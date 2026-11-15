@@ -7,13 +7,14 @@ import {
   SERVER_CALL_RESPONSE_FORMATS,
   SERVER_CALL_TOKEN_HEADER,
   serverCallOutputCap,
+  serverCallOutputCapFor,
   serverCallRequestSchema,
   type ServerCallClaims,
   type ServerCallTokenPurpose,
 } from "@kobe/protocol";
 import { verifyServerCallToken, type SessionVerifyKeys } from "@kobe/session-token";
 import { isUsageKind } from "./usage/kind.js";
-import type { ServerCallRunClaim } from "@kobe/db";
+import type { ServerCallPassClaim, ServerCallRunClaim } from "@kobe/db";
 import { CREDENTIAL_HEADERS } from "./credentials.js";
 import type { CallLimiter, RequestRate } from "./limits.js";
 import type { Route } from "./routes.js";
@@ -35,6 +36,12 @@ export interface ServerCallOptions {
    * indexed read (`serverCallRunMatches`), so a server bug cannot charge another member.
    */
   readonly runMatches: (claim: ServerCallRunClaim) => Promise<boolean>;
+  /**
+   * A learning-pass token's `pass_id` names a running pass of its thread and member (KOBE-391):
+   * one indexed read (`serverCallPassRunning`), so a token for a finished, queued or someone
+   * else's pass charges nothing.
+   */
+  readonly passRunning: (claim: ServerCallPassClaim) => Promise<boolean>;
   /**
    * Server calls' own request rate and concurrency, per team (review L4): a team whose sandboxes
    * are busy still gets its titles, and server calls cannot crowd out its sandboxes.
@@ -149,7 +156,23 @@ export function serverCallBodyLimit(maxBodyBytes: number, purpose: ServerCallTok
   return Math.min(maxBodyBytes, SERVER_CALL_LIMITS[purpose].max_body_bytes);
 }
 
-/** The structured-output format the purpose may ask for, if any (only the judge's verdict). */
+/**
+ * Purposes that sample at exactly their `SERVER_CALL_LIMITS` temperature (0) or not at all: the
+ * eval judge (KOBE-326 review L4: the author's run and the Registry re-run agree) and the learning
+ * pass's extractor (KOBE-391: extraction, not prose).
+ */
+const FIXED_TEMPERATURE_PURPOSES: readonly ServerCallTokenPurpose[] = [
+  "eval_judge",
+  "memory_learn",
+];
+
+/**
+ * Purposes whose output cap is clamped to the model's catalog `max_output_tokens` too (KOBE-391;
+ * the server mints them with `serverCallOutputCapFor`). Older purposes keep their small fixed caps.
+ */
+const CATALOG_CLAMPED_PURPOSES: readonly ServerCallTokenPurpose[] = ["memory_learn"];
+
+/** The structured-output format the purpose may ask for, if any (the judge's, the extractor's). */
 const formatOf = (purpose: ServerCallTokenPurpose): unknown =>
   (SERVER_CALL_RESPONSE_FORMATS as Partial<Record<ServerCallTokenPurpose, unknown>>)[purpose];
 
@@ -166,6 +189,8 @@ export function checkServerCallBody(
   claims: ServerCallClaims,
   /** The catalog marks `claims.model` as reasoning (`GatewayPrincipal.reasoningModels`). */
   reasoning: boolean,
+  /** The catalog's `max_output_tokens` for `claims.model`, when it names one (KOBE-391). */
+  catalogMaxOutputTokens?: number,
 ): { readonly ok: true; readonly maxOutputTokens: number } | ServerCallRefusal {
   const bad = (message: string) => refuse(400, "server_call_body_refused", message);
   let json: unknown;
@@ -183,13 +208,13 @@ export function checkServerCallBody(
   if (parsed.data.messages.some((m) => m.content.length > maxChars)) {
     return bad("A message is longer than the purpose allows.");
   }
-  // The judge samples at its fixed temperature (0) or not at all (KOBE-326 review L4): the
-  // author's run and the Registry re-run must agree.
   if (
-    claims.purpose === "eval_judge" &&
-    parsed.data.temperature !== SERVER_CALL_LIMITS.eval_judge.temperature
+    FIXED_TEMPERATURE_PURPOSES.includes(claims.purpose) &&
+    parsed.data.temperature !== SERVER_CALL_LIMITS[claims.purpose].temperature
   ) {
-    return bad("The eval judge runs at temperature 0.");
+    return bad(
+      `This purpose runs at temperature ${SERVER_CALL_LIMITS[claims.purpose].temperature}.`,
+    );
   }
   const format = parsed.data.response_format;
   if (format !== undefined && !isDeepStrictEqual(format, formatOf(claims.purpose))) {
@@ -197,7 +222,10 @@ export function checkServerCallBody(
   }
   const limit = parsed.data.max_tokens ?? parsed.data.max_completion_tokens ?? Infinity;
   if (limit > claims.max_output_tokens) return bad("The output limit is above the token's.");
-  if (limit > serverCallOutputCap(claims.purpose, reasoning)) {
+  const cap = CATALOG_CLAMPED_PURPOSES.includes(claims.purpose)
+    ? serverCallOutputCapFor(claims.purpose, reasoning, catalogMaxOutputTokens)
+    : serverCallOutputCap(claims.purpose, reasoning);
+  if (limit > cap) {
     return bad("The output limit is above this model's cap for the purpose.");
   }
   if (parsed.data.reasoning_effort !== undefined && !reasoning) {

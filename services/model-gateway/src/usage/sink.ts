@@ -34,9 +34,21 @@ interface Queued {
   readonly callId?: string | undefined;
 }
 
-/** The ledger row for a call, or undefined when it is not a model call that reached Bifrost. */
+/**
+ * A server call whose purpose `run_usage.kind` cannot record (authentication refuses those, so
+ * only a bug gets here): its row is dropped with an error log, never written as `eval` or `run`
+ * (KOBE-391), which would bill it as something it is not.
+ */
+export function unrecordablePurpose(call: CallRecord): string | undefined {
+  return call.purpose !== undefined && !isUsageKind(call.purpose) ? call.purpose : undefined;
+}
+
+/**
+ * The ledger row for a call, or undefined when it is not a model call that reached Bifrost, or a
+ * server call whose purpose is no usage kind ({@link unrecordablePurpose}).
+ */
 export function usageRecordOf(call: CallRecord): ModelUsageRecord | undefined {
-  if (!call.usage || !call.model) return undefined;
+  if (!call.usage || !call.model || unrecordablePurpose(call) !== undefined) return undefined;
   const { counts, source } = call.usage;
   return {
     id: randomUUID(),
@@ -45,7 +57,7 @@ export function usageRecordOf(call: CallRecord): ModelUsageRecord | undefined {
     sandboxId: call.sandboxId,
     runId: call.runId,
     // A server call's purpose, an eval sandbox's `eval` (KOBE-327), else the default `run`.
-    ...(call.purpose && isUsageKind(call.purpose)
+    ...(call.purpose !== undefined && isUsageKind(call.purpose)
       ? { kind: call.purpose }
       : call.eval
         ? { kind: "eval" as const }
@@ -87,6 +99,13 @@ export class DbUsageSink implements UsageSink {
   record(call: CallRecord): void {
     // Metadata only, never content (KOBE-40's log line, now with the token counts).
     this.options.logger.info({ call }, "model call");
+    const unrecordable = unrecordablePurpose(call);
+    if (unrecordable !== undefined && call.usage && call.model) {
+      this.options.logger.error(
+        { teamId: call.teamId, runId: call.runId, callId: call.callId, purpose: unrecordable },
+        "server call purpose is no usage kind: dropped its model usage record",
+      );
+    }
     const record = usageRecordOf(call);
     if (record) {
       this.enqueue([{ record, attempts: 0, callId: call.callId }]);

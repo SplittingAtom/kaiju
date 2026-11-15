@@ -10,6 +10,7 @@ import {
 import { request as httpsRequest, Agent as HttpsAgent } from "node:https";
 import {
   serverCallBoundToRun,
+  serverCallNamesPass,
   type ServerCallClaims,
   type SessionTokenClaims,
   type ThinkingLevel,
@@ -260,14 +261,40 @@ async function serverCallAttribution(
       runId: claims.run_id,
       threadId: claims.thread_id,
       userId: claims.user_id,
+      // A learning pass is the thread author's own (KOBE-391): its lease check admits only them.
+      ...(serverCallNamesPass(claims.purpose) ? { authorOnly: true } : {}),
     }));
-  if (matches) return { ok: true, runId: claims.run_id };
-  return {
-    ok: false,
-    status: 403,
-    code: "server_call_run_mismatch",
-    message: "That run is not a completed run of this thread and member.",
-  };
+  if (!matches) {
+    return {
+      ok: false,
+      status: 403,
+      code: "server_call_run_mismatch",
+      message: serverCallNamesPass(claims.purpose)
+        ? "That run is not a completed run of this thread by its author."
+        : "That run is not a completed run of this thread and member.",
+    };
+  }
+  // A learning pass's token names its pass (KOBE-391): running now, this thread's, this member's.
+  if (serverCallNamesPass(claims.purpose)) {
+    const running =
+      claims.pass_id !== undefined &&
+      claims.thread_id !== undefined &&
+      (await options.serverCalls?.passRunning({
+        teamId: claims.team_id,
+        passId: claims.pass_id,
+        threadId: claims.thread_id,
+        userId: claims.user_id,
+      }));
+    if (!running) {
+      return {
+        ok: false,
+        status: 403,
+        code: "server_call_pass_mismatch",
+        message: "That learning pass is not running on this thread for this member.",
+      };
+    }
+  }
+  return { ok: true, runId: claims.run_id };
 }
 
 export function createModelGateway(options: GatewayOptions): Server {
@@ -550,6 +577,7 @@ export function createModelGateway(options: GatewayOptions): Server {
           body,
           serverCall,
           resolution.reasoningModels.has(serverCall.model),
+          resolution.outputCaps.get(serverCall.model),
         );
         if (!checked.ok) {
           status = checked.status;

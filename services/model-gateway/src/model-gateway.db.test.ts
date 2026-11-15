@@ -9,10 +9,12 @@ import {
   and,
   isActiveRunLeasedTo,
   isRunTokenActive,
+  memoryLearningPasses,
   recordRunToken,
   runs,
   sandboxRunLeases,
   threads,
+  threadEntries,
   sql,
   loadGatewayPrincipal,
   modelCatalog,
@@ -21,6 +23,7 @@ import {
   recordModelUsage,
   runUsage,
   runThinkingLevelOf,
+  serverCallPassRunning,
   serverCallRunMatches,
   sandboxes,
   teamModels,
@@ -161,6 +164,7 @@ beforeAll(async () => {
       keys: SESSION.verify,
       replay: new ServerCallReplay(),
       runMatches: (c) => serverCallRunMatches(db, c),
+      passRunning: (c) => serverCallPassRunning(db, c),
       limiter: new CallLimiter({ perSandbox: 2, total: 4 }),
       rate: new RequestRate({ burst: 10, perSecond: 10 }),
     },
@@ -467,5 +471,199 @@ describe("server calls against the real store and ledger (KOBE-234)", () => {
         .where(eq(runUsage.id, row?.id ?? "")),
     );
     expect(stored).toMatchObject({ kind: "title", sandboxId: null, runId, threadId, userId: user });
+  });
+});
+
+describe("a learning pass's call against the real store (KOBE-391)", () => {
+  /** A thread `user` wrote, shared with `mate`: one completed run leased to each of them. */
+  async function sharedThread() {
+    const mate = randomUUID();
+    await app.db.insert(users).values({ id: mate, name: "M", email: `${mate}@g.test` });
+    return withTeam(app.db, team, async (tx) => {
+      await tx.insert(teamMembers).values({ teamId: team, userId: mate, role: "member" });
+      const [thread] = await tx
+        .insert(threads)
+        .values({ teamId: team, ownerUserId: user })
+        .returning({ id: threads.id });
+      const threadId = thread?.id ?? "";
+      await tx
+        .insert(threadEntries)
+        .values({ teamId: team, threadId, entryId: "leaf", type: "message" });
+      const runOf = async (who: string) => {
+        const [r] = await tx
+          .insert(runs)
+          .values({
+            teamId: team,
+            threadId,
+            trigger: "user",
+            status: "completed",
+            startedAt: new Date(),
+            endedAt: new Date(),
+          })
+          .returning({ id: runs.id });
+        await tx
+          .insert(sandboxRunLeases)
+          .values({ teamId: team, runId: r?.id ?? "", userId: who, threadId, sandboxId });
+        return r?.id ?? "";
+      };
+      return { mate, threadId, authorRun: await runOf(user), mateRun: await runOf(mate) };
+    });
+  }
+
+  /** A learning pass of `who` over `threadId` in `status` (finished ones carry their end). */
+  async function passOf(threadId: string, who: string, status: "running" | "completed" | "failed") {
+    const finished =
+      status === "running"
+        ? {}
+        : {
+            finishedAt: new Date(),
+            toEntryId: "leaf",
+            ...(status === "failed" ? { error: "x" } : {}),
+          };
+    const [p] = await withTeam(app.db, team, (tx) =>
+      tx
+        .insert(memoryLearningPasses)
+        .values({
+          teamId: team,
+          threadId,
+          userId: who,
+          branchLeafEntryId: "leaf",
+          modelAlias: "learner",
+          promptVersion: "v1",
+          status,
+          startedAt: new Date(),
+          ...finished,
+        })
+        .returning({ id: memoryLearningPasses.id }),
+    );
+    return p?.id ?? "";
+  }
+
+  it("the pass check admits a running pass of the token's thread and member only", async () => {
+    const { mate, threadId } = await sharedThread();
+    const { threadId: otherThread } = await sharedThread();
+    const claim = (passId: string, userId = user, thread = threadId) => ({
+      teamId: team,
+      passId,
+      threadId: thread,
+      userId,
+    });
+    const running = await passOf(threadId, user, "running");
+    expect(await serverCallPassRunning(app.db, claim(running))).toBe(true);
+    // Wrong pass: an unknown id, or the right id named on another thread.
+    expect(await serverCallPassRunning(app.db, claim(randomUUID()))).toBe(false);
+    expect(await serverCallPassRunning(app.db, claim(running, user, otherThread))).toBe(false);
+    // Another member's pass (the mate's, on a thread of their own).
+    expect(await serverCallPassRunning(app.db, claim(running, mate))).toBe(false);
+    const matePass = await passOf(otherThread, mate, "running");
+    expect(await serverCallPassRunning(app.db, claim(matePass, user, otherThread))).toBe(false);
+    // Finished passes: completed or failed.
+    await withTeam(app.db, team, (tx) =>
+      tx
+        .update(memoryLearningPasses)
+        .set({ status: "completed", finishedAt: new Date(), toEntryId: "leaf" })
+        .where(and(eq(memoryLearningPasses.teamId, team), eq(memoryLearningPasses.id, running))),
+    );
+    expect(await serverCallPassRunning(app.db, claim(running))).toBe(false);
+    const failed = await passOf(threadId, user, "failed");
+    expect(await serverCallPassRunning(app.db, claim(failed))).toBe(false);
+    // Another team never sees the pass.
+    expect(
+      await serverCallPassRunning(app.db, { ...claim(matePass, mate, otherThread), teamId: other }),
+    ).toBe(false);
+  });
+
+  it("the run check admits the thread's author only (ac-2)", async () => {
+    const { mate, threadId, authorRun, mateRun } = await sharedThread();
+    const claim = (runId: string, userId: string) => ({ teamId: team, runId, threadId, userId });
+    // A title or follow-ups call for the member who ran it, as before.
+    expect(await serverCallRunMatches(app.db, claim(mateRun, mate))).toBe(true);
+    // A learning pass: not for a member who is not the author, even on their own run.
+    expect(await serverCallRunMatches(app.db, { ...claim(mateRun, mate), authorOnly: true })).toBe(
+      false,
+    );
+    expect(await serverCallRunMatches(app.db, { ...claim(mateRun, user), authorOnly: true })).toBe(
+      false,
+    );
+    expect(
+      await serverCallRunMatches(app.db, { ...claim(authorRun, user), authorOnly: true }),
+    ).toBe(true);
+  });
+
+  it("reads the catalog's maxOutputTokens for a server call (output clamp)", async () => {
+    const alias = `fast-${team.slice(0, 8)}`;
+    await app.db
+      .update(modelCatalog)
+      .set({ maxOutputTokens: 4096 })
+      .where(eq(modelCatalog.alias, alias));
+    try {
+      const p = await loadGatewayPrincipal(app.db, team, user, undefined);
+      expect(p.outputCaps).toEqual({ "openai/gpt-x": 4096 });
+    } finally {
+      await app.db
+        .update(modelCatalog)
+        .set({ maxOutputTokens: null })
+        .where(eq(modelCatalog.alias, alias));
+    }
+    expect((await loadGatewayPrincipal(app.db, team, user, undefined)).outputCaps).toEqual({});
+  });
+
+  it("an author's extractor call reaches Bifrost and lands as a kind=memory_learn row", async () => {
+    const { threadId, authorRun } = await sharedThread();
+    const passId = await passOf(threadId, user, "running");
+    const learnCall = async (pass: string) => {
+      const iat = Math.floor(Date.now() / 1000);
+      const scToken = signServerCallToken(SC_KEY, {
+        iss: "kobe-server",
+        aud: SERVER_CALL_AUDIENCE,
+        purpose: "memory_learn",
+        team_id: team,
+        user_id: user,
+        thread_id: threadId,
+        run_id: authorRun,
+        pass_id: pass,
+        model: "openai/gpt-x",
+        max_output_tokens: 8192,
+        iat,
+        exp: iat + 30,
+        jti: randomUUID(),
+      });
+      return fetch(`${base}/v1/chat/completions`, {
+        method: "POST",
+        headers: { [SERVER_CALL_TOKEN_HEADER]: scToken, "content-type": "application/json" },
+        body: JSON.stringify({
+          model: "openai/gpt-x",
+          messages: [{ role: "user", content: "the thread" }],
+          max_tokens: 8192,
+          temperature: 0,
+        }),
+      });
+    };
+    recorded.length = 0;
+    // A pass that is not running (here: an unknown id) is refused before Bifrost.
+    const refused = await learnCall(randomUUID());
+    expect(refused.status).toBe(403);
+    expect(((await refused.json()) as { error?: { code?: string } }).error?.code).toBe(
+      "server_call_pass_mismatch",
+    );
+    const res = await learnCall(passId);
+    expect(res.status).toBe(200);
+    await expect.poll(() => recorded.length).toBe(1);
+    const row = usageRecordOf(recorded[0] as CallRecord);
+    expect(row).toBeDefined();
+    await recordModelUsage(app.db, row ? [row] : []);
+    const [stored] = await withTeam(app.db, team, (tx) =>
+      tx
+        .select()
+        .from(runUsage)
+        .where(eq(runUsage.id, row?.id ?? "")),
+    );
+    expect(stored).toMatchObject({
+      kind: "memory_learn",
+      sandboxId: null,
+      runId: authorRun,
+      threadId,
+      userId: user,
+    });
   });
 });

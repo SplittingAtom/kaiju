@@ -18,12 +18,14 @@ export {
   providerKeyContext,
   runSessionOf,
   runThinkingLevelOf,
+  serverCallPassRunning,
   serverCallRunMatches,
   virtualKeyContext,
   type GatewayPrincipal,
   type GatewayThinkingRow,
   type RunSession,
   type SandboxLiveness,
+  type ServerCallPassClaim,
   type ServerCallRunClaim,
 } from "./store.js";
 export { recordModelUsage, type ModelUsageRecord } from "./usage.js";
