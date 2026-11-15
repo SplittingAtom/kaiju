@@ -20,6 +20,7 @@ import { Button, EmptyState, Notice, Section } from "../ui/console";
 import { AddMemory } from "./add-memory";
 import { CheckProblem, itemAnchor, useCheckedSave } from "./item-checks";
 import { ItemRow, type Done, type FocusAfter } from "./item-row";
+import { OpenedMemory } from "./opened-memory";
 
 type MyScope = "user" | "portable";
 
@@ -120,7 +121,8 @@ type Lists = ReturnType<typeof useScopeLists>;
  * The Memories tab (KOBE-384; SM5, SM6, SM21): your memories **Only in this workspace** and in
  * **All my workspaces**, with add, edit, archive, restore, pin and tags. Every save runs the
  * KOBE-379 checks and shows their warnings inline (Save anyway), every change can be undone,
- * each group says when it is 80% full or full, and focus stays on what you were working on.
+ * each group says when it is 80% full or full, and focus stays on what you were working on. A
+ * memory linked from a conversation (`?item=`, KOBE-399) is shown first (`OpenedMemory`).
  */
 export function MyMemories({ teamId }: { readonly teamId: string }) {
   const api = useMemo(() => createMemoryItemsApi(teamId), [teamId]);
@@ -129,6 +131,8 @@ export function MyMemories({ teamId }: { readonly teamId: string }) {
   const listsOf = (scope: string): Lists => (scope === "portable" ? portable : user);
   const [done, setDone] = useState<{ readonly n: number; readonly done: Done } | null>(null);
   const [focus, setFocus] = useState<{ scope: MyScope; target: FocusAfter } | null>(null);
+  /** The last item an Undo brought back (the opened memory shows it too, KOBE-399). */
+  const [undone, setUndone] = useState<MemoryItem | null>(null);
 
   useEffect(() => {
     if (focus === null) return;
@@ -176,7 +180,9 @@ export function MyMemories({ teamId }: { readonly teamId: string }) {
             done={done.done}
             known={known}
             onUndone={(item) => {
-              listsOf(item.scope).place(item);
+              setUndone(item);
+              if (item.scope === "user" || item.scope === "portable")
+                listsOf(item.scope).place(item);
               setFocus({
                 scope: item.scope === "portable" ? "portable" : "user",
                 target: item.status === "active" ? itemAnchor(item.id) : "group",
@@ -185,6 +191,15 @@ export function MyMemories({ teamId }: { readonly teamId: string }) {
           />
         )}
       </div>
+      <OpenedMemory
+        api={api}
+        known={known}
+        undone={undone}
+        onChanged={(item, d) => {
+          if (item.scope === "user" || item.scope === "portable") listsOf(item.scope).place(item);
+          setDone((prev) => ({ n: (prev?.n ?? 0) + 1, done: d }));
+        }}
+      />
       <AddMemory
         api={api}
         known={known}

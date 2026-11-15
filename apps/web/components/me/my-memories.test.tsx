@@ -558,3 +558,56 @@ describe("Me editor (ac-2)", () => {
     expect(calls.some((c) => c.method === "POST")).toBe(false);
   });
 });
+
+describe("an item opened from a conversation (KOBE-399, ac-3)", () => {
+  const ITEM = `${BASE}/user/${ID3}`;
+
+  it("shows the linked memory first; Archive archives it and Undo brings it back", async () => {
+    window.history.replaceState(null, "", `/me/memory?item=${ID3}`);
+    const opened = item({ id: ID3, statement: "Forget the euros", tags: [] });
+    const archived = { ...opened, status: "archived", version: 2 };
+    const calls = stubApi({
+      ...groups([opened]),
+      [`GET ${ITEM}`]: [200, { ...opened, versions: [] }],
+      [`POST ${ITEM}/archive`]: [200, archived],
+      [`POST ${ITEM}/restore`]: [200, { ...opened, version: 3 }],
+    });
+    renderTeam(<MyMemoryPage />, MEMBER);
+    const region = await screen.findByRole("region", { name: "Opened from a conversation" });
+    expect(within(region).getByText("Forget the euros")).toBeTruthy();
+    await userEvent.click(within(region).getByRole("button", { name: /Archive/ }));
+    expect(bodyOf(calls, "POST", `${ITEM}/archive`)).toEqual({ expected_version: 1 });
+    await waitFor(() =>
+      expect(within(region).getByRole("button", { name: /Restore/ })).toBeTruthy(),
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "Undo" }));
+    await waitFor(() =>
+      expect(calls.some((c) => c.method === "POST" && c.url === `${ITEM}/restore`)).toBe(true),
+    );
+  });
+
+  it("finds a Workspace memory's scope, shown read-only, and says when it is gone", async () => {
+    window.history.replaceState(null, "", `/me/memory?item=${ID3}`);
+    const team = item({
+      id: ID3,
+      scope: "team",
+      owner_user_id: null,
+      statement: "Deploys on Tuesday",
+      tags: [],
+    });
+    stubApi({
+      ...groups(),
+      [`GET ${BASE}/team/${ID3}`]: [200, { ...team, versions: [] }],
+    });
+    renderTeam(<MyMemoryPage />, MEMBER);
+    const region = await screen.findByRole("region", { name: "Opened from a conversation" });
+    expect(await within(region).findByText("Deploys on Tuesday")).toBeTruthy();
+    expect(within(region).queryByRole("button", { name: /Archive/ })).toBeNull();
+    expect(within(region).getByText(/curators/)).toBeTruthy();
+    cleanup();
+    window.history.replaceState(null, "", `/me/memory?item=${ID2}&scope=user`);
+    stubApi(groups());
+    renderTeam(<MyMemoryPage />, MEMBER);
+    expect(await screen.findByText(/no longer available/)).toBeTruthy();
+  });
+});
