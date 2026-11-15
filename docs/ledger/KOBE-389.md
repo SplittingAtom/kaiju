@@ -47,11 +47,11 @@ WHERE status IN ('queued','running')`: one pass per thread whoever asks (team_id
   (proposals), skipping rows whose thread/pass already went in the same cascade. Dismissals and
   watermarks hold no content: no delete guard. TRUNCATE refused on all five.
 
-- **`memory_learn` usage kind (coordinator, for KOBE-390):** added to `USAGE_KINDS` and
-  `RUNLESS_USAGE_KINDS` (packages/db) and to the `run_usage_kind` / `run_usage_kind_shape` CHECKs
-  in 0229 (NOT VALID, as 0192). Shaped like `skill_manifest`: no sandbox, no run (a pass is
-  member-started), so `thread_id` stays null too (`run_usage_thread_needs_run`). Protocol
-  `SERVER_CALL_PURPOSES` / `RUNLESS_SERVER_CALL_PURPOSES` are not touched (KOBE-390's contract).
+- **`memory_learn` usage kind (coordinator, for KOBE-390):** added to `USAGE_KINDS` and the
+  `run_usage_kind` CHECK in 0229 (NOT VALID, as 0192). A server call bound to the leaf's last
+  completed run (KOBE-390 contract, PR #572): sandbox NULL, run_id set, like title/followups;
+  0192's shape CHECK already covers it, so it is unchanged. `RUNLESS_USAGE_KINDS` stays
+  `["skill_manifest"]`.
 
 ## Open questions (for Chris or the coordinator)
 
@@ -68,6 +68,6 @@ WHERE status IN ('queued','running')`: one pass per thread whoever asks (team_id
   "indexes open candidates, pending proposals and finished passes".
 - ac-3: same file, "thread purge (ac-3, SM28)": passes, candidates, dismissals, watermarks gone
   with the thread, another thread's rows kept, the proposal kept with `candidate_ref` null.
-- `memory_learn`: `usage.db.test.ts` "takes a memory_learn row with no sandbox and no run".
+- `memory_learn`: `usage.db.test.ts` "takes a memory_learn row as a server call bound to a run".
 - ac-4: same file, "watermarks (ac-4)": FK to the entry, recursive ancestor walk true for leaf b,
   false for side branch c.

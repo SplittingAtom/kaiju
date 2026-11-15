@@ -116,12 +116,11 @@ CREATE TRIGGER "memory_proposals_legal_hold_truncate" BEFORE TRUNCATE ON "memory
   FOR EACH STATEMENT EXECUTE FUNCTION "public"."legal_hold_refuse_truncate"();
 --> statement-breakpoint
 
--- run_usage kind `memory_learn` (for KOBE-390): a learning pass's model call, a server call that a
--- member starts from a conversation (no sandbox, no run), shaped like `skill_manifest` (0192).
--- NOT VALID, no VALIDATE, as 0192: every existing row passes both CHECKs by construction (the old
--- ones were stricter), and validating would scan the ledger under the DROP's lock. The previous
--- release writes only the kinds 0192 names, which both CHECKs still accept.
+-- run_usage kind `memory_learn` (for KOBE-390): a learning pass's model call, a server call bound
+-- to the leaf's last completed run (no sandbox, run_id set, like title/followups/eval_judge). The
+-- shape CHECK of 0192 already puts every kind other than run/eval/skill_manifest in that branch,
+-- so only the kind list widens. NOT VALID, no VALIDATE, as 0192: every existing row passes by
+-- construction, and validating would scan the ledger under the DROP's lock. The previous release
+-- writes only the kinds 0192 names, which the CHECK still accepts.
 ALTER TABLE "run_usage" DROP CONSTRAINT "run_usage_kind";--> statement-breakpoint
-ALTER TABLE "run_usage" ADD CONSTRAINT "run_usage_kind" CHECK ("run_usage"."kind" IN ('run', 'title', 'followups', 'eval', 'eval_judge', 'skill_manifest', 'memory_learn')) NOT VALID;--> statement-breakpoint
-ALTER TABLE "run_usage" DROP CONSTRAINT "run_usage_kind_shape";--> statement-breakpoint
-ALTER TABLE "run_usage" ADD CONSTRAINT "run_usage_kind_shape" CHECK (("run_usage"."kind" IN ('run', 'eval') AND "run_usage"."sandbox_id" IS NOT NULL) OR ("run_usage"."kind" IN ('skill_manifest', 'memory_learn') AND "run_usage"."sandbox_id" IS NULL AND "run_usage"."run_id" IS NULL) OR ("run_usage"."kind" NOT IN ('run', 'eval', 'skill_manifest', 'memory_learn') AND "run_usage"."sandbox_id" IS NULL AND "run_usage"."run_id" IS NOT NULL)) NOT VALID;
+ALTER TABLE "run_usage" ADD CONSTRAINT "run_usage_kind" CHECK ("run_usage"."kind" IN ('run', 'title', 'followups', 'eval', 'eval_judge', 'skill_manifest', 'memory_learn')) NOT VALID;

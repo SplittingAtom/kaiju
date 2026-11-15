@@ -1071,7 +1071,7 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   `0229_memory_learning_rls` add five empty team tables for learning from conversations
   (`memory_learning_passes`, `memory_candidates`, `memory_dismissals`,
   `memory_learning_watermarks`, `memory_proposals`; row-level security per team, legal-hold
-  guards), and allow the `memory_learn` model usage kind (no run, no sandbox). No existing data changes and nothing uses them yet. On a `helm rollback` the previous
+  guards), and allow the `memory_learn` model usage kind. No existing data changes and nothing uses them yet. On a `helm rollback` the previous
   release ignores them.
 
 - **Memory notifications (KOBE-645).** Migrations `0220_memory_notifications` and

@@ -47,8 +47,8 @@ export type UsageSource = (typeof USAGE_SOURCES)[number];
  * `skill_manifest` (KOBE-564) is the server's call that drafts a `kobe.skill.yaml` for a member:
  * the one server call a member starts, with no run, so its row names no sandbox and no run
  * (migration 0192 lets the shape CHECK take it). `memory_learn` (KOBE-389 for KOBE-390) is a
- * learning pass's call: member-started from a conversation, no run and no sandbox, charged to
- * (team, user) like `skill_manifest` (migration 0229).
+ * learning pass's call, bound to the leaf's last completed run: a server call like `title`
+ * (no sandbox, run set; migration 0229).
  */
 export const USAGE_KINDS = [
   "run",
@@ -60,7 +60,7 @@ export const USAGE_KINDS = [
   "memory_learn",
 ] as const;
 /** Server-call kinds whose rows name no run (`run_id` NULL): started by a member, not a run. */
-export const RUNLESS_USAGE_KINDS = ["skill_manifest", "memory_learn"] as const;
+export const RUNLESS_USAGE_KINDS = ["skill_manifest"] as const;
 export type UsageKind = (typeof USAGE_KINDS)[number];
 
 /** Longest gateway model id kept (`<gateway provider>/<model>`). */
