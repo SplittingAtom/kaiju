@@ -76,7 +76,9 @@ enabled, only over HTTPS.
 
 **Memory.** Markdown notes kept across conversations: `user` scope (only this user) and `project`
 scope (shared with the project). Read with `recall`, write with `remember`. Each scope has an index
-file, `MEMORY.md`, shown to you at the start of a run.
+file, `MEMORY.md`, shown to you at the start of a run. **Saved memories** are short statements
+(What Kobe knows) that people save; you read them, find more with `recall {query}`, and show one
+with `show_memory_item`, but never write them.
 
 **Artifact.** Content you create for the user to keep with `create_artifact` (kinds: html, svg,
 markdown, mermaid, code, csv), shown in the **artifact column**, the right-hand column of tabs.

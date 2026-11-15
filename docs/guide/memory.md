@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, which site and workspace switches control notes and memories, how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
+summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, which site and workspace switches control notes and memories, how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
 section: Memory
 order: 1
 audience: member
@@ -34,12 +34,31 @@ Each kind is a small set of `.md` files with one index file, `MEMORY.md`, and to
 At the start of each run the agent gets the index of your memory (and of the conversation's
 project, if any). It has two tools:
 
-- **remember** saves or appends a note to a memory file;
-- **recall** reads a memory file or searches memory by text. It never needs approval.
+- **remember** saves or appends a note to a memory file. Notes are the agent's own; durable things
+  become **memories** when you press **Learn** (the agent never writes memories itself);
+- **recall** reads a memory file or searches by text. A search also returns your matching
+  **memories** first (up to 8, best match first, each labelled with where it is saved and its
+  kind), then the matching notes. It never needs approval;
+- **show memory item** shows you one memory the run was given or a search found, with an **Open in
+  Memory** link. It only reads: it changes nothing.
 
 Ask in plain words: "Remember that I report in euros", "What do you remember about the Q3 plan?",
 "Forget what you saved about my old manager" (or delete it yourself, below). The agent is told
 never to store secrets or passwords in memory; do not ask it to.
+
+### Forget a memory
+
+The agent cannot change or archive memories. Ask "What do you know about my old manager?" or
+"Forget that I prefer euros": the agent finds the memory and shows it with an **Open in Memory**
+link under its tool call. The link opens **My memory** with that memory first, under **Opened
+from a conversation**, where **Archive** is one click and **Undo** puts it back. An archived
+memory is never given to a run again, and a search no longer finds it. Workspace and site
+memories open read-only there: their curators change them.
+
+The agent's searches over memories follow the same rules as the memories a run is given: only
+yours, your current workspace's and (while the workspace allows them) the site's, and none for an
+agent whose **Memory** setting is **Notes only** or **Off**. A search with a notes place
+(**My notes** or the project) looks in those notes only.
 
 ## Memories in a run
 
@@ -78,8 +97,8 @@ The agent gets its memories as a section called **What Kobe knows**, in this ord
 3. **pinned** memories;
 4. your notes indexes (**Saved memory**) and the project's instructions;
 5. **What Kobe knows for this message**: the memories picked for this message, and a line saying
-   how many more matched but did not fit (the agent can search them with **recall** when notes
-   are on);
+   how many more matched but did not fit (the agent can find them with **recall**, which searches
+   all your memories whether or not they were given);
 6. the file you have open and any sync conflicts.
 
 Each place is fenced and labelled with where it came from (for example "approved by a Workspace
