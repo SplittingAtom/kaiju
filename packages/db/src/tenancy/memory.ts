@@ -18,6 +18,12 @@ export const memory = defineDomain({
     "memory_stewards",
     // Pending objects owed one 7-day reminder (KOBE-645).
     "memory_reminders",
+    // Phase B learning (KOBE-389): passes, candidates, dismissals, watermarks, Workspace proposals.
+    "memory_learning_passes",
+    "memory_candidates",
+    "memory_dismissals",
+    "memory_learning_watermarks",
+    "memory_proposals",
   ],
   siteWide: [
     "portable_memory_items",
