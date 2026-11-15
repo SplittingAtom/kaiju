@@ -17,11 +17,18 @@ import {
   newNonce,
   untrustedMemoryBlock,
 } from "../kobe-tools/memory-fence.js";
-import type { MemoryFileContent } from "./context-file.js";
+import type { MemoryFileContent, PicksPlacement } from "./context-file.js";
 import { projectContextText } from "./project-context.js";
 import { viewingContextText } from "./viewing-context.js";
 import { conflictNoteText } from "./conflict-context.js";
-import { semanticContextText } from "./semantic-context.js";
+import { semanticContextText, type SemanticRender } from "./semantic-context.js";
+
+/** Where kobe-tools puts the picks for each Site placement (KOBE-658). */
+export function picksPlacementOf(placement: SemanticRender["placement"]): PicksPlacement {
+  if (placement === "latest_user_keep" || placement === "stable_plus_delta") return "message_keep";
+  if (placement === "latest_user_strip") return "message_strip";
+  return "system";
+}
 
 /**
  * The memory index in the model's context (KOBE-157, memory.ts `run.start.memory`). Indexes are
@@ -113,6 +120,9 @@ export function memoryRunFileContent(
     text: tools ? (memoryContextText(memory, fence) ?? "") : "",
     ...(known.known === "" ? {} : { known: known.known, knownSections: known.knownSections }),
     ...(known.picks === "" ? {} : { picks: known.picks, picksSections: known.picksSections }),
+    ...(known.held === "" ? {} : { held: known.held, heldSections: known.heldSections }),
+    // KOBE-658: the picks beside the newest user message unless the Site keeps them in the prompt.
+    picksPlacement: picksPlacementOf(known.placement),
     project: projectContextText(project) ?? "",
     viewing: viewingContextText(viewing) ?? "",
     ...(note === undefined ? {} : { conflicts: note }),

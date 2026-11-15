@@ -22,8 +22,17 @@ export interface MemoryFileContent {
   readonly known?: string;
   /** The per-message picks and the overflow line (KOBE-383): after the project instructions. */
   readonly picks?: string;
+  /** The held picks of `stable_plus_delta` (KOBE-658): in the system prompt, after the project. */
+  readonly held?: string;
+  /**
+   * Where kobe-tools puts `picks` (KOBE-658): in the system prompt (`system`, also absent), or
+   * before the newest user message, earlier messages keeping theirs (`message_keep`) or not
+   * (`message_strip`).
+   */
+  readonly picksPlacement?: PicksPlacement;
   /** The context viewer's sections of `known` / `picks` (agent memory only, not in the file). */
   readonly knownSections?: readonly SemanticSection[];
+  readonly heldSections?: readonly SemanticSection[];
   readonly picksSections?: readonly SemanticSection[];
   /** Project instructions block (KOBE-245); empty for a non-project run. */
   readonly project: string;
@@ -35,6 +44,25 @@ export interface MemoryFileContent {
   readonly conflictsLive?: string;
   /** The viewer may edit the run's project (KOBE-580): kobe-tools lists `commit_project`. */
   readonly projectWrite?: boolean;
+}
+
+export type PicksPlacement = "system" | "message_keep" | "message_strip";
+
+/** The file's JSON (what kobe-tools/memory-hooks.ts `readMemoryRunFile` parses). */
+export function memoryFileJson(content: MemoryFileContent): string {
+  return JSON.stringify({
+    tools: content.tools,
+    text: content.text,
+    known: content.known ?? "",
+    picks: content.picks ?? "",
+    held: content.held ?? "",
+    picks_placement: content.picksPlacement ?? "system",
+    project: content.project,
+    viewing: content.viewing ?? "",
+    conflicts: content.conflicts ?? "",
+    conflicts_live: content.conflictsLive ?? "",
+    project_write: content.projectWrite === true,
+  });
 }
 
 export const isMemoryTemp = (name: string): boolean =>
@@ -53,17 +81,7 @@ export class MemoryContextFile {
   }
 
   write(content: MemoryFileContent): Promise<void> {
-    const text = JSON.stringify({
-      tools: content.tools,
-      text: content.text,
-      known: content.known ?? "",
-      picks: content.picks ?? "",
-      project: content.project,
-      viewing: content.viewing ?? "",
-      conflicts: content.conflicts ?? "",
-      conflicts_live: content.conflictsLive ?? "",
-      project_write: content.projectWrite === true,
-    });
+    const text = memoryFileJson(content);
     const next = this.#chain.then(async () => {
       await writeFileAtomic(this.path, text, this.#mode);
       this.#writtenText = text;

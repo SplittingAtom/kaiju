@@ -110,6 +110,7 @@ describe("memoryRunFileContent", () => {
       text: "",
       project: "",
       viewing: "",
+      picksPlacement: "system",
       projectWrite: false,
     });
   });
@@ -119,6 +120,7 @@ describe("memoryRunFileContent", () => {
       text: "",
       project: "",
       viewing: "",
+      picksPlacement: "system",
       projectWrite: false,
     });
     expect(memoryRunFileContent(undefined)).toEqual({
@@ -126,6 +128,7 @@ describe("memoryRunFileContent", () => {
       text: "",
       project: "",
       viewing: "",
+      picksPlacement: "system",
       projectWrite: false,
     });
   });

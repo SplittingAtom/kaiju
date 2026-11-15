@@ -31,6 +31,32 @@ import {
 export const CAPABILITY_SEMANTIC_MEMORY = "semantic_memory";
 
 /**
+ * Where the per-message picks reach the model (KOBE-658, Site setting `memory.placement`; Gate A
+ * cache regression). Policy and pinned items stay in the system prompt in every mode.
+ * - `system`: the picks in the system prompt (KOBE-383 as built).
+ * - `latest_user_keep`: the picks beside the newest user message; earlier messages keep theirs.
+ * - `latest_user_strip`: as keep, but only the newest message carries its picks.
+ * - `stable_plus_delta`: a held pick set in the system prompt (items marked `held`, re-picked
+ *   every N messages), the other picks beside the newest message.
+ * - `tool_only`: no picks; the agent uses `recall` / `show_memory_item` (KOBE-399).
+ * Absent = `system` (an old server). Sent only to agents listing
+ * {@link CAPABILITY_SEMANTIC_MEMORY_PLACEMENT}.
+ */
+export const SEMANTIC_MEMORY_PLACEMENTS = [
+  "system",
+  "latest_user_keep",
+  "latest_user_strip",
+  "stable_plus_delta",
+  "tool_only",
+] as const;
+export const semanticMemoryPlacementSchema = z.enum(SEMANTIC_MEMORY_PLACEMENTS);
+export type SemanticMemoryPlacement = z.infer<typeof semanticMemoryPlacementSchema>;
+export const SEMANTIC_MEMORY_PLACEMENT_DEFAULT: SemanticMemoryPlacement = "latest_user_keep";
+
+/** `hello.capabilities` entry of an agent that renders `run.start.memory.semantic.placement`. */
+export const CAPABILITY_SEMANTIC_MEMORY_PLACEMENT = "semantic_memory_placement";
+
+/**
  * Bytes of the rendered "What Kobe knows" block (SM23): block header and footer, each lane's
  * nonce fences and header, and each item's line (bullet, kind, provenance) plus its statement.
  * {@link semanticMemoryRenderedBytes} computes it with the fixed overheads below. The Site's
@@ -45,11 +71,12 @@ export const SEMANTIC_MEMORY_BLOCK_MIN_BYTES = 4 * 1024;
 export const SEMANTIC_MEMORY_BLOCK_DEFAULT_BYTES = 8 * 1024;
 export const SEMANTIC_MEMORY_BLOCK_MAX_BYTES = 16 * 1024;
 /**
- * Both headers ("What Kobe knows" and "… for this message"), the preamble with the untrusted-data
- * notice, and the "n more not shown" line (KOBE-383: measured from the sandbox's renderer, which
- * tests that it stays within each overhead).
+ * The headers ("What Kobe knows", "… for this message" and, with `stable_plus_delta`, "… for this
+ * conversation"), the preamble with the untrusted-data notice (longer when the picks travel beside
+ * the person's message, KOBE-658), and the "n more not shown" line (KOBE-383: measured from the
+ * sandbox's renderer, which tests that it stays within each overhead; 640 before KOBE-658).
  */
-export const SEMANTIC_MEMORY_RENDER_BLOCK_OVERHEAD_BYTES = 640;
+export const SEMANTIC_MEMORY_RENDER_BLOCK_OVERHEAD_BYTES = 768;
 /**
  * One fence: its label line and nonce markers, open and close. A lane gets one fence among the
  * stable items (Policy, pinned) and another among the per-message picks when it has both
@@ -81,6 +108,8 @@ export const runSemanticMemoryItemSchema = z.strictObject({
   policy: z.boolean(),
   pinned: z.boolean(),
   provenance: runSemanticMemoryProvenanceSchema,
+  /** A pick of the held set (`stable_plus_delta`, KOBE-658): rendered in the system prompt. */
+  held: z.literal(true).optional(),
 });
 export type RunSemanticMemoryItem = z.infer<typeof runSemanticMemoryItemSchema>;
 
@@ -100,8 +129,15 @@ export const semanticMemoryRunLane = (item: RunSemanticMemoryItem): string =>
  * the per-message picks. The server's selector and this estimate charge one fence overhead per
  * distinct value, so they count what the renderer draws.
  */
-export const semanticMemoryRunFence = (item: { policy: boolean; pinned: boolean; scope: string }) =>
-  `${item.policy ? "policy" : item.scope}:${item.policy || item.pinned ? "stable" : "pick"}`;
+export const semanticMemoryRunFence = (item: {
+  policy: boolean;
+  pinned: boolean;
+  scope: string;
+  held?: boolean | undefined;
+}) =>
+  `${item.policy ? "policy" : item.scope}:${
+    item.policy || item.pinned ? "stable" : item.held === true ? "held" : "pick"
+  }`;
 
 /**
  * Bytes of the rendered block for these items (see {@link SEMANTIC_MEMORY_BLOCK_MAX_BYTES}): an
@@ -126,6 +162,8 @@ export const runSemanticMemorySchema = z
     items: z.array(runSemanticMemoryItemSchema).max(SEMANTIC_MEMORY_RUN_MAX_ITEMS),
     /** Eligible items left out to stay within the budgets (the agent may say there are more). */
     omitted_count: z.number().int().nonnegative(),
+    /** Where the picks render (KOBE-658); absent = `system`. */
+    placement: semanticMemoryPlacementSchema.optional(),
   })
   .superRefine((v, ctx) => {
     const issue = (message: string) => ctx.addIssue({ code: "custom", path: ["items"], message });
@@ -139,6 +177,14 @@ export const runSemanticMemorySchema = z
       const prev = v.items[i - 1];
       if (prev && semanticMemoryRunRank(prev) > semanticMemoryRunRank(item))
         issue(`item ${i}: order is Policy, pinned, then per-message picks`);
+      if (item.held === true && (item.policy || item.pinned))
+        issue(`item ${i}: only per-message picks are held`);
+      if (item.held === true && v.placement !== "stable_plus_delta")
+        issue(`item ${i}: held picks exist only with stable_plus_delta`);
+      if (item.held === true && prev && semanticMemoryRunRank(prev) === 2 && prev.held !== true)
+        issue(`item ${i}: held picks come before the other picks`);
+      if (v.placement === "tool_only" && semanticMemoryRunRank(item) === 2)
+        issue(`item ${i}: tool_only carries no per-message picks`);
     });
     if (new Set(v.items.map((i) => `${i.scope}:${i.id}`)).size !== v.items.length)
       issue("an item is listed twice");
