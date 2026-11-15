@@ -25,3 +25,4 @@ export { default as backup } from "./backup";
 export { default as auditForwarding } from "./audit-forwarding";
 export { default as ssoMappings } from "./sso-mappings";
 export { default as memory } from "./memory";
+export { default as portableBreakGlass } from "./portable-break-glass";

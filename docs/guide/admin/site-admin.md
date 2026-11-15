@@ -1,6 +1,6 @@
 ---
 title: Site admin overview
-summary: What site admins do and where each setting lives in the Site console (people, grants such as Site memory steward, teams, models, connectors, egress ceiling, policy floor, Site memory and Policy with import and export, appearance, legal holds including the Site-wide hold on Site memory, audit and backups).
+summary: What site admins do and where each setting lives in the Site console (people, grants such as Site memory steward, teams, models, connectors, egress ceiling, policy floor, Site memory and Policy with import and export, appearance, legal holds including the Site-wide hold on Site memory, audit, break-glass for teams and for one person's portable memories, and backups).
 section: Site admin
 order: 1
 audience: admin
@@ -16,7 +16,9 @@ console** in the top bar.
 There are three site roles: **Owner**, **Admin** and **User**. Owners and Admins are site admins and
 can use every Site console page. Only the Owner grants or removes Admin and transfers ownership.
 Site admins cannot read a team's conversations or files; when they must, they use break-glass
-access, which is time-boxed, read-only, audited and shown to the team.
+access, which is time-boxed, read-only, audited and shown to the team. Nobody but their owner can
+read a person's portable preferences either; reading them needs its own break-glass grant on the
+**Portable memory access** page (see below).
 
 ## People
 
@@ -121,6 +123,17 @@ access, which is time-boxed, read-only, audited and shown to the team.
   only; a Policy row imports only for Site admins and only while Policy has room. Exports are
   audited. Your own workspace's memory switches don't limit what you curate here (they decide
   what reaches that workspace's runs). The memory switches stay under **Settings**.
+- **Portable memory access**: break-glass for one person's portable preferences, which follow
+  them into every workspace and so are outside any team's break-glass. A site admin picks the
+  person, gives a reason and a window (up to 24 hours, 1 hour by default); a second site admin
+  approves (on a site whose only other admin is that person, the requester approves alone and the
+  grant is flagged). The person can never approve, deny or end a request about themselves. While
+  the grant is active only the requester can open the person's portable memories, read-only.
+  The person is emailed when it is approved and when it ends (not for a **legal hold**), and so
+  are the team admins of every workspace they belong to. Every page opened is recorded in the
+  site audit log and in the audit view of each of those workspaces
+  (`governance.site_break_glass.read`). A person's memories inside one workspace, and the
+  workspace's own memories, still need that workspace's break-glass.
 
 ## System
 

@@ -164,7 +164,10 @@ workspace turns memory, memories or Site memories off. Only the site's own **All
 turns Policy off.
 
 - **Portable preferences** (site): your preferences (how you like answers, units, tone) follow you
-  into every workspace you belong to. Facts about work never leave their workspace.
+  into every workspace you belong to. Facts about work never leave their workspace. Only you can
+  read them; a site admin can read them only under a time-boxed, read-only break-glass grant that a
+  second site admin approved. You are emailed when it starts and ends (unless it is a legal hold),
+  and every read is in the site audit log and the audit view of each of your workspaces.
 - **Learn from this chat** (site and workspace): you can ask Kobe to suggest memories from a
   conversation and review every suggestion before anything is saved.
 - **Members may propose to the Site** (site and workspace): workspace memories can be proposed to

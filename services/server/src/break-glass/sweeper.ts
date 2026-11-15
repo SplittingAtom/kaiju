@@ -2,6 +2,8 @@ import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
 import { deliverBreakGlassNotifications } from "./outbox.js";
 import { expireDueGrants } from "./store.js";
+import { deliverSiteBreakGlassNotifications } from "../site-break-glass/outbox.js";
+import { expireDueSiteGrants } from "../site-break-glass/store.js";
 
 /** How often each replica records ended grants and retries notifications. Access itself ends at `expires_at`, not here. */
 export const BREAK_GLASS_SWEEP_INTERVAL_MS = 60_000;
@@ -14,8 +16,11 @@ export const BREAK_GLASS_SWEEP_INTERVAL_MS = 60_000;
  */
 export async function sweepBreakGlass(deps: ServerDeps): Promise<number> {
   const expired = await expireDueGrants(deps.database.db);
+  // Site-level grants on portable memories (KOBE-648): same sweep, same rules.
+  const expiredSite = await expireDueSiteGrants(deps.database.db);
   await deliverBreakGlassNotifications(deps);
-  return expired.length;
+  await deliverSiteBreakGlassNotifications(deps);
+  return expired.length + expiredSite.length;
 }
 
 export class BreakGlassSweeper {

@@ -18,6 +18,18 @@ export {
   type BreakGlassThread,
   type BreakGlassThreadCursor,
 } from "./break-glass/read.js";
+export {
+  PORTABLE_BREAK_GLASS_ITEMS_MAX,
+  SiteBreakGlassDenied,
+  readPortableWithSiteBreakGlass,
+  type PortableBreakGlassItem,
+  type PortableBreakGlassRead,
+  type PortableBreakGlassResult,
+  type PortableBreakGlassVersion,
+  type SiteBreakGlassAccess,
+  type SiteBreakGlassDeniedCode,
+  type SiteBreakGlassGrantView,
+} from "./break-glass/portable-read.js";
 export { BREAK_GLASS_READABLE_TABLES, type BreakGlassReadableTable } from "./break-glass/tables.js";
 export {
   LEGAL_HOLD_SQLSTATE,
