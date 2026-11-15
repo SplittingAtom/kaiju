@@ -8,6 +8,9 @@ import {
   type RecallInput,
   type RememberInput,
   type RunMemoryContext,
+  type RunSemanticMemoryItem,
+  type SemanticMemoryScope,
+  type ShowMemoryItemInput,
 } from "@kobe/protocol";
 import {
   and,
@@ -42,7 +45,9 @@ import {
   type MemoryTarget,
 } from "./store.js";
 import { searchFiles, type Reresolve } from "./search.js";
+import { recallItems, showItem } from "./items/recall-items.js";
 import { readSwitches } from "./switches.js";
+import { readRunMemoryPlan } from "../agents/run-memory.js";
 
 /**
  * The server side of the sandbox's `remember` and `recall` tools (KOBE-156, spec D24; contract
@@ -514,9 +519,79 @@ export async function readMemory(
     if (req.input.path !== undefined && found.files.length === 0) {
       return fail("not_found", "There is no such memory file.");
     }
-    return { ok: true, op: "read", files: found.files, truncated: found.truncated };
+    const items = await readItems(deps, req);
+    return {
+      ok: true,
+      op: "read",
+      files: found.files,
+      truncated: found.truncated,
+      ...(items === undefined ? {} : { items }),
+    };
   } catch (err) {
     deps.log.error({ err, run_id: req.runId }, "memory.read failed");
+    return NO_STORAGE;
+  }
+}
+
+/**
+ * KOBE-399: the saved memories a `recall({ query })` without `scope` answers before the Notes
+ * files (`items/recall-items.ts`). Its own short transaction after the Notes listing; a failure
+ * leaves the items out (logged) and never costs the Notes answer.
+ */
+async function readItems(
+  deps: Pick<MemoryAgentDeps, "db" | "log">,
+  req: ReadRequest,
+): Promise<RunSemanticMemoryItem[] | undefined> {
+  const { query, scope, path } = req.input;
+  if (query === undefined || scope !== undefined || path !== undefined) return undefined;
+  try {
+    return await withTeam(deps.db, req.teamId, (tx) => recallItems(tx, req, query));
+  } catch (err) {
+    deps.log.error({ err, run_id: req.runId }, "recall over memory items failed");
+    return undefined;
+  }
+}
+
+// ------------------------------------------------------------------------------ show_memory_item
+
+export interface ShowRequest extends MemoryCaller {
+  readonly input: ShowMemoryItemInput;
+  /** The scope of an item an earlier `recall` of this run answered (kept by the connection). */
+  readonly recalled: (id: string) => SemanticMemoryScope | undefined;
+  readonly refused: (reason: MemoryRefusal) => void;
+}
+
+const UNKNOWN_ITEM = fail(
+  "not_found",
+  "That memory is not in this run's context or an earlier recall answer. Recall it first.",
+);
+
+/**
+ * `memory.show` (KOBE-399): one saved memory, read-only, for an id this run was given or
+ * recalled (`showItem`). The run must be active and the agent version's memory not `off`. Never
+ * throws; never writes.
+ */
+export async function showMemory(
+  deps: Pick<MemoryAgentDeps, "db" | "log">,
+  req: ShowRequest,
+): Promise<MemoryReply> {
+  try {
+    const shown = await withTeam(deps.db, req.teamId, async (tx) => {
+      if (!(await loadRun(tx, req))) return "ended" as const;
+      if (!(await readRunMemoryPlan(tx, req)).notes) return "off" as const;
+      return showItem(tx, req, req.input.id, req.recalled);
+    });
+    if (shown === "ended") {
+      req.refused("run_not_active");
+      return NOT_ACTIVE;
+    }
+    if (shown === "off") {
+      req.refused("memory_disabled");
+      return fail("memory_disabled", "Memory is turned off for this agent.");
+    }
+    return shown === undefined ? UNKNOWN_ITEM : { ok: true, op: "show", item: shown };
+  } catch (err) {
+    deps.log.error({ err, run_id: req.runId }, "memory.show failed");
     return NO_STORAGE;
   }
 }
