@@ -70,3 +70,4 @@ export * from "./semantic-memory.js";
 export * from "./memory-stewards.js";
 export * from "./memory-reminders.js";
 export * from "./site-break-glass.js";
+export * from "./semantic-memory-learning.js";

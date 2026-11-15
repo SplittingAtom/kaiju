@@ -9,11 +9,17 @@ import {
   runs,
   semanticMemoryItemVersions,
   semanticMemoryItems,
+  memoryCandidates,
+  memoryDismissals,
+  memoryLearningPasses,
+  memoryLearningWatermarks,
+  memoryProposals,
   memoryReminders,
   memoryStewards,
   siteMemoryItemVersions,
   siteMemoryItems,
   teamMembers,
+  threadEntries,
   threads,
   users,
 } from "../../schema/index.js";
@@ -64,6 +70,38 @@ async function insertItem(tx: KobeTx, teamId: string) {
     actorUserId: userId,
   });
   return { itemId: item.id, userId };
+}
+
+/** A thread of a new user with one entry `e1`, for learning rows to hang off. */
+async function insertThread(tx: KobeTx, teamId: string) {
+  const userId = await insertUser(tx);
+  const [thread] = await tx
+    .insert(threads)
+    .values({ teamId, ownerUserId: userId, title: "Probe" })
+    .returning({ id: threads.id });
+  if (!thread) throw new Error("probe: thread insert returned nothing");
+  await tx
+    .insert(threadEntries)
+    .values({ teamId, threadId: thread.id, entryId: "e1", type: "message" });
+  return { threadId: thread.id, userId };
+}
+
+/** A queued learning pass over that thread. */
+async function insertPass(tx: KobeTx, teamId: string) {
+  const { threadId, userId } = await insertThread(tx, teamId);
+  const [pass] = await tx
+    .insert(memoryLearningPasses)
+    .values({
+      teamId,
+      threadId,
+      userId,
+      branchLeafEntryId: "e1",
+      modelAlias: "learner",
+      promptVersion: "v1",
+    })
+    .returning({ id: memoryLearningPasses.id });
+  if (!pass) throw new Error("probe: pass insert returned nothing");
+  return { passId: pass.id, threadId, userId };
 }
 
 export const memoryFixtures: Record<(typeof memory.team)[number], ProbeFixture> = {
@@ -126,6 +164,41 @@ export const memoryFixtures: Record<(typeof memory.team)[number], ProbeFixture> 
       relatedKind: "memory.proposal.received",
       userId,
       dueAt: new Date(Date.now() + 7 * 86_400_000),
+    });
+  },
+  memory_learning_passes: async (tx, teamId) => {
+    await insertPass(tx, teamId);
+  },
+  memory_candidates: async (tx, teamId) => {
+    const { passId } = await insertPass(tx, teamId);
+    await tx
+      .insert(memoryCandidates)
+      .values({ teamId, passId, ord: 0, payload: { statement: "x" } });
+  },
+  memory_dismissals: async (tx, teamId) => {
+    const { threadId, userId } = await insertThread(tx, teamId);
+    await tx
+      .insert(memoryDismissals)
+      .values({ teamId, threadId, userId, statementHash: "0".repeat(64) });
+  },
+  memory_learning_watermarks: async (tx, teamId) => {
+    const { threadId, userId } = await insertThread(tx, teamId);
+    await tx.insert(memoryLearningWatermarks).values({ teamId, threadId, userId, entryId: "e1" });
+  },
+  memory_proposals: async (tx, teamId) => {
+    const { passId, userId } = await insertPass(tx, teamId);
+    const [candidate] = await tx
+      .insert(memoryCandidates)
+      .values({ teamId, passId, ord: 0, payload: { statement: "x" } })
+      .returning({ id: memoryCandidates.id });
+    if (!candidate) throw new Error("probe: candidate insert returned nothing");
+    await tx.insert(memoryProposals).values({
+      teamId,
+      source: "candidate",
+      candidateRef: candidate.id,
+      statement: "Deploys go out on Tuesdays",
+      kind: "convention",
+      proposerId: userId,
     });
   },
 };

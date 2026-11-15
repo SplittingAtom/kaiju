@@ -1104,6 +1104,13 @@ Migrations report what an upgrade changed in the migration Job's log (`"msg":"mi
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
 
+- **Memory learning tables (KOBE-389).** Migrations `0228_memory_learning` and
+  `0229_memory_learning_rls` add five empty team tables for learning from conversations
+  (`memory_learning_passes`, `memory_candidates`, `memory_dismissals`,
+  `memory_learning_watermarks`, `memory_proposals`; row-level security per team, legal-hold
+  guards), and allow the `memory_learn` model usage kind. No existing data changes and nothing uses them yet. On a `helm rollback` the previous
+  release ignores them.
+
 - **Memory notifications (KOBE-645).** Migrations `0220_memory_notifications` and
   `0221_memory_notifications_rls` widen the `notifications` kind checks with every v1.3 memory
   notification kind, add five nullable columns that only those kinds use (`memory_scope`,
