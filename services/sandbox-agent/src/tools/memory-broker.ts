@@ -4,11 +4,13 @@ import type {
   MemoryPutFrame,
   MemoryReadFrame,
   MemoryResultFrame,
+  MemoryShowFrame,
 } from "@kobe/protocol";
 import { toolsError } from "./channel.js";
 
 /**
- * Routes `remember` / `recall` kobe-tools requests (`memory.put`, `memory.read`) to the server and
+ * Routes `remember` / `recall` / `show_memory_item` kobe-tools requests (`memory.put`,
+ * `memory.read`, `memory.show` since KOBE-399) to the server and
  * its `memory.result` back (KOBE-157, memory.ts). Same rules as the other brokers: wire ids
  * are minted here, the frame carries the run and thread the agent knows (never ones the extension
  * names) plus the `tool_call_id` kobe-policy allowed, every pending request is answered exactly
@@ -17,7 +19,11 @@ import { toolsError } from "./channel.js";
 export const MAX_PENDING_MEMORY = 32;
 export const MAX_PENDING_MEMORY_PER_THREAD = 4;
 
-type MemoryRequest = Extract<KobeToolsRequest, { op: "memory.put" | "memory.read" }>;
+type MemoryRequest = Extract<
+  KobeToolsRequest,
+  { op: "memory.put" | "memory.read" | "memory.show" }
+>;
+type MemoryFrame = MemoryPutFrame | MemoryReadFrame | MemoryShowFrame;
 
 interface Pending {
   readonly threadId: string;
@@ -28,7 +34,7 @@ interface Pending {
 
 export interface MemoryBrokerDeps {
   /** Send a frame now; false when the wire is not ready. */
-  readonly send: (frame: MemoryPutFrame | MemoryReadFrame) => boolean;
+  readonly send: (frame: MemoryFrame) => boolean;
 }
 
 export class MemoryBroker {
@@ -63,10 +69,12 @@ export class MemoryBroker {
       thread_id: threadId,
       tool_call_id: request.tool_call_id,
     };
-    const frame: MemoryPutFrame | MemoryReadFrame =
+    const frame: MemoryFrame =
       request.op === "memory.put"
         ? { ...base, type: "memory.put", input: request.input }
-        : { ...base, type: "memory.read", input: request.input };
+        : request.op === "memory.read"
+          ? { ...base, type: "memory.read", input: request.input }
+          : { ...base, type: "memory.show", input: request.input };
     this.#pending.set(requestId, { threadId, runId, extensionId: request.id, reply });
     if (!this.#deps.send(frame)) {
       this.#pending.delete(requestId);

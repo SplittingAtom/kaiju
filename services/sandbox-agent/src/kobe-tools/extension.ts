@@ -4,7 +4,7 @@ import type { Duplex } from "node:stream";
 import { ToolsClient, type ToolsClientOptions } from "./client.js";
 import { installMemoryHooks, registerProjectHooks, type MemoryHooksApi } from "./memory-hooks.js";
 import { commitProjectTool } from "./project-commit-tool.js";
-import { recallTool, rememberTool } from "./memory-tools.js";
+import { recallTool, rememberTool, showMemoryItemTool } from "./memory-tools.js";
 import {
   MEMORY_FILE_ENV,
   TOOLS_FD_ENV,
@@ -148,6 +148,7 @@ export function registerKobeTools(
   if (options.memory === true) {
     pi.registerTool(rememberTool(transport));
     pi.registerTool(recallTool(transport));
+    pi.registerTool(showMemoryItemTool(transport)); // KOBE-399
     // Active only for runs that have memory on (the agent says so in the run's memory file).
     if (pi.on && pi.getActiveTools && pi.setActiveTools) {
       installMemoryHooks(pi as MemoryHooksApi, options.memoryFile);

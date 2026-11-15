@@ -46,6 +46,24 @@ describe("MemoryBroker", () => {
     expect(sent[0]).toMatchObject({ type: "memory.read", tool_call_id: "call_r" });
   });
 
+  it("sends memory.show with the show_memory_item tool call id (KOBE-399)", () => {
+    const { broker, sent, reply } = setup();
+    const id = "11111111-1111-4111-8111-111111111111";
+    broker.request(
+      THREAD,
+      RUN,
+      { id: "kt_3", op: "memory.show", tool_call_id: "call_s", input: { id } },
+      reply,
+    );
+    expect(sent[0]).toMatchObject({
+      type: "memory.show",
+      run_id: RUN,
+      thread_id: THREAD,
+      tool_call_id: "call_s",
+      input: { id },
+    });
+  });
+
   it("relays the result once, to the right request", () => {
     const { broker, sent, replies, reply } = setup();
     broker.request(THREAD, RUN, put(), reply);

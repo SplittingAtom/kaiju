@@ -34,6 +34,7 @@ export const OP_FILE_SHARE = "file.share";
 export const OP_PROJECT_COMMIT = "project.commit";
 export const OP_MEMORY_PUT = "memory.put";
 export const OP_MEMORY_READ = "memory.read";
+export const OP_MEMORY_SHOW = "memory.show";
 export const OP_SKILL_DRAFT_SAVE = "skill.draft_save";
 export const OP_FILE_EDIT_PROPOSE = "file.edit_propose";
 export const OP_FILE_OPEN = "file.open";
@@ -44,6 +45,7 @@ export const OPS = [
   OP_PROJECT_COMMIT,
   OP_MEMORY_PUT,
   OP_MEMORY_READ,
+  OP_MEMORY_SHOW,
   OP_SKILL_DRAFT_SAVE,
   OP_FILE_EDIT_PROPOSE,
   OP_FILE_OPEN,
@@ -56,11 +58,14 @@ export const TOOLS_MEMORY_ENV = "KOBE_TOOLS_MEMORY";
 export const MEMORY_FILE_ENV = "KOBE_MEMORY_FILE";
 export const TOOL_REMEMBER = "remember";
 export const TOOL_RECALL = "recall";
+/** KOBE-399: shows one saved memory the run was given or recalled (read-only). */
+export const TOOL_SHOW_MEMORY_ITEM = "show_memory_item";
 /** Mirrors packages/protocol `memory.ts` (pinned by a test). */
 export const MEMORY_FILE_MAX_BYTES = 64 * 1024;
 export const MEMORY_PATH_MAX = 200;
 export const MEMORY_QUERY_MAX = 500;
 export const MEMORY_RECALL_MAX_FILES = 20;
+export const MEMORY_RECALL_MAX_ITEMS = 8;
 
 /** Env var set to `1` by an agent that announced the `files` capability. Read once, removed. */
 export const TOOLS_FILES_ENV = "KOBE_TOOLS_FILES";
@@ -218,6 +223,22 @@ export interface MemoryPutAnswer {
   readonly version?: number;
   readonly previous_version?: number;
 }
+/** A saved memory (semantic item) as `recall` and `show_memory_item` answer it (KOBE-399). */
+export interface SavedMemoryItem {
+  readonly id: string;
+  readonly version: number;
+  readonly scope: string;
+  readonly kind: string;
+  readonly statement: string;
+  readonly policy: boolean;
+  readonly pinned: boolean;
+  readonly provenance: {
+    readonly actor_kind: string;
+    readonly as_of: string | null;
+    readonly saved_on: string;
+  };
+}
+
 export interface MemoryReadAnswer {
   readonly ok: true;
   readonly op: "read";
@@ -228,11 +249,20 @@ export interface MemoryReadAnswer {
     readonly version: number;
   }[];
   readonly truncated: boolean;
+  /** KOBE-399: saved memories matching a `recall({ query })`, best first; absent when none apply. */
+  readonly items?: readonly SavedMemoryItem[];
+}
+
+export interface MemoryShowAnswer {
+  readonly ok: true;
+  readonly op: "show";
+  readonly item: SavedMemoryItem & { readonly status: string };
 }
 
 export type ToolsResponse =
   | ({ readonly id: string } & MemoryPutAnswer)
   | ({ readonly id: string } & MemoryReadAnswer)
+  | ({ readonly id: string } & MemoryShowAnswer)
   | ({ readonly id: string } & ProjectCommitAnswer)
   | ({ readonly id: string } & SkillDraftAnswer)
   | ({ readonly id: string } & FileEditAnswer)

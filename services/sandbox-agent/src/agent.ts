@@ -343,7 +343,11 @@ export class Agent {
           this.#broker.failThread(threadId, reason);
         },
         toolsRequest: (threadId, runId, request, reply) => {
-          if (request.op === "memory.put" || request.op === "memory.read") {
+          if (
+            request.op === "memory.put" ||
+            request.op === "memory.read" ||
+            request.op === "memory.show"
+          ) {
             if (this.#memoryEnabled()) this.#memory.request(threadId, runId, request, reply);
             else reply(toolsError(request.id, "not_allowed", "memory is not available"));
             return;
