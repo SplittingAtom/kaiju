@@ -4,3 +4,4 @@ export * from "./errors.js";
 export * from "./transfer.js";
 export * from "./run-context.js";
 export * from "./governance.js";
+export * from "./learning.js";

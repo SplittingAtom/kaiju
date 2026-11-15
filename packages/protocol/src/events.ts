@@ -25,6 +25,7 @@ import {
   notebookOutputPayloadSchema,
   notebookStartedPayloadSchema,
 } from "./notebooks.js";
+import { memoryPassEventPayloadSchemas } from "./semantic-memory/learning.js";
 import { thinkingLevelSchema } from "./thinking.js";
 import {
   SERVER_CALL_PURPOSES,
@@ -73,6 +74,11 @@ export const KOBE_EVENT_TYPES = [
   // Epilogue (KOBE-234): results of the server's post-run model calls, after `run.completed`.
   "thread.updated",
   "thread.suggestions",
+  // KOBE-390 (SM15): a learning pass on the thread (semantic-memory/learning.ts), written to the
+  // pass's bound run after its terminal event; not an epilogue.
+  "memory.pass.progress",
+  "memory.pass.completed",
+  "memory.pass.failed",
 ] as const;
 
 export type KobeEventType = (typeof KOBE_EVENT_TYPES)[number];
@@ -450,6 +456,7 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     thread_id: uuidSchema,
     suggestions: threadSuggestionsSchema,
   }),
+  ...memoryPassEventPayloadSchemas,
 } as const satisfies Record<KobeEventType, z.ZodType>;
 
 export type KobeEventPayload<T extends KobeEventType> = z.infer<(typeof EVENT_PAYLOAD_SCHEMAS)[T]>;

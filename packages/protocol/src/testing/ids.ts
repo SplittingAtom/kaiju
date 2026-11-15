@@ -12,4 +12,5 @@ export const EXAMPLE_IDS = {
   memory: "8d9e0f1a-2b3c-4d4e-9f60-718293a4b5c6",
   connector: "9e0f1a2b-3c4d-4e5f-8071-8293a4b5c6d7",
   sandbox: "af1a2b3c-4d5e-4f60-9182-93a4b5c6d7e8",
+  pass: "b02b3c4d-5e6f-4a71-8293-a4b5c6d7e8f9",
 } as const;

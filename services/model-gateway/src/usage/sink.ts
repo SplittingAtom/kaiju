@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { ModelUsageRecord } from "@kobe/db";
+import { isUsageKind } from "./kind.js";
 import type { Logger } from "pino";
 import type { CallRecord, UsageSink } from "../seams.js";
 
@@ -44,7 +45,11 @@ export function usageRecordOf(call: CallRecord): ModelUsageRecord | undefined {
     sandboxId: call.sandboxId,
     runId: call.runId,
     // A server call's purpose, an eval sandbox's `eval` (KOBE-327), else the default `run`.
-    ...(call.purpose ? { kind: call.purpose } : call.eval ? { kind: "eval" as const } : {}),
+    ...(call.purpose && isUsageKind(call.purpose)
+      ? { kind: call.purpose }
+      : call.eval
+        ? { kind: "eval" as const }
+        : {}),
     at: call.startedAt,
     route: call.route,
     model: call.model,
