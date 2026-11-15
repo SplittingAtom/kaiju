@@ -203,6 +203,13 @@ many versions of a memory are kept (50), when a memory counts as stale (90 days:
 retention window for archived memories (365 days), learning rate limits, and an embedding model
 that is not used yet. Search always uses English word matching; there is no language setting.
 
+The embedding model goes through the model gateway like every other model. A standard install runs
+a small one inside your cluster, on CPU: **nomic-embed-text**, listed in the gateway as
+`kobe-local/nomic-embed-text`. Only the gateway can reach it, so no team or sandbox calls it
+directly. The people who install Kobe can turn it off and use an external model instead, such as
+an Ollama server on your network or a hosted provider with a site key, added under **Models and
+providers**.
+
 ### Legal hold on Site memory
 
 A site admin can place a **Site-wide legal hold** under **Site console › Legal hold** (a second

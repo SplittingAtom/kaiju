@@ -92,7 +92,7 @@ const podSpecs = (ms: Manifest[]) =>
 describe("workloads", () => {
   const ms = render();
 
-  it("deploys web, server, mcp-proxy, egress-proxy, model-gateway, scheduler and Bifrost", () => {
+  it("deploys web, server, mcp-proxy, egress-proxy, model-gateway, scheduler, Bifrost and embeddings", () => {
     expect(
       byKind(ms, "Deployment")
         .map((d) => d.metadata.name)
@@ -100,6 +100,7 @@ describe("workloads", () => {
     ).toEqual(
       [
         "kobe-bifrost",
+        "kobe-embeddings",
         "kobe-egress-proxy",
         "kobe-mcp-proxy",
         "kobe-model-gateway",

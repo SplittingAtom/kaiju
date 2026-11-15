@@ -591,6 +591,40 @@ only via Kobe's **model-gateway shim** (spec D30): no provider key ever enters a
   most 400 days) and `bucket` (`hour`/`day`); per run and per thread for whoever can read them
   (`GET /v1/runs/{id}/usage`, `GET /v1/threads/{id}/usage`).
 
+### Embeddings (in-cluster CPU model)
+
+Kobe's embedding model (for Semantic Memory, KOBE-409) is reached only through the model gateway,
+like every other model. By default the chart runs a small one in the cluster
+(`embeddings.local.enabled: true`):
+
+- **What runs.** llama.cpp's `llama-server` (MIT, `ghcr.io/ggml-org/llama.cpp`, pinned by build
+  tag and digest; never `latest`) serving **nomic-embed-text v1.5** (Apache-2.0, 768 dimensions,
+  the f16 GGUF, about 270 MB) on CPU: one replica, non-root, read-only root filesystem, requests
+  1 CPU / 1 GiB and limits 2 CPUs / 1 GiB (`embeddings.local.resources`, `threads: 2`). No GPU.
+- **In the gateway.** The server registers it in Bifrost as the keyless provider `kobe-local`, so
+  the model is `kobe-local/nomic-embed-text`. It is the chart's, not a Site console provider:
+  turning it off removes it from Bifrost on the next sync. The provider id `local` is reserved.
+- **Network.** Only Bifrost's pods may connect (port 8080); sandboxes, the shim and the server
+  cannot. Bifrost's egress policy gets a rule to it.
+- **Where the model comes from.** An init container puts the file on a 1 Gi PVC
+  (`embeddings.local.persistence`) and checks its sha256 on every start. With
+  `model.download: true` (default) it downloads the pinned URL once; while download is on the pod
+  may reach DNS and public HTTPS (a mirror on a private address needs
+  `embeddings.local.networkPolicy.extraEgress`, and `model.url` pointing at it). **Air-gapped:**
+  set `model.download: false` and `persistence.existingClaim` to a claim that already holds
+  `model.file` (copy the GGUF onto it, e.g. from a pod mounting the claim with `kubectl cp`); the
+  pod then has no egress at all, and fails with a clear log line if the file is missing or its
+  sha256 differs.
+- **An external model instead.** Set `embeddings.local.enabled: false` and add the model as a
+  Site console provider: a LAN Ollama (`ollama`, with `allow_private_network` and a
+  `bifrost.networkPolicy.extraEgress` rule to its host on 11434) or a hosted provider with a site
+  key (public HTTPS needs no extra rule). Either way the calls go through Bifrost.
+- **Check it** (after a deploy): from the Bifrost pod, the only one allowed to connect,
+  `kubectl -n <ns> exec deploy/<release>-bifrost -- wget -qO- --header 'Content-Type: application/json' --post-data '{"model":"nomic-embed-text","input":"hello"}' http://<release>-embeddings:8080/v1/embeddings`
+  returns a 768-number vector; the same from any other pod times out. Bifrost lists the model:
+  from the server pod, `GET $KOBE_BIFROST_URL/api/models?provider=kobe-local` with
+  `Authorization: Bearer base64(kobe:$KOBE_BIFROST_ADMIN_PASSWORD)` shows `nomic-embed-text`.
+
 ## MCP connectors
 
 Sandboxes reach remote MCP servers only through the **MCP proxy** (spec D27): Streamable HTTP

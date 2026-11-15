@@ -52,4 +52,34 @@ describe("loadModelsConfig", () => {
       loadModelsConfig({ ...full, KOBE_MODELS_VIRTUAL_KEY_SECRET: "a".repeat(40) }),
     ).toThrow(/must differ/);
   });
+
+  it("takes the chart's local embedding service (KOBE-659): both URL and model, or neither", () => {
+    expect(loadModelsConfig(full)?.localEmbedding).toBeUndefined();
+    const c = loadModelsConfig({
+      ...full,
+      KOBE_EMBEDDINGS_LOCAL_URL: "http://kobe-embeddings:8080",
+      KOBE_EMBEDDINGS_LOCAL_MODEL: "nomic-embed-text",
+    });
+    expect(c?.localEmbedding).toEqual({
+      url: "http://kobe-embeddings:8080",
+      model: "nomic-embed-text",
+    });
+    expect(() =>
+      loadModelsConfig({ ...full, KOBE_EMBEDDINGS_LOCAL_URL: "http://kobe-embeddings:8080" }),
+    ).toThrow(/KOBE_EMBEDDINGS_LOCAL_MODEL/);
+    expect(() =>
+      loadModelsConfig({
+        ...full,
+        KOBE_EMBEDDINGS_LOCAL_URL: "ftp://x",
+        KOBE_EMBEDDINGS_LOCAL_MODEL: "nomic-embed-text",
+      }),
+    ).toThrow(/KOBE_EMBEDDINGS_LOCAL_URL/);
+    expect(() =>
+      loadModelsConfig({
+        ...full,
+        KOBE_EMBEDDINGS_LOCAL_URL: "http://kobe-embeddings:8080",
+        KOBE_EMBEDDINGS_LOCAL_MODEL: "bad model/../x",
+      }),
+    ).toThrow(/KOBE_EMBEDDINGS_LOCAL_MODEL/);
+  });
 });

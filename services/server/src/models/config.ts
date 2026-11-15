@@ -1,4 +1,4 @@
-import { MIN_SECRET_LENGTH } from "@kobe/db";
+import { MIN_SECRET_LENGTH, PROVIDER_MODEL_PATTERN } from "@kobe/db";
 import { z } from "zod";
 
 /**
@@ -22,6 +22,18 @@ export interface ModelsConfig {
   readonly allowUnsafeEndpoints: boolean;
   /** Full reconcile period, besides change hints. */
   readonly syncIntervalMs: number;
+  /**
+   * The chart's in-cluster embedding service (KOBE-659, Helm `embeddings.local`): the sync
+   * registers it in Bifrost as the keyless provider `kobe-local`. Unset: no local service.
+   */
+  readonly localEmbedding?: LocalEmbeddingConfig;
+}
+
+export interface LocalEmbeddingConfig {
+  /** The service's base URL (OpenAI-compatible; Bifrost appends `/v1/...`). */
+  readonly url: string;
+  /** The model name it serves (`/v1/models`), e.g. `nomic-embed-text`. */
+  readonly model: string;
 }
 
 const secret = (name: string) =>
@@ -66,6 +78,16 @@ const schema = z.object({
     .min(1_000, "KOBE_MODELS_SYNC_INTERVAL_MS must be between 1000 and 3600000")
     .max(3_600_000, "KOBE_MODELS_SYNC_INTERVAL_MS must be between 1000 and 3600000")
     .default(30_000),
+  KOBE_EMBEDDINGS_LOCAL_URL: z
+    .url({ protocol: /^https?$/, error: "KOBE_EMBEDDINGS_LOCAL_URL must be an http(s) URL" })
+    .optional(),
+  KOBE_EMBEDDINGS_LOCAL_MODEL: z
+    .string()
+    .regex(
+      new RegExp(PROVIDER_MODEL_PATTERN),
+      "KOBE_EMBEDDINGS_LOCAL_MODEL must be a plain model name",
+    )
+    .optional(),
 });
 
 /** The variables whose presence means "models are configured" (the rest have defaults). */
@@ -92,6 +114,13 @@ export function loadModelsConfig(
       "Invalid model gateway configuration: the provider-key and virtual-key secrets must differ",
     );
   }
+  const localUrl = c.KOBE_EMBEDDINGS_LOCAL_URL;
+  const localModel = c.KOBE_EMBEDDINGS_LOCAL_MODEL;
+  if ((localUrl === undefined) !== (localModel === undefined)) {
+    throw new Error(
+      "Invalid model gateway configuration: KOBE_EMBEDDINGS_LOCAL_URL and KOBE_EMBEDDINGS_LOCAL_MODEL are set together",
+    );
+  }
   return {
     bifrostUrl: c.KOBE_BIFROST_URL,
     adminUsername: c.KOBE_BIFROST_ADMIN_USERNAME,
@@ -106,5 +135,8 @@ export function loadModelsConfig(
     ].filter((v) => v !== ""),
     allowUnsafeEndpoints: c.KOBE_MODELS_ALLOW_UNSAFE_ENDPOINTS === "true",
     syncIntervalMs: c.KOBE_MODELS_SYNC_INTERVAL_MS,
+    ...(localUrl && localModel
+      ? { localEmbedding: { url: localUrl.replace(/\/+$/, ""), model: localModel } }
+      : {}),
   };
 }

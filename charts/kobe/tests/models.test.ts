@@ -262,7 +262,9 @@ describe("network policies", () => {
 
   it("Bifrost's own egress: DNS and public addresses on 443, plus explicit local-model rules", () => {
     const egress = policy("kobe-bifrost")?.egress as any[];
-    expect(egress).toHaveLength(2);
+    // DNS, public 443 and the in-cluster embedding service (KOBE-659, on by default).
+    expect(egress).toHaveLength(3);
+    expect(egress[2].to).toEqual([{ podSelector: { matchLabels: component("embeddings") } }]);
     expect(egress[1].to[0].ipBlock.except).toEqual(
       expect.arrayContaining(["10.0.0.0/8", "169.254.0.0/16", "192.168.0.0/16"]),
     );

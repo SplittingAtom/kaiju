@@ -7,6 +7,15 @@ required; the install fails without one).
 Warning: modelGateway.requireRunToken is on: model calls without a run token (Orbit eval sandboxes,
 runs whose token fetch timed out) are refused with 401.
 {{- end }}
+{{- $emb := include "kobe.embeddingsValues" . | fromJson }}
+{{- if $emb.enabled }}
+
+Embeddings: {{ include "kobe.fullname" . }}-embeddings serves {{ $emb.model.name }} on CPU, registered in the
+model gateway as kobe-local/{{ $emb.model.name }}.
+{{- if $emb.model.download }} It downloads the model once on first start.
+{{- else }} The model must be preloaded on its volume (download off).
+{{- end }}
+{{- end }}
 {{- if .Values.ingress.enabled }}
 
 Open: http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.host }}
