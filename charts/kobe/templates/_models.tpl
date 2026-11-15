@@ -100,6 +100,7 @@ this.
   {{- include "kobe.modelKeyRef" (dict "root" . "key" "virtual-keys-previous" "optional" true) | nindent 2 }}
 - name: KOBE_MODELS_ALLOW_UNSAFE_ENDPOINTS
   value: {{ (include "kobe.bifrostValues" . | fromJson).allowUnsafeProviderEndpoints | toString | quote }}
+{{- include "kobe.embeddingsServerEnv" . }}
 {{- end -}}
 
 {{/*

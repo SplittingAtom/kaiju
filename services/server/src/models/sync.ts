@@ -32,6 +32,8 @@ import {
   type ProviderInput,
   type TeamInput,
 } from "./desired.js";
+import type { LocalEmbeddingConfig } from "./config.js";
+import { withLocalEmbedding } from "./local-embedding.js";
 import { reconcile } from "./reconcile.js";
 
 /** Session advisory lock held by the one replica that syncs the gateway ("kobe" + 40). */
@@ -51,6 +53,8 @@ export interface ModelGatewaySyncOptions {
   readonly intervalMs: number;
   /** Budgets/rate limits per level (KOBE-42). */
   readonly limits?: GovernanceLimitsSource;
+  /** The chart's in-cluster embedding service, pushed as provider `kobe-local` (KOBE-659). */
+  readonly localEmbedding?: LocalEmbeddingConfig;
   readonly leaderRetryMs?: number;
   readonly debounceMs?: number;
 }
@@ -89,6 +93,9 @@ export class ModelGatewaySync {
   private timers = new Set<NodeJS.Timeout>();
   private periodic: NodeJS.Timeout | undefined;
   private attempt = 0;
+
+  /** The reserved-id conflict (KOBE-659) is logged once, not on every pass. */
+  private localConflictLogged = false;
 
   constructor(private readonly options: ModelGatewaySyncOptions) {}
 
@@ -282,7 +289,7 @@ export class ModelGatewaySync {
     ]);
     let unreadable = false;
     const reseal: { id: string; revision: number; apiKey: string }[] = [];
-    const providers = providerRows.map((p): ProviderInput => {
+    const stored = providerRows.map((p): ProviderInput => {
       let apiKey: string | undefined;
       if (p.apiKeyEnc !== null) {
         try {
@@ -303,6 +310,14 @@ export class ModelGatewaySync {
         apiKey,
       };
     });
+    const { providers, conflict } = withLocalEmbedding(stored, this.options.localEmbedding);
+    if (conflict && !this.localConflictLogged) {
+      this.localConflictLogged = true;
+      logger.error(
+        { provider: "local" },
+        "a Site provider uses the id reserved for the local embedding service; it is not registered",
+      );
+    }
     // Keys sealed with a previous secret (rotation): re-seal with the current one.
     for (const r of reseal) {
       await db

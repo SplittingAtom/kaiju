@@ -406,6 +406,7 @@ function modelJobs(o: ServerJobsOptions): ServerJob[] {
     ).toString("hex"),
     intervalMs: config.syncIntervalMs,
     logger: o.logger,
+    ...(config.localEmbedding ? { localEmbedding: config.localEmbedding } : {}),
   });
   return [
     job(

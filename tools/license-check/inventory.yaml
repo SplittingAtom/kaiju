@@ -372,6 +372,39 @@ sections:
         reason: >-
           Checked at transports/v2.5.1: a single LICENSE (Apache-2.0); Kobe uses none of the
           enterprise features (docs/licensing.md). Re-check on every bump.
+      - id: llama-cpp
+        component: llama.cpp server (`ghcr.io/ggml-org/llama.cpp`, `server-*` image)
+        version: server-b12004, digest-pinned (chart `embeddings.local.image`)
+        license: MIT
+        use: optional, separate process (on by default; `embeddings.local.enabled`)
+        where: cluster (Kobe's namespace)
+        link: https://github.com/ggml-org/llama.cpp/blob/b12004/LICENSE
+        images: [ghcr.io/ggml-org/llama.cpp]
+        reason: >-
+          The in-cluster CPU embedding server (KOBE-659), pulled unmodified; Kobe talks to it only
+          through Bifrost over HTTP. The image's distribution packages are the next row.
+      - id: llama-cpp-image-packages
+        pending: gate review
+        component: Ubuntu distribution packages in the llama.cpp server image (ffmpeg, curl)
+        version: as shipped in `server-b12004` (Ubuntu base)
+        license: GPL-2.0-or-later AND LGPL-2.1-or-later AND curl
+        use: optional, separate process (inside the `embeddings.local` image; not run by Kobe)
+        where: cluster (the embedding service's image)
+        link: https://ffmpeg.org/legal.html
+        images: []
+        reason: >-
+          The upstream image installs ffmpeg (built with --enable-gpl) and curl from Ubuntu. They
+          are separate, unmodified programs in an image Kobe pulls as is; Kobe never runs ffmpeg
+          and never links either (the chart's init container only calls the curl binary to fetch
+          the model). curl itself is under the curl licence (MIT-style).
+      - id: nomic-embed-text
+        component: nomic-embed-text v1.5 model weights (GGUF, `nomic-ai/nomic-embed-text-v1.5-GGUF`)
+        version: f16, commit 0188c9bf409793f810680a5a431e7b899c46104c
+        license: Apache-2.0
+        use: optional, data (downloaded at install by the embedding service, or preloaded)
+        where: cluster (the embedding service's volume)
+        link: https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF
+        images: []
       - id: clamav
         approval: { by: Chris, on: 2026-10-17, ref: KOBE-375 }
         component: ClamAV (`clamav/clamav`)
@@ -652,6 +685,7 @@ chartValues:
   egressProxy: first-party
   modelGateway: first-party
   bifrost: [bifrost]
+  embeddings: [llama-cpp, llama-cpp-image-packages, nomic-embed-text]
   postgres: [cnpg, postgres]
   retention: first-party
   branding: first-party

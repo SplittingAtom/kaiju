@@ -57,6 +57,16 @@ spec:
         - protocol: TCP
           port: {{ int . }}
         {{- end }}
+    {{- if (include "kobe.embeddingsValues" . | fromJson).enabled }}
+    # The in-cluster embedding service (KOBE-659), provider kobe-local.
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "kobe.selectorLabels" (dict "root" . "component" "embeddings") | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 8080
+    {{- end }}
     {{- with $b.networkPolicy.extraEgress }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
