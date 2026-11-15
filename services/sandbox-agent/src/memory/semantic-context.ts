@@ -235,9 +235,14 @@ export function semanticContextText(
   options: { readonly recall: boolean; readonly maxBytes?: number },
 ): SemanticRender {
   if (semantic === undefined) return NONE;
-  if (semantic.items.length === 0 && semantic.omitted_count === 0) return NONE;
-  const cap = options.maxBytes ?? semanticCapBytes(semantic);
   const placement = semantic.placement ?? "system";
+  // KOBE-658 review: outside `system` an empty selection still renders the header and preamble
+  // and keeps its placement, so a message that matches nothing changes neither the system prompt
+  // nor where the per-message parts go (both would break the cache for this turn and the next).
+  if (semantic.items.length === 0 && semantic.omitted_count === 0 && placement === "system") {
+    return NONE;
+  }
+  const cap = options.maxBytes ?? semanticCapBytes(semantic);
   let items = [...semantic.items];
   let dropped = 0;
   let out = render(items, semantic.omitted_count, nonce, options.recall, placement);

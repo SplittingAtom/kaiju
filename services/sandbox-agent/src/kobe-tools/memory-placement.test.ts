@@ -33,10 +33,17 @@ const PINNED = item({ pinned: true, statement: "PINNED-1" });
 const PICKS = [item({ statement: "PICK-ONE" }), item({ statement: "PICK-TWO" })];
 const HELD = item({ statement: "HELD-ONE" });
 
-function memory(placement: SemanticMemoryPlacement | undefined, turn: number): RunMemoryContext {
+type ItemsFor = (turn: number) => RunSemanticMemoryItem[];
+
+function memory(
+  placement: SemanticMemoryPlacement | undefined,
+  turn: number,
+  itemsFor?: ItemsFor,
+): RunMemoryContext {
   const pick = PICKS[turn % 2] as RunSemanticMemoryItem;
-  const items =
-    placement === "stable_plus_delta"
+  const items = itemsFor
+    ? itemsFor(turn)
+    : placement === "stable_plus_delta"
       ? [POLICY, PINNED, { ...HELD, held: true as const }, pick]
       : placement === "tool_only"
         ? [POLICY, PINNED]
@@ -55,7 +62,7 @@ function memory(placement: SemanticMemoryPlacement | undefined, turn: number): R
 type Msg = Record<string, unknown>;
 
 /** A Pi stand-in: one thread, a transcript of user/assistant messages, hooks fired per turn. */
-function conversation(placement: SemanticMemoryPlacement | undefined) {
+function conversation(placement: SemanticMemoryPlacement | undefined, itemsFor?: ItemsFor) {
   let fileText = "";
   const handlers = new Map<string, (event: never) => unknown>();
   installMemoryHooks(
@@ -90,7 +97,7 @@ function conversation(placement: SemanticMemoryPlacement | undefined) {
           ]
         : undefined;
     fileText = memoryFileJson(
-      memoryRunFileContent(memory(placement, i), NONCE, undefined, viewing, conflicts),
+      memoryRunFileContent(memory(placement, i, itemsFor), NONCE, undefined, viewing, conflicts),
     );
     const started = handlers.get("before_agent_start")?.({ systemPrompt: "PI" } as never) as
       { systemPrompt?: string } | undefined;
@@ -161,6 +168,52 @@ describe("memory placement through kobe-tools (KOBE-658 ac-2)", () => {
     const at = three.request.findIndex((m) => m.content === "message 2");
     expect(three.request[at - 1]?.customType).toBe(MEMORY_PICKS_TYPE);
     expect(String(three.request[at - 1]?.content).startsWith(`${PICKS_HEADER}\n`)).toBe(true);
+  });
+
+  it.each(["latest_user_keep", "latest_user_strip", "stable_plus_delta"] as const)(
+    "%s with no Policy or pinned items: a turn with zero picks changes neither the system prompt nor history (review)",
+    (placement) => {
+      // Turn 1 has picks, turn 2 matches nothing, turn 3 has picks again.
+      const held = placement === "stable_plus_delta" ? { held: true as const } : {};
+      const c = conversation(placement, (turn) =>
+        turn === 1 ? [] : [{ ...(PICKS[turn % 2] as RunSemanticMemoryItem), ...held }],
+      );
+      const turns = [c.turn(0), c.turn(1), c.turn(2)];
+      if (placement !== "stable_plus_delta") {
+        for (const t of turns) expect(t.system).toBe(turns[0]?.system);
+        expect(turns[0]?.system).toContain("## What Kobe knows\n");
+      }
+      for (const t of turns) expect(t.system).not.toContain("VIEWED-");
+      // Each request extends the previous one byte for byte (keep) or keeps everything before
+      // the newest note (strip): the zero-pick turn never drops earlier notes.
+      const prefix = (a: Msg[], b: Msg[]) =>
+        JSON.stringify(b.slice(0, a.length)) === JSON.stringify(a);
+      if (placement !== "latest_user_strip") {
+        expect(prefix(turns[0]?.request ?? [], turns[1]?.request ?? [])).toBe(true);
+        expect(prefix(turns[1]?.request ?? [], turns[2]?.request ?? [])).toBe(true);
+      } else {
+        expect(blocks(turns[2]?.request ?? [])).toHaveLength(1);
+      }
+    },
+  );
+
+  it("binds the note to a run Pi started from a custom message", () => {
+    const handlers = new Map<string, (event: never) => unknown>();
+    const fileText = memoryFileJson(memoryRunFileContent(memory("latest_user_keep", 0), NONCE));
+    installMemoryHooks(
+      { on: (e, h) => handlers.set(e, h), getActiveTools: () => [], setActiveTools: () => {} },
+      "/f",
+      () => fileText,
+    );
+    handlers.get("before_agent_start")?.({ systemPrompt: "PI" } as never);
+    const started = {
+      role: "custom",
+      customType: "kobe.schedule",
+      content: "go",
+      timestamp: Date.now() + 5,
+    };
+    const out = handlers.get("context")?.({ messages: [started] } as never) as { messages: Msg[] };
+    expect(out.messages.map((m) => m.customType)).toEqual([MEMORY_PICKS_TYPE, "kobe.schedule"]);
   });
 
   it("latest_user_strip: only the newest user message carries its block", () => {

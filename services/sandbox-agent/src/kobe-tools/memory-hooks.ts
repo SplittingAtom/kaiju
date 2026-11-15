@@ -196,16 +196,32 @@ export function installMemoryHooks(
   }) as never);
 }
 
-const userTimestamp = (m: unknown): number | undefined => {
+/**
+ * The timestamp of a message a note may sit before: a user message, or a custom message that is
+ * not one of kobe-tools' own notes (a run Pi started from a custom message).
+ */
+const anchorTimestamp = (m: unknown, custom: boolean): number | undefined => {
   if (typeof m !== "object" || m === null) return undefined;
   const r = m as Record<string, unknown>;
-  return r.role === "user" && typeof r.timestamp === "number" ? r.timestamp : undefined;
+  if (typeof r.timestamp !== "number") return undefined;
+  if (r.role === "user") return r.timestamp;
+  const own = r.customType === MEMORY_PICKS_TYPE || r.customType === CONFLICT_NOTE_TYPE;
+  return custom && r.role === "custom" && !own ? r.timestamp : undefined;
 };
+const userTimestamp = (m: unknown): number | undefined => anchorTimestamp(m, true);
 
-/** The run's user message: the last one created at or after the run's `before_agent_start`. */
+/**
+ * The run's starting message: the last user message created at or after the run's
+ * `before_agent_start`, else (a run started from a custom message) the first such custom message,
+ * so the note always goes out with the run whose picks were recorded.
+ */
 function runMessageKey(messages: readonly unknown[], since: number): number | undefined {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
-    const ts = userTimestamp(messages[i]);
+    const ts = anchorTimestamp(messages[i], false);
+    if (ts !== undefined && ts >= since) return ts;
+  }
+  for (const m of messages) {
+    const ts = anchorTimestamp(m, true);
     if (ts !== undefined && ts >= since) return ts;
   }
   return undefined;
@@ -238,10 +254,14 @@ export function withPicksNotes(
     if (ts !== undefined && notes.has(ts)) newest = i;
   });
   if (newest < 0) return messages as unknown[];
+  const placed = new Set<number>();
   return messages.flatMap((m, i) => {
     const ts = userTimestamp(m);
     const text = ts === undefined ? undefined : notes.get(ts);
-    if (text === undefined || ts === undefined || (strip && i !== newest)) return [m];
+    if (text === undefined || ts === undefined || placed.has(ts)) return [m];
+    if (strip && i !== newest) return [m];
+    // Once per key: another message created in the same millisecond never gets a second copy.
+    placed.add(ts);
     return [picksNoteMessage(text, ts), m];
   });
 }
