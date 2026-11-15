@@ -525,7 +525,8 @@ export async function readMemory(
       op: "read",
       files: found.files,
       truncated: found.truncated,
-      ...(items === undefined ? {} : { items }),
+      // Only when some matched: a Notes-only answer stays exactly as before KOBE-399.
+      ...(items === undefined || items.length === 0 ? {} : { items }),
     };
   } catch (err) {
     deps.log.error({ err, run_id: req.runId }, "memory.read failed");

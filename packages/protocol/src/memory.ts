@@ -182,9 +182,9 @@ export const memoryReadOkFields = {
   truncated: z.boolean(),
   /**
    * KOBE-399: saved memories (active semantic items of the scopes enabled for this run) matching a
-   * `recall({ query })` without `scope`, best first, shown before the Notes files. Absent for path
-   * reads, listings, a `scope`d query, an old server, and runs whose agent version's memory setting
-   * is `notes_only` or `off`. Read-only: the agent never writes items.
+   * `recall({ query })` without `scope`, best first, shown before the Notes files. Absent when none
+   * matched, for path reads, listings, a `scope`d query, an old server, and runs whose agent
+   * version's memory setting is `notes_only` or `off`. Read-only: the agent never writes items.
    */
   items: z.array(runSemanticMemoryItemSchema).max(MEMORY_RECALL_MAX_ITEMS).optional(),
 } as const;
