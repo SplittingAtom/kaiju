@@ -43,7 +43,7 @@
   Under legal hold no row names the person and Workspace rows omit the item id.
 - **Notifications** follow the Workspace grant's rule with the person's Workspaces as "the team":
   requested → other site admins; approved / ended-while-active → the person (unless legal hold), the
-  team admins of each of their Workspaces, site admins; denied/withdrawn/lapsed → requester. Own outbox
+  site admins; denied/withdrawn/lapsed → requester. Own outbox
   table, delivered by the existing break-glass sweeper (which also expires Site grants).
 - **API** `/v1/site/portable-break-glass` (site.break_glass.request / .approve), GET-only reads
   `/:id/items`, `/:id/items/:itemId`. **Console** Site → Governance → Portable memory access.
@@ -51,8 +51,10 @@
 
 ## Open questions (for Chris or the coordinator)
 
-- Team admins of the person's Workspaces are emailed on approval/end (mirrors D10's "team admins are
-  notified"); drop them if Chris prefers only the person + site admins.
+- Decided (Chris 2026-11-14): only the site admins and the person are emailed; Workspace admins are
+  not (they see reads in their audit view). No break-glass tools in the Kobe admin MCP.
+- Security review (2026-11-15): no CRITICAL/HIGH. MEDIUM fixed: the Site read row drops `itemId` under
+  legal hold (a held site admin reads the Site log).
 - Kobe admin MCP has no tools for this (break-glass is out of its scope, kobe-admin-mcp.md:196).
 
 ## Evidence (acceptance criteria → test or command output)

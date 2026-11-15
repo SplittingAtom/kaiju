@@ -129,8 +129,8 @@ read a person's portable preferences either; reading them needs its own break-gl
   approves (on a site whose only other admin is that person, the requester approves alone and the
   grant is flagged). The person can never approve, deny or end a request about themselves. While
   the grant is active only the requester can open the person's portable memories, read-only.
-  The person is emailed when it is approved and when it ends (not for a **legal hold**), and so
-  are the team admins of every workspace they belong to. Every page opened is recorded in the
+  The person (not for a **legal hold**) and the site admins are emailed when it is approved and
+  when it ends. Every page opened is recorded in the
   site audit log and in the audit view of each of those workspaces
   (`governance.site_break_glass.read`). A person's memories inside one workspace, and the
   workspace's own memories, still need that workspace's break-glass.

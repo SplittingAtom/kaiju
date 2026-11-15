@@ -47,7 +47,7 @@ export interface PortableGrantRequest {
 
 export interface PortableGrantChange {
   readonly grant: PortableGrant;
-  readonly notified: { readonly recipients: number; readonly teamAdmins?: number };
+  readonly notified: { readonly recipients: number };
 }
 
 export type PortableGrantDecision = "approve" | "deny" | "revoke";

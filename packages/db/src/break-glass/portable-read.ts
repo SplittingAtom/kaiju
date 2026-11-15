@@ -314,7 +314,8 @@ export async function readPortableWithSiteBreakGlass(
         grantId: locked.id,
         object,
         ...shown,
-        ...(itemId ? { itemId } : {}),
+        // Not under legal hold either: a held site admin reads the Site log (security review).
+        ...(itemId && !locked.legalHold ? { itemId } : {}),
         workspaces: workspaces.length,
       },
       ...request,

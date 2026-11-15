@@ -10,9 +10,9 @@ import type { SiteGrantDetail } from "./store.js";
 const MINUTE = 60_000;
 
 /**
- * The email for one recipient. Site admins see the reason and the person; Workspace admins see
- * them unless the grant is a legal hold; the person is told their portable memories were read
- * (never under legal hold: they are not a recipient then).
+ * The email for one recipient: the site admins and the person (Chris 2026-11-14: Workspace admins
+ * are not emailed; they see the reads in their audit view). Site admins see the reason and the
+ * person; the person is told their portable memories were read (never under legal hold).
  */
 export function siteGrantMessage(
   deps: Pick<ServerDeps, "publicUrl">,

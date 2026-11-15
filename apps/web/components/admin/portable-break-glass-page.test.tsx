@@ -77,7 +77,7 @@ describe("site portable memory break-glass page (KOBE-648)", () => {
       "GET /v1/site/users": [200, USERS],
       "POST /v1/site/portable-break-glass/g-1/approve": [
         200,
-        { grant: grant({ status: "active" }), notified: { recipients: 3, teamAdmins: 1 } },
+        { grant: grant({ status: "active" }), notified: { recipients: 2 } },
       ],
     });
     renderSite(<PortableBreakGlassPage />);

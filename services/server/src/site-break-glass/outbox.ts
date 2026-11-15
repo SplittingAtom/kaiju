@@ -1,14 +1,10 @@
 import {
   SYSTEM_ACTOR,
-  TEAM_ID_SETTING,
   and,
-  asc,
   eq,
   isNull,
   siteBreakGlassNotifications,
   sql,
-  teamMembers,
-  teams,
   users,
   type BreakGlassNotificationEvent,
   type BreakGlassRecipientRole,
@@ -36,39 +32,6 @@ import { getSiteGrant, type SiteGrantDetail, type SiteGrantRow } from "./store.j
 
 export interface SiteQueuedCounts {
   readonly recipients: number;
-  /** Of which Workspace admins (only for events that reach the Workspaces). */
-  readonly teamAdmins?: number;
-}
-
-/**
- * Active Workspace admins of every Workspace `userId` belongs to, each team read under its own RLS
- * (transaction-local `kobe.team_id`, cleared afterwards).
- */
-async function workspaceAdminsOf(tx: KobeTx, userId: string): Promise<string[]> {
-  const all = await tx.select({ id: teams.id }).from(teams).orderBy(asc(teams.id));
-  const admins: string[] = [];
-  for (const team of all) {
-    await tx.execute(sql`SELECT set_config(${TEAM_ID_SETTING}, ${team.id}, true)`);
-    const [member] = await tx
-      .select({ id: teamMembers.userId })
-      .from(teamMembers)
-      .where(and(eq(teamMembers.teamId, team.id), eq(teamMembers.userId, userId)));
-    if (!member) continue;
-    const rows = await tx
-      .select({ id: users.id })
-      .from(teamMembers)
-      .innerJoin(users, eq(users.id, teamMembers.userId))
-      .where(
-        and(
-          eq(teamMembers.teamId, team.id),
-          eq(teamMembers.role, "team_admin"),
-          isNull(users.deactivatedAt),
-        ),
-      );
-    admins.push(...rows.map((r) => r.id));
-  }
-  await tx.execute(sql`SELECT set_config(${TEAM_ID_SETTING}, '', true)`);
-  return admins;
 }
 
 async function isActiveUser(tx: KobeTx, id: string): Promise<boolean> {
@@ -94,9 +57,6 @@ export async function siteRecipientsFor(
     // The person first: told as the subject even when they are also an admin.
     if (!grant.legalHold && (await isActiveUser(tx, grant.subjectUserId))) {
       list.push({ id: grant.subjectUserId, role: "subject" });
-    }
-    for (const id of await workspaceAdminsOf(tx, grant.subjectUserId)) {
-      list.push({ id, role: "team_admin" });
     }
     for (const a of await activeSiteAdmins(tx)) {
       list.push({ id: a.id, role: a.id === grant.adminId ? "requester" : "site_admin" });
@@ -136,12 +96,7 @@ export async function enqueueSiteNotifications(
       })),
     );
   }
-  return reachesTeam(event, wasActive)
-    ? {
-        recipients: recipients.length,
-        teamAdmins: recipients.filter((r) => r.role === "team_admin").length,
-      }
-    : { recipients: recipients.length };
+  return { recipients: recipients.length };
 }
 
 const LEASE = "5 minutes";

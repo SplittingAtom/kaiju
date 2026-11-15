@@ -224,7 +224,7 @@ describe("requesting and approving (POST /v1/site/portable-break-glass)", () => 
     }
   });
 
-  it("needs a second site admin; approval notifies the person and every Workspace admin of theirs", async () => {
+  it("needs a second site admin; approval notifies the person and the site admins, never Workspace admins", async () => {
     const id = await requestGrant();
     const self = await as.investigator.post(`${BASE}/${id}/approve`);
     expect(self.status).toBe(403);
@@ -238,12 +238,13 @@ describe("requesting and approving (POST /v1/site/portable-break-glass)", () => 
     const res = await as.owner.post(`${BASE}/${id}/approve`);
     expect(res.status, JSON.stringify(res.json)).toBe(200);
     expect(res.json.grant.status).toBe("active");
-    expect(res.json.notified).toMatchObject({ teamAdmins: 2 });
+    expect(res.json.notified).not.toHaveProperty("teamAdmins");
     const bob = await mailTo("bob", counts.bob + 1);
     expect(bob.at(-1)?.subject).toMatch(/your portable memories was approved/);
-    await mailTo("alice", counts.alice + 1);
-    await mailTo("dave", counts.dave + 1);
     await settled();
+    // Workspace admins of the person's Workspaces (alice, dave) are not emailed (Chris 2026-11-14).
+    expect(mailer.to(email("alice")).length).toBe(counts.alice);
+    expect(mailer.to(email("dave")).length).toBe(counts.dave);
     expect(mailer.to(email("erin")).length).toBe(counts.erin);
     const approved = (await auditFor(id)).find(
       (r) => r.action === "governance.site_break_glass.approved",

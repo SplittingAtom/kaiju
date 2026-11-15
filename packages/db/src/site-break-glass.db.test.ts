@@ -239,8 +239,9 @@ describe("readPortableWithSiteBreakGlass (KOBE-648)", () => {
     expect(rows).toHaveLength(3);
     for (const r of rows) {
       expect(r.target).not.toHaveProperty("subjectUserId");
+      // The Site row too: a held site admin reads the Site log (security review).
+      expect(r.target).not.toHaveProperty("itemId");
     }
-    expect(rows.find((r) => r.team_id === teamA)?.target).not.toHaveProperty("itemId");
   });
 
   it("refuses inside a team context and never leaves one set", async () => {
