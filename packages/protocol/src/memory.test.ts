@@ -368,7 +368,12 @@ describe("recall over items and show_memory_item (KOBE-399)", () => {
     };
     expect(memoryShowFrameSchema.safeParse(frame).success).toBe(true);
     expect(decodeSandboxFrame(JSON.stringify(frame)).ok).toBe(true);
-    const result = { v: SANDBOX_WIRE_VERSION, type: "memory.result", request_id: "mem_1", ...shown };
+    const result = {
+      v: SANDBOX_WIRE_VERSION,
+      type: "memory.result",
+      request_id: "mem_1",
+      ...shown,
+    };
     expect(memoryResultFrameSchema.safeParse(result).success).toBe(true);
     expect(decodeServerFrame(JSON.stringify(result)).ok).toBe(true);
   });
