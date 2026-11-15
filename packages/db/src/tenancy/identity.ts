@@ -35,6 +35,9 @@ export const identity = defineDomain({
     "legal_holds",
     // Site-wide legal hold on Site memory (KOBE-647, SM28): no team, so its own table
     "site_legal_holds",
+    // Site-level break-glass for portable memories (KOBE-648, SM28): no team, so its own tables
+    "site_break_glass_grants",
+    "site_break_glass_notifications",
     "audit_log",
     // Single sign-on and SCIM (KOBE-625, spec sso-oidc-scim §4–§10)
     "sso_providers",
@@ -85,6 +88,11 @@ export const identity = defineDomain({
     legal_holds: ["SELECT", "INSERT", "UPDATE"],
     // Same record and rules for the Site-wide hold (KOBE-647): site_legal_holds_guard trigger.
     site_legal_holds: ["SELECT", "INSERT", "UPDATE"],
+    // Same record and rules for the Site-level grant on one person's portable memories
+    // (KOBE-648): never deleted; site_break_glass_grants_guard trigger checks transitions.
+    site_break_glass_grants: ["SELECT", "INSERT", "UPDATE"],
+    // Outbox of the Site-level grants, as break_glass_notifications.
+    site_break_glass_notifications: ["SELECT", "INSERT", "UPDATE"],
     // Single sign-on (KOBE-625). Deleting a provider is refused by foreign keys while an identity
     // is linked or an SSO session is live; unlinking deletes the identity row.
     sso_providers: ALL_PRIVILEGES,
