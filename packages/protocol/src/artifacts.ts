@@ -6,7 +6,12 @@ import {
   projectCommitToolsRequestSchema,
 } from "./project-commits.js";
 import { fileShareOkFields, fileShareToolsRequestSchema } from "./files.js";
-import { memoryPutOkFields, memoryReadOkFields, memoryToolsRequestSchema } from "./memory.js";
+import {
+  memoryPutOkFields,
+  memoryReadOkFields,
+  memoryShowOkFields,
+  memoryToolsRequestSchema,
+} from "./memory.js";
 import { skillDraftSaveOkFields, skillDraftToolsRequestSchema } from "./skill-draft-tool.js";
 import { fileEditProposeOkFields, fileEditToolsRequestSchema } from "./file-editor.js";
 import { fileOpenOkFields, fileOpenToolsRequestSchema } from "./file-open.js";
@@ -148,6 +153,7 @@ export const kobeToolsResponseSchema = z.union([
   z.strictObject({ id: idSchema, ...projectCommitFailFields }),
   z.strictObject({ id: idSchema, ...memoryPutOkFields }), // KOBE-157 (memory.ts)
   z.strictObject({ id: idSchema, ...memoryReadOkFields }), // KOBE-157
+  z.strictObject({ id: idSchema, ...memoryShowOkFields }), // KOBE-399
   z.strictObject({ id: idSchema, ...skillDraftSaveOkFields }), // KOBE-442 (skill-draft-tool.ts)
   z.strictObject({ id: idSchema, ...fileEditProposeOkFields }), // KOBE-462 (file-editor.ts)
   z.strictObject({ id: idSchema, ...fileOpenOkFields }), // KOBE-484 (file-open.ts)

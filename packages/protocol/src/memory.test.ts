@@ -12,7 +12,15 @@ import {
   memoryListResponseSchema,
   memoryPathSchema,
   memorySettingsSchema,
+  MEMORY_RECALL_MAX_ITEMS,
+  memoryResultFrameSchema,
+  memoryShowFrameSchema,
   memoryToolInputSchema,
+  kobeToolsRequestSchema,
+  kobeToolsResponseSchema,
+  SHOW_MEMORY_ITEM_TOOL,
+  BUILTIN_TOOLS,
+  showMemoryItemInputSchema,
   memoryToolsRequestSchema,
   memoryToolsResponseSchema,
   recallInputSchema,
@@ -106,7 +114,7 @@ describe("remember / recall inputs", () => {
     expect(recallInputSchema.safeParse({ query: "" }).success).toBe(false);
   });
   it("maps tool names to schemas", () => {
-    expect(Object.keys(memoryToolInputSchema)).toEqual(["remember", "recall"]);
+    expect(Object.keys(memoryToolInputSchema)).toEqual(["remember", "recall", "show_memory_item"]);
   });
 });
 
@@ -302,5 +310,66 @@ describe("panel API", () => {
         .success,
     ).toBe(true);
     expect(memorySettingsSchema.safeParse({ memory_enabled: "yes" }).success).toBe(false);
+  });
+});
+
+describe("recall over items and show_memory_item (KOBE-399)", () => {
+  const item = {
+    id: ID,
+    version: 2,
+    scope: "team",
+    kind: "fact",
+    statement: "Deploys go out on Tuesdays.",
+    policy: false,
+    pinned: false,
+    provenance: { actor_kind: "user", as_of: null, saved_on: "2026-11-01" },
+  };
+  const read = { id: "r1", ok: true, op: "read", files: [], truncated: false };
+
+  it("a recall answer may carry items, at most MEMORY_RECALL_MAX_ITEMS", () => {
+    expect(MEMORY_RECALL_MAX_ITEMS).toBe(8);
+    expect(memoryToolsResponseSchema.safeParse({ ...read, items: [item] }).success).toBe(true);
+    // Old answers (no items) stay valid.
+    expect(memoryToolsResponseSchema.safeParse(read).success).toBe(true);
+    const many = Array.from({ length: 9 }, (_, i) => ({
+      ...item,
+      id: `${ID.slice(0, -2)}${String(i).padStart(2, "0")}`,
+    }));
+    expect(memoryToolsResponseSchema.safeParse({ ...read, items: many }).success).toBe(false);
+  });
+
+  it("show_memory_item takes one uuid and nothing else", () => {
+    expect(SHOW_MEMORY_ITEM_TOOL).toBe("show_memory_item");
+    expect(showMemoryItemInputSchema.safeParse({ id: ID }).success).toBe(true);
+    expect(showMemoryItemInputSchema.safeParse({ id: "x" }).success).toBe(false);
+    expect(showMemoryItemInputSchema.safeParse({ id: ID, scope: "team" }).success).toBe(false);
+    expect(BUILTIN_TOOLS.show_memory_item).toEqual({
+      source: "kobe",
+      risk: "read",
+      scope: "kobe",
+      open_world: false,
+    });
+  });
+
+  it("memory.show request, frame and answer", () => {
+    const req = { id: "k1", op: "memory.show", tool_call_id: "tc", input: { id: ID } };
+    expect(memoryToolsRequestSchema.safeParse(req).success).toBe(true);
+    expect(kobeToolsRequestSchema.safeParse(req).success).toBe(true);
+    const shown = { ok: true, op: "show", item: { ...item, status: "archived" } };
+    expect(kobeToolsResponseSchema.safeParse({ id: "k1", ...shown }).success).toBe(true);
+    const frame = {
+      v: SANDBOX_WIRE_VERSION,
+      type: "memory.show",
+      request_id: "mem_1",
+      run_id: ID,
+      thread_id: ID2,
+      tool_call_id: "tc",
+      input: { id: ID },
+    };
+    expect(memoryShowFrameSchema.safeParse(frame).success).toBe(true);
+    expect(decodeSandboxFrame(JSON.stringify(frame)).ok).toBe(true);
+    const result = { v: SANDBOX_WIRE_VERSION, type: "memory.result", request_id: "mem_1", ...shown };
+    expect(memoryResultFrameSchema.safeParse(result).success).toBe(true);
+    expect(decodeServerFrame(JSON.stringify(result)).ok).toBe(true);
   });
 });

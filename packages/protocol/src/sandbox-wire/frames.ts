@@ -21,6 +21,7 @@ import {
   memoryPutFrameSchema,
   memoryReadFrameSchema,
   memoryResultFrameSchema,
+  memoryShowFrameSchema,
 } from "./memory-frames.js";
 import { projectCommitFrameSchema, projectCommitResultFrameSchema } from "./project-frames.js";
 import { runMcpContextSchema } from "./mcp-config.js";
@@ -351,6 +352,7 @@ export const sandboxToServerFrameSchema = z.union([
   fileShareFrameSchema,
   memoryPutFrameSchema,
   memoryReadFrameSchema,
+  memoryShowFrameSchema,
   projectCommitFrameSchema,
   skillDraftSaveFrameSchema,
   fileEditProposeFrameSchema,
@@ -803,6 +805,7 @@ export type LegacyWebSearchQueryFrame = z.infer<typeof legacyWebSearchQueryFrame
 export type LegacyWebSearchResultFrame = z.infer<typeof legacyWebSearchResultFrameSchema>;
 export type MemoryPutFrame = z.infer<typeof memoryPutFrameSchema>;
 export type MemoryReadFrame = z.infer<typeof memoryReadFrameSchema>;
+export type MemoryShowFrame = z.infer<typeof memoryShowFrameSchema>;
 export type MemoryResultFrame = z.infer<typeof memoryResultFrameSchema>;
 export type PolicyResultFrame = z.infer<typeof policyResultFrameSchema>;
 export type RunStartFrame = z.infer<typeof runStartFrameSchema>;
