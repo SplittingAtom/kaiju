@@ -151,8 +151,8 @@ while it is on at both levels that have it. Every switch is on unless an admin t
   Policy still applies unless the site's switch is off (below).
 - **Allow project notes** (site and workspace): project memory, as above. Needs memory.
 - **Allow memories** (site and workspace): short statements Kobe knows about you, your workspace
-  and the site, given to the agent at the start of each run. Needs memory. (Memories arrive with
-  Kobe v1.3; the switches are in place so admins can decide beforehand.)
+  and the site, given to the agent at the start of each run. Needs memory. Turning **Allow
+  memory** off now also turns memories off, not only notes.
 - **Workspace memories** (workspace): memories everyone in the workspace shares, curated by team
   admins and memory stewards on the Team console's **Memory** page, with import and export (see
   [Workspace memories](admin/team-admin.md#workspace-memories)).
