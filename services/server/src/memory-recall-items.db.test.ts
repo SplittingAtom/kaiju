@@ -9,6 +9,8 @@ import {
   type PolicyEngine,
   type RunMemoryContext,
 } from "@kobe/protocol";
+import type { Logger } from "pino";
+import { readMemory, showMemory } from "./memory/agent.js";
 import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
 import { MemoryObjects } from "./testing/memory-objects.js";
@@ -65,6 +67,7 @@ beforeAll(async () => {
   item.portable = await seed({ scope: "portable", owner: runner.id, statement: s("My portable") });
   item.site = await seed({ scope: "site", statement: s("Site fact") });
   item.unrelated = await seed({ scope: "team", team, statement: "Lunch is at noon on Fridays" });
+  item.policy = await seed({ scope: "site", policy: true, statement: "Never share customer data" });
 });
 
 afterAll(async () => {
@@ -78,6 +81,7 @@ async function seed(o: {
   statement: string;
   team?: string;
   owner?: string;
+  policy?: boolean;
 }): Promise<string> {
   const id = randomUUID();
   const actor = o.owner ?? runner.id;
@@ -106,7 +110,11 @@ async function seed(o: {
         [id, o.statement, o.owner],
       );
     } else {
-      await fx.admin.query(`INSERT INTO site_memory_items (id, kind) VALUES ($1, $2)`, [id, kind]);
+      await fx.admin.query(`INSERT INTO site_memory_items (id, kind, policy) VALUES ($1, $2, $3)`, [
+        id,
+        kind,
+        o.policy ?? false,
+      ]);
       await fx.admin.query(
         `INSERT INTO site_memory_item_versions (item_id, version, statement, actor_user_id, actor_kind)
          VALUES ($1, 1, $2, $3, 'user')`,
@@ -321,6 +329,62 @@ describe("show_memory_item (ac-2)", () => {
     }
     expect((await show(s, item.mine)).ok).toBe(true);
     expect(await snapshot()).toBe(before);
+  });
+});
+
+const quiet = { error: () => undefined } as unknown as Logger;
+const caller = (run: Run) => ({
+  teamId: team,
+  userId: runner.id,
+  runId: run.runId,
+  threadId: run.threadId,
+  refused: () => undefined,
+});
+const setWorkspace = (memory: Record<string, boolean>) =>
+  fx.admin.query(
+    `UPDATE teams SET settings = jsonb_set(settings, '{memory}', $2::jsonb) WHERE id = $1`,
+    [team, JSON.stringify(memory)],
+  );
+
+describe("review fixes", () => {
+  it("answers saved memories from recall({ query }) without blob storage, Notes refused", async () => {
+    const run = await newRun();
+    const deps = { db: fx.db, blobs: undefined, log: quiet };
+    const res = await readMemory(deps, { ...caller(run), input: { query: WORD } });
+    expect(res).toMatchObject({ ok: true, op: "read", files: [], truncated: false });
+    expect(idsOf((res as { items?: { id: string }[] }).items)).toContain(item.mine);
+    const notes = await readMemory(deps, {
+      ...caller(run),
+      input: { scope: "user", path: "MEMORY.md" },
+    });
+    expect(notes).toMatchObject({ ok: false, error: { code: "storage_failed" } });
+  });
+
+  it("shows only a given Policy item under notes_only, and re-checks the scope switch", async () => {
+    const agentId = await createAgent("Shower");
+    await publish(agentId);
+    const version = await setMemory(agentId, "notes_only");
+    const notes = await session(await newRun({ agentId, agentVersion: version }));
+    expect(idsOf(notes.memory?.semantic?.items)).toEqual([item.policy]);
+    expect(await show(notes, item.policy)).toMatchObject({ ok: true, item: { policy: true } });
+    // A recalled id would not be enough without semantic memory.
+    const deps = { db: fx.db, log: quiet };
+    const recalled = await showMemory(deps, {
+      ...caller(notes.run),
+      input: { id: must(item.team, "team item") },
+      recalled: () => "team",
+    });
+    expect(recalled).toMatchObject({ ok: false, error: { code: "not_found" } });
+
+    const s = await session(await newRun(), `What about ${WORD}?`);
+    expect(idsOf(s.memory?.semantic?.items)).toContain(item.team);
+    await setWorkspace({ workspace_memories_enabled: false });
+    try {
+      expect(await show(s, item.team)).toMatchObject({ ok: false, error: { code: "not_found" } });
+      expect((await show(s, item.mine)).ok).toBe(true);
+    } finally {
+      await setWorkspace({});
+    }
   });
 });
 

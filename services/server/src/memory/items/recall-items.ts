@@ -80,27 +80,41 @@ interface ShownRow extends Record<string, unknown> {
 }
 
 /** Where `id` came from in this run: its records first, then an earlier recall answer. */
-async function scopeOf(
+async function sourceOf(
   tx: KobeTx,
   who: RecallWho,
   id: string,
   recalled: (id: string) => SemanticMemoryScope | undefined,
-): Promise<SemanticMemoryScope | undefined> {
+): Promise<{ readonly scope: SemanticMemoryScope; readonly givenPolicy: boolean } | undefined> {
   const record = (await readRunRecords(tx, who.teamId, who.userId, who.runId)).find(
     (r) => r.id === id,
   );
-  if (record) return record.lane === "policy" ? "site" : record.lane;
-  return recalled(id);
+  if (record)
+    return record.lane === "policy"
+      ? { scope: "site", givenPolicy: true }
+      : { scope: record.lane, givenPolicy: false };
+  const scope = recalled(id);
+  return scope === undefined ? undefined : { scope, givenPolicy: false };
 }
 
+/**
+ * One item, for `show_memory_item`. Besides coming from the run, it must still be allowed now:
+ * without semantic memory (`notes_only`) only a Policy item the run was given; and its scope's
+ * switch (Policy: the Site master) must still be on.
+ */
 export async function showItem(
   tx: KobeTx,
   who: RecallWho,
   id: string,
   recalled: (id: string) => SemanticMemoryScope | undefined,
+  semantic: boolean,
 ): Promise<MemoryShownItem | undefined> {
-  const scope = await scopeOf(tx, who, id, recalled);
-  if (scope === undefined) return undefined;
+  const source = await sourceOf(tx, who, id, recalled);
+  if (source === undefined || (!semantic && !source.givenPolicy)) return undefined;
+  const { scope } = source;
+  const { memory } = parseRunMemoryState(
+    (await tx.execute<RunMemoryStateRow>(runMemoryStateQuery(who.teamId))).rows[0],
+  );
   const loc = locate(scope, who.teamId, who.userId);
   const { rows } = await tx.execute<ShownRow>(sql`
     SELECT i.id, i.kind, i.status, i.pinned, ${loc.policy} AS policy, i.current_version AS version,
@@ -111,6 +125,8 @@ export async function showItem(
      WHERE ${loc.where} AND i.id = ${id}`);
   const row = rows[0];
   if (!row) return undefined;
+  if (row.policy ? !memory.policy : !memory.scopes[scope]) return undefined;
+  if (!semantic && !row.policy) return undefined;
   return {
     id: row.id,
     version: Number(row.version),

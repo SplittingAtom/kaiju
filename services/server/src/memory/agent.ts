@@ -495,7 +495,7 @@ export async function readMemory(
   deps: Pick<MemoryAgentDeps, "db" | "blobs" | "log">,
   req: ReadRequest,
 ): Promise<MemoryReply> {
-  if (!deps.blobs) return NO_STORAGE;
+  if (!deps.blobs) return readItemsOnly(deps, req);
   const blobs = deps.blobs;
   try {
     const listed = await withTeam(deps.db, req.teamId, async (tx) => {
@@ -552,6 +552,30 @@ async function readItems(
   }
 }
 
+/**
+ * Without blob storage the Notes can't be read, but saved memories live in Postgres: an unscoped
+ * `recall({ query })` still answers them (no files); anything else is `storage_failed`.
+ */
+async function readItemsOnly(
+  deps: Pick<MemoryAgentDeps, "db" | "log">,
+  req: ReadRequest,
+): Promise<MemoryReply> {
+  const { query, scope, path } = req.input;
+  if (query === undefined || scope !== undefined || path !== undefined) return NO_STORAGE;
+  try {
+    if (!(await withTeam(deps.db, req.teamId, (tx) => loadRun(tx, req)))) {
+      req.refused("run_not_active");
+      return NOT_ACTIVE;
+    }
+  } catch (err) {
+    deps.log.error({ err, run_id: req.runId }, "memory.read failed");
+    return NO_STORAGE;
+  }
+  const items = await readItems(deps, req);
+  if (items === undefined) return NO_STORAGE;
+  return { ok: true, op: "read", files: [], truncated: false, items };
+}
+
 // ------------------------------------------------------------------------------ show_memory_item
 
 export interface ShowRequest extends MemoryCaller {
@@ -578,8 +602,9 @@ export async function showMemory(
   try {
     const shown = await withTeam(deps.db, req.teamId, async (tx) => {
       if (!(await loadRun(tx, req))) return "ended" as const;
-      if (!(await readRunMemoryPlan(tx, req)).notes) return "off" as const;
-      return showItem(tx, req, req.input.id, req.recalled);
+      const plan = await readRunMemoryPlan(tx, req);
+      if (!plan.notes) return "off" as const;
+      return showItem(tx, req, req.input.id, req.recalled, plan.semantic);
     });
     if (shown === "ended") {
       req.refused("run_not_active");
