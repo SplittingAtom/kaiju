@@ -63,8 +63,11 @@ describe("who lists the site tools (ac-1, ac-2, ac-4)", () => {
   });
 });
 
-/** Site tools on a route shared with the Memory editor (KOBE-650): Site memory items, read-only. */
-const SHARED_ROUTE = /^\/memory\/semantic\/items(\/site\/[0-9a-f-]+)?$/;
+/**
+ * Site tools on a route shared with the Memory editor (KOBE-650): Site memory items, read-only;
+ * and the Site memory settings (KOBE-658), read-only.
+ */
+const SHARED_ROUTE = /^\/memory\/(semantic\/items(\/site\/[0-9a-f-]+)?|settings)$/;
 
 describe("site tool definitions", () => {
   it.each(KOBE_SITE_TOOLS.map((t) => [t.name, t] as const))(

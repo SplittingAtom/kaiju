@@ -191,6 +191,36 @@ describe("Site memory settings", () => {
     });
   });
 
+  it("memory placement (KOBE-658): five modes, latest_user_keep by default, re-pick every 20", () => {
+    expect(MEMORY_SITE_SETTINGS_DEFAULTS).toMatchObject({
+      placement: "latest_user_keep",
+      stable_repick_every: 20,
+    });
+    const ok = (over: Record<string, unknown>) =>
+      memorySiteSettingsSchema.safeParse({ ...MEMORY_SITE_SETTINGS_DEFAULTS, ...over }).success;
+    for (const placement of [
+      "system",
+      "latest_user_keep",
+      "latest_user_strip",
+      "stable_plus_delta",
+      "tool_only",
+    ])
+      expect(ok({ placement }), placement).toBe(true);
+    expect(ok({ placement: "nowhere" })).toBe(false);
+    expect([1, 2, 200, 201, 2.5].map((n) => ok({ stable_repick_every: n }))).toEqual([
+      false,
+      true,
+      true,
+      false,
+      false,
+    ]);
+    // A document saved before KOBE-658 reads the defaults for the new fields.
+    expect(parseMemorySiteSettings(JSON.stringify({ version_cap: 20 }))).toMatchObject({
+      placement: "latest_user_keep",
+      stable_repick_every: 20,
+    });
+  });
+
   it("has no full-text search language setting (Q11)", () => {
     expect(Object.keys(MEMORY_SITE_SETTINGS_DEFAULTS).filter((k) => /lang|fts/.test(k))).toEqual(
       [],

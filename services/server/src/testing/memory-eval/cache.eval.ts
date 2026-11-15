@@ -2,7 +2,8 @@ import { mkdirSync, readFileSync, writeFileSync, writeSync } from "node:fs";
 import { dirname } from "node:path";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { TERMINAL_EVENT_TYPES } from "@kobe/protocol";
+import { SEMANTIC_MEMORY_PLACEMENTS, TERMINAL_EVENT_TYPES } from "@kobe/protocol";
+import { formatMemoryUse, memoryUse, parseExpectations } from "./memory-use.js";
 import { cacheShares, formatCacheShare, runUsageSchema } from "./score.js";
 
 /**
@@ -12,6 +13,11 @@ import { cacheShares, formatCacheShare, runUsageSchema } from "./score.js";
  * the docs/gates/gate-7a.md SQL reads). Gate A runs it once on the KOBE-382 build ("before") and
  * once on the KOBE-383 build ("after"). Everything comes from the environment (e2e/memory-eval.sh
  * lists it); nothing about an install is committed.
+ *
+ * KOBE-658: `KOBE_EVAL_PLACEMENTS=system,latest_user_keep,...` replays the same turns once per Site
+ * memory placement (each in a new thread; the member must be a Site admin, and the Site's own
+ * placement is put back at the end) and reports, per mode, the cache-read share and memory use:
+ * how many answers used the memories they should have (e2e/fixtures/memory-cache/expect.json).
  */
 const env = z
   .object({
@@ -25,6 +31,8 @@ const env = z
     KOBE_EVAL_SEED: z.enum(["0", "1"]).optional(),
     KOBE_EVAL_LABEL: z.string().optional(),
     KOBE_EVAL_OUT: z.string().optional(),
+    /** KOBE-658: comma-separated Site memory placements to replay, one thread each. */
+    KOBE_EVAL_PLACEMENTS: z.string().optional(),
     /** Per-turn limit in seconds (default 300). */
     KOBE_EVAL_TURN_TIMEOUT_S: z.coerce.number().int().positive().optional(),
   })
@@ -38,6 +46,15 @@ const turns = z
 const seed = z
   .object({ items: z.array(z.record(z.string(), z.unknown())).min(1) })
   .parse(read("seed.json")).items;
+const expectations = parseExpectations(read("expect.json"));
+if (expectations.length !== turns.length) throw new Error("expect.json needs one entry per turn");
+const placementSchema = z.enum(SEMANTIC_MEMORY_PLACEMENTS);
+const placements = (env.KOBE_EVAL_PLACEMENTS ?? "")
+  .split(",")
+  .map((p) => p.trim())
+  .filter((p) => p !== "")
+  .map((p) => placementSchema.parse(p));
+const SITE_MEMORY = "/v1/memory/settings?level=site";
 
 const say = (text: string) => writeSync(1, `${text}\n`);
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -85,8 +102,11 @@ function client() {
       }
       return { status: res.status, json, text };
     },
-    /** Reads the run's event stream until a terminal event (or the deadline). */
-    async waitForRun(runId: string, timeoutMs: number): Promise<string> {
+    /**
+     * Reads the run's event stream until a terminal event (or the deadline); `text` collects the
+     * answer's text deltas (memory use, KOBE-658).
+     */
+    async waitForRun(runId: string, timeoutMs: number, text: string[] = []): Promise<string> {
       const abort = new AbortController();
       const timer = setTimeout(() => abort.abort(), timeoutMs);
       try {
@@ -105,6 +125,7 @@ function client() {
             buffer = buffer.slice(at + 2);
             const event = /^event: ?(.*)$/m.exec(block)?.[1];
             if (event && TERMINAL.has(event)) return event;
+            if (event === "text.delta") text.push(deltaOf(block));
           }
         }
         return "stream ended";
@@ -133,6 +154,29 @@ function client() {
   return self;
 }
 
+/** The `delta` of one `text.delta` SSE block ("" when it does not parse). */
+function deltaOf(block: string): string {
+  const data = /^data: ?(.*)$/m.exec(block)?.[1];
+  try {
+    const parsed = JSON.parse(data ?? "") as { payload?: { delta?: unknown } };
+    const delta = parsed.payload?.delta;
+    return typeof delta === "string" ? delta : "";
+  } catch {
+    return "";
+  }
+}
+
+type Client = ReturnType<typeof client>;
+
+async function setPlacement(c: Client, placement: string): Promise<void> {
+  const r = await c.call("PUT", SITE_MEMORY, { settings: { placement } });
+  if (r.status !== 200) {
+    throw new Error(
+      `could not set the placement (a Site admin?): ${r.status} ${r.text.slice(0, 200)}`,
+    );
+  }
+}
+
 describe("memory cache-read replay (KOBE-387)", () => {
   it("replays 20 turns and reports the cache-read share", async () => {
     const c = client();
@@ -146,8 +190,54 @@ describe("memory cache-read replay (KOBE-387)", () => {
         );
       }
     }
+    if (placements.length === 0) {
+      await replay(c, env.KOBE_EVAL_LABEL ?? null, env.KOBE_EVAL_OUT);
+      return;
+    }
+    // KOBE-658: one thread per placement; the Site's own placement is put back at the end.
+    const before = await c.call("GET", SITE_MEMORY);
+    const original = z
+      .object({ settings: z.object({ placement: placementSchema }) })
+      .parse(before.json).settings.placement;
+    const reports: Record<string, unknown>[] = [];
+    try {
+      for (const placement of placements) {
+        await setPlacement(c, placement);
+        const label = [env.KOBE_EVAL_LABEL, placement].filter(Boolean).join(" ");
+        reports.push({ placement, ...(await replay(c, label, undefined)) });
+      }
+    } finally {
+      await setPlacement(c, original);
+    }
+    say("\nKOBE-658 placements (cache share all / turns 2-20 / memory use):");
+    for (const r of reports) {
+      const s = r as unknown as {
+        placement: string;
+        all: { share: number | null };
+        afterFirst: { share: number | null };
+        memoryUse: { used: number; scored: number };
+      };
+      const pct = (v: number | null) => (v === null ? "-" : `${(v * 100).toFixed(1)}%`);
+      say(
+        `${s.placement.padEnd(18)} ${pct(s.all.share)} / ${pct(s.afterFirst.share)} / ` +
+          `${s.memoryUse.used} of ${s.memoryUse.scored}`,
+      );
+    }
+    if (env.KOBE_EVAL_OUT)
+      writeReport(env.KOBE_EVAL_OUT, { label: env.KOBE_EVAL_LABEL ?? null, reports });
+  });
+});
+
+function writeReport(file: string, report: unknown): void {
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, JSON.stringify(report, null, 2));
+}
+
+/** One replay of the 20 turns in a new thread: its cache shares and memory use. */
+async function replay(c: Client, labelText: string | null, out: string | undefined) {
+  {
     const made = await c.call("POST", "/v1/threads", {
-      title: `memory cache replay ${env.KOBE_EVAL_LABEL ?? ""}`.trim(),
+      title: `memory cache replay ${labelText ?? ""}`.trim(),
       ...(env.KOBE_EVAL_AGENT_ID ? { agent_id: env.KOBE_EVAL_AGENT_ID } : {}),
       ...(env.KOBE_EVAL_MODEL ? { model: env.KOBE_EVAL_MODEL } : {}),
     });
@@ -157,6 +247,7 @@ describe("memory cache-read replay (KOBE-387)", () => {
     }
     say(`thread ${threadId}`);
     const runIds: string[] = [];
+    const answers: string[] = [];
     const timeoutMs = (env.KOBE_EVAL_TURN_TIMEOUT_S ?? 300) * 1000;
     for (const [i, content] of turns.entries()) {
       const sent = await c.call("POST", `/v1/threads/${threadId}/messages`, { content });
@@ -164,7 +255,9 @@ describe("memory cache-read replay (KOBE-387)", () => {
       if (sent.status !== 201 || typeof runId !== "string") {
         throw new Error(`turn ${i + 1}: message refused ${sent.status} ${sent.text.slice(0, 200)}`);
       }
-      const end = await c.waitForRun(runId, timeoutMs);
+      const text: string[] = [];
+      const end = await c.waitForRun(runId, timeoutMs, text);
+      answers.push(text.join(""));
       say(`turn ${i + 1}: run ${runId} ${end}`);
       if (end !== "run.completed") throw new Error(`turn ${i + 1} ended with ${end}`);
       runIds.push(runId);
@@ -180,25 +273,19 @@ describe("memory cache-read replay (KOBE-387)", () => {
       if (shares.missing.length === 0 || Date.now() > deadline) break;
       await sleep(2_000);
     }
-    const label = env.KOBE_EVAL_LABEL ? ` (${env.KOBE_EVAL_LABEL})` : "";
+    const use = memoryUse(expectations, answers);
+    const label = labelText ? ` (${labelText})` : "";
     say(`\nKOBE-387 cache replay${label}: thread ${threadId}, ${runIds.length} turns`);
     say(formatCacheShare("all turns", shares.all));
     say(formatCacheShare("turns 2-20", shares.afterFirst));
+    say(formatMemoryUse(use));
     if (shares.missing.length > 0) say(`turns without usage: ${shares.missing.join(", ")}`);
     if (shares.all.cacheRead === 0) {
       say("no cache reads at all: does this model's provider report cached prompt tokens?");
     }
-    if (env.KOBE_EVAL_OUT) {
-      mkdirSync(dirname(env.KOBE_EVAL_OUT), { recursive: true });
-      writeFileSync(
-        env.KOBE_EVAL_OUT,
-        JSON.stringify(
-          { label: env.KOBE_EVAL_LABEL ?? null, threadId, runIds, ...shares },
-          null,
-          2,
-        ),
-      );
-    }
+    const report = { label: labelText, threadId, runIds, ...shares, memoryUse: use };
+    if (out) writeReport(out, report);
     expect(runIds).toHaveLength(turns.length);
-  });
-});
+    return report;
+  }
+}

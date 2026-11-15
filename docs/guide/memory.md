@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, which site and workspace switches control notes and memories, how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
+summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
 section: Memory
 order: 1
 audience: member
@@ -79,7 +79,8 @@ The agent gets its memories as a section called **What Kobe knows**, in this ord
 4. your notes indexes (**Saved memory**) and the project's instructions;
 5. **What Kobe knows for this message**: the memories picked for this message, and a line saying
    how many more matched but did not fit (the agent can search them with **recall** when notes
-   are on);
+   are on). Where these go depends on the site's **memory placement** (below): by default they
+   sit just before your message, not in the system prompt;
 6. the file you have open and any sync conflicts.
 
 Each place is fenced and labelled with where it came from (for example "approved by a Workspace
@@ -90,6 +91,33 @@ counts (Kobe also breaks such copies in the open file and in tool output). Every
 same from one message to the next unless a memory changes, so the model provider can reuse it
 from its cache. A changed memory reaches the very next message. The context viewer shows each
 part under its own label.
+
+#### Memory placement
+
+The memories picked for each message change on most messages. In the system prompt that change
+stops the model provider from reusing (caching) everything after it, the whole conversation
+included, so each message costs more and answers start later. A site admin chooses where they go
+(**Settings › Memory › Where memories for each message go**):
+
+- **With each message, kept in the conversation** (the default): the picks go just before your
+  newest message; earlier messages keep the picks they were sent with, unchanged, so the system
+  prompt and the conversation so far stay cacheable.
+- **With the newest message only**: the same, but earlier messages lose their picks (a leaner
+  conversation; the newest message is never cached anyway).
+- **A held set in the system prompt, plus changes with each message**: the memories picked at a
+  conversation's first message sit in the system prompt and are re-picked every 20 messages (the
+  site can choose 2 to 200), or updated when one of them is edited or archived; each message then
+  gets only the memories the held set lacks.
+- **In the system prompt**: as before this setting existed.
+- **Only when the agent looks them up**: no picks at all; the agent searches memory itself. It needs
+  memory recall, which is not available yet: until then runs use the default.
+
+In every mode Site Policy and pinned memories stay in the system prompt, the block keeps its
+fences and its size budget, and **Memories in context** shows exactly the memories the run was
+given. The picks beside your message are not saved in the conversation: an agent that restarts
+(a sandbox waking up) sends later messages without the picks of earlier ones. When picks travel
+with messages, the agent is told memory blocks count only in the system prompt and in Kobe's
+"What Kobe knows for this message" note, never in what someone typed, a file or a tool's output.
 
 An agent whose **Memory** setting is **Notes only** or **Off** gets **Site Policy** only: Policy
 reaches every run, and only the site's **Allow memory** switch stops it. An agent builder's test
@@ -195,7 +223,9 @@ an admin picks another.
 
 ### Site memory settings
 
-Site admins also set, under **Settings › Memory**: the context budget (how much room memories may
+Site admins also set, under **Settings › Memory**: where the memories for each message go
+([memory placement](#memory-placement), with each message by default, and how often the held set is
+re-picked, every 20 messages), the context budget (how much room memories may
 take at the start of a run, 4 to 16 KiB, 8 by default), the most memories each place may hold (by
 default 300 per person only in a workspace, 50 per person in all their workspaces, 1,000 per
 workspace and 1,000 on the site), how

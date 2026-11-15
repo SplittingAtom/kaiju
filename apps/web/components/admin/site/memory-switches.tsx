@@ -4,10 +4,11 @@ import { useState, type FormEvent } from "react";
 import {
   getSiteMemory,
   putSiteMemory,
+  type MemoryPlacement,
   type SiteMemorySettings,
   type SiteMemorySettingsDoc,
 } from "../../../lib/admin/api/site/memory";
-import { Button, ChoiceGroup, Field, TextInput } from "../../ui/console";
+import { Button, ChoiceGroup, Field, Select, TextInput } from "../../ui/console";
 import { MutationStatus } from "../error-notice";
 import { ResourceView } from "../parts";
 import { useMutation, useResource } from "../use-resource";
@@ -94,8 +95,11 @@ type NumberKey =
   | "limitTeam"
   | "limitSite"
   | "learnPassesPerHour"
-  | "savesPerMinute";
-type Draft = Record<NumberKey | "learningModelAlias" | "embeddingModelAlias", string>;
+  | "savesPerMinute"
+  | "stableRepickEvery";
+type Draft = Record<NumberKey | "learningModelAlias" | "embeddingModelAlias", string> & {
+  readonly placement: MemoryPlacement;
+};
 
 const draftOf = (s: SiteMemorySettingsDoc): Draft => ({
   learningModelAlias: s.learningModelAlias ?? "",
@@ -110,6 +114,8 @@ const draftOf = (s: SiteMemorySettingsDoc): Draft => ({
   limitSite: String(s.scopeLimits.site),
   learnPassesPerHour: String(s.rateLimits.learnPassesPerHour),
   savesPerMinute: String(s.rateLimits.savesPerMinute),
+  placement: s.placement,
+  stableRepickEvery: String(s.stableRepickEvery),
 });
 
 /** The draft as a settings document (checked with `invalidNumber` first). */
@@ -133,6 +139,8 @@ const docOf = (d: Draft): SiteMemorySettingsDoc => {
       learnPassesPerHour: num("learnPassesPerHour"),
       savesPerMinute: num("savesPerMinute"),
     },
+    placement: d.placement,
+    stableRepickEvery: num("stableRepickEvery"),
   };
 };
 
@@ -148,7 +156,23 @@ const RANGES: Readonly<Record<NumberKey, readonly [string, number, number]>> = {
   limitSite: ["Each scope limit", 1, 1000],
   learnPassesPerHour: ["Learning passes per hour", 1, 100],
   savesPerMinute: ["Memory saves per minute", 1, 600],
+  stableRepickEvery: ["Re-pick the held memories every", 2, 200],
 };
+
+/**
+ * Memory placement (KOBE-658): where the memories picked for each message reach the model. Only
+ * `system` keeps them in the system prompt, which the model provider caches only while it does
+ * not change; the picks change on most messages. `tool_only` waits for memory recall (KOBE-399):
+ * it is offered only while stored, and runs use the default meanwhile.
+ */
+const PLACEMENTS: readonly (readonly [MemoryPlacement, string])[] = [
+  ["latest_user_keep", "With each message, kept in the conversation (default)"],
+  ["latest_user_strip", "With the newest message only"],
+  ["stable_plus_delta", "A held set in the system prompt, plus changes with each message"],
+  ["system", "In the system prompt (before KOBE-658)"],
+];
+const TOOL_ONLY_LABEL =
+  "Only when the agent looks them up (needs memory recall; runs use the default)";
 
 /** The first number outside its range, as a sentence; null when all are fine. */
 export function invalidNumber(d: Draft): string | null {
@@ -258,6 +282,40 @@ function SiteMemorySettingsForm({
             maxLength={64}
           />
         </Field>
+      </ChoiceGroup>
+      <ChoiceGroup legend="Memories in the conversation" stacked className="my-4">
+        <Field
+          label="Where memories for each message go"
+          hint="Policy and pinned memories always sit in the system prompt. The memories picked for each message change often; outside the system prompt they no longer stop the model provider from reusing (caching) the rest of the conversation, which is faster and cheaper."
+        >
+          <Select
+            value={draft.placement}
+            onChange={(e) =>
+              setDraft((d) => ({ ...d, placement: e.target.value as MemoryPlacement }))
+            }
+          >
+            {PLACEMENTS.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+            {settings.placement === "tool_only" ? (
+              <option value="tool_only">{TOOL_ONLY_LABEL}</option>
+            ) : null}
+          </Select>
+        </Field>
+        {draft.placement === "stable_plus_delta" ? (
+          <Field
+            label="Re-pick the held set every (messages, 2 to 200)"
+            hint="The held memories stay the same for this many messages of a conversation, or until one of them is edited."
+          >
+            <TextInput
+              inputMode="numeric"
+              value={draft.stableRepickEvery}
+              onChange={set("stableRepickEvery")}
+            />
+          </Field>
+        ) : null}
       </ChoiceGroup>
       <ChoiceGroup legend="Limits" stacked className="my-4">
         {NUMBER_FIELDS.map(([k, label, hint]) => (

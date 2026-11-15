@@ -1,0 +1,25 @@
+{
+  "about": "KOBE-658: per turn of turns.json, patterns (case-insensitive regular expressions) an answer that used the seeded memories should contain; any one matching counts. null: no memory is expected (the turn is not scored). Used by `e2e/memory-eval.sh cache` to report memory use next to the cache-read share, so a placement that saves cache by hiding memories (tool_only) shows it.",
+  "expect": [
+    ["services", "overages"],
+    ["\\bNRR\\b", "net revenue retention"],
+    ["1 Feb", "February 1", "1st of February"],
+    ["28 days", "28-day"],
+    ["2\\.1\\s*%"],
+    null,
+    ["Snowflake"],
+    ["05:00", "06:00", "\\b5\\s?am\\b", "\\b6\\s?am\\b"],
+    ["10\\s*%", "10 percent", "Enterprise"],
+    ["\\bEU\\b", "Frankfurt", "Dublin"],
+    ["->", ":\\s*(str|datetime|int)\\b"],
+    null,
+    ["£"],
+    ["services", "overages", "excluded"],
+    ["board pack"],
+    ["board pack", "Metabase"],
+    ["2027-02-01", "1 February 2027"],
+    ["28"],
+    null,
+    null
+  ]
+}

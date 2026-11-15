@@ -4,6 +4,7 @@ import { sql, withTeam } from "@kobe/db";
 import {
   CAPABILITY_MEMORY,
   CAPABILITY_SEMANTIC_MEMORY,
+  CAPABILITY_SEMANTIC_MEMORY_PLACEMENT,
   runMemoryContextSchema,
   threadContextMemoriesSchema,
   type RunMemoryContext,
@@ -545,5 +546,107 @@ describe("GET /v1/threads/{id}/context/memories (ac-2, CV2)", () => {
     const res = await other.browser.get(url(run.threadId));
     expect(res.status).toBe(403);
     expect(res.json).toMatchObject({ code: "not_owner" });
+  });
+});
+
+describe("memory placement (KOBE-658 ac-1, ac-2)", () => {
+  const PLACES = [
+    CAPABILITY_MEMORY,
+    CAPABILITY_SEMANTIC_MEMORY,
+    CAPABILITY_SEMANTIC_MEMORY_PLACEMENT,
+  ];
+  async function setSite(settings: Record<string, unknown> | null) {
+    if (settings === null) {
+      await fx.admin.query(`DELETE FROM site_settings WHERE key = 'memory.settings'`);
+      return;
+    }
+    await fx.admin.query(
+      `INSERT INTO site_settings (key, value) VALUES ('memory.settings', $1)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+      [JSON.stringify(settings)],
+    );
+  }
+  const recordedIds = async (runId: string) =>
+    (await records(teamA, runId)).map((r) => `${r.item_id}@${r.version}`).sort();
+  const givenIds = (m: RunMemoryContext | undefined) =>
+    (m?.semantic?.items ?? []).map((i) => `${i.id}@${i.version}`).sort();
+
+  it("an agent that places picks gets the Site's placement (default latest_user_keep); others none", async () => {
+    const placed = await memoryOf(teamA, await newRun(teamA), { caps: PLACES });
+    expect(placed?.semantic?.placement).toBe("latest_user_keep");
+    expect(placed?.semantic?.items.some((i) => i.held === true)).toBe(false);
+    const old = await memoryOf(teamA, await newRun(teamA));
+    expect(old?.semantic?.placement).toBeUndefined();
+  });
+
+  it("tool_only falls back to latest_user_keep until KOBE-399 lands", async () => {
+    await setSite({ placement: "tool_only" });
+    try {
+      const m = await memoryOf(teamA, await newRun(teamA), { caps: PLACES });
+      expect(m?.semantic?.placement).toBe("latest_user_keep");
+      expect(idsOf(m)).toContain(item.team);
+    } finally {
+      await setSite(null);
+    }
+  });
+
+  it("stable_plus_delta: the epoch's picks held at current versions, records match the payload", async () => {
+    await setSite({ placement: "stable_plus_delta", stable_repick_every: 2 });
+    try {
+      // Epoch start: every pick is held.
+      const first = await newRun(teamA);
+      const m1 = await memoryOf(teamA, first, { caps: PLACES, message: `about ${WORD}` });
+      expect(m1?.semantic?.placement).toBe("stable_plus_delta");
+      const picks1 = (m1?.semantic?.items ?? []).filter((i) => !i.policy && !i.pinned);
+      expect(picks1.map((i) => i.id)).toContain(item.team);
+      expect(picks1.every((i) => i.held === true)).toBe(true);
+      expect(await recordedIds(first.runId)).toEqual(givenIds(m1));
+      await finish(first);
+      // A held item is edited: the next run holds its new version.
+      await fx.admin.query(
+        `INSERT INTO semantic_memory_item_versions (team_id, item_id, version, statement, actor_user_id, actor_kind)
+         VALUES ($1, $2, 2, $3, $4, 'user')`,
+        [teamA, item.team, `Workspace fact ${WORD} statement, edited`, runner.id],
+      );
+      await fx.admin.query(
+        `UPDATE semantic_memory_items SET current_version = 2 WHERE team_id = $1 AND id = $2`,
+        [teamA, item.team],
+      );
+      // Same epoch, an unrelated message: the held set stays (it is not re-picked).
+      const second = { threadId: first.threadId, runId: await addRun(teamA, first.threadId) };
+      const m2 = await memoryOf(teamA, second, { caps: PLACES, message: "lorem ipsum dolor" });
+      const held2 = (m2?.semantic?.items ?? []).filter((i) => i.held === true);
+      expect(held2.map((i) => i.id).sort()).toEqual(picks1.map((i) => i.id).sort());
+      expect(held2.find((i) => i.id === item.team)?.version).toBe(2);
+      // run_memory_items holds exactly what the payload carried (U48), held set included.
+      expect(await recordedIds(second.runId)).toEqual(givenIds(m2));
+      // Delivered again: the same payload, held marks included.
+      const again = await withTeam(fx.db, teamA, (tx) =>
+        buildRunSemantic(tx, {
+          teamId: teamA,
+          userId: runner.id,
+          threadId: second.threadId,
+          runId: second.runId,
+          message: "lorem ipsum dolor",
+          agentPlaces: true,
+        }),
+      );
+      expect(again?.fresh).toBe(false);
+      expect(
+        again?.semantic.items
+          .filter((i) => i.held === true)
+          .map((i) => i.id)
+          .sort(),
+      ).toEqual(held2.map((i) => i.id).sort());
+      await finish(second);
+      // The third message starts the next epoch: re-picked for that message.
+      const third = { threadId: first.threadId, runId: await addRun(teamA, first.threadId) };
+      const m3 = await memoryOf(teamA, third, { caps: PLACES, message: "lorem ipsum dolor" });
+      const held3 = (m3?.semantic?.items ?? []).filter((i) => i.held === true).map((i) => i.id);
+      expect(held3).not.toContain(item.team);
+      expect(await recordedIds(third.runId)).toEqual(givenIds(m3));
+    } finally {
+      await setSite(null);
+    }
   });
 });

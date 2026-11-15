@@ -120,11 +120,16 @@ describe("the memory item tool set is read-only (ac-2)", () => {
   it("no catalog tool touches memory items except these reads", () => {
     const itemTools = KOBE_ADMIN_TOOLS.filter((t) => /memory_item/.test(t.name));
     expect(itemTools.map((t) => t.name).sort()).toEqual(MEMORY_TOOL_NAMES);
-    // The other memory tools are the switch tools (KOBE-381), not item tools.
+    // The other memory tools are the switch tools (KOBE-381) and the read-only Site memory
+    // settings (KOBE-658), not item tools.
     const otherMemory = KOBE_ADMIN_TOOLS.filter(
       (t) => /memory/.test(t.name) && !/memory_item/.test(t.name),
     );
-    expect(otherMemory.map((t) => t.name).sort()).toEqual(["team_memory_get", "team_memory_set"]);
+    expect(otherMemory.map((t) => t.name).sort()).toEqual([
+      "site_memory_settings_get",
+      "team_memory_get",
+      "team_memory_set",
+    ]);
   });
 
   it("needs the scope's curate permission", () => {

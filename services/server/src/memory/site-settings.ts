@@ -8,6 +8,8 @@ import {
   type KobeTx,
 } from "@kobe/db";
 import {
+  SEMANTIC_MEMORY_PLACEMENT_DEFAULT,
+  semanticMemoryPlacementSchema,
   SEMANTIC_MEMORY_BLOCK_DEFAULT_BYTES,
   SEMANTIC_MEMORY_BLOCK_MAX_BYTES,
   SEMANTIC_MEMORY_BLOCK_MIN_BYTES,
@@ -34,6 +36,10 @@ export const MEMORY_CONTEXT_BUDGET_KIB_MIN = SEMANTIC_MEMORY_BLOCK_MIN_BYTES / 1
 export const MEMORY_CONTEXT_BUDGET_KIB_MAX = SEMANTIC_MEMORY_BLOCK_MAX_BYTES / 1024;
 const MEMORY_CONTEXT_BUDGET_KIB_DEFAULT = SEMANTIC_MEMORY_BLOCK_DEFAULT_BYTES / 1024;
 
+export const MEMORY_STABLE_REPICK_MIN = 2;
+export const MEMORY_STABLE_REPICK_MAX = 200;
+const MEMORY_STABLE_REPICK_DEFAULT = 20;
+
 const alias = z.string().max(64).regex(new RegExp(MODEL_ALIAS_PATTERN));
 const scopeLimit = z.number().int().min(1).max(SEMANTIC_MEMORY_SCOPE_MAX_ITEMS);
 
@@ -58,6 +64,13 @@ export const memorySiteSettingsFields = {
     saves_per_minute: z.number().int().min(1).max(600),
   }),
   retention_days: z.number().int().min(30).max(3650),
+  /**
+   * Where the per-message picks reach the model (KOBE-658; protocol `SEMANTIC_MEMORY_PLACEMENTS`):
+   * read by the selector's caller (memory/items/placement.ts) and sent with `run.start`.
+   */
+  placement: semanticMemoryPlacementSchema,
+  /** `stable_plus_delta`: the held picks are re-picked every this many messages of a thread. */
+  stable_repick_every: z.number().int().min(MEMORY_STABLE_REPICK_MIN).max(MEMORY_STABLE_REPICK_MAX),
 } as const;
 
 export const memorySiteSettingsSchema = z.strictObject(memorySiteSettingsFields);
@@ -83,6 +96,8 @@ export const MEMORY_SITE_SETTINGS_DEFAULTS: MemorySiteSettings = Object.freeze({
   stale_after_days: 90,
   rate_limits: Object.freeze({ learn_passes_per_hour: 10, saves_per_minute: 30 }),
   retention_days: 365,
+  placement: SEMANTIC_MEMORY_PLACEMENT_DEFAULT,
+  stable_repick_every: MEMORY_STABLE_REPICK_DEFAULT,
 });
 
 /** The stored document over the defaults, field by field (pure; tested). */

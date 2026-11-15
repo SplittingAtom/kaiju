@@ -609,6 +609,7 @@ describe("site catalog contract (ac-5)", () => {
       change: { from: { app_name: "Kobe" }, to: { app_name: "Kobe Lab" } },
     }),
     site_budget_get: async () => ({}),
+    site_memory_settings_get: async () => ({}),
     site_budget_set: async () => {
       const { rows } = await fx.admin.query<{ v: number | null }>(
         `SELECT user_requests_per_minute AS v FROM site_model_limits WHERE id = 1`,

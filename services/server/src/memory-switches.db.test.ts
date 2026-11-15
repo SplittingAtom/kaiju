@@ -268,6 +268,30 @@ describe("Site memory settings", () => {
   });
 });
 
+describe("memory placement setting (KOBE-658 ac-1)", () => {
+  it("is served with its default, saved, validated and audited by name", async () => {
+    const ia = await siteAdmin();
+    const got = (await settings(ia, "site")).json as { settings: Record<string, unknown> };
+    expect(got.settings).toMatchObject({ placement: "latest_user_keep", stable_repick_every: 20 });
+    expect((await settings(ia, "site", { settings: { placement: "nowhere" } })).status).toBe(400);
+    expect((await settings(ia, "site", { settings: { stable_repick_every: 1 } })).status).toBe(400);
+    const ok = await settings(ia, "site", {
+      settings: { placement: "stable_plus_delta", stable_repick_every: 10 },
+    });
+    expect(ok.status, ok.text).toBe(200);
+    expect(ok.json).toMatchObject({
+      settings: { placement: "stable_plus_delta", stable_repick_every: 10 },
+    });
+    const { rows } = await fx.admin.query<{ target: { settings?: string[] } }>(
+      `SELECT target FROM audit_log WHERE action = 'memory.site_settings_changed'
+        ORDER BY seq DESC LIMIT 1`,
+    );
+    expect(rows[0]?.target.settings).toEqual(["placement", "stable_repick_every"]);
+    const back = await settings(ia, "site", { settings: { placement: "latest_user_keep" } });
+    expect(back.status, back.text).toBe(200);
+  });
+});
+
 describe("learning model (ac-4)", () => {
   it("unset: unavailable with a reason, though the Workspace has a default model", async () => {
     const w = await world();

@@ -8,6 +8,7 @@ import {
   CAPABILITY_MCP,
   CAPABILITY_MEMORY,
   CAPABILITY_SEMANTIC_MEMORY,
+  CAPABILITY_SEMANTIC_MEMORY_PLACEMENT,
   CAPABILITY_FILE_EDITS,
   CAPABILITY_PROJECTS,
   CAPABILITY_RUN_TOKEN,
@@ -787,6 +788,8 @@ export class CommandDelivery {
         plan.policy && this.#host.hasCapability(CAPABILITY_SEMANTIC_MEMORY)
           ? await this.#runSemantic(row.runId, row.threadId, (frame as RunStartFrame).message, {
               policyOnly: !plan.semantic,
+              // KOBE-658: an agent that renders the placement gets the Site's; others `system`.
+              agentPlaces: this.#host.hasCapability(CAPABILITY_SEMANTIC_MEMORY_PLACEMENT),
             })
           : undefined;
       if (memory || semantic) {
@@ -919,10 +922,10 @@ export class CommandDelivery {
     runId: string,
     threadId: string,
     message: string,
-    opts: { readonly policyOnly: boolean },
+    opts: { readonly policyOnly: boolean; readonly agentPlaces: boolean },
   ): Promise<{ readonly semantic: RunSemanticMemory; readonly fresh: boolean } | undefined> {
     const { teamId, userId } = this.#host.target;
-    const input = { teamId, userId, threadId, runId, message, policyOnly: opts.policyOnly };
+    const input = { teamId, userId, threadId, runId, message, ...opts };
     try {
       return await withTeam(this.#ctx.db, teamId, (tx) => buildRunSemantic(tx, input));
     } catch (err) {

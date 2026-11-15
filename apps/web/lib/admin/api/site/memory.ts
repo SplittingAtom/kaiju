@@ -21,7 +21,14 @@ export interface SiteMemorySettingsDoc {
   readonly staleAfterDays: number;
   readonly rateLimits: { readonly learnPassesPerHour: number; readonly savesPerMinute: number };
   readonly retentionDays: number;
+  /** Where the per-message memories reach the model (KOBE-658). */
+  readonly placement: MemoryPlacement;
+  /** `stable_plus_delta`: re-pick the held memories every this many messages (2 to 200). */
+  readonly stableRepickEvery: number;
 }
+
+export type MemoryPlacement =
+  "system" | "latest_user_keep" | "latest_user_strip" | "stable_plus_delta" | "tool_only";
 
 export interface SiteMemorySettings extends MemorySwitches {
   readonly memoriesEnabled: boolean;
