@@ -1,19 +1,21 @@
 import { expect, test } from "@playwright/test";
 import { SHELL_TIMEOUT_MS } from "./support/constants.js";
 import { panelOf } from "./support/panel.js";
+import { uniqueWords } from "./support/unique.js";
 
 /**
  * KOBE-384: the Me editor on the Memories tab of My memory, in the panel over the workspace. One
  * memory goes through add (with the 'Use in all my workspaces?' confirmation shown and declined
  * first) → edit → pin → archive → restore, with Undo once, and focus checked where the editor
- * promises it. The memory's text is unique per run; it is left archived at the end (memories are
- * never deleted). Needs the Memories switches on for KOBE_USER's active workspace. Spends no
- * tokens. Run on gate1: `npx playwright test memory-editor`.
+ * promises it. The memory's text is unique per run (support/unique.ts) and status messages are
+ * matched exactly (each group's "n of 10 pinned." line contains "pinned."). It is left archived
+ * at the end (memories are never deleted). Needs the Memories switches on for KOBE_USER's active
+ * workspace. Spends no tokens. Run on gate1: `npx playwright test memory-editor`.
  */
 const ONLY_HERE = "Only in this workspace";
 
 test("Memories: add, edit, pin, archive and restore one memory", async ({ page }) => {
-  const text = `Prefers e2e answers ${Date.now()}`;
+  const text = `Prefers e2e answers ${uniqueWords()}`;
   const edited = `${text} (edited)`;
   await page.goto("/me/memory");
   const panel = panelOf(page);
@@ -35,7 +37,9 @@ test("Memories: add, edit, pin, archive and restore one memory", async ({ page }
   // Add to this workspace only.
   await panel.getByRole("checkbox", { name: /Use in all my workspaces/ }).uncheck();
   await panel.getByRole("button", { name: "Save memory" }).click();
-  await expect(panel.getByText("Memory saved.")).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
+  await expect(panel.getByText("Memory saved.", { exact: true })).toBeVisible({
+    timeout: SHELL_TIMEOUT_MS,
+  });
   const row = group.getByRole("listitem", { name: text });
   await expect(row).toBeVisible();
 
@@ -49,13 +53,17 @@ test("Memories: add, edit, pin, archive and restore one memory", async ({ page }
   await expect(editedRow).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
   await expect(editedRow.getByRole("button", { name: `Edit: ${edited}` })).toBeFocused();
   await panel.getByRole("button", { name: "Undo" }).click();
-  await expect(panel.getByText("Undone.")).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
+  await expect(panel.getByText("Undone.", { exact: true })).toBeVisible({
+    timeout: SHELL_TIMEOUT_MS,
+  });
   await expect(group.getByRole("listitem", { name: text })).toBeVisible();
 
   // Pin: listed first, pressed, focus kept.
   const pin = row.getByRole("button", { name: `Pin: ${text}` });
   await pin.click();
-  await expect(panel.getByText("Pinned.")).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
+  await expect(panel.getByText("Pinned.", { exact: true })).toBeVisible({
+    timeout: SHELL_TIMEOUT_MS,
+  });
   const pinned = group.getByRole("button", { name: `Pin: ${text}` });
   await expect(pinned).toHaveAttribute("aria-pressed", "true");
   await expect(pinned).toBeFocused();
@@ -69,7 +77,9 @@ test("Memories: add, edit, pin, archive and restore one memory", async ({ page }
   await group.getByRole("button", { name: `Show archived (${ONLY_HERE})` }).click();
   const archive = group.getByRole("list", { name: `Archived: ${ONLY_HERE}` });
   await archive.getByRole("button", { name: `Restore: ${text}` }).click();
-  await expect(panel.getByText("Restored.")).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
+  await expect(panel.getByText("Restored.", { exact: true })).toBeVisible({
+    timeout: SHELL_TIMEOUT_MS,
+  });
   await expect(
     group.getByRole("list", { name: ONLY_HERE }).getByRole("listitem", { name: text }),
   ).toBeVisible();
@@ -77,6 +87,8 @@ test("Memories: add, edit, pin, archive and restore one memory", async ({ page }
     .getByRole("list", { name: ONLY_HERE })
     .getByRole("button", { name: `Archive: ${text}` })
     .click();
-  await expect(panel.getByText("Archived.")).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
+  await expect(panel.getByText("Archived.", { exact: true })).toBeVisible({
+    timeout: SHELL_TIMEOUT_MS,
+  });
   await expect(panel.getByRole("alert")).toHaveCount(0);
 });
