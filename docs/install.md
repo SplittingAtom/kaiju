@@ -610,7 +610,10 @@ like every other model. By default the chart runs a small one in the cluster
   (`embeddings.local.persistence`) and checks its sha256 on every start. With
   `model.download: true` (default) it downloads the pinned URL once; while download is on the pod
   may reach DNS and public HTTPS (a mirror on a private address needs
-  `embeddings.local.networkPolicy.extraEgress`, and `model.url` pointing at it). **Air-gapped:**
+  `embeddings.local.networkPolicy.extraEgress`, and `model.url` pointing at it). The policy is
+  per pod, so the running server keeps that egress too: **turn download off after the first
+  start** (`model.download: false`; the file stays on the PVC and is still checked) and the pod
+  has no egress at all. **Air-gapped:**
   set `model.download: false` and `persistence.existingClaim` to a claim that already holds
   `model.file` (copy the GGUF onto it, e.g. from a pod mounting the claim with `kubectl cp`); the
   pod then has no egress at all, and fails with a clear log line if the file is missing or its

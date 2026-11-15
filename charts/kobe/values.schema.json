@@ -1016,6 +1016,7 @@
             },
             "image": {
               "type": "object",
+              "required": ["digest"],
               "additionalProperties": false,
               "properties": {
                 "repository": {
@@ -1032,7 +1033,7 @@
                 },
                 "digest": {
                   "type": "string",
-                  "pattern": "^(sha256:[0-9a-f]{64})?$"
+                  "pattern": "^sha256:[0-9a-f]{64}$"
                 }
               }
             },

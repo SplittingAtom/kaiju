@@ -62,6 +62,7 @@ describe("embeddings.local (enabled by default)", () => {
     expect(main.image).not.toMatch(/latest/);
     expect(() => helm({ "embeddings.local.image.tag": "latest" })).toThrow(/tag|pattern/);
     expect(deployment?.spec.replicas).toBe(1);
+    expect(() => helm({ "embeddings.local.image.digest": "" })).toThrow(/digest|pattern/);
   });
 
   it("serves the model under its gateway name, embeddings only, without the web UI", () => {
@@ -147,6 +148,15 @@ describe("embeddings.local (enabled by default)", () => {
     const np = find(air, "NetworkPolicy", "kobe-embeddings");
     expect(np?.spec.policyTypes).toEqual(["Ingress", "Egress"]);
     expect(np?.spec.egress ?? []).toEqual([]);
+  });
+
+  it("has no egress once download is off on its own PVC (after the first start)", () => {
+    const off = render({ "embeddings.local.model.download": "false" });
+    expect(find(off, "PersistentVolumeClaim", "kobe-embeddings")).toBeDefined();
+    const np = find(off, "NetworkPolicy", "kobe-embeddings");
+    expect(np?.spec.policyTypes).toEqual(["Ingress", "Egress"]);
+    expect(np?.spec.egress ?? []).toEqual([]);
+    expect(find(ms, "NetworkPolicy", "kobe-embeddings")?.spec.egress.length).toBeGreaterThan(0);
   });
 
   it("admits only Bifrost, on the server port", () => {

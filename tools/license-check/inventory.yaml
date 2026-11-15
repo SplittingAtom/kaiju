@@ -382,8 +382,21 @@ sections:
         images: [ghcr.io/ggml-org/llama.cpp]
         reason: >-
           The in-cluster CPU embedding server (KOBE-659), pulled unmodified; Kobe talks to it only
-          through Bifrost over HTTP. The image's Ubuntu base also carries distribution packages
-          (curl, ffmpeg) under their own licenses; none is linked into Kobe.
+          through Bifrost over HTTP. The image's distribution packages are the next row.
+      - id: llama-cpp-image-packages
+        pending: gate review
+        component: Ubuntu distribution packages in the llama.cpp server image (ffmpeg, curl)
+        version: as shipped in `server-b12004` (Ubuntu base)
+        license: GPL-2.0-or-later AND LGPL-2.1-or-later AND curl
+        use: optional, separate process (inside the `embeddings.local` image; not run by Kobe)
+        where: cluster (the embedding service's image)
+        link: https://ffmpeg.org/legal.html
+        images: []
+        reason: >-
+          The upstream image installs ffmpeg (built with --enable-gpl) and curl from Ubuntu. They
+          are separate, unmodified programs in an image Kobe pulls as is; Kobe never runs ffmpeg
+          and never links either (the chart's init container only calls the curl binary to fetch
+          the model). curl itself is under the curl licence (MIT-style).
       - id: nomic-embed-text
         component: nomic-embed-text v1.5 model weights (GGUF, `nomic-ai/nomic-embed-text-v1.5-GGUF`)
         version: f16, commit 0188c9bf409793f810680a5a431e7b899c46104c
@@ -672,7 +685,7 @@ chartValues:
   egressProxy: first-party
   modelGateway: first-party
   bifrost: [bifrost]
-  embeddings: [llama-cpp, nomic-embed-text]
+  embeddings: [llama-cpp, llama-cpp-image-packages, nomic-embed-text]
   postgres: [cnpg, postgres]
   retention: first-party
   branding: first-party

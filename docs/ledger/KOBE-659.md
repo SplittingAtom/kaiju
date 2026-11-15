@@ -35,7 +35,9 @@
   `persistence.existingClaim`) and fails with a clear log line otherwise. NetworkPolicy egress:
   DNS + public 443 only while download is on (a pod-level policy can't scope it to the init
   container; HF's CDN has no stable IPs), none at all with download off; `networkPolicy.extraEgress`
-  for a private mirror.
+  for a private mirror. Install doc: turn download off after the first start (review fix).
+- **Review fixes:** image digest required by the schema (test); test for download off on the
+  chart's own PVC (no egress).
 - **Ingress:** only Bifrost pods, port 8080 (not the shim, not the server, not sandboxes).
   Bifrost's restricted egress gains a matching rule when the service is on.
 - **Registration without gateway code:** Bifrost's config is owned by the server's sync (anything
@@ -62,8 +64,8 @@
   virtual key allows it today, so nothing but 409's path will be able to call it.
 - nomic-embed-text expects task prefixes (`search_query: ` / `search_document: `); 409's caller
   should add them (the server does not).
-- The llama.cpp image's Ubuntu base carries ffmpeg/curl packages (own licences, not linked);
-  noted in the inventory row and licensing.md.
+- Gate review: inventory row `llama-cpp-image-packages` (Ubuntu ffmpeg built --enable-gpl,
+  curl; separate unmodified programs, never run or linked by Kobe) is `pending: gate review`.
 
 ## Evidence (acceptance criteria → test or command output)
 
