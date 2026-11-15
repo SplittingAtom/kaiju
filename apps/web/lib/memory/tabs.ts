@@ -27,3 +27,13 @@ export function showTabInUrl(tab: MemoryTab): void {
   }
   window.history.replaceState(null, "", url);
 }
+
+/**
+ * The address of one saved memory (KOBE-399, the chat's "Open in Memory" chip): the Memories tab
+ * with `?item=<id>` (and `&scope=` when known), where it is shown first with Archive and Undo.
+ */
+export function memoryItemHref(id: string, scope?: string): string {
+  const params = new URLSearchParams({ item: id });
+  if (scope !== undefined) params.set("scope", scope);
+  return `${MEMORY_PAGE_HREF}?${params.toString()}`;
+}

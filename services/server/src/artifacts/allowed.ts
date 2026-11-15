@@ -18,6 +18,7 @@ export const BOUND_TOOLS = [
   "share_file",
   "remember",
   "recall",
+  "show_memory_item",
   "commit_project",
   "save_skill_draft",
   "propose_file_edit",

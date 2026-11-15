@@ -12,6 +12,7 @@ import {
   TOOLS_TIMEOUT_MS,
   type MemoryPutAnswer,
   type MemoryReadAnswer,
+  type MemoryShowAnswer,
   type SharedFileFields,
   type ToolsError,
   type ToolsRequest,
@@ -26,6 +27,7 @@ import {
 export type ToolsOutcome =
   | MemoryPutAnswer
   | MemoryReadAnswer
+  | MemoryShowAnswer
   | ProjectCommitAnswer
   | SkillDraftAnswer
   | NotebookRunAnswer

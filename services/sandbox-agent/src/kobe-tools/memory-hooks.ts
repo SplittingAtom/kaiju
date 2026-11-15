@@ -1,13 +1,19 @@
 import { readFileSync } from "node:fs";
 import { neutralizeMemoryMarkers } from "./memory-fence.js";
 import { sanitizeRememberInput } from "./memory-tools.js";
-import { TOOL_COMMIT_PROJECT, TOOL_RECALL, TOOL_REMEMBER } from "./protocol.js";
+import {
+  TOOL_COMMIT_PROJECT,
+  TOOL_RECALL,
+  TOOL_REMEMBER,
+  TOOL_SHOW_MEMORY_ITEM,
+} from "./protocol.js";
 
 /**
  * Per-run memory and project wiring of the kobe-tools extension (KOBE-157, review of #205). The agent writes the
  * run's memory file (`KOBE_MEMORY_FILE`, memory/context-file.ts) before every prompt, so a change
  * to memory never restarts Pi:
- *  - `tools`: whether memory is on for this run; `remember` / `recall` are active only then;
+ *  - `tools`: whether memory is on for this run; `remember` / `recall` / `show_memory_item` are
+ *    active only then;
  *  - `known` / `picks` (KOBE-383): "What Kobe knows", the stable part first and the per-message
  *    picks after the project instructions; added with or without Notes (Policy reaches every agent);
  *  - `text`: the run's memory section (already sanitised, capped and fenced by the agent), added
@@ -96,7 +102,9 @@ export interface MemoryHooksApi {
   setActiveTools(names: string[]): void;
 }
 
-const MEMORY_TOOL_NAMES = [TOOL_REMEMBER, TOOL_RECALL];
+const MEMORY_TOOL_NAMES = [TOOL_REMEMBER, TOOL_RECALL, TOOL_SHOW_MEMORY_ITEM];
+/** Tool results whose memory blocks are real, with their own fresh nonce (left as they are). */
+const FENCED_RESULT_TOOLS: readonly string[] = [TOOL_RECALL, TOOL_SHOW_MEMORY_ITEM];
 
 export function installMemoryHooks(
   pi: MemoryHooksApi,
@@ -172,7 +180,8 @@ export function conflictNoteMessage(text: string): Record<string, unknown> {
 
 /**
  * Pi's messages with every tool result's text put through `neutralizeMemoryMarkers`, except
- * `recall` (its blocks are real, sanitised memory with their own fresh nonce). The same array when
+ * `recall` and `show_memory_item` (their blocks are real, sanitised memory with their own fresh
+ * nonce). The same array when
  * nothing changed, so the request is untouched.
  */
 export function neutralizeToolResults(messages: readonly unknown[]): unknown[] {
@@ -180,7 +189,8 @@ export function neutralizeToolResults(messages: readonly unknown[]): unknown[] {
   const out = messages.map((message) => {
     if (typeof message !== "object" || message === null) return message;
     const m = message as Record<string, unknown>;
-    if (m.role !== "toolResult" || m.toolName === TOOL_RECALL) return message;
+    if (m.role !== "toolResult" || FENCED_RESULT_TOOLS.includes(m.toolName as string))
+      return message;
     const content = cleanContent(m.content);
     if (content === m.content) return message;
     changed = true;

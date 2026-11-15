@@ -160,6 +160,7 @@ describe("server-side tool registry", () => {
         "remember",
         "save_skill_draft",
         "share_file",
+        "show_memory_item",
         "tool_search",
         "update_artifact",
         "write",

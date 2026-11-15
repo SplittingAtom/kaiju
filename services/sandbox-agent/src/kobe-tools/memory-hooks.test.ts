@@ -119,13 +119,14 @@ describe("installMemoryHooks", () => {
     const pi = fakePi(["bash", "remember", "recall"]);
     installMemoryHooks(pi.api, "/f", () => JSON.stringify(content));
     pi.fire("input");
-    expect(pi.active()).toEqual(["bash", "remember", "recall"]);
+    const memoryTools = ["remember", "recall", "show_memory_item"];
+    expect(pi.active()).toEqual(["bash", ...memoryTools]);
     content = { tools: false, text: "", project: "", viewing: "" };
     pi.fire("input");
     expect(pi.active()).toEqual(["bash"]);
     content = { tools: true, text: "" };
     pi.fire("input");
-    expect(pi.active()).toEqual(["bash", "remember", "recall"]);
+    expect(pi.active()).toEqual(["bash", ...memoryTools]);
   });
 
   it("adds the run's text to that run's system prompt, and nothing when empty", () => {
@@ -341,6 +342,9 @@ describe("tool results never carry a working memory marker (KOBE-383 review M1)"
     expect(
       neutralizeToolResults([{ role: "toolResult", toolName: "recall", content: copy }]),
     ).toEqual([{ role: "toolResult", toolName: "recall", content: copy }]);
+    // KOBE-399: show_memory_item's block is real too.
+    const shown = [{ role: "toolResult", toolName: "show_memory_item", content: copy }];
+    expect(neutralizeToolResults(shown)).toBe(shown);
     const clean = [{ role: "toolResult", toolName: "bash", content: "ok" }];
     expect(neutralizeToolResults(clean)).toBe(clean);
     const pi = fakePi([]);
