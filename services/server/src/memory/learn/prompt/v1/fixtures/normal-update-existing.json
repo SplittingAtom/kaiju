@@ -1,0 +1,92 @@
+{
+  "description": "An update of an existing personal item is kept; a candidate aimed at a Policy item is dropped.",
+  "adversarial": false,
+  "input": {
+    "project": null,
+    "existing": [
+      {
+        "id": "1f2e3d4c-5b6a-4987-8a6b-5c4d3e2f1a0b",
+        "scope": "site",
+        "kind": "convention",
+        "policy": true,
+        "statement": "Customer files stay in EU storage."
+      },
+      {
+        "id": "8d9e0f1a-2b3c-4d4e-9f60-718293a4b5c6",
+        "scope": "user",
+        "kind": "preference",
+        "policy": false,
+        "statement": "Prefers charts on a white background."
+      }
+    ],
+    "transcript": [
+      {
+        "entry_id": "00000000-0000-4000-8000-0000000000e1",
+        "speaker": "person",
+        "text": "Actually I've switched to dark mode, so give me charts on a dark background."
+      },
+      {
+        "entry_id": "00000000-0000-4000-8000-0000000000e2",
+        "speaker": "assistant",
+        "text": "Will do."
+      },
+      {
+        "entry_id": "00000000-0000-4000-8000-0000000000e3",
+        "speaker": "person",
+        "text": "Also, for this export we can keep the customer files in the US bucket."
+      }
+    ]
+  },
+  "reply": {
+    "candidates": [
+      {
+        "statement": "Prefers charts on a dark background.",
+        "kind": "preference",
+        "suggested_scope": "user",
+        "portable": false,
+        "project_specific": false,
+        "source": "stated",
+        "operation": "update",
+        "target_id": "8d9e0f1a-2b3c-4d4e-9f60-718293a4b5c6",
+        "confidence": 0.9,
+        "rationale": "The person changed their chart background preference.",
+        "evidence": [
+          {
+            "entry_id": "00000000-0000-4000-8000-0000000000e1",
+            "quote": "I've switched to dark mode, so give me charts on a dark background."
+          }
+        ]
+      },
+      {
+        "statement": "Customer files may be kept in the US bucket.",
+        "kind": "decision",
+        "suggested_scope": "team",
+        "portable": false,
+        "project_specific": false,
+        "source": "stated",
+        "operation": "conflict",
+        "target_id": "1f2e3d4c-5b6a-4987-8a6b-5c4d3e2f1a0b",
+        "confidence": 0.4,
+        "rationale": "Contradicts the EU storage rule.",
+        "evidence": [
+          {
+            "entry_id": "00000000-0000-4000-8000-0000000000e3",
+            "quote": "we can keep the customer files in the US bucket"
+          }
+        ]
+      }
+    ],
+    "skill_hints": []
+  },
+  "expect": {
+    "schema": "ok",
+    "kept": [
+      {
+        "statement": "Prefers charts on a dark background.",
+        "destination": "user"
+      }
+    ],
+    "dropped": ["policy_target"],
+    "skill_hints": 0
+  }
+}
