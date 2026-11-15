@@ -52,6 +52,14 @@ Server-only, no migrations, no protocol change. `services/server/src/memory/lear
 - **Version bump rule:** editing `SYSTEM`/`INSTRUCTIONS` fails the sha256 test; copy to `v2/`,
   record new fixtures, point `prompt/index.ts` at it.
 
+## Review fixes (coordinator, Opus review)
+
+- Personal data is checked at every scope (a colleague's details never become a personal
+  memory); fixture `adversarial-third-party-personal-user`.
+- `entry_id` must be a uuid and ids (entries, items) unique; otherwise `invalid_input`.
+- A target must be one of the items the prompt listed (`listedExistingItems`, ≤100).
+- The instruction lint also runs on rationale (drop) and skill hints (left out).
+
 ## Open questions (for Chris or the coordinator)
 
 - Capture real glm-5.3-flash replies for these inputs on gate1 once KOBE-393 can run a pass,
@@ -66,9 +74,9 @@ Server-only, no migrations, no protocol change. `services/server/src/memory/lear
 - **ac-1** `prompt/v1/prompt.ts` next to `prompt/v1/fixtures/*.json`; `fixtures.test.ts` pins the
   bytes (`prompt.sha256`); `build.test.ts` checks version, order, byte-stable static messages,
   nonce placement, caps, valid `serverCallRequestSchema` body.
-- **ac-2** `fixtures.test.ts` replays 10 fixtures through `parseMemoryExtractorOutput` +
+- **ac-2** `fixtures.test.ts` replays 11 fixtures through `parseMemoryExtractorOutput` +
   `screenExtractorOutput` with no model or keys (plain `vitest`, part of `pnpm test`).
 - **ac-3** Adversarial fixtures (injected tool output, agent hallucination, secret in chat,
-  third-party personal data, branch summary, site scope) keep no `team`/`project_notes`
+  third-party personal data at Workspace and personal scope, branch summary, site scope) keep no `team`/`project_notes`
   candidate; `normal-project-fact` comes back `project_notes` with `project_specific: true`.
-- `services/server` `vitest run src/memory/learn`: 42 passed. `pnpm verify` green (format, lint, typecheck, all tests, license, hygiene; no DB tests: no migrations).
+- `services/server` `vitest run src/memory/learn`: 49 passed. `pnpm verify` green (format, lint, typecheck, all tests, license, hygiene; no DB tests: no migrations).

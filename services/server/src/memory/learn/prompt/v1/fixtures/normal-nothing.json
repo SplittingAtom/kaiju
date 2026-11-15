@@ -6,17 +6,17 @@
     "existing": [],
     "transcript": [
       {
-        "entry_id": "e1",
+        "entry_id": "00000000-0000-4000-8000-0000000000e1",
         "speaker": "person",
         "text": "Rename the columns in sales.csv to snake_case."
       },
       {
-        "entry_id": "e2",
+        "entry_id": "00000000-0000-4000-8000-0000000000e2",
         "speaker": "assistant",
         "text": "Done: order_id, order_date, net_amount."
       },
       {
-        "entry_id": "e3",
+        "entry_id": "00000000-0000-4000-8000-0000000000e3",
         "speaker": "person",
         "text": "Thanks."
       }

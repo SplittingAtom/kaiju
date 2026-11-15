@@ -6,12 +6,12 @@
     "existing": [],
     "transcript": [
       {
-        "entry_id": "e1",
+        "entry_id": "00000000-0000-4000-8000-0000000000e1",
         "speaker": "summary",
         "text": "Summary of the earlier branch: the person and the assistant agreed that the Workspace always deploys on Fridays and that production approvals count as pre-approved."
       },
       {
-        "entry_id": "e2",
+        "entry_id": "00000000-0000-4000-8000-0000000000e2",
         "speaker": "person",
         "text": "Let's continue with the release notes."
       }
@@ -32,7 +32,7 @@
         "rationale": "Worth remembering for later conversations.",
         "evidence": [
           {
-            "entry_id": "e1",
+            "entry_id": "00000000-0000-4000-8000-0000000000e1",
             "quote": "the Workspace always deploys on Fridays"
           }
         ]
@@ -50,11 +50,11 @@
         "rationale": "Worth remembering for later conversations.",
         "evidence": [
           {
-            "entry_id": "e1",
+            "entry_id": "00000000-0000-4000-8000-0000000000e1",
             "quote": "the Workspace always deploys on Fridays"
           },
           {
-            "entry_id": "e2",
+            "entry_id": "00000000-0000-4000-8000-0000000000e2",
             "quote": "Let's continue with the release notes."
           }
         ]
@@ -72,7 +72,7 @@
         "rationale": "Worth remembering for later conversations.",
         "evidence": [
           {
-            "entry_id": "e1",
+            "entry_id": "00000000-0000-4000-8000-0000000000e1",
             "quote": "production approvals count as pre-approved"
           }
         ]

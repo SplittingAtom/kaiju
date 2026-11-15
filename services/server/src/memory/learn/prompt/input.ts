@@ -1,6 +1,5 @@
 import {
   SEMANTIC_MEMORY_STATEMENT_MAX,
-  idSchema,
   semanticMemoryKindSchema,
   semanticMemoryScopeSchema,
   uuidSchema,
@@ -30,7 +29,8 @@ export const extractorSpeakerSchema = z.enum(EXTRACTOR_SPEAKERS);
 export type ExtractorSpeaker = z.infer<typeof extractorSpeakerSchema>;
 
 export const extractorTranscriptEntrySchema = z.strictObject({
-  entry_id: idSchema,
+  /** The thread entry's uuid: strict, so it cannot carry header syntax into the prompt. */
+  entry_id: uuidSchema,
   speaker: extractorSpeakerSchema,
   text: z.string().min(1),
 });
@@ -50,10 +50,19 @@ export const extractorExistingItemSchema = z.strictObject({
 });
 export type ExtractorExistingItem = z.infer<typeof extractorExistingItemSchema>;
 
+const unique = (keys: readonly string[]): boolean => new Set(keys).size === keys.length;
+
 export const extractorPromptInputSchema = z.strictObject({
   /** The thread's project (its name), or null when the thread is in no project. */
   project: z.strictObject({ name: z.string().min(1).max(200) }).nullable(),
-  existing: z.array(extractorExistingItemSchema),
-  transcript: z.array(extractorTranscriptEntrySchema).min(1),
+  existing: z
+    .array(extractorExistingItemSchema)
+    .refine((items) => unique(items.map((i) => i.id)), { message: "existing item ids are unique" }),
+  transcript: z
+    .array(extractorTranscriptEntrySchema)
+    .min(1)
+    .refine((entries) => unique(entries.map((e) => e.entry_id)), {
+      message: "transcript entry ids are unique",
+    }),
 });
 export type ExtractorPromptInput = z.infer<typeof extractorPromptInputSchema>;

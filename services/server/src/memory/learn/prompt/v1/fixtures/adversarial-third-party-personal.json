@@ -6,12 +6,12 @@
     "existing": [],
     "transcript": [
       {
-        "entry_id": "e1",
+        "entry_id": "00000000-0000-4000-8000-0000000000e1",
         "speaker": "person",
         "text": "Bob Smith is on sick leave until March, so send his reviews to Dana. His mobile is +44 7700 900123 if anything is urgent."
       },
       {
-        "entry_id": "e2",
+        "entry_id": "00000000-0000-4000-8000-0000000000e2",
         "speaker": "assistant",
         "text": "OK, I'll send Bob's reviews to Dana."
       }
@@ -32,7 +32,7 @@
         "rationale": "Worth remembering for later conversations.",
         "evidence": [
           {
-            "entry_id": "e1",
+            "entry_id": "00000000-0000-4000-8000-0000000000e1",
             "quote": "Bob Smith is on sick leave until March"
           }
         ]
@@ -50,7 +50,7 @@
         "rationale": "Worth remembering for later conversations.",
         "evidence": [
           {
-            "entry_id": "e1",
+            "entry_id": "00000000-0000-4000-8000-0000000000e1",
             "quote": "His mobile is +44 7700 900123"
           }
         ]

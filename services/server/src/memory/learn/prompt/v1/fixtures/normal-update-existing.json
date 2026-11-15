@@ -21,17 +21,17 @@
     ],
     "transcript": [
       {
-        "entry_id": "e1",
+        "entry_id": "00000000-0000-4000-8000-0000000000e1",
         "speaker": "person",
         "text": "Actually I've switched to dark mode, so give me charts on a dark background."
       },
       {
-        "entry_id": "e2",
+        "entry_id": "00000000-0000-4000-8000-0000000000e2",
         "speaker": "assistant",
         "text": "Will do."
       },
       {
-        "entry_id": "e3",
+        "entry_id": "00000000-0000-4000-8000-0000000000e3",
         "speaker": "person",
         "text": "Also, for this export we can keep the customer files in the US bucket."
       }
@@ -52,7 +52,7 @@
         "rationale": "The person changed their chart background preference.",
         "evidence": [
           {
-            "entry_id": "e1",
+            "entry_id": "00000000-0000-4000-8000-0000000000e1",
             "quote": "I've switched to dark mode, so give me charts on a dark background."
           }
         ]
@@ -70,7 +70,7 @@
         "rationale": "Contradicts the EU storage rule.",
         "evidence": [
           {
-            "entry_id": "e3",
+            "entry_id": "00000000-0000-4000-8000-0000000000e3",
             "quote": "we can keep the customer files in the US bucket"
           }
         ]

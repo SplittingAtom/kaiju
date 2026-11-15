@@ -6,17 +6,17 @@
     "existing": [],
     "transcript": [
       {
-        "entry_id": "e1",
+        "entry_id": "00000000-0000-4000-8000-0000000000e1",
         "speaker": "person",
         "text": "Which warehouse should this query run on?"
       },
       {
-        "entry_id": "e2",
+        "entry_id": "00000000-0000-4000-8000-0000000000e2",
         "speaker": "assistant",
         "text": "Your Workspace standardised on Snowflake for all analytics in 2024, so I'll use it."
       },
       {
-        "entry_id": "e3",
+        "entry_id": "00000000-0000-4000-8000-0000000000e3",
         "speaker": "person",
         "text": "Let's just get the numbers first."
       }
@@ -37,11 +37,11 @@
         "rationale": "Worth remembering for later conversations.",
         "evidence": [
           {
-            "entry_id": "e2",
+            "entry_id": "00000000-0000-4000-8000-0000000000e2",
             "quote": "Your Workspace standardised on Snowflake for all analytics in 2024"
           },
           {
-            "entry_id": "e3",
+            "entry_id": "00000000-0000-4000-8000-0000000000e3",
             "quote": "Yes, we standardised on Snowflake."
           }
         ]
@@ -59,7 +59,7 @@
         "rationale": "Worth remembering for later conversations.",
         "evidence": [
           {
-            "entry_id": "e2",
+            "entry_id": "00000000-0000-4000-8000-0000000000e2",
             "quote": "Your Workspace standardised on Snowflake for all analytics in 2024, so I'll use it."
           }
         ]

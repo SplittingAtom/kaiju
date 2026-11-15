@@ -6,23 +6,23 @@
     "existing": [],
     "transcript": [
       {
-        "entry_id": "e1",
+        "entry_id": "00000000-0000-4000-8000-0000000000e1",
         "speaker": "person",
         "text": "Can you summarise last month's revenue by region? And please always give me amounts in EUR with thousands separators, I read everything in euros."
       },
       {
-        "entry_id": "e2",
+        "entry_id": "00000000-0000-4000-8000-0000000000e2",
         "speaker": "assistant",
         "text": "Here is the summary in EUR. North: €1,204,000; South: €880,500. One question: does your Workspace close the books on the third working day of each month? The ledger timestamps suggest so."
       },
       {
-        "entry_id": "e3",
+        "entry_id": "00000000-0000-4000-8000-0000000000e3",
         "speaker": "person",
         "text": "Yes, the close is on the third working day, every month."
       }
     ]
   },
-  "reply": "```json\n{\n  \"candidates\": [\n    {\n      \"statement\": \"Prefers amounts in EUR with thousands separators.\",\n      \"kind\": \"preference\",\n      \"suggested_scope\": \"user\",\n      \"portable\": true,\n      \"project_specific\": false,\n      \"source\": \"stated\",\n      \"operation\": \"add\",\n      \"target_id\": null,\n      \"confidence\": 0.9,\n      \"rationale\": \"The person asked for EUR explicitly and said they read everything in euros.\",\n      \"evidence\": [\n        {\n          \"entry_id\": \"e1\",\n          \"quote\": \"please always give me amounts in EUR with thousands separators\"\n        }\n      ]\n    },\n    {\n      \"statement\": \"The Workspace closes the books on the third working day of each month.\",\n      \"kind\": \"fact\",\n      \"suggested_scope\": \"team\",\n      \"portable\": false,\n      \"project_specific\": false,\n      \"source\": \"confirmed\",\n      \"operation\": \"add\",\n      \"target_id\": null,\n      \"confidence\": 0.8,\n      \"rationale\": \"The assistant asked and the person confirmed the close date.\",\n      \"evidence\": [\n        {\n          \"entry_id\": \"e2\",\n          \"quote\": \"does your Workspace close the books on the third working day of each month?\"\n        },\n        {\n          \"entry_id\": \"e3\",\n          \"quote\": \"Yes, the close is on the third working day, every month.\"\n        }\n      ]\n    }\n  ],\n  \"skill_hints\": []\n}\n```",
+  "reply": "```json\n{\n  \"candidates\": [\n    {\n      \"statement\": \"Prefers amounts in EUR with thousands separators.\",\n      \"kind\": \"preference\",\n      \"suggested_scope\": \"user\",\n      \"portable\": true,\n      \"project_specific\": false,\n      \"source\": \"stated\",\n      \"operation\": \"add\",\n      \"target_id\": null,\n      \"confidence\": 0.9,\n      \"rationale\": \"The person asked for EUR explicitly and said they read everything in euros.\",\n      \"evidence\": [\n        {\n          \"entry_id\": \"00000000-0000-4000-8000-0000000000e1\",\n          \"quote\": \"please always give me amounts in EUR with thousands separators\"\n        }\n      ]\n    },\n    {\n      \"statement\": \"The Workspace closes the books on the third working day of each month.\",\n      \"kind\": \"fact\",\n      \"suggested_scope\": \"team\",\n      \"portable\": false,\n      \"project_specific\": false,\n      \"source\": \"confirmed\",\n      \"operation\": \"add\",\n      \"target_id\": null,\n      \"confidence\": 0.8,\n      \"rationale\": \"The assistant asked and the person confirmed the close date.\",\n      \"evidence\": [\n        {\n          \"entry_id\": \"00000000-0000-4000-8000-0000000000e2\",\n          \"quote\": \"does your Workspace close the books on the third working day of each month?\"\n        },\n        {\n          \"entry_id\": \"00000000-0000-4000-8000-0000000000e3\",\n          \"quote\": \"Yes, the close is on the third working day, every month.\"\n        }\n      ]\n    }\n  ],\n  \"skill_hints\": []\n}\n```",
   "expect": {
     "schema": "ok",
     "kept": [

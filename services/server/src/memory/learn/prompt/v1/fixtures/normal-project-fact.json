@@ -8,17 +8,17 @@
     "existing": [],
     "transcript": [
       {
-        "entry_id": "e1",
+        "entry_id": "00000000-0000-4000-8000-0000000000e1",
         "speaker": "person",
         "text": "For this budget project we use the April-to-March fiscal year, and the board deadline is 14 March."
       },
       {
-        "entry_id": "e2",
+        "entry_id": "00000000-0000-4000-8000-0000000000e2",
         "speaker": "assistant",
         "text": "Understood. I'll lay the model out April to March and plan back from 14 March."
       },
       {
-        "entry_id": "e3",
+        "entry_id": "00000000-0000-4000-8000-0000000000e3",
         "speaker": "person",
         "text": "Here's how I rebuild the forecast each week: export actuals, refresh the driver sheet, re-run the variance model, then send the deck to finance."
       }
@@ -39,7 +39,7 @@
         "rationale": "Holds for this project's model and deadlines only.",
         "evidence": [
           {
-            "entry_id": "e1",
+            "entry_id": "00000000-0000-4000-8000-0000000000e1",
             "quote": "For this budget project we use the April-to-March fiscal year"
           }
         ]
@@ -57,7 +57,7 @@
         "rationale": "A project deadline the person stated.",
         "evidence": [
           {
-            "entry_id": "e1",
+            "entry_id": "00000000-0000-4000-8000-0000000000e1",
             "quote": "the board deadline is 14 March"
           }
         ]

@@ -3,7 +3,11 @@ import {
   SERVER_CALL_RESPONSE_FORMATS,
   type ServerCallRequest,
 } from "@kobe/protocol";
-import type { ExtractorExistingItem, ExtractorPromptInput } from "./input.js";
+import {
+  extractorPromptInputSchema,
+  type ExtractorExistingItem,
+  type ExtractorPromptInput,
+} from "./input.js";
 
 /**
  * Builds the `memory_learn` call's four messages (KOBE-394, SM15), in this order:
@@ -40,8 +44,12 @@ export type ExtractorMessagesResult =
     }
   | {
       readonly ok: false;
-      /** `too_large`: over the purpose's message or body cap (KOBE-392 trims the transcript). */
-      readonly reason: "too_large" | "nonce_in_content";
+      /**
+       * `too_large`: over the purpose's message or body cap (KOBE-392 trims the transcript);
+       * `invalid_input`: fails {@link extractorPromptInputSchema} (an entry id that is not a
+       * uuid, a duplicate id), so no id can forge an entry header.
+       */
+      readonly reason: "too_large" | "nonce_in_content" | "invalid_input";
     };
 
 const itemLine = (item: ExtractorExistingItem): string =>
@@ -53,11 +61,16 @@ const itemLine = (item: ExtractorExistingItem): string =>
     statement: item.statement,
   });
 
-function contextMessage(input: ExtractorPromptInput, nonce: string): string {
-  const ordered = [
+/** The existing items the prompt lists: Policy first, at most {@link EXTRACTOR_MAX_EXISTING_ITEMS}. */
+export function listedExistingItems(input: ExtractorPromptInput): ExtractorExistingItem[] {
+  return [
     ...input.existing.filter((i) => i.policy),
     ...input.existing.filter((i) => !i.policy),
   ].slice(0, EXTRACTOR_MAX_EXISTING_ITEMS);
+}
+
+function contextMessage(input: ExtractorPromptInput, nonce: string): string {
+  const ordered = listedExistingItems(input);
   const project =
     input.project === null
       ? "Thread project: none (this thread is in no project; project_specific is always false)."
@@ -92,6 +105,8 @@ export function buildExtractorMessages(
 ): ExtractorMessagesResult {
   if (nonce.length < EXTRACTOR_NONCE_MIN_CHARS || !NONCE.test(nonce))
     throw new Error("extractor nonce must be at least 16 letters or digits");
+  if (!extractorPromptInputSchema.safeParse(input).success)
+    return { ok: false, reason: "invalid_input" };
   const data = [
     input.project?.name ?? "",
     ...input.existing.map((i) => i.statement),

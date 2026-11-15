@@ -7,6 +7,7 @@ import { findPersonalData } from "../checks/personal.js";
 import { lintInstructions } from "../checks/lint.js";
 import { findSecret } from "../checks/secrets.js";
 import { quoteFoundIn } from "../quote-normalise.js";
+import { listedExistingItems } from "./prompt/build.js";
 import type { ExtractorPromptInput, ExtractorSpeaker } from "./prompt/input.js";
 
 /**
@@ -21,14 +22,17 @@ import type { ExtractorPromptInput, ExtractorSpeaker } from "./prompt/input.js";
  * - `person_evidence_missing`: no quote comes from the person (an assistant claim, a tool result
  *   or a summary alone never makes a memory);
  * - `shared_evidence_not_person`: a Workspace candidate also quotes tool output or a summary;
- * - `unknown_target` / `policy_target`: `target_id` is not a listed item, or is a Policy item;
+ * - `unknown_target` / `policy_target`: `target_id` is not one of the items the prompt listed
+ *   (`listedExistingItems`), or is a Policy item;
  * - `secret`: the statement, rationale or a quote holds a credential;
- * - `instruction`: the statement reads as an instruction to the agent (memory/checks lint);
- * - `personal_data`: a Workspace statement carries personal data;
+ * - `instruction`: the statement or rationale reads as an instruction to the agent
+ *   (memory/checks lint);
+ * - `personal_data`: the statement carries personal data (any scope: other people's details
+ *   never become memories, personal ones included);
  * - `project_without_project`: a Workspace candidate is project-specific but the thread has no
  *   project.
  *
- * Skill hints holding a credential are left out.
+ * Skill hints holding a credential or reading as an instruction are left out.
  *
  * A survivor gets its destination: `user`, `portable`, `team`, or `project_notes` for a
  * project-specific Workspace candidate (project facts go to the project's Notes, not Workspace
@@ -87,12 +91,14 @@ function evidenceReason(c: MemoryExtractorCandidate, ctx: Context): ScreenDropRe
   return null;
 }
 
+const instructs = (text: string): boolean => lintInstructions(text).length > 0;
+const unsafe = (text: string): boolean => findSecret(text) !== undefined || instructs(text);
+
 function contentReason(c: MemoryExtractorCandidate): ScreenDropReason | null {
   const texts = [c.statement, c.rationale, ...c.evidence.map((e) => e.quote)];
   if (texts.some((t) => findSecret(t) !== undefined)) return "secret";
-  if (lintInstructions(c.statement).length > 0) return "instruction";
-  if (c.suggested_scope === "team" && findPersonalData(c.statement).length > 0)
-    return "personal_data";
+  if ([c.statement, c.rationale].some(instructs)) return "instruction";
+  if (findPersonalData(c.statement).length > 0) return "personal_data";
   return null;
 }
 
@@ -121,7 +127,7 @@ export function screenExtractorOutput(
 ): ScreenResult {
   const ctx: Context = {
     entries: new Map(input.transcript.map((e) => [e.entry_id, e])),
-    items: new Map(input.existing.map((i) => [i.id, i])),
+    items: new Map(listedExistingItems(input).map((i) => [i.id, i])),
     hasProject: input.project !== null,
   };
   const kept: ScreenedCandidate[] = [];
@@ -131,9 +137,7 @@ export function screenExtractorOutput(
     if (v.ok) kept.push({ candidate, destination: v.destination });
     else dropped.push({ index, reason: v.reason });
   });
-  // A skill hint is shown to the author too: one carrying a credential is left out.
-  const skill_hints = output.skill_hints.filter(
-    (h) => findSecret(h.title) === undefined && findSecret(h.summary) === undefined,
-  );
+  // A skill hint is shown to the author too: one carrying a credential or an order is left out.
+  const skill_hints = output.skill_hints.filter((h) => !unsafe(h.title) && !unsafe(h.summary));
   return { kept, dropped, skill_hints };
 }
