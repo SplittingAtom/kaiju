@@ -142,7 +142,7 @@ export function installMemoryHooks(
     pi.setActiveTools(state().tools ? [...active, ...MEMORY_TOOL_NAMES] : active);
   };
   pi.on("input", syncTools as never);
-  // KOBE-658: picks placed in messages. Each run's picks note is bound to the run's user message
+  // KOBE-658: picks (and the viewed file and sync conflicts) placed in messages. Each run's note is bound to the run's user message
   // (by its timestamp: Pi creates the message right after `before_agent_start`) and re-sent before
   // it on every later request, byte for byte, so the system prompt and the history stay cacheable.
   // Held in this process only, never in the session (no memory text in thread entries): a new Pi
@@ -153,10 +153,15 @@ export function installMemoryHooks(
     // Stable first, so the provider caches the longest prefix (KOBE-383, Q6): What Kobe knows'
     // stable part, Notes, project instructions; then what changes per message.
     const { known, text, project, held, picks, picksPlacement, viewing, conflicts } = state();
-    const inPrompt = picksPlacement === "system" ? picks : "";
+    // KOBE-658: outside `system` everything that changes per message (picks, the viewed file,
+    // sync conflicts) goes before the run's user message, so the system prompt stays byte-stable.
+    const perMessage = [picks, viewing, conflicts].filter((part) => part !== "");
+    const inMessage = picksPlacement !== "system";
     pending =
-      picksPlacement !== "system" && picks !== "" ? { text: picks, since: Date.now() } : undefined;
-    const parts = [known, text, project, held, inPrompt, viewing, conflicts].filter(
+      inMessage && perMessage.length > 0
+        ? { text: perMessage.join("\n\n"), since: Date.now() }
+        : undefined;
+    const parts = [known, text, project, held, ...(inMessage ? [] : perMessage)].filter(
       (part) => part !== "",
     );
     return parts.length === 0

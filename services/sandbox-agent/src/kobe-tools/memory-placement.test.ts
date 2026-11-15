@@ -70,7 +70,28 @@ function conversation(placement: SemanticMemoryPlacement | undefined) {
   const transcript: Msg[] = [];
   let clock = 1_000;
   const turn = (i: number) => {
-    fileText = memoryFileJson(memoryRunFileContent(memory(placement, i), NONCE));
+    // The viewed file changes every turn; a sync conflict arrives on odd turns.
+    const viewing = {
+      path: `docs/file-${i}.md`,
+      sha256: String(i % 10).repeat(64),
+      size: 9,
+      content: `VIEWED-${i}`,
+      truncated: false,
+    };
+    const conflicts =
+      i % 2 === 1
+        ? [
+            {
+              path: `docs/n${i}.md`,
+              conflict_path: `docs/n${i}.conflict-20261023T120000Z.md`,
+              member_sha256: "a".repeat(64),
+              agent_sha256: "b".repeat(64),
+            },
+          ]
+        : undefined;
+    fileText = memoryFileJson(
+      memoryRunFileContent(memory(placement, i), NONCE, undefined, viewing, conflicts),
+    );
     const started = handlers.get("before_agent_start")?.({ systemPrompt: "PI" } as never) as
       { systemPrompt?: string } | undefined;
     clock = Math.max(clock + 1, Date.now());
@@ -93,6 +114,9 @@ describe("memory placement through kobe-tools (KOBE-658 ac-2)", () => {
     const one = c.turn(0);
     const two = c.turn(1);
     expect(one.system).toContain("PICK-ONE");
+    // Today's behaviour: the viewed file and conflicts stay in the system prompt too.
+    expect(two.system).toContain("VIEWED-1");
+    expect(two.system).toContain("conflict-2026");
     expect(two.system).toContain("PICK-TWO");
     expect(two.system).not.toBe(one.system);
     expect(blocks(two.request)).toEqual([]);
@@ -108,7 +132,14 @@ describe("memory placement through kobe-tools (KOBE-658 ac-2)", () => {
         expect(t.system).toContain("POLICY-1");
         expect(t.system).toContain("PINNED-1");
         expect(t.system).not.toContain("PICK-");
+        // The viewed file and sync conflicts change per message: never in the system prompt.
+        expect(t.system).not.toContain("VIEWED-");
+        expect(t.system).not.toContain("conflict-2026");
       }
+      // They travel in the note before the run's message instead.
+      const last = blocks(turns[3]?.request ?? []).at(-1);
+      expect(String(last?.content)).toContain("VIEWED-3");
+      expect(String(last?.content)).toContain("docs/n3.conflict-20261023T120000Z.md");
       if (placement === "stable_plus_delta") expect(turns[0]?.system).toContain("HELD-ONE");
     },
   );
@@ -153,10 +184,12 @@ describe("memory placement through kobe-tools (KOBE-658 ac-2)", () => {
     ).not.toContain("HELD-ONE");
   });
 
-  it("tool_only: no block anywhere", () => {
+  it("tool_only: no picks anywhere (the note carries only the viewed file and conflicts)", () => {
     const c = conversation("tool_only");
     c.turn(0);
-    expect(blocks(c.turn(1).request)).toEqual([]);
+    const notes = blocks(c.turn(1).request).map((b) => String(b.content));
+    expect(notes).toHaveLength(2);
+    for (const n of notes) expect(n).not.toContain(PICKS_HEADER);
   });
 
   it("an old server (no placement) keeps KOBE-383's behaviour: picks in the system prompt", () => {

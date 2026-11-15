@@ -28,8 +28,14 @@
   byte for byte. A new Pi process (sandbox wake, launch change) loses older notes: one uncached
   request, like the per-process fence key. Capped at 256 notes per Pi.
 - The note goes **before** the user message (the person's text stays last).
-- Viewed file and sync conflicts stay in the system prompt (only the picks move; gate-7a's
-  proposal also named them, left for a follow-up if the data asks for it).
+- Coordinator 2026-11-15: in every mode but `system` the viewed file and sync conflicts join the
+  picks in the per-message note (same binding, never stored); `tool_only` too (no picks). A run
+  with no semantic memory at all (Site master off) has no placement and keeps them in the prompt.
+- Audit of the rest of the system prompt: Pi's base prompt has no date/time; cwd, skills, tool
+  guidance and the agent addendum (written once per launch) are stable; the fence nonce is per
+  thread (rotates only with a new agent process); budget and file lists are not in it. The Notes
+  index section changes only when notes change (after `remember` or an edit), not per turn: left.
+- Coordinator accepted: notes kept in process memory, held-set refresh on edit, 768 B overhead.
 - With picks in messages the preamble says where blocks count ("here and in a 'What Kobe knows
   for this message' note"; Policy only in the system prompt), and kobe-tools neutralises memory
   markers in user messages for the request (as tool results, KOBE-383 M1). `system` mode keeps
@@ -51,7 +57,6 @@
 ## Open questions (for Chris or the coordinator)
 
 - Default stays `latest_user_keep` until the gate1 numbers are in (ac-3).
-- Should the viewed file / sync conflicts also move out of the system prompt? Not done.
 
 ## Evidence (acceptance criteria → test or command output)
 
@@ -61,7 +66,7 @@
   `apps/web/components/admin/memory-switches.test.tsx` (select, tool_only hidden),
   `kobe-mcp/site-tools.test.ts` + `kobe-mcp-site.db.test.ts` (read tool contract).
 - ac-2: `services/sandbox-agent/src/kobe-tools/memory-placement.test.ts` (real render → real file
-  JSON → hooks, 4 turns: system prompt byte-identical in keep/strip/stable_plus_delta/tool_only,
+  JSON → hooks, 4 turns with picks, viewed file and a sync conflict changing: system prompt byte-identical in keep/strip/stable_plus_delta/tool_only,
   Policy and pinned in it; keep is a request prefix; strip; delta), `memory/semantic-placement.test.ts`
   (fences, one header per part, cap across parts, server byte count holds per mode),
   `memory-selection.db.test.ts` (records equal the payload per run incl. held set; redelivery).

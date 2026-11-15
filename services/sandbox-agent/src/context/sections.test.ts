@@ -251,11 +251,13 @@ describe("context sections (KOBE-470)", () => {
     const sections = sectionsOf([
       { role: "user", content: [{ type: "text", text: note }] },
       { role: "custom", customType: "kobe-memory-picks", content: note },
+      { role: "user", content: `${VIEWING_HEADER}\nfile` },
       { role: "user", content: "hi" },
     ]);
     expect(kinds(sections)).toEqual([
       "memory:What Kobe knows for this message",
       "memory:What Kobe knows for this message",
+      "viewing_file:Viewed file",
       "user_message:User",
     ]);
   });

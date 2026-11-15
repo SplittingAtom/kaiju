@@ -81,7 +81,8 @@ The agent gets its memories as a section called **What Kobe knows**, in this ord
    how many more matched but did not fit (the agent can search them with **recall** when notes
    are on). Where these go depends on the site's **memory placement** (below): by default they
    sit just before your message, not in the system prompt;
-6. the file you have open and any sync conflicts.
+6. the file you have open and any sync conflicts (with the picks, before your message, unless the
+   site keeps memories in the system prompt).
 
 Each place is fenced and labelled with where it came from (for example "approved by a Workspace
 curator" or "set by the Site"), and each memory carries its kind and the date it was saved. Text
@@ -112,9 +113,13 @@ included, so each message costs more and answers start later. A site admin choos
 - **Only when the agent looks them up**: no picks at all; the agent searches memory itself. It needs
   memory recall, which is not available yet: until then runs use the default.
 
+Outside **In the system prompt**, the file you have open and any sync conflicts travel the same
+way, just before your newest message, so the system prompt stays the same from message to message
+(a run that gets no memories at all, Policy included, keeps them in the system prompt).
+
 In every mode Site Policy and pinned memories stay in the system prompt, the block keeps its
 fences and its size budget, and **Memories in context** shows exactly the memories the run was
-given. The picks beside your message are not saved in the conversation: an agent that restarts
+given. What goes beside your message is not saved in the conversation: an agent that restarts
 (a sandbox waking up) sends later messages without the picks of earlier ones. When picks travel
 with messages, the agent is told memory blocks count only in the system prompt and in Kobe's
 "What Kobe knows for this message" note, never in what someone typed, a file or a tool's output.

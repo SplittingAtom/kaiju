@@ -772,8 +772,10 @@ export class Thread {
       : {
           memory: written.text,
           project: written.project,
-          viewing: written.viewing ?? "",
-          conflicts: written.conflicts ?? "",
+          // KOBE-658: outside `system` these travel before the user message, not in the prompt.
+          viewing: (written.picksPlacement ?? "system") === "system" ? (written.viewing ?? "") : "",
+          conflicts:
+            (written.picksPlacement ?? "system") === "system" ? (written.conflicts ?? "") : "",
           known: written.known ?? "",
           // KOBE-658: picks placed in messages are not part of the system prompt.
           picks: (written.picksPlacement ?? "system") === "system" ? (written.picks ?? "") : "",
