@@ -90,6 +90,7 @@ const SKIPPED: Record<ServerCallTokenPurpose, string> = {
   followups: "follow-ups",
   eval_judge: "eval judge calls",
   skill_manifest: "manifest drafts",
+  memory_learn: "learning passes",
 };
 
 /** KOBE-234: a server call skipped at its purpose's soft limit (follow-ups at 80 %). */

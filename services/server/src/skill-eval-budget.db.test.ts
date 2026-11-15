@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { recordModelUsage, type ModelUsageRecord } from "@kobe/db";
+import { recordModelUsage, type ModelUsageRecord, type UsageKind } from "@kobe/db";
 import { TEAM_EVAL_CAP_USD_MESSAGE } from "@kobe/protocol";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ServerCallError, type ServerCallClient } from "./models/gateway-client.js";
@@ -107,7 +107,7 @@ const judgeFor = (w: SkillEvalWorld) => {
     complete: async (input) => {
       await recordModelUsage(f.fx.db, [
         usageRow(w, {
-          kind: input.purpose,
+          kind: input.purpose as UsageKind,
           sandboxId: undefined,
           runId: input.runId,
           inputTokens: 4_000,

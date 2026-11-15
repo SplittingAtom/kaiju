@@ -12,6 +12,7 @@ import {
   type ServerCallTokenPurpose,
 } from "@kobe/protocol";
 import { verifyServerCallToken, type SessionVerifyKeys } from "@kobe/session-token";
+import { isUsageKind } from "./usage/kind.js";
 import type { ServerCallRunClaim } from "@kobe/db";
 import { CREDENTIAL_HEADERS } from "./credentials.js";
 import type { CallLimiter, RequestRate } from "./limits.js";
@@ -126,6 +127,15 @@ export function authenticateServerCall(
       403,
       "server_call_route_refused",
       `A server call may only use POST ${SERVER_CALL_PATH}.`,
+    );
+  }
+  // A purpose the contract has but `run_usage.kind` cannot record yet (KOBE-390 `memory_learn`
+  // until its usage kind lands) is refused, so no call goes unbilled.
+  if (!isUsageKind(claims.purpose)) {
+    return refuse(
+      403,
+      "server_call_purpose_unsupported",
+      "This gateway does not accept that server call purpose yet.",
     );
   }
   return { ok: true, claims };

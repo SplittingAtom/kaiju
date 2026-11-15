@@ -156,4 +156,24 @@ export const EVENT_PAYLOAD_EXAMPLES: { readonly [T in KobeEventType]: KobeEventP
     thread_id: EXAMPLE_IDS.thread,
     suggestions: ["Break it down by month", "Compare with last year", "Chart the top five"],
   },
+  "memory.pass.progress": {
+    pass_id: EXAMPLE_IDS.pass,
+    thread_id: EXAMPLE_IDS.thread,
+    stage: "extracting",
+    entries: 42,
+  },
+  "memory.pass.completed": {
+    pass_id: EXAMPLE_IDS.pass,
+    thread_id: EXAMPLE_IDS.thread,
+    candidates: 3,
+    dropped: 1,
+    skill_hints: 0,
+  },
+  "memory.pass.failed": {
+    pass_id: EXAMPLE_IDS.pass,
+    thread_id: EXAMPLE_IDS.thread,
+    code: "learning_model_unavailable",
+    message: "No learning model is enabled for this Workspace.",
+    retryable: false,
+  },
 };

@@ -56,6 +56,9 @@ describe("Kobe Event Stream types", () => {
       "run.budget_stopped",
       "thread.updated",
       "thread.suggestions",
+      "memory.pass.progress",
+      "memory.pass.completed",
+      "memory.pass.failed",
     ]);
   });
 

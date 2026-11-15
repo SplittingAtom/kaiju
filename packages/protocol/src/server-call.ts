@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { NO_CONTROL_CHARS, THREAD_TITLE_MAX, uuidSchema } from "./common.js";
 import { gatewayModelSchema } from "./sandbox-wire/frames.js";
+import {
+  MEMORY_EXTRACTOR_RESPONSE_SCHEMA,
+  MEMORY_LEARN_SCHEMA_RETRIES,
+} from "./semantic-memory/learning.js";
 import { SKILL_EVAL_JUDGE_RESPONSE_SCHEMA } from "./skill-evals/judge.js";
 
 /**
@@ -46,12 +50,17 @@ export type ServerCallPurpose = z.infer<typeof serverCallPurposeSchema>;
  * Every purpose a server-call token may carry: the epilogue's, the eval judge's, and the skill
  * manifest's (`skill_manifest`, KOBE-564: a member asks Kobe to write a version's
  * `kobe.skill.yaml` with the model they chose; the only purpose a member starts, so it names no
- * thread or run: {@link RUNLESS_SERVER_CALL_PURPOSES}).
+ * thread or run: {@link RUNLESS_SERVER_CALL_PURPOSES}), and the learning pass's (`memory_learn`,
+ * KOBE-390, SM14/SM15: one extractor call per pass, bound to the leaf's last completed run and
+ * naming its pass in `pass_id`; semantic-memory/learning.ts). Append new purposes at the end, each
+ * with its `SERVER_CALL_LIMITS` entry (the compiler insists) and, if it asks for structured output,
+ * a `SERVER_CALL_RESPONSE_FORMATS` entry.
  */
 export const SERVER_CALL_TOKEN_PURPOSES = [
   ...SERVER_CALL_PURPOSES,
   "eval_judge",
   "skill_manifest",
+  "memory_learn",
 ] as const;
 export const serverCallTokenPurposeSchema = z.enum(SERVER_CALL_TOKEN_PURPOSES);
 export type ServerCallTokenPurpose = z.infer<typeof serverCallTokenPurposeSchema>;
@@ -110,6 +119,17 @@ export const SERVER_CALL_MESSAGE_MAX_CHARS = 16_000;
  * boolean and one or two sentences; the call has its own timeout (the eval runner keeps beating
  * meanwhile, and nobody else ends a beating execution).
  */
+/** One purpose's limits (see {@link SERVER_CALL_LIMITS}); the gateway reads these per token. */
+export interface ServerCallLimit {
+  readonly max_output_tokens: number;
+  readonly reasoning_max_output_tokens: number;
+  readonly timeout_ms: number;
+  readonly skip_at_percent: number;
+  readonly max_message_chars: number;
+  readonly max_body_bytes: number;
+  readonly temperature: number;
+}
+
 export const SERVER_CALL_LIMITS = {
   title: {
     max_output_tokens: 64,
@@ -149,18 +169,22 @@ export const SERVER_CALL_LIMITS = {
     max_body_bytes: 512 * 1024,
     temperature: 0.2,
   },
-} as const satisfies Record<
-  ServerCallTokenPurpose,
-  {
-    max_output_tokens: number;
-    reasoning_max_output_tokens: number;
-    timeout_ms: number;
-    skip_at_percent: number;
-    max_message_chars: number;
-    max_body_bytes: number;
-    temperature: number;
-  }
->;
+  // KOBE-390 (SM14/SM15): the learning pass's extractor. Its data is the thread up to the leaf
+  // (one message of up to 300,000 characters) plus the Workspace's related items; its answer is up
+  // to 20 candidates with evidence, so the output is the largest of any purpose. The server clamps
+  // the cap to the model's catalog `maxOutputTokens` ({@link serverCallOutputCapFor}). Temperature
+  // 0 (extraction, not prose); refused at 100 % of a budget line; a 30 s token like every purpose
+  // with a 60 s call timeout; one retry on a schema reject (MEMORY_LEARN_SCHEMA_RETRIES).
+  memory_learn: {
+    max_output_tokens: 8192,
+    reasoning_max_output_tokens: 16_384,
+    timeout_ms: 60_000,
+    skip_at_percent: 100,
+    max_message_chars: 300_000,
+    max_body_bytes: 384 * 1024,
+    temperature: 0,
+  },
+} as const satisfies Record<ServerCallTokenPurpose, ServerCallLimit>;
 
 /** Longest message any server call may send (each purpose's own cap is checked too). */
 const MAX_MESSAGE_CHARS = Math.max(
@@ -169,7 +193,8 @@ const MAX_MESSAGE_CHARS = Math.max(
 
 /**
  * The structured-output format a purpose may ask for (`response_format`), exactly this one: the
- * eval judge's verdict schema (KOBE-324 `SKILL_EVAL_JUDGE_RESPONSE_SCHEMA`). Other purposes send
+ * eval judge's verdict schema (KOBE-324 `SKILL_EVAL_JUDGE_RESPONSE_SCHEMA`) and the learning
+ * pass's extractor schema (KOBE-390 `MEMORY_EXTRACTOR_RESPONSE_SCHEMA`). Other purposes send
  * none. The server asks for it only where the provider is known to support it (KOBE-326).
  */
 export const SERVER_CALL_RESPONSE_FORMATS = {
@@ -179,6 +204,14 @@ export const SERVER_CALL_RESPONSE_FORMATS = {
       name: "skill_eval_verdict",
       strict: true,
       schema: SKILL_EVAL_JUDGE_RESPONSE_SCHEMA,
+    },
+  },
+  memory_learn: {
+    type: "json_schema",
+    json_schema: {
+      name: "memory_extractor",
+      strict: true,
+      schema: MEMORY_EXTRACTOR_RESPONSE_SCHEMA,
     },
   },
 } as const satisfies Partial<Record<ServerCallTokenPurpose, unknown>>;
@@ -195,6 +228,38 @@ export function serverCallOutputCap(purpose: ServerCallTokenPurpose, reasoning: 
   const l = SERVER_CALL_LIMITS[purpose];
   return reasoning ? l.reasoning_max_output_tokens : l.max_output_tokens;
 }
+
+/**
+ * The output cap the server puts in the token and body: {@link serverCallOutputCap}, clamped to
+ * the model's catalog `maxOutputTokens` (`model_catalog.max_output_tokens`) when the catalog
+ * names one. Never below 1.
+ */
+export function serverCallOutputCapFor(
+  purpose: ServerCallTokenPurpose,
+  reasoning: boolean,
+  catalogMaxOutputTokens: number | null | undefined,
+): number {
+  const cap = serverCallOutputCap(purpose, reasoning);
+  if (catalogMaxOutputTokens === null || catalogMaxOutputTokens === undefined) return cap;
+  return Math.max(1, Math.min(cap, Math.floor(catalogMaxOutputTokens)));
+}
+
+/** Purposes whose token names a learning pass (`pass_id`); no other purpose carries one. */
+export const PASS_SERVER_CALL_PURPOSES = ["memory_learn"] as const;
+
+/** Whether a purpose's token must name its learning pass (`pass_id`). */
+export function serverCallNamesPass(purpose: ServerCallTokenPurpose): boolean {
+  return (PASS_SERVER_CALL_PURPOSES as readonly string[]).includes(purpose);
+}
+
+/**
+ * Longest a learning pass may append pass events after it started (the server's append guard):
+ * the extractor call and its one retry, plus reading the thread and checking the candidates.
+ */
+export const MEMORY_PASS_MARGIN_MS = 30_000;
+export const MEMORY_PASS_MAX_MS =
+  SERVER_CALL_LIMITS.memory_learn.timeout_ms * (1 + MEMORY_LEARN_SCHEMA_RETRIES) +
+  MEMORY_PASS_MARGIN_MS;
 
 const MAX_OUTPUT_CAP = Math.max(
   ...SERVER_CALL_TOKEN_PURPOSES.map((p) => SERVER_CALL_LIMITS[p].reasoning_max_output_tokens),
@@ -222,6 +287,12 @@ export const serverCallClaimsSchema = z
      * a run-less purpose, where the usage row's `run_id` is NULL.
      */
     run_id: uuidSchema.optional(),
+    /**
+     * The learning pass the call serves (`memory_learning_passes.id`, KOBE-390); present exactly
+     * for {@link PASS_SERVER_CALL_PURPOSES}. Its run is the leaf's last completed run, so the
+     * gateway's lease check admits the thread's author only.
+     */
+    pass_id: uuidSchema.optional(),
     /** `<gateway provider>/<model>`: the thread's resolved model (a pinned agent's model wins). */
     model: gatewayModelSchema,
     max_output_tokens: z.number().int().min(1).max(MAX_OUTPUT_CAP),
@@ -249,7 +320,11 @@ export const serverCallClaimsSchema = z
       message: "thread_id and run_id are both present for a run-bound purpose and absent otherwise",
       path: ["run_id"],
     },
-  );
+  )
+  .refine((c) => serverCallNamesPass(c.purpose) === (c.pass_id !== undefined), {
+    message: "pass_id is present for a learning pass's purpose and absent otherwise",
+    path: ["pass_id"],
+  });
 export type ServerCallClaims = z.infer<typeof serverCallClaimsSchema>;
 
 export type ServerCallTokenFailure = "malformed" | "bad_signature" | "expired" | "not_yet_valid";
@@ -286,7 +361,7 @@ export const serverCallRequestSchema = z
     n: z.literal(1).optional(),
     /** For reasoning models, so a small output cap is not spent on thinking. */
     reasoning_effort: z.enum(["none", "minimal", "low"]).optional(),
-    /** Structured output (the eval judge only; compared with the purpose's format). */
+    /** Structured output (the eval judge and the extractor; compared with the purpose's format). */
     response_format: z
       .strictObject({
         type: z.literal("json_schema"),
