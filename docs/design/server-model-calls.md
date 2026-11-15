@@ -30,6 +30,18 @@ characters (SKILL.md is cut at 60 000 in the prompt), 512 KiB body, temperature 
 100 %. The skill's content travels between per-call nonce delimiters as data, as the judge's does.
 Details in [skill-package.md](../skill-package.md#created-by-kobe-on-request-kobe-564).
 
+**Learning pass (KOBE-390 contract, semantic memory SM14/SM15).** Purpose `memory_learn`: one
+extractor call per learning pass, bound to the leaf's last completed run (so the run check admits
+the thread's author only), and its token also names the pass (`pass_id`, which no other purpose
+carries). Model: the Workspace's learning model (a Site setting with Workspace override; never a
+fallback). Limits (`SERVER_CALL_LIMITS.memory_learn`): 8192 / 16 384 output tokens clamped to the
+catalog's `maxOutputTokens` (`serverCallOutputCapFor`), 60 s, messages up to 300 000 characters,
+384 KiB body, temperature 0, refused at 100 %, TTL 30 s like every token, one retry when the reply
+fails the extractor schema (`SERVER_CALL_RESPONSE_FORMATS.memory_learn`,
+`packages/protocol/src/semantic-memory/learning.ts`). Progress reaches the thread as
+`memory.pass.*` events on the bound run, after its terminal event. Until `run_usage.kind` can
+record `memory_learn`, the gateway refuses the purpose (403 `server_call_purpose_unsupported`).
+
 ## Decisions
 
 | Topic         | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |

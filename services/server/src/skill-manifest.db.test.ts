@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { strToU8, zipSync } from "fflate";
-import { recordModelUsage } from "@kobe/db";
+import { recordModelUsage, type UsageKind } from "@kobe/db";
 import { SERVER_CALL_TOKEN_HEADER, type ServerCallClaims } from "@kobe/protocol";
 import { generateSessionKeyPair, verifyServerCallToken } from "@kobe/session-token";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -66,7 +66,7 @@ const gatewayFetch: typeof fetch = async (_url, init) => {
       userId: claims.user_id,
       sandboxId: undefined,
       runId: claims.run_id,
-      kind: claims.purpose,
+      kind: claims.purpose as UsageKind,
       at: new Date(),
       route: "openai",
       model: claims.model,

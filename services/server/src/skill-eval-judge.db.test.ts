@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { recordModelUsage, serverCallRunMatches } from "@kobe/db";
+import { recordModelUsage, serverCallRunMatches, type UsageKind } from "@kobe/db";
 import {
   SERVER_CALL_RESPONSE_FORMATS,
   SERVER_CALL_TOKEN_HEADER,
@@ -72,7 +72,7 @@ const gatewayFetch: typeof fetch = async (_url, init) => {
       userId: claims.user_id,
       sandboxId: undefined,
       runId: claims.run_id,
-      kind: claims.purpose,
+      kind: claims.purpose as UsageKind,
       at: new Date(),
       route: "openai",
       model: claims.model,
