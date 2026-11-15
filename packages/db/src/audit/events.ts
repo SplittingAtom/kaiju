@@ -1485,6 +1485,60 @@ export const AUDIT_EVENTS = {
     threadId: id.optional(),
   }),
 
+  // ── governance: Site-level break-glass on one person's portable memories (KOBE-648, SM28;
+  // amends D10). Lifecycle in the Site log; every read is also recorded in each Workspace the
+  // person belongs to (their audit views). Under legal hold the person's id is left out (the
+  // grant row, resolved by `grantId` in the Site console, keeps it); never the reason.
+  /** A site admin asked to read one person's portable memories. */
+  "governance.site_break_glass.requested": event("site", {
+    grantId: id,
+    subjectUserId: id.optional(),
+    legalHold: z.boolean(),
+    durationMinutes: z.number().int().min(1).max(BREAK_GLASS_MAX_MINUTES),
+    ...notified,
+  }),
+  /** A second site admin approved; `selfApproved` flags a single-admin site (D10). */
+  "governance.site_break_glass.approved": event("site", {
+    grantId: id,
+    subjectUserId: id.optional(),
+    legalHold: z.boolean(),
+    expiresAt: z.iso.datetime({ offset: true }),
+    selfApproved: z.boolean(),
+    ...notified,
+  }),
+  "governance.site_break_glass.denied": event("site", { grantId: id, ...notified }),
+  /** Withdrawn while pending (`wasActive` false) or revoked during its window. */
+  "governance.site_break_glass.revoked": event("site", {
+    grantId: id,
+    wasActive: z.boolean(),
+    ...notified,
+  }),
+  /** The window ended (`wasActive`) or the request lapsed undecided (actor: system). */
+  "governance.site_break_glass.expired": event("site", {
+    grantId: id,
+    wasActive: z.boolean(),
+    ...notified,
+  }),
+  /** A queued notification gave up after its retries (actor: system). */
+  "governance.site_break_glass.notification_failed": event("site", {
+    grantId: id,
+    recipientUserId: id,
+    event: z.enum(BREAK_GLASS_NOTIFICATION_EVENTS),
+    attempts: z.number().int().positive(),
+  }),
+  /**
+   * A read of the person's portable memories under the grant: one row in the Site log (no team)
+   * and one in each Workspace the person belongs to (`teamId` set), all in the read's transaction.
+   * `workspaces` (Site row only): how many Workspace rows were written.
+   */
+  "governance.site_break_glass.read": event("any", {
+    grantId: id,
+    object: z.enum(["portable_items", "portable_item"]),
+    itemId: id.optional(),
+    subjectUserId: id.optional(),
+    workspaces: count.optional(),
+  }),
+
   // ── governance: legal hold (D18, KOBE-17); site scope: holds are confidential, and the team's
   // admins may be the people held. Never the held user's id or the reason (the hold row keeps them).
   /** A site admin asked for a hold on a team, or on one user in it. */

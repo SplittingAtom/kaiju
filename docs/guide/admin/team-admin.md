@@ -153,7 +153,10 @@ after saving.
 - **Audit view**: the team's audit events.
 - **Usage**: spend by user, agent and model.
 - **Break-glass access**: when site admins had time-boxed, read-only access to this team, now and
-  in the past. A banner tells members while it is active.
+  in the past. A banner tells members while it is active. When a site admin reads the portable
+  preferences of one of your members under a site-level grant, each read also appears in your
+  audit view as `governance.site_break_glass.read`. Team admins are not emailed about site-level
+  grants; the audit view is where you see them.
 
 ## From a conversation
 
