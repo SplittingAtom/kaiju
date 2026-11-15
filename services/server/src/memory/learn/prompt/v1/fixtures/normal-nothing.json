@@ -1,0 +1,35 @@
+{
+  "description": "Task state only: nothing durable to learn.",
+  "adversarial": false,
+  "input": {
+    "project": null,
+    "existing": [],
+    "transcript": [
+      {
+        "entry_id": "e1",
+        "speaker": "person",
+        "text": "Rename the columns in sales.csv to snake_case."
+      },
+      {
+        "entry_id": "e2",
+        "speaker": "assistant",
+        "text": "Done: order_id, order_date, net_amount."
+      },
+      {
+        "entry_id": "e3",
+        "speaker": "person",
+        "text": "Thanks."
+      }
+    ]
+  },
+  "reply": {
+    "candidates": [],
+    "skill_hints": []
+  },
+  "expect": {
+    "schema": "ok",
+    "kept": [],
+    "dropped": [],
+    "skill_hints": 0
+  }
+}

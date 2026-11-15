@@ -1,0 +1,88 @@
+{
+  "description": "Project facts come back project-specific and go to the project's Notes; a walked-through procedure becomes a skill hint.",
+  "adversarial": false,
+  "input": {
+    "project": {
+      "name": "FY27 budget"
+    },
+    "existing": [],
+    "transcript": [
+      {
+        "entry_id": "e1",
+        "speaker": "person",
+        "text": "For this budget project we use the April-to-March fiscal year, and the board deadline is 14 March."
+      },
+      {
+        "entry_id": "e2",
+        "speaker": "assistant",
+        "text": "Understood. I'll lay the model out April to March and plan back from 14 March."
+      },
+      {
+        "entry_id": "e3",
+        "speaker": "person",
+        "text": "Here's how I rebuild the forecast each week: export actuals, refresh the driver sheet, re-run the variance model, then send the deck to finance."
+      }
+    ]
+  },
+  "reply": {
+    "candidates": [
+      {
+        "statement": "The FY27 budget project uses an April-to-March fiscal year.",
+        "kind": "convention",
+        "suggested_scope": "team",
+        "portable": false,
+        "project_specific": true,
+        "source": "stated",
+        "operation": "add",
+        "target_id": null,
+        "confidence": 0.8,
+        "rationale": "Holds for this project's model and deadlines only.",
+        "evidence": [
+          {
+            "entry_id": "e1",
+            "quote": "For this budget project we use the April-to-March fiscal year"
+          }
+        ]
+      },
+      {
+        "statement": "The FY27 budget goes to the board by 14 March.",
+        "kind": "fact",
+        "suggested_scope": "team",
+        "portable": false,
+        "project_specific": true,
+        "source": "stated",
+        "operation": "add",
+        "target_id": null,
+        "confidence": 0.7,
+        "rationale": "A project deadline the person stated.",
+        "evidence": [
+          {
+            "entry_id": "e1",
+            "quote": "the board deadline is 14 March"
+          }
+        ]
+      }
+    ],
+    "skill_hints": [
+      {
+        "title": "Weekly forecast rebuild",
+        "summary": "Export actuals, refresh the driver sheet, re-run the variance model and send the deck to finance."
+      }
+    ]
+  },
+  "expect": {
+    "schema": "ok",
+    "kept": [
+      {
+        "statement": "The FY27 budget project uses an April-to-March fiscal year.",
+        "destination": "project_notes"
+      },
+      {
+        "statement": "The FY27 budget goes to the board by 14 March.",
+        "destination": "project_notes"
+      }
+    ],
+    "dropped": [],
+    "skill_hints": 1
+  }
+}
