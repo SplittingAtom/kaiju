@@ -5,8 +5,6 @@ import {
   runSemanticMemorySchema,
   type RunSemanticMemory,
   type RunSemanticMemoryItem,
-  type SemanticMemoryActorKind,
-  type SemanticMemoryKind,
   type SemanticMemoryScope,
 } from "@kobe/protocol";
 import { parseRunMemoryState, runMemoryStateQuery, type RunMemoryStateRow } from "../switches.js";
@@ -21,6 +19,8 @@ import {
   readHeldSet,
 } from "./placement.js";
 import { trigramSimilarity, trigrams } from "./trigram.js";
+import type { ItemRow } from "./item-row.js";
+import { mergeVectorRows } from "./vector-leg.js";
 import {
   PREFERENCE_BASE,
   RECENCY_DAYS,
@@ -78,6 +78,12 @@ export interface RunSemanticInput {
    * placement applies. Otherwise (absent) the picks stay in the system prompt (`system`).
    */
   readonly agentPlaces?: boolean;
+  /**
+   * The vector leg's rows for this message (KOBE-409, `startVectorLeg`), started before the
+   * keyword read and bounded by its deadline: undefined when late, failed or unavailable, and the
+   * message is ranked by keywords alone.
+   */
+  readonly vectorRows?: Promise<readonly ItemRow[] | undefined>;
 }
 
 /** The words of `text` the full-text query ORs together (letters and digits only). */
@@ -171,23 +177,6 @@ async function readQueryContext(tx: KobeTx, input: RunSemanticInput) {
 
 /** A `uuid[]` as one bound parameter (the values are uuids the database returned). */
 const uuidArray = (values: readonly string[]): SQL => sql`${`{${values.join(",")}}`}::uuid[]`;
-
-interface ItemRow extends Record<string, unknown> {
-  readonly lane: SelectLane | "policy";
-  readonly id: string;
-  readonly kind: SemanticMemoryKind;
-  readonly pinned: boolean;
-  readonly version: number;
-  readonly statement: string;
-  readonly actor_kind: SemanticMemoryActorKind;
-  readonly as_of: string | null;
-  readonly saved_on: string;
-  readonly matched: boolean;
-  readonly rank: number | string;
-  readonly age_days: number | string;
-  readonly sticky: boolean;
-  readonly total: number | string;
-}
 
 const toItem = (
   scope: SemanticMemoryScope,
@@ -338,7 +327,12 @@ export async function buildRunSemantic(
     message: trigrams(input.message.slice(0, TRIGRAM_MESSAGE_MAX_CHARS)),
     sticky: context.sticky,
   };
-  const rows = await readLanes(tx, input, memory.policy, lanes, q);
+  const rows = await withVectorLeg(
+    input,
+    lanes,
+    q,
+    await readLanes(tx, input, memory.policy, lanes, q),
+  );
   const budgetBytes = settings.context_budget_kib * 1024;
   const selected = select(rows, lanes, q, budgetBytes);
   if (selected.items.length === 0 && input.policyOnly) return undefined;
@@ -400,7 +394,12 @@ export async function readRunCandidates(
     message: trigrams(input.message.slice(0, TRIGRAM_MESSAGE_MAX_CHARS)),
     sticky: context.sticky,
   };
-  const rows = await readLanes(tx, input, memory.policy, lanes, q);
+  const rows = await withVectorLeg(
+    input,
+    lanes,
+    q,
+    await readLanes(tx, input, memory.policy, lanes, q),
+  );
   return {
     candidates: toCandidates(rows, lanes, q).candidates,
     semantic: select(rows, lanes, q, settings.context_budget_kib * 1024),
@@ -430,6 +429,21 @@ export async function buildPolicyOnly(
   return runSemanticMemorySchema.parse(
     applyPlacement(semantic, placement, { budgetBytes: settings.context_budget_kib * 1024 }),
   );
+}
+
+/**
+ * Hybrid ranking (KOBE-409): the keyword rows plus the vector leg's, when the query vector came
+ * in time and the leg answered within its own deadline; otherwise the keyword rows alone.
+ */
+async function withVectorLeg(
+  input: RunSemanticInput,
+  lanes: readonly SelectLane[],
+  q: Query,
+  keyword: ItemRow[],
+): Promise<ItemRow[]> {
+  if (input.vectorRows === undefined || lanes.length === 0) return keyword;
+  const vector = await input.vectorRows;
+  return vector === undefined ? keyword : mergeVectorRows(keyword, vector, lanes, q.sticky);
 }
 
 async function readLanes(
@@ -516,8 +530,11 @@ function toCandidates(
       trigram: trigramSimilarity(r.statement, q.message),
       ageDays: Number(r.age_days),
       sticky: r.sticky,
+      ...(r.sim === undefined ? {} : { vector: Number(r.sim) }),
     }));
-    beyond[lane] = Number(mine[0]?.total ?? 0) - mine.length;
+    // Rows only the vector leg found (`total` -1) are not part of the keyword count.
+    const keyword = mine.filter((r) => Number(r.total) >= 0);
+    beyond[lane] = Math.max(0, Number(keyword[0]?.total ?? 0) - keyword.length);
   }
   return { candidates, beyond };
 }

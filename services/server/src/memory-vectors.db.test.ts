@@ -9,6 +9,8 @@ import { MemoryObjects } from "./testing/memory-objects.js";
 import { MEMORY_SITE_SETTINGS_KEY } from "./memory/site-settings.js";
 import { readVectorSupport } from "./memory/embeddings/vector-support.js";
 import { conceptVector } from "./testing/fake-embeddings.js";
+import { buildRunSemantic, readRunCandidates } from "./memory/items/run-memory.js";
+import { startVectorLeg } from "./memory/items/vector-leg.js";
 
 /**
  * KOBE-409: the Site embedding model, embed on save, Build vectors and the Site console's state,
@@ -195,6 +197,57 @@ describe("memory vectors (KOBE-409)", () => {
     expect([res.status, (res.json as { code: string }).code]).toEqual([400, "unavailable"]);
     const state = (await admin.browser.get("/v1/memory/vectors")).json as Record<string, unknown>;
     expect(state).toMatchObject({ model: null, model_state: "no_model" });
+  });
+
+  it("hybrid selection finds a similar item with no shared word; late vectors mean keywords only", async () => {
+    await setModel(MODEL);
+    const res = await member.browser.post("/v1/memory/semantic/items", {
+      scope: "user",
+      kind: "fact",
+      statement: "My automobile is parked in garage B",
+    });
+    expect(res.status).toBe(201);
+    const id = (res.json as { id: string }).id;
+    await fx.replica(0).deps.background.idle();
+    expect((await vectorOf(id)).embedding_model).toBe(MODEL);
+    const runId = await fx.run(team, member);
+    const [row] = (await fx.admin.query(`SELECT thread_id FROM runs WHERE id = $1`, [runId]))
+      .rows as { thread_id: string }[];
+    const db = fx.replica(0).deps.database.db;
+    const message = "Where should I leave the car tomorrow?";
+    const base = {
+      teamId: team,
+      userId: member.id,
+      threadId: row?.thread_id ?? "",
+      runId,
+      message,
+    };
+    const keywordOnly = await withTeam(db, team, (tx) => buildRunSemantic(tx, base));
+    expect(keywordOnly?.semantic.items.map((i) => i.id) ?? []).not.toContain(id);
+    const who = { teamId: team, userId: member.id };
+    const leg = (model: string) =>
+      startVectorLeg(db, who, Promise.resolve({ model, vector: conceptVector(message) }), 5000);
+    const hybrid = await withTeam(db, team, (tx) =>
+      buildRunSemantic(tx, { ...base, vectorRows: leg(MODEL) }),
+    );
+    expect(hybrid?.semantic.items.map((i) => i.id)).toContain(id);
+    // A vector of another model (or dimension count) finds nothing extra.
+    const mismatch = await withTeam(db, team, (tx) =>
+      buildRunSemantic(tx, { ...base, vectorRows: leg("kobe-local/other") }),
+    );
+    expect(mismatch?.semantic.items.map((i) => i.id) ?? []).not.toContain(id);
+    // The service's query vector: paid by the run's member, naming the run.
+    calls.length = 0;
+    const qv = await fx.replica(0).deps.memoryEmbeddings.queryVector(base);
+    expect(qv?.model).toBe(MODEL);
+    expect(calls[0]?.claims).toMatchObject({ user_id: member.id, team_id: team, run_id: runId });
+    const { candidates } = await withTeam(db, team, (tx) =>
+      readRunCandidates(tx, {
+        ...base,
+        vectorRows: startVectorLeg(db, who, Promise.resolve(qv), 5000),
+      }),
+    );
+    expect(candidates.user?.find((c) => c.item.id === id)?.vector).toBeGreaterThan(0.9);
   });
 
   it("a member gets 403 on the Site vector routes", async () => {

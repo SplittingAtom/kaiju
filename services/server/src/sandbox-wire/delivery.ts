@@ -50,6 +50,7 @@ import { endRunInTx, loadRun, runStillOpen } from "./run-state.js";
 import { mirrorBranchSummaryInTx, parseBranchSummaryResult } from "./branch-summary-end.js";
 import { buildRunMemory } from "../memory/agent.js";
 import { buildPolicyOnly, buildRunSemantic } from "../memory/items/run-memory.js";
+import { startVectorLeg } from "../memory/items/vector-leg.js";
 import { recordRunMemory } from "../memory/items/run-records.js";
 import { readRunMemoryPlan, type RunMemoryPlan } from "../agents/run-memory.js";
 import { markTold, untoldNotes, type AgentNotes } from "../sync-conflicts/store.js";
@@ -925,7 +926,25 @@ export class CommandDelivery {
     opts: { readonly policyOnly: boolean; readonly agentPlaces: boolean },
   ): Promise<{ readonly semantic: RunSemanticMemory; readonly fresh: boolean } | undefined> {
     const { teamId, userId } = this.#host.target;
-    const input = { teamId, userId, threadId, runId, message, ...opts };
+    // KOBE-409: the vector leg (query embedding, paid by the run's member, then the nearest items)
+    // starts at once and runs beside the keyword read; late or failed: keywords alone.
+    const vectorRows =
+      opts.policyOnly || this.#ctx.memoryEmbeddings === undefined
+        ? undefined
+        : startVectorLeg(
+            this.#ctx.db,
+            { teamId, userId },
+            this.#ctx.memoryEmbeddings.queryVector({ teamId, userId, threadId, runId, message }),
+          );
+    const input = {
+      teamId,
+      userId,
+      threadId,
+      runId,
+      message,
+      ...opts,
+      ...(vectorRows ? { vectorRows } : {}),
+    };
     try {
       return await withTeam(this.#ctx.db, teamId, (tx) => buildRunSemantic(tx, input));
     } catch (err) {
