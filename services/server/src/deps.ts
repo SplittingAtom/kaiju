@@ -85,7 +85,8 @@ import {
 } from "./skills/registry/maintainers.js";
 import { createServerCallClient } from "./models/gateway-client.js";
 import { createEmbeddingClient } from "./models/embedding-client.js";
-import { VectorBackfill } from "./memory/embeddings/backfill.js";
+import { MEMORY_VECTOR_BUILD_LOCK, VectorBackfill } from "./memory/embeddings/backfill.js";
+import { createPgReconcileLock } from "./sandbox/reconcile-lock.js";
 import { MemoryEmbeddings } from "./memory/embeddings/service.js";
 import {
   createSkillManifestGenerator,
@@ -511,6 +512,11 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     embeddings: memoryEmbeddings,
     background,
     log: logger.child({ component: "memory-vectors" }),
+    lock: createPgReconcileLock(
+      database.pool,
+      (err) => logger.warn({ err }, "memory vector build lock connection problem"),
+      MEMORY_VECTOR_BUILD_LOCK,
+    ),
     ...(options.embeddings?.gatewaySyncWaitMs === undefined
       ? {}
       : { gatewaySyncWaitMs: options.embeddings.gatewaySyncWaitMs }),

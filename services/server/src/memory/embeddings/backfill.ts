@@ -2,6 +2,7 @@ import { modelGatewayState, scanTeams, withTeam, type KobeDb } from "@kobe/db";
 import { MEMORY_EMBED_MAX_INPUTS } from "@kobe/protocol";
 import type { Logger } from "pino";
 import type { BackgroundTasks } from "../../background.js";
+import type { ReconcileLock } from "../../sandbox/reconcile-lock.js";
 import type { MemoryEmbeddings } from "./service.js";
 import { pendingVersions, type VectorTable } from "./vector-store.js";
 
@@ -12,8 +13,14 @@ import { pendingVersions, type VectorTable } from "./vector-store.js";
  * Site console's action), never by an upgrade; paid by that admin in their current Workspace. It
  * stops at the first refusal (a budget line at 100 %, a gateway error) or when the Site model
  * changes, and can be started again. Keyword search covers every item without a current vector
- * meanwhile. One job per server replica; the console's coverage comes from the database.
+ * meanwhile. One job at a time across replicas (review L6): the job holds a session advisory lock
+ * ({@link MEMORY_VECTOR_BUILD_LOCK}) while it runs, and a start that cannot take it says the build
+ * is already running. The console's coverage comes from the database; the job state shown is
+ * the replica's own.
  */
+
+/** The session advisory lock a running build holds (one job across replicas). */
+export const MEMORY_VECTOR_BUILD_LOCK = "kobe.memory-vector-build";
 
 export interface BuildJob {
   readonly state: "running" | "done" | "stopped";
@@ -44,7 +51,15 @@ export interface BuildOptions {
    * starts anyway (a refusal stops it and the admin can start it again).
    */
   readonly gatewaySyncWaitMs?: number;
+  /** One job across replicas (`createPgReconcileLock` on {@link MEMORY_VECTOR_BUILD_LOCK}). */
+  readonly lock?: ReconcileLock;
 }
+
+const ALREADY_RUNNING: BuildStart = {
+  ok: false,
+  code: "running",
+  message: "Vectors are already being built.",
+};
 
 /** Polls until the gateway sync caught up with the desired configuration, or `waitMs` passed. */
 async function waitForGatewaySync(db: KobeDb, waitMs: number): Promise<void> {
@@ -74,15 +89,17 @@ export class VectorBackfill {
     return this.#job;
   }
 
+  #running(): boolean {
+    return this.#job?.state === "running";
+  }
+
   #now(): string {
     return (this.#o.now?.() ?? new Date()).toISOString();
   }
 
   /** Starts a job paid by `admin` in `admin.teamId`, unless one runs or vectors are unusable. */
   async start(admin: { readonly userId: string; readonly teamId: string }): Promise<BuildStart> {
-    if (this.#job?.state === "running") {
-      return { ok: false, code: "running", message: "Vectors are already being built." };
-    }
+    if (this.#job?.state === "running") return ALREADY_RUNNING;
     const model = await this.#o.embeddings.usableModel();
     if (model === undefined) {
       return {
@@ -92,6 +109,9 @@ export class VectorBackfill {
           "Vectors can't be built: set an embedding model and enable pgvector (see the notice).",
       };
     }
+    // Another start on this replica may have begun while the model was read.
+    if (this.#running()) return ALREADY_RUNNING;
+    const previous = this.#job;
     const job: BuildJob = {
       state: "running",
       model,
@@ -102,11 +122,41 @@ export class VectorBackfill {
       embedded: 0,
       stopReason: null,
     };
+    // Set first, so a second start on this replica meanwhile says it is running.
     this.#job = job;
-    this.#o.background.run("memory vector build failed", () => this.#run(admin, model), {
-      team_id: admin.teamId,
+    const lock = this.#o.lock;
+    if (lock === undefined) {
+      this.#o.background.run("memory vector build failed", () => this.#run(admin, model), {
+        team_id: admin.teamId,
+      });
+      return { ok: true, job };
+    }
+    let took!: (outcome: "taken" | "busy" | "error") => void;
+    const taken = new Promise<"taken" | "busy" | "error">((resolve) => {
+      took = resolve;
     });
-    return { ok: true, job };
+    this.#o.background.run(
+      "memory vector build failed",
+      async () => {
+        try {
+          const out = await lock.runExclusive(async () => {
+            took("taken");
+            await this.#run(admin, model);
+          });
+          if (!out.ran) took("busy");
+        } catch (err) {
+          took("error");
+          throw err;
+        }
+      },
+      { team_id: admin.teamId },
+    );
+    const outcome = await taken;
+    if (outcome === "taken") return { ok: true, job };
+    if (this.#job === job) this.#job = previous;
+    return outcome === "busy"
+      ? ALREADY_RUNNING
+      : { ok: false, code: "unavailable", message: "Vectors can't be built now; try again." };
   }
 
   #update(change: Partial<BuildJob>): void {

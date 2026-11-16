@@ -11,6 +11,7 @@ import { readVectorSupport } from "./memory/embeddings/vector-support.js";
 import { conceptVector } from "./testing/fake-embeddings.js";
 import { buildRunSemantic, readRunCandidates } from "./memory/items/run-memory.js";
 import { startVectorLeg } from "./memory/items/vector-leg.js";
+import { MEMORY_VECTOR_BUILD_LOCK } from "./memory/embeddings/backfill.js";
 
 /**
  * KOBE-409: the Site embedding model, embed on save, Build vectors and the Site console's state,
@@ -190,6 +191,26 @@ describe("memory vectors (KOBE-409)", () => {
     expect(again.status).toBe(202);
     await fx.replica(0).deps.background.idle();
     expect(calls).toEqual([]);
+  });
+
+  it("Build vectors runs on one replica at a time (advisory lock, review L6)", async () => {
+    expect((await setModel(MODEL)).status).toBe(200);
+    await fx.replica(0).deps.background.idle();
+    // Another replica's job holds the lock: this one says it is already running.
+    await fx.admin.query(`SELECT pg_advisory_lock(hashtextextended($1, 0))`, [
+      MEMORY_VECTOR_BUILD_LOCK,
+    ]);
+    try {
+      const busy = await admin.browser.post("/v1/memory/vectors/build", {});
+      expect([busy.status, (busy.json as { code: string }).code]).toEqual([409, "running"]);
+    } finally {
+      await fx.admin.query(`SELECT pg_advisory_unlock(hashtextextended($1, 0))`, [
+        MEMORY_VECTOR_BUILD_LOCK,
+      ]);
+    }
+    const free = await admin.browser.post("/v1/memory/vectors/build", {});
+    expect(free.status).toBe(202);
+    await fx.replica(0).deps.background.idle();
   });
 
   it("Build vectors is unavailable without a model", async () => {
