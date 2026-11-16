@@ -173,6 +173,8 @@ describe("command registry", () => {
       "previous-thread": "Mod+[",
       "next-thread": "Mod+]",
       "focus-composer": "Mod+/",
+      // KOBE-395: Learn from this chat, listed in the sheet's Memory section.
+      learn: "Mod+Shift+L",
       // The sheet's own key; not one of the twelve.
       "keyboard-shortcuts": "?",
     });

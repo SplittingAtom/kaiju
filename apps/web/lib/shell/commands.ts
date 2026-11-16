@@ -11,6 +11,7 @@ import {
   BookOpenIcon,
   BotIcon,
   BrainIcon,
+  BrainCircuitIcon,
   CalendarClockIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -134,6 +135,11 @@ export interface Command {
   readonly slash?: string;
   /** The argument it takes after its `/` word (its binding's `choices`), named for the menu. */
   readonly arg?: string;
+  /**
+   * The argument may be left out: the bare `/` word runs the binding's `onSelect` (`/learn`), and
+   * its choices are listed only after a space (`/learn all`).
+   */
+  readonly argOptional?: boolean;
   /** Offered to a reader of a shared thread (KOBE-221): it changes nothing of the owner's. */
   readonly readOnlySafe?: boolean;
   /**
@@ -590,6 +596,18 @@ const LIST = [
     name: "Agent and model",
     icon: SlidersHorizontalIcon,
     scope: "composer",
+  },
+  // Learn from this chat (KOBE-395, SM12, Q8): the + menu's Memory › Learn from this chat.
+  // `/learn` and Mod+Shift+L read what is new since the last pass; `/learn all` rescans the chat.
+  {
+    id: "learn",
+    name: "Learn from this chat",
+    icon: BrainCircuitIcon,
+    scope: "composer",
+    shortcut: "Mod+Shift+L",
+    slash: "learn",
+    arg: "range",
+    argOptional: true,
   },
   { id: "dictate", name: "Dictate", icon: MicIcon, scope: "composer" },
   { id: "send", name: "Send", icon: ArrowUpIcon, scope: "composer" },

@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo), how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
+summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo), how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
 section: Memory
 order: 1
 audience: member
@@ -155,6 +155,34 @@ what your latest message's run was given, grouped by place, each with the versio
 your newest message is still waiting, it shows the previous message's and says so. The
 `/session` dialog shows the same count as **Memories in context**. Both are yours only: people a
 conversation is shared with never see what your memory gave it.
+
+## Learn from this chat
+
+Kobe can suggest memories from a conversation you started. Nothing is saved until you review each
+suggestion in **To review** on My memory.
+
+- Open **+** in the composer › **Memory** › **Learn from this chat**. Kobe reads what was said
+  since its last pass on this conversation (the first time, the whole conversation).
+- **Rescan the whole chat** reads all of it again, for example after you changed your mind about
+  something earlier. The menu shows an estimate of the tokens it reads.
+- From the keyboard: type `/learn` (new messages) or `/learn all` (rescan), press **Ctrl+Shift+L**
+  (**Cmd+Shift+L** on a Mac), or search for "Learn from this chat" in the command palette.
+
+The **+** button shows where Learn is:
+
+| On the + button | Meaning                                                                     |
+| --------------- | --------------------------------------------------------------------------- |
+| A dot           | New messages since Kobe last learned from this conversation                 |
+| A spinner       | Kobe is learning from it now; you can keep chatting                         |
+| A number        | Suggestions from this conversation are waiting; **+** › **Memory** › Review |
+
+When a pass ends, Kobe says how many suggestions it found, or why it stopped (try again from the
+same menu). Learn is only for the conversation's author: people it is shared with don't see it,
+and Workbench, agent test and eval chats are refused. When Learn can't run, the menu item stays
+visible and says why: memories or Learn are switched off, no learning model is available (see
+[The learning model](#the-learning-model)), a budget is used up, you already started 20 passes in
+this workspace today, or no reply in the conversation has finished yet. Each pass is charged to
+you like any other model call.
 
 ## Your memories
 

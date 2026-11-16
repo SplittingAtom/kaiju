@@ -660,6 +660,65 @@ export class FakeKobe {
     });
   }
 
+  /**
+   * Learn from this chat (KOBE-395): each thread's Learn state (wire casing, merged over the
+   * default), by thread id; absent: Learn unavailable (no learning model). Starts are recorded;
+   * `learnRefusal` makes the starts refuse. A start marks the thread's pass running.
+   */
+  readonly learnState = new Map<string, Json>();
+  readonly learnStarts: { threadId: string; mode: string }[] = [];
+  learnRefusal: { status: number; code: string; message: string } | null = null;
+
+  #learnStateOf(thread: FakeThread): Json {
+    const own = this.learnState.get(thread.thread_id);
+    return {
+      thread_id: thread.thread_id,
+      blocker:
+        own === undefined
+          ? {
+              code: "memory_learning_model_unavailable",
+              reason: "no_learning_model",
+              message: "No learning model is set.",
+            }
+          : null,
+      running: null,
+      new_messages: false,
+      candidates: 0,
+      passes_left: 20,
+      last_failure: null,
+      estimate: null,
+      ...own,
+    };
+  }
+
+  #learn(method: string, thread: FakeThread, body: Json | undefined): Response {
+    if (thread.read_only === true)
+      return error(403, "read_only", "Only the thread's author can teach Kobe from it.");
+    if (method === "GET") return json(200, this.#learnStateOf(thread));
+    const refusal = this.learnRefusal;
+    if (refusal !== null) return error(refusal.status, refusal.code, refusal.message);
+    const mode = body?.mode === "all" ? "all" : "new";
+    this.learnStarts.push({ threadId: thread.thread_id, mode });
+    const passId = "00000000-0000-4000-8000-00000000aa01";
+    this.learnState.set(thread.thread_id, {
+      ...this.learnState.get(thread.thread_id),
+      running: { pass_id: passId, started_at: "2026-11-15T10:00:00.000Z" },
+    });
+    return json(202, {
+      pass_id: passId,
+      run_id: "00000000-0000-4000-8000-00000000aa02",
+      model_alias: "k2",
+      mode,
+      input: {
+        entries: 2,
+        truncated: false,
+        summarised: false,
+        partial: false,
+        estimated_tokens: 900,
+      },
+    });
+  }
+
   #threadContext(thread: FakeThread): Response {
     if (thread.read_only === true) {
       return error(403, "not_owner", THREAD_CONTEXT_ERROR_MESSAGES.not_owner);
@@ -1876,6 +1935,7 @@ export class FakeKobe {
       return this.#toolOutput(thread, sub);
     }
     if (action === "entries") return json(200, this.#entryPage(thread, url));
+    if (action === "learn") return this.#learn(method, thread, body);
     if (action === "connectors" && method === "GET") return this.#chatConnectors(thread.thread_id);
     if (action === "connectors" && method === "PUT" && sub !== undefined) {
       const row = this.chatConnectors.find((c) => c.connector_id === sub);
