@@ -45,6 +45,25 @@ describe("screenExtractorOutput (KOBE-394)", () => {
     expect(screen(candidate()).kept.map((k) => k.destination)).toEqual(["team"]);
   });
 
+  it("never takes evidence from a placeholder entry (KOBE-392)", () => {
+    const placeholder: ExtractorPromptInput = {
+      ...input,
+      transcript: [
+        {
+          entry_id: "a1b2c3d4",
+          speaker: "person",
+          text: "[long message left out]",
+          placeholder: true,
+        },
+      ],
+    };
+    const c = candidate({
+      suggested_scope: "user",
+      evidence: [{ entry_id: "a1b2c3d4", quote: "long message left out" }],
+    });
+    expect(screen(c, placeholder).dropped).toEqual([{ index: 0, reason: "evidence_not_found" }]);
+  });
+
   it("drops a quote citing an entry the transcript lacks", () => {
     const c = candidate({
       evidence: [

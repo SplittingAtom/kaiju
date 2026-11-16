@@ -484,6 +484,19 @@ export async function readRecallRows(
   }));
 }
 
+/**
+ * Every active Site Policy item, unranked (the learning pass lists them all: KOBE-392). The caller
+ * checks that Policy applies (`memory.policy`).
+ */
+export async function readPolicyItems(
+  tx: KobeTx,
+  who: { readonly teamId: string; readonly userId: string },
+): Promise<RunSemanticMemoryItem[]> {
+  const q: Query = { words: [], message: new Set(), sticky: [] };
+  const rows = await readLanes(tx, who, true, [], q);
+  return rows.map((r) => toItem("site", true, r));
+}
+
 type LaneCandidates = Partial<Record<SelectLane, Candidate[]>>;
 
 /** The candidates of each lane with their relevance parts, and the eligible ones not read. */

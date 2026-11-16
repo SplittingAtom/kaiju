@@ -24,15 +24,31 @@ import { z } from "zod";
  *
  * Images, attachments and approvals are left out or described in text by KOBE-392.
  */
+/**
+ * Entry ids the prompt may carry in its entry headers (KOBE-392): Pi's short hex and the server's
+ * `ks-`/`ku-`/`ka-` ids. Pi's ids come from the sandbox (untrusted), so the pass input skips any
+ * other entry rather than risk header syntax in the prompt.
+ */
+const SAFE_ENTRY_ID = /^[A-Za-z0-9_-]{1,128}$/;
+export const isSafeEntryId = (id: string): boolean => SAFE_ENTRY_ID.test(id);
+
 export const EXTRACTOR_SPEAKERS = ["person", "assistant", "tool", "summary"] as const;
 export const extractorSpeakerSchema = z.enum(EXTRACTOR_SPEAKERS);
 export type ExtractorSpeaker = z.infer<typeof extractorSpeakerSchema>;
 
 export const extractorTranscriptEntrySchema = z.strictObject({
-  /** The thread entry's uuid: strict, so it cannot carry header syntax into the prompt. */
-  entry_id: uuidSchema,
+  /**
+   * The thread entry's id: Pi's short hex or the server's `ks-`/`ku-`/`ka-` ids (KOBE-392). Letters,
+   * digits, `-` and `_` only, so it cannot carry header syntax into the prompt.
+   */
+  entry_id: z.string().refine(isSafeEntryId, { message: "entry id has unsafe characters" }),
   speaker: extractorSpeakerSchema,
   text: z.string().min(1),
+  /**
+   * A stand-in for a body the pass could not read (offloaded, KOBE-392): shown so the model knows
+   * something was there, never quotable as evidence (`screen.ts` leaves it out).
+   */
+  placeholder: z.literal(true).optional(),
 });
 export type ExtractorTranscriptEntry = z.infer<typeof extractorTranscriptEntrySchema>;
 
