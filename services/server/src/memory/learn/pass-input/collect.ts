@@ -7,7 +7,9 @@ import { toTranscriptPiece, type SkipReason, type TranscriptPiece } from "./tran
  * Reads the bodies of a branch range newest first, a chunk at a time, and stops once the turns
  * read are over the cap (budget.ts keeps the newest of them): a first pass over a long thread
  * never loads every body. When it stops early, the newest compaction entry of the part not read
- * is read too, so the over-cap fallback still has its summary.
+ * is read too, so the over-cap fallback still has its summary. A summary that folds in pre-fork
+ * content is left out (`pre_fork_summary`), and an offloaded message counts as `offloaded` (it is
+ * read as a placeholder).
  */
 
 /** Entry bodies per query. */
@@ -25,9 +27,17 @@ export async function collectPieces(
   tx: KobeTx,
   where: { readonly teamId: string; readonly threadId: string },
   range: readonly PathRow[],
-  options: { readonly includeToolOutputs: boolean },
+  options: {
+    readonly includeToolOutputs: boolean;
+    /** A compaction summary to leave out (one folding in pre-fork content: range.ts). */
+    readonly dropSummary?: (firstKeptEntryId: string | null) => boolean;
+  },
   caps: BudgetCaps = DEFAULT_CAPS,
 ): Promise<Collected> {
+  const screen = (p: TranscriptPiece): TranscriptPiece =>
+    p.kind === "compaction" && options.dropSummary?.(p.firstKeptEntryId)
+      ? { kind: "skip", why: "pre_fork_summary" }
+      : p;
   const read = async (rows: readonly PathRow[]): Promise<TranscriptPiece[]> => {
     const bodies = await readEntries(
       tx,
@@ -38,7 +48,7 @@ export async function collectPieces(
     return rows.map((r) => {
       const body = bodies.get(r.entryId);
       return body
-        ? toTranscriptPiece(body, options)
+        ? screen(toTranscriptPiece(body, options))
         : ({ kind: "skip", why: "not_a_turn" } as const);
     });
   };
@@ -66,6 +76,10 @@ export async function collectPieces(
     if (newest) pieces = [...(await read([newest])), ...pieces];
   }
   const skipped: Partial<Record<SkipReason, number>> = {};
-  for (const p of pieces) if (p.kind === "skip") skipped[p.why] = (skipped[p.why] ?? 0) + 1;
+  const count = (why: SkipReason) => (skipped[why] = (skipped[why] ?? 0) + 1);
+  for (const p of pieces) {
+    if (p.kind === "skip") count(p.why);
+    else if (p.kind === "turn" && p.entry.placeholder) count("offloaded");
+  }
   return { pieces, stoppedEarly, skipped };
 }

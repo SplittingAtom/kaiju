@@ -108,7 +108,10 @@ const toolResult = (name: string, t: string): [string, Payload] => [
   "message",
   { message: { role: "toolResult", toolCallId: "c1", toolName: name, content: text(t) } },
 ];
-const compaction = (summary: string): [string, Payload] => ["compaction", { summary }];
+const compaction = (summary: string, firstKeptEntryId?: string): [string, Payload] => [
+  "compaction",
+  { summary, ...(firstKeptEntryId === undefined ? {} : { firstKeptEntryId }) },
+];
 const branchSummary = (summary: string): [string, Payload] => ["branch_summary", { summary }];
 
 interface Entry {
@@ -117,6 +120,8 @@ interface Entry {
   readonly body: [string, Payload];
   /** Minutes from now (negative = earlier); default: in order after the thread. */
   readonly at?: number;
+  /** An offloaded body's object key (D15). */
+  readonly blob?: string;
 }
 
 const MINUTE = 60_000;
@@ -158,8 +163,9 @@ async function entries(threadId: string, list: readonly Entry[], leaf?: string):
   for (const e of list) {
     clock += 1;
     await fx.admin.query(
-      `INSERT INTO thread_entries (team_id, thread_id, entry_id, parent_id, type, payload, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      `INSERT INTO thread_entries (team_id, thread_id, entry_id, parent_id, type, payload, created_at,
+         blob_ref)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         team,
         threadId,
@@ -168,6 +174,7 @@ async function entries(threadId: string, list: readonly Entry[], leaf?: string):
         e.body[0],
         JSON.stringify(e.body[1]),
         new Date(Date.now() + (e.at ?? clock / 1000) * MINUTE),
+        e.blob ?? null,
       ],
     );
   }
@@ -356,6 +363,67 @@ describe("fork and shared-copy lower bound (ac-1, Q9)", () => {
     const fork = await thread({ forkAt: "s3" });
     await entries(fork, copied(-30));
     expect(await learn(fork)).toMatchObject({ ok: false, reason: "nothing_to_learn" });
+  });
+});
+
+describe("compaction summaries in a fork (Q9, review)", () => {
+  it("drops a summary that folds in pre-fork content and marks the input partial", async () => {
+    const long = "w".repeat(800);
+    const source = await thread();
+    const copied = chain(
+      null,
+      [
+        ["p1", user(`Pre-fork ${WORD}`)],
+        ["p2", assistant("Pre-fork answer")],
+      ],
+      -30,
+    );
+    await entries(source, copied);
+    const fork = await thread({ forkOf: source, forkAt: "p2" });
+    await entries(fork, [
+      ...copied,
+      ...chain(
+        "p2",
+        [
+          ["q1", user(long)],
+          ["q2", assistant(long)],
+          ["q3", compaction("Summary of p1..q2 incl. pre-fork words", "q3")],
+          ["q4", user(long)],
+          ["q5", assistant(long)],
+        ],
+        1,
+      ),
+    ]);
+    const r = await learn(fork, { caps: { maxTokens: 500, maxBytes: 1e6 } });
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.input.prompt.transcript.map((e) => e.entry_id)).toEqual(["q4", "q5"]);
+    expect(r.input).toMatchObject({
+      truncated: true,
+      summarised: false,
+      partial: true,
+      skipped: { pre_fork_summary: 1 },
+    });
+  });
+});
+
+describe("offloaded bodies (review)", () => {
+  it("become a placeholder that is never evidence", async () => {
+    const id = await thread();
+    await entries(id, [
+      ...chain(null, [["o1", user("Short words")]]),
+      { id: "o2", parent: "o1", body: ["message", { message: { role: "user" } }], blob: "k/o2" },
+      ...chain("o2", [["o3", assistant("Reply")]]),
+    ]);
+    const r = await learn(id);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.input.prompt.transcript[1]).toEqual({
+      entry_id: "o2",
+      speaker: "person",
+      text: "[long message left out]",
+      placeholder: true,
+    });
+    expect(r.input.skipped.offloaded).toBe(1);
+    expect(r.input.partial).toBe(false);
   });
 });
 

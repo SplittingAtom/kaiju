@@ -126,7 +126,8 @@ export function screenExtractorOutput(
   input: ExtractorPromptInput,
 ): ScreenResult {
   const ctx: Context = {
-    entries: new Map(input.transcript.map((e) => [e.entry_id, e])),
+    // A placeholder (a body the pass could not read) is never evidence (KOBE-392).
+    entries: new Map(input.transcript.filter((e) => !e.placeholder).map((e) => [e.entry_id, e])),
     items: new Map(listedExistingItems(input).map((i) => [i.id, i])),
     hasProject: input.project !== null,
   };

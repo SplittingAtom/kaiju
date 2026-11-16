@@ -7,8 +7,9 @@ import { isSafeEntryId, type ExtractorTranscriptEntry } from "../prompt/input.js
  * text plus one line per tool call, never its reasoning), tool output (`tool`, off by default;
  * opted in it is cut to {@link TOOL_OUTPUT_MAX_BYTES} and fenced as untrusted) and compaction
  * summaries (`summary`, used only when the branch is over the cap: budget.ts). Branch summaries
- * (`branch_summary`, KOBE-548) are excluded outright; so are offloaded bodies, server notes, app
- * cards, model changes and anything else that is not a turn.
+ * (`branch_summary`, KOBE-548) are excluded outright; an offloaded message becomes a placeholder
+ * that is never evidence ({@link LONG_MESSAGE_PLACEHOLDER}); server notes, app cards, model
+ * changes and anything else that is not a turn are skipped.
  */
 
 export { isSafeEntryId };
@@ -22,11 +23,22 @@ export interface EntryRow {
 }
 
 export type SkipReason =
-  "unsafe_id" | "offloaded" | "branch_summary" | "tool_output" | "empty" | "not_a_turn";
+  | "pre_fork_summary"
+  | "unsafe_id"
+  | "offloaded"
+  | "branch_summary"
+  | "tool_output"
+  | "empty"
+  | "not_a_turn";
 
 export type TranscriptPiece =
   | { readonly kind: "turn"; readonly entry: ExtractorTranscriptEntry }
-  | { readonly kind: "compaction"; readonly entry: ExtractorTranscriptEntry }
+  | {
+      readonly kind: "compaction";
+      readonly entry: ExtractorTranscriptEntry;
+      /** Pi folded the branch before this entry into the summary; null when unknown. */
+      readonly firstKeptEntryId: string | null;
+    }
   | { readonly kind: "skip"; readonly why: SkipReason };
 
 export interface PieceOptions {
@@ -41,6 +53,11 @@ export const TOOL_OUTPUT_MAX_BYTES = 2048;
 /** Longest one-line summary of a tool call's arguments. */
 export const TOOL_CALL_ARGS_MAX_CHARS = 160;
 const CUT_MARK = "\n[cut]";
+/**
+ * Stands in for a message whose body is in object storage (over 64 KB, D15): not read, never
+ * quotable (`placeholder: true`), but the model knows something was said there.
+ */
+export const LONG_MESSAGE_PLACEHOLDER = "[long message left out]";
 
 const record = (v: unknown): Record<string, unknown> | undefined =>
   typeof v === "object" && v !== null && !Array.isArray(v)
@@ -144,16 +161,36 @@ const turn = (
     ? { kind: "skip", why: "empty" }
     : { kind: "turn", entry: { entry_id: entryId, speaker, text: cut(text) } };
 
+const SPEAKER_OF_ROLE: Readonly<Record<string, ExtractorTranscriptEntry["speaker"]>> = {
+  user: "person",
+  assistant: "assistant",
+  toolResult: "tool",
+};
+
+/** An offloaded message: a placeholder with the role's speaker when the stub names it. */
+function placeholderFor(row: EntryRow, options: PieceOptions): TranscriptPiece {
+  if (row.type !== "message") return { kind: "skip", why: "offloaded" };
+  const role = str(record(row.payload.message)?.role);
+  if (role === "toolResult" && !options.includeToolOutputs)
+    return { kind: "skip", why: "tool_output" };
+  const speaker = (role !== undefined && SPEAKER_OF_ROLE[role]) || "assistant";
+  return {
+    kind: "turn",
+    entry: { entry_id: row.entryId, speaker, text: LONG_MESSAGE_PLACEHOLDER, placeholder: true },
+  };
+}
+
 export function toTranscriptPiece(row: EntryRow, options: PieceOptions): TranscriptPiece {
   if (row.type === "branch_summary") return { kind: "skip", why: "branch_summary" };
   if (!isSafeEntryId(row.entryId)) return { kind: "skip", why: "unsafe_id" };
-  if (row.offloaded) return { kind: "skip", why: "offloaded" };
+  if (row.offloaded) return placeholderFor(row, options);
   if (row.type === "compaction") {
     const summary = str(row.payload.summary) ?? "";
     if (summary.trim() === "") return { kind: "skip", why: "empty" };
     return {
       kind: "compaction",
       entry: { entry_id: row.entryId, speaker: "summary", text: cut(summary) },
+      firstKeptEntryId: str(row.payload.firstKeptEntryId) ?? null,
     };
   }
   if (row.type !== "message") return { kind: "skip", why: "not_a_turn" };

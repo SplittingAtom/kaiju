@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ENTRY_TEXT_MAX_CHARS,
+  LONG_MESSAGE_PLACEHOLDER,
   TOOL_OUTPUT_MAX_BYTES,
   isSafeEntryId,
   toTranscriptPiece,
@@ -173,13 +174,39 @@ describe("other entries", () => {
     ).toEqual({
       kind: "compaction",
       entry: { entry_id: "a1b2c3d4", speaker: "summary", text: "Earlier: X" },
+      firstKeptEntryId: null,
     });
+    expect(
+      toTranscriptPiece(
+        row({ type: "compaction", payload: { summary: "S", firstKeptEntryId: "e5" } }),
+        off,
+      ),
+    ).toMatchObject({ kind: "compaction", firstKeptEntryId: "e5" });
   });
 
-  it("skips an offloaded body and anything that is not a turn", () => {
+  it("puts a placeholder, never quotable, where a long body was offloaded", () => {
+    expect(toTranscriptPiece(msg({ role: "user" }, { offloaded: true }), off)).toEqual({
+      kind: "turn",
+      entry: {
+        entry_id: "a1b2c3d4",
+        speaker: "person",
+        text: LONG_MESSAGE_PLACEHOLDER,
+        placeholder: true,
+      },
+    });
+    expect(toTranscriptPiece(row({ offloaded: true, payload: {} }), off)).toMatchObject({
+      kind: "turn",
+      entry: { speaker: "assistant", placeholder: true },
+    });
     expect(
-      toTranscriptPiece(msg({ role: "user", content: "x" }, { offloaded: true }), off),
+      toTranscriptPiece(msg({ role: "toolResult", toolName: "x" }, { offloaded: true }), off),
+    ).toEqual({ kind: "skip", why: "tool_output" });
+    expect(
+      toTranscriptPiece(row({ type: "compaction", offloaded: true, payload: {} }), off),
     ).toEqual({ kind: "skip", why: "offloaded" });
+  });
+
+  it("skips anything that is not a turn", () => {
     expect(toTranscriptPiece(row({ type: "model_change", payload: {} }), off)).toEqual({
       kind: "skip",
       why: "not_a_turn",

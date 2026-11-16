@@ -44,6 +44,11 @@ export const extractorTranscriptEntrySchema = z.strictObject({
   entry_id: z.string().refine(isSafeEntryId, { message: "entry id has unsafe characters" }),
   speaker: extractorSpeakerSchema,
   text: z.string().min(1),
+  /**
+   * A stand-in for a body the pass could not read (offloaded, KOBE-392): shown so the model knows
+   * something was there, never quotable as evidence (`screen.ts` leaves it out).
+   */
+  placeholder: z.literal(true).optional(),
 });
 export type ExtractorTranscriptEntry = z.infer<typeof extractorTranscriptEntrySchema>;
 

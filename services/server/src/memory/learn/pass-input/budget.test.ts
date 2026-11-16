@@ -12,6 +12,7 @@ const compaction = (id: string, chars: number) =>
   ({
     kind: "compaction",
     entry: { entry_id: id, speaker: "summary", text: "s".repeat(chars) },
+    firstKeptEntryId: null,
   }) as const satisfies TranscriptPiece;
 const ids = (entries: readonly ExtractorTranscriptEntry[]) => entries.map((e) => e.entry_id);
 

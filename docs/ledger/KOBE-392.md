@@ -53,13 +53,22 @@ Server-only, no migration, no protocol change. `services/server/src/memory/learn
   KOBE-398 / KOBE-652; the prompt gets the name only.
 - **Docs:** none: no user-facing surface yet (KOBE-395/396 add the panel and its guide text).
 
+## Review round 1 (coordinator)
+
+- **Fork summaries dropped:** a compaction whose folded range (root → `firstKeptEntryId`) reaches
+  before the fork/copy point is left out (`skipped.pre_fork_summary`; `summaryReachesBeforeFork`
+  in range.ts; unknown first-kept entry = folds in everything). Over the cap with no summary
+  standing in → `partial: true` (UI: "some earlier messages were compacted and left out").
+- **Offloaded bodies (for KOBE-393):** still not read from object storage; a message whose body
+  is offloaded becomes a placeholder entry (`[long message left out]`, speaker from the stub's
+  role, else `assistant`; offloaded tool output follows the tool-output switch) with
+  `placeholder: true` on the transcript entry. `screen.ts` leaves placeholders out of the
+  evidence map, so they are never quotable; counted in `skipped.offloaded`.
+
 ## Open questions (for Chris or the coordinator)
 
-- A compaction summary written in a fork after the fork point may summarise copied turns. It is
-  a `summary` speaker (never evidence), so kept; say if it should be dropped in forks.
 - Workbench test chats are refused like builder tests and evals (labels precedent); the spec
   names only evals, eval cases and agent-creator test chats.
-- Offloaded bodies (>64 KB) are skipped, not read from S3; KOBE-393 may want them.
 
 ## Evidence (acceptance criteria → test or command output)
 
@@ -67,4 +76,6 @@ Server-only, no migration, no protocol change. `services/server/src/memory/learn
   "fork and shared-copy lower bound"; pure cases in `pass-input/range.test.ts`.
 - **ac-2** db test "over the cap"; `pass-input/budget.test.ts`.
 - **ac-3** db test "related items and tool output"; `pass-input/transcript.test.ts`.
+- Review round 1: db tests "compaction summaries in a fork", "offloaded bodies";
+  `range.test.ts`, `transcript.test.ts`, `screen.test.ts` (placeholder never evidence).
 - **ac-4** db test "author only" (shared reader, private non-owner, break-glass, Trash, test).

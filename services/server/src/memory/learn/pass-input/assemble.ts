@@ -5,7 +5,7 @@ import type { ExtractorPromptInput } from "../prompt/input.js";
 import { CHARS_PER_TOKEN, DEFAULT_CAPS, fitTranscript, type BudgetCaps } from "./budget.js";
 import { collectPieces } from "./collect.js";
 import { entrySeq, readBranch, readWatermark } from "./read.js";
-import { learningRange, type RangeMode } from "./range.js";
+import { learningRange, summaryReachesBeforeFork, type RangeMode } from "./range.js";
 import { readRelatedItems } from "./related.js";
 import type { SkipReason } from "./transcript.js";
 
@@ -25,7 +25,9 @@ import type { SkipReason } from "./transcript.js";
  *    ancestor; `rescan` ignores it; a fork or shared-thread copy never reads its copied prefix.
  * 4. **Transcript** (transcript.ts, budget.ts): committed turns only, `branch_summary` excluded,
  *    tool calls as one-line summaries, tool output only when opted in (cut to 2 KB and fenced);
- *    over ~60k tokens the newest compaction summary plus the newest turns, flagged `truncated`.
+ *    over ~60k tokens the newest compaction summary plus the newest turns, flagged `truncated`
+ *    (`partial` when no summary stands in: in a fork, one folding in pre-fork content is
+ *    dropped). An offloaded message is a placeholder that is never evidence.
  * 5. **Related items** (related.ts): every Policy item, then the best 40 of the writable scopes.
  */
 
@@ -73,6 +75,12 @@ export interface LearningPassInput {
   readonly truncated: boolean;
   /** A compaction summary stands in for what was left out. */
   readonly summarised: boolean;
+  /**
+   * Older turns were left out and no summary stands in for them (none, or the only one folded in
+   * pre-fork content and was dropped): the panel says "some earlier messages were compacted and
+   * left out".
+   */
+  readonly partial: boolean;
   readonly toolOutputs: "excluded" | "included";
   /** Entries of the range that are not in the transcript, by reason (as far as they were read). */
   readonly skipped: Readonly<Partial<Record<SkipReason, number>>>;
@@ -142,13 +150,17 @@ export async function assembleLearningInput(
     rescan: options.rescan ?? false,
   });
   const rows = path.slice(range.start);
+  const pathIndex = new Map(path.map((e, i) => [e.entryId, i]));
   const includeToolOutputs = options.includeToolOutputs ?? false;
   const caps = options.caps ?? DEFAULT_CAPS;
   const collected = await collectPieces(
     tx,
     { teamId, threadId },
     rows,
-    { includeToolOutputs },
+    {
+      includeToolOutputs,
+      dropSummary: (kept) => summaryReachesBeforeFork(kept, pathIndex, range.lowerBound),
+    },
     caps,
   );
   const fitted = fitTranscript(collected.pieces, caps);
@@ -156,14 +168,16 @@ export async function assembleLearningInput(
   if (fitted.transcript.length === 0 || first === undefined)
     return { ok: false, reason: "nothing_to_learn", leafEntryId: leaf };
 
-  const said = fitted.transcript.filter((e) => e.speaker === "person").reverse();
+  const readable = fitted.transcript.filter((e) => !e.placeholder);
+  const said = readable.filter((e) => e.speaker === "person").reverse();
   const existing = await readRelatedItems(tx, viewer, {
-    text: [...said, ...fitted.transcript.filter((e) => e.speaker === "assistant").reverse()]
+    text: [...said, ...readable.filter((e) => e.speaker === "assistant").reverse()]
       .map((e) => e.text)
       .join("\n"),
     latest: said[0]?.text ?? "",
   });
   const project = await projectOf(tx, viewer, thread.projectId);
+  const truncated = fitted.truncated || collected.stoppedEarly;
   const itemTokens = existing.reduce(
     (n, i) => n + Math.ceil(i.statement.length / CHARS_PER_TOKEN) + ITEM_OVERHEAD_TOKENS,
     0,
@@ -182,8 +196,9 @@ export async function assembleLearningInput(
       mode: range.mode,
       forkedAtEntryId: forkedAt,
       project,
-      truncated: fitted.truncated || collected.stoppedEarly,
+      truncated,
       summarised: fitted.summarised,
+      partial: truncated && !fitted.summarised,
       toolOutputs: includeToolOutputs ? "included" : "excluded",
       skipped: collected.skipped,
       estimatedTokens: fitted.estimatedTokens + itemTokens,

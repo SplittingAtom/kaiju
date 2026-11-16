@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { learningRange, type PathEntry } from "./range.js";
+import { learningRange, summaryReachesBeforeFork, type PathEntry } from "./range.js";
 
 const T0 = new Date("2026-11-01T00:00:00Z");
 const later = (min: number) => new Date(T0.getTime() + min * 60_000);
@@ -117,5 +117,24 @@ describe("fork and copy lower bound (Q9)", () => {
       { entryId: "n2", seq: 5, createdAt: later(12) },
     ];
     expect(learningRange({ path: edited, fork, watermark: null, rescan: false }).start).toBe(2);
+  });
+});
+
+describe("compaction summaries in a fork (Q9)", () => {
+  const index = new Map(["e1", "e2", "e3", "e4", "e5"].map((id, i) => [id, i]));
+
+  it("drops a summary that folds in anything before the fork point", () => {
+    // Copied e1..e3 (lower bound 3): a summary keeping from e5 folds in e1..e4.
+    expect(summaryReachesBeforeFork("e5", index, 3)).toBe(true);
+    expect(summaryReachesBeforeFork("e2", index, 3)).toBe(true);
+    // Unknown or off-branch first kept entry: assume it folds in everything.
+    expect(summaryReachesBeforeFork(null, index, 3)).toBe(true);
+    expect(summaryReachesBeforeFork("x9", index, 3)).toBe(true);
+  });
+
+  it("keeps a summary that folds in nothing, and every summary of an original thread", () => {
+    expect(summaryReachesBeforeFork("e1", index, 3)).toBe(false);
+    expect(summaryReachesBeforeFork("e5", index, 0)).toBe(false);
+    expect(summaryReachesBeforeFork(null, index, 0)).toBe(false);
   });
 });

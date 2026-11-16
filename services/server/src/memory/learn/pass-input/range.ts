@@ -87,3 +87,20 @@ export function learningRange(input: RangeInput): LearningRange {
   }
   return from(0, "lca");
 }
+
+/**
+ * Whether a compaction summary folds in entries from before the fork/copy point (Q9). Pi folds the
+ * branch before `firstKeptEntryId` into the summary (from the root), so in a fork with a copied
+ * prefix any summary that folds in something reaches it. Such a summary is dropped: even though a
+ * summary is never evidence, pre-fork content could steer inferred candidates. An unknown or
+ * off-branch first kept entry counts as folding in everything.
+ */
+export function summaryReachesBeforeFork(
+  firstKeptEntryId: string | null,
+  pathIndex: ReadonlyMap<string, number>,
+  lowerBound: number,
+): boolean {
+  if (lowerBound === 0) return false;
+  const kept = firstKeptEntryId === null ? undefined : pathIndex.get(firstKeptEntryId);
+  return kept === undefined || kept > 0;
+}
