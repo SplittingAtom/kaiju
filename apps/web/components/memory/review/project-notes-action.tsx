@@ -10,7 +10,6 @@ import type {
 import { visible } from "../../../lib/security/visible";
 import { Button, useConfirm } from "../../ui/console";
 
-export const SUGGEST_LABEL = "Suggest to editors";
 export const ADD_LABEL = "Add to project notes";
 
 /**
@@ -18,8 +17,8 @@ export const ADD_LABEL = "Add to project notes";
  * Team admins get **Add to project notes**: the server previews the exact change (the line under
  * `## Learned` in the project's `MEMORY.md`) with a signed approval, the person approves it in a
  * dialog, and the server writes it after checking everything again. Disabled with the server's
- * reason when project memory is off or the file is full. Readers see **Suggest to editors**,
- * disabled until suggestions arrive (KOBE-652 plugs in here).
+ * reason when project memory is off or the file is full. Readers never get Add: the card shows
+ * **Suggest to editors** instead (`suggest-action.tsx`, KOBE-652).
  */
 export function ProjectNotesAction({
   candidate,
@@ -39,13 +38,12 @@ export function ProjectNotesAction({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirm, confirmDialog] = useConfirm();
-  const reader = status.access === "read";
 
-  if (reader || !status.available)
+  if (!status.available)
     return (
       <span className="flex max-w-xs flex-col gap-1">
         <Button disabled aria-describedby={reasonId}>
-          {reader ? SUGGEST_LABEL : ADD_LABEL}
+          {ADD_LABEL}
         </Button>
         <span id={reasonId} className="text-xs text-console-muted">
           {status.reason}

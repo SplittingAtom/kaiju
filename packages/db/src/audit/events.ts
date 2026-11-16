@@ -3163,6 +3163,36 @@ export const AUDIT_EVENTS = {
     version,
     edited: z.boolean(),
   }),
+  // ── Readers' suggestions to a project's Notes (KOBE-652, SM7/Q2): ids and flags only, never the
+  // statement, evidence or the dismissal reason.
+  /** A project reader suggested a candidate for the project's notes (`edited`: changed first). */
+  "memory.suggestion.created": event("team", {
+    suggestionId: id,
+    candidateId: id,
+    passId: id,
+    threadId: id,
+    projectId: id,
+    edited: z.boolean(),
+  }),
+  /**
+   * A project editor, owner or Team admin approved a suggestion: it went under `## Learned` in the
+   * project's `MEMORY.md` (the Notes doc at `version`) through the signed change.
+   */
+  "memory.suggestion.accepted": event("team", {
+    suggestionId: id,
+    threadId: id,
+    projectId: id,
+    memoryDocId: id,
+    version,
+    edited: z.boolean(),
+  }),
+  /** A suggestion was dismissed; `reasonGiven` when the decider wrote why. */
+  "memory.suggestion.dismissed": event("team", {
+    suggestionId: id,
+    threadId: id,
+    projectId: id,
+    reasonGiven: z.boolean(),
+  }),
   /** A Team admin made a member a Workspace memory steward, or took it back (KOBE-380). */
   "memory.steward.granted": event("team", { userId: id }),
   "memory.steward.revoked": event("team", { userId: id }),

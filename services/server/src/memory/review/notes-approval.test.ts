@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { verifyApproval } from "@kobe/protocol/node";
 import { approvalKeyring } from "../../approvals/keys.js";
 import {
+  SUGGESTION_TOOL,
   notesKeyring,
   signNotesApproval,
   verifyNotesApproval,
@@ -59,5 +60,15 @@ describe("the signed approval of a Notes change (KOBE-398)", () => {
       keyFor: keys.keyFor,
     });
     expect(asTool).toEqual({ ok: false, reason: "unknown_key" });
+  });
+
+  it("keeps a suggestion's approval apart from a candidate's (KOBE-652)", () => {
+    const candidateToken = signNotesApproval(keys, change, now);
+    const suggestion = { ...change, tool: SUGGESTION_TOOL } as const;
+    expect(verifyNotesApproval(keys, candidateToken, suggestion, now)).toBe("mismatch");
+    const token = signNotesApproval(keys, suggestion, now);
+    expect(token.tool).toBe(SUGGESTION_TOOL);
+    expect(verifyNotesApproval(keys, token, suggestion, now)).toBe("ok");
+    expect(verifyNotesApproval(keys, token, change, now)).toBe("mismatch");
   });
 });

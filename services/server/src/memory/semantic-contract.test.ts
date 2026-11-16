@@ -65,9 +65,10 @@ describe("semantic memory contract matches the schema", () => {
     for (const action of RESERVED_MEMORY_AUDIT_ACTIONS) {
       expect(action).toMatch(/^memory\.[a-z_]+\.[a-z_]+$/);
       // Learning pass actions are registered by KOBE-393, candidate actions by KOBE-396,
-      // Workspace proposal actions by KOBE-397; the rest wait for their tickets.
+      // Workspace proposal actions by KOBE-397, readers' suggestions by KOBE-652; the rest wait
+      // for their tickets.
       expect(isAuditAction(action), action).toBe(
-        /^memory\.(pass|candidate|proposal)\./.test(action),
+        /^memory\.(pass|candidate|proposal|suggestion)\./.test(action),
       );
     }
     expect(MEMORY_PASS_AUDIT_FAILURE_CODES).toEqual([...MEMORY_PASS_FAILURE_CODES, "interrupted"]);

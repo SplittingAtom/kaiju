@@ -28,7 +28,7 @@ export interface CardSeams {
    * The project action in a project thread (KOBE-398: Add to project notes; readers' Suggest to
    * editors is KOBE-652): `project-notes-action.tsx`, given the statement as edited.
    */
-  readonly projectNotes?: (candidate: Candidate, statement: string) => ReactNode;
+  readonly projectNotes?: (candidate: Candidate, statement: string, kind: ItemKind) => ReactNode;
 }
 
 const NO_ITEMS: ReadonlyMap<string, MemoryItem> = new Map();
@@ -241,7 +241,7 @@ export function CandidateCard({
             onProposed={(p) => seams.propose?.onProposed(candidate, p)}
           />
         )}
-        {seams?.projectNotes?.(candidate, draft.statement)}
+        {seams?.projectNotes?.(candidate, draft.statement, draft.kind)}
         <Button variant="ghost" aria-expanded={editing} onClick={() => setEditing((v) => !v)}>
           {editing ? "Done editing" : "Edit"}
         </Button>

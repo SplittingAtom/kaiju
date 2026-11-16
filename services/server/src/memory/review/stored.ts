@@ -37,7 +37,18 @@ const notesDecisionSchema = z.object({
   version: z.number().int().positive(),
   batch: z.literal(false),
 });
-export const decisionSchema = z.union([memoryDecisionSchema, notesDecisionSchema]);
+/** Suggested to the project's editors (KOBE-652): the suggestion decides from here; no Undo. */
+const suggestedDecisionSchema = z.object({
+  op: z.literal("suggested"),
+  suggestion_id: uuidSchema,
+  project_id: uuidSchema,
+  batch: z.literal(false),
+});
+export const decisionSchema = z.union([
+  memoryDecisionSchema,
+  notesDecisionSchema,
+  suggestedDecisionSchema,
+]);
 export type MemoryDecision = z.infer<typeof memoryDecisionSchema>;
 export type Decision = z.infer<typeof decisionSchema>;
 
@@ -190,12 +201,12 @@ export async function lockCandidate(
   return row;
 }
 
-/** Closes an open candidate (`saved` with its decision, or `dismissed`). */
+/** Closes an open candidate (`saved` or `suggested` with its decision, or `dismissed`). */
 export async function decideCandidate(
   tx: KobeTx,
   teamId: string,
   candidateId: string,
-  state: "saved" | "dismissed",
+  state: "saved" | "suggested" | "dismissed",
   decision?: Decision,
 ): Promise<void> {
   const extra = decision ? JSON.stringify({ decision }) : "{}";

@@ -25,6 +25,11 @@ import { MEMORY_INDEX_FILE } from "@kobe/protocol";
  */
 
 export const NOTES_TOOL = "kobe.project_notes.add";
+/**
+ * An editor approving a reader's suggestion (KOBE-652): `run_id` and `tool_call_id` are the
+ * suggestion, so a token for a candidate never covers a suggestion and the other way round.
+ */
+export const SUGGESTION_TOOL = "kobe.project_notes.suggestion";
 const NOTES_KEY_LABEL = "kobe.project_notes.v1";
 
 export interface NotesChange {
@@ -36,6 +41,8 @@ export interface NotesChange {
   /** `MEMORY.md`'s version the line is added to (0: no file yet). */
   readonly baseVersion: number;
   readonly line: string;
+  /** {@link NOTES_TOOL} (default) or {@link SUGGESTION_TOOL}. */
+  readonly tool?: typeof NOTES_TOOL | typeof SUGGESTION_TOOL;
 }
 
 /** The Notes key: HMAC(approval key, label), with its own kid. */
@@ -67,7 +74,7 @@ export function signNotesApproval(
     team_id: change.teamId,
     run_id: change.passId,
     tool_call_id: change.candidateId,
-    tool: NOTES_TOOL,
+    tool: change.tool ?? NOTES_TOOL,
     input: inputOf(change),
     now,
   });
@@ -85,7 +92,7 @@ export function verifyNotesApproval(
       team_id: change.teamId,
       run_id: change.passId,
       tool_call_id: change.candidateId,
-      tool: NOTES_TOOL,
+      tool: change.tool ?? NOTES_TOOL,
     },
     input: inputOf(change),
     now,

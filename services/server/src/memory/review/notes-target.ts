@@ -21,8 +21,8 @@ import { appendLearned, fitsIndex, indexHasRoom, learnedLine } from "./learned.j
  */
 
 export const READER_REASON =
-  "Only the project's editors, owners and Team admins add to its notes. Suggesting a note to " +
-  "them is coming soon.";
+  "Only the project's editors, owners and Team admins add to its notes: suggest it to them " +
+  "instead.";
 export const DISABLED_REASON = "Project memory is turned off.";
 export const FULL_REASON = `The project's ${MEMORY_INDEX_FILE} is full (${MEMORY_INDEX_MAX_LINES} lines): make room in its Notes first.`;
 export const STORAGE_REASON = "Notes storage is not available.";
@@ -73,8 +73,9 @@ export async function unavailableReason(
   teamId: string,
   project: ThreadProject,
 ): Promise<string | null> {
-  if (project.access !== "write") return READER_REASON;
   if (!(await scopeEnabled(tx, teamId, "project"))) return DISABLED_REASON;
+  // A reader suggests it to the editors instead (KOBE-652): nothing else stands in the way.
+  if (project.access !== "write") return null;
   if (!blobs) return STORAGE_REASON;
   return indexHasRoom((await readIndex(tx, blobs, teamId, project.projectId)).content)
     ? null
@@ -91,21 +92,13 @@ export interface PlannedChange {
   readonly warnings: readonly SemanticMemoryIssue[];
 }
 
-/** Every check at click, then the exact change. Throws the refusal the person sees. */
-export async function planChange(
-  tx: KobeTx,
-  blobs: BlobStore,
-  ids: { teamId: string; userId: string; threadId: string },
-  statement: string,
-): Promise<PlannedChange> {
-  const project = await threadProject(tx, ids);
-  if (!project) throw inactive("This conversation is no longer in a project you can see.");
-  if (project.access !== "write") throw notAllowed(READER_REASON);
-  if (!(await scopeEnabled(tx, ids.teamId, "project")))
-    throw new MemoryItemError("memory_disabled", DISABLED_REASON);
-  // Project notes are shared and the text is model-generated: the Workspace item rules apply
-  // (personal data and instruction lint). Lint hits refuse, as a Workspace save without an
-  // override would; the other warnings travel to the card.
+/**
+ * Project notes are shared and the text is model-generated: the Workspace item rules apply
+ * (personal data and instruction lint). Secrets and lint hits refuse, as a Workspace save without
+ * an override would; the other warnings (returned) travel to the card. Also run on a reader's
+ * suggestion (KOBE-652) when it is made, and again when an editor approves it.
+ */
+export function scanSharedLine(statement: string): readonly SemanticMemoryIssue[] {
   const scan = scanMemoryText({ scope: "team", policy: false, statement });
   if (scan.invalid !== null) throw invalid(scan.invalid);
   if (scan.secret !== null)
@@ -120,7 +113,22 @@ export async function planChange(
       "This reads like an instruction to the agent, so it can't go into the project's notes.",
       { warnings: lint },
     );
-  const warnings = scan.warnings.filter((w) => !w.code.startsWith("instruction_"));
+  return scan.warnings.filter((w) => !w.code.startsWith("instruction_"));
+}
+
+/** Every check at click, then the exact change. Throws the refusal the person sees. */
+export async function planChange(
+  tx: KobeTx,
+  blobs: BlobStore,
+  ids: { teamId: string; userId: string; threadId: string },
+  statement: string,
+): Promise<PlannedChange> {
+  const project = await threadProject(tx, ids);
+  if (!project) throw inactive("This conversation is no longer in a project you can see.");
+  if (project.access !== "write") throw notAllowed(READER_REASON);
+  if (!(await scopeEnabled(tx, ids.teamId, "project")))
+    throw new MemoryItemError("memory_disabled", DISABLED_REASON);
+  const warnings = scanSharedLine(statement);
   const index = await readIndex(tx, blobs, ids.teamId, project.projectId);
   const line = learnedLine(statement);
   const content = appendLearned(index.content, line);
