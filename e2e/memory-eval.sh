@@ -23,6 +23,11 @@
 #       KOBE_EVAL_SEED=1    first create the memories of e2e/fixtures/memory-cache/seed.json
 #                           (once per install; Policy rows need a Site admin)
 #       KOBE_EVAL_LABEL     a label for the output (before/after)
+#       KOBE_EVAL_PLACEMENTS  KOBE-658: comma-separated Site memory placements (system,
+#                           latest_user_keep, latest_user_strip, stable_plus_delta, tool_only);
+#                           replays once per mode in a new thread and reports each mode's
+#                           cache-read share and memory use (e2e/fixtures/memory-cache/expect.json).
+#                           The member must be a Site admin; the Site's placement is restored.
 #
 #   KOBE_EVAL_OUT=<file>  also writes the report as JSON (both modes).
 set -euo pipefail

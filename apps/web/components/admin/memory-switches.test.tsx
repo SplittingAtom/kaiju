@@ -192,6 +192,8 @@ const SETTINGS = {
   stale_after_days: 90,
   rate_limits: { learn_passes_per_hour: 10, saves_per_minute: 30 },
   retention_days: 365,
+  placement: "latest_user_keep",
+  stable_repick_every: 20,
 };
 const SITE_ON = {
   memory_enabled: true,
@@ -293,6 +295,47 @@ describe("Site console › Settings › Memory (KOBE-381 ac-3)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save site memory settings" }));
     await screen.findByText("Site memory settings saved.");
     expect(putBody(calls, SITE)).toMatchObject({ settings: { retention_days: 400 } });
+  });
+
+  it("memory placement (KOBE-658): default shown, saved, re-pick count only for the held mode", async () => {
+    const calls = stubApi({
+      [`GET ${SITE}`]: [200, SITE_ON],
+      [`PUT ${SITE}`]: [200, SITE_ON],
+    });
+    renderSite(<MemorySwitchesSection />);
+    const select = (await screen.findByRole("combobox", {
+      name: /Where memories for each message go/,
+    })) as HTMLSelectElement;
+    expect(select.value).toBe("latest_user_keep");
+    // tool_only waits for memory recall (KOBE-399): not offered unless stored.
+    expect([...select.options].map((o) => o.value)).toEqual([
+      "latest_user_keep",
+      "latest_user_strip",
+      "stable_plus_delta",
+      "system",
+    ]);
+    expect(screen.queryByRole("textbox", { name: /Re-pick the held set/ })).toBeNull();
+    await userEvent.selectOptions(select, "stable_plus_delta");
+    const every = screen.getByRole("textbox", { name: /Re-pick the held set every/ });
+    await userEvent.clear(every);
+    await userEvent.type(every, "10");
+    await userEvent.click(screen.getByRole("button", { name: "Save site memory settings" }));
+    await screen.findByText("Site memory settings saved.");
+    expect(putBody(calls, SITE)).toMatchObject({
+      settings: { placement: "stable_plus_delta", stable_repick_every: 10 },
+    });
+  });
+
+  it("a stored tool_only placement is shown as waiting for recall", async () => {
+    stubApi({
+      [`GET ${SITE}`]: [200, { ...SITE_ON, settings: { ...SETTINGS, placement: "tool_only" } }],
+    });
+    renderSite(<MemorySwitchesSection />);
+    const select = (await screen.findByRole("combobox", {
+      name: /Where memories for each message go/,
+    })) as HTMLSelectElement;
+    expect(select.value).toBe("tool_only");
+    expect(select.selectedOptions[0]?.textContent).toMatch(/needs memory recall/);
   });
 
   it("refuses a context budget outside 4 to 16 KiB before sending", async () => {

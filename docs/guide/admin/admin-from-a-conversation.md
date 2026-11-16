@@ -66,7 +66,8 @@ With a site role, the agent can also work on the Site console: list, deactivate 
 users; list and create teams; list a team's members, add existing users to it, change their team
 role or remove them; site invitations; the model catalog (labels, prices, limits);
 connector status; the egress ceiling and site access requests; the skill blocklist; site grants
-(Skill reviewer and Site memory steward); Site memories, Policy included (read only); branding;
+(Skill reviewer and Site memory steward); Site memories, Policy included (read only); the Site
+memory settings, memory placement included (read only); branding;
 the site budget; usage and the audit log. A Skill reviewer can claim, comment on
 and decide registry reviews.
 

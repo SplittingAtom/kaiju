@@ -166,6 +166,7 @@ describe.skipIf(!PI_AVAILABLE)("memory tools in real Pi, through kobe-sandbox-ag
     const t = await start();
     const caps = (t.server.frames("hello")[0] as { capabilities?: string[] }).capabilities ?? [];
     expect(caps).toContain("semantic_memory");
+    expect(caps).toContain("semantic_memory_placement");
     const policy = {
       id: "00000000-0000-4000-8000-000000000001",
       version: 1,

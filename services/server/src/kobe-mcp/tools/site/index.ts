@@ -30,7 +30,13 @@ import {
   siteTeamMembersRemove,
   siteTeamMembersSetRole,
 } from "./team-members.js";
-import { siteBrandingGet, siteBrandingSet, siteBudgetGet, siteBudgetSet } from "./settings.js";
+import {
+  siteBrandingGet,
+  siteBrandingSet,
+  siteBudgetGet,
+  siteBudgetSet,
+  siteMemorySettingsGet,
+} from "./settings.js";
 import {
   siteGrantsGive,
   siteGrantsList,
@@ -88,6 +94,7 @@ export const KOBE_SITE_TOOLS: readonly KobeTool[] = [
   siteBrandingGet,
   siteBrandingSet,
   siteBudgetGet,
+  siteMemorySettingsGet,
   siteBudgetSet,
   siteUsageRead,
   siteAuditList,

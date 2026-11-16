@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { appNameSchema, themeSettingsSchema } from "@kobe/protocol";
+import { SEMANTIC_MEMORY_PLACEMENTS, appNameSchema, themeSettingsSchema } from "@kobe/protocol";
 import { kobeTool } from "../../catalog.js";
 import { changeLine, fromTo, readAs, sameValues } from "./shared.js";
 
@@ -165,4 +165,60 @@ export const siteBudgetSet = kobeTool({
     return b !== undefined && sameValues(input.change.from, b) ? "same" : "changed";
   },
   summary: (input) => `Change the site budget: ${changeLine(input.change.from, input.change.to)}`,
+});
+
+/**
+ * Site console › Settings › Memory (`/v1/memory/settings?level=site`, `site.settings.manage`),
+ * read only (KOBE-658): the memory placement and the other Site memory settings. Changes stay in
+ * the console.
+ */
+const memorySettingsAnswer = z.object({
+  memory_enabled: z.boolean(),
+  memories_enabled: z.boolean(),
+  settings: z
+    .object({
+      placement: z.enum(SEMANTIC_MEMORY_PLACEMENTS),
+      stable_repick_every: z.number().int(),
+      context_budget_kib: z.number().int(),
+      learning_model_alias: z.string().nullable(),
+      retention_days: z.number().int(),
+    })
+    .loose(),
+});
+
+export const siteMemorySettingsGet = kobeTool({
+  name: "site_memory_settings_get",
+  title: "Read the site memory settings",
+  description:
+    "Reads the Site memory settings (Site console › Settings › Memory): whether Notes and " +
+    "memories are on, where the per-message memories reach the model (placement: system, " +
+    "latest_user_keep, latest_user_strip, stable_plus_delta or tool_only), how often " +
+    "stable_plus_delta re-picks, the context budget, the learning model and the retention. Read " +
+    "only: changes are made in the console.",
+  scope: "site",
+  permission: "site.settings.manage",
+  readOnly: true,
+  input: z.strictObject({}),
+  output: z.strictObject({
+    memory_enabled: z.boolean(),
+    memories_enabled: z.boolean(),
+    placement: z.enum(SEMANTIC_MEMORY_PLACEMENTS),
+    stable_repick_every: z.number().int(),
+    context_budget_kib: z.number().int(),
+    learning_model_alias: z.string().max(64).nullable(),
+    retention_days: z.number().int(),
+  }),
+  route: () => ({ method: "GET", path: "/memory/settings", query: { level: "site" } }),
+  reduce: (body) => {
+    const a = memorySettingsAnswer.parse(body);
+    return {
+      memory_enabled: a.memory_enabled,
+      memories_enabled: a.memories_enabled,
+      placement: a.settings.placement,
+      stable_repick_every: a.settings.stable_repick_every,
+      context_budget_kib: a.settings.context_budget_kib,
+      learning_model_alias: a.settings.learning_model_alias,
+      retention_days: a.settings.retention_days,
+    };
+  },
 });

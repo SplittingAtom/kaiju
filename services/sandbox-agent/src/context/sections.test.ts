@@ -246,6 +246,31 @@ describe("context sections (KOBE-470)", () => {
     expect(JSON.parse(sections[6]?.text ?? "")).toEqual({ command: "ls" });
   });
 
+  it("labels a picks note before a user message as memory, whether converted or not (KOBE-658)", () => {
+    const note = "## What Kobe knows for this message\n<<<BEGIN UNTRUSTED MEMORY n>>>\n- fact: x";
+    const sections = sectionsOf([
+      { role: "user", content: [{ type: "text", text: note }] },
+      { role: "custom", customType: "kobe-memory-picks", content: note },
+      { role: "user", content: `${VIEWING_HEADER}\nfile` },
+      { role: "user", content: "hi" },
+    ]);
+    expect(kinds(sections)).toEqual([
+      "memory:What Kobe knows for this message",
+      "memory:What Kobe knows for this message",
+      "viewing_file:Viewed file",
+      "user_message:User",
+    ]);
+  });
+
+  it("splits a forced prompt with held picks after the project instructions (KOBE-658)", () => {
+    const held = "## What Kobe knows for this conversation\nHELD";
+    const parts = { memory: "", project: "", viewing: "", known: "", picks: "", held };
+    const sections = splitForcedPrompt(`${RENDERED}\n\n${held}`, parts);
+    expect(kinds(sections).at(-1)).toBe("memory:What Kobe knows for this conversation");
+    const byHeader = splitForcedPrompt(`${RENDERED}\n\n${held}`, undefined);
+    expect(kinds(byHeader).at(-1)).toBe("memory:What Kobe knows for this conversation");
+  });
+
   it("puts a raw Context's prompt and tools first, and converts session summaries", () => {
     const messages = contextMessages({
       systemPrompt: "Be brief",

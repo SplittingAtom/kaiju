@@ -64,6 +64,7 @@ export const KOBE_SITE_SAMPLES: Readonly<Record<string, unknown>> = {
   site_branding_get: {},
   site_branding_set: { change: { from: { show_name: true }, to: { show_name: false } } },
   site_budget_get: {},
+  site_memory_settings_get: {},
   site_budget_set: { change: { from: { daily_usd: null }, to: { daily_usd: 10 } } },
   site_usage_read: {},
   site_audit_list: {},

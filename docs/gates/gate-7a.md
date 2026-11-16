@@ -101,6 +101,35 @@ KOBE_EVAL_LABEL=after KOBE_EVAL_OUT=after.json e2e/memory-eval.sh cache
 A turn that does not end in `run.completed` stops the replay. "No cache reads at all" means the
 provider reports no cached tokens: pick another model. Cross-check one thread with the SQL above.
 
+### Memory placement replay (KOBE-658)
+
+KOBE-658 makes where the picks go a Site setting (`memory.placement`, Site console › Settings ›
+Memory): `system` (as measured above), `latest_user_keep` (default: before the newest user
+message, earlier messages keep theirs), `latest_user_strip`, `stable_plus_delta` (a held set in the
+system prompt, re-picked every `stable_repick_every` messages, plus the picks it lacks per message)
+and `tool_only` (waits for KOBE-399; falls back to `latest_user_keep`). One command replays the 20
+turns once per mode, each in a new thread, and reports per mode the cache-read share and **memory
+use**: how many of the 15 scored answers contain what the seeded memories say
+(`e2e/fixtures/memory-cache/expect.json`), so a mode that saves cache by hiding memories shows it.
+The member must be a Site admin (the harness sets the placement and restores the Site's own after):
+
+```bash
+# same KOBE_EVAL_* exports as above (no KOBE_EVAL_SEED: the memories exist)
+KOBE_EVAL_PLACEMENTS=system,latest_user_keep,latest_user_strip,stable_plus_delta \
+  KOBE_EVAL_LABEL=658 KOBE_EVAL_OUT=placements.json e2e/memory-eval.sh cache
+```
+
+ac-3 target: `latest_user_keep` at >= 80% of the pre-383 baseline (91.2% all turns, so >= 73.0%).
+
+| Placement         | Build | Thread | Share (all) | Share (turns 2-20) | Memory use |
+| ----------------- | ----- | ------ | ----------- | ------------------ | ---------- |
+| system            |       |        |             |                    |            |
+| latest_user_keep  |       |        |             |                    |            |
+| latest_user_strip |       |        |             |                    |            |
+| stable_plus_delta |       |        |             |                    |            |
+
+Not measured yet (needs the KOBE-658 build on gate1).
+
 ## Relevance: FTS recall@8 (KOBE-387, SM25/SM30)
 
 Gate A's other number: does the KOBE-382 selector (Postgres full text with the fixed `english`

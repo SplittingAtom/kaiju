@@ -5,6 +5,13 @@ import {
   type KobePromptParts,
   type RawSection,
 } from "./system-prompt.js";
+import { PICKS_HEADER } from "../memory/semantic-context.js";
+import { VIEWING_HEADER } from "../memory/viewing-context.js";
+import { CONFLICTS_HEADER } from "../memory/conflict-context.js";
+
+/** kobe-tools' picks note (KOBE-658, kobe-tools/memory-hooks.ts `MEMORY_PICKS_TYPE`). */
+const PICKS_NOTE_TYPE = "kobe-memory-picks";
+const PICKS_LABEL = "What Kobe knows for this message";
 
 /**
  * A model call's context as ordered sections (KOBE-470, CV3). Takes what kobe-models captured
@@ -86,6 +93,17 @@ function systemSections(message: Rec, leading: boolean, parts?: KobePromptParts)
   return out;
 }
 
+/** kobe-tools' per-message note (KOBE-658): labelled by the part it starts with. */
+function noteSection(text: string): RawSection | undefined {
+  if (text.startsWith(`${PICKS_HEADER}\n`)) return { kind: "memory", label: PICKS_LABEL, text };
+  if (text.startsWith(`${VIEWING_HEADER}\n`))
+    return { kind: "viewing_file", label: "Viewed file", text };
+  if (text.startsWith(`${CONFLICTS_HEADER}\n`)) {
+    return { kind: "system_prompt", label: "Workspace sync conflicts", text };
+  }
+  return undefined;
+}
+
 function userSection(content: unknown): RawSection {
   const { text, images } = contentOf(content);
   const counted = images > 0 ? { images } : {};
@@ -95,6 +113,9 @@ function userSection(content: unknown): RawSection {
   if (text.startsWith(BRANCH_SUMMARY_PREFIX)) {
     return { kind: "other", label: "Branch summary", text, ...counted };
   }
+  // KOBE-658: the picks note kobe-tools puts before a user message reaches the model as one.
+  const note = noteSection(text);
+  if (note !== undefined) return { ...note, ...counted };
   return { kind: "user_message", label: "User", text, ...counted };
 }
 
@@ -149,6 +170,8 @@ function messageSections(message: unknown, index: number, parts?: KobePromptPart
       ];
     case "custom": {
       const { text, images } = contentOf(message.content);
+      if (message.customType === PICKS_NOTE_TYPE)
+        return [{ kind: "memory", label: PICKS_LABEL, text }];
       const label = str(message.customType) || "Custom message";
       return [{ kind: "other", label, text, ...(images > 0 ? { images } : {}) }];
     }

@@ -13,6 +13,13 @@ import { parseRunMemoryState, runMemoryStateQuery, type RunMemoryStateRow } from
 import { memberText, messageText } from "../../threads/messages.js";
 import { locate } from "./location.js";
 import { readRunRecords, recordToRunItem } from "./run-records.js";
+import {
+  applyPlacement,
+  effectivePlacement,
+  markHeld,
+  readEpoch,
+  readHeldSet,
+} from "./placement.js";
 import { trigramSimilarity, trigrams } from "./trigram.js";
 import {
   PREFERENCE_BASE,
@@ -66,6 +73,11 @@ export interface RunSemanticInput {
   readonly message: string;
   /** Site Policy only (an agent version with `notes_only` or `off`, Chris 2026-11-13). */
   readonly policyOnly?: boolean;
+  /**
+   * The sandbox renders `semantic.placement` (KOBE-658, `semantic_memory_placement`): the Site's
+   * placement applies. Otherwise (absent) the picks stay in the system prompt (`system`).
+   */
+  readonly agentPlaces?: boolean;
 }
 
 /** The words of `text` the full-text query ORs together (letters and digits only). */
@@ -295,16 +307,31 @@ export async function buildRunSemantic(
   input: RunSemanticInput,
 ): Promise<{ readonly semantic: RunSemanticMemory; readonly fresh: boolean } | undefined> {
   const context = await readQueryContext(tx, input);
+  const { memory, settings } = context;
+  const placement = effectivePlacement(settings.placement, {
+    agentPlaces: input.agentPlaces === true,
+  });
+  const lanes = input.policyOnly
+    ? []
+    : (["user", "portable", "team", "site"] as const).filter((s) => memory.scopes[s]);
   if (context.recorded) {
     const items = (await readRunRecords(tx, input.teamId, input.userId, input.runId)).map(
       recordToRunItem,
     );
-    return { semantic: runSemanticMemorySchema.parse({ items, omitted_count: 0 }), fresh: false };
+    const recorded = runSemanticMemorySchema.parse({ items, omitted_count: 0 });
+    // The same payload again (KOBE-658): placement and, for stable_plus_delta, the held marks.
+    return {
+      semantic: await placeRecorded(
+        tx,
+        input,
+        recorded,
+        placement,
+        lanes,
+        settings.stable_repick_every,
+      ),
+      fresh: false,
+    };
   }
-  const { memory, settings } = context;
-  const lanes = input.policyOnly
-    ? []
-    : (["user", "portable", "team", "site"] as const).filter((s) => memory.scopes[s]);
   if (!memory.policy && lanes.length === 0) return undefined;
   const q: Query = {
     words: queryWords(context.text),
@@ -312,9 +339,47 @@ export async function buildRunSemantic(
     sticky: context.sticky,
   };
   const rows = await readLanes(tx, input, memory.policy, lanes, q);
-  const semantic = select(rows, lanes, q, settings.context_budget_kib * 1024);
-  if (semantic.items.length === 0 && input.policyOnly) return undefined;
+  const budgetBytes = settings.context_budget_kib * 1024;
+  const selected = select(rows, lanes, q, budgetBytes);
+  if (selected.items.length === 0 && input.policyOnly) return undefined;
+  const held =
+    placement === "stable_plus_delta"
+      ? await heldFor(tx, input, lanes, settings.stable_repick_every)
+      : undefined;
+  const semantic = runSemanticMemorySchema.parse(
+    applyPlacement(selected, placement, { budgetBytes, ...(held ? { held } : {}) }),
+  );
   return { semantic, fresh: true };
+}
+
+/** The held set, or undefined when this run starts its epoch (its own picks become it). */
+async function heldFor(
+  tx: KobeTx,
+  input: RunSemanticInput,
+  lanes: readonly SelectLane[],
+  every: number,
+) {
+  const epoch = await readEpoch(tx, input, every);
+  if (epoch === undefined || epoch.isThisRun) return undefined;
+  return readHeldSet(tx, input, epoch.epochRunId, lanes);
+}
+
+async function placeRecorded(
+  tx: KobeTx,
+  input: RunSemanticInput,
+  recorded: RunSemanticMemory,
+  placement: ReturnType<typeof effectivePlacement>,
+  lanes: readonly SelectLane[],
+  every: number,
+): Promise<RunSemanticMemory> {
+  if (placement !== "stable_plus_delta") {
+    return runSemanticMemorySchema.parse(
+      applyPlacement(recorded, placement, { budgetBytes: Number.POSITIVE_INFINITY }),
+    );
+  }
+  const held = await heldFor(tx, input, lanes, every);
+  const ids = held === undefined ? recorded.items.map((i) => i.id) : held.map((i) => i.id);
+  return runSemanticMemorySchema.parse(markHeld(recorded, new Set(ids)));
 }
 
 /**
@@ -357,7 +422,14 @@ export async function buildPolicyOnly(
   const q: Query = { words: [], message: new Set(), sticky: [] };
   const rows = await readLanes(tx, input, true, [], q);
   const semantic = select(rows, [], q, settings.context_budget_kib * 1024);
-  return semantic.items.length === 0 ? undefined : semantic;
+  if (semantic.items.length === 0) return undefined;
+  // The same placement as the run's other starts, so the preamble (system prompt) matches.
+  const placement = effectivePlacement(settings.placement, {
+    agentPlaces: input.agentPlaces === true,
+  });
+  return runSemanticMemorySchema.parse(
+    applyPlacement(semantic, placement, { budgetBytes: settings.context_budget_kib * 1024 }),
+  );
 }
 
 async function readLanes(

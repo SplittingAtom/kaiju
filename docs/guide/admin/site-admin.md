@@ -148,7 +148,10 @@ read a person's portable preferences either; reading them needs its own break-gl
   memories and no Site Policy anywhere; it is the only switch that stops Policy), project notes, memories, **Portable preferences**, **Learn from this chat**
   and **Members may propose to the Site**, each also needing the workspace's own switch; the
   **learning model** (used by workspaces without their own, where enabled; learning never falls back
-  to another model or the conversation's model), the context budget (4 to 16 KiB), scope limits (by default 300 memories per person in each workspace, 50 portable preferences per person, 1,000 per workspace and 1,000 on the Site; saving stops at the limit and nothing is ever removed to make room, and curators are told when a workspace or the Site reaches 80%), versions kept per memory (default 50; older versions are pruned on edit, except versions a run used and while a legal hold applies: a Site-wide hold for Site memories),
+  to another model or the conversation's model), **where memories for each message go** (memory
+  placement: with each message, kept, by default; with the newest message only; a held set in the
+  system prompt plus changes, re-picked every 20 messages by default; or in the system prompt;
+  see [Memory placement](../memory.md#memory-placement)), the context budget (4 to 16 KiB), scope limits (by default 300 memories per person in each workspace, 50 portable preferences per person, 1,000 per workspace and 1,000 on the Site; saving stops at the limit and nothing is ever removed to make room, and curators are told when a workspace or the Site reaches 80%), versions kept per memory (default 50; older versions are pruned on edit, except versions a run used and while a legal hold applies: a Site-wide hold for Site memories),
   the stale threshold, the retention window and learning rate limits. Turning a switch off deletes
   nothing. See [Memory](../memory.md#switches-that-control-memory). The **Kobe connector** setting is **Off**, **Docs only** (the
   default) or **Docs and admin tools**; see below.

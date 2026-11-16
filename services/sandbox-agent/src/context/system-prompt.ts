@@ -3,7 +3,12 @@ import { MEMORY_HEADER } from "../memory/context.js";
 import { PROJECT_HEADER } from "../memory/project-context.js";
 import { VIEWING_HEADER } from "../memory/viewing-context.js";
 import { CONFLICTS_HEADER } from "../memory/conflict-context.js";
-import { KNOWN_HEADER, PICKS_HEADER, type SemanticSection } from "../memory/semantic-context.js";
+import {
+  HELD_HEADER,
+  KNOWN_HEADER,
+  PICKS_HEADER,
+  type SemanticSection,
+} from "../memory/semantic-context.js";
 
 /**
  * The system prompt of a model call, split into the context viewer's sections (KOBE-470, CV3).
@@ -35,6 +40,9 @@ export interface KobePromptParts {
   readonly picks?: string;
   readonly knownSections?: readonly SemanticSection[];
   readonly picksSections?: readonly SemanticSection[];
+  /** Held picks (KOBE-658, stable_plus_delta): after the project instructions. */
+  readonly held?: string;
+  readonly heldSections?: readonly SemanticSection[];
 }
 
 const SECTION_KINDS: Readonly<Record<string, ContextSectionKind>> = {
@@ -95,7 +103,7 @@ function section(name: string, text: string): RawSection {
   return { kind: kindOfSection(name), label: labelOfSection(name), text };
 }
 
-type TextPart = "memory" | "project" | "viewing" | "conflicts" | "known" | "picks";
+type TextPart = "memory" | "project" | "viewing" | "conflicts" | "known" | "picks" | "held";
 
 /** kobe-tools' parts in the order it appends them (kobe-tools/memory-hooks.ts, KOBE-383). */
 const KOBE_SECTIONS: readonly {
@@ -104,7 +112,7 @@ const KOBE_SECTIONS: readonly {
   readonly kind: ContextSectionKind;
   readonly label: string;
   /** The part's own sections (What Kobe knows: one per lane), when the agent wrote them. */
-  readonly sections?: "knownSections" | "picksSections";
+  readonly sections?: "knownSections" | "picksSections" | "heldSections";
 }[] = [
   {
     part: "known",
@@ -119,6 +127,13 @@ const KOBE_SECTIONS: readonly {
     header: PROJECT_HEADER,
     kind: "agent_instructions",
     label: "Project instructions",
+  },
+  {
+    part: "held",
+    header: HELD_HEADER,
+    kind: "memory",
+    label: "What Kobe knows for this conversation",
+    sections: "heldSections",
   },
   {
     part: "picks",

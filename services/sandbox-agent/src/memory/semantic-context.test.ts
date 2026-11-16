@@ -237,7 +237,9 @@ describe("What Kobe knows (KOBE-383)", () => {
         maxBytes: semanticMemoryRenderedBytes(block),
       });
       // Now charged per fence (7: policy, site and team in both parts, portable, user).
-      expect(semanticMemoryRenderedBytes(block)).toBe(640 + 7 * 160 + 8 * 96 + 3749);
+      expect(semanticMemoryRenderedBytes(block)).toBe(
+        SEMANTIC_MEMORY_RENDER_BLOCK_OVERHEAD_BYTES + 7 * 160 + 8 * 96 + 3749,
+      );
       expect(semanticMemoryRenderedBytes(block)).toBeGreaterThan(old);
       expect(r.dropped).toBe(0);
       expect(size(r)).toBeLessThanOrEqual(semanticMemoryRenderedBytes(block));
