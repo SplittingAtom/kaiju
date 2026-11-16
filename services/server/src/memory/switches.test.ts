@@ -183,7 +183,7 @@ describe("Site memory settings", () => {
     expect(parseMemorySiteSettings(null)).toEqual(MEMORY_SITE_SETTINGS_DEFAULTS);
     expect(MEMORY_SITE_SETTINGS_DEFAULTS).toMatchObject({
       learning_model_alias: null,
-      embedding_model_alias: null,
+      embedding_model: null,
       context_budget_kib: 8,
       version_cap: 50,
       stale_after_days: 90,

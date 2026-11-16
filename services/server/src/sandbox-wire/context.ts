@@ -1,4 +1,5 @@
 import type { SessionSigningKey } from "@kobe/session-token";
+import type { QueryEmbedder } from "../memory/embeddings/service.js";
 import type { ServerCallPurpose, ToolRegistry } from "@kobe/protocol";
 import type { NotebookFiles } from "../notebooks/files.js";
 import type {
@@ -102,6 +103,8 @@ export interface WireContext {
   readonly traceRelay?: TraceRelayContext;
   /** Server calls a completed run may announce (KOBE-234/219); empty: none configured. */
   readonly serverCalls: readonly ServerCallPurpose[];
+  /** The selector's query embedding (KOBE-409); unset: memory search is keyword-only. */
+  readonly memoryEmbeddings?: QueryEmbedder;
   readonly tools: ToolRegistry;
   readonly policy: PolicyCheckDeps;
   /** Storage for `artifact.put` (KOBE-129). */

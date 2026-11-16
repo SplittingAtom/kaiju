@@ -82,6 +82,28 @@ describe("withLocalEmbedding", () => {
   });
 });
 
+describe("the Site embedding model on every member's key (KOBE-409)", () => {
+  it("adds the Site embedding model to each virtual key, outside every catalog", () => {
+    const { providers } = withLocalEmbedding([lanOllama], LOCAL);
+    const desired = buildDesiredState(
+      {
+        providers,
+        catalog: [{ alias: "chat", providerId: "ollama", model: "qwen3.5:9b" }],
+        teams: [
+          { teamId: "t1", members: ["u1"], aliases: ["chat"] },
+          { teamId: "t2", members: ["u2"], aliases: [] },
+        ],
+        siteModels: ["kobe-local/nomic-embed-text", "gone/model"],
+      },
+      "f".repeat(32),
+    );
+    expect(desired.virtualKeys.map((k) => k.models)).toEqual([
+      { "kobe-local": ["nomic-embed-text"], ollama: ["qwen3.5:9b"] },
+      { "kobe-local": ["nomic-embed-text"] },
+    ]);
+  });
+});
+
 describe("the reserved provider id", () => {
   it("cannot be taken by a new Site console provider", () => {
     const r = addProviderSchema.safeParse({

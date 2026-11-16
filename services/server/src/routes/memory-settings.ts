@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { Context, MiddlewareHandler } from "hono";
-import { withTeam } from "@kobe/db";
+import { bumpModelsConfig, withTeam } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
 import {
   requireSitePermission,
@@ -10,6 +10,8 @@ import {
 } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { learnAvailability } from "../memory/learning-model.js";
+import { gatewayProviderNames } from "../memory/embeddings/model.js";
+import { adminWorkspace } from "./memory-vectors.js";
 import {
   readMemorySiteSettings,
   removedModelSettings,
@@ -96,10 +98,11 @@ export function memorySettingsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
       return c.json(
         await db.transaction(async (tx) => {
           const settings = await readMemorySiteSettings(tx);
+          const providers = await gatewayProviderNames(tx, deps.memoryEmbeddings.localModel);
           return siteWire(
             await readSiteSwitches(tx),
             settings,
-            await removedModelSettings(tx, settings),
+            await removedModelSettings(tx, settings, providers),
           );
         }),
       );
@@ -139,11 +142,16 @@ export function memorySettingsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
     if (!body || (empty(switches) && (settings === undefined || empty(settings)))) {
       return invalidRequest(c, "Send at least one switch or setting (expected is for level=team).");
     }
+    let embeddingChanged = false;
     const out = await db.transaction(async (tx) => {
       await lockSiteMemorySettings(tx);
-      // Settings first: a new unknown model alias refuses before anything is written.
-      const written = await writeMemorySiteSettings(tx, settings ?? {});
+      // Settings first: a new unknown model refuses before anything is written.
+      const providers = await gatewayProviderNames(tx, deps.memoryEmbeddings.localModel);
+      const written = await writeMemorySiteSettings(tx, settings ?? {}, providers);
       if (!written.ok) return written;
+      // KOBE-409: every member's virtual key allows the Site embedding model (models/sync.ts).
+      embeddingChanged = written.changed.includes("embedding_model");
+      if (embeddingChanged) await bumpModelsConfig(tx);
       const { before, after } = await writeSiteSwitches(tx, siteSwitchChangeOf(switches));
       const switchChanged = (Object.keys(after) as (keyof SiteMemorySwitches)[]).some(
         (k) => before[k] !== after[k],
@@ -154,9 +162,22 @@ export function memorySettingsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
           target: { ...after, ...settingsAudit(written.before, written.settings, written.changed) },
         });
       }
-      return siteWire(after, written.settings, await removedModelSettings(tx, written.settings));
+      return siteWire(
+        after,
+        written.settings,
+        await removedModelSettings(tx, written.settings, providers),
+      );
     });
     if ("ok" in out) return c.json({ code: out.code, message: out.message }, 400);
+    if (embeddingChanged) {
+      // A new model re-embeds in the background, paid by this admin in their current Workspace
+      // (keyword search meanwhile); without one they start it from the Site memory page.
+      deps.memoryEmbeddings.invalidate();
+      if (out.settings.embedding_model !== null) {
+        const teamId = await adminWorkspace(deps, c);
+        if (teamId !== null) await deps.memoryVectors.start({ userId: c.get("user").id, teamId });
+      }
+    }
     return c.json(out);
   }
 
@@ -235,10 +256,10 @@ function settingsAudit(
   changed: readonly string[],
 ) {
   if (changed.length === 0) return {};
-  const model = (k: "learning_model_alias" | "embedding_model_alias") =>
+  const model = (k: "learning_model_alias" | "embedding_model") =>
     changed.includes(k) ? { from: before[k], to: after[k] } : undefined;
   const learning = model("learning_model_alias");
-  const embedding = model("embedding_model_alias");
+  const embedding = model("embedding_model");
   return {
     settings: [...changed],
     ...(learning ? { learningModel: learning } : {}),

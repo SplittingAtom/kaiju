@@ -1,0 +1,214 @@
+import { randomUUID } from "node:crypto";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { sql, withTeam } from "@kobe/db";
+import { SERVER_CALL_TOKEN_HEADER } from "@kobe/protocol";
+import { generateSessionKeyPair, verifyServerCallToken } from "@kobe/session-token";
+import { EventStreamFixture, PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";
+import { TestBrowser } from "./testing/browser.js";
+import { MemoryObjects } from "./testing/memory-objects.js";
+import { MEMORY_SITE_SETTINGS_KEY } from "./memory/site-settings.js";
+import { readVectorSupport } from "./memory/embeddings/vector-support.js";
+import { conceptVector } from "./testing/fake-embeddings.js";
+
+/**
+ * KOBE-409: the Site embedding model, embed on save, Build vectors and the Site console's state,
+ * against a database with pgvector (the test server has it) and a fake gateway that embeds by
+ * concept words. Billing: a save is paid by the saver in the Workspace they act in (no run); a
+ * build by the Site admin in their active Workspace. A refusal never fails the save.
+ */
+const PAIR = generateSessionKeyPair();
+const MODEL = "kobe-local/test-embed";
+const fx = new EventStreamFixture();
+
+interface Call {
+  readonly claims: Record<string, unknown>;
+  readonly inputs: string[];
+}
+const calls: Call[] = [];
+let refuse: string | undefined;
+
+const gateway = (async (url: string | URL, init?: RequestInit) => {
+  expect(String(url)).toBe("http://gateway.test/v1/embeddings");
+  const headers = init?.headers as Record<string, string>;
+  const verified = verifyServerCallToken(
+    PAIR.verify,
+    headers[SERVER_CALL_TOKEN_HEADER],
+    Math.floor(Date.now() / 1000),
+  );
+  const body = JSON.parse(String(init?.body)) as { input: string[] };
+  calls.push({
+    claims: verified.ok ? (verified.claims as unknown as Record<string, unknown>) : {},
+    inputs: body.input,
+  });
+  if (refuse) return new Response(JSON.stringify({ error: { code: refuse } }), { status: 429 });
+  const data = body.input.map((t, index) => ({ index, embedding: conceptVector(t) }));
+  return new Response(JSON.stringify({ data }), { status: 200 });
+}) as typeof fetch;
+
+let admin: Person & { readonly id: string };
+let member: Person;
+let team: string;
+
+beforeAll(async () => {
+  await fx.setup([{}], () => ({
+    blobs: { objects: new MemoryObjects(), prefix: "kobe/" },
+    serverCalls: { gatewayUrl: "http://gateway.test", key: PAIR.signing, fetch: gateway },
+    embeddings: { localModel: "kobe-local/nomic-embed-text" },
+  }));
+  const email = `vec-adm-${randomUUID().slice(0, 6)}@events.test`;
+  const { id } = await fx
+    .replica(0)
+    .deps.createUserWithPassword(
+      { email, name: "va", password: "a long enough password" },
+      { siteRole: "admin" },
+    );
+  const browser = new TestBrowser(fx.replica(0).app, PUBLIC_URL);
+  expect(
+    (await browser.post("/api/auth/sign-in/email", { email, password: "a long enough password" }))
+      .status,
+  ).toBe(200);
+  admin = { id, email, browser };
+  member = await fx.person("vec-mem");
+  team = await fx.team(`vec-${randomUUID().slice(0, 6)}`, admin, [member]);
+  await fx.activate(admin, team);
+  await fx.activate(member, team);
+});
+afterAll(() => fx.teardown());
+afterEach(async () => {
+  refuse = undefined;
+  calls.length = 0;
+  await fx.admin.query(`DELETE FROM site_settings WHERE key = $1`, [MEMORY_SITE_SETTINGS_KEY]);
+  fx.replica(0).deps.memoryEmbeddings.invalidate();
+});
+
+const setModel = (model: string | null) =>
+  admin.browser.put("/v1/memory/settings?level=site", { settings: { embedding_model: model } });
+
+async function vectorOf(itemId: string) {
+  const res = await fx.admin.query(
+    `SELECT embedding_model, embedding_dims FROM semantic_memory_item_versions WHERE item_id = $1`,
+    [itemId],
+  );
+  return res.rows[0] as { embedding_model: string | null; embedding_dims: number | null };
+}
+
+describe("memory vectors (KOBE-409)", () => {
+  it("the test database has pgvector and the embedding columns", async () => {
+    expect(await readVectorSupport(fx.replica(0).deps.database.db)).toEqual({
+      extension: "enabled",
+      columns: true,
+    });
+  });
+
+  it("the embedding model names a gateway provider; an unknown one is refused", async () => {
+    const bad = await setModel("nowhere/model");
+    expect([bad.status, (bad.json as { code: string }).code]).toEqual([
+      400,
+      "unknown_embedding_provider",
+    ]);
+    const ok = await setModel(MODEL);
+    expect(ok.status).toBe(200);
+    expect((ok.json as { settings: { embedding_model: string } }).settings.embedding_model).toBe(
+      MODEL,
+    );
+    const state = await admin.browser.get("/v1/memory/vectors");
+    expect(state.json).toMatchObject({
+      pgvector: "enabled",
+      columns: true,
+      model: MODEL,
+      model_state: "ok",
+      local_model: "kobe-local/nomic-embed-text",
+      server_calls: true,
+    });
+    expect((state.json as { providers: string[] }).providers).toContain("kobe-local");
+  });
+
+  it("embeds on save, paid by the saver in their Workspace; a budget refusal keeps the save", async () => {
+    await setModel(MODEL);
+    await fx.replica(0).deps.background.idle();
+    calls.length = 0;
+    const res = await member.browser.post("/v1/memory/semantic/items", {
+      scope: "user",
+      kind: "fact",
+      statement: "I drive an electric car to work",
+    });
+    expect(res.status, JSON.stringify(res.json)).toBe(201);
+    const id = (res.json as { id: string }).id;
+    await fx.replica(0).deps.background.idle();
+    expect(await vectorOf(id)).toEqual({ embedding_model: MODEL, embedding_dims: 6 });
+    expect(calls[0]?.claims).toMatchObject({
+      purpose: "memory_embed",
+      team_id: team,
+      user_id: member.id,
+      model: MODEL,
+    });
+    expect(calls[0]?.claims.run_id).toBeUndefined();
+
+    refuse = "budget_exhausted";
+    const refused = await member.browser.post("/v1/memory/semantic/items", {
+      scope: "user",
+      kind: "fact",
+      statement: "My invoices are due monthly",
+    });
+    expect(refused.status).toBe(201);
+    await fx.replica(0).deps.background.idle();
+    expect(await vectorOf((refused.json as { id: string }).id)).toEqual({
+      embedding_model: null,
+      embedding_dims: null,
+    });
+  });
+
+  it("Build vectors embeds what is missing, paid by the admin; coverage counts it", async () => {
+    // Saved before any model was set: no vector yet.
+    const res = await member.browser.post("/v1/memory/semantic/items", {
+      scope: "user",
+      kind: "fact",
+      statement: "It rains a lot in spring",
+    });
+    expect(res.status).toBe(201);
+    await fx.replica(0).deps.background.idle();
+    expect(calls).toEqual([]);
+    // Saving the model starts the build (the admin pays, in their active Workspace).
+    expect((await setModel(MODEL)).status).toBe(200);
+    await fx.replica(0).deps.background.idle();
+    expect(await vectorOf((res.json as { id: string }).id)).toMatchObject({
+      embedding_model: MODEL,
+    });
+    expect(calls.length).toBeGreaterThan(0);
+    for (const c of calls) expect(c.claims).toMatchObject({ team_id: team, user_id: admin.id });
+    const state = (await admin.browser.get("/v1/memory/vectors")).json as {
+      coverage: { embedded: number; total: number };
+      job: { state: string; embedded: number };
+    };
+    expect(state.coverage.embedded).toBe(state.coverage.total);
+    expect(state.job.state).toBe("done");
+    // Again: nothing is missing, so no call; the action answers 202 all the same.
+    calls.length = 0;
+    const again = await admin.browser.post("/v1/memory/vectors/build", {});
+    expect(again.status).toBe(202);
+    await fx.replica(0).deps.background.idle();
+    expect(calls).toEqual([]);
+  });
+
+  it("Build vectors is unavailable without a model", async () => {
+    const res = await admin.browser.post("/v1/memory/vectors/build", {});
+    expect([res.status, (res.json as { code: string }).code]).toEqual([400, "unavailable"]);
+    const state = (await admin.browser.get("/v1/memory/vectors")).json as Record<string, unknown>;
+    expect(state).toMatchObject({ model: null, model_state: "no_model" });
+  });
+
+  it("a member gets 403 on the Site vector routes", async () => {
+    expect((await member.browser.get("/v1/memory/vectors")).status).toBe(403);
+    expect((await member.browser.post("/v1/memory/vectors/build", {})).status).toBe(403);
+  });
+
+  it("vector writes stay inside the Workspace (RLS)", async () => {
+    const other = await fx.team(`vec-o-${randomUUID().slice(0, 6)}`, member, []);
+    const rows = await withTeam(fx.replica(0).deps.database.db, other, async (tx) =>
+      tx.execute(
+        sql`SELECT count(*)::int AS n FROM semantic_memory_item_versions WHERE team_id = ${team}`,
+      ),
+    );
+    expect((rows.rows[0] as { n: number }).n).toBe(0);
+  });
+});
