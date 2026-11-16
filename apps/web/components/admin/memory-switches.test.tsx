@@ -422,6 +422,11 @@ describe("Site console › Settings › Memory: search by meaning (KOBE-409)", (
     await screen.findByText("No embedding model is set");
     const field = screen.getByRole("combobox", { name: /Embedding model \(gateway model\)/ });
     expect(field.getAttribute("placeholder")).toBe("kobe-local/nomic-embed-text");
+    // Review M2: the field says plainly what goes to the embedding provider.
+    expect(
+      screen.getByText(/every run message \(up to 4,000 characters\) and every saved memory/),
+    ).toBeTruthy();
+    expect(screen.getByText(/memories of every workspace/)).toBeTruthy();
     await userEvent.type(field, "kobe-mac-mini/qwen3-embedding:0.6b");
     await userEvent.click(screen.getByRole("button", { name: "Save site memory settings" }));
     await screen.findByText("Site memory settings saved.");

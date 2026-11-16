@@ -288,7 +288,7 @@ function SiteMemorySettingsForm({
         <Field
           label="Embedding model (gateway model)"
           error={gone("embeddingModel", draft.embeddingModel)}
-          hint="Adds search by meaning to word matching. Name a model the gateway serves as provider/model: the in-cluster model, or an embedding model of a Site provider (for example a LAN Ollama). It is not added to any model picker. Saving a new model builds vectors in the background, paid by you in your active workspace; until then, and whenever vectors are unavailable, search uses English word matching."
+          hint="Adds search by meaning to word matching. Name a model the gateway serves as provider/model: the in-cluster model, or an embedding model of a Site provider (for example a LAN Ollama); not a chat model. It is not added to any model picker. Its provider receives every run message (up to 4,000 characters) and every saved memory, and Build vectors sends the memories of every workspace, every member's portable memories and the Site's, paid by you in your active workspace: choose a provider your organization may send that to (the in-cluster model keeps it in your cluster). Saving a new model builds vectors in the background; until then, and whenever vectors are unavailable, search uses English word matching."
         >
           <TextInput
             value={draft.embeddingModel}

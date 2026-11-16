@@ -273,9 +273,12 @@ it is unavailable, search uses word matching alone and nothing else changes.
   `kobe-local/nomic-embed-text`. You can name an embedding model of any provider under
   **Models and providers** instead, such as an Ollama server on your network
   (`kobe-mac-mini/qwen3-embedding:0.6b`, for example) or a hosted provider with a site key. The
-  embedding model is not added to the models list, so it never shows in a model picker, and it is
-  never replaced by another model: if its provider is removed, the page says so and search uses
-  word matching until you choose another.
+  embedding model is not added to the models list, so it never shows in a model picker (nor in
+  the list of models an agent's sandbox can ask the gateway for), and it is never replaced by
+  another model: if its provider is removed, the page says so and search uses word matching until
+  you choose another. A chat model from the models list is refused, and when the provider
+  publishes its list of models the name must be on it; a provider without a list (an Ollama server
+  without a key, the in-cluster model) takes the name as you type it, so check the spelling.
 - **Vectors.** Each memory is turned into a vector when it is saved (in every place: yours,
   portable, workspace and site). Saving a new model builds vectors for every memory in the
   background; until a memory has a vector from the current model, word matching finds it. The
@@ -296,7 +299,20 @@ it is unavailable, search uses word matching alone and nothing else changes.
     `CREATE EXTENSION vector;` in Kobe's database, then Kobe is upgraded;
   - _no embedding model is set_, or _the embedding model's provider is gone_: choose one above.
 
-Memories are never sent anywhere but to the embedding model you chose, through the gateway.
+- **What is sent to the embedding provider.** Choosing an embedding model sends text to that
+  model's provider, through the gateway:
+  - every message a member sends in a run with memories (up to its first 4,000 characters),
+    to search for that message;
+  - every memory statement when it is saved, edited, reverted or imported, in every place (yours,
+    portable, workspace and site);
+  - with **Build vectors** (or **Re-embed**, or saving a new model), the statements of **every**
+    memory without a vector: site memories, every member's portable memories and the personal and
+    shared memories of **every workspace**, all charged to the site admin who started it, in their
+    active workspace.
+
+  Pick a provider your organization may send all of that to: the in-cluster model keeps it inside
+  your cluster; a hosted provider receives it under its own terms. Nothing else is sent, and
+  memories never go anywhere but to the embedding model you chose.
 
 ### Legal hold on Site memory
 

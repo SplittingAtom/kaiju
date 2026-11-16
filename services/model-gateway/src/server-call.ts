@@ -33,8 +33,9 @@ export interface ServerCallOptions {
   readonly keys: SessionVerifyKeys;
   readonly replay: ServerCallReplay;
   /**
-   * The token's run is a completed run of its thread, leased to its member (review L1): one
-   * indexed read (`serverCallRunMatches`), so a server bug cannot charge another member.
+   * The token's run is a completed run of its thread, leased to its member (review L1), or for
+   * `memory_embed` a live run of a thread its member owns (KOBE-409): one indexed read
+   * (`serverCallRunMatches`), so a server bug cannot charge another member.
    */
   readonly runMatches: (claim: ServerCallRunClaim) => Promise<boolean>;
   /**

@@ -234,9 +234,11 @@ output allowance is 0 and the usage meter never counts the returned vectors as o
 the provider's `prompt_tokens`, else estimated from the request size.
 
 The run is optional: the selector's query embedding names the run being started, saves and
-backfill name none. A token that names a run must name a live run of that thread leased to that
-member: any status but a terminal failure (queued, running, waiting for approval or completed;
-never failed, interrupted, cancelled or budget-stopped), else 403 `server_call_run_mismatch`. The
+backfill name none. A token that names a run must name a live run of that thread owned by that
+member (the thread's owner, whose sandbox runs it: the embedding starts when the message is
+accepted, before any sandbox lease exists): any status but a terminal failure (queued, running,
+waiting for approval or completed; never failed, interrupted, cancelled or budget-stopped), else
+403 `server_call_run_mismatch`. Selection waits for that early embedding at most 35 ms. The
 model is the Site embedding model, a gateway model id in no catalog: the gateway does not require
 the Workspace to enable it on `memory_embed` tokens, and Bifrost still decides, because the sync
 adds the Site embedding model to every member's virtual key and nothing else. The budget
