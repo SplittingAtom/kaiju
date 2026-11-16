@@ -568,6 +568,8 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     budget: options.runs?.budget ?? DB_RUN_BUDGET_GATE,
     db: database.db,
     router: sandboxWire.router,
+    // KOBE-409 review M1: the query embedding starts as the run's start is sent.
+    prefetchQuery: (query) => memoryEmbeddings.prefetchQuery(query),
   });
   late.runs = runs;
   runs.useNotebooks(notebookFiles);

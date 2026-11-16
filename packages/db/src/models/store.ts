@@ -371,47 +371,64 @@ const LIVE_CLAIM_STATUSES = ["queued", "running", "waiting_approval", "completed
  * server bug cannot charge another member's budget for a thread's title or follow-ups; with
  * `authorOnly` the member is the thread's author too (KOBE-391). One read by primary keys, in the
  * team's RLS context. A `live` claim (KOBE-409) also takes a run that has not ended yet, never one
- * that failed, was interrupted, cancelled or budget-stopped.
+ * that failed, was interrupted, cancelled or budget-stopped; it matches on the thread's owner
+ * instead of the lease (review M1: the query embedding starts when the message is accepted,
+ * before a sandbox took the run, and a thread's runs always run in its owner's sandbox, so the
+ * owner is the member a lease would name).
  */
 export async function serverCallRunMatches(
   db: KobeDb,
   claim: ServerCallRunClaim,
 ): Promise<boolean> {
   return withTeam(db, claim.teamId, async (tx) => {
-    const rows = await tx
-      .select({ runId: runs.id })
-      .from(runs)
-      .innerJoin(
-        sandboxRunLeases,
-        and(eq(sandboxRunLeases.teamId, runs.teamId), eq(sandboxRunLeases.runId, runs.id)),
-      )
-      .where(
-        and(
-          eq(runs.teamId, claim.teamId),
-          eq(runs.id, claim.runId),
-          eq(runs.threadId, claim.threadId),
-          claim.live
-            ? inArray(runs.status, [...LIVE_CLAIM_STATUSES])
-            : eq(runs.status, "completed"),
-          eq(sandboxRunLeases.userId, claim.userId),
-          eq(sandboxRunLeases.threadId, claim.threadId),
-          claim.authorOnly
-            ? exists(
-                tx
-                  .select({ id: threads.id })
-                  .from(threads)
-                  .where(
-                    and(
-                      eq(threads.teamId, claim.teamId),
-                      eq(threads.id, claim.threadId),
-                      eq(threads.ownerUserId, claim.userId),
-                    ),
-                  ),
-              )
-            : undefined,
-        ),
-      )
-      .limit(1);
+    const run = and(
+      eq(runs.teamId, claim.teamId),
+      eq(runs.id, claim.runId),
+      eq(runs.threadId, claim.threadId),
+    );
+    const rows = claim.live
+      ? await tx
+          .select({ runId: runs.id })
+          .from(runs)
+          .innerJoin(threads, and(eq(threads.teamId, runs.teamId), eq(threads.id, runs.threadId)))
+          .where(
+            and(
+              run,
+              inArray(runs.status, [...LIVE_CLAIM_STATUSES]),
+              eq(threads.ownerUserId, claim.userId),
+            ),
+          )
+          .limit(1)
+      : await tx
+          .select({ runId: runs.id })
+          .from(runs)
+          .innerJoin(
+            sandboxRunLeases,
+            and(eq(sandboxRunLeases.teamId, runs.teamId), eq(sandboxRunLeases.runId, runs.id)),
+          )
+          .where(
+            and(
+              run,
+              eq(runs.status, "completed"),
+              eq(sandboxRunLeases.userId, claim.userId),
+              eq(sandboxRunLeases.threadId, claim.threadId),
+              claim.authorOnly
+                ? exists(
+                    tx
+                      .select({ id: threads.id })
+                      .from(threads)
+                      .where(
+                        and(
+                          eq(threads.teamId, claim.teamId),
+                          eq(threads.id, claim.threadId),
+                          eq(threads.ownerUserId, claim.userId),
+                        ),
+                      ),
+                  )
+                : undefined,
+            ),
+          )
+          .limit(1);
     return rows.length > 0;
   });
 }

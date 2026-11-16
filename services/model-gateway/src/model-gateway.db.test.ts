@@ -474,7 +474,7 @@ describe("server calls against the real store and ledger (KOBE-234)", () => {
   });
 
   it("a live-run claim (KOBE-409 memory_embed) takes an unfinished run, never a failed one", async () => {
-    const make = (status: "running" | "completed" | "failed" | "cancelled") =>
+    const make = (status: "running" | "completed" | "failed" | "cancelled", leased = true) =>
       withTeam(app.db, team, async (tx) => {
         const [thread] = await tx
           .insert(threads)
@@ -492,13 +492,15 @@ describe("server calls against the real store and ledger (KOBE-234)", () => {
             ...(ended ? { endedAt: new Date() } : {}),
           })
           .returning({ id: runs.id });
-        await tx.insert(sandboxRunLeases).values({
-          teamId: team,
-          runId: run?.id ?? "",
-          userId: user,
-          threadId: thread?.id ?? "",
-          sandboxId,
-        });
+        if (leased) {
+          await tx.insert(sandboxRunLeases).values({
+            teamId: team,
+            runId: run?.id ?? "",
+            userId: user,
+            threadId: thread?.id ?? "",
+            sandboxId,
+          });
+        }
         return { teamId: team, runId: run?.id ?? "", threadId: thread?.id ?? "", userId: user };
       });
     const running = await make("running");
@@ -514,6 +516,17 @@ describe("server calls against the real store and ledger (KOBE-234)", () => {
     }
     expect(
       await serverCallRunMatches(app.db, { ...running, userId: randomUUID(), live: true }),
+    ).toBe(false);
+    // Review M1: the query embedding starts when the message is accepted, before any sandbox
+    // took the run (no lease yet): the thread's owner (whose sandbox runs it) is the member.
+    const unleased = await make("running", false);
+    expect(await serverCallRunMatches(app.db, { ...unleased, live: true })).toBe(true);
+    expect(await serverCallRunMatches(app.db, unleased)).toBe(false);
+    expect(
+      await serverCallRunMatches(app.db, { ...unleased, userId: randomUUID(), live: true }),
+    ).toBe(false);
+    expect(
+      await serverCallRunMatches(app.db, { ...unleased, threadId: randomUUID(), live: true }),
     ).toBe(false);
   });
 });

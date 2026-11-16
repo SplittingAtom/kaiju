@@ -8,6 +8,7 @@ import { embeddingModelFor, type EmbeddingModel } from "./model.js";
 import { documentText, queryText } from "./prefixes.js";
 import { pendingVersions, writeVectors, type VectorTable } from "./vector-store.js";
 import { readVectorSupport, type VectorSupport } from "./vector-support.js";
+import { PendingQueries, runWantsVectors } from "./query-prefetch.js";
 
 /**
  * Memory embeddings (KOBE-409): embed on save, the selector's query embedding and what the
@@ -19,7 +20,11 @@ import { readVectorSupport, type VectorSupport } from "./vector-support.js";
  * a run: a failure is logged and the item or message is searched by keywords.
  */
 
-/** The selector waits at most this long for the query vector, then searches by keywords. */
+/**
+ * The selector waits at most this long for the query vector, then searches by keywords. The
+ * embedding itself starts when the message is accepted (`prefetchQuery`, review M1), so by
+ * selection it has usually answered already.
+ */
 export const QUERY_EMBED_DEADLINE_MS = 35;
 /** How long the Site model and pgvector state are reused before they are read again. */
 export const STATE_TTL_MS = 10_000;
@@ -42,6 +47,11 @@ export interface QueryEmbedInput {
 
 /** The part the selector needs (sandbox-wire delivery). */
 export interface QueryEmbedder {
+  /**
+   * Starts this run's query embedding now (when the message is accepted, or as delivery begins),
+   * without waiting; `queryVector` then takes it. Nothing for a run without memory lanes.
+   */
+  prefetchQuery?(input: QueryEmbedInput): void;
   /** Resolves within the deadline: the vector, or undefined (no model, no pgvector, late, error). */
   queryVector(input: QueryEmbedInput): Promise<QueryVector | undefined>;
 }
@@ -87,6 +97,11 @@ export class MemoryEmbeddings implements QueryEmbedder {
   readonly #o: MemoryEmbeddingsOptions;
   #model: Cached<EmbeddingModel> | undefined;
   #support: Cached<VectorSupport> | undefined;
+  #modelLoad: Promise<EmbeddingModel> | undefined;
+  #supportLoad: Promise<VectorSupport> | undefined;
+  readonly #pending = new PendingQueries();
+  /** Bumped by `invalidate`: a read begun before it stores nothing. */
+  #gen = 0;
 
   constructor(options: MemoryEmbeddingsOptions) {
     this.#o = options;
@@ -103,22 +118,61 @@ export class MemoryEmbeddings implements QueryEmbedder {
 
   /** Forget the cached model and pgvector state (the Site setting changed). */
   invalidate(): void {
+    this.#gen += 1;
     this.#model = undefined;
     this.#support = undefined;
+    this.#modelLoad = undefined;
+    this.#supportLoad = undefined;
   }
 
+  /**
+   * The Site model, cached for {@link STATE_TTL_MS}. Past that the cached value is still answered
+   * at once and read again in the background (review M1: no database read inside the selection's
+   * window once warm); only the first read, or one after `invalidate`, waits.
+   */
   async model(): Promise<EmbeddingModel> {
-    if (this.#model && this.#now() - this.#model.at < STATE_TTL_MS) return this.#model.value;
-    const value = await embeddingModelFor(this.#o.db, this.localModel);
-    this.#model = { value, at: this.#now() };
-    return value;
+    const cached = this.#model;
+    if (cached && this.#now() - cached.at < STATE_TTL_MS) return cached.value;
+    const load = (this.#modelLoad ??= this.#loadModel());
+    if (cached) {
+      load.catch(() => undefined);
+      return cached.value;
+    }
+    return load;
   }
 
+  async #loadModel(): Promise<EmbeddingModel> {
+    const gen = this.#gen;
+    try {
+      const value = await embeddingModelFor(this.#o.db, this.localModel);
+      if (gen === this.#gen) this.#model = { value, at: this.#now() };
+      return value;
+    } finally {
+      if (gen === this.#gen) this.#modelLoad = undefined;
+    }
+  }
+
+  /** pgvector's state, cached as {@link model} is. */
   async support(): Promise<VectorSupport> {
-    if (this.#support && this.#now() - this.#support.at < STATE_TTL_MS) return this.#support.value;
-    const value = await readVectorSupport(this.#o.db);
-    this.#support = { value, at: this.#now() };
-    return value;
+    const cached = this.#support;
+    if (cached && this.#now() - cached.at < STATE_TTL_MS) return cached.value;
+    const load = (this.#supportLoad ??= this.#loadSupport());
+    if (cached) {
+      load.catch(() => undefined);
+      return cached.value;
+    }
+    return load;
+  }
+
+  async #loadSupport(): Promise<VectorSupport> {
+    const gen = this.#gen;
+    try {
+      const value = await readVectorSupport(this.#o.db);
+      if (gen === this.#gen) this.#support = { value, at: this.#now() };
+      return value;
+    } finally {
+      if (gen === this.#gen) this.#supportLoad = undefined;
+    }
   }
 
   /** The model to embed with now, or undefined (no client, no model, no columns). */
@@ -206,18 +260,50 @@ export class MemoryEmbeddings implements QueryEmbedder {
     return { stored };
   }
 
-  queryVector(input: QueryEmbedInput): Promise<QueryVector | undefined> {
-    const deadline = this.#o.queryDeadlineMs ?? QUERY_EMBED_DEADLINE_MS;
-    const signal = AbortSignal.timeout(deadline);
-    const work = this.#embedQuery(input, signal).catch((err: unknown) => {
-      if (!signal.aborted) {
-        this.#o.log.info(
-          { run_id: input.runId, code: codeOf(err) },
-          "memory query embedding failed; keyword search for this message",
-        );
-      }
+  /** Whether this run's selection reads a memory lane (`runWantsVectors`; tests replace it). */
+  runWantsVectors(input: QueryEmbedInput): Promise<boolean> {
+    return runWantsVectors(this.#o.db, input);
+  }
+
+  /**
+   * Starts the run's query embedding now, bounded only by the server-call timeout (review M1):
+   * called when the message is accepted and again as delivery begins (once per run per process).
+   * A run without memory lanes pays for nothing; its entry resolves to undefined.
+   */
+  prefetchQuery(input: QueryEmbedInput): void {
+    if (!this.#o.client || input.message.trim() === "" || !this.#pending.canStart(input.runId)) {
+      return;
+    }
+    const signal = AbortSignal.timeout(SERVER_CALL_LIMITS.memory_embed.timeout_ms);
+    const work = (async () => {
+      if (!(await this.runWantsVectors(input))) return undefined;
+      return this.#embedQuery(input, signal);
+    })().catch((err: unknown) => {
+      this.#o.log.info(
+        { run_id: input.runId, code: codeOf(err) },
+        "memory query embedding failed; keyword search for this message",
+      );
       return undefined;
     });
+    this.#pending.put(input.runId, input.message, work);
+  }
+
+  queryVector(input: QueryEmbedInput): Promise<QueryVector | undefined> {
+    const deadline = this.#o.queryDeadlineMs ?? QUERY_EMBED_DEADLINE_MS;
+    // Started when the message was accepted: only wait for it (review M1).
+    const early = this.#pending.take(input.runId, input.message);
+    const signal = AbortSignal.timeout(deadline);
+    const work =
+      early ??
+      this.#embedQuery(input, signal).catch((err: unknown) => {
+        if (!signal.aborted) {
+          this.#o.log.info(
+            { run_id: input.runId, code: codeOf(err) },
+            "memory query embedding failed; keyword search for this message",
+          );
+        }
+        return undefined;
+      });
     // Late answers are dropped: the selector never waits past the deadline.
     const late = new Promise<undefined>((resolve) => {
       const timer = setTimeout(() => resolve(undefined), deadline);

@@ -78,6 +78,75 @@ describe("query embedding deadline (KOBE-409)", () => {
   });
 });
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+describe("query embedding started when the message is accepted (KOBE-409 review M1)", () => {
+  /** A gateway call that takes `ms` (token checks, budget reservation, Bifrost, the provider). */
+  const slowEmbed = (ms: number, order: string[]) => async () => {
+    order.push("embed");
+    await sleep(ms);
+    return [[0.3, 0.4]];
+  };
+
+  it("starts the embedding before selection, which only waits for it within the deadline", async () => {
+    const order: string[] = [];
+    const s = service(slowEmbed(80, order), 20);
+    s.runWantsVectors = async () => true;
+    s.prefetchQuery(input);
+    await sleep(120); // the sandbox claim or wake
+    order.push("select");
+    const t0 = Date.now();
+    expect(await s.queryVector(input)).toEqual({
+      model: "kobe-local/nomic-embed-text",
+      vector: [0.3, 0.4],
+    });
+    expect(Date.now() - t0).toBeLessThan(15);
+    expect(order).toEqual(["embed", "select"]);
+    // Started once per run, even when delivery asks again.
+    s.prefetchQuery(input);
+    expect(order).toEqual(["embed", "select"]);
+  });
+
+  it("without the early start the same call misses the deadline (keywords alone)", async () => {
+    const s = service(slowEmbed(80, []), 20);
+    expect(await s.queryVector(input)).toBeUndefined();
+  });
+
+  it("a selection that comes before the embedding answered still waits only the deadline", async () => {
+    const s = service(slowEmbed(200, []), 20);
+    s.runWantsVectors = async () => true;
+    s.prefetchQuery(input);
+    const t0 = Date.now();
+    expect(await s.queryVector(input)).toBeUndefined();
+    expect(Date.now() - t0).toBeLessThan(100);
+  });
+
+  it("pays for nothing when the run reads no memory lane, and never embeds again at selection", async () => {
+    const order: string[] = [];
+    const s = service(slowEmbed(1, order), 20);
+    s.runWantsVectors = async () => false;
+    s.prefetchQuery(input);
+    expect(await s.queryVector(input)).toBeUndefined();
+    expect(order).toEqual([]);
+  });
+
+  it("an early embedding of another message is not used", async () => {
+    let seen = "";
+    const s = service(async (i) => {
+      seen = i.inputs[0] ?? "";
+      return [[1]];
+    }, 50);
+    s.runWantsVectors = async () => true;
+    s.prefetchQuery({ ...input, message: "an edited message" });
+    await sleep(5);
+    expect(await s.queryVector(input)).toEqual({
+      model: "kobe-local/nomic-embed-text",
+      vector: [1],
+    });
+    expect(seen).toBe("search_query: where do I park?");
+  });
+});
+
 describe("vector leg deadline (KOBE-409 L5)", () => {
   it("reads no rows once the deadline passed", async () => {
     let reads = 0;

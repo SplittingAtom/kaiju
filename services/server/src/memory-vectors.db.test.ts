@@ -320,6 +320,17 @@ describe("memory vectors (KOBE-409)", () => {
       }),
     );
     expect(candidates.user?.find((c) => c.item.id === id)?.vector).toBeGreaterThan(0.9);
+    // Review M1: started when the message is accepted (this run reads memory lanes), the
+    // selection only takes the answer; one gateway call in all.
+    calls.length = 0;
+    const embeddings = fx.replica(0).deps.memoryEmbeddings;
+    expect(await embeddings.runWantsVectors(base)).toBe(true);
+    embeddings.prefetchQuery(base);
+    for (let i = 0; i < 100 && calls.length === 0; i++) await new Promise((r) => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 20));
+    expect((await embeddings.queryVector(base))?.model).toBe(MODEL);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.claims).toMatchObject({ user_id: member.id, run_id: runId });
   });
 
   it("a member gets 403 on the Site vector routes", async () => {

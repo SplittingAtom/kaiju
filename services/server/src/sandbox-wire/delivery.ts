@@ -615,6 +615,21 @@ export class CommandDelivery {
       );
       return;
     }
+    // KOBE-409 review M1: the memory query embedding runs beside the session restore and the
+    // claim (usually started already when the message was accepted, on the replica that took it).
+    if (
+      row.kind === "run.start" &&
+      row.runId !== null &&
+      this.#host.target.evalThreadId === undefined
+    ) {
+      this.#ctx.memoryEmbeddings?.prefetchQuery?.({
+        teamId,
+        userId,
+        threadId: row.threadId,
+        runId: row.runId,
+        message: (frame as RunStartFrame).message,
+      });
+    }
     const starts = startsRun(row.kind);
     if (starts) {
       const session = await this.#ensureSession(row.threadId);
