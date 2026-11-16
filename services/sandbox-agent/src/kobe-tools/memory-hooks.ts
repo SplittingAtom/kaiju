@@ -19,6 +19,8 @@ import {
  *  - `picks_placement` / `held` (KOBE-658): with `message_keep` / `message_strip` the picks leave
  *    the system prompt and go before the run's user message instead (see {@link installMemoryHooks});
  *    `held` (stable_plus_delta's held picks) joins the system prompt after the project;
+ *  - `picks_notes` (KOBE-662): the notes earlier messages of the thread were sent with, kept by
+ *    the agent across Pi restarts;
  *  - `text`: the run's memory section (already sanitised, capped and fenced by the agent), added
  *    to that run's system prompt only: not part of the launch, not stored in the session;
  *  - `project` and `viewing` (KOBE-245, KOBE-462): the project instructions and the fenced file
@@ -48,6 +50,12 @@ export interface MemoryRunFile {
   readonly conflictsLive: string;
   /** The viewer may edit the run's project (KOBE-580): `commit_project` is listed. */
   readonly projectWrite: boolean;
+  /**
+   * The notes of the thread's earlier messages (KOBE-662), by their user message's timestamp: the
+   * agent keeps them across Pi restarts (the server restarts Pi for every message), so each
+   * message keeps the note it was sent with and the request stays a cacheable prefix.
+   */
+  readonly picksNotes: ReadonlyMap<number, string>;
 }
 export type PicksPlacement = "system" | "message_keep" | "message_strip";
 const PICKS_PLACEMENTS: readonly string[] = ["system", "message_keep", "message_strip"];
@@ -64,7 +72,41 @@ const OFF: MemoryRunFile = {
   conflicts: "",
   conflictsLive: "",
   projectWrite: false,
+  picksNotes: new Map(),
 };
+
+/** Notes kept per thread (here and by the agent): older user messages lose theirs past this. */
+export const PICKS_NOTES_MAX = 256;
+
+/**
+ * `picks_notes` as the agent writes it: `[[timestamp, text], ...]`, oldest first. Undefined when
+ * malformed (the whole file then fails closed).
+ */
+function readPicksNotes(value: unknown): Map<number, string> | undefined {
+  if (value === undefined) return new Map();
+  if (!Array.isArray(value) || value.length > PICKS_NOTES_MAX) return undefined;
+  const notes = new Map<number, string>();
+  for (const entry of value) {
+    if (!Array.isArray(entry) || entry.length !== 2) return undefined;
+    const [ts, text] = entry as unknown[];
+    if (typeof ts !== "number" || !Number.isFinite(ts) || typeof text !== "string")
+      return undefined;
+    notes.set(ts, text);
+  }
+  return notes;
+}
+
+/**
+ * What kobe-tools puts before the run's user message outside `system` (KOBE-658): the parts that
+ * change per message. The agent renders the same text to keep it for later messages (KOBE-662).
+ */
+export function perMessageNote(parts: {
+  readonly picks: string;
+  readonly viewing: string;
+  readonly conflicts: string;
+}): string {
+  return [parts.picks, parts.viewing, parts.conflicts].filter((part) => part !== "").join("\n\n");
+}
 
 const optionalText = (value: unknown): string | undefined | false =>
   value === undefined ? undefined : typeof value === "string" ? value : false;
@@ -98,6 +140,9 @@ export function readMemoryRunFile(
     // Absent in files from an older agent: no write access (fail closed).
     const projectWrite = record.project_write ?? false;
     if (typeof projectWrite !== "boolean") return OFF;
+    // Absent in files from an older agent: no earlier notes.
+    const picksNotes = readPicksNotes(record.picks_notes);
+    if (picksNotes === undefined) return OFF;
     return {
       tools,
       text: tools ? text : "",
@@ -110,6 +155,7 @@ export function readMemoryRunFile(
       conflicts: conflicts || "",
       conflictsLive: conflictsLive || "",
       projectWrite,
+      picksNotes,
     };
   } catch {
     return OFF;
@@ -129,8 +175,6 @@ const FENCED_RESULT_TOOLS: readonly string[] = [TOOL_RECALL, TOOL_SHOW_MEMORY_IT
 
 /** `customType` of the picks note before a user message (KOBE-658; never stored, never shown). */
 export const MEMORY_PICKS_TYPE = "kobe-memory-picks";
-/** Notes remembered per Pi process (one thread): older user messages lose theirs past this. */
-const PICKS_REMEMBERED_MAX = 256;
 
 export function installMemoryHooks(
   pi: MemoryHooksApi,
@@ -150,11 +194,14 @@ export function installMemoryHooks(
     pi.setActiveTools(state().tools ? [...active, ...MEMORY_TOOL_NAMES] : active);
   };
   pi.on("input", syncTools as never);
-  // KOBE-658: picks (and the viewed file and sync conflicts) placed in messages. Each run's note is bound to the run's user message
-  // (by its timestamp: Pi creates the message right after `before_agent_start`) and re-sent before
-  // it on every later request, byte for byte, so the system prompt and the history stay cacheable.
-  // Held in this process only, never in the session (no memory text in thread entries): a new Pi
-  // (sandbox resumed, launch changed) starts without the older notes, one uncached request.
+  // KOBE-658: picks (and the viewed file and sync conflicts) placed in messages. Each run's note is
+  // bound to the run's user message (by its timestamp: Pi creates the message right after
+  // `before_agent_start`) and re-sent before it on every later request, byte for byte, so the
+  // system prompt and the history stay cacheable. Never in the session (no memory text in thread
+  // entries). KOBE-662: the server restarts Pi for every message (each run's `kobe.branch`
+  // marker), so the agent keeps the notes (bound the same way, from the run's user message event)
+  // and hands them back in the run file; this map only covers the current run until then. A new
+  // agent (sandbox resumed) starts without them: one uncached request.
   const notes = new Map<number, string>();
   let pending: { readonly text: string; readonly since: number } | undefined;
   pi.on("before_agent_start", ((event: { systemPrompt: string }) => {
@@ -163,15 +210,16 @@ export function installMemoryHooks(
     const { known, text, project, held, picks, picksPlacement, viewing, conflicts } = state();
     // KOBE-658: outside `system` everything that changes per message (picks, the viewed file,
     // sync conflicts) goes before the run's user message, so the system prompt stays byte-stable.
-    const perMessage = [picks, viewing, conflicts].filter((part) => part !== "");
     const inMessage = picksPlacement !== "system";
-    pending =
-      inMessage && perMessage.length > 0
-        ? { text: perMessage.join("\n\n"), since: Date.now() }
-        : undefined;
-    const parts = [known, text, project, held, ...(inMessage ? [] : perMessage)].filter(
-      (part) => part !== "",
-    );
+    const note = perMessageNote({ picks, viewing, conflicts });
+    pending = inMessage && note !== "" ? { text: note, since: Date.now() } : undefined;
+    const parts = [
+      known,
+      text,
+      project,
+      held,
+      ...(inMessage ? [] : [picks, viewing, conflicts]),
+    ].filter((part) => part !== "");
     return parts.length === 0
       ? undefined
       : { systemPrompt: `${event.systemPrompt}\n\n${parts.join("\n\n")}` };
@@ -182,20 +230,24 @@ export function installMemoryHooks(
   // Tool results are rewritten for each request too (KOBE-383 review M1): a copy of a memory
   // block with the thread's nonce (stable across runs) never works as a fence there.
   pi.on("context", ((event: { messages: unknown[] }) => {
-    const { conflictsLive, picksPlacement } = state();
+    const { conflictsLive, picksPlacement, picksNotes } = state();
     let cleaned = neutralizeToolResults(event.messages);
     if (picksPlacement !== "system") {
       if (pending !== undefined) {
         const key = runMessageKey(cleaned, pending.since);
         if (key !== undefined) {
           notes.set(key, pending.text);
-          if (notes.size > PICKS_REMEMBERED_MAX) notes.delete(notes.keys().next().value as number);
+          if (notes.size > PICKS_NOTES_MAX) notes.delete(notes.keys().next().value as number);
           pending = undefined;
         }
       }
+      // The agent's notes of earlier messages (KOBE-662: they outlive this Pi), then this
+      // process's own bindings (the current run's, before the agent has seen its message).
+      const known = new Map(picksNotes);
+      for (const [ts, text] of notes) if (!known.has(ts)) known.set(ts, text);
       cleaned = withPicksNotes(
         neutralizeUserMessages(cleaned),
-        notes,
+        known,
         picksPlacement === "message_strip",
       );
     }

@@ -121,14 +121,33 @@ KOBE_EVAL_PLACEMENTS=system,latest_user_keep,latest_user_strip,stable_plus_delta
 
 ac-3 target: `latest_user_keep` at >= 80% of the pre-383 baseline (91.2% all turns, so >= 73.0%).
 
-| Placement         | Build | Thread | Share (all) | Share (turns 2-20) | Memory use |
-| ----------------- | ----- | ------ | ----------- | ------------------ | ---------- |
-| system            |       |        |             |                    |            |
-| latest_user_keep  |       |        |             |                    |            |
-| latest_user_strip |       |        |             |                    |            |
-| stable_plus_delta |       |        |             |                    |            |
+Measured 2026-11-16 on gate1 (main `ee806045`, glm-5.3-flash via Ollama Cloud; two runs, the
+second in brackets; `tool_only` ran as `latest_user_keep`, see above):
 
-Not measured yet (needs the KOBE-658 build on gate1).
+| Placement         | Build      | Share (turns 2-20) | Memory use    |
+| ----------------- | ---------- | ------------------ | ------------- |
+| system            | `ee806045` | 23.6%              | 16/16         |
+| latest_user_keep  | `ee806045` | 0.0% (0.0%)        | 16/16 (15/16) |
+| latest_user_strip | `ee806045` | 0.0%               | 15/16         |
+| stable_plus_delta | `ee806045` | 83.1% (79.7%)      | 15/16 (15/16) |
+| tool_only         | `ee806045` | 0.0% (0.0%)        | 16/16 (16/16) |
+
+**KOBE-662 (cause and fix).** The server sends every run after the first with `parent_entry_id`
+= the thread's leaf, so the sandbox agent stops Pi, appends the run's `kobe.branch` marker and
+starts a new Pi for every message (one marker per run in `thread_entries`). The picks notes of
+earlier messages lived only in kobe-tools' process memory, so each new Pi dropped the previous
+message's note: the first byte that differed between turn N and N+1 was the first user-role
+message after the system prompt and tools (turn N had its note there). Ollama Cloud's cache for
+this model keeps one checkpoint a block or two before the end of each request (probe: cached
+tokens = previous prompt rounded down to 64, minus 64; any change in that tail gives 0), so a
+dropped note costs the whole prefix; `stable_plus_delta` kept only turn 1's checkpoint (4,800
+tokens) because its delta notes were dropped too. The agent now keeps each message's note, bound
+to the run's user message from Pi's events, and hands them back in the run file
+(`picks_notes`), so they survive the restart. Replaying the KOBE-662 test's requests through
+Bifrost v2.5.1 to Ollama Cloud: `latest_user_keep` 94% (5 turns, cached 3,712 of 3,931 on turn
+5), `stable_plus_delta` 94%, `latest_user_strip` 0% (by design: the previous note moves, see the
+provider note above), `system` hits only when the picks repeat. The gate1 replay is re-run by
+the coordinator after the KOBE-662 deploy.
 
 ## Relevance: FTS recall@8 (KOBE-387, SM25/SM30)
 

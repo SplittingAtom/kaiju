@@ -38,6 +38,7 @@ describe("readMemoryRunFile", () => {
       conflicts: "",
       conflictsLive: "",
       projectWrite: false,
+      picksNotes: new Map(),
     });
     expect(
       readMemoryRunFile("/x", () => {
@@ -55,6 +56,7 @@ describe("readMemoryRunFile", () => {
       conflicts: "",
       conflictsLive: "",
       projectWrite: false,
+      picksNotes: new Map(),
     });
     expect(readMemoryRunFile("/x", () => "not json")).toEqual({
       tools: false,
@@ -68,6 +70,7 @@ describe("readMemoryRunFile", () => {
       conflicts: "",
       conflictsLive: "",
       projectWrite: false,
+      picksNotes: new Map(),
     });
     expect(readMemoryRunFile("/x", file({ tools: "yes", text: 1 }))).toEqual({
       tools: false,
@@ -81,6 +84,7 @@ describe("readMemoryRunFile", () => {
       conflicts: "",
       conflictsLive: "",
       projectWrite: false,
+      picksNotes: new Map(),
     });
   });
   it("gives no text when tools are off", () => {
@@ -96,6 +100,7 @@ describe("readMemoryRunFile", () => {
       conflicts: "",
       conflictsLive: "",
       projectWrite: false,
+      picksNotes: new Map(),
     });
     expect(readMemoryRunFile("/x", file({ tools: true, text: "idx" }))).toEqual({
       tools: true,
@@ -109,6 +114,7 @@ describe("readMemoryRunFile", () => {
       conflicts: "",
       conflictsLive: "",
       projectWrite: false,
+      picksNotes: new Map(),
     });
     // Project instructions do not depend on memory being on.
     expect(readMemoryRunFile("/x", file({ tools: false, text: "", project: "P" }))).toEqual({
@@ -123,6 +129,7 @@ describe("readMemoryRunFile", () => {
       conflicts: "",
       conflictsLive: "",
       projectWrite: false,
+      picksNotes: new Map(),
     });
   });
 });
@@ -254,6 +261,7 @@ describe("viewed file in the run's prompt (KOBE-462)", () => {
       conflicts: "",
       conflictsLive: "",
       projectWrite: false,
+      picksNotes: new Map(),
     });
   });
 });
@@ -302,6 +310,7 @@ describe("sync conflict notes (KOBE-492)", () => {
       conflicts: "",
       conflictsLive: "",
       projectWrite: false,
+      picksNotes: new Map(),
     });
   });
 });

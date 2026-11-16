@@ -3,6 +3,7 @@
 // `{ "tool", "args", "id" }` (one tool call), `{ "calls": [...] }` (parallel calls in one message),
 // `{ "text" }`, `{ "thinking", "stopReason" }` (reasoning only, e.g. cut off at the output limit,
 // KOBE-258), `{ "echoUsers": true }` (replies with every user message the model was given) or
+// `{ "dumpContext": "/abs/file.jsonl" }` (appends the request it was given as JSON, KOBE-662) or
 // `{ "waitForAbort": true }` (no first token until the run is aborted: Stop before the answer,
 // KOBE-290) or `{ "countInSystem": [base64...] }` (replies `COUNTS:[n, ...]`, how often each
 // decoded needle occurs in the system prompt, so neither the needle nor the prompt lands in the
@@ -13,6 +14,7 @@
 // `session_start` may still be pending when the first prompt arrives) and activates `codemode` when the built-in is loaded (it
 // registers inactive). Pi needs a writable PI_CODING_AGENT_DIR to use any provider (it opens its
 // credential store there), so tests using this extension give Pi one.
+import { appendFileSync } from "node:fs";
 import {
   fauxAssistantMessage,
   fauxProvider,
@@ -56,6 +58,11 @@ async function step(context, options) {
   if (next.waitForAbort) {
     await aborted(options?.signal);
     return fauxAssistantMessage("too late");
+  }
+  // KOBE-662: append the whole request (prompt, tools, messages) as one JSON line to the file.
+  if (next.dumpContext !== undefined) {
+    appendFileSync(next.dumpContext, `${JSON.stringify(context)}\n`);
+    return fauxAssistantMessage(next.text ?? "dumped");
   }
   // KOBE-123: reply with the system prompt the model was given.
   if (next.echoSystemPrompt) {
