@@ -1,7 +1,8 @@
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, exists, inArray, isNull, sql } from "drizzle-orm";
 import type { KobeDb, KobeTx } from "../client.js";
 import {
   ACTIVE_RUN_STATUSES,
+  memoryLearningPasses,
   modelCatalog,
   modelGatewayKeys,
   modelProviders,
@@ -103,6 +104,12 @@ export interface GatewayPrincipal {
    */
   readonly reasoningModels?: readonly string[];
   /**
+   * Server calls only (KOBE-391): the site catalog's `max_output_tokens` of those enabled models
+   * that name one, the smallest when several aliases name one model. A learning pass's output cap
+   * is clamped to it (`serverCallOutputCapFor`). Absent: none.
+   */
+  readonly outputCaps?: Readonly<Record<string, number>>;
+  /**
    * The thinking settings of the team's enabled models that have a thinking control (KOBE-260):
    * the site's and the team's maximum, per alias (several aliases may name one model; the
    * gateway keeps the strictest). The gateway writes the call's level in the control's form.
@@ -165,6 +172,7 @@ export async function loadGatewayPrincipal(
         kind: modelProviders.kind,
         model: modelCatalog.model,
         reasoning: modelCatalog.reasoning,
+        maxOutputTokens: modelCatalog.maxOutputTokens,
         control: modelCatalog.thinkingControl,
         allowed: modelCatalog.thinkingAllowed,
         default: modelCatalog.thinkingDefault,
@@ -194,7 +202,14 @@ export async function loadGatewayPrincipal(
     if (sandboxId === undefined) {
       // Several aliases may name one model: it reasons if any of them says so.
       const reasoningModels = [...new Set(enabled.filter((e) => e.reasoning).map(named))].sort();
+      const outputCaps: Record<string, number> = {};
+      for (const e of enabled) {
+        if (e.maxOutputTokens === null) continue;
+        const m = named(e);
+        outputCaps[m] = Math.min(outputCaps[m] ?? Infinity, e.maxOutputTokens);
+      }
       return {
+        outputCaps,
         member: member.length > 0,
         sandbox: "unrecorded",
         virtualKey: vk,
@@ -334,13 +349,20 @@ export interface ServerCallRunClaim {
   readonly runId: string;
   readonly threadId: string;
   readonly userId: string;
+  /**
+   * The member must also be the thread's author (`threads.owner_user_id`; KOBE-391): a learning
+   * pass (`memory_learn`) is the author's own, so a run another member ran in a shared thread does
+   * not admit them.
+   */
+  readonly authorOnly?: boolean;
 }
 
 /**
  * Whether a server call's claims match the record (KOBE-234 review L1): the run is a completed run
  * of that thread, leased to that member (`sandbox_run_leases`, kept after the run ends), so a
- * server bug cannot charge another member's budget for a thread's title or follow-ups. One read
- * by primary keys, in the team's RLS context.
+ * server bug cannot charge another member's budget for a thread's title or follow-ups; with
+ * `authorOnly` the member is the thread's author too (KOBE-391). One read by primary keys, in the
+ * team's RLS context.
  */
 export async function serverCallRunMatches(
   db: KobeDb,
@@ -362,6 +384,57 @@ export async function serverCallRunMatches(
           eq(runs.status, "completed"),
           eq(sandboxRunLeases.userId, claim.userId),
           eq(sandboxRunLeases.threadId, claim.threadId),
+          claim.authorOnly
+            ? exists(
+                tx
+                  .select({ id: threads.id })
+                  .from(threads)
+                  .where(
+                    and(
+                      eq(threads.teamId, claim.teamId),
+                      eq(threads.id, claim.threadId),
+                      eq(threads.ownerUserId, claim.userId),
+                    ),
+                  ),
+              )
+            : undefined,
+        ),
+      )
+      .limit(1);
+    return rows.length > 0;
+  });
+}
+
+/** What a learning-pass token (`memory_learn`, KOBE-391) claims about its pass. */
+export interface ServerCallPassClaim {
+  readonly teamId: string;
+  readonly passId: string;
+  readonly threadId: string;
+  readonly userId: string;
+}
+
+/**
+ * Whether a learning-pass token names a pass that is running now, over the token's thread, for
+ * the token's member (`memory_learning_passes`, KOBE-389/391): a token minted for a queued,
+ * finished or failed pass, another thread's pass or another member's pass charges nothing. The
+ * run itself is checked by {@link serverCallRunMatches} (author-only). One read by primary key,
+ * in the team's RLS context.
+ */
+export async function serverCallPassRunning(
+  db: KobeDb,
+  claim: ServerCallPassClaim,
+): Promise<boolean> {
+  return withTeam(db, claim.teamId, async (tx) => {
+    const rows = await tx
+      .select({ id: memoryLearningPasses.id })
+      .from(memoryLearningPasses)
+      .where(
+        and(
+          eq(memoryLearningPasses.teamId, claim.teamId),
+          eq(memoryLearningPasses.id, claim.passId),
+          eq(memoryLearningPasses.threadId, claim.threadId),
+          eq(memoryLearningPasses.userId, claim.userId),
+          eq(memoryLearningPasses.status, "running"),
         ),
       )
       .limit(1);
