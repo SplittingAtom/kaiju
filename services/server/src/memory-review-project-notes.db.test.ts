@@ -271,13 +271,17 @@ describe("Add to project notes (ac-1, ac-3)", () => {
 });
 
 describe("who may, and when (ac-2)", () => {
-  it("a reader sees why and is refused; the role is re-checked at click", async () => {
+  it("a reader is refused adding; the role is re-checked at click", async () => {
     const p = await project();
     const r = await candidate(ids.reader, p);
     const status = (await listOf(as.reader, r.threadId)).project_notes;
-    expect(status).toMatchObject({ access: "read", available: false });
-    expect(status?.reason).toMatch(/editors, owners and Team admins/);
-    expect(codeOf(await preview(as.reader, r.candidateId))).toEqual([403, "memory_not_allowed"]);
+    // Available to readers as Suggest to editors (KOBE-652); adding stays refused.
+    expect(status).toMatchObject({ access: "read", available: true, reason: null });
+    const refused = await preview(as.reader, r.candidateId);
+    expect(codeOf(refused)).toEqual([403, "memory_not_allowed"]);
+    expect((refused.json as { message: string }).message).toMatch(
+      /editors, owners and Team admins/,
+    );
 
     const c = await candidate(ids.editor, p);
     const pre = (await preview(as.editor, c.candidateId)).json as Preview;

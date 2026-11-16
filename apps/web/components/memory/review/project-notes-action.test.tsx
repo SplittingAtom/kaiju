@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ProjectNotesApi, ProjectNotesStatus } from "../../../lib/memory/project-notes-api";
 import type { Candidate, ReviewApi, ReviewList } from "../../../lib/memory/review-api";
+import type { SuggestionsApi } from "../../../lib/memory/suggestions-api";
 import { ReviewSection } from "./review-section";
 
 /** KOBE-398: Add to project notes on a To review card (ac-1, ac-2, the client side). */
@@ -72,11 +73,33 @@ function apis(projectNotes: ProjectNotesStatus | null) {
       }),
     ),
   } satisfies ProjectNotesApi;
-  return { review, notes, preview };
+  const suggestions = {
+    suggest: vi.fn(() =>
+      ok({
+        suggestionId: "s1",
+        candidateId: "c1",
+        projectId: PROJECT,
+        expiresAt: new Date().toISOString(),
+      }),
+    ),
+    list: vi.fn(),
+    preview: vi.fn(),
+    approve: vi.fn(),
+    dismiss: vi.fn(),
+  } as unknown as SuggestionsApi & { suggest: ReturnType<typeof vi.fn> };
+  return { review, notes, preview, suggestions };
 }
 
 const show = (a: ReturnType<typeof apis>) =>
-  render(<ReviewSection teamId="t1" threadId={THREAD} api={a.review} notesApi={a.notes} />);
+  render(
+    <ReviewSection
+      teamId="t1"
+      threadId={THREAD}
+      api={a.review}
+      notesApi={a.notes}
+      suggestionsApi={a.suggestions}
+    />,
+  );
 const editor: ProjectNotesStatus = {
   projectId: PROJECT,
   access: "write",
@@ -148,24 +171,71 @@ describe("Add to project notes", () => {
     expect(screen.getByText("Project memory is turned off.")).toBeTruthy();
   });
 
-  it("offers readers Suggest to editors (coming), never Add", async () => {
-    show(
-      apis({
-        projectId: PROJECT,
-        access: "read",
-        available: false,
-        reason: "Readers: coming soon.",
-      }),
-    );
-    const button = await screen.findByRole("button", { name: "Suggest to editors" });
-    expect((button as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.queryByRole("button", { name: "Add to project notes" })).toBeNull();
-    expect(screen.getByText("Readers: coming soon.")).toBeTruthy();
-  });
-
   it("is absent outside a project thread", async () => {
     show(apis(null));
     await screen.findByRole("button", { name: "Save" });
     expect(screen.queryByRole("button", { name: /project notes|Suggest/ })).toBeNull();
+  });
+});
+
+/** KOBE-652: a project reader's Suggest to editors on the same card. */
+describe("Suggest to editors", () => {
+  const reader: ProjectNotesStatus = {
+    projectId: PROJECT,
+    access: "read",
+    available: true,
+    reason: null,
+  };
+
+  it("readers suggest the edited statement and kind after confirming; never Add", async () => {
+    const a = apis(reader);
+    show(a);
+    await screen.findByRole("button", { name: "Suggest to editors" });
+    expect(screen.queryByRole("button", { name: "Add to project notes" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const field = screen.getByRole("textbox", { name: "Statement" });
+    await userEvent.clear(field);
+    await userEvent.type(field, "Deploys happen on Mondays");
+    await userEvent.click(screen.getByRole("button", { name: "Suggest to editors" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(within(dialog).getByText(/quotes from your own messages/)).toBeTruthy();
+    expect(within(dialog).getByText("Deploys happen on Mondays")).toBeTruthy();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Suggest" }));
+    await waitFor(() =>
+      expect(a.suggestions.suggest).toHaveBeenCalledWith("c1", {
+        statement: "Deploys happen on Mondays",
+      }),
+    );
+    expect(await screen.findByText(/Suggested to the project's editors/)).toBeTruthy();
+    expect(a.notes.preview).not.toHaveBeenCalled();
+  });
+
+  it("suggests nothing when cancelled, and shows the server's refusal", async () => {
+    const a = apis(reader);
+    show(a);
+    await userEvent.click(await screen.findByRole("button", { name: "Suggest to editors" }));
+    await userEvent.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Cancel" }),
+    );
+    expect(a.suggestions.suggest).not.toHaveBeenCalled();
+    a.suggestions.suggest.mockReturnValueOnce(
+      Promise.resolve({
+        ok: false as const,
+        status: 403,
+        error: { code: "memory_not_allowed", message: "A suggestion needs your own words." },
+      }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Suggest to editors" }));
+    await userEvent.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Suggest" }),
+    );
+    expect((await screen.findByRole("alert")).textContent).toContain("needs your own words");
+  });
+
+  it("is disabled with the reason while project memory is off", async () => {
+    show(apis({ ...reader, available: false, reason: "Project memory is turned off." }));
+    const button = await screen.findByRole("button", { name: "Suggest to editors" });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("Project memory is turned off.")).toBeTruthy();
   });
 });

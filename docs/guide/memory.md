@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo, and Add to project notes in a project conversation), how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
+summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo, Add to project notes in a project conversation, and Suggest to editors for project readers), how project editors approve or dismiss readers' suggestions for the project's notes, how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
 section: Memory
 order: 1
 audience: member
@@ -267,10 +267,46 @@ or remove it there (its history shows you added it). The suggestion then leaves 
 never becomes a Workspace memory, and there is no **Undo** in To review for it.
 
 The button is disabled, with the reason beside it, while project memory is turned off or the
-project's `MEMORY.md` is full (200 lines). Readers of the project see **Suggest to editors**
-instead; suggesting a note to the project's editors is coming soon. Only you can add from your
-own conversation, and only by clicking: agents and scheduled or automatic runs never add to
-project notes this way (an agent's own **remember** into project notes still asks for approval).
+project's `MEMORY.md` is full (200 lines). Readers of the project see
+[Suggest to editors](#suggest-to-editors) instead. Only you can add from your own conversation,
+and only by clicking: agents and scheduled or automatic runs never add to project notes this way
+(an agent's own **remember** into project notes still asks for approval).
+
+### Suggest to editors
+
+If you only read the project, you can't change its notes, so the card offers **Suggest to
+editors** instead. After you confirm, the statement (as you edited it) and its kind go to the
+project's editors, owners and the Team admins, with the quotes from **your own messages** in this
+conversation (never the agent's replies; without a quote of yours Kobe refuses the suggestion).
+The same checks as for adding apply first: secrets are refused, text that reads like an
+instruction to the agent is refused, and the button is disabled while project memory is turned
+off. The suggestion then leaves your To review.
+
+The people who decide get a notification, and a reminder if it waits a week. You get a
+notification when they add it or dismiss it (with their reason, if they gave one), or when it
+expires: suggestions wait 30 days, and moving the conversation out of the project expires its
+waiting suggestions at once (they were for that project's notes). Your suggestions and what
+happened to them are listed under **Your suggestions** on the project's **Memory** tab
+(**Projects** › the project › **Memory**).
+
+### Readers' suggestions
+
+If you are an editor or owner of a project, or a Team admin, readers' suggestions for the
+project's notes wait for you in two places: the project's **Memory** tab (**Suggestions**) and,
+for all your projects at once, **Suggested for project notes** under To review on **My memory**.
+Each card shows the statement, its kind, who suggested it and when, and their own words from the
+conversation.
+
+- **Approve** shows the exact line Kobe adds under `## Learned` in the project's `MEMORY.md`;
+  **Approve and add** is your signed approval of that change, as for
+  [Add to project notes](#add-to-project-notes). Kobe checks again, at that moment, that you
+  still decide for the project, that project memory is on, that the conversation is still in the
+  project and that the file has not changed; the line is written as yours (the Notes history
+  shows it).
+- **Dismiss** closes it, with an optional reason the suggester sees.
+
+Readers can't approve or dismiss suggestions, their own included. Only people decide: agents and
+runs never approve or dismiss a suggestion.
 
 ## See and edit your notes
 
@@ -496,7 +532,7 @@ when it is your turn. Each notification has a button that opens the place where 
 
 - **A proposal or suggestion arrived** (to the people who review it): a Workspace memory proposal
   (opens the team console's **Memory** page), a reader's suggestion for a project's notes (opens
-  the project) or a Site memory proposal (opens Site memory).
+  the project's **Memory** tab) or a Site memory proposal (opens Site memory).
 - **Your proposal or suggestion was accepted, dismissed or sent back for changes**, naming who
   decided, or **expired** undecided. A Site proposal also tells the Site's curators when its Team
   admin **confirmed** it.

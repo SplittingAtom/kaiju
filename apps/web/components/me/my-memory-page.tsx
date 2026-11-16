@@ -8,6 +8,7 @@ import { useTeamAccess } from "../admin/console-context";
 import { MemoryPanel } from "../memory/memory-panel";
 import { MyMemories } from "../memory/my-memories";
 import { ReviewSection } from "../memory/review/review-section";
+import { SuggestionsReview } from "../memory/suggestions/suggestions-review";
 import { lastThreadId } from "../../lib/shell/last-thread";
 import { ProjectPicker } from "../projects/project-picker";
 import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/console";
@@ -65,6 +66,8 @@ export function MyMemoryPage() {
         {/* Kept mounted while Notes is shown, so an unsent memory and the Undo bar survive. */}
         <TabsContent value="memories" forceMount hidden={tab !== "memories"}>
           <ReviewSection teamId={teamId} threadId={reviewThread} autoFocus={forReview} />
+          {/* Readers' suggestions for the notes of projects the person decides (KOBE-652). */}
+          <SuggestionsReview teamId={teamId} />
           <MyMemories teamId={teamId} />
         </TabsContent>
         <TabsContent value="notes">

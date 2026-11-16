@@ -16,6 +16,7 @@ import {
   type ThreadResult,
   type Viewer,
 } from "./repository.js";
+import { staleMovedSuggestions } from "../memory/suggestions/rows.js";
 
 /**
  * The owner's organization of their threads (CE19, KOBE-220): pin, archive, move to project. Each
@@ -172,6 +173,9 @@ export async function moveThread(
     });
     await notifyThreadAccess(tx, viewer.teamId, id);
   }
+  // PE5: readers' suggestions made in the thread were for the old project's notes (KOBE-652).
+  // Last: it notifies the suggesters.
+  await staleMovedSuggestions(tx, viewer.teamId, id);
   return result;
 }
 

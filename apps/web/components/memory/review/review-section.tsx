@@ -13,7 +13,9 @@ import { InlineLink } from "../../shell/text-links";
 import { Button, Notice, Section } from "../../ui/console";
 import { createProjectNotesApi, type ProjectNotesApi } from "../../../lib/memory/project-notes-api";
 import { CandidateCard, type CardSeams } from "./candidate-card";
+import { createSuggestionsApi, type SuggestionsApi } from "../../../lib/memory/suggestions-api";
 import { ProjectNotesAction } from "./project-notes-action";
+import { SuggestAction } from "./suggest-action";
 
 const WORKBENCH_HREF = "/me/skills?tab=workbench";
 export const REVIEW_HEADING = "memory-to-review";
@@ -37,6 +39,7 @@ export function ReviewSection({
   autoFocus = false,
   seams,
   notesApi: givenNotesApi,
+  suggestionsApi: givenSuggestionsApi,
 }: {
   readonly teamId: string;
   readonly threadId: string | undefined;
@@ -45,11 +48,17 @@ export function ReviewSection({
   readonly seams?: CardSeams | undefined;
   /** Add to project notes (KOBE-398); defaults to the real client. */
   readonly notesApi?: ProjectNotesApi;
+  /** Suggest to editors (KOBE-652); defaults to the real client. */
+  readonly suggestionsApi?: SuggestionsApi;
 }) {
   const api = useMemo(() => givenApi ?? createReviewApi(teamId), [givenApi, teamId]);
   const notesApi = useMemo(
     () => givenNotesApi ?? createProjectNotesApi(teamId),
     [givenNotesApi, teamId],
+  );
+  const suggestionsApi = useMemo(
+    () => givenSuggestionsApi ?? createSuggestionsApi(teamId),
+    [givenSuggestionsApi, teamId],
   );
   const [added, setAdded] = useState<string | null>(null);
   const [list, setList] = useState<ReviewList | null>(null);
@@ -98,18 +107,35 @@ export function ReviewSection({
   const cardSeams: CardSeams | undefined = notes
     ? {
         ...seams,
-        projectNotes: (c, statement) => (
-          <ProjectNotesAction
-            candidate={c}
-            statement={statement}
-            status={notes}
-            api={notesApi}
-            onAdded={(a) => {
-              drop([a.candidateId]);
-              setAdded("Added to the project's notes. Change or remove it in the project's Notes.");
-            }}
-          />
-        ),
+        projectNotes: (c, statement, kind) =>
+          notes.access === "read" ? (
+            <SuggestAction
+              candidate={c}
+              statement={statement}
+              kind={kind}
+              status={notes}
+              api={suggestionsApi}
+              onSuggested={(sg) => {
+                drop([sg.candidateId]);
+                setAdded(
+                  "Suggested to the project's editors. You'll hear when they add it or dismiss it.",
+                );
+              }}
+            />
+          ) : (
+            <ProjectNotesAction
+              candidate={c}
+              statement={statement}
+              status={notes}
+              api={notesApi}
+              onAdded={(a) => {
+                drop([a.candidateId]);
+                setAdded(
+                  "Added to the project's notes. Change or remove it in the project's Notes.",
+                );
+              }}
+            />
+          ),
       }
     : seams;
 

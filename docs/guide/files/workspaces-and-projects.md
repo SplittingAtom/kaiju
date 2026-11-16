@@ -84,6 +84,11 @@ download a file as of that commit or the whole project with **Download as zip**,
 add a new commit equal to an earlier one. History is never rewritten; a workspace setting may prune
 old commits.
 
+**Memory** on the project page lists readers' suggestions for the project's notes: editors, owners
+and Team admins approve (adds the line under `## Learned` in the project's `MEMORY.md`) or dismiss
+them, and readers see their own suggestions and what happened to them. See
+[Suggest to editors](../memory.md#suggest-to-editors).
+
 ## Related
 
 - [Storage limits](storage-limits.md): file sizes, file counts and the workspace quota

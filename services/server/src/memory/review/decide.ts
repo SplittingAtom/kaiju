@@ -269,6 +269,8 @@ export function undoSaves(
       const d = row.candidate.decision as Decision;
       if (d.op === "project_notes")
         throw invalid("Added to project notes: change it in the project's Notes (its history).");
+      if (d.op === "suggested")
+        throw invalid("Suggested to the project's editors: they decide it.");
       const op = await ops(d.scope);
       if (d.op === "create") await archiveItemIn(op, d.item_id, { expected_version: d.version });
       else if (d.op === "update")

@@ -32,12 +32,15 @@ import { ProjectThreads } from "./project-threads";
 import { ProjectWorkingCopies } from "./project-working-copies";
 import { useCommitsApi, useProjectAgents, useProjectsApi } from "./use-projects";
 import { useNavigate } from "../shell/use-navigate";
+import { SuggestionsReview } from "../memory/suggestions/suggestions-review";
+import { isUuid } from "../../lib/memory/ids";
 
 /**
  * One project (`/v1/projects/:id`, KOBE-161/162/163; Workspaces KOBE-581): Overview (settings,
  * visibility and people, files, storage, conversations) and History (commits, diffs, downloads
  * at a commit, Revert; working copies for owners and admins). "Open to mount" while the project
- * is not in the member's files (no conversation of theirs in it, no checkout; MT1, FP2).
+ * is not in the member's files (no conversation of theirs in it, no checkout; MT1, FP2). Memory:
+ * readers' suggestions for the project's notes (KOBE-652); the bell's `?suggestion=<id>` opens it.
  */
 export function ProjectDetailPage({ projectId }: { readonly projectId: string }) {
   const api = useProjectsApi();
@@ -68,8 +71,14 @@ function ProjectView({
   const can = projectPermissions(access.role, project.myRole ?? undefined);
   // `#history` (the proposal card's "Open History" link) opens the History tab.
   const [tab, setTab] = useState("overview");
+  const [suggestion, setSuggestion] = useState<string | null>(null);
   useEffect(() => {
     if (window.location.hash === "#history") setTab("history");
+    const asked = new URLSearchParams(window.location.search).get("suggestion");
+    if (asked !== null && isUuid(asked)) {
+      setSuggestion(asked.toLowerCase());
+      setTab("memory");
+    }
   }, []);
   const commits = useCommitsApi();
   const threads = useResource(() => api.threads(project.id));
@@ -197,6 +206,7 @@ function ProjectView({
         <TabsList label="Project">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
+          <TabsTrigger value="memory">Memory</TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
           <Section title="Settings">
@@ -240,6 +250,9 @@ function ProjectView({
         <TabsContent value="history">
           <ProjectHistory project={project} canRevert={can.edit} />
           {can.manage && <ProjectWorkingCopies project={project} />}
+        </TabsContent>
+        <TabsContent value="memory">
+          <SuggestionsReview teamId={access.team.id} projectId={project.id} focusId={suggestion} />
         </TabsContent>
       </Tabs>
       {confirmDialog}
