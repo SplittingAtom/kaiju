@@ -355,14 +355,23 @@ export interface ServerCallRunClaim {
    * not admit them.
    */
   readonly authorOnly?: boolean;
+  /**
+   * KOBE-409 `memory_embed`: the run is still starting (the selector's query embedding), so any
+   * status but a terminal failure matches (queued, running, waiting for approval, completed).
+   */
+  readonly live?: true;
 }
+
+/** Run statuses a live-run claim accepts (every status but the terminal failures). */
+const LIVE_CLAIM_STATUSES = ["queued", "running", "waiting_approval", "completed"] as const;
 
 /**
  * Whether a server call's claims match the record (KOBE-234 review L1): the run is a completed run
  * of that thread, leased to that member (`sandbox_run_leases`, kept after the run ends), so a
  * server bug cannot charge another member's budget for a thread's title or follow-ups; with
  * `authorOnly` the member is the thread's author too (KOBE-391). One read by primary keys, in the
- * team's RLS context.
+ * team's RLS context. A `live` claim (KOBE-409) also takes a run that has not ended yet, never one
+ * that failed, was interrupted, cancelled or budget-stopped.
  */
 export async function serverCallRunMatches(
   db: KobeDb,
@@ -381,7 +390,9 @@ export async function serverCallRunMatches(
           eq(runs.teamId, claim.teamId),
           eq(runs.id, claim.runId),
           eq(runs.threadId, claim.threadId),
-          eq(runs.status, "completed"),
+          claim.live
+            ? inArray(runs.status, [...LIVE_CLAIM_STATUSES])
+            : eq(runs.status, "completed"),
           eq(sandboxRunLeases.userId, claim.userId),
           eq(sandboxRunLeases.threadId, claim.threadId),
           claim.authorOnly

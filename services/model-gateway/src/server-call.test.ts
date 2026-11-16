@@ -421,16 +421,39 @@ describe("server calls: memory embeddings (KOBE-409 ac-3)", () => {
     });
   });
 
-  it("records the run a query embedding names, without a completed-run check", async () => {
+  it("records the run a query embedding names after a live-run check (not terminal-failed)", async () => {
     const r = await post(
       "/v1/embeddings",
       asServer(embedToken({ run_id: run, thread_id: thread })),
       embedBody,
     );
     expect(r.status).toBe(200);
-    expect(runChecks).toEqual([]);
+    expect(runChecks).toEqual([
+      { teamId: team, runId: run, threadId: thread, userId: user, live: true },
+    ]);
     await expect.poll(() => records.length).toBe(1);
     expect(records[0]).toMatchObject({ purpose: "memory_embed", runId: run });
+  });
+
+  it("refuses a query embedding whose run is not a live run of that member (403)", async () => {
+    runMatches = false;
+    const r = await post(
+      "/v1/embeddings",
+      asServer(embedToken({ run_id: run, thread_id: thread })),
+      embedBody,
+    );
+    expect(r.status).toBe(403);
+    expect(hits).toHaveLength(0);
+  });
+
+  it("takes the Site embedding model although no Workspace enabled it (the VK still decides)", async () => {
+    const model = "kobe-local/nomic-embed-text";
+    const r = await post("/v1/embeddings", asServer(embedToken({ model })), {
+      model,
+      input: "Fiscal year starts in April",
+    });
+    expect(r.status).toBe(200);
+    expect(hits[0]?.path).toBe("/v1/embeddings");
   });
 
   it("refuses a sandbox on the embeddings route: session token, run token, API key (404)", async () => {
@@ -456,7 +479,7 @@ describe("server calls: memory embeddings (KOBE-409 ac-3)", () => {
     expect(hits).toEqual([]);
   });
 
-  it("allows only the contract's body naming the token's model, if the team enabled it", async () => {
+  it("allows only the contract's body naming the token's model", async () => {
     const bad = async (body: unknown, token = embedToken()) =>
       (await post("/v1/embeddings", asServer(token), body)).code;
     expect(await bad({ ...embedBody, dimensions: 256 })).toBe("server_call_body_refused");
@@ -464,9 +487,6 @@ describe("server calls: memory embeddings (KOBE-409 ac-3)", () => {
     expect(await bad({ model: EMBED_MODEL, input: Array(65).fill("x") })).toBe(
       "server_call_body_refused",
     );
-    expect(
-      await bad({ model: "openai/off", input: "x" }, embedToken({ model: "openai/off" })),
-    ).toBe("model_not_enabled");
     expect(hits).toEqual([]);
   });
 });

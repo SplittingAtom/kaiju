@@ -254,9 +254,11 @@ async function serverCallAttribution(
   | { readonly ok: true; readonly runId: string | undefined }
   | { readonly ok: false; readonly status: 403; readonly code: string; readonly message: string }
 > {
-  // KOBE-409: an optional-run purpose's ids are attribution only (the run is still starting).
-  if (serverCallRunOptional(claims.purpose)) return { ok: true, runId: claims.run_id };
-  if (!serverCallBoundToRun(claims.purpose)) return { ok: true, runId: undefined };
+  // KOBE-409: an optional-run purpose may name no run; one that names a run must name a live run
+  // (still starting, running or completed, never a terminal failure) of that thread and member.
+  const optional = serverCallRunOptional(claims.purpose);
+  if (optional && claims.run_id === undefined) return { ok: true, runId: undefined };
+  if (!optional && !serverCallBoundToRun(claims.purpose)) return { ok: true, runId: undefined };
   const matches =
     claims.run_id !== undefined &&
     claims.thread_id !== undefined &&
@@ -267,15 +269,18 @@ async function serverCallAttribution(
       userId: claims.user_id,
       // A learning pass is the thread author's own (KOBE-391): its lease check admits only them.
       ...(serverCallNamesPass(claims.purpose) ? { authorOnly: true } : {}),
+      ...(optional ? { live: true as const } : {}),
     }));
   if (!matches) {
     return {
       ok: false,
       status: 403,
       code: "server_call_run_mismatch",
-      message: serverCallNamesPass(claims.purpose)
-        ? "That run is not a completed run of this thread by its author."
-        : "That run is not a completed run of this thread and member.",
+      message: optional
+        ? "That run is not a live run of this thread and member."
+        : serverCallNamesPass(claims.purpose)
+          ? "That run is not a completed run of this thread by its author."
+          : "That run is not a completed run of this thread and member.",
     };
   }
   // A learning pass's token names its pass (KOBE-391): running now, this thread's, this member's.
@@ -675,7 +680,15 @@ export function createModelGateway(options: GatewayOptions): Server {
       };
       // Every model call names a model the team enabled (checked here too, so a disable holds even
       // when a push to Bifrost failed). Listing models (GET) names none.
-      if (req.method === "POST" && (!model || !resolution.enabledModels.has(model))) {
+      // KOBE-409: the Site embedding model is a Site choice, never a Workspace's chat model (it is
+      // in no catalog, so in no picker): a server-signed `memory_embed` token names it, and the
+      // member's virtual key allows it only because the sync adds the Site's embedding model to
+      // every key, so Bifrost still refuses any other model.
+      const siteEmbedding = serverCall?.purpose === "memory_embed";
+      if (
+        req.method === "POST" &&
+        (!model || (!siteEmbedding && !resolution.enabledModels.has(model)))
+      ) {
         status = 403;
         sendError(
           res,
