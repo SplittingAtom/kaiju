@@ -1,12 +1,13 @@
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./support/chat.js";
+import { panelOf } from "./support/panel.js";
 
 /**
  * KOBE-395 (SM12, Q8): Learn from this chat on gate1. After one short answer the composer's + menu
  * has Memory › Learn from this chat and Rescan the whole chat, each either ready or disabled with
  * the reason (the switches, the learning model or the budget decide on the install). When Learn
  * can run, it starts a pass: the + shows the spinner, and the pass ends with what it found or why
- * it stopped. `/learn` is offered in the / menu and the ? sheet lists Mod+Shift+L. Light and dark
+ * it stopped; when it found something, To review opens by itself over the chat (KOBE-396, KOBE-661). `/learn` is offered in the / menu and the ? sheet lists Mod+Shift+L. Light and dark
  * screenshots of the Memory submenu are attached. Spends one short model turn and at most one
  * learning pass.
  */
@@ -56,10 +57,27 @@ test("Learn from this chat in the + menu, /learn and the ? sheet", async ({ chat
     await expect(plus).toHaveAttribute("data-kobe-learn-state", "spinner");
     const notice = page.locator("[data-kobe-learn-notice]");
     await expect(notice).toContainText("Kobe is learning from this chat");
-    await expect(plus).not.toHaveAttribute("data-kobe-learn-state", "spinner", {
-      timeout: PASS_TIMEOUT_MS,
-    });
-    await expect(notice).toHaveText(/Kobe found|Try again|budget|turned off|isn't enabled/);
+    // The pass ends one of two ways (KOBE-661). Candidates found while this chat is on screen open
+    // To review by itself (KOBE-396): a modal panel, the chat inert behind it, so the + leaves the
+    // accessibility tree. Otherwise the + settles and the notice says how it went.
+    const panel = panelOf(page);
+    await expect(async () => {
+      if (await panel.isVisible()) return;
+      expect(await plus.getAttribute("data-kobe-learn-state", { timeout: 1_000 })).not.toBe(
+        "spinner",
+      );
+    }).toPass({ timeout: PASS_TIMEOUT_MS });
+    if (await panel.isVisible()) {
+      await expect(page).toHaveURL(/\/me\/memory\?review=1/);
+      await panel
+        .getByRole("button", { name: /^Close / })
+        .first()
+        .click();
+      await expect(panel).toBeHidden();
+      await expect(plus).toHaveAttribute("data-kobe-learn-state", "count");
+    } else {
+      await expect(notice).toHaveText(/Kobe found|Try again|budget|turned off|isn't enabled/);
+    }
   }
 
   // The / menu offers /learn.

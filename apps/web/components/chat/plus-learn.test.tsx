@@ -8,6 +8,7 @@ import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { isMacPlatform } from "../../lib/shell/shortcuts";
 import { chatRequests, composer, openApp } from "./testing";
+import { LEARN_SPIN_MAX_MS, LEARN_TIMEOUT_MESSAGE } from "../../lib/chat/learn-watch";
 import { LEARN_HINT_KEY } from "./plus-learn";
 
 /**
@@ -204,6 +205,37 @@ describe("starting a pass (ac-2)", { timeout: 30_000 }, () => {
     window.removeEventListener("kobe:memory-pass-completed", hear);
     expect(announced).toEqual([expect.objectContaining({ threadId: t, candidates: 2 })]);
     await plusSaying("2 memory suggestions to review");
+  });
+
+  it("never spins forever: past the limit the + stops and says Try again (KOBE-661)", async () => {
+    const t = answered();
+    learnable(t);
+    openApp(fake, t);
+    await plusSaying("New messages to learn from");
+    const { user, sub } = await openMemory();
+    await user.click(within(sub).getByRole("menuitem", { name: /^Learn from this chat/ }));
+    await plusSaying("Kobe is learning from this chat");
+    // The server keeps saying it runs; the clock passes the limit before the next check.
+    const now = Date.now();
+    vi.spyOn(Date, "now").mockReturnValue(now + LEARN_SPIN_MAX_MS + 1_000);
+    await waitFor(() => expect(notice()).toBe(LEARN_TIMEOUT_MESSAGE), { timeout: 8_000 });
+    const button = await plus();
+    expect(mark(button)).not.toBe("spinner");
+    expect(button.getAttribute("data-kobe-learn-state")).not.toBe("spinner");
+  });
+
+  it("reads the state again when the tab comes back while a pass runs (KOBE-661)", async () => {
+    const t = answered();
+    learnable(t, { running: { pass_id: PASS, started_at: "2026-11-15T10:00:00.000Z" } });
+    openApp(fake, t);
+    await plusSaying("Kobe is learning from this chat");
+    fake.learnState.set(t, { new_messages: false, running: null, candidates: 1 });
+    const reads = () =>
+      fake.requests.filter((r) => r.method === "GET" && r.path.endsWith("/learn"));
+    const before = reads().length;
+    document.dispatchEvent(new Event("visibilitychange"));
+    await waitFor(() => expect(reads().length).toBeGreaterThan(before), { timeout: 300 });
+    await plusSaying("1 memory suggestion to review");
   });
 
   it("a server refusal shows its message", async () => {
