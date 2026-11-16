@@ -3091,6 +3091,34 @@ export const AUDIT_EVENTS = {
   }),
   /** A candidate was dismissed (later passes over the thread don't offer it again). */
   "memory.candidate.dismissed": event("team", { candidateId: id, passId: id, threadId: id }),
+  // ── Workspace proposals (KOBE-397, SM22): a member proposed a statement to the curators. Ids
+  // and flags only: never the statement, rationale or evidence.
+  /**
+   * A member proposed a candidate (`candidateId`; null once its thread is gone) to the Workspace;
+   * `edited` when they changed its statement or kind first; `repropose` when it is an expired
+   * proposal (`previousId`) sent again or one sent back for changes proposed again.
+   */
+  "memory.proposal.created": event("team", {
+    proposalId: id,
+    candidateId: id.nullable(),
+    edited: z.boolean(),
+    repropose: z.boolean(),
+    previousId: id.nullable(),
+  }),
+  /** A curator approved a proposal as Workspace memory `itemId`; `edited`: Edit and approve. */
+  "memory.proposal.accepted": event("team", {
+    proposalId: id,
+    proposerId: id,
+    itemId: id,
+    version,
+    edited: z.boolean(),
+  }),
+  /** A curator turned a proposal down with a reason: dismissed, or sent back for changes. */
+  "memory.proposal.dismissed": event("team", {
+    proposalId: id,
+    proposerId: id,
+    outcome: z.enum(["dismissed", "changes_requested"]),
+  }),
   /** A Team admin made a member a Workspace memory steward, or took it back (KOBE-380). */
   "memory.steward.granted": event("team", { userId: id }),
   "memory.steward.revoked": event("team", { userId: id }),

@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo), how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
+summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
 section: Memory
 order: 1
 audience: member
@@ -201,7 +201,8 @@ Each suggestion is a card with:
   conversation to that message, which flashes briefly;
 - **Keep it for**: **Just me (this workspace)** or **This Workspace**. Only the places allowed are
   offered: something Kobe noticed always stays yours, and a Workspace memory needs your own words
-  in the conversation. Saving to the Workspace needs a Team admin or memory steward. For a
+  in the conversation. Saving to the Workspace needs a Team admin or memory steward; anyone else
+  can [propose it](#propose-a-memory-to-the-workspace). For a
   preference you can tick **Use in all my workspaces**; Kobe asks first and shows the text;
 - for a change to a memory you already have (an update, a replacement or a contradiction), the
   **changes** word by word, removed words struck through and new ones underlined;
@@ -220,6 +221,45 @@ and the limits again on every click. Suggestions you leave expire after 14 days 
 counted as dismissed), and learning again adds new suggestions to the ones still open, without
 repeating any. When Kobe thinks a procedure could be a skill it says so, with a link to the
 **Skill Workbench**.
+
+### Propose a memory to the Workspace
+
+If you are not a Team admin or memory steward, a suggestion that may go to **This Workspace** has
+**Propose…** beside **Save**. Edit the statement or kind first if you like, add an optional note
+for the curators (at most 1,000 characters) and choose **Send to curators**. The card leaves To
+review; nothing is saved until a curator approves. Curators (Team admins and memory stewards) see
+the statement, its kind, your name, your note, your words from the conversation (only those
+quotes; the conversation itself opens for them only if it is shared with them) and anything the
+[checks](#what-kobe-checks-before-a-memory-is-saved) find, such as a similar Workspace memory or a
+Site Policy it may contradict. A secret is refused before it is sent. Team admins and memory
+stewards save their own suggestions to the Workspace directly (recorded in the audit log with
+their name), so they never propose.
+
+**Your Workspace proposals**, under To review on the **Memories** tab, lists what you proposed
+with its outcome and the curator's reason. The bell tells you when a curator decides:
+
+- **Accepted**: it is a Workspace memory and reaches every member's next run.
+- **Sent back for changes**: the suggestion is back in your To review with the curator's reason
+  (**Open To review**). Edit it and propose it again; it keeps its original 30-day deadline.
+- **Dismissed**, with the reason.
+- **Expired**: no curator decided within 30 days. **Propose again** sends it once more, with a new
+  30-day deadline, as long as its conversation still exists.
+
+### Decide on proposals (Team admins and memory stewards)
+
+The team console's **Memory** page has a **Proposals** tab for curators, oldest first; the bell's
+**Open the proposal** opens it there. For each proposal:
+
+- **Approve** saves it as a Workspace memory, in your name, with the same checks as any save
+  (warnings and Site Policy conflicts ask you to **Approve anyway**). It reaches every member's
+  next run.
+- **Edit and approve…** lets you change the statement or kind first.
+- **Request changes…** sends it back to the proposer's To review and **Dismiss…** turns it down.
+  Both need a reason, which the proposer reads.
+
+Nobody decides their own proposal, not even someone who became a curator after proposing: another
+curator does. Proposals stay inside their workspace. A proposal waiting a week reminds each
+curator once; more than five in an hour arrive as one digest.
 
 ## See and edit your notes
 
@@ -399,10 +439,11 @@ Shared memory needs people to review it, so the **Notifications** bell in the to
 when it is your turn. Each notification has a button that opens the place where you act:
 
 - **A proposal or suggestion arrived** (to the people who review it): a Workspace memory proposal
-  (opens the team console's **Memory** page), a reader's suggestion for a project's notes (opens
+  (opens the **Proposals** tab of the team console's **Memory** page), a reader's suggestion for a project's notes (opens
   the project) or a Site memory proposal (opens Site memory).
 - **Your proposal or suggestion was accepted, dismissed or sent back for changes**, naming who
-  decided, or **expired** undecided. A Site proposal also tells the Site's curators when its Team
+  decided, or **expired** undecided (a Workspace proposal opens **Your Workspace proposals** on
+  **My memory**). A Site proposal also tells the Site's curators when its Team
   admin **confirmed** it.
 - **Memories to review**: Kobe found things to remember in a conversation while you were
   elsewhere ("3 memories to review"); **Open To review** opens that conversation's
