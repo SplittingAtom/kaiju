@@ -4,6 +4,10 @@ import { dirname } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
 import { readRunCandidates } from "../../memory/items/run-memory.js";
+import { startVectorLeg } from "../../memory/items/vector-leg.js";
+import { documentText, queryText } from "../../memory/embeddings/prefixes.js";
+import { vectorLiteral } from "../../memory/embeddings/vector-store.js";
+import { embedTexts, endpointFromEnv, quantile } from "./embed-endpoint.js";
 import { openHarness, type Harness } from "../harness.js";
 import {
   RANK_MODES,
@@ -24,7 +28,15 @@ import {
  * site_memory_items), asks the KOBE-382 selector's own store read (`readRunCandidates`) about every
  * query in queries.json as a run's message, and reports recall@8. Not part of `pnpm verify`
  * (vitest.eval.config.ts). Writes the report as JSON to KOBE_EVAL_OUT when set.
+ *
+ * KOBE-409 hybrid mode: with KOBE_EVAL_EMBED_URL and KOBE_EVAL_EMBED_MODEL (embed-endpoint.ts)
+ * every statement is embedded once (with the model's document prefix) and each query too (timed:
+ * per-message embed latency), and the report compares keyword-only with hybrid (the selector's
+ * vector leg, `startVectorLeg`, given the query vector) on the same candidates code.
  */
+const endpoint = endpointFromEnv(process.env);
+/** Database id → where its version lives, for the hybrid mode's vectors. */
+const seeded: { id: string; scope: RelevanceItem["scope"]; statement: string }[] = [];
 const FIXTURES = new URL("../../../../../e2e/fixtures/memory-relevance/", import.meta.url);
 const read = (f: string): unknown => JSON.parse(readFileSync(new URL(f, FIXTURES), "utf8"));
 const set = parseRelevanceSet(read("items.json"), read("queries.json"));
@@ -43,6 +55,7 @@ const fixtureOf = new Map<string, string>();
 async function seedItem(item: RelevanceItem): Promise<void> {
   const id = randomUUID();
   fixtureOf.set(id, item.id);
+  seeded.push({ id, scope: item.scope, statement: item.statement });
   const q = (text: string, params: unknown[]) => h.admin.query(text, params);
   const age = `${item.age_days} days`;
   if (item.scope === "team" || item.scope === "user") {
@@ -107,8 +120,33 @@ beforeAll(async () => {
   );
   runId = (run.rows[0] as { id: string }).id;
   await h.admin.query("COMMIT");
+  if (endpoint) await embedAll();
   await h.admin.query("ANALYZE");
-}, 120_000);
+}, 600_000);
+
+const TABLE: Record<RelevanceItem["scope"], string> = {
+  user: "semantic_memory_item_versions",
+  team: "semantic_memory_item_versions",
+  portable: "portable_memory_item_versions",
+  site: "site_memory_item_versions",
+};
+
+/** Hybrid mode: every statement's vector, stored as embed on save would. */
+async function embedAll(): Promise<void> {
+  if (!endpoint) return;
+  const vectors = await embedTexts(
+    endpoint,
+    seeded.map((s) => documentText(endpoint.storedModel, s.statement)),
+  );
+  for (const [i, s] of seeded.entries()) {
+    const v = vectors[i] ?? [];
+    await h.admin.query(
+      `UPDATE ${TABLE[s.scope]} SET embedding = $1::vector, embedding_model = $2, embedding_dims = $3
+        WHERE item_id = $4 AND version = 1`,
+      [vectorLiteral(v), endpoint.storedModel, v.length, s.id],
+    );
+  }
+}
 
 afterAll(async () => {
   await h?.close();
@@ -117,13 +155,32 @@ afterAll(async () => {
 describe("memory relevance eval (KOBE-387)", () => {
   it("reports recall@8 per kind and overall", async () => {
     const results: QueryResult[] = [];
+    const hybrid: QueryResult[] = [];
+    const latencies: number[] = [];
     const lanesSeen = new Set<string>();
+    const toFixture = (ids: readonly string[]) => ids.map((id) => fixtureOf.get(id) ?? id);
+    const db = h.deps.database.db;
     for (const q of set.queries) {
-      const { candidates, semantic } = await withTeam(h.deps.database.db, team, (tx) =>
-        readRunCandidates(tx, { teamId: team, userId: runner, threadId, runId, message: q.query }),
+      const input = { teamId: team, userId: runner, threadId, runId, message: q.query };
+      const { candidates, semantic } = await withTeam(db, team, (tx) =>
+        readRunCandidates(tx, input),
       );
+      if (endpoint) {
+        const t0 = performance.now();
+        const [vector] = await embedTexts(endpoint, [queryText(endpoint.storedModel, q.query)]);
+        latencies.push(performance.now() - t0);
+        const query = { model: endpoint.storedModel, vector: vector ?? [] };
+        // The leg's own deadline is lifted here: this measures ranking, not latency.
+        const vectorRows = startVectorLeg(db, input, Promise.resolve(query), 60_000);
+        const h2 = await withTeam(db, team, (tx) =>
+          readRunCandidates(tx, { ...input, vectorRows }),
+        );
+        const ranked2 = Object.fromEntries(
+          RANK_MODES.map((m) => [m, toFixture(rankCandidates(h2.candidates, m))]),
+        ) as Record<RankMode, string[]>;
+        hybrid.push(scoreQuery(q, ranked2, new Set(toFixture(h2.semantic.items.map((i) => i.id)))));
+      }
       for (const lane of Object.keys(candidates)) lanesSeen.add(lane);
-      const toFixture = (ids: readonly string[]) => ids.map((id) => fixtureOf.get(id) ?? id);
       const ranked = Object.fromEntries(
         RANK_MODES.map((m) => [m, toFixture(rankCandidates(candidates, m))]),
       ) as Record<RankMode, string[]>;
@@ -140,10 +197,36 @@ describe("memory relevance eval (KOBE-387)", () => {
       .filter((r) => r.recall.relevance < 1)
       .map((r) => `${r.id} ${r.kind}/${r.style} ranks ${r.ranks.map((x) => x ?? "-").join(",")}`);
     say(`Misses (${misses.length}): ${misses.join("; ")}\n`);
+    const hybridReport = endpoint ? summarise(hybrid, set.queries) : undefined;
+    if (endpoint && hybridReport) {
+      say(
+        `\nKOBE-409 hybrid (${endpoint.model}): keyword-only recall@8 ${report.overall.relevance.toFixed(3)} → hybrid ${hybridReport.overall.relevance.toFixed(3)}; ` +
+          `query embed latency p50 ${quantile(latencies, 0.5).toFixed(1)} ms, p95 ${quantile(latencies, 0.95).toFixed(1)} ms\n\n${formatRelevanceReport(hybridReport)}\n`,
+      );
+    }
     const out = process.env.KOBE_EVAL_OUT;
     if (out) {
       mkdirSync(dirname(out), { recursive: true });
-      writeFileSync(out, JSON.stringify({ report, results }, null, 2));
+      writeFileSync(
+        out,
+        JSON.stringify(
+          {
+            report,
+            results,
+            ...(hybridReport
+              ? {
+                  hybrid: { model: endpoint?.model, report: hybridReport, results: hybrid },
+                  embedLatencyMs: {
+                    p50: quantile(latencies, 0.5),
+                    p95: quantile(latencies, 0.95),
+                  },
+                }
+              : {}),
+          },
+          null,
+          2,
+        ),
+      );
     }
     expect(results).toHaveLength(set.queries.length);
   }, 600_000);

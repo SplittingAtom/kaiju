@@ -185,7 +185,7 @@ describe("Workspace settings › Memory (KOBE-381 ac-3)", () => {
 
 const SETTINGS = {
   learning_model_alias: null,
-  embedding_model_alias: null,
+  embedding_model: null,
   context_budget_kib: 8,
   scope_limits: { user: 1000, portable: 1000, team: 1000, site: 1000 },
   version_cap: 50,
@@ -347,5 +347,86 @@ describe("Site console › Settings › Memory (KOBE-381 ac-3)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save site memory settings" }));
     await screen.findByText("The context budget must be a whole number from 4 to 16.");
     expect(calls.filter((c) => c.method === "PUT")).toEqual([]);
+  });
+});
+
+const VECTORS = "/v1/memory/vectors";
+const VEC_READY = {
+  pgvector: "enabled",
+  columns: true,
+  model: "kobe-local/nomic-embed-text",
+  model_state: "ok",
+  server_calls: true,
+  local_model: "kobe-local/nomic-embed-text",
+  providers: ["kobe-local", "kobe-mac-mini"],
+  coverage: { embedded: 3, total: 10 },
+  job: null,
+};
+
+describe("Site console › Settings › Memory: search by meaning (KOBE-409)", () => {
+  it("says what to do when the Postgres server has no pgvector", async () => {
+    stubApi({
+      [`GET ${SITE}`]: [200, SITE_ON],
+      [`GET ${VECTORS}`]: [
+        200,
+        { ...VEC_READY, pgvector: "missing", columns: false, coverage: null, model: null },
+      ],
+    });
+    renderSite(<MemorySwitchesSection />);
+    await screen.findByText(/this Postgres server has no pgvector/);
+    expect(screen.getByText(/CREATE EXTENSION vector;/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Build vectors" })).toBeNull();
+  });
+
+  it("says no embedding model is set", async () => {
+    stubApi({
+      [`GET ${SITE}`]: [200, SITE_ON],
+      [`GET ${VECTORS}`]: [200, { ...VEC_READY, model: null, model_state: "no_model" }],
+    });
+    renderSite(<MemorySwitchesSection />);
+    await screen.findByText("No embedding model is set");
+  });
+
+  it("shows coverage and re-embeds on request", async () => {
+    const calls = stubApi({
+      [`GET ${SITE}`]: [200, SITE_ON],
+      [`GET ${VECTORS}`]: [200, VEC_READY],
+      [`POST ${VECTORS}/build`]: [
+        202,
+        {
+          job: {
+            state: "running",
+            model: VEC_READY.model,
+            embedded: 0,
+            started_at: "2026-11-15T00:00:00Z",
+            finished_at: null,
+            stop_reason: null,
+          },
+        },
+      ],
+    });
+    renderSite(<MemorySwitchesSection />);
+    await screen.findByText(/3 of 10 memories have vectors from/);
+    await userEvent.click(screen.getByRole("button", { name: "Re-embed" }));
+    await screen.findByText("Building vectors in the background.");
+    expect(calls.some((c) => c.method === "POST" && c.url === `${VECTORS}/build`)).toBe(true);
+  });
+
+  it("saves a gateway embedding model and offers the in-cluster one", async () => {
+    const calls = stubApi({
+      [`GET ${SITE}`]: [200, SITE_ON],
+      [`PUT ${SITE}`]: [200, SITE_ON],
+      [`GET ${VECTORS}`]: [200, { ...VEC_READY, model: null, model_state: "no_model" }],
+    });
+    renderSite(<MemorySwitchesSection />);
+    await screen.findByText("No embedding model is set");
+    const field = screen.getByRole("combobox", { name: /Embedding model \(gateway model\)/ });
+    expect(field.getAttribute("placeholder")).toBe("kobe-local/nomic-embed-text");
+    await userEvent.type(field, "kobe-mac-mini/qwen3-embedding:0.6b");
+    await userEvent.click(screen.getByRole("button", { name: "Save site memory settings" }));
+    await screen.findByText("Site memory settings saved.");
+    expect(putBody(calls, SITE)).toEqual({
+      settings: { ...SETTINGS, embedding_model: "kobe-mac-mini/qwen3-embedding:0.6b" },
+    });
   });
 });
