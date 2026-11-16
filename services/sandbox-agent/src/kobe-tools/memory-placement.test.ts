@@ -8,7 +8,12 @@ import { describe, expect, it } from "vitest";
 import { memoryRunFileContent } from "../memory/context.js";
 import { memoryFileJson } from "../memory/context-file.js";
 import { PICKS_HEADER } from "../memory/semantic-context.js";
-import { MEMORY_PICKS_TYPE, installMemoryHooks, readMemoryRunFile } from "./memory-hooks.js";
+import {
+  MEMORY_PICKS_TYPE,
+  installMemoryHooks,
+  perMessageNote,
+  readMemoryRunFile,
+} from "./memory-hooks.js";
 
 /**
  * KOBE-658: the picks leave the system prompt (Gate A: cache share 91.2% -> 26.1% because they
@@ -61,19 +66,33 @@ function memory(
 
 type Msg = Record<string, unknown>;
 
-/** A Pi stand-in: one thread, a transcript of user/assistant messages, hooks fired per turn. */
-function conversation(placement: SemanticMemoryPlacement | undefined, itemsFor?: ItemsFor) {
+/**
+ * A Pi stand-in: one thread, a transcript of user/assistant messages, hooks fired per turn. With
+ * `restart` every turn gets a new Pi (new hooks, nothing remembered), as on gate1 where the server
+ * restarts Pi for every message (KOBE-662), and the notes come back from the agent through the
+ * run file, bound to the run's user message as the agent binds them (thread.ts).
+ */
+function conversation(
+  placement: SemanticMemoryPlacement | undefined,
+  itemsFor?: ItemsFor,
+  restart = false,
+) {
   let fileText = "";
-  const handlers = new Map<string, (event: never) => unknown>();
-  installMemoryHooks(
-    {
-      on: (event, handler) => handlers.set(event, handler),
-      getActiveTools: () => [],
-      setActiveTools: () => undefined,
-    },
-    "/run/memory-context.json",
-    () => fileText,
-  );
+  let handlers = new Map<string, (event: never) => unknown>();
+  const install = () => {
+    handlers = new Map();
+    installMemoryHooks(
+      {
+        on: (event, handler) => handlers.set(event, handler),
+        getActiveTools: () => [],
+        setActiveTools: () => undefined,
+      },
+      "/run/memory-context.json",
+      () => fileText,
+    );
+  };
+  install();
+  const agentNotes = new Map<number, string>();
   const transcript: Msg[] = [];
   let clock = 1_000;
   const turn = (i: number) => {
@@ -96,13 +115,26 @@ function conversation(placement: SemanticMemoryPlacement | undefined, itemsFor?:
             },
           ]
         : undefined;
-    fileText = memoryFileJson(
-      memoryRunFileContent(memory(placement, i, itemsFor), NONCE, undefined, viewing, conflicts),
+    const content = memoryRunFileContent(
+      memory(placement, i, itemsFor),
+      NONCE,
+      undefined,
+      viewing,
+      conflicts,
     );
+    fileText = memoryFileJson({ ...content, picksNotes: [...agentNotes] });
+    if (restart) install();
     const started = handlers.get("before_agent_start")?.({ systemPrompt: "PI" } as never) as
       { systemPrompt?: string } | undefined;
     clock = Math.max(clock + 1, Date.now());
     transcript.push({ role: "user", content: `message ${i}`, timestamp: clock });
+    const note = perMessageNote({
+      picks: content.picks ?? "",
+      viewing: content.viewing ?? "",
+      conflicts: content.conflicts ?? "",
+    });
+    if ((content.picksPlacement ?? "system") !== "system" && note !== "")
+      agentNotes.set(clock, note);
     const ctx = handlers.get("context")?.({ messages: [...transcript] } as never) as
       { messages?: Msg[] } | undefined;
     const request = ctx?.messages ?? transcript;
@@ -196,6 +228,76 @@ describe("memory placement through kobe-tools (KOBE-658 ac-2)", () => {
       }
     },
   );
+
+  /** The request as the provider gets it (the custom note goes out in user role). */
+  const wire = (system: string, request: Msg[]): Msg[] => [
+    { role: "system", content: system },
+    ...request.map((m) => ({ role: m.role === "custom" ? "user" : m.role, content: m.content })),
+  ];
+  /** The wire messages before the newest user message and the note that goes with it. */
+  const sharedPrefix = (t: { system: string; request: Msg[] }) => {
+    let end = t.request.findLastIndex((m) => m.role === "user");
+    if (t.request[end - 1]?.customType === MEMORY_PICKS_TYPE) end -= 1;
+    return wire(t.system, t.request.slice(0, end));
+  };
+  /** `head` opens `all`, message for message and byte for byte. */
+  const opens = (all: Msg[], head: Msg[]) =>
+    JSON.stringify(all.slice(0, head.length)) === JSON.stringify(head);
+
+  it.each(["latest_user_keep", "tool_only", "stable_plus_delta"] as const)(
+    "%s with a new Pi every message (KOBE-662): turn N+1 starts with the whole of turn N",
+    (placement) => {
+      const c = conversation(placement, undefined, true);
+      const one = c.turn(0);
+      const two = c.turn(1);
+      const three = c.turn(2);
+      for (const [prev, next] of [
+        [one, two],
+        [two, three],
+      ] as const) {
+        const before = wire(prev.system, prev.request);
+        // Everything turn N sent (prompt, notes, messages) opens turn N+1, byte for byte.
+        expect(opens(sharedPrefix(next), before)).toBe(true);
+      }
+      // Each message kept the note it was sent with (tool_only: the viewed file and conflicts).
+      expect(blocks(three.request)).toHaveLength(3);
+    },
+  );
+
+  it("latest_user_strip with a new Pi every message: only the newest note moves", () => {
+    const c = conversation("latest_user_strip", undefined, true);
+    const one = c.turn(0);
+    const two = c.turn(1);
+    expect(blocks(two.request)).toHaveLength(1);
+    expect(two.system).toBe(one.system);
+    // By design the previous message loses its note; the rest of turn N opens turn N+1.
+    const unnoted = one.request.filter((m) => m.customType !== MEMORY_PICKS_TYPE);
+    expect(opens(sharedPrefix(two), wire(one.system, unnoted))).toBe(true);
+  });
+
+  it("system with a new Pi every message: the history is a prefix, the prompt moves with the picks", () => {
+    const c = conversation("system", undefined, true);
+    const one = c.turn(0);
+    const two = c.turn(1);
+    const three = c.turn(2);
+    expect(two.system).not.toBe(one.system);
+    expect(three.system).not.toBe(two.system);
+    expect(blocks(three.request)).toEqual([]);
+    expect(JSON.stringify(three.request.slice(0, two.request.length))).toBe(
+      JSON.stringify(two.request),
+    );
+  });
+
+  it("an agent's malformed notes fail the run file closed", () => {
+    const base = { tools: true, text: "" };
+    const read = (picks_notes: unknown) =>
+      readMemoryRunFile("/f", () => JSON.stringify({ ...base, picks_notes }));
+    expect(read([[1, "a"]]).picksNotes.get(1)).toBe("a");
+    expect(read(undefined).picksNotes.size).toBe(0);
+    for (const bad of [{}, [["1", "a"]], [[1, 2]], [[1]], [[Number.NaN, "a"]]]) {
+      expect(read(bad).tools).toBe(false);
+    }
+  });
 
   it("binds the note to a run Pi started from a custom message", () => {
     const handlers = new Map<string, (event: never) => unknown>();

@@ -25,6 +25,12 @@ import type {
 import { MEMORY_FILE_ENV, MEMORY_FILE_NAME, MemoryContextFile } from "../memory/context-file.js";
 import { memoryRunFileContent, threadFenceNonce } from "../memory/context.js";
 import { conflictNoteText } from "../memory/conflict-context.js";
+import {
+  CONFLICT_NOTE_TYPE,
+  MEMORY_PICKS_TYPE,
+  PICKS_NOTES_MAX,
+  perMessageNote,
+} from "../kobe-tools/memory-hooks.js";
 import { PiProcess, PiProcessError, type PiExit, type PiRecord } from "../pi/pi-process.js";
 import type { PiIdentities, PiIdentity } from "../pi/identities.js";
 import type { PiLaunch } from "../pi/pi-launch.js";
@@ -229,6 +235,9 @@ interface ActiveRun {
   readonly resolveEnded: () => void;
 }
 
+/** The run file's share for earlier messages' notes (KOBE-662); a note is at most ~50 KiB. */
+const PICKS_NOTES_MAX_BYTES = 4 * 1024 * 1024;
+
 export class Thread {
   readonly id: string;
   readonly #env: ThreadEnv;
@@ -261,6 +270,16 @@ export class Thread {
   #contextFile: string | undefined;
   /** Conflicts told during the current run (KOBE-492); cleared when the next run attaches. */
   #liveConflicts: readonly SyncConflict[] = [];
+  /**
+   * The picks notes of this thread's messages (KOBE-662), by their user message's timestamp. Kept
+   * here, not in Pi: the server restarts Pi for every message (each run's `kobe.branch` marker),
+   * and a message that loses its note changes the request's prefix and the provider's cache.
+   * Memory only, never in the session; oldest dropped past {@link PICKS_NOTES_MAX} notes or
+   * {@link PICKS_NOTES_MAX_BYTES} (the run file carries them all before every prompt).
+   */
+  readonly #picksNotes = new Map<number, string>();
+  /** The current run's note, until its user message shows up in Pi's events. */
+  #runNote: { readonly runId: string; readonly text: string } | undefined;
   /** Each process's private runtime directory (and identity), removed once it has exited. */
   readonly #runtimeDirs = new Map<PiProcess, RuntimeOf>();
   /** Removal of a runtime directory in progress (awaited by `stopProcess`). */
@@ -736,10 +755,52 @@ export class Thread {
     conflicts?: readonly SyncConflict[],
   ): Promise<void> {
     this.#liveConflicts = [];
-    await this.#memoryFile?.write(
-      // Per-thread fence nonce (KOBE-383): the memory blocks stay byte-stable across runs.
-      memoryRunFileContent(memory, threadFenceNonce(this.id), project, viewing, conflicts),
+    // Per-thread fence nonce (KOBE-383): the memory blocks stay byte-stable across runs.
+    const content = memoryRunFileContent(
+      memory,
+      threadFenceNonce(this.id),
+      project,
+      viewing,
+      conflicts,
     );
+    // KOBE-662: what kobe-tools will put before this run's message, kept for later messages.
+    const note =
+      (content.picksPlacement ?? "system") === "system"
+        ? ""
+        : perMessageNote({
+            picks: content.picks ?? "",
+            viewing: content.viewing ?? "",
+            conflicts: content.conflicts ?? "",
+          });
+    const runId = this.#run?.runId;
+    this.#runNote = note === "" || runId === undefined ? undefined : { runId, text: note };
+    await this.#memoryFile?.write({ ...content, picksNotes: [...this.#picksNotes] });
+  }
+
+  /**
+   * Binds the run's note to its starting message (KOBE-662), as kobe-tools does: the first user
+   * message of the run, or a custom one that is not a kobe-tools note.
+   */
+  #bindRunNote(runId: string, event: PiRecord): void {
+    const pending = this.#runNote;
+    if (pending === undefined || pending.runId !== runId || event.type !== "message_end") return;
+    const message = event.message as Record<string, unknown> | undefined;
+    if (typeof message !== "object" || message === null) return;
+    const ts = message.timestamp;
+    const own =
+      message.customType === MEMORY_PICKS_TYPE || message.customType === CONFLICT_NOTE_TYPE;
+    const anchor = message.role === "user" || (message.role === "custom" && !own);
+    if (!anchor || typeof ts !== "number" || !Number.isFinite(ts)) return;
+    this.#runNote = undefined;
+    this.#picksNotes.delete(ts);
+    this.#picksNotes.set(ts, pending.text);
+    let bytes = 0;
+    for (const text of this.#picksNotes.values()) bytes += Buffer.byteLength(text);
+    while (this.#picksNotes.size > PICKS_NOTES_MAX || bytes > PICKS_NOTES_MAX_BYTES) {
+      const oldest = this.#picksNotes.keys().next().value as number;
+      bytes -= Buffer.byteLength(this.#picksNotes.get(oldest) ?? "");
+      this.#picksNotes.delete(oldest);
+    }
   }
 
   /**
@@ -873,6 +934,7 @@ export class Thread {
     this.#run = undefined;
     this.#runToken = undefined;
     this.#branchSummary = undefined;
+    this.#runNote = undefined;
     this.lastUsed = Date.now();
     this.#modelFile
       ?.update({ runId: null, traceparent: null })
@@ -930,7 +992,10 @@ export class Thread {
     this.lastUsed = Date.now();
     if (event.type === "agent_start") this.#streaming = true;
     const run = this.#run;
-    if (run !== undefined) this.#hooks.piEvent(run.runId, this.id, event);
+    if (run !== undefined) {
+      this.#bindRunNote(run.runId, event);
+      this.#hooks.piEvent(run.runId, this.id, event);
+    }
     if (event.type === "turn_end" && run?.stopAfterStep === true && !run.stopping) {
       this.onStopDue?.();
     }

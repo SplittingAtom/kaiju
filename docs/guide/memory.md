@@ -128,7 +128,9 @@ included, so each message costs more and answers start later. A site admin choos
   newest message; earlier messages keep the picks they were sent with, unchanged, so the system
   prompt and the conversation so far stay cacheable.
 - **With the newest message only**: the same, but earlier messages lose their picks (a leaner
-  conversation; the newest message is never cached anyway).
+  conversation). Some providers reuse only what ends their previous request (Ollama Cloud does), and
+  removing the previous message's picks changes exactly that part, so this mode gets little or no
+  cache reuse there; the default does not have that problem.
 - **A held set in the system prompt, plus changes with each message**: the memories picked at a
   conversation's first message sit in the system prompt and are re-picked every 20 messages (the
   site can choose 2 to 200), or updated when one of them is edited or archived; each message then

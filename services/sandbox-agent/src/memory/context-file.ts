@@ -44,6 +44,11 @@ export interface MemoryFileContent {
   readonly conflictsLive?: string;
   /** The viewer may edit the run's project (KOBE-580): kobe-tools lists `commit_project`. */
   readonly projectWrite?: boolean;
+  /**
+   * The notes the thread's earlier messages were sent with (KOBE-662), `[user message timestamp,
+   * text]`, oldest first: kept by the agent, since the server restarts Pi for every message.
+   */
+  readonly picksNotes?: readonly (readonly [number, string])[];
 }
 
 export type PicksPlacement = "system" | "message_keep" | "message_strip";
@@ -62,6 +67,7 @@ export function memoryFileJson(content: MemoryFileContent): string {
     conflicts: content.conflicts ?? "",
     conflicts_live: content.conflictsLive ?? "",
     project_write: content.projectWrite === true,
+    picks_notes: content.picksNotes ?? [],
   });
 }
 
