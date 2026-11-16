@@ -37,3 +37,12 @@ export function memoryItemHref(id: string, scope?: string): string {
   if (scope !== undefined) params.set("scope", scope);
   return `${MEMORY_PAGE_HREF}?${params.toString()}`;
 }
+
+/**
+ * A link to To review (KOBE-396): `?review=…` (the bell) or `?tab=review` (KOBE-395's Learn).
+ * To review sits atop the Memories tab, so it opens Memories and focuses the first card.
+ */
+export function isReviewLink(search: string): boolean {
+  const params = new URLSearchParams(search);
+  return params.has("review") || params.get("tab") === "review";
+}

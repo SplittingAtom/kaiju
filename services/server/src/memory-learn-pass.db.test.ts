@@ -275,6 +275,19 @@ describe("a pass that succeeds (ac-4)", () => {
       statement_hash: statementHash("I prefer metric units."),
     });
     expect(await watermarkOf(s.threadId)).toBe("a1");
+    // To review's bell notice and its reminder (KOBE-396), with the pass.
+    const notice = await fx.admin.query(
+      `SELECT item_count, memory_object_id FROM notifications
+        WHERE team_id = $1 AND user_id = $2 AND thread_id = $3
+          AND kind = 'memory.review.candidates_ready'`,
+      [team, owner.id, s.threadId],
+    );
+    expect(notice.rows).toEqual([{ item_count: 1, memory_object_id: started.passId }]);
+    const reminder = await fx.admin.query(
+      `SELECT related_kind FROM memory_reminders WHERE team_id = $1 AND object_id = $2`,
+      [team, started.passId],
+    );
+    expect(reminder.rows).toEqual([{ related_kind: null }]);
     expect((await passEvents(s.runId)).map((e) => [e.type, e.payload.stage ?? null])).toEqual([
       ["memory.pass.progress", "reading"],
       ["memory.pass.progress", "extracting"],

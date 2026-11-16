@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { isUuid } from "../../lib/memory/ids";
 import type { MemoryTarget } from "../../lib/memory/api";
-import { memoryTabOf, showTabInUrl, type MemoryTab } from "../../lib/memory/tabs";
+import { isReviewLink, memoryTabOf, showTabInUrl, type MemoryTab } from "../../lib/memory/tabs";
 import { useTeamAccess } from "../admin/console-context";
 import { MemoryPanel } from "../memory/memory-panel";
 import { MyMemories } from "../memory/my-memories";
+import { ReviewSection } from "../memory/review/review-section";
+import { lastThreadId } from "../../lib/shell/last-thread";
 import { ProjectPicker } from "../projects/project-picker";
 import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/console";
 
@@ -33,6 +35,14 @@ function showInUrl(projectId: string | null): void {
 export function MyMemoryPage() {
   const teamId = useTeamAccess().team.id;
   const [tab, setTab] = useState<MemoryTab>(() => memoryTabOf(window.location.search));
+  // `?review=1`: opened for a finished learning pass (KOBE-396); To review takes focus.
+  // `?tab=review` (KOBE-395's Review N candidates and /learn) does the same.
+  const [forReview] = useState(() => isReviewLink(window.location.search));
+  // `?thread=<uuid>`: the bell's Open To review names its conversation; else the one on screen.
+  const [reviewThread] = useState(() => {
+    const id = new URLSearchParams(window.location.search).get("thread");
+    return id !== null && isUuid(id) ? id.toLowerCase() : lastThreadId(teamId);
+  });
   const [projectId, setProjectId] = useState(projectFromLocation);
   const target: MemoryTarget =
     projectId === null ? { scope: "user" } : { scope: "project", projectId };
@@ -54,6 +64,7 @@ export function MyMemoryPage() {
         </TabsList>
         {/* Kept mounted while Notes is shown, so an unsent memory and the Undo bar survive. */}
         <TabsContent value="memories" forceMount hidden={tab !== "memories"}>
+          <ReviewSection teamId={teamId} threadId={reviewThread} autoFocus={forReview} />
           <MyMemories teamId={teamId} />
         </TabsContent>
         <TabsContent value="notes">

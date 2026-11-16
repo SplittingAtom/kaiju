@@ -3082,6 +3082,24 @@ export const AUDIT_EVENTS = {
     reason: z.enum(MEMORY_PASS_AUDIT_FAILURE_CODES),
     attempts: count,
   }),
+  // ── To review (KOBE-396, SM16): the thread's author decided a pass's candidate. Ids, the scope,
+  // the item and flags only: never the statement, evidence or rationale.
+  /**
+   * A candidate was saved as a memory (`itemId` at `version`): `edited` when the person changed
+   * its statement, kind or scope first; `batch` when it was part of Save all mine.
+   */
+  "memory.candidate.accepted": event("team", {
+    candidateId: id,
+    passId: id,
+    threadId: id,
+    scope: z.enum(["user", "portable", "team"]),
+    itemId: id,
+    version,
+    edited: z.boolean(),
+    batch: z.boolean(),
+  }),
+  /** A candidate was dismissed (later passes over the thread don't offer it again). */
+  "memory.candidate.dismissed": event("team", { candidateId: id, passId: id, threadId: id }),
   /** A Team admin made a member a Workspace memory steward, or took it back (KOBE-380). */
   "memory.steward.granted": event("team", { userId: id }),
   "memory.steward.revoked": event("team", { userId: id }),

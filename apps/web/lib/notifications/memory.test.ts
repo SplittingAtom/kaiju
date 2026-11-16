@@ -69,9 +69,11 @@ describe("memory notifications in the bell (KOBE-645)", () => {
     expect(notificationLabel(n, null)).toMatch(/memory|notes/i);
     const link = memoryNotificationLink(n);
     if (kind === "memory.review.candidates_ready") {
-      // Opens its conversation (the bell's Open conversation), where To review lives.
-      expect(n.threadId).toBeTruthy();
-      expect(link).toBeNull();
+      // Opens To review for its conversation (KOBE-396), beside the bell's Open conversation.
+      expect(link).toEqual({
+        href: `/me/memory?review=1&thread=${n.threadId ?? ""}`,
+        label: "Open To review",
+      });
       return;
     }
     expect(link?.href).toMatch(/^\/(me|admin)\//);

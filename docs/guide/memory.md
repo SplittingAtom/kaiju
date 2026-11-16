@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
+summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo), how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
 section: Memory
 order: 1
 audience: member
@@ -215,6 +215,43 @@ a secret is never saved. If the memory changed in another tab since you opened i
 **Undo** that comes too late (the memory changed since) is withdrawn. Each group says when it is
 80% full, and when it is full (by default 300 memories only in this workspace and 50 in all your
 workspaces; a site admin can change this): archive some before adding more.
+
+## To review
+
+When you ask Kobe to learn from a conversation, nothing is saved until you choose. What it found
+waits in **To review**, at the top of the **Memories** tab of **My memory**, for the conversation
+on screen. It opens by itself when the learning finishes while you are on that conversation and
+no other panel is open; otherwise the bell says "3 memories to review" (its **Open To review**
+button opens it) and the count waits for you.
+
+Each suggestion is a card with:
+
+- the **statement**, which you can **Edit** (text and kind) before saving;
+- where it came from: **You said**, **You confirmed** or **Kobe noticed** (something Kobe concluded
+  rather than heard from you), with its confidence, its kind and the days left;
+- **why** Kobe suggests it and the **quotes** it rests on: choose a quote to scroll the
+  conversation to that message, which flashes briefly;
+- **Keep it for**: **Just me (this workspace)** or **This Workspace**. Only the places allowed are
+  offered: something Kobe noticed always stays yours, and a Workspace memory needs your own words
+  in the conversation. Saving to the Workspace needs a Team admin or memory steward. For a
+  preference you can tick **Use in all my workspaces**; Kobe asks first and shows the text;
+- for a change to a memory you already have (an update, a replacement or a contradiction), the
+  **changes** word by word, removed words struck through and new ones underlined;
+- a **Site Policy** it may contradict, with **Not a conflict? Save anyway** (recorded), and a
+  similar memory you already have;
+- for something about the conversation's project, one line on how project notes differ: adding to
+  the project's notes asks for a signed approval of the change, while a project file's Accept
+  changes only that file.
+
+**Save** keeps it as a memory (with the same [checks](#what-kobe-checks-before-a-memory-is-saved)
+as any save) and **Dismiss** drops it: later learning in the same conversation doesn't suggest it
+again. **Save all mine** saves every new personal suggestion at once; if one of them needs your
+attention, nothing is saved and the cards say why. After a save or **Save all mine**, **Undo**
+takes it all back and the suggestions return to To review. Kobe checks your rights, the switches
+and the limits again on every click. Suggestions you leave expire after 14 days (they are not
+counted as dismissed), and learning again adds new suggestions to the ones still open, without
+repeating any. When Kobe thinks a procedure could be a skill it says so, with a link to the
+**Skill Workbench**.
 
 ## See and edit your notes
 
@@ -445,7 +482,9 @@ when it is your turn. Each notification has a button that opens the place where 
   decided, or **expired** undecided. A Site proposal also tells the Site's curators when its Team
   admin **confirmed** it.
 - **Memories to review**: Kobe found things to remember in a conversation while you were
-  elsewhere ("3 memories to review"); the button opens that conversation's To review section.
+  elsewhere ("3 memories to review"); **Open To review** opens that conversation's
+  [To review](#to-review) section. When To review opened by itself, the notification is already
+  read.
 - **A memory is 80% full**: Workspace or Site memory is close to its limit (to its curators).
 - **A reminder**: something you review has waited a week. Each waiting item reminds you once.
 - **A digest**: more than five notifications of one kind within an hour are rolled into one item

@@ -32,7 +32,7 @@ import { ThreadCommands } from "./thread-commands";
 import { AgentStarters, FollowupChips, useAgentStarters } from "./suggestion-chips";
 import { ThreadTitle } from "./thread-title";
 import { useFollowLatest } from "./use-follow";
-import { useReveal } from "./use-reveal";
+import { useReveal, useRevealRequests } from "./use-reveal";
 
 interface ThreadStatusCue {
   readonly label: string;
@@ -179,6 +179,8 @@ function MessagesAndComposer({
     state.actionError,
   );
   useReveal(state, extras.projection, viewport);
+  // To review's evidence quotes scroll here (KOBE-396).
+  useRevealRequests(state.threadId, extras.controller);
   const tree = useTreeData();
   // The palette's message actions act on the message last focused or hovered (CT4).
   const remember = (target: EventTarget) => {

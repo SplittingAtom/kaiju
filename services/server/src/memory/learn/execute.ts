@@ -16,6 +16,7 @@ import { readSwitches } from "../switches.js";
 import { checkCandidates, insertCandidates, readKnownStatements } from "./candidates.js";
 import type { LearningPassInput } from "./pass-input/assemble.js";
 import { auditPassCompleted, auditPassFailed } from "./audit.js";
+import { noticeCandidatesReady } from "../review/notify.js";
 import { completePass, failPass, moveWatermark } from "./passes.js";
 import { extractorMessages } from "./prompt/index.js";
 import { screenExtractorOutput } from "./screen.js";
@@ -188,6 +189,8 @@ async function finish(
     if (!done) throw new PassFailure("cancelled", "pass_not_running");
     await moveWatermark(tx, { ...pass, entryId: input.leafEntryId });
     await auditPassCompleted(tx, pass, counts, attempts(usage));
+    // To review's bell notice and reminder (KOBE-396): last, it holds the digest lock to commit.
+    await noticeCandidatesReady(tx, pass, counts.stored);
     span.setAttributes({
       "kobe.memory.candidates": counts.stored,
       "kobe.memory.dropped": dropped,

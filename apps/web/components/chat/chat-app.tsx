@@ -61,6 +61,8 @@ import { RetentionNotice } from "./retention-notice";
 import { SavedSkillNotice } from "./saved-skill-notice";
 import { ThreadActivityWatch } from "./thread-activity";
 import { ThreadView } from "./thread-view";
+import { useReviewArrival } from "../memory/review/arrival";
+import { createReviewApi } from "../../lib/memory/review-api";
 import { useViewportHeight } from "./use-viewport-height";
 import styles from "./chat.module.css";
 
@@ -374,6 +376,14 @@ function ChatWorkspace({
     }),
     [treeOpen, push, onClosePanel],
   );
+  // A finished learning pass opens To review when the person is here and nothing else is open
+  // (KOBE-396); otherwise its candidates wait in the bell and on +.
+  useReviewArrival({
+    threadId,
+    panelOpen: panel !== undefined,
+    open: (href) => push?.(href),
+    seen: (id) => void createReviewApi(session.teamId, fetchFn).seen(id),
+  });
   // A fork opened from the tree: the panel's entry becomes that thread's, as in Threads.
   const openFromTree = useCallback(
     (id: string) => {

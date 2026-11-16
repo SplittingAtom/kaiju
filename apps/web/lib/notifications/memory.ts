@@ -77,11 +77,18 @@ function linkOf(
 }
 
 /**
- * The bell's deep link for a memory notification; null for every other kind and for
- * `memory.review.candidates_ready`, which opens its conversation (the To review section is there).
+ * The bell's deep link for a memory notification; null for every other kind.
+ * `memory.review.candidates_ready` opens To review for its conversation (KOBE-396), beside the
+ * bell's Open conversation.
  */
 export function memoryNotificationLink(n: KobeNotification): MemoryLink | null {
-  if (n.kind === "memory.review.candidates_ready") return null;
+  if (n.kind === "memory.review.candidates_ready")
+    return n.threadId
+      ? {
+          href: `${withParam(MEMORY_PAGES.me, "review", "1")}&thread=${encodeURIComponent(n.threadId)}`,
+          label: "Open To review",
+        }
+      : null;
   if (n.kind === "memory.review.digest") {
     // The list the rolled-up notifications belong to.
     return n.relatedKind === "memory.review.reminder" || !n.relatedKind
