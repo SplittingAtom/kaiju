@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AGENT_VERSION_MEMORY_SETTINGS,
   AUDIT_EVENTS,
+  MEMORY_PASS_AUDIT_FAILURE_CODES,
   isAuditAction,
   NOTIFICATION_KINDS as DB_NOTIFICATION_KINDS,
   SEMANTIC_MEMORY_ACTOR_KIND_VALUES,
@@ -20,6 +21,7 @@ import {
   AGENT_MEMORY_SETTINGS,
   MEMORY_NOTIFICATION_KINDS,
   MEMORY_STEWARD_SITE_GRANT,
+  MEMORY_PASS_FAILURE_CODES,
   RESERVED_MEMORY_AUDIT_ACTIONS,
   SEMANTIC_MEMORY_ACTOR_KINDS,
   SEMANTIC_MEMORY_KINDS,
@@ -62,8 +64,10 @@ describe("semantic memory contract matches the schema", () => {
     expect(created.actorKind.options).toEqual([...SEMANTIC_MEMORY_ACTOR_KINDS]);
     for (const action of RESERVED_MEMORY_AUDIT_ACTIONS) {
       expect(action).toMatch(/^memory\.[a-z_]+\.[a-z_]+$/);
-      expect(isAuditAction(action), action).toBe(false);
+      // Learning pass actions are registered by KOBE-393; the rest wait for their tickets.
+      expect(isAuditAction(action), action).toBe(action.startsWith("memory.pass."));
     }
+    expect(MEMORY_PASS_AUDIT_FAILURE_CODES).toEqual([...MEMORY_PASS_FAILURE_CODES, "interrupted"]);
   });
 
   it("the DB notification kind CHECK lists every memory kind, in order (KOBE-645)", () => {

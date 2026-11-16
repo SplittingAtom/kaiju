@@ -7,7 +7,7 @@ import {
   SERVER_CALL_REASONING_EFFORT,
   SERVER_CALL_RESPONSE_FORMATS,
   SERVER_CALL_TOKEN_HEADER,
-  serverCallOutputCap,
+  serverCallOutputCapFor,
   serverCallRequestSchema,
   type ServerCallRequest,
   type ServerCallTokenPurpose,
@@ -41,6 +41,10 @@ import {
 
 /** Largest reply read (a title or three follow-ups are far smaller). */
 const MAX_REPLY_BYTES = 64 * 1024;
+/** The extractor's reply (KOBE-393): up to 16k output tokens of JSON. */
+const MAX_LEARN_REPLY_BYTES = 256 * 1024;
+const replyCap = (purpose: ServerCallTokenPurpose): number =>
+  purpose === "memory_learn" ? MAX_LEARN_REPLY_BYTES : MAX_REPLY_BYTES;
 const CODE = /^[a-z][a-z0-9_]{0,63}$/;
 
 /**
@@ -121,8 +125,18 @@ export interface ServerCallInput {
   readonly reasoning: boolean;
   readonly messages: ServerCallRequest["messages"];
   /**
-   * Ask for the purpose's structured-output format (`SERVER_CALL_RESPONSE_FORMATS`; the eval
-   * judge's verdict), where the caller knows the provider supports it.
+   * The learning pass the call serves (`memory_learn` only, KOBE-393): the token's `pass_id`. The
+   * claims schema refuses it on any other purpose, and its absence on `memory_learn`.
+   */
+  readonly passId?: string;
+  /**
+   * The model's catalog `max_output_tokens`: clamps the output cap (`serverCallOutputCapFor`).
+   * Only a learning pass passes it (the gateway clamps that purpose alone, KOBE-391).
+   */
+  readonly catalogMaxOutputTokens?: number | null;
+  /**
+   * Ask for the purpose's structured-output format (`SERVER_CALL_RESPONSE_FORMATS`: the eval
+   * judge's verdict, the extractor's reply), where the caller knows the provider supports it.
    */
   readonly structured?: boolean;
   /** Bounds the whole call (the purpose's `timeout_ms`). */
@@ -143,6 +157,14 @@ export interface ServerCallClientOptions {
   readonly now?: () => Date;
 }
 
+/** The call's output cap, in the token and the body alike. */
+const outputCap = (input: ServerCallInput): number =>
+  serverCallOutputCapFor(
+    input.purpose,
+    input.reasoning,
+    input.purpose === "memory_learn" ? input.catalogMaxOutputTokens : undefined,
+  );
+
 function mintToken(key: SessionSigningKey, input: ServerCallInput, now: Date): string {
   const iat = Math.floor(now.getTime() / 1000);
   return signServerCallToken(key, {
@@ -155,8 +177,9 @@ function mintToken(key: SessionSigningKey, input: ServerCallInput, now: Date): s
     // one with them (KOBE-564), so a caller's mistake fails here, before anything is sent.
     ...(input.threadId === undefined ? {} : { thread_id: input.threadId }),
     ...(input.runId === undefined ? {} : { run_id: input.runId }),
+    ...(input.passId === undefined ? {} : { pass_id: input.passId }),
     model: input.model,
-    max_output_tokens: serverCallOutputCap(input.purpose, input.reasoning),
+    max_output_tokens: outputCap(input),
     iat,
     exp: iat + MAX_SERVER_CALL_TOKEN_TTL_SECONDS,
     jti: randomUUID(),
@@ -165,13 +188,13 @@ function mintToken(key: SessionSigningKey, input: ServerCallInput, now: Date): s
 
 function bodyOf(input: ServerCallInput): ServerCallRequest {
   const format =
-    input.structured && input.purpose === "eval_judge"
-      ? { response_format: SERVER_CALL_RESPONSE_FORMATS.eval_judge }
+    input.structured && (input.purpose === "eval_judge" || input.purpose === "memory_learn")
+      ? { response_format: SERVER_CALL_RESPONSE_FORMATS[input.purpose] }
       : {};
   return serverCallRequestSchema.parse({
     model: input.model,
     messages: input.messages,
-    max_tokens: serverCallOutputCap(input.purpose, input.reasoning),
+    max_tokens: outputCap(input),
     temperature: SERVER_CALL_LIMITS[input.purpose].temperature,
     stream: false,
     ...(input.reasoning ? { reasoning_effort: SERVER_CALL_REASONING_EFFORT } : {}),
@@ -179,8 +202,8 @@ function bodyOf(input: ServerCallInput): ServerCallRequest {
   });
 }
 
-/** Reads at most MAX_REPLY_BYTES of the body; undefined when it is longer or unreadable. */
-async function readCapped(res: Response): Promise<string | undefined> {
+/** Reads at most `cap` bytes of the body; undefined when it is longer or unreadable. */
+async function readCapped(res: Response, cap: number): Promise<string | undefined> {
   if (!res.body) return "";
   const reader = res.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -189,7 +212,7 @@ async function readCapped(res: Response): Promise<string | undefined> {
     const { done, value } = await reader.read();
     if (done) break;
     size += value.byteLength;
-    if (size > MAX_REPLY_BYTES) {
+    if (size > cap) {
       await reader.cancel();
       return undefined;
     }
@@ -295,7 +318,7 @@ export function createServerCallClient(options: ServerCallClientOptions): Server
           const res = await post(doFetch, endpoint, headers, body, input.signal);
           let text: string | undefined;
           try {
-            text = await readCapped(res);
+            text = await readCapped(res, replyCap(input.purpose));
           } catch {
             throw new ServerCallError(input.signal.aborted ? "timeout" : "unreadable", res.status, {
               model: input.model,

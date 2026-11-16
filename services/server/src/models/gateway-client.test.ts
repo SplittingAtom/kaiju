@@ -117,6 +117,54 @@ describe("server-call gateway client: the eval judge (KOBE-326)", () => {
   });
 });
 
+describe("server-call gateway client: a learning pass (KOBE-393)", () => {
+  const PASS = "5e6f7a8b-9c0d-4e1f-8a3b-4c5d6e7f8091";
+
+  it("names the pass in the token and asks for the extractor's format and clamped cap", async () => {
+    reply = ok('{"candidates": [], "skill_hints": []}');
+    const client = createServerCallClient({ url: base, key: KEY });
+    await client.complete(
+      input({
+        purpose: "memory_learn",
+        passId: PASS,
+        structured: true,
+        catalogMaxOutputTokens: 4000,
+      }),
+    );
+    const body = serverCallRequestSchema.parse(JSON.parse(seen[0]?.body ?? ""));
+    expect(body).toMatchObject({
+      temperature: 0,
+      max_tokens: 4000,
+      response_format: SERVER_CALL_RESPONSE_FORMATS.memory_learn,
+    });
+    const claims = verifyServerCallToken(
+      PAIR.verify,
+      seen[0]?.headers[SERVER_CALL_TOKEN_HEADER],
+      Math.floor(Date.now() / 1000),
+    );
+    expect(claims.ok && claims.claims).toMatchObject({
+      purpose: "memory_learn",
+      pass_id: PASS,
+      max_output_tokens: 4000,
+    });
+  });
+
+  it("reads an extractor reply larger than a title's cap", async () => {
+    const big = "x".repeat(100 * 1024);
+    reply = ok(big);
+    const client = createServerCallClient({ url: base, key: KEY });
+    await expect(client.complete(input({ purpose: "memory_learn", passId: PASS }))).resolves.toBe(
+      big,
+    );
+  });
+
+  it("refuses a pass id on any other purpose before sending", async () => {
+    const client = createServerCallClient({ url: base, key: KEY });
+    await expect(client.complete(input({ passId: PASS }))).rejects.toThrow();
+    expect(seen).toHaveLength(0);
+  });
+});
+
 describe("server-call gateway client (KOBE-219 ac-4, ac-8)", () => {
   it("sends the server-call token alone, non-streaming, to POST /v1/chat/completions", async () => {
     reply = ok("Revenue drivers");
