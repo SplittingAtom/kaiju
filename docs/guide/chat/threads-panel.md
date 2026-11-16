@@ -1,6 +1,6 @@
 ---
 title: The Threads panel
-summary: How to find, file, archive, delete, restore and export conversations (with your notes and memories), and see which files each thread used.
+summary: How to find, file, archive, delete, restore and export conversations (with your notes, memories and Learn from this chat records), and see which files each thread used.
 section: Chat and threads
 order: 2
 audience: member
@@ -23,7 +23,12 @@ portable preferences, each with its kind, tags, status, dates and every kept ver
 the conversation of yours it came from and quotes of your own messages). Workspace and Site
 memories, and anything other people wrote (including messages copied into a fork), are not
 included; an item's `notes` says when something was left out. A legal hold does not change what
-you get. Memories you kept in a workspace you have left are not in any export. To download one
+you get. `memory-learning.json` holds what Learn from this chat kept for you in this workspace:
+your learning passes, the suggestions they found for you (saved, dismissed, expired or still open),
+your dismissals, how far each conversation was read, and the Workspace proposals and project
+suggestions you made with their outcome and any reason given. Quotes are kept only from your own
+messages in your own conversations, and who decided is not included. Memories you kept in a
+workspace you have left are not in any export. To download one
 conversation as Markdown, use `/export` in it.
 
 ## Folders

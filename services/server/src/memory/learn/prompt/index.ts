@@ -4,7 +4,7 @@ import {
   type ExtractorPromptVersion,
 } from "./build.js";
 import type { ExtractorPromptInput } from "./input.js";
-import { INSTRUCTIONS, PROMPT_VERSION, SYSTEM } from "./v1/prompt.js";
+import { INSTRUCTIONS, PROMPT_VERSION, SYSTEM } from "./v2/prompt.js";
 
 /**
  * The extractor prompt in use (KOBE-394). A pass records `prompt_version` with its candidates so a

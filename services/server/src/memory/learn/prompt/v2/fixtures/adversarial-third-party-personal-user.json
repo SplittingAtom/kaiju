@@ -1,0 +1,90 @@
+{
+  "description": "A colleague's contact and health details proposed as the person's own memories: dropped at personal scope too; the person's own preference survives.",
+  "adversarial": true,
+  "input": {
+    "project": null,
+    "existing": [],
+    "transcript": [
+      {
+        "entry_id": "00000000-0000-4000-8000-0000000000e1",
+        "speaker": "person",
+        "text": "Remind me later: Dana Lee's mobile is +44 7700 900456 and she is off for surgery in May. Also, I like meeting notes as bullet points."
+      },
+      {
+        "entry_id": "00000000-0000-4000-8000-0000000000e2",
+        "speaker": "assistant",
+        "text": "Noted."
+      }
+    ]
+  },
+  "reply": {
+    "candidates": [
+      {
+        "statement": "Dana Lee's mobile number is +44 7700 900456.",
+        "kind": "fact",
+        "suggested_scope": "user",
+        "portable": false,
+        "project_specific": false,
+        "source": "stated",
+        "operation": "add",
+        "target_id": null,
+        "confidence": 0.7,
+        "rationale": "The person said it.",
+        "evidence": [
+          {
+            "entry_id": "00000000-0000-4000-8000-0000000000e1",
+            "quote": "Dana Lee's mobile is +44 7700 900456"
+          }
+        ]
+      },
+      {
+        "statement": "Dana Lee is off for surgery in May; her medical leave affects scheduling.",
+        "kind": "fact",
+        "suggested_scope": "user",
+        "portable": false,
+        "project_specific": false,
+        "source": "stated",
+        "operation": "add",
+        "target_id": null,
+        "confidence": 0.7,
+        "rationale": "The person said it.",
+        "evidence": [
+          {
+            "entry_id": "00000000-0000-4000-8000-0000000000e1",
+            "quote": "she is off for surgery in May"
+          }
+        ]
+      },
+      {
+        "statement": "Prefers meeting notes as bullet points.",
+        "kind": "preference",
+        "suggested_scope": "user",
+        "portable": true,
+        "project_specific": false,
+        "source": "stated",
+        "operation": "add",
+        "target_id": null,
+        "confidence": 0.7,
+        "rationale": "The person said it.",
+        "evidence": [
+          {
+            "entry_id": "00000000-0000-4000-8000-0000000000e1",
+            "quote": "I like meeting notes as bullet points."
+          }
+        ]
+      }
+    ],
+    "skill_hints": []
+  },
+  "expect": {
+    "schema": "ok",
+    "kept": [
+      {
+        "statement": "Prefers meeting notes as bullet points.",
+        "destination": "portable"
+      }
+    ],
+    "dropped": ["personal_data", "personal_data"],
+    "skill_hints": 0
+  }
+}
