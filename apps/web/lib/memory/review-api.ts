@@ -6,6 +6,7 @@
  */
 import type { ItemKind, MemoryItem, Overrides } from "./items-api";
 import { apiRequest, type ApiResult } from "../api/client";
+import type { ProjectNotesStatus } from "./project-notes-api";
 
 export type ReviewScope = "user" | "portable" | "team";
 
@@ -46,6 +47,8 @@ export interface ReviewList {
   readonly canCurateWorkspace: boolean;
   readonly candidates: readonly Candidate[];
   readonly skillHints: readonly { readonly title: string; readonly summary: string }[];
+  /** Add to project notes in this thread (KOBE-398); null or absent: not a project thread. */
+  readonly projectNotes?: ProjectNotesStatus | null;
 }
 
 export interface CandidateEdit {

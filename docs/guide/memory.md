@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo), how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
+summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo, and Add to project notes in a project conversation), how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
 section: Memory
 order: 1
 audience: member
@@ -220,6 +220,25 @@ and the limits again on every click. Suggestions you leave expire after 14 days 
 counted as dismissed), and learning again adds new suggestions to the ones still open, without
 repeating any. When Kobe thinks a procedure could be a skill it says so, with a link to the
 **Skill Workbench**.
+
+### Add to project notes
+
+In a conversation that belongs to a project, each card also offers **Add to project notes** if
+you are an editor or owner of the project, or a Team admin. It adds the statement (as you edited
+it) as one line under `## Learned` in the project's `MEMORY.md`, starting that section if the file
+has none. Kobe first shows you the exact line and the file; **Approve and add** is your signed
+approval of that change, and Kobe writes it only if nothing changed since: your role in the
+project, the project memory switch, the conversation still being in the project, and the file
+itself (otherwise add it again to see the new change). The line is in the project's **Notes**, so
+everyone who can read the project sees it and the agent reads it in project conversations; change
+or remove it there (its history shows you added it). The suggestion then leaves To review. It
+never becomes a Workspace memory, and there is no **Undo** in To review for it.
+
+The button is disabled, with the reason beside it, while project memory is turned off or the
+project's `MEMORY.md` is full (200 lines). Readers of the project see **Suggest to editors**
+instead; suggesting a note to the project's editors is coming soon. Only you can add from your
+own conversation, and only by clicking: agents and scheduled or automatic runs never add to
+project notes this way (an agent's own **remember** into project notes still asks for approval).
 
 ## See and edit your notes
 

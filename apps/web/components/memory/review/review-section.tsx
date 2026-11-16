@@ -11,7 +11,9 @@ import {
 import { visible } from "../../../lib/security/visible";
 import { InlineLink } from "../../shell/text-links";
 import { Button, Notice, Section } from "../../ui/console";
+import { createProjectNotesApi, type ProjectNotesApi } from "../../../lib/memory/project-notes-api";
 import { CandidateCard, type CardSeams } from "./candidate-card";
+import { ProjectNotesAction } from "./project-notes-action";
 
 const WORKBENCH_HREF = "/me/skills?tab=workbench";
 export const REVIEW_HEADING = "memory-to-review";
@@ -34,14 +36,22 @@ export function ReviewSection({
   api: givenApi,
   autoFocus = false,
   seams,
+  notesApi: givenNotesApi,
 }: {
   readonly teamId: string;
   readonly threadId: string | undefined;
   readonly api?: ReviewApi;
   readonly autoFocus?: boolean;
   readonly seams?: CardSeams | undefined;
+  /** Add to project notes (KOBE-398); defaults to the real client. */
+  readonly notesApi?: ProjectNotesApi;
 }) {
   const api = useMemo(() => givenApi ?? createReviewApi(teamId), [givenApi, teamId]);
+  const notesApi = useMemo(
+    () => givenNotesApi ?? createProjectNotesApi(teamId),
+    [givenNotesApi, teamId],
+  );
+  const [added, setAdded] = useState<string | null>(null);
   const [list, setList] = useState<ReviewList | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [undoable, setUndoable] = useState<Undoable | null>(null);
@@ -74,11 +84,34 @@ export function ReviewSection({
     (first ?? heading.current)?.focus();
   }, [autoFocus, count]);
 
-  if (threadId === undefined || list === null || (count === 0 && undoable === null)) return null;
+  if (
+    threadId === undefined ||
+    list === null ||
+    (count === 0 && undoable === null && added === null)
+  )
+    return null;
 
   const drop = (ids: readonly string[]) =>
     setList((l) => (l ? { ...l, candidates: l.candidates.filter((c) => !ids.includes(c.id)) } : l));
   const mine = list.candidates.filter((c) => c.saveAllMine);
+  const notes = list.projectNotes ?? null;
+  const cardSeams: CardSeams | undefined = notes
+    ? {
+        ...seams,
+        projectNotes: (c, statement) => (
+          <ProjectNotesAction
+            candidate={c}
+            statement={statement}
+            status={notes}
+            api={notesApi}
+            onAdded={(a) => {
+              drop([a.candidateId]);
+              setAdded("Added to the project's notes. Change or remove it in the project's Notes.");
+            }}
+          />
+        ),
+      }
+    : seams;
 
   const saveAll = async () => {
     setBusy(true);
@@ -128,6 +161,11 @@ export function ReviewSection({
           <p className="m-0">{undoable.message}</p>
         </Notice>
       )}
+      {added && (
+        <Notice tone="success" role="status">
+          <p className="m-0">{added}</p>
+        </Notice>
+      )}
       {error && (
         <Notice tone="error" role="alert">
           <p className="m-0">{error}</p>
@@ -148,7 +186,7 @@ export function ReviewSection({
               api={api}
               threadId={threadId}
               canCurateWorkspace={list.canCurateWorkspace}
-              seams={seams}
+              seams={cardSeams}
               onSaved={(saved) => {
                 drop([saved.candidateId]);
                 setUndoable({ message: "Memory saved.", saved: [saved] });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 import type { ItemKind, MemoryItem } from "../../../lib/memory/items-api";
 import type {
   Candidate,
@@ -19,8 +19,11 @@ import { SCOPE_LABELS } from "./labels";
 export interface CardSeams {
   /** Propose… to the Workspace's curators (KOBE-397). */
   readonly onPropose?: (candidate: Candidate) => void;
-  /** Add to project notes / Suggest to editors (KOBE-398 / KOBE-652). */
-  readonly onAddToProjectNotes?: (candidate: Candidate) => void;
+  /**
+   * The project action in a project thread (KOBE-398: Add to project notes; readers' Suggest to
+   * editors is KOBE-652): `project-notes-action.tsx`, given the statement as edited.
+   */
+  readonly projectNotes?: (candidate: Candidate, statement: string) => ReactNode;
 }
 
 const NO_ITEMS: ReadonlyMap<string, MemoryItem> = new Map();
@@ -226,11 +229,7 @@ export function CandidateCard({
         {curatorOnly && seams?.onPropose && (
           <Button onClick={() => seams?.onPropose?.(candidate)}>Propose…</Button>
         )}
-        {candidate.projectSpecific && seams?.onAddToProjectNotes && (
-          <Button onClick={() => seams?.onAddToProjectNotes?.(candidate)}>
-            Add to project notes
-          </Button>
-        )}
+        {seams?.projectNotes?.(candidate, draft.statement)}
         <Button variant="ghost" aria-expanded={editing} onClick={() => setEditing((v) => !v)}>
           {editing ? "Done editing" : "Edit"}
         </Button>

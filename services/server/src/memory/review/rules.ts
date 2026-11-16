@@ -13,8 +13,8 @@ import type { StoredCandidate } from "./stored.js";
  * - A candidate that acts on an existing item (`update`, `supersede`, `conflict`) stays in that
  *   item's scope (locked).
  * - Portable memories are preferences.
- * - A project-specific Workspace candidate belongs in the project's Notes (KOBE-398, later); until
- *   then it may be kept as a personal memory.
+ * - A project-specific Workspace candidate belongs in the project's Notes (Add to project notes,
+ *   KOBE-398: `project-notes.ts`); Save keeps it as a personal memory.
  * - Never `site`: only a Team admin's confirmation moves a statement there (Phase C proposals).
  */
 

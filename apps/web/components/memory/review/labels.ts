@@ -28,8 +28,8 @@ export function confidenceLabel(confidence: number): string {
 }
 
 /**
- * Project candidates (KOBE-398, later): the one line that tells a signed Notes approval from a
- * project file's Accept.
+ * Project candidates (KOBE-398): the one line that tells a signed Notes approval from a project
+ * file's Accept.
  */
 export const PROJECT_LINE =
   "This is about the project: Add to project notes asks for a signed approval of the Notes change; " +

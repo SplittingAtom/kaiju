@@ -3091,6 +3091,20 @@ export const AUDIT_EVENTS = {
   }),
   /** A candidate was dismissed (later passes over the thread don't offer it again). */
   "memory.candidate.dismissed": event("team", { candidateId: id, passId: id, threadId: id }),
+  /**
+   * A candidate went under `## Learned` in its project's `MEMORY.md` (KOBE-398) after the person
+   * approved the signed change: the Notes doc at `version`; `edited` when the statement changed
+   * first.
+   */
+  "memory.candidate.added_to_project": event("team", {
+    candidateId: id,
+    passId: id,
+    threadId: id,
+    projectId: id,
+    memoryDocId: id,
+    version,
+    edited: z.boolean(),
+  }),
   /** A Team admin made a member a Workspace memory steward, or took it back (KOBE-380). */
   "memory.steward.granted": event("team", { userId: id }),
   "memory.steward.revoked": event("team", { userId: id }),
