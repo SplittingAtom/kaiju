@@ -6,7 +6,7 @@ import { ServerCallError } from "../../models/gateway-client.js";
 import { documentText, queryText } from "./prefixes.js";
 import { MemoryEmbeddings, isBudgetSkip } from "./service.js";
 import { pickEmbeddingModel } from "./model.js";
-import { mergeVectorRows } from "../items/vector-leg.js";
+import { mergeVectorRows, startVectorLeg } from "../items/vector-leg.js";
 import type { ItemRow } from "../items/item-row.js";
 
 const silent = { info: () => undefined, warn: () => undefined };
@@ -75,6 +75,26 @@ describe("query embedding deadline (KOBE-409)", () => {
     s.usableModel = async () => undefined;
     expect(await s.queryVector(input)).toBeUndefined();
     expect(called).toBe(false);
+  });
+});
+
+describe("vector leg deadline (KOBE-409 L5)", () => {
+  it("reads no rows once the deadline passed", async () => {
+    let reads = 0;
+    const read = async () => {
+      reads += 1;
+      return [];
+    };
+    const db = undefined as unknown as KobeDb;
+    const late = new Promise<{ model: string; vector: number[] }>((resolve) =>
+      setTimeout(() => resolve({ model: "m/x", vector: [1] }), 40),
+    );
+    expect(await startVectorLeg(db, { teamId: "t", userId: "u" }, late, 10, read)).toBeUndefined();
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(reads).toBe(0);
+    const inTime = Promise.resolve({ model: "m/x", vector: [1] });
+    expect(await startVectorLeg(db, { teamId: "t", userId: "u" }, inTime, 50, read)).toEqual([]);
+    expect(reads).toBe(1);
   });
 });
 

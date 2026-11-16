@@ -80,19 +80,27 @@ export async function readVectorRows(db: KobeDb, who: Who, query: QueryVector): 
 /**
  * Starts the vector leg for one message (call it before the keyword read, so the two overlap).
  * Resolves within `deadlineMs` to the nearest rows, or undefined (no query vector, late, failed).
+ * A query vector that arrives after the deadline reads nothing (review L5): the selection has
+ * moved on, so the statement would only cost a connection.
  */
 export function startVectorLeg(
   db: KobeDb,
   who: Who,
   queryVector: Promise<QueryVector | undefined>,
   deadlineMs = VECTOR_LEG_DEADLINE_MS,
+  read: typeof readVectorRows = readVectorRows,
 ): Promise<ItemRow[] | undefined> {
+  let expired = false;
   const work = (async () => {
     const query = await queryVector;
-    return query === undefined ? undefined : await readVectorRows(db, who, query);
+    if (query === undefined || expired) return undefined;
+    return await read(db, who, query);
   })().catch(() => undefined);
   const late = new Promise<undefined>((resolve) => {
-    const timer = setTimeout(() => resolve(undefined), deadlineMs);
+    const timer = setTimeout(() => {
+      expired = true;
+      resolve(undefined);
+    }, deadlineMs);
     void work.finally(() => clearTimeout(timer));
   });
   return Promise.race([work, late]);
