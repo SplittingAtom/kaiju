@@ -172,6 +172,11 @@ function eventOf(found: FoundUsage): unknown {
 
 export interface MeterOptions {
   readonly kind: RouteKind;
+  /**
+   * An embeddings response (KOBE-409): it generates no text, so output is 0 and its bytes (the
+   * vectors) are never counted as output; the input side is reported or estimated as usual.
+   */
+  readonly embeddings?: boolean;
   readonly contentType: string | undefined;
   readonly contentEncoding: string | undefined;
   readonly maxLineBytes?: number;
@@ -231,6 +236,7 @@ export class UsageMeter {
       }
     }
     const m = this.merged;
+    if (this.options.embeddings) return this.embeddingsReading(complete, requestBytes);
     if (complete && this.sawFinal) {
       return this.withReasoning({
         source: "reported",
@@ -254,6 +260,21 @@ export class UsageMeter {
         cacheWrite: m.cacheWrite ?? 0,
       },
     });
+  }
+
+  /** Embeddings: reported when the completed response named its input; output always 0. */
+  private embeddingsReading(complete: boolean, requestBytes: number): UsageReading {
+    const m = this.merged;
+    const reported = complete && m.input !== undefined;
+    return {
+      source: reported ? "reported" : "estimated",
+      counts: {
+        input: m.input ?? Math.ceil(requestBytes / CHARS_PER_TOKEN),
+        output: 0,
+        cacheRead: m.cacheRead ?? 0,
+        cacheWrite: 0,
+      },
+    };
   }
 
   private withReasoning(reading: UsageReading): UsageReading {

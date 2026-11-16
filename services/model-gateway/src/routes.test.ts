@@ -51,3 +51,15 @@ describe("routeTemplate (KOBE-525)", () => {
     );
   });
 });
+
+describe("server-call-only routes (KOBE-409)", () => {
+  it("classifies POST /v1/embeddings only for a server call", () => {
+    expect(classify("POST", "/v1/embeddings")).toBeUndefined();
+    expect(classify("POST", "/v1/embeddings", true)).toEqual({
+      kind: "openai",
+      path: "/v1/embeddings",
+      pathModel: undefined,
+    });
+    expect(classify("GET", "/v1/embeddings", true)).toBeUndefined();
+  });
+});

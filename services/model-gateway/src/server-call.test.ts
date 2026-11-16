@@ -129,6 +129,17 @@ beforeAll(async () => {
         return;
       }
       res.writeHead(200, { "content-type": "application/json", "x-bf-provider-key": "pk-1" });
+      if (req.url === "/v1/embeddings") {
+        const vector = Array.from({ length: 768 }, (_, i) => i / 768);
+        res.end(
+          JSON.stringify({
+            object: "list",
+            data: [{ object: "embedding", index: 0, embedding: vector }],
+            usage: { prompt_tokens: 7, total_tokens: 7 },
+          }),
+        );
+        return;
+      }
       res.end(
         JSON.stringify({
           choices: [{ message: { role: "assistant", content: "Revenue by region" } }],
@@ -371,6 +382,92 @@ describe("server calls: the skill manifest (KOBE-564)", () => {
     expect((await post("/v1/chat/completions", asServer(manifestToken()), tools)).code).toBe(
       "server_call_body_refused",
     );
+  });
+});
+
+describe("server calls: memory embeddings (KOBE-409 ac-3)", () => {
+  const EMBED_MODEL = "openai/other";
+  const embedToken = (over: Partial<ServerCallClaims> = {}) =>
+    serverToken({
+      purpose: "memory_embed",
+      thread_id: undefined,
+      run_id: undefined,
+      model: EMBED_MODEL,
+      max_output_tokens: 1,
+      ...over,
+    });
+  const embedBody = { model: EMBED_MODEL, input: ["Fiscal year starts in April"] };
+
+  it("forwards an embedding call with the member's key, no output charged, input as reported", async () => {
+    const r = await post("/v1/embeddings", asServer(embedToken()), embedBody);
+    expect(r.status).toBe(200);
+    expect(hits[0]?.path).toBe("/v1/embeddings");
+    expect(hits[0]?.headers["x-bf-vk"]).toBe(vk);
+    expect(hits[0]?.headers[SERVER_CALL_TOKEN_HEADER]).toBeUndefined();
+    expect(runChecks).toEqual([]);
+    expect(admitted[0]).toMatchObject({
+      teamId: team,
+      userId: user,
+      runId: undefined,
+      purpose: "memory_embed",
+      outputAllowance: 0,
+    });
+    await expect.poll(() => records.length).toBe(1);
+    expect(records[0]).toMatchObject({
+      purpose: "memory_embed",
+      runId: undefined,
+      sandboxId: undefined,
+      usage: { source: "reported", counts: { input: 7, output: 0 } },
+    });
+  });
+
+  it("records the run a query embedding names, without a completed-run check", async () => {
+    const r = await post(
+      "/v1/embeddings",
+      asServer(embedToken({ run_id: run, thread_id: thread })),
+      embedBody,
+    );
+    expect(r.status).toBe(200);
+    expect(runChecks).toEqual([]);
+    await expect.poll(() => records.length).toBe(1);
+    expect(records[0]).toMatchObject({ purpose: "memory_embed", runId: run });
+  });
+
+  it("refuses a sandbox on the embeddings route: session token, run token, API key (404)", async () => {
+    for (const headers of [
+      { authorization: `Bearer ${sessionToken()}` },
+      { authorization: `Bearer ${sessionToken()}`, [RUN_TOKEN_HEADER]: runToken() },
+      { "x-api-key": sessionToken() },
+    ]) {
+      const r = await post("/v1/embeddings", headers, embedBody);
+      expect(r.status).toBe(404);
+    }
+    expect(hits).toEqual([]);
+  });
+
+  it("refuses any other purpose on the embeddings route, and memory_embed on the chat route", async () => {
+    const title = await post("/v1/embeddings", asServer(), embedBody);
+    expect([title.status, title.code]).toEqual([403, "server_call_route_refused"]);
+    const chat = await post("/v1/chat/completions", asServer(embedToken()), {
+      ...BODY,
+      model: EMBED_MODEL,
+    });
+    expect([chat.status, chat.code]).toEqual([403, "server_call_route_refused"]);
+    expect(hits).toEqual([]);
+  });
+
+  it("allows only the contract's body naming the token's model, if the team enabled it", async () => {
+    const bad = async (body: unknown, token = embedToken()) =>
+      (await post("/v1/embeddings", asServer(token), body)).code;
+    expect(await bad({ ...embedBody, dimensions: 256 })).toBe("server_call_body_refused");
+    expect(await bad({ ...embedBody, model: MODEL })).toBe("server_call_body_refused");
+    expect(await bad({ model: EMBED_MODEL, input: Array(65).fill("x") })).toBe(
+      "server_call_body_refused",
+    );
+    expect(
+      await bad({ model: "openai/off", input: "x" }, embedToken({ model: "openai/off" })),
+    ).toBe("model_not_enabled");
+    expect(hits).toEqual([]);
   });
 });
 

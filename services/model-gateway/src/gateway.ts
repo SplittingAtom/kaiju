@@ -11,9 +11,11 @@ import { request as httpsRequest, Agent as HttpsAgent } from "node:https";
 import {
   serverCallBoundToRun,
   serverCallNamesPass,
+  serverCallRunOptional,
   type ServerCallClaims,
   type SessionTokenClaims,
   type ThinkingLevel,
+  SERVER_CALL_EMBEDDINGS_PATH,
 } from "@kobe/protocol";
 import { SessionTokenError, type SessionVerifyKeys } from "@kobe/session-token";
 import {
@@ -252,6 +254,8 @@ async function serverCallAttribution(
   | { readonly ok: true; readonly runId: string | undefined }
   | { readonly ok: false; readonly status: 403; readonly code: string; readonly message: string }
 > {
+  // KOBE-409: an optional-run purpose's ids are attribution only (the run is still starting).
+  if (serverCallRunOptional(claims.purpose)) return { ok: true, runId: claims.run_id };
   if (!serverCallBoundToRun(claims.purpose)) return { ok: true, runId: undefined };
   const matches =
     claims.run_id !== undefined &&
@@ -428,7 +432,7 @@ export function createModelGateway(options: GatewayOptions): Server {
       res.end(JSON.stringify({ status: ready ? "ok" : "draining", service: "model-gateway" }));
       return;
     }
-    const route = classify(req.method ?? "", url.pathname);
+    const route = classify(req.method ?? "", url.pathname, isServerCall(req.headers));
     const kind = route?.kind ?? "openai";
     // Route templates only (KOBE-525): the per-route latency query groups by them.
     if (route) span.setAttributes({ "http.route": routeTemplate(route) });
@@ -571,6 +575,7 @@ export function createModelGateway(options: GatewayOptions): Server {
       // Count-only endpoints generate nothing (KOBE-43 review): no output allowance.
       const countOnly = route.path.endsWith("/count_tokens") || route.path.endsWith(":countTokens");
       let outputAllowance = chargedOutput(undefined, 1, countOnly);
+      const embeddings = route.path === SERVER_CALL_EMBEDDINGS_PATH;
       if (serverCall) {
         // The contract's shape, the token's model and cap (no tools, no streaming).
         const checked = checkServerCallBody(
@@ -585,7 +590,7 @@ export function createModelGateway(options: GatewayOptions): Server {
           return;
         }
         model = serverCall.model;
-        outputAllowance = chargedOutput(checked.maxOutputTokens, 1, false);
+        outputAllowance = chargedOutput(checked.maxOutputTokens, 1, embeddings);
       } else if (req.method === "POST") {
         const scanned = topLevelModel(body);
         if (!scanned.ok) {
@@ -707,7 +712,7 @@ export function createModelGateway(options: GatewayOptions): Server {
           forwardBody,
           resolution.virtualKey,
           attempt === 0,
-          { kind: route.kind, started, outputAllowance },
+          { kind: route.kind, started, outputAllowance, embeddings },
           traceContext,
         );
         status = outcome.status;
@@ -827,6 +832,8 @@ export function createModelGateway(options: GatewayOptions): Server {
       readonly kind: RouteKind;
       readonly started: number;
       readonly outputAllowance: number;
+      /** Embeddings generate no text: output is 0, the vectors are not counted (KOBE-409). */
+      readonly embeddings: boolean;
     },
     traceContext: Context | undefined,
   ): Promise<Outcome> {
@@ -911,6 +918,7 @@ export function createModelGateway(options: GatewayOptions): Server {
           if (!errorAnswer) {
             meter = new UsageMeter({
               kind: call.kind,
+              embeddings: call.embeddings,
               contentType: up.headers["content-type"],
               contentEncoding: up.headers["content-encoding"],
             });

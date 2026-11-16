@@ -3,11 +3,12 @@ import { isDeepStrictEqual } from "node:util";
 import {
   RUN_TOKEN_HEADER,
   SERVER_CALL_LIMITS,
-  SERVER_CALL_PATH,
   SERVER_CALL_RESPONSE_FORMATS,
   SERVER_CALL_TOKEN_HEADER,
+  serverCallEmbeddingsRequestSchema,
   serverCallOutputCap,
   serverCallOutputCapFor,
+  serverCallPathFor,
   serverCallRequestSchema,
   type ServerCallClaims,
   type ServerCallTokenPurpose,
@@ -129,11 +130,13 @@ export function authenticateServerCall(
   if (!options.replay.claim(claims.jti, claims.exp, nowSeconds)) {
     return refuse(401, "server_call_token_replayed", "That server call token was already used.");
   }
-  if (method !== "POST" || route?.path !== SERVER_CALL_PATH) {
+  // One route per purpose (KOBE-409): embeddings for `memory_embed`, chat for every other.
+  const allowed = serverCallPathFor(claims.purpose);
+  if (method !== "POST" || route?.path !== allowed) {
     return refuse(
       403,
       "server_call_route_refused",
-      `A server call may only use POST ${SERVER_CALL_PATH}.`,
+      `This server call may only use POST ${allowed}.`,
     );
   }
   // A purpose the contract has but `run_usage.kind` cannot record yet (KOBE-390 `memory_learn`
@@ -177,6 +180,28 @@ const formatOf = (purpose: ServerCallTokenPurpose): unknown =>
   (SERVER_CALL_RESPONSE_FORMATS as Partial<Record<ServerCallTokenPurpose, unknown>>)[purpose];
 
 /**
+ * An embedding call's body (KOBE-409): the contract's strict shape (inputs only, floats, no
+ * `dimensions`) naming the token's model. It generates no text, so its output allowance is 0.
+ */
+function checkEmbeddingsBody(
+  json: unknown,
+  claims: ServerCallClaims,
+): { readonly ok: true; readonly maxOutputTokens: number } | ServerCallRefusal {
+  const parsed = serverCallEmbeddingsRequestSchema.safeParse(json);
+  if (!parsed.success) {
+    return refuse(
+      400,
+      "server_call_body_refused",
+      "An embedding server call sends only its model and inputs (at most 64, floats).",
+    );
+  }
+  if (parsed.data.model !== claims.model) {
+    return refuse(400, "server_call_body_refused", "The model is not the token's.");
+  }
+  return { ok: true, maxOutputTokens: 0 };
+}
+
+/**
  * The body against the contract and the token: shape (no tools, no streaming), the token's model,
  * an output limit within the token's and within the purpose's cap for this model: the reasoning
  * headroom and a `reasoning_effort` only when the site catalog marks the model as reasoning
@@ -199,6 +224,7 @@ export function checkServerCallBody(
   } catch {
     return bad("The body must be JSON.");
   }
+  if (claims.purpose === "memory_embed") return checkEmbeddingsBody(json, claims);
   const parsed = serverCallRequestSchema.safeParse(json);
   if (!parsed.success) {
     return bad("A server call is a plain chat completion: no tools, no streaming, text only.");
