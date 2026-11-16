@@ -7,6 +7,7 @@ import {
   CE23_SHORTCUTS,
   COMPOSER_KEYS,
   isMacPlatform,
+  MORE_SHORTCUTS,
   SHEET_NAMES,
   SHEET_NOTES,
   shortcutsOf,
@@ -26,8 +27,8 @@ function Keys({ keys, mac }: { readonly keys: string; readonly mac: boolean }) {
 const ROW = "flex items-baseline justify-between gap-4 py-1 text-sm";
 
 /**
- * The `?` sheet (CE23, KOBE-225): the twelve fixed shortcuts in the spec's order, then the message
- * box's own keys. Opened with `?` (outside a text field) or from the palette; a modal dialog that
+ * The `?` sheet (CE23, KOBE-225): the twelve fixed shortcuts in the spec's order, Memory's Learn
+ * from this chat (KOBE-395), then the message box's own keys. Opened with `?` (outside a text field) or from the palette; a modal dialog that
  * gives the focus back on close.
  */
 export function ShortcutSheet() {
@@ -75,6 +76,19 @@ export function ShortcutSheet() {
                     <span className="text-muted-foreground block text-xs">{SHEET_NOTES[id]}</span>
                   )}
                 </span>
+                <span className="flex shrink-0 gap-1">
+                  {shortcutsOf(command(id)).map((k) => (
+                    <Keys key={k} keys={k} mac={mac} />
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <h3 className="m-0 text-sm font-semibold">Memory</h3>
+          <ul className="m-0 list-none p-0" aria-label="Memory shortcuts">
+            {MORE_SHORTCUTS.map((id) => (
+              <li key={id} className={ROW} data-kobe-shortcut-more={id}>
+                <span>{command(id).name}</span>
                 <span className="flex shrink-0 gap-1">
                   {shortcutsOf(command(id)).map((k) => (
                     <Keys key={k} keys={k} mac={mac} />

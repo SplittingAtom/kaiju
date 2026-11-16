@@ -1,6 +1,6 @@
 ---
 title: Writing messages
-summary: How to send messages, attach files, mention files, use slash commands, stop or steer a run, and rate an answer.
+summary: How to send messages, attach files, mention files, use slash commands, ask Kobe to learn from the conversation, stop or steer a run, and rate an answer.
 section: Chat and threads
 order: 1
 audience: member
@@ -25,7 +25,9 @@ message box from anywhere.
 
 ## The composer toolbar
 
-- **+** opens **Attach files**, your **Connectors** for this conversation, and **Skills**.
+- **+** opens **Attach files**, your **Connectors** for this conversation, **Memory** (**Learn
+  from this chat**, see [Memory](../memory.md#learn-from-this-chat)), **Skills** and **Apps**. A
+  dot, spinner or number on **+** shows where Learn is for this conversation.
 - The agent picker chooses which agent answers. See [Agents](../agents/agents.md).
 - **Model for this conversation** and the thinking level. See [Models](../models.md).
 - The project control ("Add to a project", or the project's name) on a conversation not started
@@ -64,6 +66,7 @@ as a message.
 | `/move <project>`, `/folder <folder>`         | Move to a project, save to a folder             |
 | `/archive`, `/unarchive`, `/share <with>`     | Archive, unarchive or share the thread          |
 | `/skill`, `/saveskill <skill>`                | Make a skill from this conversation, or save it |
+| `/learn`, `/learn all`                        | Learn from this chat (new messages, or rescan)  |
 | `/stop`                                       | Stop the run                                    |
 | `/search`, `/shortcuts`                       | Open search or the keyboard shortcuts           |
 | `/memory`, `/schedules`, `/agents`, `/skills` | Open My memory, My schedules, Agents or Skills  |

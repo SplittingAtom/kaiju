@@ -213,7 +213,9 @@ export function slashOutcome(item: TriggerItem, entries: readonly SlashEntry[]):
     const choice = binding.choices?.find((c) => c.key === item.metadata?.["key"]);
     return choice ? { kind: "run", run: choice.onSelect } : { kind: "blocked", reason: NOT_HERE };
   }
-  if (binding.choices !== undefined) {
+  // An optional argument (`/learn`): the bare word runs; its choices come after a space.
+  const bare = entry.command.argOptional === true && binding.onSelect !== undefined;
+  if (binding.choices !== undefined && !bare) {
     return { kind: "complete", text: `${SLASH_TRIGGER}${entry.slash} ` };
   }
   return binding.onSelect
