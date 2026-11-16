@@ -15,6 +15,8 @@ import { CuratorMemories } from "../../memory/curator-memories";
 import { ExportPanel } from "../../memory/export-panel";
 import { ImportPanel } from "../../memory/import-panel";
 import { PolicyReadOnly } from "../../memory/policy-budget";
+import { ProposalQueue } from "../../memory/proposals/proposal-queue";
+import { isUuid } from "../../../lib/memory/ids";
 import { useTeamAccess } from "../console-context";
 import {
   getEffectiveMemory,
@@ -82,7 +84,8 @@ export const WORKSPACE_SWITCHES: readonly SwitchSpec<WorkspaceSwitch>[] = [
  * archive, restore, pin, tags, import, export), Site memories and Site Policy read-only (Team
  * admins see the Policy text and change none of it); anyone else here reads only. **Settings**
  * (Team admins): the memory switches and learning model, AND-ed with the Site's; a switch off
- * stops use and deletes nothing.
+ * stops use and deletes nothing. **Proposals** (curators, KOBE-397): members' pending Workspace
+ * proposals to approve, send back or dismiss; `?proposal=<id>` (the bell) opens it there.
  */
 export function TeamMemoryPage() {
   const access = useTeamAccess();
@@ -90,12 +93,14 @@ export function TeamMemoryPage() {
   const curate = access.permissions.includes("team.memory.curate");
   const manage = access.permissions.includes("team.memory.manage");
   const [generation, setGeneration] = useState(0);
+  const [proposal] = useState(() => proposalFromLocation());
   return (
     <>
       <PageHeader title="Memory" />
-      <Tabs defaultValue="memories">
+      <Tabs defaultValue={curate && proposal !== null ? "proposals" : "memories"}>
         <TabsList label="Memory">
           <TabsTrigger value="memories">Memories</TabsTrigger>
+          {curate && <TabsTrigger value="proposals">Proposals</TabsTrigger>}
           {curate && <TabsTrigger value="transfer">Import and export</TabsTrigger>}
           {manage && <TabsTrigger value="settings">Settings</TabsTrigger>}
         </TabsList>
@@ -117,6 +122,11 @@ export function TeamMemoryPage() {
           <PolicyReadOnly teamId={teamId} />
         </TabsContent>
         {curate && (
+          <TabsContent value="proposals">
+            <ProposalQueue teamId={teamId} userId={access.user.id} focusId={proposal} />
+          </TabsContent>
+        )}
+        {curate && (
           <TabsContent value="transfer">
             <ImportPanel
               teamId={teamId}
@@ -134,6 +144,12 @@ export function TeamMemoryPage() {
       </Tabs>
     </>
   );
+}
+
+/** `?proposal=<uuid>`: the bell's Open the proposal. */
+function proposalFromLocation(): string | null {
+  const id = new URLSearchParams(window.location.search).get("proposal");
+  return id !== null && isUuid(id) ? id.toLowerCase() : null;
 }
 
 /** The Settings tab: the Workspace's memory switches and learning model (KOBE-155, KOBE-381). */
