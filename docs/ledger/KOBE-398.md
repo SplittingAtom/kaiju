@@ -50,8 +50,18 @@ project_id, memory_doc_id, version, batch: false}` (decision schema is now a uni
 
 - The approval design above (derived-key token, no approvals row) is my call: the ticket's
   "existing signed project-memory approval" is run-bound. Worth a security look.
-- KOBE-395 follow-up (`announcePassCompleted` when a pass finishes in the open thread) is **not
-  done**: #582 is not on this base. Left for the coordinator / a rebase after #582 merges.
+- KOBE-395 follow-up: **done** after merging origin/main (395, #582): `use-learn.ts` calls
+  `announcePassCompleted` when a watched pass ends without failure (test in `plus-learn.test.tsx`).
+
+## Security review follow-up (2026-11-16)
+
+- **M1:** the line is scanned with the Workspace item rules (`scanMemoryText({scope: "team"})`):
+  instruction-lint hits refuse with `memory_lint_warning` (409, warnings in details); other
+  warnings (personal data) come back as the preview's `warnings` and show in the approval dialog.
+  DB test "scans the line as shared text…", web test "shows the preview's warnings…".
+- **L1:** `learnedLine` escapes a leading `<` and every backtick (`learned.test.ts`).
+- **L2:** `lineCount` (store and protocol) ignores one trailing newline, so the cap is the full 200
+  lines for the index everywhere, not only in `fitsIndex` (`learned.test.ts`).
 
 ## Evidence (acceptance criteria → test or command output)
 
