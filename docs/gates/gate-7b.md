@@ -94,3 +94,56 @@ fixtures with oracle replies (expected candidates plus every attack): it is not 
 <!-- extractor-results:end -->
 
 The gate1 run against the Site's learning model is done at Gate B (KOBE-401).
+
+## Vectors (KOBE-409)
+
+Hybrid retrieval (keyword read plus the vector leg, spec Phase D) on the KOBE-387 relevance set
+(121 items, 151 queries; method and columns as in [gate-7a.md](gate-7a.md)), with
+`e2e/memory-eval.sh relevance` against dev Postgres 17 + pgvector and embeddings from a LAN
+Ollama (the in-cluster `kobe-local/nomic-embed-text` was not measured here). Latency is the
+per-message query embedding as the harness measures it from the dev VM (p50 / p95).
+
+**Tuning.** Fusion weights were tuned on the even query ids only, then checked on the odd ids;
+nothing was tuned on the odd half. Each setting was chosen from a plateau (neighbouring values
+score the same within one query), not a single best point.
+
+| Retrieval                       | recall@8 even | recall@8 odd | recall@8 all | paraphrase | selector score | in block | negative above | embed p50 / p95 ms |
+| ------------------------------- | ------------- | ------------ | ------------ | ---------- | -------------- | -------- | -------------- | ------------------ |
+| Keyword only                    | 0.567         | 0.579        | **0.573**    | 0.139      | 0.174          | 0.662    | 17.9%          | -                  |
+| qwen3-embedding:0.6b, before    | 0.687         | 0.684        | 0.685        | 0.377      | 0.456          | 0.778    | 10.5%          | 35 / 53            |
+| qwen3-embedding:0.6b, after     | 0.913         | 0.875        | **0.894**    | 0.902      | 0.858          | 0.930    | 12.6%          | 34 / 37            |
+| nomic-embed-text, before        | 0.800         | 0.829        | 0.815        | 0.705      | 0.545          | 0.877    | 16.8%          | 16 / 18            |
+| nomic-embed-text, after         | 0.907         | 0.882        | **0.894**    | 0.836      | 0.874          | 0.917    | 16.8%          | 16 / 18            |
+| nomic-embed-text, card prefixes | 0.880         | 0.822        | 0.851        | 0.803      | -              | -        | 16.8%          | -                  |
+
+Both models now pass the 0.85 line on the held-out half. "Before" is the first KOBE-409 build
+(score `+ 1.0 · (sim − 0.5)/0.5`, a candidate without a keyword match needs cosine ≥ 0.5;
+nomic with `search_query: ` / `search_document: `). The last row is the tuned fusion with
+nomic's model-card prefixes, for comparison.
+
+**What changed** (`services/server/src/memory/items/select.ts`, `memory/embeddings/prefixes.ts`):
+
+- **The similarity floor was model-specific.** Unrelated statements sit near cosine 0.5 with
+  nomic-embed-text (median of non-answers 0.51) and near 0.3 with Qwen3-Embedding (0.29, answers
+  median 0.54). A fixed 0.5 floor let most of nomic's candidates through with a tiny score and
+  kept many of Qwen's answers out: vector-only ranking of Qwen already reached recall@8 0.88, the
+  hybrid only 0.685. The vector score is now relative to the message's best similarity:
+  `VECTOR_WEIGHT (2) · max(0, 1 − (best − sim) / VECTOR_BAND (0.1))`, and a candidate without a
+  keyword match counts when it is within the band and among the `VECTOR_MAX_ELIGIBLE` (8)
+  nearest of the message. Band 0.08–0.15 and weight ≥ 1.5 score the same within one query on the
+  tuning half. A rank-based RRF variant (`k/(k + rank)`) scored 0.853 / 0.900 on the tuning half
+  and was not taken. The vector leg still reads 32 nearest per lane (16 scored the same).
+- **Prefixes.** Kobe already added them (save, Build vectors and the query all go through
+  `documentText` / `queryText`). Qwen3's query instruction helps (vector-only recall@8 0.88 with
+  it, 0.82 without). nomic-embed-text ranks better **without** its card's prefixes on both halves
+  (table above; vector-only 0.86 vs 0.84), so Kobe now embeds nomic texts as is.
+- **Re-embed marker.** Vectors are stored under `storedVectorModel(model)`: the gateway model id,
+  plus `#d<n>` once a family's document scheme is past 1. nomic is now scheme 2
+  (`…/nomic-embed-text#d2`), so its stored vectors no longer match the query's model, count as not
+  embedded in the Site console, and **Re-embed** rebuilds them; until then that Site uses word
+  matching alone. Qwen3 and other models keep their stored vectors (no document change).
+- **Selector score vs relevance.** The selector adds 0.5 to each of the 24 person-lane
+  preferences, which are always eligible (SM24). With the old scaling a relevant item's vector
+  score (nomic: answers at sim ~0.66 → 0.3) stayed below that base, so the preferences filled the top 8 of
+  most queries (0.545). Recency, pins and kind weights were not the cause. With the vector score
+  on its own scale the answers rise above the base (0.874 / 0.858); the base itself is unchanged.

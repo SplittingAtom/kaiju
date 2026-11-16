@@ -16,10 +16,12 @@ import {
   RENDER_LANES,
   PREFERENCE_BASE,
   STICKY_BONUS,
-  VECTOR_MIN_SIMILARITY,
+  VECTOR_BAND,
+  VECTOR_MAX_ELIGIBLE,
   VECTOR_WEIGHT,
   eligible,
   memoryScore,
+  rankVectors,
   vectorScore,
   selectRunMemory,
   type Candidate,
@@ -167,28 +169,52 @@ describe("selectRunMemory", () => {
     expect(memoryScore(cand(i, { textRank: 0, trigram: 0, ageDays: 400 }), "team")).toBe(0);
   });
 
-  it("adds the vector leg's similarity, scaled above its floor (KOBE-409 hybrid)", () => {
+  it("adds the vector score, relative to the message's best similarity (KOBE-409 hybrid)", () => {
     const i = item("team");
     const base = cand(i, { textRank: 0.4, trigram: 0, ageDays: 400 });
-    expect(memoryScore({ ...base, vector: 1 }, "team")).toBeCloseTo(0.4 + VECTOR_WEIGHT);
-    expect(memoryScore({ ...base, vector: VECTOR_MIN_SIMILARITY }, "team")).toBeCloseTo(0.4);
-    expect(memoryScore({ ...base, vector: 0.1 }, "team")).toBeCloseTo(0.4);
+    const at = (vector: number, vectorBest: number) => ({ ...base, vector, vectorBest });
+    expect(memoryScore(at(0.6, 0.6), "team")).toBeCloseTo(0.4 + VECTOR_WEIGHT);
+    expect(memoryScore(at(0.6 - VECTOR_BAND / 2, 0.6), "team")).toBeCloseTo(
+      0.4 + VECTOR_WEIGHT / 2,
+    );
+    expect(memoryScore(at(0.6 - VECTOR_BAND, 0.6), "team")).toBeCloseTo(0.4);
+    expect(memoryScore(at(0.1, 0.6), "team")).toBeCloseTo(0.4);
     expect(memoryScore(base, "team")).toBeCloseTo(0.4);
-    expect(vectorScore(undefined)).toBe(0);
+    expect(vectorScore(base)).toBe(0);
   });
 
-  it("lets a similar item in without a keyword match, never a dissimilar one", () => {
+  it("ranks similarities across lanes, without changing the input", () => {
+    const a = cand(item("team", { id: 1 }), { vector: 0.3 });
+    const b = cand(item("user", { id: 2 }), { vector: 0.7 });
+    const c = cand(item("team", { id: 3 }));
+    const lanes = { team: [a, c], user: [b] };
+    const out = rankVectors(lanes);
+    expect(out.user?.[0]).toMatchObject({ vectorBest: 0.7, vectorRank: 0 });
+    expect(out.team?.[0]).toMatchObject({ vectorBest: 0.7, vectorRank: 1 });
+    expect(out.team?.[1]).toBe(c);
+    expect(a.vectorRank).toBeUndefined();
+    expect(rankVectors({ team: [c] }).team?.[0]).toBe(c);
+  });
+
+  it("lets the nearest items in without a keyword match, never distant ones", () => {
     const i = item("team");
     const none = cand(i, { textRank: 0 });
     expect(eligible(none, "team")).toBe(false);
-    expect(eligible({ ...none, vector: VECTOR_MIN_SIMILARITY + 0.01 }, "team")).toBe(true);
-    expect(eligible({ ...none, vector: VECTOR_MIN_SIMILARITY - 0.01 }, "team")).toBe(false);
-    // Ranked above a weak keyword match when it is close enough.
+    const near = { ...none, vector: 0.5, vectorBest: 0.5 + VECTOR_BAND - 0.01, vectorRank: 3 };
+    expect(eligible(near, "team")).toBe(true);
+    expect(eligible({ ...near, vectorBest: 0.5 + VECTOR_BAND + 0.01 }, "team")).toBe(false);
+    // Only the VECTOR_MAX_ELIGIBLE nearest count on similarity alone.
+    expect(eligible({ ...near, vectorRank: VECTOR_MAX_ELIGIBLE }, "team")).toBe(false);
+    // The model's similarity scale does not matter: a low best similarity still counts.
+    expect(eligible({ ...none, vector: 0.21, vectorBest: 0.25, vectorRank: 0 }, "team")).toBe(true);
+    // Ranked above a weak keyword match when it is close enough; selectRunMemory ranks vectors
+    // itself, so unranked candidates work too.
     const close = cand(item("team", { id: 1 }), { textRank: 0, vector: 0.95 });
+    const far = cand(item("team", { id: 3 }), { textRank: 0, vector: 0.5 });
     const weak = cand(item("team", { id: 2 }), { textRank: 0.05 });
     const out = selectRunMemory({
       policy: [],
-      lanes: { team: [weak, close] },
+      lanes: { team: [weak, close, far] },
       budgetBytes: budget,
     });
     expect(ids(out.items)).toEqual([close.item.id, weak.item.id].sort());

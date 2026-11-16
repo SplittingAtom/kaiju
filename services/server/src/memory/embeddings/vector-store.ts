@@ -1,5 +1,6 @@
 import { scanTeams, sql, type KobeDb, type KobeTx } from "@kobe/db";
 import { MEMORY_EMBED_MAX_DIMS } from "@kobe/protocol";
+import { storedVectorModel } from "./prefixes.js";
 
 /**
  * Raw SQL over the embedding columns of the three memory version tables (KOBE-409; migration
@@ -56,7 +57,8 @@ export function vectorLiteral(vector: readonly number[]): string {
 const uuids = (ids: readonly string[]): SQL => sql`${`{${ids.join(",")}}`}::uuid[]`;
 
 /**
- * Current versions of `table` without a vector of `model`, at most `limit`, by item id. Workspace
+ * Current versions of `table` without a vector of `model` (gateway model id; matched as
+ * `storedVectorModel(model)`, so a document scheme change makes them pending), at most `limit`, by item id. Workspace
  * rows need `teamId` (the transaction's team); `itemIds` narrows to the items just saved.
  */
 export async function pendingVersions(
@@ -79,7 +81,7 @@ export async function pendingVersions(
     SELECT i.id AS item_id, v.version, v.statement
       FROM ${t.items} i JOIN ${t.versions} v ON ${t.join} AND v.version = i.current_version
      WHERE i.status IN ('active', 'archived') ${team} ${ids} ${owner}
-       AND v.embedding_model IS DISTINCT FROM ${opts.model}
+       AND v.embedding_model IS DISTINCT FROM ${storedVectorModel(opts.model)}
      ORDER BY i.id LIMIT ${opts.limit}`);
   return res.rows.map((r) => ({
     itemId: r.item_id,
@@ -88,7 +90,10 @@ export async function pendingVersions(
   }));
 }
 
-/** Stores one vector per version (made by `model`); a version that moved on is left alone. */
+/**
+ * Stores one vector per version (made by `model`, stored as `storedVectorModel(model)`); a version
+ * that moved on is left alone.
+ */
 export async function writeVectors(
   tx: KobeTx,
   table: VectorTable,
@@ -103,7 +108,7 @@ export async function writeVectors(
     const res = await tx.execute(sql`
       UPDATE ${t.versions}
          SET embedding = ${vectorLiteral(r.vector)}::public.vector,
-             embedding_model = ${model}, embedding_dims = ${r.vector.length}
+             embedding_model = ${storedVectorModel(model)}, embedding_dims = ${r.vector.length}
        WHERE item_id = ${r.itemId}::uuid AND version = ${r.version} ${team}`);
     written += res.rowCount ?? 0;
   }
@@ -124,8 +129,9 @@ async function countTable(
 ): Promise<Coverage> {
   const t = TABLES[table];
   const team = table === "workspace" ? sql`AND i.team_id = ${teamId ?? null}::uuid` : sql``;
+  const stored = model === null ? null : storedVectorModel(model);
   const res = await tx.execute<{ embedded: string | number; total: string | number }>(sql`
-    SELECT count(*) FILTER (WHERE v.embedding_model = ${model}) AS embedded, count(*) AS total
+    SELECT count(*) FILTER (WHERE v.embedding_model = ${stored}) AS embedded, count(*) AS total
       FROM ${t.items} i JOIN ${t.versions} v ON ${t.join} AND v.version = i.current_version
      WHERE i.status IN ('active', 'archived') ${team}`);
   return { embedded: Number(res.rows[0]?.embedded ?? 0), total: Number(res.rows[0]?.total ?? 0) };

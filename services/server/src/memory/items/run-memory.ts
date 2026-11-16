@@ -27,6 +27,7 @@ import {
   RECENCY_WEIGHT,
   SELECT_LANES,
   STICKY_BONUS,
+  rankVectors,
   selectRunMemory,
   type Candidate,
   type SelectLane,
@@ -539,7 +540,8 @@ function toCandidates(
     const keyword = mine.filter((r) => Number(r.total) >= 0);
     beyond[lane] = Math.max(0, Number(keyword[0]?.total ?? 0) - keyword.length);
   }
-  return { candidates, beyond };
+  // Vector scores are relative to the message's best similarity, across lanes (KOBE-409).
+  return { candidates: rankVectors(candidates), beyond };
 }
 
 function select(

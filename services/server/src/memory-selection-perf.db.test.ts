@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
 import { runSemanticMemorySchema, semanticMemoryRenderedBytes } from "@kobe/protocol";
 import { startVectorLeg } from "./memory/items/vector-leg.js";
+import { storedVectorModel } from "./memory/embeddings/prefixes.js";
 import { BackgroundTasks } from "./background.js";
 import { MemoryEmbeddings, type QueryVector } from "./memory/embeddings/service.js";
 import { buildRunSemantic } from "./memory/items/run-memory.js";
@@ -221,7 +222,7 @@ describe("selector performance at scope limits (ac-4)", () => {
       "site_memory_item_versions",
     ]) {
       await q(
-        `UPDATE ${t} v SET embedding = ${vec}, embedding_model = '${VECTOR_MODEL}', embedding_dims = ${DIMS}`,
+        `UPDATE ${t} v SET embedding = ${vec}, embedding_model = '${storedVectorModel(VECTOR_MODEL)}', embedding_dims = ${DIMS}`,
       );
     }
     await q("ANALYZE");

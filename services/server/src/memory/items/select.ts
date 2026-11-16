@@ -25,20 +25,29 @@ import {
 
 /**
  * Relevance: `ts_rank_cd + 0.3 · trigram + 0.1 · recency` (SM24), plus, with vectors (KOBE-409
- * hybrid), `VECTOR_WEIGHT · vectorScore(similarity)`. Tuned offline on the KOBE-387 relevance set
- * (`e2e/memory-eval.sh relevance` with an embedding endpoint; results in the KOBE-409 ledger).
+ * hybrid), `VECTOR_WEIGHT · vectorScore`. Tuned offline on the KOBE-387 relevance set
+ * (`e2e/memory-eval.sh relevance` with an embedding endpoint; tuned on the even query ids, checked
+ * on the odd ones; results in docs/gates/gate-7b.md "Vectors (KOBE-409)").
  */
 export const TRIGRAM_WEIGHT = 0.3;
 export const RECENCY_WEIGHT = 0.1;
 /** Recency falls linearly from 1 (saved today) to 0 at this age. */
 export const RECENCY_DAYS = 180;
-/** Weight of the vector leg's scaled similarity (KOBE-409). */
-export const VECTOR_WEIGHT = 1;
+/** Weight of the vector leg's score (KOBE-409): 1 for the message's nearest item. */
+export const VECTOR_WEIGHT = 2;
 /**
- * Cosine similarity a candidate needs to count without a keyword match, and the floor the vector
- * score rises from (0 at the floor, 1 at identical).
+ * The vector score is relative to the message's best similarity, not absolute: cosine scales
+ * differ by model (unrelated texts sit near 0.5 with nomic-embed-text and near 0.3 with
+ * Qwen3-Embedding), so a fixed floor either lets everything in or keeps the answers out. A
+ * candidate within this band of the best similarity scores 1 at the best and falls to 0 at the
+ * band's edge; past it, it scores 0.
  */
-export const VECTOR_MIN_SIMILARITY = 0.5;
+export const VECTOR_BAND = 0.1;
+/**
+ * The nearest items (by similarity, all lanes together) that count without a keyword match, when
+ * they are inside {@link VECTOR_BAND}: a dense cluster of similar items cannot flood the picks.
+ */
+export const VECTOR_MAX_ELIGIBLE = 8;
 /** Base score of a preference in the person and portable lanes. */
 export const PREFERENCE_BASE = 0.5;
 /** Bonus for an item the thread's previous run was given (in-thread stickiness). */
@@ -70,6 +79,10 @@ export interface Candidate {
    * without the vector leg or without a vector of the current model.
    */
   readonly vector?: number;
+  /** The best similarity among this message's candidates ({@link rankVectors}; default: own). */
+  readonly vectorBest?: number;
+  /** 0-based rank of {@link vector} among this message's candidates ({@link rankVectors}). */
+  readonly vectorRank?: number;
 }
 
 export interface SelectInput {
@@ -88,10 +101,40 @@ export interface SelectInput {
 
 const recency = (ageDays: number) => Math.max(0, 1 - Math.max(0, ageDays) / RECENCY_DAYS);
 
-/** The similarity above {@link VECTOR_MIN_SIMILARITY}, scaled to 0..1 (0 without a vector). */
-export function vectorScore(similarity: number | undefined): number {
-  if (similarity === undefined) return 0;
-  return Math.max(0, (similarity - VECTOR_MIN_SIMILARITY) / (1 - VECTOR_MIN_SIMILARITY));
+/**
+ * Sets every candidate's {@link Candidate.vectorBest} and {@link Candidate.vectorRank} across all
+ * lanes (pure: returns new lists; ties by item id). Candidates without a vector are unchanged.
+ */
+export function rankVectors(
+  lanes: Partial<Record<SelectLane, readonly Candidate[]>>,
+): Partial<Record<SelectLane, Candidate[]>> {
+  const all = SELECT_LANES.flatMap((lane) => lanes[lane] ?? [])
+    .filter((c) => c.vector !== undefined)
+    .sort((a, b) => (b.vector ?? 0) - (a.vector ?? 0) || byId(a.item, b.item));
+  const best = all[0]?.vector;
+  const rank = new Map(all.map((c, i) => [c, i]));
+  const out: Partial<Record<SelectLane, Candidate[]>> = {};
+  for (const lane of SELECT_LANES) {
+    const list = lanes[lane];
+    if (list === undefined) continue;
+    out[lane] = list.map((c) => {
+      const at = rank.get(c);
+      return at === undefined || best === undefined
+        ? c
+        : { ...c, vectorBest: best, vectorRank: at };
+    });
+  }
+  return out;
+}
+
+/** How far below the message's best similarity this candidate's is (undefined: no vector). */
+const vectorGap = (c: Candidate) =>
+  c.vector === undefined ? undefined : Math.max(0, (c.vectorBest ?? c.vector) - c.vector);
+
+/** 1 at the message's best similarity, falling to 0 at {@link VECTOR_BAND} below it. */
+export function vectorScore(c: Candidate): number {
+  const gap = vectorGap(c);
+  return gap === undefined ? 0 : Math.max(0, 1 - gap / VECTOR_BAND);
 }
 
 /** Relevance alone (SM24, KOBE-409), without the preference base or stickiness. */
@@ -100,7 +143,7 @@ export function relevanceScore(c: Candidate): number {
     c.textRank +
     TRIGRAM_WEIGHT * c.trigram +
     RECENCY_WEIGHT * recency(c.ageDays) +
-    VECTOR_WEIGHT * vectorScore(c.vector)
+    VECTOR_WEIGHT * vectorScore(c)
   );
 }
 
@@ -113,17 +156,22 @@ export function memoryScore(c: Candidate, lane: SelectLane): number {
 
 /**
  * A candidate counts at all: pinned, a person-lane preference, a word of this message's query
- * matched, or its vector is at least {@link VECTOR_MIN_SIMILARITY} similar to the message's
- * (KOBE-409). Stickiness and trigram similarity only rank: an item the previous run got is never a
+ * matched, or it is one of the message's {@link VECTOR_MAX_ELIGIBLE} nearest and within
+ * {@link VECTOR_BAND} of the best similarity (KOBE-409). Stickiness and trigram similarity only rank: an item the previous run got is never a
  * candidate on that alone (re-picked every message, Q6).
  */
 export function eligible(c: Candidate, lane: SelectLane): boolean {
   return (
     c.item.pinned ||
     c.matched ||
-    (c.vector !== undefined && c.vector >= VECTOR_MIN_SIMILARITY) ||
+    nearEnough(c) ||
     (c.item.kind === "preference" && (lane === "user" || lane === "portable"))
   );
+}
+
+function nearEnough(c: Candidate): boolean {
+  const gap = vectorGap(c);
+  return gap !== undefined && gap <= VECTOR_BAND && (c.vectorRank ?? 0) < VECTOR_MAX_ELIGIBLE;
 }
 
 /** Rendered bytes of one item (Buffer.byteLength: the same UTF-8 count, without an encoder). */
@@ -175,8 +223,9 @@ export function selectRunMemory(input: SelectInput): RunSemanticMemory {
   const queues = new Map<SelectLane, Ranked[]>();
   const pinned: Ranked[] = [];
   let eligibleCount = 0;
+  const lanes = rankVectors(input.lanes);
   for (const lane of SELECT_LANES) {
-    const list = input.lanes[lane];
+    const list = lanes[lane];
     if (list === undefined) continue;
     const ranked = list
       .filter((c) => eligible(c, lane))
