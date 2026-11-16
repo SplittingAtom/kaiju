@@ -1611,6 +1611,13 @@
       "when": 1794772580005,
       "tag": "0229_memory_learning_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 230,
+      "version": "7",
+      "when": 1794788567828,
+      "tag": "0230_memory_vectors",
+      "breakpoints": true
     }
   ]
 }

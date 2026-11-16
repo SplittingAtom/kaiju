@@ -110,6 +110,12 @@ family. `pnpm license:check` names anything missing.
   packages (curl, ffmpeg and their libraries) under their own licenses; Kobe runs the image
   unmodified and links none of it. The model it serves, **nomic-embed-text v1.5** (GGUF weights
   from `nomic-ai/nomic-embed-text-v1.5-GGUF`), is Apache-2.0.
+- **pgvector** (the `vector` Postgres extension, optional; KOBE-409 vector memory search):
+  PostgreSQL License (permissive, BSD/MIT-family under D3, like PostgreSQL itself). It runs inside
+  the site's Postgres server (the CloudNativePG image ships it; an external server installs it)
+  and Kobe ships none of it: no Kobe image contains pgvector, so no notice is carried. If Kobe ever
+  builds its own Postgres image, that image must ship pgvector's `LICENSE`. CI installs Debian's
+  `postgresql-17-pgvector` into the test Postgres of the db-server jobs (`scripts/ci-postgres.sh`).
 - **Pi** (`@earendil-works/pi-coding-agent`, pinned 1.4.0): MIT. Checked at `v1.0.0` and `v1.4.0`
   (`github.com/earendil-works/pi`): one `LICENSE` (MIT) at the root, the npm package declares MIT,
   and `packages/mcp/LICENSES` holds the MIT license of the MCP TypeScript SDK it includes.

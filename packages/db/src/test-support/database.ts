@@ -65,6 +65,26 @@ export interface TestDatabaseOptions {
    * ignoring KOBE_TEST_BASE_MIGRATIONS.
    */
   readonly migrationsFolder?: string;
+  /**
+   * Enable pgvector as the superuser before migrating, when the server has it (KOBE-409), as an
+   * operator or the CloudNativePG bootstrap would. Default true; false gives a database where the
+   * migration role finds the extension available but not enabled (vector columns skipped).
+   */
+  readonly vector?: boolean;
+}
+
+/** Whether the test server has pgvector installed (vector tests skip with a reason otherwise). */
+export async function serverHasPgvector(serverUrl: string): Promise<boolean> {
+  const client = new pg.Client({ connectionString: serverUrl });
+  await client.connect();
+  try {
+    const { rows } = await client.query(
+      `SELECT 1 FROM pg_available_extensions WHERE name = 'vector'`,
+    );
+    return rows.length > 0;
+  } finally {
+    await client.end();
+  }
 }
 
 /**
@@ -107,6 +127,7 @@ export async function createTestDatabase(
       `CREATE ROLE ${appRole} LOGIN PASSWORD '${password}' NOSUPERUSER NOBYPASSRLS`,
     );
     await admin.query(`CREATE DATABASE ${dbName} OWNER ${ownerRole}`);
+    if (options.vector !== false) await enablePgvector(serverUrl, dbName);
     const baseFolder = process.env.KOBE_TEST_BASE_MIGRATIONS;
     if (options.migrationsFolder) {
       await runMigrations({
@@ -143,6 +164,22 @@ export async function createTestDatabase(
     appRole,
     drop,
   };
+}
+
+/** Superuser `CREATE EXTENSION vector` in the new database, when the server has pgvector. */
+async function enablePgvector(serverUrl: string, dbName: string): Promise<void> {
+  const url = new URL(serverUrl);
+  url.pathname = `/${dbName}`;
+  const client = new pg.Client({ connectionString: url.toString() });
+  await client.connect();
+  try {
+    const { rows } = await client.query(
+      `SELECT 1 FROM pg_available_extensions WHERE name = 'vector'`,
+    );
+    if (rows.length > 0) await client.query(`CREATE EXTENSION IF NOT EXISTS vector SCHEMA public`);
+  } finally {
+    await client.end();
+  }
 }
 
 /**
