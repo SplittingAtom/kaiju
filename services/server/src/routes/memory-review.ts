@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { z } from "zod";
 import { withTeam } from "@kobe/db";
 import type { TeamVariables } from "../authz/middleware.js";
@@ -14,6 +14,16 @@ import {
 import { workspaceOf } from "../memory/review/ids.js";
 import { listReview } from "../memory/review/list.js";
 import { markReviewSeen } from "../memory/review/notify.js";
+import {
+  addToProjectNotes,
+  notesAddSchema,
+  notesPreviewSchema,
+  previewProjectNotes,
+  projectNotesStatus,
+  type NotesDeps,
+} from "../memory/review/project-notes.js";
+import { MemoryStorageError } from "../memory/store.js";
+import { logger } from "../logger.js";
 import { proposeCandidate, proposeSchema } from "../memory/proposals/propose.js";
 import { invalidRequest } from "../teams/http.js";
 import { uuidSchema } from "../threads/schemas.js";
@@ -34,6 +44,9 @@ const threadQuery = z.object({ thread_id: uuidSchema });
  * - `POST /save-all` `{candidate_ids}`: Save all mine, one batch
  * - `POST /undo` `{candidate_ids}`: Undo of a save or a batch
  * - `POST /seen` `{thread_id}`: the panel showed the thread's candidates (bell notices read)
+ * - `POST /candidates/:id/project-notes/preview` `{statement?}`: the exact Notes change, signed
+ * - `POST /candidates/:id/project-notes` `{statement?, base_version, approval}`: Add to project
+ *   notes (KOBE-398; the list's `project_notes` says whether the caller may)
  */
 export function memoryReviewRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }> {
   const app = new Hono<{ Variables: TeamVariables }>();
@@ -41,11 +54,50 @@ export function memoryReviewRoutes(deps: ServerDeps): Hono<{ Variables: TeamVari
   app.use("*", refuseAgentWrites);
   const { answer, readBody } = memoryRouteKit(deps);
   const candidateId = (raw: string | undefined) => uuidSchema.safeParse(raw);
+  // Read per request: building the app must not touch blobs or keys (threads.db.test.ts ac-2).
+  const notes = (): NotesDeps => ({ db, blobs: deps.blobs, keys: deps.approvalKeys });
+  /** Notes storage failures are 503, as on the Notes routes. */
+  const storage = async <T>(c: Context, fn: () => Promise<T>): Promise<T | Response> => {
+    try {
+      return await fn();
+    } catch (err) {
+      if (!(err instanceof MemoryStorageError)) throw err;
+      logger.error({ err }, "project notes storage failed");
+      return c.json(
+        { code: "storage_unavailable", message: "Memory storage is unavailable." },
+        503,
+      );
+    }
+  };
 
   app.get("/", async (c) => {
     const q = threadQuery.safeParse(c.req.query());
     if (!q.success) return invalidRequest(c, "thread_id must be a conversation id.");
-    return answer(c, "user", (who) => listReview(db, who, q.data.thread_id));
+    return answer(c, "user", async (who) => {
+      const list = await listReview(db, who, q.data.thread_id);
+      const status = await storage(c, () => projectNotesStatus(notes(), who, q.data.thread_id));
+      return { ...list, project_notes: status instanceof Response ? null : status };
+    });
+  });
+
+  app.post("/candidates/:id/project-notes/preview", async (c) => {
+    const id = candidateId(c.req.param("id"));
+    if (!id.success) return invalidRequest(c, "id must be a candidate id.");
+    const body = await readBody(c, notesPreviewSchema, true);
+    if (!body.success) return invalidRequest(c, issueText(body.error));
+    return answer(c, "user", (who) =>
+      storage(c, () => previewProjectNotes(notes(), who, id.data, body.data)),
+    );
+  });
+
+  app.post("/candidates/:id/project-notes", async (c) => {
+    const id = candidateId(c.req.param("id"));
+    if (!id.success) return invalidRequest(c, "id must be a candidate id.");
+    const body = await readBody(c, notesAddSchema);
+    if (!body.success) return invalidRequest(c, issueText(body.error));
+    return answer(c, "user", (who) =>
+      storage(c, () => addToProjectNotes(notes(), who, id.data, body.data)),
+    );
   });
 
   app.post("/candidates/:id/save", async (c) => {

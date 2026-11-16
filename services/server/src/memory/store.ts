@@ -89,7 +89,8 @@ const DOC_COLUMNS = {
   updatedAt: memoryDocs.updatedAt,
 };
 
-export const lineCount = (s: string): number => (s === "" ? 0 : s.split("\n").length);
+export const lineCount = (s: string): number =>
+  s === "" ? 0 : s.replace(/\n$/, "").split("\n").length;
 
 const targetWhere = (teamId: string, target: MemoryTarget, path: string) =>
   target.scope === "user"

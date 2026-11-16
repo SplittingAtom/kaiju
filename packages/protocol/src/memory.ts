@@ -74,7 +74,7 @@ export const memoryPathSchema = z
     { message: "invalid memory path" },
   );
 
-const lineCount = (s: string): number => (s === "" ? 0 : s.split("\n").length);
+const lineCount = (s: string): number => (s === "" ? 0 : s.replace(/\n$/, "").split("\n").length);
 
 const memoryContent = z.string().refine((s) => utf8ByteLength(s) <= MEMORY_FILE_MAX_BYTES, {
   message: `content exceeds ${MEMORY_FILE_MAX_BYTES} bytes`,

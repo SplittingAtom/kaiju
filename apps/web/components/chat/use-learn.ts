@@ -3,6 +3,7 @@
 import type { LearnMode } from "@kobe/protocol";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getLearnState, learnBlocker, startLearn, type LearnState } from "../../lib/chat/learn-api";
+import { announcePassCompleted } from "../memory/review/arrival";
 import { useChatSession } from "./kobe-runtime";
 
 /** How often a running pass is checked on. */
@@ -59,9 +60,10 @@ export function useLearn(threadId: string | null, threadRunning: boolean): Learn
       const passId = watched.current;
       if (passId !== null && next.running?.passId !== passId) {
         watched.current = null;
-        say(
-          next.lastFailure?.passId === passId ? next.lastFailure.message : found(next.candidates),
-        );
+        const failed = next.lastFailure?.passId === passId;
+        say(failed ? next.lastFailure.message : found(next.candidates));
+        // KOBE-396: To review opens by itself when this thread is on screen and no panel is open.
+        if (!failed) announcePassCompleted({ threadId, passId, candidates: next.candidates });
       }
       if (next.running !== null) watched.current = next.running.passId;
       setState(next);

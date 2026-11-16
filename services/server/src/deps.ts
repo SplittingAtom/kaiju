@@ -323,6 +323,8 @@ export interface ServerDeps {
    * signed-approval verifier the MCP proxy (KOBE-58) calls.
    */
   readonly approvals: ApprovalService;
+  /** The site's approval key (KOBE-37); To review signs project Notes changes with a derived key (KOBE-398). */
+  readonly approvalKeys: ApprovalKeyring | undefined;
   /** Seals team-injected egress header values (KOBE-39); undefined when not configured. */
   readonly egressHeaders: SecretBox | undefined;
   /** Envelope encryption for connector credentials and other per-record secrets (KOBE-107). */
@@ -714,6 +716,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     connectorProbe: options.connectorProbe ?? NO_PROBE,
     appCaller: options.appCaller ?? NO_APP_CALLER,
     approvals,
+    approvalKeys: options.approvalKeys,
     envelope: options.envelope,
     sso,
     egressHeaders: options.egressHeaderSecrets ? headerBox(options.egressHeaderSecrets) : undefined,

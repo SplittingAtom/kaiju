@@ -33,6 +33,7 @@ import {
   reopenCandidate,
   type CandidateRow,
   type Decision,
+  type MemoryDecision,
 } from "./stored.js";
 
 /**
@@ -44,8 +45,8 @@ import {
  * item store (KOBE-378: switches, rights, limits, `memory/checks.ts`, Policy conflicts with their
  * audited override), on the same transaction, so a refused save leaves the candidate open.
  *
- * Project-notes candidates (KOBE-398, later) can be kept personally or dismissed here; the
- * Add to project notes action plugs in beside Save. Propose… (KOBE-397) likewise.
+ * Project-notes candidates can also be kept personally here; Add to project notes (KOBE-398) is
+ * `project-notes.ts` beside Save. Propose… (KOBE-397) likewise.
  */
 
 export const saveCandidateSchema = z.strictObject({
@@ -149,7 +150,7 @@ async function saveLocked(
     if (!parsed.success) throw invalid(parsed.error.issues[0]?.message ?? "Invalid memory.");
     item = await createItemIn(op, parsed.data);
   }
-  const decision: Decision = {
+  const decision: MemoryDecision = {
     item_id: item.id,
     scope,
     version: item.version,
@@ -266,6 +267,8 @@ export function undoSaves(
     for (const id of [...new Set(candidateIds)]) {
       const row = await lockCandidate(tx, { teamId, userId: who.userId }, id, "saved");
       const d = row.candidate.decision as Decision;
+      if (d.op === "project_notes")
+        throw invalid("Added to project notes: change it in the project's Notes (its history).");
       const op = await ops(d.scope);
       if (d.op === "create") await archiveItemIn(op, d.item_id, { expected_version: d.version });
       else if (d.op === "update")

@@ -20,7 +20,7 @@ import { MemoryItemError, inactive } from "../items/errors.js";
 
 const ref = z.object({ id: uuidSchema, version: z.number().int().positive() });
 
-export const decisionSchema = z.object({
+const memoryDecisionSchema = z.object({
   item_id: uuidSchema,
   scope: z.enum(["user", "portable", "team"]),
   /** The item's version right after the save (Undo refuses once it moved on). */
@@ -29,6 +29,16 @@ export const decisionSchema = z.object({
   /** Saved by Save all mine: Undo of that batch reopens it. */
   batch: z.boolean(),
 });
+/** Added to the project's Notes (KOBE-398): `MEMORY.md` at `version`; no Undo here (Notes history). */
+const notesDecisionSchema = z.object({
+  op: z.literal("project_notes"),
+  project_id: uuidSchema,
+  memory_doc_id: uuidSchema,
+  version: z.number().int().positive(),
+  batch: z.literal(false),
+});
+export const decisionSchema = z.union([memoryDecisionSchema, notesDecisionSchema]);
+export type MemoryDecision = z.infer<typeof memoryDecisionSchema>;
 export type Decision = z.infer<typeof decisionSchema>;
 
 export const storedCandidateSchema = z.object({

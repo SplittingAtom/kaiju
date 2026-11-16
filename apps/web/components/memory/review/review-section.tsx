@@ -12,7 +12,9 @@ import { createProposalsApi, type ProposalsApi } from "../../../lib/memory/propo
 import { visible } from "../../../lib/security/visible";
 import { InlineLink } from "../../shell/text-links";
 import { Button, Notice, Section } from "../../ui/console";
+import { createProjectNotesApi, type ProjectNotesApi } from "../../../lib/memory/project-notes-api";
 import { CandidateCard, type CardSeams } from "./candidate-card";
+import { ProjectNotesAction } from "./project-notes-action";
 
 const WORKBENCH_HREF = "/me/skills?tab=workbench";
 export const REVIEW_HEADING = "memory-to-review";
@@ -36,6 +38,7 @@ export function ReviewSection({
   proposalsApi,
   autoFocus = false,
   seams,
+  notesApi: givenNotesApi,
 }: {
   readonly teamId: string;
   readonly threadId: string | undefined;
@@ -43,8 +46,15 @@ export function ReviewSection({
   readonly proposalsApi?: Pick<ProposalsApi, "propose">;
   readonly autoFocus?: boolean;
   readonly seams?: CardSeams | undefined;
+  /** Add to project notes (KOBE-398); defaults to the real client. */
+  readonly notesApi?: ProjectNotesApi;
 }) {
   const api = useMemo(() => givenApi ?? createReviewApi(teamId), [givenApi, teamId]);
+  const notesApi = useMemo(
+    () => givenNotesApi ?? createProjectNotesApi(teamId),
+    [givenNotesApi, teamId],
+  );
+  const [added, setAdded] = useState<string | null>(null);
   const proposals = useMemo(
     () => proposalsApi ?? createProposalsApi(teamId),
     [proposalsApi, teamId],
@@ -85,13 +95,31 @@ export function ReviewSection({
   if (
     threadId === undefined ||
     list === null ||
-    (count === 0 && undoable === null && proposed === null)
+    (count === 0 && undoable === null && added === null && proposed === null)
   )
     return null;
 
   const drop = (ids: readonly string[]) =>
     setList((l) => (l ? { ...l, candidates: l.candidates.filter((c) => !ids.includes(c.id)) } : l));
   const mine = list.candidates.filter((c) => c.saveAllMine);
+  const notes = list.projectNotes ?? null;
+  const cardSeams: CardSeams | undefined = notes
+    ? {
+        ...seams,
+        projectNotes: (c, statement) => (
+          <ProjectNotesAction
+            candidate={c}
+            statement={statement}
+            status={notes}
+            api={notesApi}
+            onAdded={(a) => {
+              drop([a.candidateId]);
+              setAdded("Added to the project's notes. Change or remove it in the project's Notes.");
+            }}
+          />
+        ),
+      }
+    : seams;
 
   const saveAll = async () => {
     setBusy(true);
@@ -141,6 +169,11 @@ export function ReviewSection({
           <p className="m-0">{undoable.message}</p>
         </Notice>
       )}
+      {added && (
+        <Notice tone="success" role="status">
+          <p className="m-0">{added}</p>
+        </Notice>
+      )}
       {proposed && (
         <Notice tone="success" role="status">
           <p className="m-0">{proposed}</p>
@@ -167,7 +200,7 @@ export function ReviewSection({
               threadId={threadId}
               canCurateWorkspace={list.canCurateWorkspace}
               seams={{
-                ...seams,
+                ...cardSeams,
                 propose: {
                   api: proposals,
                   onProposed: (done) => {

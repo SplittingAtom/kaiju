@@ -187,6 +187,9 @@ describe("starting a pass (ac-2)", { timeout: 30_000 }, () => {
   it("says how a pass it started ended: the candidates found, then the count on the +", async () => {
     const t = answered();
     learnable(t);
+    const announced: unknown[] = [];
+    const hear = (e: Event) => announced.push((e as CustomEvent).detail);
+    window.addEventListener("kobe:memory-pass-completed", hear);
     openApp(fake, t);
     await plusSaying("New messages to learn from");
     const { user, sub } = await openMemory();
@@ -197,6 +200,9 @@ describe("starting a pass (ac-2)", { timeout: 30_000 }, () => {
     await waitFor(() => expect(notice()).toMatch(/Kobe found 2 things to review/), {
       timeout: 8_000,
     });
+    // KOBE-396: the finished pass is announced, so To review can open by itself.
+    window.removeEventListener("kobe:memory-pass-completed", hear);
+    expect(announced).toEqual([expect.objectContaining({ threadId: t, candidates: 2 })]);
     await plusSaying("2 memory suggestions to review");
   });
 
