@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
+summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how the learning model is chosen, how long memories and Learn from this chat records (suggestions, proposals, passes) are kept, and how a Site-wide legal hold keeps Site memories.
 section: Memory
 order: 1
 audience: member
@@ -443,18 +443,32 @@ archived for you. What goes, and when:
   it).
 - **Evidence.** When the conversation a memory was learned from is deleted for good, the quote and
   the link to that conversation go with it; the memory itself stays (its source is deleted).
+- **What Learn from this chat keeps.** Suggestions in To review you don't act on expire after 14
+  days; an expired suggestion is not a dismissal, so a later pass can find the same thing again.
+  Workspace proposals no curator decided expire after 30 days (sending one back for changes does
+  not restart the clock), and so do suggestions for a project's notes no editor decided; you get a
+  notification when yours expires, once. The record of each learning pass (when it ran, the model
+  and what it found) is deleted once it is older than the workspace's retention period, with the
+  suggestions it made, unless one is still waiting for you or for a curator (nothing while the
+  workspace keeps conversations forever). When a conversation is deleted for good, its learning
+  passes, suggestions, dismissals and suggestions for project notes go with it; a Workspace proposal
+  stays with its statement and note, without the quotes.
 - **Leaving a workspace.** Your own memories in a workspace are deleted 30 days after you leave it
   (or after your account is deactivated); coming back within the 30 days keeps them, and leaving again later starts a new 30 days. Workspace and
   Site memories you wrote stay (once you are removed from the workspace, they show as written by a former member). Leaving a workspace changes
-  nothing for the memories that follow you.
+  nothing for the memories that follow you. At the same time, what Learn from this chat kept for
+  you there goes too: your learning passes and their suggestions, your dismissals, and the Workspace
+  proposals and project suggestions you made. A Workspace memory a curator approved from your
+  proposal stays.
 - **Deactivation.** When your account is deactivated (by a site admin, or by your organization's
   identity provider through single sign-on), the memories that follow you are kept, unchanged,
   and are there again when your account is reactivated. Only a site admin removes them earlier,
   with **Purge memories** on the deactivated account (Site console › Users), never while a legal hold covers you or a Site-wide hold is in force. A new account made
   for you by single sign-on, instead of your old one, starts with no memories.
 - **Legal holds.** A legal hold suspends all of this: a hold on a person keeps their memories (in
-  every workspace and the ones that follow them) and the Site memories they wrote; a hold on a
-  workspace keeps that workspace's memories and the memories that follow each of its members; a
+  every workspace and the ones that follow them), what Learn from this chat kept for them (nothing
+  of theirs expires while it lasts) and the Site memories they wrote; a hold on a
+  workspace keeps that workspace's memories, its Learn from this chat records and the memories that follow each of its members; a
   Site-wide hold keeps Site memories and every memory that follows a person.
 
 ## What Kobe checks before a memory is saved
