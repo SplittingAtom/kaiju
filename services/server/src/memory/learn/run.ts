@@ -78,6 +78,8 @@ export type LearnStartResult =
   | ({ readonly ok: false } & LearnStartRefusal);
 
 export interface LearningPasses {
+  /** False when the server has no model gateway for its own calls: every start is refused. */
+  readonly serverCalls: boolean;
   start(
     viewer: Viewer,
     threadId: string,
@@ -97,14 +99,14 @@ export interface LearningPassesOptions {
   readonly timeoutMs?: number;
 }
 
-const SWITCH_REASONS: ReadonlySet<LearnUnavailableReason> = new Set([
+export const SWITCH_REASONS: ReadonlySet<LearnUnavailableReason> = new Set([
   "site_memory_off",
   "memory_off",
   "site_learn_off",
   "learn_off",
 ]);
 
-const INPUT_MESSAGES: Readonly<Record<LearningInputRefusal | "no_completed_run", string>> = {
+export const INPUT_MESSAGES: Readonly<Record<LearningInputRefusal | "no_completed_run", string>> = {
   thread_not_found: "Thread not found.",
   read_only: "Only the thread's author can teach Kobe from it.",
   thread_in_trash: "Restore the thread from Trash first.",
@@ -114,6 +116,12 @@ const INPUT_MESSAGES: Readonly<Record<LearningInputRefusal | "no_completed_run",
   nothing_to_learn: "Nothing new to learn since the last pass.",
   no_completed_run: "Learn works once a reply on this branch has finished.",
 };
+
+export const RATE_LIMITED_MESSAGE = `You can teach Kobe ${LEARN_PASSES_PER_DAY} times a day in this workspace. Try again later.`;
+export const BUDGET_MESSAGE =
+  "A budget is used up, so Kobe can't learn from this chat until it resets or an admin raises it.";
+export const PASS_RUNNING_MESSAGE = "Kobe is already learning from this thread.";
+export const SERVER_CALLS_OFF_MESSAGE = "This server has no model gateway for its own model calls.";
 
 const refuse = (r: LearnStartRefusal): LearnStartResult => ({ ok: false, ...r });
 
@@ -148,17 +156,9 @@ async function prepare(
     });
   const input = assembled.input;
   if ((await passesToday(tx, teamId, userId)) >= LEARN_PASSES_PER_DAY)
-    return no({
-      code: "learn_rate_limited",
-      message: `You can teach Kobe ${LEARN_PASSES_PER_DAY} times a day in this workspace. Try again later.`,
-    });
+    return no({ code: "learn_rate_limited", message: RATE_LIMITED_MESSAGE });
   const budget = await loadMemberBudgetState(tx, teamId, userId);
-  if (exhaustedLine(budget.lines))
-    return no({
-      code: "budget_exhausted",
-      message:
-        "A budget is used up, so Kobe can't learn from this chat until it resets or an admin raises it.",
-    });
+  if (exhaustedLine(budget.lines)) return no({ code: "budget_exhausted", message: BUDGET_MESSAGE });
   const runId = await leafPathRun(tx, teamId, threadId, input.leafEntryId, userId);
   if (runId === null)
     return no({ code: "no_completed_run", message: INPUT_MESSAGES.no_completed_run });
@@ -172,8 +172,7 @@ async function prepare(
     modelAlias: model.alias,
     promptVersion: CURRENT_EXTRACTOR_PROMPT.version,
   });
-  if (passId === null)
-    return no({ code: "pass_running", message: "Kobe is already learning from this thread." });
+  if (passId === null) return no({ code: "pass_running", message: PASS_RUNNING_MESSAGE });
   const pass: RunningPass = {
     teamId,
     userId,
@@ -190,12 +189,13 @@ async function prepare(
 export function createLearningPasses(options: LearningPassesOptions): LearningPasses {
   const { db, client, background, log } = options;
   return {
+    serverCalls: client !== undefined,
     async start(viewer, threadId, startOptions = {}) {
       if (!client)
         return refuse({
           code: "memory_learning_model_unavailable",
           reason: "server_calls_off",
-          message: "This server has no model gateway for its own model calls.",
+          message: SERVER_CALLS_OFF_MESSAGE,
         });
       const prepared = await withTeam(db, viewer.teamId, (tx) =>
         prepare(tx, viewer, threadId, startOptions),
