@@ -64,6 +64,9 @@ edited, batch`) and `memory.candidate.dismissed`; registered in `AUDIT_EVENTS`, 
   `components/memory/review/arrival.ts` on `memory.pass.completed`; the `+` count can use
   `useReviewArrival`'s `onWait` or `createReviewApi().list(threadId)`. This ticket does not touch
   the `+` menu.
+- **KOBE-395 deep link:** its Review N candidates item and `/learn` completion open
+  `/me/memory?tab=review`: `isReviewLink` (lib/memory/tabs.ts) opens the Memories tab, To review
+  on top, and focuses the first card. 395 owns the start route (`/v1/threads/{id}/learn`); none here.
 - **KOBE-397 / KOBE-398 / KOBE-652:** `CandidateCard` `seams.onPropose` and
   `seams.onAddToProjectNotes` (buttons appear only when given); server `rules.ts` keeps
   project-notes candidates personal until then.

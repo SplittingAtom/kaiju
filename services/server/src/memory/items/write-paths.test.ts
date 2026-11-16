@@ -17,10 +17,15 @@ const CHECKED = {
   patchItem: "a statement change or a Policy change (tags alone: secret scan of the tags)",
   revertItem: "Undo: an earlier statement as a new version",
   restoreItem: "re-activates an archived statement",
+  // The same writes on an op the caller holds (To review, KOBE-396).
+  createItemIn: "a new statement (createItem's body)",
+  patchItemIn: "patchItem's body",
+  revertItemIn: "revertItem's body",
 } as const;
 const EXEMPT = {
   archiveItem: "takes a statement out of use",
   pinItem: "ranks an active, already-checked statement; no text changes",
+  archiveItemIn: "archiveItem's body",
 } as const;
 
 const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -47,10 +52,15 @@ describe("memory write paths (review H-1)", () => {
 
   it("runs the save checks on every path that writes or re-activates a statement", () => {
     const fns = { ...create, ...edit } as Record<string, (...a: never[]) => unknown>;
-    for (const name of Object.keys(CHECKED))
-      expect(String(fns[name]), name).toMatch(/\bsaveChecks\b/u);
+    // A wrapper that runs its `*In` body on its own transaction is checked through that body.
+    const body = (name: string) => {
+      const own = String(fns[name]);
+      const inner = `${name}In`;
+      return inner in fns && own.includes(inner) ? String(fns[inner]) : own;
+    };
+    for (const name of Object.keys(CHECKED)) expect(body(name), name).toMatch(/\bsaveChecks\b/u);
     for (const name of Object.keys(EXEMPT))
-      expect(String(fns[name]), name).not.toMatch(
+      expect(body(name), name).not.toMatch(
         /status = 'active'|\binsertVersion\b|\bappendStatement\b/u,
       );
   });

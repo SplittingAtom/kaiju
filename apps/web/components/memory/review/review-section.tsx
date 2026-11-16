@@ -48,6 +48,7 @@ export function ReviewSection({
   const [busy, setBusy] = useState(false);
   const [generation, setGeneration] = useState(0);
   const heading = useRef<HTMLHeadingElement | null>(null);
+  const cardsRef = useRef<HTMLUListElement | null>(null);
 
   useEffect(() => {
     if (threadId === undefined) return;
@@ -64,8 +65,13 @@ export function ReviewSection({
   }, [api, threadId, generation]);
 
   const count = list?.candidates.length ?? 0;
+  // Opened for review: focus goes to the first card's statement (else the section's heading).
+  const focused = useRef(false);
   useEffect(() => {
-    if (autoFocus && count > 0) heading.current?.focus();
+    if (!autoFocus || count === 0 || focused.current) return;
+    focused.current = true;
+    const first = cardsRef.current?.querySelector<HTMLElement>("[data-review-statement]");
+    (first ?? heading.current)?.focus();
   }, [autoFocus, count]);
 
   if (threadId === undefined || list === null || (count === 0 && undoable === null)) return null;
@@ -134,7 +140,7 @@ export function ReviewSection({
           </Button>
         </div>
       )}
-      <ul aria-label="Candidates" className="m-0 flex list-none flex-col gap-3 p-0">
+      <ul ref={cardsRef} aria-label="Candidates" className="m-0 flex list-none flex-col gap-3 p-0">
         {list.candidates.map((c: Candidate) => (
           <li key={c.id}>
             <CandidateCard

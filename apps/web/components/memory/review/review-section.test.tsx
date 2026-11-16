@@ -85,6 +85,12 @@ describe("To review", () => {
     expect(api.list).toHaveBeenCalledTimes(1);
   });
 
+  it("focuses the first card when opened for review (?tab=review, the bell)", async () => {
+    render(<ReviewSection teamId="t1" threadId={THREAD} api={fakeApi([cand()])} autoFocus />);
+    const first = await screen.findByRole("heading", { name: "We ship on Tuesdays" });
+    await waitFor(() => expect(document.activeElement).toBe(first));
+  });
+
   it("labels a card and locks an inferred one to you", async () => {
     show(
       fakeApi([

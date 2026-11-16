@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { isUuid } from "../../lib/memory/ids";
 import type { MemoryTarget } from "../../lib/memory/api";
-import { memoryTabOf, showTabInUrl, type MemoryTab } from "../../lib/memory/tabs";
+import { isReviewLink, memoryTabOf, showTabInUrl, type MemoryTab } from "../../lib/memory/tabs";
 import { useTeamAccess } from "../admin/console-context";
 import { MemoryPanel } from "../memory/memory-panel";
 import { MyMemories } from "../memory/my-memories";
@@ -36,7 +36,8 @@ export function MyMemoryPage() {
   const teamId = useTeamAccess().team.id;
   const [tab, setTab] = useState<MemoryTab>(() => memoryTabOf(window.location.search));
   // `?review=1`: opened for a finished learning pass (KOBE-396); To review takes focus.
-  const [forReview] = useState(() => new URLSearchParams(window.location.search).has("review"));
+  // `?tab=review` (KOBE-395's Review N candidates and /learn) does the same.
+  const [forReview] = useState(() => isReviewLink(window.location.search));
   // `?thread=<uuid>`: the bell's Open To review names its conversation; else the one on screen.
   const [reviewThread] = useState(() => {
     const id = new URLSearchParams(window.location.search).get("thread");

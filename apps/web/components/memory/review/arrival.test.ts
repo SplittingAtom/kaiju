@@ -48,3 +48,14 @@ describe("statement diff", () => {
     ]);
   });
 });
+
+describe("To review links", () => {
+  it("opens Memories (To review on top) for ?tab=review and ?review=", async () => {
+    const { isReviewLink, memoryTabOf } = await import("../../../lib/memory/tabs");
+    expect(isReviewLink("?tab=review")).toBe(true);
+    expect(memoryTabOf("?tab=review")).toBe("memories");
+    expect(isReviewLink("?review=1&thread=x")).toBe(true);
+    expect(isReviewLink("?tab=notes")).toBe(false);
+    expect(memoryTabOf("?tab=notes")).toBe("notes");
+  });
+});

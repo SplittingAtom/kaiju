@@ -129,7 +129,12 @@ export function CandidateCard({
 
   return (
     <Card aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h3 id={headingId} className="m-0 text-base font-semibold [overflow-wrap:anywhere]">
+      <h3
+        id={headingId}
+        tabIndex={-1}
+        data-review-statement
+        className="m-0 text-base font-semibold [overflow-wrap:anywhere]"
+      >
         {visible(editing ? draft.statement : candidate.statement)}
       </h3>
       <CandidateLabels candidate={candidate} />
