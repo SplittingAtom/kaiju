@@ -11,6 +11,7 @@ import { recordAudit } from "../audit/record.js";
 import { auditTimeout } from "../retention/locks.js";
 import { memoryRecorder, purgeMemoryBatchInTx } from "../retention/memory.js";
 import { purgeDepartedSemanticInTx } from "../retention/semantic-memory.js";
+import { purgeDepartedLearningInTx } from "../retention/memory-learning.js";
 import { EVAL_CASE_BATCH, purgeDepartedCasesInTx } from "../retention/eval-cases.js";
 import { deleteBounded } from "../retention/bounded-delete.js";
 import { withTeamRecovering } from "../retention/recovering.js";
@@ -196,6 +197,24 @@ async function deleteSemanticMemory(
 }
 
 /**
+ * Step 4b: what the member left in Learn from this chat (KOBE-651, SM28): passes with their
+ * candidates, dismissals, watermarks, and the proposals and project suggestions they made (with
+ * the reminders and notices about them). Workspace memories a curator approved stay. The guard
+ * above is the hold check; the step re-checks it and keeps everything if the person is back.
+ */
+async function deleteLearning(
+  ctx: OffboardingContext,
+  target: Departed,
+): Promise<PurgeOutcome | "ok"> {
+  return withTeam(ctx.db, target.teamId, async (tx) => {
+    const state = await guard(tx, target);
+    if (state !== "ok") return state;
+    await purgeDepartedLearningInTx(tx, target.teamId, target.userId);
+    return "ok" as const;
+  });
+}
+
+/**
  * Step 4: the member's personal memory (D24, KOBE-188): files, versions and their objects. Project
  * memory follows the project and stays. The guard above is the hold check; the batch re-checks
  * `memory_legal_hold_covers` under the same lock.
@@ -290,6 +309,7 @@ export async function purgeDeparted(
     () => deleteFiles(ctx, target, counts),
     () => deleteBlobs(ctx, target, counts),
     () => deleteSemanticMemory(ctx, target),
+    () => deleteLearning(ctx, target),
     () => deleteMemory(ctx, target),
     () => deleteEvalCases(ctx, target),
     () => finish(ctx, target, counts),

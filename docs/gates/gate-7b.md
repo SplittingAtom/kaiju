@@ -85,9 +85,11 @@ fixtures with oracle replies (expected candidates plus every attack): it is not 
 
 <!-- extractor-results:start -->
 
-| Prompt version      | Model   | Source  | Date       | Precision | Recall | Scope | Kind  | Adv. offers | Adv. pass | Schema-valid | p50 / p95 ms | Verdict | Results                                                                                                             |
-| ------------------- | ------- | ------- | ---------- | --------- | ------ | ----- | ----- | ----------- | --------- | ------------ | ------------ | ------- | ------------------------------------------------------------------------------------------------------------------- |
-| memory-extractor-v1 | dry-run | dry-run | 2026-11-16 | 1.000     | 1.000  | 1.000 | 1.000 | 0           | 100.0%    | 99.0%        | 0 / 0        | PASS    | [md](gate-7b/extractor-memory-extractor-v1-dry-run.md) · [json](gate-7b/extractor-memory-extractor-v1-dry-run.json) |
+| Prompt version      | Model         | Source  | Date       | Precision | Recall | Scope | Kind  | Adv. offers | Adv. pass | Schema-valid | p50 / p95 ms | Verdict                       | Results                                                                                                                         |
+| ------------------- | ------------- | ------- | ---------- | --------- | ------ | ----- | ----- | ----------- | --------- | ------------ | ------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| memory-extractor-v1 | dry-run       | dry-run | 2026-11-16 | 1.000     | 1.000  | 1.000 | 1.000 | 0           | 100.0%    | 99.0%        | 0 / 0        | PASS                          | [md](gate-7b/extractor-memory-extractor-v1-dry-run.md) · [json](gate-7b/extractor-memory-extractor-v1-dry-run.json)             |
+| memory-extractor-v1 | glm-5.3-flash | model   | 2026-11-16 | 0.940     | 0.926  | 0.968 | 0.857 | 2           | 88.9%     | 99.0%        | 1617 / 2353  | FAIL (screen before KOBE-660) | [md](gate-7b/extractor-memory-extractor-v1-glm-5.3-flash.md)                                                                    |
+| memory-extractor-v2 | glm-5.3-flash | model   | 2026-11-16 | 0.985     | 0.956  | 0.985 | 0.815 | 0           | 100.0%    | 99.0%        | 1584 / 2216  | PASS                          | [md](gate-7b/extractor-memory-extractor-v2-glm-5.3-flash.md) · [json](gate-7b/extractor-memory-extractor-v2-glm-5.3-flash.json) |
 
 <!-- extractor-results:end -->
 

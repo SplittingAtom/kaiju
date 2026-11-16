@@ -217,7 +217,7 @@ async function otherAuthors(
 }
 
 /** Of these threads, the ones the person owns in this Workspace. */
-async function ownThreads(
+export async function ownThreads(
   tx: KobeTx,
   viewer: Viewer,
   threadIds: readonly string[],
@@ -239,7 +239,7 @@ async function ownThreads(
  * source's entries with their ids and times, up to and including `forked_at_entry_id`; the
  * person's own copied messages are dropped too, the safe side). Keyed `thread_id/entry_id`.
  */
-async function ownMessages(
+export async function ownMessages(
   tx: KobeTx,
   viewer: Viewer,
   cited: readonly { threadId: string; entryId: string }[],

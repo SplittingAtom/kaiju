@@ -3,10 +3,11 @@ import type {
   MemoryExtractorOutput,
   MemorySkillHint,
 } from "@kobe/protocol";
-import { findPersonalData } from "../checks/personal.js";
+import { capitalisedWords, findPersonalData, namesNearSensitiveData } from "../checks/personal.js";
 import { lintInstructions } from "../checks/lint.js";
 import { findSecret } from "../checks/secrets.js";
 import { quoteFoundIn } from "../quote-normalise.js";
+import { mentionsCapabilityChange, quoteAsksCapabilityChange } from "./capability.js";
 import { listedExistingItems } from "./prompt/build.js";
 import type { ExtractorPromptInput, ExtractorSpeaker } from "./prompt/input.js";
 
@@ -27,8 +28,14 @@ import type { ExtractorPromptInput, ExtractorSpeaker } from "./prompt/input.js";
  * - `secret`: the statement, rationale or a quote holds a credential;
  * - `instruction`: the statement or rationale reads as an instruction to the agent
  *   (memory/checks lint);
- * - `personal_data`: the statement carries personal data (any scope: other people's details
- *   never become memories, personal ones included);
+ * - `capability_change`: the statement or a quote asks for (or reports a wish for) a change to
+ *   what the agent may do: internet or egress access, approvals, tool or connector permissions,
+ *   sandbox settings (`capability.ts`, KOBE-660; memory cannot change those, at any scope);
+ * - `personal_data`: the statement carries personal data, or names someone a cited entry
+ *   discusses personal data about (KOBE-660: "Do not share drafts with Priya" from "Priya's
+ *   husband works at our competitor"), at any scope: other people's details never become
+ *   memories, personal ones included, nor do statements built on them. A name alone is fine
+ *   ("Anna owns the Q3 report");
  * - `project_without_project`: a Workspace candidate is project-specific but the thread has no
  *   project.
  *
@@ -47,6 +54,7 @@ export const SCREEN_DROP_REASONS = [
   "policy_target",
   "secret",
   "instruction",
+  "capability_change",
   "personal_data",
   "project_without_project",
 ] as const;
@@ -94,11 +102,28 @@ function evidenceReason(c: MemoryExtractorCandidate, ctx: Context): ScreenDropRe
 const instructs = (text: string): boolean => lintInstructions(text).length > 0;
 const unsafe = (text: string): boolean => findSecret(text) !== undefined || instructs(text);
 
-function contentReason(c: MemoryExtractorCandidate): ScreenDropReason | null {
+/** The statement names someone a cited entry discusses personal data about. */
+function namesSensitivePerson(c: MemoryExtractorCandidate, ctx: Context): boolean {
+  const named = capitalisedWords(c.statement);
+  if (named.size === 0) return false;
+  return c.evidence.some((e) => {
+    const entry = ctx.entries.get(e.entry_id);
+    return entry !== undefined && [...namesNearSensitiveData(entry.text)].some((w) => named.has(w));
+  });
+}
+
+function contentReason(c: MemoryExtractorCandidate, ctx: Context): ScreenDropReason | null {
   const texts = [c.statement, c.rationale, ...c.evidence.map((e) => e.quote)];
   if (texts.some((t) => findSecret(t) !== undefined)) return "secret";
   if ([c.statement, c.rationale].some(instructs)) return "instruction";
-  if (findPersonalData(c.statement).length > 0) return "personal_data";
+  // Not the rationale: it may say why a request is left out of the statement.
+  if (
+    mentionsCapabilityChange(c.statement) ||
+    c.evidence.some((e) => quoteAsksCapabilityChange(e.quote))
+  )
+    return "capability_change";
+  if (findPersonalData(c.statement).length > 0 || namesSensitivePerson(c, ctx))
+    return "personal_data";
   return null;
 }
 
@@ -110,7 +135,7 @@ function verdictFor(c: MemoryExtractorCandidate, ctx: Context): Verdict {
     if (!target) return { ok: false, reason: "unknown_target" };
     if (target.policy) return { ok: false, reason: "policy_target" };
   }
-  const content = contentReason(c);
+  const content = contentReason(c, ctx);
   if (content) return { ok: false, reason: content };
   if (c.suggested_scope === "user")
     return { ok: true, destination: c.portable ? "portable" : "user" };

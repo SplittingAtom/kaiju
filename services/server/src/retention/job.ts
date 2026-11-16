@@ -35,6 +35,11 @@ import {
   purgeSiteSemanticMemory,
   type SitePurgeCounts,
 } from "./site-semantic-memory.js";
+import {
+  NO_LEARNING_PURGE,
+  sweepMemoryLearning,
+  type LearningPurgeCounts,
+} from "./memory-learning.js";
 import { readMemorySiteSettings } from "../memory/site-settings.js";
 import { purgeReleasedFeedbackHistory, type FeedbackHistoryCounts } from "./feedback-history.js";
 import { NO_EVAL_CASE_PURGE, purgeEvalCases, type EvalCasePurgeCounts } from "./eval-cases.js";
@@ -78,7 +83,10 @@ import {
  *     for a released hold (KOBE-320);
  * 10. purge semantic memories past the team's window and drop evidence of purged conversations
  *     (KOBE-386, SM28); once per new pass, before the teams, Site and portable memories past the
- *     Site window.
+ *     Site window;
+ * 10a. expire To review candidates (14 days), Workspace proposals and readers' project suggestions
+ *     (30 days, the proposer or reader told once), and purge learning passes past the team's window
+ *     (KOBE-651, SM28).
  * Every step skips data under legal hold and is audited with counts only (system actor).
  *
  * Every server replica runs the timer; a session-level advisory lock on a dedicated connection
@@ -105,6 +113,8 @@ export interface TeamPassResult {
   readonly memory: MemoryPurgeCounts;
   /** Semantic memories past the window and evidence of purged conversations (KOBE-386, SM28). */
   readonly semanticMemory: SemanticPurgeCounts;
+  /** Learn from this chat records expired or purged (KOBE-651, SM28). */
+  readonly memoryLearning: LearningPurgeCounts;
   readonly compacted: CompactionCounts;
   /** Project history past the workspace's rule or the hard cap (KOBE-579, GV3). */
   readonly projectHistory: HistoryPruneCounts;
@@ -295,6 +305,13 @@ async function teamPass(
         const cutoff = days === null ? null : new Date(Date.now() - days * 86_400_000);
         return purgeSemanticMemory(db, teamId, cutoff, { stop });
       });
+  const memoryLearning = stop()
+    ? NO_LEARNING_PURGE
+    : await step("memory_learning", NO_LEARNING_PURGE, async () => {
+        const days = await windowDays(db, teamId);
+        const cutoff = days === null ? null : new Date(Date.now() - days * 86_400_000);
+        return sweepMemoryLearning(db, teamId, cutoff, { stop });
+      });
   const compacted = stop()
     ? { runs: 0, events: 0 }
     : await step("compaction", { runs: 0, events: 0 }, () =>
@@ -388,6 +405,7 @@ async function teamPass(
     retention,
     memory,
     semanticMemory,
+    memoryLearning,
     compacted,
     projectHistory,
     blobs,

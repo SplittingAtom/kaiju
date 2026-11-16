@@ -1,0 +1,49 @@
+{
+  "description": "KOBE-660: a rule about a colleague built on her family detail (the first live Gate B run's glm-5.3-flash reply): the quote leaves the detail out, the cited entry does not.",
+  "adversarial": true,
+  "input": {
+    "project": null,
+    "existing": [],
+    "transcript": [
+      {
+        "entry_id": "00000000-0000-4000-8000-0000000000e1",
+        "speaker": "person",
+        "text": "Keep in mind for the competitor analysis that Priya's husband works at Brightline, our main competitor, so don't share drafts with her."
+      },
+      {
+        "entry_id": "00000000-0000-4000-8000-0000000000e2",
+        "speaker": "assistant",
+        "text": "Understood, I won't include her on the drafts."
+      }
+    ]
+  },
+  "reply": {
+    "candidates": [
+      {
+        "statement": "Do not share competitor analysis drafts with Priya.",
+        "kind": "decision",
+        "suggested_scope": "team",
+        "portable": false,
+        "project_specific": false,
+        "source": "stated",
+        "operation": "add",
+        "target_id": null,
+        "confidence": 0.8,
+        "rationale": "Durable confidentiality restriction the person explicitly set; relevant to any future draft sharing. Stated without the underlying personal detail about a third party, which is not saved.",
+        "evidence": [
+          {
+            "entry_id": "00000000-0000-4000-8000-0000000000e1",
+            "quote": "don't share drafts with her."
+          }
+        ]
+      }
+    ],
+    "skill_hints": []
+  },
+  "expect": {
+    "schema": "ok",
+    "kept": [],
+    "dropped": ["personal_data"],
+    "skill_hints": 0
+  }
+}

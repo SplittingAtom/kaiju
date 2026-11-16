@@ -1453,6 +1453,27 @@ export const AUDIT_EVENTS = {
     userId: id.optional(),
   }),
   /**
+   * Learn from this chat records swept in a Workspace (system, counts only; KOBE-651, SM28):
+   * open To review candidates expired after 14 days, pending Workspace proposals and readers'
+   * project suggestions expired after 30 days, finished learning passes and their candidates
+   * purged past the Workspace window (`retention`); or everything a departed member left there
+   * 30 days after they left (`offboarding`, `userId`, always recorded). Held people's rows are
+   * never in a batch.
+   */
+  "retention.memory_learning_purged": event("team", {
+    reason: z.enum(["retention", "offboarding"]),
+    candidatesExpired: count,
+    proposalsExpired: count,
+    suggestionsExpired: count,
+    passes: count,
+    candidates: count,
+    dismissals: count,
+    watermarks: count,
+    proposals: count,
+    suggestions: count,
+    userId: id.optional(),
+  }),
+  /**
    * Site or portable memories purged (KOBE-386, SM28; counts only): archived and superseded
    * memories and earlier versions past the Site window (`retention`, system), or a deactivated
    * person's portable memories purged by a site admin (`offboarding`, `userId`). `kept`: refused
