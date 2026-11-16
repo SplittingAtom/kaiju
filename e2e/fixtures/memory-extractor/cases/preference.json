@@ -1,0 +1,339 @@
+{
+  "cases": [
+    {
+      "id": "pref-eur-amounts",
+      "description": "A portable formatting preference stated in passing while asking for a task (from KOBE-394 normal-preferences).",
+      "transcript": [
+        [
+          "person",
+          "Can you summarise last month's revenue by region? And please always give me amounts in EUR with thousands separators, I read everything in euros."
+        ],
+        ["assistant", "Here is the summary in EUR. North: €1,204,000; South: €880,500."]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers amounts in EUR with thousands separators.",
+          "match": [["eur", "euro"], "thousand"],
+          "kind": "preference",
+          "scope": "portable",
+          "quote": "please always give me amounts in EUR with thousands separators"
+        }
+      ]
+    },
+    {
+      "id": "pref-british-spelling",
+      "description": "Language preference that holds in every Workspace.",
+      "transcript": [
+        ["person", "Draft a short note to the suppliers about the new delivery window."],
+        ["assistant", "Here is a draft: 'We have optimized our delivery schedule...'"],
+        [
+          "person",
+          "Use British spelling please, optimised not optimized. I write British English everywhere."
+        ]
+      ],
+      "expect": [
+        {
+          "statement": "Writes in British English and prefers British spelling.",
+          "match": ["british"],
+          "kind": "preference",
+          "scope": "portable",
+          "quote": "I write British English everywhere."
+        }
+      ]
+    },
+    {
+      "id": "pref-short-answers",
+      "description": "Tone preference: short answers first, detail on request.",
+      "transcript": [
+        ["person", "What changed in the March pricing file?"],
+        [
+          "assistant",
+          "There are several changes across twelve sheets. First, the discount table was restructured, which affects..."
+        ],
+        [
+          "person",
+          "Too long. I like the answer in one or two sentences first, then details only if I ask."
+        ]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers a one or two sentence answer first, with details only on request.",
+          "match": [["sentence", "short", "brief"]],
+          "kind": "preference",
+          "scope": "portable",
+          "quote": "I like the answer in one or two sentences first, then details only if I ask."
+        }
+      ],
+      "allow": [["detail"]]
+    },
+    {
+      "id": "pref-iso-dates",
+      "description": "Date format preference.",
+      "transcript": [
+        [
+          "person",
+          "List the open purchase orders with their due dates. Dates as YYYY-MM-DD please, that is the only format I use."
+        ],
+        ["assistant", "PO-1182 due 2026-11-30, PO-1190 due 2026-12-04."]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers dates in YYYY-MM-DD format.",
+          "match": [["yyyy", "iso"]],
+          "kind": "preference",
+          "scope": "portable",
+          "quote": "Dates as YYYY-MM-DD please, that is the only format I use."
+        }
+      ]
+    },
+    {
+      "id": "pref-python-over-r",
+      "description": "Tooling preference for analysis code; holds everywhere.",
+      "transcript": [
+        ["person", "Can you fit a quick regression on the attached churn sample?"],
+        ["assistant", "Sure. Would you like the code in R or Python?"],
+        ["person", "Python with pandas, always. I don't read R."]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers analysis code in Python with pandas rather than R.",
+          "match": ["python"],
+          "kind": "preference",
+          "scope": "portable",
+          "quote": "Python with pandas, always. I don't read R."
+        }
+      ]
+    },
+    {
+      "id": "pref-role-finance-controller",
+      "description": "The person's role in this Workspace: personal, not portable.",
+      "transcript": [
+        [
+          "person",
+          "I'm the finance controller for the Benelux entity, so most of what I ask you will be about month-end and intercompany."
+        ],
+        ["assistant", "Understood. What would you like to start with?"],
+        ["person", "Intercompany balances for October."]
+      ],
+      "expect": [
+        {
+          "statement": "Is the finance controller for the Benelux entity.",
+          "match": ["controller"],
+          "kind": "fact",
+          "scope": "user",
+          "quote": "I'm the finance controller for the Benelux entity"
+        }
+      ],
+      "allow": [["intercompany"], ["month end"]]
+    },
+    {
+      "id": "pref-tables-not-bullets",
+      "description": "Output shape preference.",
+      "transcript": [
+        ["person", "Compare the three logistics vendors on price, lead time and coverage."],
+        ["assistant", "- Vendor A: cheapest, 5 days...\n- Vendor B: ...\n- Vendor C: ..."],
+        [
+          "person",
+          "When you compare things, give me a table, not bullet lists. Much easier for me to scan."
+        ]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers comparisons as tables rather than bullet lists.",
+          "match": ["table"],
+          "kind": "preference",
+          "scope": "portable",
+          "quote": "When you compare things, give me a table, not bullet lists."
+        }
+      ]
+    },
+    {
+      "id": "pref-timezone",
+      "description": "Personal time zone; holds in every Workspace.",
+      "transcript": [
+        [
+          "person",
+          "Schedule the reminder for 9 tomorrow. I'm in Singapore time, by the way, so any times you give me should be SGT."
+        ],
+        ["assistant", "Reminder set for 09:00 SGT tomorrow."]
+      ],
+      "expect": [
+        {
+          "statement": "Works in Singapore time (SGT).",
+          "match": [["singapore", "sgt"]],
+          "kind": "preference",
+          "scope": "portable",
+          "quote": "I'm in Singapore time, by the way, so any times you give me should be SGT."
+        }
+      ]
+    },
+    {
+      "id": "pref-workspace-specific-client-format",
+      "description": "A preference that names a client: personal but not portable.",
+      "transcript": [
+        [
+          "person",
+          "For anything about the Halvorsen account I want the figures in NOK, they are the only client that reports in kroner."
+        ],
+        ["assistant", "Noted, I'll show Halvorsen figures in NOK."]
+      ],
+      "expect": [
+        {
+          "statement": "Wants Halvorsen account figures shown in NOK.",
+          "match": ["halvorsen", ["nok", "kroner"]],
+          "kind": "preference",
+          "scope": ["user", "team"],
+          "quote": "For anything about the Halvorsen account I want the figures in NOK"
+        }
+      ]
+    },
+    {
+      "id": "pref-no-emoji",
+      "description": "Style preference.",
+      "transcript": [
+        [
+          "person",
+          "Please drop the emoji from your answers. I paste them into reports and they look unprofessional."
+        ],
+        ["assistant", "Understood, no emoji."]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers answers without emoji.",
+          "match": ["emoji"],
+          "kind": "preference",
+          "scope": "portable",
+          "quote": "Please drop the emoji from your answers."
+        }
+      ]
+    },
+    {
+      "id": "pref-metric-units",
+      "description": "Units preference, stated with a reason.",
+      "transcript": [
+        ["person", "How heavy is the pallet load in the shipping note?"],
+        ["assistant", "About 2,200 lb."],
+        ["person", "Kilograms please. I only work in metric units."]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers metric units such as kilograms.",
+          "match": [["metric", "kilogram", "kg"]],
+          "kind": "preference",
+          "scope": "portable",
+          "quote": "I only work in metric units."
+        }
+      ]
+    },
+    {
+      "id": "pref-german-replies",
+      "description": "Reply language preference.",
+      "transcript": [
+        [
+          "person",
+          "Kannst du mir die Zusammenfassung auf Deutsch geben? Ich lese lieber Deutsch, auch wenn ich auf Englisch frage."
+        ],
+        ["assistant", "Gerne, hier ist die Zusammenfassung auf Deutsch."]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers replies in German, even when asking in English.",
+          "match": [["german", "deutsch"]],
+          "kind": "preference",
+          "scope": "portable",
+          "quote": "Ich lese lieber Deutsch, auch wenn ich auf Englisch frage."
+        }
+      ]
+    },
+    {
+      "id": "pref-inferred-sql-first",
+      "description": "An inference from repeated behaviour, kept personal.",
+      "transcript": [
+        ["person", "Show me the SQL before you run anything."],
+        ["assistant", "Here is the query: SELECT region, sum(amount) ..."],
+        ["person", "OK run it. Next one: monthly active users. Again, SQL first."],
+        ["assistant", "SELECT date_trunc('month', seen_at) ..."],
+        ["person", "Good. And for the cohort question, same thing, show me the SQL first."]
+      ],
+      "expect": [
+        {
+          "statement": "Likes to see the SQL before a query is run.",
+          "match": ["sql"],
+          "kind": "preference",
+          "scope": ["user", "portable"],
+          "source": "inferred",
+          "quote": "Show me the SQL before you run anything."
+        }
+      ]
+    },
+    {
+      "id": "pref-two-in-one",
+      "description": "Two separate preferences in one message.",
+      "transcript": [
+        [
+          "person",
+          "Two things about me: I'm colour-blind (red/green), so never rely on those colours in charts, and I prefer charts with a white background."
+        ],
+        ["assistant", "Understood, I'll use a colour-blind-safe palette on a white background."]
+      ],
+      "expect": [
+        {
+          "statement": "Is red/green colour-blind; charts should not rely on red and green.",
+          "match": [["colour blind", "color blind", "red green", "red/green"]],
+          "kind": "preference",
+          "scope": "portable",
+          "quote": "I'm colour-blind (red/green), so never rely on those colours in charts"
+        },
+        {
+          "statement": "Prefers charts with a white background.",
+          "match": ["white", "background"],
+          "kind": "preference",
+          "scope": "portable",
+          "quote": "I prefer charts with a white background."
+        }
+      ]
+    },
+    {
+      "id": "pref-confirmed-currency-rounding",
+      "description": "The assistant proposes, the person confirms.",
+      "transcript": [
+        ["person", "Give me the forecast table again."],
+        [
+          "assistant",
+          "Here it is. I rounded to the nearest thousand like last time; do you want that by default?"
+        ],
+        ["person", "Yes, nearest thousand by default."]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers forecast figures rounded to the nearest thousand by default.",
+          "match": ["thousand"],
+          "kind": "preference",
+          "scope": ["user", "portable"],
+          "quote": "Yes, nearest thousand by default.",
+          "also_quote": "I rounded to the nearest thousand like last time; do you want that by default?"
+        }
+      ]
+    },
+    {
+      "id": "pref-one-off-not-durable",
+      "description": "A one-off request phrased like a preference: nothing durable except the stated general habit.",
+      "transcript": [
+        [
+          "person",
+          "For this report only, use landscape pages. Normally I want portrait, that's my default for every document."
+        ],
+        ["assistant", "Landscape for this one; portrait otherwise."]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers portrait pages by default for documents.",
+          "match": ["portrait"],
+          "kind": "preference",
+          "scope": "portable",
+          "quote": "Normally I want portrait, that's my default for every document."
+        }
+      ]
+    }
+  ]
+}
