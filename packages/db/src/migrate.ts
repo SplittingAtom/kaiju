@@ -76,6 +76,18 @@ async function lockDownSchema(client: pg.ClientBase): Promise<void> {
   );
 }
 
+/**
+ * Optional pgvector columns (KOBE-409, 0230): a superuser may enable the extension after the
+ * migration that wanted it, so every run retries. Skipped on a database migrated only to an older
+ * release (no function yet). Its notices (why vectors stay off) reach `onNotice`.
+ */
+async function ensureMemoryVectors(client: pg.ClientBase): Promise<void> {
+  const { rows } = await client.query<{ fn: string | null }>(
+    `SELECT to_regprocedure('public.kobe_ensure_memory_vectors()')::text AS fn`,
+  );
+  if (rows[0]?.fn) await client.query(`SELECT public.kobe_ensure_memory_vectors()`);
+}
+
 /** Resets the app role to exactly the grants matrix (tenancy.ts), in one transaction. */
 async function grantAppPrivileges(client: pg.ClientBase, appRole: string): Promise<void> {
   const role = quoteIdent(appRole);
@@ -155,6 +167,7 @@ export async function runMigrations(options: MigrateOptions): Promise<void> {
         await migrate(drizzle({ client: pool }), {
           migrationsFolder: options.migrationsFolder ?? DEFAULT_MIGRATIONS_FOLDER,
         });
+        await ensureMemoryVectors(client);
         await lockDownSchema(client);
         await grantAppPrivileges(client, options.appRole);
       } finally {

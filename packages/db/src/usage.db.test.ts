@@ -400,6 +400,36 @@ describe("recordModelUsage", () => {
     expect(await shape({ kind: "memory_learn", runId })).toBe("run_usage_kind_shape");
   });
 
+  it("takes a memory_embed row as a server call with or without a run (KOBE-409)", async () => {
+    const runId = randomUUID();
+    const withRun = randomUUID();
+    const runless = randomUUID();
+    await recordModelUsage(app.db, [
+      record({ id: withRun, sandboxId: undefined, runId, kind: "memory_embed" }),
+      record({ id: runless, sandboxId: undefined, runId: undefined, kind: "memory_embed" }),
+    ]);
+    const rows = await withTeam(app.db, teamA, (tx) =>
+      tx
+        .select({ id: runUsage.id, runId: runUsage.runId })
+        .from(runUsage)
+        .where(and(eq(runUsage.teamId, teamA), eq(runUsage.kind, "memory_embed"))),
+    );
+    expect(new Map(rows.map((r) => [r.id, r.runId]))).toEqual(
+      new Map([
+        [withRun, runId],
+        [runless, null],
+      ]),
+    );
+    const shape = async (over: Partial<ModelUsageRecord>) =>
+      (
+        (await recordModelUsage(app.db, [record(over)]).catch((e: unknown) => e)) as {
+          cause?: { constraint?: string };
+        }
+      ).cause?.constraint;
+    // Never with a sandbox.
+    expect(await shape({ kind: "memory_embed", runId })).toBe("run_usage_kind_shape");
+  });
+
   it("adds the kind CHECKs NOT VALID: no scan of the ledger under the migration's lock (0099)", async () => {
     const res = await app.db.execute<{ conname: string; convalidated: boolean }>(sql`
       SELECT conname, convalidated FROM pg_constraint

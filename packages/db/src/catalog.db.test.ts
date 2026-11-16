@@ -350,12 +350,22 @@ describe("app role privileges", () => {
        ORDER BY 1, 3, 2`,
       [appRole],
     );
+    // Optional columns (the pgvector embeddings, KOBE-409) are granted only where they exist.
+    const present = new Set(
+      (
+        await rows<{ c: string }>(
+          `SELECT table_name || '.' || column_name AS c FROM information_schema.columns
+           WHERE table_schema = 'public'`,
+        )
+      ).map((r) => r.c),
+    );
     const expected = Object.entries(SITE_WIDE_COLUMN_GRANTS)
       .flatMap(([table, grants]) =>
         Object.entries(grants ?? {}).flatMap(([privilege, columns]) =>
           (columns ?? []).map((column) => ({ table, column, privilege })),
         ),
       )
+      .filter((g) => present.has(`${g.table}.${g.column}`))
       .sort((a, b) =>
         `${a.table}|${a.privilege}|${a.column}`.localeCompare(
           `${b.table}|${b.privilege}|${b.column}`,

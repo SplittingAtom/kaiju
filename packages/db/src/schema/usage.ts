@@ -48,7 +48,9 @@ export type UsageSource = (typeof USAGE_SOURCES)[number];
  * the one server call a member starts, with no run, so its row names no sandbox and no run
  * (migration 0192 lets the shape CHECK take it). `memory_learn` (KOBE-389 for KOBE-390) is a
  * learning pass's call, bound to the leaf's last completed run: a server call like `title`
- * (no sandbox, run set; migration 0229).
+ * (no sandbox, run set; migration 0229). `memory_embed` (KOBE-409) is the server's embedding call
+ * (`POST /v1/embeddings`): no sandbox, and a run only when a run's start needed it (the selector's
+ * query embedding); saves and background jobs name none (migration 0230).
  */
 export const USAGE_KINDS = [
   "run",
@@ -58,6 +60,7 @@ export const USAGE_KINDS = [
   "eval_judge",
   "skill_manifest",
   "memory_learn",
+  "memory_embed",
 ] as const;
 /** Server-call kinds whose rows name no run (`run_id` NULL): started by a member, not a run. */
 export const RUNLESS_USAGE_KINDS = ["skill_manifest"] as const;

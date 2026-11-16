@@ -135,8 +135,10 @@ jobs:
           persist-credentials: false
       # Not a service container: its pull cannot be retried, and the Docker Hub mirror (anonymous
       # Docker Hub pulls from shared runner IPs fail, 2026-10-09) sometimes answers 429 (KOBE-415).
-      - name: PostgreSQL 17 (pulled with retries)
-        run: scripts/ci-postgres.sh ci-only
+      # With pgvector (KOBE-409): the server's vector memory tests run here; db-core keeps a
+      # Postgres without it, so migrations and the probe suite are proven on such a server too.
+      - name: PostgreSQL 17 + pgvector (pulled with retries)
+        run: scripts/ci-postgres.sh ci-only --pgvector
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:

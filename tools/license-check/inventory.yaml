@@ -361,6 +361,20 @@ sections:
           A separate server Kobe talks to over the network; the PostgreSQL License is permissive
           (MIT/BSD-like). The image's build files (cloudnative-pg/postgres-containers) are
           Apache-2.0.
+      - id: pgvector
+        pending: gate review
+        component: pgvector Postgres extension (`vector`; Debian `postgresql-17-pgvector` in CI)
+        version: 0.8.x (whatever the site's Postgres ships; optional)
+        license: PostgreSQL
+        use: optional, separate process (inside the site's Postgres server; Kobe never ships it)
+        where: the site's Postgres (CloudNativePG image or external server); CI db-server jobs
+        link: https://github.com/pgvector/pgvector/blob/master/LICENSE
+        images: []
+        reason: >-
+          Vector memory search (KOBE-409) when the site's Postgres has it; keyword search
+          otherwise. Same PostgreSQL License as the approved postgres row (permissive, BSD/MIT-like,
+          spec D3). Kobe builds no Postgres image, so it carries no pgvector notice; an own image
+          would have to ship it.
       - id: bifrost
         component: Bifrost model gateway (`maximhq/bifrost`)
         version: v2.5.1, digest-pinned (images/bifrost/Dockerfile, chart `bifrost.image`)

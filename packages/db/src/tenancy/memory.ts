@@ -1,5 +1,8 @@
 import { ALL_PRIVILEGES, defineDomain } from "./types.js";
 
+/** The optional pgvector columns of the three memory item version tables (KOBE-409, 0230). */
+export const MEMORY_EMBEDDING_COLUMNS = ["embedding", "embedding_model", "embedding_dims"] as const;
+
 /**
  * Semantic memory (v1.3, KOBE-376). Workspace items are team tables; portable and Site items are
  * site-wide, read with app-role grants and filtered by the server (no SECURITY DEFINER, KOBE-42).
@@ -43,4 +46,11 @@ export const memory = defineDomain({
     site_memory_item_versions: ["SELECT", "INSERT", "DELETE"],
   },
   teamReferencing: {},
+  // Optional pgvector embeddings (KOBE-409, 0230): the server writes them after a version is saved
+  // (embed on save, backfill, re-embed); the immutability trigger lets only these columns change.
+  // Granted only where the columns exist (no pgvector: none).
+  columnGrants: {
+    portable_memory_item_versions: { UPDATE: MEMORY_EMBEDDING_COLUMNS },
+    site_memory_item_versions: { UPDATE: MEMORY_EMBEDDING_COLUMNS },
+  },
 });
