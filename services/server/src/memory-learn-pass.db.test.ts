@@ -202,6 +202,29 @@ async function passEvents(runId: string) {
   return rows;
 }
 
+/** The pass's audit rows in order; a pass id is unique, so this filters by the target. */
+async function passAudits(passId: string) {
+  const { rows } = await fx.admin.query<{
+    action: string;
+    team_id: string | null;
+    actor_kind: string;
+    actor_id: string | null;
+    target: Record<string, unknown>;
+  }>(
+    `SELECT action, team_id, actor_kind, actor_id, target FROM audit_log
+      WHERE action LIKE 'memory.pass.%' AND target->>'passId' = $1 ORDER BY seq`,
+    [passId],
+  );
+  return rows;
+}
+
+/** No audit row carries a statement, quote, rationale or message text (KOBE-393). */
+function expectNoContent(rows: { target: Record<string, unknown> }[], ...texts: string[]) {
+  const all = JSON.stringify(rows.map((r) => r.target)).toLowerCase();
+  for (const t of [...texts, "statement", "quote", "evidence", "rationale", "message"])
+    expect(all).not.toContain(t.toLowerCase());
+}
+
 async function startAndWait(s: Seeded, who: Person = owner) {
   const started = await passes.start(viewer(who), s.threadId);
   await background.idle();
@@ -265,6 +288,38 @@ describe("a pass that succeeds (ac-4)", () => {
       dropped: 2,
       skill_hints: 0,
     });
+    const audits = await passAudits(started.passId);
+    expect(audits.map((a) => a.action)).toEqual(["memory.pass.started", "memory.pass.completed"]);
+    for (const a of audits)
+      expect(a).toMatchObject({ team_id: team, actor_kind: "user", actor_id: owner.id });
+    expect(audits[0]?.target).toEqual({
+      passId: started.passId,
+      threadId: s.threadId,
+      modelAlias: LEARNER,
+      extractorVersion: CURRENT_EXTRACTOR_PROMPT.version,
+      entries: 2,
+      partial: false,
+      truncated: false,
+      summarised: false,
+    });
+    expect(audits[1]?.target).toEqual({
+      passId: started.passId,
+      threadId: s.threadId,
+      replied: 3,
+      stored: 1,
+      dropped: 2,
+      skillHints: 0,
+      attempts: 1,
+    });
+    expectNoContent(
+      audits,
+      "metric",
+      "Dana",
+      "tea",
+      "short replies",
+      "The person said it",
+      "Noted",
+    );
     // Nothing is saved to memory without the person's review.
     const { rows } = await fx.admin.query(
       `SELECT 1 FROM semantic_memory_items WHERE team_id = $1 AND owner_user_id = $2`,
@@ -392,6 +447,19 @@ describe("schema rejects and failures", () => {
       type: "memory.pass.failed",
       payload: { code: "schema_rejected", retryable: true },
     });
+    const audits = await passAudits(started.passId);
+    expect(audits.map((a) => a.action)).toEqual(["memory.pass.started", "memory.pass.failed"]);
+    expect(audits[1]).toMatchObject({
+      actor_kind: "user",
+      actor_id: owner.id,
+      target: {
+        passId: started.passId,
+        threadId: s.threadId,
+        reason: "schema_rejected",
+        attempts: 2,
+      },
+    });
+    expectNoContent(audits, "metric", "nope");
   });
 
   it("maps a gateway budget refusal to budget_exhausted, not retryable (ac-2)", async () => {
@@ -403,6 +471,10 @@ describe("schema rejects and failures", () => {
     expect((await passEvents(s.runId)).at(-1)).toMatchObject({
       type: "memory.pass.failed",
       payload: { code: "budget_exhausted", retryable: false },
+    });
+    expect((await passAudits(started.passId)).at(-1)?.target).toMatchObject({
+      reason: "budget_exhausted",
+      attempts: 1,
     });
   });
 
@@ -591,6 +663,15 @@ describe("one pass per thread, across replicas (ac-3)", () => {
     );
     expect(await passes.sweep()).toBeGreaterThanOrEqual(1);
     expect(await passRow(rows[0]?.id ?? "")).toMatchObject({ status: "failed" });
+    expect(await passAudits(rows[0]?.id ?? "")).toMatchObject([
+      {
+        action: "memory.pass.failed",
+        team_id: team,
+        actor_kind: "system",
+        actor_id: null,
+        target: { threadId: s.threadId, reason: "interrupted", attempts: 0 },
+      },
+    ]);
     expect(await startAndWait(s)).toMatchObject({ ok: true });
   });
 });

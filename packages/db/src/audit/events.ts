@@ -172,6 +172,22 @@ const tokenAmount = z.number().int().nonnegative().max(MAX_BUDGET_TOKENS);
 const providerId = z.string().max(32).regex(new RegExp(PROVIDER_ID_PATTERN));
 const providerKind = z.enum(MODEL_PROVIDER_KINDS);
 const modelAlias = z.string().max(64).regex(new RegExp(MODEL_ALIAS_PATTERN));
+/** A learning pass's extractor prompt version, e.g. `memory-extractor-v1` (KOBE-393). */
+const memoryPromptVersion = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
+/**
+ * `memory.pass.failed.reason`: @kobe/protocol `MEMORY_PASS_FAILURE_CODES` (the server's contract
+ * test keeps them equal) plus `interrupted` for a pass the stale-pass sweep failed.
+ */
+export const MEMORY_PASS_AUDIT_FAILURE_CODES = [
+  "budget_exhausted",
+  "learning_model_unavailable",
+  "memory_disabled",
+  "schema_rejected",
+  "timeout",
+  "model_error",
+  "cancelled",
+  "interrupted",
+] as const;
 const providerModel = z.string().max(200).regex(new RegExp(PROVIDER_MODEL_PATTERN));
 /** A provider endpoint's host (name or IP literal, no path or credentials); null: vendor default. */
 const endpointHost = z
@@ -2929,8 +2945,9 @@ export const AUDIT_EVENTS = {
   }),
   // ── semantic memory items (v1.3, KOBE-377, SM28): ids, scopes, kinds, versions and counts, never
   // a statement, tag or evidence. Workspace items are team events; portable and Site items site
-  // events (`any`). Pass, candidate, proposal and suggestion actions are reserved for Phase B/C
-  // (`RESERVED_MEMORY_AUDIT_ACTIONS` in @kobe/protocol) and registered by their tickets.
+  // events (`any`). Candidate, proposal and suggestion actions are reserved for Phase B/C
+  // (`RESERVED_MEMORY_AUDIT_ACTIONS` in @kobe/protocol) and registered by their tickets; the
+  // pass actions are registered below (KOBE-393).
   /**
    * An item was saved (its first version): by a person, or from an import. Names follow the
    * brief's SM28 pattern (`memory.item.*`); the SM28 text was not available to check them.
@@ -3023,6 +3040,38 @@ export const AUDIT_EVENTS = {
       .array(z.string().regex(/^[a-z][a-z0-9_]{0,63}$/))
       .min(1)
       .max(20),
+  }),
+  // ── learning passes (KOBE-393, SM15): the actor is the person who started the pass (the
+  // stale-pass sweep is the system). Ids, the model alias, the prompt version and counts only:
+  // never a statement, quote, evidence, rationale or message text. Tokens and cost are the
+  // gateway's `run_usage` row (`kind = memory_learn`, same run), not repeated here.
+  /** A person started a learning pass on their thread: what it reads, as counts and flags. */
+  "memory.pass.started": event("team", {
+    passId: id,
+    threadId: id,
+    modelAlias,
+    extractorVersion: memoryPromptVersion,
+    entries: count,
+    partial: z.boolean(),
+    truncated: z.boolean(),
+    summarised: z.boolean(),
+  }),
+  /** A pass completed: candidates the model replied with, stored for review, and dropped. */
+  "memory.pass.completed": event("team", {
+    passId: id,
+    threadId: id,
+    replied: count,
+    stored: count,
+    dropped: count,
+    skillHints: count,
+    attempts: count,
+  }),
+  /** A pass failed: its reason (`interrupted`: a stopped server's pass, failed by the sweep). */
+  "memory.pass.failed": event("team", {
+    passId: id,
+    threadId: id,
+    reason: z.enum(MEMORY_PASS_AUDIT_FAILURE_CODES),
+    attempts: count,
   }),
   /** A Team admin made a member a Workspace memory steward, or took it back (KOBE-380). */
   "memory.steward.granted": event("team", { userId: id }),

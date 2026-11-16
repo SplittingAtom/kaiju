@@ -15,6 +15,7 @@ import { ServerCallError, type ServerCallClient } from "../../models/gateway-cli
 import { readSwitches } from "../switches.js";
 import { checkCandidates, insertCandidates, readKnownStatements } from "./candidates.js";
 import type { LearningPassInput } from "./pass-input/assemble.js";
+import { auditPassCompleted, auditPassFailed } from "./audit.js";
 import { completePass, failPass, moveWatermark } from "./passes.js";
 import { extractorMessages } from "./prompt/index.js";
 import { screenExtractorOutput } from "./screen.js";
@@ -53,6 +54,9 @@ export interface RunningPass {
   readonly modelAlias: string;
   readonly promptVersion: string;
 }
+
+const attempts = (usage: Record<string, unknown>): number =>
+  typeof usage.attempts === "number" ? usage.attempts : 0;
 
 const UNREADABLE_REPLY: ReadonlySet<string> = new Set(["empty_content", "truncated", "bad_reply"]);
 
@@ -183,6 +187,7 @@ async function finish(
     });
     if (!done) throw new PassFailure("cancelled", "pass_not_running");
     await moveWatermark(tx, { ...pass, entryId: input.leafEntryId });
+    await auditPassCompleted(tx, pass, counts, attempts(usage));
     span.setAttributes({
       "kobe.memory.candidates": counts.stored,
       "kobe.memory.dropped": dropped,
@@ -220,10 +225,12 @@ async function fail(
           },
         },
       ]);
-      await failPass(tx, end);
+      if (await failPass(tx, end)) await auditPassFailed(tx, pass, code, attempts(usage));
     });
   } catch {
-    await withTeam(ctx.db, pass.teamId, (tx) => failPass(tx, end));
+    await withTeam(ctx.db, pass.teamId, async (tx) => {
+      if (await failPass(tx, end)) await auditPassFailed(tx, pass, code, attempts(usage));
+    });
   }
 }
 

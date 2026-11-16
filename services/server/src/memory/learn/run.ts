@@ -12,6 +12,7 @@ import type { ServerCallClient } from "../../models/gateway-client.js";
 import type { Viewer } from "../../threads/repository.js";
 import { learnAvailability, type LearnUnavailableReason } from "../learning-model.js";
 import { readSwitches } from "../switches.js";
+import { auditPassStarted } from "./audit.js";
 import { executePass, type RunningPass } from "./execute.js";
 import {
   assembleLearningInput,
@@ -173,19 +174,17 @@ async function prepare(
   });
   if (passId === null)
     return no({ code: "pass_running", message: "Kobe is already learning from this thread." });
-  return {
-    ok: true,
-    input,
-    pass: {
-      teamId,
-      userId,
-      threadId,
-      passId,
-      runId,
-      modelAlias: model.alias,
-      promptVersion: CURRENT_EXTRACTOR_PROMPT.version,
-    },
+  const pass: RunningPass = {
+    teamId,
+    userId,
+    threadId,
+    passId,
+    runId,
+    modelAlias: model.alias,
+    promptVersion: CURRENT_EXTRACTOR_PROMPT.version,
   };
+  await auditPassStarted(tx, pass, { ...input, entries: input.prompt.transcript.length });
+  return { ok: true, input, pass };
 }
 
 export function createLearningPasses(options: LearningPassesOptions): LearningPasses {

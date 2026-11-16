@@ -1,5 +1,6 @@
 import { MEMORY_PASS_MAX_MS } from "@kobe/protocol";
 import { sql, type KobeTx } from "@kobe/db";
+import { auditPassFailed } from "./audit.js";
 
 /**
  * The learning pass's rows (KOBE-393; `memory_learning_passes`, `memory_learning_watermarks`), in
@@ -50,19 +51,30 @@ export async function passesToday(tx: KobeTx, teamId: string, userId: string): P
   return Number(res.rows[0]?.n ?? 0);
 }
 
-/** Marks running passes past `MEMORY_PASS_MAX_MS` failed (one thread, or the whole Workspace). */
+/**
+ * Marks running passes past `MEMORY_PASS_MAX_MS` failed (one thread, or the whole Workspace), each
+ * with a `memory.pass.failed` audit row (code `interrupted`, the system's doing).
+ */
 export async function failStalePasses(
   tx: KobeTx,
   teamId: string,
   threadId?: string,
 ): Promise<number> {
-  const res = await tx.execute(sql`
+  const res = await tx.execute<{ id: string; user_id: string; thread_id: string }>(sql`
     UPDATE memory_learning_passes
        SET status = 'failed', error = ${STALE_PASS_ERROR}, finished_at = now()
      WHERE team_id = ${teamId} AND status IN ('queued', 'running')
        ${threadId === undefined ? sql`` : sql`AND thread_id = ${threadId}`}
-       AND coalesce(started_at, created_at) < now() - make_interval(secs => ${STALE_SECONDS})`);
-  return res.rowCount ?? 0;
+       AND coalesce(started_at, created_at) < now() - make_interval(secs => ${STALE_SECONDS})
+    RETURNING id, user_id, thread_id`);
+  for (const r of res.rows)
+    await auditPassFailed(
+      tx,
+      { teamId, userId: r.user_id, threadId: r.thread_id, passId: r.id },
+      "interrupted",
+      0,
+    );
+  return res.rows.length;
 }
 
 /**

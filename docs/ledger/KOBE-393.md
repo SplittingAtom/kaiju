@@ -62,13 +62,18 @@ Server only, no migration, no protocol change. `services/server/src/memory/learn
 - **Trace:** span `memory.learn_pass` (model alias, gateway model, prompt version, entries,
   partial, counts, outcome/failure code); the `server_call.memory_learn` span and the gateway's
   span carry the call and its tokens.
-- **Not done here:** audit actions `memory.pass.*` (reserved; need `AUDIT_EVENTS` registration in
-  packages/db), the HTTP route and panel (KOBE-395/396). **Docs:** none, no user-facing surface yet.
+- **Audit (`memory/learn/audit.ts`, registered in packages/db `AUDIT_EVENTS`, no migration):**
+  `memory.pass.started` (model alias, `extractorVersion`, entries, partial/truncated/summarised) in
+  the start transaction; `memory.pass.completed` (replied/stored/dropped/skill hints, attempts) in
+  the success transaction; `memory.pass.failed` (`reason`, attempts) with the row update, only when the
+  row moved; the stale sweep writes `failed` reason `interrupted` as the system. Team events, actor
+  the person. Metadata only; tokens/cost stay on the gateway's `run_usage` row. The db failure
+  enum is protocol's codes + `interrupted` (contract test keeps them equal).
+- **Not done here:** the HTTP route and panel (KOBE-395/396). **Docs:** none, no user-facing surface yet.
 
 ## Open questions (for Chris or the coordinator)
 
 - Rate limit counts per Workspace (RLS); a person in several Workspaces gets 20 in each.
-- Should passes write the reserved `memory.pass.*` audit events (needs a db package change)?
 
 ## Evidence (acceptance criteria → test or command output)
 
@@ -80,5 +85,7 @@ Server only, no migration, no protocol change. `services/server/src/memory/learn
   learning_model_unavailable when the model is disabled after the start".
 - **ac-3** db tests "a running pass written by another replica refuses a new one", "two replicas
   starting at once", stale sweep.
+- **audit** db tests: success (started + completed targets exact, no content), schema_rejected,
+  budget_exhausted, stale sweep (`interrupted`, system actor); `semantic-contract.test.ts`.
 - **ac-4** db tests "stores screened candidates … streams its events to the run", "records a
   trace …", append guard cases; `models/gateway-client.test.ts` learning pass cases.
