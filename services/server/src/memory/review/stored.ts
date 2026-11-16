@@ -59,6 +59,10 @@ export const storedCandidateSchema = z.object({
   policy_conflicts: z.array(ref).default([]),
   near_duplicates: z.array(ref).default([]),
   decision: decisionSchema.optional(),
+  /** Proposed to the Workspace (KOBE-397): the proposal it became. */
+  proposal_id: uuidSchema.optional(),
+  /** A curator sent its proposal back for changes: open again, with the proposal's clock. */
+  returned: z.object({ proposal_id: uuidSchema }).optional(),
 });
 export type StoredCandidate = z.infer<typeof storedCandidateSchema>;
 
@@ -199,6 +203,40 @@ export async function decideCandidate(
     UPDATE memory_candidates SET state = ${state}, decided_at = now(),
            payload = payload || ${extra}::jsonb
      WHERE team_id = ${teamId} AND id = ${candidateId} AND state = 'open'`);
+}
+
+/** Proposed (KOBE-397): closed in To review, pointing at its proposal. */
+export async function proposeCandidateRow(
+  tx: KobeTx,
+  teamId: string,
+  candidateId: string,
+  proposalId: string,
+): Promise<void> {
+  const extra = JSON.stringify({ proposal_id: proposalId });
+  await tx.execute(sql`
+    UPDATE memory_candidates SET state = 'proposed', decided_at = now(),
+           payload = (payload - 'returned') || ${extra}::jsonb
+     WHERE team_id = ${teamId} AND id = ${candidateId} AND state = 'open'`);
+}
+
+/**
+ * A curator sent the proposal back (KOBE-397): the candidate is open again in its person's To
+ * review, marked with the proposal, and lives at least as long as the proposal's clock (request
+ * rounds don't reset it).
+ */
+export async function returnCandidate(
+  tx: KobeTx,
+  teamId: string,
+  candidateId: string,
+  proposal: { id: string; expiresAt: string },
+): Promise<boolean> {
+  const extra = JSON.stringify({ returned: { proposal_id: proposal.id } });
+  const res = await tx.execute(sql`
+    UPDATE memory_candidates SET state = 'open', decided_at = NULL,
+           expires_at = greatest(expires_at, ${proposal.expiresAt}::timestamptz),
+           payload = (payload - 'proposal_id') || ${extra}::jsonb
+     WHERE team_id = ${teamId} AND id = ${candidateId} AND state = 'proposed'`);
+  return (res.rowCount ?? 0) > 0;
 }
 
 /** Undo: the saved candidate is open again (its expiry unchanged), without its decision. */

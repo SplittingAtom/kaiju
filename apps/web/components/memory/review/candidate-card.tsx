@@ -8,17 +8,22 @@ import type {
   ReviewScope,
   SavedCandidate,
 } from "../../../lib/memory/review-api";
+import type { ProposalsApi, Proposed } from "../../../lib/memory/proposals-api";
 import { visible } from "../../../lib/security/visible";
 import { Button, Card, Checkbox, ChoiceGroup, Radio, useConfirm } from "../../ui/console";
 import { CheckProblem, useCheckedSave } from "../item-checks";
 import { DraftFields, draftError, type Draft } from "../item-fields";
 import { CandidateContext, CandidateLabels, CandidateWhy } from "./candidate-details";
+import { ProposeAction } from "./propose-action";
 import { SCOPE_LABELS } from "./labels";
 
 /** Actions later tickets plug in beside Save (absent: not offered). */
 export interface CardSeams {
-  /** Propose… to the Workspace's curators (KOBE-397). */
-  readonly onPropose?: (candidate: Candidate) => void;
+  /** Propose… to the Workspace's curators (KOBE-397): offered to members who don't curate. */
+  readonly propose?: {
+    readonly api: Pick<ProposalsApi, "propose">;
+    readonly onProposed: (candidate: Candidate, proposed: Proposed) => void;
+  };
   /**
    * The project action in a project thread (KOBE-398: Add to project notes; readers' Suggest to
    * editors is KOBE-652): `project-notes-action.tsx`, given the statement as edited.
@@ -202,7 +207,7 @@ export function CandidateCard({
       {curatorOnly && (
         <p className="m-0 text-sm text-console-muted">
           Only Team admins and memory stewards save Workspace memories. Keep it for yourself, or
-          propose it when proposals are available.
+          propose it to them.
         </p>
       )}
       {invalid && (
@@ -226,8 +231,15 @@ export function CandidateCard({
         >
           Save
         </Button>
-        {curatorOnly && seams?.onPropose && (
-          <Button onClick={() => seams?.onPropose?.(candidate)}>Propose…</Button>
+        {curatorOnly && seams?.propose && (
+          <ProposeAction
+            candidateId={candidate.id}
+            original={candidate}
+            draft={draft}
+            api={seams.propose.api}
+            disabled={busy}
+            onProposed={(p) => seams.propose?.onProposed(candidate, p)}
+          />
         )}
         {seams?.projectNotes?.(candidate, draft.statement)}
         <Button variant="ghost" aria-expanded={editing} onClick={() => setEditing((v) => !v)}>
