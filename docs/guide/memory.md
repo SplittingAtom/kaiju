@@ -183,7 +183,9 @@ The **+** button shows where Learn is:
 | A number        | Suggestions from this conversation are waiting; **+** › **Memory** › Review |
 
 When a pass ends, Kobe says how many suggestions it found, or why it stopped (try again from the
-same menu). Learn is only for the conversation's author: people it is shared with don't see it,
+same menu). If it found something while you are on the conversation, To review opens by itself
+(see [To review](#to-review)). If Kobe can't confirm that a pass finished within a few minutes, the
+spinner stops and Kobe asks you to try again. Learn is only for the conversation's author: people it is shared with don't see it,
 and Workbench, agent test and eval chats are refused. When Learn can't run, the menu item stays
 visible and says why: memories or Learn are switched off, no learning model is available (see
 [The learning model](#the-learning-model)), a budget is used up, you already started 20 passes in

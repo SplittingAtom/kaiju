@@ -3,6 +3,7 @@
 import type { LearnMode } from "@kobe/protocol";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getLearnState, learnBlocker, startLearn, type LearnState } from "../../lib/chat/learn-api";
+import { LEARN_TIMEOUT_MESSAGE, learnStep, type LearnWatch } from "../../lib/chat/learn-watch";
 import { announcePassCompleted } from "../memory/review/arrival";
 import { useChatSession } from "./kobe-runtime";
 
@@ -34,8 +35,11 @@ const found = (n: number) =>
 
 /**
  * Learn from this chat (KOBE-395) for the thread on screen: its state (read when the thread
- * opens and each time a run on it ends, every {@link LEARN_POLL_MS} while a pass runs), starting a
- * pass, and a notice for what happened (started, refused with the server's reason, finished).
+ * opens and each time a run on it ends, every {@link LEARN_POLL_MS} while a pass runs, and again
+ * when the tab comes back or the network returns), starting a pass, and a notice for what happened
+ * (started, refused with the server's reason, finished). The state is Postgres's, so it is the same
+ * whichever replica answers (KOBE-661); a pass that seems to run too long stops the spinner with
+ * Try again ({@link learnStep}).
  */
 export function useLearn(threadId: string | null, threadRunning: boolean): Learn {
   const session = useChatSession();
@@ -44,29 +48,40 @@ export function useLearn(threadId: string | null, threadRunning: boolean): Learn
   const say = useCallback((text: string) => setNotice((s) => ({ text, n: s.n + 1 })), []);
   const current = useRef<string | null>(threadId);
   current.current = threadId;
-  const watched = useRef<string | null>(null);
+  const watched = useRef<LearnWatch | null>(null);
+  const abandoned = useRef<Set<string>>(new Set());
+  // Bumped by each start: a read sent before it can't end the pass it started.
+  const epoch = useRef(0);
 
   const refresh = useCallback(
     async (estimate = false) => {
       if (threadId === null) return;
+      const sent = epoch.current;
       const res = await getLearnState(session.teamId, threadId, { estimate });
-      if (current.current !== threadId) return;
+      if (current.current !== threadId || sent !== epoch.current) return;
       if (!res.ok) {
         setState(null);
         return;
       }
-      const next = res.data;
-      // A pass this tab watched has ended: say how it went.
-      const passId = watched.current;
-      if (passId !== null && next.running?.passId !== passId) {
-        watched.current = null;
-        const failed = next.lastFailure?.passId === passId;
-        say(failed ? next.lastFailure.message : found(next.candidates));
+      const step = learnStep(watched.current, res.data, Date.now(), abandoned.current);
+      watched.current = step.kind === "running" ? step.watch : null;
+      if (step.kind === "ended") {
+        // A pass this tab watched has ended: say how it went.
+        say(step.failure ?? found(step.state.candidates));
         // KOBE-396: To review opens by itself when this thread is on screen and no panel is open.
-        if (!failed) announcePassCompleted({ threadId, passId, candidates: next.candidates });
+        if (step.failure === null)
+          announcePassCompleted({
+            threadId,
+            passId: step.passId,
+            candidates: step.state.candidates,
+          });
+        const later = step.state.running;
+        if (later !== null) watched.current = { passId: later.passId, since: Date.now() };
+      } else if (step.kind === "timeout") {
+        abandoned.current.add(step.passId);
+        say(LEARN_TIMEOUT_MESSAGE);
       }
-      if (next.running !== null) watched.current = next.running.passId;
-      setState(next);
+      setState(step.state);
     },
     [session.teamId, threadId, say],
   );
@@ -84,7 +99,17 @@ export function useLearn(threadId: string | null, threadRunning: boolean): Learn
   useEffect(() => {
     if (runningId === undefined) return undefined;
     const timer = setInterval(() => void refresh(), LEARN_POLL_MS);
-    return () => clearInterval(timer);
+    // A sleeping tab or a dropped connection misses polls: read again as soon as it is back.
+    const again = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", again);
+    window.addEventListener("online", again);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", again);
+      window.removeEventListener("online", again);
+    };
   }, [runningId, refresh]);
 
   useEffect(() => {
@@ -106,7 +131,8 @@ export function useLearn(threadId: string | null, threadRunning: boolean): Learn
         void refresh();
         return;
       }
-      watched.current = res.data.passId;
+      epoch.current += 1;
+      watched.current = { passId: res.data.passId, since: Date.now() };
       setState((s) =>
         s === null
           ? s

@@ -4,18 +4,21 @@ import {
   learnRefusalSchema,
   learnStartResponseSchema,
   learnStateSchema,
+  listNotificationsResponseSchema,
   type LearnState,
 } from "@kobe/protocol";
 import { generateSessionKeyPair } from "@kobe/session-token";
 import { appendRunEvents } from "./event-stream/append.js";
 import { LEARN_PASSES_PER_DAY } from "./memory/learn/passes.js";
 import { passErrorMessage } from "./memory/learn/state.js";
-import { EventStreamFixture, type Person } from "./testing/event-stream-fixture.js";
+import { TestBrowser } from "./testing/browser.js";
+import { EventStreamFixture, PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";
 
 /**
  * KOBE-395: `GET/POST /v1/threads/{id}/learn` against Postgres, the server's real learning passes
  * and a gateway stand-in: the state the + button reads (blocker, running pass, dot, candidates,
- * estimate), the start (202) and its refusals, owner only.
+ * estimate), the start (202) and its refusals, owner only. KOBE-661: a pass started and run on one
+ * replica reaches the browser through the other (its Learn state and the pass's events).
  */
 const fx = new EventStreamFixture();
 const PAIR = generateSessionKeyPair();
@@ -24,9 +27,13 @@ let mate: Person;
 let team: string;
 const LEARNER = `lr-${randomBytes(3).toString("hex")}`;
 
+/** While set, extractor calls wait for it (a pass held running, KOBE-661). */
+let hold: Promise<void> | null = null;
+
 /** Every extractor call answers one candidate quoting u1. */
-const gatewayFetch: typeof fetch = async () =>
-  new Response(
+const gatewayFetch: typeof fetch = async () => {
+  if (hold) await hold;
+  return new Response(
     JSON.stringify({
       choices: [
         {
@@ -57,9 +64,11 @@ const gatewayFetch: typeof fetch = async () =>
     }),
     { status: 200, headers: { "content-type": "application/json" } },
   );
+};
 
 beforeAll(async () => {
-  await fx.setup([{}], () => ({
+  // Two replicas on one database, as gate1 runs (KOBE-661).
+  await fx.setup([{}, {}], () => ({
     serverCalls: { gatewayUrl: "http://gateway.invalid", key: PAIR.signing, fetch: gatewayFetch },
   }));
   owner = await fx.person(`lo${randomBytes(2).toString("hex")}`);
@@ -279,6 +288,54 @@ describe("POST /v1/threads/{id}/learn (KOBE-395)", () => {
     expect(res.status).toBe(403);
     expect(res.json.code).toBe("read_only");
     expect((await owner.browser.post(path(t), { mode: "x" })).status).toBe(400);
+  });
+});
+
+describe("a pass that ran on another replica (KOBE-661)", () => {
+  /** The same signed-in tab, its requests served by replica `i` (the ingress balances them). */
+  const tabOn = (i: number, who: Person): TestBrowser => {
+    const tab = new TestBrowser(fx.replica(i).app, PUBLIC_URL);
+    for (const [k, v] of who.browser.cookies) tab.cookies.set(k, v);
+    tab.team = who.browser.team;
+    return tab;
+  };
+
+  it("its completion reaches the browser through the other replica: state and events", async () => {
+    // Someone new: the candidate isn't already waiting for review from an earlier test.
+    const who = await fx.person(`lx${randomBytes(2).toString("hex")}`);
+    await fx.addMember(team, who);
+    await fx.activate(who, team);
+    const t = await seedThread(who);
+    let release: () => void = () => undefined;
+    hold = new Promise<void>((r) => {
+      release = r;
+    });
+    // Started on replica 0, which runs the pass on its own background tasks.
+    const res = await tabOn(0, who).post(path(t), { mode: "new" });
+    expect(res.status, JSON.stringify(res.json)).toBe(202);
+    const started = learnStartResponseSchema.parse(res.json);
+    const onOther = tabOn(1, who);
+    // Replica 1 runs nothing of it, yet it sees the running pass...
+    const before = await onOther.get(path(t));
+    expect(before.status, JSON.stringify(before.json)).toBe(200);
+    expect(learnStateSchema.parse(before.json).running?.pass_id).toBe(started.pass_id);
+    hold = null;
+    release();
+    await fx.replica(0).deps.background.idle();
+    // ...and its end: no running pass, the candidate waiting, the dot off (Postgres is the record).
+    const after = learnStateSchema.parse((await onOther.get(path(t))).json);
+    expect(after).toMatchObject({ running: null, new_messages: false, candidates: 1 });
+    expect(after.last_failure).toBeNull();
+    // The bell's To review notice, written with the pass, is there too.
+    const bell = listNotificationsResponseSchema.parse(
+      (await onOther.get("/v1/notifications")).json,
+    );
+    expect(
+      bell.notifications.filter(
+        (n) =>
+          n.kind === "memory.review.candidates_ready" && n.memory_object_id === started.pass_id,
+      ),
+    ).toHaveLength(1);
   });
 });
 
