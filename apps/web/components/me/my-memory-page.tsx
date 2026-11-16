@@ -7,6 +7,7 @@ import { isReviewLink, memoryTabOf, showTabInUrl, type MemoryTab } from "../../l
 import { useTeamAccess } from "../admin/console-context";
 import { MemoryPanel } from "../memory/memory-panel";
 import { MyMemories } from "../memory/my-memories";
+import { MyProposals } from "../memory/proposals/my-proposals";
 import { ReviewSection } from "../memory/review/review-section";
 import { SuggestionsReview } from "../memory/suggestions/suggestions-review";
 import { lastThreadId } from "../../lib/shell/last-thread";
@@ -44,6 +45,11 @@ export function MyMemoryPage() {
     const id = new URLSearchParams(window.location.search).get("thread");
     return id !== null && isUuid(id) ? id.toLowerCase() : lastThreadId(teamId);
   });
+  // `?proposal=<uuid>`: the bell's outcome of a Workspace proposal (KOBE-397).
+  const [proposal] = useState(() => {
+    const id = new URLSearchParams(window.location.search).get("proposal");
+    return id !== null && isUuid(id) ? id.toLowerCase() : null;
+  });
   const [projectId, setProjectId] = useState(projectFromLocation);
   const target: MemoryTarget =
     projectId === null ? { scope: "user" } : { scope: "project", projectId };
@@ -66,6 +72,7 @@ export function MyMemoryPage() {
         {/* Kept mounted while Notes is shown, so an unsent memory and the Undo bar survive. */}
         <TabsContent value="memories" forceMount hidden={tab !== "memories"}>
           <ReviewSection teamId={teamId} threadId={reviewThread} autoFocus={forReview} />
+          <MyProposals teamId={teamId} focusId={proposal} />
           {/* Readers' suggestions for the notes of projects the person decides (KOBE-652). */}
           <SuggestionsReview teamId={teamId} />
           <MyMemories teamId={teamId} />

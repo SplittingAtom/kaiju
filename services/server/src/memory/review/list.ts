@@ -38,7 +38,7 @@ async function relatedItem(
     : null;
 }
 
-async function policyStatements(
+export async function policyStatements(
   tx: KobeTx,
   refs: readonly { id: string; version: number }[],
 ): Promise<Related[]> {

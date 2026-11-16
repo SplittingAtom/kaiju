@@ -1,0 +1,254 @@
+{
+  "cases": [
+    {
+      "id": "proj-q3-campaign-baseline",
+      "description": "A project fact goes to the project's notes (from KOBE-394 normal-project-fact).",
+      "project": "Q3 Campaign Analysis",
+      "transcript": [
+        [
+          "person",
+          "For this analysis the baseline period is the six weeks before launch, 2026-05-01 to 2026-06-12."
+        ],
+        ["assistant", "Using 2026-05-01 to 2026-06-12 as the baseline."]
+      ],
+      "expect": [
+        {
+          "statement": "The baseline period for the Q3 campaign analysis is the six weeks before launch (2026-05-01 to 2026-06-12).",
+          "match": ["baseline"],
+          "kind": "fact",
+          "scope": "project_notes",
+          "quote": "For this analysis the baseline period is the six weeks before launch, 2026-05-01 to 2026-06-12."
+        }
+      ]
+    },
+    {
+      "id": "proj-deadline",
+      "description": "A project deadline.",
+      "project": "Supplier Consolidation",
+      "transcript": [
+        [
+          "person",
+          "The shortlist for this project has to be with procurement by 15 January, that's the hard deadline."
+        ],
+        ["assistant", "Noted. I'll plan the scoring work back from 15 January."]
+      ],
+      "expect": [
+        {
+          "statement": "The supplier shortlist is due to procurement by 15 January (hard deadline).",
+          "match": ["15 january"],
+          "kind": "fact",
+          "scope": "project_notes",
+          "quote": "The shortlist for this project has to be with procurement by 15 January, that's the hard deadline."
+        }
+      ]
+    },
+    {
+      "id": "proj-excluded-stores",
+      "description": "A project-specific data choice.",
+      "project": "Store Footfall Study",
+      "transcript": [
+        [
+          "person",
+          "Exclude the three airport stores from this study, their footfall isn't comparable."
+        ],
+        ["assistant", "Excluded stores 104, 117 and 121 (airports)."],
+        ["person", "Right, and that applies to every chart in this project."]
+      ],
+      "expect": [
+        {
+          "statement": "The footfall study excludes the three airport stores because their footfall is not comparable.",
+          "match": ["airport"],
+          "kind": "decision",
+          "scope": "project_notes",
+          "quote": "Exclude the three airport stores from this study, their footfall isn't comparable."
+        }
+      ]
+    },
+    {
+      "id": "proj-plus-workspace-fact",
+      "description": "One project fact and one Workspace-wide fact in the same thread.",
+      "project": "Pricing Review 2027",
+      "transcript": [
+        [
+          "person",
+          "In this review we model a 4% list price increase. Separately, and this is true for all our work: prices are always quoted ex VAT."
+        ],
+        ["assistant", "Modelling +4% list price, ex VAT."]
+      ],
+      "expect": [
+        {
+          "statement": "The 2027 pricing review models a 4% list price increase.",
+          "match": ["4"],
+          "kind": "decision",
+          "scope": "project_notes",
+          "quote": "In this review we model a 4% list price increase."
+        },
+        {
+          "statement": "Prices are quoted excluding VAT.",
+          "match": ["vat"],
+          "kind": "convention",
+          "scope": "team",
+          "quote": "prices are always quoted ex VAT."
+        }
+      ]
+    },
+    {
+      "id": "proj-stakeholder-format",
+      "description": "Project audience preference: belongs to the project.",
+      "project": "Board Strategy Offsite",
+      "transcript": [
+        [
+          "person",
+          "Everything in this project goes to the board, so slides must be 16:9 with the board template and no more than ten slides."
+        ],
+        ["assistant", "I'll keep the deck to ten 16:9 slides on the board template."]
+      ],
+      "expect": [
+        {
+          "statement": "Offsite slides are 16:9 on the board template, at most ten slides.",
+          "match": [["16 9", "ten slides", "board template"]],
+          "kind": "convention",
+          "scope": "project_notes",
+          "quote": "slides must be 16:9 with the board template and no more than ten slides."
+        }
+      ]
+    },
+    {
+      "id": "proj-dataset-version",
+      "description": "Pinned dataset version for a project.",
+      "project": "Churn Model v2",
+      "transcript": [
+        [
+          "person",
+          "Train on the customer snapshot from 2026-09-30 only. We froze that version for this model so results stay comparable."
+        ],
+        ["assistant", "Using the 2026-09-30 snapshot."]
+      ],
+      "expect": [
+        {
+          "statement": "The churn model v2 trains on the frozen 2026-09-30 customer snapshot.",
+          "match": [["2026 09 30", "30 september", "september 30", "30 sep"]],
+          "kind": "decision",
+          "scope": "project_notes",
+          "quote": "Train on the customer snapshot from 2026-09-30 only. We froze that version for this model so results stay comparable."
+        }
+      ]
+    },
+    {
+      "id": "proj-no-project-thread",
+      "description": "Thread in no project: a project-sounding fact is a Workspace fact, not project notes.",
+      "transcript": [
+        [
+          "person",
+          "Our Atlas migration is scheduled for the weekend of 7 March; the whole Workspace is affected."
+        ],
+        ["assistant", "I'll flag reports that depend on Atlas for that weekend."]
+      ],
+      "expect": [
+        {
+          "statement": "The Atlas migration is scheduled for the weekend of 7 March.",
+          "match": ["atlas", "7 march"],
+          "kind": "fact",
+          "scope": "team",
+          "quote": "Our Atlas migration is scheduled for the weekend of 7 March"
+        }
+      ]
+    },
+    {
+      "id": "proj-client-contact-role",
+      "description": "A project fact naming a role, without personal data.",
+      "project": "Northwind Implementation",
+      "transcript": [
+        [
+          "person",
+          "For this implementation, every scope change must be approved by Northwind's steering committee, not by their project lead."
+        ],
+        ["assistant", "Understood, scope changes go to the steering committee."]
+      ],
+      "expect": [
+        {
+          "statement": "Scope changes in the Northwind implementation are approved by Northwind's steering committee.",
+          "match": ["steering committee"],
+          "kind": "convention",
+          "scope": "project_notes",
+          "quote": "every scope change must be approved by Northwind's steering committee, not by their project lead."
+        }
+      ]
+    },
+    {
+      "id": "proj-personal-pref-in-project",
+      "description": "A personal preference stated inside a project thread stays personal.",
+      "project": "Q4 Forecast",
+      "transcript": [
+        [
+          "person",
+          "Let's update the forecast. And in general, I prefer to see variances as percentages, not absolute numbers."
+        ],
+        ["assistant", "Here is the forecast with variances in %."]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers variances shown as percentages rather than absolute numbers.",
+          "match": ["variance", ["percent", "%"]],
+          "kind": "preference",
+          "scope": ["portable", "user"],
+          "quote": "I prefer to see variances as percentages, not absolute numbers."
+        }
+      ]
+    },
+    {
+      "id": "proj-glossary-term",
+      "description": "A project-specific definition.",
+      "project": "Loyalty Programme Redesign",
+      "transcript": [
+        [
+          "person",
+          "In this project, a 'lapsed member' is someone with no purchase in 180 days. Elsewhere it's 365, but we use 180 here."
+        ],
+        ["assistant", "Using 180 days for lapsed members in this project."]
+      ],
+      "expect": [
+        {
+          "statement": "In the loyalty redesign project a lapsed member has had no purchase in 180 days.",
+          "match": ["lapsed", "180"],
+          "kind": "definition",
+          "scope": "project_notes",
+          "quote": "In this project, a 'lapsed member' is someone with no purchase in 180 days."
+        }
+      ],
+      "allow": [["365"]]
+    },
+    {
+      "id": "proj-task-state-only",
+      "description": "A project thread with only task progress: nothing durable.",
+      "project": "Q3 Campaign Analysis",
+      "transcript": [
+        ["person", "Re-run the uplift chart with the new colours and export it as PNG."],
+        ["assistant", "Done, uplift_chart.png is in the project files."],
+        ["person", "Thanks, next do the same for the retention chart."]
+      ],
+      "expect": [],
+      "forbid": [["png"], ["colour"], ["retention chart"]]
+    },
+    {
+      "id": "proj-decision-confirmed",
+      "description": "A project decision proposed by the assistant and confirmed.",
+      "project": "Warehouse Automation Pilot",
+      "transcript": [
+        ["person", "Which site should the pilot run in?"],
+        ["assistant", "Given volumes, WH-DE-01 looks best. Shall we fix the pilot to WH-DE-01?"],
+        ["person", "Yes, the pilot runs at WH-DE-01. Decided."]
+      ],
+      "expect": [
+        {
+          "statement": "The automation pilot runs at WH-DE-01.",
+          "match": ["wh de 01"],
+          "kind": "decision",
+          "scope": "project_notes",
+          "quote": "Yes, the pilot runs at WH-DE-01. Decided.",
+          "also_quote": "Shall we fix the pilot to WH-DE-01?"
+        }
+      ]
+    }
+  ]
+}

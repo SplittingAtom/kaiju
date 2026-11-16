@@ -8,6 +8,7 @@ import {
   type ReviewList,
   type SavedCandidate,
 } from "../../../lib/memory/review-api";
+import { createProposalsApi, type ProposalsApi } from "../../../lib/memory/proposals-api";
 import { visible } from "../../../lib/security/visible";
 import { InlineLink } from "../../shell/text-links";
 import { Button, Notice, Section } from "../../ui/console";
@@ -36,6 +37,7 @@ export function ReviewSection({
   teamId,
   threadId,
   api: givenApi,
+  proposalsApi,
   autoFocus = false,
   seams,
   notesApi: givenNotesApi,
@@ -44,6 +46,7 @@ export function ReviewSection({
   readonly teamId: string;
   readonly threadId: string | undefined;
   readonly api?: ReviewApi;
+  readonly proposalsApi?: Pick<ProposalsApi, "propose">;
   readonly autoFocus?: boolean;
   readonly seams?: CardSeams | undefined;
   /** Add to project notes (KOBE-398); defaults to the real client. */
@@ -61,6 +64,11 @@ export function ReviewSection({
     [givenSuggestionsApi, teamId],
   );
   const [added, setAdded] = useState<string | null>(null);
+  const proposals = useMemo(
+    () => proposalsApi ?? createProposalsApi(teamId),
+    [proposalsApi, teamId],
+  );
+  const [proposed, setProposed] = useState<string | null>(null);
   const [list, setList] = useState<ReviewList | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [undoable, setUndoable] = useState<Undoable | null>(null);
@@ -96,7 +104,7 @@ export function ReviewSection({
   if (
     threadId === undefined ||
     list === null ||
-    (count === 0 && undoable === null && added === null)
+    (count === 0 && undoable === null && added === null && proposed === null)
   )
     return null;
 
@@ -192,6 +200,11 @@ export function ReviewSection({
           <p className="m-0">{added}</p>
         </Notice>
       )}
+      {proposed && (
+        <Notice tone="success" role="status">
+          <p className="m-0">{proposed}</p>
+        </Notice>
+      )}
       {error && (
         <Notice tone="error" role="alert">
           <p className="m-0">{error}</p>
@@ -212,7 +225,18 @@ export function ReviewSection({
               api={api}
               threadId={threadId}
               canCurateWorkspace={list.canCurateWorkspace}
-              seams={cardSeams}
+              seams={{
+                ...cardSeams,
+                propose: {
+                  api: proposals,
+                  onProposed: (done) => {
+                    drop([done.id]);
+                    setProposed(
+                      "Proposed to the Workspace's curators. You'll hear when they decide.",
+                    );
+                  },
+                },
+              }}
               onSaved={(saved) => {
                 drop([saved.candidateId]);
                 setUndoable({ message: "Memory saved.", saved: [saved] });

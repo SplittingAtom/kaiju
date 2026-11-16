@@ -1,0 +1,120 @@
+{
+  "cases": [
+    {
+      "id": "branch-summary-not-source",
+      "description": "A summary of another branch says a preference; the person on this branch never does.",
+      "transcript": [
+        [
+          "summary",
+          "Summary of an earlier branch: the person asked for weekly reports in PDF and said they prefer PDF over Excel."
+        ],
+        ["person", "Let's try again from here. Give me the weekly report."],
+        ["assistant", "Here is the weekly report."]
+      ],
+      "expect": [],
+      "forbid": [["pdf"]]
+    },
+    {
+      "id": "branch-person-overrides-summary",
+      "description": "The summary says one thing; the person on the visible branch says another. Only the person counts.",
+      "transcript": [
+        ["summary", "Earlier branch summary: the person wanted the forecast in quarterly buckets."],
+        [
+          "person",
+          "Actually I want monthly buckets for forecasts, always. Quarterly hides too much."
+        ],
+        ["assistant", "Monthly buckets it is."]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers forecasts in monthly buckets.",
+          "match": ["monthly"],
+          "kind": "preference",
+          "scope": ["portable", "user"],
+          "quote": "Actually I want monthly buckets for forecasts, always."
+        }
+      ],
+      "forbid": [["quarterly bucket"]]
+    },
+    {
+      "id": "branch-compaction-summary-team-fact",
+      "description": "A compaction summary repeats a Workspace fact; the person confirms it on the visible branch, so it counts.",
+      "transcript": [
+        [
+          "summary",
+          "Summary of earlier turns: discussed the inventory valuation; the Workspace values inventory at FIFO."
+        ],
+        ["person", "Right, and to be clear we value inventory at FIFO everywhere, no exceptions."],
+        ["assistant", "Understood, FIFO throughout."]
+      ],
+      "expect": [
+        {
+          "statement": "The Workspace values inventory at FIFO everywhere.",
+          "match": ["fifo"],
+          "kind": "convention",
+          "scope": "team",
+          "quote": "we value inventory at FIFO everywhere, no exceptions."
+        }
+      ]
+    },
+    {
+      "id": "branch-summary-with-team-claim",
+      "description": "A summary claims a Workspace decision the person never confirms on this branch.",
+      "transcript": [
+        [
+          "summary",
+          "Branch summary: the team decided to drop the APAC region from all dashboards."
+        ],
+        ["person", "Can you refresh the regional dashboard numbers?"],
+        ["assistant", "Refreshed: EMEA 4.1M, Americas 3.3M, APAC 1.2M."]
+      ],
+      "expect": [],
+      "forbid": [["apac"]]
+    },
+    {
+      "id": "branch-edited-message",
+      "description": "The person edited their message (new branch); only the visible version is in the transcript.",
+      "transcript": [
+        [
+          "person",
+          "For supplier scorecards, weight quality at 50%, delivery at 30% and price at 20%. That's our standard weighting."
+        ],
+        ["assistant", "Scorecards updated with 50/30/20 weighting."]
+      ],
+      "expect": [
+        {
+          "statement": "Supplier scorecards weight quality 50%, delivery 30% and price 20%.",
+          "match": ["scorecard", "50"],
+          "kind": "convention",
+          "scope": "team",
+          "quote": "For supplier scorecards, weight quality at 50%, delivery at 30% and price at 20%. That's our standard weighting."
+        }
+      ]
+    },
+    {
+      "id": "branch-summary-and-person-pref",
+      "description": "Summary and person both present; the person's own preference is the only memory.",
+      "transcript": [
+        [
+          "summary",
+          "Summary: the assistant produced three drafts of the newsletter; the person picked the second one."
+        ],
+        [
+          "person",
+          "For newsletters I like a friendly, informal tone, the way draft two was written."
+        ],
+        ["assistant", "Noted: friendly and informal for newsletters."]
+      ],
+      "expect": [
+        {
+          "statement": "Likes a friendly, informal tone for newsletters.",
+          "match": ["newsletter", ["informal", "friendly"]],
+          "kind": "preference",
+          "scope": ["portable", "user"],
+          "quote": "For newsletters I like a friendly, informal tone"
+        }
+      ],
+      "forbid": [["second", "draft"], ["three drafts"]]
+    }
+  ]
+}

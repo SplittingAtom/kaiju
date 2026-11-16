@@ -25,6 +25,7 @@ import {
 import { MemoryStorageError } from "../memory/store.js";
 import { suggestSchema, suggestToEditors } from "../memory/suggestions/suggest.js";
 import { logger } from "../logger.js";
+import { proposeCandidate, proposeSchema } from "../memory/proposals/propose.js";
 import { invalidRequest } from "../teams/http.js";
 import { uuidSchema } from "../threads/schemas.js";
 import { issueText, memoryRouteKit, refuseAgentWrites } from "./memory-items.js";
@@ -39,6 +40,8 @@ const threadQuery = z.object({ thread_id: uuidSchema });
  * - `GET  /?thread_id=` the open candidates of the caller's thread
  * - `POST /candidates/:id/save` `{statement?, kind?, scope?, confirm_portable?, overrides?}`
  * - `POST /candidates/:id/dismiss`
+ * - `POST /candidates/:id/propose` `{statement?, kind?, rationale?}`: to the Workspace's curators
+ *   (KOBE-397; members who don't curate)
  * - `POST /save-all` `{candidate_ids}`: Save all mine, one batch
  * - `POST /undo` `{candidate_ids}`: Undo of a save or a batch
  * - `POST /seen` `{thread_id}`: the panel showed the thread's candidates (bell notices read)
@@ -120,6 +123,14 @@ export function memoryReviewRoutes(deps: ServerDeps): Hono<{ Variables: TeamVari
     const id = candidateId(c.req.param("id"));
     if (!id.success) return invalidRequest(c, "id must be a candidate id.");
     return answer(c, "user", (who) => dismissCandidate(db, who, id.data));
+  });
+
+  app.post("/candidates/:id/propose", async (c) => {
+    const id = candidateId(c.req.param("id"));
+    if (!id.success) return invalidRequest(c, "id must be a candidate id.");
+    const body = await readBody(c, proposeSchema, true);
+    if (!body.success) return invalidRequest(c, issueText(body.error));
+    return answer(c, "user", (who) => proposeCandidate(db, who, id.data, body.data), 201);
   });
 
   app.post("/save-all", async (c) => {
