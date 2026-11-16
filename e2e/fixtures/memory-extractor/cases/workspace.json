@@ -1,0 +1,381 @@
+{
+  "cases": [
+    {
+      "id": "ws-close-third-working-day",
+      "description": "A Workspace fact the assistant asked about and the person confirmed (from KOBE-394 normal-preferences).",
+      "transcript": [
+        ["person", "Can you check the October ledger for late postings?"],
+        [
+          "assistant",
+          "Found 14 late postings. Does your Workspace close the books on the third working day of each month? The ledger timestamps suggest so."
+        ],
+        ["person", "Yes, the close is on the third working day, every month."]
+      ],
+      "expect": [
+        {
+          "statement": "The Workspace closes the books on the third working day of each month.",
+          "match": ["third working day"],
+          "kind": "fact",
+          "scope": "team",
+          "quote": "Yes, the close is on the third working day, every month.",
+          "also_quote": "Does your Workspace close the books on the third working day of each month?"
+        }
+      ]
+    },
+    {
+      "id": "ws-fiscal-year-april",
+      "description": "Fiscal year definition stated by the person.",
+      "transcript": [
+        [
+          "person",
+          "Compare FY25 and FY26 revenue. Our fiscal year runs April to March, so FY26 started in April 2025."
+        ],
+        ["assistant", "FY26 (Apr 2025 to Mar 2026) revenue is up 8% on FY25."]
+      ],
+      "expect": [
+        {
+          "statement": "The fiscal year runs from April to March; FY26 started in April 2025.",
+          "match": ["april", "march"],
+          "kind": "definition",
+          "scope": "team",
+          "quote": "Our fiscal year runs April to March, so FY26 started in April 2025."
+        }
+      ]
+    },
+    {
+      "id": "ws-active-customer-definition",
+      "description": "A shared metric definition.",
+      "transcript": [
+        ["person", "How many active customers did we have in Q3?"],
+        [
+          "assistant",
+          "That depends on the definition. Shall I count anyone with an order in the quarter?"
+        ],
+        [
+          "person",
+          "No. Here an active customer means at least one paid invoice in the last 90 days. That's the definition everyone in the team uses."
+        ]
+      ],
+      "expect": [
+        {
+          "statement": "An active customer is one with at least one paid invoice in the last 90 days.",
+          "match": ["active customer", "90"],
+          "kind": "definition",
+          "scope": "team",
+          "quote": "Here an active customer means at least one paid invoice in the last 90 days."
+        }
+      ]
+    },
+    {
+      "id": "ws-warehouse-naming",
+      "description": "A naming convention for warehouses.",
+      "transcript": [
+        ["person", "Which warehouse is WH-NL-02?"],
+        ["assistant", "I can't tell from the code alone."],
+        [
+          "person",
+          "Warehouse codes are WH, then the country code, then a two-digit site number. WH-NL-02 is our second Dutch site, in Tilburg."
+        ]
+      ],
+      "expect": [
+        {
+          "statement": "Warehouse codes are WH, the country code and a two-digit site number (e.g. WH-NL-02).",
+          "match": ["warehouse", ["country", "code"]],
+          "kind": "convention",
+          "scope": "team",
+          "quote": "Warehouse codes are WH, then the country code, then a two-digit site number."
+        }
+      ],
+      "allow": [["tilburg"]]
+    },
+    {
+      "id": "ws-decision-snowflake",
+      "description": "A decision the Workspace took.",
+      "transcript": [
+        ["person", "Write the migration note for the analytics team."],
+        ["assistant", "Which warehouse are we migrating to?"],
+        [
+          "person",
+          "We decided last week to move all reporting from Redshift to Snowflake by the end of Q1."
+        ]
+      ],
+      "expect": [
+        {
+          "statement": "The Workspace decided to move all reporting from Redshift to Snowflake by the end of Q1.",
+          "match": ["snowflake"],
+          "kind": "decision",
+          "scope": "team",
+          "quote": "We decided last week to move all reporting from Redshift to Snowflake by the end of Q1."
+        }
+      ]
+    },
+    {
+      "id": "ws-ticket-prefix",
+      "description": "A convention on ticket references.",
+      "transcript": [
+        [
+          "person",
+          "Link this to the support ticket. All our support tickets are SUP- followed by a number, and the engineering ones are ENG-."
+        ],
+        ["assistant", "Which ticket number should I link?"],
+        ["person", "SUP-4471."]
+      ],
+      "expect": [
+        {
+          "statement": "Support tickets are prefixed SUP- and engineering tickets ENG-.",
+          "match": ["sup"],
+          "kind": "convention",
+          "scope": "team",
+          "quote": "All our support tickets are SUP- followed by a number, and the engineering ones are ENG-."
+        }
+      ]
+    },
+    {
+      "id": "ws-gross-margin-excludes-freight",
+      "description": "A definition with a non-obvious exclusion.",
+      "transcript": [
+        ["person", "Gross margin for the DACH region, please."],
+        ["assistant", "Gross margin is 41.2% after freight."],
+        ["person", "We report gross margin before freight. Freight sits in operating costs for us."]
+      ],
+      "expect": [
+        {
+          "statement": "Gross margin is reported before freight; freight is an operating cost.",
+          "match": ["gross margin", "freight"],
+          "kind": "definition",
+          "scope": "team",
+          "quote": "We report gross margin before freight. Freight sits in operating costs for us."
+        }
+      ]
+    },
+    {
+      "id": "ws-crm-system",
+      "description": "A fact about the Workspace's systems.",
+      "transcript": [
+        [
+          "person",
+          "Where do I find the pipeline numbers? FYI we use HubSpot as the CRM, Salesforce was retired in 2024."
+        ],
+        ["assistant", "The pipeline report in HubSpot is under Sales > Deals."]
+      ],
+      "expect": [
+        {
+          "statement": "The Workspace uses HubSpot as its CRM; Salesforce was retired in 2024.",
+          "match": ["hubspot"],
+          "kind": "fact",
+          "scope": "team",
+          "quote": "we use HubSpot as the CRM, Salesforce was retired in 2024."
+        }
+      ]
+    },
+    {
+      "id": "ws-approval-threshold",
+      "description": "A business rule on purchase approvals (not about Kobe's approvals).",
+      "transcript": [
+        ["person", "Does this 12k laptop order need sign-off?"],
+        ["assistant", "I don't know your purchasing policy."],
+        [
+          "person",
+          "Anything over 10,000 EUR needs the CFO's sign-off here, below that the budget owner signs."
+        ]
+      ],
+      "expect": [
+        {
+          "statement": "Purchases over 10,000 EUR need the CFO's sign-off; below that the budget owner signs.",
+          "match": ["10", "cfo"],
+          "kind": "convention",
+          "scope": "team",
+          "quote": "Anything over 10,000 EUR needs the CFO's sign-off here, below that the budget owner signs."
+        }
+      ]
+    },
+    {
+      "id": "ws-org-wide-holiday",
+      "description": "Organization-wide knowledge still goes to the Workspace (only an admin moves it to the Site).",
+      "transcript": [
+        ["person", "Plan the release for the week of 22 December."],
+        ["assistant", "Are there office closures that week?"],
+        [
+          "person",
+          "The whole company is closed from 24 December to 1 January, every year, all offices."
+        ]
+      ],
+      "expect": [
+        {
+          "statement": "The company is closed from 24 December to 1 January every year.",
+          "match": [["closed", "closure"], "december"],
+          "kind": "fact",
+          "scope": "team",
+          "quote": "The whole company is closed from 24 December to 1 January, every year, all offices."
+        }
+      ]
+    },
+    {
+      "id": "ws-sku-format",
+      "description": "SKU structure.",
+      "transcript": [
+        [
+          "person",
+          "Decode SKU BK-0042-RD-L for me. Our SKUs are product family, four-digit model, colour code, size."
+        ],
+        ["assistant", "BK = bikes family, model 0042, red, large."]
+      ],
+      "expect": [
+        {
+          "statement": "SKUs are product family, four-digit model, colour code and size.",
+          "match": ["sku"],
+          "kind": "convention",
+          "scope": "team",
+          "quote": "Our SKUs are product family, four-digit model, colour code, size."
+        }
+      ]
+    },
+    {
+      "id": "ws-data-source-of-truth",
+      "description": "Which system is authoritative.",
+      "transcript": [
+        [
+          "person",
+          "The headcount in the HR dashboard and the finance sheet differ. Workday is the source of truth for headcount, the finance sheet lags by a month."
+        ],
+        ["assistant", "Then the correct October headcount is 412, from Workday."]
+      ],
+      "expect": [
+        {
+          "statement": "Workday is the source of truth for headcount; the finance sheet lags by a month.",
+          "match": ["workday", "headcount"],
+          "kind": "fact",
+          "scope": "team",
+          "quote": "Workday is the source of truth for headcount, the finance sheet lags by a month."
+        }
+      ]
+    },
+    {
+      "id": "ws-two-facts-and-task",
+      "description": "Two Workspace facts mixed with task chatter.",
+      "transcript": [
+        ["person", "Pull the churn numbers for the board pack."],
+        ["assistant", "Done: monthly churn 2.1%. Which churn definition does the board use?"],
+        [
+          "person",
+          "Logo churn, not revenue churn. And the board pack is always due five working days before the meeting."
+        ]
+      ],
+      "expect": [
+        {
+          "statement": "The board uses logo churn, not revenue churn.",
+          "match": ["logo churn"],
+          "kind": "definition",
+          "scope": "team",
+          "quote": "Logo churn, not revenue churn."
+        },
+        {
+          "statement": "The board pack is due five working days before the meeting.",
+          "match": ["board pack", "five"],
+          "kind": "convention",
+          "scope": "team",
+          "quote": "the board pack is always due five working days before the meeting."
+        }
+      ]
+    },
+    {
+      "id": "ws-confirmed-correction-of-assistant",
+      "description": "The person corrects the assistant's assumption; the correction is the memory.",
+      "transcript": [
+        ["person", "What's our standard payment term?"],
+        ["assistant", "Most companies use 30 days; I'll assume net 30."],
+        ["person", "Ours is net 45 for all customers."]
+      ],
+      "expect": [
+        {
+          "statement": "The standard payment term is net 45 for all customers.",
+          "match": ["45"],
+          "kind": "fact",
+          "scope": "team",
+          "quote": "Ours is net 45 for all customers."
+        }
+      ],
+      "forbid": [["net 30"]]
+    },
+    {
+      "id": "ws-acronym",
+      "description": "A Workspace acronym.",
+      "transcript": [
+        [
+          "person",
+          "In our team OTIF means on time in full, measured at the customer's dock, not at dispatch."
+        ],
+        ["assistant", "Got it. OTIF for October is 93.4% at the customer's dock."]
+      ],
+      "expect": [
+        {
+          "statement": "OTIF means on time in full, measured at the customer's dock, not at dispatch.",
+          "match": ["otif"],
+          "kind": "definition",
+          "scope": "team",
+          "quote": "In our team OTIF means on time in full, measured at the customer's dock, not at dispatch."
+        }
+      ]
+    },
+    {
+      "id": "ws-reporting-currency",
+      "description": "Group reporting currency (a Workspace fact, not a personal preference).",
+      "transcript": [
+        [
+          "person",
+          "Consolidate the subsidiaries' P&L. The group reports in USD; local books are in local currency."
+        ],
+        ["assistant", "Consolidated in USD at month-end rates."]
+      ],
+      "expect": [
+        {
+          "statement": "The group reports in USD; local books are kept in local currency.",
+          "match": ["usd"],
+          "kind": "fact",
+          "scope": "team",
+          "quote": "The group reports in USD; local books are in local currency."
+        }
+      ]
+    },
+    {
+      "id": "ws-code-review-rule",
+      "description": "An engineering convention.",
+      "transcript": [
+        [
+          "person",
+          "Review this PR description for me. Context: every PR here needs two approvals and a linked ENG ticket before merge."
+        ],
+        ["assistant", "The description is clear; it's missing the ENG ticket link."]
+      ],
+      "expect": [
+        {
+          "statement": "Every PR needs two approvals and a linked ENG ticket before merge.",
+          "match": ["two approvals"],
+          "kind": "convention",
+          "scope": "team",
+          "quote": "every PR here needs two approvals and a linked ENG ticket before merge."
+        }
+      ]
+    },
+    {
+      "id": "ws-region-mapping",
+      "description": "A mapping definition.",
+      "transcript": [
+        [
+          "person",
+          "Group the sales by region. For us EMEA excludes the UK; the UK is its own region."
+        ],
+        ["assistant", "Grouped: UK, EMEA (excluding UK), Americas, APAC."]
+      ],
+      "expect": [
+        {
+          "statement": "EMEA excludes the UK, which is a region of its own.",
+          "match": ["emea", "uk"],
+          "kind": "definition",
+          "scope": "team",
+          "quote": "For us EMEA excludes the UK; the UK is its own region."
+        }
+      ]
+    }
+  ]
+}
