@@ -39,6 +39,7 @@ sheet.
 | Mod+Shift+Enter                    | Steer now: pass the message to the running agent                     |
 | Mod+.                              | Stop                                                                 |
 | Mod+Shift+E, or Up in an empty box | Edit your last message                                               |
+| Mod+Shift+L                        | Learn from this chat (new messages since the last pass)              |
 | @                                  | Mention one of your files in the message                             |
 | /                                  | Slash commands, at the start of the message box                      |
 

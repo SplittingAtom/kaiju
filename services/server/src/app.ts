@@ -19,6 +19,7 @@ import { scheduleRoutes } from "./routes/schedules.js";
 import { notificationRoutes } from "./routes/notifications.js";
 import { fileRoutes } from "./routes/files.js";
 import { memoryRoutes } from "./routes/memory.js";
+import { threadLearnRoutes } from "./routes/thread-learn.js";
 import { memoryItemRoutes } from "./routes/memory-items.js";
 import { memoryTransferRoutes } from "./routes/memory-transfer.js";
 import { memorySettingsRoutes } from "./routes/memory-settings.js";
@@ -269,6 +270,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   api.route("/threads", threadAppResultRoutes(deps));
   api.route("/threads", threadAppCardRoutes(deps));
   api.route("/threads", threadUsageRoutes(deps));
+  api.route("/threads", threadLearnRoutes(deps));
   api.route("/threads", threadFeedbackRoutes(deps));
   api.route("/threads", threadFileEditRoutes(deps));
   api.route("/threads", threadSyncConflictRoutes(deps));
