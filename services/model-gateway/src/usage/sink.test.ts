@@ -88,7 +88,10 @@ describe("DbUsageSink: a purpose that is no usage kind (KOBE-391)", () => {
     await sink.flush();
     expect(writes).toEqual([]);
     expect(errors).toEqual([
-      expect.objectContaining({ purpose: "memory_embed", msg: expect.stringContaining("dropped") }),
+      expect.objectContaining({
+        purpose: "memory_future",
+        msg: expect.stringContaining("dropped"),
+      }),
     ]);
     await sink.close();
   });
