@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
 import { readRunCandidates } from "../../memory/items/run-memory.js";
 import { startVectorLeg } from "../../memory/items/vector-leg.js";
-import { documentText, queryText } from "../../memory/embeddings/prefixes.js";
+import { documentText, queryText, storedVectorModel } from "../../memory/embeddings/prefixes.js";
 import { vectorLiteral } from "../../memory/embeddings/vector-store.js";
 import { embedTexts, endpointFromEnv, quantile } from "./embed-endpoint.js";
 import { openHarness, type Harness } from "../harness.js";
@@ -143,7 +143,7 @@ async function embedAll(): Promise<void> {
     await h.admin.query(
       `UPDATE ${TABLE[s.scope]} SET embedding = $1::vector, embedding_model = $2, embedding_dims = $3
         WHERE item_id = $4 AND version = 1`,
-      [vectorLiteral(v), endpoint.storedModel, v.length, s.id],
+      [vectorLiteral(v), storedVectorModel(endpoint.storedModel), v.length, s.id],
     );
   }
 }

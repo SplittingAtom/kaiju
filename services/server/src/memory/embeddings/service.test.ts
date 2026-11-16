@@ -3,7 +3,7 @@ import type { KobeDb } from "@kobe/db";
 import { BackgroundTasks } from "../../background.js";
 import type { EmbeddingClient } from "../../models/embedding-client.js";
 import { ServerCallError } from "../../models/gateway-client.js";
-import { documentText, queryText } from "./prefixes.js";
+import { documentText, queryText, storedVectorModel } from "./prefixes.js";
 import { MemoryEmbeddings, isBudgetSkip } from "./service.js";
 import { pickEmbeddingModel } from "./model.js";
 import { mergeVectorRows, startVectorLeg } from "../items/vector-leg.js";
@@ -31,7 +31,7 @@ function service(embed: EmbeddingClient["embed"], deadline = 30) {
 }
 
 describe("query embedding deadline (KOBE-409)", () => {
-  it("returns the vector made in time, with the query prefix and the run named", async () => {
+  it("returns the vector made in time, with the query text and the run named", async () => {
     let seen: Parameters<EmbeddingClient["embed"]>[0] | undefined;
     const s = service(async (i) => {
       seen = i;
@@ -41,7 +41,7 @@ describe("query embedding deadline (KOBE-409)", () => {
       model: "kobe-local/nomic-embed-text",
       vector: [0.1, 0.2],
     });
-    expect(seen?.inputs).toEqual(["search_query: where do I park?"]);
+    expect(seen?.inputs).toEqual(["where do I park?"]);
     expect(seen?.run).toEqual({ runId: "r", threadId: "th" });
   });
 
@@ -143,7 +143,7 @@ describe("query embedding started when the message is accepted (KOBE-409 review 
       model: "kobe-local/nomic-embed-text",
       vector: [1],
     });
-    expect(seen).toBe("search_query: where do I park?");
+    expect(seen).toBe("where do I park?");
   });
 });
 
@@ -169,12 +169,23 @@ describe("vector leg deadline (KOBE-409 L5)", () => {
 
 describe("embedding helpers (KOBE-409)", () => {
   it("prefixes per model family", () => {
-    expect(documentText("kobe-local/nomic-embed-text", "x")).toBe("search_document: x");
-    expect(queryText("mac/nomic-embed-text:latest", "x")).toBe("search_query: x");
+    // nomic-embed-text ranks better without its card's prefixes on the relevance set (gate-7b).
+    expect(documentText("kobe-local/nomic-embed-text", "x")).toBe("x");
+    expect(queryText("mac/nomic-embed-text:latest", "x")).toBe("x");
     expect(queryText("mac/qwen3-embedding:0.6b", "x")).toMatch(/^Instruct: .*\nQuery: x$/s);
     expect(documentText("mac/qwen3-embedding:0.6b", "x")).toBe("x");
     expect(queryText("openai/text-embedding-3-small", "x")).toBe("x");
     expect(queryText("m/nomic-embed-text", "y".repeat(5000))).toHaveLength(4000);
+    expect(queryText("m/qwen3-embedding:0.6b", "y".repeat(5000))).toHaveLength(4000);
+  });
+
+  it("stores vectors under the document scheme, so a scheme change re-embeds", () => {
+    // nomic's documents lost their prefix (scheme 2): vectors stored by scheme 1 no longer match.
+    expect(storedVectorModel("kobe-local/nomic-embed-text")).toBe("kobe-local/nomic-embed-text#d2");
+    expect(storedVectorModel("mac/qwen3-embedding:0.6b")).toBe("mac/qwen3-embedding:0.6b");
+    expect(storedVectorModel("openai/text-embedding-3-small")).toBe(
+      "openai/text-embedding-3-small",
+    );
   });
 
   it("picks the stored model only while its provider is on the gateway", () => {

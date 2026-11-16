@@ -94,6 +94,13 @@
 - **Rebase note:** `origin/kobe-409-sm-migration` has 2 newer commits (main merge + sink.test.ts
   fix); the coordinator rebases after the migration PR merges.
 
+- **Tuning (ac-1, 2026-11-16, branch `kobe-409-tune`):** numbers in docs/gates/gate-7b.md
+  "Vectors (KOBE-409)". Fixed 0.5 cosine floor replaced by a score relative to the message's best
+  similarity (`VECTOR_WEIGHT` 2, `VECTOR_BAND` 0.1, `VECTOR_MAX_ELIGIBLE` 8), tuned on even query
+  ids, checked on odd: recall@8 nomic 0.815 → 0.894, qwen3 0.685 → 0.894. nomic now embedded
+  without prefixes (better on both halves); stored id `storedVectorModel()` adds `#d<scheme>`, so
+  nomic vectors need **Re-embed** after deploy (qwen3/other unchanged).
+
 ## Open questions (for Chris or the coordinator)
 
 - ac-1 numbers: the Mac mini Ollama was not reachable from the GSD VM (TCP to 11434 closed) and

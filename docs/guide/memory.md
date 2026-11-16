@@ -389,7 +389,15 @@ it is unavailable, search uses word matching alone and nothing else changes.
   background; until a memory has a vector from the current model, word matching finds it. The
   **Search by meaning** section shows how many memories have one (for example "812 of 840") and
   has a **Build vectors** (or **Re-embed**) button to fill the gaps, for example after Kobe was
-  upgraded or a build stopped. Nothing runs by itself after an upgrade.
+  upgraded or a build stopped. Nothing runs by itself after an upgrade. An upgrade can also change
+  how Kobe prepares memories for a model, which makes its old vectors out of date: the count then
+  drops (to "0 of 840", say) and word matching carries on alone until you press **Re-embed**. The
+  release that tuned search by meaning did this for **nomic-embed-text** (including the in-cluster
+  `kobe-local/nomic-embed-text`).
+- **How results are ranked.** A memory's closeness to the message counts relative to the closest
+  memory for that message, not as a fixed score, so models with different scales rank the same
+  way. Only the eight closest memories can be picked on meaning alone, and only when they are
+  nearly as close as the best one; word matches are considered as before.
 - **Who pays.** Every embedding call goes through the model gateway and counts like any other
   model use: the person saving a memory pays, in the workspace they are working in; the member
   whose message is searched pays for that message's search; the site admin who saves the model or

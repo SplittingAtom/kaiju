@@ -1,4 +1,5 @@
 import { sql, withTeam, type KobeDb } from "@kobe/db";
+import { storedVectorModel } from "../embeddings/prefixes.js";
 import { vectorLiteral } from "../embeddings/vector-store.js";
 import type { QueryVector } from "../embeddings/service.js";
 import type { ItemRow } from "./item-row.js";
@@ -53,7 +54,7 @@ function laneVectorQuery(who: Who, lane: SelectLane, model: string, dims: number
           JOIN ${loc.versions} v ON ${loc.versionOf} AND v.version = i.current_version
           CROSS JOIN p
          WHERE ${loc.where} AND i.status = 'active' AND NOT ${loc.policy}
-           AND v.embedding_model = ${model} AND v.embedding_dims = ${dims}
+           AND v.embedding_model = ${storedVectorModel(model)} AND v.embedding_dims = ${dims}
          ORDER BY distance, i.id
          LIMIT ${raw(VECTOR_READ_MAX)}
       ) c`;
