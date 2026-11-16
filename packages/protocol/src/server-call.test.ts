@@ -2,11 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   EPILOGUE_EVENT_TYPES,
   MAX_SERVER_CALL_TOKEN_TTL_SECONDS,
+  MEMORY_LEARN_SCHEMA_RETRIES,
+  MEMORY_PASS_MAX_MS,
+  PASS_SERVER_CALL_PURPOSES,
+  SERVER_CALL_TOKEN_MAX_CHARS,
   RUNLESS_SERVER_CALL_PURPOSES,
   SERVER_CALL_AUDIENCE,
   SERVER_CALL_EPILOGUE_MARGIN_MS,
   SERVER_CALL_EPILOGUE_MAX_MS,
   SERVER_CALL_LIMITS,
+  SERVER_CALL_PURPOSES,
   SERVER_CALL_REASONING_EFFORT,
   SERVER_CALL_RESPONSE_FORMATS,
   SERVER_CALL_TOKEN_HEADER,
@@ -19,6 +24,9 @@ import {
   parseEventPayload,
   serverCallBoundToRun,
   serverCallClaimsSchema,
+  serverCallNamesPass,
+  serverCallOutputCap,
+  serverCallOutputCapFor,
   serverCallRequestSchema,
   type KobeEventType,
   type ServerCallClaims,
@@ -125,6 +133,7 @@ describe("server-call token", () => {
       "followups",
       "eval_judge",
       "skill_manifest",
+      "memory_learn",
     ]);
     expect(parse({ purpose: "eval_judge", max_output_tokens: 512 })).toBe(true);
     expect(
@@ -191,6 +200,144 @@ describe("server-call token", () => {
     });
     expect(SERVER_CALL_LIMITS.skill_manifest.max_message_chars).toBeGreaterThanOrEqual(100 * 1024);
     expect(SERVER_CALL_EPILOGUE_MAX_MS).toBe(30_000);
+  });
+});
+
+describe("memory_learn purpose (KOBE-390)", () => {
+  const LEARN: ServerCallClaims = {
+    ...CLAIMS,
+    purpose: "memory_learn",
+    pass_id: "b02b3c4d-5e6f-4a71-8293-a4b5c6d7e8f9",
+    max_output_tokens: 8192,
+  };
+  const parse = (claims: Record<string, unknown>) =>
+    serverCallClaimsSchema.safeParse(claims).success;
+
+  it("is a token purpose, run-bound, never an epilogue (ac-2)", () => {
+    expect(SERVER_CALL_TOKEN_PURPOSES).toContain("memory_learn");
+    expect(SERVER_CALL_PURPOSES as readonly string[]).not.toContain("memory_learn");
+    expect(RUNLESS_SERVER_CALL_PURPOSES as readonly string[]).not.toContain("memory_learn");
+    expect(serverCallBoundToRun("memory_learn")).toBe(true);
+    expect(Object.keys(EPILOGUE_EVENT_TYPES)).toEqual(["title", "followups"]);
+    expect(() =>
+      parseEventPayload("run.completed", { leaf_entry_id: null, epilogue: ["memory_learn"] }),
+    ).toThrow();
+  });
+
+  it("names its pass and bound run; no other purpose carries a pass_id", () => {
+    expect(PASS_SERVER_CALL_PURPOSES).toEqual(["memory_learn"]);
+    expect(parse(LEARN)).toBe(true);
+    const { pass_id: _p, ...noPass } = LEARN;
+    expect(parse(noPass)).toBe(false);
+    expect(parse({ ...LEARN, run_id: undefined })).toBe(false);
+    expect(parse({ ...LEARN, thread_id: undefined })).toBe(false);
+    expect(parse({ ...LEARN, pass_id: "not-a-uuid" })).toBe(false);
+    for (const p of ["title", "followups", "eval_judge"] as const) {
+      expect(serverCallNamesPass(p)).toBe(false);
+      expect(parse({ ...CLAIMS, purpose: p, max_output_tokens: 48, pass_id: LEARN.pass_id })).toBe(
+        false,
+      );
+    }
+  });
+
+  it("keeps the 30 s token cap (no 180 s token)", () => {
+    expect(MAX_SERVER_CALL_TOKEN_TTL_SECONDS).toBe(30);
+    expect(parse({ ...LEARN, exp: NOW + 30 })).toBe(true);
+    expect(parse({ ...LEARN, exp: NOW + 31 })).toBe(false);
+    expect(parse({ ...LEARN, exp: NOW + 180 })).toBe(false);
+  });
+
+  it("has its own limits: 384 KiB, 300,000 chars, 4 messages, 60 s, 100 %, one retry (ac-2)", () => {
+    expect(SERVER_CALL_LIMITS.memory_learn).toEqual({
+      max_output_tokens: 8192,
+      reasoning_max_output_tokens: 16_384,
+      timeout_ms: 60_000,
+      skip_at_percent: 100,
+      max_message_chars: 300_000,
+      max_body_bytes: 384 * 1024,
+      temperature: 0,
+    });
+    expect(MEMORY_LEARN_SCHEMA_RETRIES).toBe(1);
+    expect(MEMORY_PASS_MAX_MS).toBe(150_000);
+    expect(parse({ ...LEARN, max_output_tokens: 16_384 })).toBe(true);
+    expect(parse({ ...LEARN, max_output_tokens: 16_385 })).toBe(false);
+    // A 300,000-character message passes the shared request schema; five messages never do.
+    const msg = { role: "user", content: "x".repeat(300_000) };
+    const body = { model: LEARN.model, messages: [msg], max_tokens: 8192 };
+    expect(serverCallRequestSchema.safeParse(body).success).toBe(true);
+    expect(
+      serverCallRequestSchema.safeParse({ ...body, messages: Array(5).fill(BODY.messages[0]) })
+        .success,
+    ).toBe(false);
+  });
+
+  it("clamps the output cap to the catalog's maxOutputTokens", () => {
+    expect(serverCallOutputCap("memory_learn", false)).toBe(8192);
+    expect(serverCallOutputCapFor("memory_learn", false, null)).toBe(8192);
+    expect(serverCallOutputCapFor("memory_learn", true, undefined)).toBe(16_384);
+    expect(serverCallOutputCapFor("memory_learn", true, 4096)).toBe(4096);
+    expect(serverCallOutputCapFor("memory_learn", false, 32_000)).toBe(8192);
+    expect(serverCallOutputCapFor("title", false, 0)).toBe(1);
+  });
+
+  it("fits the token size cap with the longest claims the contract allows", () => {
+    const b64 = (s: string) => Math.ceil((Buffer.byteLength(s) * 4) / 3);
+    const header = JSON.stringify({ alg: "EdDSA", typ: "ksc2", kid: "k".repeat(22) });
+    const payload = JSON.stringify({
+      ...LEARN,
+      model: `${"p".repeat(64)}/${"m".repeat(191)}`,
+      max_output_tokens: 16_384,
+      jti: "j".repeat(128),
+    });
+    // kid: 16 bytes as base64url (keys.ts); Ed25519 signature: 86 base64url characters; two dots.
+    expect(b64(header) + b64(payload) + 86 + 2).toBeLessThanOrEqual(SERVER_CALL_TOKEN_MAX_CHARS);
+  });
+});
+
+describe("existing purposes are unchanged (KOBE-390 ac-3)", () => {
+  it("keeps title, followups, eval_judge and skill_manifest as they were", () => {
+    expect(SERVER_CALL_PURPOSES).toEqual(["title", "followups"]);
+    expect(SERVER_CALL_LIMITS.title).toEqual({
+      max_output_tokens: 64,
+      reasoning_max_output_tokens: 512,
+      timeout_ms: 15_000,
+      skip_at_percent: 100,
+      max_message_chars: 16_000,
+      max_body_bytes: 64 * 1024,
+      temperature: 0.2,
+    });
+    expect(SERVER_CALL_LIMITS.followups).toEqual({
+      max_output_tokens: 256,
+      reasoning_max_output_tokens: 768,
+      timeout_ms: 20_000,
+      skip_at_percent: 80,
+      max_message_chars: 16_000,
+      max_body_bytes: 64 * 1024,
+      temperature: 0.2,
+    });
+    expect(SERVER_CALL_LIMITS.eval_judge).toEqual({
+      max_output_tokens: 512,
+      reasoning_max_output_tokens: 2048,
+      timeout_ms: 60_000,
+      skip_at_percent: 100,
+      max_message_chars: 400_000,
+      max_body_bytes: 2 * 1024 * 1024,
+      temperature: 0,
+    });
+    expect(SERVER_CALL_LIMITS.skill_manifest).toEqual({
+      max_output_tokens: 1024,
+      reasoning_max_output_tokens: 3072,
+      timeout_ms: 60_000,
+      skip_at_percent: 100,
+      max_message_chars: 120_000,
+      max_body_bytes: 512 * 1024,
+      temperature: 0.2,
+    });
+    expect(Object.keys(SERVER_CALL_RESPONSE_FORMATS)).toEqual(["eval_judge", "memory_learn"]);
+    expect(SERVER_CALL_RESPONSE_FORMATS.eval_judge.json_schema.name).toBe("skill_eval_verdict");
+    expect(SERVER_CALL_EPILOGUE_MAX_MS).toBe(30_000);
+    // An epilogue token with no pass_id still validates exactly as before.
+    expect(serverCallClaimsSchema.safeParse(CLAIMS).success).toBe(true);
   });
 });
 

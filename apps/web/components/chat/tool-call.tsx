@@ -21,9 +21,10 @@ import { useSkillOfToolCall } from "./skill-badge";
 import { ApprovalSlot, ArtifactSlot, EgressBlocked, FileSlot } from "./slots";
 import { SkillDraftCard } from "./skill-draft-card";
 import { SAVE_SKILL_DRAFT_TOOL } from "../../lib/skills/draft-tool-result";
-import { OPEN_FILE_TOOL, PROPOSE_FILE_EDIT_TOOL } from "@kobe/protocol";
+import { OPEN_FILE_TOOL, PROPOSE_FILE_EDIT_TOOL, SHOW_MEMORY_ITEM_TOOL } from "@kobe/protocol";
 import { FileEditCard } from "../files/file-edit-card";
 import { OpenFileCard } from "../files/open-file-card";
+import { OpenInMemoryChip } from "./open-in-memory-chip";
 import styles from "./chat.module.css";
 
 const NO_ACTIVITY: ToolActivity = { egressBlocked: [], artifacts: [], files: [] };
@@ -286,6 +287,9 @@ function ToolCardSlots({
           done={result !== undefined}
           failed={failed}
         />
+      )}
+      {toolName === SHOW_MEMORY_ITEM_TOOL && (
+        <OpenInMemoryChip args={args} done={result !== undefined} failed={failed} />
       )}
     </div>
   );

@@ -339,6 +339,12 @@ function applyOne(run: LiveRun, event: KobeEvent): LiveRun {
       return next;
     case "thread.skill_updated":
       return { ...next, skillsUpdated: true };
+    // KOBE-390: learning-pass events follow the bound run's terminal event, so never reach here;
+    // the pass UI (a later ticket) reads them.
+    case "memory.pass.progress":
+    case "memory.pass.completed":
+    case "memory.pass.failed":
+      return next;
   }
 }
 

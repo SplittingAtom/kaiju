@@ -546,6 +546,51 @@ bifrost:
     requests: { cpu: 100m, memory: 128Mi }
     limits: { cpu: "1", memory: 512Mi }
 
+# Embedding models (KOBE-659). Every embedding call goes through the model gateway (Bifrost).
+# `local` runs a small CPU embedding model in the cluster, on by default: llama.cpp's llama-server
+# (MIT) with nomic-embed-text v1.5 (Apache-2.0, 768 dimensions, ~270 MB). The server registers it
+# in Bifrost as the keyless provider `kobe-local` (model `kobe-local/<model.name>`); only Bifrost
+# can reach it. Off: use an external model instead, added as a Site console provider (a LAN
+# Ollama or a hosted provider with a site key; a private address needs
+# bifrost.networkPolicy.extraEgress).
+embeddings:
+  local:
+    enabled: true
+    image:
+      repository: ghcr.io/ggml-org/llama.cpp
+      # A llama.cpp build tag, never `latest`; multi-arch index digest of the tag (update both).
+      tag: server-b12004
+      digest: sha256:b32890309c1a33a534a01b0b461e953dc2c5a6bac20213abcf48e22847a19c85
+    model:
+      # Served under this name (`/v1/models`); the gateway model is kobe-local/<name>.
+      name: nomic-embed-text
+      # GGUF file on the model volume.
+      file: nomic-embed-text-v1.5.f16.gguf
+      # true: the init container downloads `url` once onto the volume (needs egress to it: DNS and
+      # public HTTPS are allowed while this is on). false (air-gapped): the file must already be
+      # on the volume (persistence.existingClaim); the pod then has no egress at all.
+      download: true
+      url: https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/0188c9bf409793f810680a5a431e7b899c46104c/nomic-embed-text-v1.5.f16.gguf
+      # Checked on every start, downloaded or preloaded.
+      sha256: f7af6f66802f4df86eda10fe9bbcfc75c39562bed48ef6ace719a251cf1c2fdb
+    # Tokens per input (nomic-embed-text v1.5 was trained on 2048).
+    contextSize: 2048
+    # CPU threads for inference; keep at or below resources.limits.cpu.
+    threads: 2
+    persistence:
+      # Keeps the model across restarts (one download). Off: an emptyDir, downloaded every start.
+      enabled: true
+      size: 1Gi
+      storageClass: ""
+      # A claim you preloaded with the model file (air-gapped installs); no PVC is created.
+      existingClaim: ""
+    networkPolicy:
+      # More egress rules, e.g. to a model mirror on a private address while download is on.
+      extraEgress: []
+    resources:
+      requests: { cpu: "1", memory: 1Gi }
+      limits: { cpu: "2", memory: 1Gi }
+
 postgres:
   # external: bring your own Postgres 17 (+pg_trgm). cnpg: bundle a CloudNativePG Cluster (the
   # CloudNativePG operator must already be installed).

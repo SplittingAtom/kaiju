@@ -7,7 +7,7 @@ import {
 } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { recordModelUsage } from "@kobe/db";
+import { recordModelUsage, type UsageKind } from "@kobe/db";
 import {
   RUN_TOKEN_HEADER,
   SERVER_CALL_LIMITS,
@@ -82,7 +82,7 @@ async function handle(headers: IncomingHttpHeaders, url: string, raw: string, re
       teamId: claims.team_id,
       userId: claims.user_id,
       sandboxId: undefined,
-      kind: claims.purpose,
+      kind: claims.purpose as UsageKind,
       runId: claims.run_id,
       at: new Date(),
       route: "openai",

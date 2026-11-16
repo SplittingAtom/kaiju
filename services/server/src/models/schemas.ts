@@ -9,6 +9,7 @@ import {
   PROVIDER_MODEL_PATTERN,
 } from "@kobe/db";
 import { z } from "zod";
+import { LOCAL_EMBEDDING_PROVIDER_ID } from "./local-embedding.js";
 import { teamThinkingMaxSchema, thinkingPolicySchema } from "./thinking.js";
 
 /** Request bodies of the model admin API (KOBE-40). Errors never echo input (keys). */
@@ -71,6 +72,13 @@ export const addProviderSchema = z
   .superRefine((v, ctx) => {
     if (v.kind === "openai_compatible") {
       if (!v.id) ctx.addIssue({ code: "custom", message: "id is required for this kind" });
+      // KOBE-659: the chart's in-cluster embedding service is the gateway provider `kobe-local`.
+      if (v.id === LOCAL_EMBEDDING_PROVIDER_ID) {
+        ctx.addIssue({
+          code: "custom",
+          message: "id local is reserved for the in-cluster embedding service",
+        });
+      }
     } else if (v.id !== undefined && v.id !== v.kind) {
       ctx.addIssue({ code: "custom", message: "id must equal kind for this provider" });
     }

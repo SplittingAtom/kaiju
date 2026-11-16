@@ -38,7 +38,7 @@
  *   and, after pushing the file through workspace sync, sends `file.share` (a small frame: no own size
  *   entry in the table above); the server answers `file.share_result` and refuses `file.share` from a
  *   connection that did not announce the capability.
- *   `memory` ({@link CAPABILITY_MEMORY}, memory.ts): `memory.put` / `memory.read` / `memory.result` and
+ *   `memory` ({@link CAPABILITY_MEMORY}, memory.ts): `memory.put` / `memory.read` / `memory.show` (KOBE-399) / `memory.result` and
  *   `run.start.memory`; same refusal rule.
  *   `projects` ({@link CAPABILITY_PROJECTS}, projects.ts, KOBE-159): `project.commit` /
  *   `project.commit_result` and `run.start.project`; same refusal rule.

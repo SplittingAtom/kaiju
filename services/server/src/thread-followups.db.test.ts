@@ -7,7 +7,7 @@ import {
 } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { recordModelUsage, sql } from "@kobe/db";
+import { recordModelUsage, sql, type UsageKind } from "@kobe/db";
 import {
   SERVER_CALL_LIMITS,
   SERVER_CALL_PATH,
@@ -106,7 +106,7 @@ async function handle(headers: IncomingHttpHeaders, url: string, raw: string, re
       teamId: claims.team_id,
       userId: claims.user_id,
       sandboxId: undefined,
-      kind: claims.purpose,
+      kind: claims.purpose as UsageKind,
       runId: claims.run_id,
       at: new Date(),
       route: "openai",
@@ -125,7 +125,7 @@ async function handle(headers: IncomingHttpHeaders, url: string, raw: string, re
   answer(res, 200, {
     choices: [
       {
-        message: { role: "assistant", content: REPLIES[claims.purpose] },
+        message: { role: "assistant", content: REPLIES[claims.purpose as keyof typeof REPLIES] },
         finish_reason: "stop",
       },
     ],

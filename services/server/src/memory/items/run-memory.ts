@@ -218,17 +218,27 @@ interface Query {
  * current versions only, with their relevance parts and how many were eligible in all. The ORDER BY mirrors
  * `memoryScore` (select.ts) so the cut keeps the ones the selector would rank first.
  */
-function laneQuery(input: RunSemanticInput, lane: SelectLane | "policy"): SQL {
+function laneQuery(
+  input: Pick<RunSemanticInput, "teamId" | "userId">,
+  lane: SelectLane | "policy",
+  mode: "select" | "recall" = "select",
+): SQL {
   const scope: SemanticMemoryScope = lane === "policy" ? "site" : lane;
   const loc = locate(scope, input.teamId, input.userId);
   const personal = lane === "user" || lane === "portable";
-  const policy = lane === "policy";
-  const base = personal
-    ? sql`CASE WHEN i.kind = 'preference' THEN ${raw(PREFERENCE_BASE)} ELSE 0 END`
-    : sql`0`;
-  const filter = policy
-    ? sql`${loc.policy}`
-    : sql`NOT ${loc.policy} AND (i.pinned OR COALESCE(v.statement_tsv @@ p.q, false)
+  const recall = mode === "recall";
+  // `recall` (KOBE-399) ranks Policy like any lane and takes only items the query matched.
+  const policy = lane === "policy" && !recall;
+  const base =
+    personal && !recall
+      ? sql`CASE WHEN i.kind = 'preference' THEN ${raw(PREFERENCE_BASE)} ELSE 0 END`
+      : sql`0`;
+  const matched = sql`COALESCE(v.statement_tsv @@ p.q, false)`;
+  const filter = recall
+    ? sql`${lane === "policy" ? loc.policy : sql`NOT ${loc.policy}`} AND ${matched}`
+    : policy
+      ? sql`${loc.policy}`
+      : sql`NOT ${loc.policy} AND (i.pinned OR ${matched}
           ${personal ? sql`OR i.kind = 'preference'` : sql``})`;
   // Policy is taken whole, unranked. A lane is read in two steps to stay within 50 ms at the
   // scope limits (no index helps under FORCE RLS): every eligible row is ranked with the cheap
@@ -255,7 +265,7 @@ function laneQuery(input: RunSemanticInput, lane: SelectLane | "policy"): SQL {
               CROSS JOIN p
              WHERE ${loc.where} AND i.status = 'active' AND ${filter}
           ) x
-         ORDER BY x.pinned DESC,
+         ORDER BY ${recall ? sql`` : sql`x.pinned DESC,`}
                   x.quick + x.base + CASE WHEN x.sticky THEN ${raw(STICKY_BONUS)} ELSE 0 END
                     + ${raw(RECENCY_WEIGHT)} * GREATEST(0, 1 - x.age_days / ${raw(RECENCY_DAYS)}) DESC,
                   x.id
@@ -424,13 +434,14 @@ export async function buildPolicyOnly(
 
 async function readLanes(
   tx: KobeTx,
-  input: RunSemanticInput,
+  input: Pick<RunSemanticInput, "teamId" | "userId">,
   policy: boolean,
   lanes: readonly SelectLane[],
   q: Query,
+  mode: "select" | "recall" = "select",
 ): Promise<ItemRow[]> {
   const parts = [...(policy ? (["policy"] as const) : []), ...lanes].map(
-    (lane) => sql`SELECT * FROM (${laneQuery(input, lane)}) AS ${sql.raw(`l_${lane}`)}`,
+    (lane) => sql`SELECT * FROM (${laneQuery(input, lane, mode)}) AS ${sql.raw(`l_${lane}`)}`,
   );
   if (parts.length === 0) return [];
   // Every lane in one prepared statement (one round trip, one plan); query terms bound once.
@@ -441,6 +452,36 @@ async function readLanes(
                       ${uuidArray(q.sticky)} AS sticky, now() AS now)
     ${sql.join(parts, sql` UNION ALL `)}`,
   );
+}
+
+/** One item a `recall({ query })` found, with its relevance parts (KOBE-399, `recall-items.ts`). */
+export interface RecallRow {
+  readonly item: RunSemanticMemoryItem;
+  readonly textRank: number;
+  readonly ageDays: number;
+}
+
+/**
+ * The active items of the given lanes (and Site Policy when `policy`) whose statement matches one
+ * of `words`, best `LANE_READ_MAX` per lane by the cheap rank; read like {@link buildRunSemantic}'s
+ * lanes, in the caller's `withTeam()` transaction (the runner's own personal and portable rows,
+ * Workspace rows under RLS).
+ */
+export async function readRecallRows(
+  tx: KobeTx,
+  who: { readonly teamId: string; readonly userId: string },
+  words: readonly string[],
+  policy: boolean,
+  lanes: readonly SelectLane[],
+): Promise<RecallRow[]> {
+  if (words.length === 0) return [];
+  const q: Query = { words: [...words], message: new Set(), sticky: [] };
+  const rows = await readLanes(tx, who, policy, lanes, q, "recall");
+  return rows.map((r) => ({
+    item: r.lane === "policy" ? toItem("site", true, r) : toItem(r.lane, false, r),
+    textRank: Number(r.rank),
+    ageDays: Number(r.age_days),
+  }));
 }
 
 type LaneCandidates = Partial<Record<SelectLane, Candidate[]>>;

@@ -376,6 +376,30 @@ describe("recordModelUsage", () => {
     );
   });
 
+  it("takes a memory_learn row as a server call bound to a run (KOBE-389, for KOBE-390)", async () => {
+    const id = randomUUID();
+    const runId = randomUUID();
+    await recordModelUsage(app.db, [
+      record({ id, sandboxId: undefined, runId, kind: "memory_learn" }),
+    ]);
+    const [row] = await withTeam(app.db, teamA, (tx) =>
+      tx.select().from(runUsage).where(eq(runUsage.id, id)),
+    );
+    expect(row).toMatchObject({ kind: "memory_learn", sandboxId: null, runId, userId });
+    expect(row?.costUsd).toBeGreaterThan(0);
+    const shape = async (over: Partial<ModelUsageRecord>) =>
+      (
+        (await recordModelUsage(app.db, [record(over)]).catch((e: unknown) => e)) as {
+          cause?: { constraint?: string };
+        }
+      ).cause?.constraint;
+    // Never without its run, never with a sandbox.
+    expect(await shape({ kind: "memory_learn", sandboxId: undefined, runId: undefined })).toBe(
+      "run_usage_kind_shape",
+    );
+    expect(await shape({ kind: "memory_learn", runId })).toBe("run_usage_kind_shape");
+  });
+
   it("adds the kind CHECKs NOT VALID: no scan of the ledger under the migration's lock (0099)", async () => {
     const res = await app.db.execute<{ conname: string; convalidated: boolean }>(sql`
       SELECT conname, convalidated FROM pg_constraint

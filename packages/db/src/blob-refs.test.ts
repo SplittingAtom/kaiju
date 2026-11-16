@@ -69,6 +69,8 @@ const KEY_LIKE = /(^|_)(key|ref|blob_ref|blob_key|object_key)$/;
 const NOT_OBJECT_KEYS: Record<string, string> = {
   "events.ref": "a reference to the event's subject, not an object",
   "jwks.public_key": "a signing key",
+  "memory_proposals.candidate_ref": "a memory candidate's id (KOBE-389)",
+  "memory_proposals.item_ref": "a semantic memory item's id (KOBE-389)",
   "jwks.private_key": "a signing key (encrypted)",
   "passkeys.public_key": "a WebAuthn credential key",
   "rate_limits.key": "a rate-limit bucket name",

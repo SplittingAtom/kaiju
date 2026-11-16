@@ -5,6 +5,7 @@ import {
   CAPABILITY_NOTEBOOKS,
   CAPABILITY_FILES,
   CAPABILITY_MEMORY,
+  CAPABILITY_SEMANTIC_MEMORY,
   CAPABILITY_PROJECTS,
   CAPABILITY_SKILL_DRAFTS,
   CAPABILITY_TRACE_SPANS,
@@ -55,7 +56,14 @@ import { AllowedArtifactCalls } from "../artifacts/allowed.js";
 import { putArtifact } from "../artifacts/put.js";
 import { shareFile } from "../files/share.js";
 import { onProjectCommit } from "./project-commit.js";
-import { putMemory, readMemory, type MemoryRefusal, type MemoryReply } from "../memory/agent.js";
+import {
+  putMemory,
+  readMemory,
+  showMemory,
+  type MemoryRefusal,
+  type MemoryReply,
+} from "../memory/agent.js";
+import { RecalledItems } from "../memory/recalled.js";
 import { decidePolicyCheck, denyFrame } from "./policy-check.js";
 import type { ConnectionRegistry, RegisteredConnection } from "./registry.js";
 import { activeLeasedRuns, endRunInTx, type InterruptCause } from "./run-state.js";
@@ -183,6 +191,8 @@ export class SandboxConnection implements RegisteredConnection {
   readonly #skillDraftSaves = { count: 0 };
   /** Aborts pending project-memory approvals when the connection ends. */
   readonly #memoryAbort = new AbortController();
+  /** Saved memories this connection's `recall` answers named, per run (KOBE-399). */
+  readonly #recalled = new RecalledItems();
   readonly #deniedBuckets = new Map<string, { tokens: number; at: number }>();
   readonly #delivery: CommandDelivery;
   /** `notebook.output` frames of this connection's running executions (KOBE-464). */
@@ -577,6 +587,9 @@ export class SandboxConnection implements RegisteredConnection {
         return;
       case "memory.read":
         this.#onMemoryRead(frame);
+        return;
+      case "memory.show":
+        this.#onMemoryShow(frame);
         return;
       case "web_search.query":
         this.#onLegacyWebSearch(frame);
@@ -1296,6 +1309,81 @@ export class SandboxConnection implements RegisteredConnection {
       runId: frame.run_id,
       threadId: frame.thread_id,
       input: frame.input,
+      refused: audit,
+    })
+      .then((reply) => {
+        // KOBE-399: what this recall named may be shown with `show_memory_item` in this run.
+        if (reply.ok && reply.op === "read" && reply.items !== undefined)
+          this.#recalled.add(frame.run_id, reply.items);
+        answer(reply);
+      })
+      .finally(() => {
+        this.#memoryOps -= 1;
+      });
+  }
+
+  /**
+   * `memory.show` (KOBE-399, `show_memory_item`): a read, bound to the allowed call like
+   * `memory.read`; needs both `memory` and `semantic_memory`. `showMemory` answers only for an item
+   * this run was given or recalled, and writes nothing.
+   */
+  #onMemoryShow(frame: Extract<SandboxToServerFrame, { type: "memory.show" }>): void {
+    const answer = (reply: MemoryReply) =>
+      this.send({ v: 1, type: "memory.result", request_id: frame.request_id, ...reply });
+    const audit = (reason: MemoryRefusal | "capability_missing" | "input_mismatch") =>
+      this.#ctx.auditMemoryRefused(this.target, this.sandboxId, {
+        op: "read",
+        reason,
+        runId: frame.run_id,
+        toolCallId: frame.tool_call_id,
+      });
+    const refuse = (reason: Parameters<typeof audit>[0], message: string) => {
+      audit(reason);
+      answer({ ok: false, error: { code: "not_allowed", message } });
+    };
+    if (!this.hasCapability(CAPABILITY_MEMORY) || !this.hasCapability(CAPABILITY_SEMANTIC_MEMORY)) {
+      refuse("capability_missing", "This sandbox did not announce semantic memory.");
+      return;
+    }
+    const check = this.#checkToolRun(frame.run_id, frame.thread_id, "memory.show");
+    if (check === "violation") return;
+    if (check === "ended") {
+      refuse("run_not_active", "The run has ended.");
+      return;
+    }
+    const verdict = this.#allowedArtifacts.check(
+      frame.run_id,
+      frame.tool_call_id,
+      "show_memory_item",
+      frame.input,
+    );
+    if (verdict !== "ok") {
+      refuse(
+        verdict === "input_mismatch" ? "input_mismatch" : "not_allowed",
+        verdict === "input_mismatch"
+          ? "The call differs from the one that was allowed."
+          : "This tool call was not allowed for this tool.",
+      );
+      return;
+    }
+    if (this.#memoryOps >= this.#ctx.tuning.maxPendingArtifactPuts) {
+      answer({
+        ok: false,
+        error: {
+          code: "storage_failed",
+          message: "Too many memory requests are waiting. Try again.",
+        },
+      });
+      return;
+    }
+    this.#memoryOps += 1;
+    void showMemory(this.#ctx.memory, {
+      teamId: this.target.teamId,
+      userId: this.target.userId,
+      runId: frame.run_id,
+      threadId: frame.thread_id,
+      input: frame.input,
+      recalled: (id) => this.#recalled.scopeOf(frame.run_id, id),
       refused: audit,
     })
       .then(answer)

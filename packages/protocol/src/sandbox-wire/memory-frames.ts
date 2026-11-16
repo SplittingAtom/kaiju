@@ -4,8 +4,10 @@ import {
   memoryFailFields,
   memoryPutOkFields,
   memoryReadOkFields,
+  memoryShowOkFields,
   recallInputSchema,
   rememberInputSchema,
+  showMemoryItemInputSchema,
 } from "../memory.js";
 import { SANDBOX_WIRE_VERSION } from "./connection.js";
 
@@ -33,9 +35,20 @@ export const memoryReadFrameSchema = frame("memory.read", {
   input: recallInputSchema,
 });
 
+/** Sandbox -> server: a `show_memory_item` call (KOBE-399). Answered by `memory.result`. */
+export const memoryShowFrameSchema = frame("memory.show", {
+  request_id: idSchema,
+  run_id: uuidSchema,
+  thread_id: uuidSchema,
+  /** The call kobe-policy let through (D-3), like `memory.read`. */
+  tool_call_id: idSchema,
+  input: showMemoryItemInputSchema,
+});
+
 /** Server -> sandbox; `error.code` is open (known: `MEMORY_ERROR_CODES`). */
 export const memoryResultFrameSchema = z.union([
   frame("memory.result", { request_id: idSchema, ...memoryPutOkFields }),
   frame("memory.result", { request_id: idSchema, ...memoryReadOkFields }),
+  frame("memory.result", { request_id: idSchema, ...memoryShowOkFields }),
   frame("memory.result", { request_id: idSchema, ...memoryFailFields }),
 ]);

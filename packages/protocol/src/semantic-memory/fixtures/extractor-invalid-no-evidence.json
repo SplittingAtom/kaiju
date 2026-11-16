@@ -1,0 +1,18 @@
+{
+  "candidates": [
+    {
+      "statement": "Chris prefers revenue tables in EUR with thousands separators.",
+      "kind": "preference",
+      "suggested_scope": "user",
+      "portable": true,
+      "project_specific": false,
+      "source": "stated",
+      "operation": "add",
+      "target_id": null,
+      "confidence": 0.92,
+      "rationale": "The person asked for EUR twice and corrected a USD table.",
+      "evidence": []
+    }
+  ],
+  "skill_hints": []
+}

@@ -501,6 +501,17 @@ describe("server calls: refused (KOBE-234 ac-2)", () => {
     expect(hits).toEqual([]);
   });
 
+  it("admits a memory_learn token now that its usage kind exists (KOBE-389)", async () => {
+    const learn = serverToken({
+      purpose: "memory_learn",
+      pass_id: randomUUID(),
+      max_output_tokens: 4096,
+    });
+    const r = await post("/v1/chat/completions", asServer(learn), { ...BODY, max_tokens: 4096 });
+    expect(r.status).toBe(200);
+    expect(hits).toHaveLength(1);
+  });
+
   it("refuses an expired token and a replay of a used one", async () => {
     const expired = serverToken({ iat: now() - 20, exp: now() - 1 });
     expect((await post("/v1/chat/completions", asServer(expired))).code).toBe(

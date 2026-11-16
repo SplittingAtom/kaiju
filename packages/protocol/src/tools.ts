@@ -170,6 +170,8 @@ export const BUILTIN_TOOLS: Readonly<Record<string, BuiltinTool>> = {
   },
   remember: { source: "kobe", risk: "write", scope: "kobe", open_world: false },
   recall: { source: "kobe", risk: "read", scope: "kobe", open_world: false },
+  /** KOBE-399: shows one saved memory the run was given or recalled; writes nothing. */
+  show_memory_item: { source: "kobe", risk: "read", scope: "kobe", open_world: false },
 };
 
 /**

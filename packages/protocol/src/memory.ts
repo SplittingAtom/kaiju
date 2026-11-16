@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { idSchema, timestampSchema, utf8ByteLength, uuidSchema } from "./common.js";
-import { runSemanticMemorySchema } from "./semantic-memory/run-context.js";
+import { semanticMemoryStatusSchema } from "./semantic-memory/fields.js";
+import {
+  runSemanticMemoryItemSchema,
+  runSemanticMemorySchema,
+} from "./semantic-memory/run-context.js";
 
 /**
  * File memory contract (KOBE-153 = 56a of KOBE-56, spec D24). Additive: an agent without
@@ -19,7 +23,8 @@ import { runSemanticMemorySchema } from "./semantic-memory/run-context.js";
  * `memory.updated`, whose payload is enough for Undo ({@link undoMemoryAction}). A `project` write
  * is held for approval (the answer is `status: "pending_approval"`; the approval is the normal
  * HMAC-signed one over run_id, tool_call_id and canonical input) and applied, with
- * `memory.updated`, only once approved. `recall` is a read (`memory.read`), never needs approval.
+ * `memory.updated`, only once approved. `recall` is a read (`memory.read`), never needs approval;
+ * `show_memory_item` (`memory.show`, KOBE-399) is a read too.
  *
  * Switches (D24): booleans {@link memorySettingsSchema} `memory_enabled` and
  * `project_memory_enabled`, kept per team (team admins) and site-wide (site admins). The
@@ -45,6 +50,8 @@ export const MEMORY_PATH_MAX_DEPTH = 4;
 export const MEMORY_QUERY_MAX = 500;
 /** Most files a `recall` answer lists. */
 export const MEMORY_RECALL_MAX_FILES = 20;
+/** Most saved memories (semantic items) a `recall({ query })` answer carries (KOBE-399, A7: @8). */
+export const MEMORY_RECALL_MAX_ITEMS = 8;
 
 const SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 /**
@@ -114,11 +121,23 @@ export const recallInputSchema = z
   });
 export type RecallInput = z.infer<typeof recallInputSchema>;
 
-export const MEMORY_TOOLS = ["remember", "recall"] as const;
+/**
+ * `show_memory_item({ id })` (KOBE-399, SM26): read-only. The server answers only for an item id
+ * this run was given (`run.start.memory.semantic`, its run records) or that an earlier `recall`
+ * answer of the run returned; anything else is `not_found`. The web shows an "Open in Memory"
+ * chip under a call that succeeded, linking to the item where archive and Undo live.
+ */
+export const SHOW_MEMORY_ITEM_TOOL = "show_memory_item";
+export const showMemoryItemInputSchema = z.strictObject({ id: uuidSchema });
+export type ShowMemoryItemInput = z.infer<typeof showMemoryItemInputSchema>;
+
+/** Denied together when an agent version's memory setting is `off` (KOBE-646). */
+export const MEMORY_TOOLS = ["remember", "recall", SHOW_MEMORY_ITEM_TOOL] as const;
 export type MemoryToolName = (typeof MEMORY_TOOLS)[number];
 export const memoryToolInputSchema = {
   remember: rememberInputSchema,
   recall: recallInputSchema,
+  show_memory_item: showMemoryItemInputSchema,
 } as const;
 
 // ----------------------------------------------------------------------------- results
@@ -161,6 +180,23 @@ export const memoryReadOkFields = {
   files: z.array(memoryReadFileSchema).max(MEMORY_RECALL_MAX_FILES),
   /** More matches than {@link MEMORY_RECALL_MAX_FILES}. */
   truncated: z.boolean(),
+  /**
+   * KOBE-399: saved memories (active semantic items of the scopes enabled for this run) matching a
+   * `recall({ query })` without `scope`, best first, shown before the Notes files. Absent when none
+   * matched, for path reads, listings, a `scope`d query, an old server, and runs whose agent
+   * version's memory setting is `notes_only` or `off`. Read-only: the agent never writes items.
+   */
+  items: z.array(runSemanticMemoryItemSchema).max(MEMORY_RECALL_MAX_ITEMS).optional(),
+} as const;
+/** `show_memory_item`'s answer: the item as saved now, with its status (it may be archived). */
+export const memoryShownItemSchema = runSemanticMemoryItemSchema.extend({
+  status: semanticMemoryStatusSchema,
+});
+export type MemoryShownItem = z.infer<typeof memoryShownItemSchema>;
+export const memoryShowOkFields = {
+  ok: z.literal(true),
+  op: z.literal("show"),
+  item: memoryShownItemSchema,
 } as const;
 export const memoryFailFields = { ok: z.literal(false), error: memoryErrorSchema } as const;
 
@@ -180,12 +216,19 @@ export const memoryToolsRequestSchema = z.union([
     tool_call_id: idSchema,
     input: recallInputSchema,
   }),
+  z.strictObject({
+    id: idSchema,
+    op: z.literal("memory.show"),
+    tool_call_id: idSchema,
+    input: showMemoryItemInputSchema,
+  }),
 ]);
 export type MemoryToolsRequest = z.infer<typeof memoryToolsRequestSchema>;
 
 export const memoryToolsResponseSchema = z.union([
   z.strictObject({ id: idSchema, ...memoryPutOkFields }),
   z.strictObject({ id: idSchema, ...memoryReadOkFields }),
+  z.strictObject({ id: idSchema, ...memoryShowOkFields }),
   z.strictObject({ id: idSchema, ...memoryFailFields }),
 ]);
 export type MemoryToolsResponse = z.infer<typeof memoryToolsResponseSchema>;

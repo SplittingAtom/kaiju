@@ -1003,6 +1003,121 @@
         }
       }
     },
+    "embeddings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "local": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "image": {
+              "type": "object",
+              "required": ["digest"],
+              "additionalProperties": false,
+              "properties": {
+                "repository": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "tag": {
+                  "type": "string",
+                  "minLength": 1,
+                  "not": {
+                    "pattern": "^latest$"
+                  },
+                  "description": "A pinned version tag, never latest."
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                }
+              }
+            },
+            "model": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,199}$"
+                },
+                "file": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$"
+                },
+                "download": {
+                  "type": "boolean"
+                },
+                "url": {
+                  "type": "string",
+                  "pattern": "^https?://[^\\s'\"$`\\\\]+$"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            },
+            "contextSize": {
+              "type": "integer",
+              "minimum": 512,
+              "maximum": 8192
+            },
+            "threads": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 64
+            },
+            "persistence": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "size": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9]+(\\.[0-9]+)?(m|Ki|Mi|Gi|Ti)?$"
+                    },
+                    {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  ]
+                },
+                "storageClass": {
+                  "type": "string"
+                },
+                "existingClaim": {
+                  "type": "string"
+                }
+              }
+            },
+            "networkPolicy": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "extraEgress": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            },
+            "resources": {
+              "$ref": "#/$defs/resources"
+            }
+          }
+        }
+      }
+    },
     "postgres": {
       "type": "object",
       "additionalProperties": false,
