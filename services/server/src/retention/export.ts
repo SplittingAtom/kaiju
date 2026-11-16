@@ -9,6 +9,7 @@ import { readOffloadedJson } from "../threads/offloaded-body.js";
 import { logger } from "../logger.js";
 import { personalMemoryForExport } from "../memory/export.js";
 import { countSemanticMemoryForExport, semanticMemoryForExport } from "../memory/items-export.js";
+import { learningExportJson } from "../memory/learning-export.js";
 import { readableProjectsForExport, projectObject } from "./export-projects.js";
 import {
   entryMarkdown,
@@ -43,6 +44,9 @@ import { artifactExtension, readArtifactBytes } from "../artifacts/serve.js";
  *  - `memory/<path>`: the user's personal memory files, current versions (KOBE-155);
  *  - `memory-items.json`: the user's own semantic memories, their `user` items in this team and
  *    their portable items, with versions (KOBE-649, `memory/items-export.ts`);
+ *  - `memory-learning.json`: the user's Learn from this chat records in this team: passes,
+ *    candidates, dismissals, watermarks, Workspace proposals and project suggestions they made
+ *    (KOBE-651, `memory/learning-export.ts`);
  *  - `projects/<slug>/commits.json` and `projects/<slug>/head/<path>`: each project the user
  *    may read, its commit list and head files (KOBE-579, GV5; `export-projects.ts`);
  *  - `feedback.json`: the user's own answer ratings in this team (KOBE-275), with their comments,
@@ -377,6 +381,11 @@ This archive holds the conversations you own in one Kobe team.
   yours each came from, and quotes of your own messages. Memories the workspace shares, Site
   memories and anything someone else wrote are not included; an item's \`notes\` says when
   something was left out.
+- \`memory-learning.json\`: what Learn from this chat kept for you in this workspace: your
+  learning passes, the candidates they found for you (saved, dismissed, expired or still open),
+  your dismissals and how far each conversation was read, and the workspace proposals and project
+  suggestions you made with their outcome. Quotes are kept only from your own messages in your own
+  conversations; who decided is not included.
 - \`projects/<slug>/\`: each project you can read: \`commits.json\` (its history, newest first) and
   \`head/\` (its current files).
 - \`files/<file id>/<name>\`: the files you uploaded to the conversation or the assistant shared.
@@ -613,6 +622,13 @@ export async function* exportZip(
     yield* drain();
   }
   items.push(strToU8(`${firstItem ? "" : "\n  "}]\n}\n`), true);
+  // KOBE-651: the person's Learn from this chat records.
+  const learning = file("memory-learning.json");
+  for await (const chunk of learningExportJson(db, viewer)) {
+    learning.push(strToU8(chunk));
+    yield* drain();
+  }
+  learning.push(new Uint8Array(0), true);
   const feedback = file("feedback.json");
   feedback.push(strToU8('{\n  "feedback": ['));
   let afterFeedback: string | null = null;
