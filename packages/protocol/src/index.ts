@@ -32,6 +32,7 @@ export * from "./run-orchestrator.js";
 export * from "./session-token.js";
 export * from "./run-token.js";
 export * from "./server-call.js";
+export * from "./server-call-embeddings.js";
 export * from "./tracing.js";
 export * from "./sandbox-wire/index.js";
 export * from "./ui-preferences.js";
