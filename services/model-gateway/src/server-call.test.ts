@@ -149,6 +149,8 @@ let admitted: CallContext[] = [];
 let gate: CallGate = OPEN_GATE;
 let runMatches = true;
 let runChecks: unknown[] = [];
+let passRunning = true;
+let passChecks: unknown[] = [];
 let shim: Server;
 let base = "";
 
@@ -160,6 +162,8 @@ beforeEach(async () => {
   gate = OPEN_GATE;
   runMatches = true;
   runChecks = [];
+  passRunning = true;
+  passChecks = [];
   vk = `sk-bf-${randomUUID()}`;
   principal = {
     member: true,
@@ -189,6 +193,10 @@ beforeEach(async () => {
       runMatches: async (c) => {
         runChecks.push(c);
         return runMatches;
+      },
+      passRunning: async (c) => {
+        passChecks.push(c);
+        return passRunning;
       },
       limiter: new CallLimiter({ perSandbox: 2, total: 4 }),
       rate: new RequestRate({ burst: 1000, perSecond: 1000 }),
@@ -457,6 +465,156 @@ describe("server calls: the eval judge (KOBE-326 ac-2)", () => {
   });
 });
 
+describe("server calls: the learning pass (KOBE-391)", () => {
+  const pass = randomUUID();
+  const learnToken = (over: Partial<ServerCallClaims> = {}) =>
+    serverToken({ purpose: "memory_learn", pass_id: pass, max_output_tokens: 8192, ...over });
+  const learnBody = (extra: object = {}) => ({
+    model: MODEL,
+    messages: [
+      { role: "system", content: "Extract durable facts and preferences as candidates." },
+      { role: "user", content: "the thread up to its leaf" },
+    ],
+    max_tokens: 8192,
+    temperature: 0,
+    response_format: SERVER_CALL_RESPONSE_FORMATS.memory_learn,
+    ...extra,
+  });
+  const authorCheck = {
+    teamId: team,
+    runId: run,
+    threadId: thread,
+    userId: user,
+    authorOnly: true,
+  };
+  const passCheck = { teamId: team, passId: pass, threadId: thread, userId: user };
+
+  // ac-3, whatever the usage kinds: the route check comes before the purpose's.
+  it("refuses /v1/embeddings and every other route to a learning token", async () => {
+    for (const path of ["/v1/embeddings", "/v1/responses", "/anthropic/v1/messages"]) {
+      const r = await post(path, asServer(learnToken()), { model: MODEL, input: "x" });
+      expect([r.status, r.code], path).toEqual([403, "server_call_route_refused"]);
+    }
+    expect(hits).toEqual([]);
+  });
+
+  it("a token never outlives 30 s, and an expired one is refused", async () => {
+    expect(() => learnToken({ iat: now(), exp: now() + 31 })).toThrow();
+    const expired = learnToken({ iat: now() - 31, exp: now() - 1 });
+    const r = await post("/v1/chat/completions", asServer(expired), learnBody());
+    expect([r.status, r.code]).toEqual([401, "invalid_server_call_token"]);
+    expect(hits).toEqual([]);
+  });
+
+  it("no sandbox or run token can make a learning call (ac-2)", async () => {
+    for (const t of [sessionToken(), runToken()]) {
+      const r = await post("/v1/chat/completions", asServer(t), learnBody());
+      expect([r.status, r.code]).toEqual([401, "invalid_server_call_token"]);
+    }
+    for (const extra of [
+      { authorization: `Bearer ${sessionToken()}` },
+      { [RUN_TOKEN_HEADER]: runToken() },
+    ]) {
+      const r = await post(
+        "/v1/chat/completions",
+        { ...asServer(learnToken()), ...extra },
+        learnBody(),
+      );
+      expect([r.status, r.code]).toEqual([400, "ambiguous_credentials"]);
+    }
+    expect(hits).toEqual([]);
+  });
+
+  it("forwards an extractor call, checks the run against the thread's author, records memory_learn", async () => {
+    const body = learnBody();
+    const r = await post("/v1/chat/completions", asServer(learnToken()), body);
+    expect(r.status).toBe(200);
+    expect(JSON.parse(hits[0]?.body ?? "{}")).toEqual(body);
+    expect(runChecks).toEqual([authorCheck]);
+    expect(passChecks).toEqual([passCheck]);
+    expect(admitted.at(-1)).toMatchObject({ purpose: "memory_learn", outputAllowance: 8192 });
+    await expect.poll(() => records.length).toBe(1);
+    expect(records[0]).toMatchObject({
+      purpose: "memory_learn",
+      teamId: team,
+      userId: user,
+      sandboxId: undefined,
+      runId: run,
+      model: MODEL,
+    });
+  });
+
+  it("refuses a run that is not the author's (a shared thread's other member) (ac-2)", async () => {
+    runMatches = false;
+    const r = await post("/v1/chat/completions", asServer(learnToken()), learnBody());
+    expect([r.status, r.code]).toEqual([403, "server_call_run_mismatch"]);
+    expect(runChecks).toEqual([authorCheck]);
+    expect(passChecks).toEqual([]);
+    expect(hits).toEqual([]);
+  });
+
+  it("refuses a token whose pass is not running on this thread for this member", async () => {
+    passRunning = false;
+    const r = await post("/v1/chat/completions", asServer(learnToken()), learnBody());
+    expect([r.status, r.code]).toEqual([403, "server_call_pass_mismatch"]);
+    expect(passChecks).toEqual([passCheck]);
+    expect(admitted).toEqual([]);
+    expect(hits).toEqual([]);
+  });
+
+  it("refuses a model other than the token's, or one the Workspace has not enabled (no fallback)", async () => {
+    const other = await post(
+      "/v1/chat/completions",
+      asServer(learnToken()),
+      learnBody({ model: "openai/other" }),
+    );
+    expect([other.status, other.code]).toEqual([400, "server_call_body_refused"]);
+    principal = { ...principal, enabledModels: ["openai/other"] };
+    const disabled = await post("/v1/chat/completions", asServer(learnToken()), learnBody());
+    expect([disabled.status, disabled.code]).toEqual([403, "model_not_enabled"]);
+    expect(hits).toEqual([]);
+  });
+
+  it("clamps the output to the model's catalog maxOutputTokens", async () => {
+    principal = { ...principal, outputCaps: { [MODEL]: 4096 } };
+    const over = await post("/v1/chat/completions", asServer(learnToken()), learnBody());
+    expect([over.status, over.code]).toEqual([400, "server_call_body_refused"]);
+    const ok = await post(
+      "/v1/chat/completions",
+      asServer(learnToken({ max_output_tokens: 4096 })),
+      learnBody({ max_tokens: 4096 }),
+    );
+    expect(ok.status).toBe(200);
+    expect(hits).toHaveLength(1);
+  });
+
+  it("refuses a body over 384 KiB though its message is within 300,000 characters", async () => {
+    const wide = "é".repeat(200_000);
+    const r = await post(
+      "/v1/chat/completions",
+      asServer(learnToken()),
+      learnBody({ messages: [{ role: "user", content: wide }] }),
+    );
+    expect(r.status).toBe(413);
+    expect(hits).toEqual([]);
+  });
+
+  it("refuses at 100 % of a budget line (402, final)", async () => {
+    gate = {
+      admit: async () => ({
+        ok: false,
+        status: 402,
+        code: "budget_exhausted",
+        message: "used up",
+      }),
+    };
+    const r = await post("/v1/chat/completions", asServer(learnToken()), learnBody());
+    expect([r.status, r.code]).toEqual([402, "budget_exhausted"]);
+    expect(admitted.at(-1)).toMatchObject({ purpose: "memory_learn" });
+    expect(hits).toEqual([]);
+  });
+});
+
 describe("server calls: refused (KOBE-234 ac-2)", () => {
   it("a server-call token is no sandbox credential (API-key headers or the run-token header)", async () => {
     const t = serverToken();
@@ -499,17 +657,6 @@ describe("server calls: refused (KOBE-234 ac-2)", () => {
     const r = await post("/v1/chat/completions?key=k", asServer());
     expect([r.status, r.code]).toEqual([400, "ambiguous_credentials"]);
     expect(hits).toEqual([]);
-  });
-
-  it("admits a memory_learn token now that its usage kind exists (KOBE-389)", async () => {
-    const learn = serverToken({
-      purpose: "memory_learn",
-      pass_id: randomUUID(),
-      max_output_tokens: 4096,
-    });
-    const r = await post("/v1/chat/completions", asServer(learn), { ...BODY, max_tokens: 4096 });
-    expect(r.status).toBe(200);
-    expect(hits).toHaveLength(1);
   });
 
   it("refuses an expired token and a replay of a used one", async () => {

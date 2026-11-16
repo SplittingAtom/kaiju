@@ -26,6 +26,8 @@ export type Resolution =
       readonly enabledModels: ReadonlySet<string>;
       /** Those the catalog marks as reasoning (server calls' headroom, KOBE-219). */
       readonly reasoningModels: ReadonlySet<string>;
+      /** The catalog's `max_output_tokens` per enabled model, where it names one (KOBE-391). */
+      readonly outputCaps: ReadonlyMap<string, number>;
       /** Thinking settings of the enabled models with a control, team narrowing applied. */
       readonly thinking: ReadonlyMap<string, ThinkingPolicy>;
       /** An Orbit eval Job's token: its calls have no run (default thinking level, S4). */
@@ -104,6 +106,7 @@ export class PrincipalCache {
         virtualKey: this.box.open(p.virtualKey.valueEnc, virtualKeyContext(teamId, userId)),
         enabledModels: new Set(p.enabledModels),
         reasoningModels: new Set(p.reasoningModels ?? []),
+        outputCaps: new Map(Object.entries(p.outputCaps ?? {})),
         thinking: thinkingPolicies(p.thinking ?? []),
         eval: p.eval === true,
       };

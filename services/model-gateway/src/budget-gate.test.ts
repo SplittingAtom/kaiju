@@ -52,7 +52,7 @@ describe("BudgetGate: server calls (KOBE-234)", () => {
     lines: [line({ limit: 1_000, spent })],
     requestsPerMinute: 1_000,
   });
-  const server = (user: string, purpose: "title" | "followups"): CallContext => ({
+  const server = (user: string, purpose: "title" | "followups" | "memory_learn"): CallContext => ({
     ...call(user),
     sandboxId: undefined,
     runId: randomUUID(),
@@ -116,6 +116,18 @@ describe("BudgetGate: server calls (KOBE-234)", () => {
     // Titles and sandbox calls are judged on the full limit.
     await g.admit(server(randomUUID(), "title"));
     expect(seen[1]?.[0]).toMatchObject({ limit: 1_000, limitExact: "1000.5" });
+  });
+
+  it("refuses a learning pass only at 100 %, as budget_exhausted (KOBE-391 ac-1)", async () => {
+    const { g } = gate(() => at(1_000));
+    expect(await g.admit(server(randomUUID(), "memory_learn"))).toMatchObject({
+      ok: false,
+      status: 402,
+      code: "budget_exhausted",
+    });
+    // 80 % (where follow-ups stop) is no soft limit for it.
+    const { g: under } = gate(() => at(800));
+    expect(await under.admit(server(randomUUID(), "memory_learn"))).toMatchObject({ ok: true });
   });
 
   it("stops titles at 100 % like any call", async () => {

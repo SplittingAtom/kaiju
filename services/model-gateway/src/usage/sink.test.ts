@@ -58,6 +58,40 @@ describe("usageRecordOf", () => {
       usageRecordOf(call({ sandboxId: undefined, runId, purpose: "followups" })),
     ).toMatchObject({ kind: "followups", runId, sandboxId: undefined });
   });
+
+  it("never records a server call whose purpose is no usage kind as eval or run (KOBE-391)", () => {
+    // A purpose the protocol may gain before `run_usage.kind` does (e.g. a future `memory_embed`).
+    const unknown = call({ sandboxId: undefined, purpose: "memory_embed" as never });
+    expect(usageRecordOf(unknown)).toBeUndefined();
+    expect(usageRecordOf({ ...unknown, eval: true })).toBeUndefined();
+  });
+});
+
+describe("DbUsageSink: a purpose that is no usage kind (KOBE-391)", () => {
+  it("drops the row and logs an error instead of writing it as eval or run", async () => {
+    const errors: unknown[] = [];
+    const log = pino(
+      { level: "error" },
+      { write: (line: string) => errors.push(JSON.parse(line)) },
+    );
+    const writes: ModelUsageRecord[][] = [];
+    const sink = new DbUsageSink({
+      logger: log,
+      flushMs: 60_000,
+      write: async (rows) => {
+        writes.push([...rows]);
+        return rows.length;
+      },
+    });
+    sink.record(call({ sandboxId: undefined, purpose: "memory_embed" as never, eval: true }));
+    expect(sink.pending).toBe(0);
+    await sink.flush();
+    expect(writes).toEqual([]);
+    expect(errors).toEqual([
+      expect.objectContaining({ purpose: "memory_embed", msg: expect.stringContaining("dropped") }),
+    ]);
+    await sink.close();
+  });
 });
 
 describe("DbUsageSink", () => {

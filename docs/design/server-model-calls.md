@@ -39,8 +39,15 @@ catalog's `maxOutputTokens` (`serverCallOutputCapFor`), 60 s, messages up to 300
 384 KiB body, temperature 0, refused at 100 %, TTL 30 s like every token, one retry when the reply
 fails the extractor schema (`SERVER_CALL_RESPONSE_FORMATS.memory_learn`,
 `packages/protocol/src/semantic-memory/learning.ts`). Progress reaches the thread as
-`memory.pass.*` events on the bound run, after its terminal event. Until `run_usage.kind` can
-record `memory_learn`, the gateway refuses the purpose (403 `server_call_purpose_unsupported`).
+`memory.pass.*` events on the bound run, after its terminal event. The gateway (KOBE-391) checks
+every limit itself: the run check adds the thread's author (`serverCallRunMatches` with
+`authorOnly`; a shared thread's other member is refused, 403 `server_call_run_mismatch`), the
+token's `pass_id` must name a `memory_learning_passes` row that is `running` on the token's thread
+for the token's member (`serverCallPassRunning`; else 403 `server_call_pass_mismatch`), the
+temperature is exactly 0, the output cap is also clamped to the model's catalog `maxOutputTokens`,
+the body cap is in bytes whatever the character count (413), and the budget stop is the ordinary
+100 % one (402 `budget_exhausted`). Should a purpose ever reach the usage sink without a usage kind, its row is dropped with an error log, never written as
+`eval` or `run`.
 
 ## Decisions
 
