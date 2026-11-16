@@ -103,6 +103,21 @@ beforeAll(async () => {
         res.on("close", () => clearTimeout(t));
         return;
       }
+      if (req.url === "/v1/models") {
+        // Bifrost lists every model the virtual key allows, the Site embedding model too.
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(
+          JSON.stringify({
+            object: "list",
+            data: [
+              { id: "openai/m", object: "model", created: 1, owned_by: "openai" },
+              { id: "kobe-local/nomic-embed-text", object: "model", owned_by: "kobe-local" },
+              { id: "gemini/g", object: "model", owned_by: "gemini" },
+            ],
+          }),
+        );
+        return;
+      }
       if (
         req.url?.startsWith("/v1/chat/completions") &&
         chunks.join("").includes('"stream":true')
@@ -314,6 +329,18 @@ describe("authentication", () => {
 });
 
 describe("routing", () => {
+  it("lists only the team's enabled models (the Site embedding model stays out, KOBE-409 L4)", async () => {
+    const r = await call("/v1/models", { method: "GET", headers: bearer() });
+    expect(r.status).toBe(200);
+    const body = JSON.parse(r.text) as { object: string; data: { id: string }[] };
+    expect(body.object).toBe("list");
+    expect(body.data).toEqual([
+      { id: "openai/m", object: "model", created: 1, owned_by: "openai" },
+      { id: "gemini/g", object: "model", owned_by: "gemini" },
+    ]);
+    expect(Number(r.headers.get("content-length"))).toBe(Buffer.byteLength(r.text));
+  });
+
   it("serves inference paths only: admin API, health, batches and unknown paths are 404", async () => {
     for (const [method, path] of [
       ["GET", "/api/providers"],

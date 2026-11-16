@@ -42,6 +42,7 @@ import {
   serverCallBodyLimit,
   type ServerCallOptions,
 } from "./server-call.js";
+import { MODEL_LIST_MAX_BYTES, filterModelList } from "./model-list.js";
 import { classify, forwardedQuery, routeTemplate, type Route, type RouteKind } from "./routes.js";
 import { applyThinking, callThinkingLevel } from "./thinking.js";
 import type { RunTokenSubject } from "@kobe/db";
@@ -725,7 +726,16 @@ export function createModelGateway(options: GatewayOptions): Server {
           forwardBody,
           resolution.virtualKey,
           attempt === 0,
-          { kind: route.kind, started, outputAllowance, embeddings },
+          {
+            kind: route.kind,
+            started,
+            outputAllowance,
+            embeddings,
+            // KOBE-409 L4: a listing names only the team's enabled models.
+            ...(req.method === "GET" && route.path === "/v1/models"
+              ? { listModels: resolution.enabledModels }
+              : {}),
+          },
           traceContext,
         );
         status = outcome.status;
@@ -847,6 +857,8 @@ export function createModelGateway(options: GatewayOptions): Server {
       readonly outputAllowance: number;
       /** Embeddings generate no text: output is 0, the vectors are not counted (KOBE-409). */
       readonly embeddings: boolean;
+      /** `GET /v1/models`: keep only these ids in the listing (`model-list.ts`). */
+      readonly listModels?: ReadonlySet<string>;
     },
     traceContext: Context | undefined,
   ): Promise<Outcome> {
@@ -926,6 +938,13 @@ export function createModelGateway(options: GatewayOptions): Server {
             );
             return;
           }
+          if (call.listModels !== undefined && !errorAnswer) {
+            readModelList(up, call.listModels, res, (o, bytes) => {
+              bytesOut = bytes;
+              done(o);
+            });
+            return;
+          }
           res.writeHead(upStatus, forwardResponseHeaders(up.headers));
           res.flushHeaders();
           if (!errorAnswer) {
@@ -982,6 +1001,47 @@ export function createModelGateway(options: GatewayOptions): Server {
       });
       upstream.end(body);
     });
+  }
+
+  /** Reads Bifrost's whole model listing and answers with the enabled entries only. */
+  function readModelList(
+    up: IncomingMessage,
+    enabled: ReadonlySet<string>,
+    res: ServerResponse,
+    done: (o: Omit<Outcome, "bytesOut" | "usage" | "ttfbMs">, bytesOut: number) => void,
+  ): void {
+    const upStatus = up.statusCode ?? 502;
+    const chunks: Buffer[] = [];
+    let size = 0;
+    const fail = () => {
+      if (!res.headersSent) {
+        sendError(res, "openai", 502, "model_gateway_unavailable", "The model list is unreadable.");
+      }
+      done({ kind: "done", status: 502, errorType: undefined, aborted: false }, 0);
+    };
+    up.on("data", (c: Buffer) => {
+      size += c.length;
+      if (size > MODEL_LIST_MAX_BYTES) {
+        up.destroy();
+        fail();
+        return;
+      }
+      chunks.push(c);
+    });
+    up.on("end", () => {
+      if (size > MODEL_LIST_MAX_BYTES) return;
+      const text = filterModelList(Buffer.concat(chunks), enabled);
+      if (text === undefined) {
+        fail();
+        return;
+      }
+      const headers = forwardResponseHeaders(up.headers);
+      delete headers["content-encoding"];
+      res.writeHead(upStatus, { ...headers, "content-length": text.length });
+      res.end(text);
+      done({ kind: "done", status: upStatus, errorType: undefined, aborted: false }, text.length);
+    });
+    up.on("error", fail);
   }
 
   const server = createServer((req, res) => {
