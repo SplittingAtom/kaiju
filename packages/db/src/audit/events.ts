@@ -188,6 +188,14 @@ export const MEMORY_PASS_AUDIT_FAILURE_CODES = [
   "cancelled",
   "interrupted",
 ] as const;
+/** The Site embedding model (KOBE-409): a gateway model id, `<provider>/<model>` (protocol's pattern). */
+const embeddingModel = z.union([
+  modelAlias,
+  z
+    .string()
+    .max(256)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\/[A-Za-z0-9][A-Za-z0-9._:/-]{0,190}$/),
+]);
 const providerModel = z.string().max(200).regex(new RegExp(PROVIDER_MODEL_PATTERN));
 /** A provider endpoint's host (name or IP literal, no path or credentials); null: vendor default. */
 const endpointHost = z
@@ -2939,8 +2947,9 @@ export const AUDIT_EVENTS = {
     learningModel: z
       .strictObject({ from: modelAlias.nullable(), to: modelAlias.nullable() })
       .optional(),
+    /** Since KOBE-409 a gateway model id (`kobe-local/nomic-embed-text`); an alias before. */
     embeddingModel: z
-      .strictObject({ from: modelAlias.nullable(), to: modelAlias.nullable() })
+      .strictObject({ from: embeddingModel.nullable(), to: embeddingModel.nullable() })
       .optional(),
   }),
   // ── semantic memory items (v1.3, KOBE-377, SM28): ids, scopes, kinds, versions and counts, never

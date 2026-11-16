@@ -2,6 +2,10 @@ import { z } from "zod";
 import { NO_CONTROL_CHARS, THREAD_TITLE_MAX, uuidSchema } from "./common.js";
 import { gatewayModelSchema } from "./sandbox-wire/frames.js";
 import {
+  MEMORY_EMBED_MAX_INPUT_CHARS,
+  SERVER_CALL_EMBEDDINGS_PATH,
+} from "./server-call-embeddings.js";
+import {
   MEMORY_EXTRACTOR_RESPONSE_SCHEMA,
   MEMORY_LEARN_SCHEMA_RETRIES,
 } from "./semantic-memory/learning.js";
@@ -52,7 +56,9 @@ export type ServerCallPurpose = z.infer<typeof serverCallPurposeSchema>;
  * `kobe.skill.yaml` with the model they chose; the only purpose a member starts, so it names no
  * thread or run: {@link RUNLESS_SERVER_CALL_PURPOSES}), and the learning pass's (`memory_learn`,
  * KOBE-390, SM14/SM15: one extractor call per pass, bound to the leaf's last completed run and
- * naming its pass in `pass_id`; semantic-memory/learning.ts). Append new purposes at the end, each
+ * naming its pass in `pass_id`; semantic-memory/learning.ts), and the embedding calls
+ * (`memory_embed`, KOBE-409: `POST /v1/embeddings` only, server-call-embeddings.ts; the run is
+ * optional: {@link OPTIONAL_RUN_SERVER_CALL_PURPOSES}). Append new purposes at the end, each
  * with its `SERVER_CALL_LIMITS` entry (the compiler insists) and, if it asks for structured output,
  * a `SERVER_CALL_RESPONSE_FORMATS` entry.
  */
@@ -61,6 +67,7 @@ export const SERVER_CALL_TOKEN_PURPOSES = [
   "eval_judge",
   "skill_manifest",
   "memory_learn",
+  "memory_embed",
 ] as const;
 export const serverCallTokenPurposeSchema = z.enum(SERVER_CALL_TOKEN_PURPOSES);
 export type ServerCallTokenPurpose = z.infer<typeof serverCallTokenPurposeSchema>;
@@ -73,9 +80,25 @@ export type ServerCallTokenPurpose = z.infer<typeof serverCallTokenPurposeSchema
 export const RUNLESS_SERVER_CALL_PURPOSES = ["skill_manifest"] as const;
 export type RunlessServerCallPurpose = (typeof RUNLESS_SERVER_CALL_PURPOSES)[number];
 
+/**
+ * Purposes whose token may name a run (and its thread) or none (KOBE-409 `memory_embed`): the
+ * selector's query embedding names the run being started (not yet completed, so the gateway's
+ * completed-run check does not apply: the ids are usage attribution only); saves and background
+ * jobs name none. The budget is always the token's (team, user).
+ */
+export const OPTIONAL_RUN_SERVER_CALL_PURPOSES = ["memory_embed"] as const;
+
+/** Whether a purpose's run ids are optional attribution (never checked against a completed run). */
+export function serverCallRunOptional(purpose: ServerCallTokenPurpose): boolean {
+  return (OPTIONAL_RUN_SERVER_CALL_PURPOSES as readonly string[]).includes(purpose);
+}
+
 /** Whether a purpose's token must name the completed run (and thread) that triggered the call. */
 export function serverCallBoundToRun(purpose: ServerCallTokenPurpose): boolean {
-  return !(RUNLESS_SERVER_CALL_PURPOSES as readonly string[]).includes(purpose);
+  return (
+    !(RUNLESS_SERVER_CALL_PURPOSES as readonly string[]).includes(purpose) &&
+    !serverCallRunOptional(purpose)
+  );
 }
 
 export const SERVER_CALL_TOKEN_HEADER = "x-kobe-server-call";
@@ -93,8 +116,13 @@ export const SERVER_CALL_TOKEN_MAX_CHARS = 1280;
 export const SERVER_CALL_TOKEN_SKEW_SECONDS = 30;
 /** Upper bound on `exp - iat`: a token is minted right before its one call. */
 export const MAX_SERVER_CALL_TOKEN_TTL_SECONDS = 30;
-/** The only gateway route a server call may use (Bifrost translates it for every provider). */
+/** The gateway route of every chat server call (Bifrost translates it for every provider). */
 export const SERVER_CALL_PATH = "/v1/chat/completions";
+
+/** The one route a purpose's token may use: embeddings for `memory_embed`, chat for the rest. */
+export function serverCallPathFor(purpose: ServerCallTokenPurpose): string {
+  return purpose === "memory_embed" ? SERVER_CALL_EMBEDDINGS_PATH : SERVER_CALL_PATH;
+}
 /** Largest request body the gateway accepts on an epilogue call (`SERVER_CALL_LIMITS` per purpose). */
 export const SERVER_CALL_MAX_BODY_BYTES = 64 * 1024;
 export const SERVER_CALL_MAX_MESSAGES = 4;
@@ -181,6 +209,19 @@ export const SERVER_CALL_LIMITS = {
     timeout_ms: 60_000,
     skip_at_percent: 100,
     max_message_chars: 300_000,
+    max_body_bytes: 384 * 1024,
+    temperature: 0,
+  },
+  // KOBE-409: embeddings generate no text (the output caps are the schema's minimum and the
+  // reservation's allowance only); each input at most MEMORY_EMBED_MAX_INPUT_CHARS, a backfill
+  // batch of up to 64 statements fits the body. A short timeout: the selector gives the query
+  // embedding its own, shorter deadline and falls back to keyword search.
+  memory_embed: {
+    max_output_tokens: 1,
+    reasoning_max_output_tokens: 1,
+    timeout_ms: 15_000,
+    skip_at_percent: 100,
+    max_message_chars: MEMORY_EMBED_MAX_INPUT_CHARS,
     max_body_bytes: 384 * 1024,
     temperature: 0,
   },
@@ -310,12 +351,15 @@ export const serverCallClaimsSchema = z
     message: "max_output_tokens is above the purpose's cap",
     path: ["max_output_tokens"],
   })
-  // A run-bound purpose names its thread and run, both; a run-less one names neither (KOBE-564).
+  // A run-bound purpose names its thread and run, both; a run-less one names neither (KOBE-564);
+  // an optional-run purpose names both or neither (KOBE-409).
   .refine(
     (c) =>
-      serverCallBoundToRun(c.purpose)
-        ? c.thread_id !== undefined && c.run_id !== undefined
-        : c.thread_id === undefined && c.run_id === undefined,
+      serverCallRunOptional(c.purpose)
+        ? (c.thread_id === undefined) === (c.run_id === undefined)
+        : serverCallBoundToRun(c.purpose)
+          ? c.thread_id !== undefined && c.run_id !== undefined
+          : c.thread_id === undefined && c.run_id === undefined,
     {
       message: "thread_id and run_id are both present for a run-bound purpose and absent otherwise",
       path: ["run_id"],

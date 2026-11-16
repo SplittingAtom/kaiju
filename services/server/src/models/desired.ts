@@ -122,6 +122,12 @@ export function buildDesiredState(
     readonly providers: readonly ProviderInput[];
     readonly catalog: readonly CatalogInput[];
     readonly teams: readonly TeamInput[];
+    /**
+     * Gateway models every member's key allows besides the team's catalog (KOBE-409: the Site
+     * embedding model, `<gateway provider>/<model>`; in no catalog, so in no chat picker). Only
+     * models of a provider being pushed count.
+     */
+    readonly siteModels?: readonly string[];
   },
   fingerprintSecret: string,
   limits: GovernanceLimitsSource = {},
@@ -131,6 +137,7 @@ export function buildDesiredState(
     input.providers.map((p) => [p.id, gatewayProviderName(p.id, p.kind)]),
   );
   const catalog = new Map(input.catalog.map((c) => [c.alias, c]));
+  const pushed = new Set(providerNames.values());
   const teams: DesiredTeam[] = [];
   const virtualKeys: DesiredVirtualKey[] = [];
   for (const team of input.teams) {
@@ -145,6 +152,12 @@ export function buildDesiredState(
       const provider = entry && providerNames.get(entry.providerId);
       if (!entry || !provider) continue;
       (models[provider] ??= new Set()).add(entry.model);
+    }
+    for (const id of input.siteModels ?? []) {
+      const slash = id.indexOf("/");
+      const provider = id.slice(0, slash);
+      if (slash > 0 && pushed.has(provider))
+        (models[provider] ??= new Set()).add(id.slice(slash + 1));
     }
     const sorted = Object.fromEntries(
       Object.entries(models)

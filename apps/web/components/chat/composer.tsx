@@ -99,7 +99,7 @@ function wantsEditLast(e: KeyboardEvent<HTMLTextAreaElement>): boolean {
  * steering panel above the input (CE10, `steering-panel.tsx`). The text is cleared only
  * once the server accepted it. The mic button dictates into the prompt (`lib/chat/dictation.ts`);
  * sending stops dictation. Its toolbar starts with the + menu (KOBE-451: Attach files,
- * Connectors, Memory, Skills, Apps). Before the first prompt the toolbar then holds the
+ * Connectors, Memory with Learn from this chat (KOBE-395), Skills, Apps). Before the first prompt the toolbar then holds the
  * conversation's Agent, Model and Thinking selectors (KOBE-418), folded into one menu on a narrow
  * composer; after it they move to the line below, before the context gauge (KOBE-450).
  */
@@ -401,6 +401,7 @@ export function Composer({
             <PlusMenu
               draft={draft}
               threadId={remoteId ?? null}
+              threadRunning={running}
               onAttach={() => filePicker.current?.click()}
             />
             {started ? (

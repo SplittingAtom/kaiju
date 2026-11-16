@@ -153,7 +153,12 @@ read a person's portable preferences either; reading them needs its own break-gl
   system prompt plus changes, re-picked every 20 messages by default; or in the system prompt;
   see [Memory placement](../memory.md#memory-placement)), the context budget (4 to 16 KiB), scope limits (by default 300 memories per person in each workspace, 50 portable preferences per person, 1,000 per workspace and 1,000 on the Site; saving stops at the limit and nothing is ever removed to make room, and curators are told when a workspace or the Site reaches 80%), versions kept per memory (default 50; older versions are pruned on edit, except versions a run used and while a legal hold applies: a Site-wide hold for Site memories),
   the stale threshold, the retention window and learning rate limits. Turning a switch off deletes
-  nothing. See [Memory](../memory.md#switches-that-control-memory). The **Kobe connector** setting is **Off**, **Docs only** (the
+  nothing. See [Memory](../memory.md#switches-that-control-memory). The **embedding model**
+  (search by meaning) sends every run message (up to 4,000 characters) and every saved memory to
+  its provider, and **Build vectors** sends the memories of every workspace, every member's portable
+  memories and the Site's, charged to you in your active workspace: choose a provider your
+  organization may send that to (the in-cluster model keeps it in your cluster). See
+  [Search by meaning](../memory.md#search-by-meaning). The **Kobe connector** setting is **Off**, **Docs only** (the
   default) or **Docs and admin tools**; see below.
 - **Isolation**: whether agents can run. Kobe refuses to run agents unless the cluster offers a
   gVisor or Kata sandbox runtime; this page shows the check and how to fix it.

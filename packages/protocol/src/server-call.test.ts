@@ -134,6 +134,7 @@ describe("server-call token", () => {
       "eval_judge",
       "skill_manifest",
       "memory_learn",
+      "memory_embed",
     ]);
     expect(parse({ purpose: "eval_judge", max_output_tokens: 512 })).toBe(true);
     expect(
