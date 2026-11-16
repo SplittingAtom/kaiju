@@ -11,9 +11,11 @@ import { request as httpsRequest, Agent as HttpsAgent } from "node:https";
 import {
   serverCallBoundToRun,
   serverCallNamesPass,
+  serverCallRunOptional,
   type ServerCallClaims,
   type SessionTokenClaims,
   type ThinkingLevel,
+  SERVER_CALL_EMBEDDINGS_PATH,
 } from "@kobe/protocol";
 import { SessionTokenError, type SessionVerifyKeys } from "@kobe/session-token";
 import {
@@ -40,6 +42,7 @@ import {
   serverCallBodyLimit,
   type ServerCallOptions,
 } from "./server-call.js";
+import { MODEL_LIST_MAX_BYTES, filterModelList } from "./model-list.js";
 import { classify, forwardedQuery, routeTemplate, type Route, type RouteKind } from "./routes.js";
 import { applyThinking, callThinkingLevel } from "./thinking.js";
 import type { RunTokenSubject } from "@kobe/db";
@@ -252,7 +255,11 @@ async function serverCallAttribution(
   | { readonly ok: true; readonly runId: string | undefined }
   | { readonly ok: false; readonly status: 403; readonly code: string; readonly message: string }
 > {
-  if (!serverCallBoundToRun(claims.purpose)) return { ok: true, runId: undefined };
+  // KOBE-409: an optional-run purpose may name no run; one that names a run must name a live run
+  // (still starting, running or completed, never a terminal failure) of that thread and member.
+  const optional = serverCallRunOptional(claims.purpose);
+  if (optional && claims.run_id === undefined) return { ok: true, runId: undefined };
+  if (!optional && !serverCallBoundToRun(claims.purpose)) return { ok: true, runId: undefined };
   const matches =
     claims.run_id !== undefined &&
     claims.thread_id !== undefined &&
@@ -263,15 +270,18 @@ async function serverCallAttribution(
       userId: claims.user_id,
       // A learning pass is the thread author's own (KOBE-391): its lease check admits only them.
       ...(serverCallNamesPass(claims.purpose) ? { authorOnly: true } : {}),
+      ...(optional ? { live: true as const } : {}),
     }));
   if (!matches) {
     return {
       ok: false,
       status: 403,
       code: "server_call_run_mismatch",
-      message: serverCallNamesPass(claims.purpose)
-        ? "That run is not a completed run of this thread by its author."
-        : "That run is not a completed run of this thread and member.",
+      message: optional
+        ? "That run is not a live run of this thread and member."
+        : serverCallNamesPass(claims.purpose)
+          ? "That run is not a completed run of this thread by its author."
+          : "That run is not a completed run of this thread and member.",
     };
   }
   // A learning pass's token names its pass (KOBE-391): running now, this thread's, this member's.
@@ -428,7 +438,7 @@ export function createModelGateway(options: GatewayOptions): Server {
       res.end(JSON.stringify({ status: ready ? "ok" : "draining", service: "model-gateway" }));
       return;
     }
-    const route = classify(req.method ?? "", url.pathname);
+    const route = classify(req.method ?? "", url.pathname, isServerCall(req.headers));
     const kind = route?.kind ?? "openai";
     // Route templates only (KOBE-525): the per-route latency query groups by them.
     if (route) span.setAttributes({ "http.route": routeTemplate(route) });
@@ -571,6 +581,7 @@ export function createModelGateway(options: GatewayOptions): Server {
       // Count-only endpoints generate nothing (KOBE-43 review): no output allowance.
       const countOnly = route.path.endsWith("/count_tokens") || route.path.endsWith(":countTokens");
       let outputAllowance = chargedOutput(undefined, 1, countOnly);
+      const embeddings = route.path === SERVER_CALL_EMBEDDINGS_PATH;
       if (serverCall) {
         // The contract's shape, the token's model and cap (no tools, no streaming).
         const checked = checkServerCallBody(
@@ -585,7 +596,7 @@ export function createModelGateway(options: GatewayOptions): Server {
           return;
         }
         model = serverCall.model;
-        outputAllowance = chargedOutput(checked.maxOutputTokens, 1, false);
+        outputAllowance = chargedOutput(checked.maxOutputTokens, 1, embeddings);
       } else if (req.method === "POST") {
         const scanned = topLevelModel(body);
         if (!scanned.ok) {
@@ -670,7 +681,15 @@ export function createModelGateway(options: GatewayOptions): Server {
       };
       // Every model call names a model the team enabled (checked here too, so a disable holds even
       // when a push to Bifrost failed). Listing models (GET) names none.
-      if (req.method === "POST" && (!model || !resolution.enabledModels.has(model))) {
+      // KOBE-409: the Site embedding model is a Site choice, never a Workspace's chat model (it is
+      // in no catalog, so in no picker): a server-signed `memory_embed` token names it, and the
+      // member's virtual key allows it only because the sync adds the Site's embedding model to
+      // every key, so Bifrost still refuses any other model.
+      const siteEmbedding = serverCall?.purpose === "memory_embed";
+      if (
+        req.method === "POST" &&
+        (!model || (!siteEmbedding && !resolution.enabledModels.has(model)))
+      ) {
         status = 403;
         sendError(
           res,
@@ -707,7 +726,16 @@ export function createModelGateway(options: GatewayOptions): Server {
           forwardBody,
           resolution.virtualKey,
           attempt === 0,
-          { kind: route.kind, started, outputAllowance },
+          {
+            kind: route.kind,
+            started,
+            outputAllowance,
+            embeddings,
+            // KOBE-409 L4: a listing names only the team's enabled models.
+            ...(req.method === "GET" && route.path === "/v1/models"
+              ? { listModels: resolution.enabledModels }
+              : {}),
+          },
           traceContext,
         );
         status = outcome.status;
@@ -827,6 +855,10 @@ export function createModelGateway(options: GatewayOptions): Server {
       readonly kind: RouteKind;
       readonly started: number;
       readonly outputAllowance: number;
+      /** Embeddings generate no text: output is 0, the vectors are not counted (KOBE-409). */
+      readonly embeddings: boolean;
+      /** `GET /v1/models`: keep only these ids in the listing (`model-list.ts`). */
+      readonly listModels?: ReadonlySet<string>;
     },
     traceContext: Context | undefined,
   ): Promise<Outcome> {
@@ -906,11 +938,19 @@ export function createModelGateway(options: GatewayOptions): Server {
             );
             return;
           }
+          if (call.listModels !== undefined && !errorAnswer) {
+            readModelList(up, call.listModels, res, (o, bytes) => {
+              bytesOut = bytes;
+              done(o);
+            });
+            return;
+          }
           res.writeHead(upStatus, forwardResponseHeaders(up.headers));
           res.flushHeaders();
           if (!errorAnswer) {
             meter = new UsageMeter({
               kind: call.kind,
+              embeddings: call.embeddings,
               contentType: up.headers["content-type"],
               contentEncoding: up.headers["content-encoding"],
             });
@@ -961,6 +1001,47 @@ export function createModelGateway(options: GatewayOptions): Server {
       });
       upstream.end(body);
     });
+  }
+
+  /** Reads Bifrost's whole model listing and answers with the enabled entries only. */
+  function readModelList(
+    up: IncomingMessage,
+    enabled: ReadonlySet<string>,
+    res: ServerResponse,
+    done: (o: Omit<Outcome, "bytesOut" | "usage" | "ttfbMs">, bytesOut: number) => void,
+  ): void {
+    const upStatus = up.statusCode ?? 502;
+    const chunks: Buffer[] = [];
+    let size = 0;
+    const fail = () => {
+      if (!res.headersSent) {
+        sendError(res, "openai", 502, "model_gateway_unavailable", "The model list is unreadable.");
+      }
+      done({ kind: "done", status: 502, errorType: undefined, aborted: false }, 0);
+    };
+    up.on("data", (c: Buffer) => {
+      size += c.length;
+      if (size > MODEL_LIST_MAX_BYTES) {
+        up.destroy();
+        fail();
+        return;
+      }
+      chunks.push(c);
+    });
+    up.on("end", () => {
+      if (size > MODEL_LIST_MAX_BYTES) return;
+      const text = filterModelList(Buffer.concat(chunks), enabled);
+      if (text === undefined) {
+        fail();
+        return;
+      }
+      const headers = forwardResponseHeaders(up.headers);
+      delete headers["content-encoding"];
+      res.writeHead(upStatus, { ...headers, "content-length": text.length });
+      res.end(text);
+      done({ kind: "done", status: upStatus, errorType: undefined, aborted: false }, text.length);
+    });
+    up.on("error", fail);
   }
 
   const server = createServer((req, res) => {

@@ -29,6 +29,7 @@ import { logger } from "./logger.js";
 import { createSmtpMailer } from "./mail/mailer.js";
 import { createHttpBifrostAdmin } from "./models/bifrost-admin.js";
 import { loadModelsConfig } from "./models/config.js";
+import { localEmbeddingGatewayModel } from "./models/local-embedding.js";
 import { createPgReconcileLock } from "./sandbox/reconcile-lock.js";
 import { loadUploadSettings } from "./uploads/settings.js";
 import { createInternalApp } from "./routes/internal.js";
@@ -170,6 +171,10 @@ if (config.process === "scheduler") {
       : {}),
     ...(s3 && objectStore ? { blobs: { objects: objectStore, prefix: s3.prefix } } : {}),
     uploads: uploadSettings,
+    // KOBE-409: the in-cluster embedding model (KOBE-659) as the gateway names it.
+    ...(modelsConfig?.localEmbedding
+      ? { embeddings: { localModel: localEmbeddingGatewayModel(modelsConfig.localEmbedding) } }
+      : {}),
     ...(modelsConfig
       ? {
           models: {

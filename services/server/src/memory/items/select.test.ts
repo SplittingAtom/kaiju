@@ -16,7 +16,11 @@ import {
   RENDER_LANES,
   PREFERENCE_BASE,
   STICKY_BONUS,
+  VECTOR_MIN_SIMILARITY,
+  VECTOR_WEIGHT,
+  eligible,
   memoryScore,
+  vectorScore,
   selectRunMemory,
   type Candidate,
   type SelectLane,
@@ -161,6 +165,34 @@ describe("selectRunMemory", () => {
       0.4 + 0.15 + 0.05,
     );
     expect(memoryScore(cand(i, { textRank: 0, trigram: 0, ageDays: 400 }), "team")).toBe(0);
+  });
+
+  it("adds the vector leg's similarity, scaled above its floor (KOBE-409 hybrid)", () => {
+    const i = item("team");
+    const base = cand(i, { textRank: 0.4, trigram: 0, ageDays: 400 });
+    expect(memoryScore({ ...base, vector: 1 }, "team")).toBeCloseTo(0.4 + VECTOR_WEIGHT);
+    expect(memoryScore({ ...base, vector: VECTOR_MIN_SIMILARITY }, "team")).toBeCloseTo(0.4);
+    expect(memoryScore({ ...base, vector: 0.1 }, "team")).toBeCloseTo(0.4);
+    expect(memoryScore(base, "team")).toBeCloseTo(0.4);
+    expect(vectorScore(undefined)).toBe(0);
+  });
+
+  it("lets a similar item in without a keyword match, never a dissimilar one", () => {
+    const i = item("team");
+    const none = cand(i, { textRank: 0 });
+    expect(eligible(none, "team")).toBe(false);
+    expect(eligible({ ...none, vector: VECTOR_MIN_SIMILARITY + 0.01 }, "team")).toBe(true);
+    expect(eligible({ ...none, vector: VECTOR_MIN_SIMILARITY - 0.01 }, "team")).toBe(false);
+    // Ranked above a weak keyword match when it is close enough.
+    const close = cand(item("team", { id: 1 }), { textRank: 0, vector: 0.95 });
+    const weak = cand(item("team", { id: 2 }), { textRank: 0.05 });
+    const out = selectRunMemory({
+      policy: [],
+      lanes: { team: [weak, close] },
+      budgetBytes: budget,
+    });
+    expect(ids(out.items)).toEqual([close.item.id, weak.item.id].sort());
+    expect(memoryScore(close, "team")).toBeGreaterThan(memoryScore(weak, "team"));
   });
 
   it("keeps items of the thread's previous run (stickiness)", () => {

@@ -27,6 +27,8 @@ export const memory = defineDomain({
     "memory_dismissals",
     "memory_learning_watermarks",
     "memory_proposals",
+    // Readers' suggestions for a project's Notes (KOBE-652).
+    "memory_project_suggestions",
   ],
   siteWide: [
     "portable_memory_items",

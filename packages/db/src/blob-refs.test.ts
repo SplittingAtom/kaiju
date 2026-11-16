@@ -71,6 +71,7 @@ const NOT_OBJECT_KEYS: Record<string, string> = {
   "jwks.public_key": "a signing key",
   "memory_proposals.candidate_ref": "a memory candidate's id (KOBE-389)",
   "memory_proposals.item_ref": "a semantic memory item's id (KOBE-389)",
+  "memory_project_suggestions.candidate_ref": "a memory candidate's id (KOBE-652)",
   "jwks.private_key": "a signing key (encrypted)",
   "passkeys.public_key": "a WebAuthn credential key",
   "rate_limits.key": "a rate-limit bucket name",

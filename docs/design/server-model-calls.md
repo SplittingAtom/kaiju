@@ -221,3 +221,27 @@ its limit at the purpose's percentage, so the reservation's own spend read and t
 in-flight reservations (KOBE-286) judge it, not this replica's cached spend. The cached state only
 refuses early. Because in-flight reservations count, a follow-up is skipped slightly before the
 ledger alone reaches 80 % when many calls are in flight (conservative by design).
+
+## Embedding calls (KOBE-409)
+
+Memory embeddings use the same token with purpose `memory_embed`, on `POST /v1/embeddings` only
+(every other purpose stays on `POST /v1/chat/completions`). The route exists for server calls alone:
+a sandbox's request to it is 404 like any unknown path, and a `memory_embed` token on the chat route
+(or a chat purpose on the embeddings route) is 403 `server_call_route_refused`. The body is the
+contract's strict subset (`serverCallEmbeddingsRequestSchema`: the token's model, one input or a
+batch of up to 64, floats only, no `dimensions`). Embeddings generate no text, so the reservation's
+output allowance is 0 and the usage meter never counts the returned vectors as output; the input is
+the provider's `prompt_tokens`, else estimated from the request size.
+
+The run is optional: the selector's query embedding names the run being started, saves and
+backfill name none. A token that names a run must name a live run of that thread owned by that
+member (the thread's owner, whose sandbox runs it: the embedding starts when the message is
+accepted, before any sandbox lease exists): any status but a terminal failure (queued, running,
+waiting for approval or completed; never failed, interrupted, cancelled or budget-stopped), else
+403 `server_call_run_mismatch`. Selection waits for that early embedding at most 35 ms. The
+model is the Site embedding model, a gateway model id in no catalog: the gateway does not require
+the Workspace to enable it on `memory_embed` tokens, and Bifrost still decides, because the sync
+adds the Site embedding model to every member's virtual key and nothing else. The budget
+is the token's (team, user): the run's member, the person saving (in the Workspace they act in), or
+the Site admin who started a backfill or re-embed. At 100 % of a budget line the call is refused and
+the item stays on keyword search.

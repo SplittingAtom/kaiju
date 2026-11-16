@@ -53,6 +53,15 @@ export function memoryItemRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariab
   // its body or path is read, so it is always 403 (review I1). Reads are checked in `answer`.
   app.use("*", refuseAgentWrites);
   const { answer, readBody } = memoryRouteKit(deps);
+  /** Embed on save (KOBE-409): in the background, never blocking or failing the save. */
+  const embedded = <T extends { readonly id: string }>(
+    who: MemoryWho,
+    scope: SemanticMemoryScope,
+    saved: T,
+  ): T => {
+    deps.memoryEmbeddings.afterSave(who, scope, [saved.id]);
+    return saved;
+  };
   /** Scope and id of an item route, or a 400 response. */
   const target = (c: Ctx): { scope: SemanticMemoryScope; id: string } | Response => {
     const scope = semanticMemoryScopeSchema.safeParse(c.req.param("scope"));
@@ -71,7 +80,12 @@ export function memoryItemRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariab
   app.post("/", async (c) => {
     const body = await readBody(c, createSemanticMemoryItemSchema);
     if (!body.success) return invalidRequest(c, issueText(body.error));
-    return answer(c, body.data.scope, (who) => createItem(db, who, body.data), 201);
+    return answer(
+      c,
+      body.data.scope,
+      async (who) => embedded(who, body.data.scope, await createItem(db, who, body.data)),
+      201,
+    );
   });
 
   app.get("/:scope/:id", async (c) => {
@@ -86,7 +100,9 @@ export function memoryItemRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariab
     if (t instanceof Response) return t;
     const body = await readBody(c, patchSemanticMemoryItemSchema);
     if (!body.success) return invalidRequest(c, issueText(body.error));
-    return answer(c, t.scope, (who) => patchItem(db, who, t.scope, t.id, body.data));
+    return answer(c, t.scope, async (who) =>
+      embedded(who, t.scope, await patchItem(db, who, t.scope, t.id, body.data)),
+    );
   });
 
   app.post("/:scope/:id/archive", async (c) => {
@@ -110,7 +126,9 @@ export function memoryItemRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariab
     if (t instanceof Response) return t;
     const body = await readBody(c, revertSemanticMemoryItemSchema);
     if (!body.success) return invalidRequest(c, issueText(body.error));
-    return answer(c, t.scope, (who) => revertItem(db, who, t.scope, t.id, body.data));
+    return answer(c, t.scope, async (who) =>
+      embedded(who, t.scope, await revertItem(db, who, t.scope, t.id, body.data)),
+    );
   });
 
   app.post("/:scope/:id/pin", async (c) => {

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import {
+  getMemoryVectors,
   getSiteMemory,
   putSiteMemory,
   type MemoryPlacement,
@@ -13,6 +14,7 @@ import { MutationStatus } from "../error-notice";
 import { ResourceView } from "../parts";
 import { useMutation, useResource } from "../use-resource";
 import { MemorySwitchesForm, memoryNotice, type SwitchSpec } from "../team/memory-switches-form";
+import { MemoryVectorsSection } from "./memory-vectors";
 
 type SiteSwitch = Exclude<keyof SiteMemorySettings, "settings" | "removedModels">;
 
@@ -62,6 +64,7 @@ export const SITE_SWITCHES: readonly SwitchSpec<SiteSwitch>[] = [
  */
 export function MemorySwitchesSection() {
   const { state, reload } = useResource(getSiteMemory);
+  const vectors = useResource(getMemoryVectors);
   return (
     <ResourceView state={state} label="memory settings">
       {(site) => (
@@ -77,8 +80,17 @@ export function MemorySwitchesSection() {
           <SiteMemorySettingsForm
             settings={site.settings}
             removed={site.removedModels ?? []}
-            onSaved={reload}
+            suggestions={
+              vectors.state.status === "ready" && vectors.state.data.localModel
+                ? [vectors.state.data.localModel]
+                : []
+            }
+            onSaved={() => {
+              reload();
+              vectors.reload();
+            }}
           />
+          <MemoryVectorsSection resource={vectors} />
         </>
       )}
     </ResourceView>
@@ -97,13 +109,13 @@ type NumberKey =
   | "learnPassesPerHour"
   | "savesPerMinute"
   | "stableRepickEvery";
-type Draft = Record<NumberKey | "learningModelAlias" | "embeddingModelAlias", string> & {
+type Draft = Record<NumberKey | "learningModelAlias" | "embeddingModel", string> & {
   readonly placement: MemoryPlacement;
 };
 
 const draftOf = (s: SiteMemorySettingsDoc): Draft => ({
   learningModelAlias: s.learningModelAlias ?? "",
-  embeddingModelAlias: s.embeddingModelAlias ?? "",
+  embeddingModel: s.embeddingModel ?? "",
   contextBudgetKib: String(s.contextBudgetKib),
   versionCap: String(s.versionCap),
   staleAfterDays: String(s.staleAfterDays),
@@ -124,7 +136,7 @@ const docOf = (d: Draft): SiteMemorySettingsDoc => {
   const alias = (v: string) => (v.trim() === "" ? null : v.trim());
   return {
     learningModelAlias: alias(d.learningModelAlias),
-    embeddingModelAlias: alias(d.embeddingModelAlias),
+    embeddingModel: alias(d.embeddingModel),
     contextBudgetKib: num("contextBudgetKib"),
     versionCap: num("versionCap"),
     staleAfterDays: num("staleAfterDays"),
@@ -222,17 +234,19 @@ const REMOVED = "Removed from the site's models — choose another.";
 function SiteMemorySettingsForm({
   settings,
   removed,
+  suggestions,
   onSaved,
 }: {
   readonly settings: SiteMemorySettingsDoc;
+  /** Embedding models to offer (the in-cluster model), from `/v1/memory/vectors`. */
+  readonly suggestions: readonly string[];
   /** Model settings whose stored alias is no longer in the catalog (wire names). */
   readonly removed: readonly string[];
   readonly onSaved: () => void;
 }) {
-  const gone = (k: "learningModelAlias" | "embeddingModelAlias", v: string) =>
-    removed.includes(
-      k === "learningModelAlias" ? "learning_model_alias" : "embedding_model_alias",
-    ) && v.trim() === (settings[k] ?? "")
+  const gone = (k: "learningModelAlias" | "embeddingModel", v: string) =>
+    removed.includes(k === "learningModelAlias" ? "learning_model_alias" : "embedding_model") &&
+    v.trim() === (settings[k] ?? "")
       ? REMOVED
       : undefined;
   const mutation = useMutation();
@@ -272,16 +286,25 @@ function SiteMemorySettingsForm({
           />
         </Field>
         <Field
-          label="Embedding model (model alias)"
-          error={gone("embeddingModelAlias", draft.embeddingModelAlias)}
-          hint="Not used yet: only if search by meaning is added later. Search uses English word matching."
+          label="Embedding model (gateway model)"
+          error={gone("embeddingModel", draft.embeddingModel)}
+          hint="Adds search by meaning to word matching. Name a model the gateway serves as provider/model: the in-cluster model, or an embedding model of a Site provider (for example a LAN Ollama); not a chat model. It is not added to any model picker. Its provider receives every run message (up to 4,000 characters) and every saved memory, and Build vectors sends the memories of every workspace, every member's portable memories and the Site's, paid by you in your active workspace: choose a provider your organization may send that to (the in-cluster model keeps it in your cluster). Saving a new model builds vectors in the background; until then, and whenever vectors are unavailable, search uses English word matching."
         >
           <TextInput
-            value={draft.embeddingModelAlias}
-            onChange={set("embeddingModelAlias")}
-            maxLength={64}
+            value={draft.embeddingModel}
+            onChange={set("embeddingModel")}
+            maxLength={256}
+            list={suggestions.length > 0 ? "embedding-model-suggestions" : undefined}
+            placeholder={suggestions[0]}
           />
         </Field>
+        {suggestions.length > 0 && (
+          <datalist id="embedding-model-suggestions">
+            {suggestions.map((m) => (
+              <option key={m} value={m} />
+            ))}
+          </datalist>
+        )}
       </ChoiceGroup>
       <ChoiceGroup legend="Memories in the conversation" stacked className="my-4">
         <Field

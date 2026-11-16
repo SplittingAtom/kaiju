@@ -9,7 +9,7 @@ import { agentChoices, chatRequests, composer, openApp } from "./testing";
 
 /**
  * KOBE-451: the composer's + menu. Attach files, Connectors (on or off for this thread, a broken
- * one with its reason and fix), Memory (a placeholder), Skills (a removable chip sent with the
+ * one with its reason and fix), Memory (Learn from this chat, KOBE-395: plus-learn.test.tsx), Skills (a removable chip sent with the
  * message) and Apps (an app card, as from the rail).
  */
 let fake: FakeKobe;
@@ -90,7 +90,7 @@ async function openSub(name: string) {
 const posts = (end: string) => chatRequests(fake, "POST").filter((r) => r.path.endsWith(end));
 
 describe("the + menu (ac-1)", { timeout: 30_000 }, () => {
-  it("replaces the attach icon: Attach files, Connectors, Memory (soon), Skills, Apps", async () => {
+  it("replaces the attach icon: Attach files, Connectors, Memory, Skills, Apps", async () => {
     openApp(fake, answered());
     await composer();
     expect(screen.queryByRole("button", { name: "Attach files" })).toBeNull();
@@ -99,9 +99,7 @@ describe("the + menu (ac-1)", { timeout: 30_000 }, () => {
       within(menu)
         .getAllByRole("menuitem")
         .map((i) => i.textContent),
-    ).toEqual(["Attach files", "Connectors", "MemoryComing soon", "Skills", "Apps"]);
-    const memory = within(menu).getByRole("menuitem", { name: /^Memory/ });
-    expect(memory.getAttribute("aria-disabled")).toBe("true");
+    ).toEqual(["Attach files", "Connectors", "Memory", "Skills", "Apps"]);
     const picker = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
     await user.click(within(menu).getByRole("menuitem", { name: "Attach files" }));
     expect(picker).toHaveBeenCalledOnce();

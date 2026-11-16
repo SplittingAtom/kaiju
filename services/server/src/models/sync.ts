@@ -34,6 +34,7 @@ import {
 } from "./desired.js";
 import type { LocalEmbeddingConfig } from "./config.js";
 import { withLocalEmbedding } from "./local-embedding.js";
+import { readMemorySiteSettings } from "../memory/site-settings.js";
 import { reconcile } from "./reconcile.js";
 
 /** Session advisory lock held by the one replica that syncs the gateway ("kobe" + 40). */
@@ -238,9 +239,9 @@ export class ModelGatewaySync {
     const { db, logger } = this.options;
     const [state] = await db.select().from(modelGatewayState);
     const version = state?.desiredVersion ?? 0;
-    const { providers, catalog, teams, unreadable } = await this.loadInputs();
+    const { providers, catalog, teams, unreadable, siteModels } = await this.loadInputs();
     const desired = buildDesiredState(
-      { providers, catalog, teams },
+      { providers, catalog, teams, siteModels },
       this.options.fingerprintSecret,
       this.options.limits,
     );
@@ -275,6 +276,7 @@ export class ModelGatewaySync {
     catalog: { alias: string; providerId: string; model: string }[];
     teams: TeamSnapshot[];
     unreadable: boolean;
+    siteModels: string[];
   }> {
     const { db, logger, providerKeys } = this.options;
     const [providerRows, catalog] = await Promise.all([
@@ -359,7 +361,10 @@ export class ModelGatewaySync {
         keys: new Map(keys.map((k) => [k.userId, { vkId: k.vkId, valueEnc: k.valueEnc }])),
       };
     });
-    return { providers, catalog, teams, unreadable };
+    // KOBE-409: the Site embedding model is allowed on every member's key (server calls only:
+    // the gateway takes it on memory_embed tokens alone).
+    const embedding = (await readMemorySiteSettings(db)).embedding_model;
+    return { providers, catalog, teams, unreadable, siteModels: embedding ? [embedding] : [] };
   }
 
   /**

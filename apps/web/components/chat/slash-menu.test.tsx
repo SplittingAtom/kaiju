@@ -99,6 +99,7 @@ describe("the / menu lists the bound actions (ac-1)", { timeout: 30_000 }, () =>
       "/saveskill skill, Save skill to Workbench, unavailable: No skill folder in /workspace/skills yet: ask skill-creator to build one.",
       "/rename, Rename",
       "/fork, Fork to a new thread",
+      "/learn range, Learn from this chat, unavailable: No learning model is set.",
       "/stop, Stop, unavailable: Nothing is running.",
       "/search, Search actions, threads and files",
       "/shortcuts, Keyboard shortcuts",

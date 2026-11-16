@@ -1,4 +1,5 @@
 import type { SessionSigningKey } from "@kobe/session-token";
+import type { QueryEmbedder } from "../memory/embeddings/service.js";
 import { randomUUID } from "node:crypto";
 import type { NotebookFiles } from "../notebooks/files.js";
 import type { Server } from "node:http";
@@ -82,6 +83,8 @@ export interface SandboxWireOptions {
   readonly traceSpanKey?: Uint8Array;
   /** Server calls a completed run may announce (KOBE-234/219); unset: none. */
   readonly serverCalls?: readonly ServerCallPurpose[];
+  /** The selector's query embedding (KOBE-409); unset: memory search is keyword-only. */
+  readonly memoryEmbeddings?: QueryEmbedder;
   /** Connections one replica accepts. */
   readonly maxConnections?: number;
   /** Run the lost-sandbox sweep on a timer (default true; tests call `sweep()`). */
@@ -290,6 +293,7 @@ export function createSandboxWire(options: SandboxWireOptions): SandboxWire {
     ...(options.runTokenKey ? { runTokenKey: options.runTokenKey } : {}),
     ...(traceRelay ? { traceRelay } : {}),
     serverCalls: options.serverCalls ?? [],
+    ...(options.memoryEmbeddings ? { memoryEmbeddings: options.memoryEmbeddings } : {}),
     tools,
     policy: {
       db,

@@ -50,6 +50,7 @@ import { endRunInTx, loadRun, runStillOpen } from "./run-state.js";
 import { mirrorBranchSummaryInTx, parseBranchSummaryResult } from "./branch-summary-end.js";
 import { buildRunMemory } from "../memory/agent.js";
 import { buildPolicyOnly, buildRunSemantic } from "../memory/items/run-memory.js";
+import { startVectorLeg } from "../memory/items/vector-leg.js";
 import { recordRunMemory } from "../memory/items/run-records.js";
 import { readRunMemoryPlan, type RunMemoryPlan } from "../agents/run-memory.js";
 import { markTold, untoldNotes, type AgentNotes } from "../sync-conflicts/store.js";
@@ -614,6 +615,21 @@ export class CommandDelivery {
       );
       return;
     }
+    // KOBE-409 review M1: the memory query embedding runs beside the session restore and the
+    // claim (usually started already when the message was accepted, on the replica that took it).
+    if (
+      row.kind === "run.start" &&
+      row.runId !== null &&
+      this.#host.target.evalThreadId === undefined
+    ) {
+      this.#ctx.memoryEmbeddings?.prefetchQuery?.({
+        teamId,
+        userId,
+        threadId: row.threadId,
+        runId: row.runId,
+        message: (frame as RunStartFrame).message,
+      });
+    }
     const starts = startsRun(row.kind);
     if (starts) {
       const session = await this.#ensureSession(row.threadId);
@@ -925,7 +941,28 @@ export class CommandDelivery {
     opts: { readonly policyOnly: boolean; readonly agentPlaces: boolean },
   ): Promise<{ readonly semantic: RunSemanticMemory; readonly fresh: boolean } | undefined> {
     const { teamId, userId } = this.#host.target;
-    const input = { teamId, userId, threadId, runId, message, ...opts };
+    // KOBE-409: the vector leg (query embedding, paid by the run's member, then the nearest items)
+    // starts once the switches allow a lane and runs beside the keyword read; late or failed:
+    // keywords alone.
+    const embeddings = this.#ctx.memoryEmbeddings;
+    const vectorLeg =
+      opts.policyOnly || embeddings === undefined
+        ? undefined
+        : () =>
+            startVectorLeg(
+              this.#ctx.db,
+              { teamId, userId },
+              embeddings.queryVector({ teamId, userId, threadId, runId, message }),
+            );
+    const input = {
+      teamId,
+      userId,
+      threadId,
+      runId,
+      message,
+      ...opts,
+      ...(vectorLeg ? { vectorLeg } : {}),
+    };
     try {
       return await withTeam(this.#ctx.db, teamId, (tx) => buildRunSemantic(tx, input));
     } catch (err) {

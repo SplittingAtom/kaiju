@@ -62,6 +62,14 @@ const bindings: MenuBindings = {
     ],
   },
   "regenerate-thread-with": { choices: [], blocker: "Wait for the current run to finish." },
+  // KOBE-395: an optional argument; the bare word runs onSelect.
+  learn: {
+    onSelect: run,
+    choices: [
+      { key: "new", label: "New messages since the last pass", onSelect: vi.fn() },
+      { key: "all", label: "The whole chat (rescan)", onSelect: vi.fn() },
+    ],
+  },
   // Bound but without a `/` word: never listed.
   "trash-thread": { onSelect: run },
 };
@@ -163,6 +171,16 @@ describe("slashOutcome", () => {
     expect(slashOutcome(pick("move", "bud"), entries)).toEqual({
       kind: "run",
       run: bindings["move-thread"]?.choices?.[1]?.onSelect,
+    });
+  });
+
+  it("runs an optional-argument action bare (/learn) and its choice after a space (/learn all)", () => {
+    expect(slashOutcome(pick("learn"), entries)).toEqual({ kind: "run", run });
+    const all = slashItems({ offset: 0, name: "learn", arg: "all" }, entries);
+    expect(all.map((i) => i.label)).toEqual(["The whole chat (rescan)"]);
+    expect(slashOutcome(pick("learn", "all"), entries)).toEqual({
+      kind: "run",
+      run: bindings.learn?.choices?.[1]?.onSelect,
     });
   });
 
