@@ -591,6 +591,27 @@ only via Kobe's **model-gateway shim** (spec D30): no provider key ever enters a
   most 400 days) and `bucket` (`hour`/`day`); per run and per thread for whoever can read them
   (`GET /v1/runs/{id}/usage`, `GET /v1/threads/{id}/usage`).
 
+### Vector search for memory (pgvector)
+
+Memory search by meaning (KOBE-409) stores each memory's vector in Postgres with the
+[pgvector](https://github.com/pgvector/pgvector) extension (PostgreSQL License). It is optional:
+without it Kobe runs as before and memory search uses word matching, and the Site console's
+memory page says so.
+
+- **Enable it.** pgvector is not a trusted extension and Kobe's migration role is never a
+  superuser, so install the pgvector package for your Postgres 17 server (or use a Postgres image
+  that has it), then once, as a superuser, in Kobe's database: `CREATE EXTENSION vector;`. The
+  next Kobe upgrade (or migration run) adds the vector columns; nothing else changes. If the
+  migration role may create the extension itself, the migration does it.
+- **Check it.** Site console › Settings › Memory shows "Search by meaning" with a count of
+  memories that have vectors, or a notice naming what is missing.
+- **Then** choose the embedding model there (the in-cluster model below, or an external one) and
+  build vectors. Every embedding call goes through the model gateway with a server-call token
+  (purpose `memory_embed`, `POST /v1/embeddings` only; sandboxes cannot reach it) and is charged
+  to the member who caused it; the sync allows the chosen model on every member's virtual key so
+  no workspace has to enable it. No vector index is created: as with full-text search, row-level
+  security keeps each search to one workspace's memories.
+
 ### Embeddings (in-cluster CPU model)
 
 Kobe's embedding model (for Semantic Memory, KOBE-409) is reached only through the model gateway,
@@ -1131,7 +1152,7 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   until an admin turns them off, so the upgrade changes no behaviour. Site values are new
   `site_settings` keys (`memory.memories_enabled`, `memory.portable_enabled`,
   `memory.learn_enabled`, `memory.site_proposals_enabled`, and the JSON document
-  `memory.settings`: learning and embedding model, context budget 4–16 KiB, scope limits, version
+  `memory.settings`: learning model alias and embedding model (a gateway model id), context budget 4–16 KiB, scope limits, version
   cap, stale threshold, retention window, rate limits); workspace values are the `memory` key of
   `teams.settings`. Learn needs a learning model the workspace has enabled and never falls back to
   the conversation's model. Turning a switch off deletes nothing. The admin tool

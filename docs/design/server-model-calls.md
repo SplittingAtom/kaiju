@@ -233,8 +233,13 @@ batch of up to 64, floats only, no `dimensions`). Embeddings generate no text, s
 output allowance is 0 and the usage meter never counts the returned vectors as output; the input is
 the provider's `prompt_tokens`, else estimated from the request size.
 
-The run is optional attribution: the selector's query embedding names the run being started (not
-yet completed, so the completed-run check does not apply), saves and backfill name none. The budget
+The run is optional: the selector's query embedding names the run being started, saves and
+backfill name none. A token that names a run must name a live run of that thread leased to that
+member: any status but a terminal failure (queued, running, waiting for approval or completed;
+never failed, interrupted, cancelled or budget-stopped), else 403 `server_call_run_mismatch`. The
+model is the Site embedding model, a gateway model id in no catalog: the gateway does not require
+the Workspace to enable it on `memory_embed` tokens, and Bifrost still decides, because the sync
+adds the Site embedding model to every member's virtual key and nothing else. The budget
 is the token's (team, user): the run's member, the person saving (in the Workspace they act in), or
 the Site admin who started a backfill or re-embed. At 100 % of a budget line the call is refused and
 the item stays on keyword search.
