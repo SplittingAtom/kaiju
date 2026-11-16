@@ -199,7 +199,12 @@ export interface ServerDepsOptions {
    * (`kobe-local/<model>`, KOBE-659), offered in the Site console; unset: none runs. Tests may
    * shorten the selector's query-embedding deadline.
    */
-  readonly embeddings?: { readonly localModel?: string; readonly queryDeadlineMs?: number };
+  readonly embeddings?: {
+    readonly localModel?: string;
+    readonly queryDeadlineMs?: number;
+    /** Build vectors' first wait for the gateway sync (tests: 0). */
+    readonly gatewaySyncWaitMs?: number;
+  };
   /**
    * Answer ratings as trace scores (KOBE-275): the tracing backend's score sink (Langfuse only,
    * `@kobe/telemetry` createLangfuseScoreSink) and whether scores may carry the comment
@@ -506,6 +511,9 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     embeddings: memoryEmbeddings,
     background,
     log: logger.child({ component: "memory-vectors" }),
+    ...(options.embeddings?.gatewaySyncWaitMs === undefined
+      ? {}
+      : { gatewaySyncWaitMs: options.embeddings.gatewaySyncWaitMs }),
   });
   // Project files in members' workspaces (KOBE-162); `index.ts` binds the workspace store later.
   const projectMounts = createProjectMounts(database.db, logger);

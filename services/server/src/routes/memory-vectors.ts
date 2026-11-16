@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import type { Context, MiddlewareHandler } from "hono";
-import { getMembership } from "@kobe/db";
 import {
-  readActiveTeamId,
+  requestNamesTeam,
   requireSitePermission,
+  requireTeam,
   type TeamVariables,
 } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
@@ -13,14 +13,17 @@ import { readCoverage } from "../memory/embeddings/vector-store.js";
 type Ctx = Context<{ Variables: TeamVariables }>;
 
 /**
- * The Workspace a Site admin acts in (their session's active Workspace, where they are still a
- * member): it pays for vectors they start (KOBE-409 billing). Null without one.
+ * The Workspace a Site admin acts in (the request's team, resolved and membership-checked by
+ * `requireTeam`: the team header with the session's active team, or an admin tool's run team): it
+ * pays for vectors they start (KOBE-409 billing). Null without one.
  */
 export async function adminWorkspace(deps: ServerDeps, c: Ctx): Promise<string | null> {
-  const teamId = await readActiveTeamId(deps, c.get("sessionId"));
-  if (teamId === null) return null;
-  const role = await getMembership(deps.database.db, teamId, c.get("user").id);
-  return role === null ? null : teamId;
+  if (!(await requestNamesTeam(deps, c))) return null;
+  let teamId: string | null = null;
+  await requireTeam(deps)(c, async () => {
+    teamId = c.get("team").id;
+  });
+  return teamId;
 }
 
 /**

@@ -42,8 +42,5 @@ export async function embeddingModelFor(
   localModel: string | undefined,
 ): Promise<EmbeddingModel> {
   const settings = await readMemorySiteSettings(db);
-  return pickEmbeddingModel(
-    settings.embedding_model,
-    await gatewayProviderNames(db, localModel),
-  );
+  return pickEmbeddingModel(settings.embedding_model, await gatewayProviderNames(db, localModel));
 }

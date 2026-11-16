@@ -79,11 +79,12 @@ export interface RunSemanticInput {
    */
   readonly agentPlaces?: boolean;
   /**
-   * The vector leg's rows for this message (KOBE-409, `startVectorLeg`), started before the
-   * keyword read and bounded by its deadline: undefined when late, failed or unavailable, and the
-   * message is ranked by keywords alone.
+   * Starts the vector leg for this message (KOBE-409, `startVectorLeg`): called only once the
+   * switches allow at least one lane (so no embedding is paid for a run without memories), right
+   * before the keyword read; resolves within its deadline, undefined when late, failed or
+   * unavailable, and the message is ranked by keywords alone.
    */
-  readonly vectorRows?: Promise<readonly ItemRow[] | undefined>;
+  readonly vectorLeg?: () => Promise<readonly ItemRow[] | undefined>;
 }
 
 /** The words of `text` the full-text query ORs together (letters and digits only). */
@@ -322,13 +323,14 @@ export async function buildRunSemantic(
     };
   }
   if (!memory.policy && lanes.length === 0) return undefined;
+  const vectorRows = lanes.length > 0 ? input.vectorLeg?.() : undefined;
   const q: Query = {
     words: queryWords(context.text),
     message: trigrams(input.message.slice(0, TRIGRAM_MESSAGE_MAX_CHARS)),
     sticky: context.sticky,
   };
   const rows = await withVectorLeg(
-    input,
+    vectorRows,
     lanes,
     q,
     await readLanes(tx, input, memory.policy, lanes, q),
@@ -389,13 +391,14 @@ export async function readRunCandidates(
   const context = await readQueryContext(tx, input);
   const { memory, settings } = context;
   const lanes = SELECT_LANES.filter((s) => memory.scopes[s]);
+  const vectorRows = lanes.length > 0 ? input.vectorLeg?.() : undefined;
   const q: Query = {
     words: queryWords(context.text),
     message: trigrams(input.message.slice(0, TRIGRAM_MESSAGE_MAX_CHARS)),
     sticky: context.sticky,
   };
   const rows = await withVectorLeg(
-    input,
+    vectorRows,
     lanes,
     q,
     await readLanes(tx, input, memory.policy, lanes, q),
@@ -436,13 +439,13 @@ export async function buildPolicyOnly(
  * in time and the leg answered within its own deadline; otherwise the keyword rows alone.
  */
 async function withVectorLeg(
-  input: RunSemanticInput,
+  vectorRows: Promise<readonly ItemRow[] | undefined> | undefined,
   lanes: readonly SelectLane[],
   q: Query,
   keyword: ItemRow[],
 ): Promise<ItemRow[]> {
-  if (input.vectorRows === undefined || lanes.length === 0) return keyword;
-  const vector = await input.vectorRows;
+  if (vectorRows === undefined || lanes.length === 0) return keyword;
+  const vector = await vectorRows;
   return vector === undefined ? keyword : mergeVectorRows(keyword, vector, lanes, q.sticky);
 }
 

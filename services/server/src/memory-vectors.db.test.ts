@@ -55,7 +55,7 @@ beforeAll(async () => {
   await fx.setup([{}], () => ({
     blobs: { objects: new MemoryObjects(), prefix: "kobe/" },
     serverCalls: { gatewayUrl: "http://gateway.test", key: PAIR.signing, fetch: gateway },
-    embeddings: { localModel: "kobe-local/nomic-embed-text" },
+    embeddings: { localModel: "kobe-local/nomic-embed-text", gatewaySyncWaitMs: 0 },
   }));
   const email = `vec-adm-${randomUUID().slice(0, 6)}@events.test`;
   const { id } = await fx
@@ -228,12 +228,25 @@ describe("memory vectors (KOBE-409)", () => {
     const leg = (model: string) =>
       startVectorLeg(db, who, Promise.resolve({ model, vector: conceptVector(message) }), 5000);
     const hybrid = await withTeam(db, team, (tx) =>
-      buildRunSemantic(tx, { ...base, vectorRows: leg(MODEL) }),
+      buildRunSemantic(tx, { ...base, vectorLeg: () => leg(MODEL) }),
     );
     expect(hybrid?.semantic.items.map((i) => i.id)).toContain(id);
+    // No lane (Policy only, or memories off): the leg never starts, so no embedding is paid for.
+    let started = false;
+    await withTeam(db, team, (tx) =>
+      buildRunSemantic(tx, {
+        ...base,
+        policyOnly: true,
+        vectorLeg: () => {
+          started = true;
+          return leg(MODEL);
+        },
+      }),
+    );
+    expect(started).toBe(false);
     // A vector of another model (or dimension count) finds nothing extra.
     const mismatch = await withTeam(db, team, (tx) =>
-      buildRunSemantic(tx, { ...base, vectorRows: leg("kobe-local/other") }),
+      buildRunSemantic(tx, { ...base, vectorLeg: () => leg("kobe-local/other") }),
     );
     expect(mismatch?.semantic.items.map((i) => i.id) ?? []).not.toContain(id);
     // The service's query vector: paid by the run's member, naming the run.
@@ -244,7 +257,7 @@ describe("memory vectors (KOBE-409)", () => {
     const { candidates } = await withTeam(db, team, (tx) =>
       readRunCandidates(tx, {
         ...base,
-        vectorRows: startVectorLeg(db, who, Promise.resolve(qv), 5000),
+        vectorLeg: () => startVectorLeg(db, who, Promise.resolve(qv), 5000),
       }),
     );
     expect(candidates.user?.find((c) => c.item.id === id)?.vector).toBeGreaterThan(0.9);

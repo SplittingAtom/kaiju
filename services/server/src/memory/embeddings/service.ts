@@ -174,7 +174,11 @@ export class MemoryEmbeddings implements QueryEmbedder {
     table: VectorTable,
     rowsTeamId: string | undefined,
     model: string,
-    pending: readonly { readonly itemId: string; readonly version: number; readonly statement: string }[],
+    pending: readonly {
+      readonly itemId: string;
+      readonly version: number;
+      readonly statement: string;
+    }[],
   ): Promise<{ readonly stored: number } | { readonly refused: string }> {
     const client = this.#o.client;
     if (!client) return { refused: "no_client" };

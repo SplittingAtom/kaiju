@@ -1,4 +1,4 @@
-import { scanTeams, withTeam, type KobeDb } from "@kobe/db";
+import { modelGatewayState, scanTeams, withTeam, type KobeDb } from "@kobe/db";
 import { MEMORY_EMBED_MAX_INPUTS } from "@kobe/protocol";
 import type { Logger } from "pino";
 import type { BackgroundTasks } from "../../background.js";
@@ -38,6 +38,22 @@ export interface BuildOptions {
   readonly background: BackgroundTasks;
   readonly log: Pick<Logger, "info" | "warn">;
   readonly now?: () => Date;
+  /**
+   * How long a job first waits for the gateway sync to push the new model onto every member's
+   * virtual key (`model_gateway_state` synced at the desired version), default 60 s; then it
+   * starts anyway (a refusal stops it and the admin can start it again).
+   */
+  readonly gatewaySyncWaitMs?: number;
+}
+
+/** Polls until the gateway sync caught up with the desired configuration, or `waitMs` passed. */
+async function waitForGatewaySync(db: KobeDb, waitMs: number): Promise<void> {
+  const until = Date.now() + waitMs;
+  while (Date.now() < until) {
+    const [s] = await db.select().from(modelGatewayState);
+    if (!s || s.syncedVersion >= s.desiredVersion) return;
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
 }
 
 /** Where to look next: the site-wide tables, then one Workspace at a time. */
@@ -100,6 +116,7 @@ export class VectorBackfill {
   async #run(admin: { readonly userId: string; readonly teamId: string }, model: string) {
     let stopReason: string | null = null;
     try {
+      await waitForGatewaySync(this.#o.db, this.#o.gatewaySyncWaitMs ?? 60_000);
       const teams = await scanTeams(this.#o.db, "memory vector build", async (_tx, t) => t.id);
       const targets: Target[] = [
         { table: "site" },

@@ -145,11 +145,12 @@ const build = async (run: string, message: string, queryVector?: number[]) => {
       message,
       ...(queryVector
         ? {
-            vectorRows: startVectorLeg(
-              h.deps.database.db,
-              { teamId: team, userId: runner },
-              Promise.resolve({ model: VECTOR_MODEL, vector: queryVector }),
-            ),
+            vectorLeg: () =>
+              startVectorLeg(
+                h.deps.database.db,
+                { teamId: team, userId: runner },
+                Promise.resolve({ model: VECTOR_MODEL, vector: queryVector }),
+              ),
           }
         : {}),
     }),

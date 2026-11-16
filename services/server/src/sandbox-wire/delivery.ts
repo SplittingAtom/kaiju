@@ -927,15 +927,18 @@ export class CommandDelivery {
   ): Promise<{ readonly semantic: RunSemanticMemory; readonly fresh: boolean } | undefined> {
     const { teamId, userId } = this.#host.target;
     // KOBE-409: the vector leg (query embedding, paid by the run's member, then the nearest items)
-    // starts at once and runs beside the keyword read; late or failed: keywords alone.
-    const vectorRows =
-      opts.policyOnly || this.#ctx.memoryEmbeddings === undefined
+    // starts once the switches allow a lane and runs beside the keyword read; late or failed:
+    // keywords alone.
+    const embeddings = this.#ctx.memoryEmbeddings;
+    const vectorLeg =
+      opts.policyOnly || embeddings === undefined
         ? undefined
-        : startVectorLeg(
-            this.#ctx.db,
-            { teamId, userId },
-            this.#ctx.memoryEmbeddings.queryVector({ teamId, userId, threadId, runId, message }),
-          );
+        : () =>
+            startVectorLeg(
+              this.#ctx.db,
+              { teamId, userId },
+              embeddings.queryVector({ teamId, userId, threadId, runId, message }),
+            );
     const input = {
       teamId,
       userId,
@@ -943,7 +946,7 @@ export class CommandDelivery {
       runId,
       message,
       ...opts,
-      ...(vectorRows ? { vectorRows } : {}),
+      ...(vectorLeg ? { vectorLeg } : {}),
     };
     try {
       return await withTeam(this.#ctx.db, teamId, (tx) => buildRunSemantic(tx, input));

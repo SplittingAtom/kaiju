@@ -171,10 +171,8 @@ describe("memory relevance eval (KOBE-387)", () => {
         latencies.push(performance.now() - t0);
         const query = { model: endpoint.storedModel, vector: vector ?? [] };
         // The leg's own deadline is lifted here: this measures ranking, not latency.
-        const vectorRows = startVectorLeg(db, input, Promise.resolve(query), 60_000);
-        const h2 = await withTeam(db, team, (tx) =>
-          readRunCandidates(tx, { ...input, vectorRows }),
-        );
+        const vectorLeg = () => startVectorLeg(db, input, Promise.resolve(query), 60_000);
+        const h2 = await withTeam(db, team, (tx) => readRunCandidates(tx, { ...input, vectorLeg }));
         const ranked2 = Object.fromEntries(
           RANK_MODES.map((m) => [m, toFixture(rankCandidates(h2.candidates, m))]),
         ) as Record<RankMode, string[]>;
