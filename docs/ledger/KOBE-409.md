@@ -56,7 +56,8 @@
   it); a removed provider shows as removed, never a fallback. The sync adds the model to every
   member's virtual key; the gateway skips the Workspace-enabled check on `memory_embed` only.
 - **Gateway hardening:** a `memory_embed` token naming a run needs a live run of that thread
-  leased to that member (queued/running/waiting/completed; `serverCallRunMatches({live:true})`).
+  owned by that member (queued/running/waiting/completed; `serverCallRunMatches({live:true})`);
+  owner, not lease, since review M1 (the embedding starts before any lease exists).
 - **Embed on save:** create, edit, revert, import (all scopes) via the item/transfer routes, in
   `BackgroundTasks` after the response; payer = saver + the Workspace they act in (none: skipped).
   Prefixes: nomic `search_document:`/`search_query:`, qwen3 query instruction (`prefixes.ts`).
@@ -76,6 +77,22 @@
   round trips); hybrid with the leg beside it p50 39 / p95 57 ms, leg answered 20/20. An earlier
   design (leg after the keyword read, in a savepoint) always timed out at 15 ms. The perf test
   bounds hybrid p95 by max(budget, keyword p95) + 10 ms.
+
+- **Review fixes (2026-11-15, commits after 9983ac5f):**
+  M1 the query embedding starts when the start is sent (`RunDispatcher.start` →
+  `MemoryEmbeddings.prefetchQuery`) and again as delivery begins; selection takes the running
+  promise, deadline 35 ms; per process (other replica: started at delivery); a run without lanes
+  pays nothing (`runWantsVectors`); Site model/pgvector state served stale-while-refresh.
+  M2 data flow stated in the memory guide, site-admin guide and the embedding field's hint.
+  L3 refuses catalog chat models and ids missing from the provider's Bifrost list (no list:
+  accepted). L4 gateway filters `GET /v1/models` to enabled models (fails closed, `model-list.ts`).
+  L5 a late query vector reads no rows. L6 Build vectors holds advisory lock
+  `kobe.memory-vector-build`; a second start is 409 `running`.
+  Perf (this VM, LAN pg, strict): 150 ms embed + 250 ms wake → vector in time 20/20 (0/5 when
+  started at selection); p95 80.6 ms vs keyword-only after the same pause 75.6 ms (idle
+  connections are slower either way; back-to-back keyword p95 36 ms).
+- **Rebase note:** `origin/kobe-409-sm-migration` has 2 newer commits (main merge + sink.test.ts
+  fix); the coordinator rebases after the migration PR merges.
 
 ## Open questions (for Chris or the coordinator)
 
@@ -97,7 +114,11 @@ KOBE_EVAL_EMBED_MODEL=qwen3-embedding:0.6b e2e/memory-eval.sh relevance` (then
   `memory/embeddings/service.test.ts` (deadline, errors, no model); web
   `components/admin/memory-switches.test.tsx` "search by meaning" (pgvector missing, no model,
   coverage + Re-embed, gateway model saved).
-- Perf: `memory-selection-perf.db.test.ts` (hybrid case).
+- Perf: `memory-selection-perf.db.test.ts` (hybrid case; realistic embed latency case, M1).
+- Review fixes: `memory/embeddings/service.test.ts` (M1 early start, L5), `runs/dispatch.test.ts`
+  (embedding started before run.start), `memory-vectors.db.test.ts` (M1 prefetch, L3, L6),
+  `model-gateway/src/gateway.test.ts` + `model-list.test.ts` (L4), `model-gateway.db.test.ts`
+  (unleased live claim), web `memory-switches.test.tsx` (M2 hint).
 - ac-1: harness hybrid mode `services/server/src/testing/memory-eval/relevance.eval.ts` +
   `embed-endpoint.ts`; numbers pending (see open questions).
 - ac-4: docs/guide/memory.md (Search by meaning; /llms.txt is generated from it),
