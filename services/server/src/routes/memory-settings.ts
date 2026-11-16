@@ -10,9 +10,10 @@ import {
 } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { learnAvailability } from "../memory/learning-model.js";
-import { gatewayProviderNames } from "../memory/embeddings/model.js";
+import { embeddingModelListed, gatewayProviderNames } from "../memory/embeddings/model.js";
 import { adminWorkspace } from "./memory-vectors.js";
 import {
+  gatewayProviderOf,
   readMemorySiteSettings,
   removedModelSettings,
   writeMemorySiteSettings,
@@ -142,6 +143,8 @@ export function memorySettingsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
     if (!body || (empty(switches) && (settings === undefined || empty(settings)))) {
       return invalidRequest(c, "Send at least one switch or setting (expected is for level=team).");
     }
+    const refused = await unlistedEmbedding(settings?.embedding_model);
+    if (refused) return c.json(refused, 400);
     let embeddingChanged = false;
     const out = await db.transaction(async (tx) => {
       await lockSiteMemorySettings(tx);
@@ -179,6 +182,22 @@ export function memorySettingsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
       }
     }
     return c.json(out);
+  }
+
+  /**
+   * Review L3: a new embedding model must be one its provider lists, when the gateway has a list
+   * for it (Bifrost's cache, read before the transaction). A provider without one is accepted.
+   */
+  async function unlistedEmbedding(
+    model: string | null | undefined,
+  ): Promise<{ readonly code: string; readonly message: string } | undefined> {
+    if (!model || (await readMemorySiteSettings(db)).embedding_model === model) return undefined;
+    const listed = await embeddingModelListed(deps.models?.discovery, model);
+    if (listed !== "not_listed") return undefined;
+    return {
+      code: "unknown_embedding_model",
+      message: `The provider "${gatewayProviderOf(model)}" does not list "${model.slice(model.indexOf("/") + 1)}": pick one of its models.`,
+    };
   }
 
   async function putTeam(c: Context<{ Variables: TeamVariables }>) {

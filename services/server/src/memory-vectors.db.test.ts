@@ -52,8 +52,22 @@ let admin: Person & { readonly id: string };
 let member: Person;
 let team: string;
 
+/** Bifrost's model listing (KOBE-409 L3): `openai` lists its models; `kobe-local` none. */
+const discovery = {
+  listKeys: async () => [],
+  listModelInfo: async (provider: string) =>
+    provider === "openai"
+      ? ["openai/gpt-fake", "openai/text-embedding-3-small"].map((name) => ({
+          name,
+          inputModalities: [],
+        }))
+      : [],
+  refreshModels: async () => undefined,
+};
+
 beforeAll(async () => {
   await fx.setup([{}], () => ({
+    models: { providerKeySecrets: ["p".repeat(40)], discovery },
     blobs: { objects: new MemoryObjects(), prefix: "kobe/" },
     serverCalls: { gatewayUrl: "http://gateway.test", key: PAIR.signing, fetch: gateway },
     embeddings: { localModel: "kobe-local/nomic-embed-text", gatewaySyncWaitMs: 0 },
@@ -124,6 +138,30 @@ describe("memory vectors (KOBE-409)", () => {
       server_calls: true,
     });
     expect((state.json as { providers: string[] }).providers).toContain("kobe-local");
+  });
+
+  it("the embedding model is no chat catalog model and is one its provider lists (review L3)", async () => {
+    await fx.admin.query(
+      `INSERT INTO model_providers (id, kind, name, api_key_enc, created_by)
+       VALUES ('openai', 'openai', 'openai', 'v2.test.sealed-provider-key', $1)
+       ON CONFLICT (id) DO NOTHING`,
+      [admin.id],
+    );
+    await fx.admin.query(
+      `INSERT INTO model_catalog (alias, provider_id, model, created_by)
+       VALUES ('vec-chat', 'openai', 'gpt-fake', $1) ON CONFLICT (alias) DO NOTHING`,
+      [admin.id],
+    );
+    const code = async (model: string) => {
+      const res = await setModel(model);
+      return [res.status, (res.json as { code?: string }).code ?? null];
+    };
+    expect(await code("openai/gpt-fake")).toEqual([400, "embedding_is_chat_model"]);
+    expect(await code("openai/not-a-model")).toEqual([400, "unknown_embedding_model"]);
+    expect(await code("openai/text-embedding-3-small")).toEqual([200, null]);
+    // A provider without a model list (keyless, no discovery): accepted as typed.
+    expect(await code(MODEL)).toEqual([200, null]);
+    await fx.replica(0).deps.background.idle();
   });
 
   it("embeds on save, paid by the saver in their Workspace; a budget refusal keeps the save", async () => {

@@ -2,7 +2,9 @@ import { z } from "zod";
 import {
   MODEL_ALIAS_PATTERN,
   eq,
+  gatewayProviderName,
   modelCatalog,
+  modelProviders,
   siteSettings,
   type KobeDb,
   type KobeTx,
@@ -152,6 +154,15 @@ async function inCatalog(db: KobeDb | KobeTx, alias: string): Promise<boolean> {
   return m !== undefined;
 }
 
+/** Whether `model` (`<gateway provider>/<model>`) is a chat model of the catalog (review L3). */
+async function isCatalogChatModel(db: KobeDb | KobeTx, model: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: modelProviders.id, kind: modelProviders.kind, model: modelCatalog.model })
+    .from(modelCatalog)
+    .innerJoin(modelProviders, eq(modelProviders.id, modelCatalog.providerId));
+  return rows.some((r) => `${gatewayProviderName(r.id, r.kind)}/${r.model}` === model);
+}
+
 /**
  * The model settings whose model is gone (review M1): the learning alias left the catalog, or the
  * embedding model's provider left the gateway (`providers`: the gateway provider names now). The
@@ -181,7 +192,11 @@ export type SiteSettingsWrite =
     }
   | {
       readonly ok: false;
-      readonly code: "unknown_alias" | "unknown_embedding_provider";
+      readonly code:
+        | "unknown_alias"
+        | "unknown_embedding_provider"
+        | "embedding_is_chat_model"
+        | "unknown_embedding_model";
       readonly message: string;
     };
 
@@ -190,7 +205,9 @@ export type SiteSettingsWrite =
  * `lockSiteMemorySettings`). A model is checked only when it changes, so a stale stored value
  * never blocks saving other fields: a learning alias against the catalog (whether a Workspace
  * enabled it is checked when it is used), an embedding model's provider against `providers` (the
- * gateway provider names now).
+ * gateway provider names now) and against the chat catalog (review L3: a chat model is refused).
+ * Whether the provider lists the model is checked by the route, outside the transaction
+ * (`embeddingModelListed`).
  */
 export async function writeMemorySiteSettings(
   tx: KobeTx,
@@ -216,6 +233,17 @@ export async function writeMemorySiteSettings(
       ok: false,
       code: "unknown_embedding_provider",
       message: `The gateway has no provider "${gatewayProviderOf(embedding)}": add it in Site settings › Models, or name the in-cluster model.`,
+    };
+  }
+  if (
+    embedding &&
+    embedding !== before.embedding_model &&
+    (await isCatalogChatModel(tx, embedding))
+  ) {
+    return {
+      ok: false,
+      code: "embedding_is_chat_model",
+      message: `"${embedding}" is a chat model in the catalog: name the provider's embedding model.`,
     };
   }
   const given = Object.fromEntries(Object.entries(change).filter(([, v]) => v !== undefined));

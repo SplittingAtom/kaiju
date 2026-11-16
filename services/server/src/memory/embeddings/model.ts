@@ -1,4 +1,5 @@
 import { gatewayProviderName, modelProviders, type KobeDb, type KobeTx } from "@kobe/db";
+import { catalogModelIds, type ModelDiscovery } from "../../models/discovery.js";
 import { gatewayProviderOf, readMemorySiteSettings } from "../site-settings.js";
 
 /**
@@ -43,4 +44,28 @@ export async function embeddingModelFor(
 ): Promise<EmbeddingModel> {
   const settings = await readMemorySiteSettings(db);
   return pickEmbeddingModel(settings.embedding_model, await gatewayProviderNames(db, localModel));
+}
+
+/**
+ * Whether the gateway's model list for the model's provider has it (review L3; Bifrost's cache, no
+ * provider call): `listed`, `not_listed`, or `unknown` when the provider lists nothing (a keyless
+ * provider without discovery, e.g. Ollama or the in-cluster model), the list was cut short, or the
+ * gateway could not be asked. Only `not_listed` refuses the setting.
+ */
+export async function embeddingModelListed(
+  discovery: Pick<ModelDiscovery, "listModelInfo"> | undefined,
+  model: string,
+): Promise<"listed" | "not_listed" | "unknown"> {
+  if (discovery === undefined) return "unknown";
+  const provider = gatewayProviderOf(model);
+  let names: string[];
+  try {
+    names = (await discovery.listModelInfo(provider)).map((m) => m.name);
+  } catch {
+    return "unknown";
+  }
+  const { models, truncated } = catalogModelIds(names, provider);
+  if (models.length === 0) return "unknown";
+  if (models.includes(model.slice(provider.length + 1))) return "listed";
+  return truncated ? "unknown" : "not_listed";
 }
