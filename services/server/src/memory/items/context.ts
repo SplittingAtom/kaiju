@@ -49,22 +49,7 @@ export async function inStore<T>(
   const portableHolds =
     scope === "portable" && options.prunes ? await snapshotPortableHolds(db) : undefined;
   const body = async (tx: KobeTx) => {
-    const op: Op = {
-      tx,
-      ...(portableHolds ? { portableHolds } : {}),
-      who,
-      loc: locate(scope, teamId, who.userId),
-      // Without a Workspace only the Site's switches apply (portable and Site requests). Site
-      // curators curating Site items aren't limited by their active Workspace's switches either
-      // (coordinator 2026-11-13, KOBE-385): those govern what reaches that Workspace's runs, so
-      // an admin tool's read from inside a run (KOBE-650) keeps them.
-      memory:
-        teamId === null || (scope === "site" && who.viaAgent !== true && curates(who, "site"))
-          ? effectiveMemory(await readSiteSwitches(tx), WORKSPACE_SWITCHES_ON)
-          : (await readSwitches(tx, teamId)).memory,
-      settings: await readMemorySiteSettings(tx),
-      pending: [],
-    };
+    const op = await openOp(tx, who, scope, portableHolds);
     const value = await fn(op);
     pending = op.pending;
     return value;
@@ -73,6 +58,37 @@ export async function inStore<T>(
   const out = teamId === null ? await db.transaction(body) : await withTeam(db, teamId, body);
   if (pending.length > 0) await deliverSiteNotices(db, pending);
   return out;
+}
+
+/**
+ * One store call's {@link Op} on a transaction the caller holds: {@link inStore} uses it, and so
+ * does a caller that writes several items and its own rows in one transaction (To review, KOBE-396).
+ * Such a caller runs in `withTeam(who.teamId)`, reads `portableHolds` before it opens the
+ * transaction when a call may prune, and delivers each op's `pending` notices after commit.
+ */
+export async function openOp(
+  tx: KobeTx,
+  who: MemoryWho,
+  scope: SemanticMemoryScope,
+  portableHolds?: PortableHoldSnapshot,
+): Promise<Op> {
+  const teamId = who.teamId;
+  return {
+    tx,
+    ...(portableHolds ? { portableHolds } : {}),
+    who,
+    loc: locate(scope, teamId, who.userId),
+    // Without a Workspace only the Site's switches apply (portable and Site requests). Site
+    // curators curating Site items aren't limited by their active Workspace's switches either
+    // (coordinator 2026-11-13, KOBE-385): those govern what reaches that Workspace's runs, so
+    // an admin tool's read from inside a run (KOBE-650) keeps them.
+    memory:
+      teamId === null || (scope === "site" && who.viaAgent !== true && curates(who, "site"))
+        ? effectiveMemory(await readSiteSwitches(tx), WORKSPACE_SWITCHES_ON)
+        : (await readSwitches(tx, teamId)).memory,
+    settings: await readMemorySiteSettings(tx),
+    pending: [],
+  };
 }
 
 /** The item, row-locked for a write, or 404. */

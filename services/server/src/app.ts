@@ -21,6 +21,7 @@ import { fileRoutes } from "./routes/files.js";
 import { memoryRoutes } from "./routes/memory.js";
 import { memoryItemRoutes } from "./routes/memory-items.js";
 import { memoryTransferRoutes } from "./routes/memory-transfer.js";
+import { memoryReviewRoutes } from "./routes/memory-review.js";
 import { memorySettingsRoutes } from "./routes/memory-settings.js";
 import { siteMemoryStewardRoutes, teamMemoryStewardRoutes } from "./routes/memory-stewards.js";
 import { uploadRoutes } from "./routes/uploads.js";
@@ -284,6 +285,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   api.route("/memory/settings", memorySettingsRoutes(deps));
   api.route("/memory/semantic/items", memoryItemRoutes(deps));
   api.route("/memory/semantic", memoryTransferRoutes(deps));
+  api.route("/memory/review", memoryReviewRoutes(deps));
   api.route("/memory", memoryRoutes(deps));
   api.route("/uploads", uploadRoutes(deps));
   api.route("/files", fileRoutes(deps));

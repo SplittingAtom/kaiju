@@ -38,88 +38,95 @@ export function createItem(
   who: MemoryWho,
   body: CreateSemanticMemoryItem,
 ): Promise<SemanticMemoryItemDetail> {
-  return inStore(db, who, body.scope, async (op) => {
-    const policy = body.policy === true;
-    assertEnabled(op.memory, body.scope, policy);
-    assertMayWrite(who, body.scope, {
-      policyField: body.policy !== undefined,
-      targetIsPolicy: false,
-    });
-    const replaced = body.supersedes_id
-      ? await replacedItem(op, body.supersedes_id, body.supersedes_expected_version)
-      : undefined;
-    if (body.source_thread_id) await assertThreadInWorkspace(op, body.source_thread_id);
+  return inStore(db, who, body.scope, (op) => createItemIn(op, body));
+}
 
-    await lockScope(op.tx, op.loc);
-    const before = await assertRoom(op.tx, op.loc, op.settings, replaced ? 0 : 1);
-    if (body.pinned === true) await assertPinRoom(op.tx, op.loc);
-    const retired = replaced?.policy ? [replaced.id] : [];
-    if (policy) await assertPolicyBudget(op.tx, retired, body.statement);
-    const checks = await saveChecks(
-      op,
-      {
-        statement: body.statement,
-        policy,
-        except: replaced ? [replaced.id] : [],
-        tags: normaliseTags(body.tags ?? []),
-      },
-      body.overrides,
-    );
+/** {@link createItem} on an op the caller holds (`openOp`; `op.loc.scope` is `body.scope`). */
+export async function createItemIn(
+  op: Op,
+  body: CreateSemanticMemoryItem,
+): Promise<SemanticMemoryItemDetail> {
+  const who = op.who;
+  const policy = body.policy === true;
+  assertEnabled(op.memory, body.scope, policy);
+  assertMayWrite(who, body.scope, {
+    policyField: body.policy !== undefined,
+    targetIsPolicy: false,
+  });
+  const replaced = body.supersedes_id
+    ? await replacedItem(op, body.supersedes_id, body.supersedes_expected_version)
+    : undefined;
+  if (body.source_thread_id) await assertThreadInWorkspace(op, body.source_thread_id);
 
-    const id = await insertItem(op, body, policy);
-    await insertVersion(op.tx, op.loc, {
-      itemId: id,
-      version: 1,
+  await lockScope(op.tx, op.loc);
+  const before = await assertRoom(op.tx, op.loc, op.settings, replaced ? 0 : 1);
+  if (body.pinned === true) await assertPinRoom(op.tx, op.loc);
+  const retired = replaced?.policy ? [replaced.id] : [];
+  if (policy) await assertPolicyBudget(op.tx, retired, body.statement);
+  const checks = await saveChecks(
+    op,
+    {
       statement: body.statement,
-      actorKind: "user",
-      lintOverride: checks.lintOverride,
-      policyOverride: checks.policyOverride,
-      sourceThreadId: body.source_thread_id,
-      sourceEntryIds: body.source_entry_ids,
-    });
-    if (replaced) {
-      await op.tx.execute(sql`
+      policy,
+      except: replaced ? [replaced.id] : [],
+      tags: normaliseTags(body.tags ?? []),
+    },
+    body.overrides,
+  );
+
+  const id = await insertItem(op, body, policy);
+  await insertVersion(op.tx, op.loc, {
+    itemId: id,
+    version: 1,
+    statement: body.statement,
+    actorKind: "user",
+    lintOverride: checks.lintOverride,
+    policyOverride: checks.policyOverride,
+    sourceThreadId: body.source_thread_id,
+    sourceEntryIds: body.source_entry_ids,
+  });
+  if (replaced) {
+    await op.tx.execute(sql`
         UPDATE ${op.loc.items} i SET status = 'superseded', superseded_by = ${id}, updated_at = now()
          WHERE ${op.loc.where} AND i.id = ${replaced.id}`);
-    }
-    op.pending = await notifyNearFull(
-      op.tx,
-      op.loc,
-      op.settings,
-      before,
-      before + (replaced ? 0 : 1),
-    );
+  }
+  op.pending = await notifyNearFull(
+    op.tx,
+    op.loc,
+    op.settings,
+    before,
+    before + (replaced ? 0 : 1),
+  );
 
-    const teamId = auditTeam(op.loc);
-    const scope = body.scope;
-    const events: ServerAuditEvent[] = [
-      {
-        action: "memory.item.created",
-        teamId,
-        target: {
-          scope,
-          itemId: id,
-          kind: body.kind,
-          version: 1,
-          actorKind: "user",
-          pinned: body.pinned === true,
-          policy,
-        },
+  const teamId = auditTeam(op.loc);
+  const scope = body.scope;
+  const events: ServerAuditEvent[] = [
+    {
+      action: "memory.item.created",
+      teamId,
+      target: {
+        scope,
+        itemId: id,
+        kind: body.kind,
+        version: 1,
+        actorKind: "user",
+        pinned: body.pinned === true,
+        policy,
       },
-    ];
-    if (replaced)
-      events.push({
-        action: "memory.item.superseded",
-        teamId,
-        target: { scope, itemId: replaced.id, supersededBy: id },
-      });
-    events.push(...overrideAuditEvents(checks, { scope, itemId: id, version: 1, teamId }));
-    const row = await readItem(op.tx, op.loc, id);
-    if (!row) throw new Error("memory item vanished inside its own transaction");
-    const detail = await detailOf(op.tx, op.loc, who, row, op.settings.stale_after_days);
-    await audit(op, events);
-    return detail;
-  });
+    },
+  ];
+  if (replaced)
+    events.push({
+      action: "memory.item.superseded",
+      teamId,
+      target: { scope, itemId: replaced.id, supersededBy: id },
+    });
+  events.push(...overrideAuditEvents(checks, { scope, itemId: id, version: 1, teamId }));
+  const row = await readItem(op.tx, op.loc, id);
+  if (!row) throw new Error("memory item vanished inside its own transaction");
+  const detail = await detailOf(op.tx, op.loc, who, row, op.settings.stale_after_days);
+  await audit(op, events);
+  return detail;
 }
 
 /** The active item a save replaces: same scope, and the caller may change it. */
