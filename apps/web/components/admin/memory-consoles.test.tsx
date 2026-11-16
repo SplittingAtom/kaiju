@@ -66,9 +66,10 @@ describe("Workspace console Memory page (ac-1)", () => {
       [`POST ${ITEMS}/team/${WS.id}/archive`]: [200, { ...WS, status: "archived", version: 1 }],
     });
     renderTeam(<TeamMemoryPage />, { permissions: CURATOR });
-    // A steward: Memories and Import and export, no Settings.
+    // A steward: Memories, Proposals (KOBE-397) and Import and export, no Settings.
     expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual([
       "Memories",
+      "Proposals",
       "Import and export",
     ]);
     const ws = await screen.findByRole("list", { name: "Workspace memories" });
@@ -102,6 +103,7 @@ describe("Workspace console Memory page (ac-1)", () => {
     renderTeam(<TeamMemoryPage />, { permissions: ADMIN });
     expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual([
       "Memories",
+      "Proposals",
       "Import and export",
       "Settings",
     ]);
