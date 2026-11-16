@@ -2,7 +2,7 @@
 
 <!-- Keep under ~150 lines: decisions and links to evidence, not pasted logs. -->
 
-- **Status:** in progress (part 1: migration landed as its own commit)
+- **Status:** in progress: migration PR #579; contract 043c2d90 and gateway route 4b19b04f committed
 - **Branch / worktree:** `kobe-409-sm` in `../Kobe-wt409`
 - **Depends on:** KOBE-408 (earned: recall@8 0.573), KOBE-659 (in-cluster embedding model)
 
@@ -38,10 +38,23 @@
   vector-path tests in `packages/db` skip with a logged reason.
 - **Licensing:** docs/licensing.md note; inventory row `pgvector` marked `pending: gate review`.
 
+- **Billing (coordinator, 2026-11-15):** query embedding = the run's member and Workspace (run_id
+  set); embed on save = the person saving, in the Workspace they act in (Site console: the admin's
+  current Workspace; portable: the owner where they saved); backfill/re-embed only when a Site admin
+  saves the model setting or presses the action, charged to that admin and Workspace; nothing
+  auto-runs after an upgrade (notice + action). 100 % budget skips the embed, never the save.
+- **Contract:** `memory_embed` uses `/v1/embeddings` only; its run ids are attribution only (the
+  run is still starting, so no completed-run check); output cap 1 (schema minimum), allowance 0.
+- **Gateway:** the route is classified only for server-call requests (sandbox: 404); the usage
+  meter charges no output for embeddings.
+
 ## Open questions (for Chris or the coordinator)
 
-- Budget attribution of run-less embeds (background backfill, Site and portable items): see report.
+- none yet
 
 ## Evidence (acceptance criteria → test or command output)
 
 - Migration: `packages/db/src/memory-vectors.db.test.ts` (with and without pgvector, late enable).
+- ac-3: `services/model-gateway/src/server-call.test.ts` "memory embeddings (KOBE-409 ac-3)",
+  `routes.test.ts`, `usage/meter.test.ts`; `packages/protocol/src/server-call-embeddings.test.ts`;
+  docs/licensing.md pgvector note.
