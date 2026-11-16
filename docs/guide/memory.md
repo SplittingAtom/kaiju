@@ -188,6 +188,19 @@ visible and says why: memories or Learn are switched off, no learning model is a
 this workspace today, or no reply in the conversation has finished yet. Each pass is charged to
 you like any other model call.
 
+Learn never suggests, at any level (yours or the Workspace's):
+
+- something only Kobe, a tool's output, a file or a summary said: every suggestion rests on your
+  own words;
+- a password, key or token, or a statement that reads as an order to the agent;
+- a request to change what the agent may do: internet access, approvals, tool or connector
+  permissions or sandbox settings, also when it is written as a wish ("the person wants
+  internet access to … enabled"). Memory can't change these; ask an admin (internet access has
+  **Request access**);
+- other people's personal details (contact details, health, pay, family and the like), nor a rule
+  about someone that rests on such a detail ("don't share drafts with Priya" because of her
+  family). Plain work facts about colleagues ("Anna owns the Q3 report") are fine.
+
 ## Your memories
 
 The **Memories** tab of **My memory** is where you keep your own memories. It has two groups:
@@ -484,7 +497,7 @@ links written as `hxxp://example[.]com` are read as the plain words they stand f
   is exempt from this check, because Policy is the site's own rules.
 - **Personal data in shared memories gets a warning.** In Workspace and Site memories, which many
   people read, you are warned about email addresses, phone numbers, and a person's name near
-  sensitive information (health, pay, discipline, family or identity documents). Your own memories
+  sensitive information (health, pay, discipline, family members or identity documents). Your own memories
   are not checked for this.
 - **Links are shown with their host.** A link is a web address in any spelling (with
   `https:`, `www.` or a path). You are warned when a link points to a host this workspace's sandboxes can't reach (it isn't on the workspace's internet

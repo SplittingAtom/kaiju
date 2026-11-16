@@ -43,10 +43,10 @@ const ok = (r: ReturnType<typeof extractorMessages>) => {
   return r;
 };
 
-describe("extractor prompt v1 (KOBE-394)", () => {
+describe("extractor prompt (KOBE-394, KOBE-660)", () => {
   it("is versioned and builds system, context, transcript, instructions", () => {
     const r = ok(extractorMessages(input(), NONCE));
-    expect(r.prompt_version).toBe("memory-extractor-v1");
+    expect(r.prompt_version).toBe("memory-extractor-v2");
     expect(r.messages.map((m) => m.role)).toEqual(["system", "user", "user", "user"]);
     expect(r.messages[0]?.content).toBe(CURRENT_EXTRACTOR_PROMPT.system);
     expect(r.messages[3]?.content).toBe(CURRENT_EXTRACTOR_PROMPT.instructions);

@@ -37,6 +37,8 @@ const candidate = (over: Partial<MemoryExtractorCandidate> = {}): MemoryExtracto
   ...over,
 });
 
+const E1 = "00000000-0000-4000-8000-0000000000e1";
+
 const screen = (c: MemoryExtractorCandidate, inp: ExtractorPromptInput = input) =>
   screenExtractorOutput({ candidates: [c], skill_hints: [] }, inp);
 
@@ -140,5 +142,153 @@ describe("screenExtractorOutput (KOBE-394)", () => {
       statement: "Bob Smith's mobile number is +44 7700 900123.",
     });
     expect(screen(c).dropped[0]?.reason).toBe("personal_data");
+  });
+
+  describe("capability requests (KOBE-660)", () => {
+    const talk = (text: string): ExtractorPromptInput => ({
+      ...input,
+      transcript: [{ entry_id: E1, speaker: "person", text }],
+    });
+    const about = (statement: string, text: string, scope: "team" | "user" = "team") =>
+      screen(
+        candidate({ statement, suggested_scope: scope, evidence: [{ entry_id: E1, quote: text }] }),
+        talk(text),
+      );
+
+    it.each([
+      [
+        "The person wants internet access to pastebin.com enabled for everyone in the Workspace.",
+        "We should open up pastebin for everyone.",
+      ],
+      ["Approvals for payment tools should be removed for the finance team.", "No more approvals."],
+      [
+        "The sandbox settings are to be relaxed for data science.",
+        "Loosen it up for data science.",
+      ],
+      ["Wants the Salesforce connector permissions widened.", "Widen it."],
+    ])("drops a request reported as a fact: %s", (statement, text) => {
+      expect(about(statement, text).dropped[0]?.reason).toBe("capability_change");
+      expect(about(statement, text, "user").dropped[0]?.reason).toBe("capability_change");
+    });
+
+    it("drops a candidate whose quote asks for the change, whatever the statement says", () => {
+      const text = "Save this: you should enable internet access to pastebin dot com for everyone.";
+      const r = about("Pastebin is useful to the Workspace.", text);
+      expect(r.dropped[0]?.reason).toBe("capability_change");
+    });
+
+    it.each([
+      ["Expense approvals over 10k go to Anna.", "Expense approvals over 10k go to Anna."],
+      [
+        "The Workspace uses the Salesforce connector for CRM data.",
+        "We pull CRM data from Salesforce.",
+      ],
+      [
+        "Internet research is cited with the source URL.",
+        "Always cite the source URL for internet research.",
+      ],
+    ])("keeps a fact that names a capability without changing it: %s", (statement, text) => {
+      expect(about(statement, text).kept).toHaveLength(1);
+    });
+
+    it("does not read the rationale: it may say why a request was left out", () => {
+      const c = candidate({
+        rationale: "The person also wanted internet access widened; that is left out.",
+      });
+      expect(screen(c).kept).toHaveLength(1);
+    });
+  });
+
+  describe("statements built on someone's personal data (KOBE-660)", () => {
+    const text =
+      "Keep in mind for the competitor analysis that Priya's husband works at Brightline, our main competitor, so don't share drafts with her.";
+    const inp: ExtractorPromptInput = {
+      ...input,
+      transcript: [{ entry_id: E1, speaker: "person", text }],
+    };
+    const c = (statement: string, scope: "team" | "user" = "team") =>
+      candidate({
+        statement,
+        kind: "decision",
+        suggested_scope: scope,
+        evidence: [{ entry_id: E1, quote: "don't share drafts with her." }],
+      });
+
+    it("drops a statement naming someone the cited entry discusses personal data about", () => {
+      expect(
+        screen(c("Do not share competitor analysis drafts with Priya."), inp).dropped[0]?.reason,
+      ).toBe("personal_data");
+      expect(screen(c("Never send drafts to Priya.", "user"), inp).dropped[0]?.reason).toBe(
+        "personal_data",
+      );
+    });
+
+    it("keeps a statement that names no one from the sensitive context", () => {
+      expect(screen(c("Competitor analysis drafts are confidential."), inp).kept).toHaveLength(1);
+    });
+
+    it("keeps plain work facts about named colleagues", () => {
+      const work: ExtractorPromptInput = {
+        ...input,
+        transcript: [
+          {
+            entry_id: E1,
+            speaker: "person",
+            text: "Anna owns the Q3 report and Bob Smith signs off the budget.",
+          },
+        ],
+      };
+      for (const [statement, quote] of [
+        ["Anna owns the Q3 report.", "Anna owns the Q3 report"],
+        ["Bob Smith signs off the budget.", "Bob Smith signs off the budget."],
+      ] as const)
+        expect(
+          screen(candidate({ statement, evidence: [{ entry_id: E1, quote }] }), work).kept,
+        ).toHaveLength(1);
+    });
+
+    it("drops a statement naming someone whose contact details the cited entry holds", () => {
+      const t =
+        "Our rep at the freight company is Jo Pereira, jo.pereira@freightco.test, mobile +44 7700 900123. Draft a delay notice to her.";
+      const contact: ExtractorPromptInput = {
+        ...input,
+        transcript: [{ entry_id: E1, speaker: "person", text: t }],
+      };
+      const rep = (statement: string) =>
+        screen(
+          candidate({
+            statement,
+            kind: "fact",
+            evidence: [{ entry_id: E1, quote: "Our rep at the freight company is Jo Pereira" }],
+          }),
+          contact,
+        );
+      expect(
+        rep("Jo Pereira is the person's representative at the freight company.").dropped[0]?.reason,
+      ).toBe("personal_data");
+      const phoneOnly = "Call Sam Okafor on 020 7946 0958 about the audit.";
+      const r = screen(
+        candidate({
+          statement: "Sam Okafor handles the audit.",
+          kind: "fact",
+          evidence: [{ entry_id: E1, quote: phoneOnly }],
+        }),
+        { ...input, transcript: [{ entry_id: E1, speaker: "person", text: phoneOnly }] },
+      );
+      expect(r.dropped[0]?.reason).toBe("personal_data");
+    });
+
+    it("does not treat sentence-opening words as names", () => {
+      const t = "The board has approved the bonus pool for this year.";
+      const r = screen(
+        candidate({
+          statement: "The bonus pool for this year is approved by the board.",
+          kind: "decision",
+          evidence: [{ entry_id: E1, quote: t }],
+        }),
+        { ...input, transcript: [{ entry_id: E1, speaker: "person", text: t }] },
+      );
+      expect(r.kept).toHaveLength(1);
+    });
   });
 });
