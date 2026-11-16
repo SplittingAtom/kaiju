@@ -23,6 +23,7 @@ import { threadLearnRoutes } from "./routes/thread-learn.js";
 import { memoryItemRoutes } from "./routes/memory-items.js";
 import { memoryTransferRoutes } from "./routes/memory-transfer.js";
 import { memorySettingsRoutes } from "./routes/memory-settings.js";
+import { memoryVectorRoutes } from "./routes/memory-vectors.js";
 import { siteMemoryStewardRoutes, teamMemoryStewardRoutes } from "./routes/memory-stewards.js";
 import { uploadRoutes } from "./routes/uploads.js";
 import { approvalRoutes } from "./routes/approvals.js";
@@ -284,6 +285,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   api.route("/schedules", scheduleRoutes(deps));
   api.route("/notifications", notificationRoutes(deps));
   api.route("/memory/settings", memorySettingsRoutes(deps));
+  api.route("/memory/vectors", memoryVectorRoutes(deps));
   api.route("/memory/semantic/items", memoryItemRoutes(deps));
   api.route("/memory/semantic", memoryTransferRoutes(deps));
   api.route("/memory", memoryRoutes(deps));

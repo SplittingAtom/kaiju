@@ -14,6 +14,14 @@ export interface Route {
   readonly pathModel: string | undefined;
 }
 
+/**
+ * Server-call-only routes (KOBE-409): reachable with a server-call token alone, never from a
+ * sandbox (its request to them is 404 like any other unknown path).
+ */
+const SERVER_CALL_ONLY: Readonly<Record<string, readonly [string, RouteKind]>> = {
+  "/v1/embeddings": ["POST", "openai"],
+};
+
 const GEMINI =
   /^\/genai\/v1beta\/models\/([A-Za-z0-9][A-Za-z0-9._/-]{0,200}):(generateContent|streamGenerateContent|countTokens)$/;
 
@@ -34,9 +42,9 @@ export function routeTemplate(route: Route): string {
   return route.path.replace(`/models/${route.pathModel}:`, "/models/{model}:");
 }
 
-export function classify(method: string, pathname: string): Route | undefined {
+export function classify(method: string, pathname: string, serverCall = false): Route | undefined {
   if (pathname.includes("..") || pathname.includes("//")) return undefined;
-  const exact = EXACT[pathname];
+  const exact = EXACT[pathname] ?? (serverCall ? SERVER_CALL_ONLY[pathname] : undefined);
   if (exact) {
     return exact[0] === method
       ? { kind: exact[1], path: pathname, pathModel: undefined }

@@ -157,15 +157,30 @@ export interface ServerCallClientOptions {
   readonly now?: () => Date;
 }
 
+/** The claims a token binds (every server call, chat or embeddings). */
+export type ServerCallTokenInput = Pick<
+  ServerCallInput,
+  | "purpose"
+  | "teamId"
+  | "userId"
+  | "threadId"
+  | "runId"
+  | "model"
+  | "reasoning"
+  | "passId"
+  | "catalogMaxOutputTokens"
+>;
+
 /** The call's output cap, in the token and the body alike. */
-const outputCap = (input: ServerCallInput): number =>
+const outputCap = (input: ServerCallTokenInput): number =>
   serverCallOutputCapFor(
     input.purpose,
     input.reasoning,
     input.purpose === "memory_learn" ? input.catalogMaxOutputTokens : undefined,
   );
 
-function mintToken(key: SessionSigningKey, input: ServerCallInput, now: Date): string {
+/** A server-call token for one call, minted right before it (also `embedding-client.ts`). */
+export function mintToken(key: SessionSigningKey, input: ServerCallTokenInput, now: Date): string {
   const iat = Math.floor(now.getTime() / 1000);
   return signServerCallToken(key, {
     iss: "kobe-server",
@@ -221,7 +236,7 @@ async function readCapped(res: Response, cap: number): Promise<string | undefine
   return Buffer.concat(chunks).toString("utf8");
 }
 
-function parseJson(text: string | undefined): unknown {
+export function parseJson(text: string | undefined): unknown {
   if (text === undefined) return undefined;
   try {
     return JSON.parse(text) as unknown;
@@ -231,7 +246,7 @@ function parseJson(text: string | undefined): unknown {
 }
 
 /** The gateway's refusal code (OpenAI shape `{error: {code | type}}`), else the status. */
-function refusalCode(json: unknown, status: number): string {
+export function refusalCode(json: unknown, status: number): string {
   const error = (json as { error?: { code?: unknown; type?: unknown } } | undefined)?.error;
   const code = typeof error?.code === "string" ? error.code : error?.type;
   return typeof code === "string" && CODE.test(code) ? code : `http_${status}`;

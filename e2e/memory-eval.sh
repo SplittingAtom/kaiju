@@ -8,6 +8,13 @@
 #     KOBE_TEST_DATABASE_URL's server (a superuser URL; the database is created and dropped), runs
 #     the KOBE-382 selector's store read for each of the ~150 queries and prints recall@8 per kind
 #     and overall (the Gate A number: Phase D vectors only if it is below 0.85).
+#     KOBE-409 hybrid comparison: also set an OpenAI-compatible embedding endpoint (from the
+#     operator's shell, never committed) and the report adds hybrid recall@8 and the per-message
+#     query embedding latency:
+#       KOBE_EVAL_EMBED_URL    base URL ending in /v1 (an Ollama, the in-cluster model, a provider)
+#       KOBE_EVAL_EMBED_MODEL  the endpoint's model name, e.g. nomic-embed-text
+#       KOBE_EVAL_EMBED_KEY    bearer key, if the endpoint needs one
+#     The scratch database needs pgvector on that server (it is enabled as the superuser).
 #
 #   e2e/memory-eval.sh cache
 #     Replays the 20 messages of e2e/fixtures/memory-cache/turns.json in one new thread on a

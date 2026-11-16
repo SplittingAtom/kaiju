@@ -7,8 +7,11 @@ import { snakeBody, type MemorySwitches } from "../team/memory";
 
 export interface SiteMemorySettingsDoc {
   readonly learningModelAlias: string | null;
-  /** Phase D: used only once vectors are earned. */
-  readonly embeddingModelAlias: string | null;
+  /**
+   * The embedding model for search by meaning (KOBE-409): a gateway model id
+   * (`<gateway provider>/<model>`, e.g. `kobe-local/nomic-embed-text`), not a catalog alias.
+   */
+  readonly embeddingModel: string | null;
   /** 4 to 16 KiB. */
   readonly contextBudgetKib: number;
   readonly scopeLimits: {
@@ -37,9 +40,10 @@ export interface SiteMemorySettings extends MemorySwitches {
   readonly siteProposalsEnabled: boolean;
   readonly settings: SiteMemorySettingsDoc;
   /**
-   * Model settings whose stored alias is no longer in the catalog. The server sends setting
-   * names (`learning_model_alias`); `camelizeKeys` leaves string values alone, so they are mapped
-   * here by the form. Absent from an older server.
+   * Model settings whose stored model is gone (a learning alias left the catalog, an embedding
+   * model's provider left the gateway). The server sends setting names (`learning_model_alias`,
+   * `embedding_model`); `camelizeKeys` leaves string values alone, so they are mapped here by the
+   * form. Absent from an older server.
    */
   readonly removedModels?: readonly string[];
 }
@@ -66,3 +70,35 @@ export const putSiteMemory = (change: SiteMemoryChange): Promise<ApiResult<SiteM
     json: { ...snakeBody(switches), ...(settings ? { settings: nested(settings) } : {}) },
   });
 };
+
+/** Vector search state on the Site memory page (`/v1/memory/vectors`, KOBE-409). */
+export interface MemoryVectorJob {
+  readonly state: "running" | "done" | "stopped";
+  readonly model: string;
+  readonly embedded: number;
+  readonly startedAt: string;
+  readonly finishedAt: string | null;
+  /** `budget`, `model_changed`, or the gateway's short code. */
+  readonly stopReason: string | null;
+}
+
+export interface MemoryVectors {
+  /** pgvector: enabled in the database, available on the server only, or missing. */
+  readonly pgvector: "enabled" | "available" | "missing";
+  readonly columns: boolean;
+  readonly model: string | null;
+  readonly modelState: "ok" | "no_model" | "provider_missing";
+  readonly serverCalls: boolean;
+  /** The chart's in-cluster embedding model, if it runs one. */
+  readonly localModel: string | null;
+  /** Gateway provider names an embedding model may use. */
+  readonly providers: readonly string[];
+  readonly coverage: { readonly embedded: number; readonly total: number } | null;
+  readonly job: MemoryVectorJob | null;
+}
+
+export const getMemoryVectors = (): Promise<ApiResult<MemoryVectors>> =>
+  apiRequest("/v1/memory/vectors");
+
+export const buildMemoryVectors = (): Promise<ApiResult<{ readonly job: MemoryVectorJob }>> =>
+  apiRequest("/v1/memory/vectors/build", { method: "POST", json: {} });

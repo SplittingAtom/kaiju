@@ -114,7 +114,7 @@ import {
 } from "./store.js";
 import { lockOwnedThread, ownedRun } from "./access.js";
 import { queuedMessageCount, reorderQueuedRuns } from "./queue-order.js";
-import { RunDispatcher, type StopTarget } from "./dispatch.js";
+import { RunDispatcher, type QueryPrefetch, type StopTarget } from "./dispatch.js";
 import { sweepRuns, type RunSweepResult } from "./sweeper.js";
 import { MODEL_TOKEN_DEFAULTS, type ModelTokenDefaults } from "../models/token-limits.js";
 
@@ -172,6 +172,8 @@ export interface RunOrchestratorOptions {
   /** Run the sweep on a timer (default true; tests call `sweep()`). */
   readonly sweep?: boolean;
   readonly log?: Logger;
+  /** The early memory query embedding (KOBE-409 review M1; `RunDispatcher`). */
+  readonly prefetchQuery?: (query: QueryPrefetch) => void;
 }
 
 /** Uploads staged for a message, between validation and the submit transaction (KOBE-144). */
@@ -326,6 +328,7 @@ export class DbRunOrchestrator implements ServerRunOrchestrator {
       emit: (teamId, transitions) => this.#emit(teamId, transitions),
       advance: (teamId, threadId) => this.#advance(teamId, threadId),
       track: (task) => this.#track(task),
+      ...(options.prefetchQuery ? { prefetchQuery: options.prefetchQuery } : {}),
     });
     if (options.sweep !== false) this.#scheduleSweep();
   }

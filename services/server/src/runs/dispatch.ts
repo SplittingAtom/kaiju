@@ -40,6 +40,20 @@ export interface DispatchHost {
   emit(teamId: string, transitions: readonly AppliedTransition[]): void;
   advance(teamId: string, threadId: string): Promise<void>;
   track(task: Promise<unknown>): void;
+  /**
+   * Starts the run's memory query embedding (KOBE-409 review M1) as the start is sent, so it runs
+   * beside the sandbox claim or wake and selection only waits for its answer. Never blocks.
+   */
+  prefetchQuery?(query: QueryPrefetch): void;
+}
+
+/** What the early query embedding needs (`MemoryEmbeddings.prefetchQuery`). */
+export interface QueryPrefetch {
+  readonly teamId: string;
+  readonly userId: string;
+  readonly threadId: string;
+  readonly runId: string;
+  readonly message: string;
 }
 
 export interface StopTarget {
@@ -72,6 +86,17 @@ export class RunDispatcher {
 
   /** Sends `run.start`; a start that no sandbox took fails the run here (KOBE-24 contract). */
   async start(plan: StartPlan): Promise<void> {
+    try {
+      this.#h.prefetchQuery?.({
+        teamId: plan.teamId,
+        userId: plan.ownerUserId,
+        threadId: plan.threadId,
+        runId: plan.runId,
+        message: plan.input,
+      });
+    } catch (err) {
+      this.#h.log.warn({ err, run_id: plan.runId }, "memory query embedding not started early");
+    }
     const outcome = await this.#h.router.startRun(
       { teamId: plan.teamId, userId: plan.ownerUserId },
       {
