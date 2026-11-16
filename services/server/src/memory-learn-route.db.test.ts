@@ -226,11 +226,21 @@ describe("GET /v1/threads/{id}/learn (KOBE-395)", () => {
 describe("POST /v1/threads/{id}/learn (KOBE-395)", () => {
   it("starts a pass (202); the state shows it running, then the candidate and no dot", async () => {
     const t = await seedThread();
-    const res = await owner.browser.post(path(t), {});
-    expect(res.status, JSON.stringify(res.json)).toBe(202);
-    const started = learnStartResponseSchema.parse(res.json);
-    expect(started).toMatchObject({ model_alias: LEARNER, mode: "new" });
-    expect((await stateOf(t)).running?.pass_id).toBe(started.pass_id);
+    // Hold the learner so the pass is still running when the state is read.
+    let release: () => void = () => undefined;
+    hold = new Promise<void>((r) => {
+      release = r;
+    });
+    try {
+      const res = await owner.browser.post(path(t), {});
+      expect(res.status, JSON.stringify(res.json)).toBe(202);
+      const started = learnStartResponseSchema.parse(res.json);
+      expect(started).toMatchObject({ model_alias: LEARNER, mode: "new" });
+      expect((await stateOf(t)).running?.pass_id).toBe(started.pass_id);
+    } finally {
+      hold = null;
+      release();
+    }
     await fx.replica(0).deps.background.idle();
     const after = await stateOf(t);
     expect(after).toMatchObject({ running: null, new_messages: false, candidates: 1 });
