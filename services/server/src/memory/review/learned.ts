@@ -17,7 +17,14 @@ const LEARNED = /^##\s+learned\s*$/i;
 const SECTION_END = /^#{1,2}\s/;
 
 export function learnedLine(statement: string): string {
-  return `- ${statement.replace(/\s+/g, " ").trim()}`;
+  const text = statement
+    .replace(/\s+/g, " ")
+    .trim()
+    // A renderer must not hide later lines: no raw HTML start (`<!--`, `<details>`) and no code
+    // spans or fences.
+    .replace(/^</, "\\<")
+    .replace(/`/g, "\\`");
+  return `- ${text}`;
 }
 
 export function appendLearned(content: string, line: string): string {

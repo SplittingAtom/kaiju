@@ -115,6 +115,17 @@ describe("Add to project notes", () => {
     expect(a.notes.add).not.toHaveBeenCalled();
   });
 
+  it("shows the preview's warnings in the approval dialog", async () => {
+    const a = apis(editor);
+    a.notes.preview.mockImplementation(() =>
+      ok({ ...a.preview, warnings: [{ code: "personal_email", message: "Looks like an email." }] }),
+    );
+    show(a);
+    await userEvent.click(await screen.findByRole("button", { name: "Add to project notes" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(within(dialog).getByText("Looks like an email.")).toBeTruthy();
+  });
+
   it("shows the server's refusal at click", async () => {
     const a = apis(editor);
     a.notes.preview.mockReturnValueOnce(

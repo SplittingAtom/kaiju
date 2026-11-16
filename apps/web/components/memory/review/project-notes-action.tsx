@@ -76,6 +76,15 @@ export function ProjectNotesAction({
             <span className="mt-2 block border-0 border-l-4 border-solid border-console-border ps-3 font-mono [overflow-wrap:anywhere] whitespace-pre-wrap">
               {visible(preview.data.line)}
             </span>
+            {(preview.data.warnings ?? []).length > 0 ? (
+              <span role="note" className="mt-2 block text-xs text-console-warning">
+                {(preview.data.warnings ?? []).map((w) => (
+                  <span key={w.code} className="block">
+                    {w.message}
+                  </span>
+                ))}
+              </span>
+            ) : null}
           </>
         ),
         confirmLabel: "Approve and add",

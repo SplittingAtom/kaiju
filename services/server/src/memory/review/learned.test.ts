@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MEMORY_INDEX_MAX_LINES } from "@kobe/protocol";
-import { appendLearned, indexHasRoom, learnedLine } from "./learned.js";
+import { appendLearned, fitsIndex, indexHasRoom, learnedLine } from "./learned.js";
 
 describe("Add to project notes: the ## Learned section (KOBE-398)", () => {
   it("makes one list line of the statement (no line breaks, no heading)", () => {
@@ -40,5 +40,18 @@ describe("Add to project notes: the ## Learned section (KOBE-398)", () => {
     expect(indexHasRoom("")).toBe(true);
     expect(indexHasRoom(full)).toBe(false);
     expect(indexHasRoom(full.split("\n").slice(1).join("\n"))).toBe(true);
+  });
+
+  it("neutralises a leading < and backticks so a renderer can't hide later lines", () => {
+    expect(learnedLine("<!-- hidden")).toBe("- \\<!-- hidden");
+    expect(learnedLine("```js fence")).toBe("- \\`\\`\\`js fence");
+    expect(learnedLine("a < b and `x`")).toBe("- a < b and \\`x\\`");
+  });
+
+  it("does not count the trailing newline as a line (the cap is the full 200)", () => {
+    const lines = (n: number) => `${Array.from({ length: n }, (_, i) => `l${i}`).join("\n")}\n`;
+    expect(fitsIndex(lines(MEMORY_INDEX_MAX_LINES))).toBe(true);
+    expect(fitsIndex(lines(MEMORY_INDEX_MAX_LINES + 1))).toBe(false);
+    expect(indexHasRoom(lines(MEMORY_INDEX_MAX_LINES - 1))).toBe(true);
   });
 });

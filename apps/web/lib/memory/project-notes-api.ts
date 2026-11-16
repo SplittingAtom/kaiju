@@ -24,6 +24,8 @@ export interface NotesPreview {
   readonly section: string;
   readonly baseVersion: number;
   readonly line: string;
+  /** Shared-scope warnings (personal data, links) to read before approving; may be absent. */
+  readonly warnings?: readonly { readonly code: string; readonly message: string }[];
   readonly approval: string;
 }
 

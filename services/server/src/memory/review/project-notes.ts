@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { MEMORY_INDEX_FILE, semanticMemoryStatementSchema } from "@kobe/protocol";
+import {
+  MEMORY_INDEX_FILE,
+  semanticMemoryStatementSchema,
+  type SemanticMemoryIssue,
+} from "@kobe/protocol";
 import { withTeam, type KobeDb } from "@kobe/db";
 import type { ApprovalKeyring } from "../../approvals/keys.js";
 import { recordAudit } from "../../audit/record.js";
@@ -108,6 +112,8 @@ export interface NotesPreview {
   readonly section: "Learned";
   readonly base_version: number;
   readonly line: string;
+  /** Warnings to show before approving (personal data and the like). */
+  readonly warnings: readonly SemanticMemoryIssue[];
   /** The signed approval of this change, opaque: send it back to add. */
   readonly approval: string;
 }
@@ -131,6 +137,7 @@ export function previewProjectNotes(
       section: "Learned",
       base_version: plan.baseVersion,
       line: plan.line,
+      warnings: plan.warnings,
       approval: encodeNotesApproval(signNotesApproval(keys, changeOf(who, row, plan), new Date())),
     };
   });
