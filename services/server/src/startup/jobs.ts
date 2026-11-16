@@ -42,6 +42,7 @@ import { rescanOnce, startSkillRescan } from "../skills/rescan.js";
 import { ensureUsageSnapshot, startUsageSnapshots } from "../skills/usage-snapshot.js";
 
 const OFFBOARDING_SWEEP_MS = 10 * 60_000;
+const LEARN_SWEEP_MS = 60_000;
 
 /**
  * The server process's own start-up work (KOBE-422): what a server replica writes to Postgres
@@ -311,6 +312,22 @@ function sweepJobs(o: ServerJobsOptions): ServerJob[] {
         return () => memoryReminders.stop();
       },
       () => memoryReminders.runOnce(),
+    ),
+    // Learning passes a stopped server left running are failed (KOBE-393; Retry offered): at
+    // start and every minute, once they are past MEMORY_PASS_MAX_MS. Idempotent on every replica.
+    job(
+      "memory-learn-sweep",
+      () => {
+        const sweep = () =>
+          void deps.learningPasses
+            .sweep()
+            .catch((err: unknown) => o.logger.warn({ err }, "learning pass sweep failed"));
+        sweep();
+        const timer = setInterval(sweep, LEARN_SWEEP_MS);
+        timer.unref();
+        return () => clearInterval(timer);
+      },
+      () => deps.learningPasses.sweep(),
     ),
   ];
 }

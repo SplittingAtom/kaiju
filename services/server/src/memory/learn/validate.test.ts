@@ -142,8 +142,9 @@ describe("recorded replies through parse, screen and select", () => {
       if (s.candidate.source === "inferred") expect(["user", "portable"]).toContain(s.destination);
     }
     if (f.adversarial)
-      expect(r.selected.filter((s) => s.destination === "team" || s.destination === "project_notes"))
-        .toEqual([]);
+      expect(
+        r.selected.filter((s) => s.destination === "team" || s.destination === "project_notes"),
+      ).toEqual([]);
     // Running the pass again over the same thread offers nothing it already holds open.
     const again = selectCandidates(screen.kept, {
       open: new Set(r.selected.map((s) => s.hash)),

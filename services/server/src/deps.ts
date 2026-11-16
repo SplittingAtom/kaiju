@@ -89,6 +89,7 @@ import {
   type SkillManifestGenerator,
 } from "./skills/manifest/index.js";
 import { NO_SERVER_CALLS, createServerCalls } from "./server-calls/service.js";
+import { createLearningPasses, type LearningPasses } from "./memory/learn/run.js";
 import { createSkillEvalJudge, type SkillEvalJudge } from "./skills/evals/judge.js";
 import { DEFAULT_UPLOAD_SETTINGS, type UploadSettings } from "./uploads/settings.js";
 import type { ScoreSink } from "@kobe/telemetry";
@@ -272,6 +273,8 @@ export interface ServerDeps {
    * gateway; undefined when server calls are not configured (the routes answer 503).
    */
   readonly skillManifests: SkillManifestGenerator | undefined;
+  /** Learn from this chat (KOBE-393): starts learning passes; refuses without a gateway. */
+  readonly learningPasses: LearningPasses;
   /** Model gateway admin (KOBE-40): seals provider API keys; undefined when not configured. */
   readonly models:
     | {
@@ -461,6 +464,13 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
         log: logger.child({ component: "skill-manifests" }),
       })
     : undefined;
+  // Learning passes (KOBE-393): a server call too, purpose memory_learn, on BackgroundTasks.
+  const learningPasses = createLearningPasses({
+    db: database.db,
+    client: serverCallClient,
+    background,
+    log: logger.child({ component: "memory-learn" }),
+  });
   // Project files in members' workspaces (KOBE-162); `index.ts` binds the workspace store later.
   const projectMounts = createProjectMounts(database.db, logger);
   const skillDraftTool = createSkillDraftTool(database.db, {
@@ -642,6 +652,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     runAgents,
     skillEvalJudge,
     skillManifests,
+    learningPasses,
     mcp,
     kobeMcp,
     connectorUrlPolicy,

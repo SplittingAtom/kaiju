@@ -1,6 +1,8 @@
 import {
   EPILOGUE_EVENT_TYPES,
   EVENT_PAYLOAD_MAX_BYTES,
+  MEMORY_PASS_EVENT_TYPES,
+  MEMORY_PASS_MAX_MS,
   SERVER_CALL_EPILOGUE_MAX_MS,
   EventPayloadTooLargeError,
   isKobeEventType,
@@ -41,7 +43,8 @@ export type AppendErrorCode =
   | "terminal_not_last" // a terminal run.* event followed by more events in the batch
   | "run_not_found" // no such run in the transaction's team
   | "run_finished" // the run already has its terminal event
-  | "epilogue_refused"; // an epilogue event the run's run.completed did not leave room for
+  | "epilogue_refused" // an epilogue event the run's run.completed did not leave room for
+  | "pass_refused"; // a learning pass event without an open pass on this ended run's thread
 
 export class AppendError extends Error {
   constructor(
@@ -172,6 +175,11 @@ const EPILOGUE_TYPES: ReadonlyMap<KobeEventType, string> = new Map(
  */
 const TAIL = 1 + EPILOGUE_TYPES.size;
 
+/** Learning pass events (KOBE-393): never part of the tail the epilogue guard reads. */
+const PASS_TYPES: ReadonlySet<string> = new Set(MEMORY_PASS_EVENT_TYPES);
+const PASS_TYPE_LIST = sql.raw(MEMORY_PASS_EVENT_TYPES.map((t) => `'${t}'`).join(", "));
+const isPassEvent = (e: ValidEvent): boolean => PASS_TYPES.has(e.type);
+
 /**
  * An event the epilogue writes. A `thread.updated` without a title is a leaf move (CT13,
  * KOBE-543), sent while the run commits entries: an ordinary event, never part of the epilogue.
@@ -187,6 +195,8 @@ function isEpilogueEvent(e: ValidEvent): boolean {
  * `@kobe/protocol` server-call.ts): the event types `run.completed.epilogue` announced, each at
  * most once per run, within `SERVER_CALL_EPILOGUE_MAX_MS` of `run.completed` (database clock);
  * everything else is `run_finished`, so an epilogue event at the end never reopens the run.
+ * Learning pass events (KOBE-393) are appended alone, only after the terminal event, and only for
+ * an open pass ({@link checkPassesOpen}); the tail read skips them, so any number may follow.
  */
 async function checkRunOpen(
   tx: KobeTx,
@@ -194,15 +204,25 @@ async function checkRunOpen(
   runId: string,
   valid: readonly ValidEvent[],
 ): Promise<void> {
+  // The run's last events other than pass events (which may follow the epilogue, any number).
   const tail = await tx.execute<{ type: string; payload: unknown; age_ms: number }>(sql`
-    SELECT e.type, e.payload,
-           (extract(epoch FROM clock_timestamp() - e.created_at) * 1000)::float8 AS age_ms
-      FROM runs r
-      JOIN run_events e ON e.team_id = r.team_id AND e.run_id = r.id AND e.seq > r.last_seq - ${TAIL}
-     WHERE r.team_id = ${teamId} AND r.id = ${runId}
-     ORDER BY e.seq`);
+    SELECT t.type, t.payload, t.age_ms FROM (
+      SELECT e.seq, e.type, e.payload,
+             (extract(epoch FROM clock_timestamp() - e.created_at) * 1000)::float8 AS age_ms
+        FROM run_events e
+       WHERE e.team_id = ${teamId} AND e.run_id = ${runId} AND e.type NOT IN (${PASS_TYPE_LIST})
+       ORDER BY e.seq DESC LIMIT ${TAIL}) t
+     ORDER BY t.seq`);
   const at = tail.rows.findIndex((r) => isKobeEventType(r.type) && isTerminalEventType(r.type));
   const terminal = at < 0 ? undefined : tail.rows[at];
+  const passes = valid.filter(isPassEvent);
+  if (passes.length > 0) {
+    if (passes.length < valid.length)
+      throw new AppendError("pass_refused", `run ${runId}: pass events are appended alone`);
+    if (!terminal) throw new AppendError("pass_refused", `run ${runId} has not ended`);
+    await checkPassesOpen(tx, teamId, runId, passes);
+    return;
+  }
   const epilogue = valid.filter(isEpilogueEvent);
   if (!terminal) {
     if (epilogue.length > 0) {
@@ -227,6 +247,53 @@ async function checkRunOpen(
   }
   if (Number(terminal.age_ms) >= SERVER_CALL_EPILOGUE_MAX_MS) {
     throw new AppendError("epilogue_refused", `run ${runId}: the epilogue window has closed`);
+  }
+}
+
+const FINAL_PASS_TYPES: ReadonlySet<string> = new Set([
+  "memory.pass.completed",
+  "memory.pass.failed",
+]);
+
+/**
+ * Learning pass events (KOBE-393; `@kobe/protocol` semantic-memory/learning.ts) go to an ended run
+ * of the pass's thread while the pass runs: its row is `running` on the run's thread, started
+ * within `MEMORY_PASS_MAX_MS` (database clock), and the batch ends each pass at most once, last.
+ * The pass closes its row in the same transaction as its final event, so nothing follows it.
+ */
+async function checkPassesOpen(
+  tx: KobeTx,
+  teamId: string,
+  runId: string,
+  passes: readonly ValidEvent[],
+): Promise<void> {
+  const ended = new Set<string>();
+  const byPass = new Map<string, string>();
+  for (const e of passes) {
+    const { pass_id: passId, thread_id: threadId } = e.payload as {
+      pass_id: string;
+      thread_id: string;
+    };
+    if (ended.has(passId) || (byPass.get(passId) ?? threadId) !== threadId)
+      throw new AppendError("pass_refused", `run ${runId}: pass ${passId} already ended`);
+    if (FINAL_PASS_TYPES.has(e.type)) ended.add(passId);
+    byPass.set(passId, threadId);
+  }
+  const ids = [...byPass.keys()];
+  const open = await tx.execute<{ id: string; thread_id: string }>(sql`
+    SELECT p.id, p.thread_id FROM memory_learning_passes p
+      JOIN runs r ON r.team_id = p.team_id AND r.thread_id = p.thread_id
+     WHERE p.team_id = ${teamId} AND r.id = ${runId}
+       AND p.id IN (${sql.join(
+         ids.map((id) => sql`${id}::uuid`),
+         sql`, `,
+       )})
+       AND p.status = 'running'
+       AND p.started_at > clock_timestamp() - make_interval(secs => ${MEMORY_PASS_MAX_MS / 1000})`);
+  const threadOf = new Map(open.rows.map((r) => [r.id, r.thread_id]));
+  for (const [passId, threadId] of byPass) {
+    if (threadOf.get(passId) !== threadId)
+      throw new AppendError("pass_refused", `run ${runId}: pass ${passId} is not open here`);
   }
 }
 

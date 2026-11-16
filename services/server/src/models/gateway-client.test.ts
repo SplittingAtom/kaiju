@@ -124,7 +124,12 @@ describe("server-call gateway client: a learning pass (KOBE-393)", () => {
     reply = ok('{"candidates": [], "skill_hints": []}');
     const client = createServerCallClient({ url: base, key: KEY });
     await client.complete(
-      input({ purpose: "memory_learn", passId: PASS, structured: true, catalogMaxOutputTokens: 4000 }),
+      input({
+        purpose: "memory_learn",
+        passId: PASS,
+        structured: true,
+        catalogMaxOutputTokens: 4000,
+      }),
     );
     const body = serverCallRequestSchema.parse(JSON.parse(seen[0]?.body ?? ""));
     expect(body).toMatchObject({
