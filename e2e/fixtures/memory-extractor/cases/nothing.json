@@ -1,0 +1,104 @@
+{
+  "cases": [
+    {
+      "id": "nothing-plain-task",
+      "description": "A plain one-off task: nothing durable (from KOBE-394 normal-nothing).",
+      "transcript": [
+        ["person", "What's 17% of 2,340?"],
+        ["assistant", "397.80."]
+      ],
+      "expect": [],
+      "forbid": [["397"], ["2 340"]]
+    },
+    {
+      "id": "nothing-file-contents",
+      "description": "File contents and one-off numbers are task state.",
+      "transcript": [
+        ["person", "Open sales_q3.csv and tell me the top three products."],
+        ["tool", "product,revenue\nAlpha,120400\nBravo,98000\nCharlie,77250"],
+        ["assistant", "Alpha (120,400), Bravo (98,000), Charlie (77,250)."],
+        ["person", "Great, thanks."]
+      ],
+      "expect": [],
+      "forbid": [["alpha"], ["bravo"], ["120"]]
+    },
+    {
+      "id": "nothing-chitchat",
+      "description": "Small talk.",
+      "transcript": [
+        ["person", "Morning! Busy day ahead, coffee first."],
+        ["assistant", "Good morning! Let me know when you're ready."]
+      ],
+      "expect": [],
+      "forbid": [["coffee"]]
+    },
+    {
+      "id": "nothing-todo-list",
+      "description": "Open to-dos are task state, not memories.",
+      "transcript": [
+        [
+          "person",
+          "Remind me what's left: I still need to send the VAT return and chase the two unpaid invoices."
+        ],
+        ["assistant", "Left: VAT return; chase invoices INV-2201 and INV-2207."]
+      ],
+      "expect": [],
+      "forbid": [["vat return"], ["inv 22"], ["chase"]]
+    },
+    {
+      "id": "nothing-question-only",
+      "description": "A general knowledge question.",
+      "transcript": [
+        ["person", "What's the difference between a median and a mean?"],
+        ["assistant", "The mean is the average; the median is the middle value..."]
+      ],
+      "expect": [],
+      "forbid": [["median"]]
+    },
+    {
+      "id": "nothing-procedure-skill-hint",
+      "description": "A repeatable procedure belongs in a skill hint, not a memory.",
+      "transcript": [
+        [
+          "person",
+          "Here's how I do the weekly stock check: export the WMS report, filter to negative stock, match each line against open transfers, then email the list to the site leads. Do that for this week."
+        ],
+        [
+          "assistant",
+          "Done: 6 negative lines, 4 matched to open transfers; the list is ready to send."
+        ]
+      ],
+      "expect": [],
+      "forbid": [["export the wms"], ["negative stock", "transfer"]],
+      "allow": [["weekly stock check"]]
+    },
+    {
+      "id": "nothing-assistant-chatter",
+      "description": "Only the assistant states things; the person just says thanks.",
+      "transcript": [
+        ["person", "Explain what a cash flow statement is."],
+        [
+          "assistant",
+          "A cash flow statement shows cash in and out from operating, investing and financing activities. Most companies publish it quarterly."
+        ],
+        ["person", "Thanks."]
+      ],
+      "expect": [],
+      "forbid": [["cash flow"]]
+    },
+    {
+      "id": "nothing-temporary-state",
+      "description": "Temporary state: true today, not next month.",
+      "transcript": [
+        [
+          "person",
+          "I'm working from the Lisbon office this week, so the VPN is slow. Keep the attachments small today."
+        ],
+        ["assistant", "Will do, I'll keep files small."]
+      ],
+      "expect": [],
+      "forbid": [["vpn"], ["attachment"]],
+      "allow": [["lisbon"]]
+    }
+  ]
+}

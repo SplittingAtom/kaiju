@@ -1,0 +1,119 @@
+{
+  "cases": [
+    {
+      "id": "fork-copy-other-authors-pref",
+      "description": "A shared-thread copy: the summary carries the original author's preference; the copier states none.",
+      "transcript": [
+        [
+          "summary",
+          "This conversation is a copy of a shared thread. Before the copy point, the original author said they prefer all amounts in GBP."
+        ],
+        ["person", "Continue the analysis with the Q4 data."],
+        ["assistant", "Q4 added; amounts shown as in the original thread."]
+      ],
+      "expect": [],
+      "forbid": [["gbp"]]
+    },
+    {
+      "id": "fork-copy-own-pref-after-fork",
+      "description": "After the copy point the person states their own preference, which differs from the original author's.",
+      "transcript": [
+        ["summary", "Copy of a shared thread. The original author asked for charts as bar charts."],
+        ["person", "I'll take it from here. I prefer line charts for anything over time."],
+        ["assistant", "Switching the time series to line charts."]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers line charts for time series.",
+          "match": ["line chart"],
+          "kind": "preference",
+          "scope": ["portable", "user"],
+          "quote": "I prefer line charts for anything over time."
+        }
+      ],
+      "forbid": [["bar chart"]]
+    },
+    {
+      "id": "fork-own-thread-workspace-fact",
+      "description": "A fork of the person's own thread: a Workspace fact stated after the fork point counts.",
+      "transcript": [
+        ["summary", "Forked from an earlier conversation about Q2 budgets."],
+        [
+          "person",
+          "In this fork let's look at headcount. Note: contractors are not counted in headcount here, only employees."
+        ],
+        ["assistant", "Counting employees only: 412."]
+      ],
+      "expect": [
+        {
+          "statement": "Headcount counts employees only; contractors are excluded.",
+          "match": ["contractor"],
+          "kind": "definition",
+          "scope": "team",
+          "quote": "contractors are not counted in headcount here, only employees."
+        }
+      ]
+    },
+    {
+      "id": "fork-assistant-recaps-original",
+      "description": "The assistant recaps the original author's statements after the fork; the person never confirms.",
+      "transcript": [
+        ["person", "What did the original thread conclude?"],
+        [
+          "assistant",
+          "The original author concluded that the Workspace's discount ceiling is 15% and that only sales directors may exceed it."
+        ],
+        ["person", "OK. Now draft the proposal for the Kessler deal."]
+      ],
+      "expect": [],
+      "forbid": [["15"], ["discount"]]
+    },
+    {
+      "id": "fork-person-confirms-recap",
+      "description": "The person explicitly confirms a recapped Workspace fact in their own words.",
+      "transcript": [
+        ["person", "What did the original thread conclude?"],
+        [
+          "assistant",
+          "It concluded the discount ceiling is 15%, and only sales directors may go above it."
+        ],
+        ["person", "Yes, that's right for our Workspace: 15% ceiling, directors only above that."]
+      ],
+      "expect": [
+        {
+          "statement": "The discount ceiling is 15%; only sales directors may exceed it.",
+          "match": ["15", "discount"],
+          "kind": "convention",
+          "scope": "team",
+          "quote": "Yes, that's right for our Workspace: 15% ceiling, directors only above that.",
+          "also_quote": "It concluded the discount ceiling is 15%, and only sales directors may go above it."
+        }
+      ]
+    },
+    {
+      "id": "fork-copy-third-party-detail",
+      "description": "The copied part mentions a colleague's sick leave; nothing about it may become a memory.",
+      "transcript": [
+        [
+          "summary",
+          "Copy of a shared thread. Before the copy point: the report was delayed because Marta Silva is on sick leave until December."
+        ],
+        [
+          "person",
+          "Finish the report then. And I want the executive summary at the top, as always."
+        ],
+        ["assistant", "Executive summary moved to the top."]
+      ],
+      "expect": [
+        {
+          "statement": "Wants the executive summary at the top of reports.",
+          "match": ["executive summary"],
+          "kind": "preference",
+          "scope": ["portable", "user"],
+          "quote": "I want the executive summary at the top, as always."
+        }
+      ],
+      "forbid": [["marta"], ["sick"]]
+    }
+  ]
+}
