@@ -3,6 +3,9 @@ import { performance } from "node:perf_hooks";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
 import { runSemanticMemorySchema, semanticMemoryRenderedBytes } from "@kobe/protocol";
+import { startVectorLeg } from "./memory/items/vector-leg.js";
+import { BackgroundTasks } from "./background.js";
+import { MemoryEmbeddings, type QueryVector } from "./memory/embeddings/service.js";
 import { buildRunSemantic } from "./memory/items/run-memory.js";
 import { recordRunMemory } from "./memory/items/run-records.js";
 import { openHarness, type Harness } from "./testing/harness.js";
@@ -134,9 +137,31 @@ afterAll(async () => {
 });
 
 /** One selection, as delivery runs it (records are written later, once the start is accepted). */
-const build = async (run: string, message: string) => {
+const build = async (
+  run: string,
+  message: string,
+  queryVector?: number[] | Promise<QueryVector | undefined>,
+) => {
   const out = await withTeam(h.deps.database.db, team, (tx) =>
-    buildRunSemantic(tx, { teamId: team, userId: runner, threadId, runId: run, message }),
+    buildRunSemantic(tx, {
+      teamId: team,
+      userId: runner,
+      threadId,
+      runId: run,
+      message,
+      ...(queryVector
+        ? {
+            vectorLeg: () =>
+              startVectorLeg(
+                h.deps.database.db,
+                { teamId: team, userId: runner },
+                Array.isArray(queryVector)
+                  ? Promise.resolve({ model: VECTOR_MODEL, vector: queryVector })
+                  : queryVector,
+              ),
+          }
+        : {}),
+    }),
   );
   if (out === undefined) throw new Error("no selection");
   return out.semantic;
@@ -158,6 +183,12 @@ const MESSAGES = [
  */
 const P95_MAX_MS = process.env.KOBE_PERF_STRICT === "1" ? 50 : 200;
 
+const VECTOR_MODEL = "kobe-local/nomic-embed-text";
+/** The keyword-only p95 of the run above (the hybrid bound is relative to it). */
+let keywordP95 = 0;
+const DIMS = 768;
+const randomVector = () => Array.from({ length: DIMS }, () => Math.random() - 0.5);
+
 describe("selector performance at scope limits (ac-4)", () => {
   it(`answers within ${P95_MAX_MS} ms at p95, selection only`, async () => {
     for (let i = 0; i < 10; i++) await build(runId, message(i));
@@ -177,6 +208,120 @@ describe("selector performance at scope limits (ac-4)", () => {
     );
     expect(semantic.items.filter((i) => i.policy)).toHaveLength(25);
     expect(semanticMemoryRenderedBytes(semantic)).toBeLessThanOrEqual(8 * 1024);
+    keywordP95 = p(0.95);
     expect(p(0.95)).toBeLessThanOrEqual(P95_MAX_MS);
+  });
+
+  it(`with every item embedded (768 dims), hybrid selection stays within the budget at p95 (KOBE-409)`, async () => {
+    const q = (text: string) => h.admin.query(text);
+    const vec = `ARRAY(SELECT random() - 0.5 FROM generate_series(1, ${DIMS}) WHERE v.item_id IS NOT NULL)::real[]::public.vector`;
+    for (const t of [
+      "semantic_memory_item_versions",
+      "portable_memory_item_versions",
+      "site_memory_item_versions",
+    ]) {
+      await q(
+        `UPDATE ${t} v SET embedding = ${vec}, embedding_model = '${VECTOR_MODEL}', embedding_dims = ${DIMS}`,
+      );
+    }
+    await q("ANALYZE");
+    for (let i = 0; i < 10; i++) await build(runId, message(i), randomVector());
+    const times: number[] = [];
+    for (let i = 0; i < 100; i++) {
+      const v = randomVector();
+      const t0 = performance.now();
+      await build(runId, message(i), v);
+      times.push(performance.now() - t0);
+    }
+    // How often the leg itself answered in time (else that message was ranked by keywords).
+    let answered = 0;
+    for (let i = 0; i < 20; i++) {
+      const rows = await startVectorLeg(
+        h.deps.database.db,
+        { teamId: team, userId: runner },
+        Promise.resolve({ model: VECTOR_MODEL, vector: randomVector() }),
+      );
+      if (rows !== undefined) answered += 1;
+    }
+    console.log(`KOBE-409 vector leg answered in time: ${answered}/20`);
+    times.sort((a, b) => a - b);
+    const p = (x: number) => times[Math.min(times.length - 1, Math.floor(x * times.length))] ?? 0;
+    console.log(
+      `KOBE-409 hybrid selector (vector leg beside the keyword read, query vector given): p50 ${p(0.5).toFixed(1)} ms, ` +
+        `p95 ${p(0.95).toFixed(1)} ms, max ${p(1).toFixed(1)} ms`,
+    );
+    // The vector leg runs beside the keyword read and selection waits for it at most
+    // VECTOR_LEG_DEADLINE_MS (45 ms) from the start, so hybrid adds at most the merge to
+    // max(keyword read, 45 ms); 10 ms of slack for the second connection's contention.
+    expect(p(0.95)).toBeLessThanOrEqual(Math.max(P95_MAX_MS, keywordP95) + 10);
+  });
+
+  it("with a realistic query embedding call, started when the message is accepted (KOBE-409 review M1)", async () => {
+    // The gateway call as production makes it: token checks, budget reservation, Bifrost and
+    // the provider, here a fixed EMBED_LATENCY_MS; the sandbox claim or wake meanwhile, here a
+    // conservative WAKE_MS (a wake from hibernation takes seconds). Real service, real deadline.
+    const EMBED_LATENCY_MS = 150;
+    const WAKE_MS = 250;
+    const embeddings = new MemoryEmbeddings({
+      db: h.deps.database.db,
+      client: {
+        embed: async () => {
+          await new Promise((resolve) => setTimeout(resolve, EMBED_LATENCY_MS));
+          return [randomVector()];
+        },
+      },
+      background: new BackgroundTasks(),
+      log: { info: () => undefined, warn: () => undefined },
+    });
+    embeddings.usableModel = async () => VECTOR_MODEL;
+    embeddings.runWantsVectors = async () => true;
+    const input = (i: number, early: boolean) => ({
+      teamId: team,
+      userId: runner,
+      threadId,
+      runId: `${early ? "early" : "late"}-${i}`,
+      message: message(i),
+    });
+    const ROUNDS = 20;
+    const pause = () => new Promise((resolve) => setTimeout(resolve, WAKE_MS));
+    // Baseline: keyword-only selection after the same pause (an idle connection and CPU answer
+    // slower than the back-to-back runs above, with or without vectors).
+    const idle: number[] = [];
+    for (let i = 0; i < ROUNDS; i++) {
+      await pause();
+      const t0 = performance.now();
+      await build(runId, message(i));
+      idle.push(performance.now() - t0);
+    }
+    idle.sort((a, b) => a - b);
+    const idleP95 = idle[Math.floor(0.95 * ROUNDS)] ?? 0;
+    const times: number[] = [];
+    let answered = 0;
+    for (let i = 0; i < ROUNDS; i++) {
+      embeddings.prefetchQuery(input(i, true)); // the message is accepted
+      await pause();
+      const t0 = performance.now();
+      const vector = embeddings.queryVector(input(i, true));
+      void vector.then((v) => {
+        if (v !== undefined) answered += 1;
+      });
+      await build(runId, message(i), vector);
+      times.push(performance.now() - t0);
+    }
+    // The same call started at selection (the design before review M1) never makes the deadline.
+    let answeredLate = 0;
+    for (let i = 0; i < 5; i++) {
+      if ((await embeddings.queryVector(input(i, false))) !== undefined) answeredLate += 1;
+    }
+    times.sort((a, b) => a - b);
+    const p = (x: number) => times[Math.min(times.length - 1, Math.floor(x * times.length))] ?? 0;
+    console.log(
+      `KOBE-409 hybrid selector with a ${EMBED_LATENCY_MS} ms embedding started at accept: ` +
+        `vector in time ${answered}/${ROUNDS} (started at selection: ${answeredLate}/5); ` +
+        `p50 ${p(0.5).toFixed(1)} ms, p95 ${p(0.95).toFixed(1)} ms (keyword-only after the same pause: p95 ${idleP95.toFixed(1)} ms)`,
+    );
+    expect(answered).toBe(ROUNDS);
+    expect(answeredLate).toBe(0);
+    expect(p(0.95)).toBeLessThanOrEqual(Math.max(P95_MAX_MS, idleP95) + 10);
   });
 });

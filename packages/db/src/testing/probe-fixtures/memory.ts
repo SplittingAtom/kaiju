@@ -14,8 +14,10 @@ import {
   memoryLearningPasses,
   memoryLearningWatermarks,
   memoryProposals,
+  memoryProjectSuggestions,
   memoryReminders,
   memoryStewards,
+  projects,
   siteMemoryItemVersions,
   siteMemoryItems,
   teamMembers,
@@ -199,6 +201,29 @@ export const memoryFixtures: Record<(typeof memory.team)[number], ProbeFixture> 
       statement: "Deploys go out on Tuesdays",
       kind: "convention",
       proposerId: userId,
+    });
+  },
+  memory_project_suggestions: async (tx, teamId) => {
+    const { passId, threadId, userId } = await insertPass(tx, teamId);
+    const [candidate] = await tx
+      .insert(memoryCandidates)
+      .values({ teamId, passId, ord: 0, payload: { statement: "x" } })
+      .returning({ id: memoryCandidates.id });
+    if (!candidate) throw new Error("probe: candidate insert returned nothing");
+    const [project] = await tx
+      .insert(projects)
+      .values({ teamId, name: "Probe", slug: `p-${randomUUID().slice(0, 8)}`, createdBy: userId })
+      .returning({ id: projects.id });
+    if (!project) throw new Error("probe: project insert returned nothing");
+    await tx.insert(memoryProjectSuggestions).values({
+      teamId,
+      projectId: project.id,
+      threadId,
+      candidateRef: candidate.id,
+      statement: "Invoices are numbered per year",
+      kind: "convention",
+      evidence: [{ entryId: "e1", quote: "we number invoices per year" }],
+      suggestedBy: userId,
     });
   },
 };

@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
+summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how the learning model is chosen, how long memories are kept, and how a Site-wide legal hold keeps Site memories.
 section: Memory
 order: 1
 audience: member
@@ -78,6 +78,10 @@ the site. Kobe picks them again for every message you send, so they follow the c
   do memories the previous message got, but only when they match this message too.
 - Memories are given whole, never cut. If some that matched did not fit, the agent is told how
   many were left out.
+- With **search by meaning** on (see [Search by meaning](#search-by-meaning)), a memory can also
+  be picked because it means much the same as your message, even with no word in common ("car"
+  finds "my automobile is in garage B"). Word matches still count as before. If finding similar
+  memories takes too long for a message, that message uses word matching alone.
 
 Only memories you can see reach your runs: your own (never another person's), your current
 workspace's (never another workspace's), and site memories while the workspace allows them. A run
@@ -155,6 +159,34 @@ what your latest message's run was given, grouped by place, each with the versio
 your newest message is still waiting, it shows the previous message's and says so. The
 `/session` dialog shows the same count as **Memories in context**. Both are yours only: people a
 conversation is shared with never see what your memory gave it.
+
+## Learn from this chat
+
+Kobe can suggest memories from a conversation you started. Nothing is saved until you review each
+suggestion in **To review** on My memory.
+
+- Open **+** in the composer › **Memory** › **Learn from this chat**. Kobe reads what was said
+  since its last pass on this conversation (the first time, the whole conversation).
+- **Rescan the whole chat** reads all of it again, for example after you changed your mind about
+  something earlier. The menu shows an estimate of the tokens it reads.
+- From the keyboard: type `/learn` (new messages) or `/learn all` (rescan), press **Ctrl+Shift+L**
+  (**Cmd+Shift+L** on a Mac), or search for "Learn from this chat" in the command palette.
+
+The **+** button shows where Learn is:
+
+| On the + button | Meaning                                                                     |
+| --------------- | --------------------------------------------------------------------------- |
+| A dot           | New messages since Kobe last learned from this conversation                 |
+| A spinner       | Kobe is learning from it now; you can keep chatting                         |
+| A number        | Suggestions from this conversation are waiting; **+** › **Memory** › Review |
+
+When a pass ends, Kobe says how many suggestions it found, or why it stopped (try again from the
+same menu). Learn is only for the conversation's author: people it is shared with don't see it,
+and Workbench, agent test and eval chats are refused. When Learn can't run, the menu item stays
+visible and says why: memories or Learn are switched off, no learning model is available (see
+[The learning model](#the-learning-model)), a budget is used up, you already started 20 passes in
+this workspace today, or no reply in the conversation has finished yet. Each pass is charged to
+you like any other model call.
 
 ## Your memories
 
@@ -332,15 +364,60 @@ take at the start of a run, 4 to 16 KiB, 8 by default), the most memories each p
 default 300 per person only in a workspace, 50 per person in all their workspaces, 1,000 per
 workspace and 1,000 on the site), how
 many versions of a memory are kept (50), when a memory counts as stale (90 days: an active memory not changed, and not dated with an as-of date, within that time; stale memories are only marked for review, never removed), the
-retention window for archived memories (365 days), learning rate limits, and an embedding model
-that is not used yet. Search always uses English word matching; there is no language setting.
+retention window for archived memories (365 days), learning rate limits, and the embedding model
+for search by meaning (below). Word matching uses English stemming; there is no language setting.
 
-The embedding model goes through the model gateway like every other model. A standard install runs
-a small one inside your cluster, on CPU: **nomic-embed-text**, listed in the gateway as
-`kobe-local/nomic-embed-text`. Only the gateway can reach it, so no team or sandbox calls it
-directly. The people who install Kobe can turn it off and use an external model instead, such as
-an Ollama server on your network or a hosted provider with a site key, added under **Models and
-providers**.
+### Search by meaning
+
+Memory search matches words. With an **embedding model** set (Site settings › Memory), it also
+finds memories that mean the same as the message, and ranks both together. Without one, or while
+it is unavailable, search uses word matching alone and nothing else changes.
+
+- **Choosing the model.** Type the model as the gateway names it, `provider/model`. A standard
+  install runs a small one inside your cluster, on CPU: **nomic-embed-text**, offered as
+  `kobe-local/nomic-embed-text`. You can name an embedding model of any provider under
+  **Models and providers** instead, such as an Ollama server on your network
+  (`kobe-mac-mini/qwen3-embedding:0.6b`, for example) or a hosted provider with a site key. The
+  embedding model is not added to the models list, so it never shows in a model picker (nor in
+  the list of models an agent's sandbox can ask the gateway for), and it is never replaced by
+  another model: if its provider is removed, the page says so and search uses word matching until
+  you choose another. A chat model from the models list is refused, and when the provider
+  publishes its list of models the name must be on it; a provider without a list (an Ollama server
+  without a key, the in-cluster model) takes the name as you type it, so check the spelling.
+- **Vectors.** Each memory is turned into a vector when it is saved (in every place: yours,
+  portable, workspace and site). Saving a new model builds vectors for every memory in the
+  background; until a memory has a vector from the current model, word matching finds it. The
+  **Search by meaning** section shows how many memories have one (for example "812 of 840") and
+  has a **Build vectors** (or **Re-embed**) button to fill the gaps, for example after Kobe was
+  upgraded or a build stopped. Nothing runs by itself after an upgrade.
+- **Who pays.** Every embedding call goes through the model gateway and counts like any other
+  model use: the person saving a memory pays, in the workspace they are working in; the member
+  whose message is searched pays for that message's search; the site admin who saves the model or
+  presses Build vectors pays for the build, in their active workspace. A workspace at 100% of a
+  budget line gets no new vectors (the memory is saved all the same, and found by word matching),
+  and a build stops there; press the button again later.
+- **When it is off.** The section says why search is word matching only, and what to do:
+  - _this Postgres server has no pgvector_: the people who run Kobe install pgvector for its
+    Postgres server (see the install guide), run `CREATE EXTENSION vector;` as a superuser and
+    upgrade Kobe;
+  - _pgvector is not enabled_: it is installed but Kobe may not enable it; a superuser runs
+    `CREATE EXTENSION vector;` in Kobe's database, then Kobe is upgraded;
+  - _no embedding model is set_, or _the embedding model's provider is gone_: choose one above.
+
+- **What is sent to the embedding provider.** Choosing an embedding model sends text to that
+  model's provider, through the gateway:
+  - every message a member sends in a run with memories (up to its first 4,000 characters),
+    to search for that message;
+  - every memory statement when it is saved, edited, reverted or imported, in every place (yours,
+    portable, workspace and site);
+  - with **Build vectors** (or **Re-embed**, or saving a new model), the statements of **every**
+    memory without a vector: site memories, every member's portable memories and the personal and
+    shared memories of **every workspace**, all charged to the site admin who started it, in their
+    active workspace.
+
+  Pick a provider your organization may send all of that to: the in-cluster model keeps it inside
+  your cluster; a hosted provider receives it under its own terms. Nothing else is sent, and
+  memories never go anywhere but to the embedding model you chose.
 
 ### Legal hold on Site memory
 

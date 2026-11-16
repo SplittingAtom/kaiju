@@ -2,7 +2,9 @@ import { z } from "zod";
 import {
   MODEL_ALIAS_PATTERN,
   eq,
+  gatewayProviderName,
   modelCatalog,
+  modelProviders,
   siteSettings,
   type KobeDb,
   type KobeTx,
@@ -10,6 +12,7 @@ import {
 import {
   SEMANTIC_MEMORY_PLACEMENT_DEFAULT,
   semanticMemoryPlacementSchema,
+  gatewayModelSchema,
   SEMANTIC_MEMORY_BLOCK_DEFAULT_BYTES,
   SEMANTIC_MEMORY_BLOCK_MAX_BYTES,
   SEMANTIC_MEMORY_BLOCK_MIN_BYTES,
@@ -26,8 +29,10 @@ import { logger } from "../logger.js";
  * The values are read by the tickets that enforce them: the context budget by the selector
  * (KOBE-382; the `run.start` contract allows the whole range), scope limits and the version cap by
  * the item store (KOBE-378), the stale threshold and retention window by the sweeps (KOBE-386),
- * rate limits and the learning model by Learn (KOBE-393). The embedding model is for Phase D and
- * unused until vectors are earned.
+ * rate limits and the learning model by Learn (KOBE-393). The embedding model (KOBE-409) is a
+ * gateway model id (`<gateway provider>/<model>`), not a catalog alias: embedding models stay out
+ * of the catalog, so they never appear in a chat model picker; its provider must be one the
+ * gateway has (a Site provider, or `kobe-local` when the chart runs the in-cluster model).
  */
 export const MEMORY_SITE_SETTINGS_KEY = "memory.settings";
 
@@ -45,7 +50,7 @@ const scopeLimit = z.number().int().min(1).max(SEMANTIC_MEMORY_SCOPE_MAX_ITEMS);
 
 export const memorySiteSettingsFields = {
   learning_model_alias: alias.nullable(),
-  embedding_model_alias: alias.nullable(),
+  embedding_model: gatewayModelSchema.nullable(),
   context_budget_kib: z
     .number()
     .int()
@@ -82,7 +87,7 @@ export const MEMORY_SITE_SETTING_NAMES = Object.keys(
 
 export const MEMORY_SITE_SETTINGS_DEFAULTS: MemorySiteSettings = Object.freeze({
   learning_model_alias: null,
-  embedding_model_alias: null,
+  embedding_model: null,
   context_budget_kib: MEMORY_CONTEXT_BUDGET_KIB_DEFAULT,
   // SM21 defaults (KOBE-378 brief): 300 per person per Workspace, 50 portable per person,
   // 1,000 per Workspace and per Site.
@@ -134,30 +139,47 @@ export async function readMemorySiteSettings(db: KobeDb | KobeTx): Promise<Memor
 
 const stable = (v: unknown) => JSON.stringify(v);
 
-export const MEMORY_SITE_MODEL_SETTINGS = [
-  "learning_model_alias",
-  "embedding_model_alias",
-] as const;
+/** Model settings the console shows as removed when their model is gone. */
+export const MEMORY_SITE_MODEL_SETTINGS = ["learning_model_alias", "embedding_model"] as const;
 export type MemorySiteModelSetting = (typeof MEMORY_SITE_MODEL_SETTINGS)[number];
 
+/** The gateway provider of a gateway model id (`kobe-local/nomic-embed-text` → `kobe-local`). */
+export const gatewayProviderOf = (model: string): string => model.slice(0, model.indexOf("/"));
+
+async function inCatalog(db: KobeDb | KobeTx, alias: string): Promise<boolean> {
+  const [m] = await db
+    .select({ alias: modelCatalog.alias })
+    .from(modelCatalog)
+    .where(eq(modelCatalog.alias, alias));
+  return m !== undefined;
+}
+
+/** Whether `model` (`<gateway provider>/<model>`) is a chat model of the catalog (review L3). */
+async function isCatalogChatModel(db: KobeDb | KobeTx, model: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: modelProviders.id, kind: modelProviders.kind, model: modelCatalog.model })
+    .from(modelCatalog)
+    .innerJoin(modelProviders, eq(modelProviders.id, modelCatalog.providerId));
+  return rows.some((r) => `${gatewayProviderName(r.id, r.kind)}/${r.model}` === model);
+}
+
 /**
- * The model settings whose stored alias is no longer in the catalog (review M1): the console shows
- * them as removed so the admin can choose another; they never block saving other settings.
+ * The model settings whose model is gone (review M1): the learning alias left the catalog, or the
+ * embedding model's provider left the gateway (`providers`: the gateway provider names now). The
+ * console shows them as removed so the admin can choose another; they never block saving other
+ * settings.
  */
 export async function removedModelSettings(
   db: KobeDb | KobeTx,
   settings: MemorySiteSettings,
+  providers: ReadonlySet<string>,
 ): Promise<MemorySiteModelSetting[]> {
   const out: MemorySiteModelSetting[] = [];
-  for (const key of MEMORY_SITE_MODEL_SETTINGS) {
-    const a = settings[key];
-    if (a === null) continue;
-    const [m] = await db
-      .select({ alias: modelCatalog.alias })
-      .from(modelCatalog)
-      .where(eq(modelCatalog.alias, a));
-    if (!m) out.push(key);
-  }
+  const learning = settings.learning_model_alias;
+  if (learning !== null && !(await inCatalog(db, learning))) out.push("learning_model_alias");
+  const embedding = settings.embedding_model;
+  if (embedding !== null && !providers.has(gatewayProviderOf(embedding)))
+    out.push("embedding_model");
   return out;
 }
 
@@ -168,29 +190,61 @@ export type SiteSettingsWrite =
       readonly settings: MemorySiteSettings;
       readonly changed: readonly MemorySiteSettingName[];
     }
-  | { readonly ok: false; readonly code: "unknown_alias"; readonly message: string };
+  | {
+      readonly ok: false;
+      readonly code:
+        | "unknown_alias"
+        | "unknown_embedding_provider"
+        | "embedding_is_chat_model"
+        | "unknown_embedding_model";
+      readonly message: string;
+    };
 
 /**
  * Saves the given fields over the current document (inside the caller's transaction, under
- * `lockSiteMemorySettings`). A model alias is checked against the catalog only when it changes,
- * so a stale stored alias never blocks saving other fields; whether a Workspace enabled it is
- * checked when it is used.
+ * `lockSiteMemorySettings`). A model is checked only when it changes, so a stale stored value
+ * never blocks saving other fields: a learning alias against the catalog (whether a Workspace
+ * enabled it is checked when it is used), an embedding model's provider against `providers` (the
+ * gateway provider names now) and against the chat catalog (review L3: a chat model is refused).
+ * Whether the provider lists the model is checked by the route, outside the transaction
+ * (`embeddingModelListed`).
  */
 export async function writeMemorySiteSettings(
   tx: KobeTx,
   change: { readonly [K in MemorySiteSettingName]?: MemorySiteSettings[K] | undefined },
+  providers: ReadonlySet<string>,
 ): Promise<SiteSettingsWrite> {
   const before = await readMemorySiteSettings(tx);
-  for (const key of MEMORY_SITE_MODEL_SETTINGS) {
-    const a = change[key];
-    if (a === undefined || a === null || a === before[key]) continue;
-    const [m] = await tx
-      .select({ alias: modelCatalog.alias })
-      .from(modelCatalog)
-      .where(eq(modelCatalog.alias, a));
-    if (!m) {
-      return { ok: false, code: "unknown_alias", message: `No model in the catalog is "${a}".` };
-    }
+  const learning = change.learning_model_alias;
+  if (learning && learning !== before.learning_model_alias && !(await inCatalog(tx, learning))) {
+    return {
+      ok: false,
+      code: "unknown_alias",
+      message: `No model in the catalog is "${learning}".`,
+    };
+  }
+  const embedding = change.embedding_model;
+  if (
+    embedding &&
+    embedding !== before.embedding_model &&
+    !providers.has(gatewayProviderOf(embedding))
+  ) {
+    return {
+      ok: false,
+      code: "unknown_embedding_provider",
+      message: `The gateway has no provider "${gatewayProviderOf(embedding)}": add it in Site settings › Models, or name the in-cluster model.`,
+    };
+  }
+  if (
+    embedding &&
+    embedding !== before.embedding_model &&
+    (await isCatalogChatModel(tx, embedding))
+  ) {
+    return {
+      ok: false,
+      code: "embedding_is_chat_model",
+      message: `"${embedding}" is a chat model in the catalog: name the provider's embedding model.`,
+    };
   }
   const given = Object.fromEntries(Object.entries(change).filter(([, v]) => v !== undefined));
   const next: MemorySiteSettings = { ...before, ...given };

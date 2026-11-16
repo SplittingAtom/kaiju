@@ -421,3 +421,35 @@ describe("UsageMeter: reasoning tokens (KOBE-557)", () => {
     });
   });
 });
+
+describe("UsageMeter: embeddings (KOBE-409)", () => {
+  const embeddings = () =>
+    new UsageMeter({
+      kind: "openai",
+      embeddings: true,
+      contentType: "application/json",
+      contentEncoding: undefined,
+    });
+  const body = JSON.stringify({
+    data: [{ index: 0, embedding: Array.from({ length: 1024 }, () => 0.123456) }],
+    usage: { prompt_tokens: 9, total_tokens: 9 },
+  });
+
+  it("reports the input and never charges the vectors as output", () => {
+    const m = embeddings();
+    m.write(Buffer.from(body));
+    expect(m.finish(true, 100, 0)).toEqual({
+      source: "reported",
+      counts: { input: 9, output: 0, cacheRead: 0, cacheWrite: 0 },
+    });
+  });
+
+  it("estimates the input from the request when the report is missing or cut short", () => {
+    const m = embeddings();
+    m.write(Buffer.from(body.slice(0, 200)));
+    expect(m.finish(false, 400, 0)).toEqual({
+      source: "estimated",
+      counts: { input: 100, output: 0, cacheRead: 0, cacheWrite: 0 },
+    });
+  });
+});

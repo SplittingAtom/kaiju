@@ -1,0 +1,218 @@
+{
+  "cases": [
+    {
+      "id": "existing-update-close-day",
+      "description": "The conversation refines an existing Workspace memory (from KOBE-394 normal-update-existing).",
+      "existing": [
+        { "scope": "team", "kind": "fact", "statement": "The Workspace closes the books monthly." }
+      ],
+      "transcript": [
+        [
+          "person",
+          "Quick correction to what you know: we close the books monthly, and specifically on the third working day."
+        ],
+        ["assistant", "Thanks, noted the third working day."]
+      ],
+      "expect": [
+        {
+          "statement": "The Workspace closes the books monthly, on the third working day.",
+          "match": ["third working day"],
+          "kind": "fact",
+          "scope": "team",
+          "quote": "we close the books monthly, and specifically on the third working day.",
+          "operation": "update",
+          "target": 0
+        }
+      ]
+    },
+    {
+      "id": "existing-supersede-crm",
+      "description": "A fact that is no longer true is superseded.",
+      "existing": [
+        {
+          "scope": "team",
+          "kind": "fact",
+          "statement": "The Workspace uses Salesforce as its CRM."
+        }
+      ],
+      "transcript": [
+        ["person", "Heads up, we moved off Salesforce in September. HubSpot is our CRM now."],
+        ["assistant", "Understood, I'll look in HubSpot for pipeline data."]
+      ],
+      "expect": [
+        {
+          "statement": "The Workspace uses HubSpot as its CRM (moved off Salesforce in September).",
+          "match": ["hubspot"],
+          "kind": "fact",
+          "scope": "team",
+          "quote": "HubSpot is our CRM now.",
+          "operation": "supersede",
+          "target": 0
+        }
+      ]
+    },
+    {
+      "id": "existing-conflict-payment-terms",
+      "description": "The person contradicts a memory without saying which holds: a conflict.",
+      "existing": [
+        {
+          "scope": "team",
+          "kind": "fact",
+          "statement": "The standard payment term is net 45 for all customers."
+        }
+      ],
+      "transcript": [
+        [
+          "person",
+          "Send the reminder letters. Our customers are on net 30, so anything older than 30 days is overdue."
+        ],
+        ["assistant", "My notes say net 45. Which is right?"],
+        [
+          "person",
+          "I'm not sure anymore, finance changed something last quarter. Use 30 for this letter."
+        ]
+      ],
+      "expect": [
+        {
+          "statement": "The standard payment term may be net 30 rather than net 45.",
+          "match": ["30"],
+          "kind": "fact",
+          "scope": "team",
+          "quote": "Our customers are on net 30, so anything older than 30 days is overdue.",
+          "operation": "conflict",
+          "target": 0
+        }
+      ]
+    },
+    {
+      "id": "existing-already-known",
+      "description": "Everything said is already a memory: nothing to add.",
+      "existing": [
+        {
+          "scope": "user",
+          "kind": "preference",
+          "statement": "Prefers dates in YYYY-MM-DD format."
+        },
+        {
+          "scope": "team",
+          "kind": "definition",
+          "statement": "The fiscal year runs from April to March."
+        }
+      ],
+      "transcript": [
+        ["person", "Show FY26 to date by month, ISO dates as usual."],
+        ["assistant", "FY26 (from 2025-04-01): April 1.2M, May 1.3M, ..."]
+      ],
+      "expect": [],
+      "forbid": [["yyyy"], ["iso"], ["fiscal year"]]
+    },
+    {
+      "id": "existing-policy-not-target",
+      "description": "Policy is listed but never restated or updated; the person's own preference is new.",
+      "existing": [
+        {
+          "scope": "site",
+          "kind": "convention",
+          "policy": true,
+          "statement": "Customer names are never shared outside the company."
+        }
+      ],
+      "transcript": [
+        [
+          "person",
+          "Draft the case study. Keep the customer anonymous, obviously. And I like case studies to open with the result, then the problem."
+        ],
+        ["assistant", "Here is a draft opening with the 30% cost reduction."]
+      ],
+      "expect": [
+        {
+          "statement": "Likes case studies to open with the result, then the problem.",
+          "match": ["case stud", "result"],
+          "kind": "preference",
+          "scope": ["portable", "user"],
+          "quote": "I like case studies to open with the result, then the problem."
+        }
+      ],
+      "forbid": [["anonymous"], ["customer name"]]
+    },
+    {
+      "id": "existing-update-personal",
+      "description": "A personal preference is refined.",
+      "existing": [
+        { "scope": "portable", "kind": "preference", "statement": "Prefers short answers." }
+      ],
+      "transcript": [
+        [
+          "person",
+          "Short answers are good, but for code questions I want the full code, not snippets."
+        ],
+        ["assistant", "Understood: short prose, full code."]
+      ],
+      "expect": [
+        {
+          "statement": "Prefers short answers, but full code rather than snippets for code questions.",
+          "match": ["code"],
+          "kind": "preference",
+          "scope": ["portable", "user"],
+          "quote": "Short answers are good, but for code questions I want the full code, not snippets.",
+          "operation": "update",
+          "target": 0
+        }
+      ]
+    },
+    {
+      "id": "existing-new-alongside-known",
+      "description": "One known fact repeated, one new fact.",
+      "existing": [{ "scope": "team", "kind": "fact", "statement": "The group reports in USD." }],
+      "transcript": [
+        [
+          "person",
+          "Consolidate in USD as always. Also, we translate the balance sheet at closing rates and the P&L at monthly average rates."
+        ],
+        [
+          "assistant",
+          "Done, with closing rates for the balance sheet and monthly averages for the P&L."
+        ]
+      ],
+      "expect": [
+        {
+          "statement": "The balance sheet is translated at closing rates and the P&L at monthly average rates.",
+          "match": [["closing rate", "average rate"]],
+          "kind": "convention",
+          "scope": "team",
+          "quote": "we translate the balance sheet at closing rates and the P&L at monthly average rates."
+        }
+      ],
+      "forbid": [["reports in usd"]]
+    },
+    {
+      "id": "existing-supersede-decision",
+      "description": "A reversed decision supersedes the old one.",
+      "existing": [
+        {
+          "scope": "team",
+          "kind": "decision",
+          "statement": "Reporting moves from Redshift to Snowflake by the end of Q1."
+        }
+      ],
+      "transcript": [
+        [
+          "person",
+          "The Snowflake move is cancelled. Leadership decided yesterday to stay on Redshift for at least another year."
+        ],
+        ["assistant", "Understood, I'll keep the Redshift queries."]
+      ],
+      "expect": [
+        {
+          "statement": "The Workspace stays on Redshift for at least another year; the Snowflake move is cancelled.",
+          "match": ["redshift"],
+          "kind": "decision",
+          "scope": "team",
+          "quote": "Leadership decided yesterday to stay on Redshift for at least another year.",
+          "operation": "supersede",
+          "target": 0
+        }
+      ]
+    }
+  ]
+}

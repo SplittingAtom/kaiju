@@ -325,6 +325,10 @@ describe("the ? sheet and tooltips list them (ac-2)", { timeout: 30_000 }, () =>
     const mac = isMacPlatform();
     expect(rows[0]?.querySelector("kbd")?.textContent).toBe(mac ? "⌘K" : "Ctrl+K");
     expect(within(sheet).getByRole("list", { name: "Message box keys" })).toBeTruthy();
+    // KOBE-395: Learn from this chat in its own Memory section.
+    const memory = within(sheet).getByRole("list", { name: "Memory shortcuts" });
+    expect(memory.textContent).toContain("Learn from this chat");
+    expect(memory.querySelector("kbd")?.textContent).toBe(mac ? "⌘⇧L" : "Ctrl+Shift+L");
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(before));

@@ -23,11 +23,22 @@ import {
  * same bytes and the Policy + pinned prefix stays byte-identical between messages.
  */
 
-/** Relevance: `ts_rank_cd + 0.3 · trigram + 0.1 · recency` (SM24). */
+/**
+ * Relevance: `ts_rank_cd + 0.3 · trigram + 0.1 · recency` (SM24), plus, with vectors (KOBE-409
+ * hybrid), `VECTOR_WEIGHT · vectorScore(similarity)`. Tuned offline on the KOBE-387 relevance set
+ * (`e2e/memory-eval.sh relevance` with an embedding endpoint; results in the KOBE-409 ledger).
+ */
 export const TRIGRAM_WEIGHT = 0.3;
 export const RECENCY_WEIGHT = 0.1;
 /** Recency falls linearly from 1 (saved today) to 0 at this age. */
 export const RECENCY_DAYS = 180;
+/** Weight of the vector leg's scaled similarity (KOBE-409). */
+export const VECTOR_WEIGHT = 1;
+/**
+ * Cosine similarity a candidate needs to count without a keyword match, and the floor the vector
+ * score rises from (0 at the floor, 1 at identical).
+ */
+export const VECTOR_MIN_SIMILARITY = 0.5;
 /** Base score of a preference in the person and portable lanes. */
 export const PREFERENCE_BASE = 0.5;
 /** Bonus for an item the thread's previous run was given (in-thread stickiness). */
@@ -54,6 +65,11 @@ export interface Candidate {
   readonly ageDays: number;
   /** The thread's previous run was given this item. */
   readonly sticky: boolean;
+  /**
+   * Cosine similarity of the current version's vector and the message's (KOBE-409); undefined
+   * without the vector leg or without a vector of the current model.
+   */
+  readonly vector?: number;
 }
 
 export interface SelectInput {
@@ -72,9 +88,20 @@ export interface SelectInput {
 
 const recency = (ageDays: number) => Math.max(0, 1 - Math.max(0, ageDays) / RECENCY_DAYS);
 
-/** Relevance alone (SM24), without the preference base or stickiness. */
+/** The similarity above {@link VECTOR_MIN_SIMILARITY}, scaled to 0..1 (0 without a vector). */
+export function vectorScore(similarity: number | undefined): number {
+  if (similarity === undefined) return 0;
+  return Math.max(0, (similarity - VECTOR_MIN_SIMILARITY) / (1 - VECTOR_MIN_SIMILARITY));
+}
+
+/** Relevance alone (SM24, KOBE-409), without the preference base or stickiness. */
 export function relevanceScore(c: Candidate): number {
-  return c.textRank + TRIGRAM_WEIGHT * c.trigram + RECENCY_WEIGHT * recency(c.ageDays);
+  return (
+    c.textRank +
+    TRIGRAM_WEIGHT * c.trigram +
+    RECENCY_WEIGHT * recency(c.ageDays) +
+    VECTOR_WEIGHT * vectorScore(c.vector)
+  );
 }
 
 /** The score of one candidate in its lane (pure; the SQL ordering mirrors it). */
@@ -85,14 +112,16 @@ export function memoryScore(c: Candidate, lane: SelectLane): number {
 }
 
 /**
- * A candidate counts at all: pinned, a person-lane preference, or a word of this message's query
- * matched. Stickiness and trigram similarity only rank: an item the previous run got is never a
+ * A candidate counts at all: pinned, a person-lane preference, a word of this message's query
+ * matched, or its vector is at least {@link VECTOR_MIN_SIMILARITY} similar to the message's
+ * (KOBE-409). Stickiness and trigram similarity only rank: an item the previous run got is never a
  * candidate on that alone (re-picked every message, Q6).
  */
 export function eligible(c: Candidate, lane: SelectLane): boolean {
   return (
     c.item.pinned ||
     c.matched ||
+    (c.vector !== undefined && c.vector >= VECTOR_MIN_SIMILARITY) ||
     (c.item.kind === "preference" && (lane === "user" || lane === "portable"))
   );
 }

@@ -84,6 +84,10 @@ import {
   notifyUnmaintained,
 } from "./skills/registry/maintainers.js";
 import { createServerCallClient } from "./models/gateway-client.js";
+import { createEmbeddingClient } from "./models/embedding-client.js";
+import { MEMORY_VECTOR_BUILD_LOCK, VectorBackfill } from "./memory/embeddings/backfill.js";
+import { createPgReconcileLock } from "./sandbox/reconcile-lock.js";
+import { MemoryEmbeddings } from "./memory/embeddings/service.js";
 import {
   createSkillManifestGenerator,
   type SkillManifestGenerator,
@@ -192,6 +196,17 @@ export interface ServerDepsOptions {
     readonly fetch?: typeof fetch;
   };
   /**
+   * Memory embeddings (KOBE-409): the chart's in-cluster embedding model as the gateway names it
+   * (`kobe-local/<model>`, KOBE-659), offered in the Site console; unset: none runs. Tests may
+   * shorten the selector's query-embedding deadline.
+   */
+  readonly embeddings?: {
+    readonly localModel?: string;
+    readonly queryDeadlineMs?: number;
+    /** Build vectors' first wait for the gateway sync (tests: 0). */
+    readonly gatewaySyncWaitMs?: number;
+  };
+  /**
    * Answer ratings as trace scores (KOBE-275): the tracing backend's score sink (Langfuse only,
    * `@kobe/telemetry` createLangfuseScoreSink) and whether scores may carry the comment
    * (`telemetry.captureContent`). Unset: ratings are not exported.
@@ -275,6 +290,10 @@ export interface ServerDeps {
   readonly skillManifests: SkillManifestGenerator | undefined;
   /** Learn from this chat (KOBE-393): starts learning passes; refuses without a gateway. */
   readonly learningPasses: LearningPasses;
+  /** Memory embeddings (KOBE-409): embed on save, query vectors, the Site console's state. */
+  readonly memoryEmbeddings: MemoryEmbeddings;
+  /** Build vectors / re-embed, started by a Site admin (KOBE-409). */
+  readonly memoryVectors: VectorBackfill;
   /** Model gateway admin (KOBE-40): seals provider API keys; undefined when not configured. */
   readonly models:
     | {
@@ -471,6 +490,37 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     background,
     log: logger.child({ component: "memory-learn" }),
   });
+  // Memory embeddings (KOBE-409): a server call too, purpose memory_embed, on POST /v1/embeddings.
+  const memoryEmbeddings = new MemoryEmbeddings({
+    db: database.db,
+    client: options.serverCalls
+      ? createEmbeddingClient({
+          url: options.serverCalls.gatewayUrl,
+          key: options.serverCalls.key,
+          ...(options.serverCalls.fetch ? { fetch: options.serverCalls.fetch } : {}),
+        })
+      : undefined,
+    background,
+    log: logger.child({ component: "memory-embeddings" }),
+    localModel: options.embeddings?.localModel,
+    ...(options.embeddings?.queryDeadlineMs === undefined
+      ? {}
+      : { queryDeadlineMs: options.embeddings.queryDeadlineMs }),
+  });
+  const memoryVectors = new VectorBackfill({
+    db: database.db,
+    embeddings: memoryEmbeddings,
+    background,
+    log: logger.child({ component: "memory-vectors" }),
+    lock: createPgReconcileLock(
+      database.pool,
+      (err) => logger.warn({ err }, "memory vector build lock connection problem"),
+      MEMORY_VECTOR_BUILD_LOCK,
+    ),
+    ...(options.embeddings?.gatewaySyncWaitMs === undefined
+      ? {}
+      : { gatewaySyncWaitMs: options.embeddings.gatewaySyncWaitMs }),
+  });
   // Project files in members' workspaces (KOBE-162); `index.ts` binds the workspace store later.
   const projectMounts = createProjectMounts(database.db, logger);
   const skillDraftTool = createSkillDraftTool(database.db, {
@@ -487,6 +537,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     engine: policyEngine,
     ...options.sandboxWire,
     serverCalls: serverCalls.purposes,
+    memoryEmbeddings,
     approvals: options.sandboxWire?.approvals ?? approvals.broker,
     approvalVerifier: options.sandboxWire?.approvalVerifier ?? approvals.verifier,
     background,
@@ -517,6 +568,8 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     budget: options.runs?.budget ?? DB_RUN_BUDGET_GATE,
     db: database.db,
     router: sandboxWire.router,
+    // KOBE-409 review M1: the query embedding starts as the run's start is sent.
+    prefetchQuery: (query) => memoryEmbeddings.prefetchQuery(query),
   });
   late.runs = runs;
   runs.useNotebooks(notebookFiles);
@@ -653,6 +706,8 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     skillEvalJudge,
     skillManifests,
     learningPasses,
+    memoryEmbeddings,
+    memoryVectors,
     mcp,
     kobeMcp,
     connectorUrlPolicy,

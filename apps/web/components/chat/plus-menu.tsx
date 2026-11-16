@@ -1,8 +1,8 @@
 "use client";
 
-import { AppWindowIcon, BrainIcon, KeyRoundIcon, PaperclipIcon } from "lucide-react";
+import { AppWindowIcon, KeyRoundIcon, PaperclipIcon } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { listChatConnectors } from "../../lib/chat/composer-plus-api";
 import { MY_CONNECTOR_KEYS } from "../../lib/apps/app-cards";
 import { useAppLaunch } from "../apps/use-app-launch";
@@ -12,10 +12,10 @@ import { useNavigate } from "../shell/use-navigate";
 import { chatPortalContainer } from "../ui/chat-portal";
 import { useChatSession } from "./kobe-runtime";
 import { ConnectorsSubmenu } from "./plus-connectors";
+import { MemorySubmenu, PlusFace, plusIndicator, useLearnBindings } from "./plus-learn";
 import { PLUS_CONTENT, PLUS_ITEM } from "./plus-menu-styles";
 import { SkillsSubmenu } from "./plus-skills";
-
-export const MEMORY_SOON = "Coming soon";
+import { useLearn, type Learn } from "./use-learn";
 
 /** The connectors off in the thread on screen (none for a new conversation), read on open. */
 function useConnectorsOff(threadId: string | null, open: boolean): ReadonlySet<string> {
@@ -108,61 +108,87 @@ function AppsSubmenu({
   );
 }
 
+/** A Learn notice beside the + button: started, refused with the reason, or finished. */
+function LearnNotice({ learn }: { readonly learn: Learn }) {
+  const { text, n } = learn.notice;
+  return (
+    <span
+      role="status"
+      data-kobe-learn-notice=""
+      className={
+        text === ""
+          ? "sr-only"
+          : "bg-background text-foreground absolute bottom-full start-0 z-30 mb-2 w-max max-w-[min(20rem,calc(100vw-2rem))] rounded-md border px-2 py-1 text-xs whitespace-normal shadow-md"
+      }
+    >
+      {text}
+      {n % 2 === 1 && text !== "" ? "\u00a0" : ""}
+    </span>
+  );
+}
+
 /**
  * The composer's + menu (KOBE-451): everything that adds to a message under one button, opening
  * upward. Attach files (drag and drop onto the composer still attaches), Connectors (on or off
- * for this conversation), Memory (a placeholder), Skills (a chip the server checks) and Apps (an
- * app card, as from the rail). Radix's menu button: Enter, Space or the arrows open it, arrows
- * move and open submenus, Escape closes and returns the focus.
+ * for this conversation), Memory (Learn from this chat, KOBE-395), Skills (a chip the server
+ * checks) and Apps (an app card, as from the rail). Radix's menu button: Enter, Space or the
+ * arrows open it, arrows move and open submenus, Escape closes and returns the focus. The button
+ * carries the Learn state (KOBE-395): a spinner while a pass runs, the count of candidates from
+ * this chat waiting in To review, or a dot for new messages since the last pass. The composer
+ * renders it only for the thread's owner (a shared reader gets the banner instead).
  */
 export function PlusMenu({
   draft,
   threadId,
+  threadRunning = false,
   onAttach,
 }: {
   readonly draft: string;
   /** The thread on screen; null for a conversation not started yet. */
   readonly threadId: string | null;
+  /** A run holds the thread: the Learn state is read again when it ends. */
+  readonly threadRunning?: boolean;
   readonly onAttach: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const memoryId = useId();
+  const learn = useLearn(threadId, threadRunning);
+  useLearnBindings(learn, threadId);
+  const face = plusIndicator(learn.state);
   return (
-    <DropdownMenu.Root open={open} onOpenChange={setOpen} modal={false}>
-      <DropdownMenu.Trigger asChild>
-        <IconAction command="plus-menu" className="size-7 shrink-0 rounded-full" side="top" />
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal container={chatPortalContainer()}>
-        <DropdownMenu.Content
-          data-kobe-portal
-          data-kobe-plus-menu
-          side="top"
-          align="start"
-          sideOffset={6}
-          className={PLUS_CONTENT}
-        >
-          <DropdownMenu.Item className={PLUS_ITEM} data-command="attach" onSelect={onAttach}>
-            <PaperclipIcon aria-hidden className="size-4 shrink-0" />
-            Attach files
-          </DropdownMenu.Item>
-          <ConnectorsSubmenu threadId={threadId} open={open} />
-          <DropdownMenu.Item
-            className={PLUS_ITEM}
-            data-kobe-plus="memory"
-            aria-disabled
-            aria-describedby={memoryId}
-            onSelect={(e) => e.preventDefault()}
+    <span className="relative inline-flex shrink-0" data-kobe-plus-wrap="">
+      <DropdownMenu.Root open={open} onOpenChange={setOpen} modal={false}>
+        <DropdownMenu.Trigger asChild>
+          <IconAction
+            command="plus-menu"
+            className="size-7 shrink-0 rounded-full"
+            side="top"
+            description={face.description}
+            data-kobe-learn-state={face.mark ?? undefined}
           >
-            <BrainIcon aria-hidden className="size-4 shrink-0" />
-            Memory
-            <span id={memoryId} className="text-muted-foreground ms-auto text-xs">
-              {MEMORY_SOON}
-            </span>
-          </DropdownMenu.Item>
-          <SkillsSubmenu draft={draft} threadId={threadId} open={open} />
-          <AppsSubmenu threadId={threadId} open={open} />
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+            <PlusFace face={face} />
+          </IconAction>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal container={chatPortalContainer()}>
+          <DropdownMenu.Content
+            data-kobe-portal
+            data-kobe-plus-menu
+            side="top"
+            align="start"
+            sideOffset={6}
+            className={PLUS_CONTENT}
+          >
+            <DropdownMenu.Item className={PLUS_ITEM} data-command="attach" onSelect={onAttach}>
+              <PaperclipIcon aria-hidden className="size-4 shrink-0" />
+              Attach files
+            </DropdownMenu.Item>
+            <ConnectorsSubmenu threadId={threadId} open={open} />
+            <MemorySubmenu learn={learn} threadId={threadId} />
+            <SkillsSubmenu draft={draft} threadId={threadId} open={open} />
+            <AppsSubmenu threadId={threadId} open={open} />
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
+      <LearnNotice learn={learn} />
+    </span>
   );
 }
