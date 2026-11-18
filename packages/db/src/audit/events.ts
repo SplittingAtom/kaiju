@@ -2960,6 +2960,8 @@ export const AUDIT_EVENTS = {
     portableEnabled: z.boolean().optional(),
     learnEnabled: z.boolean().optional(),
     siteProposalsEnabled: z.boolean().optional(),
+    /** KOBE-410 (absent on older rows): the Learn nudge on the composer's + button. */
+    learnNudgeEnabled: z.boolean().optional(),
     settings: z
       .array(z.string().regex(/^[a-z][a-z_]{0,40}$/))
       .max(20)
