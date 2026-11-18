@@ -9,7 +9,7 @@ import {
   RotateCwIcon,
 } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   LONG_DELTA_TOKENS,
   TO_REVIEW_HREF,
@@ -21,6 +21,8 @@ import {
 import type { MenuBindings } from "../../lib/shell/menu";
 import { useBindCommands } from "../shell/command-bindings";
 import markStyles from "../shell/icon-action.module.css";
+import { claimNudge } from "../../lib/chat/learn-nudge";
+import nudgeStyles from "./plus-learn.module.css";
 import { useNavigate } from "../shell/use-navigate";
 import { chatPortalContainer } from "../ui/chat-portal";
 import { PLUS_CONTENT, PLUS_ITEM } from "./plus-menu-styles";
@@ -70,8 +72,50 @@ export function plusIndicator(state: LearnState | null): {
   return { mark: null };
 }
 
-/** The + with its Learn mark: a spinner, the count (1–99, then 99+) or a dot. */
-export function PlusFace({ face }: { readonly face: ReturnType<typeof plusIndicator> }) {
+/** How long the nudge's pulse lasts (the CSS animation: two beats). */
+export const LEARN_NUDGE_PULSE_MS = 2_400;
+
+/**
+ * The Learn nudge (KOBE-410): true while the dot pulses, once per crossing the server names
+ * (`state.nudge.key`) per thread, only while the dot shows. A hint: it never starts a pass.
+ */
+export function useLearnNudge(threadId: string | null, state: LearnState | null): boolean {
+  const [pulse, setPulse] = useState(false);
+  // The crossing this + claimed (a re-run of the effect before the pulse ends keeps it), and the
+  // one it finished pulsing.
+  const claimed = useRef<string | null>(null);
+  const done = useRef<string | null>(null);
+  const key = state?.nudge?.key ?? null;
+  const dot = plusIndicator(state).mark === "dot";
+  useEffect(() => {
+    if (threadId === null || key === null || !dot) return undefined;
+    const crossing = `${threadId} ${key}`;
+    if (done.current === crossing) return undefined;
+    if (claimed.current !== crossing) {
+      if (!claimNudge(threadId, key)) return undefined;
+      claimed.current = crossing;
+    }
+    setPulse(true);
+    const timer = setTimeout(() => {
+      done.current = crossing;
+      setPulse(false);
+    }, LEARN_NUDGE_PULSE_MS);
+    return () => {
+      clearTimeout(timer);
+      setPulse(false);
+    };
+  }, [threadId, key, dot]);
+  return pulse;
+}
+
+/** The + with its Learn mark: a spinner, the count (1–99, then 99+) or a dot (`pulse`: the nudge). */
+export function PlusFace({
+  face,
+  pulse = false,
+}: {
+  readonly face: ReturnType<typeof plusIndicator>;
+  readonly pulse?: boolean;
+}) {
   return (
     <>
       <PlusIcon aria-hidden />
@@ -88,7 +132,12 @@ export function PlusFace({ face }: { readonly face: ReturnType<typeof plusIndica
         </span>
       )}
       {face.mark === "dot" && (
-        <span className={markStyles.dot} data-kobe-learn-mark="dot" aria-hidden="true" />
+        <span
+          className={pulse ? `${markStyles.dot} ${nudgeStyles.pulse}` : markStyles.dot}
+          data-kobe-learn-mark="dot"
+          data-kobe-learn-nudge={pulse ? "pulse" : undefined}
+          aria-hidden="true"
+        />
       )}
     </>
   );

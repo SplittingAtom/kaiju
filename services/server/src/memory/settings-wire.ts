@@ -35,6 +35,7 @@ export const siteSwitchesWireShape = {
   portable_enabled: z.boolean(),
   learn_enabled: z.boolean(),
   site_proposals_enabled: z.boolean(),
+  learn_nudge_enabled: z.boolean(),
 } as const;
 
 /** Site level: the switches and the Site memory settings document. */
@@ -94,6 +95,7 @@ export const toSiteSwitchesWire = (s: SiteMemorySwitches) => ({
   portable_enabled: s.portableEnabled,
   learn_enabled: s.learnEnabled,
   site_proposals_enabled: s.siteProposalsEnabled,
+  learn_nudge_enabled: s.learnNudgeEnabled,
 });
 
 export function siteSwitchChangeOf(
@@ -106,5 +108,6 @@ export function siteSwitchChangeOf(
     portableEnabled: body.portable_enabled,
     learnEnabled: body.learn_enabled,
     siteProposalsEnabled: body.site_proposals_enabled,
+    learnNudgeEnabled: body.learn_nudge_enabled,
   };
 }

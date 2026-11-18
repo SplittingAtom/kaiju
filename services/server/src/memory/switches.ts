@@ -46,6 +46,7 @@ export const SITE_SWITCH_KEYS: Readonly<Record<keyof SiteMemorySwitches, string>
   portableEnabled: "memory.portable_enabled",
   learnEnabled: "memory.learn_enabled",
   siteProposalsEnabled: "memory.site_proposals_enabled",
+  learnNudgeEnabled: "memory.learn_nudge_enabled",
 };
 
 /** The `teams.settings` key of the Workspace's v1.3 memory switches. */

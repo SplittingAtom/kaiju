@@ -1,0 +1,25 @@
+/* The Learn nudge (KOBE-410): the + button's dot pulses twice, once per crossing. */
+.pulse {
+  animation: learn-nudge 1.2s ease-out 2;
+}
+
+@keyframes learn-nudge {
+  0% {
+    box-shadow:
+      0 0 0 2px var(--admin-bg),
+      0 0 0 2px color-mix(in srgb, var(--admin-danger) 60%, transparent);
+  }
+
+  100% {
+    box-shadow:
+      0 0 0 2px var(--admin-bg),
+      0 0 0 8px color-mix(in srgb, var(--admin-danger) 0%, transparent);
+  }
+}
+
+/* No motion for people who asked for less: the still dot says the same. */
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+}
