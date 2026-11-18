@@ -88,7 +88,8 @@ async function appendStatement(
     itemId: row.id,
     version,
     statement,
-    actorKind: "user",
+    actorKind: op.fromProposal ? "proposal" : "user",
+    proposalId: op.fromProposal,
     lintOverride: checks.lintOverride,
     policyOverride: checks.policyOverride,
   });

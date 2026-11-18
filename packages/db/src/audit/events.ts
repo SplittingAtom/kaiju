@@ -3151,6 +3151,71 @@ export const AUDIT_EVENTS = {
     proposerId: id,
     outcome: z.enum(["dismissed", "changes_requested"]),
   }),
+  // ── Site proposals (KOBE-403, SM19/SM20/SM22): step 1 in the proposing Workspace's log (team),
+  // step 2 in the site log. Ids and flags only: never the statement or justification.
+  /**
+   * A Workspace member proposed a statement to the Site, from their To review candidate
+   * (`candidateId`) or from a Workspace memory (`itemId`, curators); `confirmed` when a Team admin
+   * proposed it (step 1 skipped); `edited` when the wording or kind changed first.
+   */
+  "memory.site_proposal.created": event("team", {
+    proposalId: id,
+    source: z.enum(["candidate", "item"]),
+    candidateId: id.nullable(),
+    itemId: id.nullable(),
+    confirmed: z.boolean(),
+    edited: z.boolean(),
+  }),
+  /** A Team admin confirmed it for the Site (`edited`: Edit and confirm); `round` of changes. */
+  "memory.site_proposal.confirmed": event("team", {
+    proposalId: id,
+    proposerId: id,
+    edited: z.boolean(),
+    round: count,
+  }),
+  /** A Workspace curator endorsed it (the Site sees the flag). */
+  "memory.site_proposal.endorsed": event("team", { proposalId: id, proposerId: id }),
+  /** Withdrawn before the Site decided, by its proposer or a Team admin. */
+  "memory.site_proposal.withdrawn": event("team", {
+    proposalId: id,
+    proposerId: id,
+    by: z.enum(["proposer", "team_admin"]),
+    fromState: z.enum(["awaiting_team", "awaiting_site"]),
+  }),
+  /**
+   * A Site curator approved it as Site memory `itemId`, or merged it into that memory as its
+   * `version` (`edited`: the Site changed the wording first). Never the proposer.
+   */
+  "memory.site_proposal.accepted": event("site", {
+    proposalId: id,
+    fromTeamId: id,
+    proposerId: id,
+    outcome: z.enum(["approved", "merged"]),
+    itemId: id,
+    version,
+    edited: z.boolean(),
+  }),
+  /**
+   * The Workspace's own record of a Site decision on its proposal (team log, recorded as the
+   * system; the deciding Site curator is the actor of the paired site event): approved or merged
+   * as Site memory `itemId` at `version`, rejected, or sent back for changes (`round`).
+   */
+  "memory.site_proposal.decided": event("team", {
+    proposalId: id,
+    proposerId: id,
+    outcome: z.enum(["approved", "merged", "rejected", "changes_requested"]),
+    round: count,
+    itemId: id.nullable(),
+    version: version.nullable(),
+  }),
+  /** A Site curator rejected it with a reason, or sent it back for changes (`round` 1..3). */
+  "memory.site_proposal.dismissed": event("site", {
+    proposalId: id,
+    fromTeamId: id,
+    proposerId: id,
+    outcome: z.enum(["rejected", "changes_requested"]),
+    round: count,
+  }),
   /**
    * A candidate went under `## Learned` in its project's `MEMORY.md` (KOBE-398) after the person
    * approved the signed change: the Notes doc at `version`; `edited` when the statement changed

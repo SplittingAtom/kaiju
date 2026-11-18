@@ -1,3 +1,4 @@
+import { presentedActorKind } from "./actor-kind.js";
 import { sql, type KobeTx } from "@kobe/db";
 import {
   MEMORY_RECALL_MAX_ITEMS,
@@ -136,6 +137,10 @@ export async function showItem(
     policy: row.policy,
     pinned: row.policy ? false : row.pinned,
     status: row.status,
-    provenance: { actor_kind: row.actor_kind, as_of: row.as_of, saved_on: row.saved_on },
+    provenance: {
+      actor_kind: presentedActorKind(row.actor_kind),
+      as_of: row.as_of,
+      saved_on: row.saved_on,
+    },
   };
 }

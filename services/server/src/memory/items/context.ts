@@ -28,6 +28,11 @@ export interface Op {
   readonly settings: MemorySiteSettings;
   /** Site curators to tell after commit (limits.ts). */
   pending: PendingSiteNotices;
+  /**
+   * A Site curator accepting a Site proposal (KOBE-403): the version written is the proposal's
+   * (`actor_kind = 'proposal'`, `proposal_id`), its only provenance (the wall, SM20).
+   */
+  readonly fromProposal?: string;
 }
 
 /**

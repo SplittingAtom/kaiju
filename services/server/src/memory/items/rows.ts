@@ -1,3 +1,4 @@
+import { presentedActorKind } from "./actor-kind.js";
 import { sql, type KobeTx } from "@kobe/db";
 import type {
   SemanticMemoryActorKind,
@@ -140,7 +141,7 @@ export async function detailOf(
       version: v.version,
       statement: v.statement,
       actor_user_id: authors ? v.actor_user_id : null,
-      actor_kind: v.actor_kind,
+      actor_kind: authors ? v.actor_kind : presentedActorKind(v.actor_kind),
       lint_override: v.lint_override,
       policy_override: v.policy_override,
       source_thread_id: showLinks ? v.source_thread_id : null,
