@@ -80,6 +80,15 @@ queue health on seeded data; pass signals; 1,000-item performance seed).
 | ac-2      | Nudge and quality signals visible on gate1: `memory-quality-nudge.spec.ts`, two passing runs             |
 | ac-3      | Gate 1 and Gate 2 shards green on `2088782d` (e2e run 44409422267)                                       |
 
+## Finding: `recall` is keyword only
+
+The vector leg feeds the per-message picks only. The agent's `recall({ query })` tool
+(`services/server/src/memory/items/recall-items.ts`, KOBE-399) still ranks saved memories by
+keywords (`ts_rank_cd + 0.3 · trigram + 0.1 · recency`), so a paraphrased recall gets
+keyword-quality results (paraphrase recall@8 0.139 here, against 0.836 hybrid). Proposed
+follow-up before Gate 7: run `recall` through the same hybrid scoring, keywords only without a
+model. U50 above is about the picks and holds as measured.
+
 ## Decisions for Chris
 
 None new from Phase D. Open from earlier gates and needed before Gate 7 (KOBE-413):
