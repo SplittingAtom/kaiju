@@ -25,6 +25,8 @@ export interface NewVersion {
   /** Workspace scopes only (the contract refuses links elsewhere). */
   readonly sourceThreadId?: string | undefined;
   readonly sourceEntryIds?: readonly string[] | undefined;
+  /** Site scope only: the accepted Site proposal (`actorKind` is then `proposal`, KOBE-403). */
+  readonly proposalId?: string | undefined;
 }
 
 export async function insertVersion(tx: KobeTx, loc: Location, v: NewVersion): Promise<void> {
@@ -41,6 +43,15 @@ export async function insertVersion(tx: KobeTx, loc: Location, v: NewVersion): P
         (team_id, item_id, version, statement, actor_user_id, actor_kind, lint_override,
          policy_override, source_thread_id, source_entry_ids)
       VALUES (${workspaceTeam(loc)}, ${v.itemId}, ${common}, ${v.sourceThreadId ?? null}, ${entries})`);
+    return;
+  }
+  if (v.proposalId !== undefined) {
+    if (loc.scope !== "site") throw new Error("only Site versions come from a Site proposal");
+    await tx.execute(sql`
+      INSERT INTO site_memory_item_versions
+        (item_id, version, statement, actor_user_id, actor_kind, lint_override, policy_override,
+         proposal_id)
+      VALUES (${v.itemId}, ${common}, ${v.proposalId})`);
     return;
   }
   await tx.execute(sql`
