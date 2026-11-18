@@ -223,6 +223,19 @@ project's file, writes one in the owner's workspace and is shared with the team:
 project file by name and the owner's file only as a count. Clean-up deletes the folders, unshares
 and archives and deletes the project. `npx playwright test thread-file-map`.
 
+## Site proposals (`site-proposals.spec.ts`, Gate C, KOBE-407)
+
+member2 (`KOBE_USER2`/`KOBE_PW2`, a plain member; skipped without them) states a unique office
+office fact (a meeting room's name) in a no-tools turn, runs Learn from this chat and proposes the candidate to the Site
+with a justification; the owner (`KOBE_USER`, Team admin and Site admin) confirms it with an edit
+on Workspace console › Memory › To the Site, checks the Site console detail (statement, kind,
+justification, source Workspace, date, none of the conversation), requests changes, confirms
+again and approves. member2 then reads it as a Site memory naming no Workspace, and Your Site
+proposals says Approved. Fails (not skips) when Learn is unavailable or the pass finds no
+candidate. Light and dark screenshots of the detail and the To the Site tab are attached; the
+Site memory is archived at the end. One short turn and one learning pass:
+`npx playwright test site-proposals`.
+
 ## Single sign-on (`sso.spec.ts`, KOBE-634)
 
 Sign-in with the mock identity provider (`e2e/sso/mock-entra.mjs`), registered as its own generic
