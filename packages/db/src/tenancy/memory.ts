@@ -35,6 +35,8 @@ export const memory = defineDomain({
     "portable_memory_item_versions",
     "site_memory_items",
     "site_memory_item_versions",
+    // Phase C (KOBE-402): Workspaces' proposals for the Site; statement + justification only.
+    "site_memory_proposals",
   ],
   grants: {
     // Portable preferences (like personal_skills): the server confines rows to their owner.
@@ -46,8 +48,17 @@ export const memory = defineDomain({
     // Site admins and stewards. DELETE: a purge of a Site item (its versions go with it).
     site_memory_items: ALL_PRIVILEGES,
     site_memory_item_versions: ["SELECT", "INSERT", "DELETE"],
+    // Site proposals (KOBE-402): read only through server paths that filter by role (proposer,
+    // the proposing Workspace's Team admins, Site admins and stewards). Withdrawn, expired and
+    // decided rows stay as history; rows leave only with their Workspace (cascade), so no DELETE.
+    site_memory_proposals: ["SELECT", "INSERT", "UPDATE"],
   },
-  teamReferencing: {},
+  teamReferencing: {
+    site_memory_proposals:
+      "from_team_id names the proposing Workspace (SM19/SM20): a statement and justification its " +
+      "Team admin confirmed for the Site, never evidence, rationale or thread links; ON DELETE " +
+      "CASCADE takes a deleted Workspace's proposals. Server paths filter rows by role.",
+  },
   // Optional pgvector embeddings (KOBE-409, 0230): the server writes them after a version is saved
   // (embed on save, backfill, re-embed); the immutability trigger lets only these columns change.
   // Granted only where the columns exist (no pgvector: none).

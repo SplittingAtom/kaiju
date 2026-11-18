@@ -90,6 +90,19 @@ describe("tenancy registry", () => {
     }
   });
 
+  // KOBE-402 (v1.3 SMC1, SM19/SM20): Site proposals are site-wide, read only through server paths;
+  // from_team_id names the proposing Workspace (a reference, not the tenancy key).
+  it("keeps site_memory_proposals site-wide, team-referencing, without DELETE (KOBE-402)", () => {
+    expect(SITE_WIDE_TABLES).toContain("site_memory_proposals");
+    expect(isTeamTable("site_memory_proposals")).toBe(false);
+    expect(appPrivilegesFor("site_memory_proposals")).toEqual(["SELECT", "INSERT", "UPDATE"]);
+    expect(TEAM_REFERENCING_SITE_WIDE).toHaveProperty("site_memory_proposals");
+    const table = schemaTables.find((s) => s.name === "site_memory_proposals");
+    const columns = table?.columns.map((c) => snake(c.name)) ?? [];
+    expect(columns).toContain("from_team_id");
+    expect(columns).not.toContain("team_id");
+  });
+
   // KOBE-625 (spec sso-oidc-scim §4–§10): single sign-on and SCIM are site configuration, not
   // team content. Only the access mappings name teams; SCIM tokens are revoked, never deleted.
   it("keeps the SSO and SCIM tables site-wide with least-privilege grants (KOBE-625)", () => {
