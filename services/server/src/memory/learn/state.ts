@@ -15,7 +15,8 @@ import {
 } from "@kobe/protocol";
 import { findThread, type Viewer } from "../../threads/repository.js";
 import { learnAvailability } from "../learning-model.js";
-import { readSwitches } from "../switches.js";
+import { readSwitches, type MemorySwitches } from "../switches.js";
+import { nudgeOf, readNudgeSignals } from "./nudge.js";
 import { assembleLearningInput } from "./pass-input/assemble.js";
 import { LEARN_PASSES_PER_DAY, leafPathRun, passesToday } from "./passes.js";
 import {
@@ -31,8 +32,8 @@ import { failureMessage } from "./target.js";
  * The thread's Learn state for the composer's + button (KOBE-395; SM12, Q8), read without a lock
  * and without starting anything: why a pass can't start now (the start's own checks, in its
  * order, as far as they can be told without assembling the input), the thread's running pass, new
- * messages since the person's last pass (the dot), and the open candidates from this chat (the
- * count). The start (run.ts) checks everything again; this answer is a hint for the button.
+ * messages since the person's last pass (the dot), the open candidates from this chat (the
+ * count) and the Learn nudge (KOBE-410, `nudge.ts`: the dot pulses once). The start (run.ts) checks everything again; this answer is a hint for the button.
  */
 
 const STALE_SECONDS = MEMORY_PASS_MAX_MS / 1000;
@@ -103,6 +104,7 @@ async function blockerOf(
   thread: Thread,
   serverCalls: boolean,
   left: number,
+  switches: MemorySwitches,
 ): Promise<LearnRefusal | null> {
   const { teamId, userId } = viewer;
   if (thread.deletedAt !== null)
@@ -115,7 +117,7 @@ async function blockerOf(
       reason: "server_calls_off",
       message: SERVER_CALLS_OFF_MESSAGE,
     };
-  const model = await learnAvailability(tx, teamId, await readSwitches(tx, teamId));
+  const model = await learnAvailability(tx, teamId, switches);
   if (!model.ok)
     return {
       code: SWITCH_REASONS.has(model.reason)
@@ -154,17 +156,40 @@ export async function readLearnState(
       LEARN_PASSES_PER_DAY - (await passesToday(tx, viewer.teamId, viewer.userId)),
     );
     const mark = await watermark(tx, viewer, threadId);
+    const switches = await readSwitches(tx, viewer.teamId);
+    const blocker = await blockerOf(tx, viewer, thread, options.serverCalls, left, switches);
+    const running = await runningPass(tx, viewer.teamId, threadId);
+    const newMessages = thread.leafEntryId !== null && mark !== thread.leafEntryId;
+    const candidates = await openCandidates(tx, viewer, threadId);
+    // KOBE-410: the nudge only when the dot would show (Learn could start, nothing waits).
+    const leaf = thread.leafEntryId;
+    const nudge =
+      switches.memory.learnNudge &&
+      leaf !== null &&
+      newMessages &&
+      blocker === null &&
+      running === null &&
+      candidates === 0
+        ? nudgeOf(
+            await readNudgeSignals(tx, viewer, {
+              id: threadId,
+              leafEntryId: leaf,
+              forkedAtEntryId: thread.forkedAtEntryId ?? null,
+            }),
+          )
+        : null;
     return {
       ok: true,
       state: {
         thread_id: threadId,
-        blocker: await blockerOf(tx, viewer, thread, options.serverCalls, left),
-        running: await runningPass(tx, viewer.teamId, threadId),
-        new_messages: thread.leafEntryId !== null && mark !== thread.leafEntryId,
-        candidates: await openCandidates(tx, viewer, threadId),
+        blocker,
+        running,
+        new_messages: newMessages,
+        candidates,
         passes_left: left,
         last_failure: await lastFailure(tx, viewer, threadId),
         estimate: null,
+        nudge,
       },
     };
   });

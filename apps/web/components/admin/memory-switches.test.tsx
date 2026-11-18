@@ -203,6 +203,7 @@ const SITE_ON = {
   portable_enabled: true,
   learn_enabled: true,
   site_proposals_enabled: true,
+  learn_nudge_enabled: true,
   settings: SETTINGS,
 };
 
@@ -220,6 +221,7 @@ describe("Site console › Settings › Memory (KOBE-381 ac-3)", () => {
       /Portable preferences/,
       /Learn from this chat/,
       /Members may propose to the Site/,
+      /Nudge to learn/,
     ]) {
       expect(((await box(name)) as HTMLInputElement).checked).toBe(true);
     }
@@ -234,7 +236,20 @@ describe("Site console › Settings › Memory (KOBE-381 ac-3)", () => {
       portable_enabled: false,
       learn_enabled: false,
       site_proposals_enabled: true,
+      learn_nudge_enabled: true,
     });
+  });
+
+  it("turns the Learn nudge off on its own (KOBE-410 ac-3)", async () => {
+    const calls = stubApi({
+      [`GET ${SITE}`]: [200, SITE_ON],
+      [`PUT ${SITE}`]: [200, { ...SITE_ON, learn_nudge_enabled: false }],
+    });
+    renderSite(<MemorySwitchesSection />);
+    await userEvent.click(await box(/Nudge to learn/));
+    await userEvent.click(screen.getByRole("button", { name: "Save memory settings" }));
+    await screen.findByText(/Memory settings saved on this site/);
+    expect(putBody(calls, SITE)).toMatchObject({ learn_nudge_enabled: false, learn_enabled: true });
   });
 
   it("persists the master switch", async () => {

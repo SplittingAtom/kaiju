@@ -12,7 +12,13 @@ import { useNavigate } from "../shell/use-navigate";
 import { chatPortalContainer } from "../ui/chat-portal";
 import { useChatSession } from "./kobe-runtime";
 import { ConnectorsSubmenu } from "./plus-connectors";
-import { MemorySubmenu, PlusFace, plusIndicator, useLearnBindings } from "./plus-learn";
+import {
+  MemorySubmenu,
+  PlusFace,
+  plusIndicator,
+  useLearnBindings,
+  useLearnNudge,
+} from "./plus-learn";
 import { PLUS_CONTENT, PLUS_ITEM } from "./plus-menu-styles";
 import { SkillsSubmenu } from "./plus-skills";
 import { useLearn, type Learn } from "./use-learn";
@@ -134,7 +140,8 @@ function LearnNotice({ learn }: { readonly learn: Learn }) {
  * checks) and Apps (an app card, as from the rail). Radix's menu button: Enter, Space or the
  * arrows open it, arrows move and open submenus, Escape closes and returns the focus. The button
  * carries the Learn state (KOBE-395): a spinner while a pass runs, the count of candidates from
- * this chat waiting in To review, or a dot for new messages since the last pass. The composer
+ * this chat waiting in To review, or a dot for new messages since the last pass, which pulses
+ * once when the server nudges (KOBE-410: enough new messages or a correction). The composer
  * renders it only for the thread's owner (a shared reader gets the banner instead).
  */
 export function PlusMenu({
@@ -154,6 +161,7 @@ export function PlusMenu({
   const learn = useLearn(threadId, threadRunning);
   useLearnBindings(learn, threadId);
   const face = plusIndicator(learn.state);
+  const pulse = useLearnNudge(threadId, learn.state);
   return (
     <span className="relative inline-flex shrink-0" data-kobe-plus-wrap="">
       <DropdownMenu.Root open={open} onOpenChange={setOpen} modal={false}>
@@ -165,7 +173,7 @@ export function PlusMenu({
             description={face.description}
             data-kobe-learn-state={face.mark ?? undefined}
           >
-            <PlusFace face={face} />
+            <PlusFace face={face} pulse={pulse} />
           </IconAction>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal container={chatPortalContainer()}>

@@ -55,6 +55,12 @@ export const SITE_SWITCHES: readonly SwitchSpec<SiteSwitch>[] = [
     hint: "Workspaces can propose memories to the site. A team admin confirms first; a site admin or site memory steward accepts. Only the statement and its reason are sent.",
     needs: ["memoryEnabled", "memoriesEnabled"],
   },
+  {
+    key: "learnNudgeEnabled",
+    label: "Nudge to learn",
+    hint: "The dot on the + button in the composer pulses once after about 10 new messages since Kobe last learned from a conversation, or after someone corrects the agent (a thumbs down or an edited message). It never starts learning by itself.",
+    needs: ["memoryEnabled", "memoriesEnabled", "learnEnabled"],
+  },
 ];
 
 /**

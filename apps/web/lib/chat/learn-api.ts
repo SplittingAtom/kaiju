@@ -23,6 +23,8 @@ export interface LearnState {
     readonly finishedAt: string;
   } | null;
   readonly estimate: { readonly newTokens: number | null; readonly allTokens: number } | null;
+  /** KOBE-410: why the dot pulses once (absent from an older server). */
+  readonly nudge?: { readonly reason: "messages" | "correction"; readonly key: string } | null;
 }
 
 export interface LearnStarted {
