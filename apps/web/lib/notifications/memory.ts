@@ -57,7 +57,12 @@ function linkOf(
             label: "Open the project",
           }
         : { href: "/me/projects", label: "Open projects" };
+    // Received goes to the Workspace's Team admins (KOBE-403 notify.ts): their confirmation queue.
     case "memory.site_proposal.received":
+      return {
+        href: withParam(MEMORY_PAGES.workspace, "site_proposal", objectId),
+        label: "Open the Site proposal",
+      };
     case "memory.site_proposal.confirmed":
       return {
         href: withParam(MEMORY_PAGES.site, "site_proposal", objectId),

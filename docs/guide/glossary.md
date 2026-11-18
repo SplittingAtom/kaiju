@@ -70,8 +70,9 @@ agent writes, yours and a project's). See [Memory](memory.md).
 **Memory steward.** A grant on top of any role, not a role: a **workspace** memory steward
 (given by a team admin on **Members and roles**) curates the workspace's shared memories with the
 team admins; a **Site** memory steward (given by a site admin in **Site roles**) curates Site
-memory and accepts or dismisses the proposals team admins send to the Site. Only team admins send
-memories to the Site, and only site admins set Policy. See
+memory and accepts or dismisses the proposals team admins send to the Site. Anyone can propose
+something they said to the Site, but only a team admin's confirmation sends it there; workspace
+stewards endorse. Only site admins set Policy. See
 [Team admin overview](admin/team-admin.md#team).
 
 **Model.** The AI model that writes the answers. See [Models and thinking levels](models.md).

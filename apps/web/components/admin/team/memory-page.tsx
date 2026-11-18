@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import {
   Button,
   Field,
@@ -16,6 +16,9 @@ import { ExportPanel } from "../../memory/export-panel";
 import { ImportPanel } from "../../memory/import-panel";
 import { PolicyReadOnly } from "../../memory/policy-budget";
 import { ProposalQueue } from "../../memory/proposals/proposal-queue";
+import { ProposeItemToSite } from "../../memory/site-proposals/propose-item";
+import { WorkspaceSiteQueue } from "../../memory/site-proposals/site-queue";
+import { createSiteProposalsApi } from "../../../lib/memory/site-proposals-api";
 import { isUuid } from "../../../lib/memory/ids";
 import { useTeamAccess } from "../console-context";
 import {
@@ -85,7 +88,10 @@ export const WORKSPACE_SWITCHES: readonly SwitchSpec<WorkspaceSwitch>[] = [
  * admins see the Policy text and change none of it); anyone else here reads only. **Settings**
  * (Team admins): the memory switches and learning model, AND-ed with the Site's; a switch off
  * stops use and deletes nothing. **Proposals** (curators, KOBE-397): members' pending Workspace
- * proposals to approve, send back or dismiss; `?proposal=<id>` (the bell) opens it there.
+ * proposals to approve, send back or dismiss; `?proposal=<id>` (the bell) opens it there. **To
+ * the Site** (curators, KOBE-404): this Workspace's Site proposals, the Team admins'
+ * confirmation queue (stewards endorse); `?site_proposal=<id>` opens it. Curators also get
+ * Propose to Site on each active Workspace memory.
  */
 export function TeamMemoryPage() {
   const access = useTeamAccess();
@@ -93,14 +99,24 @@ export function TeamMemoryPage() {
   const curate = access.permissions.includes("team.memory.curate");
   const manage = access.permissions.includes("team.memory.manage");
   const [generation, setGeneration] = useState(0);
-  const [proposal] = useState(() => proposalFromLocation());
+  const [proposal] = useState(() => idFromLocation("proposal"));
+  const [siteProposal] = useState(() => idFromLocation("site_proposal"));
+  const siteApi = useMemo(() => createSiteProposalsApi(teamId), [teamId]);
+  const opening = !curate
+    ? "memories"
+    : proposal !== null
+      ? "proposals"
+      : siteProposal !== null
+        ? "site"
+        : "memories";
   return (
     <>
       <PageHeader title="Memory" />
-      <Tabs defaultValue={curate && proposal !== null ? "proposals" : "memories"}>
+      <Tabs defaultValue={opening}>
         <TabsList label="Memory">
           <TabsTrigger value="memories">Memories</TabsTrigger>
           {curate && <TabsTrigger value="proposals">Proposals</TabsTrigger>}
+          {curate && <TabsTrigger value="site">To the Site</TabsTrigger>}
           {curate && <TabsTrigger value="transfer">Import and export</TabsTrigger>}
           {manage && <TabsTrigger value="settings">Settings</TabsTrigger>}
         </TabsList>
@@ -118,12 +134,23 @@ export function TeamMemoryPage() {
               { scope: "team", curate },
               { scope: "site", curate: false },
             ]}
+            {...(curate
+              ? {
+                  rowExtra: (item) =>
+                    item.scope === "team" ? <ProposeItemToSite item={item} api={siteApi} /> : null,
+                }
+              : {})}
           />
           <PolicyReadOnly teamId={teamId} />
         </TabsContent>
         {curate && (
           <TabsContent value="proposals">
             <ProposalQueue teamId={teamId} userId={access.user.id} focusId={proposal} />
+          </TabsContent>
+        )}
+        {curate && (
+          <TabsContent value="site">
+            <WorkspaceSiteQueue teamId={teamId} focusId={siteProposal} api={siteApi} />
           </TabsContent>
         )}
         {curate && (
@@ -146,9 +173,9 @@ export function TeamMemoryPage() {
   );
 }
 
-/** `?proposal=<uuid>`: the bell's Open the proposal. */
-function proposalFromLocation(): string | null {
-  const id = new URLSearchParams(window.location.search).get("proposal");
+/** `?proposal=<uuid>` / `?site_proposal=<uuid>`: the bell's links. */
+function idFromLocation(param: "proposal" | "site_proposal"): string | null {
+  const id = new URLSearchParams(window.location.search).get(param);
   return id !== null && isUuid(id) ? id.toLowerCase() : null;
 }
 

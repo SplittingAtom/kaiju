@@ -118,7 +118,7 @@ describe("memory notifications in the bell (KOBE-645)", () => {
         ...examples["memory.review.reminder"],
         relatedKind: "memory.site_proposal.received",
       }),
-    ).toBe("/admin/site/memory?site_proposal=obj-1");
+    ).toBe("/admin/team/memory?site_proposal=obj-1");
     expect(href(examples["memory.site_proposal.confirmed"])).toBe(
       "/admin/site/memory?site_proposal=obj-1",
     );
