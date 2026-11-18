@@ -45,7 +45,7 @@ export interface SiteProposed {
   };
 }
 
-const switchedOff = () =>
+export const switchedOff = () =>
   new MemoryItemError(
     "memory_disabled",
     "This workspace doesn't propose memories to the Site (Members may propose to the Site is off).",

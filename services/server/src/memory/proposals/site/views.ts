@@ -14,6 +14,11 @@ import type { SiteProposalRow } from "./rows.js";
 
 const stateOf = (p: SiteProposalRow) => (p.lapsed ? ("expired" as const) : p.state);
 
+/** Decided by the Site (the only states whose `decided_*` and `reason` are a decision). */
+const decided = (p: SiteProposalRow) =>
+  p.state === "approved" || p.state === "merged" || p.state === "rejected";
+const open = (p: SiteProposalRow) => p.state === "awaiting_team" || p.state === "awaiting_site";
+
 function common(p: SiteProposalRow) {
   return {
     id: p.id,
@@ -26,9 +31,11 @@ function common(p: SiteProposalRow) {
     proposer: p.proposer,
     confirmed_by: p.confirmedBy,
     confirmed_at: p.confirmedAt,
-    /** The Site's reason (rejected) or its request-changes note (back with the Workspace). */
-    reason: p.reason,
-    decided_at: p.decidedAt,
+    /** The Site's reason for a rejection (null otherwise). */
+    reason: p.state === "rejected" ? p.reason : null,
+    /** The Site's latest request-changes note while the proposal is still open (rounds > 0). */
+    changes_note: open(p) && p.rounds > 0 ? p.reason : null,
+    decided_at: decided(p) ? p.decidedAt : null,
     merged_into: p.mergedInto,
     expires_at: p.expiresAt,
     created_at: p.createdAt,
@@ -40,20 +47,20 @@ export function siteView(p: SiteProposalRow) {
   return {
     ...common(p),
     from_workspace: { id: p.fromTeamId, name: p.fromTeamName },
-    decided_by: p.decidedBy,
+    decided_by: decided(p) ? p.decidedBy : null,
   };
 }
 export type SiteProposalView = ReturnType<typeof siteView>;
 
 export function workspaceView(who: MemoryWho, p: SiteProposalRow) {
-  const open = stateOf(p) === "awaiting_team" || stateOf(p) === "awaiting_site";
+  const actionable = stateOf(p) === "awaiting_team" || stateOf(p) === "awaiting_site";
   const own = p.proposer.id === who.userId;
   return {
     ...common(p),
     may: {
-      confirm: open && p.state === "awaiting_team" && isTeamAdmin(who),
-      endorse: open && !p.endorsed && !own && curatesWorkspace(who),
-      withdraw: open && (own || isTeamAdmin(who)),
+      confirm: actionable && p.state === "awaiting_team" && isTeamAdmin(who),
+      endorse: actionable && !p.endorsed && !own && curatesWorkspace(who),
+      withdraw: actionable && (own || isTeamAdmin(who)),
     },
   };
 }

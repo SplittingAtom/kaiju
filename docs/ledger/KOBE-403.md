@@ -72,6 +72,25 @@ Service + HTTP API, no migration, no protocol change.
   site log (accepted, dismissed with outcome rejected/changes_requested), ids and flags only;
   the Site item also gets `memory.item.created` with `actorKind: proposal`.
 
+## Security review follow-ups (coordinator, on 4086e8a6)
+
+- **LOW-2:** approve and merge re-read the Workspace's Members may propose to the Site switch in
+  the decision transaction; off → 403 `memory_disabled` (nothing from that Workspace enters Site
+  memory). Reject and request changes still go through, so the proposal can be settled.
+- **LOW-3:** every Site decision also writes `memory.site_proposal.decided` (team log, ids only:
+  outcome, round, Site item id/version) with the **system** as actor; the deciding Site curator
+  stays the actor of the paired site event (contract wall M6).
+- **LOW-4:** approve/merge clear `reason`; views show `reason` only on `rejected`, `decided_at` /
+  `decided_by` only on approved/merged/rejected, and the latest request-changes note as
+  `changes_note` while the proposal is open (rounds > 0). The note text lives only in the row
+  (and the bell links to it), never in audit.
+- **LOW-5:** `items/actor-kind.ts` `presentedActorKind`: run context (selector, recall, run
+  records/placement) always, and item detail for non-Site-curators, show `proposal` as `user`.
+- LOW-1 (confirming Team admin who is a Site steward may decide) left for Gate C (Chris).
+- Tests added: other Workspace's Team admin by id (404), concurrent approvals (one item), confirm
+  vs withdraw race, steward + Policy/archived targets, expired proposal, switch off after confirm,
+  Workspace audit entry, note vs decision, actor-kind presentation.
+
 ## User-facing docs
 
 No guide change now: the flow has no UI yet (KOBE-404/405 ship the user-facing pages), the guide

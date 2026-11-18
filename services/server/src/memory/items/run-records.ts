@@ -1,3 +1,4 @@
+import { presentedActorKind } from "./actor-kind.js";
 import { sql, type KobeTx } from "@kobe/db";
 import {
   semanticMemoryRunRank,
@@ -127,7 +128,11 @@ export const recordToRunItem = (r: RecordRow): RunSemanticMemoryItem => ({
   statement: r.statement,
   policy: r.lane === "policy",
   pinned: r.pinned,
-  provenance: { actor_kind: r.actor_kind, as_of: r.as_of, saved_on: r.saved_on },
+  provenance: {
+    actor_kind: presentedActorKind(r.actor_kind),
+    as_of: r.as_of,
+    saved_on: r.saved_on,
+  },
 });
 
 /**

@@ -3193,6 +3193,19 @@ export const AUDIT_EVENTS = {
     version,
     edited: z.boolean(),
   }),
+  /**
+   * The Workspace's own record of a Site decision on its proposal (team log, recorded as the
+   * system; the deciding Site curator is the actor of the paired site event): approved or merged
+   * as Site memory `itemId` at `version`, rejected, or sent back for changes (`round`).
+   */
+  "memory.site_proposal.decided": event("team", {
+    proposalId: id,
+    proposerId: id,
+    outcome: z.enum(["approved", "merged", "rejected", "changes_requested"]),
+    round: count,
+    itemId: id.nullable(),
+    version: version.nullable(),
+  }),
   /** A Site curator rejected it with a reason, or sent it back for changes (`round` 1..3). */
   "memory.site_proposal.dismissed": event("site", {
     proposalId: id,

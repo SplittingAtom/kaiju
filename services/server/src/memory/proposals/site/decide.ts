@@ -1,4 +1,11 @@
-import { SITE_MEMORY_PROPOSAL_ROUNDS_MAX, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import {
+  SITE_MEMORY_PROPOSAL_ROUNDS_MAX,
+  SYSTEM_ACTOR,
+  sql,
+  withTeam,
+  type KobeDb,
+  type KobeTx,
+} from "@kobe/db";
 import { createSemanticMemoryItemSchema, type SemanticMemoryItemDetail } from "@kobe/protocol";
 import { siteMemoryWriteAllows } from "../../../authz/permissions.js";
 import { recordAudit } from "../../../audit/record.js";
@@ -8,7 +15,9 @@ import { patchItemIn } from "../../items/edit.js";
 import { inactive, invalid, notAllowed, notFound } from "../../items/errors.js";
 import { deliverSiteNotices } from "../../items/limits.js";
 import type { MemoryWho } from "../../items/who.js";
+import { readSwitches } from "../../switches.js";
 import { assertSiteDecider, decidesForSite } from "./access.js";
+import { switchedOff } from "./propose.js";
 import { noticeAwaitingTeam, noticeDecided } from "./notify.js";
 import { lockOpen, readSiteProposal, siteProposalNotFound, type SiteProposalRow } from "./rows.js";
 import type { ApproveSiteProposal, MergeSiteProposal } from "./schemas.js";
@@ -56,9 +65,43 @@ async function decide<T>(
   return done.value;
 }
 
-/** The item store's op for a Site write made from this proposal. */
+/**
+ * The item store's op for a Site write made from this proposal. The Workspace's **Members may
+ * propose to the Site** switch is read again: turned off after confirmation, nothing of that
+ * Workspace enters Site memory (approve and merge refuse, `memory_disabled`); reject and request
+ * changes still settle the proposal.
+ */
 async function proposalOp(tx: KobeTx, who: MemoryWho, p: SiteProposalRow): Promise<Op> {
+  if (!(await readSwitches(tx, p.fromTeamId)).memory.siteProposals) throw switchedOff();
   return { ...(await openOp(tx, who, "site")), fromProposal: p.id };
+}
+
+type Outcome = "approved" | "merged" | "rejected" | "changes_requested";
+
+/**
+ * The Workspace's own record of a Site decision (ids only, recorded as the system: the deciding
+ * Site curator is named in the site log's paired event, contract wall M6).
+ */
+async function workspaceAudit(
+  tx: KobeTx,
+  p: SiteProposalRow,
+  outcome: Outcome,
+  round: number,
+  item: { id: string; version: number } | null = null,
+): Promise<void> {
+  await recordAudit(tx, {
+    action: "memory.site_proposal.decided",
+    teamId: p.fromTeamId,
+    actor: SYSTEM_ACTOR,
+    target: {
+      proposalId: p.id,
+      proposerId: p.proposer.id,
+      outcome,
+      round,
+      itemId: item?.id ?? null,
+      version: item?.version ?? null,
+    },
+  });
 }
 
 async function setDecided(
@@ -71,7 +114,7 @@ async function setDecided(
   await tx.execute(sql`
     UPDATE site_memory_proposals
        SET state = ${state}, decided_by = ${who.userId}, decided_at = now(),
-           reason = ${extra.reason ?? (state === "rejected" ? null : p.reason)},
+           reason = ${extra.reason ?? null},
            merged_into = ${extra.mergedInto ?? null}, updated_at = now()
      WHERE id = ${p.id} AND state = 'awaiting_site'`);
 }
@@ -111,6 +154,7 @@ async function accepted(
       edited,
     },
   });
+  await workspaceAudit(tx, p, outcome, p.rounds, item);
   await noticeDecided(tx, subject(p), "accepted", who.userId);
   const proposal = siteView(await readSiteProposal(tx, SITE, p.id));
   return { value: { proposal, item }, pending: op.pending };
@@ -197,6 +241,7 @@ export function rejectSiteProposal(
         round: p.rounds,
       },
     });
+    await workspaceAudit(tx, p, "rejected", p.rounds);
     await noticeDecided(tx, subject(p), "dismissed", who.userId);
     return { value: { proposal: siteView(await readSiteProposal(tx, SITE, p.id)) }, pending: [] };
   });
@@ -234,6 +279,7 @@ export function requestSiteChanges(
         round,
       },
     });
+    await workspaceAudit(tx, p, "changes_requested", round);
     await noticeAwaitingTeam(tx, subject(p), who.userId, true);
     return { value: { proposal: siteView(await readSiteProposal(tx, SITE, p.id)) }, pending: [] };
   });

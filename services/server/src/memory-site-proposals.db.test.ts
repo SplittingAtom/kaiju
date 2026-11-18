@@ -491,3 +491,204 @@ describe("step 2 (the Site)", () => {
     expect((await as.siteSteward.get(`${SITE}?state=bogus`)).status).toBe(400);
   });
 });
+
+/** Earlier tests leave similar Site memories: save over the near-duplicate warning. */
+const LINT_OK = { overrides: { lint: true } };
+
+const setSwitch = (on: boolean) =>
+  h.admin.query(
+    on
+      ? `UPDATE teams SET settings = settings #- '{memory,site_proposals_enabled}' WHERE id = $1`
+      : `UPDATE teams SET settings = jsonb_set(coalesce(settings, '{}'), '{memory}',
+           coalesce(settings -> 'memory', '{}') || '{"site_proposals_enabled": false}') WHERE id = $1`,
+    [team],
+  );
+
+async function siteItem(body: object): Promise<string> {
+  const r = await as.siteAdmin.post("/v1/memory/semantic/items", {
+    scope: "site",
+    kind: "convention",
+    ...body,
+  });
+  expect(r.status, JSON.stringify(r.json)).toBe(201);
+  return (r.json as { id: string }).id;
+}
+
+describe("review follow-ups (walls, races, edges)", () => {
+  it("another Workspace's Team admin can't act on a proposal by id", async () => {
+    const id = proposalOf(await fromCandidate("member", await seed(ids.member))).id;
+    for (const path of ["confirm", "withdraw", "endorse"])
+      expect(codeOf(await as.outsider.post(`${WS}/${id}/${path}`, {})), path).toEqual([
+        404,
+        "memory_item_not_found",
+      ]);
+    expect((await row(id)).state).toBe("awaiting_team");
+  });
+
+  it("two concurrent approvals make exactly one Site memory", async () => {
+    const id = await confirmed();
+    const results = await Promise.all([
+      as.siteAdmin.post(`${SITE}/${id}/approve`, LINT_OK),
+      as.siteSteward.post(`${SITE}/${id}/approve`, LINT_OK),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    const made = await h.admin.query(
+      `SELECT DISTINCT item_id FROM site_memory_item_versions WHERE proposal_id = $1`,
+      [id],
+    );
+    expect(made.rows).toHaveLength(1);
+  });
+
+  it("confirm racing withdraw: serialised, the withdrawal always wins in the end", async () => {
+    const id = proposalOf(await fromCandidate("member", await seed(ids.member))).id;
+    const [c, w] = await Promise.all([
+      as.admin.post(`${WS}/${id}/confirm`, {}),
+      as.member.post(`${WS}/${id}/withdraw`),
+    ]);
+    // Withdraw works in either open state; confirm loses (409) only when withdraw went first.
+    expect(w.status).toBe(200);
+    expect([200, 409]).toContain(c.status);
+    expect((await row(id)).state).toBe("withdrawn");
+    expect((await audits("memory.site_proposal.withdrawn", id))[0]?.target).toMatchObject({
+      fromState: c.status === 200 ? "awaiting_site" : "awaiting_team",
+    });
+  });
+
+  it("a Site steward can't approve as Policy, merge into Policy or into an archived memory", async () => {
+    const id = await confirmed();
+    expect(codeOf(await as.siteSteward.post(`${SITE}/${id}/approve`, { policy: true }))).toEqual([
+      403,
+      "memory_not_allowed",
+    ]);
+    const policy = await siteItem({
+      statement: unique("All teams follow the handbook"),
+      policy: true,
+    });
+    expect(codeOf(await as.siteSteward.post(`${SITE}/${id}/merge`, { item_id: policy }))).toEqual([
+      403,
+      "memory_not_allowed",
+    ]);
+    const archived = await siteItem({ statement: unique("Archive me") });
+    expect(
+      (await as.siteAdmin.post(`/v1/memory/semantic/items/site/${archived}/archive`, {})).status,
+    ).toBe(200);
+    expect(codeOf(await as.siteSteward.post(`${SITE}/${id}/merge`, { item_id: archived }))).toEqual(
+      [409, "memory_item_inactive"],
+    );
+    expect((await row(id)).state).toBe("awaiting_site");
+  });
+
+  it("an expired proposal reads expired and refuses every action", async () => {
+    const waiting = await confirmed();
+    const fresh = proposalOf(await fromCandidate("member", await seed(ids.member))).id;
+    await h.admin.query(
+      `UPDATE site_memory_proposals SET expires_at = now() - interval '1 minute' WHERE id = ANY($1)`,
+      [[waiting, fresh]],
+    );
+    expect(proposalOf(await as.member.get(`${WS}/${fresh}`)).state).toBe("expired");
+    expect(proposalOf(await as.siteAdmin.get(`${SITE}/${waiting}`)).state).toBe("expired");
+    for (const r of [
+      await as.admin.post(`${WS}/${fresh}/confirm`, {}),
+      await as.member.post(`${WS}/${fresh}/withdraw`),
+      await as.steward.post(`${WS}/${fresh}/endorse`),
+      await as.siteAdmin.post(`${SITE}/${waiting}/approve`, LINT_OK),
+      await as.siteAdmin.post(`${SITE}/${waiting}/reject`, { reason: "Late." }),
+      await as.siteAdmin.post(`${SITE}/${waiting}/request-changes`, { note: "Late." }),
+    ])
+      expect(codeOf(r)).toEqual([409, "memory_item_inactive"]);
+  });
+
+  it("the switch turned off after confirmation stops approve and merge, not reject", async () => {
+    const id = await confirmed();
+    const target = await siteItem({ statement: unique("Invoices go out monthly") });
+    await setSwitch(false);
+    try {
+      expect(codeOf(await as.siteAdmin.post(`${SITE}/${id}/approve`, LINT_OK))).toEqual([
+        403,
+        "memory_disabled",
+      ]);
+      expect(codeOf(await as.siteAdmin.post(`${SITE}/${id}/merge`, { item_id: target }))).toEqual([
+        403,
+        "memory_disabled",
+      ]);
+      expect((await as.siteAdmin.post(`${SITE}/${id}/reject`, { reason: "Off." })).status).toBe(
+        200,
+      );
+    } finally {
+      await setSwitch(true);
+    }
+  });
+
+  it("Site decisions are also in the Workspace's log, ids only, as the system", async () => {
+    const id = await confirmed();
+    await as.siteAdmin.post(`${SITE}/${id}/request-changes`, { note: "Say which day." });
+    await as.admin.post(`${WS}/${id}/confirm`, {});
+    const done = (await as.siteAdmin.post(`${SITE}/${id}/approve`, LINT_OK)).json as {
+      item: { id: string };
+    };
+    const rows = (
+      await h.admin.query<{
+        team_id: string;
+        actor_kind: string;
+        actor_id: string | null;
+        target: Record<string, unknown>;
+      }>(
+        `SELECT team_id, actor_kind, actor_id, target FROM audit_log
+          WHERE action = 'memory.site_proposal.decided' AND target ->> 'proposalId' = $1
+          ORDER BY seq`,
+        [id],
+      )
+    ).rows;
+    expect(rows).toEqual([
+      expect.objectContaining({
+        team_id: team,
+        actor_kind: "system",
+        actor_id: null,
+        target: expect.objectContaining({ outcome: "changes_requested", round: 1 }),
+      }),
+      expect.objectContaining({
+        team_id: team,
+        target: expect.objectContaining({ outcome: "approved", itemId: done.item.id }),
+      }),
+    ]);
+    expect(JSON.stringify(rows)).not.toContain("Say which day.");
+  });
+
+  it("a request-changes note is a note, not a decision, and never survives approval", async () => {
+    const id = await confirmed();
+    await as.siteAdmin.post(`${SITE}/${id}/request-changes`, { note: "Name the day." });
+    for (const view of [
+      proposalOf(await as.member.get(`${WS}/${id}`)),
+      proposalOf(await as.siteAdmin.get(`${SITE}/${id}`)),
+    ])
+      expect(view).toMatchObject({
+        state: "awaiting_team",
+        reason: null,
+        decided_at: null,
+        changes_note: "Name the day.",
+      });
+    expect(proposalOf(await as.siteAdmin.get(`${SITE}/${id}`))).toMatchObject({ decided_by: null });
+    await as.admin.post(`${WS}/${id}/confirm`, {});
+    const approved = proposalOf(await as.siteAdmin.post(`${SITE}/${id}/approve`, LINT_OK));
+    expect(approved).toMatchObject({ state: "approved", reason: null, changes_note: null });
+    expect((await row(id)).reason).toBeNull();
+  });
+
+  it("presents proposal-made Site memories as set by the Site to everyone but Site curators", async () => {
+    const id = await confirmed();
+    const item = (
+      (await as.siteAdmin.post(`${SITE}/${id}/approve`, LINT_OK)).json as {
+        item: { id: string };
+      }
+    ).item.id;
+    const kinds = async (who: Who) =>
+      (
+        (await as[who].get(`/v1/memory/semantic/items/site/${item}`)).json as {
+          versions: { actor_kind: string }[];
+        }
+      ).versions.map((v) => v.actor_kind);
+    expect(await kinds("siteAdmin")).toEqual(["proposal"]);
+    for (const who of ["member", "admin", "outsider"] as const)
+      expect(await kinds(who), who).toEqual(["user"]);
+  });
+});

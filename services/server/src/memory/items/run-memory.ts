@@ -1,3 +1,4 @@
+import { presentedActorKind } from "./actor-kind.js";
 import { createHash } from "node:crypto";
 import { sql, type KobeTx } from "@kobe/db";
 import {
@@ -192,7 +193,11 @@ const toItem = (
   statement: r.statement,
   policy,
   pinned: policy ? false : r.pinned,
-  provenance: { actor_kind: r.actor_kind, as_of: r.as_of, saved_on: r.saved_on },
+  provenance: {
+    actor_kind: presentedActorKind(r.actor_kind),
+    as_of: r.as_of,
+    saved_on: r.saved_on,
+  },
 });
 
 const raw = (n: number) => sql.raw(String(n));
