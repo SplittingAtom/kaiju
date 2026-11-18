@@ -117,7 +117,11 @@ read a person's portable preferences either; reading them needs its own break-gl
   Only Site admins see the **Policy** button on a memory (make it Policy, or ordinary again) and
   change a Policy item; stewards read Policy. Policy is given to every agent in every workspace
   in every run, so it is small: the **Policy budget** meters show items of 25 and text of 2,048
-  bytes and warn from 80%. **Import and export** works as on a workspace's Memory page
+  bytes and warn from 80%. **Quality** shows the Site proposal queue's health (waiting now,
+  oldest, median time to a decision over 30 days), each Site memory's runs across all workspaces
+  with thumbs-down runs and the **Check this** and **Not used lately** flags (filterable), and
+  Learn's numbers per workspace and in total, numbers only (see
+  [Memory quality](../memory.md#memory-quality)); nothing is archived by them. **Import and export** works as on a workspace's Memory page
   ([Workspace memories](team-admin.md#workspace-memories)): Markdown bullets, CSV or a Kobe
   export, at most 200 rows, a preview that checks every row with no model, then the new rows
   only; a Policy row imports only for Site admins and only while Policy has room. Exports are
@@ -161,7 +165,8 @@ read a person's portable preferences either; reading them needs its own break-gl
   placement: with each message, kept, by default; with the newest message only; a held set in the
   system prompt plus changes, re-picked every 20 messages by default; or in the system prompt;
   see [Memory placement](../memory.md#memory-placement)), the context budget (4 to 16 KiB), scope limits (by default 300 memories per person in each workspace, 50 portable preferences per person, 1,000 per workspace and 1,000 on the Site; saving stops at the limit and nothing is ever removed to make room, and curators are told when a workspace or the Site reaches 80%), versions kept per memory (default 50; older versions are pruned on edit, except versions a run used and while a legal hold applies: a Site-wide hold for Site memories),
-  the stale threshold, the retention window and learning rate limits. Turning a switch off deletes
+  the stale threshold, **Not used after** (days without a run receiving a memory before the
+  Quality tab flags it, default 90), the retention window and learning rate limits. Turning a switch off deletes
   nothing. See [Memory](../memory.md#switches-that-control-memory). The **embedding model**
   (search by meaning) sends every run message (up to 4,000 characters) and every saved memory to
   its provider, and **Build vectors** sends the memories of every workspace, every member's portable

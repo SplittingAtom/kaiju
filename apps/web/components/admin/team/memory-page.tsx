@@ -19,6 +19,7 @@ import { ProposalQueue } from "../../memory/proposals/proposal-queue";
 import { ProposeItemToSite } from "../../memory/site-proposals/propose-item";
 import { WorkspaceSiteQueue } from "../../memory/site-proposals/site-queue";
 import { createSiteProposalsApi } from "../../../lib/memory/site-proposals-api";
+import { MemoryQuality } from "../../memory/quality/memory-quality";
 import { isUuid } from "../../../lib/memory/ids";
 import { useTeamAccess } from "../console-context";
 import {
@@ -117,6 +118,7 @@ export function TeamMemoryPage() {
           <TabsTrigger value="memories">Memories</TabsTrigger>
           {curate && <TabsTrigger value="proposals">Proposals</TabsTrigger>}
           {curate && <TabsTrigger value="site">To the Site</TabsTrigger>}
+          {curate && <TabsTrigger value="quality">Quality</TabsTrigger>}
           {curate && <TabsTrigger value="transfer">Import and export</TabsTrigger>}
           {manage && <TabsTrigger value="settings">Settings</TabsTrigger>}
         </TabsList>
@@ -151,6 +153,11 @@ export function TeamMemoryPage() {
         {curate && (
           <TabsContent value="site">
             <WorkspaceSiteQueue teamId={teamId} focusId={siteProposal} api={siteApi} />
+          </TabsContent>
+        )}
+        {curate && (
+          <TabsContent value="quality">
+            <MemoryQuality level="workspace" teamId={teamId} />
           </TabsContent>
         )}
         {curate && (

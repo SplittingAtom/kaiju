@@ -107,6 +107,7 @@ type NumberKey =
   | "contextBudgetKib"
   | "versionCap"
   | "staleAfterDays"
+  | "unusedAfterDays"
   | "retentionDays"
   | "limitUser"
   | "limitPortable"
@@ -125,6 +126,7 @@ const draftOf = (s: SiteMemorySettingsDoc): Draft => ({
   contextBudgetKib: String(s.contextBudgetKib),
   versionCap: String(s.versionCap),
   staleAfterDays: String(s.staleAfterDays),
+  unusedAfterDays: String(s.unusedAfterDays),
   retentionDays: String(s.retentionDays),
   limitUser: String(s.scopeLimits.user),
   limitPortable: String(s.scopeLimits.portable),
@@ -146,6 +148,7 @@ const docOf = (d: Draft): SiteMemorySettingsDoc => {
     contextBudgetKib: num("contextBudgetKib"),
     versionCap: num("versionCap"),
     staleAfterDays: num("staleAfterDays"),
+    unusedAfterDays: num("unusedAfterDays"),
     retentionDays: num("retentionDays"),
     scopeLimits: {
       user: num("limitUser"),
@@ -167,6 +170,7 @@ const RANGES: Readonly<Record<NumberKey, readonly [string, number, number]>> = {
   contextBudgetKib: ["The context budget", 4, 16],
   versionCap: ["Versions kept per memory", 5, 500],
   staleAfterDays: ["Stale after", 7, 3650],
+  unusedAfterDays: ["Not used after", 7, 3650],
   retentionDays: ["The retention window", 30, 3650],
   limitUser: ["Each scope limit", 1, 1000],
   limitPortable: ["Each scope limit", 1, 1000],
@@ -220,6 +224,11 @@ const NUMBER_FIELDS: readonly (readonly [NumberKey, string, string])[] = [
     "staleAfterDays",
     "Stale after (days)",
     "A memory nobody has confirmed or used for this long is marked for review. Nothing is archived or deleted automatically.",
+  ],
+  [
+    "unusedAfterDays",
+    "Not used after (days)",
+    "A memory no run has received for this long is marked Not used lately on the memory pages' Quality tab. Nothing is archived or deleted automatically.",
   ],
   [
     "retentionDays",

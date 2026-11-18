@@ -22,6 +22,8 @@ export interface SiteMemorySettingsDoc {
   };
   readonly versionCap: number;
   readonly staleAfterDays: number;
+  /** "Not used lately" on the Quality tabs (KOBE-411): no run received a memory for this long. */
+  readonly unusedAfterDays: number;
   readonly rateLimits: { readonly learnPassesPerHour: number; readonly savesPerMinute: number };
   readonly retentionDays: number;
   /** Where the per-message memories reach the model (KOBE-658). */

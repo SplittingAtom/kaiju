@@ -190,6 +190,7 @@ const SETTINGS = {
   scope_limits: { user: 1000, portable: 1000, team: 1000, site: 1000 },
   version_cap: 50,
   stale_after_days: 90,
+  unused_after_days: 90,
   rate_limits: { learn_passes_per_hour: 10, saves_per_minute: 30 },
   retention_days: 365,
   placement: "latest_user_keep",

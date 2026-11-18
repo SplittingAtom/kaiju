@@ -31,6 +31,7 @@ import {
 import { memorySuggestionRoutes } from "./routes/memory-suggestions.js";
 import { memorySettingsRoutes } from "./routes/memory-settings.js";
 import { memoryVectorRoutes } from "./routes/memory-vectors.js";
+import { memoryQualityRoutes, siteMemoryQualityRoutes } from "./routes/memory-quality.js";
 import { siteMemoryStewardRoutes, teamMemoryStewardRoutes } from "./routes/memory-stewards.js";
 import { uploadRoutes } from "./routes/uploads.js";
 import { approvalRoutes } from "./routes/approvals.js";
@@ -299,6 +300,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   api.route("/memory/proposals", memoryProposalRoutes(deps));
   api.route("/memory/site-proposals", memorySiteProposalRoutes(deps));
   api.route("/memory/suggestions", memorySuggestionRoutes(deps));
+  api.route("/memory/quality", memoryQualityRoutes(deps));
   api.route("/memory", memoryRoutes(deps));
   api.route("/uploads", uploadRoutes(deps));
   api.route("/files", fileRoutes(deps));
@@ -332,6 +334,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   api.route("/site/roles", siteRolesRoutes(deps));
   api.route("/site/memory/stewards", siteMemoryStewardRoutes(deps));
   api.route("/site/memory/proposals", siteMemoryProposalRoutes(deps));
+  api.route("/site/memory/quality", siteMemoryQualityRoutes(deps));
   api.route("/site/sso", siteSsoMappingRoutes(deps));
   api.route("/site/policy", sitePolicyRoutes(deps));
   api.route("/site/users", siteUsersRoutes(deps));
