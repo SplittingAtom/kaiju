@@ -16,6 +16,7 @@ import { ExportPanel } from "../../memory/export-panel";
 import { ImportPanel } from "../../memory/import-panel";
 import { PolicyReadOnly } from "../../memory/policy-budget";
 import { ProposalQueue } from "../../memory/proposals/proposal-queue";
+import { MemoryQuality } from "../../memory/quality/memory-quality";
 import { isUuid } from "../../../lib/memory/ids";
 import { useTeamAccess } from "../console-context";
 import {
@@ -101,6 +102,7 @@ export function TeamMemoryPage() {
         <TabsList label="Memory">
           <TabsTrigger value="memories">Memories</TabsTrigger>
           {curate && <TabsTrigger value="proposals">Proposals</TabsTrigger>}
+          {curate && <TabsTrigger value="quality">Quality</TabsTrigger>}
           {curate && <TabsTrigger value="transfer">Import and export</TabsTrigger>}
           {manage && <TabsTrigger value="settings">Settings</TabsTrigger>}
         </TabsList>
@@ -124,6 +126,11 @@ export function TeamMemoryPage() {
         {curate && (
           <TabsContent value="proposals">
             <ProposalQueue teamId={teamId} userId={access.user.id} focusId={proposal} />
+          </TabsContent>
+        )}
+        {curate && (
+          <TabsContent value="quality">
+            <MemoryQuality level="workspace" teamId={teamId} />
           </TabsContent>
         )}
         {curate && (

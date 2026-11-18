@@ -5,6 +5,7 @@ import { fetchMyTeams } from "../../../lib/teams";
 import { CuratorMemories } from "../../memory/curator-memories";
 import { ExportPanel } from "../../memory/export-panel";
 import { ImportPanel } from "../../memory/import-panel";
+import { MemoryQuality } from "../../memory/quality/memory-quality";
 import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/console";
 import { useSiteAccess } from "../console-context";
 import { ResourceView } from "../parts";
@@ -45,6 +46,7 @@ export function SiteMemoryPage() {
             <Tabs defaultValue="memories">
               <TabsList label="Memory">
                 <TabsTrigger value="memories">Memories</TabsTrigger>
+                <TabsTrigger value="quality">Quality</TabsTrigger>
                 <TabsTrigger value="transfer">Import and export</TabsTrigger>
               </TabsList>
               <TabsContent value="memories">
@@ -61,6 +63,9 @@ export function SiteMemoryPage() {
                   scopes={[{ scope: "site", curate: true }]}
                   canSetPolicy={canSetPolicy}
                 />
+              </TabsContent>
+              <TabsContent value="quality">
+                <MemoryQuality level="site" teamId={teamId} />
               </TabsContent>
               <TabsContent value="transfer">
                 <ImportPanel

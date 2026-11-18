@@ -8,6 +8,7 @@ import { useTeamAccess } from "../admin/console-context";
 import { MemoryPanel } from "../memory/memory-panel";
 import { MyMemories } from "../memory/my-memories";
 import { MyProposals } from "../memory/proposals/my-proposals";
+import { MyMemoryQuality } from "../memory/quality/my-memory-quality";
 import { ReviewSection } from "../memory/review/review-section";
 import { SuggestionsReview } from "../memory/suggestions/suggestions-review";
 import { lastThreadId } from "../../lib/shell/last-thread";
@@ -76,6 +77,7 @@ export function MyMemoryPage() {
           {/* Readers' suggestions for the notes of projects the person decides (KOBE-652). */}
           <SuggestionsReview teamId={teamId} />
           <MyMemories teamId={teamId} />
+          <MyMemoryQuality teamId={teamId} />
         </TabsContent>
         <TabsContent value="notes">
           <ProjectPicker
