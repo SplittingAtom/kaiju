@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isUuid } from "../../../lib/memory/ids";
 import { fetchMyTeams } from "../../../lib/teams";
 import { CuratorMemories } from "../../memory/curator-memories";
 import { ExportPanel } from "../../memory/export-panel";
@@ -8,6 +9,7 @@ import { ImportPanel } from "../../memory/import-panel";
 import { MemoryQuality } from "../../memory/quality/memory-quality";
 import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/console";
 import { useSiteAccess } from "../console-context";
+import { SiteProposals } from "./memory-proposals/site-proposals";
 import { ResourceView } from "../parts";
 import { useResource } from "../use-resource";
 
@@ -17,7 +19,8 @@ const POLICY_ROLES: ReadonlySet<string> = new Set(["owner", "admin"]);
 /**
  * Site console › Memory (KOBE-385; SM8, SM21, SM23): the Site's memories for Site admins and Site
  * memory stewards, with filters, edit, archive, restore, pin, tags, import and export, and the
- * Policy budget. Only Site admins make an item Policy or change one (the `site.memory.policy`
+ * Policy budget. **Proposals** (KOBE-405): what Team admins confirmed for the Site, to approve,
+ * merge, reject or send back; `?site_proposal=<id>` (the bell) opens it there. Only Site admins make an item Policy or change one (the `site.memory.policy`
  * guard; the server refuses anyone else). The memory switches stay in Settings.
  *
  * Requests carry the session's active Workspace when there is one (`X-Kobe-Team`, which the
@@ -36,6 +39,7 @@ export function SiteMemoryPage() {
     }
   });
   const [generation, setGeneration] = useState(0);
+  const [proposal] = useState(() => proposalFromLocation());
   return (
     <>
       <PageHeader title="Memory" />
@@ -43,9 +47,10 @@ export function SiteMemoryPage() {
         {(activeTeamId) => {
           const teamId = activeTeamId ?? undefined;
           return (
-            <Tabs defaultValue="memories">
+            <Tabs defaultValue={proposal === null ? "memories" : "proposals"}>
               <TabsList label="Memory">
                 <TabsTrigger value="memories">Memories</TabsTrigger>
+                <TabsTrigger value="proposals">Proposals</TabsTrigger>
                 <TabsTrigger value="quality">Quality</TabsTrigger>
                 <TabsTrigger value="transfer">Import and export</TabsTrigger>
               </TabsList>
@@ -62,6 +67,15 @@ export function SiteMemoryPage() {
                   teamId={teamId}
                   scopes={[{ scope: "site", curate: true }]}
                   canSetPolicy={canSetPolicy}
+                />
+              </TabsContent>
+              <TabsContent value="proposals">
+                <SiteProposals
+                  teamId={teamId}
+                  userId={access.user.id}
+                  canSetPolicy={canSetPolicy}
+                  focusId={proposal}
+                  onDecided={() => setGeneration((g) => g + 1)}
                 />
               </TabsContent>
               <TabsContent value="quality">
@@ -81,4 +95,10 @@ export function SiteMemoryPage() {
       </ResourceView>
     </>
   );
+}
+
+/** `?site_proposal=<uuid>`: the bell's Open the Site proposal. */
+function proposalFromLocation(): string | null {
+  const id = new URLSearchParams(window.location.search).get("site_proposal");
+  return id !== null && isUuid(id) ? id.toLowerCase() : null;
 }

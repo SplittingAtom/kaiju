@@ -326,3 +326,61 @@ describe("Site console Memory page (ac-1, ac-3)", () => {
     expect(JSON.parse(String(sent?.body))).toEqual({ scope: "site", format: "csv" });
   });
 });
+
+describe("Site console Memory › Proposals (KOBE-405)", () => {
+  const P = "00000000-0000-4000-8000-0000000000f1";
+  const wire = {
+    id: P,
+    statement: "Deploys come from main.",
+    kind: "fact",
+    justification: "Every workspace asks.",
+    endorsed: false,
+    state: "awaiting_site",
+    rounds: 0,
+    proposer: { id: "00000000-0000-4000-8000-0000000000f2", name: "Member One" },
+    confirmed_by: { id: "00000000-0000-4000-8000-0000000000f3", name: "Team Admin" },
+    confirmed_at: "2026-11-15T00:00:00Z",
+    reason: null,
+    changes_note: null,
+    decided_at: null,
+    decided_by: null,
+    merged_into: null,
+    expires_at: "2026-12-14T00:00:00Z",
+    created_at: "2026-11-14T00:00:00Z",
+    updated_at: "2026-11-15T00:00:00Z",
+    from_workspace: { id: TEAM.id, name: "Platform" },
+  };
+  const QUEUE = "/v1/site/memory/proposals";
+
+  it("lists the queue with counts and rejects with a reason (wire shapes)", async () => {
+    const calls = stubApi({
+      "GET /v1/me/teams": [200, { activeTeamId: null, lastTeamId: null, teams: [] }],
+      [`GET ${QUEUE}?state=awaiting_site`]: [
+        200,
+        { proposals: [wire], counts: { awaiting_site: 1, rejected: 2 } },
+      ],
+      [`GET ${QUEUE}/${P}`]: [
+        200,
+        {
+          proposal: wire,
+          checks: { secret: false, warnings: [], near_duplicates: [], policy_conflicts: [] },
+        },
+      ],
+      [`POST ${QUEUE}/${P}/reject`]: [200, { proposal: { ...wire, state: "rejected" } }],
+    });
+    renderSite(<SiteMemoryPage />, "user", ["memory_steward"]);
+    await userEvent.click(await screen.findByRole("tab", { name: "Proposals" }));
+    const counts = await screen.findByRole("list", { name: "Proposals by state" });
+    expect(counts.textContent).toContain("Waiting for the Site: 1");
+    expect(counts.textContent).toContain("Rejected: 2");
+    await userEvent.click(screen.getByRole("button", { name: "Review: Deploys come from main." }));
+    expect(await screen.findByText("From Platform")).toBeTruthy();
+    expect(screen.getByText("The memory checks found nothing.")).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Reject…" }));
+    await userEvent.type(screen.getByRole("textbox", { name: /Why it is rejected/ }), "Duplicate");
+    await userEvent.click(screen.getByRole("button", { name: "Reject proposal" }));
+    expect(await screen.findByText(/Rejected. The workspace reads your reason/)).toBeTruthy();
+    const sent = calls.find((c) => c.url === `${QUEUE}/${P}/reject`);
+    expect(JSON.parse(String(sent?.body))).toEqual({ reason: "Duplicate" });
+  });
+});

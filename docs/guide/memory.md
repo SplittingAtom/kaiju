@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean and when the dot pulses (the Learn nudge), which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo, Add to project notes in a project conversation, and Suggest to editors for project readers), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how anyone proposes something they said to the Site (Propose… › The Site, with a justification) and how curators propose Workspace memories to the Site (Propose to Site), how Team admins confirm, edit or withdraw Site proposals and memory stewards endorse them (Memory › To the Site), how project editors approve or dismiss readers' suggestions for the project's notes, how the learning model is chosen, how long memories and Learn from this chat records (suggestions, proposals, passes) are kept, and how a Site-wide legal hold keeps Site memories.
+summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean and when the dot pulses (the Learn nudge), which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo, Add to project notes in a project conversation, and Suggest to editors for project readers), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how anyone proposes something they said to the Site (Propose… › The Site, with a justification) and how curators propose Workspace memories to the Site (Propose to Site), how Team admins confirm, edit or withdraw Site proposals and memory stewards endorse them (Memory › To the Site), how Site admins and Site memory stewards approve, merge, reject or send back workspace proposals to the Site, how project editors approve or dismiss readers' suggestions for the project's notes, how the learning model is chosen, how long memories and Learn from this chat records (suggestions, proposals, passes) are kept, and how a Site-wide legal hold keeps Site memories.
 section: Memory
 order: 1
 audience: member
@@ -535,6 +535,41 @@ workspace and 1,000 on the site), how
 many versions of a memory are kept (50), when a memory counts as stale (90 days: an active memory not changed, and not dated with an as-of date, within that time; stale memories are only marked for review, never removed), when a memory counts as not used lately on the [Quality tab](#memory-quality) (**Not used after**, 90 days without a run receiving it; also only a review flag), the
 retention window for archived memories (365 days), learning rate limits, and the embedding model
 for search by meaning (below). Word matching uses English stemming; there is no language setting.
+
+### Decide on Site proposals (Site admins and Site memory stewards)
+
+A workspace can propose one of its memories to the Site when the site and the workspace allow
+**Members may propose to the Site**. A Team admin of that workspace confirms it first; only then
+does it reach the Site, and only its statement, kind and justification travel: never the
+conversation, quotes or notes it came from.
+
+The site console's **Memory** page has a **Proposals** tab for Site admins and Site memory
+stewards; the bell's **Open the Site proposal** opens the proposal there. It shows how many
+proposals are in each state (waiting for the Site, back with the Team admins, approved, merged,
+rejected, expired, withdrawn) and filters by state and by source workspace. **Review** opens one:
+its statement, kind, the justification, the source workspace, who proposed and confirmed it, the
+date, whether a workspace curator endorsed it, and the round. Below that is what the
+[checks](#what-kobe-checks-before-a-memory-is-saved) find now: Site Policy it may contradict and
+similar Site memories, each with a word diff (struck words are the saved memory's, underlined
+words the proposal's), other warnings, and a secret, which can't be saved.
+
+- **Approve** saves it as a new Site memory, with the same checks as any save (warnings and
+  Policy conflicts ask you to **Save anyway**, which is recorded). Site admins can tick **Make it
+  Policy** first.
+- **Merge into existing…** makes it the next version of a Site memory you choose (similar ones
+  are listed first; Policy items only for Site admins). You see the saved wording against the new
+  one and can edit the new wording. If the wording would not change, reject the proposal as a
+  duplicate instead.
+- **Reject…** needs a reason, which the workspace's Team admins and the proposer read.
+- **Request changes…** sends it back to the workspace's Team admins with a note (at most 500
+  characters); it returns once a Team admin confirms it again. After three rounds of changes this
+  is turned off: approve, merge or reject it.
+
+Nobody decides their own proposal. Approve and merge are refused while the workspace has turned
+**Members may propose to the Site** off (reject and request changes still work), and any action
+says so when someone else already decided the proposal or it expired (30 days after it was made):
+reload the queue. Every decision is in the site audit log, and the workspace's audit log records
+the outcome without naming you.
 
 ### Search by meaning
 
