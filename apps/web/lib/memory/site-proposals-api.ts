@@ -148,3 +148,41 @@ export function describeSiteChecks(checks: SiteChecks): string | null {
   if (parts.length === 0) return null;
   return `Note: ${parts.join(", and ")}. The Site's curators see this when they decide.`;
 }
+
+/** Proposals loaded for a page: every open one (up to the list limit per step) and the newest closed. */
+export interface LoadedSiteProposals {
+  readonly proposals: readonly SiteProposal[];
+  readonly counts: SiteProposalList["counts"];
+}
+
+/**
+ * Reads what a page shows in three lists (each at most 100, the API has no cursor): waiting for
+ * a Team admin and waiting for the Site, oldest first, and all states, newest first, for the
+ * closed ones. Merged by id; the counts say how many there are in all.
+ */
+export async function loadSiteProposals(
+  api: Pick<SiteProposalsApi, "list">,
+): Promise<ApiResult<LoadedSiteProposals>> {
+  const answers = await Promise.all([
+    api.list("awaiting_team"),
+    api.list("awaiting_site"),
+    api.list(),
+  ]);
+  const failed = answers.find((a) => !a.ok);
+  if (failed && !failed.ok) return failed;
+  const byId = new Map<string, SiteProposal>();
+  let counts: SiteProposalList["counts"] = {};
+  for (const a of answers)
+    if (a.ok) {
+      for (const p of a.data.proposals) if (!byId.has(p.id)) byId.set(p.id, p);
+      counts = a.data.counts;
+    }
+  return { ok: true, status: 200, data: { proposals: [...byId.values()], counts } };
+}
+
+/** "Showing 100 of 140 closed proposals (at most 100 per list)." when a group holds more. */
+export function moreThanShown(shown: number, total: number, what: string): string | null {
+  return total > shown
+    ? `Showing ${shown} of ${total} ${what} (at most ${LIST_LIMIT} per list).`
+    : null;
+}

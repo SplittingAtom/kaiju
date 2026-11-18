@@ -127,6 +127,14 @@ describe("Workspace console Memory page (ac-1)", () => {
     const calls = stubApi({
       ...routes,
       "GET /v1/memory/site-proposals?limit=100": [200, { proposals: [], counts: {} }],
+      "GET /v1/memory/site-proposals?state=awaiting_team&limit=100": [
+        200,
+        { proposals: [], counts: {} },
+      ],
+      "GET /v1/memory/site-proposals?state=awaiting_site&limit=100": [
+        200,
+        { proposals: [], counts: {} },
+      ],
     });
     renderTeam(<TeamMemoryPage />, { permissions: CURATOR });
     expect(screen.getByRole("tab", { name: "To the Site" }).getAttribute("aria-selected")).toBe(

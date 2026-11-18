@@ -55,12 +55,22 @@ summary, stewards' rights, Memory row (Proposals, To the Site), Propose to Site 
 `docs/guide/glossary.md`: Memory steward. "For agents" pages unchanged: agents have no write path
 to memory or proposals, and nothing they see changed.
 
+## Coordinator follow-up (bell links, list limit)
+
+- Site proposal notices link each reader to a page they can open: the bell asks `/v1/me` and
+  `/v1/team` once, only when a Site proposal notice is listed (`lib/notifications/memory-viewer.ts`).
+  `confirmed`: Site curators → Site console, others (the proposer) → My memory. Outcomes
+  (accepted, dismissed, changes requested, expired): Workspace curators → Workspace console,
+  others → My memory. Unknown reader → My memory.
+- My memory gains **Your Site proposals** (`site-proposals/my-site-proposals.tsx`, own only,
+  `?site_proposal=<id>` focuses it; reuses the card, so Withdraw is there).
+- Lists: the API has no cursor (max 100). Pages now read awaiting_team, awaiting_site and all
+  (newest first) separately, so open proposals aren't hidden by closed ones, and each group says
+  "Showing N of M …" from the counts when it holds more.
+
 ## Open questions
 
-1. `memory.site_proposal.confirmed` also reaches the proposer (KOBE-403 notify table) but links to
-   the Site console, which a member can't open. Left as is (KOBE-405 owns the Site side); a
-   per-recipient link would need the notice to say who it is for.
-2. The Workspace list returns at most 100 proposals (no cursor); old Closed ones may drop off.
+1. None left from this ticket's side; a cursor on the Workspace list would replace the notes.
 
 ## Evidence
 

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MemoryItem } from "../../../lib/memory/items-api";
 import type { SiteProposal, SiteProposalsApi } from "../../../lib/memory/site-proposals-api";
 import { answerConfirm, forbidNativeConfirm } from "../../admin/testing";
+import { MySiteProposals } from "./my-site-proposals";
 import { ProposeItemToSite } from "./propose-item";
 import { WorkspaceSiteQueue } from "./site-queue";
 
@@ -201,5 +202,57 @@ describe("Propose to Site on a Workspace memory (curators)", () => {
     await userEvent.type(screen.getByRole("textbox", { name: /Why every/ }), "Because.");
     await userEvent.click(screen.getByRole("button", { name: "Propose to the Site" }));
     expect((await screen.findByRole("alert")).textContent).toMatch(/doesn't propose/);
+  });
+});
+
+describe("Lists hold at most 100 (no cursor)", () => {
+  it("says when a group shows fewer than there are", async () => {
+    const api = fakeApi([sp()]);
+    api.list.mockImplementation(() =>
+      ok({ proposals: [sp()], counts: { awaiting_team: 1, rejected: 140 } }),
+    );
+    render(<WorkspaceSiteQueue teamId="t1" api={api} />);
+    expect(await screen.findByText(/Showing 0 of 140 closed proposals/)).toBeTruthy();
+    expect(screen.queryByText(/proposals waiting for a Team admin \(at most/)).toBeNull();
+    // Open ones are read separately, so a long closed list never hides them.
+    expect(api.list).toHaveBeenCalledWith("awaiting_team");
+    expect(api.list).toHaveBeenCalledWith("awaiting_site");
+  });
+});
+
+describe("Your Site proposals (My memory)", () => {
+  it("lists only your own, with the Site's note, and focuses the bell's one", async () => {
+    const api = fakeApi([
+      sp({
+        id: "00000000-0000-4000-8000-0000000000b1",
+        proposer: { id: "u-me", name: "Ada" },
+        changesNote: "Name the month.",
+        rounds: 1,
+        may: { confirm: false, endorse: false, withdraw: true },
+      }),
+      sp({ id: "sp-other", statement: "Someone else's" }),
+    ]);
+    render(
+      <MySiteProposals
+        teamId="t1"
+        userId="u-me"
+        focusId="00000000-0000-4000-8000-0000000000b1"
+        api={api}
+      />,
+    );
+    expect(await screen.findByRole("region", { name: "Your Site proposals" })).toBeTruthy();
+    expect(screen.getByText(/Name the month\./)).toBeTruthy();
+    expect(screen.queryByText("Someone else's")).toBeNull();
+    expect(document.activeElement?.getAttribute("data-my-site-proposal")).toBe(
+      "00000000-0000-4000-8000-0000000000b1",
+    );
+    expect(screen.getByRole("button", { name: "Withdraw…" })).toBeTruthy();
+  });
+
+  it("stays hidden when you have none", async () => {
+    const api = fakeApi([sp()]);
+    const { container } = render(<MySiteProposals teamId="t1" userId="u-me" api={api} />);
+    await Promise.resolve();
+    expect(container.textContent).toBe("");
   });
 });

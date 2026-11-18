@@ -323,7 +323,12 @@ Team admins and memory stewards can also propose a **Workspace memory**: on the 
 **Memory › Memories** tab, each active Workspace memory has **Propose to Site**, which asks for the
 same justification. The Workspace memory stays as it is.
 
-The bell tells the proposer when the Site decides or asks for changes.
+**Your Site proposals**, under To review on the **Memories** tab of **My memory**, lists what you
+proposed to the Site from this workspace: where each one waits (a Team admin, then the Site), the
+Site's note when it asked for changes, its reason when it said no, and **Withdraw…** while it is
+open. The bell tells you when a Team admin confirms it and when the Site decides or asks for
+changes; its button opens your proposal there (Team admins and Site curators open their console's
+Memory page instead).
 
 ### Decide on proposals (Team admins and memory stewards)
 
