@@ -10,8 +10,8 @@ import type {
   SiteProposalsApi,
   SiteQueue,
   SiteQueueQuery,
-} from "../../../../lib/memory/site-proposals-api";
-import { countsFromWire } from "../../../../lib/memory/site-proposals-api";
+} from "../../../../lib/memory/site-proposals-admin-api";
+import { countsFromWire } from "../../../../lib/memory/site-proposals-admin-api";
 import { SiteProposals } from "./site-proposals";
 
 /** KOBE-405: Site console › Memory › Proposals (the client side of KOBE-403's Site API). */

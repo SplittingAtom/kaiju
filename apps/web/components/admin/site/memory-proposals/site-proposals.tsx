@@ -9,7 +9,7 @@ import {
   type SiteProposalsApi,
   type SiteQueue,
   type SiteProposalState,
-} from "../../../../lib/memory/site-proposals-api";
+} from "../../../../lib/memory/site-proposals-admin-api";
 import { visible } from "../../../../lib/security/visible";
 import { Badge, Button, EmptyState, Field, Notice, Select } from "../../../ui/console";
 import { SITE_STATE_LABELS, SiteStateBadge, day, workspaceName } from "./labels";

@@ -8,7 +8,7 @@ import type {
   SiteProposalChecks,
   SiteProposalDetail,
   SiteProposalsApi,
-} from "../../../../lib/memory/site-proposals-api";
+} from "../../../../lib/memory/site-proposals-admin-api";
 import { visible } from "../../../../lib/security/visible";
 import { Button, Card, Notice } from "../../../ui/console";
 import { StatementDiff } from "../../../memory/review/statement-diff";

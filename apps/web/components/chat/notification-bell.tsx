@@ -12,6 +12,12 @@ import {
   type ScheduleWhen,
 } from "../../lib/notifications/format";
 import { memoryNotificationLink } from "../../lib/notifications/memory";
+import {
+  UNKNOWN_VIEWER,
+  fetchMemoryViewer,
+  needsViewer,
+  type MemoryViewer,
+} from "../../lib/notifications/memory-viewer";
 import { catalogHref } from "../skills/catalog-tab";
 import { createSchedulesApi } from "../../lib/schedules/api";
 import { ErrorNotice } from "../admin/error-notice";
@@ -50,9 +56,30 @@ function useUnreadCount(api: NotificationsApi, pollMs: number) {
   return [unread, setUnread] as const;
 }
 
+/**
+ * Who reads the bell, asked once when a Site proposal notice is listed (its link depends on it,
+ * KOBE-404); unknown until then.
+ */
+function useMemoryViewer(fetchFn: typeof fetch | undefined, wanted: boolean): MemoryViewer {
+  const [viewer, setViewer] = useState<MemoryViewer | null>(null);
+  const asked = viewer !== null;
+  useEffect(() => {
+    if (!wanted || asked) return;
+    let current = true;
+    void fetchMemoryViewer(fetchFn).then((v) => {
+      if (current) setViewer(v);
+    });
+    return () => {
+      current = false;
+    };
+  }, [wanted, asked, fetchFn]);
+  return viewer ?? UNKNOWN_VIEWER;
+}
+
 function NotificationItem({
   note: n,
   label,
+  viewer,
   onOpen,
   onOpenSkill,
   onOpenLink,
@@ -60,13 +87,14 @@ function NotificationItem({
 }: {
   readonly note: KobeNotification;
   readonly label: string;
+  readonly viewer: MemoryViewer;
   readonly onOpen: (() => void) | null;
   readonly onOpenSkill: ((href: string) => void) | null;
   readonly onOpenLink: (href: string) => void;
   readonly onMarkRead: () => void;
 }) {
   const skillHref = n.skillId ? catalogHref(n.skillId) : null;
-  const memoryLink = memoryNotificationLink(n);
+  const memoryLink = memoryNotificationLink(n, viewer);
   const title = notificationTitle(n);
   const unread = n.readAt === null;
   return (
@@ -140,6 +168,10 @@ function NotificationPanel({
   );
   const list = useNotificationList(api, onUnread, refresh);
   const { state } = list;
+  const viewer = useMemoryViewer(
+    fetchFn,
+    state.status === "ready" && state.items.some(needsViewer),
+  );
   const openThread = async (n: KobeNotification, threadId: string) => {
     if (n.readAt === null) await list.markRead([n.notificationId]);
     onOpenThread(threadId);
@@ -188,6 +220,7 @@ function NotificationPanel({
               key={n.notificationId}
               note={n}
               label={notificationLabel(n, known)}
+              viewer={viewer}
               onOpen={n.threadId === null ? null : () => void openThread(n, n.threadId as string)}
               onOpenSkill={(href) => void openSkill(n, href)}
               onOpenLink={(href) => void openLink(n, href)}

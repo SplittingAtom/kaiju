@@ -1,7 +1,7 @@
 "use client";
 
 import { SEMANTIC_MEMORY_KINDS, SEMANTIC_MEMORY_SCOPE_LABELS } from "@kobe/protocol";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { ApiError } from "../../lib/api/client";
 import {
   createMemoryItemsApi,
@@ -68,10 +68,13 @@ export function CuratorMemories({
   teamId,
   scopes,
   canSetPolicy = false,
+  rowExtra,
 }: {
   readonly teamId: string | undefined;
   readonly scopes: readonly ListedScope[];
   readonly canSetPolicy?: boolean;
+  /** More for each active row the caller curates (Propose to Site, KOBE-404). */
+  readonly rowExtra?: (item: MemoryItem) => ReactNode;
 }) {
   const api = useMemo(() => createMemoryItemsApi(teamId), [teamId]);
   const first = scopes[0]?.scope ?? "team";
@@ -303,6 +306,7 @@ export function CuratorMemories({
                     onRefreshed={place}
                     readOnly={!curate}
                     canSetPolicy={canSetPolicy}
+                    extra={rowExtra?.(item)}
                   />
                 ))}
               </ul>

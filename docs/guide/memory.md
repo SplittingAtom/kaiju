@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean and when the dot pulses (the Learn nudge), which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo, Add to project notes in a project conversation, and Suggest to editors for project readers), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how Site admins and Site memory stewards approve, merge, reject or send back workspace proposals to the Site, how project editors approve or dismiss readers' suggestions for the project's notes, how the learning model is chosen, how long memories and Learn from this chat records (suggestions, proposals, passes) are kept, and how a Site-wide legal hold keeps Site memories.
+summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean and when the dot pulses (the Learn nudge), which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo, Add to project notes in a project conversation, and Suggest to editors for project readers), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how anyone proposes something they said to the Site (Propose… › The Site, with a justification) and how curators propose Workspace memories to the Site (Propose to Site), how Team admins confirm, edit or withdraw Site proposals and memory stewards endorse them (Memory › To the Site), how Site admins and Site memory stewards approve, merge, reject or send back workspace proposals to the Site, how project editors approve or dismiss readers' suggestions for the project's notes, how the learning model is chosen, how long memories and Learn from this chat records (suggestions, proposals, passes) are kept, and how a Site-wide legal hold keeps Site memories.
 section: Memory
 order: 1
 audience: member
@@ -258,7 +258,8 @@ Each suggestion is a card with:
 - **Keep it for**: **Just me (this workspace)** or **This Workspace**. Only the places allowed are
   offered: something Kobe noticed always stays yours, and a Workspace memory needs your own words
   in the conversation. Saving to the Workspace needs a Team admin or memory steward; anyone else
-  can [propose it](#propose-a-memory-to-the-workspace). For a
+  can [propose it](#propose-a-memory-to-the-workspace). Anyone can also
+  [propose it to the Site](#propose-a-memory-to-the-site) with **Propose…**. For a
   preference you can tick **Use in all my workspaces**; Kobe asks first and shows the text;
 - for a change to a memory you already have (an update, a replacement or a contradiction), the
   **changes** word by word, removed words struck through and new ones underlined;
@@ -281,8 +282,9 @@ repeating any. When Kobe thinks a procedure could be a skill it says so, with a 
 ### Propose a memory to the Workspace
 
 If you are not a Team admin or memory steward, a suggestion that may go to **This Workspace** has
-**Propose…** beside **Save**. Edit the statement or kind first if you like, add an optional note
-for the curators (at most 1,000 characters) and choose **Send to curators**. The card leaves To
+**Propose…** beside **Save**, with **This Workspace's curators** chosen. Edit the statement or kind
+first if you like, add an optional note for the curators (at most 1,000 characters) and choose
+**Send to curators**. The card leaves To
 review; nothing is saved until a curator approves. Curators (Team admins and memory stewards) see
 the statement, its kind, your name, your note, your words from the conversation (only those
 quotes; the conversation itself opens for them only if it is shared with them) and anything the
@@ -301,6 +303,40 @@ with its outcome and the curator's reason. The bell tells you when a curator dec
 - **Expired**: no curator decided within 30 days. **Propose again** sends it once more, with a new
   30-day deadline, as long as its conversation still exists.
 
+### Propose a memory to the Site
+
+Something every workspace should know (a company-wide fact or convention) can be proposed to the
+**Site**, whose admins and memory stewards keep the memories every workspace's agents get. Under
+**Propose…** on a To review card, choose **The Site (every workspace)**, say **why every workspace
+should know this** (required, at most 1,000 characters) and choose **Propose to the Site**. Edit
+the statement or kind first if you like. The card leaves To review.
+
+- Only what you **said** or **confirmed** can go to the Site, and only as a new memory. **Kobe
+  noticed** suggestions, and changes to a memory you already have, show the option disabled with
+  the reason.
+- Only the statement, its kind and your justification ever leave the workspace: never your words
+  from the conversation, the conversation itself or Kobe's reasons.
+- A **Team admin** of your workspace confirms it first (see
+  [below](#confirm-site-proposals-team-admins)); a Team admin's own proposal goes straight to the
+  Site. Then a Site admin or Site memory steward approves it (it becomes a Site memory, "set by the
+  Site"), merges it into a Site memory, rejects it with a reason, or asks for changes (back to your
+  Team admins, at most three times). It waits up to 30 days.
+- Kobe refuses a secret and says so. Warnings and a Site Policy it may contradict don't stop it:
+  the notice tells you, and the Site's curators see it too.
+- When the workspace's **Members may propose to the Site** switch is off, Kobe refuses and says
+  why.
+
+Team admins and memory stewards can also propose a **Workspace memory**: on the team console's
+**Memory › Memories** tab, each active Workspace memory has **Propose to Site**, which asks for the
+same justification. The Workspace memory stays as it is.
+
+**Your Site proposals**, under To review on the **Memories** tab of **My memory**, lists what you
+proposed to the Site from this workspace: where each one waits (a Team admin, then the Site), the
+Site's note when it asked for changes, its reason when it said no, and **Withdraw…** while it is
+open. The bell tells you when a Team admin confirms it and when the Site decides or asks for
+changes; its button opens your proposal there (Team admins and Site curators open their console's
+Memory page instead).
+
 ### Decide on proposals (Team admins and memory stewards)
 
 The team console's **Memory** page has a **Proposals** tab for curators, oldest first; the bell's
@@ -316,6 +352,27 @@ The team console's **Memory** page has a **Proposals** tab for curators, oldest 
 Nobody decides their own proposal, not even someone who became a curator after proposing: another
 curator does. Proposals stay inside their workspace. A proposal waiting a week reminds each
 curator once; more than five in an hour arrive as one digest.
+
+### Confirm Site proposals (Team admins)
+
+The team console's **Memory** page has a **To the Site** tab for curators (Team admins and memory
+stewards; members don't see it), with the workspace's Site proposals grouped as **Waiting for a
+Team admin**, **Waiting for the Site** and **Closed**. The bell's **Open the Site proposal** opens
+it there. Each proposal shows its statement, kind, justification, who proposed it, whether a
+curator endorsed it, and, when the Site asked for changes, the Site's note and the round.
+
+- **Confirm** (Team admins) sends it to the Site's curators; **Edit and confirm…** lets you change
+  the statement, kind or justification first (the edit is recorded in the audit log, never its
+  text). Confirming runs the same checks as proposing.
+- **Endorse** (curators other than the proposer, memory stewards included) tells the Team admins
+  you support it. Memory stewards can't confirm.
+- **Withdraw…** (Team admins, or the proposer for their own) takes it back after a question; it
+  won't reach the Site.
+
+Kobe shows its refusal in the card when a proposal was already decided, withdrawn or expired, or
+when **Members may propose to the Site** is off (then nothing from this workspace reaches the
+Site, Team admins' proposals included). After the Site asks for changes, the proposal waits here
+again with the Site's note; confirm it again (edited or not), or withdraw it.
 
 ### Add to project notes
 

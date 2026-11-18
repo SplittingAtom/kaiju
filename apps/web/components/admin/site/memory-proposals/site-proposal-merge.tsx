@@ -6,7 +6,7 @@ import type {
   RelatedSiteItem,
   SiteProposal,
   SiteProposalChecks,
-} from "../../../../lib/memory/site-proposals-api";
+} from "../../../../lib/memory/site-proposals-admin-api";
 import { visible } from "../../../../lib/security/visible";
 import { Button, Field, Select, Textarea } from "../../../ui/console";
 import { StatementDiff } from "../../../memory/review/statement-diff";

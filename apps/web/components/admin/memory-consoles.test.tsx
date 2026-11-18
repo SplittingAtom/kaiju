@@ -66,15 +66,17 @@ describe("Workspace console Memory page (ac-1)", () => {
       [`POST ${ITEMS}/team/${WS.id}/archive`]: [200, { ...WS, status: "archived", version: 1 }],
     });
     renderTeam(<TeamMemoryPage />, { permissions: CURATOR });
-    // A steward: Memories, Proposals (KOBE-397) and Import and export, no Settings.
+    // A steward: Memories, Proposals (KOBE-397), To the Site (KOBE-404) and Import and export,
+    // no Settings.
     expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual([
       "Memories",
       "Proposals",
+      "To the Site",
       "Import and export",
     ]);
     const ws = await screen.findByRole("list", { name: "Workspace memories" });
     const row = within(ws).getByRole("listitem");
-    for (const action of ["Edit", "Pin", "Archive"])
+    for (const action of ["Edit", "Pin", "Archive", "Propose to Site"])
       expect(within(row).getByRole("button", { name: new RegExp(`^${action}:`) })).toBeTruthy();
     await userEvent.click(within(row).getByRole("button", { name: /^Archive:/ }));
     expect(await screen.findByText("Archived.")).toBeTruthy();
@@ -104,10 +106,45 @@ describe("Workspace console Memory page (ac-1)", () => {
     expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual([
       "Memories",
       "Proposals",
+      "To the Site",
       "Import and export",
       "Settings",
     ]);
     await screen.findByRole("list", { name: "Workspace memories" });
+  });
+
+  it("opens To the Site from the bell's link and lists the Workspace's Site proposals", async () => {
+    window.history.replaceState(null, "", "/admin/team/memory?site_proposal=not-a-uuid");
+    stubApi(routes);
+    const { unmount } = renderTeam(<TeamMemoryPage />, { permissions: CURATOR });
+    // Not a uuid: the page opens on Memories.
+    expect(screen.getByRole("tab", { name: "Memories" }).getAttribute("aria-selected")).toBe(
+      "true",
+    );
+    unmount();
+    const id = "00000000-0000-4000-8000-0000000000f1";
+    window.history.replaceState(null, "", `/admin/team/memory?site_proposal=${id}`);
+    const calls = stubApi({
+      ...routes,
+      "GET /v1/memory/site-proposals?limit=100": [200, { proposals: [], counts: {} }],
+      "GET /v1/memory/site-proposals?state=awaiting_team&limit=100": [
+        200,
+        { proposals: [], counts: {} },
+      ],
+      "GET /v1/memory/site-proposals?state=awaiting_site&limit=100": [
+        200,
+        { proposals: [], counts: {} },
+      ],
+    });
+    renderTeam(<TeamMemoryPage />, { permissions: CURATOR });
+    expect(screen.getByRole("tab", { name: "To the Site" }).getAttribute("aria-selected")).toBe(
+      "true",
+    );
+    expect(await screen.findByText("No Site proposals")).toBeTruthy();
+    expect(
+      calls.find((c) => c.url.startsWith("/v1/memory/site-proposals"))?.headers.get("x-kobe-team"),
+    ).toBe(TEAM.id);
+    window.history.replaceState(null, "", "/");
   });
 
   it("is read-only for anyone who doesn't curate", async () => {

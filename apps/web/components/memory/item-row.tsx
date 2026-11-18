@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { ApiResult } from "../../lib/api/client";
 import type { MemoryItem, MemoryItemsApi, Overrides } from "../../lib/memory/items-api";
 import { visible } from "../../lib/security/visible";
@@ -45,6 +45,7 @@ export function ItemRow({
   onRefreshed,
   readOnly = false,
   canSetPolicy = false,
+  extra,
 }: {
   readonly item: MemoryItem;
   readonly api: MemoryItemsApi;
@@ -59,6 +60,8 @@ export function ItemRow({
    * toggle. Without it a Policy item is read-only (Site stewards never change Policy).
    */
   readonly canSetPolicy?: boolean;
+  /** More for an active row the caller acts on (Propose to Site on Workspace memories, KOBE-404). */
+  readonly extra?: ReactNode;
 }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   /** The version the draft started from; a newer `item.version` means someone saved meanwhile. */
@@ -269,6 +272,7 @@ export function ItemRow({
               )}
             </div>
           )}
+          {!locked && !archived && extra}
         </>
       ) : (
         <form

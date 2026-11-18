@@ -7,6 +7,7 @@
  */
 import type { NotificationKind } from "@kobe/protocol";
 import type { KobeNotification } from "./api";
+import { UNKNOWN_VIEWER, type MemoryViewer } from "./memory-viewer";
 
 /** Where each memory surface lives. Site memory's console section arrives with KOBE-385/403. */
 export const MEMORY_PAGES = {
@@ -31,7 +32,13 @@ function linkOf(
   objectId: string | undefined,
   projectId: string | undefined,
   scope: "team" | "site" | undefined,
+  viewer: MemoryViewer,
 ): MemoryLink | null {
+  // Site proposals: a member's are on My memory; curators' pages are in the consoles.
+  const mine = {
+    href: withParam(MEMORY_PAGES.me, "site_proposal", objectId),
+    label: "Open My memory",
+  };
   switch (kind) {
     case "memory.scope.near_full":
       return scope === "site"
@@ -57,20 +64,31 @@ function linkOf(
             label: "Open the project",
           }
         : { href: "/me/projects", label: "Open projects" };
+    // Received goes to the Workspace's Team admins (KOBE-403 notify.ts): their confirmation queue.
     case "memory.site_proposal.received":
-    case "memory.site_proposal.confirmed":
       return {
-        href: withParam(MEMORY_PAGES.site, "site_proposal", objectId),
+        href: withParam(MEMORY_PAGES.workspace, "site_proposal", objectId),
         label: "Open the Site proposal",
       };
+    // Confirmed reaches the Site's curators (to decide) and the proposer (to know).
+    case "memory.site_proposal.confirmed":
+      return viewer.siteCurator
+        ? {
+            href: withParam(MEMORY_PAGES.site, "site_proposal", objectId),
+            label: "Open the Site proposal",
+          }
+        : mine;
+    // Outcomes reach the proposer and the Workspace's Team admins (the confirmer).
     case "memory.site_proposal.accepted":
     case "memory.site_proposal.dismissed":
     case "memory.site_proposal.changes_requested":
     case "memory.site_proposal.expired":
-      return {
-        href: withParam(MEMORY_PAGES.workspace, "site_proposal", objectId),
-        label: "Open Workspace memory",
-      };
+      return viewer.workspaceCurator
+        ? {
+            href: withParam(MEMORY_PAGES.workspace, "site_proposal", objectId),
+            label: "Open Workspace memory",
+          }
+        : mine;
     default:
       return null;
   }
@@ -79,9 +97,13 @@ function linkOf(
 /**
  * The bell's deep link for a memory notification; null for every other kind.
  * `memory.review.candidates_ready` opens To review for its conversation (KOBE-396), beside the
- * bell's Open conversation.
+ * bell's Open conversation. `viewer` picks a page the reader can open for Site proposal notices
+ * (KOBE-404); unknown, they open My memory.
  */
-export function memoryNotificationLink(n: KobeNotification): MemoryLink | null {
+export function memoryNotificationLink(
+  n: KobeNotification,
+  viewer: MemoryViewer = UNKNOWN_VIEWER,
+): MemoryLink | null {
   if (n.kind === "memory.review.candidates_ready")
     return n.threadId
       ? {
@@ -93,14 +115,14 @@ export function memoryNotificationLink(n: KobeNotification): MemoryLink | null {
     // The list the rolled-up notifications belong to.
     return n.relatedKind === "memory.review.reminder" || !n.relatedKind
       ? { href: MEMORY_PAGES.me, label: "Open My memory" }
-      : linkOf(n.relatedKind, undefined, undefined, undefined);
+      : linkOf(n.relatedKind, undefined, undefined, undefined, viewer);
   }
   if (n.kind === "memory.review.reminder") {
     return n.relatedKind
-      ? linkOf(n.relatedKind, n.memoryObjectId, n.projectId, undefined)
+      ? linkOf(n.relatedKind, n.memoryObjectId, n.projectId, undefined, viewer)
       : { href: withParam(MEMORY_PAGES.me, "review", n.memoryObjectId), label: "Open To review" };
   }
-  return linkOf(n.kind, n.memoryObjectId, n.projectId, n.memoryScope);
+  return linkOf(n.kind, n.memoryObjectId, n.projectId, n.memoryScope, viewer);
 }
 
 /** What a digest rolls up, in the plural ("Workspace memory proposals"). */

@@ -1,7 +1,10 @@
 "use client";
 
-import type { SiteProposal, SiteProposalState } from "../../../../lib/memory/site-proposals-api";
-import { SITE_PROPOSAL_ROUNDS_MAX } from "../../../../lib/memory/site-proposals-api";
+import type {
+  SiteProposal,
+  SiteProposalState,
+} from "../../../../lib/memory/site-proposals-admin-api";
+import { SITE_PROPOSAL_ROUNDS_MAX } from "../../../../lib/memory/site-proposals-admin-api";
 import { visible } from "../../../../lib/security/visible";
 import { Badge, type BadgeTone } from "../../../ui/console";
 import { KIND_LABELS } from "../../../memory/item-fields";

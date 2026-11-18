@@ -12,7 +12,7 @@ import {
   type SiteProposal,
   type SiteProposalChecks,
   type SiteProposalsApi,
-} from "../../../../lib/memory/site-proposals-api";
+} from "../../../../lib/memory/site-proposals-admin-api";
 import { Button, Checkbox, Field, Notice, Textarea } from "../../../ui/console";
 import { CheckProblem, useCheckedSave } from "../../../memory/item-checks";
 import type { Decided } from "./site-proposal-detail";
