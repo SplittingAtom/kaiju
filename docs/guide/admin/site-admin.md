@@ -152,7 +152,10 @@ read a person's portable preferences either; reading them needs its own break-gl
   [Single sign-on](single-sign-on.md#multi-factor-authentication)), and the site's
   memory switches and settings: **Allow memory** (the master switch: off means no notes, no
   memories and no Site Policy anywhere; it is the only switch that stops Policy), project notes, memories, **Portable preferences**, **Learn from this chat**
-  and **Members may propose to the Site**, each also needing the workspace's own switch; the
+  and **Members may propose to the Site**, each also needing the workspace's own switch;
+  **Nudge to learn** (site only: the composer's **+** dot pulses once after about 10 new messages
+  or a correction, never starting learning itself; see
+  [Memory](../memory.md#learn-from-this-chat)); the
   **learning model** (used by workspaces without their own, where enabled; learning never falls back
   to another model or the conversation's model), **where memories for each message go** (memory
   placement: with each message, kept, by default; with the newest message only; a held set in the
