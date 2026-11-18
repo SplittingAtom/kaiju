@@ -24,6 +24,11 @@ export interface SiteMemorySwitches {
   readonly learnEnabled: boolean;
   /** Members may propose Workspace memories to the Site. */
   readonly siteProposalsEnabled: boolean;
+  /**
+   * The Learn nudge (KOBE-410): the + button's dot pulses once after enough new messages or a
+   * correction. Site only; it never starts a pass.
+   */
+  readonly learnNudgeEnabled: boolean;
 }
 
 /** Workspace settings › Memory. */
@@ -51,6 +56,7 @@ export const SITE_SWITCH_NAMES = [
   "portableEnabled",
   "learnEnabled",
   "siteProposalsEnabled",
+  "learnNudgeEnabled",
 ] as const satisfies readonly (keyof SiteMemorySwitches)[];
 
 export const WORKSPACE_SWITCH_NAMES = [
@@ -70,6 +76,7 @@ export const SITE_SWITCHES_ON: SiteMemorySwitches = Object.freeze({
   portableEnabled: true,
   learnEnabled: true,
   siteProposalsEnabled: true,
+  learnNudgeEnabled: true,
 });
 
 export const WORKSPACE_SWITCHES_ON: WorkspaceMemorySwitches = Object.freeze({
@@ -102,6 +109,8 @@ export interface EffectiveMemory {
   readonly policy: boolean;
   /** The Learn switches allow learning (a learning model is checked separately). */
   readonly learn: boolean;
+  /** Learn is allowed and the Site's Learn nudge is on (KOBE-410). */
+  readonly learnNudge: boolean;
   /** Members may propose Workspace memories to the Site. */
   readonly siteProposals: boolean;
 }
@@ -113,6 +122,7 @@ export function effectiveMemory(
 ): EffectiveMemory {
   const master = site.memoryEnabled && ws.memoryEnabled;
   const memories = master && site.memoriesEnabled && ws.memoriesEnabled;
+  const learn = memories && site.learnEnabled && ws.learnEnabled;
   return {
     notes: {
       user: master,
@@ -126,7 +136,8 @@ export function effectiveMemory(
       site: memories && ws.siteMemoriesEnabled,
     },
     policy: site.memoryEnabled,
-    learn: memories && site.learnEnabled && ws.learnEnabled,
+    learn,
+    learnNudge: learn && site.learnNudgeEnabled,
     siteProposals:
       memories &&
       ws.workspaceMemoriesEnabled &&

@@ -57,6 +57,8 @@ const plusSaying = (text: string | RegExp) =>
   }, WAIT);
 const mark = (button: HTMLElement) =>
   button.querySelector("[data-kobe-learn-mark]")?.getAttribute("data-kobe-learn-mark") ?? null;
+const pulse = (button: HTMLElement) =>
+  button.querySelector("[data-kobe-learn-nudge]")?.getAttribute("data-kobe-learn-nudge") ?? null;
 const starts = () => fake.learnStarts.map((s) => s.mode);
 const notice = () =>
   (document.querySelector("[data-kobe-learn-notice]")?.textContent ?? "").replace(/\u00a0/g, "");
@@ -100,6 +102,36 @@ describe("the + button's Learn state (ac-1)", { timeout: 30_000 }, () => {
     openApp(fake, t);
     const button = await plusSaying("New messages to learn from (Memory)");
     expect(mark(button)).toBe("dot");
+  });
+
+  it("the nudge pulses the dot once per crossing and never starts a pass (KOBE-410)", async () => {
+    const t = answered();
+    learnable(t, { nudge: { reason: "messages", key: "start:messages" } });
+    openApp(fake, t);
+    const button = await plusSaying("New messages to learn from (Memory)");
+    expect(mark(button)).toBe("dot");
+    await waitFor(() => expect(pulse(button)).toBe("pulse"), WAIT);
+    expect(starts()).toEqual([]);
+    // Opened again (another render, a reload): the same crossing does not pulse again.
+    cleanup();
+    openApp(fake, t);
+    const again = await plusSaying("New messages to learn from (Memory)");
+    expect(mark(again)).toBe("dot");
+    expect(pulse(again)).toBeNull();
+    // A new crossing (after the next pass, or a correction) pulses once more.
+    cleanup();
+    learnable(t, { nudge: { reason: "correction", key: "start:correction" } });
+    openApp(fake, t);
+    await waitFor(async () => expect(pulse(await plus())).toBe("pulse"), WAIT);
+    expect(starts()).toEqual([]);
+  });
+
+  it("no nudge, no pulse: the dot stays still", async () => {
+    const t = answered();
+    learnable(t, { nudge: null });
+    openApp(fake, t);
+    const button = await plusSaying("New messages to learn from (Memory)");
+    expect(pulse(button)).toBeNull();
   });
 
   it("a running pass: a spinner, not a dot; the items say it is learning", async () => {

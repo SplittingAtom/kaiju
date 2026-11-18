@@ -34,6 +34,7 @@ const ALL_ON = {
   scopes: { user: true, portable: true, team: true, site: true },
   policy: true,
   learn: true,
+  learnNudge: true,
   siteProposals: true,
 };
 const ALL_OFF = {
@@ -42,6 +43,7 @@ const ALL_OFF = {
   scopes: { user: false, portable: false, team: false, site: false },
   policy: false,
   learn: false,
+  learnNudge: false,
   siteProposals: false,
 };
 
@@ -74,8 +76,10 @@ describe("effective memory switches (ac-1)", () => {
     projectMemoryEnabled: { ...ALL_ON, notes: { user: true, project: false } },
     memoriesEnabled: { ...ALL_OFF, notes: { user: true, project: true }, policy: true },
     portableEnabled: { ...ALL_ON, scopes: { ...ALL_ON.scopes, portable: false } },
-    learnEnabled: { ...ALL_ON, learn: false },
+    learnEnabled: { ...ALL_ON, learn: false, learnNudge: false },
     siteProposalsEnabled: { ...ALL_ON, siteProposals: false },
+    // KOBE-410: the Learn nudge is a Site switch only; off keeps Learn itself.
+    learnNudgeEnabled: { ...ALL_ON, learnNudge: false },
   };
   const WS_ROWS: Record<(typeof WORKSPACE_SWITCH_NAMES)[number], object> = {
     memoryEnabled: { ...ALL_OFF, policy: true },
@@ -87,7 +91,7 @@ describe("effective memory switches (ac-1)", () => {
       siteProposals: false,
     },
     siteMemoriesEnabled: { ...ALL_ON, scopes: { ...ALL_ON.scopes, site: false } },
-    learnEnabled: { ...ALL_ON, learn: false },
+    learnEnabled: { ...ALL_ON, learn: false, learnNudge: false },
     siteProposalsEnabled: { ...ALL_ON, siteProposals: false },
   };
 
