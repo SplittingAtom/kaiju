@@ -8,7 +8,7 @@ import { uniqueWords } from "./support/unique.js";
 /**
  * Gate C (KOBE-407): a fact a member states in a conversation travels to the Site in two steps
  * and comes back as a Site memory. member2 (KOBE_USER2, a plain member) asks a no-tools question
- * that states a unique office code phrase, runs Learn from this chat and proposes the candidate
+ * that states a unique office fact (the name of a meeting room), runs Learn from this chat and proposes the candidate
  * to the Site with a justification (KOBE-404); My memory › Your Site proposals shows it waiting
  * for a Team admin. The owner (KOBE_USER, Team admin and Site admin) confirms it with an edit on
  * Workspace console › Memory › To the Site; on Site console › Memory › Proposals the detail shows
@@ -87,7 +87,12 @@ async function learnCandidate(page: Page, threadId: string, word: string): Promi
   const plus = page.getByRole("button", { name: "Add to your message", exact: true });
   const notice = page.locator("[data-kobe-learn-notice]");
   const panel = panelOf(page);
-  // Candidates open To review by itself (KOBE-396, KOBE-661); otherwise the + settles.
+  // The pass starts (the + shows the spinner, or To review is already open), then ends:
+  // candidates open To review by itself (KOBE-396, KOBE-661); otherwise the + settles.
+  await expect(async () => {
+    if (await panel.isVisible()) return;
+    expect(await plus.getAttribute("data-kobe-learn-state", { timeout: 1_000 })).toBe("spinner");
+  }).toPass({ timeout: SHELL_TIMEOUT_MS });
   await expect(async () => {
     if (await panel.isVisible()) return;
     expect(await plus.getAttribute("data-kobe-learn-state", { timeout: 1_000 })).not.toBe(
@@ -99,7 +104,13 @@ async function learnCandidate(page: Page, threadId: string, word: string): Promi
     await page.goto(`/me/memory?review=1&thread=${encodeURIComponent(threadId)}`);
   }
   const candidates = panel.getByRole("list", { name: "Candidates" });
-  const card = candidates.getByRole("listitem").filter({ hasText: word });
+  // Cards are the list's own items (a card has nested items of its own, e.g. its quotes).
+  const card = candidates.locator(":scope > li").filter({ hasText: word });
+  // To review may have loaded before the pass stored its candidates: read it again once.
+  if ((await card.count()) === 0) {
+    await page.waitForTimeout(3_000);
+    await page.goto(`/me/memory?review=1&thread=${encodeURIComponent(threadId)}`);
+  }
   await expect(card, `the learning pass found no candidate naming "${word}" (${said})`).toHaveCount(
     1,
     { timeout: SHELL_TIMEOUT_MS },
@@ -134,7 +145,7 @@ async function openSiteProposal(page: Page, word: string): Promise<Locator> {
   await panel.getByRole("tab", { name: "Proposals" }).click({ timeout: SHELL_TIMEOUT_MS });
   const row = panel
     .getByRole("list", { name: "Site proposals" })
-    .getByRole("listitem")
+    .locator(":scope > li")
     .filter({ hasText: word });
   await expect(row).toHaveCount(1, { timeout: SHELL_TIMEOUT_MS });
   await row.getByRole("button", { name: /^Review: / }).click();
@@ -171,7 +182,7 @@ test("a member's fact goes to the Site: propose, confirm, request changes, appro
   test.setTimeout(15 * 60_000);
   const [first = "", second = ""] = uniqueWords().split(" ");
   const phrase = `${first} ${second}`;
-  const justification = `E2E ${first}: everyone at the office needs the code phrase.`;
+  const justification = `E2E ${first}: every Workspace books this room.`;
   const changesNote = `E2E ${first}: please say which office this is for.`;
 
   const member = await signInSecond(browser);
@@ -181,7 +192,7 @@ test("a member's fact goes to the Site: propose, confirm, request changes, appro
     // 1. member2: the fact in a conversation, Learn, Propose… › The Site.
     await memberChat.open();
     const threadId = await memberChat.ask(
-      `No tools. Reply with the single word OK. Our office code phrase is ${phrase}.`,
+      `No tools. Reply with the single word OK. For the record: our office's big meeting room is called the ${phrase} room.`,
     );
     const card = await learnCandidate(member, threadId, first);
     const proposed = ((await card.locator("[data-review-statement]").textContent()) ?? "").trim();
@@ -301,7 +312,7 @@ test("a member's fact goes to the Site: propose, confirm, request changes, appro
         const panel = panelOf(page);
         const row = panel
           .getByRole("list", { name: "Site memories" })
-          .getByRole("listitem")
+          .locator(":scope > li")
           .filter({ hasText: first });
         await row.getByRole("button", { name: /^Archive: / }).click({ timeout: SHELL_TIMEOUT_MS });
         await expect(panel.getByText("Archived.", { exact: true })).toBeVisible({

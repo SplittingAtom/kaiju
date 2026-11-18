@@ -226,7 +226,7 @@ and archives and deletes the project. `npx playwright test thread-file-map`.
 ## Site proposals (`site-proposals.spec.ts`, Gate C, KOBE-407)
 
 member2 (`KOBE_USER2`/`KOBE_PW2`, a plain member; skipped without them) states a unique office
-code phrase in a no-tools turn, runs Learn from this chat and proposes the candidate to the Site
+office fact (a meeting room's name) in a no-tools turn, runs Learn from this chat and proposes the candidate to the Site
 with a justification; the owner (`KOBE_USER`, Team admin and Site admin) confirms it with an edit
 on Workspace console › Memory › To the Site, checks the Site console detail (statement, kind,
 justification, source Workspace, date, none of the conversation), requests changes, confirms
