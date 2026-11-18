@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean, which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo, Add to project notes in a project conversation, and Suggest to editors for project readers), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how project editors approve or dismiss readers' suggestions for the project's notes, how the learning model is chosen, how long memories and Learn from this chat records (suggestions, proposals, passes) are kept, and how a Site-wide legal hold keeps Site memories.
+summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean and when the dot pulses (the Learn nudge), which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo, Add to project notes in a project conversation, and Suggest to editors for project readers), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how project editors approve or dismiss readers' suggestions for the project's notes, how the learning model is chosen, how long memories and Learn from this chat records (suggestions, proposals, passes) are kept, and how a Site-wide legal hold keeps Site memories.
 section: Memory
 order: 1
 audience: member
@@ -181,6 +181,13 @@ The **+** button shows where Learn is:
 | A dot           | New messages since Kobe last learned from this conversation                 |
 | A spinner       | Kobe is learning from it now; you can keep chatting                         |
 | A number        | Suggestions from this conversation are waiting; **+** › **Memory** › Review |
+
+**The nudge.** The dot pulses once, as a reminder, after about 10 of your messages since Kobe last
+learned from this conversation (or since it started), or after you correct the agent: a thumbs
+down on an answer, or editing one of your messages or sending a new one from an earlier answer (Regenerate and Retry don't count). It pulses
+once for each of these, then stays still until the next time; with reduced motion turned on in your
+system settings it doesn't move at all. The nudge never starts learning: only you do. A site admin
+can turn it off (**Nudge to learn**).
 
 When a pass ends, Kobe says how many suggestions it found, or why it stopped (try again from the
 same menu). If it found something while you are on the conversation, To review opens by itself
@@ -404,6 +411,9 @@ turns Policy off.
   and every read is in the site audit log and the audit view of each of your workspaces.
 - **Learn from this chat** (site and workspace): you can ask Kobe to suggest memories from a
   conversation and review every suggestion before anything is saved.
+- **Nudge to learn** (site): the dot on the **+** button pulses once when a conversation has
+  enough new messages or a correction to learn from (see [Learn from this chat](#learn-from-this-chat)).
+  Off: the dot stays still. It never starts learning by itself.
 - **Members may propose to the Site** (site and workspace): workspace memories can be proposed to
   the site; a team admin confirms before anything leaves the workspace. Needs **Workspace
   memories** on.

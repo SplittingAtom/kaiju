@@ -75,6 +75,9 @@ export type LearnRefusal = z.infer<typeof learnRefusalSchema>;
 
 const count = z.number().int().nonnegative();
 
+/** The person's messages since their last pass that make the + button's dot pulse (KOBE-410). */
+export const LEARN_NUDGE_MESSAGES = 10;
+
 export const learnStateSchema = z.strictObject({
   thread_id: uuidSchema,
   /** Why Learn can't start now; null when it can (a running pass is `running`, not a blocker). */
@@ -100,6 +103,21 @@ export const learnStateSchema = z.strictObject({
    * when nothing is new) and what `/learn all` reads. Null when not asked or not computable.
    */
   estimate: z.strictObject({ new_tokens: count.nullable(), all_tokens: count }).nullable(),
+  /**
+   * The Learn nudge (KOBE-410): why the + button's dot should pulse once, or null. `messages` =
+   * at least {@link LEARN_NUDGE_MESSAGES} of the person's messages on the branch since their last
+   * pass; `correction` = they thumbed an answer down or edited one of their messages since then.
+   * `key` names the crossing (the pass it counts from and the reason), so a client pulses once
+   * per key. Only while Learn could start and nothing waits; never starts a pass. Optional: absent
+   * from servers before KOBE-410.
+   */
+  nudge: z
+    .strictObject({
+      reason: z.enum(["messages", "correction"]),
+      key: z.string().min(1).max(300),
+    })
+    .nullable()
+    .optional(),
 });
 export type LearnState = z.infer<typeof learnStateSchema>;
 

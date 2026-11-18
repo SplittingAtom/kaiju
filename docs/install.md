@@ -1151,7 +1151,8 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   Members may propose to the Site) are AND-ed across the levels that have them and read as **on**
   until an admin turns them off, so the upgrade changes no behaviour. Site values are new
   `site_settings` keys (`memory.memories_enabled`, `memory.portable_enabled`,
-  `memory.learn_enabled`, `memory.site_proposals_enabled`, and the JSON document
+  `memory.learn_enabled`, `memory.site_proposals_enabled`, `memory.learn_nudge_enabled` (KOBE-410,
+  the Learn nudge; site only), and the JSON document
   `memory.settings`: learning model alias and embedding model (a gateway model id), context budget 4–16 KiB, scope limits, version
   cap, stale threshold, retention window, rate limits); workspace values are the `memory` key of
   `teams.settings`. Learn needs a learning model the workspace has enabled and never falls back to
