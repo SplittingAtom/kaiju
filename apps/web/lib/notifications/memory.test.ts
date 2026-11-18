@@ -118,13 +118,28 @@ describe("memory notifications in the bell (KOBE-645)", () => {
         ...examples["memory.review.reminder"],
         relatedKind: "memory.site_proposal.received",
       }),
-    ).toBe("/admin/site/memory?site_proposal=obj-1");
-    expect(href(examples["memory.site_proposal.confirmed"])).toBe(
+    ).toBe("/admin/team/memory?site_proposal=obj-1");
+    // KOBE-404: each reader gets a page they can open; unknown readers get My memory.
+    const site = { siteCurator: true, workspaceCurator: false };
+    const ws = { siteCurator: false, workspaceCurator: true };
+    const linkFor = (n: KobeNotification, v?: typeof site) => memoryNotificationLink(n, v)?.href;
+    expect(linkFor(examples["memory.site_proposal.confirmed"], site)).toBe(
       "/admin/site/memory?site_proposal=obj-1",
     );
-    expect(href(examples["memory.site_proposal.changes_requested"])).toBe(
+    expect(linkFor(examples["memory.site_proposal.confirmed"], ws)).toBe(
+      "/me/memory?site_proposal=obj-1",
+    );
+    expect(href(examples["memory.site_proposal.confirmed"])).toBe("/me/memory?site_proposal=obj-1");
+    expect(linkFor(examples["memory.site_proposal.changes_requested"], ws)).toBe(
       "/admin/team/memory?site_proposal=obj-1",
     );
+    for (const kind of [
+      "memory.site_proposal.changes_requested",
+      "memory.site_proposal.accepted",
+      "memory.site_proposal.dismissed",
+      "memory.site_proposal.expired",
+    ] as const)
+      expect(linkFor(examples[kind], site)).toBe("/me/memory?site_proposal=obj-1");
     expect(
       href({
         ...examples["memory.review.reminder"],

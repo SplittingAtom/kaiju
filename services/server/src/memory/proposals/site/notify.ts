@@ -9,8 +9,11 @@ import {
 /**
  * Site proposals' notices (KOBE-403, SM22) on KOBE-645's machinery and its Phase C kinds (no new
  * kind, no migration). Always in the proposing Workspace's `withTeam()` transaction and last in
- * it; ids only, never text. The machinery delivers to active members of that Workspace only, so a
- * Site curator who is not a member gets no bell notice (see the ledger).
+ * it; ids only, never text. The machinery delivers to active members of that Workspace only;
+ * Site curators who are not members get the `confirmed` notice and its reminders in their own
+ * Workspace from the reminder pass (`notifications/site-proposal-relay.ts`, KOBE-653), which also
+ * repeats the reminders weekly while a step waits. Expiry after 30 days (to the proposer and the
+ * confirmer) is the retention job's (`retention/site-proposals.ts`).
  *
  * | event                                   | kind                                       | to                              | reminder (7 d) |
  * | --------------------------------------- | ------------------------------------------ | ------------------------------- | -------------- |
@@ -20,6 +23,7 @@ import {
  * | approved or merged                      | `memory.site_proposal.accepted`            | the proposer and the confirmer  | settled        |
  * | rejected                                | `memory.site_proposal.dismissed`           | the proposer and the confirmer  | settled        |
  * | withdrawn                               | none                                       |                                 | settled        |
+ * | expired (retention, KOBE-653)           | `memory.site_proposal.expired`             | the proposer and the confirmer  | settled        |
  */
 
 export async function teamAdminsOf(tx: KobeTx, teamId: string): Promise<string[]> {
