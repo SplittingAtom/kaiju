@@ -93,14 +93,15 @@ fixtures with oracle replies (expected candidates plus every attack): it is not 
 
 <!-- extractor-results:end -->
 
-The gate1 run against the Site's learning model is done at Gate B (KOBE-401).
+The `glm-5.3-flash` rows ran against the Site's learning model on gate1 (the same Ollama Cloud
+model the Site's learning alias points at), through the harness from the dev VM.
 
 ## Vectors (KOBE-409)
 
 Hybrid retrieval (keyword read plus the vector leg, spec Phase D) on the KOBE-387 relevance set
 (121 items, 151 queries; method and columns as in [gate-7a.md](gate-7a.md)), with
 `e2e/memory-eval.sh relevance` against dev Postgres 17 + pgvector and embeddings from a LAN
-Ollama (the in-cluster `kobe-local/nomic-embed-text` was not measured here). Latency is the
+Ollama; the in-cluster model is measured separately below. Latency is the
 per-message query embedding as the harness measures it from the dev VM (p50 / p95).
 
 **Tuning.** Fusion weights were tuned on the even query ids only, then checked on the odd ids;
@@ -147,3 +148,115 @@ nomic's model-card prefixes, for comparison.
   score (nomic: answers at sim ~0.66 → 0.3) stayed below that base, so the preferences filled the top 8 of
   most queries (0.545). Recency, pins and kind weights were not the cause. With the vector score
   on its own scale the answers rise above the base (0.874 / 0.858); the base itself is unchanged.
+
+**In-cluster model on gate1** (2026-11-16, main `ee806045`, chart embedding service from
+KOBE-659, `kobe-local/nomic-embed-text`): Build vectors embedded 26 of 26 memories in Team1; the
+relevance set through that service scores recall@8 **0.894** (selector score 0.874) against 0.573
+for keyword only, the same as the LAN Ollama nomic row. Query embedding p50 60 ms / p95 85 ms,
+measured through a port-forward from the dev VM (CPU, no GPU).
+
+## Gate B results (KOBE-401)
+
+Gate B proves Phase B (Learn from this chat) on gate1. Install: gate1 at main `90ebba51cafe`
+(`local-90ebba51cafe`), deployed 2026-11-16 after a database dump; learning model `glm-5.3-flash`
+(Ollama Cloud), embeddings from the in-cluster service.
+
+### Checks
+
+| Check                                              | Result                                                                                                                                                         |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Extractor thresholds (U52, SM30)                   | **PASS** with `memory-extractor-v2` on `glm-5.3-flash`: precision 0.985, recall 0.956, scope 0.985, 0 adversarial Workspace or Site offers                     |
+| Gate 1 and Gate 2 shards on one commit (ac-3)      | **PASS** on `ee806045` (e2e merge-group run 43914538838, both shards green)                                                                                    |
+| Vectors (Phase D, KOBE-409)                        | **PASS** hybrid recall@8 0.894 against 0.573 keyword only, in-cluster model (above)                                                                            |
+| Memory placement cache replay (KOBE-658, KOBE-662) | **PASS** `latest_user_keep` 93.8% of prompt tokens read from cache on turns 2-20 (ac-3 line 73.0%), `stable_plus_delta` 94.9%, `tool_only` 93.7% (table below) |
+| Browser specs on gate1                             | **PASS** memory editor and memory consoles 3/3; Learn from this chat 7 of 8 runs (one intermittent failure after closing To review, KOBE-663)                  |
+
+### Memory placement cache replay
+
+`e2e/memory-eval.sh cache` on gate1 at `90ebba51cafe` (with KOBE-662), `glm-5.3-flash` via Ollama
+Cloud, owner in Team1, 20 turns per placement, each in a new thread (method in
+[gate-7a.md](gate-7a.md#memory-placement-replay-kobe-658)). Before KOBE-662 the same replay at
+`ee806045` read 0.0% with `latest_user_keep` and `tool_only`.
+
+| Placement         | Thread     | Share (turns 2-20) | Share (all) | Memory use |
+| ----------------- | ---------- | ------------------ | ----------- | ---------- |
+| system            | `7cc81b79` | 18.6%              | 17.8%       | 15/16      |
+| latest_user_keep  | `e8cdc2ba` | **93.8%**          | 91.5%       | 15/16      |
+| latest_user_strip | `ebc4f6c0` | 0.0%               | 0.0%        | 15/16      |
+| stable_plus_delta | `83124762` | **94.9%**          | 91.9%       | 15/16      |
+| tool_only         | `d2f2a3d4` | **93.7%**          | 91.4%       | 15/16      |
+
+`latest_user_keep` (the default) is above the pre-383 baseline (91.2% all turns) while picks are
+re-picked every message. `system` and `latest_user_strip` stay low by design (picks change the
+system prompt; strip moves the previous note). The one missed memory use is the same turn (17) in
+every placement, so it is the question, not the placement.
+
+### Browser specs on gate1
+
+Run from the Playwright 1.55 container against gate1 at `90ebba51cafe`:
+
+- `memory-editor.spec.ts`, `memory-consoles.spec.ts` (owner): 3 passed.
+- `learn-from-chat.spec.ts` (as member2; the owner had used today's 20 passes in testing): 7 of 8
+  runs passed. Four found nothing new (the spec's preference was already learned) and ended with
+  the notice; three, with a new preference in the message, found a candidate and To review opened
+  by itself. One run that opened To review failed after Close: the composer was not found
+  (KOBE-663, not reproduced in the next seven runs).
+
+Main's own CI on `90ebba51cafe` failed once in `memory-learn-route.db.test.ts` (the faked learner
+finished before the test read the running state); the test now holds the learner (#595).
+
+### Fixes found by the gate
+
+- **KOBE-660** (#591): `memory-extractor-v1` on `glm-5.3-flash` offered 2 Workspace candidates in
+  adversarial cases (a request to change what the agent may do, and a rule built on a named
+  person's personal data). The screen now drops capability-change requests and rules that cite a
+  named person near personal or contact data, independent of the model; prompt v2. Re-run: 0
+  offers.
+- **KOBE-662** (#593): the prompt cache read 0% with `latest_user_keep`: the sandbox restarts Pi
+  for every message and the earlier messages' memory notes were lost, so every turn changed the
+  prefix. The agent now keeps each message's note across restarts (details in
+  [gate-7a.md](gate-7a.md#memory-placement-replay-kobe-658)).
+- **KOBE-661** (#594): on the two-replica install the Learn spinner could stay after the pass
+  finished. The browser now refetches the pass status when the tab becomes visible or comes back
+  online and stops waiting after the pass limit plus 15 s with "Try again"; the spec accepts To
+  review opening by itself.
+
+### Acceptance criteria (ac-1, ac-2)
+
+| Criterion   | What is proven                                                                                                               | Evidence                                                                                                                                                                                                   |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| U39         | Learn for the thread author only (+ menu, `/learn`, ⌘⇧L); ≤10 candidates with verified quotes; nothing saved without a click | `learn-from-chat.spec.ts` on gate1; `memory-learn-route.db.test.ts` (shared reader 403), `memory-learn-pass.db.test.ts` (screened candidates, quotes), KOBE-395/393                                        |
+| U40         | Saves apply with chip + Undo in this Workspace; portable preferences after confirmation; no portable fact                    | `memory-review.db.test.ts` (portable needs a preference and a confirmation; batch save and one Undo), KOBE-396                                                                                             |
+| U41         | Incremental passes from the watermark on the visible branch; dismissals don't return; update/conflict; fork rules            | `memory-learn-input.db.test.ts` (watermark, other branch, fork never reads the copied prefix), `memory-learn-pass.db.test.ts` (dismissed dropped, Policy conflicts marked), KOBE-392                       |
+| U42         | Workspace proposals reach curators; approval reaches every member's next run; outcome notified; 30-day expiry                | `memory-proposals.db.test.ts` (curators told, self-approval refused, approved in every member's run), `memory-learning-retention.db.test.ts` (30-day expiry, proposer told once), KOBE-397/651             |
+| U46         | No seeded injection offered at Workspace/Site scope; secrets blocked; items never change tools                               | Extractor eval: 27 adversarial cases, 0 Workspace/Site offers, adversarial pass 100%; KOBE-660 screen tests; `show_memory_item` read-only (KOBE-399)                                                       |
+| U47         | `memory_learn` usage; refused at 100% budget; unenabled learning alias fails clearly; switches; rate limits                  | `memory-learn-pass.db.test.ts` (budget refusal → `budget_exhausted`; no learning model or one not enabled: no fallback; Learn off), `memory-learn-route.db.test.ts` (rate limit), KOBE-391 gateway purpose |
+| U52         | Extractor thresholds per prompt version and model; CI on fixtures                                                            | Results table above; recorded-response fixtures run in CI (KOBE-394/400)                                                                                                                                   |
+| U53         | Project-specific candidates offer Add to project notes via the existing approval                                             | `memory-review-project-notes.db.test.ts` (signed approval, edited statement, forged approval refused, reader refused), KOBE-398                                                                            |
+| U54         | "forget X" → Open in Memory chip; one click archives with Undo; next run no longer receives it                               | `memory-recall-items.db.test.ts`, kobe-tools tests (KOBE-399); `memory-editor.spec.ts` on gate1 (archive and restore)                                                                                      |
+| Fork/copy   | Learning starts at the fork or copy point (Q9)                                                                               | `memory-learn-input.db.test.ts`: a fork never reads the copied prefix, even on rescan                                                                                                                      |
+| No fallback | No learning-model fallback (Q5)                                                                                              | `memory-learn-pass.db.test.ts`: refuses with no learning model or one the Workspace has not enabled                                                                                                        |
+| Suggest     | Readers' Suggest to editors (Q2)                                                                                             | `memory-suggestions.db.test.ts`, `memory-project-suggestions.db.test.ts` (reader suggests, editor approves under `## Learned`, admin dismisses with a reason), KOBE-652                                    |
+| Sweeps      | Phase B sweeps                                                                                                               | `memory-learning-retention.db.test.ts` (candidates 14 days, proposals 30 days, suggestions, held people skipped, passes purged past the Workspace window), KOBE-651                                        |
+
+### Decisions for Chris
+
+1. **Licences** (`pnpm license:gate` pending rows): `pgvector` (PostgreSQL License, same as the
+   approved postgres row; Kobe ships no Postgres image) and `llama-cpp-image-packages` (ffmpeg
+   built with GPL options and curl, inside the upstream llama.cpp server image the chart pulls
+   unmodified; Kobe only talks to it over HTTP). `embeddings.local.enabled` is on by default, so
+   the second row applies to every install unless it is turned off.
+2. **Site-wide hold**: should it also freeze Workspace learning records (passes, candidates,
+   proposals, suggestions)? Today holds are per person.
+3. **Decided proposals and suggestions**: purge them by age, or keep them as long as the pass
+   window?
+4. Stale and swept suggestions share the `expired` state; separate states?
+5. The "New" hint on Learn (KOBE-395) is per browser, not per person.
+6. An approved proposal is recorded as the curator's write (with the proposer in the audit).
+7. KOBE-660: should the screen accept nonce-prefixed entry ids? The capability rule can also drop
+   genuine business facts that mention changing a tool or permission.
+8. KOBE-662: an archived memory's note stays in earlier messages' notes until the sandbox
+   restarts (the next message no longer gets it).
+9. The in-cluster embedding service runs without an API key and with open CORS; it is reachable
+   only through its network policy (gateway pods). Keep as is?
+10. Saving the embedding model without an active Workspace does not start Build vectors.
