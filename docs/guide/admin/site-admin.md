@@ -1,6 +1,6 @@
 ---
 title: Site admin overview
-summary: What site admins do and where each setting lives in the Site console (people, grants such as Site memory steward, teams, models, connectors, egress ceiling, policy floor, Site memory and Policy with import and export, appearance, legal holds including the Site-wide hold on Site memory, audit, break-glass for teams and for one person's portable memories, and backups).
+summary: What site admins do and where each setting lives in the Site console (people, grants such as Site memory steward, teams, models, connectors, egress ceiling, policy floor, Site memory and Policy with import and export and the Site proposals queue, appearance, legal holds including the Site-wide hold on Site memory, audit, break-glass for teams and for one person's portable memories, and backups).
 section: Site admin
 order: 1
 audience: admin
@@ -122,7 +122,13 @@ read a person's portable preferences either; reading them needs its own break-gl
   export, at most 200 rows, a preview that checks every row with no model, then the new rows
   only; a Policy row imports only for Site admins and only while Policy has room. Exports are
   audited. Your own workspace's memory switches don't limit what you curate here (they decide
-  what reaches that workspace's runs). The memory switches stay under **Settings**.
+  what reaches that workspace's runs). The **Proposals** tab is the queue of workspace proposals
+  a Team admin confirmed for the Site, with counts per state and filters by state and workspace:
+  open one to see its statement, kind, justification, source workspace, proposer, date,
+  endorsement and round, and what the checks find against Site memories and Policy (each with a
+  word diff), then **Approve**, **Merge into existing…**, **Reject…** (reason required) or
+  **Request changes…** (see [Decide on Site proposals](../memory.md#decide-on-site-proposals-site-admins-and-site-memory-stewards)).
+  The memory switches stay under **Settings**.
 - **Portable memory access**: break-glass for one person's portable preferences, which follow
   them into every workspace and so are outside any team's break-glass. A site admin picks the
   person, gives a reason and a window (up to 24 hours, 1 hour by default); a second site admin
