@@ -240,6 +240,11 @@ a secret is never saved. If the memory changed in another tab since you opened i
 80% full, and when it is full (by default 300 memories only in this workspace and 50 in all your
 workspaces; a site admin can change this): archive some before adding more.
 
+Below your memories, **How your memories are used** lists your memories only in this workspace
+with how many runs received each one, how many of those runs got a thumbs down, and when one was
+last received, with the same **Check this** and **Not used lately** flags and filter as the
+consoles' [Quality tab](#memory-quality). Nobody else sees these numbers for your memories.
+
 ## To review
 
 When you ask Kobe to learn from a conversation, nothing is saved until you choose. What it found
@@ -374,6 +379,31 @@ when **Members may propose to the Site** is off (then nothing from this workspac
 Site, Team admins' proposals included). After the Site asks for changes, the proposal waits here
 again with the Site's note; confirm it again (edited or not), or withdraw it.
 
+### Memory quality
+
+The **Quality** tab of the Memory page (team console for team admins and memory stewards; Site
+console for Site admins and Site memory stewards) shows how memory is doing. Kobe works the
+numbers out when you open the tab; nothing is archived, changed or deleted because of them.
+
+- **Queue health**: for each review queue, how many items wait now, how long the oldest has
+  waited, and over the last 30 days how many were decided and the median time from waiting to a
+  decision (an item that expired is not a decision). A workspace shows **Proposals to this
+  workspace** and **Readers' project note suggestions**; the Site shows **Proposals waiting for
+  the Site** (timed from a team admin's confirmation).
+- **How memories are used**: every active memory with the number of runs that received it, how
+  many of those runs got a thumbs down (from anyone, counted once per run), and when it was last
+  received. Two flags mark memories worth a look: **Check this** when more than 30% of at least 10
+  runs that received it got a thumbs down, and **Not used lately** when no run received it for 90
+  days (a memory never received counts from when it was saved; Site admins set the days under
+  Settings › Memory, **Not used after**). **Show** filters the list to one flag. Not used lately is
+  not the same as stale, which means not changed. The Site's list counts runs in every workspace
+  (numbers only).
+- **Learn from this chat**: learning passes that finished in the last 30 days and what happened to
+  the memories they suggested: **Shown** in To review, **Saved**, **Edited before save**,
+  **Proposed** to the workspace, **Suggested to editors**, **Dismissed**, **Expired** and **Still
+  in To review**, plus failed passes. The Site sees these numbers for each workspace and in total,
+  and never any text from a conversation.
+
 ### Add to project notes
 
 In a conversation that belongs to a project, each card also offers **Add to project notes** if
@@ -502,7 +532,7 @@ re-picked, every 20 messages), the context budget (how much room memories may
 take at the start of a run, 4 to 16 KiB, 8 by default), the most memories each place may hold (by
 default 300 per person only in a workspace, 50 per person in all their workspaces, 1,000 per
 workspace and 1,000 on the site), how
-many versions of a memory are kept (50), when a memory counts as stale (90 days: an active memory not changed, and not dated with an as-of date, within that time; stale memories are only marked for review, never removed), the
+many versions of a memory are kept (50), when a memory counts as stale (90 days: an active memory not changed, and not dated with an as-of date, within that time; stale memories are only marked for review, never removed), when a memory counts as not used lately on the [Quality tab](#memory-quality) (**Not used after**, 90 days without a run receiving it; also only a review flag), the
 retention window for archived memories (365 days), learning rate limits, and the embedding model
 for search by meaning (below). Word matching uses English stemming; there is no language setting.
 

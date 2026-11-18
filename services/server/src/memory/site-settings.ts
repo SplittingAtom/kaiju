@@ -64,6 +64,8 @@ export const memorySiteSettingsFields = {
   }),
   version_cap: z.number().int().min(5).max(500),
   stale_after_days: z.number().int().min(7).max(3650),
+  /** "Not used lately" (KOBE-411): no run received an item for this many days. A label only. */
+  unused_after_days: z.number().int().min(7).max(3650),
   rate_limits: z.strictObject({
     learn_passes_per_hour: z.number().int().min(1).max(100),
     saves_per_minute: z.number().int().min(1).max(600),
@@ -99,6 +101,7 @@ export const MEMORY_SITE_SETTINGS_DEFAULTS: MemorySiteSettings = Object.freeze({
   }),
   version_cap: 50,
   stale_after_days: 90,
+  unused_after_days: 90,
   rate_limits: Object.freeze({ learn_passes_per_hour: 10, saves_per_minute: 30 }),
   retention_days: 365,
   placement: SEMANTIC_MEMORY_PLACEMENT_DEFAULT,

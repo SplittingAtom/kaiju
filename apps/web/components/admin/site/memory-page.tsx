@@ -6,6 +6,7 @@ import { fetchMyTeams } from "../../../lib/teams";
 import { CuratorMemories } from "../../memory/curator-memories";
 import { ExportPanel } from "../../memory/export-panel";
 import { ImportPanel } from "../../memory/import-panel";
+import { MemoryQuality } from "../../memory/quality/memory-quality";
 import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "../../ui/console";
 import { useSiteAccess } from "../console-context";
 import { SiteProposals } from "./memory-proposals/site-proposals";
@@ -50,6 +51,7 @@ export function SiteMemoryPage() {
               <TabsList label="Memory">
                 <TabsTrigger value="memories">Memories</TabsTrigger>
                 <TabsTrigger value="proposals">Proposals</TabsTrigger>
+                <TabsTrigger value="quality">Quality</TabsTrigger>
                 <TabsTrigger value="transfer">Import and export</TabsTrigger>
               </TabsList>
               <TabsContent value="memories">
@@ -75,6 +77,9 @@ export function SiteMemoryPage() {
                   focusId={proposal}
                   onDecided={() => setGeneration((g) => g + 1)}
                 />
+              </TabsContent>
+              <TabsContent value="quality">
+                <MemoryQuality level="site" teamId={teamId} />
               </TabsContent>
               <TabsContent value="transfer">
                 <ImportPanel
