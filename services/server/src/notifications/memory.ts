@@ -3,6 +3,7 @@ import { sql, teams, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
 import type { Logger } from "pino";
 import { logger } from "../logger.js";
 import type { ReconcileLock } from "../sandbox/reconcile-lock.js";
+import { relaySiteProposals } from "./site-proposal-relay.js";
 
 /**
  * Memory notifications (KOBE-645, v1.3 Semantic Memory SM22): the one way semantic memory tells
@@ -30,8 +31,9 @@ import type { ReconcileLock } from "../sandbox/reconcile-lock.js";
  * {@link MEMORY_REMINDER_LOCK}, like the other periodic jobs); rows are also claimed with SKIP
  * LOCKED, so even an overlapping pass sends each reminder once. At send the recipient's right to
  * decide is checked again (curator for a Workspace proposal, project editor or owner or Team admin
- * for a suggestion, Team admin for a Site proposal at step 1, Site admin or steward at step 2); a
- * reminder whose recipient lost it is dropped. A failing team is logged and skipped: the other
+ * for a suggestion, Team admin for a Site proposal at step 1, Site admin or steward at step 2, and the Site proposal must
+ * still wait at that step); a reminder whose recipient lost it is dropped. Site proposal reminders
+ * stay owed, untouched, while a Site-wide legal hold is in force (KOBE-653). A failing team is logged and skipped: the other
  * teams' reminders still go out, and its own on the next pass. Ids and names only, never memory
  * text: the bell links to where the person decides.
  */
@@ -216,10 +218,14 @@ async function assertThread(
 async function mayDecide(
   tx: KobeTx,
   teamId: string,
-  userId: string,
-  about: MemoryPendingKind | null,
-  projectId: string | null,
+  r: {
+    readonly user_id: string;
+    readonly object_id: string;
+    readonly related_kind: MemoryPendingKind | null;
+    readonly project_id: string | null;
+  },
 ): Promise<boolean> {
+  const { user_id: userId, related_kind: about, project_id: projectId } = r;
   const teamAdmin = sql`EXISTS (SELECT 1 FROM team_members
     WHERE team_id = ${teamId} AND user_id = ${userId} AND role = 'team_admin')`;
   let right;
@@ -235,17 +241,35 @@ async function mayDecide(
         WHERE team_id = ${teamId} AND project_id = ${projectId} AND user_id = ${userId}
           AND role IN ('owner', 'editor')))`;
       break;
+    // A Site proposal must also still wait at that step (KOBE-653): a reminder relayed to a Site
+    // curator's own Workspace is not settled by the proposing Workspace's transitions.
     case "memory.site_proposal.received":
     case "memory.site_proposal.changes_requested":
-      right = teamAdmin;
+      right = sql`(${teamAdmin} AND ${siteProposalWaiting(r.object_id, "awaiting_team")})`;
       break;
     case "memory.site_proposal.confirmed":
-      right = siteCurator(userId);
+      right = sql`(${siteCurator(userId)} AND ${siteProposalWaiting(r.object_id, "awaiting_site")})`;
       break;
   }
   const { rows } = await tx.execute<{ ok: boolean }>(sql`SELECT ${right} AS ok`);
   return rows[0]?.ok === true;
 }
+
+/** The Site proposal is open at `step` and not past its 30 days. */
+const siteProposalWaiting = (id: string, step: "awaiting_team" | "awaiting_site") => sql`
+  EXISTS (SELECT 1 FROM site_memory_proposals
+           WHERE id = ${id} AND state = ${step} AND expires_at > now())`;
+
+/** A Site-wide legal hold freezes Site proposals' reminders too (KOBE-653, KOBE-647). */
+export async function siteProposalsFrozen(tx: KobeTx | KobeDb): Promise<boolean> {
+  const { rows } = await tx.execute<{ held: boolean }>(
+    sql`SELECT public.site_legal_hold_active() AS held`,
+  );
+  return rows[0]?.held === true;
+}
+
+const isSiteProposalKind = (k: MemoryPendingKind | null) =>
+  k !== null && k.startsWith("memory.site_proposal.");
 
 async function isActiveMember(tx: KobeTx, teamId: string, userId: string): Promise<boolean> {
   const { rows } = await tx.execute(sql`
@@ -356,10 +380,15 @@ async function sweepTeam(db: KobeDb, teamId: string): Promise<number> {
        ORDER BY due_at LIMIT ${SWEEP_BATCH}
        FOR UPDATE SKIP LOCKED`);
     // By recipient: an overlapping pass takes the per-recipient locks in the same order.
-    const byUser = [...rows].sort((x, y) => x.user_id.localeCompare(y.user_id));
+    const frozen = rows.some((r) => isSiteProposalKind(r.related_kind))
+      ? await siteProposalsFrozen(tx)
+      : false;
+    // Under a Site-wide hold a Site proposal's reminder stays owed, untouched (KOBE-653).
+    const claimed = frozen ? rows.filter((r) => !isSiteProposalKind(r.related_kind)) : rows;
+    const byUser = [...claimed].sort((x, y) => x.user_id.localeCompare(y.user_id));
     const dropped: string[] = [];
     for (const r of byUser) {
-      if (!(await mayDecide(tx, teamId, r.user_id, r.related_kind, r.project_id))) {
+      if (!(await mayDecide(tx, teamId, r))) {
         dropped.push(r.id);
         continue;
       }
@@ -375,7 +404,7 @@ async function sweepTeam(db: KobeDb, teamId: string): Promise<number> {
         ids.map((id) => sql`${id}::uuid`),
         sql`, `,
       );
-    const sent = rows.filter((r) => !dropped.includes(r.id)).map((r) => r.id);
+    const sent = claimed.filter((r) => !dropped.includes(r.id)).map((r) => r.id);
     if (sent.length > 0) {
       await tx.execute(sql`
         UPDATE memory_reminders SET sent_at = now()
@@ -390,10 +419,17 @@ async function sweepTeam(db: KobeDb, teamId: string): Promise<number> {
 }
 
 /**
- * Sends every team's due reminders once; returns how many were sent (or digested). A team whose
- * pass fails is logged and skipped (its reminders stay owed); the others still run.
+ * Sends every team's due reminders once; returns how many were sent (or digested). First relays
+ * Site proposals to Site curators outside the proposing Workspace and re-arms weekly Site proposal
+ * reminders (`site-proposal-relay.ts`, KOBE-653). A team whose pass fails is logged and skipped
+ * (its reminders stay owed); the others still run.
  */
 export async function sweepMemoryReminders(db: KobeDb): Promise<number> {
+  try {
+    await relaySiteProposals(db);
+  } catch (err) {
+    logger.error({ err }, "memory reminders: Site proposal relay failed");
+  }
   const all = await db.select({ id: teams.id }).from(teams);
   let sent = 0;
   for (const { id } of all) {

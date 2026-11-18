@@ -40,6 +40,11 @@ import {
   sweepMemoryLearning,
   type LearningPurgeCounts,
 } from "./memory-learning.js";
+import {
+  NO_SITE_PROPOSAL_SWEEP,
+  sweepSiteProposals,
+  type SiteProposalSweepCounts,
+} from "./site-proposals.js";
 import { readMemorySiteSettings } from "../memory/site-settings.js";
 import { purgeReleasedFeedbackHistory, type FeedbackHistoryCounts } from "./feedback-history.js";
 import { NO_EVAL_CASE_PURGE, purgeEvalCases, type EvalCasePurgeCounts } from "./eval-cases.js";
@@ -87,6 +92,8 @@ import {
  * 10a. expire To review candidates (14 days), Workspace proposals and readers' project suggestions
  *     (30 days, the proposer or reader told once), and purge learning passes past the team's window
  *     (KOBE-651, SM28).
+ * 10b. expire Site memory proposals still open after 30 days (the proposer and the confirming Team
+ *     admin told once; frozen by a Site-wide hold) (KOBE-653, SM22).
  * Every step skips data under legal hold and is audited with counts only (system actor).
  *
  * Every server replica runs the timer; a session-level advisory lock on a dedicated connection
@@ -115,6 +122,8 @@ export interface TeamPassResult {
   readonly semanticMemory: SemanticPurgeCounts;
   /** Learn from this chat records expired or purged (KOBE-651, SM28). */
   readonly memoryLearning: LearningPurgeCounts;
+  /** Site memory proposals of this Workspace expired after 30 days (KOBE-653). */
+  readonly siteProposals: SiteProposalSweepCounts;
   readonly compacted: CompactionCounts;
   /** Project history past the workspace's rule or the hard cap (KOBE-579, GV3). */
   readonly projectHistory: HistoryPruneCounts;
@@ -312,6 +321,11 @@ async function teamPass(
         const cutoff = days === null ? null : new Date(Date.now() - days * 86_400_000);
         return sweepMemoryLearning(db, teamId, cutoff, { stop });
       });
+  const siteProposals = stop()
+    ? NO_SITE_PROPOSAL_SWEEP
+    : await step("site_proposals", NO_SITE_PROPOSAL_SWEEP, () =>
+        sweepSiteProposals(db, teamId, { stop }),
+      );
   const compacted = stop()
     ? { runs: 0, events: 0 }
     : await step("compaction", { runs: 0, events: 0 }, () =>
@@ -406,6 +420,7 @@ async function teamPass(
     memory,
     semanticMemory,
     memoryLearning,
+    siteProposals,
     compacted,
     projectHistory,
     blobs,

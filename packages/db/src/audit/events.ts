@@ -3203,7 +3203,7 @@ export const AUDIT_EVENTS = {
   "memory.site_proposal.decided": event("team", {
     proposalId: id,
     proposerId: id,
-    outcome: z.enum(["approved", "merged", "rejected", "changes_requested"]),
+    outcome: z.enum(["approved", "merged", "rejected", "changes_requested", "expired"]),
     round: count,
     itemId: id.nullable(),
     version: version.nullable(),

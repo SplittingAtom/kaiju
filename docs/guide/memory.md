@@ -571,7 +571,8 @@ it is unavailable, search uses word matching alone and nothing else changes.
 A site admin can place a **Site-wide legal hold** under **Site console › Legal hold** (a second
 site admin approves, as for any legal hold). While it is in force, no Site memory and no earlier
 version of one is deleted: editing a Site memory past the versions-kept limit keeps every version,
-and Site memory cleanup skips it. Changes to a Site memory's kind, tags, Policy flag or as-of date
+and Site memory cleanup skips it. Site memory proposals stay as they are: none expires and their
+reminders pause until the hold is released. Changes to a Site memory's kind, tags, Policy flag or as-of date
 are still allowed, and the site audit log records the earlier and new kind, Policy flag and
 as-of date, and for tags a count and a fingerprint (not the tags themselves). A hold on one person also keeps every version of the Site memories that person wrote, for as long
 as it lasts (edits still work; nothing of those memories is pruned or cleaned up). A hold on a whole
@@ -600,6 +601,10 @@ archived for you. What goes, and when:
   workspace keeps conversations forever). When a conversation is deleted for good, its learning
   passes, suggestions, dismissals and suggestions for project notes go with it; a Workspace proposal
   stays with its statement and note, without the quotes.
+- **Site memory proposals.** A proposal to the Site that is still waiting (for the workspace's
+  Team admin, for the Site's curators, or for changes the Site asked for) expires 30 days after it
+  was made; sending it back for changes does not restart the clock. The person who proposed it and
+  the Team admin who confirmed it each get one notification when it expires.
 - **Leaving a workspace.** Your own memories in a workspace are deleted 30 days after you leave it
   (or after your account is deactivated); coming back within the 30 days keeps them, and leaving again later starts a new 30 days. Workspace and
   Site memories you wrote stay (once you are removed from the workspace, they show as written by a former member). Leaving a workspace changes
@@ -616,7 +621,9 @@ archived for you. What goes, and when:
   every workspace and the ones that follow them), what Learn from this chat kept for them (nothing
   of theirs expires while it lasts) and the Site memories they wrote; a hold on a
   workspace keeps that workspace's memories, its Learn from this chat records and the memories that follow each of its members; a
-  Site-wide hold keeps Site memories and every memory that follows a person.
+  Site-wide hold keeps Site memories and every memory that follows a person. Site memory proposals
+  don't expire while a Site-wide hold is in force (their weekly reminders pause too), or while a
+  hold covers the person who proposed them.
 
 ## What Kobe checks before a memory is saved
 
@@ -682,13 +689,17 @@ when it is your turn. Each notification has a button that opens the place where 
 - **Your proposal or suggestion was accepted, dismissed or sent back for changes**, naming who
   decided, or **expired** undecided (a Workspace proposal opens **Your Workspace proposals** on
   **My memory**). A Site proposal also tells the Site's curators when its Team
-  admin **confirmed** it.
+  admin **confirmed** it. A Site admin or Site memory steward who is not a member of the proposing
+  workspace gets that notification, and its reminders, in their own workspace (the one they last
+  used) within about 15 minutes; one who belongs to no workspace sees it only in Site memory.
 - **Memories to review**: Kobe found things to remember in a conversation while you were
   elsewhere ("3 memories to review"); **Open To review** opens that conversation's
   [To review](#to-review) section. When To review opened by itself, the notification is already
   read.
 - **A memory is 80% full**: Workspace or Site memory is close to its limit (to its curators).
-- **A reminder**: something you review has waited a week. Each waiting item reminds you once.
+- **A reminder**: something you review has waited a week. Each waiting item reminds you once; a
+  Site memory proposal reminds the people at its current step (the workspace's Team admins, then
+  the Site's admins and memory stewards) every week until that step is over.
 - **A digest**: more than five notifications of one kind within an hour are rolled into one item
   ("4 more Workspace memory proposals in the last hour"); the first five arrive one by one. The
   digest becomes unread again when it grows.
