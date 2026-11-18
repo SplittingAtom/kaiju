@@ -9,6 +9,11 @@ import {
   type SavedCandidate,
 } from "../../../lib/memory/review-api";
 import { createProposalsApi, type ProposalsApi } from "../../../lib/memory/proposals-api";
+import {
+  createSiteProposalsApi,
+  describeSiteChecks,
+  type SiteProposalsApi,
+} from "../../../lib/memory/site-proposals-api";
 import { visible } from "../../../lib/security/visible";
 import { InlineLink } from "../../shell/text-links";
 import { Button, Notice, Section } from "../../ui/console";
@@ -38,6 +43,7 @@ export function ReviewSection({
   threadId,
   api: givenApi,
   proposalsApi,
+  siteProposalsApi,
   autoFocus = false,
   seams,
   notesApi: givenNotesApi,
@@ -47,6 +53,8 @@ export function ReviewSection({
   readonly threadId: string | undefined;
   readonly api?: ReviewApi;
   readonly proposalsApi?: Pick<ProposalsApi, "propose">;
+  /** Propose… → Site (KOBE-404); defaults to the real client. */
+  readonly siteProposalsApi?: Pick<SiteProposalsApi, "proposeCandidate">;
   readonly autoFocus?: boolean;
   readonly seams?: CardSeams | undefined;
   /** Add to project notes (KOBE-398); defaults to the real client. */
@@ -67,6 +75,10 @@ export function ReviewSection({
   const proposals = useMemo(
     () => proposalsApi ?? createProposalsApi(teamId),
     [proposalsApi, teamId],
+  );
+  const siteProposals = useMemo(
+    () => siteProposalsApi ?? createSiteProposalsApi(teamId),
+    [siteProposalsApi, teamId],
   );
   const [proposed, setProposed] = useState<string | null>(null);
   const [list, setList] = useState<ReviewList | null>(null);
@@ -233,6 +245,19 @@ export function ReviewSection({
                     drop([done.id]);
                     setProposed(
                       "Proposed to the Workspace's curators. You'll hear when they decide.",
+                    );
+                  },
+                },
+                proposeSite: {
+                  api: siteProposals,
+                  onProposed: (done, res) => {
+                    drop([done.id]);
+                    const checks = describeSiteChecks(res.checks);
+                    setProposed(
+                      (res.proposal.state === "awaiting_site"
+                        ? "Proposed to the Site. You're a Team admin, so it went straight to the Site's curators; you'll hear when they decide."
+                        : "Proposed to the Site. A Team admin confirms it first; you'll hear when the Site decides.") +
+                        (checks ? ` ${checks}` : ""),
                     );
                   },
                 },

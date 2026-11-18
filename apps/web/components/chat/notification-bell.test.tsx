@@ -395,4 +395,49 @@ describe("a memory notification (KOBE-645)", () => {
       expect(onOpenLink).toHaveBeenCalledWith(`/admin/team/memory?proposal=${P}`),
     );
   });
+
+  // KOBE-404: `confirmed` reaches the Site's curators and the proposer; each opens their own page.
+  it.each([
+    ["a Site steward", { site_role: null, site_grants: ["memory_steward"] }, "/admin/site/memory"],
+    ["the proposer (a member)", { site_role: null, site_grants: [] }, "/me/memory"],
+  ])("links a confirmed Site proposal for %s to a page they can open", async (_who, me, path) => {
+    const P = "00000000-0000-4000-8000-00000000d002";
+    stubApi({
+      [COUNT]: [200, page([], 1)],
+      [ALL]: [
+        200,
+        page(
+          [
+            note(N1, {
+              kind: "memory.site_proposal.confirmed",
+              schedule_id: null,
+              thread_id: null,
+              run_id: null,
+              memory_object_id: P,
+              actor_name: "Ann",
+            }),
+          ],
+          1,
+        ),
+      ],
+      [MINE]: [200, schedules],
+      [READ]: [200, { updated: 1, unread_count: 0 }],
+      "GET /v1/me": [200, { user: { id: "u1", name: "U", email: "u@x.io" }, ...me }],
+      "GET /v1/team": [
+        200,
+        { team: { id: "t-1", slug: "t", name: "T" }, role: "member", permissions: [] },
+      ],
+    });
+    const onOpenLink = vi.fn();
+    render(
+      <IconActionProvider>
+        <NotificationBell teamId="t-1" onOpenThread={vi.fn()} onOpenLink={onOpenLink} />
+      </IconActionProvider>,
+    );
+    await userEvent.click(await bell());
+    const panel = await screen.findByRole("region", { name: "Notifications" });
+    const label = path === "/me/memory" ? /Open My memory/ : /Open the Site proposal/;
+    await userEvent.click(await within(panel).findByRole("button", { name: label }));
+    await waitFor(() => expect(onOpenLink).toHaveBeenCalledWith(`${path}?site_proposal=${P}`));
+  });
 });

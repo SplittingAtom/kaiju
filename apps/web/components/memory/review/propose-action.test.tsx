@@ -91,11 +91,14 @@ describe("Propose…", () => {
     expect(screen.getByRole("heading", { name: "We deploy from main" })).toBeTruthy();
   });
 
-  it("isn't offered to curators: they save to the Workspace directly", async () => {
+  it("isn't offered to curators: they save to the Workspace directly (the Site stays)", async () => {
     const { review, proposals } = apis(true);
     render(<ReviewSection teamId="t1" threadId={THREAD} api={review} proposalsApi={proposals} />);
     await screen.findByRole("heading", { name: "We deploy from main" });
-    expect(screen.queryByRole("button", { name: "Propose…" })).toBeNull();
+    // KOBE-404: Propose… stays for the Site only.
+    await userEvent.click(screen.getByRole("button", { name: "Propose…" }));
+    expect(screen.queryByRole("radio", { name: "This Workspace's curators" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Send to curators" })).toBeNull();
     expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(
       false,
     );

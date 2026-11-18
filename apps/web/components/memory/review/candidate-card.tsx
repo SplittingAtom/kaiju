@@ -9,12 +9,13 @@ import type {
   SavedCandidate,
 } from "../../../lib/memory/review-api";
 import type { ProposalsApi, Proposed } from "../../../lib/memory/proposals-api";
+import type { SiteProposalsApi, SiteProposed } from "../../../lib/memory/site-proposals-api";
 import { visible } from "../../../lib/security/visible";
 import { Button, Card, Checkbox, ChoiceGroup, Radio, useConfirm } from "../../ui/console";
 import { CheckProblem, useCheckedSave } from "../item-checks";
 import { DraftFields, draftError, type Draft } from "../item-fields";
 import { CandidateContext, CandidateLabels, CandidateWhy } from "./candidate-details";
-import { ProposeAction } from "./propose-action";
+import { ProposeAction, siteRefusal } from "./propose-action";
 import { SCOPE_LABELS } from "./labels";
 
 /** Actions later tickets plug in beside Save (absent: not offered). */
@@ -23,6 +24,14 @@ export interface CardSeams {
   readonly propose?: {
     readonly api: Pick<ProposalsApi, "propose">;
     readonly onProposed: (candidate: Candidate, proposed: Proposed) => void;
+  };
+  /**
+   * Propose… → Site (KOBE-404): offered to everyone; disabled with the reason for inferred
+   * candidates and for anything but a new shareable memory.
+   */
+  readonly proposeSite?: {
+    readonly api: Pick<SiteProposalsApi, "proposeCandidate">;
+    readonly onProposed: (candidate: Candidate, proposed: SiteProposed) => void;
   };
   /**
    * The project action in a project thread (KOBE-398: Add to project notes; readers' Suggest to
@@ -231,16 +240,31 @@ export function CandidateCard({
         >
           Save
         </Button>
-        {curatorOnly && seams?.propose && (
-          <ProposeAction
-            candidateId={candidate.id}
-            original={candidate}
-            draft={draft}
-            api={seams.propose.api}
-            disabled={busy}
-            onProposed={(p) => seams.propose?.onProposed(candidate, p)}
-          />
-        )}
+        <ProposeAction
+          candidateId={candidate.id}
+          original={candidate}
+          draft={draft}
+          disabled={busy}
+          targets={{
+            ...(curatorOnly && seams?.propose
+              ? {
+                  workspace: {
+                    api: seams.propose.api,
+                    onProposed: (p) => seams.propose?.onProposed(candidate, p),
+                  },
+                }
+              : {}),
+            ...(seams?.proposeSite
+              ? {
+                  site: {
+                    api: seams.proposeSite.api,
+                    refusal: siteRefusal(candidate),
+                    onProposed: (p) => seams.proposeSite?.onProposed(candidate, p),
+                  },
+                }
+              : {}),
+          }}
+        />
         {seams?.projectNotes?.(candidate, draft.statement, draft.kind)}
         <Button variant="ghost" aria-expanded={editing} onClick={() => setEditing((v) => !v)}>
           {editing ? "Done editing" : "Edit"}

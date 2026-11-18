@@ -8,6 +8,7 @@ import { useTeamAccess } from "../admin/console-context";
 import { MemoryPanel } from "../memory/memory-panel";
 import { MyMemories } from "../memory/my-memories";
 import { MyProposals } from "../memory/proposals/my-proposals";
+import { MySiteProposals } from "../memory/site-proposals/my-site-proposals";
 import { ReviewSection } from "../memory/review/review-section";
 import { SuggestionsReview } from "../memory/suggestions/suggestions-review";
 import { lastThreadId } from "../../lib/shell/last-thread";
@@ -35,7 +36,8 @@ function showInUrl(projectId: string | null): void {
  * tabs name its parts (no second title, KOBE-384 review M5).
  */
 export function MyMemoryPage() {
-  const teamId = useTeamAccess().team.id;
+  const access = useTeamAccess();
+  const teamId = access.team.id;
   const [tab, setTab] = useState<MemoryTab>(() => memoryTabOf(window.location.search));
   // `?review=1`: opened for a finished learning pass (KOBE-396); To review takes focus.
   // `?tab=review` (KOBE-395's Review N candidates and /learn) does the same.
@@ -48,6 +50,11 @@ export function MyMemoryPage() {
   // `?proposal=<uuid>`: the bell's outcome of a Workspace proposal (KOBE-397).
   const [proposal] = useState(() => {
     const id = new URLSearchParams(window.location.search).get("proposal");
+    return id !== null && isUuid(id) ? id.toLowerCase() : null;
+  });
+  // `?site_proposal=<uuid>`: the bell's notice about one of your Site proposals (KOBE-404).
+  const [siteProposal] = useState(() => {
+    const id = new URLSearchParams(window.location.search).get("site_proposal");
     return id !== null && isUuid(id) ? id.toLowerCase() : null;
   });
   const [projectId, setProjectId] = useState(projectFromLocation);
@@ -73,6 +80,7 @@ export function MyMemoryPage() {
         <TabsContent value="memories" forceMount hidden={tab !== "memories"}>
           <ReviewSection teamId={teamId} threadId={reviewThread} autoFocus={forReview} />
           <MyProposals teamId={teamId} focusId={proposal} />
+          <MySiteProposals teamId={teamId} userId={access.user.id} focusId={siteProposal} />
           {/* Readers' suggestions for the notes of projects the person decides (KOBE-652). */}
           <SuggestionsReview teamId={teamId} />
           <MyMemories teamId={teamId} />
