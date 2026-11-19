@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { SHELL_TIMEOUT_MS } from "./support/constants.js";
 import { panelOf } from "./support/panel.js";
 
@@ -16,6 +16,16 @@ const TEAM_KEYS = ["enabled_tools", "exposure", "id", "name", "slug"];
 async function badgeNames(scope: Locator): Promise<string[]> {
   const badges = scope.locator("button[data-kobe-app-badge]");
   return badges.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") ?? ""));
+}
+
+/** Tab from the page start until `target` has focus (a real keyboard path, not `.focus()`). */
+async function tabTo(page: Page, target: Locator): Promise<void> {
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  for (let i = 0; i < 200; i++) {
+    await page.keyboard.press("Tab");
+    if (await target.evaluate((el) => el === document.activeElement)) return;
+  }
+  throw new Error("Tab never reached the target");
 }
 
 /** The tools of one column: its own list, so other lists in the card never count. */
@@ -48,10 +58,20 @@ test("team Connectors: tools in Read only and Write columns, MCP-UI badges (KOBE
   const names = await badgeNames(card);
   expect(names.length).toBeGreaterThan(0);
   for (const n of names) expect(n).toMatch(UI_NAME);
-  // The badge's tooltip opens on hover (its accessible name, checked above, carries the same text
-  // for screen readers). On gate1 it did not open on keyboard focus: KOBE-654.
-  await card.locator("button[data-kobe-app-badge]").first().hover();
+  // The badge's tooltip opens on hover and on keyboard focus (Tab, which also scrolls it into view;
+  // Radix closes a tooltip on scroll, so this guards KOBE-654), and Escape closes it.
+  const badge = card.locator("button[data-kobe-app-badge]").first();
+  await badge.hover();
   await expect(page.getByRole("tooltip").first()).toContainText("Opens an app: ui://");
+  // Leaving closes it. Move in steps, as a real pointer does: Radix keeps a hoverable tooltip open
+  // while the pointer is in the grace area between trigger and content (WCAG 1.4.13), and a
+  // single jump leaves it there until the next pointermove.
+  await page.mouse.move(0, 0, { steps: 5 });
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  await tabTo(page, badge);
+  await expect(page.getByRole("tooltip").first()).toContainText("Opens an app: ui://");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
 
   // Narrow: the columns stack, Write below Read only.
   await page.setViewportSize({ width: 600, height: 900 });

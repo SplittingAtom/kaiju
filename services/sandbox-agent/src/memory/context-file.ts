@@ -102,13 +102,17 @@ export class MemoryContextFile {
     return this.#written;
   }
 
-  async verify(): Promise<boolean> {
-    await this.#chain;
-    if (this.#writtenText === undefined) return false;
-    try {
-      return (await readFile(this.path, "utf8")) === this.#writtenText;
-    } catch {
-      return false;
-    }
+  /** The tripwire, queued with the writes (KOBE-607: a mid-run rewrite is no false tamper). */
+  verify(): Promise<boolean> {
+    const result = this.#chain.then(async () => {
+      if (this.#writtenText === undefined) return false;
+      try {
+        return (await readFile(this.path, "utf8")) === this.#writtenText;
+      } catch {
+        return false;
+      }
+    });
+    this.#chain = result.catch(() => undefined);
+    return result;
   }
 }

@@ -30,11 +30,14 @@ import { threads } from "./threads.js";
 // FORCE RLS, the canonical policy); RLS, the candidate ref's SET NULL (column) key and the
 // legal-hold guards are SQL-only (custom migration `*_memory_project_suggestions_rls.sql`).
 
+// `expired`: no decision within 30 days (the KOBE-651 sweep); `stale`: its thread left the project
+// first, so it no longer applies (PE5; apart from `expired` since KOBE-668).
 export const MEMORY_SUGGESTION_STATE_VALUES = [
   "pending",
   "approved",
   "dismissed",
   "expired",
+  "stale",
 ] as const;
 export type MemorySuggestionState = (typeof MEMORY_SUGGESTION_STATE_VALUES)[number];
 
@@ -60,8 +63,8 @@ const userRef = () => uuid().references(() => users.id);
  * (column)`), and one candidate is suggested at most once. Goes with its thread (the quotes come
  * from it, SM28) and its project. An editor, owner or Team admin approves or dismisses it
  * (`decided_by`, `decided_at`, an optional `reason` on a dismissal); a pending suggestion expires
- * after 30 days, or when its thread leaves the project (PE5), with `decided_at` set and no
- * decider.
+ * after 30 days, or goes stale when its thread leaves the project first (PE5), with `decided_at`
+ * set and no decider.
  */
 export const memoryProjectSuggestions = pgTable(
   "memory_project_suggestions",
@@ -129,7 +132,7 @@ export const memoryProjectSuggestions = pgTable(
       "memory_project_suggestions_evidence",
       sql`jsonb_typeof(${t.evidence}) = 'array' AND jsonb_array_length(${t.evidence}) BETWEEN 1 AND ${n(MEMORY_SUGGESTION_EVIDENCE_MAX)} AND octet_length(${t.evidence}::text) <= ${n(SEMANTIC_MEMORY_EVIDENCE_MAX_BYTES)}`,
     ),
-    // Pending <-> undecided; approved and dismissed name the decider; expired has none.
+    // Pending <-> undecided; approved and dismissed name the decider; expired and stale have none.
     check(
       "memory_project_suggestions_decided",
       sql`(${t.state} = 'pending') = (${t.decidedAt} IS NULL) AND (${t.state} IN ('approved', 'dismissed')) = (${t.decidedBy} IS NOT NULL)`,

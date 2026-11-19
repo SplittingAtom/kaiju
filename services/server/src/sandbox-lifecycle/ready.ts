@@ -10,6 +10,13 @@ import { SandboxWakeError } from "../sandbox-wire/types.js";
 export const WORKSPACE_UNAVAILABLE_MESSAGE =
   "Your workspace could not be started because the cluster could not provide it. Ask your site admin to check the cluster, then try again.";
 
+/**
+ * What a member sees when their sandbox's pod ended (evicted, killed) and the wake's one
+ * replacement did not come up either (KOBE-636). Same text as `FAILURE_MESSAGES.sandbox_failed`.
+ */
+export const SANDBOX_FAILED_MESSAGE =
+  "Your sandbox stopped (it may have run out of temporary space or memory) and could not be restarted. Your files in /workspace are kept. Send your message again; if this keeps happening, ask your site admin.";
+
 /** What a site admin can do, by cause; appended to the audit detail (docs/install.md). */
 export const REMEDY: Readonly<Record<StallDiagnosis["cause"], string>> = {
   volume_unschedulable:
@@ -18,6 +25,8 @@ export const REMEDY: Readonly<Record<StallDiagnosis["cause"], string>> = {
     "Remedy: check the Longhorn volume and node; if the workspace never ran, delete its PVC by hand (docs/install.md)",
   scheduling: "Remedy: add node capacity or check taints and quotas",
   image_pull: "Remedy: check the sandbox image tag, registry and pull secrets",
+  pod_failed:
+    "Remedy: an eviction for the home or tmp emptyDir means raise sandbox.homeSize or sandbox.tmpSize; the next message replaces the pod again",
   unknown: "Remedy: kubectl describe the sandbox pod in the team namespace",
 };
 
@@ -41,7 +50,8 @@ export interface EnsureReadyOptions {
 /**
  * Waits for the woken sandbox pod to be Ready. If it is not (a definite unrecoverable signal, or
  * the wake budget ran out), records why for site admins and fails the wake with
- * `workspace_unavailable`. Nothing is ever deleted here: the remedy is the admin to apply.
+ * `workspace_unavailable` (`sandbox_failed` when the pod ended: KOBE-636). Nothing is ever deleted
+ * here: replacing an ended pod is the wake's, once (`wakeSandbox`), and the rest the admin's.
  */
 export async function ensureReady(options: EnsureReadyOptions): Promise<void> {
   const { provider, team, userId, log } = options;
@@ -61,5 +71,8 @@ export async function ensureReady(options: EnsureReadyOptions): Promise<void> {
     "sandbox not ready: failing the wake",
   );
   await options.onStalled(report).catch((err: unknown) => log.error({ err }, "audit failed"));
+  if (report.stall.cause === "pod_failed") {
+    throw new SandboxWakeError("sandbox_failed", SANDBOX_FAILED_MESSAGE);
+  }
   throw new SandboxWakeError("workspace_unavailable", WORKSPACE_UNAVAILABLE_MESSAGE);
 }

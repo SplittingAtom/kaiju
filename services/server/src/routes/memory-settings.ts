@@ -173,12 +173,13 @@ export function memorySettingsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
     });
     if ("ok" in out) return c.json({ code: out.code, message: out.message }, 400);
     if (embeddingChanged) {
-      // A new model re-embeds in the background, paid by this admin in their current Workspace
-      // (keyword search meanwhile); without one they start it from the Site memory page.
+      // A new model re-embeds every Workspace in the background (keyword search meanwhile), paid
+      // by this admin in their current Workspace, or without one by each Workspace (KOBE-669).
+      // A build already running (here or on another replica) is left to finish.
       deps.memoryEmbeddings.invalidate();
       if (out.settings.embedding_model !== null) {
         const teamId = await adminWorkspace(deps, c);
-        if (teamId !== null) await deps.memoryVectors.start({ userId: c.get("user").id, teamId });
+        await deps.memoryVectors.start({ userId: c.get("user").id, teamId });
       }
     }
     return c.json(out);

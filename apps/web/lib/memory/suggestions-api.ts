@@ -10,7 +10,11 @@ import { apiRequest, type ApiResult } from "../api/client";
 import type { ItemKind } from "./items-api";
 import type { NotesPreview } from "./project-notes-api";
 
-export type SuggestionState = "pending" | "approved" | "dismissed" | "expired";
+/**
+ * `expired`: no decision within 30 days; `stale`: its conversation left the project first, so it
+ * no longer applies (KOBE-668).
+ */
+export type SuggestionState = "pending" | "approved" | "dismissed" | "expired" | "stale";
 
 export interface Suggestion {
   readonly id: string;

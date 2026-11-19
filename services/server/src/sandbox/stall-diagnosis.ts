@@ -1,3 +1,4 @@
+import { podTermination } from "./pod-termination.js";
 import { judgeScheduling } from "./scheduling-message.js";
 import type { KubeClient } from "./kube.js";
 import type { KubeObject } from "./manifests.js";
@@ -14,6 +15,8 @@ export type StallCause =
   | "volume_attach"
   | "scheduling"
   | "image_pull"
+  /** The pod ended (evicted, killed: phase Failed or Succeeded); it will never become Ready. */
+  | "pod_failed"
   | "unknown";
 
 export interface StallDiagnosis {
@@ -119,6 +122,12 @@ export function classifyStall(input: {
     ...(volumePhase ? { volumePhase } : {}),
   });
 
+  // An ended pod never becomes Ready (KOBE-636): say so at once, in the kubelet's words.
+  const ended = podTermination(pod);
+  if (ended) {
+    const why = [ended.reason, ended.message].filter((p) => p !== "").join(": ");
+    return make("pod_failed", `pod ${ended.phase}${why ? `: ${why}` : ""}`, true);
+  }
   // Longhorn's replica scheduling (FailedAttachVolume etc.); the scheduler's own words below.
   const replica = events.find(
     (e) => e.reason !== "FailedScheduling" && VOLUME_SCHEDULING.test(`${e.reason} ${e.message}`),

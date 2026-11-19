@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { semanticMemoryKindSchema, type SemanticMemoryKind } from "@kobe/protocol";
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KobeTx, type MemorySuggestionState } from "@kobe/db";
 import { notifyMemoryAll, settleMemoryReminders } from "../../notifications/memory.js";
 import { MemoryItemError } from "../items/errors.js";
 
@@ -25,7 +25,7 @@ export interface SuggestionRow {
   readonly evidence: SuggestionEvidence;
   readonly suggestedBy: string;
   readonly suggesterName: string;
-  readonly state: "pending" | "approved" | "dismissed" | "expired";
+  readonly state: MemorySuggestionState;
   readonly reason: string | null;
   readonly createdAt: string;
   readonly expiresAt: string;
@@ -167,8 +167,9 @@ export async function decidersOf(tx: KobeTx, teamId: string, projectId: string):
 
 /**
  * PE5: pending suggestions of `threadId` (or of the whole Workspace) whose thread is no longer in
- * their project expire now: their reminders are settled and each suggester is told. Call it last
- * in the transaction (it notifies). Returns the ids it staled.
+ * their project go `stale` now (KOBE-668; `expired` is only the 30-day sweep): their reminders are
+ * settled and each suggester is told (`memory.suggestion.stale`). Call it last in the transaction
+ * (it notifies). Returns the ids it staled.
  */
 export async function staleMovedSuggestions(
   tx: KobeTx,
@@ -177,7 +178,7 @@ export async function staleMovedSuggestions(
 ): Promise<string[]> {
   const thread = threadId === undefined ? sql`` : sql`AND s.thread_id = ${threadId}`;
   const { rows } = await tx.execute<{ id: string; project_id: string; suggested_by: string }>(sql`
-    UPDATE memory_project_suggestions s SET state = 'expired', decided_at = now()
+    UPDATE memory_project_suggestions s SET state = 'stale', decided_at = now()
       FROM threads t
      WHERE s.team_id = ${teamId} AND t.team_id = s.team_id AND t.id = s.thread_id
        AND s.state = 'pending' AND t.project_id IS DISTINCT FROM s.project_id ${thread}
@@ -189,7 +190,7 @@ export async function staleMovedSuggestions(
     teamId,
     rows.map((r) => ({
       recipients: [r.suggested_by],
-      notice: { kind: "memory.suggestion.expired", objectId: r.id, projectId: r.project_id },
+      notice: { kind: "memory.suggestion.stale", objectId: r.id, projectId: r.project_id },
     })),
   );
   return rows.map((r) => r.id);

@@ -101,12 +101,13 @@ describe("threadHeader title (KOBE-219 review L3)", () => {
 });
 
 describe("MCP Apps context in exports (KOBE-439 ac-3)", () => {
-  it("keeps the fenced, untrusted block of a sent message", async () => {
-    const { withAppContext } = await import("../apps/context-block.js");
-    const text = withAppContext(
-      [{ connectorName: "Catalyst", data: { structuredContent: { table: "c.n.t" } } }],
-      "What is in it?",
-    );
+  it("keeps the fenced, untrusted block of a sent message", () => {
+    // A literal block in the shape withAppContext produces (covered in apps/context-block.test.ts).
+    // Importing that module here pulls in the whole catalog/run graph (~3 s cold, which hit the
+    // 5 s test timeout under load, KOBE-655), and this test only needs the text to survive export.
+    const text =
+      '<app-context source="connector:Catalyst" untrusted="true">\n' +
+      '{"structuredContent":{"table":"c.n.t"}}\n</app-context>\n\nWhat is in it?';
     const md = entryMarkdown({ type: "message", message: { role: "user", content: text } });
     expect(md).toContain('<app-context source="connector:Catalyst" untrusted="true">');
     expect(md).toContain("What is in it?");

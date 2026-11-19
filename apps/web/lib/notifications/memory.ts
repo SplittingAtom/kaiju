@@ -58,6 +58,7 @@ function linkOf(
     case "memory.suggestion.accepted":
     case "memory.suggestion.dismissed":
     case "memory.suggestion.expired":
+    case "memory.suggestion.stale":
       return projectId
         ? {
             href: withParam(MEMORY_PAGES.project(projectId), "suggestion", objectId),
@@ -133,6 +134,7 @@ const PLURAL: Partial<Record<NotificationKind, string>> = {
   "memory.proposal.changes_requested": "Workspace memory proposals sent back for changes",
   "memory.proposal.expired": "expired Workspace memory proposals",
   "memory.suggestion.expired": "expired project note suggestions",
+  "memory.suggestion.stale": "project note suggestions whose conversation left the project",
   "memory.site_proposal.confirmed": "confirmed Site memory proposals",
   "memory.site_proposal.changes_requested": "Site memory proposals sent back for changes",
   "memory.site_proposal.expired": "expired Site memory proposals",
@@ -179,7 +181,9 @@ export function memoryNotificationTitle(n: KobeNotification): string | null {
     case "memory.proposal.expired":
       return "Your Workspace memory proposal expired undecided";
     case "memory.suggestion.expired":
-      return "Your project note suggestion expired undecided";
+      return "Your project note suggestion expired undecided after 30 days";
+    case "memory.suggestion.stale":
+      return "Your project note suggestion closed: its conversation left the project";
     case "memory.site_proposal.confirmed":
       return `${who("A Team admin")} confirmed a Site memory proposal`;
     case "memory.site_proposal.changes_requested":

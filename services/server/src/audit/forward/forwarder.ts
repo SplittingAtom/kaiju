@@ -1,5 +1,6 @@
 import { listAuditEvents, type KobeDb } from "@kobe/db";
 import type { ReconcileLock } from "../../sandbox/reconcile-lock.js";
+import { siteViewEvent } from "../site-view.js";
 import { redactForwardingError } from "./redact.js";
 import { auditHeadSeq, initialState, readState, writeState, type ForwardState } from "./state.js";
 import type { AuditSink } from "./types.js";
@@ -49,6 +50,13 @@ function describe(err: unknown, secrets: readonly string[]): string {
  * one. A failure doubles the wait before the next attempt (5 s to 15 min); the state is the admin
  * health view. A destination enabled for the first time starts at the current head: the past is
  * available through the export.
+ *
+ * What leaves the box is the Site view (KOBE-676, Gate 7 answer 1; SM20): a Workspace event
+ * (`teamId` set) is forwarded with the target keys `/v1/site/audit` shows ({@link siteViewEvent},
+ * one source of truth), Site-level events as stored. Nothing is signed here: `hash` and `prevHash`
+ * are the stored row's chain values, so the chain links and the anchored head still check in the
+ * SIEM, but a Workspace row's hash is recomputed only from the stored row
+ * (`GET /v1/site/audit/integrity`); the full record is the Workspace's own audit log.
  */
 export class AuditForwarder {
   private timer: ReturnType<typeof setInterval> | undefined;
@@ -87,7 +95,7 @@ export class AuditForwarder {
       const last = page.events.at(-1);
       if (!last) return;
       try {
-        await sink.send(page.events);
+        await sink.send(page.events.map(siteViewEvent));
       } catch (err) {
         await this.fail(sink, state, err);
         return;

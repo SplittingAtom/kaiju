@@ -7,11 +7,31 @@ import { panelOf } from "./support/panel.js";
  * has Memory › Learn from this chat and Rescan the whole chat, each either ready or disabled with
  * the reason (the switches, the learning model or the budget decide on the install). When Learn
  * can run, it starts a pass: the + shows the spinner, and the pass ends with what it found or why
- * it stopped; when it found something, To review opens by itself over the chat (KOBE-396, KOBE-661). `/learn` is offered in the / menu and the ? sheet lists Mod+Shift+L. Light and dark
- * screenshots of the Memory submenu are attached. Spends one short model turn and at most one
- * learning pass.
+ * it stopped; when it found something, To review opens by itself over the chat (KOBE-396,
+ * KOBE-661). The message carries a preference new to the member, so a pass finds a candidate and
+ * To review's branch runs every time (KOBE-663). `/learn` is offered in the / menu and the ? sheet
+ * lists Mod+Shift+L. Light and dark screenshots of the Memory submenu are attached. Spends one
+ * short model turn and at most one learning pass.
  */
 const PASS_TIMEOUT_MS = 180_000;
+/** The notice once the pass has ended: what it found, or why it stopped. */
+const PASS_ENDED = /Kobe found|Try again|budget|turned off|isn't enabled/;
+/** The pass left candidates in To review (`use-learn.ts`), so To review opens by itself. */
+const FOUND_SOMETHING = /Kobe found (1 thing|\d+ things) to review/;
+
+/**
+ * A preference this member has not taught Kobe yet, so every run's pass finds a new candidate and
+ * exercises To review opening by itself (a fixed sentence is learned once, and later passes find
+ * nothing new). Candidates left in To review go with the thread, which the fixture moves to Trash.
+ */
+function freshPreference(): string {
+  const teas = ["jasmine", "oolong", "sencha", "rooibos", "assam", "darjeeling", "hojicha"];
+  const n = Date.now();
+  const tea = teas[n % teas.length] ?? "green";
+  const minutes = 2 + (Math.floor(n / 7) % 8);
+  const seconds = 10 + (Math.floor(n / 56) % 50);
+  return `I prefer my ${tea} tea steeped for exactly ${minutes} minutes and ${seconds} seconds.`;
+}
 
 async function shoot(page: Page, name: string, target: Locator): Promise<void> {
   for (const theme of ["light", "dark"] as const) {
@@ -36,7 +56,7 @@ async function openMemory(page: Page): Promise<Locator> {
 
 test("Learn from this chat in the + menu, /learn and the ? sheet", async ({ chat, page }) => {
   await chat.open();
-  await chat.ask("No tools. Reply with the single word ALPHA. I prefer metric units.");
+  await chat.ask(`No tools. Reply with the single word ALPHA. ${freshPreference()}`);
   await chat.waitForIdle();
 
   const sub = await openMemory(page);
@@ -57,26 +77,27 @@ test("Learn from this chat in the + menu, /learn and the ? sheet", async ({ chat
     await expect(plus).toHaveAttribute("data-kobe-learn-state", "spinner");
     const notice = page.locator("[data-kobe-learn-notice]");
     await expect(notice).toContainText("Kobe is learning from this chat");
-    // The pass ends one of two ways (KOBE-661). Candidates found while this chat is on screen open
-    // To review by itself (KOBE-396): a modal panel, the chat inert behind it, so the + leaves the
-    // accessibility tree. Otherwise the + settles and the notice says how it went.
+    // The pass ends with the notice saying how it went (KOBE-661). When it found something, To
+    // review opens by itself over the chat (KOBE-396): a modal panel, the chat inert behind it, so
+    // the + leaves the accessibility tree. The panel arrives a moment after the + settles and the
+    // notice changes (the router loads the Memory page first), so the found sentence, not the +,
+    // decides whether to wait for it (KOBE-663).
     const panel = panelOf(page);
+    let outcome = "";
     await expect(async () => {
-      if (await panel.isVisible()) return;
-      expect(await plus.getAttribute("data-kobe-learn-state", { timeout: 1_000 })).not.toBe(
-        "spinner",
-      );
+      outcome = (await notice.textContent({ timeout: 1_000 })) ?? "";
+      expect(outcome).toMatch(PASS_ENDED);
     }).toPass({ timeout: PASS_TIMEOUT_MS });
-    if (await panel.isVisible()) {
+    test.info().annotations.push({ type: "learn", description: outcome });
+    if (FOUND_SOMETHING.test(outcome)) {
+      await expect(panel).toBeVisible();
       await expect(page).toHaveURL(/\/me\/memory\?review=1/);
-      await panel
-        .getByRole("button", { name: /^Close / })
-        .first()
-        .click();
+      await panel.getByRole("button", { name: "Close My memory", exact: true }).click();
       await expect(panel).toBeHidden();
       await expect(plus).toHaveAttribute("data-kobe-learn-state", "count");
     } else {
-      await expect(notice).toHaveText(/Kobe found|Try again|budget|turned off|isn't enabled/);
+      await expect(panel).toBeHidden();
+      await expect(plus).not.toHaveAttribute("data-kobe-learn-state", "spinner");
     }
   }
 

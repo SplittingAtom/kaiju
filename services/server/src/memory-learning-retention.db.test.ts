@@ -346,9 +346,17 @@ describe("suggestion expiry (ac-1, ac-2)", () => {
        VALUES ($1, $2, 'memory.suggestion.received', $3, $4, now() + interval '1 day')`,
       [team, due, ids.owner, project],
     );
+    // Staled when its thread moved (KOBE-668): already closed, the sweep leaves it alone.
+    const stale = await suggestion(ids.bob, t, -1);
+    await h.admin.query(
+      `UPDATE memory_project_suggestions SET state = 'stale', decided_at = $2 WHERE id = $1`,
+      [stale, ago(5)],
+    );
     await pass();
     expect(await stateOf("memory_project_suggestions", due)).toBe("expired");
     expect(await stateOf("memory_project_suggestions", fresh)).toBe("pending");
+    expect(await stateOf("memory_project_suggestions", stale)).toBe("stale");
+    expect(await notices(ids.bob, stale)).toEqual([]);
     expect(await notices(ids.bob, due)).toEqual([
       { kind: "memory.suggestion.expired", project_id: project },
     ]);
@@ -399,6 +407,172 @@ describe("pass purge (ac-1)", () => {
     await pass();
     for (const kept of [proposed, suggested, held])
       expect(await exists("memory_learning_passes", kept)).toBe(true);
+  });
+});
+
+describe("decided proposals and suggestions (KOBE-671)", () => {
+  /** Decide a pending row `days` ago; approved/rejected/dismissed carry a decider, expired none. */
+  async function decide(
+    table: "memory_proposals" | "memory_project_suggestions",
+    id: string,
+    state: string,
+    decider: string | null,
+    days: number,
+  ): Promise<void> {
+    await h.admin.query(
+      `UPDATE ${table} SET state = $2, decided_by = $3, decided_at = $4 WHERE id = $1`,
+      [id, state, decider, ago(days)],
+    );
+  }
+
+  /** A proposal of an existing item (not from a pass). */
+  async function itemProposal(proposer: string): Promise<string> {
+    const { rows } = await h.admin.query<{ id: string }>(
+      `INSERT INTO memory_proposals (team_id, source, statement, kind, proposer_id)
+       VALUES ($1, 'item', 'Use pnpm.', 'convention', $2) RETURNING id`,
+      [team, proposer],
+    );
+    return rows[0]?.id ?? "";
+  }
+
+  async function bell(object: string, kind: string, projectId: string | null): Promise<void> {
+    await h.admin.query(
+      `INSERT INTO notifications (team_id, user_id, kind, memory_object_id, project_id, actor_user_id)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [team, ids.alice, kind, object, projectId, ids.curator],
+    );
+  }
+
+  const summed = async () => {
+    const rows = await audits("retention.memory_learning_purged");
+    const sum = (k: string) => rows.reduce((n, r) => n + Number(r[k] ?? 0), 0);
+    return { passes: sum("passes"), proposals: sum("proposals"), suggestions: sum("suggestions") };
+  };
+
+  it("purges decided ones with their pass past the window, and pass-less ones by decision date (ac-1)", async () => {
+    await setPeriod("30d");
+    const t = await thread(ids.alice);
+    const old = await learningPass(ids.alice, t, 40);
+    const approved = await proposal(ids.alice, 5, await candidate(old, -26, "proposed"));
+    await decide("memory_proposals", approved, "approved", ids.curator, 5);
+    const expired = await proposal(ids.alice, 5, await candidate(old, -26, "proposed"));
+    await decide("memory_proposals", expired, "expired", null, 2);
+    const dismissed = await suggestion(ids.alice, t, 5, await candidate(old, -26, "suggested"));
+    await decide("memory_project_suggestions", dismissed, "dismissed", ids.owner, 3);
+    await bell(approved, "memory.proposal.accepted", null);
+    await bell(dismissed, "memory.suggestion.dismissed", project);
+    // A recent pass keeps its decided proposal, however old the decision.
+    const recent = await learningPass(ids.alice, t, 10);
+    const keptWithPass = await proposal(ids.alice, 5, await candidate(recent, -1, "proposed"));
+    await decide("memory_proposals", keptWithPass, "rejected", ids.curator, 9);
+    // Not from a pass: counted from the decision date.
+    const oldItem = await itemProposal(ids.alice);
+    await decide("memory_proposals", oldItem, "rejected", ids.curator, 31);
+    const newItem = await itemProposal(ids.alice);
+    await decide("memory_proposals", newItem, "approved", ids.curator, 29);
+    const pendingItem = await itemProposal(ids.alice);
+    await h.admin.query(`UPDATE memory_proposals SET created_at = $2 WHERE id = $1`, [
+      pendingItem,
+      ago(40),
+    ]);
+    const oldLoose = await suggestion(ids.alice, t, 5);
+    await decide("memory_project_suggestions", oldLoose, "approved", ids.owner, 45);
+    const newLoose = await suggestion(ids.alice, t, 5);
+    await decide("memory_project_suggestions", newLoose, "expired", null, 20);
+    const pendingLoose = await suggestion(ids.alice, t, 5);
+    // Staled ones (KOBE-668) are decided too: with their pass, or by decision date.
+    const staleWithPass = await suggestion(ids.alice, t, 5, await candidate(old, -26, "suggested"));
+    await decide("memory_project_suggestions", staleWithPass, "stale", null, 3);
+    const oldStale = await suggestion(ids.alice, t, 5);
+    await decide("memory_project_suggestions", oldStale, "stale", null, 45);
+    const newStale = await suggestion(ids.alice, t, 5);
+    await decide("memory_project_suggestions", newStale, "stale", null, 20);
+
+    await pass();
+    expect(await exists("memory_learning_passes", old)).toBe(false);
+    for (const gone of [approved, expired, oldItem])
+      expect(await exists("memory_proposals", gone)).toBe(false);
+    for (const gone of [dismissed, oldLoose, staleWithPass, oldStale])
+      expect(await exists("memory_project_suggestions", gone)).toBe(false);
+    expect(
+      await countWhere("notifications", "memory_object_id = ANY($1)", [[approved, dismissed]]),
+    ).toBe(0);
+    expect(await exists("memory_learning_passes", recent)).toBe(true);
+    for (const kept of [keptWithPass, newItem, pendingItem])
+      expect(await exists("memory_proposals", kept)).toBe(true);
+    for (const kept of [newLoose, pendingLoose, newStale])
+      expect(await exists("memory_project_suggestions", kept)).toBe(true);
+    expect(await summed()).toEqual({ passes: 1, proposals: 3, suggestions: 4 });
+    // Nothing more on a second run.
+    const before = (await audits("retention.memory_learning_purged")).length;
+    await pass();
+    expect(await audits("retention.memory_learning_purged")).toHaveLength(before);
+  });
+
+  it("purges nothing while the Workspace keeps forever (ac-2)", async () => {
+    const t = await thread(ids.alice);
+    const old = await learningPass(ids.alice, t, 400);
+    const prop = await proposal(ids.alice, 5, await candidate(old, -26, "proposed"));
+    await decide("memory_proposals", prop, "approved", ids.curator, 390);
+    const item = await itemProposal(ids.alice);
+    await decide("memory_proposals", item, "rejected", ids.curator, 390);
+    const loose = await suggestion(ids.alice, t, 5);
+    await decide("memory_project_suggestions", loose, "dismissed", ids.owner, 390);
+    await pass();
+    expect(await exists("memory_learning_passes", old)).toBe(true);
+    expect(await exists("memory_proposals", prop)).toBe(true);
+    expect(await exists("memory_proposals", item)).toBe(true);
+    expect(await exists("memory_project_suggestions", loose)).toBe(true);
+  });
+
+  it("keeps everything a held proposer, decider or reader is part of, with its pass (ac-2)", async () => {
+    await setPeriod("30d");
+    const ta = await thread(ids.alice);
+    // Held proposer (Bob) on Alice's pass: the pass and the proposal stay.
+    const byBob = await learningPass(ids.alice, ta, 40);
+    const bobProp = await proposal(ids.bob, 5, await candidate(byBob, -26, "proposed"));
+    await decide("memory_proposals", bobProp, "rejected", ids.curator, 35);
+    const bobItem = await itemProposal(ids.bob);
+    await decide("memory_proposals", bobItem, "approved", ids.curator, 35);
+    // Held reader (Bob) on Alice's pass.
+    const byReader = await learningPass(ids.alice, ta, 40);
+    const bobSugg = await suggestion(ids.bob, ta, 5, await candidate(byReader, -26, "suggested"));
+    await decide("memory_project_suggestions", bobSugg, "dismissed", ids.owner, 35);
+    // Held decider (Carol) on Alice's proposals and suggestion.
+    const byCarol = await learningPass(ids.alice, ta, 40);
+    const carolProp = await proposal(ids.alice, 5, await candidate(byCarol, -26, "proposed"));
+    await decide("memory_proposals", carolProp, "approved", ids.carol, 35);
+    const carolItem = await itemProposal(ids.alice);
+    await decide("memory_proposals", carolItem, "rejected", ids.carol, 35);
+    const carolLoose = await suggestion(ids.alice, ta, 5);
+    await decide("memory_project_suggestions", carolLoose, "approved", ids.carol, 35);
+    // Nobody held: goes.
+    const free = await itemProposal(ids.alice);
+    await decide("memory_proposals", free, "rejected", ids.curator, 35);
+    await placeHold(ids.bob);
+    await placeHold(ids.carol);
+    await pass();
+    for (const kept of [byBob, byReader, byCarol])
+      expect(await exists("memory_learning_passes", kept)).toBe(true);
+    for (const kept of [bobProp, bobItem, carolProp, carolItem])
+      expect(await exists("memory_proposals", kept)).toBe(true);
+    for (const kept of [bobSugg, carolLoose])
+      expect(await exists("memory_project_suggestions", kept)).toBe(true);
+    expect(await exists("memory_proposals", free)).toBe(false);
+    // A Workspace-wide hold keeps the rest; released, everything goes.
+    await clearHolds();
+    await placeHold(null);
+    await pass();
+    expect(await exists("memory_proposals", bobItem)).toBe(true);
+    expect(await exists("memory_learning_passes", byBob)).toBe(true);
+    await clearHolds();
+    await pass();
+    for (const gone of [byBob, byReader, byCarol])
+      expect(await exists("memory_learning_passes", gone)).toBe(false);
+    for (const gone of [bobProp, bobItem, carolProp, carolItem])
+      expect(await exists("memory_proposals", gone)).toBe(false);
+    for (const gone of [bobSugg, carolLoose])
+      expect(await exists("memory_project_suggestions", gone)).toBe(false);
   });
 });
 

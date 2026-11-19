@@ -1,13 +1,18 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam, type AuditEntry } from "@kobe/db";
 import { generateSessionKeyPair } from "@kobe/session-token";
+import { AUDIT_FORWARD_LOCK, AuditForwarder } from "./audit/forward/forwarder.js";
+import { exportLogsRequest } from "./audit/forward/otlp.js";
+import { initialState, writeState } from "./audit/forward/state.js";
+import { formatSyslogMessage } from "./audit/forward/syslog.js";
 import { appendRunEvents } from "./event-stream/append.js";
 import { routeCaller } from "./kobe-mcp/execute.js";
 import { siteMemoryItemGet, siteMemoryItemsList } from "./kobe-mcp/tools/memory-items.js";
 import type { KobeTool } from "./kobe-mcp/catalog.js";
 import { buildRunSemantic, queryWords, readRecallRows } from "./memory/items/run-memory.js";
 import { sweepMemoryReminders } from "./notifications/memory.js";
+import { createPgReconcileLock } from "./sandbox/reconcile-lock.js";
 import type { TestBrowser } from "./testing/browser.js";
 import { must } from "./testing/event-stream-fixture.js";
 import { openHarness, type Harness } from "./testing/harness.js";
@@ -29,7 +34,7 @@ import {
  * must hold no canary and no thread-derived field: the `site_memory%` rows, the Site console and
  * Workspace proposal APIs, provenance, item detail and run context for non-curators, the admin MCP
  * Site memory tools (KOBE-650), the Site export, notifications (rows, digest, reminders, bell API,
- * mail) and the audit entries of these flows. Only the confirmed statements and justifications
+ * mail), the audit entries of these flows, the Site audit view and SIEM forwarding (KOBE-676). Only the confirmed statements and justifications
  * (canary-free) cross. ac-2: a corrupted row and an injected field are caught.
  */
 let h: Harness;
@@ -393,21 +398,67 @@ async function collect(w: World): Promise<SiteWallProbe> {
   );
   noCandidates.add("db:audit.workspace.created", created, { allowFields: ["candidateId"] });
   createdLeaks = noCandidates.leaks();
-  const apiAudit = (await get("siteAdmin", "/v1/site/audit?limit=200")) as {
-    events: { action: string; teamId: string | null }[];
-  };
-  // The site log API lists every Workspace's events too (D6); these flows' entries are the Site
-  // log's memory events and the Workspace log's Site proposal events (as above).
+  // The Site audit view (KOBE-666, Gate C decision 3): every page of `/v1/site/audit` and its
+  // export, every event (the Site log's and every Workspace's, any action), with nothing allowed:
+  // Workspace events show only allow-listed metadata (`audit/site-view.ts`).
+  const apiAudit: { action: string; teamId: string | null }[] = [];
+  for (let before: string | null = null, n = 0; n < 50; n++) {
+    const page = (await get(
+      "siteAdmin",
+      `/v1/site/audit?limit=200${before ? `&before=${before}` : ""}`,
+    )) as { events: { action: string; teamId: string | null }[]; nextCursor: string | null };
+    apiAudit.push(...page.events);
+    before = page.nextCursor;
+    if (before === null) break;
+  }
+  expect(apiAudit.some((e) => e.action === "memory.pass.completed")).toBe(true);
+  probe.add("api:siteAdmin:site.audit", apiAudit);
+  for (const format of ["jsonl", "csv"] as const) {
+    const r = await as.siteAdmin.get(`/v1/site/audit/export?format=${format}`);
+    expect(r.status, r.text).toBe(200);
+    // JSONL as objects too, so a forbidden field (not only a canary) is named.
+    const rows =
+      format === "jsonl"
+        ? r.text
+            .trim()
+            .split("\n")
+            .map((l) => JSON.parse(l))
+        : [];
+    probe.add(`api:siteAdmin:site.audit.export.${format}`, format === "jsonl" ? rows : r.text);
+  }
+  // SIEM forwarding (KOBE-676, Gate 7 answer 1) leaves the box in the same Site view: every event
+  // from seq 0 through the real forwarder into a fake sink; the probe reads the events and both
+  // wire formats (RFC 5424 messages, the OTLP request).
+  const forwarded = await forwardEverything();
+  expect(forwarded.some((e) => e.action === "memory.pass.completed")).toBe(true);
+  probe.add("siem:events", forwarded);
   probe.add(
-    "api:siteAdmin:site.audit",
-    apiAudit.events.filter((e) =>
-      e.teamId === null
-        ? e.action.startsWith("memory.")
-        : e.action.startsWith("memory.site_proposal.") &&
-          e.action !== "memory.site_proposal.created",
-    ),
+    "siem:syslog",
+    forwarded.map((e) => formatSyslogMessage(e)),
   );
+  probe.add("siem:otlp", exportLogsRequest(forwarded));
   return probe;
+}
+
+/** Every audit event as the SIEM forwarder hands it to a destination (fake sink, cursor at 0). */
+async function forwardEverything(): Promise<AuditEntry[]> {
+  const { db, pool } = h.deps.database;
+  await writeState(db, "syslog", initialState(0));
+  const sent: AuditEntry[] = [];
+  const errors: object[] = [];
+  const forwarder = new AuditForwarder({
+    db,
+    sinks: [{ name: "syslog", send: async (events) => void sent.push(...events) }],
+    lock: createPgReconcileLock(pool, undefined, `${AUDIT_FORWARD_LOCK}.wall-probe`),
+    log: { warn: (o) => void errors.push(o), error: (o) => void errors.push(o) },
+  });
+  for (let before = -1; before !== sent.length;) {
+    before = sent.length;
+    await forwarder.runOnce();
+  }
+  expect(errors).toEqual([]);
+  expect(sent.length).toBeGreaterThan(0);
+  return sent;
 }
 let createdLeaks: Leak[] = [];
 
@@ -527,6 +578,18 @@ describe("the Site wall (KOBE-406)", () => {
     expect(probe.containing(JUSTIFICATION)).toContain("db:site_memory_proposals");
     expect(probe.containing("memory.site_proposal.confirmed")).toContain("db:notifications");
     expect(probe.containing("memory.site_proposal.accepted")).toContain("db:audit.site");
+    // The Site audit view lists the Workspace's events too (D6), only without thread-derived ids.
+    for (const surface of [
+      "api:siteAdmin:site.audit",
+      "api:siteAdmin:site.audit.export.jsonl",
+      "api:siteAdmin:site.audit.export.csv",
+      "siem:events",
+      "siem:syslog",
+      "siem:otlp",
+    ]) {
+      expect(probe.containing("memory.site_proposal.created"), surface).toContain(surface);
+      expect(probe.containing("memory.pass.completed"), surface).toContain(surface);
+    }
   });
 });
 

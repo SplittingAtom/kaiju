@@ -79,6 +79,16 @@ describe("runPhase and steeringMode", () => {
     expect(steeringMode(early, phase)).toBe("active");
   });
 
+  it("says why a sandbox whose pod ended is restarting, and that My files are kept (KOBE-636)", () => {
+    expect(phaseText({ kind: "waking", reason: "restarted_out_of_space" })).toMatch(
+      /ran out of temporary space and is restarting\. My files are kept/,
+    );
+    expect(phaseText({ kind: "waking", reason: "restarted_out_of_memory" })).toMatch(
+      /ran out of memory/,
+    );
+    expect(phaseText({ kind: "waking", reason: "restarted" })).toMatch(/stopped and is restarting/);
+  });
+
   it("finishing on budget wins over tools and thinking", () => {
     const busy = running({ tools: { a: tool({ call: call("bash") }) } });
     expect(runPhase(busy, true)).toEqual({ kind: "budget" });

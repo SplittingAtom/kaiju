@@ -15,11 +15,12 @@ import { useMutation, type ResourceState } from "../use-resource";
  * Site console › Settings › Memory: search by meaning (KOBE-409). Says why memory search is
  * keyword-only when it is (no pgvector, pgvector not enabled, no embedding model, its provider
  * gone, no model gateway) and what to do; shows how many memories have a vector of the current
- * model and offers Build vectors / Re-embed (paid by the admin in their active workspace).
+ * model and offers Build vectors / Re-embed for every workspace (paid by the admin in their active
+ * workspace, or without one by each workspace, KOBE-669).
  */
 
 const STOP_REASONS: Readonly<Record<string, string>> = {
-  budget: "your workspace reached 100% of a budget line",
+  budget: "a paying workspace reached 100% of a budget line (the other workspaces were built)",
   model_changed: "the embedding model changed",
   no_client: "the model gateway is not configured",
 };
@@ -96,7 +97,8 @@ export function MemoryVectorsSection({
   const usable = notice === null;
   const coverage = v.coverage;
   const job = v.job;
-  const running = job?.state === "running";
+  const elsewhere = job?.state !== "running" && v.runningElsewhere === true;
+  const running = job?.state === "running" || elsewhere;
 
   async function build() {
     const done = await mutation.run(
@@ -117,8 +119,11 @@ export function MemoryVectorsSection({
             " The rest are found by word matching until they are embedded."}
         </p>
       )}
-      {job && running && <p role="status">Building vectors: {job.embedded} embedded so far.</p>}
-      {job && job.state === "stopped" && (
+      {job && running && !elsewhere && (
+        <p role="status">Building vectors: {job.embedded} embedded so far.</p>
+      )}
+      {elsewhere && <p role="status">Building vectors on another server replica.</p>}
+      {job && !elsewhere && job.state === "stopped" && (
         <Notice tone="warn" title="Building vectors stopped">
           <p>
             {job.embedded} embedded before it stopped: {stopText(job)}. Start it again when that is
@@ -143,8 +148,10 @@ export function MemoryVectorsSection({
       <p className="text-sm text-console-muted">
         Embedding calls are paid by whoever causes them: the person saving a memory (in the
         workspace they act in), the member whose message is searched, and you for Build vectors (in
-        your active workspace). A workspace at 100% of a budget line gets no vectors; its memories
-        stay on word matching.
+        your active workspace). Build vectors covers every workspace: with no active workspace, each
+        workspace pays for its own memories (you when you are a member, else its first team admin)
+        and the site&apos;s and portable memories are paid in the workspace you joined first. A
+        workspace at 100% of a budget line gets no vectors; its memories stay on word matching.
       </p>
       <MutationStatus error={mutation.error} notice={mutation.notice} />
     </section>

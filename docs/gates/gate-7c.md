@@ -63,7 +63,8 @@ No thread-derived text crosses to the Site (SM20): only the confirmed statement 
   (selector and recall) of a member's run; admin MCP `site_memory_items_list` /
   `site_memory_item_get` (KOBE-650) through the executor's delegated route call; the Site memory
   export (JSON and CSV, inactive included); notifications (rows, digest, swept reminders, email
-  rows, the bell API, mail sent); audit entries of these flows (rows and `/v1/site/audit`).
+  rows, the bell API, mail sent); audit entries of these flows (rows); since KOBE-666 every page
+  of `/v1/site/audit` and its JSONL and CSV export, every event, with nothing allowed.
 - **Mutation check (ac-2):** the same test corrupts one proposal row (rationale appended) and one
   Site version (evidence quote appended) and asserts the probe reports each read path that shows
   them; a detector test injects an `evidence` field into a view.

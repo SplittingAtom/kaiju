@@ -23,6 +23,14 @@ import { uniqueWords } from "./support/unique.js";
  */
 const SECOND_USER = process.env["KOBE_USER2"];
 const SECOND_PW = process.env["KOBE_PW2"];
+/**
+ * KOBE_USER3/KOBE_PW3 (optional, k3d's Gate 7): another Team admin of the workspace who confirms
+ * at step 1. Nobody decides a proposal they confirmed, so on a site whose only Site curator is
+ * KOBE_USER a second person must confirm; without it KOBE_USER confirms (another Site curator
+ * must then decide).
+ */
+const THIRD_USER = process.env["KOBE_USER3"];
+const THIRD_PW = process.env["KOBE_PW3"];
 const TEAM_KEY = "kobe.lastTeamId";
 const PASS_TIMEOUT_MS = 180_000;
 /** The parts of member2's question that are not the fact: never shown to the Site. */
@@ -39,13 +47,17 @@ async function shoot(page: Page, name: string, target: Locator): Promise<void> {
   await page.evaluate(() => delete document.documentElement.dataset.theme);
 }
 
-/** member2, signed in in a fresh context (no saved session), in the pinned team. */
-async function signInSecond(browser: Browser): Promise<Page> {
+/** member2 (or another user), signed in in a fresh context (no saved session), in the pinned team. */
+async function signInSecond(
+  browser: Browser,
+  email = SECOND_USER,
+  password = SECOND_PW,
+): Promise<Page> {
   const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
   const page = await context.newPage();
   await page.goto("/sign-in");
-  await page.getByLabel("Email").fill(SECOND_USER ?? "");
-  await page.getByLabel("Password").fill(SECOND_PW ?? "");
+  await page.getByLabel("Email").fill(email ?? "");
+  await page.getByLabel("Password").fill(password ?? "");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL((url) => !url.pathname.startsWith("/sign-in"), {
     timeout: SHELL_TIMEOUT_MS,
@@ -187,6 +199,8 @@ test("a member's fact goes to the Site: propose, confirm, request changes, appro
 
   const member = await signInSecond(browser);
   const memberChat = new Chat(member);
+  const confirmer =
+    THIRD_USER && THIRD_PW ? await signInSecond(browser, THIRD_USER, THIRD_PW) : page;
   let approved = false;
   try {
     // 1. member2: the fact in a conversation, Learn, Propose… › The Site.
@@ -217,13 +231,13 @@ test("a member's fact goes to the Site: propose, confirm, request changes, appro
     await expect(mine).toHaveCount(1, { timeout: SHELL_TIMEOUT_MS });
     await expect(mine).toContainText("A Team admin confirms it before it goes to the Site.");
 
-    // 2. owner: To the Site lists it with the justification; Edit and confirm.
+    // 2. the confirmer (KOBE_USER3, else the owner): To the Site lists it with the justification; Edit and confirm.
     const confirmed = `${proposed} (confirmed)`;
-    let tab = await toTheSite(page);
+    let tab = await toTheSite(confirmer);
     let waiting = waitingCard(tab, first);
     await expect(waiting).toHaveCount(1, { timeout: SHELL_TIMEOUT_MS });
     await expect(waiting).toContainText(justification);
-    await shoot(page, "to-the-site", tab);
+    await shoot(confirmer, "to-the-site", tab);
     await waiting.getByRole("button", { name: "Edit and confirm…" }).click();
     await waiting.getByLabel(/^Statement/).fill(confirmed);
     await waiting.getByRole("button", { name: "Confirm edited" }).click();
@@ -252,8 +266,8 @@ test("a member's fact goes to the Site: propose, confirm, request changes, appro
       timeout: SHELL_TIMEOUT_MS,
     });
 
-    // 4. owner: back on To the Site with the note and the round; Confirm again.
-    tab = await toTheSite(page);
+    // 4. the confirmer: back on To the Site with the note and the round; Confirm again.
+    tab = await toTheSite(confirmer);
     waiting = waitingCard(tab, first);
     await expect(waiting).toHaveCount(1, { timeout: SHELL_TIMEOUT_MS });
     await expect(waiting).toContainText(changesNote);
@@ -324,5 +338,6 @@ test("a member's fact goes to the Site: propose, confirm, request changes, appro
     }
     await memberChat.trashAll();
     await member.context().close();
+    if (confirmer !== page) await confirmer.context().close();
   }
 });

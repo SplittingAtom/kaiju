@@ -70,7 +70,8 @@ type SuggestionKind =
   | "memory.suggestion.received"
   | "memory.suggestion.accepted"
   | "memory.suggestion.dismissed"
-  | "memory.suggestion.expired";
+  | "memory.suggestion.expired"
+  | "memory.suggestion.stale";
 
 /** What to tell: each kind with exactly the fields it names (the DB check mirrors this). */
 export type MemoryNotice =
@@ -248,7 +249,8 @@ async function mayDecide(
       right = sql`(${teamAdmin} AND ${siteProposalWaiting(r.object_id, "awaiting_team")})`;
       break;
     case "memory.site_proposal.confirmed":
-      right = sql`(${siteCurator(userId)} AND ${siteProposalWaiting(r.object_id, "awaiting_site")})`;
+      right = sql`(${siteCurator(userId)} AND ${siteProposalWaiting(r.object_id, "awaiting_site")}
+        AND NOT ${siteProposalBarred(r.object_id, userId)})`;
       break;
   }
   const { rows } = await tx.execute<{ ok: boolean }>(sql`SELECT ${right} AS ok`);
@@ -259,6 +261,19 @@ async function mayDecide(
 const siteProposalWaiting = (id: string, step: "awaiting_team" | "awaiting_site") => sql`
   EXISTS (SELECT 1 FROM site_memory_proposals
            WHERE id = ${id} AND state = ${step} AND expires_at > now())`;
+
+/**
+ * The person proposed the Site proposal or confirmed it as a Team admin in any round (KOBE-666):
+ * they may not decide it at step 2, so they are owed no reminder for it.
+ */
+const siteProposalBarred = (id: string, userId: string) => sql`
+  EXISTS (SELECT 1 FROM site_memory_proposals p
+           WHERE p.id = ${id}
+             AND (p.proposer_id = ${userId} OR p.team_confirmed_by = ${userId}
+                  OR EXISTS (SELECT 1 FROM audit_log a
+                              WHERE a.action = 'memory.site_proposal.confirmed'
+                                AND a.team_id = p.from_team_id AND a.actor_id = ${userId}
+                                AND a.target ->> 'proposalId' = p.id::text)))`;
 
 /** A Site-wide legal hold freezes Site proposals' reminders too (KOBE-653, KOBE-647). */
 export async function siteProposalsFrozen(tx: KobeTx | KobeDb): Promise<boolean> {
@@ -420,8 +435,8 @@ async function sweepTeam(db: KobeDb, teamId: string): Promise<number> {
 
 /**
  * Sends every team's due reminders once; returns how many were sent (or digested). First relays
- * Site proposals to Site curators outside the proposing Workspace and re-arms weekly Site proposal
- * reminders (`site-proposal-relay.ts`, KOBE-653). A team whose pass fails is logged and skipped
+ * Site proposals to Site curators outside the proposing Workspace (`site-proposal-relay.ts`,
+ * KOBE-653; one reminder per step, KOBE-666). A team whose pass fails is logged and skipped
  * (its reminders stay owed); the others still run.
  */
 export async function sweepMemoryReminders(db: KobeDb): Promise<number> {

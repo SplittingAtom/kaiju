@@ -218,7 +218,9 @@ async function runInBackground(
 /** The member sees the server's own message for these; anything else is `start_failed`. */
 function failureCode(outcome: Extract<CommandOutcome, { ok: false }>): string {
   const code = outcome.error.code;
-  return code === "timeout" || code === "workspace_unavailable" ? code : "start_failed";
+  return code === "timeout" || code === "workspace_unavailable" || code === "sandbox_failed"
+    ? code
+    : "start_failed";
 }
 
 /** Interrupt or restart the thread's kernel (NB7); never wakes a sandbox. */

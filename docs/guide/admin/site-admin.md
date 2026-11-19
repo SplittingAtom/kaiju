@@ -50,7 +50,9 @@ read a person's portable preferences either; reading them needs its own break-gl
 
 ## Teams and agents
 
-- **Teams**: create teams (workspaces) with their first team admin and rename them. **Manage
+- **Teams**: create teams (workspaces) with their first team admin and rename them (Kobe has no
+  way to delete a workspace; see [Legal hold on Site memory](../memory.md#legal-hold-on-site-memory)
+  for what a deletion would have to respect). **Manage
   members** opens a team's members: name, email, team role, how they joined (invitation, site
   admin, or "Managed by _provider_" for single sign-on) and whether the account is active. From
   there you can:
@@ -103,7 +105,11 @@ read a person's portable preferences either; reading them needs its own break-gl
 
 ## Governance
 
-- **Audit log**: the site-wide, append-only audit log.
+- **Audit log**: the site-wide, append-only audit log. A workspace's events show here without
+  anything that points into its conversations (thread, message, run, learning pass, candidate,
+  tool call or approval ids, thread folder names, and the "via agent" line); the workspace's own
+  audit log (Team console › **Audit view**) keeps them. The same holds for the export and for
+  audit forwarding. A short note above the events says so.
 - **Usage and spend**: spend by team, user, agent and model, and the site budget every team's
   spend counts against.
 - **Retention maximum**: the longest retention any team may choose.
@@ -170,14 +176,18 @@ read a person's portable preferences either; reading them needs its own break-gl
   nothing. See [Memory](../memory.md#switches-that-control-memory). The **embedding model**
   (search by meaning) sends every run message (up to 4,000 characters) and every saved memory to
   its provider, and **Build vectors** sends the memories of every workspace, every member's portable
-  memories and the Site's, charged to you in your active workspace: choose a provider your
+  memories and the Site's (saving a new model starts it too, whether or not you have an active
+  workspace), charged to you in your active workspace or, with none, to each workspace for its own
+  memories: choose a provider your
   organization may send that to (the in-cluster model keeps it in your cluster). See
   [Search by meaning](../memory.md#search-by-meaning). The **Kobe connector** setting is **Off**, **Docs only** (the
   default) or **Docs and admin tools**; see below.
 - **Isolation**: whether agents can run. Kobe refuses to run agents unless the cluster offers a
   gVisor or Kata sandbox runtime; this page shows the check and how to fix it.
 - **Backup and restore**: how to back up and restore the site, and the last restore.
-- **Audit forwarding**: whether audit events reach your security monitoring system.
+- **Audit forwarding**: whether audit events reach your security monitoring system (SIEM).
+  Workspace events are forwarded with the same Site-safe details as the Audit log; site events
+  as recorded.
 
 ## From a conversation
 

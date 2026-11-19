@@ -99,6 +99,8 @@ export interface MemoryVectors {
   readonly providers: readonly string[];
   readonly coverage: { readonly embedded: number; readonly total: number } | null;
   readonly job: MemoryVectorJob | null;
+  /** Another server replica runs the Site-wide build (KOBE-669). */
+  readonly runningElsewhere?: boolean;
 }
 
 export const getMemoryVectors = (): Promise<ApiResult<MemoryVectors>> =>

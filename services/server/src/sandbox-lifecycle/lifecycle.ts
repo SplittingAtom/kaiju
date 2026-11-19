@@ -16,6 +16,7 @@ import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { IsolationRuntimeMissingError } from "../isolation/gate.js";
 import { logger as rootLogger } from "../logger.js";
 import type { TeamRef } from "../sandbox/manifests.js";
+import type { PodTermination } from "../sandbox/pod-termination.js";
 import { workspacePvcName, type SandboxProvider } from "../sandbox/provider.js";
 import { notifyHintInTx } from "../sandbox-wire/bus.js";
 import { SandboxWakeError, type SandboxTarget, type SandboxWaker } from "../sandbox-wire/types.js";
@@ -85,6 +86,8 @@ export interface LifecycleMetrics {
   wakeFailures: number;
   /** Wakes that failed because the pod was not Ready within the wake timeout (KOBE-192). */
   stalledWakes: number;
+  /** Wakes that replaced an ended (evicted, killed) pod (KOBE-636). */
+  restarted: number;
   /** Latest wake durations (ms), newest last; bounded. */
   readonly wakeMs: number[];
 }
@@ -110,7 +113,15 @@ export interface SandboxLifecycle {
 
 const WAKE_SAMPLES = 64;
 
-type WakingReason = "hibernated" | "first_start";
+type WakingReason =
+  "hibernated" | "first_start" | "restarted_out_of_space" | "restarted_out_of_memory" | "restarted";
+
+/** What the member is told while an ended pod is replaced (KOBE-636), by its cause. */
+const RESTART_REASON: Readonly<Record<PodTermination["cause"], WakingReason>> = {
+  out_of_space: "restarted_out_of_space",
+  out_of_memory: "restarted_out_of_memory",
+  stopped: "restarted",
+};
 
 interface InflightWake {
   readonly runs: Set<string>;
@@ -128,6 +139,7 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
     woken: 0,
     wakeFailures: 0,
     stalledWakes: 0,
+    restarted: 0,
     wakeMs: [],
   };
   /** One wake per sandbox per process; runs that joined it get its `sandbox.waking` too. */
@@ -216,6 +228,34 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
     });
   };
 
+  /**
+   * The wake replaced an ended pod (KOBE-636; audited by the provider as `sandbox.restarted`): log
+   * the kubelet's reason for admins and tell the waiting runs why in plain words.
+   */
+  const announceRestart = async (
+    target: SandboxTarget,
+    sandboxId: string,
+    entry: InflightWake,
+    ended: PodTermination,
+  ): Promise<void> => {
+    metrics.restarted += 1;
+    log.warn(
+      {
+        team_id: target.teamId,
+        user_id: target.userId,
+        sandbox_id: sandboxId,
+        cause: ended.cause,
+        pod_phase: ended.phase,
+        pod_reason: ended.reason,
+        pod_message: ended.message,
+      },
+      "sandbox pod had ended: replaced it",
+    );
+    const reason = RESTART_REASON[ended.cause];
+    entry.reason = reason;
+    await Promise.all([...entry.runs].map((runId) => announce(target, runId, reason)));
+  };
+
   const wakeOnce = async (target: SandboxTarget, entry: InflightWake): Promise<void> => {
     const started = Date.now();
     await assertAllowed(target);
@@ -249,6 +289,7 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
       throw err;
     }
     const { handle, resumed } = result;
+    if (result.replaced) await announceRestart(target, handle.sandboxId, entry, result.replaced);
     const claimedMs = Date.now();
     await waitUntilReady(team, target, started);
     recordWakeSpans(

@@ -64,6 +64,22 @@ Past either limit, new attachments, My files backups and project commits are ref
 message that the workspace's storage quota (or object budget) is full. Nothing already stored is
 removed. Free space by deleting files, dropping project history, or asking a team admin.
 
+## Sandbox temporary space
+
+Besides My files, each sandbox has two small scratch areas that are emptied whenever the sandbox
+sleeps or restarts:
+
+- **Home folder** (`$HOME`, `/home/kobe`): **1 GiB** by default.
+- **`/tmp`**: **2 GiB** by default.
+
+Your site admin can change both (chart values `sandbox.homeSize` and `sandbox.tmpSize`). If either
+fills up, Kubernetes stops the sandbox; Kobe starts a fresh one on your next message and tells you
+it "ran out of temporary space". My files are never affected. Packages installed with a plain
+`pip install` and npm's download cache go to the home folder, so ask the agent to install packages
+inside My files instead (for example a Python virtual environment in `/workspace/.venv`): they then
+survive sleep, and the backup skips them (`.venv`, `node_modules` and `__pycache__` folders are not
+copied).
+
 ## Where your files are stored
 
 - **My files** live on your sandbox's own disk volume while you work, with the backup copy in the

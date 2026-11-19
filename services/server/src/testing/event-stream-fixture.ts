@@ -31,6 +31,9 @@ export interface Person {
 
 export type ReplicaTuning = NonNullable<ServerDepsOptions["eventStream"]>;
 
+/** Sandbox upgrade attempts a test file may make (see setup). */
+const TEST_UPGRADE_LIMIT = { upgradeBurst: 1_000, upgradeRatePerSec: 100 } as const;
+
 /**
  * Several server "replicas" (independent deps + app, each with its own LISTEN connection and
  * pool) on one throwaway database, plus helpers to create people, teams, threads and runs.
@@ -48,8 +51,16 @@ export class EventStreamFixture {
     this.admin = new pg.Client({ connectionString: this.database.adminUrl });
     await this.admin.connect();
     this.replicas = tunings.map((eventStream, i) => {
+      const options = extra(i);
       const deps = createServerDeps({
-        ...extra(i),
+        ...options,
+        // Every fake sandbox connects from 127.0.0.1, so a whole file shares one upgrade bucket;
+        // the production limit (20, refilling 2/s) refused a fast file's 21st connect with 429
+        // (KOBE-674). A test that sets its own upgrade tuning keeps it.
+        sandboxWire: {
+          ...options.sandboxWire,
+          tuning: { ...TEST_UPGRADE_LIMIT, ...options.sandboxWire?.tuning },
+        },
         databaseUrl: this.database.appUrl,
         publicUrl: PUBLIC_URL,
         authSecret: "e".repeat(48),

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Every gate run's own verdict (KOBE-232): each log in <dir> (CI's gate-log-* artifacts: gate1..3,
-# gate4, restore, gate5-a/b, gate-apps, gate-sso) must end its run with a verdict line, and none may say FAILED. A run
+# gate4, restore, gate5-a/b, gate7-a/b, gate-apps, gate-sso) must end its run with a verdict line, and none may say FAILED. A run
 # that stopped before its verdict (its log has none) fails too. CI's `stories` job runs this before
 # the per-story verdict (e2e/gate4.sh), so a gate's FAILED can never pass unseen again.
 #   e2e/gate-verdicts.sh <dir>

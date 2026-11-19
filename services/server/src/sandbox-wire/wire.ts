@@ -317,6 +317,7 @@ export function createSandboxWire(options: SandboxWireOptions): SandboxWire {
       approvals,
       verifier: options.approvalVerifier,
       log,
+      ...(options.memoryEmbeddings ? { embeddings: options.memoryEmbeddings } : {}),
     },
     ...(options.projectMounts ? { projectMounts: options.projectMounts } : {}),
     projectCommits: {

@@ -251,13 +251,36 @@ see node or volume names.
 
 Site admins find the reason in the site audit log: filter on action `sandbox.wake_stalled`
 (`GET /v1/site/audit?action=sandbox.wake_stalled`). `cause` is one of `volume_unschedulable`,
-`volume_attach`, `scheduling`, `image_pull`, `unknown`; `detail` is the cluster's own event text
+`volume_attach`, `scheduling`, `image_pull`, `pod_failed`, `unknown`; `detail` is the cluster's own event text
 followed by a suggested remedy. The server log has the same line (level error, "sandbox not ready:
 failing the wake"). The server never deletes a pod or volume for this: if a workspace that has
 never run is stuck on a volume that cannot attach, delete its PVC by hand
 (`kubectl -n kobe-team-<slug> delete pvc workspace-u-<user-id>`) after confirming it holds no data;
 the next message starts a fresh sandbox. The server needs `list` on events in team namespaces
 (included in the chart role).
+
+**When a sandbox pod ends (evicted, killed).** A sandbox pod that ends for good (phase `Failed`,
+for example evicted because `$HOME` grew past `sandbox.homeSize`, or `/tmp` past
+`sandbox.tmpSize`) is not replaced by agent-sandbox, which only starts a pod when there is none.
+The next wake (the member's next message) deletes the ended pod, once, so agent-sandbox starts a
+fresh one from the same Sandbox; the claim, the Sandbox and the `/workspace` volume are kept, and
+`$HOME` and `/tmp` start empty, as after a hibernation. The member sees "Your sandbox ran out of
+temporary space and is restarting…" (or out of memory, or stopped) while it starts, and the
+conversation goes on. The team audit log records `sandbox.restarted` (`cause` `out_of_space`,
+`out_of_memory` or `stopped`, and the pod's own `podReason` such as `Evicted`); the server log has
+the kubelet's full message (level warn, "sandbox pod had ended: replaced it"). If the new pod ends
+too before it is Ready, the wake stops there (no second replacement): the run fails with
+`sandbox_failed` ("Your sandbox stopped … and could not be restarted. Your files in /workspace are
+kept …") and the site audit log gets `sandbox.wake_stalled` with cause `pod_failed`. The next
+message tries once more.
+
+`sandbox.homeSize` (default `1Gi`) and `sandbox.tmpSize` (default `2Gi`) size the two emptyDirs;
+both count against `sandbox.ephemeralStorage.limit` (default `4Gi`), so raise that too when you
+raise them. Pip runs without a download cache in the image, but a plain `pip install` falls back
+to `~/.local` (the image's site-packages are not writable), and npm keeps its cache in `~/.npm`:
+both land in `$HOME`. The guide
+tells agents to install packages into `/workspace` instead (a venv in `/workspace/.venv`, a
+project's `node_modules`), which the workspace backup skips.
 
 ## Egress
 
@@ -1089,6 +1112,16 @@ off per workload with `<component>.podDisruptionBudget.enabled` or
 `<component>.topologySpread.enabled`, or spread over zones with
 `<component>.topologySpread.topologyKey: topology.kubernetes.io/zone`.
 
+### Audit forwarding (SIEM)
+
+`auditForwarding.syslog` and `auditForwarding.otlp` send every audit event to your SIEM (off by
+default). Site events go as recorded; Workspace events go with the same Site-safe details as the
+Site console's Audit log (no thread, run, pass, candidate, tool-call or approval ids and no "via
+agent" record), and the full record stays in each Workspace's own audit log. Forwarded events carry
+the stored row's `hash` and `prev_hash`: the links between events check in the SIEM, and the chain
+itself is recomputed with `GET /v1/site/audit/integrity`. Details:
+[Export and forwarding](audit-log.md#export-and-forwarding).
+
 ### Private certificate authorities
 
 When a service the server calls over TLS (a syslog or OTLP collector for audit forwarding, an OIDC
@@ -1120,6 +1153,11 @@ revision's initial migration Job, which resets app-role grants to that build's m
 upgrade restores them.
 
 ### Upgrade notes
+
+Release notes for operators, one file per release, are in [docs/releases](releases/): start
+with [v1.3 (Semantic Memory)](releases/v1.3.md) for what it adds, the widened **Allow memory**
+master switch, new settings and their defaults, chart changes (the in-cluster embedding service,
+on by default), migrations `0216`–`0235` and the upgrade steps. The notes below are per change.
 
 Migrations report what an upgrade changed in the migration Job's log (`"msg":"migration notice"`,
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade

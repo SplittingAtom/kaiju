@@ -497,14 +497,54 @@ export async function readRecallRows(
   policy: boolean,
   lanes: readonly SelectLane[],
 ): Promise<RecallRow[]> {
-  if (words.length === 0) return [];
-  const q: Query = { words: [...words], message: new Set(), sticky: [] };
-  const rows = await readLanes(tx, who, policy, lanes, q, "recall");
+  const rows = await readRecallItemRows(tx, who, words, policy, lanes);
   return rows.map((r) => ({
     item: r.lane === "policy" ? toItem("site", true, r) : toItem(r.lane, false, r),
     textRank: Number(r.rank),
     ageDays: Number(r.age_days),
   }));
+}
+
+/** {@link readRecallRows} as the lane reads return them (for the vector merge: KOBE-664). */
+export async function readRecallItemRows(
+  tx: KobeTx,
+  who: { readonly teamId: string; readonly userId: string },
+  words: readonly string[],
+  policy: boolean,
+  lanes: readonly SelectLane[],
+): Promise<ItemRow[]> {
+  if (words.length === 0) return [];
+  const q: Query = { words: [...words], message: new Set(), sticky: [] };
+  return readLanes(tx, who, policy, lanes, q, "recall");
+}
+
+/**
+ * The candidates of a `recall({ query })` (KOBE-664): `rows` are its keyword rows merged with the
+ * vector leg's (`mergeVectorRows`), turned into candidates exactly as the selector's are
+ * ({@link toCandidates}: trigram of the query, similarity, relative vector rank), plus the matched
+ * Policy rows (no vector). `rankRecall` (select.ts) ranks them.
+ */
+export function recallCandidates(
+  rows: readonly ItemRow[],
+  lanes: readonly SelectLane[],
+  query: string,
+): { readonly lanes: LaneCandidates; readonly policy: Candidate[] } {
+  const q: Query = {
+    words: [],
+    message: trigrams(query.slice(0, TRIGRAM_MESSAGE_MAX_CHARS)),
+    sticky: [],
+  };
+  const policy = rows
+    .filter((r) => r.lane === "policy")
+    .map((r) => ({
+      item: toItem("site", true, r),
+      matched: r.matched,
+      textRank: Number(r.rank),
+      trigram: trigramSimilarity(r.statement, q.message),
+      ageDays: Number(r.age_days),
+      sticky: false,
+    }));
+  return { lanes: toCandidates(rows, lanes, q).candidates, policy };
 }
 
 /**

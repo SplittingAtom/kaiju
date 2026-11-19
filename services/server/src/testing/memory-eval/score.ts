@@ -150,12 +150,14 @@ export interface QueryResult {
   readonly negativeAbove: boolean;
   /** Ranks of the expected items in the relevance order (null: not a candidate at all). */
   readonly ranks: (number | null)[];
+  /** recall@k of what `recall({ query })` answered for the query, when measured (KOBE-664). */
+  readonly recallTool?: number;
 }
 
 /** Scores one query from its rankings and the block's item ids. */
 export function scoreQuery(
   q: RelevanceQuery,
-  ranked: Record<RankMode, readonly string[]>,
+  ranked: Record<RankMode, readonly string[]> & { readonly recall?: readonly string[] },
   block: ReadonlySet<string>,
   k = RECALL_K,
 ): QueryResult {
@@ -179,6 +181,7 @@ export function scoreQuery(
     inBlock: q.expected.filter((e) => block.has(e)).length / q.expected.length,
     negativeAbove,
     ranks: expectedRanks,
+    ...(ranked.recall === undefined ? {} : { recallTool: recallAtK(ranked.recall, q.expected, k) }),
   };
 }
 
@@ -188,6 +191,8 @@ export interface RecallRow {
   readonly relevance: number;
   readonly selector: number;
   readonly inBlock: number;
+  /** Mean recall@k of the recall tool's answers (KOBE-664); null when not measured. */
+  readonly recallTool: number | null;
   /** Share of the group's queries with negatives where a negative ranked above the answer. */
   readonly negativeAbove: number | null;
 }
@@ -206,11 +211,13 @@ const mean = (xs: readonly number[]) =>
 
 function row(results: readonly QueryResult[], withNegatives: ReadonlySet<string>): RecallRow {
   const neg = results.filter((r) => withNegatives.has(r.id));
+  const tool = results.flatMap((r) => (r.recallTool === undefined ? [] : [r.recallTool]));
   return {
     queries: results.length,
     relevance: mean(results.map((r) => r.recall.relevance)),
     selector: mean(results.map((r) => r.recall.selector)),
     inBlock: mean(results.map((r) => r.inBlock)),
+    recallTool: tool.length === 0 ? null : mean(tool),
     negativeAbove: neg.length === 0 ? null : mean(neg.map((r) => (r.negativeAbove ? 1 : 0))),
   };
 }
@@ -249,11 +256,15 @@ const num = (x: number) => x.toFixed(3);
 
 /** The report as a Markdown table, as gate-7a.md records it. */
 export function formatRelevanceReport(r: RelevanceReport): string {
+  // KOBE-664: the recall tool's column, only when the run measured it.
+  const tool = r.overall.recallTool !== null;
+  const toolCell = (x: RecallRow) =>
+    tool ? ` ${x.recallTool === null ? "-" : num(x.recallTool)} |` : "";
   const line = (label: string, x: RecallRow) =>
-    `| ${label} | ${x.queries} | ${num(x.relevance)} | ${num(x.selector)} | ${num(x.inBlock)} | ${pct(x.negativeAbove)} |`;
+    `| ${label} | ${x.queries} | ${num(x.relevance)} | ${num(x.selector)} |${toolCell(x)} ${num(x.inBlock)} | ${pct(x.negativeAbove)} |`;
   return [
-    `| Group | Queries | recall@${r.k} (relevance) | recall@${r.k} (selector score) | in block | negative above answer |`,
-    "| --- | --- | --- | --- | --- | --- |",
+    `| Group | Queries | recall@${r.k} (relevance) | recall@${r.k} (selector score) |${tool ? ` recall@${r.k} (recall tool) |` : ""} in block | negative above answer |`,
+    `| --- | --- | --- | --- |${tool ? " --- |" : ""} --- | --- |`,
     line("**overall**", r.overall),
     ...SEMANTIC_MEMORY_KINDS.map((k) => line(k, r.byKind[k])),
     ...QUERY_STYLES.map((s) => line(`style: ${s}`, r.byStyle[s])),

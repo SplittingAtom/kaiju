@@ -29,6 +29,11 @@ export interface SiteProposalRow {
   readonly proposer: Person;
   readonly confirmedBy: Person | null;
   readonly confirmedAt: string | null;
+  /**
+   * Every Team admin who confirmed it, in any round (KOBE-666): `team_confirmed_by` keeps only the
+   * last, so earlier rounds come from the Workspace's `memory.site_proposal.confirmed` audit events.
+   */
+  readonly confirmerIds: readonly string[];
   readonly decidedBy: Person | null;
   readonly decidedAt: string | null;
   readonly reason: string | null;
@@ -54,6 +59,7 @@ type Raw = {
   team_confirmed_by: string | null;
   confirmer_name: string | null;
   team_confirmed_at: string | Date | null;
+  confirmer_ids: string[] | null;
   decided_by: string | null;
   decider_name: string | null;
   decided_at: string | Date | null;
@@ -84,6 +90,7 @@ function toRow(r: Raw): SiteProposalRow {
     proposer: person(r.proposer_id, r.proposer_name) as Person,
     confirmedBy: person(r.team_confirmed_by, r.confirmer_name),
     confirmedAt: isoOrNull(r.team_confirmed_at),
+    confirmerIds: r.confirmer_ids ?? [],
     decidedBy: person(r.decided_by, r.decider_name),
     decidedAt: isoOrNull(r.decided_at),
     reason: r.reason,
@@ -103,7 +110,14 @@ const SELECT = sql`
          (p.state IN ('awaiting_team', 'awaiting_site', 'changes_requested')
            AND p.expires_at <= now()) AS lapsed,
          p.rounds, p.proposer_id, pu.name AS proposer_name, p.team_confirmed_by,
-         cu.name AS confirmer_name, p.team_confirmed_at, p.decided_by, du.name AS decider_name,
+         cu.name AS confirmer_name, p.team_confirmed_at,
+         ARRAY(SELECT p.team_confirmed_by::text WHERE p.team_confirmed_by IS NOT NULL
+               UNION
+               SELECT a.actor_id::text FROM audit_log a
+                WHERE a.action = 'memory.site_proposal.confirmed' AND a.team_id = p.from_team_id
+                  AND a.target ->> 'proposalId' = p.id::text AND a.actor_id IS NOT NULL)
+           AS confirmer_ids,
+         p.decided_by, du.name AS decider_name,
          p.decided_at, p.reason, p.merged_into, p.expires_at, p.created_at, p.updated_at
     FROM site_memory_proposals p
     JOIN teams t ON t.id = p.from_team_id
