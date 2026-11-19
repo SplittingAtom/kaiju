@@ -635,9 +635,14 @@ answer), search uses word matching alone and nothing else changes.
   model use: the person saving a memory pays, in the workspace they are working in; the member
   whose message is searched pays for that message's search (and for each **recall** search the
   agent makes in their conversation); the site admin who saves the model or
-  presses Build vectors pays for the build, in their active workspace. A workspace at 100% of a
-  budget line gets no new vectors (the memory is saved all the same, and found by word matching),
-  and a build stops there; press the button again later.
+  presses Build vectors pays for the build, in their active workspace. The build covers every
+  workspace whether or not that admin has an active workspace: with none, each workspace pays for
+  its own memories (the admin when they are a member, otherwise the workspace's first team admin)
+  and site and portable memories are paid in the workspace the admin joined first. A workspace at
+  100% of a budget line gets no new vectors (the memory is saved all the same, and found by word
+  matching); a build skips what that workspace would pay for, finishes the rest and says it
+  stopped for a budget line; press the button again later. Only one build runs at a time, across
+  all of Kobe's servers; the section shows it while it runs.
 - **When it is off.** The section says why search is word matching only, and what to do:
   - _this Postgres server has no pgvector_: the people who run Kobe install pgvector for its
     Postgres server (see the install guide), run `CREATE EXTENSION vector;` as a superuser and
@@ -654,8 +659,7 @@ answer), search uses word matching alone and nothing else changes.
     portable, workspace and site);
   - with **Build vectors** (or **Re-embed**, or saving a new model), the statements of **every**
     memory without a vector: site memories, every member's portable memories and the personal and
-    shared memories of **every workspace**, all charged to the site admin who started it, in their
-    active workspace.
+    shared memories of **every workspace**, charged as described under **Who pays** above.
 
   Pick a provider your organization may send all of that to: the in-cluster model keeps it inside
   your cluster; a hosted provider receives it under its own terms. Nothing else is sent, and

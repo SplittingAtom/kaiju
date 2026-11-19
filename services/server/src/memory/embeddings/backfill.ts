@@ -1,22 +1,25 @@
-import { modelGatewayState, scanTeams, withTeam, type KobeDb } from "@kobe/db";
+import { modelGatewayState, scanTeams, sql, withTeam, type KobeDb } from "@kobe/db";
 import { MEMORY_EMBED_MAX_INPUTS } from "@kobe/protocol";
 import type { Logger } from "pino";
 import type { BackgroundTasks } from "../../background.js";
 import type { ReconcileLock } from "../../sandbox/reconcile-lock.js";
 import type { MemoryEmbeddings } from "./service.js";
-import { pendingVersions, type VectorTable } from "./vector-store.js";
+import { buildTargets, type BuildAdmin, type Payer, type Target } from "./build-payers.js";
+import { pendingVersions } from "./vector-store.js";
 
 /**
  * Build vectors / re-embed (KOBE-409): embeds every current memory version without a vector of the
  * Site embedding model (Site items, portable items, then each Workspace's items), 64 per gateway
  * call, on BackgroundTasks. Started only by a Site admin (saving a new embedding model, or the
- * Site console's action), never by an upgrade; paid by that admin in their current Workspace. It
- * stops at the first refusal (a budget line at 100 %, a gateway error) or when the Site model
- * changes, and can be started again. Keyword search covers every item without a current vector
+ * Site console's action), never by an upgrade. The model is a Site setting, so the job covers
+ * every Workspace whether or not the admin has an active one (KOBE-669); who pays is in
+ * {@link buildTargets}. A payer's Workspace at 100 % of a budget line is skipped and the rest
+ * still build (the job then ends `stopped`/`budget`); any other refusal (a gateway error) or a
+ * Site model change stops it, and it can be started again. Keyword search covers every item without a current vector
  * meanwhile. One job at a time across replicas (review L6): the job holds a session advisory lock
  * ({@link MEMORY_VECTOR_BUILD_LOCK}) while it runs, and a start that cannot take it says the build
  * is already running. The console's coverage comes from the database; the job state shown is
- * the replica's own.
+ * the replica's own, plus whether another replica holds the lock ({@link buildRunningElsewhere}).
  */
 
 /** The session advisory lock a running build holds (one job across replicas). */
@@ -26,7 +29,8 @@ export interface BuildJob {
   readonly state: "running" | "done" | "stopped";
   readonly model: string;
   readonly startedBy: string;
-  readonly teamId: string;
+  /** The admin's active Workspace that pays for everything; null: each Workspace pays its own. */
+  readonly teamId: string | null;
   readonly startedAt: string;
   readonly finishedAt: string | null;
   /** Versions embedded by this job so far. */
@@ -71,10 +75,21 @@ async function waitForGatewaySync(db: KobeDb, waitMs: number): Promise<void> {
   }
 }
 
-/** Where to look next: the site-wide tables, then one Workspace at a time. */
-interface Target {
-  readonly table: VectorTable;
-  readonly teamId?: string;
+/**
+ * Whether another session (another replica's job) holds the build lock: the console shows that
+ * build as running even when this replica has none. Reads `pg_locks` (no lock taken).
+ */
+export async function buildRunningElsewhere(db: KobeDb): Promise<boolean> {
+  const res = await db.execute<{ held: boolean }>(sql`
+    WITH k AS (SELECT hashtextextended(${MEMORY_VECTOR_BUILD_LOCK}, 0) AS key)
+    SELECT EXISTS (
+      SELECT 1 FROM pg_locks l, k
+      WHERE l.locktype = 'advisory' AND l.granted AND l.objsubid = 1
+        AND l.database = (SELECT oid FROM pg_database WHERE datname = current_database())
+        AND l.classid::bigint = (k.key >> 32) & 4294967295
+        AND l.objid::bigint = k.key & 4294967295
+    ) AS held`);
+  return res.rows[0]?.held === true;
 }
 
 export class VectorBackfill {
@@ -97,8 +112,11 @@ export class VectorBackfill {
     return (this.#o.now?.() ?? new Date()).toISOString();
   }
 
-  /** Starts a job paid by `admin` in `admin.teamId`, unless one runs or vectors are unusable. */
-  async start(admin: { readonly userId: string; readonly teamId: string }): Promise<BuildStart> {
+  /**
+   * Starts a Site-wide job, unless one runs or vectors are unusable: paid by `admin` in
+   * `admin.teamId` when they have an active Workspace, else Workspace by Workspace.
+   */
+  async start(admin: BuildAdmin): Promise<BuildStart> {
     if (this.#job?.state === "running") return ALREADY_RUNNING;
     const model = await this.#o.embeddings.usableModel();
     if (model === undefined) {
@@ -163,20 +181,28 @@ export class VectorBackfill {
     if (this.#job) this.#job = { ...this.#job, ...change };
   }
 
-  async #run(admin: { readonly userId: string; readonly teamId: string }, model: string) {
+  async #run(admin: BuildAdmin, model: string) {
     let stopReason: string | null = null;
     try {
       await waitForGatewaySync(this.#o.db, this.#o.gatewaySyncWaitMs ?? 60_000);
       const teams = await scanTeams(this.#o.db, "memory vector build", async (_tx, t) => t.id);
-      const targets: Target[] = [
-        { table: "site" },
-        { table: "portable" },
-        ...teams.map((teamId) => ({ table: "workspace" as const, teamId })),
-      ];
+      const targets = await buildTargets(this.#o.db, admin, teams);
+      // Payers' Workspaces that refused for budget: their other targets are skipped.
+      const exhausted = new Set<string>();
       for (const target of targets) {
-        stopReason = await this.#target(admin, model, target);
-        if (stopReason !== null) break;
+        if (target.payer === undefined) {
+          this.#o.log.warn({ team_id: target.teamId }, "memory vector build: no member to pay");
+          continue;
+        }
+        if (exhausted.has(target.payer.teamId)) continue;
+        const reason = await this.#target(target.payer, model, target);
+        if (reason === "budget") exhausted.add(target.payer.teamId);
+        else if (reason !== null) {
+          stopReason = reason;
+          break;
+        }
       }
+      if (stopReason === null && exhausted.size > 0) stopReason = "budget";
     } catch (err) {
       stopReason = "error";
       throw err;
@@ -194,14 +220,10 @@ export class VectorBackfill {
   }
 
   /** Embeds one target until nothing is pending; a stop reason ends the whole job. */
-  async #target(
-    admin: { readonly userId: string; readonly teamId: string },
-    model: string,
-    target: Target,
-  ): Promise<string | null> {
+  async #target(payer: Payer, model: string, target: Target): Promise<string | null> {
     for (;;) {
       if ((await this.#o.embeddings.usableModel()) !== model) return "model_changed";
-      const pending = await withTeam(this.#o.db, target.teamId ?? admin.teamId, (tx) =>
+      const pending = await withTeam(this.#o.db, target.teamId ?? payer.teamId, (tx) =>
         pendingVersions(tx, target.table, {
           ...(target.teamId ? { teamId: target.teamId } : {}),
           model,
@@ -210,7 +232,7 @@ export class VectorBackfill {
       );
       if (pending.length === 0) return null;
       const out = await this.#o.embeddings.embedAndStore(
-        admin,
+        payer,
         target.table,
         target.teamId,
         model,

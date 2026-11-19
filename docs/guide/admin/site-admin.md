@@ -175,7 +175,9 @@ read a person's portable preferences either; reading them needs its own break-gl
   nothing. See [Memory](../memory.md#switches-that-control-memory). The **embedding model**
   (search by meaning) sends every run message (up to 4,000 characters) and every saved memory to
   its provider, and **Build vectors** sends the memories of every workspace, every member's portable
-  memories and the Site's, charged to you in your active workspace: choose a provider your
+  memories and the Site's (saving a new model starts it too, whether or not you have an active
+  workspace), charged to you in your active workspace or, with none, to each workspace for its own
+  memories: choose a provider your
   organization may send that to (the in-cluster model keeps it in your cluster). See
   [Search by meaning](../memory.md#search-by-meaning). The **Kobe connector** setting is **Off**, **Docs only** (the
   default) or **Docs and admin tools**; see below.
