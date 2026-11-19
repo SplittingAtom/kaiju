@@ -39,5 +39,8 @@ test("U51: one bar icon, the Notes tab, /memory and the guide's master-switch no
     const res = await fetch("/docs/memory.md");
     return res.ok ? await res.text() : `status ${res.status}`;
   });
-  expect(guide).toContain("Turning **Allow memory** off now also turns memories off");
+  // The Markdown wraps lines: compare with whitespace collapsed.
+  expect(guide.replace(/\s+/g, " ")).toContain(
+    "Turning **Allow memory** off now also turns memories off",
+  );
 });

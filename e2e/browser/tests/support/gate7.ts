@@ -25,7 +25,7 @@ export async function memoriesWith(page: Page, scope: string, text: string): Pro
   );
 }
 
-/** The ids of the memories the thread's latest run was given (`/context/memories`). */
+/** The ids of the memories the thread's latest run was given (`/context/memories`), if any. */
 export async function memoriesInContext(page: Page, threadId: string): Promise<string[]> {
   return page.evaluate(
     async ({ threadId, teamKey }) => {
@@ -34,8 +34,9 @@ export async function memoriesInContext(page: Page, threadId: string): Promise<s
         headers: { "x-kobe-team": team },
       });
       if (!res.ok) return [`status ${res.status}`];
-      const body = (await res.json()) as { items: { id: string }[] };
-      return body.items.map((i) => i.id);
+      // `latest: false`: a newer run was given no memories (the route answers an earlier one).
+      const body = (await res.json()) as { latest: boolean; items: { id: string }[] };
+      return body.latest ? body.items.map((i) => i.id) : [];
     },
     { threadId, teamKey: TEAM_KEY },
   );

@@ -433,7 +433,7 @@ if want U54; then
   FORGET_TEXT=$(field browser_item_text "$bi")
 fi
 browser_env() { # the variables the specs read, except the passwords
-  printf 'KOBE_BASE_URL=%s KOBE_USER=%s KOBE_USER2=gate7-m2@gate7.test KOBE_TEAM=gate7-a KOBE_FAKE_MODEL=1 KOBE_GATE7_FORGET_ITEM=%s' \
+  printf 'KOBE_BASE_URL=%s KOBE_USER=%s KOBE_USER2=gate7-m2@gate7.test KOBE_USER3=gate7-ad@gate7.test KOBE_TEAM=gate7-a KOBE_FAKE_MODEL=1 KOBE_GATE7_FORGET_ITEM=%s' \
     "$PUBLIC_URL" "$OWNER_EMAIL" "$FORGET_ID"
 }
 RESULTS="${KOBE_GATE7_RESULTS:-}"
@@ -453,13 +453,13 @@ elif [[ "$BROWSER" == 1 ]]; then
   fi
   RESULTS="$WORK/results.json"
   # shellcheck disable=SC2046 # browser_env is a list of NAME=value words
-  (cd e2e/browser && env $(browser_env) KOBE_PW="$OWNER_PASSWORD" KOBE_PW2="$USER_PASSWORD" \
+  (cd e2e/browser && env $(browser_env) KOBE_PW="$OWNER_PASSWORD" KOBE_PW2="$USER_PASSWORD" KOBE_PW3="$USER_PASSWORD" \
     KOBE_GATE7_FORGET_TEXT="$FORGET_TEXT" KOBE_BROWSER_MAP="$map" KOBE_BROWSER_RESULTS="$RESULTS" \
     npx playwright test "${files[@]}" >"$WORK/playwright.log" 2>&1) || true
   grep -E '✓|✘|-  |passed|failed|skipped|flaky' "$WORK/playwright.log" | tail -60 | sed 's/^/     /' || true
 elif [[ -z "$RESULTS" ]]; then
   echo "skip browser checks (KOBE_GATE7_BROWSER=$BROWSER); run them where Chromium reaches $PUBLIC_URL, then judge with KOBE_GATE7_RESULTS=<results.json>:"
-  echo "     cd e2e/browser && npm ci && npx playwright install chromium && $(browser_env) KOBE_GATE7_FORGET_TEXT='$FORGET_TEXT' KOBE_PW=<the owner's password> KOBE_PW2=<the fixtures' password> KOBE_BROWSER_RESULTS=<results.json> npx playwright test ${files[*]}"
+  echo "     cd e2e/browser && npm ci && npx playwright install chromium && $(browser_env) KOBE_GATE7_FORGET_TEXT='$FORGET_TEXT' KOBE_PW=<the owner's password> KOBE_PW2=<the fixtures' password> KOBE_PW3=<same> KOBE_BROWSER_RESULTS=<results.json> npx playwright test ${files[*]}"
 fi
 
 # ---- verdict -----------------------------------------------------------------------------------------

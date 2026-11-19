@@ -143,9 +143,14 @@ async function items(c, scope, q, status = "active") {
   return { status: r.status, items: r.json.items ?? [], usage: r.json.usage };
 }
 const create = (c, body) => c.call("POST", "/v1/memory/semantic/items", body);
+/**
+ * What the thread's latest run was given. The route answers the latest run *with records*, with
+ * `latest: false` when a newer run was given no memories: that newer run then got none.
+ */
 const contextOf = async (c, threadId) => {
   const r = await c.call("GET", `/v1/threads/${threadId}/context/memories`);
-  return { status: r.status, items: r.json.items ?? [], runId: r.json.run_id };
+  const latest = r.json.latest !== false;
+  return { status: r.status, items: latest ? (r.json.items ?? []) : [], runId: r.json.run_id };
 };
 async function notices(c) {
   const r = await c.call("GET", "/v1/notifications?limit=100");
@@ -667,7 +672,8 @@ async function u44() {
   const [id] = ids;
   const owner = await asOwner(null);
   const queue1 = await owner.call("GET", "/v1/site/memory/proposals");
-  out("site_queue_before_confirm", JSON.stringify(queue1.json).includes(fact));
+  const queued = (q) => JSON.stringify(q.json).toLowerCase().includes(fact.toLowerCase());
+  out("site_queue_before_confirm", queued(queue1));
   const st = await as("st");
   out(
     "steward_confirm",
@@ -676,7 +682,7 @@ async function u44() {
   const ad = await as("ad");
   out("admin_confirm", code(await ad.call("POST", `/v1/memory/site-proposals/${id}/confirm`, {})));
   const queue2 = await owner.call("GET", "/v1/site/memory/proposals");
-  out("site_queue_after_confirm", JSON.stringify(queue2.json).includes(fact));
+  out("site_queue_after_confirm", queued(queue2));
   const detail = await owner.call("GET", `/v1/site/memory/proposals/${id}`);
   const text = JSON.stringify(detail.json);
   const p = detail.json.proposal ?? detail.json;
@@ -1289,12 +1295,19 @@ async function u51() {
 // ---- U52: the extractor's records -----------------------------------------------------------------
 
 async function u52() {
-  const rows = await inTeam(TEAM_A, async (tx, sql) => {
-    const r =
-      await tx.execute(sql`SELECT status, model_alias, prompt_version, usage FROM memory_learning_passes
-      WHERE team_id = ${TEAM_A} ORDER BY created_at DESC LIMIT 50`);
-    return r.rows;
-  });
+  // Both teams' passes of this run (shard b learns in gate7-b; shard a in gate7-a), not the fixtures.
+  const rows = [];
+  for (const team of [TEAM_A, TEAM_B]) {
+    rows.push(
+      ...(await inTeam(team, async (tx, sql) => {
+        const r = await tx.execute(sql`
+          SELECT status, model_alias, prompt_version, usage FROM memory_learning_passes
+           WHERE team_id = ${team} AND coalesce(error, '') <> 'gate7 rate-limit fixture'
+           ORDER BY created_at DESC LIMIT 50`);
+        return r.rows;
+      })),
+    );
+  }
   out("passes", rows.length);
   out(
     "versions",
