@@ -1,0 +1,4099 @@
+{
+  "report": {
+    "k": 8,
+    "overall": {
+      "queries": 151,
+      "relevance": 0.5728476821192053,
+      "selector": 0.17439293598233996,
+      "inBlock": 0.6622516556291391,
+      "recallTool": 0.5463576158940397,
+      "negativeAbove": 0.17894736842105263
+    },
+    "byKind": {
+      "preference": {
+        "queries": 30,
+        "relevance": 0.6333333333333333,
+        "selector": 0.6777777777777777,
+        "inBlock": 0.9833333333333333,
+        "recallTool": 0.5,
+        "negativeAbove": 0.2222222222222222
+      },
+      "fact": {
+        "queries": 30,
+        "relevance": 0.5166666666666667,
+        "selector": 0,
+        "inBlock": 0.55,
+        "recallTool": 0.5166666666666667,
+        "negativeAbove": 0.1875
+      },
+      "convention": {
+        "queries": 30,
+        "relevance": 0.5333333333333333,
+        "selector": 0.03333333333333333,
+        "inBlock": 0.5333333333333333,
+        "recallTool": 0.5333333333333333,
+        "negativeAbove": 0.23529411764705882
+      },
+      "definition": {
+        "queries": 31,
+        "relevance": 0.6451612903225806,
+        "selector": 0,
+        "inBlock": 0.6774193548387096,
+        "recallTool": 0.6451612903225806,
+        "negativeAbove": 0.19230769230769232
+      },
+      "decision": {
+        "queries": 30,
+        "relevance": 0.5333333333333333,
+        "selector": 0.16666666666666666,
+        "inBlock": 0.5666666666666667,
+        "recallTool": 0.5333333333333333,
+        "negativeAbove": 0.05555555555555555
+      }
+    },
+    "byStyle": {
+      "literal": {
+        "queries": 50,
+        "relevance": 0.98,
+        "selector": 0.3,
+        "inBlock": 1,
+        "recallTool": 0.98,
+        "negativeAbove": 0.1111111111111111
+      },
+      "paraphrase": {
+        "queries": 61,
+        "relevance": 0.13934426229508196,
+        "selector": 0.08196721311475409,
+        "inBlock": 0.27049180327868855,
+        "recallTool": 0.09016393442622951,
+        "negativeAbove": 0.325
+      },
+      "indirect": {
+        "queries": 40,
+        "relevance": 0.725,
+        "selector": 0.15833333333333333,
+        "inBlock": 0.8375,
+        "recallTool": 0.7,
+        "negativeAbove": 0.03571428571428571
+      }
+    },
+    "vectorsIndicated": true
+  },
+  "results": [
+    {
+      "id": "q001",
+      "kind": "preference",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q002",
+      "kind": "preference",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q003",
+      "kind": "preference",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q004",
+      "kind": "preference",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [2],
+      "recallTool": 1
+    },
+    {
+      "id": "q005",
+      "kind": "preference",
+      "style": "literal",
+      "recall": {
+        "relevance": 0,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": true,
+      "ranks": [9],
+      "recallTool": 0
+    },
+    {
+      "id": "q006",
+      "kind": "preference",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q007",
+      "kind": "preference",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q008",
+      "kind": "preference",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q009",
+      "kind": "preference",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q010",
+      "kind": "preference",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q011",
+      "kind": "preference",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [24],
+      "recallTool": 0
+    },
+    {
+      "id": "q012",
+      "kind": "preference",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": true,
+      "ranks": [8],
+      "recallTool": 0
+    },
+    {
+      "id": "q013",
+      "kind": "preference",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [18],
+      "recallTool": 0
+    },
+    {
+      "id": "q014",
+      "kind": "preference",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": true,
+      "ranks": [25],
+      "recallTool": 0
+    },
+    {
+      "id": "q015",
+      "kind": "preference",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": true,
+      "ranks": [8],
+      "recallTool": 1
+    },
+    {
+      "id": "q016",
+      "kind": "preference",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [21],
+      "recallTool": 0
+    },
+    {
+      "id": "q017",
+      "kind": "preference",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [14],
+      "recallTool": 0
+    },
+    {
+      "id": "q018",
+      "kind": "preference",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [28],
+      "recallTool": 0
+    },
+    {
+      "id": "q019",
+      "kind": "preference",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [3],
+      "recallTool": 0
+    },
+    {
+      "id": "q020",
+      "kind": "preference",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [24],
+      "recallTool": 0
+    },
+    {
+      "id": "q021",
+      "kind": "preference",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q022",
+      "kind": "preference",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [8],
+      "recallTool": 0
+    },
+    {
+      "id": "q023",
+      "kind": "preference",
+      "style": "indirect",
+      "recall": {
+        "relevance": 0.5,
+        "selector": 0.5
+      },
+      "inBlock": 0.5,
+      "negativeAbove": false,
+      "ranks": [8, null],
+      "recallTool": 0.5
+    },
+    {
+      "id": "q024",
+      "kind": "preference",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [2],
+      "recallTool": 1
+    },
+    {
+      "id": "q025",
+      "kind": "preference",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [6],
+      "recallTool": 1
+    },
+    {
+      "id": "q026",
+      "kind": "preference",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [6],
+      "recallTool": 0
+    },
+    {
+      "id": "q027",
+      "kind": "preference",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [7],
+      "recallTool": 1
+    },
+    {
+      "id": "q028",
+      "kind": "preference",
+      "style": "indirect",
+      "recall": {
+        "relevance": 0,
+        "selector": 0.3333333333333333
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [26, 34, 22],
+      "recallTool": 0
+    },
+    {
+      "id": "q029",
+      "kind": "preference",
+      "style": "indirect",
+      "recall": {
+        "relevance": 0.5,
+        "selector": 0.5
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [38, 4],
+      "recallTool": 0.5
+    },
+    {
+      "id": "q030",
+      "kind": "preference",
+      "style": "indirect",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [20],
+      "recallTool": 0
+    },
+    {
+      "id": "q031",
+      "kind": "fact",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q032",
+      "kind": "fact",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q033",
+      "kind": "fact",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q034",
+      "kind": "fact",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q035",
+      "kind": "fact",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q036",
+      "kind": "fact",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q037",
+      "kind": "fact",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [2],
+      "recallTool": 1
+    },
+    {
+      "id": "q038",
+      "kind": "fact",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q039",
+      "kind": "fact",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q040",
+      "kind": "fact",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q041",
+      "kind": "fact",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q042",
+      "kind": "fact",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": true,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q043",
+      "kind": "fact",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q044",
+      "kind": "fact",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": true,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q045",
+      "kind": "fact",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0.5,
+        "selector": 0
+      },
+      "inBlock": 0.5,
+      "negativeAbove": false,
+      "ranks": [null, 3],
+      "recallTool": 0.5
+    },
+    {
+      "id": "q046",
+      "kind": "fact",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q047",
+      "kind": "fact",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q048",
+      "kind": "fact",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": true,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q049",
+      "kind": "fact",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q050",
+      "kind": "fact",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q051",
+      "kind": "fact",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q052",
+      "kind": "fact",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q053",
+      "kind": "fact",
+      "style": "indirect",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [17],
+      "recallTool": 0
+    },
+    {
+      "id": "q054",
+      "kind": "fact",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [2],
+      "recallTool": 1
+    },
+    {
+      "id": "q055",
+      "kind": "fact",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q056",
+      "kind": "fact",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [2],
+      "recallTool": 1
+    },
+    {
+      "id": "q057",
+      "kind": "fact",
+      "style": "indirect",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null, null],
+      "recallTool": 0
+    },
+    {
+      "id": "q058",
+      "kind": "fact",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q059",
+      "kind": "fact",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1, 2],
+      "recallTool": 1
+    },
+    {
+      "id": "q060",
+      "kind": "fact",
+      "style": "indirect",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [14],
+      "recallTool": 0
+    },
+    {
+      "id": "q061",
+      "kind": "convention",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q062",
+      "kind": "convention",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q063",
+      "kind": "convention",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [2],
+      "recallTool": 1
+    },
+    {
+      "id": "q064",
+      "kind": "convention",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q065",
+      "kind": "convention",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q066",
+      "kind": "convention",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q067",
+      "kind": "convention",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q068",
+      "kind": "convention",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q069",
+      "kind": "convention",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q070",
+      "kind": "convention",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [2],
+      "recallTool": 1
+    },
+    {
+      "id": "q071",
+      "kind": "convention",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": true,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q072",
+      "kind": "convention",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q073",
+      "kind": "convention",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q074",
+      "kind": "convention",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q075",
+      "kind": "convention",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q076",
+      "kind": "convention",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q077",
+      "kind": "convention",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": true,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q078",
+      "kind": "convention",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q079",
+      "kind": "convention",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": true,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q080",
+      "kind": "convention",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q081",
+      "kind": "convention",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q082",
+      "kind": "convention",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": true,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q083",
+      "kind": "convention",
+      "style": "indirect",
+      "recall": {
+        "relevance": 0.5,
+        "selector": 0
+      },
+      "inBlock": 0.5,
+      "negativeAbove": false,
+      "ranks": [2, 35],
+      "recallTool": 0.5
+    },
+    {
+      "id": "q084",
+      "kind": "convention",
+      "style": "indirect",
+      "recall": {
+        "relevance": 0.5,
+        "selector": 0
+      },
+      "inBlock": 0.5,
+      "negativeAbove": false,
+      "ranks": [3, null],
+      "recallTool": 0.5
+    },
+    {
+      "id": "q085",
+      "kind": "convention",
+      "style": "indirect",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q086",
+      "kind": "convention",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1, 2],
+      "recallTool": 1
+    },
+    {
+      "id": "q087",
+      "kind": "convention",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q088",
+      "kind": "convention",
+      "style": "indirect",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q089",
+      "kind": "convention",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [3, 6],
+      "recallTool": 1
+    },
+    {
+      "id": "q090",
+      "kind": "convention",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [2],
+      "recallTool": 1
+    },
+    {
+      "id": "q091",
+      "kind": "definition",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": true,
+      "ranks": [6],
+      "recallTool": 1
+    },
+    {
+      "id": "q092",
+      "kind": "definition",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q093",
+      "kind": "definition",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q094",
+      "kind": "definition",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": true,
+      "ranks": [2],
+      "recallTool": 1
+    },
+    {
+      "id": "q095",
+      "kind": "definition",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q096",
+      "kind": "definition",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q097",
+      "kind": "definition",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q098",
+      "kind": "definition",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q099",
+      "kind": "definition",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q100",
+      "kind": "definition",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [2],
+      "recallTool": 1
+    },
+    {
+      "id": "q101",
+      "kind": "definition",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q102",
+      "kind": "definition",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": true,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q103",
+      "kind": "definition",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [3],
+      "recallTool": 1
+    },
+    {
+      "id": "q104",
+      "kind": "definition",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": true,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q105",
+      "kind": "definition",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q106",
+      "kind": "definition",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q107",
+      "kind": "definition",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q108",
+      "kind": "definition",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q109",
+      "kind": "definition",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null, null],
+      "recallTool": 0
+    },
+    {
+      "id": "q110",
+      "kind": "definition",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q111",
+      "kind": "definition",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [15],
+      "recallTool": 0
+    },
+    {
+      "id": "q112",
+      "kind": "definition",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q113",
+      "kind": "definition",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [6, 1],
+      "recallTool": 1
+    },
+    {
+      "id": "q114",
+      "kind": "definition",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q115",
+      "kind": "definition",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [4],
+      "recallTool": 1
+    },
+    {
+      "id": "q116",
+      "kind": "definition",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [2, 1],
+      "recallTool": 1
+    },
+    {
+      "id": "q117",
+      "kind": "definition",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [2],
+      "recallTool": 1
+    },
+    {
+      "id": "q118",
+      "kind": "definition",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1, 5],
+      "recallTool": 1
+    },
+    {
+      "id": "q119",
+      "kind": "definition",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [2],
+      "recallTool": 1
+    },
+    {
+      "id": "q120",
+      "kind": "definition",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q121",
+      "kind": "decision",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q122",
+      "kind": "decision",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0.5
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1, 2],
+      "recallTool": 1
+    },
+    {
+      "id": "q123",
+      "kind": "decision",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0.5
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [7, 1],
+      "recallTool": 1
+    },
+    {
+      "id": "q124",
+      "kind": "decision",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q125",
+      "kind": "decision",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q126",
+      "kind": "decision",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q127",
+      "kind": "decision",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q128",
+      "kind": "decision",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q129",
+      "kind": "decision",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q130",
+      "kind": "decision",
+      "style": "literal",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q131",
+      "kind": "decision",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q132",
+      "kind": "decision",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q133",
+      "kind": "decision",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q134",
+      "kind": "decision",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q135",
+      "kind": "decision",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q136",
+      "kind": "decision",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q137",
+      "kind": "decision",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q138",
+      "kind": "decision",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q139",
+      "kind": "decision",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q140",
+      "kind": "decision",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [16],
+      "recallTool": 0
+    },
+    {
+      "id": "q141",
+      "kind": "decision",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q142",
+      "kind": "decision",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [null],
+      "recallTool": 0
+    },
+    {
+      "id": "q143",
+      "kind": "decision",
+      "style": "indirect",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 0,
+      "negativeAbove": false,
+      "ranks": [24, null],
+      "recallTool": 0
+    },
+    {
+      "id": "q144",
+      "kind": "decision",
+      "style": "indirect",
+      "recall": {
+        "relevance": 0,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [9, 27],
+      "recallTool": 0
+    },
+    {
+      "id": "q145",
+      "kind": "decision",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 1
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q146",
+      "kind": "decision",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": true,
+      "ranks": [3],
+      "recallTool": 1
+    },
+    {
+      "id": "q147",
+      "kind": "decision",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [1],
+      "recallTool": 1
+    },
+    {
+      "id": "q148",
+      "kind": "decision",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [3],
+      "recallTool": 1
+    },
+    {
+      "id": "q149",
+      "kind": "decision",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [7],
+      "recallTool": 1
+    },
+    {
+      "id": "q150",
+      "kind": "decision",
+      "style": "indirect",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": false,
+      "ranks": [5],
+      "recallTool": 1
+    },
+    {
+      "id": "q151",
+      "kind": "definition",
+      "style": "paraphrase",
+      "recall": {
+        "relevance": 1,
+        "selector": 0
+      },
+      "inBlock": 1,
+      "negativeAbove": true,
+      "ranks": [4],
+      "recallTool": 1
+    }
+  ],
+  "hybrid": {
+    "model": "qwen3-embedding:0.6b",
+    "report": {
+      "k": 8,
+      "overall": {
+        "queries": 151,
+        "relevance": 0.8940397350993378,
+        "selector": 0.8576158940397351,
+        "inBlock": 0.9304635761589404,
+        "recallTool": 0.8874172185430463,
+        "negativeAbove": 0.12631578947368421
+      },
+      "byKind": {
+        "preference": {
+          "queries": 30,
+          "relevance": 0.8333333333333334,
+          "selector": 0.9,
+          "inBlock": 0.9833333333333333,
+          "recallTool": 0.8,
+          "negativeAbove": 0.05555555555555555
+        },
+        "fact": {
+          "queries": 30,
+          "relevance": 0.9666666666666667,
+          "selector": 0.9666666666666667,
+          "inBlock": 0.9666666666666667,
+          "recallTool": 0.9666666666666667,
+          "negativeAbove": 0.0625
+        },
+        "convention": {
+          "queries": 30,
+          "relevance": 0.8666666666666667,
+          "selector": 0.7666666666666667,
+          "inBlock": 0.8666666666666667,
+          "recallTool": 0.8666666666666667,
+          "negativeAbove": 0.11764705882352941
+        },
+        "definition": {
+          "queries": 31,
+          "relevance": 0.9354838709677419,
+          "selector": 0.8225806451612904,
+          "inBlock": 0.9354838709677419,
+          "recallTool": 0.9354838709677419,
+          "negativeAbove": 0.11538461538461539
+        },
+        "decision": {
+          "queries": 30,
+          "relevance": 0.8666666666666667,
+          "selector": 0.8333333333333334,
+          "inBlock": 0.9,
+          "recallTool": 0.8666666666666667,
+          "negativeAbove": 0.2777777777777778
+        }
+      },
+      "byStyle": {
+        "literal": {
+          "queries": 50,
+          "relevance": 1,
+          "selector": 1,
+          "inBlock": 1,
+          "recallTool": 1,
+          "negativeAbove": 0
+        },
+        "paraphrase": {
+          "queries": 61,
+          "relevance": 0.9016393442622951,
+          "selector": 0.8442622950819673,
+          "inBlock": 0.9016393442622951,
+          "recallTool": 0.9016393442622951,
+          "negativeAbove": 0.225
+        },
+        "indirect": {
+          "queries": 40,
+          "relevance": 0.75,
+          "selector": 0.7,
+          "inBlock": 0.8875,
+          "recallTool": 0.725,
+          "negativeAbove": 0.10714285714285714
+        }
+      },
+      "vectorsIndicated": false
+    },
+    "results": [
+      {
+        "id": "q001",
+        "kind": "preference",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q002",
+        "kind": "preference",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q003",
+        "kind": "preference",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q004",
+        "kind": "preference",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [4],
+        "recallTool": 1
+      },
+      {
+        "id": "q005",
+        "kind": "preference",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q006",
+        "kind": "preference",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q007",
+        "kind": "preference",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q008",
+        "kind": "preference",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q009",
+        "kind": "preference",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q010",
+        "kind": "preference",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q011",
+        "kind": "preference",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q012",
+        "kind": "preference",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q013",
+        "kind": "preference",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q014",
+        "kind": "preference",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q015",
+        "kind": "preference",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q016",
+        "kind": "preference",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q017",
+        "kind": "preference",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q018",
+        "kind": "preference",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q019",
+        "kind": "preference",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q020",
+        "kind": "preference",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q021",
+        "kind": "preference",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q022",
+        "kind": "preference",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q023",
+        "kind": "preference",
+        "style": "indirect",
+        "recall": {
+          "relevance": 0,
+          "selector": 0.5
+        },
+        "inBlock": 0.5,
+        "negativeAbove": false,
+        "ranks": [10, null],
+        "recallTool": 0
+      },
+      {
+        "id": "q024",
+        "kind": "preference",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [3],
+        "recallTool": 1
+      },
+      {
+        "id": "q025",
+        "kind": "preference",
+        "style": "indirect",
+        "recall": {
+          "relevance": 0,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [11],
+        "recallTool": 0
+      },
+      {
+        "id": "q026",
+        "kind": "preference",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [6],
+        "recallTool": 0
+      },
+      {
+        "id": "q027",
+        "kind": "preference",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [7],
+        "recallTool": 1
+      },
+      {
+        "id": "q028",
+        "kind": "preference",
+        "style": "indirect",
+        "recall": {
+          "relevance": 0,
+          "selector": 0
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [27, 35, 23],
+        "recallTool": 0
+      },
+      {
+        "id": "q029",
+        "kind": "preference",
+        "style": "indirect",
+        "recall": {
+          "relevance": 0,
+          "selector": 0.5
+        },
+        "inBlock": 1,
+        "negativeAbove": true,
+        "ranks": [39, 11],
+        "recallTool": 0
+      },
+      {
+        "id": "q030",
+        "kind": "preference",
+        "style": "indirect",
+        "recall": {
+          "relevance": 0,
+          "selector": 0
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [25],
+        "recallTool": 0
+      },
+      {
+        "id": "q031",
+        "kind": "fact",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q032",
+        "kind": "fact",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q033",
+        "kind": "fact",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q034",
+        "kind": "fact",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q035",
+        "kind": "fact",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q036",
+        "kind": "fact",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q037",
+        "kind": "fact",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q038",
+        "kind": "fact",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q039",
+        "kind": "fact",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q040",
+        "kind": "fact",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q041",
+        "kind": "fact",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q042",
+        "kind": "fact",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q043",
+        "kind": "fact",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q044",
+        "kind": "fact",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q045",
+        "kind": "fact",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2, 1],
+        "recallTool": 1
+      },
+      {
+        "id": "q046",
+        "kind": "fact",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q047",
+        "kind": "fact",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q048",
+        "kind": "fact",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": true,
+        "ranks": [4],
+        "recallTool": 1
+      },
+      {
+        "id": "q049",
+        "kind": "fact",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q050",
+        "kind": "fact",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q051",
+        "kind": "fact",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q052",
+        "kind": "fact",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q053",
+        "kind": "fact",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [3],
+        "recallTool": 1
+      },
+      {
+        "id": "q054",
+        "kind": "fact",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q055",
+        "kind": "fact",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q056",
+        "kind": "fact",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [6],
+        "recallTool": 1
+      },
+      {
+        "id": "q057",
+        "kind": "fact",
+        "style": "indirect",
+        "recall": {
+          "relevance": 0,
+          "selector": 0
+        },
+        "inBlock": 0,
+        "negativeAbove": false,
+        "ranks": [null, null],
+        "recallTool": 0
+      },
+      {
+        "id": "q058",
+        "kind": "fact",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q059",
+        "kind": "fact",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1, 3],
+        "recallTool": 1
+      },
+      {
+        "id": "q060",
+        "kind": "fact",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [3],
+        "recallTool": 1
+      },
+      {
+        "id": "q061",
+        "kind": "convention",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q062",
+        "kind": "convention",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q063",
+        "kind": "convention",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q064",
+        "kind": "convention",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q065",
+        "kind": "convention",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q066",
+        "kind": "convention",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q067",
+        "kind": "convention",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q068",
+        "kind": "convention",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q069",
+        "kind": "convention",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q070",
+        "kind": "convention",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q071",
+        "kind": "convention",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": true,
+        "ranks": [3],
+        "recallTool": 1
+      },
+      {
+        "id": "q072",
+        "kind": "convention",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q073",
+        "kind": "convention",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [4],
+        "recallTool": 1
+      },
+      {
+        "id": "q074",
+        "kind": "convention",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q075",
+        "kind": "convention",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q076",
+        "kind": "convention",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q077",
+        "kind": "convention",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 0,
+          "selector": 0
+        },
+        "inBlock": 0,
+        "negativeAbove": true,
+        "ranks": [null],
+        "recallTool": 0
+      },
+      {
+        "id": "q078",
+        "kind": "convention",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 0
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [8],
+        "recallTool": 1
+      },
+      {
+        "id": "q079",
+        "kind": "convention",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q080",
+        "kind": "convention",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 0,
+          "selector": 0
+        },
+        "inBlock": 0,
+        "negativeAbove": false,
+        "ranks": [null],
+        "recallTool": 0
+      },
+      {
+        "id": "q081",
+        "kind": "convention",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q082",
+        "kind": "convention",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [3],
+        "recallTool": 1
+      },
+      {
+        "id": "q083",
+        "kind": "convention",
+        "style": "indirect",
+        "recall": {
+          "relevance": 0.5,
+          "selector": 0.5
+        },
+        "inBlock": 0.5,
+        "negativeAbove": false,
+        "ranks": [2, 21],
+        "recallTool": 0.5
+      },
+      {
+        "id": "q084",
+        "kind": "convention",
+        "style": "indirect",
+        "recall": {
+          "relevance": 0.5,
+          "selector": 0
+        },
+        "inBlock": 0.5,
+        "negativeAbove": false,
+        "ranks": [5, null],
+        "recallTool": 0.5
+      },
+      {
+        "id": "q085",
+        "kind": "convention",
+        "style": "indirect",
+        "recall": {
+          "relevance": 0,
+          "selector": 0
+        },
+        "inBlock": 0,
+        "negativeAbove": false,
+        "ranks": [null],
+        "recallTool": 0
+      },
+      {
+        "id": "q086",
+        "kind": "convention",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 0.5
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1, 2],
+        "recallTool": 1
+      },
+      {
+        "id": "q087",
+        "kind": "convention",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q088",
+        "kind": "convention",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q089",
+        "kind": "convention",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 0
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [5, 8],
+        "recallTool": 1
+      },
+      {
+        "id": "q090",
+        "kind": "convention",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q091",
+        "kind": "definition",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q092",
+        "kind": "definition",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q093",
+        "kind": "definition",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q094",
+        "kind": "definition",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q095",
+        "kind": "definition",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q096",
+        "kind": "definition",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q097",
+        "kind": "definition",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q098",
+        "kind": "definition",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q099",
+        "kind": "definition",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q100",
+        "kind": "definition",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q101",
+        "kind": "definition",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 0,
+          "selector": 0
+        },
+        "inBlock": 0,
+        "negativeAbove": false,
+        "ranks": [null],
+        "recallTool": 0
+      },
+      {
+        "id": "q102",
+        "kind": "definition",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 0,
+          "selector": 0
+        },
+        "inBlock": 0,
+        "negativeAbove": true,
+        "ranks": [null],
+        "recallTool": 0
+      },
+      {
+        "id": "q103",
+        "kind": "definition",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 0
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q104",
+        "kind": "definition",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q105",
+        "kind": "definition",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q106",
+        "kind": "definition",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q107",
+        "kind": "definition",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q108",
+        "kind": "definition",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [4],
+        "recallTool": 1
+      },
+      {
+        "id": "q109",
+        "kind": "definition",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 0.5
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1, 7],
+        "recallTool": 1
+      },
+      {
+        "id": "q110",
+        "kind": "definition",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": true,
+        "ranks": [3],
+        "recallTool": 1
+      },
+      {
+        "id": "q111",
+        "kind": "definition",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q112",
+        "kind": "definition",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q113",
+        "kind": "definition",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 0.5
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [6, 1],
+        "recallTool": 1
+      },
+      {
+        "id": "q114",
+        "kind": "definition",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q115",
+        "kind": "definition",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q116",
+        "kind": "definition",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 0.5
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1, 2],
+        "recallTool": 1
+      },
+      {
+        "id": "q117",
+        "kind": "definition",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q118",
+        "kind": "definition",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1, 2],
+        "recallTool": 1
+      },
+      {
+        "id": "q119",
+        "kind": "definition",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [3],
+        "recallTool": 1
+      },
+      {
+        "id": "q120",
+        "kind": "definition",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q121",
+        "kind": "decision",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q122",
+        "kind": "decision",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1, 2],
+        "recallTool": 1
+      },
+      {
+        "id": "q123",
+        "kind": "decision",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [2, 1],
+        "recallTool": 1
+      },
+      {
+        "id": "q124",
+        "kind": "decision",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q125",
+        "kind": "decision",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q126",
+        "kind": "decision",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q127",
+        "kind": "decision",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q128",
+        "kind": "decision",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q129",
+        "kind": "decision",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q130",
+        "kind": "decision",
+        "style": "literal",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q131",
+        "kind": "decision",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": true,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q132",
+        "kind": "decision",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [4],
+        "recallTool": 1
+      },
+      {
+        "id": "q133",
+        "kind": "decision",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q134",
+        "kind": "decision",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q135",
+        "kind": "decision",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q136",
+        "kind": "decision",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 0,
+          "selector": 0
+        },
+        "inBlock": 0,
+        "negativeAbove": true,
+        "ranks": [null],
+        "recallTool": 0
+      },
+      {
+        "id": "q137",
+        "kind": "decision",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 0,
+          "selector": 0
+        },
+        "inBlock": 0,
+        "negativeAbove": true,
+        "ranks": [null],
+        "recallTool": 0
+      },
+      {
+        "id": "q138",
+        "kind": "decision",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [6],
+        "recallTool": 1
+      },
+      {
+        "id": "q139",
+        "kind": "decision",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [5],
+        "recallTool": 1
+      },
+      {
+        "id": "q140",
+        "kind": "decision",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q141",
+        "kind": "decision",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q142",
+        "kind": "decision",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q143",
+        "kind": "decision",
+        "style": "indirect",
+        "recall": {
+          "relevance": 0,
+          "selector": 0
+        },
+        "inBlock": 0,
+        "negativeAbove": false,
+        "ranks": [25, null],
+        "recallTool": 0
+      },
+      {
+        "id": "q144",
+        "kind": "decision",
+        "style": "indirect",
+        "recall": {
+          "relevance": 0,
+          "selector": 0
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [11, 28],
+        "recallTool": 0
+      },
+      {
+        "id": "q145",
+        "kind": "decision",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q146",
+        "kind": "decision",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 0
+        },
+        "inBlock": 1,
+        "negativeAbove": true,
+        "ranks": [2],
+        "recallTool": 1
+      },
+      {
+        "id": "q147",
+        "kind": "decision",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [1],
+        "recallTool": 1
+      },
+      {
+        "id": "q148",
+        "kind": "decision",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [3],
+        "recallTool": 1
+      },
+      {
+        "id": "q149",
+        "kind": "decision",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": true,
+        "ranks": [7],
+        "recallTool": 1
+      },
+      {
+        "id": "q150",
+        "kind": "decision",
+        "style": "indirect",
+        "recall": {
+          "relevance": 1,
+          "selector": 1
+        },
+        "inBlock": 1,
+        "negativeAbove": false,
+        "ranks": [3],
+        "recallTool": 1
+      },
+      {
+        "id": "q151",
+        "kind": "definition",
+        "style": "paraphrase",
+        "recall": {
+          "relevance": 1,
+          "selector": 0
+        },
+        "inBlock": 1,
+        "negativeAbove": true,
+        "ranks": [5],
+        "recallTool": 1
+      }
+    ]
+  },
+  "embedLatencyMs": {
+    "p50": 34.663062999999966,
+    "p95": 38.50383100000181
+  }
+}
