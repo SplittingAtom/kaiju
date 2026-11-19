@@ -202,16 +202,75 @@ describe("site_memory_proposals (ac-1)", () => {
     });
   });
 
-  it("go with their Workspace; people are deactivated, never deleted (NO ACTION)", async () => {
-    const id = await propose(admin, teamGone);
+  it("people are deactivated, never deleted (NO ACTION)", async () => {
+    await propose(admin);
     await admin.query("BEGIN");
     try {
       expect(await code(admin, `DELETE FROM users WHERE id = $1`, [proposer])).toBe("23503");
     } finally {
       await admin.query("ROLLBACK");
     }
+  });
+
+  // KOBE-665 (Gate C decision 1): a Workspace with Site proposals cannot be deleted. The key is
+  // ON DELETE RESTRICT, so the database refuses (23503 on this key) whatever the proposals' state;
+  // a future Workspace deletion checks legal holds and handles the proposals explicitly first.
+  it("block deleting their Workspace (RESTRICT, KOBE-665)", async () => {
+    /** The constraint a team delete fails on, in a savepoint (undefined when it succeeds). */
+    const refusedBy = async (team: string): Promise<string | undefined> => {
+      await admin.query("SAVEPOINT probe");
+      try {
+        await admin.query(`DELETE FROM teams WHERE id = $1`, [team]);
+        await admin.query("RELEASE SAVEPOINT probe");
+        return undefined;
+      } catch (err) {
+        await admin.query("ROLLBACK TO SAVEPOINT probe");
+        const e = err as { code?: string; constraint?: string };
+        return `${e.code}:${e.constraint}`;
+      }
+    };
+    const REFUSED = "23503:site_memory_proposals_from_team_id_teams_id_fk";
+    const { rows: fk } = await admin.query<{ action: string }>(
+      `SELECT confdeltype AS action FROM pg_constraint
+       WHERE conname = 'site_memory_proposals_from_team_id_teams_id_fk'`,
+    );
+    expect(fk).toEqual([{ action: "r" }]);
+
+    const open = await propose(admin, teamGone);
+    const withdrawn = await propose(admin, teamGone);
+    await admin.query(`UPDATE site_memory_proposals SET state = 'withdrawn' WHERE id = $1`, [
+      withdrawn,
+    ]);
+    await admin.query("BEGIN");
+    try {
+      expect(await refusedBy(teamGone)).toBe(REFUSED);
+      // Only a withdrawn (or expired, decided) proposal left: still refused.
+      await admin.query(`DELETE FROM site_memory_proposals WHERE id = $1`, [open]);
+      expect(await refusedBy(teamGone)).toBe(REFUSED);
+    } finally {
+      await admin.query("ROLLBACK");
+    }
+    const { rows } = await admin.query(
+      `SELECT id FROM site_memory_proposals WHERE from_team_id = $1 ORDER BY id`,
+      [teamGone],
+    );
+    expect(rows).toHaveLength(2);
+
+    // Proposals handled (removed) first: the Workspace delete goes through.
+    await admin.query(`DELETE FROM site_memory_proposals WHERE from_team_id = $1`, [teamGone]);
     await admin.query(`DELETE FROM teams WHERE id = $1`, [teamGone]);
-    const { rows } = await admin.query(`SELECT 1 FROM site_memory_proposals WHERE id = $1`, [id]);
+    const { rows: gone } = await admin.query(`SELECT 1 FROM teams WHERE id = $1`, [teamGone]);
+    expect(gone).toEqual([]);
+  });
+
+  it("leave a Workspace that never proposed free to be deleted (KOBE-665)", async () => {
+    const team = randomUUID();
+    await admin.query(`INSERT INTO teams (id, slug, name) VALUES ($1, $2, 'N')`, [
+      team,
+      `smp-${team.slice(0, 8)}`,
+    ]);
+    await admin.query(`DELETE FROM teams WHERE id = $1`, [team]);
+    const { rows } = await admin.query(`SELECT 1 FROM teams WHERE id = $1`, [team]);
     expect(rows).toEqual([]);
   });
 

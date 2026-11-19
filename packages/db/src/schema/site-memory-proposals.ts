@@ -57,8 +57,10 @@ const userRef = () => uuid().references(() => users.id);
  * it waits for the Site (Site admins and stewards), who approve, merge it into an existing Site
  * item (`merged_into`), reject it or request changes (`decided_by`, `decided_at`, `reason`); a
  * resubmission counts a round (≤ 3). Open proposals expire at `expires_at` (a sweep sets
- * `expired`); the proposer may withdraw. Goes with its Workspace (team delete cascades); a purged
- * Site item clears only `merged_into`. The app role may not DELETE rows.
+ * `expired`); the proposer may withdraw. A Workspace with proposals cannot be deleted: the team key
+ * is ON DELETE RESTRICT (KOBE-665, Gate C decision 1), so a future Workspace deletion must check
+ * legal holds and handle its proposals explicitly first; a purged Site item clears only
+ * `merged_into`. The app role may not DELETE rows.
  */
 export const siteMemoryProposals = pgTable(
   "site_memory_proposals",
@@ -66,7 +68,7 @@ export const siteMemoryProposals = pgTable(
     id: uuid().primaryKey().defaultRandom(),
     fromTeamId: uuid()
       .notNull()
-      .references(() => teams.id, { onDelete: "cascade" }),
+      .references(() => teams.id, { onDelete: "restrict" }),
     statement: text().notNull(),
     kind: text().$type<SemanticMemoryKind>().notNull(),
     justification: text().notNull(),

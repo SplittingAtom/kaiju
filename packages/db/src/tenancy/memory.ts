@@ -50,14 +50,15 @@ export const memory = defineDomain({
     site_memory_item_versions: ["SELECT", "INSERT", "DELETE"],
     // Site proposals (KOBE-402): read only through server paths that filter by role (proposer,
     // the proposing Workspace's Team admins, Site admins and stewards). Withdrawn, expired and
-    // decided rows stay as history; rows leave only with their Workspace (cascade), so no DELETE.
+    // decided rows stay as history, so no DELETE (KOBE-665: the team key is RESTRICT, not cascade).
     site_memory_proposals: ["SELECT", "INSERT", "UPDATE"],
   },
   teamReferencing: {
     site_memory_proposals:
       "from_team_id names the proposing Workspace (SM19/SM20): a statement and justification its " +
       "Team admin confirmed for the Site, never evidence, rationale or thread links; ON DELETE " +
-      "CASCADE takes a deleted Workspace's proposals. Server paths filter rows by role.",
+      "RESTRICT (KOBE-665): a Workspace with proposals cannot be deleted until they are handled " +
+      "(legal holds checked first). Server paths filter rows by role.",
   },
   // Optional pgvector embeddings (KOBE-409, 0230): the server writes them after a version is saved
   // (embed on save, backfill, re-embed); the immutability trigger lets only these columns change.

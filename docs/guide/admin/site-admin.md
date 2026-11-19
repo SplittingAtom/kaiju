@@ -50,7 +50,9 @@ read a person's portable preferences either; reading them needs its own break-gl
 
 ## Teams and agents
 
-- **Teams**: create teams (workspaces) with their first team admin and rename them. **Manage
+- **Teams**: create teams (workspaces) with their first team admin and rename them (Kobe has no
+  way to delete a workspace; see [Legal hold on Site memory](../memory.md#legal-hold-on-site-memory)
+  for what a deletion would have to respect). **Manage
   members** opens a team's members: name, email, team role, how they joined (invitation, site
   admin, or "Managed by _provider_" for single sign-on) and whether the account is active. From
   there you can:
