@@ -428,6 +428,18 @@ describe("Site console › Settings › Memory: search by meaning (KOBE-409)", (
     expect(calls.some((c) => c.method === "POST" && c.url === `${VECTORS}/build`)).toBe(true);
   });
 
+  it("shows a build another server replica runs (KOBE-669)", async () => {
+    stubApi({
+      [`GET ${SITE}`]: [200, SITE_ON],
+      [`GET ${VECTORS}`]: [200, { ...VEC_READY, running_elsewhere: true }],
+    });
+    renderSite(<MemorySwitchesSection />);
+    await screen.findByText("Building vectors on another server replica.");
+    expect((screen.getByRole("button", { name: "Re-embed" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+  });
+
   it("saves a gateway embedding model and offers the in-cluster one", async () => {
     const calls = stubApi({
       [`GET ${SITE}`]: [200, SITE_ON],

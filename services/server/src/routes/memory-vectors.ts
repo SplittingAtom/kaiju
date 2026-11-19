@@ -8,6 +8,7 @@ import {
 } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { gatewayProviderNames } from "../memory/embeddings/model.js";
+import { buildRunningElsewhere } from "../memory/embeddings/backfill.js";
 import { readCoverage } from "../memory/embeddings/vector-store.js";
 
 type Ctx = Context<{ Variables: TeamVariables }>;
@@ -15,7 +16,7 @@ type Ctx = Context<{ Variables: TeamVariables }>;
 /**
  * The Workspace a Site admin acts in (the request's team, resolved and membership-checked by
  * `requireTeam`: the team header with the session's active team, or an admin tool's run team): it
- * pays for vectors they start (KOBE-409 billing). Null without one.
+ * pays for vectors they start (KOBE-409 billing). Null without one: each Workspace pays (KOBE-669).
  */
 export async function adminWorkspace(deps: ServerDeps, c: Ctx): Promise<string | null> {
   if (!(await requestNamesTeam(deps, c))) return null;
@@ -33,11 +34,12 @@ export async function adminWorkspace(deps: ServerDeps, c: Ctx): Promise<string |
  * - `GET /`: pgvector (`enabled`, `available` but not enabled, or `missing`), whether the columns
  *   exist, the Site embedding model and whether its provider is still on the gateway, the
  *   in-cluster model and the gateway providers to choose from, coverage (items with a vector of
- *   the current model, of all items that can have one) and this replica's build job.
- * - `POST /build`: starts the job, paid by the admin in their active Workspace (202), or says why
- *   not (409 running or no Workspace, 400 unavailable). Its calls are in the usage records
- *   (`memory_embed`, the admin and Workspace); the model choice itself is audited with the Site
- *   memory settings.
+ *   the current model, of all items that can have one), this replica's build job and whether
+ *   another replica runs one (`running_elsewhere`).
+ * - `POST /build`: starts the Site-wide job (202): paid by the admin in their active Workspace,
+ *   or without one each Workspace by its own member (KOBE-669, `buildTargets`); or says why not
+ *   (409 running, 400 unavailable). Its calls are in the usage records (`memory_embed`, payer and
+ *   Workspace); the model choice itself is audited with the Site memory settings.
  */
 export function memoryVectorRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }> {
   const app = new Hono<{ Variables: TeamVariables }>();
@@ -63,20 +65,13 @@ export function memoryVectorRoutes(deps: ServerDeps): Hono<{ Variables: TeamVari
       providers: [...providers].sort(),
       coverage: support.columns ? await readCoverage(db, current) : null,
       job: deps.memoryVectors.job ?? null,
+      running_elsewhere:
+        deps.memoryVectors.job?.state !== "running" && (await buildRunningElsewhere(db)),
     });
   });
 
   app.post("/build", async (c) => {
     const teamId = await adminWorkspace(deps, c);
-    if (teamId === null) {
-      return c.json(
-        {
-          code: "no_active_team",
-          message: "Choose a workspace first: it pays for the embedding calls.",
-        },
-        409,
-      );
-    }
     const started = await deps.memoryVectors.start({ userId: c.get("user").id, teamId });
     if (!started.ok) {
       return c.json(
