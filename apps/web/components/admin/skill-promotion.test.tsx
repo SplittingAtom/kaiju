@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, screen, within } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PromotePanel } from "../skills/promote-panel";
@@ -108,7 +108,13 @@ describe("Create kobe.skill.yaml (KOBE-564)", () => {
     const model = (await within(group).findByRole("combobox", {
       name: "Model for the manifest",
     })) as HTMLSelectElement;
-    expect(model.options[0]?.textContent).toBe("Team default (Kimi K2)");
+    // The select renders before GET /v1/team/models resolves: wait for the list, don't race it.
+    await waitFor(() =>
+      expect([...model.options].map((o) => o.textContent)).toEqual([
+        "Team default (Kimi K2)",
+        "GLM Flash",
+      ]),
+    );
     expect([...model.options].map((o) => o.textContent)).toEqual([
       "Team default (Kimi K2)",
       "GLM Flash",
