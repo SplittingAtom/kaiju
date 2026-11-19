@@ -361,6 +361,12 @@ export class SandboxConnection implements RegisteredConnection {
     return this.#leases.has(runId);
   }
 
+  liveMessageRuns(threadId: string): readonly string[] {
+    return [...this.#leases]
+      .filter(([, l]) => l.threadId === threadId && !l.ended && !l.compaction)
+      .map(([runId]) => runId);
+  }
+
   hasCapability(name: string): boolean {
     return this.#capabilities.has(name);
   }

@@ -98,15 +98,22 @@ export class ModelFile {
     return this.#write(next);
   }
 
-  /** True when the file on disk is byte for byte what this writer last wrote. */
-  async verify(): Promise<boolean> {
-    await this.#chain;
-    if (this.#writtenText === undefined) return false;
-    try {
-      return (await readFile(this.path, "utf8")) === this.#writtenText;
-    } catch {
-      return false;
-    }
+  /**
+   * True when the file on disk is byte for byte what this writer last wrote. Queued with the
+   * writes (KOBE-607): a write started during the read would otherwise change the expected text
+   * between the read and the comparison (or the file under the read), a false tamper.
+   */
+  verify(): Promise<boolean> {
+    const result = this.#chain.then(async () => {
+      if (this.#writtenText === undefined) return false;
+      try {
+        return (await readFile(this.path, "utf8")) === this.#writtenText;
+      } catch {
+        return false;
+      }
+    });
+    this.#chain = result.catch(() => undefined);
+    return result;
   }
 
   #write(content: ModelFileContent): Promise<void> {
