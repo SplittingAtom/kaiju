@@ -1112,6 +1112,16 @@ off per workload with `<component>.podDisruptionBudget.enabled` or
 `<component>.topologySpread.enabled`, or spread over zones with
 `<component>.topologySpread.topologyKey: topology.kubernetes.io/zone`.
 
+### Audit forwarding (SIEM)
+
+`auditForwarding.syslog` and `auditForwarding.otlp` send every audit event to your SIEM (off by
+default). Site events go as recorded; Workspace events go with the same Site-safe details as the
+Site console's Audit log (no thread, run, pass, candidate, tool-call or approval ids and no "via
+agent" record), and the full record stays in each Workspace's own audit log. Forwarded events carry
+the stored row's `hash` and `prev_hash`: the links between events check in the SIEM, and the chain
+itself is recomputed with `GET /v1/site/audit/integrity`. Details:
+[Export and forwarding](audit-log.md#export-and-forwarding).
+
 ### Private certificate authorities
 
 When a service the server calls over TLS (a syslog or OTLP collector for audit forwarding, an OIDC

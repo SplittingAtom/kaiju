@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { canSee, findSection } from "../../lib/admin/nav/registry";
 import { must } from "../../lib/testing/must";
-import { SiteAuditPage } from "./site/audit-page";
+import { SiteAuditPage, WORKSPACE_HINT_TEXT } from "./site/audit-page";
 import { clientDetailsVisible, plainValue } from "./site/audit-events";
 import { localToIso } from "./site/audit-filters";
 import { forbidNativeConfirm, ME, renderSite, stubApi, summary } from "./testing";
@@ -111,6 +111,24 @@ describe("Site audit log (KOBE-291)", () => {
     expect(screen.getByText(/shown for 12 hours after each event/)).toBeTruthy();
     expect(calls.every((c) => c.method === "GET")).toBe(true);
     expect(screen.queryByRole("button", { name: /delete|edit|remove/i })).toBeNull();
+  });
+
+  it("says Workspace events show only Site-safe details and where the full record is (KOBE-676)", async () => {
+    stubPage();
+    renderSite(<SiteAuditPage />);
+    await table();
+    const events = screen.getByRole("region", { name: "Events" });
+    const hint = within(events).getByText(WORKSPACE_HINT_TEXT);
+    expect(hint.tagName).toBe("P");
+    expect(hint.textContent).toMatch(/only Site-safe details/);
+    expect(hint.textContent).toMatch(
+      /each workspace's own audit log \(Team console › Audit view\)/,
+    );
+    // Plain text in reading order, before the table: no live region, nothing hidden.
+    expect(hint.closest("[aria-live], [aria-hidden='true'], .sr-only")).toBeNull();
+    expect(
+      hint.compareDocumentPosition(await table()) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("doesn't verify the chain on open: it says so until Verify chain is pressed", async () => {

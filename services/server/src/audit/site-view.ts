@@ -5,9 +5,9 @@
  * entry, run, pass, candidate, tool-call and approval ids, the person-via-agent record (thread,
  * run, tool call) and other thread-derived fields ({@link SITE_HIDDEN_TARGET_KEYS}) are dropped,
  * and so is any key nobody classified: a new event field stays hidden from the Site until it is
- * added here (`site-view.test.ts` fails until every declared key is classified). The Workspace's
- * own audit log (`/v1/team/audit`) and SIEM forwarding keep the full record; the hash chain
- * covers the stored row, not this view. Site-level events (`teamId` null) are shown as stored.
+ * added here (`site-view.test.ts` fails until every declared key is classified). SIEM forwarding
+ * sends this view too (KOBE-676). The Workspace's own audit log (`/v1/team/audit`) keeps the full
+ * record; the hash chain covers the stored row, not this view. Site-level events (`teamId` null) are shown as stored.
  */
 
 /** Metadata keys of Workspace events the Site audit view shows (no thread-derived ids or counts). */

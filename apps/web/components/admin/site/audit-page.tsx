@@ -46,6 +46,12 @@ async function loadContext(): Promise<ApiResult<AuditContext>> {
 }
 
 const EVENTS_HEADING = "audit-events-heading";
+/**
+ * Workspace events show only Site-safe details here (KOBE-666, KOBE-676; the server trims them,
+ * `audit/site-view.ts`), and so does SIEM forwarding: the full record is the workspace's own log.
+ */
+export const WORKSPACE_HINT_TEXT =
+  "Workspace events show only Site-safe details here: nothing that points into a conversation. The full record is in each workspace's own audit log (Team console › Audit view).";
 
 /** What the live region says when a view has loaded. */
 function viewMessage(view: AuditView): string {
@@ -98,6 +104,7 @@ export function SiteAuditPage() {
       />
       <AuditIntegritySection />
       <Section id={EVENTS_HEADING} title="Events">
+        <p className="text-sm text-console-muted">{WORKSPACE_HINT_TEXT}</p>
         <AuditFilterForm
           users={ctx?.users ?? []}
           teams={ctx?.teams ?? []}
