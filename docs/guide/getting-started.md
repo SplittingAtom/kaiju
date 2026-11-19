@@ -68,3 +68,4 @@ you are away. Your files are kept while it sleeps.
 - [Writing messages](chat/composer.md): slash commands, attachments and mentions.
 - [The Threads panel](chat/threads-panel.md): finding, filing and exporting conversations.
 - [Glossary](glossary.md): the words Kobe uses.
+- [What's new](whats-new.md): what changed in the latest release.
