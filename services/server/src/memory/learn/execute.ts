@@ -95,11 +95,13 @@ async function appendPassEvent(ctx: PassContext, pass: RunningPass, type: string
 const progress = (ctx: PassContext, pass: RunningPass, stage: MemoryPassStage, extra = {}) =>
   appendPassEvent(ctx, pass, "memory.pass.progress", { stage, ...extra });
 
-/** Messages with a fresh nonce (a new one if the data happens to hold it). */
+/** Messages with a fresh nonce (a new one if the data happens to hold it), and that nonce. */
 function messagesFor(input: LearningPassInput) {
   for (let i = 0; i < 3; i += 1) {
-    const built = extractorMessages(input.prompt, randomBytes(16).toString("hex"));
-    if (built.ok || built.reason !== "nonce_in_content") return built;
+    const nonce = randomBytes(16).toString("hex");
+    const built = extractorMessages(input.prompt, nonce);
+    if (built.ok) return { ...built, nonce };
+    if (built.reason !== "nonce_in_content") return built;
   }
   return { ok: false as const, reason: "nonce_in_content" as const };
 }
@@ -110,7 +112,7 @@ async function extract(
   input: LearningPassInput,
   target: Extract<LearnTarget, { ok: true }>,
   usage: { attempts: number },
-): Promise<MemoryExtractorOutput> {
+): Promise<{ output: MemoryExtractorOutput; nonce: string }> {
   const built = messagesFor(input);
   if (!built.ok) throw new PassFailure("model_error", `input_${built.reason}`);
   const timeoutMs = ctx.timeoutMs ?? SERVER_CALL_LIMITS.memory_learn.timeout_ms;
@@ -139,7 +141,7 @@ async function extract(
       throw new PassFailure(failureForCode(code), code);
     }
     const parsed = parseMemoryExtractorOutput(reply);
-    if (parsed.ok) return parsed.output;
+    if (parsed.ok) return { output: parsed.output, nonce: built.nonce };
   }
   throw new PassFailure("schema_rejected");
 }
@@ -149,11 +151,11 @@ async function finish(
   ctx: PassContext,
   pass: RunningPass,
   input: LearningPassInput,
-  output: MemoryExtractorOutput,
+  { output, nonce }: { output: MemoryExtractorOutput; nonce: string },
   usage: Record<string, unknown>,
   span: Span,
 ): Promise<void> {
-  const screen = screenExtractorOutput(output, input.prompt);
+  const screen = screenExtractorOutput(output, input.prompt, nonce);
   await withAppendTx(ctx.db, pass.teamId, async (tx) => {
     const known = await readKnownStatements(tx, pass);
     const selection = selectCandidates(screen.kept, known);
@@ -272,9 +274,9 @@ export async function executePass(
         if (!target.ok) throw new PassFailure("learning_model_unavailable", "not_enabled");
         span.setAttribute("gen_ai.request.model", target.model);
         await progress(ctx, pass, "extracting");
-        const output = await extract(ctx, pass, input, target, usage);
+        const extracted = await extract(ctx, pass, input, target, usage);
         await progress(ctx, pass, "checking");
-        await finish(ctx, pass, input, output, usage, span);
+        await finish(ctx, pass, input, extracted, usage, span);
         span.setAttribute("kobe.memory.outcome", "completed");
       } catch (err) {
         const failure =

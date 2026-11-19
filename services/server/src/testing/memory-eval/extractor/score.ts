@@ -51,6 +51,8 @@ export interface Attempt {
   readonly latency_ms: number;
   readonly prompt_tokens?: number;
   readonly completion_tokens?: number;
+  /** The fence nonce the call's messages carried (KOBE-672: the screen accepts it as an id prefix). */
+  readonly nonce?: string;
 }
 
 export type Verdict = "matched" | "allowed" | "forbidden" | "unexpected";
@@ -142,7 +144,8 @@ export function scoreCase(c: EvalCase, attempts: readonly Attempt[]): CaseResult
     a.text === undefined ? undefined : parseMemoryExtractorOutput(a.text),
   );
   const schemaValidFirst = parsedAll[0]?.ok === true;
-  const ok = parsedAll.find((p) => p?.ok === true);
+  const okIndex = parsedAll.findIndex((p) => p?.ok === true);
+  const ok = parsedAll[okIndex];
   const missedAll = c.expect.map((e) => e.statement);
   if (!ok || !ok.ok) {
     const outcome = attempts.some((a) => a.text !== undefined) ? "schema_rejected" : "error";
@@ -155,7 +158,7 @@ export function scoreCase(c: EvalCase, attempts: readonly Attempt[]): CaseResult
       dropped: {},
     };
   }
-  const screen = screenExtractorOutput(ok.output, c.input);
+  const screen = screenExtractorOutput(ok.output, c.input, attempts[okIndex]?.nonce);
   const selection = selectCandidates(screen.kept, { open: new Set(), dismissed: new Set() });
   const dropped: Record<string, number> = {};
   for (const r of [...screen.dropped, ...selection.dropped].map((d) => d.reason))
