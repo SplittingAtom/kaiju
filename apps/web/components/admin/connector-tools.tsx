@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { ToolApp, ToolAppReview } from "../../lib/admin/api/team/connectors";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import { consolePortalContainer } from "../ui/chat-portal";
+import { Tooltip, TooltipTrigger } from "../ui/tooltip";
 import { Badge, FOCUS_RING, type BadgeTone } from "../ui/console";
 
 /**
@@ -117,8 +118,8 @@ export function McpUiBadge({ app }: { readonly app: ToolApp | null | undefined }
   const text = appBadgeText(app);
   return (
     <TooltipPrimitive.Provider delayDuration={200}>
-      <TooltipPrimitive.Root>
-        <TooltipPrimitive.Trigger asChild>
+      <Tooltip>
+        <TooltipTrigger asChild>
           <button
             type="button"
             aria-label={`MCP-UI: ${text}`}
@@ -127,7 +128,7 @@ export function McpUiBadge({ app }: { readonly app: ToolApp | null | undefined }
           >
             <Badge tone={REVIEW_TONE[app.review]}>MCP-UI</Badge>
           </button>
-        </TooltipPrimitive.Trigger>
+        </TooltipTrigger>
         <TooltipPrimitive.Portal container={consolePortalContainer()}>
           <TooltipPrimitive.Content
             sideOffset={4}
@@ -136,7 +137,7 @@ export function McpUiBadge({ app }: { readonly app: ToolApp | null | undefined }
             {text}
           </TooltipPrimitive.Content>
         </TooltipPrimitive.Portal>
-      </TooltipPrimitive.Root>
+      </Tooltip>
     </TooltipPrimitive.Provider>
   );
 }

@@ -63,7 +63,8 @@ No thread-derived text crosses to the Site (SM20): only the confirmed statement 
   (selector and recall) of a member's run; admin MCP `site_memory_items_list` /
   `site_memory_item_get` (KOBE-650) through the executor's delegated route call; the Site memory
   export (JSON and CSV, inactive included); notifications (rows, digest, swept reminders, email
-  rows, the bell API, mail sent); audit entries of these flows (rows and `/v1/site/audit`).
+  rows, the bell API, mail sent); audit entries of these flows (rows); since KOBE-666 every page
+  of `/v1/site/audit` and its JSONL and CSV export, every event, with nothing allowed.
 - **Mutation check (ac-2):** the same test corrupts one proposal row (rationale appended) and one
   Site version (evidence quote appended) and asserts the probe reports each read path that shows
   them; a detector test injects an `evidence` field into a view.
@@ -95,10 +96,12 @@ is never learned, U46). The spec now states a meeting room's name.
    proposals (team cascade), even while a legal hold is on. Guard the cascade with the hold?
 2. **Who may decide** (KOBE-403 LOW-1): only the proposer is barred. A Team admin who confirmed a
    member's proposal (possibly with an edit) may also approve it at step 2 if they are a Site
-   steward. Bar the confirmer too?
+   steward. Bar the confirmer too? **Answered 2026-11-19: yes, in any round (KOBE-666).**
 3. **Site audit view** (KOBE-406): `/v1/site/audit` shows Site admins every Workspace's audit
    events, including candidate and thread ids (ids only, no text). Inside SM20's wall or not?
+   **Answered 2026-11-19: inside; Workspace events show allow-listed metadata only (KOBE-666).**
 4. **Reminders** (KOBE-653): every 7 days while a step waits (read as repeating), not once.
+   **Answered 2026-11-19: one reminder per step (KOBE-666).**
 5. **Curators outside every Workspace** (KOBE-653): Site curators who belong to no Workspace get no
    bell notices (the notices land in the Workspace a curator last used); they see the Site queue.
 6. **Team admins promoted mid-step** get no reminder for that step (KOBE-653).

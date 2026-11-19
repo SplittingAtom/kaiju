@@ -1,5 +1,5 @@
 import type { MemoryWho } from "../../items/who.js";
-import { curatesWorkspace, isTeamAdmin } from "./access.js";
+import { curatesWorkspace, decideBlocked, isTeamAdmin } from "./access.js";
 import type { SiteProposalRow } from "./rows.js";
 
 /**
@@ -7,7 +7,9 @@ import type { SiteProposalRow } from "./rows.js";
  * kind and justification (the table has no evidence, quote, rationale, thread, entry or run
  * columns), so neither view can hold thread-derived data; KOBE-406 probes these two shapes.
  *
- * - {@link siteView}: Site curators. Names the source Workspace (provenance is theirs to see).
+ * - {@link siteView}: Site curators. Names the source Workspace (provenance is theirs to see);
+ *   `may.decide` for the viewer, with `may.decide_blocked` saying why not when they proposed it or
+ *   confirmed it for the Workspace in any round (KOBE-666).
  * - {@link workspaceView}: the proposing Workspace (its curators, the proposer). Never names the
  *   Site curator who decided (Site authors stay with Site curators, contract wall M6).
  */
@@ -43,11 +45,14 @@ function common(p: SiteProposalRow) {
   };
 }
 
-export function siteView(p: SiteProposalRow) {
+export function siteView(who: MemoryWho, p: SiteProposalRow) {
+  const waiting = stateOf(p) === "awaiting_site";
+  const blocked = waiting ? decideBlocked(who, p) : null;
   return {
     ...common(p),
     from_workspace: { id: p.fromTeamId, name: p.fromTeamName },
     decided_by: decided(p) ? p.decidedBy : null,
+    may: { decide: waiting && blocked === null, decide_blocked: blocked },
   };
 }
 export type SiteProposalView = ReturnType<typeof siteView>;

@@ -698,6 +698,19 @@ Secret). Both carry the same fields as the site export, including the chain hash
 | `GET /v1/team/audit`           | Team admin (`team.audit.read`)   | Same filters except `teamId`; only the active team's events; no `ip`, `userAgent`, `prevHash` or `hash`.                                                                                                                                                                                                                                                                |
 | `GET /v1/site/audit/integrity` | Owner, Admin (3 per minute)      | `{ ok, checked, head: { seq, hash }, problem?, anchor: { seq, hash, at, mac } }`: a full-chain check plus the attested head                                                                                                                                                                                                                                             |
 
+**Site view of Workspace events (KOBE-666, SM20).** `GET /v1/site/audit` and
+`GET /v1/site/audit/export` are inside the Site wall: an event with a `teamId` shows only the
+`target` keys on the allow-list in `services/server/src/audit/site-view.ts`
+(`SITE_VIEW_TARGET_KEYS`). Thread, entry, run, pass, candidate, suggestion, tool-call, approval,
+artifact and eval-case ids, per-thread counts (`entries`, `summarised`, `replied`, `skillHints`,
+`focused`), `fromConversation`, thread folder ids and names, and the `viaAgent` record are dropped
+(`SITE_HIDDEN_TARGET_KEYS`), and so is any key not yet classified: a new target key stays hidden
+from the Site until it is added to one of the two lists (`site-view.test.ts` fails until it is).
+Site-level events (`teamId` null) are unchanged. The Workspace's own log (`/v1/team/audit` and
+its export), the database rows and SIEM forwarding keep the full record; `hash` in the site export
+covers the stored row, so verify the chain with `GET /v1/site/audit/integrity`. The KOBE-406 wall
+probe reads every page of the site log and both export formats.
+
 Pages are newest first: pass `nextCursor` back as `before`. Pass `after` (for example `after=0`)
 to page oldest first, as an export does. Unknown parameters return 400.
 

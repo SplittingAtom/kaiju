@@ -7,8 +7,9 @@ import { openHarness, type Harness } from "./testing/harness.js";
 
 /**
  * KOBE-653 (v1.3 SMC6; SM22, SM28): Site proposal sweeps. Open proposals past 30 days expire
- * (the proposer and the confirming Team admin told once); weekly reminders go to the current
- * step's deciders while it waits, settled when it ends; Site curators outside the proposing
+ * (the proposer and the confirming Team admin told once); the current step's deciders get one
+ * reminder 7 days after the step started (KOBE-666: one per step, never repeated), settled when it
+ * ends; Site curators outside the proposing
  * Workspace hear in their own Workspace (relay). A Site-wide legal hold freezes it all; a hold on
  * the proposer keeps their proposals open.
  */
@@ -260,21 +261,13 @@ describe("holds (ac-2)", () => {
     await pass();
     expect(await stateOf(id)).toBe("expired");
   });
-
-  it("a hold on the proposer stops the weekly re-arm", async () => {
-    const id = await proposal("awaiting_team", 10);
-    await reminder(id, ids.admin, "memory.site_proposal.received", 8);
-    await placeHold("legal_holds", ids.proposer);
-    await sweepMemoryReminders(db());
-    expect(await remindersOf(id)).toEqual([{ team_id: teamA, user_id: ids.admin, sent: true }]);
-    expect(await notices(ids.admin, id)).toEqual([]);
-  });
 });
 
 describe("reminders (ac-1, ac-3)", () => {
-  it("awaiting_team: the Team admins hear once a week while it waits", async () => {
+  it("awaiting_team: the Team admins hear once, 7 days in, never again (KOBE-666)", async () => {
     const id = await proposal("awaiting_team", 10);
-    await reminder(id, ids.admin, "memory.site_proposal.received", 8);
+    await reminder(id, ids.admin, "memory.site_proposal.received");
+    await makeDue(id);
     await sweepMemoryReminders(db());
     expect(await notices(ids.admin, id)).toMatchObject([
       {
@@ -283,9 +276,20 @@ describe("reminders (ac-1, ac-3)", () => {
         related_kind: "memory.site_proposal.received",
       },
     ]);
-    // Same week: nothing more, however often the pass runs (or how many run at once).
+    // Nothing more, however often the pass runs (or how many run at once)...
     await Promise.all([sweepMemoryReminders(db()), sweepMemoryReminders(db())]);
     expect(await notices(ids.admin, id)).toHaveLength(1);
+    // ...nor a week (or three) later while the step still waits: one reminder per step.
+    for (const days of [8, 15, 22]) {
+      await h.admin.query(
+        `UPDATE memory_reminders SET sent_at = now() - make_interval(days => $2)
+          WHERE object_id = $1`,
+        [id, days],
+      );
+      await sweepMemoryReminders(db());
+    }
+    expect(await notices(ids.admin, id)).toHaveLength(1);
+    expect(await remindersOf(id)).toEqual([{ team_id: teamA, user_id: ids.admin, sent: true }]);
     // Confirmed: the Team step ended, its reminder is dropped at send.
     await h.admin.query(
       `UPDATE site_memory_proposals SET state = 'awaiting_site', team_confirmed_by = $2,
@@ -326,19 +330,40 @@ describe("reminders (ac-1, ac-3)", () => {
         { team_id: teamC, user_id: ids.siteAdmin, sent: false },
       ].sort((a, b) => a.user_id.localeCompare(b.user_id)),
     );
+    // The relayed reminder is due 7 days after the step started (the confirmation), as KOBE-403's.
+    const due = await h.admin.query<{ off: number }>(
+      `SELECT abs(extract(epoch FROM r.due_at - (p.team_confirmed_at + interval '7 days')))::int
+              AS off
+         FROM memory_reminders r JOIN site_memory_proposals p ON p.id = r.object_id
+        WHERE r.object_id = $1 AND r.user_id = $2`,
+      [id, ids.siteAdmin],
+    );
+    expect(due.rows[0]?.off).toBeLessThan(5);
     // Again, and two at once: no second notice.
     await Promise.all([sweepMemoryReminders(db()), sweepMemoryReminders(db())]);
     expect(await notices(ids.siteAdmin, id)).toHaveLength(1);
-    // A week later both curators are reminded where they hear.
+    // 7 days in, both curators are reminded where they hear.
     await makeDue(id);
     await sweepMemoryReminders(db());
-    expect((await notices(ids.siteAdmin, id)).map((n) => [n.team_id, n.kind])).toEqual([
-      [teamC, "memory.site_proposal.confirmed"],
-      [teamC, "memory.review.reminder"],
-    ]);
-    expect((await notices(ids.siteMember, id)).map((n) => [n.team_id, n.kind])).toEqual([
-      [teamA, "memory.review.reminder"],
-    ]);
+    const seen = async () => [
+      (await notices(ids.siteAdmin, id)).map((n) => [n.team_id, n.kind]),
+      (await notices(ids.siteMember, id)).map((n) => [n.team_id, n.kind]),
+    ];
+    const once = [
+      [
+        [teamC, "memory.site_proposal.confirmed"],
+        [teamC, "memory.review.reminder"],
+      ],
+      [[teamA, "memory.review.reminder"]],
+    ];
+    expect(await seen()).toEqual(once);
+    // A week later, still waiting: no second reminder (KOBE-666), and no second relay.
+    await h.admin.query(
+      `UPDATE memory_reminders SET sent_at = now() - interval '8 days' WHERE object_id = $1`,
+      [id],
+    );
+    await sweepMemoryReminders(db());
+    expect(await seen()).toEqual(once);
   });
 
   it("relays again for a new confirmation round and drops the old one's reminder", async () => {

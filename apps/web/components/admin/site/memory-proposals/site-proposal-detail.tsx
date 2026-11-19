@@ -101,7 +101,9 @@ export function SiteProposalDetailView({
           checks={checks}
           api={api}
           itemsApi={itemsApi}
-          mine={proposal.proposer.id === userId}
+          blocked={
+            proposal.may?.decideBlocked ?? (proposal.proposer.id === userId ? "own_proposal" : null)
+          }
           canSetPolicy={canSetPolicy}
           onDecided={onDecided}
         />

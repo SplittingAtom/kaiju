@@ -156,7 +156,7 @@ async function accepted(
   });
   await workspaceAudit(tx, p, outcome, p.rounds, item);
   await noticeDecided(tx, subject(p), "accepted", who.userId);
-  const proposal = siteView(await readSiteProposal(tx, SITE, p.id));
+  const proposal = siteView(who, await readSiteProposal(tx, SITE, p.id));
   return { value: { proposal, item }, pending: op.pending };
 }
 
@@ -243,7 +243,10 @@ export function rejectSiteProposal(
     });
     await workspaceAudit(tx, p, "rejected", p.rounds);
     await noticeDecided(tx, subject(p), "dismissed", who.userId);
-    return { value: { proposal: siteView(await readSiteProposal(tx, SITE, p.id)) }, pending: [] };
+    return {
+      value: { proposal: siteView(who, await readSiteProposal(tx, SITE, p.id)) },
+      pending: [],
+    };
   });
 }
 
@@ -281,6 +284,9 @@ export function requestSiteChanges(
     });
     await workspaceAudit(tx, p, "changes_requested", round);
     await noticeAwaitingTeam(tx, subject(p), who.userId, true);
-    return { value: { proposal: siteView(await readSiteProposal(tx, SITE, p.id)) }, pending: [] };
+    return {
+      value: { proposal: siteView(who, await readSiteProposal(tx, SITE, p.id)) },
+      pending: [],
+    };
   });
 }
