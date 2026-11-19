@@ -1,6 +1,6 @@
 # KOBE-675: Gate 7 on k3d (e2e gate7 shard, U39–U54)
 
-- **Status:** in progress (draft PR)
+- **Status:** in review (draft PR #623)
 - **Branch / worktree:** `kobe-675-gate7-k3d` in `../Kobe-wt675`
 - **Depends on:** v1.3 Phases A–D merged (KOBE-413 writes the rest of docs/gates/gate-7.md)
 
@@ -40,4 +40,11 @@
 
 ## Evidence (acceptance criteria → test or command output)
 
-- ac-1/ac-3: CI run ids and per-story verdicts below once green.
+- ac-1/ac-3: dispatch run 44548857875 at `4669193e` (shards gate7-a, gate7-b only): both green,
+  ~9 min each after the images; U39–U54 all PASS ("Gate 7: all 8 stories proven" in each half).
+  Its `stories`/`k3d` jobs fail only because a partial run has no gate1–4 logs.
+- Iterations: run 44542362559 (site-proposals needs a second confirmer: nobody decides a
+  proposal they confirmed, so the spec takes KOBE_USER3; the context route answers an earlier run
+  when the newest got no memories; guide line wraps), run 44546256124 (the selector's query
+  includes the title and the last two user messages: negative pick checks moved to new threads).
+- ac-2 (merge commit green) is for the coordinator's full run.
