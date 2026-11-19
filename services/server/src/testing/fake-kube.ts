@@ -247,6 +247,8 @@ export interface ControllerOptions {
   readonly noPods?: boolean;
   /** Suspending leaves the pod terminating until `fake.finishTermination()` (grace period). */
   readonly slowPodTermination?: boolean;
+  /** A deleted pod of a Running Sandbox is replaced at once, like the real controller (KOBE-636). */
+  readonly replaceDeletedPods?: boolean;
 }
 
 /**
@@ -367,7 +369,7 @@ export function simulateAgentSandbox(fake: FakeKube, options: ControllerOptions 
   };
   /** A deleted pod of a Running Sandbox is replaced (the real controller does the same). */
   fake.afterDelete = (object) => {
-    if (object.kind !== "Pod") return;
+    if (!options.replaceDeletedPods || object.kind !== "Pod") return;
     const owner = object.metadata.ownerReferences?.find((o) => o.kind === "Sandbox");
     const ns = object.metadata.namespace as string;
     const sandbox = owner

@@ -340,7 +340,7 @@ describe("wakeSandbox on an ended pod (KOBE-636)", () => {
   };
 
   async function evicted(controller: Parameters<typeof simulateAgentSandbox>[1] = {}) {
-    const ctx = setup({ controller });
+    const ctx = setup({ controller: { replaceDeletedPods: true, ...controller } });
     const handle = await ctx.provider.ensureSandbox(TEAM, USER);
     const old = must(podOf(ctx.kube, handle.sandboxName));
     ctx.kube.seed({ ...old, status: EVICTED });
