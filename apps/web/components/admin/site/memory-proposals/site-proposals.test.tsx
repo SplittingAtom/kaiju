@@ -182,11 +182,35 @@ describe("Site proposal detail", () => {
     await waitFor(() => expect(document.activeElement).toBe(heading));
   });
 
-  it("offers no decision on the curator's own proposal", async () => {
+  it("disables every decision on the curator's own proposal, with the reason", async () => {
     const api = fakeApi([proposal()], detail({ proposer: { id: ME, name: "Me" } }));
     const region = await open(api);
-    expect(within(region).getByText(/another Site curator decides it/)).toBeTruthy();
-    expect(within(region).queryByRole("button", { name: "Approve" })).toBeNull();
+    const reason = within(region).getByText("You proposed this: another Site curator decides it.");
+    for (const name of ["Approve", "Merge into existing…", "Reject…", "Request changes…"]) {
+      const button = within(region).getByRole("button", { name }) as HTMLButtonElement;
+      expect(button.disabled, name).toBe(true);
+      expect(button.getAttribute("aria-describedby")).toBe(reason.id);
+    }
+  });
+
+  it("disables every decision for the Team admin who confirmed it (KOBE-666)", async () => {
+    const api = fakeApi(
+      [proposal()],
+      detail({
+        confirmedBy: { id: ME, name: "Me" },
+        may: { decide: false, decideBlocked: "confirmed" },
+      }),
+    );
+    const region = await open(api);
+    expect(
+      within(region).getByText(
+        "You confirmed this for your workspace: another Site curator decides it.",
+      ),
+    ).toBeTruthy();
+    const approve = within(region).getByRole("button", { name: "Approve" }) as HTMLButtonElement;
+    expect(approve.disabled).toBe(true);
+    await userEvent.click(approve);
+    expect(api.approve).not.toHaveBeenCalled();
   });
 });
 

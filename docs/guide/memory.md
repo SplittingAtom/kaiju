@@ -381,7 +381,8 @@ curator endorsed it, and, when the Site asked for changes, the Site's note and t
 
 - **Confirm** (Team admins) sends it to the Site's curators; **Edit and confirm…** lets you change
   the statement, kind or justification first (the edit is recorded in the audit log, never its
-  text). Confirming runs the same checks as proposing.
+  text). Confirming runs the same checks as proposing. If you are also a Site admin or Site
+  memory steward, confirming means you won't decide it on the Site: another Site curator does.
 - **Endorse** (curators other than the proposer, memory stewards included) tells the Team admins
   you support it. Memory stewards can't confirm.
 - **Withdraw…** (Team admins, or the proposer for their own) takes it back after a question; it
@@ -578,7 +579,11 @@ words the proposal's), other warnings, and a secret, which can't be saved.
   characters); it returns once a Team admin confirms it again. After three rounds of changes this
   is turned off: approve, merge or reject it.
 
-Nobody decides their own proposal. Approve and merge are refused while the workspace has turned
+Nobody decides their own proposal, and a Team admin who confirmed it for their workspace (in any
+round, even when someone else confirmed it after a request for changes) doesn't decide it either:
+another Site curator does. For them the actions are shown but turned off, with the reason. If the
+only Site admin or memory steward proposed or confirmed it, the proposal waits until someone else
+can decide it (add a Site memory steward) and expires after 30 days. Approve and merge are refused while the workspace has turned
 **Members may propose to the Site** off (reject and request changes still work), and any action
 says so when someone else already decided the proposal or it expired (30 days after it was made):
 reload the queue. Every decision is in the site audit log, and the workspace's audit log records
@@ -709,7 +714,7 @@ archived for you. What goes, and when:
   (with the learning passes they came from) and the Site memories they wrote; a hold on a
   workspace keeps that workspace's memories, its Learn from this chat records and the memories that follow each of its members; a
   Site-wide hold keeps Site memories and every memory that follows a person. Site memory proposals
-  don't expire while a Site-wide hold is in force (their weekly reminders pause too), or while a
+  don't expire while a Site-wide hold is in force (their reminders wait too), or while a
   hold covers the person who proposed them.
 
 ## What Kobe checks before a memory is saved
@@ -786,7 +791,9 @@ when it is your turn. Each notification has a button that opens the place where 
 - **A memory is 80% full**: Workspace or Site memory is close to its limit (to its curators).
 - **A reminder**: something you review has waited a week. Each waiting item reminds you once; a
   Site memory proposal reminds the people at its current step (the workspace's Team admins, then
-  the Site's admins and memory stewards) every week until that step is over.
+  the Site's admins and memory stewards, except whoever proposed or confirmed it) once, 7 days
+  after that step started, and not again while it waits. A step that starts again (the Site asked
+  for changes, a Team admin confirmed it again) reminds once more.
 - **A digest**: more than five notifications of one kind within an hour are rolled into one item
   ("4 more Workspace memory proposals in the last hour"); the first five arrive one by one. The
   digest becomes unread again when it grows.

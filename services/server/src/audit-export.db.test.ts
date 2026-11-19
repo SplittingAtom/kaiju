@@ -155,6 +155,25 @@ describe("export", () => {
     expect(theirs.some((e) => events.some((m) => m.id === e.id))).toBe(false);
   });
 
+  it("keeps a Workspace event's thread ids out of the Site view, not the team's (KOBE-666)", async () => {
+    const threadId = "6d0c5c8e-6f43-4d3c-9d4c-6a7e1b3f2a10";
+    await auditStandalone(h.deps.database.db, {
+      action: "thread.trashed",
+      teamId: finance,
+      actor: SYSTEM_ACTOR,
+      target: { threadId },
+    });
+    // The owner: the admin's 6 exports a minute are spent by the tests above.
+    const site = lines((await owner.get("/v1/site/audit/export?format=jsonl")).text);
+    const trashed = site.filter((e) => e.action === "thread.trashed");
+    expect(trashed.map((e) => e.target)).toEqual([{}]);
+    expect((await owner.get("/v1/site/audit/export?format=csv")).text).not.toContain(threadId);
+    const page = await admin.get("/v1/site/audit?action=thread.trashed&limit=5");
+    expect(page.json.events.map((e: { target: unknown }) => e.target)).toEqual([{}]);
+    const team = lines((await alice.get("/v1/team/audit/export?format=jsonl")).text);
+    expect(team.find((e) => e.action === "thread.trashed")?.target).toEqual({ threadId });
+  });
+
   it("records each export (rows, range, completeness) in the right view", async () => {
     const before = lines((await alice.get("/v1/team/audit/export?format=jsonl")).text).length;
     await h.mailer.settle();

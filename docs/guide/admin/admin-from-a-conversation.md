@@ -132,8 +132,10 @@ you did not intend: the card is where you catch that.
 ## Audit: "via agent"
 
 Each change records the console's own audit event (for example a role change), with you as the
-actor and **via agent** beneath, plus the run and tool call. The Team and Site audit views link
-**open the thread** for viewers who may read that thread. The tool call itself is recorded as a
+actor and **via agent** beneath, plus the run and tool call. The Team audit view links
+**open the thread** for viewers who may read that thread. The Site audit view shows a
+workspace's events without the via-agent line (thread, run and tool call stay with the
+workspace); Site-level changes keep it. The tool call itself is recorded as a
 connector call as well.
 
 ## Shared threads hide admin results
