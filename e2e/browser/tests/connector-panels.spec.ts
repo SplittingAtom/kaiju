@@ -63,7 +63,10 @@ test("team Connectors: tools in Read only and Write columns, MCP-UI badges (KOBE
   const badge = card.locator("button[data-kobe-app-badge]").first();
   await badge.hover();
   await expect(page.getByRole("tooltip").first()).toContainText("Opens an app: ui://");
-  await page.mouse.move(0, 0);
+  // Leaving closes it. Move in steps, as a real pointer does: Radix keeps a hoverable tooltip open
+  // while the pointer is in the grace area between trigger and content (WCAG 1.4.13), and a
+  // single jump leaves it there until the next pointermove.
+  await page.mouse.move(0, 0, { steps: 5 });
   await expect(page.getByRole("tooltip")).toHaveCount(0);
   await tabTo(page, badge);
   await expect(page.getByRole("tooltip").first()).toContainText("Opens an app: ui://");

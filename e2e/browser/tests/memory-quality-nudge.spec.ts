@@ -2,6 +2,7 @@ import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./support/chat.js";
 import { SHELL_TIMEOUT_MS } from "./support/constants.js";
 import { panelOf } from "./support/panel.js";
+import { api } from "./support/tree.js";
 
 /**
  * Gate D (KOBE-412) on gate1: the Learn nudge (KOBE-410) and memory quality (KOBE-411).
@@ -68,6 +69,28 @@ async function recordPulses(page: Page): Promise<void> {
   });
 }
 
+/**
+ * The thread's Learn state once its last run counts as completed. The chat reads the state when
+ * the thread opens and when a run ends, so its first read of a new thread can come before the
+ * reply finished (`no_completed_run`): read the server's state until the run counts, then return it.
+ */
+async function settledState(page: Page, threadId: string): Promise<LearnStateWire> {
+  let last: LearnStateWire | null = null;
+  await expect
+    .poll(
+      async () => {
+        const res = await api(page, "GET", `/v1/threads/${threadId}/learn`);
+        if (res.status !== 200) return `HTTP ${res.status}`;
+        const body = res.json as LearnStateWire & { data?: LearnStateWire };
+        last = body.data ?? body;
+        return last.blocker?.code ?? "none";
+      },
+      { timeout: SHELL_TIMEOUT_MS, intervals: [1_000] },
+    )
+    .not.toMatch(/^(no_completed_run|HTTP \d+)$/);
+  return last as unknown as LearnStateWire;
+}
+
 const pulses = (page: Page) => page.evaluate(() => window.__kobeNudgePulses ?? 0);
 
 test("the Learn nudge: switch shown, pulse after 10 messages and after a thumbs down, no pass", async ({
@@ -98,9 +121,9 @@ test("the Learn nudge: switch shown, pulse after 10 messages and after a thumbs 
   await chat.open();
   const plus = page.getByRole("button", { name: "Add to your message", exact: true });
   for (let i = 1; i <= NUDGE_MESSAGES; i += 1) {
-    const seen = states.length;
-    await chat.ask(`No tools. Reply with the single word OK. (${i})`);
-    const state = await latestAfter(seen);
+    // ask() returns once the reply finished and the chat is idle.
+    const threadId = await chat.ask(`No tools. Reply with the single word OK. (${i})`);
+    const state = await settledState(page, threadId);
     expect(state.blocker, "Learn could start (else no dot and no nudge)").toBeNull();
     expect(state.running).toBeNull();
     if (i < NUDGE_MESSAGES) {

@@ -1,5 +1,18 @@
 # Gate 7: v1.3 Semantic Memory (KOBE-413)
 
+Gate 7 closes v1.3 Semantic Memory: every story U39–U54 proven on k3d and on the real cluster
+(gate1), with the four phase gates linked. Spec: the Hadron spec _Kobe v1.3 — Semantic Memory_
+(SM1–SM31, amendments 2026-11-12).
+
+## Summary
+
+| Check                                  | Result                                                                                                                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| U39–U54 on k3d                         | **PASS**, all 16, `e2e/gate7.sh` in shards `gate7-a` / `gate7-b` (section below)                                                                                                |
+| U39–U54 on the real cluster (gate1)    | **PASS**: each story's phase gate on gate1 plus the browser specs re-run on gate1 at `e324bb1f2aee` (section below)                                                             |
+| Gate 1 and Gate 2 shards on one commit | **PASS**: every e2e shard green on main `65febf84f4db`, merge-queue run 44557277380 (suite, cold start, gate1–gate5, gate7-a/b, apps, sso, executor, restore; `stories`, `k3d`) |
+| Phase gates A–D                        | **Done**: [A](gate-7a.md) (KOBE-388), [B](gate-7b.md) (KOBE-401), [C](gate-7c.md) (KOBE-407), [D](gate-7d.md) (KOBE-412), each approved by Chris                                |
+
 ## k3d checks
 
 `e2e/gate7.sh` (KOBE-675) proves U39–U54 on a fresh k3d install, one verdict per story, in CI's
@@ -43,3 +56,83 @@ its row (U42) and the day's pass count is seeded (U47).
 | U52   | The gate's passes each record prompt version and model (the fake learning model); Learn's pass numbers for curators                                                                                                                                                                                                                                                               | —                                                                                                                         |
 | U53   | A project fact's destination is the project's notes; the preview signs the change; a forged approval is refused; the signed one adds the line to the project's notes                                                                                                                                                                                                              | —                                                                                                                         |
 | U54   | `show_memory_item` (the chip's call) succeeds; archive, Undo, archive; the next run is not given it                                                                                                                                                                                                                                                                               | `gate7/u54-forget.spec.ts` (the chip, Open in Memory, Archive, Undo, the next run)                                        |
+
+## Real cluster (gate1)
+
+gate1 runs main `e324bb1f2aee` (`local-e324bb1f2aee`, deployed 2026-11-19 after a database dump):
+every v1.3 ticket and every follow-up from the Gate B/C/D answers (KOBE-607, 636, 654, 664–672,
+674). Main moved on to `65febf84` with KOBE-675 only (the k3d shard, tests and the fake model), so
+the product on gate1 is the product at the head of main. Learning model `glm-5.3-flash` (Ollama
+Cloud); embeddings from the in-cluster `kobe-local/nomic-embed-text`.
+
+**Browser specs on gate1, 2026-11-19** (Playwright 1.55 container; owner = Site admin and Team
+admin, member2 = member, a second Team admin `steward@gate1.test` added for the Site flow):
+
+| Spec                           | Stories            | Result                                                                                                     |
+| ------------------------------ | ------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `learn-from-chat.spec.ts`      | U39, U47           | passed (member2)                                                                                           |
+| `memory-editor.spec.ts`        | U40, U54           | passed                                                                                                     |
+| `memory-consoles.spec.ts`      | U43, U45           | passed (import preview, Policy toggle and Undo)                                                            |
+| `memory-quality-nudge.spec.ts` | U47, U52 (signals) | passed twice (nudge after 10 messages and after a thumbs-down; Quality tabs)                               |
+| `site-proposals.spec.ts`       | U44, U45           | passed twice alone (member proposes, second Team admin confirms, Site admin requests changes and approves) |
+| `connector-panels.spec.ts`     | (KOBE-654)         | passed twice                                                                                               |
+
+The first run found three spec problems, none a product bug: the Site flow needed a third person
+since Gate C decision 2 (the confirmer may not decide), the nudge spec read the Learn state before
+the run counted, and a single mouse jump left the pointer in Radix's tooltip grace area. Run in
+parallel with other specs, `site-proposals.spec.ts` can hit the per-address sign-in limit (three
+sign-ins in seconds from one runner IP); it passes alone.
+
+**Per story on gate1:**
+
+| Story | Real-cluster evidence                                                                                 |
+| ----- | ----------------------------------------------------------------------------------------------------- |
+| U39   | Gate B: Learn spec on gate1 (7/8 runs, the flake fixed in KOBE-663); today's re-run                   |
+| U40   | Gate A U40 row (gate1 specs); `memory-editor.spec.ts` today                                           |
+| U41   | Gate B: watermark/fork DB tests, passes on gate1 with the Site's learning model                       |
+| U42   | Gate B: Workspace proposals; Gate B browser and DB evidence                                           |
+| U43   | Gate A U43 row; `memory-consoles.spec.ts` today                                                       |
+| U44   | Gate C: `site-proposals.spec.ts` on gate1 (twice) and the wall probe; today's re-run                  |
+| U45   | Gate A U45 row (Policy) and Gate C (approve, merge, reject); today's re-runs                          |
+| U46   | Gate B: extractor eval on the Site's learning model, 0 Workspace/Site offers in 27 adversarial cases  |
+| U47   | Gate B (budget, switches, rate limit); Gate D nudge on gate1; today's re-runs                         |
+| U48   | Gate A U48 row; Gate A/B cache replays on gate1 (memories in context)                                 |
+| U49   | Gate A U49 row                                                                                        |
+| U50   | Gate D: hybrid recall@8 0.894 vs 0.573 keyword only, in-cluster model on gate1; the recall tool below |
+| U51   | Gate A U51 row                                                                                        |
+| U52   | Gate B: extractor thresholds on the Site's learning model, per prompt version and model               |
+| U53   | Gate B: Add to project notes (signed approval)                                                        |
+| U54   | Gate B (Open in Memory, archive, Undo); `memory-editor.spec.ts` today                                 |
+
+### The recall tool (KOBE-664)
+
+`recall({ query })` now uses the same hybrid scoring as the per-message picks. On the relevance
+set (151 queries; `e2e/memory-eval.sh relevance`, dev Postgres 17 + pgvector, embeddings from the
+Mac mini Ollama, 2026-11-19, results in [gate-7/](gate-7/)):
+
+| Model                | recall tool, keywords only | recall tool, hybrid | selector, hybrid |
+| -------------------- | -------------------------- | ------------------- | ---------------- |
+| nomic-embed-text     | 0.546                      | **0.887**           | 0.894            |
+| qwen3-embedding:0.6b | 0.546                      | **0.887**           | 0.894            |
+
+## Follow-ups from the phase gates (all merged)
+
+KOBE-664 (recall hybrid), KOBE-665 (Site proposals block a Workspace delete, migration 0234),
+KOBE-666 (the confirmer may not decide, one reminder, Site audit inside the wall), KOBE-668
+(stale vs expired suggestions, migration 0235), KOBE-669 (vector build without an active
+Workspace), KOBE-670 ("Set by the Site" label), KOBE-671 (decided Learn records leave with their
+pass), KOBE-672 (the screen accepts the pass's own nonce), KOBE-607 / KOBE-636 / KOBE-654
+(reliability), KOBE-674 and #617 (test flakes), KOBE-675 (this gate's k3d shard). Parked by Chris:
+KOBE-667 (merge target search, later).
+
+## Questions for Chris
+
+Answered 2026-11-19.
+
+| #   | Question                                                                                | Answer     | Follow-up |
+| --- | --------------------------------------------------------------------------------------- | ---------- | --------- |
+| 1   | Trim SIEM forwarding like the Site audit view (KOBE-666)?                               | Yes        | KOBE-676  |
+| 2   | A hint on the Site audit page that Workspace details live in the Workspace's audit log? | Yes        | KOBE-676  |
+| 3   | Site-wide vector build without an active Workspace: each Workspace pays (KOBE-669)      | Keep       | —         |
+| 4   | Keep the gate1 test user `steward@gate1.test` (Team admin of Team1)                     | Keep       | —         |
+| 5   | v1.3 release notes                                                                      | Write them | KOBE-678  |
