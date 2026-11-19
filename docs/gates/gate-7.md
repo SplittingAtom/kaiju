@@ -127,15 +127,12 @@ KOBE-667 (merge target search, later).
 
 ## Questions for Chris
 
-1. **SIEM forwarding** (KOBE-666): the Site audit view and export now hide Workspace events'
-   thread-derived ids (allow-list, fails closed); SIEM forwarding still sends the full record.
-   Trim it the same way?
-2. **Site audit page hint** (KOBE-666): say on the page that Workspace details are in the
-   Workspace's own audit log?
-3. **Who pays for a Site-wide vector build** (KOBE-669): with no active Workspace, each Workspace
-   pays for its own memories (the admin if a member, otherwise that Workspace's earliest Team
-   admin). Amounts are tiny. Keep?
-4. **gate1 test users**: a third user `steward@gate1.test` (Team admin of Team1, password in
-   compute1 `creds.env` as `STEWARDPW`) was added for the Site flow. Keep it?
-5. **U51 release notes**: there is no release-notes file; k3d checks the guide's master-switch
-   line. Write v1.3 release notes before tagging?
+Answered 2026-11-19.
+
+| #   | Question                                                                                | Answer     | Follow-up |
+| --- | --------------------------------------------------------------------------------------- | ---------- | --------- |
+| 1   | Trim SIEM forwarding like the Site audit view (KOBE-666)?                               | Yes        | KOBE-676  |
+| 2   | A hint on the Site audit page that Workspace details live in the Workspace's audit log? | Yes        | KOBE-676  |
+| 3   | Site-wide vector build without an active Workspace: each Workspace pays (KOBE-669)      | Keep       | —         |
+| 4   | Keep the gate1 test user `steward@gate1.test` (Team admin of Team1)                     | Keep       | —         |
+| 5   | v1.3 release notes                                                                      | Write them | KOBE-678  |
