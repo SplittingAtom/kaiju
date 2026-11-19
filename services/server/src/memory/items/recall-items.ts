@@ -1,7 +1,6 @@
 import { presentedActorKind } from "./actor-kind.js";
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
 import {
-  MEMORY_RECALL_MAX_ITEMS,
   type MemoryShownItem,
   type RunSemanticMemoryItem,
   type SemanticMemoryActorKind,
@@ -10,22 +9,26 @@ import {
   type SemanticMemoryStatus,
 } from "@kobe/protocol";
 import { readRunMemoryPlan } from "../../agents/run-memory.js";
+import type { QueryEmbedInput, QueryVector } from "../embeddings/service.js";
 import { parseRunMemoryState, runMemoryStateQuery, type RunMemoryStateRow } from "../switches.js";
+import type { ItemRow } from "./item-row.js";
 import { locate } from "./location.js";
 import { readRunRecords } from "./run-records.js";
-import { queryWords, readRecallRows, TRIGRAM_MESSAGE_MAX_CHARS } from "./run-memory.js";
-import { relevanceScore, SELECT_LANES } from "./select.js";
-import { trigramSimilarity, trigrams } from "./trigram.js";
+import { queryWords, readRecallItemRows, recallCandidates } from "./run-memory.js";
+import { rankRecall, SELECT_LANES, type SelectLane } from "./select.js";
+import { mergeVectorRows, readVectorRows } from "./vector-leg.js";
 
 /**
- * The agent's read paths over saved memories (KOBE-399, SM26), in the run's team transaction:
+ * The agent's read paths over saved memories (KOBE-399, SM26):
  *
  * - {@link recallItems}: `recall({ query })` answers the runner's active items of every scope the
- *   switches allow (and Site Policy), matching the query, ranked by the selector's relevance (A7:
- *   `ts_rank_cd + 0.3 · trigram + 0.1 · recency`, no preference base or stickiness), best
- *   {@link MEMORY_RECALL_MAX_ITEMS}. Undefined when the run's agent version has no semantic memory
- *   (`notes_only`, `off`, test chats, evals). Works whether or not the run's context carried the
- *   items, so a placement that keeps them out of the prompt can rely on it.
+ *   switches allow (and Site Policy), ranked by the selector's relevance (A7:
+ *   `ts_rank_cd + 0.3 · trigram + 0.1 · recency`, no preference base or stickiness), hybrid like
+ *   the selector (KOBE-664, KOBE-409: `+ 2 · vectorScore`, and the query's nearest items count
+ *   without a shared word) when the Site has an embedding model and the items have vectors of it;
+ *   best `MEMORY_RECALL_MAX_ITEMS`. Undefined when the run's agent version has no semantic
+ *   memory (`notes_only`, `off`, test chats, evals). Works whether or not the run's context carried
+ *   the items, so a placement that keeps them out of the prompt can rely on it.
  * - {@link showItem}: `show_memory_item({ id })` reads one item as saved now, only when this run was
  *   given it (its run records) or an earlier `recall` of the run answered it (`recalled`, kept by
  *   the connection). Reads only: nothing is written, not even an audit row.
@@ -37,34 +40,76 @@ export interface RecallWho {
   readonly runId: string;
 }
 
-export async function recallItems(
+/** The recall query's vector (`MemoryEmbeddings.recallVector`); never throws. */
+export interface RecallEmbedder {
+  recallVector?(input: QueryEmbedInput): Promise<QueryVector | undefined>;
+}
+
+/** The recall vector statement's own deadline (a tool call; the selector's is 30 ms). */
+export const RECALL_VECTOR_QUERY_TIMEOUT_MS = 1_000;
+
+interface KeywordRecall {
+  readonly lanes: readonly SelectLane[];
+  readonly rows: ItemRow[];
+}
+
+/** The plan, the switches and the keyword rows, in the run's team transaction. */
+async function readKeywordRecall(
   tx: KobeTx,
   who: RecallWho,
   query: string,
-): Promise<RunSemanticMemoryItem[] | undefined> {
+): Promise<KeywordRecall | undefined> {
   const plan = await readRunMemoryPlan(tx, who);
   if (!plan.semantic) return undefined;
   const { memory } = parseRunMemoryState(
     (await tx.execute<RunMemoryStateRow>(runMemoryStateQuery(who.teamId))).rows[0],
   );
   const lanes = SELECT_LANES.filter((lane) => memory.scopes[lane]);
-  const rows = await readRecallRows(tx, who, queryWords(query), memory.policy, lanes);
-  const grams = trigrams(query.slice(0, TRIGRAM_MESSAGE_MAX_CHARS));
-  return rows
-    .map((r) => ({
-      item: r.item,
-      score: relevanceScore({
-        item: r.item,
-        matched: true,
-        textRank: r.textRank,
-        trigram: trigramSimilarity(r.item.statement, grams),
-        ageDays: r.ageDays,
-        sticky: false,
-      }),
-    }))
-    .sort((a, b) => b.score - a.score || (a.item.id < b.item.id ? -1 : 1))
-    .slice(0, MEMORY_RECALL_MAX_ITEMS)
-    .map((r) => r.item);
+  const rows = await readRecallItemRows(tx, who, queryWords(query), memory.policy, lanes);
+  return { lanes, rows };
+}
+
+/**
+ * The vector leg's rows for the recall query, after the keyword transaction committed: the query
+ * embedding is a gateway call, so no transaction is held open across it (the vector statement
+ * then runs in its own `withTeam`, as the selector's leg does). Undefined (keywords alone) when
+ * there is no embedder, no lane, no vector (no model, no pgvector, refused, failed, late) or the
+ * statement fails.
+ */
+async function recallVectorRows(
+  db: KobeDb,
+  who: RecallWho & { readonly threadId: string },
+  query: string,
+  lanes: readonly SelectLane[],
+  embedder: RecallEmbedder | undefined,
+): Promise<ItemRow[] | undefined> {
+  if (embedder?.recallVector === undefined || lanes.length === 0) return undefined;
+  const vector = await embedder.recallVector({ ...who, message: query });
+  if (vector === undefined) return undefined;
+  try {
+    return await readVectorRows(db, who, vector, RECALL_VECTOR_QUERY_TIMEOUT_MS);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * `recall({ query })`'s items: keyword rows in the run's team transaction, then (outside it) the
+ * hybrid leg when it can run, ranked by {@link rankRecall}. Throws only if the keyword read does.
+ */
+export async function recallItems(
+  db: KobeDb,
+  who: RecallWho & { readonly threadId: string },
+  query: string,
+  embedder?: RecallEmbedder,
+): Promise<RunSemanticMemoryItem[] | undefined> {
+  const keyword = await withTeam(db, who.teamId, (tx) => readKeywordRecall(tx, who, query));
+  if (keyword === undefined) return undefined;
+  const vector = await recallVectorRows(db, who, query, keyword.lanes, embedder);
+  const rows =
+    vector === undefined ? keyword.rows : mergeVectorRows(keyword.rows, vector, keyword.lanes);
+  const candidates = recallCandidates(rows, keyword.lanes, query);
+  return rankRecall(candidates.lanes, candidates.policy);
 }
 
 interface ShownRow extends Record<string, unknown> {

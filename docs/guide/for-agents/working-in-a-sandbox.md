@@ -122,10 +122,14 @@ other connector (no internet access, no key). Its tools are named `mcp__kobe__<t
 - `remember {scope, path, content, mode}` writes a Markdown file in `user` memory (saved at once;
   the user can undo) or `project` memory (held until a project member approves). Paths are one to
   four segments, such as `MEMORY.md` or `topics/clients.md`. Keep `MEMORY.md` a short index.
-- `recall` lists files, reads one, or searches by text (not by meaning). `recall {query}` without
-  `scope` also returns the user's matching saved memories first (up to 8, read-only, each with its
-  place, kind and `id`), then matching notes; with `scope` or `path` it reads notes only. No saved
-  memories come back when your agent version's memory setting is **Notes only**.
+- `recall` lists files, reads one, or searches notes by text. `recall {query}` without `scope`
+  also returns the user's matching saved memories first (up to 8, best first, read-only, each with
+  its place, kind and `id`), then matching notes; with `scope` or `path` it reads notes only. Saved
+  memories are found by words and, when the site has an embedding model, by meaning too (the same
+  ranking as What Kobe knows), so a query in your own words can find a memory that shares none of
+  them; when meaning search is unavailable you get the word matches. Notes files are matched by
+  text only. No saved memories come back when your agent version's memory setting is **Notes
+  only**.
 - `show_memory_item {id}` shows the user one saved memory you were given (What Kobe knows) or found
   with `recall`, with an **Open in Memory** link; other ids are refused. It changes nothing.
 - You cannot write, change or archive saved memories. When the user asks you to forget or change

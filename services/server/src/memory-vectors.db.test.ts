@@ -12,6 +12,8 @@ import { conceptVector } from "./testing/fake-embeddings.js";
 import { buildRunSemantic, readRunCandidates } from "./memory/items/run-memory.js";
 import { startVectorLeg } from "./memory/items/vector-leg.js";
 import { MEMORY_VECTOR_BUILD_LOCK } from "./memory/embeddings/backfill.js";
+import { readMemory } from "./memory/agent.js";
+import type { Logger } from "pino";
 
 /**
  * KOBE-409: the Site embedding model, embed on save, Build vectors and the Site console's state,
@@ -331,6 +333,71 @@ describe("memory vectors (KOBE-409)", () => {
     expect((await embeddings.queryVector(base))?.model).toBe(MODEL);
     expect(calls).toHaveLength(1);
     expect(calls[0]?.claims).toMatchObject({ user_id: member.id, run_id: runId });
+  });
+
+  it("recall({ query }) finds a paraphrase with no shared word; keywords alone otherwise (KOBE-664)", async () => {
+    await setModel(MODEL);
+    await fx.replica(0).deps.background.idle();
+    const res = await member.browser.post("/v1/memory/semantic/items", {
+      scope: "user",
+      kind: "fact",
+      statement: "My automobile sits in garage C overnight",
+    });
+    expect(res.status).toBe(201);
+    const id = (res.json as { id: string }).id;
+    await fx.replica(0).deps.background.idle();
+    expect((await vectorOf(id)).embedding_model).toBe(MODEL);
+    const runId = await fx.run(team, member);
+    const [row] = (await fx.admin.query(`SELECT thread_id FROM runs WHERE id = $1`, [runId]))
+      .rows as { thread_id: string }[];
+    const quiet = { error: () => undefined } as unknown as Logger;
+    const deps = {
+      db: fx.replica(0).deps.database.db,
+      blobs: undefined,
+      log: quiet,
+      embeddings: fx.replica(0).deps.memoryEmbeddings,
+    };
+    const ask = (query: string, d: Parameters<typeof readMemory>[0] = deps) =>
+      readMemory(d, {
+        teamId: team,
+        userId: member.id,
+        runId,
+        threadId: row?.thread_id ?? "",
+        input: { query },
+        refused: () => undefined,
+      });
+    const idsOf = (r: Awaited<ReturnType<typeof readMemory>>) => {
+      expect(r).toMatchObject({ ok: true, op: "read" });
+      return ((r as { items?: { id: string }[] }).items ?? []).map((i) => i.id);
+    };
+    const paraphrase = "Where did I leave the vehicle?";
+    calls.length = 0;
+    expect(idsOf(await ask(paraphrase))).toContain(id);
+    // ac-3: one memory_embed call, paid by the run's member in the run's Workspace.
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.claims).toMatchObject({
+      purpose: "memory_embed",
+      team_id: team,
+      user_id: member.id,
+      run_id: runId,
+      model: MODEL,
+    });
+    expect(calls[0]?.inputs).toEqual([paraphrase]);
+    // ac-2: no embedder, a budget refusal or a failing gateway: keyword results, never an error.
+    expect(idsOf(await ask(paraphrase, { ...deps, embeddings: undefined }))).not.toContain(id);
+    for (const code of ["budget_exhausted", "upstream_error"]) {
+      refuse = code;
+      expect(idsOf(await ask(paraphrase))).not.toContain(id);
+      expect(idsOf(await ask("automobile garage"))).toContain(id);
+    }
+    refuse = undefined;
+    // No Site model: nothing is embedded, keywords alone.
+    expect((await setModel(null)).status).toBe(200);
+    fx.replica(0).deps.memoryEmbeddings.invalidate();
+    calls.length = 0;
+    expect(idsOf(await ask(paraphrase))).not.toContain(id);
+    expect(idsOf(await ask("automobile garage"))).toContain(id);
+    expect(calls).toEqual([]);
   });
 
   it("a member gets 403 on the Site vector routes", async () => {

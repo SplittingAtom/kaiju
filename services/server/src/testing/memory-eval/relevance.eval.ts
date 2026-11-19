@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
 import { readRunCandidates } from "../../memory/items/run-memory.js";
+import { recallItems } from "../../memory/items/recall-items.js";
 import { startVectorLeg } from "../../memory/items/vector-leg.js";
 import { documentText, queryText, storedVectorModel } from "../../memory/embeddings/prefixes.js";
 import { vectorLiteral } from "../../memory/embeddings/vector-store.js";
@@ -33,6 +34,10 @@ import {
  * every statement is embedded once (with the model's document prefix) and each query too (timed:
  * per-message embed latency), and the report compares keyword-only with hybrid (the selector's
  * vector leg, `startVectorLeg`, given the query vector) on the same candidates code.
+ *
+ * KOBE-664: every query is also asked as `recall({ query })` (`recallItems`, the tool's own code:
+ * keyword-only in the first report, hybrid with the same query vector in the second), and both
+ * reports carry its recall@8 in a "recall tool" column beside the selector's numbers.
  */
 const endpoint = endpointFromEnv(process.env);
 /** Database id → where its version lives, for the hybrid mode's vectors. */
@@ -165,6 +170,7 @@ describe("memory relevance eval (KOBE-387)", () => {
       const { candidates, semantic } = await withTeam(db, team, (tx) =>
         readRunCandidates(tx, input),
       );
+      const recalled = toFixture(((await recallItems(db, input, q.query)) ?? []).map((i) => i.id));
       if (endpoint) {
         const t0 = performance.now();
         const [vector] = await embedTexts(endpoint, [queryText(endpoint.storedModel, q.query)]);
@@ -176,14 +182,25 @@ describe("memory relevance eval (KOBE-387)", () => {
         const ranked2 = Object.fromEntries(
           RANK_MODES.map((m) => [m, toFixture(rankCandidates(h2.candidates, m))]),
         ) as Record<RankMode, string[]>;
-        hybrid.push(scoreQuery(q, ranked2, new Set(toFixture(h2.semantic.items.map((i) => i.id)))));
+        // The recall tool with the same query vector (the gateway call is replaced, not the code).
+        const recallHybrid = await recallItems(db, input, q.query, {
+          recallVector: () => Promise.resolve(query),
+        });
+        const recall = toFixture((recallHybrid ?? []).map((i) => i.id));
+        hybrid.push(
+          scoreQuery(
+            q,
+            { ...ranked2, recall },
+            new Set(toFixture(h2.semantic.items.map((i) => i.id))),
+          ),
+        );
       }
       for (const lane of Object.keys(candidates)) lanesSeen.add(lane);
       const ranked = Object.fromEntries(
         RANK_MODES.map((m) => [m, toFixture(rankCandidates(candidates, m))]),
       ) as Record<RankMode, string[]>;
       const block = new Set(toFixture(semantic.items.map((i) => i.id)));
-      results.push(scoreQuery(q, ranked, block));
+      results.push(scoreQuery(q, { ...ranked, recall: recalled }, block));
     }
     // Every lane must have been read, or the numbers measure a switched-off store.
     expect([...lanesSeen].sort()).toEqual(["portable", "site", "team", "user"]);
@@ -199,6 +216,7 @@ describe("memory relevance eval (KOBE-387)", () => {
     if (endpoint && hybridReport) {
       say(
         `\nKOBE-409 hybrid (${endpoint.model}): keyword-only recall@8 ${report.overall.relevance.toFixed(3)} → hybrid ${hybridReport.overall.relevance.toFixed(3)}; ` +
+          `KOBE-664 recall tool ${(report.overall.recallTool ?? 0).toFixed(3)} → hybrid ${(hybridReport.overall.recallTool ?? 0).toFixed(3)}; ` +
           `query embed latency p50 ${quantile(latencies, 0.5).toFixed(1)} ms, p95 ${quantile(latencies, 0.95).toFixed(1)} ms\n\n${formatRelevanceReport(hybridReport)}\n`,
       );
     }
