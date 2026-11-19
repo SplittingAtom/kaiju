@@ -1144,6 +1144,11 @@ upgrade restores them.
 
 ### Upgrade notes
 
+Release notes for operators, one file per release, are in [docs/releases](releases/): start
+with [v1.3 (Semantic Memory)](releases/v1.3.md) for what it adds, the widened **Allow memory**
+master switch, new settings and their defaults, chart changes (the in-cluster embedding service,
+on by default), migrations `0216`–`0235` and the upgrade steps. The notes below are per change.
+
 Migrations report what an upgrade changed in the migration Job's log (`"msg":"migration notice"`,
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.

@@ -91,7 +91,7 @@ STORY_TEXT=(
   "U48|Run detail lists the memories in context with versions; changes apply from the next run; picks are made per message."
   "U49|Retention settings; legal holds; offboarding keeps the person's memory; Site break-glass for portable preferences with audit in every workspace of the person."
   "U50|Without embeddings, retrieval is keyword only (FTS); the vector half is the relevance harness (gate-7a, gate-7d)."
-  "U51|Notes, remember and recall(path) unchanged in the Notes tab; one bar icon and /memory remain; the guide covers the master-switch widening."
+  "U51|Notes, remember and recall(path) unchanged in the Notes tab; one bar icon and /memory remain; the guide and What's new cover the master-switch widening."
   "U52|Every pass records its prompt version and model; the extractor thresholds are the extractor harness (gate-7b)."
   "U53|Project-specific candidates offer Add to project notes through the signed approval; a forged approval is refused."
   "U54|'forget X' yields an Open in Memory chip; one click archives with Undo; the next run no longer receives it."
