@@ -108,7 +108,8 @@ read a person's portable preferences either; reading them needs its own break-gl
 - **Audit log**: the site-wide, append-only audit log. A workspace's events show here without
   anything that points into its conversations (thread, message, run, learning pass, candidate,
   tool call or approval ids, thread folder names, and the "via agent" line); the workspace's own
-  audit log keeps them. The same holds for the export.
+  audit log (Team console › **Audit view**) keeps them. The same holds for the export and for
+  audit forwarding. A short note above the events says so.
 - **Usage and spend**: spend by team, user, agent and model, and the site budget every team's
   spend counts against.
 - **Retention maximum**: the longest retention any team may choose.
@@ -184,7 +185,9 @@ read a person's portable preferences either; reading them needs its own break-gl
 - **Isolation**: whether agents can run. Kobe refuses to run agents unless the cluster offers a
   gVisor or Kata sandbox runtime; this page shows the check and how to fix it.
 - **Backup and restore**: how to back up and restore the site, and the last restore.
-- **Audit forwarding**: whether audit events reach your security monitoring system.
+- **Audit forwarding**: whether audit events reach your security monitoring system (SIEM).
+  Workspace events are forwarded with the same Site-safe details as the Audit log; site events
+  as recorded.
 
 ## From a conversation
 

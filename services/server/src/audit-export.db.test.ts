@@ -1,10 +1,12 @@
 import http from "node:http";
 import net from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { SYSTEM_ACTOR, auditStandalone } from "@kobe/db";
+import { randomUUID } from "node:crypto";
+import { SYSTEM_ACTOR, auditStandalone, type AuditEntry } from "@kobe/db";
 import { AUDIT_FORWARD_LOCK, AuditForwarder, backoffMs } from "./audit/forward/forwarder.js";
 import { otlpSink } from "./audit/forward/otlp.js";
 import { forwardingSecrets } from "./audit/forward/redact.js";
+import { auditHeadSeq, initialState, writeState } from "./audit/forward/state.js";
 import { syslogSink } from "./audit/forward/syslog.js";
 import { createPgReconcileLock } from "./sandbox/reconcile-lock.js";
 import type { TestBrowser } from "./testing/browser.js";
@@ -348,6 +350,47 @@ describe("forwarding", () => {
         expect(health.lastError, destination).not.toContain(secret);
       }
     }
+  });
+
+  it("forwards Workspace events in the Site view, Site-level events as stored (KOBE-676)", async () => {
+    const db = h.deps.database.db;
+    // A fresh cursor at the head: earlier tests leave this destination in backoff.
+    await writeState(db, "syslog", initialState(await auditHeadSeq(db)));
+    const sent: AuditEntry[] = [];
+    const forwarder = new AuditForwarder({
+      db,
+      sinks: [{ name: "syslog", send: async (events) => void sent.push(...events) }],
+      lock: createPgReconcileLock(h.deps.database.pool, undefined, `${AUDIT_FORWARD_LOCK}.t5`),
+      log: { warn: () => undefined, error: () => undefined },
+    });
+    const [userId, conflictId, threadId, runId] = [
+      randomUUID(),
+      randomUUID(),
+      randomUUID(),
+      randomUUID(),
+    ];
+    const team = await auditStandalone(db, {
+      action: "workspace.sync_conflict",
+      actor: SYSTEM_ACTOR,
+      teamId: finance,
+      target: { userId, conflictId, threadId, runId },
+    });
+    const site = await record("siem-site");
+    await forwarder.runOnce();
+    expect(sent.map((e) => e.seq)).toEqual([team.seq, site.seq]);
+    const [teamEvent, siteEvent] = sent as [AuditEntry, AuditEntry];
+    expect(teamEvent.target).toEqual({ userId, conflictId });
+    expect(JSON.stringify(teamEvent)).not.toContain(threadId);
+    expect(JSON.stringify(teamEvent)).not.toContain(runId);
+    expect(siteEvent.target).toEqual({ from: "verified", to: "missing", replica: "siem-site" });
+    // The chain values are the stored row's, so links and the anchored head still check.
+    const stored = await h.admin.query(
+      `SELECT hash, prev_hash, target FROM audit_log WHERE seq = $1`,
+      [team.seq],
+    );
+    expect(stored.rows[0]).toMatchObject({ hash: teamEvent.hash, prev_hash: teamEvent.prevHash });
+    expect(stored.rows[0].target).toMatchObject({ threadId, runId });
+    expect(siteEvent.prevHash).toBe(teamEvent.hash);
   });
 
   it("lets one replica forward at a time", async () => {

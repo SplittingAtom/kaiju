@@ -644,6 +644,21 @@ or TLS, octet-counted frames, APP-NAME `kobe-audit`, MSGID the action, structure
 encoding; the action is the log body, fields are `kobe.audit.*` attributes; auth headers from a
 Secret). Both carry the same fields as the site export, including the chain hashes.
 
+- **What is forwarded (KOBE-676, SM20).** Every event, in the Site view: a Workspace event
+  (`teamId` set) carries only the `target` keys `GET /v1/site/audit` shows (the same
+  `siteViewEvent` in `services/server/src/audit/site-view.ts`; see
+  "Site view of Workspace events" under [Reading the log](#reading-the-log)): no thread, entry, run, pass,
+  candidate, suggestion, tool-call, approval, artifact or eval-case ids, no per-thread counts, no
+  thread folder ids or names and no `viaAgent` record. Site-level events are forwarded as stored.
+  The full record of a Workspace event stays in that Workspace's own audit log (Team console ›
+  Audit view, `/v1/team/audit` and its export) and in the database.
+- **Integrity of forwarded events.** The forwarder signs nothing of its own. `hash` and
+  `prev_hash` are the stored row's chain values, so in the SIEM each event's `prev_hash` still
+  equals the previous event's `hash` (gaps and re-ordering show) and the anchored head can be
+  compared. A Workspace event's `hash` covers the stored row, not the trimmed target, so it can't
+  be recomputed from the forwarded payload: recompute the chain with
+  `GET /v1/site/audit/integrity` (or Site console › Audit log › **Verify chain**).
+
 - **Cursor.** Each destination keeps its last delivered `seq` and its health in
   `site_settings['audit.forward.<destination>']`. It advances only after the collector accepted
   a batch, so a failure or a crash repeats a batch and never skips one: de-duplicate on the event
@@ -698,8 +713,8 @@ Secret). Both carry the same fields as the site export, including the chain hash
 | `GET /v1/team/audit`           | Team admin (`team.audit.read`)   | Same filters except `teamId`; only the active team's events; no `ip`, `userAgent`, `prevHash` or `hash`.                                                                                                                                                                                                                                                                |
 | `GET /v1/site/audit/integrity` | Owner, Admin (3 per minute)      | `{ ok, checked, head: { seq, hash }, problem?, anchor: { seq, hash, at, mac } }`: a full-chain check plus the attested head                                                                                                                                                                                                                                             |
 
-**Site view of Workspace events (KOBE-666, SM20).** `GET /v1/site/audit` and
-`GET /v1/site/audit/export` are inside the Site wall: an event with a `teamId` shows only the
+**Site view of Workspace events (KOBE-666, SM20).** `GET /v1/site/audit`, `GET /v1/site/audit/export` and SIEM forwarding
+(KOBE-676) are inside the Site wall: an event with a `teamId` shows only the
 `target` keys on the allow-list in `services/server/src/audit/site-view.ts`
 (`SITE_VIEW_TARGET_KEYS`). Thread, entry, run, pass, candidate, suggestion, tool-call, approval,
 artifact and eval-case ids, per-thread counts (`entries`, `summarised`, `replied`, `skillHints`,
@@ -707,9 +722,11 @@ artifact and eval-case ids, per-thread counts (`entries`, `summarised`, `replied
 (`SITE_HIDDEN_TARGET_KEYS`), and so is any key not yet classified: a new target key stays hidden
 from the Site until it is added to one of the two lists (`site-view.test.ts` fails until it is).
 Site-level events (`teamId` null) are unchanged. The Workspace's own log (`/v1/team/audit` and
-its export), the database rows and SIEM forwarding keep the full record; `hash` in the site export
-covers the stored row, so verify the chain with `GET /v1/site/audit/integrity`. The KOBE-406 wall
-probe reads every page of the site log and both export formats.
+its export) and the database rows keep the full record; `hash` in the site export and in forwarded
+events covers the stored row, so verify the chain with `GET /v1/site/audit/integrity`. The Site
+console's Audit log page says so above the events. The KOBE-406 wall probe reads every page of the
+site log, both export formats and every forwarded event (the events a destination receives and
+their syslog and OTLP encodings).
 
 Pages are newest first: pass `nextCursor` back as `before`. Pass `after` (for example `after=0`)
 to page oldest first, as an export does. Unknown parameters return 400.
