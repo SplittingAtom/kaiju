@@ -1036,20 +1036,26 @@ describe("evaluatePolicy: invariants over every combination", () => {
       }),
     );
     const rules = ruleSet(many);
-    const start = performance.now();
-    for (let i = 0; i < 1000; i += 1) {
-      evaluatePolicy({
-        input: policyInput(jiraCreate, { a: { b: `value-${i}` } }),
-        tool: jiraCreate,
-        rules,
-        connector: ENABLED_ALL,
-        settings: DEFAULT_POLICY_SETTINGS,
-        now: NOW,
-      });
+    // Five batches of 200 calls (1,000 in all); judge the fastest batch. A load spike (parallel
+    // verify on an 8 GB VM) slows some batches, but cannot slow all of them, so the minimum
+    // measures the evaluator and not the machine (KOBE-655).
+    const batchMs: number[] = [];
+    for (let batch = 0; batch < 5; batch += 1) {
+      const start = performance.now();
+      for (let i = 0; i < 200; i += 1) {
+        evaluatePolicy({
+          input: policyInput(jiraCreate, { a: { b: `value-${batch * 200 + i}` } }),
+          tool: jiraCreate,
+          rules,
+          connector: ENABLED_ALL,
+          settings: DEFAULT_POLICY_SETTINGS,
+          now: NOW,
+        });
+      }
+      batchMs.push((performance.now() - start) / 200);
     }
-    const perDecisionMs = (performance.now() - start) / 1000;
     // Generous for shared CI runners; locally this is well under 1 ms.
-    expect(perDecisionMs).toBeLessThan(10);
+    expect(Math.min(...batchMs)).toBeLessThan(10);
     // The budget above allows up to 10 s; vitest's default 5 s timeout would cut it short.
   }, 30_000);
 });
