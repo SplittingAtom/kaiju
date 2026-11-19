@@ -78,6 +78,66 @@ describe("query embedding deadline (KOBE-409)", () => {
   });
 });
 
+describe("recall query embedding (KOBE-664)", () => {
+  it("embeds the recall query now, as the run's member, with the model's query text", async () => {
+    let seen: Parameters<EmbeddingClient["embed"]>[0] | undefined;
+    const s = service(async (i) => {
+      seen = i;
+      return [[0.5, 0.6]];
+    });
+    // The selector's 30 ms deadline does not apply: recall is a tool call, not the run's start.
+    s.usableModel = async () => {
+      await sleep(40);
+      return "kobe-local/nomic-embed-text";
+    };
+    expect(await s.recallVector({ ...input, message: "where's my car" })).toEqual({
+      model: "kobe-local/nomic-embed-text",
+      vector: [0.5, 0.6],
+    });
+    expect(seen?.inputs).toEqual(["where's my car"]);
+    expect(seen?.run).toEqual({ runId: "r", threadId: "th" });
+    expect(seen?.teamId).toBe("t");
+    expect(seen?.userId).toBe("u");
+  });
+
+  it("answers undefined (keywords) on no model, a budget refusal, an error or its deadline", async () => {
+    let called = false;
+    const none = service(async () => {
+      called = true;
+      return [[1]];
+    });
+    none.usableModel = async () => undefined;
+    expect(await none.recallVector(input)).toBeUndefined();
+    expect(called).toBe(false);
+    for (const code of ["budget_exhausted", "http_500"]) {
+      const refused = service(async () => {
+        throw new ServerCallError(code);
+      });
+      expect(await refused.recallVector(input)).toBeUndefined();
+    }
+    const slow = new MemoryEmbeddings({
+      db: undefined as unknown as KobeDb,
+      client: {
+        embed: (i) =>
+          new Promise((resolve, reject) => {
+            const t = setTimeout(() => resolve([[1]]), 500);
+            i.signal.addEventListener("abort", () => {
+              clearTimeout(t);
+              reject(new ServerCallError("timeout"));
+            });
+          }),
+      },
+      background: new BackgroundTasks(),
+      log: silent,
+      recallDeadlineMs: 20,
+    });
+    slow.usableModel = async () => "kobe-local/nomic-embed-text";
+    const t0 = Date.now();
+    expect(await slow.recallVector(input)).toBeUndefined();
+    expect(Date.now() - t0).toBeLessThan(200);
+  });
+});
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe("query embedding started when the message is accepted (KOBE-409 review M1)", () => {

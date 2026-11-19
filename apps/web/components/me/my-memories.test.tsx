@@ -604,10 +604,35 @@ describe("an item opened from a conversation (KOBE-399, ac-3)", () => {
     expect(await within(region).findByText("Deploys on Tuesday")).toBeTruthy();
     expect(within(region).queryByRole("button", { name: /Archive/ })).toBeNull();
     expect(within(region).getByText(/curators/)).toBeTruthy();
+    expect(within(region).queryByText("Set by the Site")).toBeNull();
     cleanup();
     window.history.replaceState(null, "", `/me/memory?item=${ID2}&scope=user`);
     stubApi(groups());
     renderTeam(<MyMemoryPage />, MEMBER);
     expect(await screen.findByText(/no longer available/)).toBeTruthy();
+  });
+
+  it("labels a Site memory 'Set by the Site' and names no Workspace (KOBE-670)", async () => {
+    window.history.replaceState(null, "", `/me/memory?item=${ID3}&scope=site`);
+    const site = item({
+      id: ID3,
+      scope: "site",
+      owner_user_id: null,
+      statement: "The wiki lives on the intranet",
+      tags: [],
+    });
+    stubApi({
+      ...groups(),
+      [`GET ${BASE}/site/${ID3}`]: [
+        200,
+        { ...site, versions: [{ version: 1, actor_kind: "proposal", statement: site.statement }] },
+      ],
+    });
+    renderTeam(<MyMemoryPage />, MEMBER);
+    const region = await screen.findByRole("region", { name: "Opened from a conversation" });
+    const row = await within(region).findByRole("listitem", { name: site.statement });
+    expect(within(row).getByText("Set by the Site")).toBeTruthy();
+    expect(row.textContent).not.toMatch(/proposal|Workspace/i);
+    expect(within(row).queryByRole("button")).toBeNull();
   });
 });

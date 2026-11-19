@@ -67,8 +67,10 @@ const say = (text: string) => writeSync(1, `${text}\n`);
 
 function messagesFor(c: EvalCase) {
   for (let i = 0; i < 3; i += 1) {
-    const built = extractorMessages(c.input, randomBytes(16).toString("hex"));
-    if (built.ok || built.reason !== "nonce_in_content") return built;
+    const nonce = randomBytes(16).toString("hex");
+    const built = extractorMessages(c.input, nonce);
+    if (built.ok) return { ...built, nonce };
+    if (built.reason !== "nonce_in_content") return built;
   }
   throw new Error(`${c.id}: no usable nonce`);
 }
@@ -153,7 +155,8 @@ function chooseSource(): Source {
     attempts: async (c) => {
       const built = messagesFor(c);
       if (!built.ok) return [{ error: `input_${built.reason}`, latency_ms: 0 }];
-      return extractWithModel(target, built.messages);
+      const attempts = await extractWithModel(target, built.messages);
+      return attempts.map((a) => ({ ...a, nonce: built.nonce }));
     },
   };
 }

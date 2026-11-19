@@ -19,7 +19,11 @@ import type { ExtractorPromptInput, ExtractorSpeaker } from "./prompt/input.js";
  * A candidate is dropped, with the first reason that applies, when:
  *
  * - `evidence_not_found`: a quote cites no transcript entry or is not a verbatim span of it
- *   (normalised as `quoteFoundIn`, exact case);
+ *   (normalised as `quoteFoundIn`, exact case). An entry id may carry this pass's own fence nonce
+ *   in front of it (`<nonce>:<id>` or the fence's `<nonce> id=<id>`; KOBE-672): that exact prefix
+ *   is stripped once and the rest must still be a transcript entry's id. Any other prefix (another
+ *   pass's nonce, a partial or case-changed one, text from the conversation, a second prefix)
+ *   stays part of the id and so matches no entry;
  * - `person_evidence_missing`: no quote comes from the person (an assistant claim, a tool result
  *   or a summary alone never makes a memory);
  * - `shared_evidence_not_person`: a Workspace candidate also quotes tool output or a summary;
@@ -84,6 +88,34 @@ interface Context {
   readonly hasProject: boolean;
 }
 
+/**
+ * The forms in which a model repeats the fence nonce in front of an entry id: the fence's own
+ * (`<<<entry <nonce> id=<id> ...>>>`) and `<nonce>:<id>` (seen live, KOBE-660 ledger).
+ */
+const NONCE_SEPARATORS = [":", " id="] as const;
+
+/** `id` without this pass's nonce prefix; unchanged when it has none. Strips at most once. */
+function withoutOwnNonce(id: string, nonce: string | undefined): string {
+  if (nonce === undefined || nonce.length === 0) return id;
+  for (const sep of NONCE_SEPARATORS) {
+    const prefix = `${nonce}${sep}`;
+    if (id.startsWith(prefix)) return id.slice(prefix.length);
+  }
+  return id;
+}
+
+/** The candidate with its evidence entry ids freed of this pass's nonce prefix (a new object). */
+function normaliseEvidenceIds(
+  c: MemoryExtractorCandidate,
+  nonce: string | undefined,
+): MemoryExtractorCandidate {
+  if (!c.evidence.some((e) => withoutOwnNonce(e.entry_id, nonce) !== e.entry_id)) return c;
+  return {
+    ...c,
+    evidence: c.evidence.map((e) => ({ ...e, entry_id: withoutOwnNonce(e.entry_id, nonce) })),
+  };
+}
+
 const SHARED_SPEAKERS: ReadonlySet<ExtractorSpeaker> = new Set(["person", "assistant"]);
 
 function evidenceReason(c: MemoryExtractorCandidate, ctx: Context): ScreenDropReason | null {
@@ -145,10 +177,14 @@ function verdictFor(c: MemoryExtractorCandidate, ctx: Context): Verdict {
     : { ok: false, reason: "project_without_project" };
 }
 
-/** Screens a parsed extractor reply against the pass's input. */
+/**
+ * Screens a parsed extractor reply against the pass's input. `nonce` is the fence nonce this
+ * pass's messages were built with; without it no prefixed entry id is accepted.
+ */
 export function screenExtractorOutput(
   output: MemoryExtractorOutput,
   input: ExtractorPromptInput,
+  nonce?: string,
 ): ScreenResult {
   const ctx: Context = {
     // A placeholder (a body the pass could not read) is never evidence (KOBE-392).
@@ -158,7 +194,8 @@ export function screenExtractorOutput(
   };
   const kept: ScreenedCandidate[] = [];
   const dropped: { index: number; reason: ScreenDropReason }[] = [];
-  output.candidates.forEach((candidate, index) => {
+  output.candidates.forEach((reply, index) => {
+    const candidate = normaliseEvidenceIds(reply, nonce);
     const v = verdictFor(candidate, ctx);
     if (v.ok) kept.push({ candidate, destination: v.destination });
     else dropped.push({ index, reason: v.reason });

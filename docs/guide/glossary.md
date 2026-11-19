@@ -101,6 +101,10 @@ it sleeps when idle.
 **SCIM.** The standard an identity provider uses to create, update and deactivate Kobe accounts
 on its own. A **SCIM token** (created in the Site console, shown once) lets one provider do this.
 
+**Set by the Site.** The label on a Site memory (knowledge the Site gives every workspace's agents)
+wherever you see one outside the site console. It never says which workspace the memory came
+from. See [Memory](memory.md#site-memories-outside-the-site-console).
+
 **Single sign-on (SSO).** Signing in to Kobe with your organization's account instead of a Kobe
 password. See [Signing in with your organization](getting-started/single-sign-on.md).
 

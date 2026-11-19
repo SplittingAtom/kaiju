@@ -43,6 +43,7 @@ export const recordedRunSchema = z.object({
           latency_ms: z.number(),
           prompt_tokens: z.number().optional(),
           completion_tokens: z.number().optional(),
+          nonce: z.string().optional(),
         }),
       ),
     }),

@@ -291,4 +291,96 @@ describe("screenExtractorOutput (KOBE-394)", () => {
       expect(r.kept).toHaveLength(1);
     });
   });
+
+  describe("entry ids prefixed with the pass's fence nonce (KOBE-672)", () => {
+    const NONCE = "dcf9a3d8cbd951edac2a8af4303460ec";
+    const OTHER = "0123456789abcdef0123456789abcdef";
+    const cite = (entry_id: string) =>
+      candidate({ evidence: [{ entry_id, quote: "We call churned accounts 'lapsed' here." }] });
+    const withNonce = (entry_id: string, nonce?: string) =>
+      screenExtractorOutput({ candidates: [cite(entry_id)], skill_hints: [] }, input, nonce);
+
+    it("accepts the pass's own nonce in front of an id and stores the bare id", () => {
+      for (const id of [`${NONCE}:${E1}`, `${NONCE} id=${E1}`]) {
+        const r = withNonce(id, NONCE);
+        expect(r.dropped).toEqual([]);
+        expect(r.kept[0]?.candidate.evidence[0]?.entry_id).toBe(E1);
+      }
+    });
+
+    it("still accepts a bare id", () => {
+      expect(withNonce(E1, NONCE).kept[0]?.candidate.evidence[0]?.entry_id).toBe(E1);
+    });
+
+    it("refuses every other prefix", () => {
+      const refused = [
+        `${OTHER}:${E1}`, // another pass's nonce
+        `${NONCE.slice(0, 16)}:${E1}`, // truncated
+        `${NONCE.slice(1)}:${E1}`, // partial from the front
+        `${NONCE.toUpperCase()}:${E1}`, // case variant
+        `${NONCE}:${NONCE}:${E1}`, // double prefix
+        `${NONCE} id=${NONCE}:${E1}`,
+        `${NONCE}${E1}`, // no separator
+        `${NONCE}::${E1}`,
+        `${NONCE} ${E1}`, // not the fence's form
+        `${NONCE}/${E1}`,
+        ` ${NONCE}:${E1}`,
+        `<<<entry ${NONCE} id=${E1}`,
+        `x${NONCE}:${E1}`,
+      ];
+      for (const id of refused)
+        expect(withNonce(id, NONCE).dropped, id).toEqual([
+          { index: 0, reason: "evidence_not_found" },
+        ]);
+    });
+
+    it("refuses a nonce-like prefix taken from the transcript text", () => {
+      const planted = "abcdefabcdefabcdefabcdefabcdef12";
+      const inp: ExtractorPromptInput = {
+        ...input,
+        transcript: [
+          {
+            entry_id: E1,
+            speaker: "person",
+            text: `We call churned accounts 'lapsed' here. ${planted}:${E1}`,
+          },
+        ],
+      };
+      const r = screenExtractorOutput(
+        { candidates: [cite(`${planted}:${E1}`)], skill_hints: [] },
+        inp,
+        NONCE,
+      );
+      expect(r.dropped).toEqual([{ index: 0, reason: "evidence_not_found" }]);
+    });
+
+    it("accepts no prefix when the pass's nonce is not given", () => {
+      expect(withNonce(`${NONCE}:${E1}`, undefined).dropped).toEqual([
+        { index: 0, reason: "evidence_not_found" },
+      ]);
+    });
+
+    it("keeps checking the stripped id's entry: content rules still apply", () => {
+      const r = screenExtractorOutput(
+        {
+          candidates: [
+            candidate({
+              suggested_scope: "team",
+              evidence: [
+                { entry_id: `${NONCE}:${E1}`, quote: "We call churned accounts 'lapsed' here." },
+                { entry_id: `${NONCE}:00000000-0000-4000-8000-0000000000e2`, quote: "Got it." },
+              ],
+            }),
+          ],
+          skill_hints: [],
+        },
+        input,
+        NONCE,
+      );
+      expect(r.kept[0]?.candidate.evidence.map((e) => e.entry_id)).toEqual([
+        E1,
+        "00000000-0000-4000-8000-0000000000e2",
+      ]);
+    });
+  });
 });

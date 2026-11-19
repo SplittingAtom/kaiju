@@ -1,4 +1,5 @@
 import {
+  MEMORY_RECALL_MAX_ITEMS,
   SEMANTIC_MEMORY_RENDER_BLOCK_OVERHEAD_BYTES,
   SEMANTIC_MEMORY_RENDER_ITEM_OVERHEAD_BYTES,
   SEMANTIC_MEMORY_RENDER_LANE_OVERHEAD_BYTES,
@@ -172,6 +173,28 @@ export function eligible(c: Candidate, lane: SelectLane): boolean {
 function nearEnough(c: Candidate): boolean {
   const gap = vectorGap(c);
   return gap !== undefined && gap <= VECTOR_BAND && (c.vectorRank ?? 0) < VECTOR_MAX_ELIGIBLE;
+}
+
+/**
+ * `recall({ query })` (KOBE-399, KOBE-664): the same relevance as the selector, hybrid when the
+ * query's vector came (pure; vector scores relative to the best similarity across all lanes, as
+ * {@link rankVectors} sets them). A candidate counts when a word of the query matched or it is
+ * one of the query's nearest within {@link VECTOR_BAND} ({@link VECTOR_MAX_ELIGIBLE}); pinned
+ * items and person-lane preferences get no pass, no preference base and no stickiness. Matched
+ * Site Policy items (no vector leg) rank like any lane. Best `max`, ties by id.
+ */
+export function rankRecall(
+  lanes: Partial<Record<SelectLane, readonly Candidate[]>>,
+  policy: readonly Candidate[],
+  max: number = MEMORY_RECALL_MAX_ITEMS,
+): RunSemanticMemoryItem[] {
+  const ranked = rankVectors(lanes);
+  return [...SELECT_LANES.flatMap((lane) => ranked[lane] ?? []), ...policy]
+    .filter((c) => c.matched || nearEnough(c))
+    .map((c) => ({ item: c.item, score: relevanceScore({ ...c, sticky: false }) }))
+    .sort((a, b) => b.score - a.score || byId(a.item, b.item))
+    .slice(0, max)
+    .map((r) => r.item);
 }
 
 /** Rendered bytes of one item (Buffer.byteLength: the same UTF-8 count, without an encoder). */

@@ -45,7 +45,7 @@ import {
   type MemoryTarget,
 } from "./store.js";
 import { searchFiles, type Reresolve } from "./search.js";
-import { recallItems, showItem } from "./items/recall-items.js";
+import { recallItems, showItem, type RecallEmbedder } from "./items/recall-items.js";
 import { readSwitches } from "./switches.js";
 import { readRunMemoryPlan } from "../agents/run-memory.js";
 
@@ -77,6 +77,8 @@ export interface MemoryAgentDeps {
   readonly approvals: ApprovalBroker;
   readonly verifier: ApprovalVerifier | undefined;
   readonly log: Logger;
+  /** `recall({ query })`'s query embedding (KOBE-664); absent: keyword recall. */
+  readonly embeddings?: RecallEmbedder;
 }
 
 export type MemoryReply = MemoryToolsResponse extends infer R
@@ -492,7 +494,7 @@ async function targetsFor(
  * and the one re-resolve of a vanished object under the same checks).
  */
 export async function readMemory(
-  deps: Pick<MemoryAgentDeps, "db" | "blobs" | "log">,
+  deps: Pick<MemoryAgentDeps, "db" | "blobs" | "log" | "embeddings">,
   req: ReadRequest,
 ): Promise<MemoryReply> {
   if (!deps.blobs) return readItemsOnly(deps, req);
@@ -536,17 +538,18 @@ export async function readMemory(
 
 /**
  * KOBE-399: the saved memories a `recall({ query })` without `scope` answers before the Notes
- * files (`items/recall-items.ts`). Its own short transaction after the Notes listing; a failure
- * leaves the items out (logged) and never costs the Notes answer.
+ * files (`items/recall-items.ts`). Its own short transaction after the Notes listing, then
+ * (KOBE-664) the query embedding and the vector leg outside it; a failure leaves the items out
+ * (logged) and never costs the Notes answer. A missing or failing embedding means keyword items.
  */
 async function readItems(
-  deps: Pick<MemoryAgentDeps, "db" | "log">,
+  deps: Pick<MemoryAgentDeps, "db" | "log" | "embeddings">,
   req: ReadRequest,
 ): Promise<RunSemanticMemoryItem[] | undefined> {
   const { query, scope, path } = req.input;
   if (query === undefined || scope !== undefined || path !== undefined) return undefined;
   try {
-    return await withTeam(deps.db, req.teamId, (tx) => recallItems(tx, req, query));
+    return await recallItems(deps.db, req, query, deps.embeddings);
   } catch (err) {
     deps.log.error({ err, run_id: req.runId }, "recall over memory items failed");
     return undefined;
@@ -558,7 +561,7 @@ async function readItems(
  * `recall({ query })` still answers them (no files); anything else is `storage_failed`.
  */
 async function readItemsOnly(
-  deps: Pick<MemoryAgentDeps, "db" | "log">,
+  deps: Pick<MemoryAgentDeps, "db" | "log" | "embeddings">,
   req: ReadRequest,
 ): Promise<MemoryReply> {
   const { query, scope, path } = req.input;
