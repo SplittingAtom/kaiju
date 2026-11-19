@@ -12,6 +12,12 @@ export type ItemScope = SemanticMemoryScope;
 export type ItemKind = SemanticMemoryKind;
 export type ItemStatus = SemanticMemoryStatus;
 
+/**
+ * The label on a Site memory wherever someone sees it outside the Site console (KOBE-670): who set
+ * it, never which Workspace it came from (KOBE-403 provenance rules).
+ */
+export const SET_BY_SITE = "Set by the Site";
+
 export interface MemoryItem {
   readonly id: string;
   readonly scope: ItemScope;

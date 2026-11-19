@@ -87,15 +87,28 @@ describe("context viewer", () => {
         statement: "<i>Deploys</i> freeze on Fridays",
         pinned: true,
       },
+      {
+        id: "00000000-0000-4000-8000-000000000004",
+        version: 1,
+        lane: "site",
+        kind: "fact",
+        statement: "The wiki lives on the intranet",
+        pinned: false,
+      },
     ]);
     const { dialog } = await openViewer(t);
-    const list = await within(dialog).findByText("Memories in context (2)");
+    const list = await within(dialog).findByText("Memories in context (3)");
     const details = must(list.closest("details"));
-    expect(within(details).getByRole("region", { name: "Policy" }).textContent).toContain(
-      "Never share customer data",
-    );
+    const policy = within(details).getByRole("region", { name: "Policy" });
+    expect(policy.textContent).toContain("Never share customer data");
+    // Policy and Site memories say who set them (KOBE-670); nothing names a Workspace.
+    expect(within(policy).getByText(/^Set by the Site ·/)).toBeTruthy();
+    const site = within(details).getByRole("region", { name: "Site memories" });
+    expect(within(site).getByText(/^Set by the Site ·/)).toBeTruthy();
+    expect(site.textContent).toContain("The wiki lives on the intranet");
     const team = within(details).getByRole("region", { name: "Workspace memories" });
     expect(team.textContent).toContain("Pinned · <i>Deploys</i> freeze on Fridays");
+    expect(within(team).queryByText(/Set by the Site/)).toBeNull();
     expect(team.querySelector("i")).toBeNull();
     expect(within(details).queryByRole("note")).toBeNull();
   });
