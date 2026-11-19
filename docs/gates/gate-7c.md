@@ -91,24 +91,34 @@ is never learned, U46). The spec now states a meeting room's name.
 
 ## Decisions for Chris
 
-1. **Workspace deletion and holds** (KOBE-402): **decided 2026-11-18: yes**, a legal hold must
-   stop a Workspace delete from removing its Site proposals. No server path deletes a Workspace
-   today; KOBE-665 makes the foreign key `RESTRICT` and documents the rule for any future
-   Workspace deletion.
-2. **Who may decide** (KOBE-403 LOW-1): only the proposer is barred. A Team admin who confirmed a
-   member's proposal (possibly with an edit) may also approve it at step 2 if they are a Site
-   steward. Bar the confirmer too?
-3. **Site audit view** (KOBE-406): `/v1/site/audit` shows Site admins every Workspace's audit
-   events, including candidate and thread ids (ids only, no text). Inside SM20's wall or not?
-4. **Reminders** (KOBE-653): every 7 days while a step waits (read as repeating), not once.
-5. **Curators outside every Workspace** (KOBE-653): Site curators who belong to no Workspace get no
-   bell notices (the notices land in the Workspace a curator last used); they see the Site queue.
-6. **Team admins promoted mid-step** get no reminder for that step (KOBE-653).
-7. **Members may propose to the Site** (KOBE-403): the existing Workspace switch, default on. Keep
-   on, or default off?
-8. **Merge target picker** (KOBE-405): loads the first 100 Site memories, no search. Lists on the
-   Workspace side show "Showing N of M" past 100 (the API has no paging).
-9. **"Set by the Site"**: members see a proposal-made Site memory as any other Site memory (no
-   Workspace named), but no screen says "set by the Site"; only the guide does. Add a label?
-10. **Gate B leftovers** (still open): the licence rows (pgvector; ffmpeg/curl in the llama.cpp
-    image) and the other Gate B decisions in [gate-7b.md](gate-7b.md#decisions-for-chris).
+Answered 2026-11-18 and 2026-11-19.
+
+| #   | Question                                                                 | Answer                                         | Follow-up |
+| --- | ------------------------------------------------------------------------ | ---------------------------------------------- | --------- |
+| 1   | A legal hold guards the Workspace-delete cascade on Site proposals?      | Yes (no server path deletes a Workspace today) | KOBE-665  |
+| 2   | Bar the confirming Team admin from deciding at step 2?                   | Yes                                            | KOBE-666  |
+| 3   | Is `/v1/site/audit` (Workspace thread/candidate ids) inside SM20's wall? | Yes: hide them from the Site view              | KOBE-666  |
+| 4   | Reminders weekly or once?                                                | Once per step                                  | KOBE-666  |
+| 5   | Curators in no Workspace get no bell notices                             | Accepted                                       | —         |
+| 6   | Team admins promoted mid-step get no reminder                            | Accepted                                       | —         |
+| 7   | "Members may propose to the Site" default                                | Keep on                                        | —         |
+| 8   | Merge target picker: first 100, no search                                | Later                                          | KOBE-667  |
+| 9   | A "Set by the Site" label for members                                    | Add it                                         | KOBE-670  |
+
+Gate B questions answered at the same time ([gate-7b.md](gate-7b.md#decisions-for-chris)):
+
+| Question                                                              | Answer             | Follow-up |
+| --------------------------------------------------------------------- | ------------------ | --------- |
+| Licences: pgvector; ffmpeg/curl in the llama.cpp image                | Approved           | #609      |
+| Site-wide hold freezes Workspace learning records?                    | No                 | —         |
+| Purge decided proposals and suggestions by age?                       | Proposal requested | pending   |
+| Stale and swept suggestions share `expired`                           | Separate states    | KOBE-668  |
+| "New" hint on Learn per browser                                       | Accepted           | —         |
+| Approved proposal recorded as the curator's write                     | Accepted           | —         |
+| Screen accepts nonce-prefixed entry ids?                              | Proposal requested | pending   |
+| Capability rule may drop genuine business facts                       | Accepted           | —         |
+| Archived memory stays in earlier notes until the sandbox restarts     | Accepted           | —         |
+| Embedding service: no API key, open CORS, gateway-only network policy | Keep               | —         |
+| Saving the embedding model without an active Workspace builds nothing | Fix                | KOBE-669  |
+| Workspace-level Learn nudge switch (Gate D)                           | No                 | —         |
+| Quality signals for portable preferences (Gate D)                     | No                 | —         |
