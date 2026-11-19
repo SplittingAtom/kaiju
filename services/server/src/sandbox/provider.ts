@@ -867,9 +867,11 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
       if (!found) {
         throw new SandboxProvisioningError(`Sandbox for ${teamNamespaceName(team)} vanished`);
       }
-      if (isPodReady(await kube.get(POD(found.namespace, found.podName)))) return { ready: true };
+      const pod = await kube.get(POD(found.namespace, found.podName));
+      if (isPodReady(pod)) return { ready: true };
       const last = now() >= deadline;
-      if (last || now() >= nextDiagnosis) {
+      // An ended pod (KOBE-636) never becomes Ready: diagnose it now, not at the next interval.
+      if (last || now() >= nextDiagnosis || podTermination(pod)) {
         nextDiagnosis = now() + READY_DIAGNOSE_EVERY_MS;
         const stall = await diagnoseStall(
           kube,

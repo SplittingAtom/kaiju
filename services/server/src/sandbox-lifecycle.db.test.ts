@@ -38,9 +38,8 @@ class FakeProvider implements LifecycleProvider {
   /** What awaitReady answers (default: Ready). */
   readyOutcome: ReadyOutcome = { ready: true };
 
-  async awaitReady(): Promise<ReadyOutcome> {
-    return this.readyOutcome;
-  }
+  /** An arrow: the lifecycle takes the method off the provider unbound. */
+  awaitReady = async (): Promise<ReadyOutcome> => this.readyOutcome;
 
   sandboxIdOf(userId: string): string {
     let id = this.ids.get(userId);
@@ -621,7 +620,7 @@ describe("an ended (evicted) sandbox pod (KOBE-636)", () => {
     await expect
       .poll(() => wakingOf(w, runId), { timeout: 5_000 })
       .toEqual([{ reason: "restarted_out_of_space" }]);
-    expect(lifecycle().metrics().restarted).toBeGreaterThanOrEqual(1);
+    expect(lifecycle(1).metrics().restarted).toBeGreaterThanOrEqual(1);
     // The new pod connects and gets the run: the conversation continues.
     const next = await connect(w, 0);
     await next.ready();
