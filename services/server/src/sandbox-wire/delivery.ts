@@ -92,6 +92,8 @@ export interface DeliveryHost {
   hasLiveLease(runId: string): boolean;
   /** The run was leased to this connection (it may have ended since). */
   hasLease(runId: string): boolean;
+  /** The thread's message runs with a live lease on this connection (compactions left out). */
+  liveMessageRuns(threadId: string): readonly string[];
   /** The agent advertised this optional feature in `hello.capabilities` (KOBE-82). */
   hasCapability(name: string): boolean;
   /** `compaction`: a compaction run's lease (KOBE-213; no tool frames may name it). */
@@ -362,6 +364,7 @@ export class CommandDelivery {
         },
         "entry sync failed",
       );
+      if (tampered(outcome)) await this.#tamperedMidRun(threadId, outcome);
       return undefined;
     }
     const data = parseGetEntries(outcome.data);
@@ -1180,6 +1183,46 @@ export class CommandDelivery {
     );
   }
 
+  /**
+   * A `pi.command` (the wire's own `get_entries`, or a row's) was answered `runtime_tampered`: the
+   * agent stopped the thread's Pi as an expected close, ended its run there and sends no
+   * `pi.exited` (KOBE-607). Every live message run of the thread is failed `runtime_tampered` with
+   * its audit row and its lease ended, so it neither stays `running` nor blocks hibernation.
+   * Compactions and branch summaries are left alone: their own result ends them.
+   */
+  async #tamperedMidRun(threadId: string, outcome: CommandOutcome): Promise<void> {
+    if (outcome.ok) return;
+    const runs = this.#host.liveMessageRuns(threadId);
+    this.#host.log.warn(
+      {
+        thread_id: threadId,
+        run_ids: runs,
+        sandbox_id: this.#host.sandboxId,
+        error: outcome.error.message.slice(0, 300),
+        security: true,
+      },
+      "Pi stopped mid-run: its runtime was tampered with",
+    );
+    const { teamId } = this.#host.target;
+    const end = {
+      status: "failed",
+      error: failureInfo(outcome.error.code, "start_failed"),
+    } as const;
+    for (const runId of runs) {
+      try {
+        const { ended } = await this.#endTx(outcome, runId, threadId, "message", (tx) =>
+          endRunInTx(tx, teamId, runId, end),
+        );
+        this.#host.endLease(runId);
+        if (ended) this.#ctx.runEnded({ teamId, runId, threadId, status: end.status });
+      } catch (err) {
+        // The row was written on its own (withTamperAudit); the lost-run sweep ends the run.
+        this.#host.endLease(runId);
+        this.#host.log.error({ err, run_id: runId }, "could not end a run stopped for tampering");
+      }
+    }
+  }
+
   /** The ids of a tampered-runtime report from this connection (KOBE-271). */
   #tamper(
     runId: string,
@@ -1204,6 +1247,12 @@ export class CommandDelivery {
       await this.#endBranchSummary(issued.rowId, issued.runId, issued.threadId, outcome).catch(
         (err: unknown) =>
           this.#host.log.error({ err, run_id: issued.runId }, "could not end a branch summary run"),
+      );
+    }
+    // A row `pi.command` refused for a tampered runtime: the agent stopped that thread's Pi.
+    if (issued.commandKind === "pi.command" && tampered(outcome)) {
+      await this.#tamperedMidRun(issued.threadId, outcome).catch((err: unknown) =>
+        this.#host.log.error({ err, thread_id: issued.threadId }, "could not end tampered runs"),
       );
     }
     await withTeam(this.#ctx.db, teamId, (tx) =>

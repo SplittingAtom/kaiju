@@ -92,18 +92,23 @@ export class EgressTokenFile {
 
   /**
    * The tripwire (as the model file's): true when the file is a regular file holding exactly the
-   * token this writer last wrote, with the mode it set.
+   * token this writer last wrote, with the mode it set. Queued with the writes (KOBE-607): a
+   * rotation during the read is no false tamper.
    */
-  async verify(): Promise<boolean> {
-    await this.#chain;
-    if (this.#written === undefined) return false;
-    try {
-      const info = await lstat(this.path);
-      if (!info.isFile() || (info.mode & 0o777) !== this.#mode) return false;
-    } catch {
-      return false;
-    }
-    return (await this.#onDisk()) === `${this.#written}\n`;
+  verify(): Promise<boolean> {
+    const result = this.#chain.then(async () => {
+      const written = this.#written;
+      if (written === undefined) return false;
+      try {
+        const info = await lstat(this.path);
+        if (!info.isFile() || (info.mode & 0o777) !== this.#mode) return false;
+      } catch {
+        return false;
+      }
+      return (await this.#onDisk()) === `${written}\n`;
+    });
+    this.#chain = result.catch(() => undefined);
+    return result;
   }
 
   /** Whether the file holds `token` (tests and diagnostics). */

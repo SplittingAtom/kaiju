@@ -166,6 +166,61 @@ describe("sandbox.runtime_tampered (KOBE-271)", () => {
     expect(row).toMatchObject({ ip: null, user_agent: null, pii_commitment: null });
   });
 
+  it("a run whose Pi was stopped mid-run (get_entries refused runtime_tampered) is failed, not left running (KOBE-607)", async () => {
+    const w = await f.world();
+    await teamModel(w);
+    const ws = await f.connect(w, 0, CAPABLE);
+    const threadId = await f.thread(w.owner);
+    const runId = await f.message(w.owner, threadId, "bash: true");
+    const start = await ws.started(runId);
+    // From here the agent finds the runtime changed around a get_entries: it stops Pi (ending the
+    // run there without agent_settled, its later frames dropped) and refuses the command.
+    const base = ws.sb.respond;
+    ws.sb.respond = (frame) =>
+      frame.type === "pi.command" && frame.command.type === "get_entries"
+        ? {
+            v: 1,
+            type: "command.result",
+            command_id: frame.command_id,
+            ok: false,
+            error: { code: "runtime_tampered", message: SANDBOX_TEXT },
+          }
+        : base?.(frame);
+    ws.event(start, { type: "agent_start" });
+    ws.event(start, {
+      type: "tool_execution_start",
+      toolCallId: "call_fake_bash",
+      toolName: "bash",
+      args: { command: "true" },
+    });
+    ws.event(start, {
+      type: "tool_execution_end",
+      toolCallId: "call_fake_bash",
+      toolName: "bash",
+      isError: false,
+      result: { content: [{ type: "text", text: "(no output)" }] },
+    });
+    ws.event(start, { type: "turn_end", message: { role: "assistant" } });
+    await f.until(w.team, runId, "failed");
+    expect(await failureCode(w.team, runId)).toBe("runtime_tampered");
+    const rows = await tamperRows(w.team);
+    expect(rows.map((r) => r.target)).toEqual([
+      {
+        sandboxId: await sandboxOf(w),
+        userId: w.owner.id,
+        threadId,
+        runId,
+        runKind: "message",
+        replicaId: f.fx.replica(0).deps.sandboxWire.replicaId,
+      },
+    ]);
+    // The thread is free again: the next run is delivered and completes.
+    ws.sb.respond = base;
+    const next = await f.message(w.owner, threadId, "again");
+    ws.reply(await ws.started(next), "answer");
+    await f.until(w.team, next, "completed");
+  });
+
   it("a compaction stopped for a tampered runtime is failed and audited once, ids only", async () => {
     const w = await f.world();
     await teamModel(w);
