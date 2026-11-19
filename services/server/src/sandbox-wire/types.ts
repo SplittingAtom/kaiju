@@ -69,11 +69,16 @@ export interface WakeContext {
 
 /**
  * A wake that cannot succeed by waiting: no verified isolation runtime, an offboarded sandbox, a
- * pod that is not Ready within the wake timeout (`workspace_unavailable`, KOBE-192).
+ * pod that is not Ready within the wake timeout (`workspace_unavailable`, KOBE-192), a pod that
+ * ended and whose replacement did not come up either (`sandbox_failed`, KOBE-636).
  */
 export class SandboxWakeError extends Error {
   constructor(
-    readonly code: "isolation_runtime_missing" | "sandbox_unavailable" | "workspace_unavailable",
+    readonly code:
+      | "isolation_runtime_missing"
+      | "sandbox_unavailable"
+      | "workspace_unavailable"
+      | "sandbox_failed",
     message: string,
   ) {
     super(message);

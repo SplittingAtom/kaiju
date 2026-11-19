@@ -117,6 +117,27 @@ describe("awaitReady (KOBE-192)", () => {
     expect(t.clock.ms).toBeLessThan(30_000);
   });
 
+  it("fails at once, definite, when the pod has ended (evicted) instead of waiting the budget", async () => {
+    const t = await setup();
+    t.setStatus({
+      phase: "Failed",
+      reason: "Evicted",
+      message: 'Usage of EmptyDir volume "home" exceeds the limit "1Gi". ',
+    });
+    const outcome = await t.provider.awaitReady(TEAM, USER, T0);
+    expect(outcome).toMatchObject({
+      ready: false,
+      sandboxId: t.handle.sandboxId,
+      stall: {
+        cause: "pod_failed",
+        definite: true,
+        detail: expect.stringContaining('EmptyDir volume "home"') as unknown,
+      },
+    });
+    expect(t.clock.ms).toBeLessThan(5_000);
+    expect(noDeletes(t.kube)).toEqual([]);
+  });
+
   it("never deletes anything, whatever it finds", async () => {
     const t = await setup(10_000);
     t.podEvent("FailedAttachVolume", "LocalReplicaSchedulingFailure: insufficient storage");

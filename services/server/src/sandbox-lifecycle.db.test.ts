@@ -10,7 +10,8 @@ import {
   type LifecycleProvider,
   type SandboxLifecycle,
 } from "./sandbox-lifecycle/index.js";
-import type { HibernateOutcome, WakeResult } from "./sandbox/provider.js";
+import type { PodTermination } from "./sandbox/pod-termination.js";
+import type { HibernateOutcome, ReadyOutcome, WakeResult } from "./sandbox/provider.js";
 import { wakeStartedAt } from "./sandbox-lifecycle/store.js";
 import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
@@ -32,6 +33,14 @@ class FakeProvider implements LifecycleProvider {
   transientFailures = 0;
   /** The next hibernate finds the claim gone. */
   claimGone = false;
+  /** The next wake found the pod ended and replaced it (KOBE-636). */
+  replaced: PodTermination | undefined;
+  /** What awaitReady answers (default: Ready). */
+  readyOutcome: ReadyOutcome = { ready: true };
+
+  async awaitReady(): Promise<ReadyOutcome> {
+    return this.readyOutcome;
+  }
 
   sandboxIdOf(userId: string): string {
     let id = this.ids.get(userId);
@@ -61,8 +70,11 @@ class FakeProvider implements LifecycleProvider {
         target: { sandboxId, userId },
       });
     }
+    const replaced = this.replaced;
+    this.replaced = undefined;
     return {
       resumed,
+      ...(replaced ? { replaced } : {}),
       handle: {
         sandboxId,
         namespace: `kobe-team-${team.id.slice(0, 4)}`,
@@ -132,6 +144,8 @@ beforeEach(() => {
   provider.wakeError = undefined;
   provider.transientFailures = 0;
   provider.claimGone = false;
+  provider.replaced = undefined;
+  provider.readyOutcome = { ready: true };
 });
 
 interface World {
@@ -567,5 +581,79 @@ describe("wake (router → waker → provider)", () => {
       code: "sandbox_unavailable",
     });
     expect(provider.calls).toEqual([]);
+  });
+});
+
+describe("an ended (evicted) sandbox pod (KOBE-636)", () => {
+  const EVICTED: PodTermination = {
+    phase: "Failed",
+    cause: "out_of_space",
+    reason: "Evicted",
+    message: 'Usage of EmptyDir volume "home" exceeds the limit "1Gi".',
+  };
+
+  async function runOf(w: World) {
+    const runId = await fx.run(w.team, w.owner);
+    const { rows } = await fx.admin.query<{ thread_id: string }>(
+      `SELECT thread_id FROM runs WHERE team_id = $1 AND id = $2`,
+      [w.team, runId],
+    );
+    return { runId, threadId: must(rows[0], "run").thread_id };
+  }
+
+  async function wakingOf(w: World, runId: string) {
+    const { rows } = await fx.admin.query<{ payload: { reason: string } }>(
+      `SELECT payload FROM run_events WHERE team_id = $1 AND run_id = $2 AND type = 'sandbox.waking'`,
+      [w.team, runId],
+    );
+    return rows.map((r) => r.payload);
+  }
+
+  it("a wake that replaced the pod tells the waiting run why, and the run goes on", async () => {
+    const w = await world();
+    const sb = await awake(w);
+    // The pod was evicted: its socket is gone, the row still says running.
+    sb.close();
+    await sb.waitClosed();
+    provider.replaced = EVICTED;
+    const { runId, threadId } = await runOf(w);
+    void router(1).startRun(w.target, { runId, threadId, message: "hi" }, { timeoutMs: 8_000 });
+    await expect
+      .poll(() => wakingOf(w, runId), { timeout: 5_000 })
+      .toEqual([{ reason: "restarted_out_of_space" }]);
+    expect(lifecycle().metrics().restarted).toBeGreaterThanOrEqual(1);
+    // The new pod connects and gets the run: the conversation continues.
+    const next = await connect(w, 0);
+    await next.ready();
+    await next.until(() => next.frames("run.start").find((f) => f.run_id === runId));
+    expect(await sandboxRow(w)).toMatchObject({ state: "running" });
+  });
+
+  it("a replacement that does not come up fails the command `sandbox_failed` at once, never looping", async () => {
+    const w = await world();
+    const sb = await awake(w);
+    sb.close();
+    await sb.waitClosed();
+    provider.replaced = EVICTED;
+    provider.readyOutcome = {
+      ready: false,
+      sandboxId: provider.sandboxIdOf(w.owner.id),
+      stall: { cause: "pod_failed", detail: "pod Failed: Evicted", definite: true },
+    };
+    provider.calls.length = 0;
+    const started = Date.now();
+    await expect(getState(w)).resolves.toMatchObject({
+      ok: false,
+      error: { code: "sandbox_failed" },
+    });
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(provider.calls.filter((c) => c === `wake:${w.owner.id}`)).toHaveLength(1);
+    const [stalled] = await fx.admin
+      .query<{ target: Record<string, unknown> }>(
+        `SELECT target FROM audit_log WHERE action = 'sandbox.wake_stalled' AND target->>'teamId' = $1`,
+        [w.team],
+      )
+      .then((r) => r.rows);
+    expect(stalled?.target).toMatchObject({ cause: "pod_failed" });
   });
 });

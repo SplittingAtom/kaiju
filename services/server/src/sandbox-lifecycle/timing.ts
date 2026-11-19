@@ -24,7 +24,7 @@ export interface WakeTimings {
   /** The pod is Ready. */
   readonly readyMs: number;
   /** Why the wake was announced; null for a running sandbox that was only disconnected. */
-  readonly reason: "first_start" | "hibernated" | null;
+  readonly reason: string | null;
   readonly resumed: boolean;
 }
 

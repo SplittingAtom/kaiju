@@ -329,3 +329,104 @@ describe("wakeSandbox (D14, KOBE-9)", () => {
     expect(patched).toHaveLength(2);
   });
 });
+
+describe("wakeSandbox on an ended pod (KOBE-636)", () => {
+  /** What the kubelet left on gate1 2026-11-12: the home emptyDir over its 1 GiB sizeLimit. */
+  const EVICTED = {
+    phase: "Failed",
+    reason: "Evicted",
+    message: 'Usage of EmptyDir volume "home" exceeds the limit "1Gi". ',
+    containerStatuses: [{ state: { terminated: { exitCode: 137, reason: "Error" } } }],
+  };
+
+  async function evicted(controller: Parameters<typeof simulateAgentSandbox>[1] = {}) {
+    const ctx = setup({ controller });
+    const handle = await ctx.provider.ensureSandbox(TEAM, USER);
+    const old = must(podOf(ctx.kube, handle.sandboxName));
+    ctx.kube.seed({ ...old, status: EVICTED });
+    ctx.kube.calls.length = 0;
+    return { ...ctx, handle, old };
+  }
+
+  it("deletes the Failed pod once so the controller starts a new one, and says why", async () => {
+    const ctx = await evicted();
+    const woken = await ctx.provider.wakeSandbox(TEAM, USER);
+    const pod = must(podOf(ctx.kube, ctx.handle.sandboxName));
+    expect(pod.metadata.uid).not.toBe(ctx.old.metadata.uid);
+    expect(woken).toMatchObject({
+      resumed: false,
+      handle: { state: "running", podName: ctx.handle.sandboxName },
+      replaced: {
+        cause: "out_of_space",
+        reason: "Evicted",
+        message: 'Usage of EmptyDir volume "home" exceeds the limit "1Gi".',
+      },
+    });
+    const deletes = ctx.kube.calls.filter((c) => c.verb === "delete");
+    expect(deletes).toEqual([
+      expect.objectContaining({ kind: "Pod", name: ctx.handle.sandboxName, namespace: NS }),
+    ]);
+    // Only the pod: the claim, the Sandbox and with them the workspace volume stay.
+    expect(ctx.kube.all("SandboxClaim")).toHaveLength(1);
+    expect(mode(ctx.kube, ctx.handle.sandboxName)).toBe("Running");
+  });
+
+  it("audits the restart for the team with the cause, never the kubelet's text", async () => {
+    const ctx = await evicted();
+    await ctx.provider.wakeSandbox(TEAM, USER);
+    const restarted = ctx.audits.find((a) => a.action === "sandbox.restarted");
+    expect(restarted).toEqual({
+      action: "sandbox.restarted",
+      teamId: TEAM.id,
+      target: {
+        sandboxId: ctx.handle.sandboxId,
+        userId: USER,
+        cause: "out_of_space",
+        podReason: "Evicted",
+      },
+    });
+    expect(AUDIT_EVENTS["sandbox.restarted"].target.parse(must(restarted).target)).toBeTruthy();
+  });
+
+  it("checks isolation before replacing (the new pod is verified like any other)", async () => {
+    const ctx = await evicted();
+    const require = vi.fn(async () => {
+      throw new IsolationRuntimeMissingError("no gVisor");
+    });
+    const gated = createSandboxProvider({
+      kube: ctx.kube,
+      isolation: { require },
+      settings: SETTINGS,
+      sleep: async () => {},
+    });
+    await expect(gated.wakeSandbox(TEAM, USER)).rejects.toBeInstanceOf(
+      IsolationRuntimeMissingError,
+    );
+    expect(ctx.kube.calls.filter((c) => c.verb === "delete")).toEqual([]);
+  });
+
+  it("replaces at most once per wake: a new pod that fails at once is returned as it is", async () => {
+    const ctx = await evicted();
+    const afterDelete = ctx.kube.afterDelete;
+    ctx.kube.afterDelete = (object, fake) => {
+      afterDelete?.(object, fake);
+      const fresh = podOf(ctx.kube, ctx.handle.sandboxName);
+      if (fresh) ctx.kube.seed({ ...fresh, status: EVICTED });
+    };
+    const woken = await ctx.provider.wakeSandbox(TEAM, USER);
+    expect(woken.replaced?.cause).toBe("out_of_space");
+    expect(ctx.kube.calls.filter((c) => c.verb === "delete")).toHaveLength(1);
+  });
+
+  it("never replaces a live pod, nor touches an ended pod outside a wake", async () => {
+    const live = setup();
+    await live.provider.ensureSandbox(TEAM, USER);
+    live.kube.calls.length = 0;
+    await expect(live.provider.wakeSandbox(TEAM, USER)).resolves.not.toHaveProperty("replaced");
+    expect(live.kube.calls.filter((c) => c.verb === "delete")).toEqual([]);
+
+    const ctx = await evicted();
+    await ctx.provider.ensureSandbox(TEAM, USER);
+    expect(ctx.kube.calls.filter((c) => c.verb === "delete")).toEqual([]);
+  });
+});

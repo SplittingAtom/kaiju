@@ -48,6 +48,7 @@ export function contextErrorFor(code: string): ThreadContextErrorCode {
     case "session_unavailable":
     case "sandbox_unavailable":
     case "workspace_unavailable":
+    case "sandbox_failed":
     case "isolation_runtime_missing":
       return "sandbox_unavailable";
     default:

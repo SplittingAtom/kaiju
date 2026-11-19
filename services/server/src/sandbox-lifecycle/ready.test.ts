@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
+import { FAILURE_MESSAGES } from "../runs/failure-codes.js";
 import { SandboxWakeError } from "../sandbox-wire/types.js";
-import { ensureReady, WORKSPACE_UNAVAILABLE_MESSAGE, type ReadyProvider } from "./ready.js";
+import {
+  ensureReady,
+  SANDBOX_FAILED_MESSAGE,
+  WORKSPACE_UNAVAILABLE_MESSAGE,
+  type ReadyProvider,
+} from "./ready.js";
 
 const stall = {
   cause: "volume_unschedulable",
@@ -41,5 +47,20 @@ describe("ensureReady", () => {
     });
     expect((err as Error).message).not.toMatch(/compute2|volume|storage on node/);
     expect(r.onStalled).toHaveBeenCalledWith({ sandboxId: "sb-1", stall });
+  });
+
+  it("an ended pod (KOBE-636) fails `sandbox_failed` in plain words, and admins still get why", async () => {
+    const ended = {
+      cause: "pod_failed",
+      detail: 'pod Failed: Evicted: Usage of EmptyDir volume "home" exceeds the limit "1Gi".',
+      definite: true,
+    } as const;
+    const r = run(async () => ({ ready: false, sandboxId: "sb-1", stall: ended }));
+    const err = await r.result.catch((e: unknown) => e);
+    expect(err).toMatchObject({ code: "sandbox_failed", message: SANDBOX_FAILED_MESSAGE });
+    expect(SANDBOX_FAILED_MESSAGE).toMatch(/\/workspace/);
+    // The run's card shows the server's own text for the code: the same words.
+    expect(FAILURE_MESSAGES["sandbox_failed"]).toBe(SANDBOX_FAILED_MESSAGE);
+    expect(r.onStalled).toHaveBeenCalledWith({ sandboxId: "sb-1", stall: ended });
   });
 });

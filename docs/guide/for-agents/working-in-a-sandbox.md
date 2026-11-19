@@ -22,6 +22,13 @@ tool list is more specific, that wins: it reflects this site's and this team's a
   and Node 22 with npm are installed.
 - The sandbox may sleep between messages. Running processes, the Python kernel and anything outside
   `/workspace` may be gone next time; files in `/workspace` are kept.
+- `$HOME` (`/home/kobe`) is limited to 1 GiB and `/tmp` to 2 GiB by default. Filling either stops
+  the sandbox: it is restarted on the next message with both emptied (`/workspace` is kept). Install
+  packages inside `/workspace`, not in `$HOME`: Python into a virtual environment
+  (`python -m venv /workspace/.venv`, then `/workspace/.venv/bin/pip install …`), npm packages in a
+  project folder under `/workspace` (its `node_modules`). A plain `pip install` goes to `~/.local`
+  and npm caches in `~/.npm`, both in `$HOME`. Write large outputs to `/workspace`, and delete
+  large temporary files when done. `.venv`, `node_modules` and `__pycache__` are not backed up.
 
 ## Every tool call is decided by the server
 

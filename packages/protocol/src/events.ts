@@ -208,8 +208,20 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     retry_of_run_id: uuidSchema.optional(),
   }),
   "sandbox.waking": z.strictObject({
-    /** `hibernated` resume, `first_start` (first-ever sandbox), `rebuild` (volume lost, D15). */
-    reason: z.enum(["hibernated", "first_start", "rebuild"]),
+    /**
+     * `hibernated` resume, `first_start` (first-ever sandbox), `rebuild` (volume lost, D15).
+     * `restarted_*` (KOBE-636): the sandbox's pod had ended and is being replaced; files in
+     * /workspace are kept, the rest is not. `restarted_out_of_space`: it ran out of temporary
+     * space ($HOME or /tmp); `restarted_out_of_memory`: out of memory; `restarted`: anything else.
+     */
+    reason: z.enum([
+      "hibernated",
+      "first_start",
+      "rebuild",
+      "restarted_out_of_space",
+      "restarted_out_of_memory",
+      "restarted",
+    ]),
   }),
   "text.delta": z.strictObject({
     message_id: messageId,

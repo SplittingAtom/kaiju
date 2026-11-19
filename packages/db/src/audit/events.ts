@@ -745,6 +745,22 @@ export const AUDIT_EVENTS = {
    */
   "sandbox.woken": event("team", { sandboxId: id, userId: id }),
   /**
+   * A wake found the sandbox's pod ended (evicted, killed) and deleted it so agent-sandbox starts a
+   * new one; claim, Sandbox and workspace volume are kept (KOBE-636; system actor, or the user
+   * whose request woke it). `cause` in plain terms, `podReason` the pod's own (`Evicted`); the
+   * kubelet's message names volumes and limits and stays in the server log.
+   */
+  "sandbox.restarted": event("team", {
+    sandboxId: id,
+    userId: id,
+    cause: z.enum(["out_of_space", "out_of_memory", "stopped"]),
+    podReason: z
+      .string()
+      .max(64)
+      // eslint-disable-next-line no-control-regex
+      .regex(/^[^\u0000-\u001f\u007f]*$/),
+  }),
+  /**
    * A woken sandbox was not Ready within the wake timeout and its run failed
    * `workspace_unavailable` (KOBE-192; system actor). Site scope: `detail` is the cluster's own
    * reason (events, volume phase) and may name nodes and volumes, so team members never see it.
@@ -753,7 +769,14 @@ export const AUDIT_EVENTS = {
     teamId: id,
     sandboxId: id,
     userId: id,
-    cause: z.enum(["volume_unschedulable", "volume_attach", "scheduling", "image_pull", "unknown"]),
+    cause: z.enum([
+      "volume_unschedulable",
+      "volume_attach",
+      "scheduling",
+      "image_pull",
+      "pod_failed",
+      "unknown",
+    ]),
     detail: z
       .string()
       .max(600)

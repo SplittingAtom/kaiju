@@ -56,6 +56,7 @@ import {
   type EvalClaimSpec,
 } from "./eval-manifests.js";
 import { logger } from "../logger.js";
+import { podTermination, type PodTermination } from "./pod-termination.js";
 import { diagnoseStall, isPodReady, type StallDiagnosis } from "./stall-diagnosis.js";
 import { reconcileTeamNamespaces, type TeamReconcileSummary } from "./team-reconcile.js";
 
@@ -138,6 +139,11 @@ export interface WakeResult {
   readonly handle: SandboxHandle & { readonly state: "running" };
   /** True when this call resumed a hibernated sandbox (false: it was running, or new). */
   readonly resumed: boolean;
+  /**
+   * Set when this wake found the sandbox's pod ended (evicted, killed) and deleted it so
+   * agent-sandbox starts a new one (KOBE-636): why the old pod ended.
+   */
+  readonly replaced?: PodTermination;
 }
 
 /** Outcome of {@link SandboxProvider.awaitReady}. */
@@ -207,6 +213,16 @@ export type SandboxAuditEvent =
       readonly action: "sandbox.woken";
       readonly teamId: string;
       readonly target: { readonly sandboxId: string; readonly userId: string };
+    }
+  | {
+      readonly action: "sandbox.restarted";
+      readonly teamId: string;
+      readonly target: {
+        readonly sandboxId: string;
+        readonly userId: string;
+        readonly cause: PodTermination["cause"];
+        readonly podReason: string;
+      };
     }
   | {
       readonly action: "sandbox.destroyed";
@@ -683,7 +699,7 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
     wake: boolean,
     evalSpec?: EvalClaimSpec,
     podWaitMs: number = podWaitTimeoutMs,
-  ): Promise<{ handle: SandboxHandle; resumed: boolean }> => {
+  ): Promise<{ handle: SandboxHandle; resumed: boolean; replaced?: PodTermination }> => {
     assertTeamRef(team);
     assertUserId(userId);
     // KOBE-9: a fresh check immediately before creating anything that runs agent code.
@@ -696,6 +712,10 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
 
     const deadline = now() + podWaitMs;
     let resumed = false;
+    /** At most one replacement per wake (KOBE-636): a pod that ends again is awaitReady's to report. */
+    let replaced: PodTermination | undefined;
+    /** The deleted pod's uid: seen again (a stale read), it is still not the next pod. */
+    let replacedUid: string | undefined;
     for (let attempt = 0; ; attempt++) {
       const current = await kube.get(CLAIM(namespace, name));
       if (!current || current.metadata.uid !== sandboxId) {
@@ -738,10 +758,31 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
         // A pod still terminating after a hibernation is not this sandbox's next pod: wait.
         const owned =
           !pod?.metadata.deletionTimestamp &&
+          (replacedUid === undefined || pod?.metadata.uid !== replacedUid) &&
           pod?.metadata.ownerReferences?.some(
             (o) => o.controller && o.kind === "Sandbox" && o.uid === sandbox.metadata.uid,
           ) &&
           pod.metadata.labels?.[LABEL_CLAIM_UID] === sandboxId;
+        const ended = wake && !replaced && pod && owned ? podTermination(pod) : undefined;
+        if (ended) {
+          // agent-sandbox never replaces an ended pod itself, but starts one when it is gone. Only
+          // the pod: claim, Sandbox and workspace volume stay. Nothing runs in it, so no
+          // isolation risk; the next pod is verified below like any other.
+          if (!(await deleteWithRetry(POD(namespace, podName)))) {
+            throw new SandboxProvisioningError(
+              `Sandbox ${namespace}/${name}: its ended pod could not be deleted; retry`,
+            );
+          }
+          replaced = ended;
+          replacedUid = pod?.metadata.uid;
+          await emit({
+            action: "sandbox.restarted",
+            teamId: team.id,
+            target: { sandboxId, userId, cause: ended.cause, podReason: ended.reason },
+          });
+          await sleep(Math.min(100 * 2 ** attempt, 1000));
+          continue;
+        }
         if (pod && owned) {
           const podClass = str(pod, "spec", "runtimeClassName");
           if (podClass !== verified.runtimeClassName) {
@@ -772,6 +813,7 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
               podName,
             },
             resumed,
+            ...(replaced ? { replaced } : {}),
           };
         }
       }
@@ -785,13 +827,13 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
   };
 
   const wakeSandbox = async (team: TeamRef, userId: string): Promise<WakeResult> => {
-    const { handle, resumed } = await provision(team, userId, true);
+    const { handle, resumed, replaced } = await provision(team, userId, true);
     if (handle.state !== "running") {
       throw new SandboxProvisioningError(
         `Sandbox ${handle.namespace}/${handle.claimName} did not resume`,
       );
     }
-    return { handle: { ...handle, state: "running" }, resumed };
+    return { handle: { ...handle, state: "running" }, resumed, ...(replaced ? { replaced } : {}) };
   };
 
   /** The claim's Sandbox, pod name and workspace PVC name (undefined while they do not exist). */

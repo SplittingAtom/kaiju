@@ -14,6 +14,19 @@ these fits, ask your team admin; they can see your team's settings and audit log
 **The first answer of the day takes a while.** Your sandbox sleeps when you are away. The first
 message wakes it, which can take a little time; your files are kept.
 
+**"Your sandbox ran out of temporary space and is restarting".** The sandbox's home folder
+(`$HOME`, 1 GiB by default) or its `/tmp` (2 GiB) filled up, usually with packages installed
+outside My files or large temporary files, so Kubernetes stopped it. Kobe starts a fresh sandbox on
+your next message by itself and the conversation goes on. Everything in My files (`/workspace`) is
+kept; the home folder, `/tmp` and anything installed there start empty again, as after the sandbox
+sleeps. To avoid it, ask the agent to install packages and write large files inside My files (see
+[Storage limits](../files/storage-limits.md#sandbox-temporary-space)). "Ran out of memory" and
+"stopped" work the same way.
+
+**"Your sandbox stopped … and could not be restarted".** The fresh sandbox did not start either.
+Your files are kept. Send your message again; if it keeps happening, ask your site admin (they see
+the reason in the audit log).
+
 **The agent seems stuck.** Look for an approval card waiting for you higher up in the answer. If
 there is none, press **Stop** and send your message again, or **Retry** an interrupted answer.
 
