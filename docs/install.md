@@ -251,13 +251,36 @@ see node or volume names.
 
 Site admins find the reason in the site audit log: filter on action `sandbox.wake_stalled`
 (`GET /v1/site/audit?action=sandbox.wake_stalled`). `cause` is one of `volume_unschedulable`,
-`volume_attach`, `scheduling`, `image_pull`, `unknown`; `detail` is the cluster's own event text
+`volume_attach`, `scheduling`, `image_pull`, `pod_failed`, `unknown`; `detail` is the cluster's own event text
 followed by a suggested remedy. The server log has the same line (level error, "sandbox not ready:
 failing the wake"). The server never deletes a pod or volume for this: if a workspace that has
 never run is stuck on a volume that cannot attach, delete its PVC by hand
 (`kubectl -n kobe-team-<slug> delete pvc workspace-u-<user-id>`) after confirming it holds no data;
 the next message starts a fresh sandbox. The server needs `list` on events in team namespaces
 (included in the chart role).
+
+**When a sandbox pod ends (evicted, killed).** A sandbox pod that ends for good (phase `Failed`,
+for example evicted because `$HOME` grew past `sandbox.homeSize`, or `/tmp` past
+`sandbox.tmpSize`) is not replaced by agent-sandbox, which only starts a pod when there is none.
+The next wake (the member's next message) deletes the ended pod, once, so agent-sandbox starts a
+fresh one from the same Sandbox; the claim, the Sandbox and the `/workspace` volume are kept, and
+`$HOME` and `/tmp` start empty, as after a hibernation. The member sees "Your sandbox ran out of
+temporary space and is restarting…" (or out of memory, or stopped) while it starts, and the
+conversation goes on. The team audit log records `sandbox.restarted` (`cause` `out_of_space`,
+`out_of_memory` or `stopped`, and the pod's own `podReason` such as `Evicted`); the server log has
+the kubelet's full message (level warn, "sandbox pod had ended: replaced it"). If the new pod ends
+too before it is Ready, the wake stops there (no second replacement): the run fails with
+`sandbox_failed` ("Your sandbox stopped … and could not be restarted. Your files in /workspace are
+kept …") and the site audit log gets `sandbox.wake_stalled` with cause `pod_failed`. The next
+message tries once more.
+
+`sandbox.homeSize` (default `1Gi`) and `sandbox.tmpSize` (default `2Gi`) size the two emptyDirs;
+both count against `sandbox.ephemeralStorage.limit` (default `4Gi`), so raise that too when you
+raise them. Pip runs without a download cache in the image, but a plain `pip install` falls back
+to `~/.local` (the image's site-packages are not writable), and npm keeps its cache in `~/.npm`:
+both land in `$HOME`. The guide
+tells agents to install packages into `/workspace` instead (a venv in `/workspace/.venv`, a
+project's `node_modules`), which the workspace backup skips.
 
 ## Egress
 

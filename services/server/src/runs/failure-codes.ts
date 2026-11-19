@@ -29,6 +29,9 @@ export const FAILURE_MESSAGES: Readonly<Record<string, string>> = {
   // Deliberately generic: the cluster's reason is for site admins (audit log, server log).
   workspace_unavailable:
     "Your workspace could not be started because the cluster could not provide it. Ask your site admin to check the cluster, then try again.",
+  // KOBE-636: the sandbox pod ended (evicted, killed) and the wake's one replacement failed too.
+  sandbox_failed:
+    "Your sandbox stopped (it may have run out of temporary space or memory) and could not be restarted. Your files in /workspace are kept. Send your message again; if this keeps happening, ask your site admin.",
   thread_not_found: "The run could not start: the thread is not available to the workspace.",
   start_lost: "The run could not start: the server that started it stopped. Send it again.",
   start_failed: "The run could not start in your workspace.",

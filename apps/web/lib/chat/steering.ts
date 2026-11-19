@@ -20,6 +20,13 @@ const WAKING: Record<NonNullable<LiveRun["waking"]>, string> = {
   hibernated: "Waking your sandbox…",
   first_start: "Starting your sandbox for the first time…",
   rebuild: "Rebuilding your sandbox…",
+  // KOBE-636: the sandbox's pod had ended and is being replaced; /workspace is kept.
+  restarted_out_of_space:
+    "Your sandbox ran out of temporary space and is restarting. My files are kept; temporary files and packages installed outside My files are cleared…",
+  restarted_out_of_memory:
+    "Your sandbox ran out of memory and is restarting. My files are kept; temporary files and packages installed outside My files are cleared…",
+  restarted:
+    "Your sandbox stopped and is restarting. My files are kept; temporary files and packages installed outside My files are cleared…",
 };
 
 export function phaseText(phase: RunPhase): string {

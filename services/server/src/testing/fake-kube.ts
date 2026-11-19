@@ -68,6 +68,8 @@ export interface FakeKube extends KubeClient {
   finishTermination?: () => void;
   /** Called on every get (e.g. to make a controller act lazily). */
   beforeGet?: (ref: ObjectRef, fake: FakeKube) => void;
+  /** Called after an object was deleted (e.g. a controller replacing its pod). */
+  afterDelete?: (object: KubeObject, fake: FakeKube) => void;
 }
 
 export function createFakeKube(): FakeKube {
@@ -216,6 +218,7 @@ export function createFakeKube(): FakeKube {
       if (!obj) return;
       store.delete(key(r));
       if (obj.metadata.uid) cascade(obj.metadata.uid);
+      fake.afterDelete?.(obj, fake);
     },
     async logs(r, options) {
       fake.calls.push({
@@ -244,6 +247,8 @@ export interface ControllerOptions {
   readonly noPods?: boolean;
   /** Suspending leaves the pod terminating until `fake.finishTermination()` (grace period). */
   readonly slowPodTermination?: boolean;
+  /** A deleted pod of a Running Sandbox is replaced at once, like the real controller (KOBE-636). */
+  readonly replaceDeletedPods?: boolean;
 }
 
 /**
@@ -361,6 +366,21 @@ export function simulateAgentSandbox(fake: FakeKube, options: ControllerOptions 
       });
       if (sandbox) reconcileSandbox(sandbox);
     }
+  };
+  /** A deleted pod of a Running Sandbox is replaced (the real controller does the same). */
+  fake.afterDelete = (object) => {
+    if (!options.replaceDeletedPods || object.kind !== "Pod") return;
+    const owner = object.metadata.ownerReferences?.find((o) => o.kind === "Sandbox");
+    const ns = object.metadata.namespace as string;
+    const sandbox = owner
+      ? fake.peek({
+          apiVersion: "agents.x-k8s.io/v1beta1",
+          kind: "Sandbox",
+          name: owner.name,
+          namespace: ns,
+        })
+      : undefined;
+    if (sandbox?.metadata.uid === owner?.uid && sandbox) reconcileSandbox(sandbox);
   };
   fake.afterWrite = (object) => {
     if (object.kind === "Sandbox") {

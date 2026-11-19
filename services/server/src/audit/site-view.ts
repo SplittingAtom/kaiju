@@ -160,6 +160,7 @@ export const SITE_VIEW_TARGET_KEYS: ReadonlySet<string> = new Set([
   "pinned",
   "pinnedVersion",
   "pod",
+  "podReason",
   "policy",
   "port",
   "previous",
