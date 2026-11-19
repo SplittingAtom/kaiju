@@ -13,7 +13,7 @@
 # `executor` (KOBE-168: the `suite` sections with the paired tool uid on, plus e2e/executor/) and
 # `restore` (KOBE-233: a timed clean install, `kobe backup`, a new k3d cluster, `kobe restore`;
 # e2e/gate4-restore.sh) and `gate5-a`/`gate5-b` (KOBE-227: Gate 5's U17-U24 in Chromium,
-# e2e/gate5.sh) and `gate-sso` (KOBE-633: OIDC sign-in against a mock Entra ID and Entra's SCIM
+# e2e/gate5.sh) and `gate7-a`/`gate7-b` (KOBE-675: Gate 7's U39-U54, e2e/gate7.sh) and `gate-sso` (KOBE-633: OIDC sign-in against a mock Entra ID and Entra's SCIM
 # requests, offline; e2e/gate-sso.sh). The gate shards keep their output; the `stories` job then gives one
 # verdict per user story U1-U16 from them (e2e/gate4.sh, KOBE-232).
 # Branch protection and the merge queue require the check named `k3d`: the last job, which passes
@@ -28,6 +28,14 @@ on:
   schedule:
     - cron: "41 5 * * *"
   workflow_dispatch:
+    inputs:
+      shards:
+        # A manual run of some shards only (e.g. a gate's halves while it is written): a JSON list
+        # such as ["gate7-a","gate7-b"]. Empty: every shard. The stories job then judges only the
+        # gate logs it gets, so a partial run's `stories` and `k3d` are not a verdict.
+        description: JSON list of shards to run (empty = all)
+        required: false
+        default: ""
 
 concurrency:
   group: e2e-${{ github.event_name }}-${{ github.ref }}
@@ -193,21 +201,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard:
-          [
-            suite,
-            cold-start,
-            gate1,
-            gate2,
-            gate3,
-            gate4,
-            gate5-a,
-            gate5-b,
-            gate-apps,
-            gate-sso,
-            executor,
-            restore,
-          ]
+        shard: ${{ fromJSON(inputs.shards || '["suite","cold-start","gate1","gate2","gate3","gate4","gate5-a","gate5-b","gate7-a","gate7-b","gate-apps","gate-sso","executor","restore"]') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -225,7 +219,7 @@ jobs:
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         if: matrix.shard == 'restore'
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        if: matrix.shard == 'gate3' || matrix.shard == 'restore' || startsWith(matrix.shard, 'gate5') || matrix.shard == 'gate-apps'
+        if: matrix.shard == 'gate3' || matrix.shard == 'restore' || startsWith(matrix.shard, 'gate5') || startsWith(matrix.shard, 'gate7') || matrix.shard == 'gate-apps'
         with:
           node-version-file: .nvmrc
           cache: ${{ matrix.shard == 'restore' && 'pnpm' || '' }}
@@ -243,13 +237,13 @@ jobs:
       # Chromium from the cache when this Playwright version was fetched before: its download host
       # (playwright.download.prss.microsoft.com) once failed DNS on a runner (KOBE-415).
       - name: Playwright's browsers from the cache
-        if: matrix.shard == 'gate3' || startsWith(matrix.shard, 'gate5') || matrix.shard == 'gate-apps'
+        if: matrix.shard == 'gate3' || startsWith(matrix.shard, 'gate5') || startsWith(matrix.shard, 'gate7') || matrix.shard == 'gate-apps'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('e2e/browser/package-lock.json') }}
       - name: Playwright and Chromium for the browser checks
-        if: matrix.shard == 'gate3' || startsWith(matrix.shard, 'gate5') || matrix.shard == 'gate-apps'
+        if: matrix.shard == 'gate3' || startsWith(matrix.shard, 'gate5') || startsWith(matrix.shard, 'gate7') || matrix.shard == 'gate-apps'
         run: |
           cd e2e/browser
           npm ci --no-audit --no-fund
@@ -359,6 +353,11 @@ jobs:
             # halves on their own clusters to keep each shard short (docs/gates/gate-5.md).
             gate5-a) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && KOBE_GATE5_STORIES="U17 U18 U19 U20" e2e/gate5.sh 2>&1 | tee "${logs}/gate5-a.log" ;;
             gate5-b) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && KOBE_GATE5_STORIES="U21 U22 U23 U24" e2e/gate5.sh 2>&1 | tee "${logs}/gate5-b.log" ;;
+            # Gate 7 (KOBE-675, v1.3 Semantic Memory): U39-U54, learning passes end to end with the
+            # fake model's scripted extractor, API checks plus the memory specs in Chromium, in two
+            # halves on their own clusters (docs/gates/gate-7.md, "k3d checks").
+            gate7-a) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && KOBE_GATE7_STORIES="U39 U40 U41 U42 U43 U44 U45 U46" e2e/gate7.sh 2>&1 | tee "${logs}/gate7-a.log" ;;
+            gate7-b) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && KOBE_GATE7_STORIES="U47 U48 U49 U50 U51 U52 U53 U54" e2e/gate7.sh 2>&1 | tee "${logs}/gate7-b.log" ;;
             # The Kobe Explorer Gate (KOBE-441, MCP Apps): an app in the conversation, then from the
             # rail, against the fake MCP server's ui:// test app, in Chromium plus API checks
             # (docs/gates/gate-apps.md). The gate install's Catalyst run is the coordinator's.
@@ -379,7 +378,7 @@ jobs:
           if-no-files-found: warn
       # Gate 5's Playwright report and traces (screenshots, DOM snapshots) when a browser check fails.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: ${{ failure() && (startsWith(matrix.shard, 'gate5') || matrix.shard == 'gate-apps') }}
+        if: ${{ failure() && (startsWith(matrix.shard, 'gate5') || startsWith(matrix.shard, 'gate7') || matrix.shard == 'gate-apps') }}
         with:
           name: playwright-${{ matrix.shard }}
           path: |
@@ -402,8 +401,9 @@ jobs:
           kubectl -n kobe-team-gate4-a describe pods | tail -60 || true
           kubectl -n kobe-team-gate4-r describe pods,pvc | tail -60 || true
           kubectl -n kobe-team-gate5-a describe pods | tail -60 || true
+          for t in a b; do kubectl -n kobe-team-gate7-$t describe pods | tail -60 || true; done
           # The sandbox agent's own log (Pi starts, refusals) for the gate shards' members.
-          for ns in kobe-team-gate5-a kobe-team-gate3-a kobe-team-gate4-a; do
+          for ns in kobe-team-gate5-a kobe-team-gate7-a kobe-team-gate7-b kobe-team-gate3-a kobe-team-gate4-a; do
             kubectl -n "$ns" logs -l agents.x-k8s.io/claim-uid --all-containers --prefix --tail=-1 2>/dev/null | grep -v '"level":30' | tail -200 || true
           done
           kubectl -n kobe-dev logs -l app.kubernetes.io/component=server -c server --tail=-1 2>/dev/null \
