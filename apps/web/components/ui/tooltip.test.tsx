@@ -44,6 +44,13 @@ describe("Tooltip focus", () => {
     expect(shown()).not.toBeNull();
   });
 
+  it("closes on Escape even right after a focus-caused scroll", async () => {
+    const badge = await open();
+    fireEvent.scroll(screen.getByTestId("scroller"));
+    fireEvent.keyDown(badge, { key: "Escape" });
+    await waitFor(() => expect(shown()).toBeNull());
+  });
+
   it("closes when focus leaves the trigger", async () => {
     const badge = await open();
     act(() => badge.blur());

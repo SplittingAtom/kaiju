@@ -55,9 +55,17 @@ function Tooltip({
           scrolled.current = true;
         };
         window.addEventListener("scroll", onScroll, true);
+        // Escape and a press outside always dismiss (WCAG 1.4.13): end the guard before Radix closes.
+        const onDismiss = (e: Event) => {
+          if (e.type === "pointerdown" || (e as KeyboardEvent).key === "Escape") stop.current?.();
+        };
+        document.addEventListener("keydown", onDismiss, true);
+        document.addEventListener("pointerdown", onDismiss, true);
         const timer = window.setTimeout(() => stop.current?.(), FOCUS_SCROLL_WINDOW_MS);
         stop.current = () => {
           window.removeEventListener("scroll", onScroll, true);
+          document.removeEventListener("keydown", onDismiss, true);
+          document.removeEventListener("pointerdown", onDismiss, true);
           window.clearTimeout(timer);
           scrolled.current = false;
           stop.current = null;
