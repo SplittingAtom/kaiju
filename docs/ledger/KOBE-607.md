@@ -25,12 +25,12 @@ gVisor I/O, a new thread).
    mirrors entries with a `get_entries` `pi.command`. The agent checks the tripwire
    (`Thread.verifyRuntime`) before and after it. At the same moment Pi's next `turn_start` makes
    the trace recorder write the turn's `traceparent` into the model file (`setTraceparent`, not
-   awaited). `ModelFile.verify()` awaited the write chain, then read the file *outside* it. A write
+   awaited). `ModelFile.verify()` awaited the write chain, then read the file _outside_ it. A write
    started during the read either renamed in the new file under the read or set the expected text
    `#writtenText` before the comparison. Old text against the new expected text (or the reverse)
    gave "the model file is not what the agent wrote". `MemoryContextFile` (mid-run
    `conflictsLive` rewrites, KOBE-492) and `EgressTokenFile` (rotation) had the same pattern.
-2. **The run never ended (server).** `stopTampered` stops Pi as an *expected* close, so the agent
+2. **The run never ended (server).** `stopTampered` stops Pi as an _expected_ close, so the agent
    ends the run locally (`endRun`; the wire drops its later frames) and sends no `pi.exited`. The
    server only logged "entry sync failed": the run stayed `running` under the live connection's
    lease, so the lost-run sweep (leaseless runs only) never touched it, and `lockIfIdle` refused
@@ -73,6 +73,9 @@ No wake or lifecycle code was touched (KOBE-636 works there).
   refused runtime_tampered) is failed…": tool call, tool result, `turn_end`, `get_entries` refused.
   Before the fix the run stayed `running` (timed out); after it the run is `failed`
   `runtime_tampered`, has one audit row with `runKind: message`, and the thread takes the next run.
+
+- `pnpm verify` green after merging origin/main (no conflicts); sandbox-wire db tests
+  (`sandbox-wire`, `-entries`, `-limits`) green.
 
 ## Docs
 

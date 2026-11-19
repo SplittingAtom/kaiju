@@ -1,3 +1,4 @@
+import type * as FsPromises from "node:fs/promises";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -19,7 +20,7 @@ const gate = vi.hoisted(() => ({
 }));
 
 vi.mock("node:fs/promises", async (importOriginal) => {
-  const real = await importOriginal<typeof import("node:fs/promises")>();
+  const real = await importOriginal<typeof FsPromises>();
   const readFile = (async (...args: Parameters<typeof real.readFile>) => {
     const text = await real.readFile(...args);
     const held = gate.held;
@@ -121,7 +122,7 @@ describe("tripwire vs the agent's own rewrite (KOBE-607)", () => {
       runId: null,
     });
     await file.create();
-    const { writeFile } = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+    const { writeFile } = await vi.importActual<typeof FsPromises>("node:fs/promises");
     await writeFile(file.path, "{}");
     expect(await file.verify()).toBe(false);
   });
