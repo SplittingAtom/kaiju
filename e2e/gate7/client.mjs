@@ -1119,12 +1119,13 @@ async function u48() {
     "run2",
     `${g2 ? `v${g2.version}:${g2.statement.endsWith("(page two)")}` : "absent"}:run_changed=${c1.runId !== c2.runId}`,
   );
-  // Picks are made per message (Q6): a message that doesn't match leaves it out again.
+  // Picks are made per message (Q6) from the message, the title and the last two user messages:
+  // a message that matches none of it (a new thread, a neutral title) leaves it out.
   const t3 = await say(ad, "No tools. Reply with the single word OK. Something else entirely.", {
-    threadId: t1.threadId,
+    title: "unrelated",
   });
   out("turn3", t3.terminal);
-  const c3 = await contextOf(ad, t1.threadId);
+  const c3 = await contextOf(ad, t3.threadId);
   out(
     "run3_has_it",
     c3.items.some((i) => i.id === id),
@@ -1250,12 +1251,12 @@ async function u50() {
   const t2 = await say(
     ad,
     "No tools. Reply with the single word OK. Where do the small marsupials live?",
-    { threadId: t1.threadId },
+    { title: "animals" }, // a new thread: earlier messages and the title count in the query
   );
   out("paraphrase_turn", t2.terminal);
   out(
     "paraphrase_pick",
-    (await contextOf(ad, t1.threadId)).items.some((i) => i.id === made.json.id),
+    (await contextOf(ad, t2.threadId)).items.some((i) => i.id === made.json.id),
   );
   await ad.call("POST", `/v1/memory/semantic/items/user/${made.json.id}/archive`, {});
 }
