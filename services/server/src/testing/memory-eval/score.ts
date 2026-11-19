@@ -181,9 +181,7 @@ export function scoreQuery(
     inBlock: q.expected.filter((e) => block.has(e)).length / q.expected.length,
     negativeAbove,
     ranks: expectedRanks,
-    ...(ranked.recall === undefined
-      ? {}
-      : { recallTool: recallAtK(ranked.recall, q.expected, k) }),
+    ...(ranked.recall === undefined ? {} : { recallTool: recallAtK(ranked.recall, q.expected, k) }),
   };
 }
 

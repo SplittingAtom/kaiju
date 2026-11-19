@@ -384,7 +384,9 @@ describe("memory vectors (KOBE-409)", () => {
     });
     expect(calls[0]?.inputs).toEqual([paraphrase]);
     // ac-2: no embedder, a budget refusal or a failing gateway: keyword results, never an error.
-    expect(idsOf(await ask(paraphrase, { ...deps, embeddings: undefined }))).not.toContain(id);
+    expect(
+      idsOf(await ask(paraphrase, { db: deps.db, blobs: deps.blobs, log: deps.log })),
+    ).not.toContain(id);
     for (const code of ["budget_exhausted", "upstream_error"]) {
       refuse = code;
       expect(idsOf(await ask(paraphrase))).not.toContain(id);

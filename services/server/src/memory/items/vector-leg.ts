@@ -73,9 +73,7 @@ export async function readVectorRows(
       sql`SELECT * FROM (${laneVectorQuery(who, lane, query.model, dims)}) AS ${sql.raw(`v_${lane}`)}`,
   );
   return withTeam(db, who.teamId, async (tx) => {
-    await tx.execute(
-      sql`SELECT set_config('statement_timeout', ${`${timeoutMs}ms`}, true)`,
-    );
+    await tx.execute(sql`SELECT set_config('statement_timeout', ${`${timeoutMs}ms`}, true)`);
     const res = await tx.execute<ItemRow>(sql`
       WITH p AS (SELECT ${vectorLiteral(query.vector)}::public.vector AS e)
       ${sql.join(parts, sql` UNION ALL `)}`);

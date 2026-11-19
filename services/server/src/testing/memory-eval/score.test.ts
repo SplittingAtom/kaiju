@@ -158,9 +158,10 @@ describe("the recall tool's ranking (KOBE-664)", () => {
     const report = summarise(withTool, [q1, q2]);
     expect(report.overall.recallTool).toBe(0.5);
     expect(formatRelevanceReport(report)).toContain("recall@8 (recall tool)");
-    const without = summarise([scoreQuery(q2, { relevance: ["c"], selector: ["c"] }, new Set())], [
-      q2,
-    ]);
+    const without = summarise(
+      [scoreQuery(q2, { relevance: ["c"], selector: ["c"] }, new Set())],
+      [q2],
+    );
     expect(without.overall.recallTool).toBeNull();
     expect(formatRelevanceReport(without)).not.toContain("recall tool");
   });
