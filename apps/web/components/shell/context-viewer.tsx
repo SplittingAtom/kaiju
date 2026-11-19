@@ -13,6 +13,7 @@ import {
 } from "react";
 import { formatTokens } from "../../lib/admin/usage-format";
 import { memoryLanes } from "../../lib/chat/context-memories";
+import { SET_BY_SITE } from "../../lib/memory/items-api";
 import {
   WAKE_GIVE_UP_MS,
   approximateNotice,
@@ -169,7 +170,8 @@ function useMemoriesRead(
 
 /**
  * Memories in context (KOBE-382, U48): what the latest run was given, per lane (Policy, Site,
- * Workspace, then the owner's own), from the run's records. Statements are plain text.
+ * Workspace, then the owner's own), from the run's records. Statements are plain text. Policy and
+ * Site memories say "Set by the Site" (KOBE-670), never their source Workspace.
  */
 function ContextMemoriesList({ memories }: { readonly memories: ThreadContextMemories }) {
   if (memories.items.length === 0) return null;
@@ -188,6 +190,9 @@ function ContextMemoriesList({ memories }: { readonly memories: ThreadContextMem
             {lane.items.map((item) => (
               <li key={item.id}>
                 {item.pinned && <span className={styles.memoryPin}>Pinned · </span>}
+                {(item.lane === "site" || item.lane === "policy") && (
+                  <span className={styles.memorySite}>{SET_BY_SITE} · </span>
+                )}
                 {item.statement}
               </li>
             ))}
