@@ -654,6 +654,15 @@ as-of date, and for tags a count and a fingerprint (not the tags themselves). A 
 as it lasts (edits still work; nothing of those memories is pruned or cleaned up). A hold on a whole
 workspace covers that workspace's memories, not the Site's.
 
+**Workspaces with Site proposals are not deleted.** Kobe has no way to delete a workspace today.
+The database refuses to delete one that has ever proposed something to the Site, whatever state
+its proposals are in (waiting, withdrawn, expired or decided), so a proposal never disappears
+with its workspace behind a legal hold's back. Any future way to delete a workspace has to check
+legal holds first (a Site-wide hold, a hold on the workspace, or a hold on a person who made or
+decided one of its proposals) and refuse while one is in force; only then may it settle the
+workspace's open Site proposals (withdraw or expire them, with the usual notices and audit
+entries) and remove them before it deletes the workspace.
+
 ## How long memories are kept
 
 Kobe never deletes a memory you still use: a live memory stays however old it is, and nothing is

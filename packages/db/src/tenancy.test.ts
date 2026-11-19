@@ -101,6 +101,16 @@ describe("tenancy registry", () => {
     const columns = table?.columns.map((c) => snake(c.name)) ?? [];
     expect(columns).toContain("from_team_id");
     expect(columns).not.toContain("team_id");
+    // KOBE-665: a Workspace with Site proposals cannot be deleted (no cascade).
+    const teamKeys = (table?.foreignKeys ?? [])
+      .map((fk) => fk.reference())
+      .filter((r) => getTableConfig(r.foreignTable).name === "teams");
+    expect(teamKeys.map((r) => r.columns.map((c) => snake(c.name)))).toEqual([["from_team_id"]]);
+    const teamKey = table?.foreignKeys.find(
+      (fk) => getTableConfig(fk.reference().foreignTable).name === "teams",
+    );
+    expect(teamKey?.onDelete).toBe("restrict");
+    expect(TEAM_REFERENCING_SITE_WIDE.site_memory_proposals).toMatch(/ON DELETE RESTRICT/);
   });
 
   // KOBE-625 (spec sso-oidc-scim §4–§10): single sign-on and SCIM are site configuration, not
