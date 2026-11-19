@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { strFromU8, unzipSync } from "fflate";
 import type { PoolClient } from "pg";
 import pino from "pino";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { runWithAuditContext } from "./audit/context.js";
 import {
   RetentionJob,
@@ -1054,6 +1054,17 @@ describe("pass interruptions (review M3, L2, L6)", () => {
       `SELECT value FROM site_settings WHERE key = 'retention.cursor'`,
     );
     expect(cursor.rows[0]?.value).toBe("start");
+    // The job closed the failed connection (release(true)), but pg ends it without waiting: its
+    // backend, which still holds the session lock, can outlive tick() by a few ms. A real failed
+    // connection is already gone; wait for this one's backend to exit (KOBE-674).
+    const pid = (lockClient as unknown as { processID: number }).processID;
+    await vi.waitFor(
+      async () => {
+        const live = await h.admin.query(`SELECT 1 FROM pg_stat_activity WHERE pid = $1`, [pid]);
+        expect(live.rowCount).toBe(0);
+      },
+      { timeout: 5_000, interval: 20 },
+    );
     expect(await job(h.deps.database.pool, new Date("2026-10-05T12:00:00Z")).tick()).toBe("ran");
     expect(await threadIds()).toEqual([]);
   });
