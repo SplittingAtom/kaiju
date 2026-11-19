@@ -673,8 +673,13 @@ archived for you. What goes, and when:
   not restart the clock), and so do suggestions for a project's notes no editor decided; you get a
   notification when yours expires, once. The record of each learning pass (when it ran, the model
   and what it found) is deleted once it is older than the workspace's retention period, with the
-  suggestions it made, unless one is still waiting for you or for a curator (nothing while the
-  workspace keeps conversations forever). When a conversation is deleted for good, its learning
+  suggestions it made and the decided (approved, dismissed or expired) Workspace proposals and
+  project suggestions made from them, unless one is still waiting for you, a curator or an editor.
+  A decided proposal that did not come from a learning pass (one proposed from an existing memory)
+  is deleted once its decision is older than the retention period. Nothing of this is deleted while
+  the workspace keeps conversations forever, and proposals still waiting are never deleted (they
+  expire first). An approved memory keeps its own version history and the audit log keeps every
+  decision, so the record of what was decided stays. When a conversation is deleted for good, its learning
   passes, suggestions, dismissals and suggestions for project notes go with it; a Workspace proposal
   stays with its statement and note, without the quotes.
 - **Site memory proposals.** A proposal to the Site that is still waiting (for the workspace's
@@ -695,7 +700,8 @@ archived for you. What goes, and when:
   for you by single sign-on, instead of your old one, starts with no memories.
 - **Legal holds.** A legal hold suspends all of this: a hold on a person keeps their memories (in
   every workspace and the ones that follow them), what Learn from this chat kept for them (nothing
-  of theirs expires while it lasts) and the Site memories they wrote; a hold on a
+  of theirs expires while it lasts), the proposals and project suggestions they made or decided
+  (with the learning passes they came from) and the Site memories they wrote; a hold on a
   workspace keeps that workspace's memories, its Learn from this chat records and the memories that follow each of its members; a
   Site-wide hold keeps Site memories and every memory that follows a person. Site memory proposals
   don't expire while a Site-wide hold is in force (their weekly reminders pause too), or while a
