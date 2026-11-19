@@ -107,18 +107,18 @@ Answered 2026-11-18 and 2026-11-19.
 
 Gate B questions answered at the same time ([gate-7b.md](gate-7b.md#decisions-for-chris)):
 
-| Question                                                              | Answer             | Follow-up |
-| --------------------------------------------------------------------- | ------------------ | --------- |
-| Licences: pgvector; ffmpeg/curl in the llama.cpp image                | Approved           | #609      |
-| Site-wide hold freezes Workspace learning records?                    | No                 | —         |
-| Purge decided proposals and suggestions by age?                       | Proposal requested | pending   |
-| Stale and swept suggestions share `expired`                           | Separate states    | KOBE-668  |
-| "New" hint on Learn per browser                                       | Accepted           | —         |
-| Approved proposal recorded as the curator's write                     | Accepted           | —         |
-| Screen accepts nonce-prefixed entry ids?                              | Proposal requested | pending   |
-| Capability rule may drop genuine business facts                       | Accepted           | —         |
-| Archived memory stays in earlier notes until the sandbox restarts     | Accepted           | —         |
-| Embedding service: no API key, open CORS, gateway-only network policy | Keep               | —         |
-| Saving the embedding model without an active Workspace builds nothing | Fix                | KOBE-669  |
-| Workspace-level Learn nudge switch (Gate D)                           | No                 | —         |
-| Quality signals for portable preferences (Gate D)                     | No                 | —         |
+| Question                                                              | Answer                                                                  | Follow-up |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------- |
+| Licences: pgvector; ffmpeg/curl in the llama.cpp image                | Approved                                                                | #609      |
+| Site-wide hold freezes Workspace learning records?                    | No                                                                      | —         |
+| Purge decided proposals and suggestions by age?                       | Yes: they leave with their pass (Workspace window); Site proposals kept | KOBE-671  |
+| Stale and swept suggestions share `expired`                           | Separate states                                                         | KOBE-668  |
+| "New" hint on Learn per browser                                       | Accepted                                                                | —         |
+| Approved proposal recorded as the curator's write                     | Accepted                                                                | —         |
+| Screen accepts nonce-prefixed entry ids?                              | Yes: only this pass's own nonce, stripped and checked                   | KOBE-672  |
+| Capability rule may drop genuine business facts                       | Accepted                                                                | —         |
+| Archived memory stays in earlier notes until the sandbox restarts     | Accepted                                                                | —         |
+| Embedding service: no API key, open CORS, gateway-only network policy | Keep                                                                    | —         |
+| Saving the embedding model without an active Workspace builds nothing | Fix                                                                     | KOBE-669  |
+| Workspace-level Learn nudge switch (Gate D)                           | No                                                                      | —         |
+| Quality signals for portable preferences (Gate D)                     | No                                                                      | —         |
