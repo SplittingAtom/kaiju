@@ -91,8 +91,10 @@ is never learned, U46). The spec now states a meeting room's name.
 
 ## Decisions for Chris
 
-1. **Workspace deletion and holds** (KOBE-402): deleting a Workspace also deletes its Site
-   proposals (team cascade), even while a legal hold is on. Guard the cascade with the hold?
+1. **Workspace deletion and holds** (KOBE-402): **decided 2026-11-18: yes**, a legal hold must
+   stop a Workspace delete from removing its Site proposals. No server path deletes a Workspace
+   today; KOBE-665 makes the foreign key `RESTRICT` and documents the rule for any future
+   Workspace deletion.
 2. **Who may decide** (KOBE-403 LOW-1): only the proposer is barred. A Team admin who confirmed a
    member's proposal (possibly with an edit) may also approve it at step 2 if they are a Site
    steward. Bar the confirmer too?
