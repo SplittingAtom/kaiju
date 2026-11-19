@@ -451,6 +451,64 @@ describe("step 2 (the Site)", () => {
     expect(await notices(ids.siteMember, own)).toContain("memory.site_proposal.dismissed");
   });
 
+  it("the Team admin who confirmed it, in any round, decides nothing (KOBE-666)", async () => {
+    type Site = View & { may: { decide: boolean; decide_blocked: string | null } };
+    const siteOf = async (who: Who, id: string) =>
+      ((await as[who].get(`${SITE}/${id}`)).json as { proposal: Site }).proposal;
+    const actions = () =>
+      [
+        ["approve", {}],
+        ["merge", { item_id: randomUUID() }],
+        ["reject", { reason: "No." }],
+        ["request-changes", { note: "Change it." }],
+      ] as const;
+    // siteMember: a Site admin who is a Team admin of the proposing Workspace for this test.
+    await h.admin.query(
+      `UPDATE team_members SET role = 'team_admin' WHERE team_id = $1 AND user_id = $2`,
+      [team, ids.siteMember],
+    );
+    try {
+      const id = proposalOf(await fromCandidate("member", await seed(ids.member))).id;
+      expect((await as.siteMember.post(`${WS}/${id}/confirm`, {})).status).toBe(200);
+      for (const [action, body] of actions())
+        expect(codeOf(await as.siteMember.post(`${SITE}/${id}/${action}`, body)), action).toEqual([
+          403,
+          "memory_not_allowed",
+        ]);
+      expect((await siteOf("siteMember", id)).may).toEqual({
+        decide: false,
+        decide_blocked: "confirmed",
+      });
+      expect((await siteOf("siteAdmin", id)).may).toEqual({ decide: true, decide_blocked: null });
+      // Sent back and confirmed by another Team admin: the first confirmer is still barred.
+      expect((await as.siteAdmin.post(`${SITE}/${id}/request-changes`, { note: "x" })).status).toBe(
+        200,
+      );
+      expect((await as.admin.post(`${WS}/${id}/confirm`, {})).status).toBe(200);
+      expect(proposalOf(await as.admin.get(`${WS}/${id}`)).confirmed_by?.id).toBe(ids.admin);
+      expect(codeOf(await as.siteMember.post(`${SITE}/${id}/approve`, {}))).toEqual([
+        403,
+        "memory_not_allowed",
+      ]);
+      expect((await siteOf("siteMember", id)).may.decide_blocked).toBe("confirmed");
+      // The proposer's own reads "own_proposal"; another Site curator decides.
+      const own = proposalOf(await fromCandidate("siteMember", await seed(ids.siteMember))).id;
+      expect((await siteOf("siteMember", own)).may).toEqual({
+        decide: false,
+        decide_blocked: "own_proposal",
+      });
+      const r = await as.siteSteward.post(`${SITE}/${id}/reject`, { reason: "Too narrow." });
+      expect(proposalOf(r).state).toBe("rejected");
+      // Decided: nobody may decide any more.
+      expect((await siteOf("siteAdmin", id)).may).toEqual({ decide: false, decide_blocked: null });
+    } finally {
+      await h.admin.query(
+        `UPDATE team_members SET role = 'member' WHERE team_id = $1 AND user_id = $2`,
+        [team, ids.siteMember],
+      );
+    }
+  });
+
   it("request changes sends it back to the Team admins, at most 3 rounds, then decide", async () => {
     const id = await confirmed();
     for (let round = 1; round <= 3; round += 1) {

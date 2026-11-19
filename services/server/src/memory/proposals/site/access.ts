@@ -11,7 +11,9 @@ import { siteProposalNotFound, type SiteProposalRow } from "./rows.js";
  *   curators (Team admins + Workspace memory stewards) read all its proposals, endorse and propose
  *   existing Workspace memories; a member reads and withdraws their own.
  * - Site side: Site admins and Site memory stewards (`site.memory.site_proposals.decide`) read
- *   proposals a Team admin confirmed and decide them, never their own.
+ *   proposals a Team admin confirmed and decide them, never their own nor one they confirmed as a
+ *   Team admin in any round (KOBE-666, Gate C decision 2). When the only Site curator is the
+ *   proposer or a confirmer, the proposal waits (and expires after 30 days).
  * - Everyone else: 404, as if it didn't exist.
  */
 
@@ -35,9 +37,24 @@ export function assertSiteCurator(who: MemoryWho): void {
     throw notAllowed("Only Site admins and Site memory stewards review Site proposals.");
 }
 
-/** Step 2: a Site curator who did not propose it. */
+/** Why a Site curator may not decide this proposal at step 2, or null when they may. */
+export type DecideBlocked = "own_proposal" | "confirmed";
+
+export function decideBlocked(who: MemoryWho, p: SiteProposalRow): DecideBlocked | null {
+  if (p.proposer.id === who.userId) return "own_proposal";
+  if (p.confirmerIds.includes(who.userId)) return "confirmed";
+  return null;
+}
+
+/** Step 2: a Site curator who neither proposed it nor confirmed it for the Workspace. */
 export function assertSiteDecider(who: MemoryWho, p: SiteProposalRow): void {
   if (!decidesForSite(who)) throw siteProposalNotFound();
-  if (p.proposer.id === who.userId)
-    throw notAllowed("You can't decide your own Site proposal: another Site curator does.");
+  switch (decideBlocked(who, p)) {
+    case "own_proposal":
+      throw notAllowed("You can't decide your own Site proposal: another Site curator does.");
+    case "confirmed":
+      throw notAllowed(
+        "You confirmed this proposal for your workspace: another Site curator decides it.",
+      );
+  }
 }

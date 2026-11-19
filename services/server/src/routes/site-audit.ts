@@ -4,6 +4,7 @@ import { exportResponse, parseExportQuery } from "../audit/export/http.js";
 import { EXPORT_PAGE_SIZE } from "../audit/export/stream.js";
 import { readForwardingHealth } from "../audit/forward/state.js";
 import { auditPageBodyFor, parseAuditQuery } from "../audit/http.js";
+import { siteViewEvent } from "../audit/site-view.js";
 import type { AuthVariables } from "../auth/session.js";
 import { requireSitePermission } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
@@ -19,6 +20,10 @@ export const INTEGRITY_CHECKS_PER_MINUTE = 3;
  * The site-wide audit log (spec D6, D8; §6.1 `/v1/site/audit`), site Owner/Admin only:
  * every event, newest first, keyset-paginated (`before`/`after` = seq) and filterable by action,
  * category, actor, team and time. `GET /integrity` recomputes the hash chain.
+ *
+ * The list and the export are inside the Site wall (KOBE-666, SM20): a Workspace's events show
+ * only allow-listed metadata, never thread, entry, run, pass or candidate ids
+ * (`audit/site-view.ts`); the Workspace's own log keeps them.
  */
 export function siteAuditRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables }> {
   const app = new Hono<{ Variables: AuthVariables }>();
@@ -28,9 +33,9 @@ export function siteAuditRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
   app.get("/", async (c) => {
     const query = parseAuditQuery(c);
     if (!query.ok) return query.response;
-    return c.json(
-      await auditPageBodyFor(db, c.get("user").id, await listAuditEvents(db, query.value)),
-    );
+    const page = await listAuditEvents(db, query.value);
+    const shown = { ...page, events: page.events.map(siteViewEvent) };
+    return c.json(await auditPageBodyFor(db, c.get("user").id, shown));
   });
 
   /** CSV or JSONL download of the whole log (optionally one team) for a date range (KOBE-19). */
@@ -51,14 +56,16 @@ export function siteAuditRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
       query: parsed.value,
       scope: "site",
       actorId,
-      fetchPage: (after) =>
-        listAuditEvents(db, {
+      fetchPage: async (after) => {
+        const page = await listAuditEvents(db, {
           after,
           limit: EXPORT_PAGE_SIZE,
           ...(since ? { since } : {}),
           ...(until ? { until } : {}),
           ...(teamId ? { teamId } : {}),
-        }),
+        });
+        return { ...page, events: page.events.map(siteViewEvent) };
+      },
     });
   });
 

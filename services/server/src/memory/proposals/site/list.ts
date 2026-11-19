@@ -69,7 +69,7 @@ export async function listSiteQueue(db: KobeDb, who: MemoryWho, q: SiteProposalL
       limit: q.limit,
     });
     return {
-      proposals: rows.map(siteView),
+      proposals: rows.map((r) => siteView(who, r)),
       counts: await countSiteProposals(tx, SITE, filter),
     };
   });
@@ -111,7 +111,7 @@ export function getSiteProposal(db: KobeDb, who: MemoryWho, id: string) {
   if (!decidesForSite(who)) throw siteProposalNotFound();
   return db.transaction(async (tx) => {
     const p = await readSiteProposal(tx, SITE, id);
-    return { proposal: siteView(p), checks: await checksFor(tx, who, p) };
+    return { proposal: siteView(who, p), checks: await checksFor(tx, who, p) };
   });
 }
 

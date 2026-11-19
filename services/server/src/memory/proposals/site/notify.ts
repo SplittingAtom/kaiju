@@ -11,19 +11,21 @@ import {
  * kind, no migration). Always in the proposing Workspace's `withTeam()` transaction and last in
  * it; ids only, never text. The machinery delivers to active members of that Workspace only;
  * Site curators who are not members get the `confirmed` notice and its reminders in their own
- * Workspace from the reminder pass (`notifications/site-proposal-relay.ts`, KOBE-653), which also
- * repeats the reminders weekly while a step waits. Expiry after 30 days (to the proposer and the
+ * Workspace from the reminder pass (`notifications/site-proposal-relay.ts`, KOBE-653), one reminder
+ * per step, 7 days after it started (KOBE-666). Expiry after 30 days (to the proposer and the
  * confirmer) is the retention job's (`retention/site-proposals.ts`).
  *
  * | event                                   | kind                                       | to                              | reminder (7 d) |
  * | --------------------------------------- | ------------------------------------------ | ------------------------------- | -------------- |
  * | proposed, awaiting a Team admin         | `memory.site_proposal.received`            | Team admins (not the proposer)  | Team admins    |
- * | confirmed (or proposed by a Team admin) | `memory.site_proposal.confirmed`           | Site curators; the proposer     | Site curators  |
+ * | confirmed (or proposed by a Team admin) | `memory.site_proposal.confirmed`           | Site curators; the proposer     | Site curators¹ |
  * | Site asked for changes                  | `memory.site_proposal.changes_requested`   | Team admins; the proposer       | Team admins    |
  * | approved or merged                      | `memory.site_proposal.accepted`            | the proposer and the confirmer  | settled        |
  * | rejected                                | `memory.site_proposal.dismissed`           | the proposer and the confirmer  | settled        |
  * | withdrawn                               | none                                       |                                 | settled        |
  * | expired (retention, KOBE-653)           | `memory.site_proposal.expired`             | the proposer and the confirmer  | settled        |
+ *
+ * ¹ Not the proposer, nor a Team admin who confirmed it (in any round): neither may decide it.
  */
 
 export async function teamAdminsOf(tx: KobeTx, teamId: string): Promise<string[]> {
@@ -79,10 +81,11 @@ export async function noticeAwaitingTeam(
 export async function noticeConfirmed(tx: KobeTx, p: Subject, confirmerId: string): Promise<void> {
   await settleMemoryReminders(tx, p.fromTeamId, p.id);
   const curators = others(await siteCurators(tx), p.proposerId);
+  // The confirmer may not decide it (KOBE-666): no reminder for them.
   await registerMemoryReminder(tx, p.fromTeamId, {
     objectId: p.id,
     about: "memory.site_proposal.confirmed",
-    recipients: curators,
+    recipients: others(curators, confirmerId),
   });
   await notifyMemoryAll(tx, p.fromTeamId, [
     {

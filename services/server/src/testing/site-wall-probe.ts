@@ -6,7 +6,7 @@ import type pg from "pg";
  * from a thread may reach the Site beyond the confirmed statement and justification. A test seeds
  * a thread with distinctive canary strings (and canary ids), drives its candidates through every
  * Site entry point, then hands every Site read path (rows, console APIs, admin MCP tools,
- * exports, notifications, audit) to a {@link SiteWallProbe}, which reports each place a canary or a
+ * exports, notifications, the Site audit view and its export, KOBE-666) to a {@link SiteWallProbe}, which reports each place a canary or a
  * forbidden field shows up. The detector is deliberately dumb and total: a case-insensitive
  * substring search over every string and key of every value, so a new column, serializer field or
  * read path that copies thread text fails without the probe knowing its shape.
@@ -44,6 +44,12 @@ export const FORBIDDEN_FIELDS: readonly string[] = [
   "passId",
   "candidate_id",
   "candidateId",
+  // KOBE-666: the Site audit view (`/v1/site/audit`) is a read path too.
+  "fromThreadId",
+  "retryOfRunId",
+  "suggestionId",
+  "toolCallId",
+  "approvalId",
 ];
 
 export interface Leak {

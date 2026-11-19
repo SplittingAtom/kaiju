@@ -3,7 +3,8 @@
  * for KOBE-405): what Team admins confirmed for the Site, for Site admins and Site memory
  * stewards. Responses arrive camelized (also the `counts` keys); bodies use the routes'
  * snake_case. The server checks every call again (Site curator, never one's own, awaiting the
- * Site and unexpired, the Workspace's switch on approve and merge).
+ * Site and unexpired, the Workspace's switch on approve and merge, never one they confirmed
+ * for their workspace: KOBE-666).
  */
 import type { ApiError, ApiResult } from "../api/client";
 import { apiRequest } from "../api/client";
@@ -55,7 +56,18 @@ export interface SiteProposal {
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly fromWorkspace: { readonly id: string; readonly name: string | null };
+  /**
+   * What the viewer may do (KOBE-666): decide it at step 2, or why not: they proposed it, or they
+   * confirmed it for their workspace as a Team admin (in any round).
+   */
+  readonly may?: {
+    readonly decide: boolean;
+    readonly decideBlocked: SiteDecideBlocked | null;
+  };
 }
+
+/** Why a Site curator may not decide a proposal (the server checks again on every action). */
+export type SiteDecideBlocked = "own_proposal" | "confirmed";
 
 export interface RelatedSiteItem {
   readonly id: string;

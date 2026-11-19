@@ -103,7 +103,10 @@ read a person's portable preferences either; reading them needs its own break-gl
 
 ## Governance
 
-- **Audit log**: the site-wide, append-only audit log.
+- **Audit log**: the site-wide, append-only audit log. A workspace's events show here without
+  anything that points into its conversations (thread, message, run, learning pass, candidate,
+  tool call or approval ids, thread folder names, and the "via agent" line); the workspace's own
+  audit log keeps them. The same holds for the export.
 - **Usage and spend**: spend by team, user, agent and model, and the site budget every team's
   spend counts against.
 - **Retention maximum**: the longest retention any team may choose.

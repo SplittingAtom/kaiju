@@ -200,12 +200,19 @@ describe("audit views: via agent", () => {
       true,
     );
 
-    // A site admin outside the team sees the record, never a way into the thread.
+    // A site admin sees the record, never the thread, run or tool call (KOBE-666: the Site
+    // audit view of a Workspace's events is inside the Site wall).
     const outsider = await h.fx.person(`so${randomUUID().slice(0, 4)}`);
     await makeSiteAdmin(outsider);
     const site = await outsider.browser.get(`/v1/site/audit?limit=50&teamId=${w.team}`);
     expect(site.status, JSON.stringify(site.json)).toBe(200);
-    expect(via(site.json)).toMatchObject({ threadId: s.threadId, threadOpen: false });
+    const event = (site.json as { events: Record<string, unknown>[] }).events.find(
+      (e) => e.action === "identity.member.role_changed",
+    );
+    expect(event).toBeDefined();
+    expect(via(site.json)).toBeUndefined();
+    expect(JSON.stringify(event)).not.toContain(s.threadId);
+    expect(JSON.stringify(event)).not.toContain(s.runId);
   });
 });
 

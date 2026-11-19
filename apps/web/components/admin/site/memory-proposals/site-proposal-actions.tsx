@@ -8,6 +8,7 @@ import {
   SITE_PROPOSAL_REASON_MAX,
   SITE_PROPOSAL_ROUNDS_MAX,
   describeSiteProposalError,
+  type SiteDecideBlocked,
   type SiteDecision,
   type SiteProposal,
   type SiteProposalChecks,
@@ -22,6 +23,11 @@ const NO_ITEMS: ReadonlyMap<string, MemoryItem> = new Map();
 const OVERRIDABLE = new Set(["memory_lint_warning", "memory_policy_conflict"]);
 
 type Mode = "merge" | "reject" | "request-changes" | null;
+
+const BLOCKED_REASON: Readonly<Record<SiteDecideBlocked, string>> = {
+  own_proposal: "You proposed this: another Site curator decides it.",
+  confirmed: "You confirmed this for your workspace: another Site curator decides it.",
+};
 
 const asItem = (res: ApiResult<SiteDecision>): ApiResult<MemoryItem> =>
   res.ok ? { ok: true, status: res.status, data: res.data.item } : res;
@@ -41,14 +47,16 @@ function Refusal({ error, children }: { readonly error: ApiError; readonly child
  * make it Policy), **Merge into existing…** (a new version of a chosen Site memory), **Reject…**
  * (a reason the workspace reads) and **Request changes…** (a note of at most 500 characters,
  * back to the Team admins; off after three rounds). Approve and merge run the save checks:
- * warnings and Policy conflicts ask to save anyway; every refusal is shown.
+ * warnings and Policy conflicts ask to save anyway; every refusal is shown. A curator who
+ * proposed it, or confirmed it for their workspace as a Team admin (KOBE-666), sees the actions
+ * disabled with the reason: another Site curator decides it.
  */
 export function SiteProposalActions({
   proposal,
   checks,
   api,
   itemsApi,
-  mine,
+  blocked,
   canSetPolicy,
   onDecided,
 }: {
@@ -56,11 +64,12 @@ export function SiteProposalActions({
   readonly checks: SiteProposalChecks;
   readonly api: SiteProposalsApi;
   readonly itemsApi: Pick<MemoryItemsApi, "list">;
-  readonly mine: boolean;
+  readonly blocked: SiteDecideBlocked | null;
   readonly canSetPolicy: boolean;
   readonly onDecided: (outcome: Decided) => void;
 }) {
   const roundsId = useId();
+  const blockedId = useId();
   const [mode, setMode] = useState<Mode>(null);
   const [policy, setPolicy] = useState(false);
   const [text, setText] = useState("");
@@ -69,11 +78,20 @@ export function SiteProposalActions({
   const { busy, problem, save, clear } = useCheckedSave();
 
   if (proposal.state !== "awaiting_site") return null;
-  if (mine)
+  if (blocked !== null)
     return (
-      <p className="m-0 text-sm text-console-muted">
-        You proposed this: another Site curator decides it.
-      </p>
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2">
+          {["Approve", "Merge into existing…", "Reject…", "Request changes…"].map((label) => (
+            <Button key={label} variant="ghost" disabled aria-describedby={blockedId}>
+              {label}
+            </Button>
+          ))}
+        </div>
+        <p id={blockedId} className="m-0 text-sm text-console-muted">
+          {BLOCKED_REASON[blocked]}
+        </p>
+      </div>
     );
 
   const roundsUsed = proposal.rounds >= SITE_PROPOSAL_ROUNDS_MAX;
