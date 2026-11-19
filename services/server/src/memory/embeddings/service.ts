@@ -26,6 +26,12 @@ import { PendingQueries, runWantsVectors } from "./query-prefetch.js";
  * selection it has usually answered already.
  */
 export const QUERY_EMBED_DEADLINE_MS = 35;
+/**
+ * `recall({ query })` (KOBE-664) embeds its query when the tool is called, so it waits longer than
+ * the selector (a tool call, not the run's start), still well inside the purpose's server-call
+ * timeout; past it the recall answers keyword results.
+ */
+export const RECALL_EMBED_DEADLINE_MS = 3_000;
 /** How long the Site model and pgvector state are reused before they are read again. */
 export const STATE_TTL_MS = 10_000;
 /** Most items embedded right after one save (an import embeds the rest with the next backfill). */
@@ -54,6 +60,13 @@ export interface QueryEmbedder {
   prefetchQuery?(input: QueryEmbedInput): void;
   /** Resolves within the deadline: the vector, or undefined (no model, no pgvector, late, error). */
   queryVector(input: QueryEmbedInput): Promise<QueryVector | undefined>;
+  /**
+   * `recall({ query })`'s vector (KOBE-664): embedded now, the same way and with the same token as
+   * the selector's (purpose `memory_embed`, the run's member and Workspace pay, refused at 100 %
+   * of a budget line), within {@link RECALL_EMBED_DEADLINE_MS}. Undefined on no model, no
+   * pgvector, a refusal, an error or the deadline: never throws.
+   */
+  recallVector?(input: QueryEmbedInput): Promise<QueryVector | undefined>;
 }
 
 export interface SaveWho {
@@ -71,6 +84,7 @@ export interface MemoryEmbeddingsOptions {
   /** The chart's in-cluster model as the gateway names it (KOBE-659), when it runs one. */
   readonly localModel?: string | undefined;
   readonly queryDeadlineMs?: number;
+  readonly recallDeadlineMs?: number;
   readonly now?: () => number;
 }
 
@@ -305,6 +319,31 @@ export class MemoryEmbeddings implements QueryEmbedder {
         return undefined;
       });
     // Late answers are dropped: the selector never waits past the deadline.
+    const late = new Promise<undefined>((resolve) => {
+      const timer = setTimeout(() => resolve(undefined), deadline);
+      void work.finally(() => clearTimeout(timer));
+    });
+    return Promise.race([work, late]);
+  }
+
+  async recallVector(input: QueryEmbedInput): Promise<QueryVector | undefined> {
+    if (!this.#o.client || input.message.trim() === "") return undefined;
+    const deadline = Math.min(
+      this.#o.recallDeadlineMs ?? RECALL_EMBED_DEADLINE_MS,
+      SERVER_CALL_LIMITS.memory_embed.timeout_ms,
+    );
+    const signal = AbortSignal.timeout(deadline);
+    const work = this.#embedQuery(input, signal).catch((err: unknown) => {
+      const budget = isBudgetSkip(err);
+      this.#o.log.info(
+        { run_id: input.runId, code: codeOf(err) },
+        budget
+          ? "recall query embedding skipped: budget; keyword search"
+          : "recall query embedding failed; keyword search",
+      );
+      return undefined;
+    });
+    // The model and pgvector reads are bounded too: past the deadline, keywords.
     const late = new Promise<undefined>((resolve) => {
       const timer = setTimeout(() => resolve(undefined), deadline);
       void work.finally(() => clearTimeout(timer));

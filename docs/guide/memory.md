@@ -38,7 +38,9 @@ project, if any). It has two tools:
   become **memories** when you press **Learn** (the agent never writes memories itself);
 - **recall** reads a memory file or searches by text. A search also returns your matching
   **memories** first (up to 8, best match first, each labelled with where it is saved and its
-  kind), then the matching notes. It never needs approval;
+  kind), then the matching notes. Memories are found the way the memories for each message are
+  picked: by words and, with an embedding model set, by meaning (see
+  [Search by meaning](#search-by-meaning)). It never needs approval;
 - **show memory item** shows you one memory the run was given or a search found, with an **Open in
   Memory** link. It only reads: it changes nothing.
 
@@ -585,8 +587,10 @@ the outcome without naming you.
 ### Search by meaning
 
 Memory search matches words. With an **embedding model** set (Site settings › Memory), it also
-finds memories that mean the same as the message, and ranks both together. Without one, or while
-it is unavailable, search uses word matching alone and nothing else changes.
+finds memories that mean the same as the message, and ranks both together. The agent's **recall**
+searches your memories the same way, with its query in place of the message. Without a model, or
+while it is unavailable (no vectors yet, the workspace's budget is used up, the model does not
+answer), search uses word matching alone and nothing else changes.
 
 - **Choosing the model.** Type the model as the gateway names it, `provider/model`. A standard
   install runs a small one inside your cluster, on CPU: **nomic-embed-text**, offered as
@@ -615,7 +619,8 @@ it is unavailable, search uses word matching alone and nothing else changes.
   nearly as close as the best one; word matches are considered as before.
 - **Who pays.** Every embedding call goes through the model gateway and counts like any other
   model use: the person saving a memory pays, in the workspace they are working in; the member
-  whose message is searched pays for that message's search; the site admin who saves the model or
+  whose message is searched pays for that message's search (and for each **recall** search the
+  agent makes in their conversation); the site admin who saves the model or
   presses Build vectors pays for the build, in their active workspace. A workspace at 100% of a
   budget line gets no new vectors (the memory is saved all the same, and found by word matching),
   and a build stops there; press the button again later.
@@ -791,8 +796,9 @@ the semantic memory features that are being rolled out; until then the bell show
 
 ## What memory is not
 
-Recall finds text in your memory files; it does not search by meaning. Memories are matched to a
-conversation by their words, not by meaning.
+Recall finds text in your memory files (notes); it does not search them by meaning. Memories are
+matched to a conversation, and to a recall, by their words, and by meaning only when the site has
+an embedding model.
 
 ## Related
 
