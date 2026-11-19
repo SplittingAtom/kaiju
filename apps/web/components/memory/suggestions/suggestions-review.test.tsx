@@ -121,6 +121,21 @@ describe("project Memory → Suggestions", () => {
     expect(screen.getByText(/editors, owners and Team admins decide/)).toBeTruthy();
   });
 
+  it("tells the reader a swept suggestion from one whose conversation moved (KOBE-668)", async () => {
+    const a = apiWith({
+      projectId: PROJECT,
+      canDecide: false,
+      suggestions: [],
+      mine: [
+        { ...sug, id: "s-exp", state: "expired", statement: "Swept one" },
+        { ...sug, id: "s-stale", state: "stale", statement: "Moved one" },
+      ],
+    });
+    render(<SuggestionsReview teamId="t1" projectId={PROJECT} api={a.api} />);
+    expect(await screen.findByText("Expired after 30 days")).toBeTruthy();
+    expect(screen.getByText("Conversation left the project")).toBeTruthy();
+  });
+
   it("focuses the suggestion the bell named", async () => {
     const a = apiWith(decider);
     render(<SuggestionsReview teamId="t1" projectId={PROJECT} focusId={sug.id} api={a.api} />);

@@ -13,12 +13,14 @@ const STATE_TONE: Readonly<Record<Suggestion["state"], BadgeTone>> = {
   approved: "done",
   dismissed: "neutral",
   expired: "neutral",
+  stale: "neutral",
 };
 const STATE_LABEL: Readonly<Record<Suggestion["state"], string>> = {
   pending: "Waiting",
   approved: "Added to notes",
   dismissed: "Dismissed",
-  expired: "Expired",
+  expired: "Expired after 30 days",
+  stale: "Conversation left the project",
 };
 
 const day = (iso: string) => new Date(iso).toLocaleDateString();

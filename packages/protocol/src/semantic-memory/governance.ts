@@ -92,6 +92,7 @@ export const MEMORY_NOTIFICATION_KINDS = [
   "memory.suggestion.accepted",
   "memory.suggestion.dismissed",
   "memory.suggestion.expired",
+  "memory.suggestion.stale",
   // Phase C: Site proposals (KOBE-403; step 1 confirmed by a Team admin, request changes, expiry
   // KOBE-653).
   "memory.site_proposal.received",

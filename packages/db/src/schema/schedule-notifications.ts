@@ -77,6 +77,7 @@ export const NOTIFICATION_KINDS = [
   "memory.suggestion.accepted",
   "memory.suggestion.dismissed",
   "memory.suggestion.expired",
+  "memory.suggestion.stale",
   "memory.site_proposal.received",
   "memory.site_proposal.confirmed",
   "memory.site_proposal.changes_requested",

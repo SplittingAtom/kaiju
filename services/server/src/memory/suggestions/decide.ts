@@ -39,7 +39,7 @@ import {
 /**
  * An editor's decision on a reader's suggestion (KOBE-652). Each step is one `withTeam()`
  * transaction with the suggestion row-locked, and re-checks at click: the suggestion is pending
- * and unexpired; its thread is still in its project (else it expires now, PE5, and the click is
+ * and unexpired; its thread is still in its project (else it goes stale now, PE5, and the click is
  * refused); the caller decides the project now (owner, editor, Team admin: `edit`).
  *
  * - **Approve** runs Add to project notes' path (`notes-target.ts` `planChange`: switches, the
@@ -67,11 +67,12 @@ export const dismissSchema = z.strictObject({
 
 const STALE = Symbol("stale");
 const STALE_MESSAGE =
-  "This conversation left the project, so its suggestion expired: nothing was changed.";
+  "This conversation left the project, so its suggestion no longer applies: nothing was changed.";
+const EXPIRED_MESSAGE = "This suggestion expired: suggestions wait 30 days.";
 
 /**
  * Runs `fn` on the locked, open suggestion in one transaction. A suggestion whose thread moved
- * expires (committed) and the click is refused afterwards.
+ * goes stale (committed) and the click is refused afterwards.
  */
 async function onOpen<T>(
   db: NotesDeps["db"],
@@ -84,8 +85,9 @@ async function onOpen<T>(
     const row = await lockSuggestion(tx, teamId, id);
     const access = await projectMemoryAccess(tx, teamId, who.userId, row.projectId);
     if (access === "none") throw suggestionNotFound();
+    if (row.state === "stale") throw inactive(STALE_MESSAGE);
+    if (row.state === "expired" || row.expired) throw inactive(EXPIRED_MESSAGE);
     if (row.state !== "pending") throw inactive("This suggestion was already decided.");
-    if (row.expired) throw inactive("This suggestion expired: suggestions wait 30 days.");
     if (row.threadProjectId !== row.projectId) {
       await staleMovedSuggestions(tx, teamId, row.threadId);
       return STALE;
