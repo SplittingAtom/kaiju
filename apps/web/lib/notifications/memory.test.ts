@@ -33,6 +33,7 @@ const examples: Record<(typeof MEMORY_NOTIFICATION_KINDS)[number], KobeNotificat
   "memory.proposal.changes_requested": { ...base, kind: "memory.proposal.changes_requested" },
   "memory.proposal.expired": { ...base, kind: "memory.proposal.expired" },
   "memory.suggestion.expired": { ...base, kind: "memory.suggestion.expired", projectId: "p-1" },
+  "memory.suggestion.stale": { ...base, kind: "memory.suggestion.stale", projectId: "p-1" },
   "memory.site_proposal.confirmed": { ...base, kind: "memory.site_proposal.confirmed" },
   "memory.site_proposal.changes_requested": {
     ...base,
@@ -101,6 +102,18 @@ describe("memory notifications in the bell (KOBE-645)", () => {
     );
     expect(notificationTitle(examples["memory.review.digest"])).toBe(
       "4 more Workspace memory proposals in the last hour",
+    );
+  });
+
+  it("tells a suggestion swept after 30 days from one whose conversation moved (KOBE-668)", () => {
+    expect(notificationTitle(examples["memory.suggestion.expired"])).toBe(
+      "Your project note suggestion expired undecided after 30 days",
+    );
+    expect(notificationTitle(examples["memory.suggestion.stale"])).toBe(
+      "Your project note suggestion closed: its conversation left the project",
+    );
+    expect(memoryNotificationLink(examples["memory.suggestion.stale"])?.href).toBe(
+      "/me/projects/p-1?suggestion=obj-1",
     );
   });
 

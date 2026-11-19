@@ -346,9 +346,17 @@ describe("suggestion expiry (ac-1, ac-2)", () => {
        VALUES ($1, $2, 'memory.suggestion.received', $3, $4, now() + interval '1 day')`,
       [team, due, ids.owner, project],
     );
+    // Staled when its thread moved (KOBE-668): already closed, the sweep leaves it alone.
+    const stale = await suggestion(ids.bob, t, -1);
+    await h.admin.query(
+      `UPDATE memory_project_suggestions SET state = 'stale', decided_at = $2 WHERE id = $1`,
+      [stale, ago(5)],
+    );
     await pass();
     expect(await stateOf("memory_project_suggestions", due)).toBe("expired");
     expect(await stateOf("memory_project_suggestions", fresh)).toBe("pending");
+    expect(await stateOf("memory_project_suggestions", stale)).toBe("stale");
+    expect(await notices(ids.bob, stale)).toEqual([]);
     expect(await notices(ids.bob, due)).toEqual([
       { kind: "memory.suggestion.expired", project_id: project },
     ]);
@@ -472,12 +480,19 @@ describe("decided proposals and suggestions (KOBE-671)", () => {
     const newLoose = await suggestion(ids.alice, t, 5);
     await decide("memory_project_suggestions", newLoose, "expired", null, 20);
     const pendingLoose = await suggestion(ids.alice, t, 5);
+    // Staled ones (KOBE-668) are decided too: with their pass, or by decision date.
+    const staleWithPass = await suggestion(ids.alice, t, 5, await candidate(old, -26, "suggested"));
+    await decide("memory_project_suggestions", staleWithPass, "stale", null, 3);
+    const oldStale = await suggestion(ids.alice, t, 5);
+    await decide("memory_project_suggestions", oldStale, "stale", null, 45);
+    const newStale = await suggestion(ids.alice, t, 5);
+    await decide("memory_project_suggestions", newStale, "stale", null, 20);
 
     await pass();
     expect(await exists("memory_learning_passes", old)).toBe(false);
     for (const gone of [approved, expired, oldItem])
       expect(await exists("memory_proposals", gone)).toBe(false);
-    for (const gone of [dismissed, oldLoose])
+    for (const gone of [dismissed, oldLoose, staleWithPass, oldStale])
       expect(await exists("memory_project_suggestions", gone)).toBe(false);
     expect(
       await countWhere("notifications", "memory_object_id = ANY($1)", [[approved, dismissed]]),
@@ -485,9 +500,9 @@ describe("decided proposals and suggestions (KOBE-671)", () => {
     expect(await exists("memory_learning_passes", recent)).toBe(true);
     for (const kept of [keptWithPass, newItem, pendingItem])
       expect(await exists("memory_proposals", kept)).toBe(true);
-    for (const kept of [newLoose, pendingLoose])
+    for (const kept of [newLoose, pendingLoose, newStale])
       expect(await exists("memory_project_suggestions", kept)).toBe(true);
-    expect(await summed()).toEqual({ passes: 1, proposals: 3, suggestions: 2 });
+    expect(await summed()).toEqual({ passes: 1, proposals: 3, suggestions: 4 });
     // Nothing more on a second run.
     const before = (await audits("retention.memory_learning_purged")).length;
     await pass();

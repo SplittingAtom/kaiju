@@ -449,10 +449,19 @@ off. The suggestion then leaves your To review.
 
 The people who decide get a notification, and a reminder if it waits a week. You get a
 notification when they add it or dismiss it (with their reason, if they gave one), or when it
-expires: suggestions wait 30 days, and moving the conversation out of the project expires its
-waiting suggestions at once (they were for that project's notes). Your suggestions and what
-happened to them are listed under **Your suggestions** on the project's **Memory** tab
-(**Projects** › the project › **Memory**).
+closes undecided. Your suggestions and what happened to them are listed under **Your
+suggestions** on the project's **Memory** tab (**Projects** › the project › **Memory**):
+
+| Label                             | What happened                                                                                                                                |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Waiting**                       | No one has decided yet.                                                                                                                      |
+| **Added to notes**                | An editor approved it: the line is under `## Learned` in the project's notes.                                                                |
+| **Dismissed**                     | An editor dismissed it, with their reason if they gave one.                                                                                  |
+| **Expired after 30 days**         | No one decided within 30 days.                                                                                                               |
+| **Conversation left the project** | The conversation was moved out of the project (or to another one) while it waited, so it no longer applies: it was for that project's notes. |
+
+Suggestions closed undecided before these two labels existed show **Expired after 30 days**
+unless Kobe could tell the conversation had moved (it closed before its 30 days were up).
 
 ### Readers' suggestions
 
@@ -692,8 +701,9 @@ archived for you. What goes, and when:
   not restart the clock), and so do suggestions for a project's notes no editor decided; you get a
   notification when yours expires, once. The record of each learning pass (when it ran, the model
   and what it found) is deleted once it is older than the workspace's retention period, with the
-  suggestions it made and the decided (approved, dismissed or expired) Workspace proposals and
-  project suggestions made from them, unless one is still waiting for you, a curator or an editor.
+  suggestions it made and the decided (approved, dismissed or expired, or for project suggestions
+  closed because their conversation left the project) Workspace proposals and project suggestions
+  made from them, unless one is still waiting for you, a curator or an editor.
   A decided proposal that did not come from a learning pass (one proposed from an existing memory)
   is deleted once its decision is older than the retention period. Nothing of this is deleted while
   the workspace keeps conversations forever, and proposals still waiting are never deleted (they
@@ -789,7 +799,8 @@ when it is your turn. Each notification has a button that opens the place where 
   the project's **Memory** tab) or a Site memory proposal (opens Site memory).
 - **Your proposal or suggestion was accepted, dismissed or sent back for changes**, naming who
   decided, or **expired** undecided (a Workspace proposal opens **Your Workspace proposals** on
-  **My memory**). A Site proposal also tells the Site's curators when its Team
+  **My memory**). A suggestion for a project's notes whose conversation left the project says so
+  instead of expired. A Site proposal also tells the Site's curators when its Team
   admin **confirmed** it. A Site admin or Site memory steward who is not a member of the proposing
   workspace gets that notification, and its reminders, in their own workspace (the one they last
   used) within about 15 minutes; one who belongs to no workspace sees it only in Site memory.

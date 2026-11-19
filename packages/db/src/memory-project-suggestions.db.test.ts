@@ -213,12 +213,17 @@ describe("suggestions", () => {
           id,
           ...params,
         ]);
-      // A decision needs decided_at; approved and dismissed name the decider, expired none.
+      // A decision needs decided_at; approved and dismissed name the decider, expired and stale
+      // (KOBE-668: its thread left the project) none.
       expect(await set(`state = 'approved', decided_by = $3`, [editor])).toBe("23514");
       expect(await set(`state = 'approved', decided_at = now()`)).toBe("23514");
       expect(await set(`state = 'expired', decided_at = now(), decided_by = $3`, [editor])).toBe(
         "23514",
       );
+      expect(await set(`state = 'stale', decided_at = now(), decided_by = $3`, [editor])).toBe(
+        "23514",
+      );
+      expect(await set(`state = 'stale', decided_by = NULL`)).toBe("23514");
       expect(await set(`decided_at = now()`)).toBe("23514");
       expect(await set(`state = 'unknown', decided_at = now()`)).toBe("23514");
       // A reason only on a dismissal, 1..1000 characters.
@@ -250,6 +255,8 @@ describe("suggestions", () => {
         ]),
       ).toBeUndefined();
       expect(await set(`state = 'expired', decided_by = NULL`)).toBeUndefined();
+      expect(await set(`state = 'stale', decided_by = NULL`)).toBeUndefined();
+      expect(await set(`state = 'stale', reason = 'x'`)).toBe("23514");
     });
   });
 

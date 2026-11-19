@@ -70,7 +70,8 @@ type SuggestionKind =
   | "memory.suggestion.received"
   | "memory.suggestion.accepted"
   | "memory.suggestion.dismissed"
-  | "memory.suggestion.expired";
+  | "memory.suggestion.expired"
+  | "memory.suggestion.stale";
 
 /** What to tell: each kind with exactly the fields it names (the DB check mirrors this). */
 export type MemoryNotice =

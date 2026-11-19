@@ -421,25 +421,29 @@ describe("editors decide (ac-2, ac-3)", () => {
 });
 
 describe("staling when the thread leaves the project (ac-3, PE5)", () => {
-  it("a move expires the thread's pending suggestions and tells the suggester", async () => {
+  it("a move stales the thread's pending suggestions and tells the suggester (KOBE-668)", async () => {
     const { p, c, id } = await suggested();
     const moved = await as.reader.post(`/v1/threads/${c.threadId}/move`, { project_id: null });
     expect(moved.status, moved.text).toBe(200);
-    expect(await row(id)).toMatchObject({ state: "expired", decided_by: null });
+    expect(await row(id)).toMatchObject({ state: "stale", decided_by: null });
     expect(await remindersOf(id)).toEqual([]);
     expect(await noticesOf(ids.reader, id)).toEqual([
-      expect.objectContaining({ kind: "memory.suggestion.expired", project_id: p }),
+      expect.objectContaining({ kind: "memory.suggestion.stale", project_id: p }),
+    ]);
+    // The reader's own list says why it closed.
+    expect((await listOf(as.reader, p)).mine).toEqual([
+      expect.objectContaining({ id, state: "stale" }),
     ]);
     expect((await listOf(as.editor, p)).suggestions).toEqual([]);
   });
 
-  it("a click on a suggestion whose thread moved expires it and changes nothing", async () => {
+  it("a click on a suggestion whose thread moved stales it and changes nothing", async () => {
     const { p, c, id } = await suggested();
     const pre = (await preview(as.editor, id)).json as Preview;
     await h.admin.query(`UPDATE threads SET project_id = NULL WHERE id = $1`, [c.threadId]);
     expect((await listOf(as.editor, p)).suggestions).toEqual([]);
     expect(codeOf(await approve(as.editor, id, pre))).toEqual([409, "memory_item_inactive"]);
-    expect(await row(id)).toMatchObject({ state: "expired" });
+    expect(await row(id)).toMatchObject({ state: "stale" });
     expect(await notes(as.editor, p)).toBeNull();
   });
 });
