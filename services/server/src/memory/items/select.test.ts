@@ -21,6 +21,7 @@ import {
   VECTOR_WEIGHT,
   eligible,
   memoryScore,
+  rankRecall,
   rankVectors,
   vectorScore,
   selectRunMemory,
@@ -398,5 +399,43 @@ describe("selectRunMemory", () => {
       expect(s.items.length + s.omitted_count).toBe(800);
       expect(runSemanticMemorySchema.safeParse(s).success).toBe(true);
     }
+  });
+});
+
+/** KOBE-664: `recall({ query })` ranks with the selector's relevance, hybrid when vectors came. */
+describe("rankRecall", () => {
+  it("orders keyword matches by relevance, with no preference base, pin or stickiness", () => {
+    const pref = cand(item("user", { id: 70, kind: "preference" }), { textRank: 0.1 });
+    const fact = cand(item("team", { id: 71 }), { textRank: 0.3 });
+    const pinned = cand(item("team", { id: 72, pinned: true }), { textRank: 0 });
+    const sticky = cand(item("site", { id: 73 }), { textRank: 0.05, sticky: true });
+    const out = rankRecall({ user: [pref], team: [fact, pinned], site: [sticky] }, []);
+    expect(ids(out)).toEqual([uuid(71), uuid(70), uuid(73)]);
+  });
+
+  it("adds the nearest items with no shared word, inside the band and the eligible count", () => {
+    const keyword = cand(item("team", { id: 80 }), { textRank: 0.2 });
+    const near = cand(item("user", { id: 81 }), { textRank: 0, vector: 0.9 });
+    const far = cand(item("user", { id: 82 }), { textRank: 0, vector: 0.9 - VECTOR_BAND - 0.01 });
+    const out = rankRecall({ team: [keyword], user: [near, far] }, []);
+    // The nearest scores VECTOR_WEIGHT above a keyword match's rank.
+    expect(ids(out)).toEqual([uuid(81), uuid(80)]);
+    const crowd = Array.from({ length: VECTOR_MAX_ELIGIBLE + 3 }, (_, k) =>
+      cand(item("site", { id: 90 + k }), { textRank: 0, vector: 0.9 - k * 0.001 }),
+    );
+    expect(rankRecall({ site: crowd }, [], 50)).toHaveLength(VECTOR_MAX_ELIGIBLE);
+  });
+
+  it("ranks matched Policy items like any lane and keeps the best max", () => {
+    const policy = cand(item("site", { id: 100, policy: true }), { textRank: 0.5 });
+    const lanes = {
+      team: Array.from({ length: 12 }, (_, k) =>
+        cand(item("team", { id: 110 + k }), { textRank: 0.01 * (k + 1) }),
+      ),
+    };
+    const out = rankRecall(lanes, [policy]);
+    expect(out).toHaveLength(8);
+    expect(out[0]?.id).toBe(uuid(100));
+    expect(out[1]?.id).toBe(uuid(121));
   });
 });

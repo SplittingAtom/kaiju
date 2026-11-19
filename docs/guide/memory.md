@@ -1,6 +1,6 @@
 ---
 title: Memory
-summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean and when the dot pulses (the Learn nudge), which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo, Add to project notes in a project conversation, and Suggest to editors for project readers), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how anyone proposes something they said to the Site (Propose… › The Site, with a justification) and how curators propose Workspace memories to the Site (Propose to Site), how Team admins confirm, edit or withdraw Site proposals and memory stewards endorse them (Memory › To the Site), how Site admins and Site memory stewards approve, merge, reject or send back workspace proposals to the Site, how project editors approve or dismiss readers' suggestions for the project's notes, how the learning model is chosen, how long memories and Learn from this chat records (suggestions, proposals, passes) are kept, and how a Site-wide legal hold keeps Site memories.
+summary: How Kobe remembers things between conversations, the Memories and Notes tabs of My memory, how to add, edit, pin, archive or undo memories and notes, how the agent looks up memories with recall and shows one with an Open in Memory link so you can archive it, how to ask Kobe to learn from a conversation (+ › Memory › Learn from this chat, /learn, /learn all, Ctrl+Shift+L) and what the dot, spinner and count on the + button mean and when the dot pulses (the Learn nudge), which site and workspace switches control notes and memories, where the memories picked for each message go (memory placement), how To review shows what Kobe learned from a conversation (save, edit, dismiss, Save all mine and Undo, Add to project notes in a project conversation, and Suggest to editors for project readers), how members propose a memory to the Workspace and how curators approve, send back or dismiss proposals, how anyone proposes something they said to the Site (Propose… › The Site, with a justification) and how curators propose Workspace memories to the Site (Propose to Site), how Team admins confirm, edit or withdraw Site proposals and memory stewards endorse them (Memory › To the Site), how Site admins and Site memory stewards approve, merge, reject or send back workspace proposals to the Site, how project editors approve or dismiss readers' suggestions for the project's notes, how the learning model is chosen, how long memories and Learn from this chat records (suggestions, proposals, passes) are kept, how a Site-wide legal hold keeps Site memories, and the Set by the Site label on Site memories outside the site console.
 section: Memory
 order: 1
 audience: member
@@ -38,7 +38,9 @@ project, if any). It has two tools:
   become **memories** when you press **Learn** (the agent never writes memories itself);
 - **recall** reads a memory file or searches by text. A search also returns your matching
   **memories** first (up to 8, best match first, each labelled with where it is saved and its
-  kind), then the matching notes. It never needs approval;
+  kind), then the matching notes. Memories are found the way the memories for each message are
+  picked: by words and, with an embedding model set, by meaning (see
+  [Search by meaning](#search-by-meaning)). It never needs approval;
 - **show memory item** shows you one memory the run was given or a search found, with an **Open in
   Memory** link. It only reads: it changes nothing.
 
@@ -53,7 +55,8 @@ The agent cannot change or archive memories. Ask "What do you know about my old 
 link under its tool call. The link opens **My memory** with that memory first, under **Opened
 from a conversation**, where **Archive** is one click and **Undo** puts it back. An archived
 memory is never given to a run again, and a search no longer finds it. Workspace and site
-memories open read-only there: their curators change them.
+memories open read-only there: their curators change them. A site memory carries the label
+**Set by the Site**.
 
 The agent's searches over memories follow the same rules as the memories a run is given: only
 yours, your current workspace's and (while the workspace allows them) the site's, and none for an
@@ -157,7 +160,8 @@ chat and skill and agent evaluations get no memories at all.
 ### See which memories a run got
 
 Open the context viewer (the context gauge under the composer): **Memories in context (n)** lists
-what your latest message's run was given, grouped by place, each with the version it got. While
+what your latest message's run was given, grouped by place, each with the version it got; Site
+Policy and site memories say **Set by the Site**. While
 your newest message is still waiting, it shows the previous message's and says so. The
 `/session` dialog shows the same count as **Memories in context**. Both are yours only: people a
 conversation is shared with never see what your memory gave it.
@@ -341,6 +345,15 @@ Site's note when it asked for changes, its reason when it said no, and **Withdra
 open. The bell tells you when a Team admin confirms it and when the Site decides or asks for
 changes; its button opens your proposal there (Team admins and Site curators open their console's
 Memory page instead).
+
+### Site memories outside the Site console
+
+Wherever you see a Site memory outside the site console (an **Open in Memory** link, **Memories
+in context**, or the team console's **Memory › Memories** list with **Scope** set to Site
+memories), it carries the label **Set by the Site** and is read-only. Kobe never says which
+workspace a Site memory came from, there or to the agent ("set by the Site"). Only Site admins and
+Site memory stewards see the source workspace, under **Proposals** in the site console; their own
+**Memory › Memories** list there has no label, since every memory in it is a Site memory.
 
 ### Decide on proposals (Team admins and memory stewards)
 
@@ -574,8 +587,10 @@ the outcome without naming you.
 ### Search by meaning
 
 Memory search matches words. With an **embedding model** set (Site settings › Memory), it also
-finds memories that mean the same as the message, and ranks both together. Without one, or while
-it is unavailable, search uses word matching alone and nothing else changes.
+finds memories that mean the same as the message, and ranks both together. The agent's **recall**
+searches your memories the same way, with its query in place of the message. Without a model, or
+while it is unavailable (no vectors yet, the workspace's budget is used up, the model does not
+answer), search uses word matching alone and nothing else changes.
 
 - **Choosing the model.** Type the model as the gateway names it, `provider/model`. A standard
   install runs a small one inside your cluster, on CPU: **nomic-embed-text**, offered as
@@ -604,7 +619,8 @@ it is unavailable, search uses word matching alone and nothing else changes.
   nearly as close as the best one; word matches are considered as before.
 - **Who pays.** Every embedding call goes through the model gateway and counts like any other
   model use: the person saving a memory pays, in the workspace they are working in; the member
-  whose message is searched pays for that message's search; the site admin who saves the model or
+  whose message is searched pays for that message's search (and for each **recall** search the
+  agent makes in their conversation); the site admin who saves the model or
   presses Build vectors pays for the build, in their active workspace. The build covers every
   workspace whether or not that admin has an active workspace: with none, each workspace pays for
   its own memories (the admin when they are a member, otherwise the workspace's first team admin)
@@ -666,8 +682,13 @@ archived for you. What goes, and when:
   not restart the clock), and so do suggestions for a project's notes no editor decided; you get a
   notification when yours expires, once. The record of each learning pass (when it ran, the model
   and what it found) is deleted once it is older than the workspace's retention period, with the
-  suggestions it made, unless one is still waiting for you or for a curator (nothing while the
-  workspace keeps conversations forever). When a conversation is deleted for good, its learning
+  suggestions it made and the decided (approved, dismissed or expired) Workspace proposals and
+  project suggestions made from them, unless one is still waiting for you, a curator or an editor.
+  A decided proposal that did not come from a learning pass (one proposed from an existing memory)
+  is deleted once its decision is older than the retention period. Nothing of this is deleted while
+  the workspace keeps conversations forever, and proposals still waiting are never deleted (they
+  expire first). An approved memory keeps its own version history and the audit log keeps every
+  decision, so the record of what was decided stays. When a conversation is deleted for good, its learning
   passes, suggestions, dismissals and suggestions for project notes go with it; a Workspace proposal
   stays with its statement and note, without the quotes.
 - **Site memory proposals.** A proposal to the Site that is still waiting (for the workspace's
@@ -688,7 +709,8 @@ archived for you. What goes, and when:
   for you by single sign-on, instead of your old one, starts with no memories.
 - **Legal holds.** A legal hold suspends all of this: a hold on a person keeps their memories (in
   every workspace and the ones that follow them), what Learn from this chat kept for them (nothing
-  of theirs expires while it lasts) and the Site memories they wrote; a hold on a
+  of theirs expires while it lasts), the proposals and project suggestions they made or decided
+  (with the learning passes they came from) and the Site memories they wrote; a hold on a
   workspace keeps that workspace's memories, its Learn from this chat records and the memories that follow each of its members; a
   Site-wide hold keeps Site memories and every memory that follows a person. Site memory proposals
   don't expire while a Site-wide hold is in force (their weekly reminders pause too), or while a
@@ -778,8 +800,9 @@ the semantic memory features that are being rolled out; until then the bell show
 
 ## What memory is not
 
-Recall finds text in your memory files; it does not search by meaning. Memories are matched to a
-conversation by their words, not by meaning.
+Recall finds text in your memory files (notes); it does not search them by meaning. Memories are
+matched to a conversation, and to a recall, by their words, and by meaning only when the site has
+an embedding model.
 
 ## Related
 

@@ -31,10 +31,11 @@ const NO_LOG = { info: () => undefined, warn: () => undefined };
 /** A scripted gateway: each call takes the next reply (a JSON value, raw text, or an error). */
 class FakeGateway implements ServerCallClient {
   readonly calls: ServerCallInput[] = [];
-  replies: (unknown | Error)[] = [];
+  replies: (unknown | Error | ((input: ServerCallInput) => unknown))[] = [];
   async complete(input: ServerCallInput): Promise<string> {
     this.calls.push(input);
-    const next = this.replies.shift() ?? { candidates: [], skill_hints: [] };
+    const queued = this.replies.shift() ?? { candidates: [], skill_hints: [] };
+    const next = typeof queued === "function" ? queued(input) : queued;
     if (next instanceof Error) throw next;
     return typeof next === "string" ? next : JSON.stringify(next);
   }
@@ -339,6 +340,35 @@ describe("a pass that succeeds (ac-4)", () => {
       [team, owner.id],
     );
     expect(rows).toHaveLength(0);
+  });
+
+  it("accepts an evidence id behind this pass's own fence nonce, no other (KOBE-672)", async () => {
+    const s = await seedThread("I prefer ISO dates. My manager is Dana.");
+    gateway.replies = [
+      (input: ServerCallInput) => {
+        const text = input.messages.map((m) => m.content).join("\n");
+        const nonce = /<<<end ([0-9a-f]+)>>>/.exec(text)?.[1] ?? "missing";
+        return reply(
+          candidate({
+            statement: "I prefer ISO dates.",
+            evidence: [{ entry_id: `${nonce}:u1`, quote: "I prefer ISO dates" }],
+          }),
+          candidate({
+            statement: "My manager is Dana.",
+            kind: "fact",
+            evidence: [{ entry_id: `${"0".repeat(32)}:u1`, quote: "My manager is Dana" }],
+          }),
+        );
+      },
+    ];
+    const started = await startAndWait(s);
+    if (!started.ok) throw new Error("pass did not start");
+    expect((await passRow(started.passId))?.usage).toMatchObject({
+      counts: { replied: 2, stored: 1, dropped: 1 },
+    });
+    const stored = await candidatesOf(started.passId);
+    expect(stored).toHaveLength(1);
+    expect(JSON.stringify(stored[0]?.payload)).toContain('"entry_id":"u1"');
   });
 
   it("records a trace with the model, prompt version and counts", async () => {

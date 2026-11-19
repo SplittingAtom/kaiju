@@ -15,6 +15,8 @@
 #       KOBE_EVAL_EMBED_MODEL  the endpoint's model name, e.g. nomic-embed-text
 #       KOBE_EVAL_EMBED_KEY    bearer key, if the endpoint needs one
 #     The scratch database needs pgvector on that server (it is enabled as the superuser).
+#     KOBE-664: both reports add a "recall tool" column: recall@8 of what the agent's
+#     recall({ query }) answers for each query (keyword-only, then hybrid with the same vector).
 #
 #   e2e/memory-eval.sh cache
 #     Replays the 20 messages of e2e/fixtures/memory-cache/turns.json in one new thread on a

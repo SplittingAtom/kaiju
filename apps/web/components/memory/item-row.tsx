@@ -2,7 +2,12 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import type { ApiResult } from "../../lib/api/client";
-import type { MemoryItem, MemoryItemsApi, Overrides } from "../../lib/memory/items-api";
+import {
+  SET_BY_SITE,
+  type MemoryItem,
+  type MemoryItemsApi,
+  type Overrides,
+} from "../../lib/memory/items-api";
 import { visible } from "../../lib/security/visible";
 import { Badge, Button, Notice } from "../ui/console";
 import { CheckProblem, itemAnchor, useCheckedSave } from "./item-checks";
@@ -74,6 +79,9 @@ export function ItemRow({
   const moved = draft !== null && item.version !== base;
   // No actions: read-only callers, superseded history, and Policy for anyone who can't set it.
   const locked = readOnly || item.status === "superseded" || (item.policy && !canSetPolicy);
+  // A Site memory shown to someone who doesn't curate it here (My memory, the Workspace console)
+  // says who set it, and never where it came from (KOBE-670; KOBE-403 provenance rules).
+  const setBySite = item.scope === "site" && readOnly;
 
   /** Cancel: back to Edit once the form is gone. */
   const [refocus, setRefocus] = useState(false);
@@ -212,6 +220,7 @@ export function ItemRow({
           </p>
           <p className="m-0 mt-2 flex flex-wrap items-center gap-1 text-sm text-console-muted">
             <span>{KIND_LABELS[item.kind]}</span>
+            {setBySite && <Badge>{SET_BY_SITE}</Badge>}
             {item.pinned && <Badge tone="accent">Pinned</Badge>}
             {item.policy && <Badge tone="accent">Policy</Badge>}
             {archived && <Badge>{item.status === "superseded" ? "Superseded" : "Archived"}</Badge>}

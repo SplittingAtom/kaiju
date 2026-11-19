@@ -91,6 +91,22 @@ describe("scoreCase", () => {
     expect(m.scope_accuracy).toBe(0.5);
   });
 
+  it("accepts an id prefixed with the attempt's own nonce, no other (KOBE-672)", () => {
+    const nonce = "dcf9a3d8cbd951edac2a8af4303460ec";
+    const prefixed = cand("Prefers tables.", "user", {
+      portable: true,
+      evidence: [{ entry_id: `${nonce}:e1`, quote: "I prefer tables." }],
+    });
+    const own = scoreCase(makeCase(), [{ text: reply(prefixed), latency_ms: 1, nonce }]);
+    expect(own.predicted.map((p) => p.verdict)).toEqual(["matched"]);
+    const other = scoreCase(makeCase(), [
+      { text: reply(prefixed), latency_ms: 1, nonce: "0123456789abcdef0123456789abcdef" },
+    ]);
+    expect(other.dropped).toEqual({ evidence_not_found: 1 });
+    const none = scoreCase(makeCase(), [{ text: reply(prefixed), latency_ms: 1 }]);
+    expect(none.dropped).toEqual({ evidence_not_found: 1 });
+  });
+
   it("allowed extras count for neither precision nor recall", () => {
     const c = makeCase({ allow: [["data"]] });
     const r = scoreCase(c, [{ text: reply(cand("Likes data.", "user")), latency_ms: 1 }]);

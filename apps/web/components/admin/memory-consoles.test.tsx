@@ -99,6 +99,9 @@ describe("Workspace console Memory page (ac-1)", () => {
     expect(within(site).getAllByRole("listitem")).toHaveLength(2);
     expect(within(site).queryByRole("button")).toBeNull();
     expect(screen.getByText(/Only their curators change them/)).toBeTruthy();
+    // Not a Site curator here: each Site memory says who set it, never where it came from.
+    for (const r of within(site).getAllByRole("listitem"))
+      expect(within(r).getByText("Set by the Site")).toBeTruthy();
   });
 
   it("shows Team admins the Settings tab too", async () => {
@@ -298,6 +301,8 @@ describe("Site console Memory page (ac-1, ac-3)", () => {
     // Policy items can be changed by Site admins.
     const policyRow = within(site).getByRole("listitem", { name: POLICY.statement });
     expect(within(policyRow).getByRole("button", { name: /^Edit:/ })).toBeTruthy();
+    // Site curators keep their own view: no "Set by the Site" label (KOBE-670).
+    expect(within(site).queryByText("Set by the Site")).toBeNull();
   });
 
   it("gives Site stewards everything but Policy", async () => {
@@ -310,6 +315,7 @@ describe("Site console Memory page (ac-1, ac-3)", () => {
     const policyRow = within(site).getByRole("listitem", { name: POLICY.statement });
     expect(within(policyRow).queryByRole("button")).toBeNull();
     expect(screen.queryByRole("checkbox", { name: /Policy/ })).toBeNull();
+    expect(within(site).queryByText("Set by the Site")).toBeNull();
   });
 
   it("exports a scope (audited by the server)", async () => {

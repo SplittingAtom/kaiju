@@ -61,16 +61,19 @@ function laneVectorQuery(who: Who, lane: SelectLane, model: string, dims: number
 }
 
 /** The nearest rows of every lane (`total` -1 marks them; `sim` is the cosine similarity). */
-export async function readVectorRows(db: KobeDb, who: Who, query: QueryVector): Promise<ItemRow[]> {
+export async function readVectorRows(
+  db: KobeDb,
+  who: Who,
+  query: QueryVector,
+  timeoutMs: number = VECTOR_QUERY_TIMEOUT_MS,
+): Promise<ItemRow[]> {
   const dims = query.vector.length;
   const parts = SELECT_LANES.map(
     (lane) =>
       sql`SELECT * FROM (${laneVectorQuery(who, lane, query.model, dims)}) AS ${sql.raw(`v_${lane}`)}`,
   );
   return withTeam(db, who.teamId, async (tx) => {
-    await tx.execute(
-      sql`SELECT set_config('statement_timeout', ${`${VECTOR_QUERY_TIMEOUT_MS}ms`}, true)`,
-    );
+    await tx.execute(sql`SELECT set_config('statement_timeout', ${`${timeoutMs}ms`}, true)`);
     const res = await tx.execute<ItemRow>(sql`
       WITH p AS (SELECT ${vectorLiteral(query.vector)}::public.vector AS e)
       ${sql.join(parts, sql` UNION ALL `)}`);

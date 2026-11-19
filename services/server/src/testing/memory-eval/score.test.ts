@@ -146,6 +146,27 @@ describe("scoreQuery and summarise", () => {
   });
 });
 
+describe("the recall tool's ranking (KOBE-664)", () => {
+  it("scores recall's list beside the selector's and adds its column only when measured", () => {
+    const q1 = query({ id: "q001", expected: ["a", "b"] });
+    const q2 = query({ id: "q002", expected: ["c"] });
+    const withTool = [
+      scoreQuery(q1, { relevance: ["a"], selector: ["a"], recall: ["b", "a"] }, new Set()),
+      scoreQuery(q2, { relevance: ["c"], selector: ["c"], recall: [] }, new Set()),
+    ];
+    expect(withTool.map((r) => r.recallTool)).toEqual([1, 0]);
+    const report = summarise(withTool, [q1, q2]);
+    expect(report.overall.recallTool).toBe(0.5);
+    expect(formatRelevanceReport(report)).toContain("recall@8 (recall tool)");
+    const without = summarise(
+      [scoreQuery(q2, { relevance: ["c"], selector: ["c"] }, new Set())],
+      [q2],
+    );
+    expect(without.overall.recallTool).toBeNull();
+    expect(formatRelevanceReport(without)).not.toContain("recall tool");
+  });
+});
+
 describe("parseRelevanceSet", () => {
   const items = {
     items: [
