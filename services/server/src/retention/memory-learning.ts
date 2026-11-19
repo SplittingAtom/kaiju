@@ -22,7 +22,10 @@ import { activeMember } from "./semantic-memory.js";
  *    the transaction);
  *  - finished learning passes (with their usage record and candidates) go once finished longer ago
  *    than the Workspace window (nothing while the Workspace keeps forever), except a pass with a
- *    candidate still open or still shown by a pending proposal or suggestion.
+ *    candidate still open or still shown by a pending proposal or suggestion. The decided
+ *    proposals and suggestions made from its candidates go with it (KOBE-671); a decided one not
+ *    from a pass (or whose pass already left) goes once decided longer ago than the window. A
+ *    hold on the proposer, reader or decider keeps it, and its pass. Pending ones only expire.
  * Thread purge needs nothing here: passes, candidates, dismissals, watermarks and suggestions go
  * with their conversation by cascade; proposals keep their own words (`candidate_ref` cleared).
  * Offboarding ({@link purgeDepartedLearningInTx}) erases what a departed member left.
@@ -150,36 +153,132 @@ async function expireSuggestions(tx: KobeTx, teamId: string): Promise<LearningPu
   return { ...NO_LEARNING_PURGE, suggestionsExpired: res.rows.length };
 }
 
-/** Finished passes past the window, with their candidates (cascade), unless still in use. */
+/**
+ * Whether a hold covers anyone a decided proposal (`r`) or suggestion (`s`) involves: the proposer
+ * or reader, and the decider (none on an expired one). A Workspace-wide hold covers everyone.
+ */
+const proposalHeld = sql`(public.legal_hold_covers(r.team_id, r.proposer_id)
+  OR (r.decided_by IS NOT NULL AND public.legal_hold_covers(r.team_id, r.decided_by)))`;
+const suggestionHeld = sql`(public.legal_hold_covers(s.team_id, s.suggested_by)
+  OR (s.decided_by IS NOT NULL AND public.legal_hold_covers(s.team_id, s.decided_by)))`;
+
+/** Reminders and bell entries about purged proposals or suggestions (they would open nothing). */
+async function dropNotices(tx: KobeTx, teamId: string, objects: readonly string[]): Promise<void> {
+  if (objects.length === 0) return;
+  const list = sql.join(
+    objects.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  );
+  await tx.execute(sql`
+    DELETE FROM memory_reminders WHERE team_id = ${teamId} AND object_id IN (${list})`);
+  await tx.execute(sql`
+    DELETE FROM notifications WHERE team_id = ${teamId} AND memory_object_id IN (${list})`);
+}
+
+/**
+ * Finished passes past the window, with their candidates (cascade) and the decided proposals and
+ * suggestions made from those candidates (KOBE-671), unless still in use (a candidate open or
+ * shown by a pending proposal or suggestion) or a hold covers the pass's person or anyone a
+ * proposal or suggestion of it involves. Proposals and suggestions go first, in their own
+ * statements, so the candidates' `ON DELETE SET NULL` refs never touch a row being deleted.
+ */
 async function purgePasses(tx: KobeTx, teamId: string, cutoff: Date): Promise<LearningPurgeCounts> {
+  const doomed = await tx.execute<{ id: string }>(sql`
+    SELECT p.id FROM memory_learning_passes p
+     WHERE p.team_id = ${teamId} AND p.finished_at IS NOT NULL
+       AND p.finished_at < ${cutoff.toISOString()}
+       AND NOT public.legal_hold_covers(p.team_id, p.user_id)
+       AND NOT EXISTS (
+         SELECT 1 FROM memory_candidates c
+          WHERE c.team_id = p.team_id AND c.pass_id = p.id
+            AND (c.state = 'open'
+                 OR EXISTS (SELECT 1 FROM memory_proposals r
+                             WHERE r.team_id = c.team_id AND r.candidate_ref = c.id
+                               AND (r.state = 'pending' OR ${proposalHeld}))
+                 OR EXISTS (SELECT 1 FROM memory_project_suggestions s
+                             WHERE s.team_id = c.team_id AND s.candidate_ref = c.id
+                               AND (s.state = 'pending' OR ${suggestionHeld}))))
+     ORDER BY p.finished_at, p.id LIMIT ${BATCH}
+       FOR UPDATE OF p SKIP LOCKED`);
+  const passIds = doomed.rows.map((r) => r.id);
+  if (passIds.length === 0) return NO_LEARNING_PURGE;
+  const passes = sql.join(
+    passIds.map((id) => sql`${id}::uuid`),
+    sql`, `,
+  );
+  const fromPasses = sql`(SELECT c.id FROM memory_candidates c
+    WHERE c.team_id = ${teamId} AND c.pass_id IN (${passes}))`;
+  const proposals = await tx.execute<{ id: string }>(sql`
+    DELETE FROM memory_proposals
+     WHERE team_id = ${teamId} AND state <> 'pending' AND candidate_ref IN ${fromPasses}
+     RETURNING id`);
+  const suggestions = await tx.execute<{ id: string }>(sql`
+    DELETE FROM memory_project_suggestions
+     WHERE team_id = ${teamId} AND state <> 'pending' AND candidate_ref IN ${fromPasses}
+     RETURNING id`);
+  await dropNotices(
+    tx,
+    teamId,
+    [...proposals.rows, ...suggestions.rows].map((r) => r.id),
+  );
   const res = await tx.execute<{ passes: number; candidates: number }>(sql`
-    WITH doomed AS (
-      SELECT p.id FROM memory_learning_passes p
-       WHERE p.team_id = ${teamId} AND p.finished_at IS NOT NULL
-         AND p.finished_at < ${cutoff.toISOString()}
-         AND NOT public.legal_hold_covers(p.team_id, p.user_id)
-         AND NOT EXISTS (
-           SELECT 1 FROM memory_candidates c
-            WHERE c.team_id = p.team_id AND c.pass_id = p.id
-              AND (c.state = 'open'
-                   OR EXISTS (SELECT 1 FROM memory_proposals r
-                               WHERE r.team_id = c.team_id AND r.candidate_ref = c.id
-                                 AND r.state = 'pending')
-                   OR EXISTS (SELECT 1 FROM memory_project_suggestions s
-                               WHERE s.team_id = c.team_id AND s.candidate_ref = c.id
-                                 AND s.state = 'pending')))
-       ORDER BY p.finished_at, p.id LIMIT ${BATCH}
-         FOR UPDATE OF p SKIP LOCKED),
-    counted AS (
-      SELECT count(*)::int AS n FROM memory_candidates c
-       WHERE c.team_id = ${teamId} AND c.pass_id IN (SELECT id FROM doomed)),
+    WITH counted AS (
+      SELECT count(*)::int AS n FROM ${fromPasses} x),
     gone AS (
-      DELETE FROM memory_learning_passes p USING doomed d
-       WHERE p.team_id = ${teamId} AND p.id = d.id
+      DELETE FROM memory_learning_passes p
+       WHERE p.team_id = ${teamId} AND p.id IN (${passes})
        RETURNING p.id)
     SELECT (SELECT count(*) FROM gone)::int AS passes, (SELECT n FROM counted) AS candidates`);
   const row = res.rows[0];
-  return { ...NO_LEARNING_PURGE, passes: row?.passes ?? 0, candidates: row?.candidates ?? 0 };
+  return {
+    ...NO_LEARNING_PURGE,
+    passes: row?.passes ?? 0,
+    candidates: row?.candidates ?? 0,
+    proposals: proposals.rows.length,
+    suggestions: suggestions.rows.length,
+  };
+}
+
+/**
+ * Decided proposals and suggestions not from a pass (proposed from an existing item, or whose
+ * candidate already left with its pass or conversation), once decided longer ago than the
+ * Workspace window and no hold covers anyone they involve (KOBE-671).
+ */
+async function purgeDecided(
+  tx: KobeTx,
+  teamId: string,
+  cutoff: Date,
+): Promise<LearningPurgeCounts> {
+  const proposals = await tx.execute<{ id: string }>(sql`
+    WITH due AS (
+      SELECT r.id FROM memory_proposals r
+       WHERE r.team_id = ${teamId} AND r.state <> 'pending' AND r.candidate_ref IS NULL
+         AND r.decided_at < ${cutoff.toISOString()} AND NOT ${proposalHeld}
+       ORDER BY r.decided_at, r.id LIMIT ${BATCH}
+         FOR UPDATE OF r SKIP LOCKED)
+    DELETE FROM memory_proposals r USING due
+     WHERE r.team_id = ${teamId} AND r.id = due.id
+     RETURNING r.id`);
+  const suggestions = await tx.execute<{ id: string }>(sql`
+    WITH due AS (
+      SELECT s.id FROM memory_project_suggestions s
+       WHERE s.team_id = ${teamId} AND s.state <> 'pending' AND s.candidate_ref IS NULL
+         AND s.decided_at < ${cutoff.toISOString()} AND NOT ${suggestionHeld}
+       ORDER BY s.decided_at, s.id LIMIT ${BATCH}
+         FOR UPDATE OF s SKIP LOCKED)
+    DELETE FROM memory_project_suggestions s USING due
+     WHERE s.team_id = ${teamId} AND s.id = due.id
+     RETURNING s.id`);
+  await dropNotices(
+    tx,
+    teamId,
+    [...proposals.rows, ...suggestions.rows].map((r) => r.id),
+  );
+  return {
+    ...NO_LEARNING_PURGE,
+    proposals: proposals.rows.length,
+    suggestions: suggestions.rows.length,
+  };
 }
 
 /** One batch in its own team transaction, hold lock first; audited when it changed something. */
@@ -227,8 +326,10 @@ export async function sweepMemoryLearning(
   let sum = await repeat(db, teamId, stop, (tx) => expireCandidates(tx, teamId));
   sum = add(sum, await repeat(db, teamId, stop, (tx) => expireProposals(tx, teamId)));
   sum = add(sum, await repeat(db, teamId, stop, (tx) => expireSuggestions(tx, teamId)));
-  if (cutoff !== null)
+  if (cutoff !== null) {
     sum = add(sum, await repeat(db, teamId, stop, (tx) => purgePasses(tx, teamId, cutoff)));
+    sum = add(sum, await repeat(db, teamId, stop, (tx) => purgeDecided(tx, teamId, cutoff)));
+  }
   return sum;
 }
 
