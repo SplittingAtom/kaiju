@@ -362,7 +362,7 @@ sections:
           (MIT/BSD-like). The image's build files (cloudnative-pg/postgres-containers) are
           Apache-2.0.
       - id: pgvector
-        pending: gate review
+        approval: { by: Chris, on: 2026-11-19, ref: KOBE-401 }
         component: pgvector Postgres extension (`vector`; Debian `postgresql-17-pgvector` in CI)
         version: 0.8.x (whatever the site's Postgres ships; optional)
         license: PostgreSQL
@@ -398,7 +398,7 @@ sections:
           The in-cluster CPU embedding server (KOBE-659), pulled unmodified; Kobe talks to it only
           through Bifrost over HTTP. The image's distribution packages are the next row.
       - id: llama-cpp-image-packages
-        pending: gate review
+        approval: { by: Chris, on: 2026-11-19, ref: KOBE-401 }
         component: Ubuntu distribution packages in the llama.cpp server image (ffmpeg, curl)
         version: as shipped in `server-b12004` (Ubuntu base)
         license: GPL-2.0-or-later AND LGPL-2.1-or-later AND curl

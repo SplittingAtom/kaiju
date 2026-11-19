@@ -423,7 +423,8 @@ button.legendRow:hover {
   overflow-wrap: anywhere;
 }
 
-.memoryPin {
+.memoryPin,
+.memorySite {
   color: var(--muted-foreground);
 }
 
