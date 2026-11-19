@@ -361,7 +361,11 @@ describe("step 1 (the Workspace)", () => {
 
 describe("step 2 (the Site)", () => {
   it("approves into a Site memory whose only provenance is the proposal; the source stays", async () => {
-    const itemId = await workspaceItem();
+    // Its own wording: Site memories are Site-wide, so an approval elsewhere in the suite with the
+    // default "We ship on Tuesdays …" statement made this one a near duplicate (409) at random.
+    const itemId = await workspaceItem(
+      unique("Quarterly offsites are planned by the operations lead"),
+    );
     const p = proposalOf(
       await as.admin.post(WS, { item_id: itemId, justification: "All teams ship Tuesdays." }),
     );
