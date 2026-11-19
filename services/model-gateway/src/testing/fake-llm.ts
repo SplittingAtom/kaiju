@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { extractorReply } from "./fake-extractor.js";
 
 /**
  * A fake model provider for tests and the k3d e2e suite (CI has no real provider keys): answers
@@ -36,6 +37,9 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
  * message containing `kobe-long-answer=<n>` is streamed as n numbered lines, one every
  * {@link LONG_LINE_MS} (a run that streams long enough to scroll, queue and stop), and one
  * containing `kobe-prompt-tokens=<n>` reports n prompt tokens (the context gauge's fill).
+ *
+ * Learning passes (OpenAI chat API only, KOBE-675 Gate 7): a `memory_learn` extractor call (its
+ * transcript fence) is answered with scripted, schema-valid candidates (fake-extractor.ts).
  */
 export interface SeenRequest {
   readonly method: string;
@@ -581,7 +585,9 @@ export function createFakeLlm(seen: SeenRequest[] = []): Server {
       const toolDone = messages.some((m) => m.role === "tool");
       const toolResult = lastToolResult(body);
       const nextStep = steps?.[stepsDone];
-      if (text.includes(SLOW_START_MARKER)) {
+      const learned = extractorReply(body);
+      if (learned !== undefined) openai(res, learned, stream, model);
+      else if (text.includes(SLOW_START_MARKER)) {
         const timer = setTimeout(
           () => openai(res, `fake-openai: ${text}`, stream, model),
           SLOW_START_MS,
