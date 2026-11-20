@@ -47,10 +47,20 @@ check of the Kubernetes client.
 - **Chart:** not changed (another lane owns the chart this wave); the env overrides are not chart
   values yet. Follow-up if operators need them.
 
+## Review follow-up
+
+- The lost connection's FATAL is logged with its SQLSTATE (server: pino `database connection
+lost`) and kept on the client; every later query on it fails with
+  `IdleInTransactionTimeoutError` (25P03) or `DatabaseConnectionLostError`, cause = the FATAL, so
+  drizzle's failing ROLLBACK raises the same typed error instead of pg's "not queryable".
+  install.md no longer claims an automatic retry.
+- The event-stream reader's pool uses the same `appSessionHook` (timeouts + logging).
+- A stalled reader (paused browser) is cut by the 60 s socket-idle timeout: documented; the
+  export stream then errors cleanly (`uploads.db.test.ts`).
+
 ## Open questions (for Chris or the coordinator)
 
-- ac-2 asks for "by migration"; done per connection instead (see above). A coordinator call on
-  whether that is acceptable.
+- ac-2 "by migration": done per connection instead; accepted by the coordinator (review).
 
 ## Evidence (acceptance criteria → test or command output)
 

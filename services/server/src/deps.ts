@@ -381,7 +381,13 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   configureUsageKey(options.authSecret);
   // Tag fingerprints in the held Site item audit (KOBE-647, review P2-L3).
   configureTagFingerprintKey(options.authSecret);
-  const database = createDb(options.databaseUrl, options.dbTimeouts ?? {});
+  // App-role sessions: timeouts and lost-connection logging (KOBE-732), for both pools below.
+  const session = {
+    ...options.dbTimeouts,
+    onConnectionError: (err: unknown, sqlstate: string | undefined) =>
+      logger.warn({ err, sqlstate }, "database connection lost"),
+  };
+  const database = createDb(options.databaseUrl, session);
   const authAttempts = new AuthAttemptAudit(database.db);
   authAttempts.start();
   const background = options.background ?? new BackgroundTasks();
@@ -421,6 +427,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   });
   const reader = createStreamReader({
     connectionString: options.databaseUrl,
+    session,
     ...(options.eventStream?.poolMax ? { max: options.eventStream.poolMax } : {}),
   });
 

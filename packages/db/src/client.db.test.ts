@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   APP_IDLE_IN_TRANSACTION_TIMEOUT_MS,
   APP_STATEMENT_TIMEOUT_MS,
+  IdleInTransactionTimeoutError,
   createDb,
   type KobeDatabase,
 } from "./client.js";
@@ -58,14 +59,29 @@ describe("app-role connection timeouts (KOBE-732)", () => {
     });
   });
 
-  it("ends a transaction left idle past the timeout, without crashing the process", async () => {
-    const d = open({ idleInTransactionTimeoutMs: 300 });
+  it("ends a transaction left idle past the timeout with a typed error, without crashing", async () => {
+    const logged: (string | undefined)[] = [];
+    const d = open({
+      idleInTransactionTimeoutMs: 300,
+      onConnectionError: (_err, sqlstate) => logged.push(sqlstate),
+    });
     const run = d.db.transaction(async (tx) => {
       await tx.execute(sql`SELECT 1`);
       await sleep(1_500);
       await tx.execute(sql`SELECT 1`);
     });
-    await expect(run).rejects.toThrow();
+    const err: unknown = await run.then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+    // The caller sees the cut itself (drizzle may wrap it), not pg's "not queryable".
+    const chain: unknown[] = [];
+    for (let e = err; e; e = (e as { cause?: unknown }).cause) chain.push(e);
+    const typed = chain.find((e) => e instanceof IdleInTransactionTimeoutError);
+    expect(typed).toBeInstanceOf(IdleInTransactionTimeoutError);
+    expect(typed).toMatchObject({ code: "25P03" });
+    expect((typed as Error).cause).toMatchObject({ code: "25P03", severity: "FATAL" });
+    expect(logged).toEqual(["25P03"]);
     // The pool drops the dead connection and serves the next caller.
     const { rows } = await d.pool.query<{ one: number }>("SELECT 1 AS one");
     expect(rows[0]?.one).toBe(1);

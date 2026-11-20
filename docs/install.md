@@ -1025,11 +1025,13 @@ the old prefix, so move them first or keep the old value. `kobe backup` and `kob
 A stuck network call must never pin a database transaction, its locks or a pooled connection
 (KOBE-732). Kobe bounds both sides:
 
-- **App-role sessions.** Every connection the server, scheduler, model gateway and egress proxy
-  open as the app role runs `SET statement_timeout = 120000` (2 min) and
+- **App-role sessions.** Every connection the server (its event-stream reader included),
+  scheduler, model gateway and egress proxy open as the app role runs `SET statement_timeout = 120000` (2 min) and
   `SET idle_in_transaction_session_timeout = 300000` (5 min) before first use. A statement
   running longer is cancelled (SQLSTATE `57014`); a transaction left idle longer is ended by
-  Postgres and its locks released (the request fails and is retried by its caller). The nightly
+  Postgres and its locks released. Nothing retries the cut work automatically: the request fails
+  with an error (logged as `database connection lost` with `sqlstate: 25P03`, the error an
+  `IdleInTransactionTimeoutError`), and a background job picks the work up on its next pass. The nightly
   retention purge and run-event compaction batches raise the statement timeout to 10 min for
   their own transaction. The server and scheduler read `KOBE_DB_STATEMENT_TIMEOUT_MS` and
   `KOBE_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS` (milliseconds, `0` turns one off); the chart does not
@@ -1057,7 +1059,10 @@ A stuck network call must never pin a database transaction, its locks or a poole
 - **Object storage.** The server's and the `kobe` CLI's S3 clients give up on a connection that
   is not established within 5 s and on a request whose socket stays silent for 60 s (nothing
   sent or received; the SDK then retries). This is an idle timeout, not a total one: an upload or
-  download of a large file runs as long as bytes keep moving. Object calls made while a
+  download of a large file runs as long as bytes keep moving. It also applies to a download whose
+  reader stalls: a browser that pauses a thread export (ZIP) or a file download for more than
+  60 s leaves the object stream silent, the download is cut, and the browser reports it failed
+  (start it again). Object calls made while a
   transaction holds locks also have a total bound: deletes 30 s (then aborted, 10 s to settle),
   memory writes and restores 30 s. Override with `KOBE_S3_CONNECT_TIMEOUT_MS` and
   `KOBE_S3_IDLE_TIMEOUT_MS` on the server.
