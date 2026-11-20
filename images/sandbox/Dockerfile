@@ -4,8 +4,8 @@
 # No `# syntax=` directive: dockerd's built-in frontend parses this file, so builds don't start
 # the external docker/dockerfile frontend container (it crashed intermittently on CI runners:
 # "frontend grpc server closed unexpectedly").
-ARG NODE_IMAGE=node:22-trixie-slim@sha256:8eb619e402eaede1748a3c8173bffab391592812e85136452f781741c7242ddf
-ARG PYTHON_IMAGE=python:3.12-slim-trixie@sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016
+ARG NODE_IMAGE=node:22-trixie-slim@sha256:68c76cfad89921b927eae28ba21407475e29d0ce450afcdbe70c1532db042b64
+ARG PYTHON_IMAGE=python:3.12-slim-trixie@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
 ARG PNPM_VERSION=12.8.1
 # 12.2.2 bundles undici 6.29.1 (12.2.1 had 6.29.0: three fixable HIGHs, KOBE-539).
 ARG NPM_VERSION=12.2.2

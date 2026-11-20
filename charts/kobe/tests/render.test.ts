@@ -555,18 +555,90 @@ describe("network policies", () => {
     ]);
   });
 
-  it("lets only the release namespace and the CloudNativePG operator reach Postgres", () => {
+  it("lets only the database users, the instances and the CloudNativePG operator reach Postgres (KOBE-699)", () => {
     expect(policy("kobe-pg")?.spec.podSelector).toEqual({
       matchLabels: { "cnpg.io/cluster": "kobe-pg" },
     });
     expect(policy("kobe-pg")?.spec.ingress).toEqual([
-      { from: [{ podSelector: {} }] },
+      {
+        from: [
+          {
+            podSelector: {
+              matchLabels: {
+                "app.kubernetes.io/name": "kobe",
+                "app.kubernetes.io/instance": "kobe",
+              },
+              matchExpressions: [
+                {
+                  key: "app.kubernetes.io/component",
+                  operator: "In",
+                  values: ["server", "scheduler", "egress-proxy", "model-gateway", "migrate"],
+                },
+              ],
+            },
+          },
+        ],
+        ports: [{ protocol: "TCP", port: 5432 }],
+      },
+      { from: [{ podSelector: { matchLabels: { "cnpg.io/cluster": "kobe-pg" } } }] },
       {
         from: [
           { namespaceSelector: { matchLabels: { "kubernetes.io/metadata.name": "cnpg-system" } } },
         ],
       },
     ]);
+  });
+
+  it("admits exactly the pods that hold database credentials, and the migrate Job (KOBE-699)", () => {
+    const usesDb = (spec: any) =>
+      [...(spec.initContainers ?? []), ...spec.containers].some((c: any) =>
+        (c.env ?? []).some((e: { name: string }) =>
+          /^KOBE_(DATABASE_URL|DB_MIGRATE_URL)$/.test(e.name),
+        ),
+      );
+    const pods = ms
+      .filter((m) => m.kind === "Deployment" || m.kind === "Job")
+      .map((m) => ({ labels: m.spec.template.metadata.labels, spec: m.spec.template.spec }));
+    const admitted = policy("kobe-pg")?.spec.ingress[0].from[0].podSelector;
+    const matches = (labels: Record<string, string>) =>
+      Object.entries(admitted.matchLabels).every(([k, v]) => labels[k] === v) &&
+      admitted.matchExpressions.every((e: any) => e.values.includes(labels[e.key]));
+    const dbPods = pods
+      .filter((p) => usesDb(p.spec))
+      .map((p) => p.labels["app.kubernetes.io/component"]);
+    expect(dbPods).toEqual(expect.arrayContaining(["server", "scheduler", "migrate"]));
+    for (const p of pods) {
+      expect([p.labels["app.kubernetes.io/component"], matches(p.labels)]).toEqual([
+        p.labels["app.kubernetes.io/component"],
+        usesDb(p.spec),
+      ]);
+    }
+  });
+
+  it("gives ClamAV egress to DNS and public addresses only (signature updates, KOBE-699)", () => {
+    const clamav = policy("kobe-clamav-egress")?.spec;
+    expect(clamav.podSelector.matchLabels["app.kubernetes.io/component"]).toBe("clamav");
+    expect(clamav.policyTypes).toEqual(["Egress"]);
+    expect(clamav.egress[0].to[0].podSelector).toEqual({ matchLabels: { "k8s-app": "kube-dns" } });
+    expect(clamav.egress[1].to[0].ipBlock.cidr).toBe("0.0.0.0/0");
+    expect(clamav.egress[1].to[0].ipBlock.except).toContain("10.0.0.0/8");
+    expect(clamav.egress[1].ports).toEqual([
+      { protocol: "TCP", port: 443 },
+      { protocol: "TCP", port: 80 },
+    ]);
+    expect(clamav.egress).toHaveLength(2);
+    const mirror = {
+      to: [{ ipBlock: { cidr: "10.9.8.7/32" } }],
+      ports: [{ protocol: "TCP", port: 8080 }],
+    };
+    const withMirror = render({
+      "clamav.enabled": "true",
+      "clamav.networkPolicy.extraEgress[0].to[0].ipBlock.cidr": "10.9.8.7/32",
+      "clamav.networkPolicy.extraEgress[0].ports[0].protocol": "TCP",
+      "clamav.networkPolicy.extraEgress[0].ports[0].port": "8080",
+    });
+    expect(find(withMirror, "NetworkPolicy", "kobe-clamav-egress")?.spec.egress[2]).toEqual(mirror);
+    expect(find(render(), "NetworkPolicy", "kobe-clamav-egress")).toBeUndefined();
   });
 });
 
@@ -770,6 +842,15 @@ describe("ClamAV", () => {
   it("is off by default and optional", () => {
     expect(find(render(), "Deployment", "kobe-clamav")).toBeUndefined();
     expect(find(on, "Deployment", "kobe-clamav")).toBeDefined();
+  });
+
+  it("pins the image by tag and digest, and drops the digest only when set empty (KOBE-691)", () => {
+    const image = (ms: Manifest[]) =>
+      find(ms, "Deployment", "kobe-clamav")?.spec.template.spec.containers[0].image as string;
+    expect(image(on)).toMatch(/^docker\.io\/clamav\/clamav:1\.4@sha256:[0-9a-f]{64}$/);
+    expect(image(render({ "clamav.enabled": "true", "clamav.image.digest": "" }))).toBe(
+      "docker.io/clamav/clamav:1.4",
+    );
   });
 
   it("tells the server where clamd is only when enabled (scanning then fails closed)", () => {

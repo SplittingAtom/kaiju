@@ -3,7 +3,7 @@
     {
       "name": "multidict",
       "versions": [
-        "6.7.1"
+        "6.9.1"
       ],
       "ecosystem": "pypi",
       "locations": [
@@ -245,7 +245,7 @@
     {
       "name": "fsspec",
       "versions": [
-        "2025.9.0"
+        "2026.6.0"
       ],
       "ecosystem": "pypi",
       "locations": [
@@ -365,7 +365,7 @@
     {
       "name": "s3fs",
       "versions": [
-        "2025.9.0"
+        "2026.6.0"
       ],
       "ecosystem": "pypi",
       "locations": [
@@ -761,7 +761,7 @@
     {
       "name": "soupsieve",
       "versions": [
-        "2.8.4"
+        "4.0"
       ],
       "ecosystem": "pypi",
       "locations": [
@@ -821,7 +821,7 @@
     {
       "name": "urllib3",
       "versions": [
-        "2.7.0"
+        "2.8.0"
       ],
       "ecosystem": "pypi",
       "locations": [

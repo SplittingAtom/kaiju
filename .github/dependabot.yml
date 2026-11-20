@@ -12,8 +12,19 @@ updates:
         "/services/egress-proxy",
         "/services/model-gateway",
         "/apps/web",
+        "/images/orbit-eval",
+        "/images/skill-scan",
       ]
     schedule: { interval: weekly }
+    # One PR per base image across every Dockerfile (KOBE-691): the Node services, the sandbox and
+    # the Python images then move to the same digest together instead of drifting apart.
+    groups:
+      node-base:
+        patterns: ["node"]
+        group-by: dependency-name
+      python-base:
+        patterns: ["python"]
+        group-by: dependency-name
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }

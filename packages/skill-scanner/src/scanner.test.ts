@@ -216,7 +216,7 @@ describe("secrets people paste into prose (KOBE-379 review H-2)", () => {
 
   it.each([
     "postgres://user:password@localhost:5432/app",
-    "postgres://postgres:kobe-dev-only@pg:5432/postgres",
+    "postgres://postgres:not-a-real-password@pg:5432/postgres",
     "The password is required for every login.",
     "password = config.api_key_v2",
     'api_key = os.environ["API_KEY"]',
