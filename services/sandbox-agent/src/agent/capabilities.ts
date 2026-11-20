@@ -72,7 +72,6 @@ function projectCommitsEnabled(deps: AgentDeps): boolean {
   return projectsEnabled(deps) && deps.workspace?.pushAll !== undefined;
 }
 
-/** `save_skill_draft` (KOBE-442) pushes the folder first, so it needs what `share_file` needs. */
 /**
  * `propose_file_edit` (KOBE-462) needs only the tools channel: it pushes nothing. `open_file`
  * (KOBE-484) rides the same capability; it pushes when sync is on, else opens the synced copy.
@@ -86,6 +85,7 @@ function notebookToolsEnabled(deps: AgentDeps): boolean {
   return deps.kernels !== undefined && deps.toolsExtension !== undefined;
 }
 
+/** `save_skill_draft` (KOBE-442) pushes the folder first, so it needs what `share_file` needs. */
 function skillDraftsEnabled(deps: AgentDeps): boolean {
   return filesEnabled(deps);
 }

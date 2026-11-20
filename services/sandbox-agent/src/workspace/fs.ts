@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { constants as FS, existsSync } from "node:fs";
+import { constants as FS, existsSync, type Stats } from "node:fs";
 import {
   lstat,
   mkdir,
@@ -153,6 +153,21 @@ export async function scanWorkspace(
 }
 
 /**
+ * `lstat`, undefined only when nothing is there (ENOENT, or ENOTDIR: a parent is not a folder).
+ * Any other failure (EACCES, EIO, ...) is rethrown: a file the agent cannot stat is not absent,
+ * and treating it so could make sync delete or overwrite it (review CODE-25).
+ */
+export async function lstatIfExists(file: string): Promise<Stats | undefined> {
+  try {
+    return await lstat(file);
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === "ENOENT" || code === "ENOTDIR") return undefined;
+    throw error;
+  }
+}
+
+/**
  * Whether every parent of `rel` is a real directory (no symlink on the way): reads, removals and
  * uploads never act on something outside the workspace through a linked parent.
  *
@@ -171,7 +186,7 @@ export async function parentsAreDirs(root: string, rel: string): Promise<boolean
   let current = root;
   for (const part of parts) {
     current = path.join(current, part);
-    const stat = await lstat(current).catch(() => undefined);
+    const stat = await lstatIfExists(current);
     if (!stat?.isDirectory()) return false;
   }
   return true;
@@ -191,7 +206,7 @@ export async function statLocal(root: string, rel: string): Promise<LocalFile | 
 /** Whether anything (file, folder, link) is at `rel`; parents must be real directories. */
 export async function entryExists(root: string, rel: string): Promise<boolean> {
   if (!(await parentsAreDirs(root, rel))) return false;
-  return (await lstat(path.join(root, rel)).catch(() => undefined)) !== undefined;
+  return (await lstatIfExists(path.join(root, rel))) !== undefined;
 }
 
 /** SHA-256 and byte count of a file, read without following a final symlink. */
@@ -334,7 +349,7 @@ export async function walkOwned(
     if (skip.has(entry.name)) continue;
     const child = path.join(dirPath, entry.name);
     const childRel = rel === "" ? entry.name : `${rel}/${entry.name}`;
-    const info = await lstat(child).catch(() => undefined);
+    const info = await lstatIfExists(child);
     if (!info) continue;
     const kind = info.isFile() ? "file" : info.isDirectory() ? "dir" : "other";
     if (kind === "other" || !ownedByAgent(info)) {
@@ -463,7 +478,7 @@ async function ensureBelow(
     } catch {
       // Parallel downloads may create the same directory: EEXIST is fine if it is one.
       await mkdir(abs, { mode: dirMode }).catch(async (error: unknown) => {
-        if (!(await lstat(abs).catch(() => undefined))?.isDirectory()) throw error;
+        if (!(await lstatIfExists(abs))?.isDirectory()) throw error;
       });
       // The agent's umask is 077: every thread shares the workspace through its group.
       await shareOnVolume(volumeRoot, abs, dirMode);
@@ -530,7 +545,7 @@ export async function writeFileAtomic(
     const seconds = expect.mtimeMs / 1000;
     await handle.utimes(seconds, seconds);
     await handle.close();
-    const existing = await lstat(target).catch(() => undefined);
+    const existing = await lstatIfExists(target);
     if (existing?.isDirectory()) throw new Error(`a directory is in the way of ${rel}`);
     await rename(temp, target);
   } catch (error) {
@@ -548,7 +563,7 @@ export async function removeFile(
 ): Promise<void> {
   if (!(await parentsAreDirs(root, rel))) return;
   const abs = path.join(root, rel);
-  const stat = await lstat(abs).catch(() => undefined);
+  const stat = await lstatIfExists(abs);
   if (!stat || stat.isDirectory()) return;
   if (isServerOwnedPath(rel)) await ensureParents(root, rel, checkouts);
   await unlink(abs).catch(() => {});
@@ -620,7 +635,7 @@ export async function conflictCopyName(root: string, rel: string, now: Date): Pr
   for (let i = 0; ; i++) {
     const name = `${stem}.conflict-${stamp}${i === 0 ? "" : `-${i}`}${ext}`;
     const candidate = dir === "." ? name : `${dir}/${name}`;
-    if ((await lstat(path.join(root, candidate)).catch(() => undefined)) === undefined) {
+    if ((await lstatIfExists(path.join(root, candidate))) === undefined) {
       return candidate;
     }
   }
