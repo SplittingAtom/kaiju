@@ -1,38 +1,32 @@
+import { isExcludedPath, type RunStartFrame } from "@kobe/protocol";
+import { MoveReplay } from "./moves.js";
+import { NO_CHECKOUTS, statLocal, type Checkouts } from "./fs.js";
+import { pull } from "./sync/pull.js";
+import { push, pushOne } from "./sync/push.js";
+import { restoreUntilDone } from "./sync/restore.js";
+import { serial, warn, type SyncState } from "./sync/state.js";
 import {
-  FILE_SHARE_MAX_BYTES,
-  WORKSPACE_SERVER_OWNED_PREFIXES,
-  isExcludedPath,
-  workspacePathIssue,
-  type RunStartFrame,
-  type WorkspaceChange,
-  type WorkspaceChangeResult,
-  type WorkspaceEntry,
-} from "@kobe/protocol";
-import { constants as FS } from "node:fs";
-import { access } from "node:fs/promises";
-import { join } from "node:path";
-import type { WireLogger } from "../wire/client.js";
-import { SyncHttpError, type SyncClient } from "./client.js";
-import { applyCheckouts } from "./checkouts.js";
-import { MoveReplay, type AppliedMove } from "./moves.js";
-import {
-  NO_CHECKOUTS,
-  conflictCopyName,
-  ensureParents,
-  entryExists,
-  hashFile,
-  isLockedPath,
-  lockServerOwned,
-  openForUpload,
-  pruneEmptyParents,
-  removeFile,
-  renameWithin,
-  scanWorkspace,
-  statLocal,
-  writeFileAtomic,
-  type Checkouts,
-  type LocalFile,
-} from "./fs.js";
+  DEFAULT_SKIP_DIRS,
+  PushPathError,
+  type ConflictListener,
+  type PushedFile,
+  type PushStats,
+  type WorkspaceSyncOptions,
+} from "./sync/types.js";
+
+export {
+  DEFAULT_SKIP_DIRS,
+  EVICTED_PREFIX,
+  PushPathError,
+  type ConflictListener,
+  type ConflictReport,
+  type PushedFile,
+  type PushStats,
+  type RestoreStats,
+  type WorkspaceSyncOptions,
+} from "./sync/types.js";
+
+const RUN_END_DEBOUNCE_MS = 2_000;
 
 /**
  * kobe-sandbox-agent's side of workspace sync (KOBE-27, D13: the agent "syncs S3 ↔ /workspace").
@@ -54,195 +48,51 @@ import {
  *
  * Conflict rule (contract): a newer server-written version keeps the path and the local edit is
  * kept beside it as `<name>.conflict-<time><ext>`; a deletion never beats a modification.
+ *
+ * This class keeps the scheduling; the steps are in `sync/` (restore, pull, push), over one
+ * {@link SyncState} the class owns.
  */
-export interface WorkspaceSyncOptions {
-  readonly root: string;
-  readonly client: SyncClient;
-  readonly logger: WireLogger;
-  /** Periodic push + pull; 0 disables sync entirely. */
-  readonly intervalMs: number;
-  /** Directory names never synced, anywhere (rebuildable caches). */
-  readonly skipDirs?: readonly string[];
-  readonly maxFiles?: number;
-  /** Parallel uploads/downloads. */
-  readonly concurrency?: number;
-  /** How long `beforeRun` waits for a failing restore before letting the run start anyway. */
-  readonly restoreWaitMs?: number;
-  readonly now?: () => Date;
-}
-
-/** A conflict copy the sync just made (KOBE-492): names relative to the root, and both hashes. */
-export interface ConflictReport {
-  readonly path: string;
-  readonly conflict_path: string;
-  readonly member_sha256: string;
-  readonly agent_sha256: string;
-  readonly at: Date;
-}
-export type ConflictListener = (report: ConflictReport) => void;
-
-/** Last known state of a path in the durable copy (what the local file was synced from). */
-interface Known {
-  readonly rev: number;
-  readonly deleted: boolean;
-  readonly sha256?: string;
-  readonly size: number;
-  readonly mtimeMs: number;
-  readonly executable: boolean;
-  readonly origin: "sandbox" | "server";
-  readonly updatedMs: number;
-  /**
-   * Carried here by a local rename (KOBE-304): `rev` is the old path's, so it must not shadow the
-   * new path's rows (review R2); the next row of this path replaces it.
-   */
-  readonly moved?: true;
-}
-
-export interface RestoreStats {
-  readonly mode: "full" | "incremental";
-  readonly entries: number;
-  readonly files: number;
-  readonly bytes: number;
-  readonly durationMs: number;
-}
-
-export interface PushStats {
-  readonly changes: number;
-  readonly uploaded: number;
-  readonly bytes: number;
-  readonly conflicts: number;
-  readonly rejected: number;
-}
-
-/** The synced entry of one file: what `file.share` must name (files.ts, push-then-share). */
-export interface PushedFile {
-  readonly path: string;
-  readonly rev: number;
-  readonly sha256: string;
-  readonly size: number;
-}
-
-/** `pushPath` could not leave the file synced; the message is shown to the model as a tool error. */
-export class PushPathError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "PushPathError";
-  }
-}
-
-export const DEFAULT_SKIP_DIRS = ["node_modules", "__pycache__", ".venv"] as const;
-const COMMIT_BATCH = 250;
-const MISSING_BATCH = 1000;
-const RUN_END_DEBOUNCE_MS = 2_000;
-const UNAVAILABLE_RETRY_MS = 5 * 60_000;
-/** Where files found in a server-owned area that the server never wrote are moved (and kept). */
-export const EVICTED_PREFIX = "kobe-moved/";
-
-/** Errors that say nothing about one file: the server or the network. Retry the whole step. */
-function isTransient(error: unknown): boolean {
-  if (error instanceof SyncHttpError) {
-    return (
-      error.status === 0 || error.status === 429 || (error.status >= 500 && error.status !== 502)
-    );
-  }
-  return error instanceof TypeError; // fetch: network failure
-}
-
-const known = (e: WorkspaceEntry): Known => ({
-  rev: e.rev,
-  deleted: e.deleted,
-  ...(e.sha256 === undefined ? {} : { sha256: e.sha256 }),
-  size: e.size,
-  mtimeMs: e.mtime_ms,
-  executable: e.executable,
-  origin: e.origin,
-  updatedMs: e.updated_ms,
-});
-
-/** Size and mtime match (the rsync heuristic: no need to read the file). */
-const sameAs = (local: LocalFile, k: { size: number; mtimeMs: number }) =>
-  local.size === k.size && Math.abs(local.mtimeMs - k.mtimeMs) <= 1;
-
-/** Group-writable: every thread's Pi identity shares the workspace through its group (KOBE-71). */
-const modeFor = (locked: boolean, executable: boolean) =>
-  locked ? 0o444 : executable ? 0o775 : 0o664;
-
-/** Runs `fn` over `items`, `limit` at a time; waits for all, then rethrows the first failure. */
-async function parallel<T>(items: readonly T[], limit: number, fn: (item: T) => Promise<void>) {
-  let next = 0;
-  let failure: { error: unknown } | undefined;
-  const worker = async () => {
-    while (next < items.length && failure === undefined) {
-      const item = items[next++] as T;
-      try {
-        await fn(item);
-      } catch (error) {
-        failure ??= { error };
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  if (failure !== undefined) throw failure.error;
-}
-
-type PlannedChange = WorkspaceChange & { readonly local?: LocalFile };
-
-interface PushPlan {
-  readonly changes: PlannedChange[];
-  /** Content to upload (one change per hash). */
-  readonly uploads: PlannedChange[];
-  /**
-   * Unchanged files whose content the server lost from storage (KOBE-475): uploaded again, never
-   * committed (their rows already point at that content).
-   */
-  readonly resends: PlannedChange[];
-}
-
 export class WorkspaceSync {
-  readonly #o: Required<Omit<WorkspaceSyncOptions, "skipDirs">> & { skipDirs: Set<string> };
-  readonly #known = new Map<string, Known>();
-  /** Local states the server refused (size/quota): not retried until the file changes. */
-  readonly #refused = new Map<string, LocalFile>();
-  /** Paths already reported unreadable (bounded). */
-  readonly #unreadable = new Set<string>();
-  #seenRev = 0;
-  #chain: Promise<unknown> = Promise.resolve();
+  readonly #s: SyncState;
   /** The sync-now push not started yet (shared by the requests that wait for it), KOBE-599. */
   #nowQueued: Promise<boolean> | undefined;
   /** The sync-now push running now. */
   #nowRunning: Promise<boolean> | undefined;
   /** Settles once the startup restore succeeded, or the server said it has no workspace sync. */
   #ready: Promise<void> | undefined;
-  #settle: () => void = () => {};
-  #restored = false;
   #timer: NodeJS.Timeout | undefined;
   #soon: NodeJS.Timeout | undefined;
-  #stopped = false;
-  #conflictListener: ConflictListener | undefined;
-  #unavailable = false;
-  #emptyAtStart: boolean | undefined;
-  /** Files and bytes downloaded by restore attempts so far. */
-  #restoredFiles = 0;
-  #restoredBytes = 0;
-  #restoreStarted = 0;
-  /** Downloads that failed for this file only (missing object, something local in the way). */
-  readonly #retry = new Map<string, WorkspaceEntry>();
-  /** Server moves replayed as local renames (KOBE-304). */
-  readonly #moves: MoveReplay;
-  /** Slugs of the member's project checkouts, as the latest pull listed them (CM4). */
-  #checkouts: Checkouts = NO_CHECKOUTS;
 
   constructor(options: WorkspaceSyncOptions) {
-    this.#o = {
+    const o = {
       // Matches the server's per-sandbox limits (a few short transactions at a time).
       concurrency: 2,
       maxFiles: 200_000,
       restoreWaitMs: 60_000,
       now: () => new Date(),
       ...options,
-      skipDirs: new Set(options.skipDirs ?? DEFAULT_SKIP_DIRS),
+      skipDirs: new Set<string>(options.skipDirs ?? DEFAULT_SKIP_DIRS),
     };
-    this.#moves = new MoveReplay(this.#o.root, this.#o.client, this.#o.logger);
+    this.#s = {
+      o,
+      known: new Map(),
+      refused: new Map(),
+      unreadable: new Set(),
+      retry: new Map(),
+      moves: new MoveReplay(o.root, o.client, o.logger),
+      seenRev: 0,
+      chain: Promise.resolve(),
+      settle: () => {},
+      restored: false,
+      stopped: false,
+      conflictListener: undefined,
+      unavailable: false,
+      emptyAtStart: undefined,
+      restoredFiles: 0,
+      restoredBytes: 0,
+      restoreStarted: 0,
+      checkouts: NO_CHECKOUTS,
+    };
   }
 
   /**
@@ -250,90 +100,35 @@ export class WorkspaceSync {
    * renames and pull now rather than at the next interval.
    */
   movedOnServer(): void {
-    if (!this.enabled || !this.#restored || this.#stopped) return;
-    void this.#serial(() => this.#pull()).catch((error: unknown) =>
-      this.#warn("workspace pull after a server move failed", error),
+    if (!this.enabled || !this.#s.restored || this.#s.stopped) return;
+    void serial(this.#s, () => pull(this.#s)).catch((error: unknown) =>
+      warn(this.#s, "workspace pull after a server move failed", error),
     );
   }
 
-  /** Journalled moves since `since` applied locally; a failure leaves them to the pull alone. */
-  async #replayMoves(since: number): Promise<AppliedMove[]> {
-    try {
-      return await this.#moves.replay(since);
-    } catch (error) {
-      this.#warn("workspace moves could not be replayed; the pull applies them", error);
-      return [];
-    }
-  }
-
-  /**
-   * Known states follow a local rename made now: the moved files keep their content base, marked
-   * `moved` so the new path's rows are always evaluated against them (review R2).
-   */
-  #rekey(moves: readonly AppliedMove[]): void {
-    for (const { from, to } of moves) {
-      for (const [path, k] of [...this.#known]) {
-        if (path !== from && !path.startsWith(`${from}/`)) continue;
-        this.#known.delete(path);
-        this.#known.set(`${to}${path.slice(from.length)}`, { ...k, moved: true });
-      }
-    }
-  }
-
   get enabled(): boolean {
-    return this.#o.intervalMs > 0 && !this.#unavailable;
+    return this.#s.o.intervalMs > 0 && !this.#s.unavailable;
   }
 
   /** The checked-out project slugs the latest pull listed (tests, diagnostics). */
   get checkouts(): Checkouts {
-    return this.#checkouts;
-  }
-
-  /** Read-only here: a server-owned area outside the member's checkouts. */
-  #locked(path: string): boolean {
-    return isLockedPath(path, this.#checkouts);
-  }
-
-  /** The checkouts of a pull take effect (CM4, `checkouts.ts`); returns the slugs that left. */
-  async #applyCheckouts(
-    next: Checkouts,
-    everyFolder: boolean,
-    executable: (rel: string) => boolean = (rel) => this.#known.get(rel)?.executable === true,
-  ): Promise<string[]> {
-    const previous = this.#checkouts;
-    this.#checkouts = next;
-    const ended = await applyCheckouts(
-      {
-        root: this.#o.root,
-        executable,
-        known: (rel) => this.#known.has(rel),
-        remove: (rel) => removeFile(this.#o.root, rel, next),
-        evict: (rel) => this.#evict(rel),
-      },
-      previous,
-      next,
-      everyFolder,
-    );
-    if (!everyFolder && ended.length > 0) {
-      this.#o.logger.info({ projects: ended.length }, "project checkout ended: folder relocked");
-    }
-    return ended;
+    return this.#s.checkouts;
   }
 
   /** Starts the restore (retried until it succeeds) and the periodic push + pull. */
   start(): void {
-    if (this.#o.intervalMs <= 0) return;
+    if (this.#s.o.intervalMs <= 0) return;
     this.#ready = new Promise<void>((resolve) => {
-      this.#settle = resolve;
+      this.#s.settle = resolve;
     });
-    void this.#restoreUntilDone().finally(() => this.#settle());
+    void restoreUntilDone(this.#s).finally(() => this.#s.settle());
     this.#timer = setInterval(() => {
-      if (!this.#restored || this.#stopped) return;
+      if (!this.#s.restored || this.#s.stopped) return;
       void (async () => {
-        await this.#push();
-        await this.#serial(() => this.#pull());
-      })().catch((error: unknown) => this.#warn("periodic workspace sync failed", error));
-    }, this.#o.intervalMs);
+        await push(this.#s);
+        await serial(this.#s, () => pull(this.#s));
+      })().catch((error: unknown) => warn(this.#s, "periodic workspace sync failed", error));
+    }, this.#s.o.intervalMs);
     this.#timer.unref();
   }
 
@@ -346,22 +141,22 @@ export class WorkspaceSync {
     if (!this.enabled || this.#ready === undefined) return;
     const restored = await Promise.race([
       this.#ready.then(() => true),
-      new Promise<false>((r) => setTimeout(() => r(false), this.#o.restoreWaitMs).unref()),
+      new Promise<false>((r) => setTimeout(() => r(false), this.#s.o.restoreWaitMs).unref()),
     ]);
-    if (!restored || !this.#restored) {
+    if (!restored || !this.#s.restored) {
       if (this.enabled) {
-        this.#o.logger.warn({}, "workspace restore still failing: starting the run without it");
+        this.#s.o.logger.warn({}, "workspace restore still failing: starting the run without it");
       }
     } else {
-      await this.#serial(() => this.#pull()).catch((error: unknown) =>
-        this.#warn("workspace pull before the run failed", error),
+      await serial(this.#s, () => pull(this.#s)).catch((error: unknown) =>
+        warn(this.#s, "workspace pull before the run failed", error),
       );
     }
     for (const attachment of frame.attachments ?? []) {
-      const rel = attachment.path.startsWith(`${this.#o.root}/`)
-        ? attachment.path.slice(this.#o.root.length + 1)
+      const rel = attachment.path.startsWith(`${this.#s.o.root}/`)
+        ? attachment.path.slice(this.#s.o.root.length + 1)
         : attachment.path;
-      if ((await statLocal(this.#o.root, rel)) === undefined) {
+      if ((await statLocal(this.#s.o.root, rel)) === undefined) {
         throw new Error(`attachment ${rel} is not in the workspace`);
       }
     }
@@ -369,12 +164,12 @@ export class WorkspaceSync {
 
   /** A run ended: push its outputs soon (debounced). */
   runEnded(): void {
-    if (!this.enabled || this.#stopped) return;
+    if (!this.enabled || this.#s.stopped) return;
     clearTimeout(this.#soon);
     this.#soon = setTimeout(() => {
-      if (!this.#restored) return;
-      void this.#push().catch((error: unknown) =>
-        this.#warn("workspace push after a run failed", error),
+      if (!this.#s.restored) return;
+      void push(this.#s).catch((error: unknown) =>
+        warn(this.#s, "workspace push after a run failed", error),
       );
     }, RUN_END_DEBOUNCE_MS);
     this.#soon.unref();
@@ -386,27 +181,27 @@ export class WorkspaceSync {
    * workspace after the flush, its saved revision (KOBE-304) included.
    */
   async flush(deadlineMs: number): Promise<PushStats | undefined> {
-    this.#stopped = true;
+    this.#s.stopped = true;
     clearInterval(this.#timer);
     clearTimeout(this.#soon);
     if (!this.enabled) return undefined;
     const timeout = new Promise<undefined>((r) =>
       setTimeout(() => r(undefined), deadlineMs).unref(),
     );
-    const settled = await Promise.race([this.#chain.then(() => true), timeout]);
+    const settled = await Promise.race([this.#s.chain.then(() => true), timeout]);
     if (settled === undefined) {
-      this.#o.logger.warn({ deadlineMs }, "workspace flush timed out");
+      this.#s.o.logger.warn({ deadlineMs }, "workspace flush timed out");
       return undefined;
     }
-    if (!this.#restored) return undefined;
-    const push = this.#push();
+    if (!this.#s.restored) return undefined;
+    const pushing = push(this.#s);
     try {
-      const stats = await Promise.race([push, timeout]);
-      if (stats === undefined) this.#o.logger.warn({ deadlineMs }, "workspace flush timed out");
-      else this.#o.logger.info({ ...stats }, "workspace flushed");
+      const stats = await Promise.race([pushing, timeout]);
+      if (stats === undefined) this.#s.o.logger.warn({ deadlineMs }, "workspace flush timed out");
+      else this.#s.o.logger.info({ ...stats }, "workspace flushed");
       return stats;
     } catch (error) {
-      this.#warn("workspace flush failed", error);
+      warn(this.#s, "workspace flush failed", error);
       return undefined;
     }
   }
@@ -419,7 +214,7 @@ export class WorkspaceSync {
    * restoring after `restoreWaitMs`, or the push failed. Never rejects.
    */
   syncNow(): Promise<boolean> {
-    if (!this.enabled || this.#stopped) return Promise.resolve(false);
+    if (!this.enabled || this.#s.stopped) return Promise.resolve(false);
     if (this.#nowQueued) return this.#nowQueued;
     const previous = this.#nowRunning ?? Promise.resolve(true);
     const next: Promise<boolean> = previous.then(async () => {
@@ -428,13 +223,13 @@ export class WorkspaceSync {
       try {
         await Promise.race([
           this.ready(),
-          new Promise<void>((resolve) => setTimeout(resolve, this.#o.restoreWaitMs).unref()),
+          new Promise<void>((resolve) => setTimeout(resolve, this.#s.o.restoreWaitMs).unref()),
         ]);
-        if (!this.#restored || this.#stopped) return false;
-        await this.#push();
+        if (!this.#s.restored || this.#s.stopped) return false;
+        await push(this.#s);
         return true;
       } catch (error) {
-        this.#warn("workspace push on request failed", error);
+        warn(this.#s, "workspace push on request failed", error);
         return false;
       } finally {
         if (this.#nowRunning === next) this.#nowRunning = undefined;
@@ -446,7 +241,7 @@ export class WorkspaceSync {
 
   /** One push now (tests, operators). */
   push(): Promise<PushStats> {
-    return this.#push();
+    return push(this.#s);
   }
 
   /**
@@ -458,13 +253,13 @@ export class WorkspaceSync {
     if (!this.enabled) throw new PushPathError("workspace sync is not available");
     await Promise.race([
       this.ready(),
-      new Promise<void>((resolve) => setTimeout(resolve, this.#o.restoreWaitMs).unref()),
+      new Promise<void>((resolve) => setTimeout(resolve, this.#s.o.restoreWaitMs).unref()),
     ]);
-    if (!this.#restored) throw new PushPathError("the workspace is still being restored");
+    if (!this.#s.restored) throw new PushPathError("the workspace is still being restored");
     try {
-      return await this.#push();
+      return await push(this.#s);
     } catch (error) {
-      this.#warn("workspace push for a commit failed", error);
+      warn(this.#s, "workspace push for a commit failed", error);
       throw new PushPathError("the working copy could not be pushed to the Kobe server");
     }
   }
@@ -478,90 +273,26 @@ export class WorkspaceSync {
    */
   async pushPath(rel: string): Promise<PushedFile> {
     if (!this.enabled) throw new PushPathError("workspace sync is not available");
-    if (isExcludedPath(rel) || rel.split("/").some((part) => this.#o.skipDirs.has(part))) {
+    if (isExcludedPath(rel) || rel.split("/").some((part) => this.#s.o.skipDirs.has(part))) {
       throw new PushPathError(`${rel} is not part of the synced workspace`);
     }
     await Promise.race([
       this.ready(),
-      new Promise<void>((resolve) => setTimeout(resolve, this.#o.restoreWaitMs).unref()),
+      new Promise<void>((resolve) => setTimeout(resolve, this.#s.o.restoreWaitMs).unref()),
     ]);
-    if (!this.#restored) throw new PushPathError("the workspace is still being restored");
+    if (!this.#s.restored) throw new PushPathError("the workspace is still being restored");
     try {
-      return await this.#pushOne(rel);
+      return await pushOne(this.#s, rel);
     } catch (error) {
       if (error instanceof PushPathError) throw error;
-      this.#warn("push of one file failed", error);
+      warn(this.#s, "push of one file failed", error);
       throw new PushPathError(`${rel} could not be pushed to the Kobe server`);
     }
   }
 
-  async #pushOne(rel: string): Promise<PushedFile> {
-    const planned = await this.#serial(async () => {
-      const hashed = await hashFile(this.#o.root, rel);
-      const local = await statLocal(this.#o.root, rel);
-      if (hashed === undefined || local === undefined || hashed.size !== local.size) {
-        throw new PushPathError(`${rel} is not a readable regular file (or it is changing)`);
-      }
-      if (hashed.size > FILE_SHARE_MAX_BYTES) throw new PushPathError(`${rel} is too large`);
-      const k = this.#known.get(rel);
-      if (k && !k.deleted && k.sha256 === hashed.sha256) {
-        return { done: { path: rel, rev: k.rev, sha256: hashed.sha256, size: hashed.size } };
-      }
-      if (this.#locked(rel)) {
-        throw new PushPathError(`${rel} is in a read-only area and differs from the server's copy`);
-      }
-      const change: PlannedChange = {
-        op: "put",
-        path: rel,
-        base_rev: k?.rev ?? null,
-        sha256: hashed.sha256,
-        size: hashed.size,
-        mtime_ms: local.mtimeMs,
-        executable: local.executable,
-        local,
-      };
-      const missing = await this.#o.client.missing([hashed.sha256]);
-      return { change, upload: missing.length > 0 };
-    });
-    if ("done" in planned) return planned.done;
-    const { change } = planned;
-    if (planned.upload) {
-      await this.#o.client.upload(
-        change.sha256,
-        await openForUpload(this.#o.root, rel),
-        change.size,
-      );
-    }
-    const outcome = await this.#serial(async () => {
-      if ((this.#known.get(rel)?.rev ?? null) !== change.base_rev) return "stale";
-      const { local: _local, ...wire } = change;
-      const out = await this.#o.client.commit([wire]);
-      const result = out.results[0];
-      if (result === undefined) return "no result";
-      let refused = false;
-      await this.#applyResult(
-        change,
-        result,
-        () => {},
-        () => (refused = true),
-      );
-      if (refused) return "refused";
-      const k = this.#known.get(rel);
-      return k && !k.deleted && k.sha256 === change.sha256 ? k : "newer";
-    });
-    if (typeof outcome === "string") {
-      throw new PushPathError(
-        outcome === "newer"
-          ? `${rel} was changed on the server meanwhile; your copy was kept beside it`
-          : `${rel} could not be synced (${outcome}); try again`,
-      );
-    }
-    return { path: rel, rev: outcome.rev, sha256: change.sha256, size: change.size };
-  }
-
   /** One pull now (tests). */
   pull(): Promise<number> {
-    return this.#serial(() => this.#pull());
+    return serial(this.#s, () => pull(this.#s));
   }
 
   /** Resolves once the startup restore succeeded. */
@@ -569,648 +300,13 @@ export class WorkspaceSync {
     return this.#ready ?? Promise.resolve();
   }
 
-  #serial<T>(fn: () => Promise<T>): Promise<T> {
-    const run = this.#chain.then(fn, fn);
-    this.#chain = run.catch(() => {});
-    return run;
-  }
-
-  /**
-   * A file a tool made owner-only (KOBE-71: tools run under Pi identities, the agent reads the
-   * workspace through its group) cannot be pushed: say so once per path, never treat it as gone.
-   */
-  async #noteUnreadable(path: string): Promise<void> {
-    if (this.#unreadable.has(path)) return;
-    try {
-      await access(join(this.#o.root, path), FS.R_OK);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "EACCES") return;
-      if (this.#unreadable.size < 1000) this.#unreadable.add(path);
-      this.#warn(
-        `workspace file not synced: ${path} is not readable by the agent (owner-only mode)`,
-        error,
-      );
-    }
-  }
-
-  #warn(message: string, error: unknown): void {
-    this.#o.logger.warn({ err: error instanceof Error ? error.message : String(error) }, message);
-  }
-
-  async #restoreUntilDone(): Promise<void> {
-    for (let attempt = 0; !this.#stopped; attempt++) {
-      try {
-        const stats = await this.#serial(() => this.#restore());
-        this.#restored = true;
-        this.#unavailable = false;
-        this.#o.logger.info({ ...stats }, "workspace restored");
-        await this.#o.client
-          .restoreReport({
-            mode: stats.mode,
-            files: stats.files,
-            bytes: stats.bytes,
-            duration_ms: stats.durationMs,
-          })
-          .catch((error: unknown) => this.#warn("workspace restore report failed", error));
-        return;
-      } catch (error) {
-        let delay = Math.min(30_000, 500 * 2 ** Math.min(attempt, 6)) * (0.5 + Math.random());
-        if (error instanceof SyncHttpError && error.status === 404 && error.code !== "not_found") {
-          // This server has no workspace sync (no object storage configured, or a replica from
-          // before it): off for now, asked again later (runs do not wait meanwhile).
-          if (!this.#unavailable) this.#o.logger.warn({}, "workspace sync is not available");
-          this.#unavailable = true;
-          this.#settle();
-          delay = UNAVAILABLE_RETRY_MS;
-        } else {
-          this.#warn("workspace restore failed; retrying", error);
-        }
-        await new Promise((r) => setTimeout(r, delay).unref());
-      }
-    }
-  }
-
-  /**
-   * Entries since a revision; `full` when this is a complete listing (from 0, or the server said
-   * our revision is older than its horizon) — then a path missing from it no longer exists.
-   */
-  async #manifestSince(since: number): Promise<{
-    head: number;
-    entries: WorkspaceEntry[];
-    full: boolean;
-    checkouts: Checkouts;
-  }> {
-    const entries: WorkspaceEntry[] = [];
-    let cursor = since;
-    for (;;) {
-      let page;
-      try {
-        page = await this.#o.client.manifest(cursor);
-      } catch (error) {
-        if (error instanceof SyncHttpError && error.code === "resync_required" && cursor > 0) {
-          return this.#manifestSince(0);
-        }
-        throw error;
-      }
-      // Re-checked here: a path the agent must never write (its own area, an invalid name) is
-      // ignored whatever the server says.
-      entries.push(
-        ...page.entries.filter(
-          (e) => workspacePathIssue(e.path) === undefined && !isExcludedPath(e.path),
-        ),
-      );
-      if (!page.more || page.entries.length === 0) {
-        // The last page's checkouts: the state at the end of this pull (absent = none).
-        const checkouts = new Set(page.checkouts.map((c) => c.slug));
-        return { head: page.head_rev, entries, full: since === 0, checkouts };
-      }
-      cursor = page.entries[page.entries.length - 1]?.rev ?? page.head_rev;
-    }
-  }
-
-  async #restore(): Promise<RestoreStats> {
-    if (this.#restoreStarted === 0) this.#restoreStarted = Date.now();
-    // A woken sandbox replays the moves made while it slept before comparing anything (KOBE-304).
-    // Without a saved revision (a new or rebuilt volume) there is nothing local to move.
-    const saved = await this.#moves.savedRev();
-    const moved = saved > 0 ? await this.#replayMoves(saved) : [];
-    const movedHere = (p: string) => moved.some(({ to }) => p === to || p.startsWith(`${to}/`));
-    const { head, entries, checkouts } = await this.#manifestSince(0);
-    // Checkouts first (recomputed, never stored): the scan then sees the folders as they are now.
-    const executables = new Set(
-      entries.filter((e) => e.executable && !e.deleted).map((e) => e.path),
-    );
-    await this.#applyCheckouts(checkouts, true, (rel) => executables.has(rel));
-    const local = await scanWorkspace(this.#o.root, {
-      skipDirs: this.#o.skipDirs,
-      maxFiles: this.#o.maxFiles,
-    });
-    // The newest row per path (a full listing has one per path; be safe anyway).
-    const latest = new Map<string, WorkspaceEntry>();
-    for (const e of entries) {
-      const prev = latest.get(e.path);
-      if (!prev || prev.rev < e.rev) latest.set(e.path, e);
-    }
-    // Whether the volume was empty when this process first looked (a retried restore sees the
-    // files its failed attempt already wrote).
-    this.#emptyAtStart ??= local.files.size === 0;
-    const empty = this.#emptyAtStart;
-    const downloads: WorkspaceEntry[] = [];
-    for (const e of latest.values()) {
-      const file = local.files.get(e.path);
-      if (e.deleted) {
-        // Only the deleted version itself is removed; a different local file is newer work.
-        if (file && sameAs(file, { size: e.size, mtimeMs: e.mtime_ms })) {
-          await removeFile(this.#o.root, e.path);
-        }
-        this.#known.set(e.path, known(e));
-        continue;
-      }
-      if (file && sameAs(file, { size: e.size, mtimeMs: e.mtime_ms })) {
-        this.#known.set(e.path, known(e));
-        continue;
-      }
-      if (!file || this.#locked(e.path)) {
-        downloads.push(e);
-        continue;
-      }
-      if (movedHere(e.path)) {
-        // Renamed here from its old path (by this attempt or an earlier one, review R1). Moved
-        // rows keep the source's mtime: a local file newer than the row is an edit made since the
-        // last sync, kept and pushed onto this row; an older one lost to a newer server version
-        // (an upload made while the sandbox slept) and is kept beside it as a conflict copy.
-        this.#known.set(e.path, known(e));
-        if (file.mtimeMs > e.mtime_ms) continue;
-        if ((await hashFile(this.#o.root, e.path))?.sha256 === e.sha256) continue;
-        await this.#conflictCopy(e.path, e.sha256);
-        downloads.push(e);
-        continue;
-      }
-      // The volume and the copy differ. A sandbox-written row: the volume is newer work, keep it
-      // (pushed next, based on this row). A server-written row (uploads, file browser): the
-      // server's version wins unless the local file changed after it — then keep both.
-      this.#known.set(e.path, known(e));
-      if (e.origin === "server") {
-        if (file.mtimeMs > e.updated_ms) await this.#conflictCopy(e.path, e.sha256);
-        downloads.push(e);
-      }
-    }
-    await parallel(downloads, this.#o.concurrency, async (e) => {
-      const got = await this.#downloadSafely(e);
-      if (got) {
-        this.#restoredFiles += 1;
-        this.#restoredBytes += got.size;
-      }
-    });
-    // Server-owned areas mirror the server: what it never wrote is moved out (kept, then pushed).
-    for (const path of local.files.keys()) {
-      if (this.#locked(path) && !latest.has(path)) await this.#evict(path);
-    }
-    await lockServerOwned(this.#o.root, WORKSPACE_SERVER_OWNED_PREFIXES, this.#checkouts);
-    this.#seenRev = head;
-    await this.#moves.save(head);
-    const files = this.#restoredFiles;
-    return {
-      mode: empty && files > 0 ? "full" : "incremental",
-      entries: latest.size,
-      files,
-      bytes: this.#restoredBytes,
-      durationMs: Date.now() - this.#restoreStarted,
-    };
-  }
-
-  async #download(path: string): Promise<{ size: number } | undefined> {
-    const got = await this.#o.client.download(path);
-    if (!got) {
-      this.#known.delete(path); // gone meanwhile; the next pull brings its tombstone
-      return undefined;
-    }
-    const { entry, body } = got;
-    await writeFileAtomic(
-      this.#o.root,
-      path,
-      body,
-      {
-        sha256: entry.sha256 ?? "",
-        size: entry.size,
-        mtimeMs: entry.mtime_ms,
-        mode: modeFor(this.#locked(path), entry.executable),
-      },
-      this.#checkouts,
-    );
-    this.#known.set(path, known(entry));
-    return { size: entry.size };
-  }
-
-  /**
-   * One file's download, failing only that file: a missing object or something local in the way
-   * (a directory where the copy has a file) is logged and retried on later pulls, keeping the
-   * local data; a server or network failure is rethrown (the whole step is retried).
-   */
-  async #downloadSafely(e: WorkspaceEntry): Promise<{ size: number } | undefined> {
-    try {
-      const got = await this.#download(e.path);
-      this.#retry.delete(e.path);
-      return got;
-    } catch (error) {
-      if (isTransient(error)) throw error;
-      this.#retry.set(e.path, e);
-      // Nothing to push or delete for this path until it is resolved.
-      if (!this.#known.has(e.path)) this.#known.set(e.path, { ...known(e), rev: e.rev - 1 });
-      this.#warn("workspace file not restored (kept the local state; retried later)", error);
-      return undefined;
-    }
-  }
-
-  /**
-   * A file in a server-owned area the server never wrote (or a tool's folder or link left in an
-   * ended checkout): moved to `kobe-moved/…`, never lost.
-   */
-  async #evict(path: string): Promise<void> {
-    let target = `${EVICTED_PREFIX}${path}`;
-    if (await entryExists(this.#o.root, target)) {
-      target = await conflictCopyName(this.#o.root, target, this.#o.now());
-    }
-    try {
-      await ensureParents(this.#o.root, target);
-      await ensureParents(this.#o.root, path, this.#checkouts); // the read-only parent: writable
-      await renameWithin(this.#o.root, path, target);
-      this.#o.logger.info({}, "moved a file out of a read-only workspace area");
-    } catch (error) {
-      this.#warn("could not move a file out of a read-only area", error);
-    }
-  }
-
-  /**
-   * The local edit at `path` becomes a conflict copy; `memberSha256` is the server version that
-   * keeps the path. Reported (KOBE-492) when both versions are known: names and hashes only.
-   */
-  async #conflictCopy(path: string, memberSha256: string | undefined): Promise<void> {
-    const now = this.#o.now();
-    const agent = await hashFile(this.#o.root, path).catch(() => undefined);
-    const copy = await conflictCopyName(this.#o.root, path, now);
-    await renameWithin(this.#o.root, path, copy);
-    this.#o.logger.info({}, "workspace conflict: kept the local version as a conflict copy");
-    if (memberSha256 === undefined || agent === undefined) return;
-    try {
-      this.#conflictListener?.({
-        path,
-        conflict_path: copy,
-        member_sha256: memberSha256,
-        agent_sha256: agent.sha256,
-        at: now,
-      });
-    } catch (error) {
-      this.#warn("could not report a workspace conflict", error);
-    }
-  }
-
   /** Who hears about conflict copies (the agent reports them to the server, KOBE-492). */
   set conflictListener(listener: ConflictListener | undefined) {
-    this.#conflictListener = listener;
+    this.#s.conflictListener = listener;
   }
 
   /** `WorkspaceHooks.onConflict` (agent.ts). */
   onConflict(listener: ConflictListener): void {
-    this.#conflictListener = listener;
-  }
-
-  async #pull(): Promise<number> {
-    // Moves first, as local renames of whole trees (KOBE-304): their rows then find the files.
-    this.#rekey((await this.#replayMoves(this.#seenRev)).filter((m) => m.now));
-    const { head, entries, full, checkouts } = await this.#manifestSince(this.#seenRev);
-    const ended = await this.#applyCheckouts(checkouts, false);
-    let applied = 0;
-    if (full && this.#seenRev > 0) applied += await this.#dropUnlisted(entries, head);
-    for (const [path, e] of [...this.#retry]) {
-      if (entries.some((n) => n.path === path)) continue; // a newer row is in this pull
-      if (await this.#downloadSafely(e)) applied += 1;
-    }
-    const touchedOwned = entries.some((e) => this.#locked(e.path));
-    for (const e of entries) {
-      const k = this.#known.get(e.path);
-      if (k && !k.moved && k.rev >= e.rev) continue; // our own write, or already applied
-      const file = await statLocal(this.#o.root, e.path);
-      const unchanged =
-        file === undefined
-          ? k === undefined || k.deleted
-          : k !== undefined && !k.deleted && sameAs(file, k);
-      const owned = this.#locked(e.path);
-      if (e.deleted) {
-        if (file && (unchanged || owned)) {
-          await removeFile(this.#o.root, e.path, this.#checkouts);
-          // A server move or delete leaves no empty folders behind (KOBE-304).
-          if (e.origin === "server" && !owned) {
-            await pruneEmptyParents(this.#o.root, e.path, this.#checkouts);
-          }
-        }
-        this.#known.set(e.path, known(e));
-        applied += 1;
-        continue;
-      }
-      if (file && !owned && k?.moved && !k.deleted && k.rev > e.rev) {
-        // A commit to the old path landed after the move (a push that raced it, review R2): the
-        // renamed local file is newer than the moved row. Keep it; it is pushed onto this row.
-        this.#known.set(e.path, known(e));
-        continue;
-      }
-      if (file && !owned && k && !k.deleted && k.sha256 !== undefined && k.sha256 === e.sha256) {
-        // The server's content is what this file was synced from (a moved file renamed here, or
-        // a row that changed only in revision): nothing to download. A local edit stays newer
-        // work, pushed onto this revision.
-        this.#known.set(e.path, known(unchanged ? { ...e, mtime_ms: file.mtimeMs } : e));
-        continue;
-      }
-      if (file && !unchanged && !owned) {
-        const local = await hashFile(this.#o.root, e.path);
-        if (local?.sha256 === e.sha256) {
-          this.#known.set(e.path, known({ ...e, mtime_ms: file.mtimeMs }));
-          continue;
-        }
-        await this.#conflictCopy(e.path, e.sha256);
-      }
-      if (await this.#downloadSafely(e)) applied += 1;
-    }
-    // An ended checkout: the restore rule brings the folder back to the head the server sent.
-    for (const slug of ended) await this.#revertFolder(`projects/${slug}`);
-    if (touchedOwned || ended.length > 0) {
-      await lockServerOwned(this.#o.root, WORKSPACE_SERVER_OWNED_PREFIXES, this.#checkouts);
-    }
-    this.#seenRev = Math.max(this.#seenRev, head);
-    await this.#moves.save(this.#seenRev);
-    return applied;
-  }
-
-  /**
-   * After a resync (our revision fell behind the server's horizon: its tombstones were purged), a
-   * known path absent from the full listing was deleted on the server. Same rule as a tombstone:
-   * the local file goes if it is still the version we knew (always in read-only areas); a local
-   * modification is kept and pushed as a new file.
-   */
-  async #dropUnlisted(entries: readonly WorkspaceEntry[], head: number): Promise<number> {
-    const listed = new Set(entries.map((e) => e.path));
-    let dropped = 0;
-    for (const [path, k] of [...this.#known]) {
-      if (k.deleted || listed.has(path) || this.#retry.has(path)) continue;
-      const file = await statLocal(this.#o.root, path);
-      if (file && !sameAs(file, k) && !this.#locked(path)) {
-        this.#known.delete(path); // new work: pushed with no base
-        continue;
-      }
-      if (file) await removeFile(this.#o.root, path);
-      this.#known.set(path, { ...k, deleted: true, rev: head });
-      dropped += 1;
-    }
-    return dropped;
-  }
-
-  /**
-   * Plan under the lock (scan, hash, revert read-only areas, ask what content the server lacks),
-   * upload outside it (a large upload never holds up a run's pull), commit under it again —
-   * dropping any change whose path a pull touched meanwhile (the next push recomputes it).
-   */
-  async #push(): Promise<PushStats> {
-    const stats = { changes: 0, uploaded: 0, bytes: 0, conflicts: 0, rejected: 0 };
-    const plan = await this.#serial(() => this.#plan());
-    stats.changes = plan.changes.length;
-    if (plan.changes.length === 0 && plan.resends.length === 0) return stats;
-    const failed = new Set<string>();
-    const queued = new Set(plan.uploads.map((c) => (c.op === "put" ? c.sha256 : "")));
-    const uploads = [
-      ...plan.uploads,
-      ...plan.resends.filter((c) => c.op === "put" && !queued.has(c.sha256)),
-    ];
-    await parallel(uploads, Math.min(4, this.#o.concurrency), async (c) => {
-      if (c.op !== "put") return;
-      try {
-        await this.#o.client.upload(c.sha256, await openForUpload(this.#o.root, c.path), c.size);
-        stats.uploaded += 1;
-        stats.bytes += c.size;
-      } catch (error) {
-        failed.add(c.sha256);
-        // 413: too large for good (until the file changes). 507 (budget full) is retried next
-        // push: collection frees room.
-        if (error instanceof SyncHttpError && error.status === 413 && c.local) {
-          this.#refused.set(c.path, c.local);
-          stats.rejected += 1;
-        } else {
-          // 409: content being collected, 422 or a body-length error: the file changed while
-          // uploading; anything else: logged. This file waits for the next push, the rest goes on.
-          this.#warn("workspace upload failed for one file", error);
-        }
-      }
-    });
-    const ready = plan.changes.filter((c) => c.op === "delete" || !failed.has(c.sha256));
-    if (ready.length === 0) return stats;
-    const committed = await this.#serial(() => this.#commit(ready));
-    return {
-      ...stats,
-      conflicts: committed.conflicts,
-      rejected: stats.rejected + committed.rejected,
-    };
-  }
-
-  /**
-   * The read-only area's rule for one path (`file`: its local state, undefined when missing):
-   * a file the server never wrote is moved out, a local edit or deletion is undone with the
-   * server's version. True when something changed.
-   */
-  async #revertLocal(path: string, file: LocalFile | undefined): Promise<boolean> {
-    const k = this.#known.get(path);
-    if (file !== undefined && (!k || k.deleted)) {
-      await this.#evict(path);
-      return true;
-    }
-    if (k === undefined || k.deleted || (file !== undefined && sameAs(file, k))) return false;
-    await this.#download(path).catch((error: unknown) => this.#warn("revert failed", error));
-    return true;
-  }
-
-  /** {@link #revertLocal} over one folder (an ended checkout): it then matches the head. */
-  async #revertFolder(folder: string): Promise<void> {
-    const scan = await scanWorkspace(this.#o.root, {
-      skipDirs: this.#o.skipDirs,
-      maxFiles: this.#o.maxFiles,
-      from: folder,
-    });
-    for (const [path, file] of scan.files) await this.#revertLocal(path, file);
-    if (scan.truncated || scan.incomplete.length > 0) return; // never infer a missing file
-    for (const [path, k] of [...this.#known]) {
-      if (k.deleted || !path.startsWith(`${folder}/`) || scan.files.has(path)) continue;
-      if (this.#retry.has(path)) continue;
-      await this.#revertLocal(path, undefined);
-    }
-  }
-
-  async #plan(): Promise<PushPlan> {
-    const scan = await scanWorkspace(this.#o.root, {
-      skipDirs: this.#o.skipDirs,
-      maxFiles: this.#o.maxFiles,
-    });
-    const changes: PlannedChange[] = [];
-    let reverted = false;
-    for (const [path, file] of scan.files) {
-      const k = this.#known.get(path);
-      if (this.#locked(path)) {
-        if (await this.#revertLocal(path, file)) reverted = true;
-        continue;
-      }
-      if (k && !k.deleted && sameAs(file, k) && file.executable === k.executable) continue;
-      const refused = this.#refused.get(path);
-      if (refused && sameAs(file, refused)) continue;
-      const hashed = await hashFile(this.#o.root, path);
-      if (!hashed) {
-        await this.#noteUnreadable(path);
-        continue; // changing right now, or unreadable: next time
-      }
-      if (hashed.size !== file.size) continue; // changing right now: next time
-      changes.push({
-        op: "put",
-        path,
-        base_rev: k?.rev ?? null,
-        sha256: hashed.sha256,
-        size: hashed.size,
-        mtime_ms: file.mtimeMs,
-        executable: file.executable,
-        local: file,
-      });
-    }
-    const unsure = (path: string) =>
-      scan.truncated || scan.incomplete.some((d) => d === "" || path.startsWith(`${d}/`));
-    for (const [path, k] of this.#known) {
-      if (k.deleted || scan.files.has(path) || isExcludedPath(path) || unsure(path)) continue;
-      if (this.#retry.has(path)) continue; // not restored yet: never a deletion
-      if (path.split("/").some((part) => this.#o.skipDirs.has(part))) continue;
-      if (this.#locked(path)) {
-        await this.#revertLocal(path, undefined);
-        reverted = true;
-        continue;
-      }
-      changes.push({ op: "delete", path, base_rev: k.rev });
-    }
-    if (reverted) {
-      await lockServerOwned(this.#o.root, WORKSPACE_SERVER_OWNED_PREFIXES, this.#checkouts);
-    }
-    const hashes = [...new Set(changes.flatMap((c) => (c.op === "put" ? [c.sha256] : [])))];
-    const missing = new Set<string>();
-    for (let i = 0; i < hashes.length; i += MISSING_BATCH) {
-      for (const h of await this.#o.client.missing(hashes.slice(i, i + MISSING_BATCH))) {
-        missing.add(h);
-      }
-    }
-    const seen = new Set<string>();
-    const uploads = changes.filter((c) => {
-      if (c.op !== "put" || !missing.has(c.sha256) || seen.has(c.sha256)) return false;
-      seen.add(c.sha256);
-      return true;
-    });
-    return { changes, uploads, resends: await this.#resends(scan.files, changes) };
-  }
-
-  /**
-   * Lost content this volume still holds (KOBE-475): for each hash the server lists, one known
-   * path whose file is unchanged since it synced (size + mtime) and still hashes to it. Files
-   * with local changes are in `changes` already (a push names their content and uploads it).
-   */
-  async #resends(
-    files: ReadonlyMap<string, LocalFile>,
-    changes: readonly PlannedChange[],
-  ): Promise<PlannedChange[]> {
-    let lost: string[];
-    try {
-      lost = await this.#o.client.lost();
-    } catch (error) {
-      // Never holds up the push: asked again next time.
-      this.#warn("could not ask which workspace content to resend", error);
-      return [];
-    }
-    if (lost.length === 0) return [];
-    const wanted = new Set(lost);
-    const changing = new Set(changes.map((c) => c.path));
-    const resends: PlannedChange[] = [];
-    for (const [path, k] of this.#known) {
-      if (k.deleted || k.sha256 === undefined || !wanted.has(k.sha256) || changing.has(path)) {
-        continue;
-      }
-      const file = files.get(path);
-      if (!file || !sameAs(file, k)) continue;
-      const hashed = await hashFile(this.#o.root, path);
-      if (hashed?.sha256 !== k.sha256 || hashed.size !== file.size) continue;
-      wanted.delete(k.sha256);
-      resends.push({
-        op: "put",
-        path,
-        base_rev: k.rev,
-        sha256: k.sha256,
-        size: hashed.size,
-        mtime_ms: file.mtimeMs,
-        executable: file.executable,
-        local: file,
-      });
-    }
-    if (resends.length > 0) {
-      this.#o.logger.info({ files: resends.length }, "resending workspace content the server lost");
-    }
-    return resends;
-  }
-
-  async #commit(
-    planned: readonly PlannedChange[],
-  ): Promise<{ conflicts: number; rejected: number }> {
-    let conflicts = 0;
-    let rejected = 0;
-    // A pull may have moved a path since the plan: its base is stale, recompute next time.
-    const ready = planned.filter((c) => (this.#known.get(c.path)?.rev ?? null) === c.base_rev);
-    for (let i = 0; i < ready.length; i += COMMIT_BATCH) {
-      const batch = ready.slice(i, i + COMMIT_BATCH);
-      const out = await this.#o.client.commit(batch.map(({ local: _l, ...change }) => change));
-      for (const [j, result] of out.results.entries()) {
-        const change = batch[j];
-        if (!change) continue;
-        // One path's local trouble (a name, a link) never abandons the other results.
-        try {
-          await this.#applyResult(
-            change,
-            result,
-            () => (conflicts += 1),
-            () => (rejected += 1),
-          );
-        } catch (error) {
-          this.#known.delete(change.path); // recomputed from scratch on the next push
-          this.#warn("could not apply a commit result for one file", error);
-        }
-      }
-    }
-    return { conflicts, rejected };
-  }
-
-  async #applyResult(
-    change: PlannedChange,
-    result: WorkspaceChangeResult,
-    conflict: () => void,
-    reject: () => void,
-  ): Promise<void> {
-    if (result.status === "applied") {
-      this.#known.set(result.path, known(result.entry));
-      this.#refused.delete(result.path);
-    } else if (result.status === "noop") {
-      this.#known.delete(result.path);
-    } else if (result.status === "conflict") {
-      conflict();
-      await this.#resolveConflict(change, result.current);
-    } else {
-      reject();
-      if (result.code !== "missing_blob" && change.local) {
-        this.#refused.set(result.path, change.local);
-      }
-      this.#o.logger.warn({ code: result.code }, "workspace change refused by the server");
-    }
-  }
-
-  /** The server's newer version keeps the path; the local edit becomes a conflict copy. */
-  async #resolveConflict(
-    change: WorkspaceChange,
-    current: WorkspaceEntry | undefined,
-  ): Promise<void> {
-    if (current === undefined || current.deleted) {
-      // Deleted meanwhile: our modification wins on top of the tombstone (next push).
-      if (current) this.#known.set(change.path, known(current));
-      else this.#known.delete(change.path);
-      return;
-    }
-    if (change.op === "put") {
-      // Our own earlier write whose answer was lost, or identical content: adopt it.
-      const local = await hashFile(this.#o.root, change.path);
-      if (local !== undefined && local.sha256 === current.sha256) {
-        const file = await statLocal(this.#o.root, change.path);
-        this.#known.set(
-          change.path,
-          known({ ...current, mtime_ms: file?.mtimeMs ?? current.mtime_ms }),
-        );
-        return;
-      }
-      await this.#conflictCopy(change.path, current.sha256);
-    }
-    await this.#downloadSafely(current);
+    this.#s.conflictListener = listener;
   }
 }
