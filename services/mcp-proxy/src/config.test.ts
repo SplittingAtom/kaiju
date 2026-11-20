@@ -24,6 +24,24 @@ describe("loadConfig", () => {
     expect(config.limits.upstreamTimeoutMs).toBeLessThan(60_000);
   });
 
+  it("serves the server's routes on their own port with their own key (KOBE-693)", () => {
+    const config = loadConfig({ ...ENV, KOBE_MCP_ROUTES_KEY: "r".repeat(32) });
+    expect(config.internalPort).toBe(8081);
+    expect(config.routesKey).toBe("r".repeat(32));
+    expect(config.routesKeyShared).toBe(false);
+    expect(loadConfig({ ...ENV, KOBE_MCP_INTERNAL_PORT: "9091" }).internalPort).toBe(9091);
+    // An existing Secret without the second key: the one key serves both ways, flagged.
+    const shared = loadConfig(ENV);
+    expect(shared.routesKey).toBe("i".repeat(32));
+    expect(shared.routesKeyShared).toBe(true);
+    expect(() => loadConfig({ ...ENV, KOBE_MCP_ROUTES_KEY: "short" })).toThrow(
+      /KOBE_MCP_ROUTES_KEY/,
+    );
+    expect(() => loadConfig({ ...ENV, KOBE_MCP_INTERNAL_PORT: "8080" })).toThrow(
+      /KOBE_MCP_INTERNAL_PORT must differ from PORT/,
+    );
+  });
+
   it("has no approval key: KOBE_APPROVAL_KEY in the environment is ignored (KOBE-520)", () => {
     const config = loadConfig({ ...ENV, KOBE_APPROVAL_KEY: "a".repeat(48) });
     expect(JSON.stringify(config)).not.toContain("a".repeat(48));

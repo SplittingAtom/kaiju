@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { withTestLoopback } from "@kobe/address-policy/testing";
 import { SpanStatusCode } from "@kobe/telemetry";
 import { isChildOf, spanNamed, traced } from "./testing/traced.js";
-import { createApp } from "./app.js";
+import { createApp, createInternalApp } from "./app.js";
 import { appCallRoutes } from "./app-calls.js";
 import { FakeUpstream } from "./testing/fake-upstream.js";
 import { createUpstreamClient, type UpstreamClient } from "./upstream.js";
@@ -32,9 +32,18 @@ afterAll(async () => {
 beforeEach(() => {
   fake.options = {};
   fake.received.length = 0;
+  registered = (id) => Promise.resolve(id === CONNECTOR ? fake.url : undefined);
 });
 
-const routes = () => appCallRoutes({ internalKey: KEY, upstream, timeoutMs: 5_000 });
+/** The registry as the server answers it (KOBE-693): this connector is the fake upstream. */
+let registered: (id: string) => Promise<string | undefined>;
+const deps = () => ({
+  internalKey: KEY,
+  upstream,
+  timeoutMs: 5_000,
+  registeredUrl: (id: string) => registered(id),
+});
+const routes = () => appCallRoutes(deps());
 const post = (body: unknown, auth = `Bearer ${KEY}`) =>
   routes().request("/", {
     method: "POST",
@@ -90,22 +99,38 @@ describe("POST /internal/v1/app-calls (KOBE-436)", () => {
     expect(fake.received).toHaveLength(0);
   });
 
-  it("is mounted only when its deps are given", async () => {
-    const res = await createApp().request("/internal/v1/app-calls", { method: "POST" });
+  it("calls only the connector's registered URL (KOBE-693)", async () => {
+    const other = await post(call({ url: "http://127.0.0.2:1/mcp" }));
+    expect(other.status).toBe(403);
+    expect(await other.json()).toEqual({ code: "url_not_registered" });
+    const unknown = await post(call({ connector_id: "22222222-2222-4222-8222-222222222222" }));
+    expect(unknown.status).toBe(403);
+    registered = () => Promise.reject(new Error("server down"));
+    expect((await post(call())).status).toBe(503);
+    expect(fake.received).toHaveLength(0);
+  });
+
+  it("is mounted only on the internal listener, and only when its deps are given", async () => {
+    const res = await createInternalApp().request("/internal/v1/app-calls", { method: "POST" });
     expect(res.status).toBe(404);
+    // The sandbox-facing listener never serves it (KOBE-693 ac-1).
+    const sandboxFacing = await createApp().request("/internal/v1/app-calls", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${KEY}` },
+      body: JSON.stringify(call()),
+    });
+    expect(sandboxFacing.status).toBe(404);
+    expect(fake.received).toHaveLength(0);
   });
 });
 
 describe("upstream span (KOBE-527)", () => {
   const postTraced = (body: unknown) =>
-    createApp(undefined, undefined, { internalKey: KEY, upstream, timeoutMs: 5_000 }).request(
-      "/internal/v1/app-calls",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json", authorization: `Bearer ${KEY}` },
-        body: JSON.stringify(body),
-      },
-    );
+    createInternalApp(undefined, deps()).request("/internal/v1/app-calls", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${KEY}` },
+      body: JSON.stringify(body),
+    });
 
   it("records the app backend's round trip as a child of the route span, kind app", async () => {
     await traced(async (exporter) => {

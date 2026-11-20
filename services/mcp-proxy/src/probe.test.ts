@@ -2,13 +2,14 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { withTestLoopback } from "@kobe/address-policy/testing";
 import { SpanKind, SpanStatusCode } from "@kobe/telemetry";
 import { isChildOf, spanNamed, traced } from "./testing/traced.js";
-import { createApp } from "./app.js";
+import { createApp, createInternalApp } from "./app.js";
 import type { UpstreamPolicy } from "./config.js";
 import { probeRoutes } from "./probe.js";
 import { FakeUpstream } from "./testing/fake-upstream.js";
 import { createUpstreamClient, type UpstreamClient } from "./upstream.js";
 
 const KEY = "k".repeat(40);
+const CONNECTOR = "11111111-1111-4111-8111-111111111111";
 const fake = new FakeUpstream();
 let upstream: UpstreamClient;
 
@@ -33,10 +34,19 @@ afterAll(async () => {
 beforeEach(() => {
   fake.options = {};
   fake.received.length = 0;
+  registered = (id) => Promise.resolve(id === CONNECTOR ? fake.url : undefined);
 });
 
-const probe = () =>
-  probeRoutes({ internalKey: KEY, upstream, timeoutMs: 5_000, maxRequestBytes: 4096 });
+/** The registry as the server answers it (KOBE-693): this connector is the fake upstream. */
+let registered: (id: string) => Promise<string | undefined>;
+const deps = () => ({
+  internalKey: KEY,
+  upstream,
+  timeoutMs: 5_000,
+  maxRequestBytes: 4096,
+  registeredUrl: (id: string) => registered(id),
+});
+const probe = () => probeRoutes(deps());
 const post = (body: unknown, auth: string | undefined = `Bearer ${KEY}`) =>
   probe().request("/", {
     method: "POST",
@@ -48,42 +58,51 @@ describe("POST /internal/v1/probe", () => {
   it("returns the live tools/list for the server", async () => {
     const tools = [{ name: "a", description: "d", inputSchema: { type: "object" } }];
     fake.options = { tools };
-    const res = await post({ url: fake.url });
+    const res = await post({ connector_id: CONNECTOR, url: fake.url });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, tools });
   });
 
   it("lists with the user's API key as a bearer token when the server sends one (KOBE-108)", async () => {
     fake.options = { tools: [] };
-    await post({ url: fake.url, api_key: "sk-live-0123456789" });
+    await post({ connector_id: CONNECTOR, url: fake.url, api_key: "sk-live-0123456789" });
     expect(fake.received.at(-1)?.headers.authorization).toBe("Bearer sk-live-0123456789");
     fake.received.length = 0;
-    await post({ url: fake.url });
+    await post({ connector_id: CONNECTOR, url: fake.url });
     expect(fake.received.at(-1)?.headers.authorization).toBeUndefined();
   });
 
   it("refuses an api_key that is not a plain header value", async () => {
-    expect((await post({ url: fake.url, api_key: "has space" })).status).toBe(400);
+    expect(
+      (await post({ connector_id: CONNECTOR, url: fake.url, api_key: "has space" })).status,
+    ).toBe(400);
     expect(fake.received).toHaveLength(0);
   });
 
   it("reports an upstream failure as data", async () => {
     fake.options = { status: 401 };
-    expect(await (await post({ url: fake.url })).json()).toEqual({
+    expect(await (await post({ connector_id: CONNECTOR, url: fake.url })).json()).toEqual({
       ok: false,
       failure: "auth_required",
     });
   });
 
   it("answers 401 without the internal key, and a sandbox token is not a key", async () => {
-    expect((await post({ url: fake.url }, "")).status).toBe(401);
-    expect((await post({ url: fake.url }, "Bearer wrong")).status).toBe(401);
+    expect((await post({ connector_id: CONNECTOR, url: fake.url }, "")).status).toBe(401);
+    expect((await post({ connector_id: CONNECTOR, url: fake.url }, "Bearer wrong")).status).toBe(
+      401,
+    );
     expect(fake.received).toHaveLength(0);
   });
 
   it("rejects unknown fields and bad bodies", async () => {
-    expect((await post({ url: fake.url, headers: { authorization: "x" } })).status).toBe(400);
+    expect(
+      (await post({ connector_id: CONNECTOR, url: fake.url, headers: { authorization: "x" } }))
+        .status,
+    ).toBe(400);
     expect((await post({})).status).toBe(400);
+    // The connector is named (KOBE-693).
+    expect((await post({ url: fake.url })).status).toBe(400);
   });
 
   it("adds the ui:// templates the tools name when asked (KOBE-433)", async () => {
@@ -92,7 +111,9 @@ describe("POST /internal/v1/probe", () => {
       tools,
       resources: [{ uri: "ui://c/app", mimeType: "text/html;profile=mcp-app", text: "<p/>" }],
     };
-    expect(await (await post({ url: fake.url, ui_resources: true })).json()).toEqual({
+    expect(
+      await (await post({ connector_id: CONNECTOR, url: fake.url, ui_resources: true })).json(),
+    ).toEqual({
       ok: true,
       tools,
       ui_resources: [
@@ -100,27 +121,59 @@ describe("POST /internal/v1/probe", () => {
       ],
     });
     fake.received.length = 0;
-    expect(await (await post({ url: fake.url })).json()).toEqual({ ok: true, tools });
+    expect(await (await post({ connector_id: CONNECTOR, url: fake.url })).json()).toEqual({
+      ok: true,
+      tools,
+    });
     expect(fake.received.map((r) => r.method)).not.toContain("resources/read");
-    expect((await post({ url: fake.url, ui_resources: ["ui://c/app"] })).status).toBe(400);
+    expect(
+      (await post({ connector_id: CONNECTOR, url: fake.url, ui_resources: ["ui://c/app"] })).status,
+    ).toBe(400);
     // A failing resources/list skips only the template part (review MEDIUM-3).
     fake.options = { ...fake.options, listErrorCode: -32603 };
-    expect(await (await post({ url: fake.url, ui_resources: true })).json()).toEqual({
+    expect(
+      await (await post({ connector_id: CONNECTOR, url: fake.url, ui_resources: true })).json(),
+    ).toEqual({
       ok: true,
       tools,
       ui_resources_skipped: "rpc_error",
     });
   });
 
-  it("is mounted only when probe deps are given", async () => {
-    const without = createApp();
+  it("probes only the connector's registered URL (KOBE-693)", async () => {
+    fake.options = { tools: [] };
+    const other = await post({ connector_id: CONNECTOR, url: "http://127.0.0.2:1/mcp" });
+    expect(other.status).toBe(403);
+    expect(await other.json()).toEqual({ code: "url_not_registered" });
+    const unknown = await post({
+      connector_id: "22222222-2222-4222-8222-222222222222",
+      url: fake.url,
+    });
+    expect(unknown.status).toBe(403);
+    registered = () => Promise.reject(new Error("server down"));
+    const down = await post({ connector_id: CONNECTOR, url: fake.url });
+    expect(down.status).toBe(503);
+    expect(await down.json()).toEqual({ code: "registry_unavailable" });
+    expect(fake.received).toHaveLength(0);
+  });
+
+  it("is mounted only on the internal listener, and only when probe deps are given", async () => {
+    const without = createInternalApp();
     expect((await without.request("/internal/v1/probe", { method: "POST" })).status).toBe(404);
+    // The sandbox-facing listener never serves it (KOBE-693 ac-1).
+    const body = JSON.stringify({ connector_id: CONNECTOR, url: fake.url });
+    const sandboxFacing = await createApp().request("/internal/v1/probe", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${KEY}` },
+      body,
+    });
+    expect(sandboxFacing.status).toBe(404);
+    expect(fake.received).toHaveLength(0);
   });
 });
 
 describe("upstream span (KOBE-528)", () => {
-  const traceApp = () =>
-    createApp(undefined, { internalKey: KEY, upstream, timeoutMs: 5_000, maxRequestBytes: 4096 });
+  const traceApp = () => createInternalApp(deps());
   const postTraced = (body: unknown) =>
     traceApp().request("/internal/v1/probe", {
       method: "POST",
@@ -131,7 +184,7 @@ describe("upstream span (KOBE-528)", () => {
   it("records the upstream round trip as a child of the route span, without the connector's URL", async () => {
     fake.options = { tools: [{ name: "a", inputSchema: { type: "object" } }] };
     await traced(async (exporter) => {
-      expect((await postTraced({ url: fake.url })).status).toBe(200);
+      expect((await postTraced({ connector_id: CONNECTOR, url: fake.url })).status).toBe(200);
       const route = spanNamed(exporter, "POST /internal/v1/probe");
       const span = spanNamed(exporter, "mcp.upstream");
       expect(isChildOf(span, route)).toBe(true);
@@ -152,7 +205,7 @@ describe("upstream span (KOBE-528)", () => {
   it("flags a failed probe as an error with its failure kind", async () => {
     fake.options = { status: 401 };
     await traced(async (exporter) => {
-      await postTraced({ url: fake.url });
+      await postTraced({ connector_id: CONNECTOR, url: fake.url });
       const span = spanNamed(exporter, "mcp.upstream");
       expect(span?.attributes["kobe.upstream.outcome"]).toBe("auth_required");
       expect(span?.attributes["kobe.upstream.error"]).toBe(true);

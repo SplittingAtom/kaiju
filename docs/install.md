@@ -684,7 +684,10 @@ servers only (no stdio), registered by site admins, enabled per team with an exp
 its own. For every request it checks the sandbox's `kobe.mcp-proxy` session token, then asks the
 server on its **internal port 8082** (reachable only from the proxy's pods, and keyed with the
 chart-generated `<release>-mcp-proxy-internal` Secret, or `mcpProxy.internalKeySecret` for offline
-renders). The server lists only the team's exposed, pinned tools, and decides every `tools/call`
+renders). The server's own calls to the proxy (the pinning probe and MCP Apps' calls) use the
+proxy's **internal port 8081**, which its NetworkPolicy opens to server pods only, with a second
+key from the same Secret (`routes-key`, one key per direction), and only for a connector's
+registered URL. The server lists only the team's exposed, pinned tools, and decides every `tools/call`
 with the same policy engine as the sandbox (D29): a call that needs approval runs only with a
 valid signed approval for exactly that run, tool and input, used once. Every allowed call is
 written to the audit log (`mcp.tool_call`) before the proxy forwards it.
@@ -1178,6 +1181,14 @@ on by default), migrations `0216`–`0235` and the upgrade steps. The notes belo
 Migrations report what an upgrade changed in the migration Job's log (`"msg":"migration notice"`,
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
+
+- **MCP proxy internal port and keys (KOBE-693).** The server's probe and app calls move to the
+  MCP proxy's own port 8081 (NetworkPolicy: server pods only); sandboxes keep port 8080. The
+  generated `<release>-mcp-proxy-internal` Secret gains a second key, `routes-key`, on upgrade
+  (the existing `key` is kept), so no manual step is needed; the server and the proxy restart with
+  it, and probes or app calls made while only one of them has rolled are refused. With your own
+  `mcpProxy.internalKeySecret`, add a `routes-key` (32 or more characters) to it; until then the
+  one `key` serves both directions and the proxy logs a warning at startup.
 
 - **Internal CIDRs (KOBE-694).** `mcpProxy.allowedInternalCidrs`,
   `egressProxy.allowedInternalCidrs` and `auth.sso.allowedInternalCidrs` no longer reach

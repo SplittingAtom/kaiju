@@ -63,6 +63,11 @@ describe("MCP proxy Deployment", () => {
         { name: "kobe-sandbox-session-verify-keys", key: "mcp-proxy" },
       ],
       ["KOBE_MCP_INTERNAL_KEY", { name: "kobe-mcp-proxy-internal", key: "key" }],
+      // KOBE-693: the server's key for the proxy's routes, the other direction.
+      [
+        "KOBE_MCP_ROUTES_KEY",
+        { name: "kobe-mcp-proxy-internal", key: "routes-key", optional: true },
+      ],
     ]);
     // No private session key reaches the proxy (KOBE-513).
     expect(
@@ -94,6 +99,7 @@ describe("MCP proxy Deployment", () => {
       KOBE_MCP_INTERNAL_KEY: "i".repeat(48),
     });
     expect(config.serverUrl).toBe("http://kobe-server:8082");
+    expect(config.internalPort).toBe(8081);
     expect(config.upstream).toEqual({
       allowInsecureHttp: false,
       allowedPorts: [443],
@@ -107,11 +113,19 @@ describe("MCP proxy Deployment", () => {
     const secret = find(ms, "Secret", "kobe-mcp-proxy-internal");
     expect(secret?.metadata).toMatchObject({ annotations: { "helm.sh/resource-policy": "keep" } });
     expect(secret?.stringData.key).toHaveLength(48);
+    // KOBE-693: one key per direction, generated the same way (an existing release keeps `key`
+    // through lookup and gains `routes-key` on upgrade).
+    expect(secret?.stringData["routes-key"]).toHaveLength(48);
+    expect(secret?.stringData["routes-key"]).not.toBe(secret?.stringData.key);
     const own = render({ "mcpProxy.internalKeySecret": "my-key" });
     expect(find(own, "Secret", "kobe-mcp-proxy-internal")).toBeUndefined();
     expect(
       envOf(own, "kobe-mcp-proxy").find((e) => e.name === "KOBE_MCP_INTERNAL_KEY")?.valueFrom,
     ).toEqual({ secretKeyRef: { name: "my-key", key: "key" } });
+    // An operator's Secret may lack routes-key: optional, and the services fall back to `key`.
+    expect(
+      envOf(own, "kobe-mcp-proxy").find((e) => e.name === "KOBE_MCP_ROUTES_KEY")?.valueFrom,
+    ).toEqual({ secretKeyRef: { name: "my-key", key: "routes-key", optional: true } });
   });
 });
 
@@ -121,9 +135,22 @@ describe("server internal listener", () => {
   it("serves the internal port with the key; the scheduler gets neither", () => {
     const server = envOf(ms, "kobe-server");
     expect(plain(server).KOBE_INTERNAL_PORT).toBe("8082");
-    expect(plain(server).KOBE_MCP_PROXY_URL).toBe("http://kobe-mcp-proxy");
+    // The proxy's internal routes on their own port (KOBE-693).
+    expect(plain(server).KOBE_MCP_PROXY_URL).toBe("http://kobe-mcp-proxy:8081");
     expect(server.find((e) => e.name === "KOBE_MCP_PROXY_INTERNAL_KEY")?.valueFrom).toEqual({
       secretKeyRef: { name: "kobe-mcp-proxy-internal", key: "key" },
+    });
+    expect(server.find((e) => e.name === "KOBE_MCP_PROXY_ROUTES_KEY")?.valueFrom).toEqual({
+      secretKeyRef: { name: "kobe-mcp-proxy-internal", key: "routes-key", optional: true },
+    });
+    expect(pod(ms, "kobe-mcp-proxy")?.containers[0].ports).toContainEqual({
+      name: "internal",
+      containerPort: 8081,
+    });
+    expect(find(ms, "Service", "kobe-mcp-proxy")?.spec.ports).toContainEqual({
+      name: "internal",
+      port: 8081,
+      targetPort: "internal",
     });
     expect(pod(ms, "kobe-server")?.containers[0].ports).toContainEqual({
       name: "internal",
@@ -141,7 +168,7 @@ describe("server internal listener", () => {
 });
 
 describe("MCP proxy NetworkPolicy", () => {
-  it("admits only team namespaces (sandboxes) and the server's probe, only on the proxy port", () => {
+  it("admits team namespaces on the proxy port and server pods on the internal port only (KOBE-693)", () => {
     expect(policy(render())?.ingress).toEqual([
       {
         from: [
@@ -159,7 +186,7 @@ describe("MCP proxy NetworkPolicy", () => {
             },
           },
         ],
-        ports: [{ protocol: "TCP", port: 8080 }],
+        ports: [{ protocol: "TCP", port: 8081 }],
       },
     ]);
   });
