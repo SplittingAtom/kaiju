@@ -89,7 +89,8 @@ verifying it. Every team-scoped action requires `teamId` (enforced by `audit()`)
 
 ## Event taxonomy and field allowlist
 
-The source of truth is `AUDIT_EVENTS` in `packages/db/src/audit/events.ts`. Each target is a
+The source of truth is `AUDIT_EVENTS` in `packages/db/src/audit/events.ts`, assembled from one
+file per area in `packages/db/src/audit/events/`. Each target is a
 strict zod object, and unknown keys are rejected. A unit test fails if an action is missing from
 this page, or if a field name suggests content or credentials. Scope `site` means no team.
 Scope `team` means the team view shows the event. Scope `any` means team for team agents and
