@@ -1,8 +1,9 @@
-import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { applyLocalMove } from "./moves.js";
+import type { SyncClient } from "./client.js";
+import { MoveReplay, applyLocalMove } from "./moves.js";
 
 const dirs: string[] = [];
 afterEach(async () => {
@@ -83,4 +84,35 @@ describe("server moves as local renames (KOBE-304)", () => {
       expect(await applyLocalMove(root, move), JSON.stringify(move)).toBe("refused");
     }
   });
+
+  // CODE-25 review: a destination the agent cannot stat skips that one move, not the replay.
+  it.skipIf(process.getuid?.() === 0)(
+    "skips a move it cannot check and replays the rest",
+    async () => {
+      const root = await dir();
+      await mkdir(path.join(root, "private/sub"), { recursive: true });
+      await put(root, "a.txt", "a");
+      const moves = [
+        { rev: 1, from: "gone.txt", to: "private/sub/gone.txt", type: "file" as const },
+        { rev: 2, from: "a.txt", to: "b.txt", type: "file" as const },
+      ];
+      const client = { moves: () => Promise.resolve({ moves, more: false }) };
+      const warnings: string[] = [];
+      const logger = {
+        debug: () => {},
+        info: () => {},
+        warn: (_o: unknown, m: string) => warnings.push(m),
+        error: () => {},
+      };
+      const replay = new MoveReplay(root, client as unknown as SyncClient, logger);
+      await chmod(path.join(root, "private"), 0o000);
+      try {
+        expect(await replay.replay(0)).toEqual([{ from: "a.txt", to: "b.txt", now: true }]);
+      } finally {
+        await chmod(path.join(root, "private"), 0o755);
+      }
+      expect(await readFile(path.join(root, "b.txt"), "utf8")).toBe("a");
+      expect(warnings.length).toBe(1);
+    },
+  );
 });
