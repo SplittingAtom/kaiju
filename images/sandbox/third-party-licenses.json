@@ -971,16 +971,6 @@
   ],
   "BlueOak-1.0.0": [
     {
-      "name": "@isaacs/nonrecursive-glob-match",
-      "versions": [
-        "1.1.0"
-      ],
-      "ecosystem": "npm",
-      "locations": [
-        "/opt/pi"
-      ]
-    },
-    {
       "name": "chownr",
       "versions": [
         "3.0.0"
@@ -1053,7 +1043,7 @@
     {
       "name": "minimatch",
       "versions": [
-        "11.0.5"
+        "10.2.6"
       ],
       "ecosystem": "npm",
       "locations": [
@@ -2180,16 +2170,6 @@
       "locations": [
         "/opt/pi",
         "/usr/local/lib"
-      ]
-    },
-    {
-      "name": "brace-expansion",
-      "versions": [
-        "5.0.13"
-      ],
-      "ecosystem": "npm",
-      "locations": [
-        "/opt/pi"
       ]
     },
     {

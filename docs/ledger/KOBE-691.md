@@ -26,8 +26,8 @@ fixed advisories, group Dependabot's docker updates, refresh every license inven
   python:3.12-slim-trixie `5e2bdb1b…` (3.12.16) for sandbox, orbit-eval and skill-scan.
 - ClamAV: new `clamav.image.digest` (index digest of `1.4` on 2026-11-20, `b7357e2c…`); an empty
   digest falls back to the tag (for mirrors that re-tag). Schema and chart test added.
-- Sandbox: tornado 6.6.1; Pi's minimatch through an npm override to 11.0.5 (Pi pins 10.2.6
-  exactly; 11.x has the same API and engines; 11.0.5 is the newest release older than two weeks).
+- Sandbox: tornado 6.6.1. (Pi's minimatch override to 11.0.5 was reverted in review, see
+  below.)
 - orbit-eval (`ci/orbit/requirements.txt`): fsspec and s3fs 2026.6.0 (s3fs pins fsspec exactly),
   urllib3 2.8.0, soupsieve 4.0.0, multidict 6.9.1.
 - skill-scan: filelock 4.2.1, multidict 6.9.1, litellm 1.100.5. litellm 1.95.0 (the review's
@@ -46,6 +46,21 @@ fixed advisories, group Dependabot's docker updates, refresh every license inven
 - Docs: no member/admin/agent-visible change. ClamAV's digest is documented in `values.yaml`
   next to the key; docs/install.md has no ClamAV image section to update.
 
+## Review follow-up (coordinator, 2026-11-20)
+
+- **Pi's minimatch override reverted.** The image's `pi` is `dist/bundle/cli.js`, and Pi's
+  bundle inlines its own minimatch (only the unbundled `dist/core` imports the package), so the
+  npm override changed the inventory and the scanners' view but not the code Pi runs in RPC mode.
+  Back to Pi's exact pin (minimatch 10.2.6, GHSA-g3hv-75wg-m249, moderate, inside the sandbox
+  only); the fix comes with a Pi release whose bundle carries minimatch >= 11.0.1 (check at the
+  next Pi bump, Dependabot #558). Hence no glob check in test-image.sh: there is no override left
+  to guard. The OSV audit lists it as MODERATE (not failing).
+- **Decision (Chris, 2026-11-20): Trivy gate on fixable HIGH for the Node service images.** In
+  `publish`, server, mcp-proxy, egress-proxy, model-gateway and web fail on a fixable HIGH or
+  CRITICAL (matrix `gate`); sandbox, orbit-eval and skill-scan stay CRITICAL-only with HIGH
+  reported. docs/development.md updated. Today's service images (built from this branch, Trivy
+  latest, `--ignore-unfixed`): no fixable HIGH or CRITICAL in any of the five.
+
 ## Open questions (for Chris or the coordinator)
 
 - Approve multidict 6.9.1 (orbit-eval, skill-scan) at the next gate review.
@@ -61,8 +76,8 @@ fixed advisories, group Dependabot's docker updates, refresh every license inven
   0 advisories (before: 10 HIGH). Images built on the remote Docker host; `collect-licenses.sh` +
   `inventory-cli image-report` refreshed the three `third-party-licenses.json`;
   `pnpm licenses:update` regenerated THIRD_PARTY_LICENSES.md and NOTICE. The images' own
-  acceptance scripts pass on those builds: `images/sandbox/test-image.sh` (78 ok, Pi with
-  minimatch 11), `images/skill-scan/test-image.sh` (litellm 1.100.5, filelock 4),
+  acceptance scripts pass on those builds: `images/sandbox/test-image.sh` (78 ok),
+  `images/skill-scan/test-image.sh` (litellm 1.100.5, filelock 4),
   `images/orbit-eval/test-image.sh` (soupsieve 4, fsspec 2026.6).
 - ac-5: `.github/dependabot.yml` groups.
 - ac-6: `pnpm verify` green locally (format, lint and typecheck in one run; the tests re-run

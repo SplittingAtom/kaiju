@@ -974,7 +974,7 @@ Documented exceptions (`tools/license-check/license-exceptions.json`):
 
 What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kobe-sandbox`): the Python data stack (`images/sandbox/requirements.txt`), Pi and its dependencies (`images/sandbox/pi/package-lock.json`), kobe-sandbox-agent's production dependencies and the npm CLI. The committed report is `images/sandbox/third-party-licenses.json`; CI `sandbox-image` compares it with the built image and runs the policy check on it.
 
-313 packages, 313 of them shipped in an image.
+311 packages, 311 of them shipped in an image.
 
 | Component | Version | License (SPDX) | How used | Where | License text |
 | --- | --- | --- | --- | --- | --- |
@@ -1010,7 +1010,6 @@ What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kobe-sand
 | @gar/promise-retry | 1.0.3 | MIT | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/@gar/promise-retry/v/1.0.3) |
 | @google/genai | 2.21.0 | Apache-2.0 | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/@google/genai/v/2.21.0) |
 | @isaacs/fs-minipass | 4.0.1 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/@isaacs/fs-minipass/v/4.0.1) |
-| @isaacs/nonrecursive-glob-match | 1.1.0 | BlueOak-1.0.0 | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/@isaacs/nonrecursive-glob-match/v/1.1.0) |
 | @isaacs/string-locale-compare | 1.1.0 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/@isaacs/string-locale-compare/v/1.1.0) |
 | @npmcli/agent | 5.0.2 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/@npmcli/agent/v/5.0.2) |
 | @npmcli/arborist | 10.0.4 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/@npmcli/arborist/v/10.0.4) |
@@ -1069,7 +1068,6 @@ What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kobe-sand
 | binary-extensions | 3.1.0 | MIT | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/binary-extensions/v/3.1.0) |
 | bowser | 2.15.0 | MIT | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/bowser/v/2.15.0) |
 | brace-expansion | 5.0.12 | MIT | bundled (npm package) | sandbox: Pi (/opt/pi), npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/brace-expansion/v/5.0.12) |
-| brace-expansion | 5.0.13 | MIT | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/brace-expansion/v/5.0.13) |
 | buffer-equal-constant-time | 1.0.1 | BSD-3-Clause | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/buffer-equal-constant-time/v/1.0.1) |
 | cacache | 21.0.1 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/cacache/v/21.0.1) |
 | chalk | 5.6.2 | MIT | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/chalk/v/5.6.2) |
@@ -1166,7 +1164,7 @@ What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kobe-sand
 | matplotlib-inline | 0.2.2 | BSD-3-Clause | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/matplotlib-inline/0.2.2/) |
 | matplotlib | 3.11.2 | Python-2.0 (exception) | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/matplotlib/3.11.2/) |
 | minimatch | 10.2.5 | BlueOak-1.0.0 | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/minimatch/v/10.2.5) |
-| minimatch | 11.0.5 | BlueOak-1.0.0 | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/minimatch/v/11.0.5) |
+| minimatch | 10.2.6 | BlueOak-1.0.0 | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/minimatch/v/10.2.6) |
 | minipass-collect | 2.0.1 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/minipass-collect/v/2.0.1) |
 | minipass-fetch | 6.0.0 | MIT | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/minipass-fetch/v/6.0.0) |
 | minipass-flush | 1.0.6 | BlueOak-1.0.0 | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/minipass-flush/v/1.0.6) |
