@@ -57,7 +57,16 @@ export {
   pgErrorOf,
 } from "./pg-errors.js";
 export {
+  APP_IDLE_IN_TRANSACTION_TIMEOUT_MS,
+  APP_STATEMENT_TIMEOUT_MS,
+  JOB_STATEMENT_TIMEOUT,
+  DatabaseConnectionLostError,
+  IDLE_IN_TRANSACTION_SQLSTATE,
+  IdleInTransactionTimeoutError,
+  appSessionHook,
   createDb,
+  type AppSessionOptions,
+  type ConnectionErrorLog,
   type CreateDbOptions,
   type KobeDatabase,
   type KobeDb,

@@ -141,6 +141,9 @@ async function snapshotAndDump(
   const client = new pg.Client({
     connectionString: options.databaseUrl,
     connectionTimeoutMillis: 10_000,
+    // This transaction holds the snapshot, idle, while pg_dump reads: never cut by a role or
+    // database default timeout (KOBE-732 sets them for the app role only, but operators may copy).
+    options: "-c statement_timeout=0 -c idle_in_transaction_session_timeout=0",
   });
   await client.connect();
   try {

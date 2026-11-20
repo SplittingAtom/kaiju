@@ -428,6 +428,9 @@ describe("migrations (KOBE-68)", () => {
     expect(hook(job)).toBe("pre-install,pre-upgrade");
     expect(weight(job)).toBeGreaterThan(weight(find(ms, "Job", "kobe-isolation-preflight")));
     expect(job?.spec.backoffLimit).toBe(0);
+    // KOBE-734: concurrent index builds need room; the runner cancels its work on SIGTERM.
+    expect(job?.spec.activeDeadlineSeconds).toBe(1800);
+    expect(job?.spec.template.spec.terminationGracePeriodSeconds).toBe(30);
     const c = job?.spec.template.spec.containers[0];
     expect(c.image).toBe("ghcr.io/splittingatom/kobe-server:0.1.0");
     expect(c.command).toEqual(["node", "node_modules/@kobe/db/dist/cli/migrate.js"]);
@@ -441,6 +444,22 @@ describe("migrations (KOBE-68)", () => {
       ]),
     );
     expect(job?.spec.template.spec.automountServiceAccountToken).toBe(false);
+  });
+
+  it("takes the migration Job deadline from postgres.migrateJob (KOBE-734)", () => {
+    const job = find(
+      render({ "postgres.migrateJob.activeDeadlineSeconds": "7200" }),
+      "Job",
+      "kobe-migrate",
+    );
+    expect(job?.spec.activeDeadlineSeconds).toBe(7200);
+    expect(
+      find(render({ "postgres.migrateJob": "null" }), "Job", "kobe-migrate")?.spec
+        .activeDeadlineSeconds,
+    ).toBe(1800);
+    expect(renderError({ "postgres.migrateJob.activeDeadlineSeconds": "60" })).toMatch(
+      /minimum|300/,
+    );
   });
 
   it("defaults keys added after a release so `helm upgrade --reuse-values` keeps working", () => {

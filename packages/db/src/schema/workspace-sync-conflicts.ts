@@ -60,6 +60,8 @@ export const workspaceSyncConflicts = pgTable(
       .on(t.teamId, t.userId, t.threadId, t.createdAt)
       .where(sql`${t.resolvedAt} IS NULL AND ${t.dismissedAt} IS NULL`),
     index("workspace_sync_conflicts_member_idx").on(t.teamId, t.userId, t.createdAt),
+    // workspace_sync_conflicts_thread_fk: the cascade from a purged thread (KOBE-735).
+    index("workspace_sync_conflicts_thread_idx").on(t.teamId, t.threadId),
     index("workspace_sync_conflicts_run_idx")
       .on(t.teamId, t.runId)
       .where(sql`${t.runId} IS NOT NULL`),
