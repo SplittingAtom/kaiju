@@ -52,6 +52,18 @@ describe("loadConfig", () => {
     expect(loadConfig(base).sessionVerifyKeys.has(PAIR.signing.kid)).toBe(true);
   });
 
+  it("refuses allowed internal CIDRs that overlap an always-refused range (KOBE-694)", () => {
+    for (const cidr of ["0.0.0.0/0", "169.254.0.0/16", "127.0.0.0/8", "128.0.0.0/1", "::/0"]) {
+      expect(
+        () =>
+          loadConfig({ ...base, KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS: `192.168.10.4/30,${cidr}` }),
+        cidr,
+      ).toThrow(/KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS.*never reachable/);
+    }
+    const lan = loadConfig({ ...base, KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS: "192.168.10.4/30" });
+    expect(lan.allowedInternalCidrs).toEqual(["192.168.10.4/30"]);
+  });
+
   it("reads and validates the internal targets (EA4, KOBE-603)", () => {
     expect(loadConfig(base).internalTargets).toEqual([]);
     const c = loadConfig({

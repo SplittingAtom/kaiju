@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { withTestLoopback } from "@kobe/address-policy/testing";
 import { discoverAuthServer } from "./discovery.js";
 import { oauthRequest, type OauthIo } from "./http.js";
 import { FakeOauthServer } from "../../testing/fake-oauth-server.js";
@@ -29,7 +30,9 @@ const local: OauthIo = {
   policy: {
     allowHttp: true,
     allowedPorts: [0],
-    allowedInternalCidrs: ["127.0.0.0/8"],
+    allowedInternalCidrs: [],
+    // Loopback (the local fake) is never allowed by a list (KOBE-694).
+    addresses: withTestLoopback(),
     deniedCidrs: [],
     resolve: () => Promise.resolve(["127.0.0.1"]),
   },

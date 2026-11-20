@@ -1,4 +1,4 @@
-import { validateCidrs } from "@kobe/address-policy";
+import { validateCidrs, validateInternalTargets } from "@kobe/address-policy";
 import { DEFAULT_ALLOWED_PORTS, resolveAll, type ConnectorUrlPolicy } from "./url-policy.js";
 
 type Env = Readonly<Record<string, string | undefined>>;
@@ -19,6 +19,17 @@ function cidrs(env: Env, name: string): string[] {
   return values;
 }
 
+/** KOBE-694: as the MCP proxy, never an entry that overlaps an always-refused range. */
+function internalCidrs(env: Env, name: string): string[] {
+  const values = cidrs(env, name);
+  try {
+    validateInternalTargets(values);
+  } catch (err) {
+    throw new Error(`Invalid configuration: ${name}: ${(err as Error).message}`, { cause: err });
+  }
+  return values;
+}
+
 /**
  * The connector URL policy from the same env the MCP proxy reads (chart `mcpProxy.*`), so what the
  * registry accepts is what the proxy will connect to (KOBE-100).
@@ -35,7 +46,7 @@ export function loadConnectorUrlPolicy(env: Env): ConnectorUrlPolicy {
   return {
     allowHttp: flag === "true",
     allowedPorts: ports.length === 0 ? DEFAULT_ALLOWED_PORTS : ports,
-    allowedInternalCidrs: cidrs(env, "KOBE_MCP_ALLOWED_INTERNAL_CIDRS"),
+    allowedInternalCidrs: internalCidrs(env, "KOBE_MCP_ALLOWED_INTERNAL_CIDRS"),
     deniedCidrs: cidrs(env, "KOBE_MCP_DENIED_CIDRS"),
     resolve: resolveAll,
   };

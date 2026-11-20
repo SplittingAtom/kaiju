@@ -11,6 +11,7 @@ import { generateSessionKeyPair, signSessionToken, signSiteEgressToken } from "@
 import { InMemorySpanExporter, initTelemetry } from "@kobe/telemetry";
 import { pino } from "pino";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { withTestLoopback } from "@kobe/address-policy/testing";
 import { AddressPolicy } from "./address-policy.js";
 import type { EgressDecision } from "./allowlist.js";
 import { egressTokenVerifier, siteTokenVerifier } from "./auth.js";
@@ -139,8 +140,9 @@ async function start(overrides: Partial<ProxyDeps> = {}): Promise<void> {
       if (!found) throw new Error("NXDOMAIN");
       return found;
     },
-    // 127.0.0.1 stands in for "the internet" here: explicitly allowed as an internal target.
-    addresses: new AddressPolicy({ allowedInternal: ["127.0.0.1/32"] }),
+    // 127.0.0.1 stands in for "the internet" here: loopback is never allowed by a policy
+    // (KOBE-694), so the test adds it.
+    addresses: withTestLoopback(),
     connections: new ConnectionLimits({ perSandbox: 2, total: 100 }),
     bandwidth: new BandwidthLimiter(0),
     audit: { record: (r) => void audit.push(r) },

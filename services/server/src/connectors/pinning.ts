@@ -49,7 +49,7 @@ export async function pinConnector(
   if (row.hash !== null) return { ok: false, failure: "already_pinned" };
 
   const apiKey = await options.credential?.({ id: connectorId, name: row.name });
-  const probed = await prober.probe(row.url, apiKey);
+  const probed = await prober.probe(row.url, apiKey, connectorId);
   if (!probed.ok) return probed;
   const snapshot = buildSnapshot(row.name, probed.tools);
   if (!snapshot.ok) return snapshot;

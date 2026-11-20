@@ -53,7 +53,16 @@ const configSchema = z.object({
     .string()
     .min(32, "KOBE_MCP_PROXY_INTERNAL_KEY must be at least 32 characters")
     .optional(),
-  // The MCP proxy's address for the pinning probe (KOBE-101); with the key above. Unset: no pinning.
+  // What the server presents to the MCP proxy's internal routes (probe, app calls; KOBE-693),
+  // separate from the key above, which the proxy presents here. Empty or unset (an operator's
+  // Secret without the second key): the key above serves both ways.
+  KOBE_MCP_PROXY_ROUTES_KEY: z
+    .string()
+    .transform((v) => (v === "" ? undefined : v))
+    .pipe(z.string().min(32, "KOBE_MCP_PROXY_ROUTES_KEY must be at least 32 characters").optional())
+    .optional(),
+  // The MCP proxy's internal routes (KOBE-101 probe, KOBE-436 app calls; their own port since
+  // KOBE-693), with the routes key. Unset: no pinning.
   KOBE_MCP_PROXY_URL: z
     .url({ protocol: /^https?$/, error: "KOBE_MCP_PROXY_URL must be an http(s) URL" })
     .optional(),
@@ -165,6 +174,12 @@ const authSchema = z.object({
     .transform((v) => (v === "" ? undefined : v))
     .pipe(z.string().min(32, "KOBE_APPROVAL_KEY must be at least 32 characters").optional())
     .optional(),
+  // HSTS includeSubDomains (KOBE-695, chart `ingress.hsts.includeSubDomains`); HSTS itself is sent
+  // whenever KOBE_PUBLIC_URL is https.
+  KOBE_HSTS_INCLUDE_SUBDOMAINS: z
+    .enum(["true", "false"], { error: "KOBE_HSTS_INCLUDE_SUBDOMAINS must be true or false" })
+    .default("false")
+    .transform((v) => v === "true"),
 });
 
 export interface AuthConfig {
@@ -174,6 +189,8 @@ export interface AuthConfig {
   readonly trustedProxies: readonly string[];
   /** Approval HMAC key; undefined denies every approval request. */
   readonly approvalKey?: string;
+  /** Add `includeSubDomains` to the HSTS header (KOBE-695). */
+  readonly hstsIncludeSubDomains: boolean;
 }
 
 export interface DbTimeouts {
@@ -195,7 +212,9 @@ export interface Config {
   readonly internalPort: number;
   /** Shared with the MCP proxy; without it the internal listener is not started. */
   readonly mcpProxyInternalKey: string | undefined;
-  /** The MCP proxy's base URL, for the pinning probe (KOBE-101). */
+  /** What the server presents to the proxy's internal routes (KOBE-693); falls back to the above. */
+  readonly mcpProxyRoutesKey: string | undefined;
+  /** The MCP proxy's internal routes base URL, for the pinning probe (KOBE-101). */
   readonly mcpProxyUrl: string | undefined;
   /** The model gateway's origin for the server's own calls (KOBE-219); unset: none. */
   readonly modelGatewayUrl: string | undefined;
@@ -246,6 +265,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     agentMaxVersions: base.data.KOBE_AGENT_MAX_VERSIONS,
     internalPort: base.data.KOBE_INTERNAL_PORT,
     mcpProxyInternalKey: base.data.KOBE_MCP_PROXY_INTERNAL_KEY,
+    mcpProxyRoutesKey: base.data.KOBE_MCP_PROXY_ROUTES_KEY ?? base.data.KOBE_MCP_PROXY_INTERNAL_KEY,
     mcpProxyUrl: base.data.KOBE_MCP_PROXY_URL,
     modelGatewayUrl:
       base.data.KOBE_MODEL_GATEWAY_URL === undefined
@@ -277,6 +297,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
       authSecret: auth.data.KOBE_AUTH_SECRET,
       setupToken: auth.data.KOBE_SETUP_TOKEN,
       trustedProxies: auth.data.KOBE_TRUSTED_PROXIES,
+      hstsIncludeSubDomains: auth.data.KOBE_HSTS_INCLUDE_SUBDOMAINS,
       ...(auth.data.KOBE_APPROVAL_KEY ? { approvalKey: auth.data.KOBE_APPROVAL_KEY } : {}),
     },
     smtp: smtp.data,

@@ -3,6 +3,7 @@ import type { AddressInfo } from "node:net";
 import { serve, type ServerType } from "@hono/node-server";
 import { pino } from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { withTestLoopback } from "@kobe/address-policy/testing";
 import {
   DEFAULT_LIMITS,
   FakeUpstream,
@@ -65,10 +66,12 @@ beforeAll(async () => {
     policy: {
       allowInsecureHttp: true,
       allowedPorts: [Number(new URL(upstreamServer.url).port)],
-      allowedInternalCidrs: ["127.0.0.0/8"],
+      allowedInternalCidrs: [],
       deniedCidrs: [],
     },
     maxResponseBytes: 1024 * 1024,
+    // Loopback (the local fake upstream) is never allowed by a list (KOBE-694).
+    addresses: withTestLoopback(),
   });
   proxy = createProxyApp({
     sessionVerifyKeys: MCP_VERIFY_KEYS,

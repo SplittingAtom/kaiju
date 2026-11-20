@@ -148,16 +148,17 @@ if (config.process === "scheduler") {
     sso: { settings: loadSsoSettings(process.env) },
     auditForwardingDestinations: destinationsOf(config.auditForwarding),
     auditForwardingSecrets: forwardingSecrets(config.auditForwarding),
-    ...(config.mcpProxyUrl && config.mcpProxyInternalKey
+    // The proxy's internal routes, with the routes key (KOBE-693).
+    ...(config.mcpProxyUrl && config.mcpProxyRoutesKey
       ? {
           connectorProbe: createProxyProbe({
             baseUrl: config.mcpProxyUrl,
-            internalKey: config.mcpProxyInternalKey,
+            internalKey: config.mcpProxyRoutesKey,
             timeoutMs: PROBE_TIMEOUT_MS,
           }),
           appCaller: createProxyAppCaller({
             baseUrl: config.mcpProxyUrl,
-            internalKey: config.mcpProxyInternalKey,
+            internalKey: config.mcpProxyRoutesKey,
             timeoutMs: PROBE_TIMEOUT_MS,
           }),
         }
@@ -470,6 +471,7 @@ const server = serve(
   {
     fetch: createApp(isServer ? deps : undefined, {
       isolation,
+      hstsIncludeSubDomains: config.auth?.hstsIncludeSubDomains ?? false,
       ...(evalRunner ? { evals: evalRunner } : {}),
       ...(externalScan ? { externalScan } : {}),
       ...(skillMirror ? { skillMirror } : {}),

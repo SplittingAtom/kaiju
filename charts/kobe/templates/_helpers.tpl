@@ -163,9 +163,16 @@ securityContext:
 {{- end -}}
 
 {{/* Auth configuration: the API server only (the scheduler never gets these secrets). */}}
+{{/* KOBE-695: HSTS includeSubDomains for the server and the web (default off). */}}
+{{- define "kobe.hstsEnv" -}}
+- name: KOBE_HSTS_INCLUDE_SUBDOMAINS
+  value: {{ ternary "true" "false" (((.Values.ingress).hsts).includeSubDomains | default false) | quote }}
+{{- end -}}
+
 {{- define "kobe.authEnv" -}}
 - name: KOBE_PUBLIC_URL
   value: {{ include "kobe.publicUrl" . | quote }}
+{{ include "kobe.hstsEnv" . }}
 - name: KOBE_AUTH_SECRET
   valueFrom:
     secretKeyRef:
