@@ -142,6 +142,47 @@ spec:
       ports:
         - protocol: TCP
           port: 3310
+---
+# ClamAV's own egress (KOBE-699): freshclam downloads signatures from database.clamav.net (a CDN,
+# addresses not fixed) at start and then periodically, so DNS and public addresses on 443 and 80
+# only. A private signature mirror needs a rule in clamav.networkPolicy.extraEgress.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $fullname }}-clamav-egress
+  labels:
+    {{- include "kobe.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "kobe.selectorLabels" (dict "root" . "component" "clamav") | nindent 6 }}
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              {{- toYaml (include "kobe.egressPrivateRanges" . | fromJsonArray) | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+    {{- with (.Values.clamav.networkPolicy | default dict).extraEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 {{- end }}
 {{- if eq .Values.postgres.mode "cnpg" }}
 ---
@@ -157,9 +198,27 @@ spec:
       cnpg.io/cluster: {{ $fullname }}-pg
   policyTypes: ["Ingress"]
   ingress:
-    # Kobe workloads and the Postgres instances themselves (replication).
+    # Only the components that hold database credentials (kobe.databaseEnv: server, scheduler,
+    # egress proxy, model gateway) and the migrate Job (KOBE-699). ClamAV, embeddings, Bifrost, web
+    # and the MCP proxy never need the database. Operators reach it with `kubectl port-forward`,
+    # which NetworkPolicy does not see (docs/backup-restore.md).
     - from:
-        - podSelector: {}
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kobe
+              app.kubernetes.io/instance: {{ .Release.Name }}
+            matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values: ["server", "scheduler", "egress-proxy", "model-gateway", "migrate"]
+      ports:
+        - protocol: TCP
+          port: 5432
+    # The Postgres instances themselves (streaming replication, instance manager status).
+    - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: {{ $fullname }}-pg
     # The CloudNativePG operator manages instances over the status and Postgres ports.
     - from:
         - namespaceSelector:

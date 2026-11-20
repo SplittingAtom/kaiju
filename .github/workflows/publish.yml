@@ -3,7 +3,8 @@
 # pins appVersion sha-<short>. Only after every image and the chart are published is :main moved,
 # for all images together, and only if this commit is still the head of main. Deploy sha-* tags or
 # chart versions, not :main (the chart's IfNotPresent pull policy would keep a stale :main).
-# Every image is scanned with Trivy before it is pushed; a fixable CRITICAL fails its job (KOBE-512).
+# Every image is scanned with Trivy before it is pushed; a fixable CRITICAL fails its job (KOBE-512),
+# and for the Node service images and web a fixable HIGH too (KOBE-691).
 name: publish
 
 on:
@@ -30,12 +31,23 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: web, dockerfile: apps/web/Dockerfile }
-          - { name: server, dockerfile: services/server/Dockerfile }
-          - { name: mcp-proxy, dockerfile: services/mcp-proxy/Dockerfile }
-          - { name: egress-proxy, dockerfile: services/egress-proxy/Dockerfile }
-          - { name: model-gateway, dockerfile: services/model-gateway/Dockerfile }
-          - { name: sandbox, dockerfile: images/sandbox/Dockerfile }
+          # gate: the severities with a fix that fail the job (Chris, 2026-11-20, KOBE-691): the
+          # Node service images and web on HIGH too; the sandbox (large Debian/Python surface)
+          # stays CRITICAL-only, with HIGH in the report.
+          - { name: web, dockerfile: apps/web/Dockerfile, gate: "HIGH,CRITICAL" }
+          - { name: server, dockerfile: services/server/Dockerfile, gate: "HIGH,CRITICAL" }
+          - { name: mcp-proxy, dockerfile: services/mcp-proxy/Dockerfile, gate: "HIGH,CRITICAL" }
+          - {
+              name: egress-proxy,
+              dockerfile: services/egress-proxy/Dockerfile,
+              gate: "HIGH,CRITICAL",
+            }
+          - {
+              name: model-gateway,
+              dockerfile: services/model-gateway/Dockerfile,
+              gate: "HIGH,CRITICAL",
+            }
+          - { name: sandbox, dockerfile: images/sandbox/Dockerfile, gate: CRITICAL }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -74,12 +86,12 @@ jobs:
           ignore-unfixed: true
           format: table
           exit-code: "0"
-      - name: Vulnerability gate (fail on any fixable CRITICAL)
+      - name: Vulnerability gate (fail on any fixable ${{ matrix.gate }})
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: kobe-${{ matrix.name }}:scan
           scanners: vuln
-          severity: CRITICAL
+          severity: ${{ matrix.gate }}
           ignore-unfixed: true
           format: table
           exit-code: "1"

@@ -508,7 +508,7 @@
     {
       "name": "tornado",
       "versions": [
-        "6.5.10"
+        "6.6.1"
       ],
       "ecosystem": "pypi",
       "locations": [
@@ -2901,7 +2901,7 @@
     {
       "name": "zod",
       "versions": [
-        "4.6.5"
+        "4.6.7"
       ],
       "ecosystem": "npm",
       "locations": [

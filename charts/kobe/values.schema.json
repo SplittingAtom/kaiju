@@ -403,6 +403,14 @@
         "serverUrl": {
           "type": "string",
           "pattern": "^(https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?/?)?$"
+        },
+        "networkPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "restrictEgress": { "type": "boolean" },
+            "extraEgress": { "type": "array", "items": { "type": "object" } }
+          }
         }
       }
     },
@@ -469,6 +477,46 @@
             "properties": {
               "secretName": { "minLength": 1 },
               "configMapName": { "minLength": 1 }
+            }
+          }
+        },
+        "networkPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "restrictEgress": { "type": "boolean" },
+            "allowedPorts": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 1, "maximum": 65535 },
+              "minItems": 1
+            },
+            "databasePeers": { "type": "array", "items": { "type": "object" } },
+            "databasePort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "kubernetesApi": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "peers": { "type": "array", "items": { "type": "object" } },
+                "ports": {
+                  "type": "array",
+                  "items": { "type": "integer", "minimum": 1, "maximum": 65535 },
+                  "minItems": 1
+                }
+              }
+            },
+            "extraEgress": { "type": "array", "items": { "type": "object" } }
+          },
+          "if": {
+            "properties": { "restrictEgress": { "const": true } },
+            "required": ["restrictEgress"]
+          },
+          "then": {
+            "required": ["kubernetesApi"],
+            "properties": {
+              "kubernetesApi": {
+                "required": ["peers"],
+                "properties": { "peers": { "minItems": 1 } }
+              }
             }
           }
         },
@@ -1360,6 +1408,22 @@
             "tag": {
               "type": "string",
               "minLength": 1
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^(sha256:[0-9a-f]{64})?$"
+            }
+          }
+        },
+        "networkPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "extraEgress": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
             }
           }
         },

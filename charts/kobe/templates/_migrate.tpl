@@ -22,6 +22,8 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: kobe
+        app.kubernetes.io/instance: {{ $root.Release.Name }}
+        # Selected by the CloudNativePG ingress policy (networkpolicies.yaml, KOBE-699).
         app.kubernetes.io/component: migrate
     spec:
       restartPolicy: Never

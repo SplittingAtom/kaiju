@@ -170,12 +170,30 @@ $KUBECTL -n "$OTEL_NS" run otlp --restart=Never --image="ghcr.io/splittingatom/k
   --image-pull-policy=IfNotPresent --labels=app=otlp --command -- node -e "$(cat e2e/lib/otlp-sink.js)" >/dev/null
 $KUBECTL -n "$OTEL_NS" expose pod otlp --port=4318 --target-port=4318 --name=otlp >/dev/null
 $KUBECTL -n "$OTEL_NS" wait --for=condition=Ready pod/otlp --timeout=180s >/dev/null 2>&1 || true
+# KOBE-698: the suite runs with the opt-in server and web egress policies on, so they are proven
+# against a working install. The server's in-cluster S3 and SMTP fixtures (kobe-deps) and the OTLP
+# sink are not public addresses: extraEgress, as docs/install.md tells a site with a LAN S3 or
+# relay. gate1-prep keeps them off: the gates' fake identity and OAuth servers are in-cluster.
+restrict_egress=()
+if [[ "$SHARD" != gate1-prep && "${KOBE_E2E_RESTRICT_EGRESS:-1}" == 1 ]]; then
+  deps_ns='{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"kobe-deps"}}}'
+  deps_rule="{\"to\":[$deps_ns]}"
+  # The chart requires the API server's and the database's peers with restrictEgress on: the API
+  # server's own addresses (after the kubernetes Service's DNAT) and the kobe-deps Postgres.
+  api_ips=$($KUBECTL -n default get endpoints kubernetes -o jsonpath='{.subsets[*].addresses[*].ip}')
+  api_peers=$(for ip in $api_ips; do printf '{"ipBlock":{"cidr":"%s/32"}},' "$ip"; done)
+  restrict_egress=(--set server.networkPolicy.restrictEgress=true --set web.networkPolicy.restrictEgress=true
+    --set-json "server.networkPolicy.kubernetesApi.peers=[${api_peers%,}]"
+    --set-json "server.networkPolicy.databasePeers=[$deps_ns]"
+    --set-json "server.networkPolicy.extraEgress=[$deps_rule,$OTEL_RULE]")
+fi
 $HELM upgrade --install kobe charts/kobe -n "$NS" -f dev/values.yaml \
   --set global.imageTag="$TAG" --set global.imagePullPolicy=IfNotPresent \
   --set telemetry.endpoint="$OTEL_SINK" \
   --set-json "mcpProxy.networkPolicy.extraEgress=[$OTEL_RULE]" \
   --set-json "egressProxy.networkPolicy.extraEgress=[$OTEL_RULE]" \
   --set-json "modelGateway.networkPolicy.extraEgress=[$OTEL_RULE]" \
+  "${restrict_egress[@]}" \
   ${KOBE_E2E_TOOL_EXECUTOR:+--set sandbox.toolExecutor.enabled=true} --wait --timeout 10m
 
 echo "==> checks"
@@ -199,6 +217,10 @@ for d in web server scheduler mcp-proxy egress-proxy model-gateway bifrost; do
   if $KUBECTL -n "$NS" rollout status "deploy/kobe-$d" --timeout=60s >/dev/null 2>&1; then ok "deployment kobe-$d is available"
   else fail "deployment kobe-$d is available"; fi
 done
+if [[ ${#restrict_egress[@]} -gt 0 ]]; then
+  contains "server and web run under their egress policies (KOBE-698)" '^kobe-server-egress kobe-web-egress$' \
+    "$($KUBECTL -n "$NS" get networkpolicy kobe-server-egress kobe-web-egress -o jsonpath='{.items[*].metadata.name}' 2>&1)"
+fi
 gated_pods='app.kubernetes.io/component in (server,scheduler)'
 gate_fmt='{range .items[*]}{range .status.initContainerStatuses[*]}{.name}={.state.terminated.reason}{"\n"}{end}{end}'
 gates=$($KUBECTL -n "$NS" get pods -l "$gated_pods" --field-selector=status.phase=Running -o jsonpath="$gate_fmt")

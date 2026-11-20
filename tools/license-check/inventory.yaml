@@ -469,7 +469,7 @@ sections:
     rows:
       - id: playwright
         component: Playwright (`@playwright/test`)
-        version: 1.55.0
+        version: 1.55.1
         license: Apache-2.0
         use: test-only
         where: e2e/browser (packages below); CI e2e shard gate3 (e2e/browser/scripts/gate3-browser.mjs)
@@ -477,7 +477,7 @@ sections:
         images: []
       - id: playwright-chromium
         component: Chromium (Playwright's build, `npx playwright install chromium`)
-        version: the build Playwright 1.55.0 pins
+        version: the build Playwright 1.55.1 pins
         license: BSD-3-Clause
         use: test-only
         where: CI e2e shard gate3 and e2e/browser runs (downloaded at test time, never shipped)
