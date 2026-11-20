@@ -863,9 +863,11 @@ is proven by an `amr` value in `mfaRule.amr_any` (default `mfa`, `hwk`, `swk`, `
   signing keys and the token endpoint (the browser does the rest). For Entra that is
   `login.microsoftonline.com` on 443; local sign-in never contacts it. Those URLs pass Kobe's SSRF
   guard: https on an allowed port (`auth.sso.allowedPorts`, default `[443]`), no private,
-  loopback, link-local or metadata address and no redirects. The server has no egress
-  NetworkPolicy of its own; if your namespace denies egress by default, turn on
-  `auth.sso.networkPolicy.enabled` (DNS plus HTTPS to public addresses, or to
+  loopback, link-local or metadata address and no redirects. With
+  `server.networkPolicy.restrictEgress` ([Server and web egress](#server-and-web-egress-optional))
+  public addresses on 443 are already allowed; an on-premises provider needs a rule in
+  `server.networkPolicy.extraEgress`. Without it, if your namespace denies egress by default, turn
+  on `auth.sso.networkPolicy.enabled` (DNS plus HTTPS to public addresses, or to
   `auth.sso.networkPolicy.cidrs`) **beside** your own allow rules for Postgres, S3, SMTP and the
   Kubernetes API, since it makes the server's other egress default-deny.
 - **An on-premises provider** on a private address: list its range in
@@ -1139,6 +1141,46 @@ certificates (default `ca.crt`). The chart mounts it read-only and sets `NODE_EX
 the CA is trusted in addition to the public ones; certificates are still verified. Restart the
 server after rotating the bundle (Node reads it at start). See
 [audit forwarding](audit-log.md#export-and-forwarding).
+
+### Server and web egress (optional)
+
+The server is the most privileged pod (it holds the envelope key, the approval key and the session
+signing keys, and manages team namespaces), and by default its egress is not restricted. Turn on
+`server.networkPolicy.restrictEgress: true` to give it an egress NetworkPolicy that allows only:
+
+- DNS (kube-dns);
+- Postgres: the bundled CloudNativePG instances, or with external Postgres the peers in
+  `server.networkPolicy.databasePeers` on `databasePort` (empty: any address on that port);
+- Kobe's own services in the release (Bifrost, model gateway, MCP proxy, egress proxy, ClamAV,
+  embeddings);
+- the Kubernetes API on `server.networkPolicy.kubernetesApi.ports` (`[443, 6443]`), at the peers in
+  `kubernetesApi.peers` (empty: any address). NetworkPolicy sees the API server's own address after
+  the `kubernetes` Service's translation: `kubectl get endpoints kubernetes` shows it;
+- public addresses on `server.networkPolicy.allowedPorts` (`[443]`): S3, the identity provider,
+  OAuth token endpoints of MCP connectors;
+- the SMTP relay on `smtp.port`, on a public address.
+
+Anything on your LAN or in the cluster needs a rule in `server.networkPolicy.extraEgress` (raw
+NetworkPolicy egress rules): an S3 endpoint such as MinIO on a private address, an internal SMTP
+relay, an on-premises identity provider, the OTLP endpoint (`telemetry.endpoint`) and the syslog or
+OTLP collectors of [audit forwarding](audit-log.md#export-and-forwarding). For example:
+
+```yaml
+server:
+  networkPolicy:
+    restrictEgress: true
+    extraEgress:
+      - to: [{ ipBlock: { cidr: 10.20.30.40/32 } }] # LAN S3
+        ports: [{ protocol: TCP, port: 9000 }]
+      - to: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: mail } } }]
+        ports: [{ protocol: TCP, port: 25 }] # in-cluster relay
+```
+
+`web.networkPolicy.restrictEgress: true` limits the web pods to DNS and the server's pods on 8080
+(the default `web.serverUrl`); a `web.serverUrl` outside the release needs a rule in
+`web.networkPolicy.extraEgress`. Both flags are off by default, so upgrading changes nothing until
+you turn them on. After turning them on, check that sign-in, an upload, an invitation email and a
+chat with a model still work; a missing destination shows as a timeout in the server log.
 
 ### Migrations
 

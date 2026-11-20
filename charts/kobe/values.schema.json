@@ -384,6 +384,14 @@
         "serverUrl": {
           "type": "string",
           "pattern": "^(https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?/?)?$"
+        },
+        "networkPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "restrictEgress": { "type": "boolean" },
+            "extraEgress": { "type": "array", "items": { "type": "object" } }
+          }
         }
       }
     },
@@ -451,6 +459,33 @@
               "secretName": { "minLength": 1 },
               "configMapName": { "minLength": 1 }
             }
+          }
+        },
+        "networkPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "restrictEgress": { "type": "boolean" },
+            "allowedPorts": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 1, "maximum": 65535 },
+              "minItems": 1
+            },
+            "databasePeers": { "type": "array", "items": { "type": "object" } },
+            "databasePort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "kubernetesApi": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "peers": { "type": "array", "items": { "type": "object" } },
+                "ports": {
+                  "type": "array",
+                  "items": { "type": "integer", "minimum": 1, "maximum": 65535 },
+                  "minItems": 1
+                }
+              }
+            },
+            "extraEgress": { "type": "array", "items": { "type": "object" } }
           }
         },
         "skillMirror": {
