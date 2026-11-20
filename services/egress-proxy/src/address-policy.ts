@@ -5,6 +5,7 @@ export {
   DEFAULT_DENIED_CIDRS,
   validateCidrs,
   validateInternalTargets,
+  type AddressChecker,
   type AddressCheckOptions,
   type AddressPolicyOptions,
   type AddressVerdict,

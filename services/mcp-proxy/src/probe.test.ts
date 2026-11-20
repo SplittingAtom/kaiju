@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { withTestLoopback } from "@kobe/address-policy/testing";
 import { SpanKind, SpanStatusCode } from "@kobe/telemetry";
 import { isChildOf, spanNamed, traced } from "./testing/traced.js";
 import { createApp } from "./app.js";
@@ -16,10 +17,14 @@ beforeAll(async () => {
   const policy: UpstreamPolicy = {
     allowInsecureHttp: true,
     allowedPorts: [Number(new URL(fake.url).port)],
-    allowedInternalCidrs: ["127.0.0.0/8"],
+    allowedInternalCidrs: [],
     deniedCidrs: [],
   };
-  upstream = createUpstreamClient({ policy, maxResponseBytes: 64 * 1024 });
+  upstream = createUpstreamClient({
+    policy,
+    maxResponseBytes: 64 * 1024,
+    addresses: withTestLoopback(),
+  });
 });
 afterAll(async () => {
   await upstream.close();

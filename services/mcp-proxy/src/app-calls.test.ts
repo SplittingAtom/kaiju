@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { withTestLoopback } from "@kobe/address-policy/testing";
 import { SpanStatusCode } from "@kobe/telemetry";
 import { isChildOf, spanNamed, traced } from "./testing/traced.js";
 import { createApp } from "./app.js";
@@ -17,10 +18,11 @@ beforeAll(async () => {
     policy: {
       allowInsecureHttp: true,
       allowedPorts: [Number(new URL(fake.url).port)],
-      allowedInternalCidrs: ["127.0.0.1/32"],
+      allowedInternalCidrs: [],
       deniedCidrs: [],
     },
     maxResponseBytes: 64 * 1024,
+    addresses: withTestLoopback(),
   });
 });
 afterAll(async () => {

@@ -307,7 +307,11 @@ equal the CONNECT host. It never decrypts traffic. Plain HTTP and other ports ar
   matches pods after Service translation). The domain must still be in the ceiling and enabled.
   `allowedInternalCidrs` is install-wide: every allowlisted host may then reach those ranges. For
   hosts served by this cluster's own ingress use `clusterIngress` (see [Same-cluster
-  hosts](#same-cluster-hosts-internal)).
+  hosts](#same-cluster-hosts-internal)). Loopback, link-local (cloud metadata), unspecified,
+  multicast and IPv4-embedding IPv6 addresses stay refused even inside a listed range, and an
+  entry that starts in or covers one of those ranges (`0.0.0.0/0`, `169.254.0.0/16`,
+  `128.0.0.0/1`) fails the chart schema and the proxy's startup; a private range such as
+  `192.168.10.4/30` is fine.
 - **External Postgres:** the proxy reads allowlists and writes its connection log as the app role.
   Set `egressProxy.networkPolicy.databasePeers` (an `ipBlock` or selector for your database) so its
   NetworkPolicy reaches only the database on `databasePort`; when empty it may reach any address on
@@ -691,7 +695,10 @@ the MCP proxy is not a sandbox. Its own NetworkPolicy allows DNS, the server's i
 public addresses on `mcpProxy.allowedPorts` (default 443). It resolves each connector's host itself
 and refuses private, loopback, link-local (cloud metadata) and reserved addresses unless listed in
 `mcpProxy.allowedInternalCidrs` (an on-premises MCP server; add a matching
-`mcpProxy.networkPolicy.extraEgress` peer for in-cluster targets). Connector URLs must be HTTPS
+`mcpProxy.networkPolicy.extraEgress` peer for in-cluster targets). Loopback, link-local (cloud
+metadata), unspecified, multicast and IPv4-embedding addresses are refused even when a listed range
+covers them, and an entry that starts in or covers such a range fails the chart schema and
+startup. Connector URLs must be HTTPS
 (`mcpProxy.allowInsecureHttp` exists for development and CI only); redirects are not followed.
 Limits per proxy replica: `mcpProxy.limits.callsPerSandbox` (8 concurrent), `requestBurst` /
 `requestsPerSecond` (60, then 10/s), `maxRequestBytes` (1 MiB), `maxResponseBytes` (4 MiB),
@@ -869,7 +876,8 @@ is proven by an `amr` value in `mfaRule.amr_any` (default `mfa`, `hwk`, `swk`, `
   `auth.sso.networkPolicy.cidrs`) **beside** your own allow rules for Postgres, S3, SMTP and the
   Kubernetes API, since it makes the server's other egress default-deny.
 - **An on-premises provider** on a private address: list its range in
-  `auth.sso.allowedInternalCidrs`, and give its CA in `server.extraCaBundle`
+  `auth.sso.allowedInternalCidrs` (a private range; loopback, link-local and metadata ranges are
+  refused, as for the proxies), and give its CA in `server.extraCaBundle`
   ([Private certificate authorities](#private-certificate-authorities)).
 - **SCIM is inbound:** Entra's provisioning service must reach `https://<kobe>/v1/scim/v2/<slug>`
   from the internet. For a Kobe that is not reachable from outside, Microsoft's on-premises
@@ -1170,6 +1178,14 @@ on by default), migrations `0216`–`0235` and the upgrade steps. The notes belo
 Migrations report what an upgrade changed in the migration Job's log (`"msg":"migration notice"`,
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
+
+- **Internal CIDRs (KOBE-694).** `mcpProxy.allowedInternalCidrs`,
+  `egressProxy.allowedInternalCidrs` and `auth.sso.allowedInternalCidrs` no longer reach
+  loopback, link-local (cloud metadata), unspecified, multicast or IPv4-embedding IPv6 addresses,
+  even inside a listed range. An entry that starts in or covers such a range (for example
+  `0.0.0.0/0`, `169.254.0.0/16`, `128.0.0.0/1`, `::/0`) now fails the chart schema, and the
+  services refuse to start with it; IPv4 entries need /8 or narrower and IPv6 entries /16 or
+  narrower (ULA `fc00::/7` excepted). Private LAN and cluster ranges keep working unchanged.
 
 - **HSTS (KOBE-695).** An install with an https public URL now sends
   `Strict-Transport-Security` (one year, no `includeSubDomains` unless

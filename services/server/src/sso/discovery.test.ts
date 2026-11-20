@@ -1,6 +1,7 @@
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { withTestLoopback } from "@kobe/address-policy/testing";
 import { validateDiscovery } from "./discovery.js";
 import { guardedFetch, SsoNetError, type SsoNet } from "./net.js";
 import { FakeIdp, resolver } from "./testing.js";
@@ -222,7 +223,9 @@ describe("the real pinned request (KOBE-626 ac-6)", () => {
       policy: {
         allowHttp: true,
         allowedPorts: [port],
-        allowedInternalCidrs: ["127.0.0.0/8"],
+        allowedInternalCidrs: [],
+        // Loopback (the local fake) is never allowed by a list (KOBE-694).
+        addresses: withTestLoopback(),
         deniedCidrs: [],
         resolve: async () => ["127.0.0.1"],
       },

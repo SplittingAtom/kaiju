@@ -1,6 +1,6 @@
 import { verifyKeysFromEnv, type SessionVerifyKeys } from "@kobe/session-token";
 import { z } from "zod";
-import { validateCidrs } from "./address-policy.js";
+import { validateCidrs, validateInternalTargets } from "./address-policy.js";
 
 /**
  * MCP proxy configuration (spec D27), validated at startup: invalid env fails fast. The chart
@@ -132,6 +132,20 @@ function cidrs(name: string, values: readonly string[]): readonly string[] {
   return values;
 }
 
+/**
+ * KOBE-694: install-wide internal targets may not start in or cover an always-refused range
+ * (loopback, link-local, metadata, unspecified, IPv4-embedding); a private LAN range is fine.
+ */
+function internalCidrs(name: string, values: readonly string[]): readonly string[] {
+  cidrs(name, values);
+  try {
+    validateInternalTargets(values);
+  } catch (err) {
+    throw new Error(`Invalid configuration: ${name}: ${(err as Error).message}`, { cause: err });
+  }
+  return values;
+}
+
 export function loadConfig(env: Readonly<Record<string, string | undefined>>): Config {
   const parsed = configSchema.safeParse(env);
   if (!parsed.success) {
@@ -148,7 +162,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     upstream: {
       allowInsecureHttp: d.KOBE_MCP_ALLOW_INSECURE_HTTP === "true",
       allowedPorts: ports(d.KOBE_MCP_ALLOWED_PORTS),
-      allowedInternalCidrs: cidrs(
+      allowedInternalCidrs: internalCidrs(
         "KOBE_MCP_ALLOWED_INTERNAL_CIDRS",
         d.KOBE_MCP_ALLOWED_INTERNAL_CIDRS,
       ),

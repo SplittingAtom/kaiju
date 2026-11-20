@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { withTestLoopback } from "@kobe/address-policy/testing";
 import { FakeUpstream } from "./testing/fake-upstream.js";
 import {
   MAX_UI_RESOURCES,
@@ -18,10 +19,11 @@ beforeAll(async () => {
     policy: {
       allowInsecureHttp: true,
       allowedPorts: [Number(new URL(fake.url).port)],
-      allowedInternalCidrs: ["127.0.0.0/8"],
+      allowedInternalCidrs: [],
       deniedCidrs: [],
     },
     maxResponseBytes: 2 * 1024 * 1024,
+    addresses: withTestLoopback(),
   });
 });
 afterAll(async () => {
