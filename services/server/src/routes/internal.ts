@@ -3,6 +3,7 @@ import { honoTracing } from "@kobe/telemetry";
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
+import { and, connectors, eq, isNull } from "@kobe/db";
 import { idSchema, uuidSchema } from "@kobe/protocol";
 import { logger } from "../logger.js";
 import { reportCapturedResult, resultReportSchema, type AppResultsDeps } from "../apps/results.js";
@@ -105,6 +106,21 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
     return result;
   };
   const connectorId = (raw: string) => uuidSchema.safeParse(raw);
+
+  // A connector's registered URL (KOBE-693): the proxy's probe and app-call routes refuse any
+  // other URL, so the server's key alone never points the proxy at an arbitrary address. The
+  // proxy's own key suffices (no sandbox is involved); the URL is the site registry's, not a
+  // secret.
+  mcp.get("/connectors/:id/endpoint", async (c) => {
+    const id = connectorId(c.req.param("id"));
+    if (!id.success) return c.json({ code: "connector_not_available", message: "Not found." }, 404);
+    const [row] = await deps.auth.db
+      .select({ url: connectors.url })
+      .from(connectors)
+      .where(and(eq(connectors.id, id.data), isNull(connectors.deletedAt)));
+    if (!row) return c.json({ code: "connector_not_available", message: "Not found." }, 404);
+    return c.json({ url: row.url });
+  });
 
   mcp.post("/connectors/:id/tools", async (c) => {
     const id = connectorId(c.req.param("id"));

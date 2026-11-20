@@ -3,10 +3,12 @@ import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { apiKeyHeaders } from "./credentials.js";
 import { keyMatches } from "./internal-key.js";
+import { logger } from "./logger.js";
+import { checkRegisteredUrl, type RegisteredUrlLookup } from "./registered-url.js";
 import type { UpstreamClient } from "./upstream.js";
 
 /**
- * The server's pinning probe (KOBE-101): `POST /internal/v1/probe {url}` returns the connector's
+ * The server's pinning probe (KOBE-101): `POST /internal/v1/probe {connector_id, url}` returns the connector's
  * live `tools/list`, fetched through the same upstream client (address policy, size and time caps)
  * the sandboxes' calls use. Only the server's internal key may call it; sandboxes cannot, and the
  * answer goes to the server, which pins it, never to a sandbox. Without an `api_key` in the request
@@ -20,11 +22,18 @@ export interface ProbeDeps {
   readonly internalKey: string;
   readonly upstream: UpstreamClient;
   readonly timeoutMs: number;
+  /**
+   * The connector's registered URL, from the server's registry (KOBE-693): a body naming any
+   * other URL is refused before the upstream is contacted.
+   */
+  readonly registeredUrl: RegisteredUrlLookup;
   readonly maxRequestBytes: number;
 }
 
 // `api_key`: a user's grant, sent by the server to pin a connector that needs one (KOBE-108).
 const bodySchema = z.strictObject({
+  // KOBE-693: the connector being pinned or refreshed; `url` must be its registered URL.
+  connector_id: z.uuid(),
   url: z.string().min(1).max(2048),
   api_key: z
     .string()
@@ -48,6 +57,13 @@ export function probeRoutes(deps: ProbeDeps): Hono {
       }
       const body = bodySchema.safeParse(await c.req.json().catch(() => undefined));
       if (!body.success) return c.json({ code: "invalid_request" }, 400);
+      const b = body.data;
+      const check = await checkRegisteredUrl(deps.registeredUrl, b.connector_id, b.url);
+      if (check === "unavailable") {
+        logger.warn("connector registry unavailable: call refused");
+        return c.json({ code: "registry_unavailable" }, 503);
+      }
+      if (check === "not_registered") return c.json({ code: "url_not_registered" }, 403);
       const result = await deps.upstream.listTools(
         {
           url: body.data.url,

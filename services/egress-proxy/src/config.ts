@@ -44,9 +44,17 @@ const configSchema = z.object({
   KOBE_EGRESS_ALLOWED_PORTS: list,
   /**
    * Internal targets explicitly allowed for every allowlisted domain (CIDRs; the broader legacy
-   * option); still subject to the domain allowlist.
+   * option); still subject to the domain allowlist. Like the internal targets, an entry that
+   * starts in or covers an always-refused range fails startup (KOBE-694).
    */
-  KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS: list,
+  KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS: list.superRefine((cidrs, ctx) => {
+    // KOBE-694: never re-opens loopback, link-local or metadata, as the internal targets.
+    try {
+      validateInternalTargets(cidrs);
+    } catch (err) {
+      ctx.addIssue({ code: "custom", message: (err as Error).message });
+    }
+  }),
   /**
    * Internal targets (CIDRs, the cluster ingress) reachable only by hosts whose ceiling pattern is
    * marked internal (EA4, KOBE-603). Loopback, link-local and metadata stay refused even if listed;

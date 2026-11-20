@@ -3,6 +3,8 @@ import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { apiKeyHeaders, oauthHeaders } from "./credentials.js";
 import { keyMatches } from "./internal-key.js";
+import { logger } from "./logger.js";
+import { checkRegisteredUrl, type RegisteredUrlLookup } from "./registered-url.js";
 import type { UpstreamClient } from "./upstream.js";
 
 /**
@@ -11,12 +13,19 @@ import type { UpstreamClient } from "./upstream.js";
  * member's browser principal (read-only, app-visible, exposed, policy, audit) and revealed the
  * member's credential (their grant or the site key), which comes here and goes only to the
  * upstream, never back. Same upstream client as the sandboxes' calls: address policy, size and
- * time caps. The sandbox is not involved and cannot reach this route (internal key only).
+ * time caps. The sandbox is not involved and cannot reach this route: it is served on the
+ * internal listener only (KOBE-693), with the server's routes key, and the URL must be the
+ * connector's registered one.
  */
 export interface AppCallDeps {
   readonly internalKey: string;
   readonly upstream: UpstreamClient;
   readonly timeoutMs: number;
+  /**
+   * The connector's registered URL, from the server's registry (KOBE-693): a body naming any
+   * other URL is refused before the upstream is contacted.
+   */
+  readonly registeredUrl: RegisteredUrlLookup;
 }
 
 /** Arguments are capped at 64 KiB by the server; the body allows a little more for the rest. */
@@ -55,6 +64,12 @@ export function appCallRoutes(deps: AppCallDeps): Hono {
       const body = bodySchema.safeParse(await c.req.json().catch(() => undefined));
       if (!body.success) return c.json({ code: "invalid_request" }, 400);
       const b = body.data;
+      const check = await checkRegisteredUrl(deps.registeredUrl, b.connector_id, b.url);
+      if (check === "unavailable") {
+        logger.warn("connector registry unavailable: call refused");
+        return c.json({ code: "registry_unavailable" }, 503);
+      }
+      if (check === "not_registered") return c.json({ code: "url_not_registered" }, 403);
       const headers =
         b.api_key !== undefined
           ? apiKeyHeaders(b.api_key)

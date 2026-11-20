@@ -5,7 +5,8 @@ import { workspacePathSchema } from "@kobe/protocol";
 import { recordAudit } from "../audit/record.js";
 import type { TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
-import { FRAME_HEADERS, isSameSiteFrameRequest, readCappedBody } from "../artifacts/serve.js";
+import { mayLoadFrame, workspaceFrameDocument } from "../artifacts/frame-document.js";
+import { FRAME_HEADERS, readCappedBody } from "../artifacts/serve.js";
 import { logger } from "../logger.js";
 import { uuidSchema } from "../threads/schemas.js";
 import { isInternalPath } from "../workspace-files/paths.js";
@@ -33,7 +34,8 @@ const tooLarge = (c: Ctx) =>
  * the document of the file viewer's iframe, served exactly like an artifact frame (D-6/D25):
  * `FRAME_HEADERS` (CSP `sandbox` without `allow-same-origin`, so an opaque origin with no cookies
  * and no network), only for navigations from Kobe's own page, only for the active team the page
- * names, only `.html`/`.htm`, and at most {@link WORKSPACE_FRAME_MAX_BYTES}. The owner comes from
+ * names, only `.html`/`.htm`, and at most {@link WORKSPACE_FRAME_MAX_BYTES}. Iframe loads only
+ * and the WebRTC guard first, as the artifact frame (KOBE-690). The owner comes from
  * the session, never the request; reads are audited like downloads.
  */
 export function registerWorkspaceFrame(
@@ -43,7 +45,7 @@ export function registerWorkspaceFrame(
 ): void {
   const db = deps.database.db;
   app.get("/frame", async (c) => {
-    if (!isSameSiteFrameRequest(c.req.raw.headers, deps.publicUrl)) {
+    if (!mayLoadFrame(c.req.raw.headers, deps.publicUrl)) {
       return c.json({ code: "forbidden_origin", message: "Cross-origin request rejected." }, 403);
     }
     const query = frameQuerySchema.safeParse(Object.fromEntries(new URL(c.req.url).searchParams));
@@ -92,7 +94,7 @@ export function registerWorkspaceFrame(
       }
       const bytes = await readCappedBody(object.body, WORKSPACE_FRAME_MAX_BYTES);
       if (bytes === "too_large") return tooLarge(c);
-      return new Response(new Uint8Array(bytes), { headers: FRAME_HEADERS });
+      return new Response(workspaceFrameDocument(bytes), { headers: FRAME_HEADERS });
     } catch (err) {
       logger.error({ err, teamId: owner.teamId }, "workspace frame unreadable");
       return c.json(

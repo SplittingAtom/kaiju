@@ -1,6 +1,7 @@
 {{- $fullname := include "kobe.fullname" . -}}
 {{- $m := include "kobe.mcpProxyValues" . | fromJson -}}
-# MCP proxy (spec D27). Ingress: only sandboxes (team namespaces) and the server's probe, only the proxy port — the
+# MCP proxy (spec D27). Ingress: sandboxes (team namespaces) on the proxy port only, and server pods on the
+# internal-routes port only (KOBE-693) — the
 # receiving side holds regardless of how the CNI applies the team policy's egress selectors
 # (KOBE-22 kube-router finding). Egress: DNS, the server's internal listener (policy re-check), and
 # remote MCP servers directly (public addresses on the allowed ports; internal ones only when
@@ -29,14 +30,15 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
-    # The server's pinning probe (KOBE-101, `/internal/v1/probe`, internal key required).
+    # The server's routes (pinning probe KOBE-101, app calls KOBE-436): their own port, server
+    # pods only (KOBE-693); sandboxes never reach it.
     - from:
         - podSelector:
             matchLabels:
               {{- include "kobe.selectorLabels" (dict "root" . "component" "server") | nindent 14 }}
       ports:
         - protocol: TCP
-          port: 8080
+          port: {{ include "kobe.mcpProxyInternalPort" . }}
   {{- if $m.networkPolicy.restrictEgress }}
   egress:
     - to:

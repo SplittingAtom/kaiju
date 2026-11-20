@@ -16,7 +16,7 @@
 {{- $webServerUrl := .Values.web.serverUrl | default (printf "http://%s-server" $fullname) | trimSuffix "/" -}}
 {{- include "kobe.nodeService" (dict "root" . "component" "web" "image" "web" "values" .Values.web
       "healthPath" "/api/healthz" "readyPath" "/api/healthz"
-      "env" (printf "- name: KOBE_SERVER_URL\n  value: %s\n- name: KOBE_PUBLIC_URL\n  value: %s" ($webServerUrl | quote) (include "kobe.publicUrl" . | quote))
+      "env" (printf "- name: KOBE_SERVER_URL\n  value: %s\n- name: KOBE_PUBLIC_URL\n  value: %s\n%s" ($webServerUrl | quote) (include "kobe.publicUrl" . | quote) (include "kobe.hstsEnv" .))
       "extraMounts" "- name: next-cache\n  mountPath: /app/apps/web/.next/cache"
       "extraVolumes" "- name: next-cache\n  emptyDir: {}") }}
 ---
@@ -33,8 +33,11 @@
       "annotations" $dbAnnotations
       "env" (printf "- name: KOBE_PROCESS\n  value: scheduler\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s" $runtime $common (include "kobe.telemetryEnv" .) (include "kobe.retentionEnv" .) (include "kobe.sandboxConfigEnv" .) $schedTick $schedGrace (include "kobe.modelDefaultsEnv" .))) }}
 ---
-{{/* MCP proxy (KOBE-58): no database; its own session key and the internal key only. */}}
+{{/* MCP proxy (KOBE-58): no database; its own session key and the two internal keys only. The
+  server's routes (probe, app calls) listen on their own port (KOBE-693). */}}
 {{ include "kobe.nodeService" (dict "root" . "component" "mcp-proxy" "image" "mcp-proxy" "values" .Values.mcpProxy
+      "extraPorts" (printf "- name: internal\n  containerPort: %s" (include "kobe.mcpProxyInternalPort" .))
+      "extraServicePorts" (printf "- name: internal\n  port: %s\n  targetPort: internal" (include "kobe.mcpProxyInternalPort" .))
       "env" (printf "%s\n%s" (include "kobe.mcpProxyEnv" .) (include "kobe.telemetryEnv" .))) }}
 ---
 {{/* Egress proxy (KOBE-38): reads allowlists and writes connection audit as the app role; holds

@@ -1,14 +1,17 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { withTestLoopback } from "@kobe/address-policy/testing";
 import type { UpstreamPolicy } from "./config.js";
 import { FakeUpstream } from "./testing/fake-upstream.js";
 import { createUpstreamClient, type UpstreamClient } from "./upstream.js";
 
-const LOOPBACK_ALLOWED: UpstreamPolicy = {
+const LOCAL_HTTP: UpstreamPolicy = {
   allowInsecureHttp: true,
   allowedPorts: [],
-  allowedInternalCidrs: ["127.0.0.0/8"],
+  allowedInternalCidrs: [],
   deniedCidrs: [],
 };
+/** The fake upstream listens on loopback, which no policy may allow (KOBE-694). */
+const LOCAL = withTestLoopback();
 
 const fake = new FakeUpstream();
 let client: UpstreamClient;
@@ -16,8 +19,8 @@ let policy: UpstreamPolicy;
 
 beforeAll(async () => {
   await fake.start();
-  policy = { ...LOOPBACK_ALLOWED, allowedPorts: [Number(new URL(fake.url).port)] };
-  client = createUpstreamClient({ policy, maxResponseBytes: 64 * 1024 });
+  policy = { ...LOCAL_HTTP, allowedPorts: [Number(new URL(fake.url).port)] };
+  client = createUpstreamClient({ policy, maxResponseBytes: 64 * 1024, addresses: LOCAL });
 });
 afterAll(async () => {
   await client.close();
@@ -78,6 +81,7 @@ describe("upstream MCP client (Streamable HTTP)", () => {
     fake.options = { session: true };
     const bounded = createUpstreamClient({
       policy,
+      addresses: LOCAL,
       maxResponseBytes: 64 * 1024,
       maxPendingDeletes: 0,
     });
@@ -175,6 +179,7 @@ describe("where the client may connect", () => {
   it("refuses plain http unless allowed, other ports, and credentials in the URL", async () => {
     const strict = createUpstreamClient({
       policy: { ...policy, allowInsecureHttp: false },
+      addresses: LOCAL,
       maxResponseBytes: 1024,
     });
     expect(await strict.callTool({ ...base(), url: fake.url })).toEqual({
@@ -212,6 +217,25 @@ describe("where the client may connect", () => {
     expect(fake.received).toEqual([]);
   });
 
+  it("refuses loopback even when an operator lists it (KOBE-694)", async () => {
+    const listed = createUpstreamClient({
+      policy: { ...policy, allowedInternalCidrs: ["127.0.0.0/8"] },
+      maxResponseBytes: 1024,
+      resolve: () => Promise.resolve([{ address: "127.0.0.1", family: 4 }]),
+    });
+    expect(await listed.callTool({ ...base(), url: fake.url })).toEqual({
+      ok: false,
+      failure: "url_not_allowed",
+    });
+    const named = fake.url.replace("127.0.0.1", "mcp.example.test");
+    expect(await listed.callTool({ ...base(), url: named })).toEqual({
+      ok: false,
+      failure: "forbidden_address",
+    });
+    await listed.close();
+    expect(fake.received).toEqual([]);
+  });
+
   it("refuses a name when any of its addresses is internal (rebinding)", async () => {
     const mixed = createUpstreamClient({
       policy: { ...policy, allowedInternalCidrs: [] },
@@ -231,6 +255,7 @@ describe("where the client may connect", () => {
   it("connects to the checked address of an allowed name", async () => {
     const resolving = createUpstreamClient({
       policy,
+      addresses: LOCAL,
       maxResponseBytes: 64 * 1024,
       resolve: () => Promise.resolve([{ address: "127.0.0.1", family: 4 }]),
     });

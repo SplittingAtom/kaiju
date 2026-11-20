@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { withTestLoopback } from "@kobe/address-policy/testing";
 import { loadEnvelope } from "@kobe/db";
 import { logger } from "./logger.js";
 import { createInternalApp } from "./routes/internal.js";
@@ -44,7 +45,9 @@ beforeAll(async () => {
     connectors: {
       allowHttp: true,
       allowedPorts: [fake.port],
-      allowedInternalCidrs: ["127.0.0.0/8"],
+      allowedInternalCidrs: [],
+      // Loopback (the local fake) is never allowed by a list (KOBE-694).
+      addresses: withTestLoopback(),
     },
   });
   aliceId = await h.createUser("alice@refresh.test");

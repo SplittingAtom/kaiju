@@ -373,7 +373,9 @@ mcpProxy:
   allowedInternalCidrs: []
   # More ranges to refuse (your cluster's pod/Service CIDRs if they are not private addresses).
   deniedCidrs: []
-  # Secret with key "key" (>= 32 chars) the proxy presents to the server. Empty: generated, kept.
+  # Secret with key "key" (>= 32 chars) the proxy presents to the server, and "routes-key" (>= 32
+  # chars) the server presents to the proxy's internal routes (KOBE-693; without it "key" serves
+  # both ways). Empty: generated, kept.
   internalKeySecret: ""
   limits:
     # Largest request from a sandbox and largest upstream answer.
@@ -680,6 +682,11 @@ ingress:
     secretName: ""
     # cert-manager ClusterIssuer; leave empty to manage the TLS Secret yourself.
     clusterIssuer: ""
+  # Strict-Transport-Security (KOBE-695): the server and the web send it themselves whenever the
+  # public URL is https (max-age one year). includeSubDomains extends it to every subdomain of the
+  # public host's domain; leave it off when Kobe shares a parent domain with other sites.
+  hsts:
+    includeSubDomains: false
 
 # Optional upload scanning (spec D26), off by default. When on, the server streams every upload to
 # clamd and refuses it unless clamd says clean: a hit is 422 scan_rejected, clamd down or still

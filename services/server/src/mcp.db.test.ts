@@ -184,6 +184,31 @@ describe("internal listener authentication", () => {
   });
 });
 
+describe("registered connector URL for the proxy's internal routes (KOBE-693)", () => {
+  const endpoint = (id: string, headers: Record<string, string>) =>
+    app.request(`/internal/v1/mcp/connectors/${id}/endpoint`, { headers });
+  const key = { authorization: `Bearer ${INTERNAL_KEY}` };
+
+  it("answers the registered URL to the proxy's key, without a sandbox token", async () => {
+    const connector = await registerConnector(fx.admin, { url: "https://mcp.example.com/k693" });
+    const res = await endpoint(connector.id, key);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ url: "https://mcp.example.com/k693" });
+    // A disabled connector is still registered (its periodic refresh probes it).
+    const disabled = await registerConnector(fx.admin, { status: "disabled" });
+    expect((await endpoint(disabled.id, key)).status).toBe(200);
+  });
+
+  it("refuses without the key, and knows no unknown or removed connector", async () => {
+    const connector = await registerConnector(fx.admin);
+    expect((await endpoint(connector.id, {})).status).toBe(401);
+    expect((await endpoint(randomUUID(), key)).status).toBe(404);
+    expect((await endpoint("not-a-uuid", key)).status).toBe(404);
+    await fx.admin.query(`UPDATE connectors SET deleted_at = now() WHERE id = $1`, [connector.id]);
+    expect((await endpoint(connector.id, key)).status).toBe(404);
+  });
+});
+
 describe("tools/list exposure (D27)", () => {
   it("lists every pinned tool under `all`, never drifted ones", async () => {
     const w = await world();

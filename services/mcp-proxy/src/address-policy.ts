@@ -3,6 +3,8 @@ export {
   AddressPolicy,
   DEFAULT_DENIED_CIDRS,
   validateCidrs,
+  validateInternalTargets,
+  type AddressChecker,
   type AddressPolicyOptions,
   type AddressVerdict,
 } from "@kobe/address-policy";

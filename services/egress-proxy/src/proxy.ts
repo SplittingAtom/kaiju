@@ -3,7 +3,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { connect as netConnect, isIP, type Socket } from "node:net";
 import { normalizeHost } from "@kobe/db";
 import type { Logger } from "pino";
-import type { AddressPolicy } from "./address-policy.js";
+import type { AddressChecker } from "./address-policy.js";
 import type { EgressDecision } from "./allowlist.js";
 import {
   authenticate,
@@ -84,7 +84,7 @@ export interface ProxyDeps {
   readonly verifySite?: SiteTokenVerifier;
   readonly policy: ProxyPolicy;
   readonly resolve: ResolveHost;
-  readonly addresses: AddressPolicy;
+  readonly addresses: AddressChecker;
   readonly connections: ConnectionLimits;
   readonly bandwidth: BandwidthLimiter;
   readonly audit: { record(record: ConnectionRecord): void };

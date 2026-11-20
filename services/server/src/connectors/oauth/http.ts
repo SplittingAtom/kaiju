@@ -1,8 +1,7 @@
 import http from "node:http";
 import https from "node:https";
 import net from "node:net";
-import { AddressPolicy } from "@kobe/address-policy";
-import { checkConnectorUrl, type ConnectorUrlPolicy } from "../url-policy.js";
+import { checkConnectorUrl, connectorAddresses, type ConnectorUrlPolicy } from "../url-policy.js";
 
 /** A refusal with a fixed code; messages never carry URLs, tokens or response bodies. */
 export type OauthFailureCode =
@@ -45,10 +44,7 @@ export const DEFAULT_TIMEOUT_MS = 10_000;
  * registration-time check (DNS rebinding) is refused here.
  */
 function pinnedLookup(policy: ConnectorUrlPolicy): net.LookupFunction {
-  const addresses = new AddressPolicy({
-    allowedInternal: policy.allowedInternalCidrs,
-    extraDenied: policy.deniedCidrs,
-  });
+  const addresses = connectorAddresses(policy);
   return (hostname, options, callback) => {
     const done = (found: readonly string[]) => {
       const usable = found.filter((a) => net.isIP(a) !== 0);
