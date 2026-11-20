@@ -94,11 +94,11 @@ export async function downloadSafely(
  * ended checkout): moved to `kobe-moved/…`, never lost.
  */
 export async function evict(s: SyncState, path: string): Promise<void> {
-  let target = `${EVICTED_PREFIX}${path}`;
-  if (await entryExists(s.o.root, target)) {
-    target = await conflictCopyName(s.o.root, target, s.o.now());
-  }
   try {
+    let target = `${EVICTED_PREFIX}${path}`;
+    if (await entryExists(s.o.root, target)) {
+      target = await conflictCopyName(s.o.root, target, s.o.now());
+    }
     await ensureParents(s.o.root, target);
     await ensureParents(s.o.root, path, s.checkouts); // the read-only parent: writable
     await renameWithin(s.o.root, path, target);

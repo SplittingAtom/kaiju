@@ -129,11 +129,22 @@ export class MoveReplay {
     for (let page = 0; page < 100; page += 1) {
       const { moves, more } = await this.#client.moves(since, after);
       for (const move of moves) {
-        const outcome = await applyLocalMove(this.#root, move).catch(() => "refused" as const);
+        let outcome: LocalMoveOutcome | "unreadable" = await applyLocalMove(this.#root, move).catch(
+          () => "refused" as const,
+        );
+        // A destination the agent cannot stat (CODE-25 review) skips this move only.
+        let there = false;
+        if (outcome === "absent") {
+          try {
+            there = await present(this.#root, move.to);
+          } catch {
+            outcome = "unreadable";
+          }
+        }
         if (outcome === "renamed") applied.push({ from: move.from, to: move.to, now: true });
-        else if (outcome === "absent" && (await present(this.#root, move.to))) {
+        else if (there) {
           applied.push({ from: move.from, to: move.to, now: false });
-        } else if (outcome === "exists" || outcome === "refused") {
+        } else if (outcome === "exists" || outcome === "refused" || outcome === "unreadable") {
           // The pull alone converges (download the new path, keep a conflicting local file).
           this.#logger.warn(
             { rev: move.rev, outcome },

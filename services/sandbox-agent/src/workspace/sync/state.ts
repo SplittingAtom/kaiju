@@ -107,6 +107,11 @@ export interface SyncState {
   readonly unreadable: Set<string>;
   /** Downloads that failed for this file only (missing object, something local in the way). */
   readonly retry: Map<string, WorkspaceEntry>;
+  /**
+   * Pulled rows whose local state could not be read (an unreadable folder, CODE-25 review):
+   * evaluated again on later pulls, with the full rule (conflict copies, tombstones).
+   */
+  readonly deferred: Map<string, WorkspaceEntry>;
   /** Server moves replayed as local renames (KOBE-304). */
   readonly moves: MoveReplay;
   seenRev: number;

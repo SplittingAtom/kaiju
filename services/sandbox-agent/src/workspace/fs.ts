@@ -195,12 +195,8 @@ export async function parentsAreDirs(root: string, rel: string): Promise<boolean
 /** The file's current state, or undefined when it is missing or not a regular file. */
 export async function statLocal(root: string, rel: string): Promise<LocalFile | undefined> {
   if (!(await parentsAreDirs(root, rel))) return undefined;
-  try {
-    const stat = await lstat(path.join(root, rel));
-    return stat.isFile() ? toLocal(stat) : undefined;
-  } catch {
-    return undefined;
-  }
+  const stat = await lstatIfExists(path.join(root, rel));
+  return stat?.isFile() ? toLocal(stat) : undefined;
 }
 
 /** Whether anything (file, folder, link) is at `rel`; parents must be real directories. */

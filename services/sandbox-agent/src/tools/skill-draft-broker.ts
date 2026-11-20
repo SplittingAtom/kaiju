@@ -11,7 +11,7 @@ import {
   type SkillDraftSaveFrame,
   type SkillDraftSaveResultFrame,
 } from "@kobe/protocol";
-import { TEMP_PREFIX } from "../workspace/fs.js";
+import { TEMP_PREFIX, lstatIfExists } from "../workspace/fs.js";
 import { DEFAULT_SKIP_DIRS, PushPathError, type PushedFile } from "../workspace/sync.js";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
@@ -55,7 +55,13 @@ const SKIP_DIRS: ReadonlySet<string> = new Set(DEFAULT_SKIP_DIRS);
 async function folderDir(root: string, folder: string): Promise<string> {
   const rel = `skills/${folder}`;
   const dir = path.join(root, rel);
-  const stat = await lstat(dir).catch(() => undefined);
+  let stat;
+  try {
+    stat = await lstatIfExists(dir);
+  } catch {
+    // Not missing: something the agent may not read (CODE-25 review).
+    throw new FolderError("invalid_path", `/workspace/${rel}/ cannot be read by the agent`);
+  }
   if (!stat) throw new FolderError("not_found", `/workspace/${rel}/ does not exist`);
   const real = await realpath(dir).catch(() => undefined);
   const realRoot = await realpath(root).catch(() => undefined);

@@ -79,6 +79,7 @@ export class WorkspaceSync {
       refused: new Map(),
       unreadable: new Set(),
       retry: new Map(),
+      deferred: new Map(),
       moves: new MoveReplay(o.root, o.client, o.logger),
       seenRev: 0,
       chain: Promise.resolve(),

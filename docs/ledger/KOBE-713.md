@@ -35,6 +35,14 @@ capability JSDoc. Lines (origin/main → now): `workspace/sync.ts` 1216 → 312,
 - CODE-25: `lstatIfExists` (workspace/fs.ts) returns undefined only on ENOENT/ENOTDIR and is used
   at the 12 listed sites (fs.ts ×7, moves.ts ×5). Not changed: `tools/skill-draft-broker.ts`
   `folderDir` has the same `lstat().catch` pattern (answers `not_found`); left for a follow-up.
+- Review follow-up (MEDIUM): a pulled row whose local state cannot be read (EACCES under an
+  owner-only folder) is deferred (`SyncState.deferred`) and evaluated again on later pulls with
+  the full pull rule; the pull applies the rest and advances. Not `s.retry`: that path downloads
+  blindly (no conflict copy, tombstones lost). `dropUnlisted` keeps an unreadable path as it is;
+  push never turns a deferred path into a deletion; `evict` checks its target inside its try.
+  `MoveReplay` skips a move whose destination cannot be checked (warns) and goes on.
+  `statLocal`'s final lstat and `skill-draft-broker` `folderDir` use `lstatIfExists` (an
+  unreadable skill folder answers `invalid_path` "cannot be read by the agent").
 - Orphaned JSDoc: the `save_skill_draft` comment now sits on `skillDraftsEnabled`; the
   `share_file` comment (also orphaned, above `#syncNow`) landed on `filesEnabled` with the move.
 - No docs/guide change: internal refactor plus an error-handling fix nobody sees unless a file is

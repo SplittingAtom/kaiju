@@ -113,6 +113,27 @@ const runStart = (attachments: { path: string; mime_type: string }[] = []): RunS
 });
 
 describe("workspace sync (agent)", () => {
+  // CODE-25 review: an entry the agent cannot stat is retried, never a reason to stop all pulls.
+  it.skipIf(process.getuid?.() === 0)(
+    "pulls the other entries past one under an unreadable folder, and retries that one later",
+    async () => {
+      const root = await volume();
+      const sync = await started(root);
+      await mkdir(path.join(root, "private/sub"), { recursive: true });
+      await chmod(path.join(root, "private"), 0o000); // a tool made it owner-only for another uid
+      server.serverWrite("private/sub/doc.md", "behind the lock");
+      server.serverWrite("open.md", "reachable");
+      await sync.pull();
+      expect(await text(root, "open.md")).toBe("reachable");
+      server.serverWrite("later.md", "the pull advanced");
+      await sync.pull();
+      expect(await text(root, "later.md")).toBe("the pull advanced");
+      await chmod(path.join(root, "private"), 0o755);
+      await sync.pull();
+      expect(await text(root, "private/sub/doc.md")).toBe("behind the lock");
+    },
+  );
+
   it("pushes the workspace and restores it onto a new, empty volume", async () => {
     const first = await volume();
     await put(first, "report.md", "# Q3\n");

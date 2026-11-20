@@ -197,7 +197,7 @@ export async function planPush(s: SyncState): Promise<PushPlan> {
     scan.truncated || scan.incomplete.some((d) => d === "" || path.startsWith(`${d}/`));
   for (const [path, k] of s.known) {
     if (k.deleted || scan.files.has(path) || isExcludedPath(path) || unsure(path)) continue;
-    if (s.retry.has(path)) continue; // not restored yet: never a deletion
+    if (s.retry.has(path) || s.deferred.has(path)) continue; // not settled yet: never a deletion
     if (path.split("/").some((part) => s.o.skipDirs.has(part))) continue;
     if (locked(s, path)) {
       await revertLocal(s, path, undefined);
