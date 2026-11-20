@@ -508,7 +508,7 @@
     {
       "name": "tornado",
       "versions": [
-        "6.5.10"
+        "6.6.1"
       ],
       "ecosystem": "pypi",
       "locations": [
@@ -971,6 +971,16 @@
   ],
   "BlueOak-1.0.0": [
     {
+      "name": "@isaacs/nonrecursive-glob-match",
+      "versions": [
+        "1.1.0"
+      ],
+      "ecosystem": "npm",
+      "locations": [
+        "/opt/pi"
+      ]
+    },
+    {
       "name": "chownr",
       "versions": [
         "3.0.0"
@@ -1043,7 +1053,7 @@
     {
       "name": "minimatch",
       "versions": [
-        "10.2.6"
+        "11.0.5"
       ],
       "ecosystem": "npm",
       "locations": [
@@ -2173,6 +2183,16 @@
       ]
     },
     {
+      "name": "brace-expansion",
+      "versions": [
+        "5.0.13"
+      ],
+      "ecosystem": "npm",
+      "locations": [
+        "/opt/pi"
+      ]
+    },
+    {
       "name": "chalk",
       "versions": [
         "5.6.2"
@@ -2901,7 +2921,7 @@
     {
       "name": "zod",
       "versions": [
-        "4.6.5"
+        "4.6.7"
       ],
       "ecosystem": "npm",
       "locations": [

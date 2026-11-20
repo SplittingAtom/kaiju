@@ -8,10 +8,9 @@
   },
   "multidict": {
     "license": "Apache License 2.0",
-    "versions": ["6.7.1"],
-    "reason": "Apache-2.0 declared as a free-text label (approved for 6.7.1 in the Orbit eval image, KOBE-92). aiohttp dependency (KOBE-341).",
-    "approvedBy": "Chris",
-    "approvedOn": "2026-10-20"
+    "versions": ["6.9.1"],
+    "reason": "Apache-2.0 declared as a free-text label (LICENSE file is the Apache 2.0 text; approved by Chris on 2026-10-20 for 6.7.1, KOBE-341). aiohttp dependency. 6.9.1 is the KOBE-691 security bump (CVE-2026-104874): same license, version approval pending.",
+    "pending": "gate review"
   },
   "regex": {
     "license": "Apache-2.0 AND CNRI-Python",

@@ -772,6 +772,15 @@ describe("ClamAV", () => {
     expect(find(on, "Deployment", "kobe-clamav")).toBeDefined();
   });
 
+  it("pins the image by tag and digest, and drops the digest only when set empty (KOBE-691)", () => {
+    const image = (ms: Manifest[]) =>
+      find(ms, "Deployment", "kobe-clamav")?.spec.template.spec.containers[0].image as string;
+    expect(image(on)).toMatch(/^docker\.io\/clamav\/clamav:1\.4@sha256:[0-9a-f]{64}$/);
+    expect(image(render({ "clamav.enabled": "true", "clamav.image.digest": "" }))).toBe(
+      "docker.io/clamav/clamav:1.4",
+    );
+  });
+
   it("tells the server where clamd is only when enabled (scanning then fails closed)", () => {
     expect(serverEnv(render()).map((e) => e.name)).not.toContain("KOBE_CLAMAV_HOST");
     expect(serverEnv(on)).toContainEqual({ name: "KOBE_CLAMAV_HOST", value: "kobe-clamav" });

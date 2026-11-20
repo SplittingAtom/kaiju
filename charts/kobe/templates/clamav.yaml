@@ -57,7 +57,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: clamav
-          image: "{{ .Values.clamav.image.repository }}:{{ .Values.clamav.image.tag }}"
+          image: "{{ .Values.clamav.image.repository }}:{{ .Values.clamav.image.tag }}{{ with .Values.clamav.image.digest }}@{{ . }}{{ end }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           command: ["/init-unprivileged"]
           securityContext:

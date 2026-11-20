@@ -2,8 +2,8 @@
 # No `# syntax=` directive: dockerd's built-in frontend parses this file, so builds don't start
 # the external docker/dockerfile frontend container (it crashed intermittently on CI runners:
 # "frontend grpc server closed unexpectedly").
-# Digest-pinned: Node 24.22.1, whose bundled root store drops emSign ECC Root CA - G3 (KOBE-486).
-ARG NODE_IMAGE=node:24-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205
+# Digest-pinned: Node 24.22.3; since 24.22.1 its root store lacks emSign ECC Root CA - G3 (KOBE-486).
+ARG NODE_IMAGE=node:24-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54
 ARG PNPM_VERSION=12.8.1
 
 FROM ${NODE_IMAGE} AS build

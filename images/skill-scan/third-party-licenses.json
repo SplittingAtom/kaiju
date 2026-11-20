@@ -15,7 +15,7 @@
     {
       "name": "multidict",
       "versions": [
-        "6.7.1"
+        "6.9.1"
       ],
       "ecosystem": "pypi",
       "locations": [
@@ -33,6 +33,28 @@
       "locations": [
         "python"
       ]
+    },
+    {
+      "name": "boto3",
+      "versions": [
+        "1.43.126"
+      ],
+      "ecosystem": "pypi",
+      "locations": [
+        "python"
+      ],
+      "notice": "boto3\nCopyright 2013-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved."
+    },
+    {
+      "name": "botocore",
+      "versions": [
+        "1.43.126"
+      ],
+      "ecosystem": "pypi",
+      "locations": [
+        "python"
+      ],
+      "notice": "Botocore\nCopyright 2012-2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.\n\n----\n\nBotocore includes vendorized parts of the requests python library for backwards compatibility.\n\nRequests License\n================\n\nCopyright 2013 Kenneth Reitz\n\n   Licensed under the Apache License, Version 2.0 (the \"License\");\n   you may not use this file except in compliance with the License.\n   You may obtain a copy of the License at\n\n       http://www.apache.org/licenses/LICENSE-2.0\n\n   Unless required by applicable law or agreed to in writing, software\n   distributed under the License is distributed on an \"AS IS\" BASIS,\n   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n   See the License for the specific language governing permissions and\n   limitations under the License.\n\nBotocore includes vendorized parts of the urllib3 library for backwards compatibility.\n\nUrllib3 License\n===============\n\nThis is the MIT license: http://www.opensource.org/licenses/mit-license.php\n\nCopyright 2008-2011 Andrey Petrov and contributors (see CONTRIBUTORS.txt),\nModifications copyright 2012 Kenneth Reitz.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this\nsoftware and associated documentation files (the \"Software\"), to deal in the Software\nwithout restriction, including without limitation the rights to use, copy, modify, merge,\npublish, distribute, sublicense, and/or sell copies of the Software, and to permit persons\nto whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or\nsubstantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,\nINCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR\nPURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE\nFOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR\nOTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER\nDEALINGS IN THE SOFTWARE.\n\nBundle of CA Root Certificates\n==============================\n\n***** BEGIN LICENSE BLOCK *****\nThis Source Code Form is subject to the terms of the\nMozilla Public License, v. 2.0. If a copy of the MPL\nwas not distributed with this file, You can obtain\none at http://mozilla.org/MPL/2.0/.\n\n***** END LICENSE BLOCK *****"
     },
     {
       "name": "cisco-ai-skill-scanner",
@@ -157,6 +179,17 @@
       "notice": "Requests\nCopyright 2019 Kenneth Reitz"
     },
     {
+      "name": "s3transfer",
+      "versions": [
+        "0.19.3"
+      ],
+      "ecosystem": "pypi",
+      "locations": [
+        "python"
+      ],
+      "notice": "s3transfer\nCopyright 2016 Amazon.com, Inc. or its affiliates. All Rights Reserved."
+    },
+    {
       "name": "tokenizers",
       "versions": [
         "0.22.2"
@@ -219,6 +252,16 @@
       "name": "cryptography",
       "versions": [
         "50.0.0"
+      ],
+      "ecosystem": "pypi",
+      "locations": [
+        "python"
+      ]
+    },
+    {
+      "name": "python-dateutil",
+      "versions": [
+        "2.9.0.post0"
       ],
       "ecosystem": "pypi",
       "locations": [
@@ -570,7 +613,7 @@
     {
       "name": "filelock",
       "versions": [
-        "3.29.0"
+        "4.2.1"
       ],
       "ecosystem": "pypi",
       "locations": [
@@ -601,6 +644,16 @@
       "name": "jiter",
       "versions": [
         "0.14.0"
+      ],
+      "ecosystem": "pypi",
+      "locations": [
+        "python"
+      ]
+    },
+    {
+      "name": "jmespath",
+      "versions": [
+        "1.1.0"
       ],
       "ecosystem": "pypi",
       "locations": [
@@ -640,7 +693,7 @@
     {
       "name": "litellm",
       "versions": [
-        "1.89.7"
+        "1.100.5"
       ],
       "ecosystem": "pypi",
       "locations": [
@@ -739,6 +792,16 @@
       ]
     },
     {
+      "name": "pydantic-settings",
+      "versions": [
+        "2.16.2"
+      ],
+      "ecosystem": "pypi",
+      "locations": [
+        "python"
+      ]
+    },
+    {
       "name": "pyjwt",
       "versions": [
         "2.15.1"
@@ -802,6 +865,16 @@
       "name": "rpds-py",
       "versions": [
         "0.30.0"
+      ],
+      "ecosystem": "pypi",
+      "locations": [
+        "python"
+      ]
+    },
+    {
+      "name": "six",
+      "versions": [
+        "1.17.0"
       ],
       "ecosystem": "pypi",
       "locations": [
