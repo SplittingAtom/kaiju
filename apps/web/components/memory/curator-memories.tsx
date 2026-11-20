@@ -28,7 +28,10 @@ export interface ListedScope {
   readonly curate: boolean;
 }
 
-/** Status filter: TODO KOBE-386 adds "stale" once its sweep defines it (ledger KOBE-385). */
+/**
+ * Status filter: the contract's three statuses. Staleness (KOBE-386) is not a status but a flag on
+ * items and a `stale` list filter (`MemoryItem.stale`, `ListQuery.stale`); not shown here yet.
+ */
 const STATUS_LABELS: Readonly<Record<ItemStatus, string>> = {
   active: "Active",
   archived: "Archived",
