@@ -172,7 +172,8 @@ export function createStreamReader(options: {
   /**
    * One read-only transaction scoped to the team in three round trips: BEGIN + set_config as one
    * simple query (the team id is a validated UUID literal, never free text), the statement, COMMIT.
-   * Same RLS context as withTeam(); the setting ends with the transaction.
+   * Same RLS context as withTeam(); the setting ends with the transaction. An accepted exception to
+   * "only withTeam() sets the team" (KOBE-697, CLAUDE.md; guarded by team-setters.test.ts).
    */
   async function inTeam<R extends pg.QueryResultRow>(
     teamId: string,
