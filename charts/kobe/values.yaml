@@ -183,8 +183,9 @@ auth:
     #     # enabled: true
     #     # maxSessionHours: 12
     providers: []
-    # The server has no egress NetworkPolicy of its own. If your namespace denies egress by
-    # default, enable this to allow the server DNS and HTTPS to the identity provider. It selects
+    # With server.networkPolicy.restrictEgress (KOBE-698) public HTTPS is already allowed. Without
+    # it, if your namespace denies egress by default, enable this to allow the server DNS and HTTPS
+    # to the identity provider. It selects
     # the server pods, so on its own it would also make every other server egress default-deny:
     # enable it only beside your own allow rules for Postgres, S3, SMTP and the Kubernetes API.
     # Entra ID needs login.microsoftonline.com (discovery, keys and token endpoint) on 443; its
@@ -226,6 +227,11 @@ web:
   # NetworkPolicy already admits). Set it only for split installs where web and server are not one
   # release. Origin only (http(s)://host[:port]); when unreachable the web serves the Kobe defaults.
   serverUrl: ""
+  networkPolicy:
+    # Opt-in egress policy (KOBE-698): DNS and the server's pods on 8080 only. A serverUrl outside
+    # this release needs a rule in extraEgress (raw NetworkPolicy egress rules).
+    restrictEgress: false
+    extraEgress: []
 
 server:
   # Stateless; at least two replicas from day one (spec D2).
@@ -306,6 +312,25 @@ server:
     username: x-access-token
     authorName: Kobe Registry
     authorEmail: registry@kobe.invalid
+  # Opt-in egress policy (KOBE-698; off keeps the server's egress open, as before). On: DNS,
+  # Postgres, Kobe's own services, the Kubernetes API, public addresses on allowedPorts (S3, the
+  # identity provider, OAuth, model discovery) and the SMTP relay on smtp.port. Anything on the LAN
+  # or in the cluster (S3, SMTP, IdP, telemetry, SIEM) needs a rule in extraEgress (docs/install.md).
+  networkPolicy:
+    restrictEgress: false
+    allowedPorts: [443]
+    # External Postgres only, required when restrictEgress is on: NetworkPolicy peers (ipBlock /
+    # selectors) of your database.
+    databasePeers: []
+    databasePort: 5432
+    # The API server as the pod sees it after the kubernetes Service's DNAT (its own address and
+    # port; `kubectl get endpoints kubernetes`). Required when restrictEgress is on.
+    kubernetesApi:
+      peers: []
+      ports: [443, 6443]
+    # Extra raw NetworkPolicy egress rules for the server, e.g. a LAN S3 endpoint:
+    # [{to: [{ipBlock: {cidr: 10.20.30.40/32}}], ports: [{protocol: TCP, port: 9000}]}].
+    extraEgress: []
 
 scheduler:
   # Replicas > 1 are safe: each due occurrence is claimed under a row lease and a unique index
@@ -665,6 +690,13 @@ clamav:
   image:
     repository: docker.io/clamav/clamav
     tag: "1.4"
+    # Multi-arch index digest of the tag (pinned; update both together). Empty uses the tag alone.
+    digest: sha256:b7357e2c1c59480628839df301b0d27923561389b36cf341911e1dd9e02cdd05
+  networkPolicy:
+    # Its egress is DNS and public addresses on 443/80 (signature downloads). A private signature
+    # mirror: raw NetworkPolicy egress rules, e.g.
+    # [{to: [{ipBlock: {cidr: 10.20.30.40/32}}], ports: [{protocol: TCP, port: 443}]}].
+    extraEgress: []
   resources:
     requests: { cpu: 100m, memory: 1Gi }
     limits: { cpu: "1", memory: 2Gi }

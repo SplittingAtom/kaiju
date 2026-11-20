@@ -203,6 +203,17 @@ jobs:
       matrix:
         shard: ${{ fromJSON(inputs.shards || '["suite","cold-start","gate1","gate2","gate3","gate4","gate5-a","gate5-b","gate7-a","gate7-b","gate-apps","gate-sso","executor","restore"]') }}
     steps:
+      # The matrix can come from the workflow_dispatch input `shards`: refuse any name that is not a
+      # known shard before a step uses it, and pass it to scripts through env only (KOBE-700).
+      - name: Known shard name
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          case "${SHARD}" in
+            suite | cold-start | executor | restore | gate1 | gate2 | gate3 | gate4) ;;
+            gate5-a | gate5-b | gate7-a | gate7-b | gate-apps | gate-sso) ;;
+            *) echo "unknown shard in the shards input: ${SHARD}" >&2; exit 2 ;;
+          esac
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -306,11 +317,12 @@ jobs:
         env:
           KOBE_IMAGE_ARCHIVES: ${{ runner.temp }}/e2e-images
           KOBE_E2E_EXTRA_IMAGES: ${{ matrix.shard == 'gate4' && 'orbit-eval' || '' }}
+          SHARD: ${{ matrix.shard }}
         run: |
           ls -lh "${KOBE_IMAGE_ARCHIVES}"
           e2e/load-images.sh kobe "${KOBE_IMAGE_TAG}"
           # The node now has its own copies (the restore shard loads them again into its second cluster).
-          if [ "${{ matrix.shard }}" != restore ]; then rm -rf "${KOBE_IMAGE_ARCHIVES}"; fi
+          if [ "${SHARD}" != restore ]; then rm -rf "${KOBE_IMAGE_ARCHIVES}"; fi
       - name: Run the ${{ matrix.shard }} shard
         env:
           KOBE_SANDBOX_IMAGE: ghcr.io/splittingatom/kobe-sandbox:${{ env.KOBE_IMAGE_TAG }}

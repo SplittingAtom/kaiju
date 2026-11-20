@@ -863,9 +863,11 @@ is proven by an `amr` value in `mfaRule.amr_any` (default `mfa`, `hwk`, `swk`, `
   signing keys and the token endpoint (the browser does the rest). For Entra that is
   `login.microsoftonline.com` on 443; local sign-in never contacts it. Those URLs pass Kobe's SSRF
   guard: https on an allowed port (`auth.sso.allowedPorts`, default `[443]`), no private,
-  loopback, link-local or metadata address and no redirects. The server has no egress
-  NetworkPolicy of its own; if your namespace denies egress by default, turn on
-  `auth.sso.networkPolicy.enabled` (DNS plus HTTPS to public addresses, or to
+  loopback, link-local or metadata address and no redirects. With
+  `server.networkPolicy.restrictEgress` ([Server and web egress](#server-and-web-egress-optional))
+  public addresses on 443 are already allowed; an on-premises provider needs a rule in
+  `server.networkPolicy.extraEgress`. Without it, if your namespace denies egress by default, turn
+  on `auth.sso.networkPolicy.enabled` (DNS plus HTTPS to public addresses, or to
   `auth.sso.networkPolicy.cidrs`) **beside** your own allow rules for Postgres, S3, SMTP and the
   Kubernetes API, since it makes the server's other egress default-deny.
 - **An on-premises provider** on a private address: list its range in
@@ -1061,7 +1063,15 @@ and a separate `kobe_app` login role. The chart generates and keeps the `kobe_ap
 GitOps tools that render offline (Argo CD, `helm template`), pre-create a `kubernetes.io/basic-auth`
 Secret (`username: kobe_app`) and set `postgres.cnpg.existingAppSecret`, or every render would
 rotate it. The generated Secret is kept on `helm uninstall`; delete it when reinstalling from
-scratch.
+scratch. The Cluster's NetworkPolicy admits only the pods that use the database (server,
+scheduler, egress proxy, model gateway and the migrate Job), the Postgres instances themselves and
+the operator's namespace; reach it from outside with `kubectl port-forward` (as in
+[backup and restore](backup-restore.md)), which NetworkPolicy does not filter.
+
+ClamAV (`clamav.enabled`) gets an egress NetworkPolicy too: DNS and public addresses on 443 and 80,
+for its signature downloads from `database.clamav.net`. A private signature mirror needs a rule in
+`clamav.networkPolicy.extraEgress`. The image is pinned by tag and digest (`clamav.image.digest`);
+set the digest to `""` only for a mirror that re-tags it.
 
 Every value is validated by `charts/kobe/values.schema.json`; unknown keys are rejected.
 
@@ -1132,6 +1142,53 @@ the CA is trusted in addition to the public ones; certificates are still verifie
 server after rotating the bundle (Node reads it at start). See
 [audit forwarding](audit-log.md#export-and-forwarding).
 
+### Server and web egress (optional)
+
+The server is the most privileged pod (it holds the envelope key, the approval key and the session
+signing keys, and manages team namespaces), and by default its egress is not restricted. Turn on
+`server.networkPolicy.restrictEgress: true` to give it an egress NetworkPolicy that allows only:
+
+- DNS (kube-dns);
+- Postgres: the bundled CloudNativePG instances, or with external Postgres the peers in
+  `server.networkPolicy.databasePeers` on `databasePort` (required with external Postgres);
+- Kobe's own services in the release (Bifrost, model gateway, MCP proxy, egress proxy, ClamAV,
+  embeddings);
+- the Kubernetes API on `server.networkPolicy.kubernetesApi.ports` (`[443, 6443]`), at the peers in
+  `kubernetesApi.peers` (required). NetworkPolicy sees the API server's own address after the
+  `kubernetes` Service's translation: `kubectl get endpoints kubernetes` shows it;
+- public addresses on `server.networkPolicy.allowedPorts` (`[443]`): S3, the identity provider,
+  OAuth token endpoints of MCP connectors;
+- the SMTP relay on `smtp.port`, on a public address.
+
+The chart refuses to render with `restrictEgress` on while `kubernetesApi.peers` (or, with
+external Postgres, `databasePeers`) is empty: "any address on 443/6443/5432" would let the server
+reach every LAN and cluster host on those ports, which the policy exists to prevent.
+
+Anything on your LAN or in the cluster needs a rule in `server.networkPolicy.extraEgress` (raw
+NetworkPolicy egress rules): an S3 endpoint such as MinIO on a private address, an internal SMTP
+relay, an on-premises identity provider, the OTLP endpoint (`telemetry.endpoint`) and the syslog or
+OTLP collectors of [audit forwarding](audit-log.md#export-and-forwarding). For example:
+
+```yaml
+server:
+  networkPolicy:
+    restrictEgress: true
+    kubernetesApi:
+      peers: [{ ipBlock: { cidr: 10.0.0.1/32 } }] # kubectl get endpoints kubernetes
+    databasePeers: [{ ipBlock: { cidr: 10.20.30.50/32 } }] # external Postgres
+    extraEgress:
+      - to: [{ ipBlock: { cidr: 10.20.30.40/32 } }] # LAN S3
+        ports: [{ protocol: TCP, port: 9000 }]
+      - to: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: mail } } }]
+        ports: [{ protocol: TCP, port: 25 }] # in-cluster relay
+```
+
+`web.networkPolicy.restrictEgress: true` limits the web pods to DNS and the server's pods on 8080
+(the default `web.serverUrl`); a `web.serverUrl` outside the release needs a rule in
+`web.networkPolicy.extraEgress`. Both flags are off by default, so upgrading changes nothing until
+you turn them on. After turning them on, check that sign-in, an upload, an invitation email and a
+chat with a model still work; a missing destination shows as a timeout in the server log.
+
 ### Migrations
 
 Install and upgrade with `--wait`. Schema migrations run as the database owner in a Job — the
@@ -1162,6 +1219,13 @@ on by default), migrations `0216`–`0235` and the upgrade steps. The notes belo
 Migrations report what an upgrade changed in the migration Job's log (`"msg":"migration notice"`,
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
+
+- **Narrower bundled-Postgres and ClamAV policies (KOBE-699).** With `postgres.mode=cnpg`, the
+  Postgres NetworkPolicy no longer admits every pod in the release namespace: only the server,
+  scheduler, egress proxy, model gateway, the migrate Job, the instances and the operator. A pod of
+  your own in that namespace that connects to the database needs its own NetworkPolicy ingress rule
+  on the Cluster's pods (`cnpg.io/cluster: <release>-pg`). ClamAV gets an egress policy (DNS,
+  public 443/80); a private signature mirror goes in `clamav.networkPolicy.extraEgress`.
 
 - **Memory learning tables (KOBE-389).** Migrations `0228_memory_learning` and
   `0229_memory_learning_rls` add five empty team tables for learning from conversations

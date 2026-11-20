@@ -17,13 +17,17 @@ default), **external** (operated by the site, not shipped by Kobe), **dev-only**
 
 ## Pending gate review
 
-Nothing is pending: every component outside the allowed family has Chris's approval.
+Outside the allowed family and not decided yet; every gate review clears this list with
+Chris (`pnpm license:gate` fails while it is not empty):
+
+- multidict 6.9.1 (Apache License 2.0, exception in images/orbit-eval/license-exceptions.json): Apache-2.0 declared as a free-text label (LICENSE file is the Apache 2.0 text; approved by Chris on 2026-10-04 for 6.7.1, KOBE-92). aiohttp dependency. 6.9.1 is the KOBE-691 security bump (CVE-2026-104874): same license, version approval pending.
+- multidict 6.9.1 (Apache License 2.0, exception in images/skill-scan/license-exceptions.json): Apache-2.0 declared as a free-text label (LICENSE file is the Apache 2.0 text; approved by Chris on 2026-10-20 for 6.7.1, KOBE-341). aiohttp dependency. 6.9.1 is the KOBE-691 security bump (CVE-2026-104874): same license, version approval pending.
 
 ## Web and services: npm packages (pnpm workspace)
 
 Every package in pnpm-lock.yaml (production and development, all platforms). "linked, bundled" packages are in the production dependencies of a deployable and ship in its image (the services via `pnpm deploy --prod`, web via the Next.js standalone output, kobe-sandbox-agent in the sandbox image); "dev-only" packages build, lint and test Kobe and are never shipped. Checked by `pnpm license:check` (CI `checks`).
 
-929 packages, 637 of them shipped in an image.
+932 packages, 634 of them shipped in an image.
 
 | Component | Version | License (SPDX) | How used | Where | License text |
 | --- | --- | --- | --- | --- | --- |
@@ -63,9 +67,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | @better-auth/passkey | 1.7.14 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@better-auth/passkey@1.7.14/LICENSE.md) |
 | @better-auth/prisma-adapter | 1.7.14 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@better-auth/prisma-adapter@1.7.14/LICENSE.md) |
 | @better-auth/telemetry | 1.7.14 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@better-auth/telemetry@1.7.14/LICENSE.md) |
-| @better-auth/utils | 0.5.0 | MIT | linked, bundled | server, web | [license](https://www.npmjs.com/package/@better-auth/utils/v/0.5.0) |
 | @better-auth/utils | 0.5.1 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@better-auth/utils@0.5.1/LICENSE) |
-| @better-fetch/fetch | 1.3.2 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@better-fetch/fetch@1.3.2/LICENSE) |
 | @better-fetch/fetch | 1.3.3 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@better-fetch/fetch@1.3.3/LICENSE) |
 | @braintree/sanitize-url | 7.1.2 | MIT | linked, bundled | web | [license](https://unpkg.com/@braintree/sanitize-url@7.1.2/LICENSE) |
 | @cacheable/memory | 2.2.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@cacheable/memory@2.2.0/LICENSE) |
@@ -88,6 +90,9 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | @codemirror/streamparser | 6.0.0 | MIT | linked, bundled | web | [license](https://unpkg.com/@codemirror/streamparser@6.0.0/LICENSE) |
 | @codemirror/view | 6.43.15 | MIT | linked, bundled | web | [license](https://unpkg.com/@codemirror/view@6.43.15/LICENSE) |
 | @drizzle-team/brocli | 0.10.2 | Apache-2.0 | dev-only | build, lint and test tooling | [license](https://www.npmjs.com/package/@drizzle-team/brocli/v/0.10.2) |
+| @emnapi/core | 2.0.0-beta.2 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/toyobayashi/emnapi/blob/main/LICENSE) |
+| @emnapi/runtime | 2.0.0-beta.2 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/toyobayashi/emnapi/blob/main/LICENSE) |
+| @emnapi/wasi-threads | 2.2.0 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/toyobayashi/emnapi/blob/main/LICENSE) |
 | @esbuild-kit/core-utils | 3.3.2 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@esbuild-kit/core-utils@3.3.2/LICENSE) |
 | @esbuild-kit/esm-loader | 2.6.5 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@esbuild-kit/esm-loader@2.6.5/LICENSE) |
 | @esbuild/aix-ppc64 | 0.25.12 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/evanw/esbuild/blob/main/LICENSE.md) |
@@ -212,15 +217,16 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | @modelcontextprotocol/client | 2.3.1 | Apache-2.0 | dev-only | build, lint and test tooling | [license](https://unpkg.com/@modelcontextprotocol/client@2.3.1/LICENSE) |
 | @modelcontextprotocol/core | 2.3.1 | Apache-2.0 | dev-only | build, lint and test tooling | [license](https://unpkg.com/@modelcontextprotocol/core@2.3.1/LICENSE) |
 | @modelcontextprotocol/ext-apps | 2.0.3 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@modelcontextprotocol/ext-apps@2.0.3/LICENSE) |
-| @next/env | 16.4.3 | MIT | linked, bundled | web | [license](https://www.npmjs.com/package/@next/env/v/16.4.3) |
-| @next/swc-darwin-arm64 | 16.4.3 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
-| @next/swc-darwin-x64 | 16.4.3 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
-| @next/swc-linux-arm64-gnu | 16.4.3 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
-| @next/swc-linux-arm64-musl | 16.4.3 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
-| @next/swc-linux-x64-gnu | 16.4.3 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
-| @next/swc-linux-x64-musl | 16.4.3 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
-| @next/swc-win32-arm64-msvc | 16.4.3 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
-| @next/swc-win32-x64-msvc | 16.4.3 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
+| @napi-rs/wasm-runtime | 1.2.6 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/napi-rs/napi-rs/blob/main/LICENSE) |
+| @next/env | 16.4.6 | MIT | linked, bundled | web | [license](https://www.npmjs.com/package/@next/env/v/16.4.6) |
+| @next/swc-darwin-arm64 | 16.4.6 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
+| @next/swc-darwin-x64 | 16.4.6 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
+| @next/swc-linux-arm64-gnu | 16.4.6 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
+| @next/swc-linux-arm64-musl | 16.4.6 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
+| @next/swc-linux-x64-gnu | 16.4.6 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
+| @next/swc-linux-x64-musl | 16.4.6 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
+| @next/swc-win32-arm64-msvc | 16.4.6 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
+| @next/swc-win32-x64-msvc | 16.4.6 | MIT | linked, bundled (platform build) | web | [license](https://github.com/vercel/next.js/blob/canary/license.md) |
 | @noble/ciphers | 2.4.0 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@noble/ciphers@2.4.0/LICENSE) |
 | @noble/hashes | 2.4.0 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@noble/hashes@2.4.0/LICENSE) |
 | @opentelemetry/api-logs | 0.200.0 | Apache-2.0 | dev-only | build, lint and test tooling | [license](https://unpkg.com/@opentelemetry/api-logs@0.200.0/LICENSE) |
@@ -246,7 +252,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | @opentelemetry/sdk-trace-node | 2.12.0 | Apache-2.0 | linked, bundled | egress-proxy, mcp-proxy, model-gateway, server | [license](https://unpkg.com/@opentelemetry/sdk-trace-node@2.12.0/LICENSE) |
 | @opentelemetry/sdk-trace | 2.12.0 | Apache-2.0 | linked, bundled | egress-proxy, mcp-proxy, model-gateway, server | [license](https://unpkg.com/@opentelemetry/sdk-trace@2.12.0/LICENSE) |
 | @opentelemetry/semantic-conventions | 1.43.0 | Apache-2.0 | linked, bundled | egress-proxy, mcp-proxy, model-gateway, server | [license](https://unpkg.com/@opentelemetry/semantic-conventions@1.43.0/LICENSE) |
-| @oxc-project/types | 0.151.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@oxc-project/types@0.151.0/LICENSE) |
+| @oxc-project/types | 0.156.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@oxc-project/types@0.156.0/LICENSE) |
 | @peculiar/asn1-android | 2.10.0 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@peculiar/asn1-android@2.10.0/LICENSE) |
 | @peculiar/asn1-asym-key | 2.10.0 | MIT | linked, bundled | server | [license](https://unpkg.com/@peculiar/asn1-asym-key@2.10.0/LICENSE) |
 | @peculiar/asn1-cms | 2.10.0 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@peculiar/asn1-cms@2.10.0/LICENSE) |
@@ -333,21 +339,22 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | @radix-ui/react-use-size | 1.1.5 | MIT | linked, bundled | web | [license](https://unpkg.com/@radix-ui/react-use-size@1.1.5/LICENSE) |
 | @radix-ui/react-visually-hidden | 1.2.13 | MIT | linked, bundled | web | [license](https://unpkg.com/@radix-ui/react-visually-hidden@1.2.13/LICENSE) |
 | @radix-ui/rect | 1.1.3 | MIT | linked, bundled | web | [license](https://unpkg.com/@radix-ui/rect@1.1.3/LICENSE) |
-| @rolldown/binding-android-arm-eabi | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-android-arm64 | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-darwin-arm64 | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-darwin-x64 | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-freebsd-x64 | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-linux-arm-gnueabihf | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-linux-arm64-gnu | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-linux-arm64-musl | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-linux-ppc64-gnu | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-linux-s390x-gnu | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-linux-x64-gnu | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-linux-x64-musl | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-openharmony-arm64 | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-win32-arm64-msvc | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
-| @rolldown/binding-win32-x64-msvc | 1.2.11 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-android-arm-eabi | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-android-arm64 | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-darwin-arm64 | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-darwin-x64 | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-freebsd-x64 | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-linux-arm-gnueabihf | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-linux-arm64-gnu | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-linux-arm64-musl | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-linux-ppc64-gnu | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-linux-s390x-gnu | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-linux-x64-gnu | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-linux-x64-musl | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-openharmony-arm64 | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-wasm32-wasi | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-win32-arm64-msvc | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
+| @rolldown/binding-win32-x64-msvc | 1.2.19 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/rolldown/rolldown/blob/main/LICENSE) |
 | @rolldown/pluginutils | 1.0.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@rolldown/pluginutils@1.0.1/LICENSE) |
 | @simplewebauthn/browser | 13.3.0 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@simplewebauthn/browser@13.3.0/LICENSE.md) |
 | @simplewebauthn/server | 13.3.3 | MIT | linked, bundled | server, web | [license](https://unpkg.com/@simplewebauthn/server@13.3.3/LICENSE.md) |
@@ -385,6 +392,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | @turbo/linux-arm64 | 2.11.10 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/vercel/turborepo/blob/main/LICENSE) |
 | @turbo/windows-64 | 2.11.10 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/vercel/turborepo/blob/main/LICENSE) |
 | @turbo/windows-arm64 | 2.11.10 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/vercel/turborepo/blob/main/LICENSE) |
+| @tybys/wasm-util | 0.10.5 | MIT | dev-only (platform build) | build, lint and test tooling | [license](https://github.com/toyobayashi/wasm-util/blob/main/LICENSE) |
 | @types/aria-query | 5.0.4 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@types/aria-query@5.0.4/LICENSE) |
 | @types/busboy | 1.5.5 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@types/busboy@1.5.5/LICENSE) |
 | @types/chai | 5.2.3 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/@types/chai@5.2.3/LICENSE) |
@@ -573,7 +581,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | diff3 | 0.0.3 | MIT | linked, bundled | server | [license](https://www.npmjs.com/package/diff3/v/0.0.3) |
 | diff | 9.0.0 | BSD-3-Clause | linked, bundled | server | [license](https://unpkg.com/diff@9.0.0/LICENSE) |
 | dom-accessibility-api | 0.5.16 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/dom-accessibility-api@0.5.16/LICENSE.md) |
-| dompurify | 3.4.16 | (MPL-2.0 OR Apache-2.0) | linked, bundled | web | [license](https://unpkg.com/dompurify@3.4.16/LICENSE) |
+| dompurify | 3.4.18 | (MPL-2.0 OR Apache-2.0) | linked, bundled | web | [license](https://unpkg.com/dompurify@3.4.18/LICENSE) |
 | drizzle-kit | 0.31.11 | MIT | dev-only | build, lint and test tooling | [license](https://www.npmjs.com/package/drizzle-kit/v/0.31.11) |
 | drizzle-orm | 0.45.3 | Apache-2.0 | linked, bundled | egress-proxy, model-gateway, server | [license](https://www.npmjs.com/package/drizzle-orm/v/0.45.3) |
 | dunder-proto | 1.0.1 | MIT | linked, bundled | server | [license](https://unpkg.com/dunder-proto@1.0.1/LICENSE) |
@@ -634,7 +642,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | gopd | 1.2.0 | MIT | linked, bundled | server | [license](https://unpkg.com/gopd@1.2.0/LICENSE) |
 | graceful-fs | 4.2.11 | ISC | linked, bundled | web | [license](https://unpkg.com/graceful-fs@4.2.11/LICENSE) |
 | hachure-fill | 0.5.2 | MIT | linked, bundled | web | [license](https://unpkg.com/hachure-fill@0.5.2/LICENSE) |
-| happy-dom | 20.14.5 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/happy-dom@20.14.5/LICENSE) |
+| happy-dom | 21.0.4 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/happy-dom@21.0.4/LICENSE) |
 | has-property-descriptors | 1.0.2 | MIT | linked, bundled | server | [license](https://unpkg.com/has-property-descriptors@1.0.2/LICENSE) |
 | has-symbols | 1.1.0 | MIT | linked, bundled | server | [license](https://unpkg.com/has-symbols@1.1.0/LICENSE) |
 | has-tostringtag | 1.0.2 | MIT | linked, bundled | server | [license](https://unpkg.com/has-tostringtag@1.0.2/LICENSE) |
@@ -642,7 +650,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | hasown | 2.0.4 | MIT | linked, bundled | server | [license](https://unpkg.com/hasown@2.0.4/LICENSE) |
 | hast-util-to-jsx-runtime | 2.3.6 | MIT | linked, bundled | web | [license](https://unpkg.com/hast-util-to-jsx-runtime@2.3.6/license) |
 | hast-util-whitespace | 3.0.0 | MIT | linked, bundled | web | [license](https://unpkg.com/hast-util-whitespace@3.0.0/license) |
-| hono | 4.13.13 | MIT | linked, bundled | egress-proxy, mcp-proxy, model-gateway, server | [license](https://unpkg.com/hono@4.13.13/LICENSE) |
+| hono | 4.13.19 | MIT | linked, bundled | egress-proxy, mcp-proxy, model-gateway, server | [license](https://unpkg.com/hono@4.13.19/LICENSE) |
 | hookified | 1.15.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/hookified@1.15.1/LICENSE) |
 | hookified | 2.2.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/hookified@2.2.0/LICENSE) |
 | hpagent | 1.2.0 | MIT | linked, bundled | server | [license](https://unpkg.com/hpagent@1.2.0/LICENSE) |
@@ -657,7 +665,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | inline-style-parser | 0.2.7 | MIT | linked, bundled | web | [license](https://unpkg.com/inline-style-parser@0.2.7/LICENSE) |
 | internmap | 1.0.1 | ISC | linked, bundled | web | [license](https://unpkg.com/internmap@1.0.1/LICENSE) |
 | internmap | 2.0.3 | ISC | linked, bundled | web | [license](https://unpkg.com/internmap@2.0.3/LICENSE) |
-| ip-address | 10.7.2 | MIT | linked, bundled | server | [license](https://unpkg.com/ip-address@10.7.2/LICENSE) |
+| ip-address | 10.7.6 | MIT | linked, bundled | server | [license](https://unpkg.com/ip-address@10.7.6/LICENSE) |
 | is-alphabetical | 2.0.1 | MIT | linked, bundled | web | [license](https://unpkg.com/is-alphabetical@2.0.1/license) |
 | is-alphanumerical | 2.0.1 | MIT | linked, bundled | web | [license](https://unpkg.com/is-alphanumerical@2.0.1/license) |
 | is-callable | 1.2.7 | MIT | linked, bundled | server | [license](https://unpkg.com/is-callable@1.2.7/LICENSE) |
@@ -773,13 +781,12 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | minimist | 1.2.8 | MIT | linked, bundled | server | [license](https://unpkg.com/minimist@1.2.8/LICENSE) |
 | minimisted | 2.0.1 | MIT | linked, bundled | server | [license](https://www.npmjs.com/package/minimisted/v/2.0.1) |
 | ms | 2.1.3 | MIT | linked, bundled | server, web | [license](https://unpkg.com/ms@2.1.3/license.md) |
-| nanoid | 3.3.19 | MIT | linked, bundled | web | [license](https://unpkg.com/nanoid@3.3.19/LICENSE) |
 | nanoid | 3.3.20 | MIT | linked, bundled | web | [license](https://unpkg.com/nanoid@3.3.20/LICENSE) |
 | nanoid | 6.0.2 | MIT | linked, bundled | web | [license](https://unpkg.com/nanoid@6.0.2/LICENSE) |
 | nanostores | 1.5.4 | MIT | linked, bundled | server, web | [license](https://unpkg.com/nanostores@1.5.4/LICENSE) |
 | natural-compare | 1.4.0 | MIT | dev-only | build, lint and test tooling | [license](https://www.npmjs.com/package/natural-compare/v/1.4.0) |
-| next | 16.4.3 | MIT | linked, bundled | web | [license](https://unpkg.com/next@16.4.3/license.md) |
-| nodemailer | 10.1.0 | MIT-0 | linked, bundled | server | [license](https://unpkg.com/nodemailer@10.1.0/LICENSE) |
+| next | 16.4.6 | MIT | linked, bundled | web | [license](https://unpkg.com/next@16.4.6/license.md) |
+| nodemailer | 10.6.0 | MIT-0 | linked, bundled | server | [license](https://unpkg.com/nodemailer@10.6.0/LICENSE) |
 | oauth4webapi | 3.8.8 | MIT | linked, bundled | server | [license](https://unpkg.com/oauth4webapi@3.8.8/LICENSE.md) |
 | obug | 2.2.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/obug@2.2.1/LICENSE) |
 | on-exit-leak-free | 2.1.2 | MIT | linked, bundled | egress-proxy, mcp-proxy, model-gateway, sandbox, server | [license](https://unpkg.com/on-exit-leak-free@2.1.2/LICENSE) |
@@ -853,7 +860,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | resolve-pkg-maps | 1.0.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/resolve-pkg-maps@1.0.0/LICENSE) |
 | rfc4648 | 1.5.4 | MIT | linked, bundled | server | [license](https://unpkg.com/rfc4648@1.5.4/LICENSE) |
 | robust-predicates | 3.0.3 | Unlicense | linked, bundled | web | [license](https://unpkg.com/robust-predicates@3.0.3/LICENSE) |
-| rolldown | 1.2.11 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/rolldown@1.2.11/LICENSE) |
+| rolldown | 1.2.19 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/rolldown@1.2.19/LICENSE) |
 | rou3 | 0.9.2 | MIT | linked, bundled | server, web | [license](https://unpkg.com/rou3@0.9.2/LICENSE) |
 | roughjs | 4.6.6 | MIT | linked, bundled | web | [license](https://unpkg.com/roughjs@4.6.6/LICENSE) |
 | rw | 1.3.3 | BSD-3-Clause | linked, bundled | web | [license](https://unpkg.com/rw@1.3.3/LICENSE) |
@@ -940,7 +947,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | uuid | 14.0.2 | MIT | linked, bundled | web | [license](https://unpkg.com/uuid@14.0.2/LICENSE.md) |
 | vfile-message | 4.0.3 | MIT | linked, bundled | web | [license](https://unpkg.com/vfile-message@4.0.3/license) |
 | vfile | 6.0.3 | MIT | linked, bundled | web | [license](https://unpkg.com/vfile@6.0.3/license) |
-| vite | 8.3.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/vite@8.3.1/LICENSE.md) |
+| vite | 8.3.8 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/vite@8.3.8/LICENSE.md) |
 | vitest | 5.0.3 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/vitest@5.0.3/LICENSE.md) |
 | w3c-keyname | 2.2.8 | MIT | linked, bundled | web | [license](https://unpkg.com/w3c-keyname@2.2.8/LICENSE) |
 | whatwg-mimetype | 3.0.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/whatwg-mimetype@3.0.0/LICENSE.txt) |
@@ -953,7 +960,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | xtend | 4.0.2 | MIT | linked, bundled | egress-proxy, model-gateway, server | [license](https://unpkg.com/xtend@4.0.2/LICENSE) |
 | yaml | 2.9.1 | ISC | linked, bundled | egress-proxy, mcp-proxy, model-gateway, sandbox, server, web | [license](https://unpkg.com/yaml@2.9.1/LICENSE) |
 | yocto-queue | 0.1.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/yocto-queue@0.1.0/license) |
-| zod | 4.6.5 | MIT | linked, bundled | egress-proxy, mcp-proxy, model-gateway, sandbox, server, web | [license](https://unpkg.com/zod@4.6.5/LICENSE) |
+| zod | 4.6.7 | MIT | linked, bundled | egress-proxy, mcp-proxy, model-gateway, sandbox, server, web | [license](https://unpkg.com/zod@4.6.7/LICENSE) |
 | zustand | 5.0.15 | MIT | linked, bundled | web | [license](https://unpkg.com/zustand@5.0.15/LICENSE) |
 | zwitch | 2.0.4 | MIT | linked, bundled | web | [license](https://unpkg.com/zwitch@2.0.4/license) |
 
@@ -1258,7 +1265,7 @@ What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kobe-sand
 | text-table | 0.2.0 | MIT | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/text-table/v/0.2.0) |
 | tiny-relative-date | 2.0.2 | MIT | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/tiny-relative-date/v/2.0.2) |
 | tinyglobby | 0.2.17 | MIT | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/tinyglobby/v/0.2.17) |
-| tornado | 6.5.10 | Apache-2.0 | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/tornado/6.5.10/) |
+| tornado | 6.6.1 | Apache-2.0 | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/tornado/6.6.1/) |
 | traitlets | 5.16.1 | BSD-3-Clause | bundled (Python package) | sandbox: Python site-packages | [license](https://pypi.org/project/traitlets/5.16.1/) |
 | treeverse | 3.0.0 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/treeverse/v/3.0.0) |
 | ts-algebra | 2.0.0 | MIT | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/ts-algebra/v/2.0.0) |
@@ -1281,7 +1288,7 @@ What `images/sandbox/collect-licenses.sh` finds in the sandbox image (`kobe-sand
 | yallist | 4.0.0 | ISC | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/yallist/v/4.0.0) |
 | yallist | 5.0.0 | BlueOak-1.0.0 | bundled (npm package) | sandbox: npm CLI (/usr/local/lib/node_modules) | [license](https://www.npmjs.com/package/yallist/v/5.0.0) |
 | yaml | 2.9.0 | ISC | bundled (npm package) | sandbox: Pi (/opt/pi) | [license](https://www.npmjs.com/package/yaml/v/2.9.0) |
-| zod | 4.6.5 | MIT | bundled (npm package) | sandbox: kobe-sandbox-agent | [license](https://www.npmjs.com/package/zod/v/4.6.5) |
+| zod | 4.6.7 | MIT | bundled (npm package) | sandbox: kobe-sandbox-agent | [license](https://www.npmjs.com/package/zod/v/4.6.7) |
 
 Documented exceptions (`images/sandbox/license-exceptions.json`):
 
@@ -1323,7 +1330,7 @@ What the same script finds in the Orbit eval image (`kobe-orbit-eval`, KOBE-92):
 | docstring_parser | 0.18.0 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/docstring_parser/0.18.0/) |
 | fastapi | 0.139.1 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/fastapi/0.139.1/) |
 | frozenlist | 1.8.0 | Apache-2.0 | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/frozenlist/1.8.0/) |
-| fsspec | 2025.9.0 | BSD-3-Clause | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/fsspec/2025.9.0/) |
+| fsspec | 2026.6.0 | BSD-3-Clause | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/fsspec/2026.6.0/) |
 | h11 | 0.16.0 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/h11/0.16.0/) |
 | httpcore | 1.0.9 | BSD-3-Clause | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/httpcore/1.0.9/) |
 | httpcore2 | 2.12.0 | BSD-3-Clause | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/httpcore2/2.12.0/) |
@@ -1346,7 +1353,7 @@ What the same script finds in the Orbit eval image (`kobe-orbit-eval`, KOBE-92):
 | mdit-py-plugins | 0.6.1 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/mdit-py-plugins/0.6.1/) |
 | mdurl | 0.1.2 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/mdurl/0.1.2/) |
 | mmh3 | 5.2.1 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/mmh3/5.2.1/) |
-| multidict | 6.7.1 | Apache License 2.0 (exception) | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/multidict/6.7.1/) |
+| multidict | 6.9.1 | Apache License 2.0 (exception) | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/multidict/6.9.1/) |
 | nest-asyncio2 | 1.7.2 | BSD-3-Clause | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/nest-asyncio2/1.7.2/) |
 | numpy | 2.5.1 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/numpy/2.5.1/) |
 | openai | 3.13.0 | Apache-2.0 | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/openai/3.13.0/) |
@@ -1366,13 +1373,13 @@ What the same script finds in the Orbit eval image (`kobe-orbit-eval`, KOBE-92):
 | requests | 2.34.2 | Apache-2.0 | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/requests/2.34.2/) |
 | rich | 15.0.0 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/rich/15.0.0/) |
 | rpds-py | 2026.6.3 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/rpds-py/2026.6.3/) |
-| s3fs | 2025.9.0 | BSD-3-Clause | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/s3fs/2025.9.0/) |
+| s3fs | 2026.6.0 | BSD-3-Clause | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/s3fs/2026.6.0/) |
 | s3transfer | 0.14.0 | Apache-2.0 | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/s3transfer/0.14.0/) |
 | semver | 3.0.4 | BSD-3-Clause | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/semver/3.0.4/) |
 | shortuuid | 1.0.13 | BSD-3-Clause | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/shortuuid/1.0.13/) |
 | six | 1.17.0 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/six/1.17.0/) |
 | sniffio | 1.3.1 | Apache-2.0 OR MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/sniffio/1.3.1/) |
-| soupsieve | 2.8.4 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/soupsieve/2.8.4/) |
+| soupsieve | 4.0 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/soupsieve/4.0/) |
 | starlette | 1.3.1 | BSD-3-Clause | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/starlette/1.3.1/) |
 | tenacity | 9.1.4 | Apache-2.0 | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/tenacity/9.1.4/) |
 | textual | 8.2.8 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/textual/8.2.8/) |
@@ -1382,7 +1389,7 @@ What the same script finds in the Orbit eval image (`kobe-orbit-eval`, KOBE-92):
 | typing-inspection | 0.4.2 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/typing-inspection/0.4.2/) |
 | uc-micro-py | 2.0.0 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/uc-micro-py/2.0.0/) |
 | universal_pathlib | 0.3.10 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/universal_pathlib/0.3.10/) |
-| urllib3 | 2.7.0 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/urllib3/2.7.0/) |
+| urllib3 | 2.8.0 | MIT | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/urllib3/2.8.0/) |
 | uvicorn | 0.51.0 | BSD-3-Clause | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/uvicorn/0.51.0/) |
 | wrapt | 1.17.3 | BSD-3-Clause | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/wrapt/1.17.3/) |
 | yarl | 1.25.1 | Apache-2.0 | bundled (Python package) | orbit-eval: Python site-packages | [license](https://pypi.org/project/yarl/1.25.1/) |
@@ -1394,7 +1401,7 @@ Documented exceptions (`images/orbit-eval/license-exceptions.json`):
 
 - `agent-client-protocol` 0.12.1 (UNKNOWN): No license metadata, but the wheel ships the Apache License 2.0 text (dist-info/licenses/LICENSE, authors at apache.org). Inspect AI dependency (KOBE-92). Approved by Chris on 2026-10-04.
 - `aiohappyeyeballs` 2.7.1 (Python-2.0): PSF-2.0 (the PyPI classifier maps to Python-2.0): permissive, not copyleft. aiohttp dependency (Inspect AI) (KOBE-92). Approved by Chris on 2026-10-04.
-- `multidict` 6.7.1 (Apache License 2.0): Apache-2.0 declared as a free-text label (LICENSE file is the Apache 2.0 text). aiohttp dependency (KOBE-92). Approved by Chris on 2026-10-04.
+- `multidict` 6.9.1 (Apache License 2.0): Apache-2.0 declared as a free-text label (LICENSE file is the Apache 2.0 text; approved by Chris on 2026-10-04 for 6.7.1, KOBE-92). aiohttp dependency. 6.9.1 is the KOBE-691 security bump (CVE-2026-104874): same license, version approval pending. Pending gate review.
 - `pathlib_abc` 0.5.2 (Python-2.0): PSF-2.0 license text in the wheel: permissive, not copyleft. universal_pathlib dependency (Inspect AI) (KOBE-92). Approved by Chris on 2026-10-04.
 - `regex` 2026.7.10 (Apache-2.0 AND CNRI-Python): Apache-2.0 with code under the CNRI Python license (BSD-like, permissive, GPL-compatible, not copyleft). tiktoken/Inspect AI dependency (KOBE-92). Approved by Chris on 2026-10-04.
 - `tiktoken` 0.13.0 (MIT License): MIT, declared with the full license text in the License field instead of an SPDX id. Inspect AI dependency (KOBE-92). Approved by Chris on 2026-10-04.
@@ -1404,7 +1411,7 @@ Documented exceptions (`images/orbit-eval/license-exceptions.json`):
 
 What the same script finds in the optional external skill scanner image (`kobe-skill-scan`, KOBE-341): Cisco skill-scanner 2.2.1 (Apache-2.0) with the dependencies of its hashed lock exported without extras and without pcodedmp (`images/skill-scan/requirements.txt`, `scanner-requirements.txt`); its bundled CEL helper is the `skill-scan-cel-go` row. The image runs only when a Site admin turns the external scanner on, as a Job with no network. The committed report is `images/skill-scan/third-party-licenses.json`; CI `skill-scan-image` compares it with the built image.
 
-91 packages, 91 of them shipped in an image.
+98 packages, 98 of them shipped in an image.
 
 | Component | Version | License (SPDX) | How used | Where | License text |
 | --- | --- | --- | --- | --- | --- |
@@ -1416,6 +1423,8 @@ What the same script finds in the optional external skill scanner image (`kobe-s
 | anthropic | 0.97.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/anthropic/0.97.0/) |
 | anyio | 4.14.2 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/anyio/4.14.2/) |
 | attrs | 26.1.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/attrs/26.1.0/) |
+| boto3 | 1.43.126 | Apache-2.0 | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/boto3/1.43.126/) |
+| botocore | 1.43.126 | Apache-2.0 | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/botocore/1.43.126/) |
 | certifi | 2026.10.19 | MPL-2.0 | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/certifi/2026.10.19/) |
 | cffi | 2.0.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/cffi/2.0.0/) |
 | charset-normalizer | 3.4.7 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/charset-normalizer/3.4.7/) |
@@ -1429,7 +1438,7 @@ What the same script finds in the optional external skill scanner image (`kobe-s
 | easygui | 0.98.3 | BSD-3-Clause | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/easygui/0.98.3/) |
 | fastapi | 0.136.1 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/fastapi/0.136.1/) |
 | fastuuid | 0.14.0 | BSD-3-Clause | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/fastuuid/0.14.0/) |
-| filelock | 3.29.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/filelock/3.29.0/) |
+| filelock | 4.2.1 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/filelock/4.2.1/) |
 | flatbuffers | 25.12.19 | Apache-2.0 | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/flatbuffers/25.12.19/) |
 | frozenlist | 1.8.0 | Apache-2.0 | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/frozenlist/1.8.0/) |
 | fsspec | 2026.6.0 | BSD-3-Clause | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/fsspec/2026.6.0/) |
@@ -1443,17 +1452,18 @@ What the same script finds in the optional external skill scanner image (`kobe-s
 | importlib_metadata | 8.5.0 | Apache-2.0 | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/importlib_metadata/8.5.0/) |
 | jinja2 | 3.1.6 | BSD-3-Clause | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/jinja2/3.1.6/) |
 | jiter | 0.14.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/jiter/0.14.0/) |
+| jmespath | 1.1.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/jmespath/1.1.0/) |
 | jsonschema-specifications | 2025.9.1 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/jsonschema-specifications/2025.9.1/) |
 | jsonschema | 4.26.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/jsonschema/4.26.0/) |
 | linkify-it-py | 2.1.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/linkify-it-py/2.1.0/) |
-| litellm | 1.89.7 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/litellm/1.89.7/) |
+| litellm | 1.100.5 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/litellm/1.100.5/) |
 | magika | 1.0.2 | Apache-2.0 | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/magika/1.0.2/) |
 | markdown-it-py | 4.0.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/markdown-it-py/4.0.0/) |
 | markupsafe | 3.0.3 | BSD-3-Clause | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/markupsafe/3.0.3/) |
 | mdit-py-plugins | 0.5.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/mdit-py-plugins/0.5.0/) |
 | mdurl | 0.1.2 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/mdurl/0.1.2/) |
 | msoffcrypto-tool | 6.0.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/msoffcrypto-tool/6.0.0/) |
-| multidict | 6.7.1 | Apache License 2.0 (exception) | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/multidict/6.7.1/) |
+| multidict | 6.9.1 | Apache License 2.0 (exception) | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/multidict/6.9.1/) |
 | numpy | 2.4.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/numpy/2.4.4/) |
 | olefile | 0.47 | BSD-3-Clause | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/olefile/0.47/) |
 | oletools | 0.60.2 | BSD-3-Clause | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/oletools/0.60.2/) |
@@ -1466,10 +1476,12 @@ What the same script finds in the optional external skill scanner image (`kobe-s
 | protobuf | 5.29.6 | 3-Clause BSD License (exception) | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/protobuf/5.29.6/) |
 | pycparser | 3.0 | BSD-3-Clause | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/pycparser/3.0/) |
 | pydantic_core | 2.41.5 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/pydantic_core/2.41.5/) |
+| pydantic-settings | 2.16.2 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/pydantic-settings/2.16.2/) |
 | pydantic | 2.12.5 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/pydantic/2.12.5/) |
 | pygments | 2.20.0 | BSD-2-Clause | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/pygments/2.20.0/) |
 | pyjwt | 2.15.1 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/pyjwt/2.15.1/) |
 | pyparsing | 3.3.2 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/pyparsing/3.3.2/) |
+| python-dateutil | 2.9.0.post0 | Apache-2.0 OR BSD-3-Clause | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/python-dateutil/2.9.0.post0/) |
 | python-dotenv | 1.2.2 | BSD-3-Clause | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/python-dotenv/1.2.2/) |
 | python-frontmatter | 1.1.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/python-frontmatter/1.1.0/) |
 | python-multipart | 0.0.32 | Apache-2.0 | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/python-multipart/0.0.32/) |
@@ -1479,7 +1491,9 @@ What the same script finds in the optional external skill scanner image (`kobe-s
 | requests | 2.33.1 | Apache-2.0 | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/requests/2.33.1/) |
 | rich | 14.3.4 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/rich/14.3.4/) |
 | rpds-py | 0.30.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/rpds-py/0.30.0/) |
+| s3transfer | 0.19.3 | Apache-2.0 | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/s3transfer/0.19.3/) |
 | shellingham | 1.5.4 | ISC | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/shellingham/1.5.4/) |
+| six | 1.17.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/six/1.17.0/) |
 | sniffio | 1.3.1 | Apache-2.0 OR MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/sniffio/1.3.1/) |
 | starlette | 1.3.1 | BSD-3-Clause | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/starlette/1.3.1/) |
 | tabulate | 0.10.0 | MIT | bundled (Python package) | skill-scan: Python site-packages | [license](https://pypi.org/project/tabulate/0.10.0/) |
@@ -1503,7 +1517,7 @@ What the same script finds in the optional external skill scanner image (`kobe-s
 Documented exceptions (`images/skill-scan/license-exceptions.json`):
 
 - `aiohappyeyeballs` 2.6.1 (Python-2.0): PSF-2.0 (the PyPI classifier maps to Python-2.0): permissive, not copyleft (approved for 2.7.1 in the Orbit eval image). aiohttp dependency (KOBE-341). Approved by Chris on 2026-10-20.
-- `multidict` 6.7.1 (Apache License 2.0): Apache-2.0 declared as a free-text label (approved for 6.7.1 in the Orbit eval image, KOBE-92). aiohttp dependency (KOBE-341). Approved by Chris on 2026-10-20.
+- `multidict` 6.9.1 (Apache License 2.0): Apache-2.0 declared as a free-text label (LICENSE file is the Apache 2.0 text; approved by Chris on 2026-10-20 for 6.7.1, KOBE-341). aiohttp dependency. 6.9.1 is the KOBE-691 security bump (CVE-2026-104874): same license, version approval pending. Pending gate review.
 - `protobuf` 5.29.6 (3-Clause BSD License): BSD-3-Clause declared as a free-text label. Cisco skill-scanner dependency (KOBE-341). Approved by Chris on 2026-10-20.
 - `regex` 2026.4.4 (Apache-2.0 AND CNRI-Python): Apache-2.0 with code under the CNRI Python license (BSD-like, permissive, not copyleft); the same licence was approved for another version in the Orbit eval image. tiktoken dependency (KOBE-341). Approved by Chris on 2026-10-20.
 - `tiktoken` 0.12.0 (MIT License): MIT declared with the license text instead of an SPDX id (approved for 0.13.0 in the Orbit eval image). litellm dependency (KOBE-341). Approved by Chris on 2026-10-20.
@@ -1558,8 +1572,8 @@ Used to develop, test and run CI for Kobe; never shipped in an image or installe
 
 | Component | Version | License (SPDX) | How used | Where | License text | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| Playwright (`@playwright/test`) | 1.55.0 | Apache-2.0 | test-only | e2e/browser (packages below); CI e2e shard gate3 (e2e/browser/scripts/gate3-browser.mjs) | [license](https://github.com/microsoft/playwright/blob/main/LICENSE) |  |
-| Chromium (Playwright's build, `npx playwright install chromium`) | the build Playwright 1.55.0 pins | BSD-3-Clause | test-only | CI e2e shard gate3 and e2e/browser runs (downloaded at test time, never shipped) | [license](https://chromium.googlesource.com/chromium/src/+/main/LICENSE) |  |
+| Playwright (`@playwright/test`) | 1.55.1 | Apache-2.0 | test-only | e2e/browser (packages below); CI e2e shard gate3 (e2e/browser/scripts/gate3-browser.mjs) | [license](https://github.com/microsoft/playwright/blob/main/LICENSE) |  |
+| Chromium (Playwright's build, `npx playwright install chromium`) | the build Playwright 1.55.1 pins | BSD-3-Clause | test-only | CI e2e shard gate3 and e2e/browser runs (downloaded at test time, never shipped) | [license](https://chromium.googlesource.com/chromium/src/+/main/LICENSE) |  |
 | Mailpit (`axllent/mailpit`) | v1.31.3 | MIT | dev-only (SMTP sink for the dev loop) | dev/mailpit.yaml (Tilt) | [license](https://github.com/axllent/mailpit/blob/develop/LICENSE) |  |
 | k3d (and its k3d-proxy/k3d-tools images) | v5.9.0 (CI e2e) | MIT | dev-only, test-only (local and CI clusters) | scripts/dev-cluster.sh, .github/workflows/e2e.yml | [license](https://github.com/k3d-io/k3d/blob/main/LICENSE.md) |  |
 | Tilt | chosen by the developer | Apache-2.0 | dev-only | Tiltfile | [license](https://github.com/tilt-dev/tilt/blob/master/LICENSE) |  |
@@ -1582,11 +1596,11 @@ From `e2e/browser/package-lock.json`.
 
 | Component | Version | License (SPDX) | How used | Where | License text |
 | --- | --- | --- | --- | --- | --- |
-| @playwright/test | 1.55.0 | Apache-2.0 | test-only | e2e/browser (run against a deployment, not shipped) | [license](https://www.npmjs.com/package/@playwright/test/v/1.55.0) |
+| @playwright/test | 1.55.1 | Apache-2.0 | test-only | e2e/browser (run against a deployment, not shipped) | [license](https://www.npmjs.com/package/@playwright/test/v/1.55.1) |
 | @types/node | 24.19.0 | MIT | test-only | e2e/browser (run against a deployment, not shipped) | [license](https://www.npmjs.com/package/@types/node/v/24.19.0) |
 | fsevents | 2.3.2 | MIT | test-only | e2e/browser (run against a deployment, not shipped) | [license](https://www.npmjs.com/package/fsevents/v/2.3.2) |
-| playwright-core | 1.55.0 | Apache-2.0 | test-only | e2e/browser (run against a deployment, not shipped) | [license](https://www.npmjs.com/package/playwright-core/v/1.55.0) |
-| playwright | 1.55.0 | Apache-2.0 | test-only | e2e/browser (run against a deployment, not shipped) | [license](https://www.npmjs.com/package/playwright/v/1.55.0) |
+| playwright-core | 1.55.1 | Apache-2.0 | test-only | e2e/browser (run against a deployment, not shipped) | [license](https://www.npmjs.com/package/playwright-core/v/1.55.1) |
+| playwright | 1.55.1 | Apache-2.0 | test-only | e2e/browser (run against a deployment, not shipped) | [license](https://www.npmjs.com/package/playwright/v/1.55.1) |
 | typescript | 6.0.3 | Apache-2.0 | test-only | e2e/browser (run against a deployment, not shipped) | [license](https://www.npmjs.com/package/typescript/v/6.0.3) |
 | undici-types | 7.24.6 | MIT | test-only | e2e/browser (run against a deployment, not shipped) | [license](https://www.npmjs.com/package/undici-types/v/7.24.6) |
 
