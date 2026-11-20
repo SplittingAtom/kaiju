@@ -1345,6 +1345,18 @@
             }
           }
         },
+        "networkPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "extraEgress": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          }
+        },
         "resources": {
           "$ref": "#/$defs/resources"
         }

@@ -667,6 +667,11 @@ clamav:
     tag: "1.4"
     # Multi-arch index digest of the tag (pinned; update both together). Empty uses the tag alone.
     digest: sha256:b7357e2c1c59480628839df301b0d27923561389b36cf341911e1dd9e02cdd05
+  networkPolicy:
+    # Its egress is DNS and public addresses on 443/80 (signature downloads). A private signature
+    # mirror: raw NetworkPolicy egress rules, e.g.
+    # [{to: [{ipBlock: {cidr: 10.20.30.40/32}}], ports: [{protocol: TCP, port: 443}]}].
+    extraEgress: []
   resources:
     requests: { cpu: 100m, memory: 1Gi }
     limits: { cpu: "1", memory: 2Gi }

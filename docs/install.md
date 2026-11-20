@@ -1061,7 +1061,15 @@ and a separate `kobe_app` login role. The chart generates and keeps the `kobe_ap
 GitOps tools that render offline (Argo CD, `helm template`), pre-create a `kubernetes.io/basic-auth`
 Secret (`username: kobe_app`) and set `postgres.cnpg.existingAppSecret`, or every render would
 rotate it. The generated Secret is kept on `helm uninstall`; delete it when reinstalling from
-scratch.
+scratch. The Cluster's NetworkPolicy admits only the pods that use the database (server,
+scheduler, egress proxy, model gateway and the migrate Job), the Postgres instances themselves and
+the operator's namespace; reach it from outside with `kubectl port-forward` (as in
+[backup and restore](backup-restore.md)), which NetworkPolicy does not filter.
+
+ClamAV (`clamav.enabled`) gets an egress NetworkPolicy too: DNS and public addresses on 443 and 80,
+for its signature downloads from `database.clamav.net`. A private signature mirror needs a rule in
+`clamav.networkPolicy.extraEgress`. The image is pinned by tag and digest (`clamav.image.digest`);
+set the digest to `""` only for a mirror that re-tags it.
 
 Every value is validated by `charts/kobe/values.schema.json`; unknown keys are rejected.
 
@@ -1162,6 +1170,13 @@ on by default), migrations `0216`–`0235` and the upgrade steps. The notes belo
 Migrations report what an upgrade changed in the migration Job's log (`"msg":"migration notice"`,
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
+
+- **Narrower bundled-Postgres and ClamAV policies (KOBE-699).** With `postgres.mode=cnpg`, the
+  Postgres NetworkPolicy no longer admits every pod in the release namespace: only the server,
+  scheduler, egress proxy, model gateway, the migrate Job, the instances and the operator. A pod of
+  your own in that namespace that connects to the database needs its own NetworkPolicy ingress rule
+  on the Cluster's pods (`cnpg.io/cluster: <release>-pg`). ClamAV gets an egress policy (DNS,
+  public 443/80); a private signature mirror goes in `clamav.networkPolicy.extraEgress`.
 
 - **Memory learning tables (KOBE-389).** Migrations `0228_memory_learning` and
   `0229_memory_learning_rls` add five empty team tables for learning from conversations
