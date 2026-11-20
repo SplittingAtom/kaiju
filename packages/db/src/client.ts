@@ -119,9 +119,11 @@ export function appSessionHook(
           ? new IdleInTransactionTimeoutError(err)
           : new DatabaseConnectionLostError("the database connection was lost", err);
     });
-    const query = client.query.bind(client) as (...args: unknown[]) => unknown;
+    // Looked up on each call, not bound once: a later patch of the prototype (instrumentation,
+    // the query-capturing plan tests) still applies.
+    const proto = Object.getPrototypeOf(client) as { query: (...args: unknown[]) => unknown };
     (client as { query: unknown }).query = (...args: unknown[]): unknown => {
-      if (lost === undefined) return query(...args);
+      if (lost === undefined) return proto.query.apply(client, args);
       const callback = args.at(-1);
       if (typeof callback === "function") {
         queueMicrotask(() => (callback as (err: Error) => void)(lost as Error));
