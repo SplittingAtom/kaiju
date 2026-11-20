@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { parseAllDocuments } from "yaml";
 import { loadConfig } from "../../../services/mcp-proxy/src/config.js";
+import { loadConfig as loadServerConfig } from "../../../services/server/src/config.js";
 import { generateSessionKeyPair } from "../../../packages/session-token/src/index.js";
 
 // Render tests for the MCP proxy's chart pieces (KOBE-58): Deployment env, internal key, the
@@ -164,6 +165,31 @@ describe("server internal listener", () => {
     expect(envOf(ms, "kobe-scheduler").some((e) => e.name === "KOBE_MCP_PROXY_INTERNAL_KEY")).toBe(
       false,
     );
+  });
+});
+
+describe("server -> proxy routes (KOBE-693)", () => {
+  it("the server's config resolves the proxy's internal port and the routes key, not the proxy's key", () => {
+    const ms = render();
+    // Secret refs resolved to stand-in values, one per Secret key.
+    const env: Record<string, string> = {};
+    for (const e of envOf(ms, "kobe-server")) {
+      const ref = e.valueFrom?.secretKeyRef;
+      env[e.name] = e.value ?? (ref ? `${ref.name}/${ref.key}`.padEnd(48, "x") : "x".repeat(48));
+    }
+    const config = loadServerConfig({
+      ...env,
+      KOBE_DATABASE_URL: "postgres://app@db:5432/kobe",
+      KOBE_DATABASE_MIGRATE_URL: "postgres://owner@db:5432/kobe",
+    });
+    expect(config.mcpProxyUrl).toBe("http://kobe-mcp-proxy:8081");
+    expect(config.mcpProxyRoutesKey).toBe("kobe-mcp-proxy-internal/routes-key".padEnd(48, "x"));
+    expect(config.mcpProxyInternalKey).toBe("kobe-mcp-proxy-internal/key".padEnd(48, "x"));
+    // The proxy authenticates the server's routes with the same Secret key.
+    expect(
+      envOf(ms, "kobe-mcp-proxy").find((e) => e.name === "KOBE_MCP_ROUTES_KEY")?.valueFrom
+        ?.secretKeyRef.key,
+    ).toBe("routes-key");
   });
 });
 
