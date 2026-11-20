@@ -22,6 +22,11 @@
   (`sandbox.sessionKeysSecret`, mounted on the server only), so docs/install.md stays.
 - Docs: none needed; no member, admin or agent-visible behaviour changes.
 
+## Review follow-up (coordinator, 2026-11-20)
+
+- The assignment pattern is now case-insensitive (`git grep -i`), so `password: "…"` in YAML or
+  JSON is caught too (checked with a probe file); the run takes a few seconds longer.
+
 ## Open questions (for Chris or the coordinator)
 
 - Owner: rotate the dev Postgres password (SEC-11).

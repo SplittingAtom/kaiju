@@ -12,7 +12,8 @@ fi
 
 # Credentials known to have been committed once (KOBE-700: the dev Postgres password, SEC-11) are
 # matched by their SHA-256, so this file does not publish them again. Checked: the password in a
-# URL's userinfo (scheme://user:password@) and the value of a *PASSWORD*= / *PASSWORD*: assignment.
+# URL's userinfo (scheme://user:password@) and the value of any password= / password: assignment,
+# in any case (password, PASSWORD, db_password ...).
 leaked_sha256=(
   82cdbaf27703fce0a797a312d86c898d574f7d806625118ea6a5f494e31bb9f9
 )
@@ -35,6 +36,6 @@ while IFS= read -r hit; do
       failed=1
     fi
   done
-done < <(git grep -noIE -e "$url_password" -e "$assigned_password" -- . ':!scripts/check-public-hygiene.sh' || true)
+done < <(git grep -noIiE -e "$url_password" -e "$assigned_password" -- . ':!scripts/check-public-hygiene.sh' || true)
 [[ "$failed" == 0 ]] || exit 1
 echo "public hygiene: ok"
