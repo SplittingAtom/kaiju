@@ -116,6 +116,7 @@ if (config.process === "scheduler") {
   // KOBE-174: the scheduler fires runs through the same orchestrator and sandbox wire router.
   deps = createServerDeps({
     databaseUrl: config.databaseUrl,
+    dbTimeouts: config.dbTimeouts,
     ...schedulerAuthStandIn(),
     // No run-token key: the wire host that delivers run.start mints run tokens, not the scheduler.
     sandboxWire: { waker },
@@ -128,6 +129,7 @@ if (config.process === "scheduler") {
   const { approvalKey, ...auth } = config.auth;
   deps = createServerDeps({
     databaseUrl: config.databaseUrl,
+    dbTimeouts: config.dbTimeouts,
     retentionPaused: config.retentionPaused,
     brandingDefaults: config.branding ?? {},
     ...auth,

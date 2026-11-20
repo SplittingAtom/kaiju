@@ -9,9 +9,10 @@ import { Transform, type Readable, type TransformCallback } from "node:stream";
 export interface ObjectStore {
   /**
    * Stores exactly `size` bytes from `body` under `key`. Rejects, storing nothing, when the body
-   * errors or ends short (a verifying stream withholds its last chunk on a hash mismatch).
+   * errors or ends short (a verifying stream withholds its last chunk on a hash mismatch). With
+   * `signal`, an abort cancels the request (a caller inside a transaction bounds it, KOBE-732).
    */
-  put(key: string, body: Readable, size: number): Promise<void>;
+  put(key: string, body: Readable, size: number, options?: SignalOptions): Promise<void>;
   /**
    * Stores a body of unknown length (an upload being received, KOBE-143) under `key` without
    * holding it in memory (S3: multipart, a few MiB in flight). Rejects, storing nothing, when the
@@ -26,8 +27,8 @@ export interface ObjectStore {
     key: string,
     options?: GetOptions,
   ): Promise<{ readonly body: Readable; readonly size: number } | null>;
-  /** Server-side copy within the bucket. */
-  copy(from: string, to: string): Promise<void>;
+  /** Server-side copy within the bucket. With `signal`, an abort cancels the request. */
+  copy(from: string, to: string, options?: SignalOptions): Promise<void>;
   /**
    * Deletes the objects (missing ones are fine). With `signal`, an abort stops the calls in
    * flight and the rest; the rejection then carries `deleted`, the keys confirmed gone
@@ -40,6 +41,16 @@ export interface ObjectStore {
    * `next` is the cursor for the following page, absent on the last one.
    */
   list(prefix: string, options?: ListOptions): Promise<ListPage>;
+}
+
+/**
+ * Longest total time for a small object call (put, copy) made while a transaction holds locks
+ * (KOBE-732): passed as `AbortSignal.timeout(...)`. Deletes use `deleteBounded` instead.
+ */
+export const TX_OBJECT_CALL_TIMEOUT_MS = 30_000;
+
+export interface SignalOptions {
+  readonly signal?: AbortSignal;
 }
 
 export interface GetOptions {

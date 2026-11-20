@@ -1,10 +1,17 @@
 import { createHash } from "node:crypto";
+import { createServer, type Server, type Socket } from "node:net";
 import { Readable } from "node:stream";
 import { S3ServiceException } from "@aws-sdk/client-s3";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { FakeS3 } from "../testing/fake-s3.js";
 import { IntegrityError, verifyingStream } from "./object-store.js";
-import { createS3ObjectStore, loadS3Settings } from "./s3.js";
+import {
+  S3_CONNECT_TIMEOUT_MS,
+  S3_IDLE_TIMEOUT_MS,
+  createS3ObjectStore,
+  loadS3Settings,
+  s3RequestHandlerOptions,
+} from "./s3.js";
 
 const sha = (b: Buffer) => createHash("sha256").update(b).digest("hex");
 const text = async (r: Readable) => {
@@ -31,7 +38,25 @@ describe("loadS3Settings", () => {
       forcePathStyle: true,
       prefix: "",
       credentials: { accessKeyId: "id", secretAccessKey: "secret" },
+      connectTimeoutMs: S3_CONNECT_TIMEOUT_MS,
+      idleTimeoutMs: S3_IDLE_TIMEOUT_MS,
     });
+  });
+
+  it("reads the client timeouts (KOBE-732)", () => {
+    const s = loadS3Settings({
+      KOBE_S3_BUCKET: "b",
+      KOBE_S3_CONNECT_TIMEOUT_MS: "2000",
+      KOBE_S3_IDLE_TIMEOUT_MS: "90000",
+    });
+    expect(s).toMatchObject({ connectTimeoutMs: 2000, idleTimeoutMs: 90_000 });
+    expect(s && s3RequestHandlerOptions(s)).toEqual({
+      connectionTimeout: 2000,
+      socketTimeout: 90_000,
+    });
+    expect(() => loadS3Settings({ KOBE_S3_BUCKET: "b", KOBE_S3_IDLE_TIMEOUT_MS: "0" })).toThrow(
+      /KOBE_S3_IDLE_TIMEOUT_MS/,
+    );
   });
 
   it("refuses credentials in the endpoint and half-set keys, without echoing them", () => {
@@ -208,5 +233,63 @@ describe("list", () => {
     expect(sent).toEqual([
       { Bucket: "b", Prefix: "p/", MaxKeys: 5, ContinuationToken: "c", Delimiter: "/" },
     ]);
+  });
+});
+
+describe("S3 client timeouts (KOBE-732)", () => {
+  // Accepts every connection and never answers: a half-open object store.
+  const sockets: Socket[] = [];
+  let server: Server;
+  let endpoint = "";
+
+  beforeAll(async () => {
+    server = createServer((socket) => {
+      sockets.push(socket);
+      socket.on("error", () => undefined);
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    if (address === null || typeof address === "string") throw new Error("no port");
+    endpoint = `http://127.0.0.1:${address.port}`;
+  });
+  afterAll(async () => {
+    for (const s of sockets) s.destroy();
+    await new Promise((resolve) => server.close(resolve));
+  });
+
+  const silentStore = () =>
+    createS3ObjectStore({
+      bucket: "kobe",
+      endpoint,
+      region: "us-east-1",
+      forcePathStyle: true,
+      prefix: "",
+      credentials: { accessKeyId: "k", secretAccessKey: "s" },
+      connectTimeoutMs: 1_000,
+      idleTimeoutMs: 300,
+    });
+
+  it("gives up on a store that accepts and never answers", async () => {
+    const store = silentStore();
+    const started = Date.now();
+    await expect(store.get("teams/t/a")).rejects.toThrow(/timed out/);
+    await expect(store.delete(["teams/t/a"])).rejects.toThrow(/timed out/);
+    await expect(store.put("teams/t/a", Readable.from([Buffer.from("x")]), 1)).rejects.toThrow(
+      /timed out/,
+    );
+    // Three calls, each with the SDK's retries: seconds, not forever.
+    expect(Date.now() - started).toBeLessThan(20_000);
+  }, 30_000);
+
+  it("honours a caller's abort signal on put and copy", async () => {
+    const store = silentStore();
+    await expect(
+      store.copy("teams/t/a", "teams/t/b", { signal: AbortSignal.timeout(100) }),
+    ).rejects.toThrow();
+    await expect(
+      store.put("teams/t/a", Readable.from([Buffer.from("x")]), 1, {
+        signal: AbortSignal.timeout(100),
+      }),
+    ).rejects.toThrow();
   });
 });

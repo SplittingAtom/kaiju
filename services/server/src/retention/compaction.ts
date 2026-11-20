@@ -1,5 +1,12 @@
 import { auditTimeout } from "./locks.js";
-import { lockLegalHolds, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import {
+  JOB_STATEMENT_TIMEOUT,
+  lockLegalHolds,
+  sql,
+  withTeam,
+  type KobeDb,
+  type KobeTx,
+} from "@kobe/db";
 import { COMPACTION_DAYS } from "./periods.js";
 
 /**
@@ -26,6 +33,8 @@ export async function compactBatchInTx(
 ): Promise<CompactionCounts & { readonly more: boolean }> {
   // Before the hold lock: a pending hold approval must not make a purge wait without bound.
   await tx.execute(sql.raw(`SET LOCAL lock_timeout = '5s'`));
+  // A batch's run-event delete may outlast the app role's default statement timeout (KOBE-732).
+  await tx.execute(sql.raw(`SET LOCAL statement_timeout = '${JOB_STATEMENT_TIMEOUT}'`));
   await lockLegalHolds(tx);
   const res = await tx.execute<{ runs: string; events: string; picked: string }>(sql`
     WITH c AS (

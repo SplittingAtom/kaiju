@@ -1018,6 +1018,50 @@ scheduler (`KOBE_S3_PREFIX`). Changing it on an existing site hides the objects 
 the old prefix, so move them first or keep the old value. `kobe backup` and `kobe restore` read
 `KOBE_S3_PREFIX` too; set it to the same value.
 
+### Timeouts (Postgres and S3)
+
+A stuck network call must never pin a database transaction, its locks or a pooled connection
+(KOBE-732). Kobe bounds both sides:
+
+- **App-role sessions.** Every connection the server, scheduler, model gateway and egress proxy
+  open as the app role runs `SET statement_timeout = 120000` (2 min) and
+  `SET idle_in_transaction_session_timeout = 300000` (5 min) before first use. A statement
+  running longer is cancelled (SQLSTATE `57014`); a transaction left idle longer is ended by
+  Postgres and its locks released (the request fails and is retried by its caller). The nightly
+  retention purge and run-event compaction batches raise the statement timeout to 10 min for
+  their own transaction. The server and scheduler read `KOBE_DB_STATEMENT_TIMEOUT_MS` and
+  `KOBE_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS` (milliseconds, `0` turns one off); the chart does not
+  set them, so the defaults apply. The settings are sent with `SET`, not as startup parameters,
+  so a session-mode PgBouncer in front works unchanged.
+- **New connections only.** The timeouts take effect on connections opened by this release's
+  pods; the upgrade's rollout replaces every pod, so nothing is left to do for Kobe itself.
+- **External Postgres: role defaults for every other client.** Give the app role the same
+  defaults, so a session opened outside Kobe's services (a `psql` as `kobe_app`, a debugging
+  tool) is bounded too. Run as a superuser (or a role with `CREATEROLE` and `ADMIN` on the app
+  role; the migration Job's owner role has neither, so Kobe cannot set them itself):
+
+  ```sql
+  ALTER ROLE kobe_app IN DATABASE kobe SET statement_timeout = '2min';
+  ALTER ROLE kobe_app IN DATABASE kobe SET idle_in_transaction_session_timeout = '5min';
+  ```
+
+  Role defaults, too, apply only to sessions opened afterwards. Do not set them on the database
+  owner or on the backup role: migrations build indexes and backfill for longer, and
+  `kobe backup` holds its snapshot transaction open, idle, for the whole dump (it turns both
+  timeouts off for its own session anyway). With bundled CloudNativePG the same commands work
+  in `psql` on the primary (`kubectl -n kobe exec -it kobe-pg-1 -c postgres -- psql -d kobe`);
+  they are optional there.
+
+- **Object storage.** The server's and the `kobe` CLI's S3 clients give up on a connection that
+  is not established within 5 s and on a request whose socket stays silent for 60 s (nothing
+  sent or received; the SDK then retries). This is an idle timeout, not a total one: an upload or
+  download of a large file runs as long as bytes keep moving. Object calls made while a
+  transaction holds locks also have a total bound: deletes 30 s (then aborted, 10 s to settle),
+  memory writes and restores 30 s. Override with `KOBE_S3_CONNECT_TIMEOUT_MS` and
+  `KOBE_S3_IDLE_TIMEOUT_MS` on the server.
+- **Kubernetes.** Each Kubernetes API call of the server gives up after 10 s, including those
+  made under a row or legal-hold lock (hibernation, workspace volume deletes).
+
 ### Sandbox tool executor
 
 By default Pi's built-in tools (`bash`, `read`, `write`, `edit`, `ls`, `grep`, `find`) run inside
@@ -1162,6 +1206,11 @@ on by default), migrations `0216`–`0235` and the upgrade steps. The notes belo
 Migrations report what an upgrade changed in the migration Job's log (`"msg":"migration notice"`,
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
+
+- **Timeouts (KOBE-732).** App-role connections now run with a 2 min statement timeout and a
+  5 min idle-in-transaction timeout, and the S3 client with 5 s connection and 60 s socket-idle
+  timeouts: see [Timeouts](#timeouts-postgres-and-s3). No migration; on external Postgres,
+  optionally add the same role defaults for other clients of the app role (commands there).
 
 - **Memory learning tables (KOBE-389).** Migrations `0228_memory_learning` and
   `0229_memory_learning_rls` add five empty team tables for learning from conversations

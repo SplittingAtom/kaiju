@@ -7,6 +7,9 @@ import { MemoryObjects } from "./testing/memory-objects.js";
 import { collectWorkspace, workspaceBlobKey } from "./workspace-sync/index.js";
 import { collectAll, type CollectOptions } from "./workspace-sync/gc.js";
 import { purgeDeparted } from "./offboarding/purge.js";
+import { DeleteAbortedError } from "./retention/bounded-delete.js";
+import { discardOrphanedResend } from "./workspace-sync/lost.js";
+import type { ObjectStore } from "./workspace-sync/object-store.js";
 import type { OffboardingContext } from "./offboarding/types.js";
 
 /**
@@ -327,6 +330,44 @@ describe("offboarding purge and legal holds (KOBE-28 path, re-verified by KOBE-1
     }
     expect(objects.deleted).toEqual([]);
     expect(await rows(w.owner)).toEqual([1, 1]);
+  });
+});
+
+describe("orphaned resend discard under the legal-hold lock (KOBE-732)", () => {
+  it("bounds the object delete and releases the lock when the store hangs", async () => {
+    const admin = await fx.person(`lb${randomBytes(2).toString("hex")}`);
+    const member = await fx.person(`lm${randomBytes(2).toString("hex")}`);
+    const teamId = await fx.team(`lb-${randomBytes(3).toString("hex")}`, admin, [member]);
+    const owner = { teamId, userId: member.id };
+    // A store that never answers a delete, but honours the abort.
+    const hanging: ObjectStore = Object.assign(new MemoryObjects(), {
+      delete: (_keys: readonly string[], options?: { signal?: AbortSignal }) =>
+        new Promise<void>((_, reject) => {
+          options?.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+        }),
+    });
+    const started = Date.now();
+    await expect(
+      discardOrphanedResend(fx.db, hanging, owner, "", sha(`r-${member.id}`), 1, 200),
+    ).rejects.toBeInstanceOf(DeleteAbortedError);
+    expect(Date.now() - started).toBeLessThan(5_000);
+    // The lock is free again: an approval's exclusive take does not wait.
+    const approver = new pg.Client({ connectionString: fx.database.adminUrl });
+    await approver.connect();
+    try {
+      await approver.query("SET lock_timeout = '1s'");
+      await approver.query("BEGIN");
+      await approver.query("SELECT pg_advisory_xact_lock(hashtextextended('kobe.legal_hold', 0))");
+      await approver.query("COMMIT");
+    } finally {
+      await approver.end();
+    }
+    // The claim stays `deleting` for collection to finish.
+    const { rows } = await fx.admin.query<{ deleting: boolean }>(
+      `SELECT deleting FROM workspace_blobs WHERE team_id = $1 AND user_id = $2`,
+      [teamId, member.id],
+    );
+    expect(rows).toEqual([{ deleting: true }]);
   });
 });
 

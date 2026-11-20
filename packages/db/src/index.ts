@@ -57,6 +57,9 @@ export {
   pgErrorOf,
 } from "./pg-errors.js";
 export {
+  APP_IDLE_IN_TRANSACTION_TIMEOUT_MS,
+  APP_STATEMENT_TIMEOUT_MS,
+  JOB_STATEMENT_TIMEOUT,
   createDb,
   type CreateDbOptions,
   type KobeDatabase,

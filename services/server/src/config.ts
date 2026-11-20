@@ -1,3 +1,4 @@
+import { APP_IDLE_IN_TRANSACTION_TIMEOUT_MS, APP_STATEMENT_TIMEOUT_MS } from "@kobe/db";
 import { z } from "zod";
 import { loadAuditForwardingConfig, type AuditForwardingConfig } from "./audit/forward/config.js";
 import { brandingDefaultsSchema, type BrandingDefaults } from "./branding/defaults-config.js";
@@ -78,6 +79,17 @@ const configSchema = z.object({
     .enum(["true", "false"], { error: "KOBE_RETENTION_PAUSED must be true or false" })
     .default("false")
     .transform((v) => v === "true"),
+  // App-role connection timeouts (KOBE-732); 0 turns one off. Defaults in @kobe/db (client.ts).
+  KOBE_DB_STATEMENT_TIMEOUT_MS: z.coerce
+    .number({ error: "KOBE_DB_STATEMENT_TIMEOUT_MS must be a number" })
+    .int("KOBE_DB_STATEMENT_TIMEOUT_MS must be an integer")
+    .min(0, "KOBE_DB_STATEMENT_TIMEOUT_MS must be 0 or more")
+    .default(APP_STATEMENT_TIMEOUT_MS),
+  KOBE_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS: z.coerce
+    .number({ error: "KOBE_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS must be a number" })
+    .int("KOBE_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS must be an integer")
+    .min(0, "KOBE_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS must be 0 or more")
+    .default(APP_IDLE_IN_TRANSACTION_TIMEOUT_MS),
   // Seconds between reconciles of every team namespace's managed objects (KOBE-115); 0 turns the
   // interval off (the run at server start stays).
   KOBE_TEAM_RECONCILE_SECONDS: z.coerce
@@ -164,10 +176,17 @@ export interface AuthConfig {
   readonly approvalKey?: string;
 }
 
+export interface DbTimeouts {
+  readonly statementTimeoutMs: number;
+  readonly idleInTransactionTimeoutMs: number;
+}
+
 export interface Config {
   readonly port: number;
   readonly process: "server" | "scheduler";
   readonly databaseUrl: string;
+  /** App-role connection timeouts (KOBE-732). */
+  readonly dbTimeouts: DbTimeouts;
   /** Sandbox RuntimeClass; undefined means agents stay disabled. */
   readonly runtimeClassName: string | undefined;
   /** Published versions per agent (KOBE-46). */
@@ -219,6 +238,10 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     port: base.data.PORT,
     process: base.data.KOBE_PROCESS,
     databaseUrl: base.data.KOBE_DATABASE_URL,
+    dbTimeouts: {
+      statementTimeoutMs: base.data.KOBE_DB_STATEMENT_TIMEOUT_MS,
+      idleInTransactionTimeoutMs: base.data.KOBE_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS,
+    },
     runtimeClassName: base.data.KOBE_RUNTIME_CLASS,
     agentMaxVersions: base.data.KOBE_AGENT_MAX_VERSIONS,
     internalPort: base.data.KOBE_INTERNAL_PORT,

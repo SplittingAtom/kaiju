@@ -102,9 +102,12 @@ import type { BrandingDefaults } from "./branding/defaults-config.js";
 import type { SsoNet } from "./sso/net.js";
 import type { ProviderStore } from "./sso/providers.js";
 import { SSO_OFF, ssoNet, type SsoSettings } from "./sso/settings.js";
+import type { DbTimeouts } from "./config.js";
 
 export interface ServerDepsOptions {
   readonly databaseUrl: string;
+  /** App-role connection timeouts (KOBE-732); the @kobe/db defaults when absent. */
+  readonly dbTimeouts?: DbTimeouts;
   readonly publicUrl: string;
   /** KOBE_RETENTION_PAUSED (KOBE-243): shown to site admins; the deleting jobs honour it. */
   readonly retentionPaused?: boolean;
@@ -378,7 +381,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   configureUsageKey(options.authSecret);
   // Tag fingerprints in the held Site item audit (KOBE-647, review P2-L3).
   configureTagFingerprintKey(options.authSecret);
-  const database = createDb(options.databaseUrl);
+  const database = createDb(options.databaseUrl, options.dbTimeouts ?? {});
   const authAttempts = new AuthAttemptAudit(database.db);
   authAttempts.start();
   const background = options.background ?? new BackgroundTasks();
