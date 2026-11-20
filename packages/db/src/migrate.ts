@@ -1,7 +1,6 @@
 import { fileURLToPath } from "node:url";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
 import pg from "pg";
+import { applyPendingMigrations } from "./migration-runner.js";
 import { quoteIdent } from "./roles.js";
 import { appColumnPrivilegesFor, appPrivilegesFor } from "./tenancy.js";
 
@@ -138,8 +137,10 @@ async function grantAppPrivileges(client: pg.ClientBase, appRole: string): Promi
 }
 
 /**
- * Verifies roles, applies pending migrations as the owner, locks down object creation, then resets
- * the app role's privileges to the grants matrix. Holds an advisory lock throughout.
+ * Verifies roles, applies pending migrations as the owner (each committed with its bookkeeping
+ * row; `-- kobe:no-transaction` files outside a transaction, migration-runner.ts), locks down
+ * object creation, then resets the app role's privileges to the grants matrix. Holds an advisory
+ * lock throughout.
  */
 export async function runMigrations(options: MigrateOptions): Promise<void> {
   quoteIdent(options.appRole);
@@ -164,9 +165,8 @@ export async function runMigrations(options: MigrateOptions): Promise<void> {
       await client.query(`SELECT pg_advisory_lock($1)`, [MIGRATION_LOCK_KEY]);
       try {
         await verifyRoles(client, options.appRole);
-        await migrate(drizzle({ client: pool }), {
-          migrationsFolder: options.migrationsFolder ?? DEFAULT_MIGRATIONS_FOLDER,
-        });
+        // One transaction per migration, on this connection (it holds the lock): KOBE-734.
+        await applyPendingMigrations(client, options.migrationsFolder ?? DEFAULT_MIGRATIONS_FOLDER);
         await ensureMemoryVectors(client);
         await lockDownSchema(client);
         await grantAppPrivileges(client, options.appRole);

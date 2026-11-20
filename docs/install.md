@@ -1192,7 +1192,13 @@ superuser, `BYPASSRLS`, owns tables, or is a member of another role.
 Migrations are written expand/contract, except where an upgrade note says otherwise: the
 previous release keeps serving while an upgrade's migration runs, and `helm rollback` runs older
 code against the newer schema (no down migrations). A migration that waits more than 10 s for a lock fails the Job instead of stalling
-live traffic. Rolling a bundled-CloudNativePG release back to its first revision re-runs that
+live traffic. Each migration commits on its own, with its row in `drizzle.__drizzle_migrations`
+(since KOBE-734; before, one upgrade's migrations shared one transaction): an early migration's
+locks are released before the next starts, and a failed upgrade leaves the migrations before the
+failing one applied, so re-running the upgrade continues from that one. Migrations marked
+`-- kobe:no-transaction` build or drop indexes `CONCURRENTLY` (reads and writes continue; they may
+wait up to 10 min for older transactions); an interrupted build's INVALID index is dropped and
+rebuilt on the next run. Rolling a bundled-CloudNativePG release back to its first revision re-runs that
 revision's initial migration Job, which resets app-role grants to that build's matrix; the next
 upgrade restores them.
 

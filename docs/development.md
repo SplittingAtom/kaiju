@@ -70,6 +70,42 @@ install, for the Gate 2 safety checks; see [gates/gate-2.md](gates/gate-2.md)). 
 new section needs no shard change: it runs in `suite`. The required `k3d` check passes only when
 every image build and every shard passed.
 
+## Migrations
+
+Schema changes go through drizzle (`pnpm --filter @kobe/db db:generate`; never edit snapshots by
+hand); the rules for parallel branches, `db:rebase` and `-- kobe:hand-written` files are in
+[parallel-work.md](parallel-work.md#migrations). The runner (`packages/db/src/migration-runner.ts`,
+KOBE-734) commits each migration in its own transaction together with its
+`drizzle.__drizzle_migrations` row (drizzle's hash and the journal's `when`, so drizzle-kit and
+existing installs agree), all under the migration advisory lock, then re-derives the app role's
+grants once.
+
+**Building or dropping an index on a large table: a no-transaction migration.** Plain
+`CREATE INDEX` blocks writes to the table while it scans, and the previous release is serving
+during the upgrade. Write such a migration with the marker in its leading comment lines and only
+concurrent, idempotent index statements, one per `--> statement-breakpoint`:
+
+```sql
+-- kobe:hand-written
+-- kobe:no-transaction
+-- Why the index is needed (the query it serves).
+CREATE INDEX CONCURRENTLY IF NOT EXISTS "files_run_idx" ON "files" USING btree ("team_id", "run_id");--> statement-breakpoint
+DROP INDEX CONCURRENTLY IF EXISTS "thread_app_results_thread_idx";
+```
+
+- The runner refuses anything else in such a file (no `ALTER TABLE`, no data changes, no
+  statement without `IF [NOT] EXISTS`, no two statements in one chunk): a failure part-way leaves
+  earlier statements applied, so a rerun must be harmless. Put other changes in their own
+  (transactional) migration.
+- Before each `CREATE INDEX CONCURRENTLY IF NOT EXISTS <name>` the runner drops `<name>` if an
+  interrupted earlier build left it INVALID, so the rerun builds it again.
+- The statements wait up to 10 min (`lock_timeout`) for transactions older than them, instead of
+  the runner's usual 10 s; they block no traffic meanwhile.
+- When the index is declared in the drizzle schema (it should be, so `db:check` stays clean),
+  generate the migration as usual, then rewrite its SQL into this form and make the first line
+  `-- kobe:hand-written` so `db:rebase` keeps the SQL and its snapshot. An SQL-only index (kept out of
+  the drizzle schema on purpose) can be a `--custom` migration instead.
+
 ## CI
 
 | Workflow        | When                                | What                                                                                                                  |
