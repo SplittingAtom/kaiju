@@ -396,3 +396,99 @@ describe("app role privileges", () => {
     expect(actual).toEqual(expected);
   });
 });
+
+describe("foreign keys to conversation tables are indexed (KOBE-735)", () => {
+  // Deleting a thread, run or entry (retention purge, Trash) makes Postgres check or cascade every
+  // foreign key that points at it; without an index for the key, each check scans the
+  // referencing table's rows of the team (review STO-4). An index covers a key when
+  //  - its leading columns are the key's columns (in any order), or
+  //  - it is unique and all its columns are key columns (at most one row matches), or
+  //  - the key points at thread_entries and the index leads with (team_id, thread_id): entries go
+  //    with their thread, and the rows of one thread are few.
+  // A partial index counts only when the key's equality implies its predicate (`col IS NOT NULL`).
+  const PARENTS = ["threads", "runs", "thread_entries"];
+
+  interface Fk {
+    name: string;
+    tbl: string;
+    parent: string;
+    cols: string[];
+    relid: number;
+  }
+  interface Ix {
+    relid: number;
+    cols: (string | null)[];
+    unique: boolean;
+    pred: string | null;
+  }
+
+  /** FKs to PARENTS whose table has no valid index covering them. */
+  async function uncovered(client: pg.ClientBase | pg.Pool): Promise<string[]> {
+    const { rows: fks } = await client.query<Fk>(
+      `SELECT con.conname AS name, cl.relname AS tbl, p.relname AS parent,
+              ARRAY(SELECT a.attname::text FROM unnest(con.conkey) k
+                      JOIN pg_attribute a ON a.attrelid = con.conrelid AND a.attnum = k) AS cols,
+              con.conrelid::int AS relid
+         FROM pg_constraint con
+         JOIN pg_class cl ON cl.oid = con.conrelid
+         JOIN pg_class p ON p.oid = con.confrelid
+        WHERE con.contype = 'f' AND cl.relnamespace = 'public'::regnamespace
+          AND p.relnamespace = 'public'::regnamespace AND p.relname = ANY($1)
+        ORDER BY 2, 1`,
+      [PARENTS],
+    );
+    const { rows: indexes } = await client.query<Ix>(
+      `SELECT i.indrelid::int AS relid, i.indisunique AS unique,
+              ARRAY(SELECT a.attname::text FROM unnest(i.indkey[0:i.indnkeyatts - 1]) WITH ORDINALITY k(n, o)
+                      LEFT JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = k.n
+                     ORDER BY k.o) AS cols,
+              pg_get_expr(i.indpred, i.indrelid) AS pred
+         FROM pg_index i JOIN pg_class cl ON cl.oid = i.indrelid
+        WHERE cl.relnamespace = 'public'::regnamespace AND i.indisvalid`,
+    );
+    const leads = (ix: Ix, cols: readonly string[]) =>
+      cols.every((c) => ix.cols.slice(0, cols.length).includes(c));
+    const covers = (fk: Fk, ix: Ix): boolean => {
+      if (ix.relid !== fk.relid) return false;
+      if (ix.pred !== null && !/^\(?\w+ IS NOT NULL\)?$/.test(ix.pred)) return false;
+      if (leads(ix, fk.cols)) return true;
+      if (ix.unique && ix.cols.every((c) => c !== null && fk.cols.includes(c))) return true;
+      return (
+        fk.parent === "thread_entries" &&
+        fk.cols.includes("thread_id") &&
+        leads(ix, ["team_id", "thread_id"])
+      );
+    };
+    return fks
+      .filter((fk) => !indexes.some((ix) => covers(fk, ix)))
+      .map((fk) => `${fk.tbl}.${fk.name}`);
+  }
+
+  it("every foreign key to threads, runs or thread_entries has a covering index", async () => {
+    expect(await uncovered(owner)).toEqual([]);
+  });
+
+  it("catches an uncovered one", async () => {
+    const client = await owner.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        `CREATE TABLE kobe735_probe (team_id uuid NOT NULL, thread_id uuid NOT NULL,
+           run_id uuid, FOREIGN KEY (team_id, thread_id) REFERENCES threads (team_id, id),
+           FOREIGN KEY (team_id, run_id) REFERENCES runs (team_id, id))`,
+      );
+      expect((await uncovered(client)).filter((n) => n.startsWith("kobe735_probe"))).toEqual([
+        "kobe735_probe.kobe735_probe_team_id_run_id_fkey",
+        "kobe735_probe.kobe735_probe_team_id_thread_id_fkey",
+      ]);
+      await client.query(`CREATE INDEX ON kobe735_probe (thread_id, team_id)`);
+      await client.query(
+        `CREATE INDEX ON kobe735_probe (team_id, run_id) WHERE run_id IS NOT NULL`,
+      );
+      expect((await uncovered(client)).filter((n) => n.startsWith("kobe735_probe"))).toEqual([]);
+    } finally {
+      await client.query("ROLLBACK");
+      client.release();
+    }
+  });
+});

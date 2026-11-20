@@ -1213,6 +1213,16 @@ Migrations report what an upgrade changed in the migration Job's log (`"msg":"mi
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
 
+- **Foreign-key indexes (KOBE-735).** Migration `0236_fk_covering_indexes` builds six indexes
+  that make thread and run purges cheap (`files_run_idx`, `artifact_versions_run_idx`,
+  `approvals_thread_idx`, `workspace_sync_conflicts_thread_idx`, `sandbox_commands_thread_idx`,
+  `sandbox_run_leases_thread_idx`) and drops the redundant `thread_app_results_thread_idx`, all
+  `CONCURRENTLY` outside a transaction (KOBE-734): traffic continues during the build, no
+  pre-build needed. If the Job fails part-way, re-run the upgrade; an INVALID leftover is rebuilt.
+  `0237_drop_artifact_versions_unique` drops the constraint `artifact_versions_artifact_version`
+  (the primary key already covers it; a brief catalog-only lock). On a `helm rollback` the previous
+  release works with or without them.
+
 - **Timeouts (KOBE-732).** App-role connections now run with a 2 min statement timeout and a
   5 min idle-in-transaction timeout, and the S3 client with 5 s connection and 60 s socket-idle
   timeouts: see [Timeouts](#timeouts-postgres-and-s3). No migration; on external Postgres,

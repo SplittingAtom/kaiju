@@ -1653,6 +1653,20 @@
       "when": 1795082722202,
       "tag": "0235_memory_suggestion_stale",
       "breakpoints": true
+    },
+    {
+      "idx": 236,
+      "version": "7",
+      "when": 1795195153182,
+      "tag": "0236_fk_covering_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 237,
+      "version": "7",
+      "when": 1795195174401,
+      "tag": "0237_drop_artifact_versions_unique",
+      "breakpoints": true
     }
   ]
 }
