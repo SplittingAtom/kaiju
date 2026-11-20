@@ -62,7 +62,8 @@ test("severityOf uses the GHSA rating, else the highest CVSS base score, else un
   assert.equal(severityOf({}), "UNKNOWN");
 });
 
-function fakeOsv(vulnsByPackage, details) {
+function fakeOsv(vulnsByPackage, details, { failDetails = 0, status = 503 } = {}) {
+  let failures = 0;
   return async (url, init) => {
     if (url.endsWith("/v1/querybatch")) {
       const { queries } = JSON.parse(init.body);
@@ -73,6 +74,10 @@ function fakeOsv(vulnsByPackage, details) {
       return { ok: true, json: async () => ({ results }) };
     }
     const id = decodeURIComponent(url.split("/v1/vulns/")[1]);
+    if (failures < failDetails) {
+      failures++;
+      return { ok: false, status, json: async () => ({}) };
+    }
     if (!details[id]) return { ok: false, status: 404, json: async () => ({}) };
     return { ok: true, json: async () => ({ id, ...details[id] }) };
   };
@@ -92,7 +97,7 @@ test("audit fails on HIGH or CRITICAL, follows a PYSEC alias to its GHSA rating"
     { ecosystem: "PyPI", name: "attrs", version: "26.1.0", source: "req.txt" },
     { ecosystem: "PyPI", name: "clean", version: "1.0.0", source: "req.txt" },
   ];
-  const report = await audit(pins, { fetchImpl });
+  const report = await audit(pins, { fetchImpl, retryDelayMs: 0 });
   assert.equal(report.failing.length, 1);
   assert.deepEqual(
     { id: report.failing[0].id, severity: report.failing[0].severity },
@@ -106,4 +111,23 @@ test("audit passes when nothing is HIGH or CRITICAL", async () => {
     fetchImpl: fakeOsv({}, {}),
   });
   assert.deepEqual(report, { findings: [], failing: [] });
+});
+
+test("a detail lookup is retried, and fails the audit when it keeps failing", async () => {
+  const vulns = { "tornado@6.5.10": ["GHSA-high"] };
+  const details = { "GHSA-high": { database_specific: { severity: "HIGH" } } };
+  const pins = [{ ecosystem: "PyPI", name: "tornado", version: "6.5.10", source: "r" }];
+  const retried = await audit(pins, {
+    fetchImpl: fakeOsv(vulns, details, { failDetails: 2 }),
+    retryDelayMs: 0,
+  });
+  assert.equal(retried.failing.length, 1);
+  await assert.rejects(
+    audit(pins, { fetchImpl: fakeOsv(vulns, details, { failDetails: 99 }), retryDelayMs: 0 }),
+    /HTTP 503/,
+  );
+  await assert.rejects(
+    audit(pins, { fetchImpl: fakeOsv(vulns, {}, {}), retryDelayMs: 0 }),
+    /HTTP 404/,
+  );
 });

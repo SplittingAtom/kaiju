@@ -21,6 +21,12 @@
   owner's; not done here.
 - Docs: docs/development.md CI table gains the workflow. No user-facing change.
 
+## Review follow-up (coordinator, 2026-11-20)
+
+- A failed OSV lookup no longer turns into UNKNOWN: requests retry 3 times on network errors,
+  429 and 5xx, then throw, and the run exits 2. Only a missing alias (404) is skipped; a missing
+  primary advisory fails. Test "a detail lookup is retried, and fails the audit…".
+
 ## Open questions (for Chris or the coordinator)
 
 - Owner: enable secret scanning, push protection and Dependabot alerts/security updates.

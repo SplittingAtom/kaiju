@@ -85,25 +85,52 @@ export function severityOf(vuln) {
   return "LOW";
 }
 
-async function getJson(fetchImpl, url, init) {
-  const res = await fetchImpl(url, init);
-  if (!res.ok) throw new Error(`OSV ${url}: HTTP ${res.status}`);
-  return res.json();
+class HttpError extends Error {
+  constructor(url, status) {
+    super(`OSV ${url}: HTTP ${status}`);
+    this.status = status;
+  }
 }
 
-/** Queries OSV for every pin; returns all findings and the failing (HIGH/CRITICAL) ones. */
-export async function audit(pins, { fetchImpl = fetch } = {}) {
+/** GET/POST with retries on network errors, 429 and 5xx; other statuses throw at once. */
+async function getJson(fetchImpl, url, init, { retries = 3, retryDelayMs = 1000 } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetchImpl(url, init);
+      if (res.ok) return await res.json();
+      const error = new HttpError(url, res.status);
+      if (res.status !== 429 && res.status < 500) throw error;
+      if (attempt >= retries) throw error;
+    } catch (err) {
+      if (err instanceof HttpError && err.status !== 429 && err.status < 500) throw err;
+      if (attempt >= retries) throw err;
+    }
+    await new Promise((r) => setTimeout(r, retryDelayMs * (attempt + 1)));
+  }
+}
+
+/** Queries OSV for every pin; returns all findings and the failing (HIGH/CRITICAL) ones. A
+ * lookup that still fails after retries throws (the run exits 2), so an advisory whose rating
+ * could not be read never passes as UNKNOWN. Only a missing alias (404) is skipped. */
+export async function audit(pins, { fetchImpl = fetch, retryDelayMs = 1000 } = {}) {
   const findings = [];
   const details = new Map();
-  const detail = async (id) => {
+  const detail = (id) => {
     if (!details.has(id)) {
       details.set(
         id,
-        getJson(fetchImpl, `${OSV}/v1/vulns/${encodeURIComponent(id)}`).catch(() => null),
+        getJson(fetchImpl, `${OSV}/v1/vulns/${encodeURIComponent(id)}`, undefined, {
+          retryDelayMs,
+        }),
       );
     }
     return details.get(id);
   };
+  const aliasDetail = (id) =>
+    detail(id).catch((err) => {
+      if (err instanceof HttpError && err.status === 404) return {};
+      throw err;
+    });
   for (let i = 0; i < pins.length; i += BATCH) {
     const batch = pins.slice(i, i + BATCH);
     const body = JSON.stringify({
@@ -112,18 +139,19 @@ export async function audit(pins, { fetchImpl = fetch } = {}) {
         version: p.version,
       })),
     });
-    const { results } = await getJson(fetchImpl, `${OSV}/v1/querybatch`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body,
-    });
+    const { results } = await getJson(
+      fetchImpl,
+      `${OSV}/v1/querybatch`,
+      { method: "POST", headers: { "content-type": "application/json" }, body },
+      { retryDelayMs },
+    );
     for (const [j, result] of results.entries()) {
       for (const { id } of result.vulns ?? []) {
-        const vuln = (await detail(id)) ?? { id };
+        const vuln = await detail(id);
         let severity = severityOf(vuln);
         for (const alias of vuln.aliases ?? []) {
           if (severity !== "UNKNOWN" || !alias.startsWith("GHSA-")) continue;
-          severity = severityOf((await detail(alias)) ?? {});
+          severity = severityOf(await aliasDetail(alias));
         }
         findings.push({ ...batch[j], id, severity, summary: vuln.summary ?? "" });
       }
