@@ -1150,15 +1150,19 @@ signing keys, and manages team namespaces), and by default its egress is not res
 
 - DNS (kube-dns);
 - Postgres: the bundled CloudNativePG instances, or with external Postgres the peers in
-  `server.networkPolicy.databasePeers` on `databasePort` (empty: any address on that port);
+  `server.networkPolicy.databasePeers` on `databasePort` (required with external Postgres);
 - Kobe's own services in the release (Bifrost, model gateway, MCP proxy, egress proxy, ClamAV,
   embeddings);
 - the Kubernetes API on `server.networkPolicy.kubernetesApi.ports` (`[443, 6443]`), at the peers in
-  `kubernetesApi.peers` (empty: any address). NetworkPolicy sees the API server's own address after
-  the `kubernetes` Service's translation: `kubectl get endpoints kubernetes` shows it;
+  `kubernetesApi.peers` (required). NetworkPolicy sees the API server's own address after the
+  `kubernetes` Service's translation: `kubectl get endpoints kubernetes` shows it;
 - public addresses on `server.networkPolicy.allowedPorts` (`[443]`): S3, the identity provider,
   OAuth token endpoints of MCP connectors;
 - the SMTP relay on `smtp.port`, on a public address.
+
+The chart refuses to render with `restrictEgress` on while `kubernetesApi.peers` (or, with
+external Postgres, `databasePeers`) is empty: "any address on 443/6443/5432" would let the server
+reach every LAN and cluster host on those ports, which the policy exists to prevent.
 
 Anything on your LAN or in the cluster needs a rule in `server.networkPolicy.extraEgress` (raw
 NetworkPolicy egress rules): an S3 endpoint such as MinIO on a private address, an internal SMTP
@@ -1169,6 +1173,9 @@ OTLP collectors of [audit forwarding](audit-log.md#export-and-forwarding). For e
 server:
   networkPolicy:
     restrictEgress: true
+    kubernetesApi:
+      peers: [{ ipBlock: { cidr: 10.0.0.1/32 } }] # kubectl get endpoints kubernetes
+    databasePeers: [{ ipBlock: { cidr: 10.20.30.50/32 } }] # external Postgres
     extraEgress:
       - to: [{ ipBlock: { cidr: 10.20.30.40/32 } }] # LAN S3
         ports: [{ protocol: TCP, port: 9000 }]

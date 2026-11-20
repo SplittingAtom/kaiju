@@ -176,8 +176,15 @@ $KUBECTL -n "$OTEL_NS" wait --for=condition=Ready pod/otlp --timeout=180s >/dev/
 # relay. gate1-prep keeps them off: the gates' fake identity and OAuth servers are in-cluster.
 restrict_egress=()
 if [[ "$SHARD" != gate1-prep && "${KOBE_E2E_RESTRICT_EGRESS:-1}" == 1 ]]; then
-  deps_rule='{"to":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"kobe-deps"}}}]}'
+  deps_ns='{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"kobe-deps"}}}'
+  deps_rule="{\"to\":[$deps_ns]}"
+  # The chart requires the API server's and the database's peers with restrictEgress on: the API
+  # server's own addresses (after the kubernetes Service's DNAT) and the kobe-deps Postgres.
+  api_ips=$($KUBECTL -n default get endpoints kubernetes -o jsonpath='{.subsets[*].addresses[*].ip}')
+  api_peers=$(for ip in $api_ips; do printf '{"ipBlock":{"cidr":"%s/32"}},' "$ip"; done)
   restrict_egress=(--set server.networkPolicy.restrictEgress=true --set web.networkPolicy.restrictEgress=true
+    --set-json "server.networkPolicy.kubernetesApi.peers=[${api_peers%,}]"
+    --set-json "server.networkPolicy.databasePeers=[$deps_ns]"
     --set-json "server.networkPolicy.extraEgress=[$deps_rule,$OTEL_RULE]")
 fi
 $HELM upgrade --install kobe charts/kobe -n "$NS" -f dev/values.yaml \

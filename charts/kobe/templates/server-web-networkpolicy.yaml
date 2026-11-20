@@ -1,6 +1,14 @@
 {{- $fullname := include "kobe.fullname" . -}}
 {{- $np := .Values.server.networkPolicy | default dict -}}
 {{- if $np.restrictEgress }}
+{{- /* "Any address on the port" would admit every LAN and cluster host on 443/6443 or 5432,
+     which defeats the policy: the peers are required (KOBE-698 review). */ -}}
+{{- if not ($np.kubernetesApi | default dict).peers }}
+{{- fail "server.networkPolicy.restrictEgress needs server.networkPolicy.kubernetesApi.peers: the API server's address as the pod sees it (kubectl get endpoints kubernetes), e.g. [{ipBlock: {cidr: 10.0.0.1/32}}]" }}
+{{- end }}
+{{- if and (ne .Values.postgres.mode "cnpg") (not $np.databasePeers) }}
+{{- fail "server.networkPolicy.restrictEgress with external Postgres needs server.networkPolicy.databasePeers: your database's address (ipBlock) or selectors" }}
+{{- end }}
 # Server egress (KOBE-698, review SEC-9; opt-in, server.networkPolicy.restrictEgress). The server
 # holds the envelope KEK, the approval key and the session signing keys, so a bypass of one of its
 # outbound checks must not reach the cluster or the LAN: DNS, Postgres, Kobe's own services, the
@@ -40,15 +48,10 @@ spec:
       ports:
         - protocol: TCP
           port: 5432
-    {{- else if $np.databasePeers }}
+    {{- else }}
     - to:
         {{- toYaml $np.databasePeers | nindent 8 }}
       ports:
-        - protocol: TCP
-          port: {{ int $np.databasePort }}
-    {{- else }}
-    # External Postgres without databasePeers: any address, Postgres port only.
-    - ports:
         - protocol: TCP
           port: {{ int $np.databasePort }}
     {{- end }}
@@ -64,17 +67,14 @@ spec:
                 operator: In
                 values: ["bifrost", "model-gateway", "mcp-proxy", "egress-proxy", "clamav", "embeddings"]
     # The Kubernetes API (team namespaces, sandboxes): after the Service's DNAT the API server's
-    # own address and port (6443 on k3s). Without peers, any address on these ports.
-    {{- $api := $np.kubernetesApi }}
-    - ports:
-        {{- range $api.ports }}
+    # own address and port (6443 on k3s).
+    - to:
+        {{- toYaml $np.kubernetesApi.peers | nindent 8 }}
+      ports:
+        {{- range $np.kubernetesApi.ports }}
         - protocol: TCP
           port: {{ int . }}
         {{- end }}
-      {{- with $api.peers }}
-      to:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0

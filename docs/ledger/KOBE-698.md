@@ -10,9 +10,9 @@
   rather than more of `networkpolicies.yaml`: the two policies are opt-in and self-contained.
 - `server.networkPolicy`: `restrictEgress` (default false), `allowedPorts` ([443]),
   `databasePeers`/`databasePort` (external Postgres; as `egressProxy.networkPolicy`),
-  `kubernetesApi.peers`/`ports` ([443, 6443]; empty peers = any address, since NetworkPolicy sees
+  `kubernetesApi.peers`/`ports` ([443, 6443]; peers required, see the follow-up below; NetworkPolicy sees
   the API server after the Service DNAT and its address is cluster-specific), `extraEgress`.
-  Allowed: DNS, Postgres (CNPG instances by selector, else databasePeers or any address on the
+  Allowed: DNS, Postgres (CNPG instances by selector, else databasePeers on the
   port), the release's bifrost/model-gateway/mcp-proxy/egress-proxy/clamav/embeddings pods (any
   port; each has its own ingress policy), the Kubernetes API, public IPv4 (private ranges
   excluded) on allowedPorts (S3, IdP, OAuth), the SMTP relay on `smtp.port` on public addresses,
@@ -27,6 +27,15 @@
 - `auth.sso.networkPolicy`'s comment and docs/install.md SSO text now point at the new flag.
 - Docs: docs/install.md "Server and web egress (optional)" (flags, destinations, what to add to
   extraEgress: LAN S3, SMTP, IdP, telemetry, SIEM, with an example). No member/agent-visible change.
+
+## Review follow-up (coordinator, 2026-11-20)
+
+- `kubernetesApi.peers` and, with external Postgres, `databasePeers` are now required when
+  `restrictEgress` is on: the chart fails with a message naming the key (template `fail`; the API
+  peers also in values.schema.json via if/then, the database rule depends on `postgres.mode` so it
+  stays in the template). "Any address on the port" admitted every LAN/cluster host on
+  443/6443/5432. e2e/run.sh passes the k3d API server's endpoint IPs and the kobe-deps namespace.
+  Chart test "refuses to render without…".
 
 ## Open questions (for Chris or the coordinator)
 

@@ -32,6 +32,20 @@ function render(values: Record<string, string> = {}): Manifest[] {
     .filter((m): m is Manifest => m !== null);
 }
 
+function renderError(values: Record<string, string>): string {
+  try {
+    render(values);
+  } catch (err) {
+    return String((err as { stderr?: string }).stderr ?? err);
+  }
+  throw new Error("render succeeded");
+}
+
+// restrictEgress needs the API server's peers, and with external Postgres the database's peers.
+const API_PEER = { "server.networkPolicy.kubernetesApi.peers[0].ipBlock.cidr": "10.0.0.1/32" };
+const DB_PEER = { "server.networkPolicy.databasePeers[0].ipBlock.cidr": "10.1.2.3/32" };
+const ON = { "server.networkPolicy.restrictEgress": "true", ...API_PEER, ...DB_PEER };
+
 const policy = (ms: Manifest[], name: string) =>
   ms.find((m) => m.kind === "NetworkPolicy" && m.metadata.name === name)?.spec;
 
@@ -75,18 +89,14 @@ describe("server and web egress (KOBE-698)", () => {
   });
 
   it("restricts the server to DNS, Postgres, Kobe's own services, the API server, public 443 and SMTP", () => {
-    const spec = policy(
-      render({ "server.networkPolicy.restrictEgress": "true" }),
-      "kobe-server-egress",
-    );
+    const spec = policy(render(ON), "kobe-server-egress");
     expect(spec.podSelector).toEqual({
       matchLabels: { ...release, "app.kubernetes.io/component": "server" },
     });
     expect(spec.policyTypes).toEqual(["Egress"]);
     expect(spec.egress).toEqual([
       DNS,
-      // External Postgres without databasePeers: any address, Postgres port only.
-      { ports: [{ protocol: "TCP", port: 5432 }] },
+      { to: [{ ipBlock: { cidr: "10.1.2.3/32" } }], ports: [{ protocol: "TCP", port: 5432 }] },
       {
         to: [
           {
@@ -110,8 +120,9 @@ describe("server and web egress (KOBE-698)", () => {
           },
         ],
       },
-      // The Kubernetes API (no peers given: any address on its ports).
+      // The Kubernetes API at its peers.
       {
+        to: [{ ipBlock: { cidr: "10.0.0.1/32" } }],
         ports: [
           { protocol: "TCP", port: 443 },
           { protocol: "TCP", port: 6443 },
@@ -122,6 +133,25 @@ describe("server and web egress (KOBE-698)", () => {
       // SMTP relay on its port.
       publicOn(587),
     ]);
+  });
+
+  it("refuses to render without the API server's or the external database's peers", () => {
+    const noApi = renderError({ "server.networkPolicy.restrictEgress": "true", ...DB_PEER });
+    expect(noApi).toMatch(/server[./]networkPolicy[./]kubernetesApi[./]peers/);
+    const noDb = renderError({ "server.networkPolicy.restrictEgress": "true", ...API_PEER });
+    expect(noDb).toMatch(/server\.networkPolicy\.databasePeers/);
+    // CloudNativePG needs no database peers (selected by label); off needs neither.
+    expect(
+      policy(
+        render({
+          "server.networkPolicy.restrictEgress": "true",
+          ...API_PEER,
+          "postgres.mode": "cnpg",
+        }),
+        "kobe-server-egress",
+      ),
+    ).toBeDefined();
+    expect(policy(render(), "kobe-server-egress")).toBeUndefined();
   });
 
   it("narrows Postgres and the API server to the given peers, and appends extraEgress", () => {
@@ -160,7 +190,11 @@ describe("server and web egress (KOBE-698)", () => {
 
   it("reaches the bundled Postgres instances by selector with CloudNativePG", () => {
     const spec = policy(
-      render({ "server.networkPolicy.restrictEgress": "true", "postgres.mode": "cnpg" }),
+      render({
+        "server.networkPolicy.restrictEgress": "true",
+        ...API_PEER,
+        "postgres.mode": "cnpg",
+      }),
       "kobe-server-egress",
     );
     expect(spec.egress[1]).toEqual({

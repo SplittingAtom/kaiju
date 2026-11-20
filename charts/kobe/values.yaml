@@ -319,12 +319,12 @@ server:
   networkPolicy:
     restrictEgress: false
     allowedPorts: [443]
-    # External Postgres only: NetworkPolicy peers (ipBlock / selectors) of your database. Empty:
-    # any address on databasePort.
+    # External Postgres only, required when restrictEgress is on: NetworkPolicy peers (ipBlock /
+    # selectors) of your database.
     databasePeers: []
     databasePort: 5432
     # The API server as the pod sees it after the kubernetes Service's DNAT (its own address and
-    # port; `kubectl get endpoints kubernetes`). Empty peers: any address on these ports.
+    # port; `kubectl get endpoints kubernetes`). Required when restrictEgress is on.
     kubernetesApi:
       peers: []
       ports: [443, 6443]

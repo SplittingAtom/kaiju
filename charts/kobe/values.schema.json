@@ -486,6 +486,19 @@
               }
             },
             "extraEgress": { "type": "array", "items": { "type": "object" } }
+          },
+          "if": {
+            "properties": { "restrictEgress": { "const": true } },
+            "required": ["restrictEgress"]
+          },
+          "then": {
+            "required": ["kubernetesApi"],
+            "properties": {
+              "kubernetesApi": {
+                "required": ["peers"],
+                "properties": { "peers": { "minItems": 1 } }
+              }
+            }
           }
         },
         "skillMirror": {
