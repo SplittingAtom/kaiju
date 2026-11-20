@@ -17,7 +17,8 @@ metadata:
   {{- end }}
 spec:
   backoffLimit: 0
-  activeDeadlineSeconds: 900
+  # The runner cancels its own statements on SIGTERM (KOBE-734), within the grace period below.
+  activeDeadlineSeconds: {{ (($root.Values.postgres.migrateJob | default dict).activeDeadlineSeconds) | default 1800 }}
   template:
     metadata:
       labels:
@@ -27,6 +28,7 @@ spec:
         app.kubernetes.io/component: migrate
     spec:
       restartPolicy: Never
+      terminationGracePeriodSeconds: 30
       {{- include "kobe.imagePullSecrets" $root | nindent 6 }}
       # No serviceAccountName: as a pre-install hook it runs before release ServiceAccounts exist,
       # and it needs no API access (token not mounted).

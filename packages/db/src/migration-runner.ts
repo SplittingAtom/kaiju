@@ -17,8 +17,11 @@ import type pg from "pg";
 /** Leading comment line that makes a migration run outside a transaction. */
 export const NO_TRANSACTION_MARKER = "-- kobe:no-transaction";
 
-/** How long a concurrent index build or drop may wait for older transactions to finish. */
-export const NO_TRANSACTION_LOCK_TIMEOUT = "10min";
+/**
+ * How long one concurrent index build or drop may wait for a lock (older transactions, KOBE-734).
+ * Several such statements must fit the migration Job's deadline (`postgres.migrateJob`).
+ */
+export const NO_TRANSACTION_LOCK_TIMEOUT = "2min";
 
 export interface PendingMigration {
   readonly tag: string;
@@ -155,7 +158,7 @@ async function applyWithoutTransaction(client: pg.ClientBase, m: PendingMigratio
   const problem = m.statements.map(noTransactionProblem).find((p) => p !== undefined);
   if (problem) throw new Error(problem);
   // Concurrent builds take no lock that blocks traffic but wait for older transactions: give
-  // them longer than the runner's 10 s.
+  // them longer than the runner's 10 s (not unbounded: the Job has a deadline).
   await client.query(`SET lock_timeout = '${NO_TRANSACTION_LOCK_TIMEOUT}'`);
   try {
     for (const statement of m.statements) {
@@ -167,7 +170,8 @@ async function applyWithoutTransaction(client: pg.ClientBase, m: PendingMigratio
     // After every statement: a crash before this line reruns the (idempotent) file.
     await record(client, m);
   } finally {
-    await client.query("RESET lock_timeout");
+    // On a dead or cancelled connection this fails too: keep the statement's own error.
+    await client.query("RESET lock_timeout").catch(() => undefined);
   }
 }
 

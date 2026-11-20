@@ -6,7 +6,7 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 import pg from "pg";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
-import { runMigrations } from "./migrate.js";
+import { MIGRATION_LOCK_KEY, MigrationCancelledError, runMigrations } from "./migrate.js";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "./test-support/database.js";
 
 // KOBE-734 (review STO-3): the runner commits each migration with its bookkeeping row, so a
@@ -200,4 +200,79 @@ describe("migration runner: -- kobe:no-transaction (KOBE-734)", () => {
     await expect(migrateWith(dir)).rejects.toThrow(/0001_bad.*IF NOT EXISTS/s);
     expect(await recorded()).toHaveLength(1);
   });
+});
+
+describe("migration runner: lock holders and cancellation (KOBE-734)", () => {
+  it("names the session holding the migration lock when it gives up", async () => {
+    const holder = new pg.Client({
+      connectionString: db.adminUrl,
+      application_name: "lock-holder-test",
+    });
+    await holder.connect();
+    const notices: string[] = [];
+    try {
+      const { rows } = await holder.query<{ pid: number }>(
+        `SELECT pg_backend_pid() AS pid, pg_advisory_lock($1)`,
+        [MIGRATION_LOCK_KEY],
+      );
+      const pid = rows[0]?.pid;
+      const run = runMigrations({
+        databaseUrl: db.ownerUrl,
+        appRole: db.appRole,
+        migrationsFolder: await folder([A, B]),
+        onNotice: (m) => notices.push(m),
+      });
+      await expect(run).rejects.toThrow(
+        new RegExp(
+          `held by another session: pid ${String(pid)} \\(application_name "lock-holder-test"`,
+        ),
+      );
+      expect(notices.join("\n")).toMatch(/migration lock is held by pid \d+/);
+    } finally {
+      await holder.end();
+    }
+    expect(await recorded()).toHaveLength(1);
+  }, 30_000);
+
+  it("cancels a waiting concurrent build in Postgres on abort and frees the lock", async () => {
+    await admin.query(`ALTER TABLE t_a ADD COLUMN v int`);
+    // Another session holds a lock the concurrent build waits for.
+    const blocker = new pg.Client({ connectionString: db.adminUrl });
+    await blocker.connect();
+    await blocker.query(`BEGIN; LOCK TABLE t_a IN SHARE UPDATE EXCLUSIVE MODE`);
+    const stop = new AbortController();
+    try {
+      const run = runMigrations({
+        databaseUrl: db.ownerUrl,
+        appRole: db.appRole,
+        migrationsFolder: await folder([
+          A,
+          {
+            tag: "0001_idx",
+            sql: "-- kobe:no-transaction\nCREATE INDEX CONCURRENTLY IF NOT EXISTS t_a_v_idx ON t_a (v);",
+          },
+        ]),
+        signal: stop.signal,
+      });
+      setTimeout(() => stop.abort(new Error("SIGTERM")), 1_500);
+      const started = Date.now();
+      await expect(run).rejects.toBeInstanceOf(MigrationCancelledError);
+      expect(Date.now() - started).toBeLessThan(10_000);
+    } finally {
+      await blocker.query("ROLLBACK");
+      await blocker.end();
+    }
+    // Nothing of the runner is left in Postgres: the lock is free and no build is running.
+    const { rows } = await admin.query<{ ok: boolean }>(`SELECT pg_try_advisory_lock($1) AS ok`, [
+      MIGRATION_LOCK_KEY,
+    ]);
+    expect(rows[0]?.ok).toBe(true);
+    await admin.query(`SELECT pg_advisory_unlock($1)`, [MIGRATION_LOCK_KEY]);
+    const busy = await admin.query(
+      `SELECT 1 FROM pg_stat_activity WHERE datname = current_database()
+          AND application_name = 'kobe-migrate' AND state <> 'idle'`,
+    );
+    expect(busy.rows).toEqual([]);
+    expect(await recorded()).toHaveLength(1);
+  }, 30_000);
 });

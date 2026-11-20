@@ -18,7 +18,26 @@ export interface MigrateOptions {
    * the migration Job logs them.
    */
   readonly onNotice?: (message: string) => void;
+  /**
+   * Aborting (the Job's SIGTERM at its deadline) cancels the runner's statement in Postgres, ends
+   * its backend if the cancel is not enough, and so frees the migration lock; the run then rejects
+   * with {@link MigrationCancelledError} (KOBE-734).
+   */
+  readonly signal?: AbortSignal;
 }
+
+/** The run was stopped through `signal`; nothing is left running in Postgres. */
+export class MigrationCancelledError extends Error {
+  constructor(cause: unknown) {
+    super("migration cancelled (SIGTERM): the running statement was cancelled in Postgres", {
+      cause,
+    });
+    this.name = "MigrationCancelledError";
+  }
+}
+
+/** After the cancel request, how long the runner may take to stop before its backend is ended. */
+const CANCEL_GRACE_MS = 5_000;
 
 /** Serializes concurrent migration Jobs (e.g. overlapping Helm upgrades) and backups/restores. */
 export const MIGRATION_LOCK_KEY = 0x6b6f6265; // "kobe"
@@ -144,6 +163,7 @@ async function grantAppPrivileges(client: pg.ClientBase, appRole: string): Promi
  */
 export async function runMigrations(options: MigrateOptions): Promise<void> {
   quoteIdent(options.appRole);
+  options.signal?.throwIfAborted();
   // lock_timeout: a migration queued behind a long transaction would otherwise block live
   // traffic queued behind it; failing the Job is better. Migrations must be backward compatible
   // (expand/contract), since the previous release keeps serving during the upgrade hook.
@@ -151,18 +171,22 @@ export async function runMigrations(options: MigrateOptions): Promise<void> {
     connectionString: options.databaseUrl,
     max: 2,
     connectionTimeoutMillis: 10_000,
+    application_name: MIGRATE_APPLICATION_NAME,
     options: "-c lock_timeout=10s",
   });
   const { onNotice } = options;
-  if (onNotice) {
-    pool.on("connect", (client) => {
-      client.on("notice", (notice) => onNotice(notice.message ?? ""));
-    });
-  }
+  pool.on("connect", (client) => {
+    // A backend ended on cancellation reports a FATAL outside any query: never crash on it.
+    client.on("error", () => undefined);
+    if (onNotice) client.on("notice", (notice) => onNotice(notice.message ?? ""));
+  });
+  pool.on("error", () => undefined);
+  let broken = false;
   try {
     const client = await pool.connect();
+    const stopCancelling = cancelOnAbort(options, client);
     try {
-      await client.query(`SELECT pg_advisory_lock($1)`, [MIGRATION_LOCK_KEY]);
+      await acquireMigrationLock(client, onNotice);
       try {
         await verifyRoles(client, options.appRole);
         // One transaction per migration, on this connection (it holds the lock): KOBE-734.
@@ -171,12 +195,122 @@ export async function runMigrations(options: MigrateOptions): Promise<void> {
         await lockDownSchema(client);
         await grantAppPrivileges(client, options.appRole);
       } finally {
-        await client.query(`SELECT pg_advisory_unlock($1)`, [MIGRATION_LOCK_KEY]);
+        await client
+          .query(`SELECT pg_advisory_unlock($1)`, [MIGRATION_LOCK_KEY])
+          .catch(() => undefined);
       }
+    } catch (err) {
+      broken = true;
+      if (options.signal?.aborted) throw new MigrationCancelledError(err);
+      throw err;
     } finally {
-      client.release();
+      stopCancelling();
+      client.release(broken);
     }
   } finally {
     await pool.end();
+  }
+}
+
+/** `application_name` of the runner's sessions: how a lock holder is recognised. */
+export const MIGRATE_APPLICATION_NAME = "kobe-migrate";
+
+/**
+ * On abort: `pg_cancel_backend` the runner's backend from a second connection (a closed socket
+ * alone does not stop a CREATE INDEX CONCURRENTLY), then `pg_terminate_backend` it if the run has
+ * not stopped within {@link CANCEL_GRACE_MS}, which also frees its session-level advisory lock.
+ */
+function cancelOnAbort(options: MigrateOptions, client: pg.PoolClient): () => void {
+  const signal = options.signal;
+  if (!signal) return () => undefined;
+  const pid = (client as unknown as { processID?: number }).processID;
+  let timer: NodeJS.Timeout | undefined;
+  const signalBackend = async (fn: "pg_cancel_backend" | "pg_terminate_backend") => {
+    if (pid === undefined) return;
+    const other = new pg.Client({
+      connectionString: options.databaseUrl,
+      connectionTimeoutMillis: 5_000,
+      application_name: MIGRATE_APPLICATION_NAME,
+    });
+    other.on("error", () => undefined);
+    try {
+      await other.connect();
+      await other.query(`SELECT ${fn}($1)`, [pid]);
+    } catch {
+      // Best effort: the Job is being stopped anyway.
+    } finally {
+      await other.end().catch(() => undefined);
+    }
+  };
+  const onAbort = () => {
+    void signalBackend("pg_cancel_backend");
+    timer = setTimeout(() => void signalBackend("pg_terminate_backend"), CANCEL_GRACE_MS);
+    timer.unref();
+  };
+  if (signal.aborted) onAbort();
+  else signal.addEventListener("abort", onAbort, { once: true });
+  return () => {
+    signal.removeEventListener("abort", onAbort);
+    if (timer) clearTimeout(timer);
+  };
+}
+
+interface LockHolder {
+  pid: number;
+  application_name: string | null;
+  state: string | null;
+  query_start: Date | null;
+  backend_start: Date | null;
+  mode: string;
+}
+
+/** Who holds the migration lock (a migration, `kobe backup`/`restore`, or a stuck backend). */
+async function lockHolders(client: pg.ClientBase): Promise<string> {
+  const { rows } = await client.query<LockHolder>(
+    `SELECT a.pid, a.application_name, a.state, a.query_start, a.backend_start, l.mode
+       FROM pg_locks l JOIN pg_stat_activity a ON a.pid = l.pid
+      WHERE l.locktype = 'advisory' AND l.granted AND l.database = (
+              SELECT oid FROM pg_database WHERE datname = current_database())
+        AND l.classid = 0 AND l.objid = $1::bigint::oid AND l.objsubid = 1
+        AND l.pid <> pg_backend_pid()`,
+    [MIGRATION_LOCK_KEY],
+  );
+  if (rows.length === 0) return "no session found (it may just have ended)";
+  return rows
+    .map(
+      (r) =>
+        `pid ${r.pid} (application_name ${JSON.stringify(r.application_name ?? "")}, ` +
+        `state ${r.state ?? "unknown"}, ${r.mode}, ` +
+        `query started ${r.query_start?.toISOString() ?? "unknown"}, ` +
+        `connected ${r.backend_start?.toISOString() ?? "unknown"})`,
+    )
+    .join("; ");
+}
+
+/**
+ * Takes the migration lock, waiting at most the session's lock_timeout (10 s). When another
+ * session holds it, says who (as a notice right away, and in the error if the wait times out), so
+ * the operator can wait for it or end it.
+ */
+async function acquireMigrationLock(
+  client: pg.ClientBase,
+  onNotice: ((message: string) => void) | undefined,
+): Promise<void> {
+  const tried = await client.query<{ ok: boolean }>(`SELECT pg_try_advisory_lock($1) AS ok`, [
+    MIGRATION_LOCK_KEY,
+  ]);
+  if (tried.rows[0]?.ok) return;
+  const holders = await lockHolders(client);
+  onNotice?.(`kobe: the migration lock is held by ${holders}; waiting up to 10 s`);
+  try {
+    await client.query(`SELECT pg_advisory_lock($1)`, [MIGRATION_LOCK_KEY]);
+  } catch (err) {
+    if ((err as { code?: unknown } | null)?.code !== "55P03") throw err;
+    throw new Error(
+      `the migration lock is held by another session: ${holders}. A migration, backup or ` +
+        "restore is running, or a stopped migration Job's backend is still working; wait for " +
+        "it, or end it with SELECT pg_terminate_backend(<pid>) and run the upgrade again",
+      { cause: err },
+    );
   }
 }

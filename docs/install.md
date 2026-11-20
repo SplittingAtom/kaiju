@@ -1258,9 +1258,23 @@ live traffic. Each migration commits on its own, with its row in `drizzle.__driz
 (since KOBE-734; before, one upgrade's migrations shared one transaction): an early migration's
 locks are released before the next starts, and a failed upgrade leaves the migrations before the
 failing one applied, so re-running the upgrade continues from that one. Migrations marked
-`-- kobe:no-transaction` build or drop indexes `CONCURRENTLY` (reads and writes continue; they may
-wait up to 10 min for older transactions); an interrupted build's INVALID index is dropped and
-rebuilt on the next run. Rolling a bundled-CloudNativePG release back to its first revision re-runs that
+`-- kobe:no-transaction` build or drop indexes `CONCURRENTLY` (reads and writes continue; each
+statement may wait up to 2 min for older transactions); an interrupted build's INVALID index is
+dropped and rebuilt on the next run.
+
+The Job stops after `postgres.migrateJob.activeDeadlineSeconds` (default 1800, 30 min; minimum
+300). At the deadline Kubernetes sends SIGTERM: the runner cancels its running statement in
+Postgres (and ends its own backend if needed), so no build keeps going and the migration lock is
+free, and exits non-zero with "migration stopped before it finished"; the migrations before that
+one stay applied. Run `helm upgrade` with a `--timeout` longer than the deadline (Helm waits for
+hook Jobs within it). On a site with large tables (millions of rows in `files`, `runs`,
+`run_events`, `thread_entries`), either raise the deadline or pre-build the release's indexes
+`CONCURRENTLY` beforehand with the definitions in its upgrade note: the migration's `IF NOT EXISTS`
+then skips them. If a run fails because "the migration lock is held by another session", the
+error names that session (pid, `application_name`, state, start times): a migration, a
+`kobe backup`/`kobe restore` (`application_name` of your client), or a backend of a stopped Job
+still working. Wait for it, or end it with `SELECT pg_terminate_backend(<pid>)`, and run the
+upgrade again. Rolling a bundled-CloudNativePG release back to its first revision re-runs that
 revision's initial migration Job, which resets app-role grants to that build's matrix; the next
 upgrade restores them.
 

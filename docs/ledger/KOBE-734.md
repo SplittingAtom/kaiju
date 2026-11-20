@@ -25,8 +25,23 @@ files for `CREATE INDEX CONCURRENTLY`.
   every shipped migration in `migration-runner.test.ts`). Before each build the runner drops an
   INVALID index of that name (`DROP INDEX CONCURRENTLY`). The bookkeeping row is written after the
   last statement; a crash in between reruns the idempotent file.
-- No-transaction statements run with `lock_timeout = 10min` (concurrent builds wait for older
-  transactions but block no traffic); the runner's 10 s stays for everything else.
+- No-transaction statements run with `lock_timeout = 2min` (review: 10 min per statement could
+  outlive the Job); the runner's 10 s stays for everything else.
+
+## Review follow-up
+
+- Job deadline is a chart value, `postgres.migrateJob.activeDeadlineSeconds` (default 1800, was a
+  fixed 900; schema minimum 300), `terminationGracePeriodSeconds: 30` set explicitly.
+- SIGTERM/SIGINT in `kobe-migrate` abort the run: `pg_cancel_backend` on the runner's backend
+  from a second connection, `pg_terminate_backend` after 5 s if it has not stopped, so no build
+  continues and the session advisory lock is freed; exit 1 with a clear message
+  (`MigrationCancelledError`).
+- Lock busy: `pg_try_advisory_lock` first; if held, the holders from `pg_locks` x
+  `pg_stat_activity` (pid, application_name, state, query/backend start, mode) go to a notice and,
+  after the 10 s wait, into the error. Runner sessions are `application_name = kobe-migrate`.
+- `RESET lock_timeout` failures are swallowed so the statement's error stays.
+- install.md: deadline, `--timeout`, pre-build advice for large tables, what to do when the lock
+  is held.
 
 ## Open questions (for Chris or the coordinator)
 
@@ -36,6 +51,8 @@ files for `CREATE INDEX CONCURRENTLY`.
 
 - ac-1: `packages/db/src/migrate-runner.db.test.ts` "leaves 1..N-1 applied and recorded when N
   fails; a rerun continues" (hashes/created_at equal to drizzle's, drizzle's migrator agrees).
+- Review tests (same file): "names the session holding the migration lock", "cancels a waiting
+  concurrent build in Postgres on abort and frees the lock"; chart `render.test.ts` deadline.
 - ac-2: same file, "builds an index CONCURRENTLY" and "rebuilds an INVALID index left by an
   interrupted concurrent build"; refusal of a non-idempotent statement.
 - ac-3: the k3d upgrade shard runs in CI (not runnable here). Locally: "continues an install

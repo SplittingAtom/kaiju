@@ -99,8 +99,10 @@ DROP INDEX CONCURRENTLY IF EXISTS "thread_app_results_thread_idx";
   (transactional) migration.
 - Before each `CREATE INDEX CONCURRENTLY IF NOT EXISTS <name>` the runner drops `<name>` if an
   interrupted earlier build left it INVALID, so the rerun builds it again.
-- The statements wait up to 10 min (`lock_timeout`) for transactions older than them, instead of
-  the runner's usual 10 s; they block no traffic meanwhile.
+- Each statement waits up to 2 min (`lock_timeout`) for transactions older than it, instead of
+  the runner's usual 10 s; they block no traffic meanwhile. All of an upgrade's migrations must
+  fit the Job's deadline (`postgres.migrateJob.activeDeadlineSeconds`, default 30 min); on
+  SIGTERM the runner cancels its statement in Postgres and exits non-zero.
 - When the index is declared in the drizzle schema (it should be, so `db:check` stays clean),
   generate the migration as usual, then rewrite its SQL into this form and make the first line
   `-- kobe:hand-written` so `db:rebase` keeps the SQL and its snapshot. An SQL-only index (kept out of

@@ -627,6 +627,11 @@ postgres:
     migrateUrlKey: migrate-url
     # Login role in app-url; the migration runner grants it privileges and refuses unsafe roles.
     appRole: kobe_app
+  # The migration Job (pre-install/pre-upgrade hook). activeDeadlineSeconds bounds a whole upgrade's
+  # migrations; concurrent index builds (KOBE-734) on large tables take longer than plain DDL, and
+  # each may wait up to 2 min for older transactions. Keep `helm upgrade --timeout` above it.
+  migrateJob:
+    activeDeadlineSeconds: 1800
   cnpg:
     instances: 1
     # Namespace of the CloudNativePG operator (allowed through the Postgres NetworkPolicy).
