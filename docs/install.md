@@ -1197,6 +1197,10 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   `0.0.0.0/0`, `169.254.0.0/16`, `128.0.0.0/1`, `::/0`) now fails the chart schema, and the
   services refuse to start with it; IPv4 entries need /8 or narrower and IPv6 entries /16 or
   narrower (ULA `fc00::/7` excepted). Private LAN and cluster ranges keep working unchanged.
+  The schema catches the common mistakes; the services validate finally. An entry they reject
+  (an invalid CIDR such as one with leading zeros, or an always-refused range) makes the pod
+  crash-loop with `Invalid configuration: KOBE_..._ALLOWED_INTERNAL_CIDRS: ...` in its log
+  (`kubectl logs deploy/<release>-mcp-proxy`, `-egress-proxy` or `-server`).
 
 - **HSTS (KOBE-695).** An install with an https public URL now sends
   `Strict-Transport-Security` (one year, no `includeSubDomains` unless

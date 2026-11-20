@@ -4,7 +4,7 @@
   "$defs": {
     "internalCidr": {
       "type": "string",
-      "description": "An install-wide internal target (KOBE-694): a CIDR that neither starts in nor covers an always-refused range (unspecified, loopback, link-local and metadata, multicast, IPv4-embedding IPv6). IPv4 needs /8 or narrower; IPv6 /16 or narrower (ULA fc00::/7 and fd00::/8 allowed). A private LAN range such as 192.168.10.4/30 passes.",
+      "description": "An install-wide internal target (KOBE-694): a CIDR that neither starts in nor covers an always-refused range (unspecified, loopback, link-local and metadata, multicast, IPv4-embedding IPv6). IPv4 needs /8 or narrower; IPv6 /16 or narrower (ULA fc00::/7 and fd00::/8 allowed). A private LAN range such as 192.168.10.4/30 passes. The schema catches the common mistakes only; the service validates finally and refuses to start on an entry it rejects (an invalid CIDR, e.g. leading zeros, or an always-refused range), logging Invalid configuration with the variable name.",
       "pattern": "^[0-9a-fA-F:.]+(/[0-9]{1,3})?$",
       "not": {
         "anyOf": [
