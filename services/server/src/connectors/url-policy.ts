@@ -1,6 +1,6 @@
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
-import { AddressPolicy } from "@kobe/address-policy";
+import { AddressPolicy, type AddressChecker } from "@kobe/address-policy";
 
 /**
  * Where a registered connector may point (spec D27, D28; KOBE-100). The registry checks what the
@@ -18,6 +18,22 @@ export interface ConnectorUrlPolicy {
   readonly deniedCidrs: readonly string[];
   /** Resolves a host to every address it has; rejects when it does not resolve. */
   readonly resolve: (host: string) => Promise<readonly string[]>;
+  /**
+   * The address check, built from the CIDR lists when unset. Tests that reach a local fake
+   * server inject one that adds loopback, which the lists can never allow (KOBE-694).
+   */
+  readonly addresses?: AddressChecker;
+}
+
+/** The policy's address check: the injected one, or one built from its CIDR lists. */
+export function connectorAddresses(policy: ConnectorUrlPolicy): AddressChecker {
+  return (
+    policy.addresses ??
+    new AddressPolicy({
+      allowedInternal: policy.allowedInternalCidrs,
+      extraDenied: policy.deniedCidrs,
+    })
+  );
 }
 
 /** The registration-time DNS lookup shares the 10 s budget of an outbound OAuth request. */
@@ -81,10 +97,7 @@ export async function checkConnectorUrl(
   if (!policy.allowedPorts.includes(port)) {
     return refuse("port_not_allowed", `Port ${port} is not allowed for connectors on this site.`);
   }
-  const addresses = new AddressPolicy({
-    allowedInternal: policy.allowedInternalCidrs,
-    extraDenied: policy.deniedCidrs,
-  });
+  const addresses = connectorAddresses(policy);
   const host = url.hostname.replace(/^\[|\]$/g, "");
   let resolved: readonly string[];
   if (isIP(host) !== 0) {

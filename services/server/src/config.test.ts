@@ -92,6 +92,29 @@ describe("loadConfig", () => {
     );
   });
 
+  it("keeps a separate key for the proxy's internal routes, falling back to one key (KOBE-693)", () => {
+    const one = "k".repeat(32);
+    const routes = "r".repeat(32);
+    expect(loadConfig({ ...REQUIRED, KOBE_MCP_PROXY_INTERNAL_KEY: one })).toMatchObject({
+      mcpProxyInternalKey: one,
+      mcpProxyRoutesKey: one,
+    });
+    expect(
+      loadConfig({
+        ...REQUIRED,
+        KOBE_MCP_PROXY_INTERNAL_KEY: one,
+        KOBE_MCP_PROXY_ROUTES_KEY: routes,
+      }),
+    ).toMatchObject({ mcpProxyInternalKey: one, mcpProxyRoutesKey: routes });
+    expect(
+      loadConfig({ ...REQUIRED, KOBE_MCP_PROXY_INTERNAL_KEY: one, KOBE_MCP_PROXY_ROUTES_KEY: "" })
+        .mcpProxyRoutesKey,
+    ).toBe(one);
+    expect(() => loadConfig({ ...REQUIRED, KOBE_MCP_PROXY_ROUTES_KEY: "short" })).toThrow(
+      /KOBE_MCP_PROXY_ROUTES_KEY/,
+    );
+  });
+
   it("reads the MCP proxy address for the pinning probe (KOBE-101)", () => {
     expect(loadConfig(REQUIRED).mcpProxyUrl).toBeUndefined();
     expect(
@@ -143,6 +166,16 @@ describe("loadConfig", () => {
   it("requires a setup token of at least 24 characters", () => {
     expect(() => loadConfig({ ...REQUIRED, KOBE_SETUP_TOKEN: "short" })).toThrow(
       /KOBE_SETUP_TOKEN/,
+    );
+  });
+
+  it("reads HSTS includeSubDomains, off by default (KOBE-695)", () => {
+    expect(loadConfig(REQUIRED).auth?.hstsIncludeSubDomains).toBe(false);
+    expect(
+      loadConfig({ ...REQUIRED, KOBE_HSTS_INCLUDE_SUBDOMAINS: "true" }).auth?.hstsIncludeSubDomains,
+    ).toBe(true);
+    expect(() => loadConfig({ ...REQUIRED, KOBE_HSTS_INCLUDE_SUBDOMAINS: "yes" })).toThrow(
+      /KOBE_HSTS_INCLUDE_SUBDOMAINS must be true or false/,
     );
   });
 

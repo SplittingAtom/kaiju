@@ -32,8 +32,12 @@ export type ProbeResult =
   | { readonly ok: false; readonly failure: ProbeFailure };
 
 export interface ConnectorProbe {
-  /** `apiKey`: the user's grant, for a connector that needs one (sent to the proxy, never stored). */
-  probe(url: string, apiKey?: string): Promise<ProbeResult>;
+  /**
+   * `apiKey`: the user's grant, for a connector that needs one (sent to the proxy, never stored).
+   * `connectorId`: the registered connector `url` belongs to; the proxy checks the URL against
+   * the registry before it connects (KOBE-693).
+   */
+  probe(url: string, apiKey: string | undefined, connectorId: string): Promise<ProbeResult>;
 }
 
 const FAILURES = [
@@ -108,8 +112,12 @@ export function createProxyProbe(options: ProxyProbeOptions): ConnectorProbe {
       redirect: "error",
     });
   return {
-    async probe(url, apiKey) {
-      const base = { url, ...(apiKey === undefined ? {} : { api_key: apiKey }) };
+    async probe(url, apiKey, connectorId) {
+      const base = {
+        connector_id: connectorId,
+        url,
+        ...(apiKey === undefined ? {} : { api_key: apiKey }),
+      };
       try {
         let res = await post({ ...base, ui_resources: true });
         // A proxy older than KOBE-433 refuses the field: probe the tools alone (review LOW-1);

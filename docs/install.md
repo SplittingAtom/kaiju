@@ -307,7 +307,11 @@ equal the CONNECT host. It never decrypts traffic. Plain HTTP and other ports ar
   matches pods after Service translation). The domain must still be in the ceiling and enabled.
   `allowedInternalCidrs` is install-wide: every allowlisted host may then reach those ranges. For
   hosts served by this cluster's own ingress use `clusterIngress` (see [Same-cluster
-  hosts](#same-cluster-hosts-internal)).
+  hosts](#same-cluster-hosts-internal)). Loopback, link-local (cloud metadata), unspecified,
+  multicast and IPv4-embedding IPv6 addresses stay refused even inside a listed range, and an
+  entry that starts in or covers one of those ranges (`0.0.0.0/0`, `169.254.0.0/16`,
+  `128.0.0.0/1`) fails the chart schema and the proxy's startup; a private range such as
+  `192.168.10.4/30` is fine.
 - **External Postgres:** the proxy reads allowlists and writes its connection log as the app role.
   Set `egressProxy.networkPolicy.databasePeers` (an `ipBlock` or selector for your database) so its
   NetworkPolicy reaches only the database on `databasePort`; when empty it may reach any address on
@@ -680,7 +684,10 @@ servers only (no stdio), registered by site admins, enabled per team with an exp
 its own. For every request it checks the sandbox's `kobe.mcp-proxy` session token, then asks the
 server on its **internal port 8082** (reachable only from the proxy's pods, and keyed with the
 chart-generated `<release>-mcp-proxy-internal` Secret, or `mcpProxy.internalKeySecret` for offline
-renders). The server lists only the team's exposed, pinned tools, and decides every `tools/call`
+renders). The server's own calls to the proxy (the pinning probe and MCP Apps' calls) use the
+proxy's **internal port 8081**, which its NetworkPolicy opens to server pods only, with a second
+key from the same Secret (`routes-key`, one key per direction), and only for a connector's
+registered URL. The server lists only the team's exposed, pinned tools, and decides every `tools/call`
 with the same policy engine as the sandbox (D29): a call that needs approval runs only with a
 valid signed approval for exactly that run, tool and input, used once. Every allowed call is
 written to the audit log (`mcp.tool_call`) before the proxy forwards it.
@@ -691,7 +698,10 @@ the MCP proxy is not a sandbox. Its own NetworkPolicy allows DNS, the server's i
 public addresses on `mcpProxy.allowedPorts` (default 443). It resolves each connector's host itself
 and refuses private, loopback, link-local (cloud metadata) and reserved addresses unless listed in
 `mcpProxy.allowedInternalCidrs` (an on-premises MCP server; add a matching
-`mcpProxy.networkPolicy.extraEgress` peer for in-cluster targets). Connector URLs must be HTTPS
+`mcpProxy.networkPolicy.extraEgress` peer for in-cluster targets). Loopback, link-local (cloud
+metadata), unspecified, multicast and IPv4-embedding addresses are refused even when a listed range
+covers them, and an entry that starts in or covers such a range fails the chart schema and
+startup. Connector URLs must be HTTPS
 (`mcpProxy.allowInsecureHttp` exists for development and CI only); redirects are not followed.
 Limits per proxy replica: `mcpProxy.limits.callsPerSandbox` (8 concurrent), `requestBurst` /
 `requestsPerSecond` (60, then 10/s), `maxRequestBytes` (1 MiB), `maxResponseBytes` (4 MiB),
@@ -871,7 +881,8 @@ is proven by an `amr` value in `mfaRule.amr_any` (default `mfa`, `hwk`, `swk`, `
   `auth.sso.networkPolicy.cidrs`) **beside** your own allow rules for Postgres, S3, SMTP and the
   Kubernetes API, since it makes the server's other egress default-deny.
 - **An on-premises provider** on a private address: list its range in
-  `auth.sso.allowedInternalCidrs`, and give its CA in `server.extraCaBundle`
+  `auth.sso.allowedInternalCidrs` (a private range; loopback, link-local and metadata ranges are
+  refused, as for the proxies), and give its CA in `server.extraCaBundle`
   ([Private certificate authorities](#private-certificate-authorities)).
 - **SCIM is inbound:** Entra's provisioning service must reach `https://<kobe>/v1/scim/v2/<slug>`
   from the internet. For a Kobe that is not reachable from outside, Microsoft's on-premises
@@ -972,6 +983,14 @@ helm install kobe charts/kobe -n kobe \
   --set smtp.host=smtp.example.com --set smtp.from='Kobe <kobe@example.com>' \
   --set smtp.existingSecret=kobe-smtp
 ```
+
+**HTTPS and HSTS.** When the public URL is https (`ingress.tls.enabled`, the default, or an https
+`publicUrl`), the server and the web send `Strict-Transport-Security: max-age=31536000`, so
+browsers refuse plain HTTP to that host for a year. A plain-HTTP install sends none. Set
+`ingress.hsts.includeSubDomains=true` only when every subdomain of the public host's domain
+serves HTTPS; leave it off (the default) when Kobe shares a parent domain with other sites. The
+server also sends `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY` on every response
+except the frames Kobe embeds in its own page.
 
 ### First run: to the first chat
 
@@ -1219,6 +1238,31 @@ on by default), migrations `0216`–`0235` and the upgrade steps. The notes belo
 Migrations report what an upgrade changed in the migration Job's log (`"msg":"migration notice"`,
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
+
+- **MCP proxy internal port and keys (KOBE-693).** The server's probe and app calls move to the
+  MCP proxy's own port 8081 (NetworkPolicy: server pods only); sandboxes keep port 8080. The
+  generated `<release>-mcp-proxy-internal` Secret gains a second key, `routes-key`, on upgrade
+  (the existing `key` is kept), so no manual step is needed; the server and the proxy restart with
+  it, and probes or app calls made while only one of them has rolled are refused. With your own
+  `mcpProxy.internalKeySecret`, add a `routes-key` (32 or more characters) to it; until then the
+  one `key` serves both directions and the proxy logs a warning at startup.
+
+- **Internal CIDRs (KOBE-694).** `mcpProxy.allowedInternalCidrs`,
+  `egressProxy.allowedInternalCidrs` and `auth.sso.allowedInternalCidrs` no longer reach
+  loopback, link-local (cloud metadata), unspecified, multicast or IPv4-embedding IPv6 addresses,
+  even inside a listed range. An entry that starts in or covers such a range (for example
+  `0.0.0.0/0`, `169.254.0.0/16`, `128.0.0.0/1`, `::/0`) now fails the chart schema, and the
+  services refuse to start with it; IPv4 entries need /8 or narrower and IPv6 entries /16 or
+  narrower (ULA `fc00::/7` excepted). Private LAN and cluster ranges keep working unchanged.
+  The schema catches the common mistakes; the services validate finally. An entry they reject
+  (an invalid CIDR such as one with leading zeros, or an always-refused range) makes the pod
+  crash-loop with `Invalid configuration: KOBE_..._ALLOWED_INTERNAL_CIDRS: ...` in its log
+  (`kubectl logs deploy/<release>-mcp-proxy`, `-egress-proxy` or `-server`).
+
+- **HSTS (KOBE-695).** An install with an https public URL now sends
+  `Strict-Transport-Security` (one year, no `includeSubDomains` unless
+  `ingress.hsts.includeSubDomains` is set). Browsers then refuse plain HTTP to the host; moving
+  the install back to plain HTTP later needs the browsers' HSTS entries to expire.
 
 - **Narrower bundled-Postgres and ClamAV policies (KOBE-699).** With `postgres.mode=cnpg`, the
   Postgres NetworkPolicy no longer admits every pod in the release namespace: only the server,

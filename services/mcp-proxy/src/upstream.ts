@@ -2,7 +2,7 @@ import { lookup as dnsLookup, type LookupAddress } from "node:dns";
 import { isIP } from "node:net";
 import { SpanKind, SpanStatusCode, withSpan } from "@kobe/telemetry";
 import { Agent, fetch as undiciFetch, type Dispatcher } from "undici";
-import { AddressPolicy } from "./address-policy.js";
+import { AddressPolicy, type AddressChecker } from "./address-policy.js";
 import type { UpstreamPolicy } from "./config.js";
 import { readUiResources } from "./ui-resources.js";
 import { upstreamModelVisible } from "./visibility.js";
@@ -100,6 +100,11 @@ export interface UpstreamOptions {
   readonly maxPendingDeletes?: number;
   /** DNS resolution (tests resolve names to loopback). */
   readonly resolve?: (host: string) => Promise<LookupAddress[]>;
+  /**
+   * The address check, built from `policy` when unset. Tests that reach a local fake upstream
+   * inject one that adds loopback, which `policy` can never allow (KOBE-694).
+   */
+  readonly addresses?: AddressChecker;
 }
 
 class UpstreamError extends Error {
@@ -123,7 +128,7 @@ function defaultResolve(host: string): Promise<LookupAddress[]> {
 export function checkUpstreamUrl(
   raw: string,
   policy: UpstreamPolicy,
-  addresses: AddressPolicy,
+  addresses: AddressChecker,
 ): URL | undefined {
   let url: URL;
   try {
@@ -164,10 +169,12 @@ function responseFor(message: unknown, id: number): Record<string, unknown> | un
 }
 
 export function createUpstreamClient(options: UpstreamOptions): UpstreamClient {
-  const addresses = new AddressPolicy({
-    allowedInternal: options.policy.allowedInternalCidrs,
-    extraDenied: options.policy.deniedCidrs,
-  });
+  const addresses =
+    options.addresses ??
+    new AddressPolicy({
+      allowedInternal: options.policy.allowedInternalCidrs,
+      extraDenied: options.policy.deniedCidrs,
+    });
   const resolve = options.resolve ?? defaultResolve;
 
   // Every name is resolved once and all of its addresses must pass; connect uses a checked one.

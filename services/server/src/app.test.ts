@@ -22,6 +22,16 @@ describe("server health endpoints", () => {
     const res = await app.request("/nope");
     expect(res.status).toBe(404);
   });
+
+  it("sends nosniff and X-Frame-Options DENY on every response (KOBE-695)", async () => {
+    for (const path of ["/healthz", "/nope"]) {
+      const res = await app.request(path);
+      expect(res.headers.get("x-content-type-options"), path).toBe("nosniff");
+      expect(res.headers.get("x-frame-options"), path).toBe("DENY");
+      // No public URL known (health-only app): no HSTS.
+      expect(res.headers.get("strict-transport-security"), path).toBeNull();
+    }
+  });
 });
 
 describe("server tracing (KOBE-10)", () => {

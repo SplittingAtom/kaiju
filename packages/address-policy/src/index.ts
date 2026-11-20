@@ -98,6 +98,12 @@ export interface AddressCheckOptions {
 
 export type AddressVerdict = "allowed" | "forbidden";
 
+/** What a proxy asks before connecting: {@link AddressPolicy}, or a test double of it. */
+export interface AddressChecker {
+  check(address: string, options?: AddressCheckOptions): AddressVerdict;
+  checkAll(addresses: readonly string[], options?: AddressCheckOptions): AddressVerdict;
+}
+
 function parseCidr(cidr: string): { address: string; prefix: number; type: "ipv4" | "ipv6" } {
   const [address = "", rawPrefix] = cidr.trim().split("/");
   const family = isIP(address);
@@ -139,23 +145,36 @@ function isAlwaysDenied(address: string): boolean {
   return ALWAYS_DENIED[type].check(address, type);
 }
 
+/** The always-denied ranges wider than one address, per family (single hosts are left to check()). */
+const ALWAYS_DENIED_RANGES = ALWAYS_DENIED_CIDRS.map(parseCidr).filter(
+  (r) => r.prefix < (r.type === "ipv6" ? 128 : 32),
+);
+
 /**
- * Validates the internal target list (config, fail fast): every entry a CIDR, none whose network
- * address is always refused (`0.0.0.0/0`, `::/0`, loopback, link-local or metadata entries are
- * configuration mistakes, not targets).
+ * Validates an internal list (config, fail fast): `internalTargets` and the install-wide
+ * `allowedInternalCidrs` of both proxies and SSO (KOBE-694). Every entry a CIDR; none that starts
+ * in an always-refused range or covers one (`0.0.0.0/0`, `::/0`, `128.0.0.0/1`, loopback,
+ * link-local or metadata entries are configuration mistakes, not targets). A range that holds
+ * only a single always-refused address (CGNAT and Alibaba's metadata address, ULA and AWS's) is
+ * accepted: `check()` refuses that address anyway.
  */
 export function validateInternalTargets(cidrs: readonly string[]): void {
   for (const c of cidrs) {
-    const { address } = parseCidr(c);
-    if (isAlwaysDenied(address)) {
+    const entry = parseCidr(c);
+    const list = new BlockList();
+    list.addSubnet(entry.address, entry.prefix, entry.type);
+    const covers = ALWAYS_DENIED_RANGES.some(
+      (r) => r.type === entry.type && list.check(r.address, r.type),
+    );
+    if (isAlwaysDenied(entry.address) || covers) {
       throw new Error(
-        `CIDR ${JSON.stringify(c)} starts in a range that is never reachable (loopback, link-local, metadata, unspecified or IPv4-embedding)`,
+        `CIDR ${JSON.stringify(c)} overlaps a range that is never reachable (loopback, link-local, metadata, unspecified, multicast or IPv4-embedding)`,
       );
     }
   }
 }
 
-export class AddressPolicy {
+export class AddressPolicy implements AddressChecker {
   private readonly denied: FamilyLists;
   private readonly allowed: FamilyLists;
   private readonly internalTargets: FamilyLists;
@@ -167,21 +186,19 @@ export class AddressPolicy {
   }
 
   /**
-   * An address is allowed when it is an operator's install-wide internal target, or global (not in
-   * any denied range), or (only for a host matched by an internal pattern) inside the internal
-   * targets and not in `ALWAYS_DENIED_CIDRS`.
+   * An address in `ALWAYS_DENIED_CIDRS` is refused whatever the lists say (KOBE-694: also through
+   * the install-wide `allowedInternal`). Otherwise it is allowed when it is an operator's
+   * install-wide internal target, or global (not in any denied range), or (only for a host
+   * matched by an internal pattern) inside the internal targets.
    */
   check(address: string, options: AddressCheckOptions = {}): AddressVerdict {
     const family = isIP(address);
     if (family === 0) return "forbidden";
+    if (isAlwaysDenied(address)) return "forbidden";
     const type = family === 6 ? "ipv6" : "ipv4";
     if (this.allowed[type].check(address, type)) return "allowed";
     if (!this.denied[type].check(address, type)) return "allowed";
-    if (
-      options.internal === true &&
-      this.internalTargets[type].check(address, type) &&
-      !isAlwaysDenied(address)
-    ) {
+    if (options.internal === true && this.internalTargets[type].check(address, type)) {
       return "allowed";
     }
     return "forbidden";

@@ -69,6 +69,55 @@ describe("AddressPolicy", () => {
     expect(custom.check("10.43.200.201")).toBe("forbidden");
   });
 
+  it("never lets allowedInternal re-open an always-denied address (KOBE-694)", () => {
+    const broad = new AddressPolicy({
+      allowedInternal: ["0.0.0.0/0", "::/0", "::ffff:0:0/96", "169.254.0.0/16", "127.0.0.0/8"],
+    });
+    for (const ip of [
+      "127.0.0.1",
+      "169.254.169.254",
+      "100.100.100.200",
+      "0.0.0.0",
+      "::1",
+      "fe80::1",
+      "fd00:ec2::254",
+      "::ffff:127.0.0.1",
+      "::ffff:169.254.169.254",
+      "64:ff9b::a9fe:a9fe",
+    ]) {
+      expect(broad.check(ip), ip).toBe("forbidden");
+    }
+    // Ordinary internal addresses the list covers stay reachable.
+    expect(broad.check("10.1.2.3")).toBe("allowed");
+    const lan = new AddressPolicy({ allowedInternal: ["192.168.10.4/30"] });
+    expect(lan.check("192.168.10.5")).toBe("allowed");
+    expect(lan.check("192.168.10.8")).toBe("forbidden");
+    expect(lan.check("::ffff:192.168.10.5")).toBe("forbidden");
+  });
+
+  it("validates internal lists: no entry covering an always-denied range (KOBE-694)", () => {
+    expect(() =>
+      validateInternalTargets(["192.168.10.4/30", "10.0.0.0/8", "fd12:3456::/48"]),
+    ).not.toThrow();
+    // A range holding only an always-denied single address is fine: check() refuses that one.
+    expect(() => validateInternalTargets(["100.64.0.0/10", "fd00::/8"])).not.toThrow();
+    for (const bad of [
+      "nope",
+      "0.0.0.0/0",
+      "::/0",
+      "128.0.0.0/1",
+      "169.0.0.0/8",
+      "169.254.0.0/16",
+      "127.0.0.1/32",
+      "224.0.0.0/3",
+      "fe80::/10",
+      "fe00::/8",
+      "::ffff:10.0.0.1/128",
+    ]) {
+      expect(() => validateInternalTargets([bad]), bad).toThrow();
+    }
+  });
+
   it("rejects invalid CIDRs in configuration", () => {
     expect(() => validateCidrs(["10.0.0.0/33"])).toThrow(/invalid CIDR/);
     expect(() => validateCidrs(["nope"])).toThrow(/invalid CIDR/);

@@ -56,10 +56,11 @@ export const WEBRTC_GUARD =
   "{value:undefined,writable:false,configurable:false})}catch(e){}}})()</script>";
 
 /**
- * A leading doctype (after an optional BOM, whitespace and comments): the guard goes right after
- * it, so the document keeps its standards mode.
+ * A leading doctype, after nothing but an optional BOM and whitespace: the guard goes right after
+ * it, so the document keeps its standards mode. Anything else first (comments included, whose
+ * parsing differs between this pattern and browsers) puts the guard at the very start (KOBE-690).
  */
-const DOCTYPE = /^\uFEFF?(?:\s|<!--[\s\S]*?-->)*<!doctype[^>]*>/i;
+const DOCTYPE = /^\uFEFF?\s*<!doctype[^>]*>/i;
 
 /**
  * The template with {@link WEBRTC_GUARD} first: after a leading doctype (so the document keeps

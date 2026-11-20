@@ -6,7 +6,7 @@ import type { TLSSocket } from "node:tls";
 import { generateSessionKeyPair, signSessionToken } from "@kobe/session-token";
 import { pino } from "pino";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { AddressPolicy } from "./address-policy.js";
+import { withTestLoopback } from "@kobe/address-policy/testing";
 import type { EgressDecision } from "./allowlist.js";
 import { egressTokenVerifier } from "./auth.js";
 import type { BlockedAttempt } from "./blocked-reporter.js";
@@ -198,7 +198,8 @@ async function start(
       if (!found) throw new Error("NXDOMAIN");
       return found;
     },
-    addresses: new AddressPolicy({ allowedInternal: ["127.0.0.0/8"] }),
+    // The local upstream listens on loopback, which no policy may allow (KOBE-694).
+    addresses: withTestLoopback(),
     connections: new ConnectionLimits({ perSandbox: 4, total: 100 }),
     bandwidth: new BandwidthLimiter(0),
     audit: { record: (r) => void audit.push(r) },

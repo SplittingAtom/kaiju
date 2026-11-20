@@ -55,5 +55,28 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // KOBE-694: the loopback-allowing address checker is a test double; services never use it.
+    files: ["**/*.ts", "**/*.tsx", "**/*.mjs", "**/*.js"],
+    ignores: [
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/testing/**",
+      "packages/address-policy/src/testing.ts",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@kobe/address-policy/testing",
+              message: "Test files only: production code never allows loopback (KOBE-694).",
+            },
+          ],
+        },
+      ],
+    },
+  },
   prettier,
 );

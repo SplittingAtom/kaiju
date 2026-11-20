@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { buildCsp, newNonce } from "./lib/security/csp";
+import { buildCsp, hstsHeader, newNonce } from "./lib/security/csp";
 
 /**
  * Per-request CSP nonce (Next 16 proxy): Next reads the nonce from the request's
@@ -14,6 +14,9 @@ export function proxy(request: NextRequest): NextResponse {
   requestHeaders.set("content-security-policy", csp);
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set("content-security-policy", csp);
+  // KOBE-695: HSTS on an https install (runtime: one image serves http and https installs).
+  const hsts = hstsHeader(process.env);
+  if (hsts !== undefined) response.headers.set("strict-transport-security", hsts);
   return response;
 }
 

@@ -1,6 +1,6 @@
 import { verifyKeysFromEnv, type SessionVerifyKeys } from "@kobe/session-token";
 import { z } from "zod";
-import { validateCidrs } from "./address-policy.js";
+import { validateCidrs, validateInternalTargets } from "./address-policy.js";
 
 /**
  * MCP proxy configuration (spec D27), validated at startup: invalid env fails fast. The chart
@@ -40,6 +40,27 @@ const configSchema = z.object({
     error: "KOBE_MCP_SERVER_URL must be an http(s) URL",
   }),
   KOBE_MCP_INTERNAL_KEY: key("KOBE_MCP_INTERNAL_KEY"),
+  /**
+   * The server's routes (probe, app calls) listen here, not on PORT (KOBE-693): the
+   * NetworkPolicy admits only server pods to this port, while sandboxes reach PORT.
+   */
+  KOBE_MCP_INTERNAL_PORT: int("KOBE_MCP_INTERNAL_PORT", 1, 65535, 8081),
+  /**
+   * The key the server presents to those routes (KOBE-693), separate from KOBE_MCP_INTERNAL_KEY,
+   * which the proxy presents to the server. Empty or unset (an operator's Secret without the
+   * second key): KOBE_MCP_INTERNAL_KEY serves both ways, with a startup warning.
+   */
+  KOBE_MCP_ROUTES_KEY: z
+    .string()
+    .default("")
+    .pipe(
+      z.union([
+        z.literal(""),
+        z
+          .string()
+          .min(MIN_KEY_LENGTH, `KOBE_MCP_ROUTES_KEY must be at least ${MIN_KEY_LENGTH} characters`),
+      ]),
+    ),
   /** Plain-http connector URLs (development and the e2e suite only; credentials would leak). */
   KOBE_MCP_ALLOW_INSECURE_HTTP: z
     .enum(["true", "false"], { error: "KOBE_MCP_ALLOW_INSECURE_HTTP must be true or false" })
@@ -99,7 +120,14 @@ export interface Config {
    */
   readonly sessionVerifyKeys: SessionVerifyKeys;
   readonly serverUrl: string;
+  /** What the proxy presents to the server's internal listener. */
   readonly internalKey: string;
+  /** The port of the server-facing routes (probe, app calls), KOBE-693. */
+  readonly internalPort: number;
+  /** What the server presents to those routes (KOBE-693). */
+  readonly routesKey: string;
+  /** True when no separate routes key is configured and `internalKey` serves both ways. */
+  readonly routesKeyShared: boolean;
   readonly upstream: UpstreamPolicy;
   readonly limits: Limits;
 }
@@ -132,6 +160,20 @@ function cidrs(name: string, values: readonly string[]): readonly string[] {
   return values;
 }
 
+/**
+ * KOBE-694: install-wide internal targets may not start in or cover an always-refused range
+ * (loopback, link-local, metadata, unspecified, IPv4-embedding); a private LAN range is fine.
+ */
+function internalCidrs(name: string, values: readonly string[]): readonly string[] {
+  cidrs(name, values);
+  try {
+    validateInternalTargets(values);
+  } catch (err) {
+    throw new Error(`Invalid configuration: ${name}: ${(err as Error).message}`, { cause: err });
+  }
+  return values;
+}
+
 export function loadConfig(env: Readonly<Record<string, string | undefined>>): Config {
   const parsed = configSchema.safeParse(env);
   if (!parsed.success) {
@@ -140,15 +182,21 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     throw new Error(`Invalid configuration: ${issues}`);
   }
   const d = parsed.data;
+  if (d.KOBE_MCP_INTERNAL_PORT === d.PORT) {
+    throw new Error("Invalid configuration: KOBE_MCP_INTERNAL_PORT must differ from PORT");
+  }
   return {
     port: d.PORT,
     sessionVerifyKeys: verifyKeysFromEnv(env, "kobe.mcp-proxy"),
     serverUrl: d.KOBE_MCP_SERVER_URL.replace(/\/+$/, ""),
     internalKey: d.KOBE_MCP_INTERNAL_KEY,
+    internalPort: d.KOBE_MCP_INTERNAL_PORT,
+    routesKey: d.KOBE_MCP_ROUTES_KEY === "" ? d.KOBE_MCP_INTERNAL_KEY : d.KOBE_MCP_ROUTES_KEY,
+    routesKeyShared: d.KOBE_MCP_ROUTES_KEY === "",
     upstream: {
       allowInsecureHttp: d.KOBE_MCP_ALLOW_INSECURE_HTTP === "true",
       allowedPorts: ports(d.KOBE_MCP_ALLOWED_PORTS),
-      allowedInternalCidrs: cidrs(
+      allowedInternalCidrs: internalCidrs(
         "KOBE_MCP_ALLOWED_INTERNAL_CIDRS",
         d.KOBE_MCP_ALLOWED_INTERNAL_CIDRS,
       ),

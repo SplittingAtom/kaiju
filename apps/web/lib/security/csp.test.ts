@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import nextConfig from "../../next.config";
 import { config, proxy } from "../../proxy";
-import { buildCsp, newNonce } from "./csp";
+import { buildCsp, hstsHeader, newNonce } from "./csp";
 
 function directives(csp: string): Map<string, string[]> {
   return new Map(
@@ -93,5 +93,34 @@ describe("Content Security Policy", () => {
     const rules = (await nextConfig.headers?.()) ?? [];
     const policy = rules[0]?.headers.find((h) => h.key === "Permissions-Policy")?.value;
     expect(policy).toBe("camera=(), microphone=(self), geolocation=(), payment=()");
+  });
+});
+
+describe("Strict-Transport-Security (KOBE-695)", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is sent only when the public URL is https, includeSubDomains only when configured", () => {
+    expect(hstsHeader({ KOBE_PUBLIC_URL: "https://kobe.example" })).toBe("max-age=31536000");
+    expect(
+      hstsHeader({ KOBE_PUBLIC_URL: "https://kobe.example", KOBE_HSTS_INCLUDE_SUBDOMAINS: "true" }),
+    ).toBe("max-age=31536000; includeSubDomains");
+    expect(
+      hstsHeader({
+        KOBE_PUBLIC_URL: "https://kobe.example",
+        KOBE_HSTS_INCLUDE_SUBDOMAINS: "false",
+      }),
+    ).toBe("max-age=31536000");
+    expect(hstsHeader({ KOBE_PUBLIC_URL: "http://kobe.example" })).toBeUndefined();
+    expect(hstsHeader({})).toBeUndefined();
+    expect(hstsHeader({ KOBE_PUBLIC_URL: "not a url" })).toBeUndefined();
+  });
+
+  it("is on page responses of an https install, and not on a plain-http one", () => {
+    vi.stubEnv("KOBE_PUBLIC_URL", "https://kobe.example");
+    const secure = proxy(new NextRequest("https://kobe.example/"));
+    expect(secure.headers.get("strict-transport-security")).toBe("max-age=31536000");
+    vi.stubEnv("KOBE_PUBLIC_URL", "http://kobe.example");
+    const plain = proxy(new NextRequest("http://kobe.example/"));
+    expect(plain.headers.get("strict-transport-security")).toBeNull();
   });
 });

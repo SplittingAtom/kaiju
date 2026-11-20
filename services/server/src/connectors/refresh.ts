@@ -192,7 +192,7 @@ export async function refreshConnector(
 
   const credential =
     options.credential ?? (await periodicCredential(db, options.envelope, connectorId, row.name));
-  const probed = await prober.probe(row.url, credential.apiKey);
+  const probed = await prober.probe(row.url, credential.apiKey, connectorId);
   if (!probed.ok) return recordSkip(db, connectorId, row, probed.failure);
   const live = buildSnapshot(row.name, probed.tools);
   if (!live.ok) return recordSkip(db, connectorId, row, live.failure);

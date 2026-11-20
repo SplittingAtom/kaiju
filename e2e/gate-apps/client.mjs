@@ -249,15 +249,20 @@ async function appsDrift() {
   );
   const { refreshConnector } = await import("/app/dist/connectors/refresh.js");
   const { createProxyProbe } = await import("/app/dist/connectors/probe.js");
+  // The server's own config decides the proxy's routes address and key (KOBE-693: their own port
+  // and key, not the key the proxy presents to the server), so this probe matches the server's.
+  const { loadConfig } = await import("/app/dist/config.js");
+  const server = loadConfig(process.env);
   const prober = createProxyProbe({
-    baseUrl: process.env.KOBE_MCP_PROXY_URL,
-    internalKey: process.env.KOBE_MCP_PROXY_INTERNAL_KEY,
+    baseUrl: server.mcpProxyUrl,
+    internalKey: server.mcpProxyRoutesKey,
     timeoutMs: 30_000,
   });
   const database = await db();
   try {
     const outcome = await refreshConnector(database.db, prober, config.connectorId);
     out("refresh", outcome.status);
+    if (outcome.status === "skipped") out("refresh_reason", outcome.reason);
   } finally {
     await database.close();
   }
