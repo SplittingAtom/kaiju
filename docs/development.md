@@ -72,12 +72,13 @@ every image build and every shard passed.
 
 ## CI
 
-| Workflow        | When                                | What                                                                                                                  |
-| --------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `ci`            | every push, merge queue             | format, build, typecheck, lint, unit + chart tests, license check, DB/RLS suite, image non-root check                 |
-| `sandbox-image` | sandbox inputs change, nightly      | build, acceptance checks, license audit, Trivy (fails on fixable CRITICAL)                                            |
-| `e2e`           | PRs to `main`, merge queue, nightly | images built once, then parallel k3d + gVisor shards: `e2e/run.sh`, cold-start trials, `e2e/gate1.sh`, `e2e/gate2.sh` |
-| `publish`       | push to `main`                      | images (Trivy-scanned before push, fails on fixable CRITICAL; `sha-<short>`; `main` moved last) and the chart to ghcr |
+| Workflow         | When                                | What                                                                                                                            |
+| ---------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `ci`             | every push, merge queue             | format, build, typecheck, lint, unit + chart tests, license check, DB/RLS suite, image non-root check                           |
+| `sandbox-image`  | sandbox inputs change, nightly      | build, acceptance checks, license audit, Trivy (fails on fixable CRITICAL)                                                      |
+| `e2e`            | PRs to `main`, merge queue, nightly | images built once, then parallel k3d + gVisor shards: `e2e/run.sh`, cold-start trials, `e2e/gate1.sh`, `e2e/gate2.sh`           |
+| `publish`        | push to `main`                      | images (Trivy-scanned before push, fails on fixable CRITICAL; `sha-<short>`; `main` moved last) and the chart to ghcr           |
+| `security-audit` | weekly, manual                      | `pnpm audit --prod` and the images' pinned Python/npm packages against OSV (`scripts/osv-audit.mjs`); fails on HIGH or CRITICAL |
 
 Image vulnerability gate: `sandbox-image`, `orbit-eval-image`, `skill-scan-image` and every image
 in `publish` run Trivy (`aquasecurity/trivy-action`, pinned by digest) twice: a report of HIGH and
