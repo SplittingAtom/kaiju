@@ -39,6 +39,21 @@ describe("artifactFrameDocument", () => {
   });
 });
 
+describe("guard placement (KOBE-690)", () => {
+  it("goes first when anything but whitespace precedes the doctype", () => {
+    for (const lead of ["<!--> ", "<!-- a --!> ", "<!-- c -->"]) {
+      const html = `${lead}<!doctype html><script>x()</script>`;
+      expect(artifactFrameDocument("html", html), lead).toBe(`${WEBRTC_GUARD}${html}`);
+      expect(workspaceFrameDocument(Buffer.from(html)), lead).toBe(`${WEBRTC_GUARD}${html}`);
+    }
+  });
+
+  it("wraps an svg holding comments with the guard still first", () => {
+    const doc = artifactFrameDocument("svg", "<!--> <svg><script>x()</script></svg>");
+    expect(doc.startsWith(`<!doctype html>${WEBRTC_GUARD}`)).toBe(true);
+  });
+});
+
 describe("workspaceFrameDocument", () => {
   it("puts the guard first in a workspace html file", () => {
     const doc = workspaceFrameDocument(Buffer.from("<!DOCTYPE html>\n<h1>hi</h1>", "utf8"));

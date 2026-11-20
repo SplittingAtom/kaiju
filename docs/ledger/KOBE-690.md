@@ -23,6 +23,15 @@ the WebRTC guard script, and iframe-only loads.
   download route, which are unchanged; a test asserts the artifact download still answers a
   top-level load.
 
+- Follow-up (review HIGH): the guard goes after a doctype only when nothing but a BOM and
+  whitespace precede it; otherwise at byte 0. Applies to app frames too.
+- Residual (review LOW): a browser that sends no `Sec-Fetch-Dest` can still open a frame URL
+  top-level (`mayLoadFrame` admits a missing header, as the app frames do, so non-browser
+  clients and older browsers keep working). Accepted: the header CSP's `sandbox` without
+  `allow-same-origin` gives the document an opaque origin even top-level (no cookies, no
+  storage, no access to Kobe), and `connect-src`/`default-src 'none'` and the guard leave it no
+  network; current Chromium, Firefox and Safari all send the header.
+
 ## Docs
 
 `docs/guide/for-agents/concepts.md` (Artifact: what the frame allows, so agents inline data) and

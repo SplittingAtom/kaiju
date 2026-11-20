@@ -32,9 +32,15 @@ describe("withWebRtcGuard", () => {
       `${BOM}  <!doctype html >${WEBRTC_GUARD}<p>a</p>`,
     );
     expect(withWebRtcGuard("<p>no doctype</p>")).toBe(`${WEBRTC_GUARD}<p>no doctype</p>`);
-    // Comments before the doctype: still after the doctype (standards mode kept).
-    expect(withWebRtcGuard("<!-- c --> <!doctype html><p>")).toBe(
-      `<!-- c --> <!doctype html>${WEBRTC_GUARD}<p>`,
+    // Anything but a BOM and whitespace before the doctype: the guard goes first of all, so no
+    // markup a browser may parse differently (comment forms it closes early) can run before it.
+    for (const lead of ["<!-- c --> ", "<!--> ", "<!-- a --!> ", "<p>x</p>"]) {
+      const html = `${lead}<!doctype html><script>x()</script>`;
+      expect(withWebRtcGuard(html), lead).toBe(`${WEBRTC_GUARD}${html}`);
+    }
+    expect(withWebRtcGuard(`${BOM}<!doctype html>`)).toBe(`${BOM}<!doctype html>${WEBRTC_GUARD}`);
+    expect(withWebRtcGuard(" \n\t<!DOCTYPE html><p>")).toBe(
+      ` \n\t<!DOCTYPE html>${WEBRTC_GUARD}<p>`,
     );
   });
 
