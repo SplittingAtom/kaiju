@@ -555,9 +555,11 @@ describe("/v1/artifacts", () => {
     expect(header("referrer-policy")).toBe("no-referrer");
     expect(header("cache-control")).toBe("private, no-store");
     expect(header("x-content-type-options")).toBe("nosniff");
-    // X-Frame-Options is on this route only.
+    // SAMEORIGIN is on the frame route only; every other route is unframeable (KOBE-695).
     const content = await w.owner.browser.get(`/v1/artifacts/${id}/versions/1/content`);
-    expect(content.headers.get("x-frame-options")).toBeNull();
+    expect(content.headers.get("x-frame-options")).toBe("DENY");
+    // A plain-http install (the fixture's public URL) gets no HSTS.
+    expect(content.headers.get("strict-transport-security")).toBeNull();
 
     const svg = await seeded("svg", "<svg/>");
     const wrapped = await svg.w.owner.browser.get(

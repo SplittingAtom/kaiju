@@ -1301,6 +1301,15 @@
               "type": "string"
             }
           }
+        },
+        "hsts": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "includeSubDomains": {
+              "type": "boolean"
+            }
+          }
         }
       },
       "if": {

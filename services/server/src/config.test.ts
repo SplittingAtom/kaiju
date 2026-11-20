@@ -146,6 +146,16 @@ describe("loadConfig", () => {
     );
   });
 
+  it("reads HSTS includeSubDomains, off by default (KOBE-695)", () => {
+    expect(loadConfig(REQUIRED).auth?.hstsIncludeSubDomains).toBe(false);
+    expect(
+      loadConfig({ ...REQUIRED, KOBE_HSTS_INCLUDE_SUBDOMAINS: "true" }).auth?.hstsIncludeSubDomains,
+    ).toBe(true);
+    expect(() => loadConfig({ ...REQUIRED, KOBE_HSTS_INCLUDE_SUBDOMAINS: "yes" })).toThrow(
+      /KOBE_HSTS_INCLUDE_SUBDOMAINS must be true or false/,
+    );
+  });
+
   it("reads an optional approval key of at least 32 characters (KOBE-37), never for the scheduler", () => {
     expect(loadConfig(REQUIRED).auth?.approvalKey).toBeUndefined();
     expect(loadConfig({ ...REQUIRED, KOBE_APPROVAL_KEY: "" }).auth?.approvalKey).toBeUndefined();

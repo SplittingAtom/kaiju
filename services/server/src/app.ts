@@ -142,6 +142,8 @@ import {
   threadUsageRoutes,
 } from "./routes/usage.js";
 
+import { securityHeaders } from "./security-headers.js";
+
 const SERVICE = "server";
 
 export interface AppOptions {
@@ -159,6 +161,8 @@ export interface AppOptions {
   readonly skillMirror?: SkillMirrorHandle;
   /** Governed skill import's fetcher (KOBE-344): through the egress proxy. */
   readonly skillImport?: ImportDeps;
+  /** HSTS `includeSubDomains` (KOBE-695); HSTS itself follows the public URL's scheme. */
+  readonly hstsIncludeSubDomains?: boolean;
 }
 
 /** Health endpoints always; auth and the /v1 API when dependencies are provided. */
@@ -168,6 +172,15 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   // Never the caller's trace (KOBE-274): run trace ids are predictable, so joining would let anyone
   // who knows a run id write into that run's trace. Every request starts its own trace.
   app.use("*", honoTracing({ joinCallerTrace: false }));
+  // HSTS on an https install, nosniff and X-Frame-Options DENY unless a frame route set its own
+  // (KOBE-695): /v1 and /api/auth reach the server straight from the ingress.
+  app.use(
+    "*",
+    securityHeaders({
+      publicUrl: deps?.publicUrl,
+      includeSubDomains: options.hstsIncludeSubDomains ?? false,
+    }),
+  );
   // An audited action that couldn't get the audit chain lock in time rolled back: retryable.
   app.onError((err, c) => {
     if (err instanceof AuditBusyError) {

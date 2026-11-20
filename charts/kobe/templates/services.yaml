@@ -16,7 +16,7 @@
 {{- $webServerUrl := .Values.web.serverUrl | default (printf "http://%s-server" $fullname) | trimSuffix "/" -}}
 {{- include "kobe.nodeService" (dict "root" . "component" "web" "image" "web" "values" .Values.web
       "healthPath" "/api/healthz" "readyPath" "/api/healthz"
-      "env" (printf "- name: KOBE_SERVER_URL\n  value: %s\n- name: KOBE_PUBLIC_URL\n  value: %s" ($webServerUrl | quote) (include "kobe.publicUrl" . | quote))
+      "env" (printf "- name: KOBE_SERVER_URL\n  value: %s\n- name: KOBE_PUBLIC_URL\n  value: %s\n%s" ($webServerUrl | quote) (include "kobe.publicUrl" . | quote) (include "kobe.hstsEnv" .))
       "extraMounts" "- name: next-cache\n  mountPath: /app/apps/web/.next/cache"
       "extraVolumes" "- name: next-cache\n  emptyDir: {}") }}
 ---

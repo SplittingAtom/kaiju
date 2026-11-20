@@ -971,6 +971,14 @@ helm install kobe charts/kobe -n kobe \
   --set smtp.existingSecret=kobe-smtp
 ```
 
+**HTTPS and HSTS.** When the public URL is https (`ingress.tls.enabled`, the default, or an https
+`publicUrl`), the server and the web send `Strict-Transport-Security: max-age=31536000`, so
+browsers refuse plain HTTP to that host for a year. A plain-HTTP install sends none. Set
+`ingress.hsts.includeSubDomains=true` only when every subdomain of the public host's domain
+serves HTTPS; leave it off (the default) when Kobe shares a parent domain with other sites. The
+server also sends `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY` on every response
+except the frames Kobe embeds in its own page.
+
 ### First run: to the first chat
 
 `helm install` leaves a site with no users. To get to a first chat (not on a site you are about
@@ -1162,6 +1170,11 @@ on by default), migrations `0216`–`0235` and the upgrade steps. The notes belo
 Migrations report what an upgrade changed in the migration Job's log (`"msg":"migration notice"`,
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
+
+- **HSTS (KOBE-695).** An install with an https public URL now sends
+  `Strict-Transport-Security` (one year, no `includeSubDomains` unless
+  `ingress.hsts.includeSubDomains` is set). Browsers then refuse plain HTTP to the host; moving
+  the install back to plain HTTP later needs the browsers' HSTS entries to expire.
 
 - **Memory learning tables (KOBE-389).** Migrations `0228_memory_learning` and
   `0229_memory_learning_rls` add five empty team tables for learning from conversations

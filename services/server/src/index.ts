@@ -468,6 +468,7 @@ const server = serve(
   {
     fetch: createApp(isServer ? deps : undefined, {
       isolation,
+      hstsIncludeSubDomains: config.auth?.hstsIncludeSubDomains ?? false,
       ...(evalRunner ? { evals: evalRunner } : {}),
       ...(externalScan ? { externalScan } : {}),
       ...(skillMirror ? { skillMirror } : {}),

@@ -151,7 +151,8 @@ describe("GET /v1/workspace/frame", () => {
       const res = await w.a.get(frame(path, w.team));
       expect(res.status, path).toBe(400);
       expect(res.json, path).toMatchObject({ code: "not_frameable" });
-      expect(res.headers.get("x-frame-options"), path).toBeNull();
+      // Refusals are not frame documents: the server-wide DENY (KOBE-695).
+      expect(res.headers.get("x-frame-options"), path).toBe("DENY");
     }
     expect(await downloads(w.team)).toEqual([]);
   });

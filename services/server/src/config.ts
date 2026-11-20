@@ -153,6 +153,12 @@ const authSchema = z.object({
     .transform((v) => (v === "" ? undefined : v))
     .pipe(z.string().min(32, "KOBE_APPROVAL_KEY must be at least 32 characters").optional())
     .optional(),
+  // HSTS includeSubDomains (KOBE-695, chart `ingress.hsts.includeSubDomains`); HSTS itself is sent
+  // whenever KOBE_PUBLIC_URL is https.
+  KOBE_HSTS_INCLUDE_SUBDOMAINS: z
+    .enum(["true", "false"], { error: "KOBE_HSTS_INCLUDE_SUBDOMAINS must be true or false" })
+    .default("false")
+    .transform((v) => v === "true"),
 });
 
 export interface AuthConfig {
@@ -162,6 +168,8 @@ export interface AuthConfig {
   readonly trustedProxies: readonly string[];
   /** Approval HMAC key; undefined denies every approval request. */
   readonly approvalKey?: string;
+  /** Add `includeSubDomains` to the HSTS header (KOBE-695). */
+  readonly hstsIncludeSubDomains: boolean;
 }
 
 export interface Config {
@@ -254,6 +262,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
       authSecret: auth.data.KOBE_AUTH_SECRET,
       setupToken: auth.data.KOBE_SETUP_TOKEN,
       trustedProxies: auth.data.KOBE_TRUSTED_PROXIES,
+      hstsIncludeSubDomains: auth.data.KOBE_HSTS_INCLUDE_SUBDOMAINS,
       ...(auth.data.KOBE_APPROVAL_KEY ? { approvalKey: auth.data.KOBE_APPROVAL_KEY } : {}),
     },
     smtp: smtp.data,
