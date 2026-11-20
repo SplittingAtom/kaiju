@@ -450,7 +450,11 @@ describe("foreign keys to conversation tables are indexed (KOBE-735)", () => {
       cols.every((c) => ix.cols.slice(0, cols.length).includes(c));
     const covers = (fk: Fk, ix: Ix): boolean => {
       if (ix.relid !== fk.relid) return false;
-      if (ix.pred !== null && !/^\(?\w+ IS NOT NULL\)?$/.test(ix.pred)) return false;
+      if (ix.pred !== null) {
+        // Only `<one of the key's columns> IS NOT NULL`: the key's equality implies it.
+        const col = /^\(?(\w+) IS NOT NULL\)?$/.exec(ix.pred)?.[1];
+        if (col === undefined || !fk.cols.includes(col)) return false;
+      }
       if (leads(ix, fk.cols)) return true;
       if (ix.unique && ix.cols.every((c) => c !== null && fk.cols.includes(c))) return true;
       return (
@@ -482,6 +486,12 @@ describe("foreign keys to conversation tables are indexed (KOBE-735)", () => {
         "kobe735_probe.kobe735_probe_team_id_thread_id_fkey",
       ]);
       await client.query(`CREATE INDEX ON kobe735_probe (thread_id, team_id)`);
+      // A partial index on another column's IS NOT NULL does not serve the run key's check.
+      await client.query(`ALTER TABLE kobe735_probe ADD COLUMN note text`);
+      await client.query(`CREATE INDEX ON kobe735_probe (team_id, run_id) WHERE note IS NOT NULL`);
+      expect((await uncovered(client)).filter((n) => n.startsWith("kobe735_probe"))).toEqual([
+        "kobe735_probe.kobe735_probe_team_id_run_id_fkey",
+      ]);
       await client.query(
         `CREATE INDEX ON kobe735_probe (team_id, run_id) WHERE run_id IS NOT NULL`,
       );
