@@ -5,6 +5,7 @@ import { CAPABILITY_ARTIFACTS, type PolicyEngine } from "@kobe/protocol";
 import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
 import { MemoryObjects } from "./testing/memory-objects.js";
+import { WEBRTC_GUARD } from "./connectors/app-frame.js";
 import { exportZip } from "./retention/export.js";
 import { blobRecorder } from "./retention/job.js";
 import { deleteReleasedBlobs, purgeThreads } from "./retention/index.js";
@@ -540,13 +541,15 @@ describe("/v1/artifacts", () => {
     const { w, id } = await seeded("html", "<h1>hi</h1><script>1</script>");
     const res = await w.owner.browser.get(`/v1/artifacts/${id}/versions/1/frame?team=${w.team}`);
     expect(res.status).toBe(200);
-    expect(res.text).toBe("<h1>hi</h1><script>1</script>");
+    // The WebRTC guard runs first (KOBE-690).
+    expect(res.text).toBe(`${WEBRTC_GUARD}<h1>hi</h1><script>1</script>`);
     const header = (name: string) => res.headers.get(name);
     expect(header("content-type")).toBe("text/html; charset=utf-8");
     expect(header("content-security-policy")).toBe(
       "sandbox allow-scripts allow-forms; default-src 'none'; script-src 'unsafe-inline'; " +
         "style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; " +
-        "connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'self'",
+        "connect-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; " +
+        "form-action 'none'; base-uri 'none'; frame-ancestors 'self'; webrtc 'block'",
     );
     expect(header("x-frame-options")).toBe("SAMEORIGIN");
     expect(header("referrer-policy")).toBe("no-referrer");
@@ -560,7 +563,8 @@ describe("/v1/artifacts", () => {
     const wrapped = await svg.w.owner.browser.get(
       `/v1/artifacts/${svg.id}/versions/1/frame?team=${svg.w.team}`,
     );
-    expect(wrapped.text).toMatch(/^<!doctype html>.*<body><svg\/><\/body><\/html>$/);
+    expect(wrapped.text.startsWith(`<!doctype html>${WEBRTC_GUARD}`)).toBe(true);
+    expect(wrapped.text).toMatch(/<body><svg\/><\/body><\/html>$/);
     expect(wrapped.headers.get("x-frame-options")).toBe("SAMEORIGIN");
   });
 
@@ -580,6 +584,24 @@ describe("/v1/artifacts", () => {
     expect(
       (await hb.get(`${url}?team=${html.w.team}`, { "sec-fetch-site": "same-origin" })).status,
     ).toBe(200);
+    // KOBE-690: only as an iframe; a top-level load (typed, bookmarked, new tab) is refused,
+    // while the download route still answers it as an attachment.
+    const iframe = { "sec-fetch-site": "same-origin", "sec-fetch-dest": "iframe" };
+    expect((await hb.get(`${url}?team=${html.w.team}`, iframe)).status).toBe(200);
+    for (const site of ["none", "same-origin"]) {
+      const top = await hb.get(`${url}?team=${html.w.team}`, {
+        "sec-fetch-site": site,
+        "sec-fetch-dest": "document",
+      });
+      expect(top.status, site).toBe(403);
+      expect(top.json).toMatchObject({ code: "forbidden_origin" });
+    }
+    const download = await hb.get(`/v1/artifacts/${html.id}/versions/1/content`, {
+      "sec-fetch-site": "none",
+      "sec-fetch-dest": "document",
+    });
+    expect(download.status).toBe(200);
+    expect(download.headers.get("content-disposition")).toMatch(/^attachment;/);
   });
 });
 

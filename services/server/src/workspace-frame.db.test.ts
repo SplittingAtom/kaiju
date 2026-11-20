@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { withTeam } from "@kobe/db";
 import { createApp } from "./app.js";
 import { FRAME_HEADERS } from "./artifacts/serve.js";
+import { WEBRTC_GUARD } from "./connectors/app-frame.js";
 import { WORKSPACE_FRAME_MAX_BYTES } from "./routes/workspace-frame.js";
 import { EventStreamFixture, PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";
 import { MemoryObjects } from "./testing/memory-objects.js";
@@ -81,7 +82,8 @@ describe("GET /v1/workspace/frame", () => {
       "sec-fetch-site": "same-origin",
     });
     expect(res.status).toBe(200);
-    expect(res.text).toBe("<h1>hi</h1><script>1</script>");
+    // The WebRTC guard runs first (KOBE-690).
+    expect(res.text).toBe(`${WEBRTC_GUARD}<h1>hi</h1><script>1</script>`);
     for (const [name, value] of Object.entries(FRAME_HEADERS)) {
       expect(res.headers.get(name), name).toBe(value);
     }
@@ -92,7 +94,7 @@ describe("GET /v1/workspace/frame", () => {
     expect(await downloads(w.team)).toEqual([{ userId: w.alice.id, bytes: 29 }]);
     // .htm and upper case count as html.
     await seed(w.team, w.alice, "Old.HTM", "<p>old</p>");
-    expect((await w.a.get(frame("Old.HTM", w.team))).text).toBe("<p>old</p>");
+    expect((await w.a.get(frame("Old.HTM", w.team))).text).toBe(`${WEBRTC_GUARD}<p>old</p>`);
   });
 
   it("refuses cross-site navigations and foreign origins", async () => {
@@ -107,6 +109,17 @@ describe("GET /v1/workspace/frame", () => {
     expect(foreign.status).toBe(403);
     expect((await w.a.get(frame("a.html", w.team), { "sec-fetch-site": "none" })).status).toBe(200);
     expect(await downloads(w.team)).toHaveLength(1);
+    // KOBE-690: only as an iframe; a top-level load is refused before anything is read.
+    const iframe = { "sec-fetch-site": "same-origin", "sec-fetch-dest": "iframe" };
+    expect((await w.a.get(frame("a.html", w.team), iframe)).status).toBe(200);
+    for (const site of ["none", "same-origin"]) {
+      const top = await w.a.get(frame("a.html", w.team), {
+        "sec-fetch-site": site,
+        "sec-fetch-dest": "document",
+      });
+      expect(top.status, site).toBe(403);
+    }
+    expect(await downloads(w.team)).toHaveLength(2);
   });
 
   it("requires the page's team, and refuses a team that is not the active one", async () => {

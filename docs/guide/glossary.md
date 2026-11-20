@@ -26,7 +26,9 @@ run without asking for a while. See [Approvals](internet-and-approvals/approvals
 only) Dangerous.
 
 **Artifact.** Something the agent made for you to keep (a document, a chart, code), shown in a tab
-of the artifact column. **Edit as file** copies a text artifact into My files.
+of the artifact column. **Edit as file** copies a text artifact into My files. HTML and SVG
+artifacts run in a locked-down frame with no network access, shown only inside Kobe; download one
+to keep a copy.
 
 **Artifact column.** The right-hand column with tabs for files, artifacts and apps.
 

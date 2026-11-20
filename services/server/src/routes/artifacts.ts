@@ -5,13 +5,12 @@ import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
 import { artifactDetail, findVersionBlob, listArtifacts } from "../artifacts/repository.js";
+import { artifactFrameDocument, mayLoadFrame } from "../artifacts/frame-document.js";
 import {
   FRAME_HEADERS,
   artifactExtension,
   fileStem,
-  isSameSiteFrameRequest,
   readArtifactBytes,
-  svgDocument,
 } from "../artifacts/serve.js";
 import { invalidRequest } from "../teams/http.js";
 import { uuidSchema } from "../threads/schemas.js";
@@ -134,7 +133,7 @@ export function artifactRoutes(
    * believes is active comes as `?team=` and must match the session's (as the thread export).
    */
   app.get("/:id/versions/:n/frame", async (c) => {
-    if (!isSameSiteFrameRequest(c.req.raw.headers, deps.publicUrl)) {
+    if (!mayLoadFrame(c.req.raw.headers, deps.publicUrl)) {
       return c.json({ code: "forbidden_origin", message: "Cross-origin request rejected." }, 403);
     }
     const team = c.get("team");
@@ -159,8 +158,9 @@ export function artifactRoutes(
         400,
       );
     }
-    const text = bytes.toString("utf8");
-    return new Response(kind === "svg" ? svgDocument(text) : text, { headers: FRAME_HEADERS });
+    return new Response(artifactFrameDocument(kind, bytes.toString("utf8")), {
+      headers: FRAME_HEADERS,
+    });
   });
 
   if (sync) registerEditAsFile(app, deps, sync, loadVersion);
