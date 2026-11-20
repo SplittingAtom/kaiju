@@ -47,7 +47,8 @@ import {
   type BranchSummaryErrorCode,
   type BranchSummaryReply,
 } from "./branch-summary.js";
-import { Thread, type ThreadEnv, type ThreadHooks } from "./thread.js";
+import { Thread } from "./thread.js";
+import type { ThreadEnv, ThreadHooks } from "./thread-env.js";
 import type { RunModel } from "../models/types.js";
 import { fromCapture, fromSession, readCapture } from "../context/assemble.js";
 import { replaySession } from "../context/session-replay.js";
