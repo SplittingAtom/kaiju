@@ -24,7 +24,8 @@ read a person's portable preferences either; reading them needs its own break-gl
 
 - **Users**: everyone with a Kobe account: site role, two-factor status, deactivate and reactivate.
   Deactivating keeps the person's memories that follow them across workspaces, so reactivating
-  restores them unchanged. On a deactivated account, **Purge memories** deletes those memories for
+  restores them unchanged. It deletes their connector keys in every workspace: after reactivation
+  they enter them again. On a deactivated account, **Purge memories** deletes those memories for
   good once you type the person's email address to confirm (refused while a legal hold covers the
   person or a Site-wide hold is in force; memories a run in a held workspace used stay; a very
   large purge reports how many are left: choose it again to continue). Every purge is in the

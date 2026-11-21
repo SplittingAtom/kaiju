@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { AUDIT_CATEGORIES } from "./audit";
 
@@ -8,15 +8,16 @@ import { AUDIT_CATEGORIES } from "./audit";
  * the source of truth and fails on drift.
  */
 function serverCategories(): string[] {
-  const source = readFileSync(
-    new URL("../../../../../../packages/db/src/audit/events.ts", import.meta.url),
-    "utf8",
-  );
-  const start = source.indexOf("export const AUDIT_EVENTS = {");
-  const end = source.indexOf("} as const;", start);
-  expect(start, "AUDIT_EVENTS not found in events.ts").toBeGreaterThan(-1);
-  const block = source.slice(start, end);
-  const actions = [...block.matchAll(/^ {2}"([a-z_]+(?:\.[a-z_]+)+)":/gm)].map((m) => m[1] ?? "");
+  // KOBE-701: AUDIT_EVENTS spreads one object per area file in packages/db/src/audit/events/.
+  const dir = new URL("../../../../../../packages/db/src/audit/events/", import.meta.url);
+  const files = readdirSync(dir).filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"));
+  const actions = files.flatMap((file) => {
+    const source = readFileSync(new URL(file, dir), "utf8");
+    const start = source.search(/^export const [A-Z_]+_EVENTS = \{$/m);
+    if (start < 0) return [];
+    const block = source.slice(start, source.indexOf("} as const", start));
+    return [...block.matchAll(/^ {2}"([a-z_]+(?:\.[a-z_]+)+)":/gm)].map((m) => m[1] ?? "");
+  });
   // A parse that finds almost nothing would make the comparison meaningless.
   expect(actions.length).toBeGreaterThan(150);
   return [...new Set(actions.map((a) => a.split(".")[0] ?? a))].sort();
