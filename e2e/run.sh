@@ -9,8 +9,8 @@ E2E_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" # sections are sourced r
 cd "$(dirname "$0")/.."
 # shellcheck source=lib/run-common.sh
 source "$E2E_DIR/lib/run-common.sh"
-# shellcheck source=run/10-install.sh
-source "$E2E_DIR/run/10-install.sh"
+# shellcheck source=run/10-deploy.sh
+source "$E2E_DIR/run/10-deploy.sh"
 # shellcheck source=run/20-checks.sh
 source "$E2E_DIR/run/20-checks.sh"
 # gate1-prep skips from here to the KOBE-40 model setup (the end of this `if` is marked).

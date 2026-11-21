@@ -10,7 +10,7 @@
 Everything else moved verbatim:
 
 - `e2e/lib/run-common.sh`: settings, `KOBE_E2E_SHARD` validation, context guard, helpers, `trap cleanup EXIT`.
-- `e2e/run/10-install.sh`, `20-checks.sh`; `30`..`37` (inside the `gate1-prep` skip `if`: sandbox provider, wire,
+- `e2e/run/10-deploy.sh`, `20-checks.sh`; `30`..`37` (inside the `gate1-prep` skip `if`: sandbox provider, wire,
   hibernate and wake with the cold-start `exit`, workspace sync, runs, interrupted runs, approvals, egress proxy);
   `40`..`47` (model gateway; `40` sets up, `41`..`47` run inside the "model client pod is ready" `if`);
   `50`..`54` (request access, MCP proxy, scheduled runs and executor, MCP token rotation, chart upgrade).
