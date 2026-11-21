@@ -12,6 +12,7 @@ import { SpanKind, withSpan, type Span } from "@kobe/telemetry";
 import type { Logger } from "pino";
 import { appendRunEventsInTx, withAppendTx } from "../../event-stream/append.js";
 import { ServerCallError, type ServerCallClient } from "../../models/gateway-client.js";
+import { lockThreadRow } from "../../runs/store.js";
 import { readSwitches } from "../switches.js";
 import { checkCandidates, insertCandidates, readKnownStatements } from "./candidates.js";
 import type { LearningPassInput } from "./pass-input/assemble.js";
@@ -33,7 +34,8 @@ import { selectCandidates } from "./validate.js";
  * One learning pass's work after its row is `running` (KOBE-393, SM15), on BackgroundTasks:
  * progress events, one `memory_learn` call on the learning model (retried once on a schema
  * reject), the screen (screen.ts), selection (validate.ts) and save checks (candidates.ts), then
- * in one transaction the candidates, the completed event, the pass row and the watermark. Any
+ * in one transaction (under the thread's change lock) the candidates, the completed event, the
+ * pass row and the watermark. Any
  * failure fails the pass with a code (never model output) and leaves the watermark where it was.
  * Events go to the run the token is bound to (the leaf path's last completed run).
  */
@@ -157,6 +159,12 @@ async function finish(
 ): Promise<void> {
   const screen = screenExtractorOutput(output, input.prompt, nonce);
   await withAppendTx(ctx.db, pass.teamId, async (tx) => {
+    // KOBE-770: first, the thread's change lock that a start holds from its watermark read to its
+    // claim (thread before run, KOBE-29). Without it this pass could complete inside another
+    // replica's start, which then claims past the finished row on the old watermark and learns
+    // the same messages again (a second model call). Taken before the pass row is touched, so a
+    // waiting start's claim never waits on this transaction while it waits on the start.
+    await lockThreadRow(tx, pass.teamId, pass.threadId);
     const known = await readKnownStatements(tx, pass);
     const selection = selectCandidates(screen.kept, known);
     const { memory } = await readSwitches(tx, pass.teamId);
