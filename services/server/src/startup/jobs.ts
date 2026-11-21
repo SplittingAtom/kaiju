@@ -51,13 +51,17 @@ const LEARN_SWEEP_MS = 60_000;
  * one pass of each on a fresh database to prove that everything they write there is a startup
  * seed `kobe restore` replaces (`@kobe/db` STARTUP_SEEDED_ROWS). Jobs that need the sandbox
  * provider (team reconcile, hibernation, the pod reconciler, workspace collection, Orbit evals)
- * stay in `index.ts`: they act on teams' sandboxes, which a fresh site has none of.
- * {@link seedAtStart} runs before the server serves; {@link serverJobs} after.
+ * are in `startup/process-jobs.ts`: they act on teams' sandboxes, which a fresh site has none of.
+ * {@link seedAtStart} runs before the jobs start; `processJobs` lists {@link serverJobs} among
+ * the rest of the process's jobs (KOBE-709).
  */
-export interface ServerJob {
+export interface ProcessJob {
   readonly name: string;
   /** Starts the job's own schedule (its first pass now or soon); returns how to stop it. */
   start(): () => unknown;
+}
+
+export interface ServerJob extends ProcessJob {
   /** One pass now, as the schedule's would be (the start-up guard test). */
   once(): Promise<unknown>;
 }
@@ -346,7 +350,7 @@ function siteJobs(o: ServerJobsOptions): ServerJob[] {
       () => relay.sweep(),
     ),
     // Departures missed, volumes deleted 30 days after a member left (KOBE-28, D12). Start it after
-    // `deps.offboarding.setProvider(...)` where a sandbox provider exists (index.ts does).
+    // `deps.offboarding.setProvider(...)` where a sandbox provider exists (startup/server.ts does).
     job(
       "offboarding",
       () =>
@@ -485,11 +489,12 @@ export function serverJobs(o: ServerJobsOptions): ServerJob[] {
 }
 
 /**
- * Starts the jobs; returns one function that stops them all. A job that fails to stop (a held
- * advisory lock, a hung connection) is logged with its name and never stops the others.
+ * Starts the jobs in order; returns one function that stops them all (each stop is called in the
+ * same order without waiting for the one before, then all are awaited). A job that fails to stop
+ * (a held advisory lock, a hung connection) is logged with its name and never stops the others.
  */
 export function startServerJobs(
-  jobs: readonly ServerJob[],
+  jobs: readonly ProcessJob[],
   log: Pick<Logger, "warn"> = rootLogger,
 ): () => Promise<void> {
   const stops = jobs.map((j) => ({ name: j.name, stop: j.start() }));

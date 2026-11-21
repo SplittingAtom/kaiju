@@ -17,7 +17,7 @@ import { scheduledRunMessage, type ScheduledRunOutcome } from "../mail/messages.
  * {@link NOTIFICATION_EMAIL_MAX_ATTEMPTS}. The claim's `attempts` is the fencing token: the lease
  * is renewed before each send and every settle names it, so a replica whose lease ran out can
  * neither send again nor overwrite the row (KOBE-179 review). A recipient who is deactivated or no longer a member of
- * the team is skipped. Delivery runs right after a scheduled run ends (index.ts) and from every
+ * the team is skipped. Delivery runs right after a scheduled run ends (startup/process-jobs.ts) and from every
  * server replica's sweep. The message carries metadata only (see `scheduledRunMessage`).
  */
 export const NOTIFICATION_EMAIL_MAX_ATTEMPTS = 8;

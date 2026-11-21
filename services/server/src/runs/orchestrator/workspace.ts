@@ -12,7 +12,7 @@ export interface RunWorkspace {
   viewing(): ViewingReader | undefined;
 }
 
-/** The seams workspace sync provides, bound once it exists (index.ts; tests bind their own). */
+/** What workspace sync provides, bound once it exists (startup/server.ts; tests bind their own). */
 export interface RunWorkspaceSeams {
   readonly attachments?: AttachmentStager;
   readonly viewing?: ViewingReader;
