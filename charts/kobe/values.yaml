@@ -76,7 +76,8 @@ sandbox:
     enabled: true
     # Sandboxes push changes this often (also after every run and before hibernating).
     pushIntervalSeconds: 60
-    # Larger files are not synced (they stay on the volume only).
+    # Larger files are not synced (they stay on the volume only). At most 5Gi: S3 stores each file
+    # with one PutObject/CopyObject request, limited to 5 GiB (the chart refuses more).
     maxFileSize: 1Gi
     # Per workspace; empty = the /workspace volume size. Teams' storage quota (D26) comes later.
     maxWorkspaceSize: ""

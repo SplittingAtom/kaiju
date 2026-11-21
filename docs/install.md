@@ -216,6 +216,25 @@ sandbox on a fresh volume, which restores from S3. S3 sync needs `s3.bucket` and
 it a lost node loses those workspaces for good. Conversations are never at risk: Postgres is the
 record of threads and runs.
 
+**Growing workspaces.** `sandbox.workspace.size` (default `10Gi`) applies to volumes created
+after the change; Kobe does not resize existing workspace volumes. To grow them, check that their
+StorageClass has `allowVolumeExpansion: true` (the chart's strict-local class has it; k3s'
+`local-path` does not support expansion at all) and that the team's quota
+(`sandbox.teamQuota["requests.storage"]`, default `500Gi`) has room for the larger requests, then
+raise each claim (expansion only: Kubernetes refuses to shrink a claim):
+
+```bash
+kubectl -n kobe-team-<slug> get pvc -l app.kubernetes.io/managed-by=kobe-server
+kubectl -n kobe-team-<slug> patch pvc workspace-u-<user-id> \
+  -p '{"spec":{"resources":{"requests":{"storage":"20Gi"}}}}'
+```
+
+A hibernated workspace grows while detached or when it is next attached, depending on the storage
+driver; an awake one grows online only if the driver supports online expansion (check your Longhorn
+version's documentation; otherwise the claim waits in `Resizing` until the sandbox hibernates). The
+filesystem is grown when the volume is next mounted (`kubectl describe pvc` shows
+`FileSystemResizePending` until then).
+
 ### Longhorn sizing for 10 GiB strict-local workspaces
 
 A strict-local volume keeps its single replica on the node where its sandbox starts, so that node
@@ -1031,6 +1050,14 @@ and get no network path to the object store. Objects live under
 `teams/<team-id>/users/<user-id>/workspace/<sha256>` (plus `…/shared/<id>` for shared files).
 Give the credentials read, write and delete on the bucket (collection deletes unreferenced
 content). Without `s3.bucket`, workspace sync stays off and the server logs a warning.
+
+Use an `https://` endpoint. A plain `http://` endpoint works, but every workspace file and the
+request signatures then travel unencrypted, and the server logs a warning at every start
+("KOBE_S3_ENDPOINT is plain http"); accept it only on a network you trust.
+
+`sandbox.workspaceSync.maxFileSize` (default `1Gi`) is the largest file workspace sync stores;
+larger files stay on the volume only. It can be at most `5Gi`, the largest object S3 accepts in a
+single PutObject or CopyObject request; the chart and the server refuse more.
 
 `s3.prefix` (default empty) puts every object under a key prefix, for a bucket shared with other
 applications. It must be relative and end in `/` (for example `kobe/`; letters, digits and

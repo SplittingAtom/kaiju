@@ -91,6 +91,21 @@ describe("sandbox config", () => {
     ).toThrow(/pushIntervalSeconds/);
   });
 
+  it("refuses a maxFileSize over S3's 5 GiB single-request limit (KOBE-743)", () => {
+    const withMax = (maxFileSize: string) =>
+      loadSandboxConfig(
+        env({
+          KOBE_SANDBOX_CONFIG: JSON.stringify({
+            ...SETTINGS,
+            workspaceSync: { ...SETTINGS.workspaceSync, maxFileSize },
+          }),
+        }),
+      );
+    expect(withMax("5Gi")?.settings.workspaceSync.maxFileSize).toBe("5Gi");
+    expect(() => withMax("6Gi")).toThrow(/maxFileSize.*5Gi/);
+    expect(() => withMax("1Ti")).toThrow(/single PutObject\/CopyObject/);
+  });
+
   it("names key variables after their audience", () => {
     expect(signingKeyEnvName("kobe.sandbox-wire")).toBe("KOBE_SESSION_SIGNING_KEY_SANDBOX_WIRE");
     expect(signingKeyEnvName("kobe.egress-proxy")).toBe("KOBE_SESSION_SIGNING_KEY_EGRESS_PROXY");

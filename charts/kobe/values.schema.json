@@ -367,6 +367,7 @@
             },
             "maxFileSize": {
               "type": "string",
+              "description": "Largest file workspace sync stores; at most 5Gi (S3 single PutObject/CopyObject limit; the chart refuses more)",
               "pattern": "^[0-9]+(\\.[0-9]+)?(m|k|M|G|T|Ki|Mi|Gi|Ti)?$"
             },
             "maxWorkspaceSize": {

@@ -68,6 +68,7 @@ import {
   createSandboxAuthenticator,
   createWorkspaceSync,
   loadS3Settings,
+  plainHttpEndpointWarning,
 } from "./workspace-sync/index.js";
 
 /** Open streams (SSE) get this long to finish before being cut; stays under k8s' 30 s grace period. */
@@ -215,6 +216,8 @@ if (config.process === "scheduler") {
       "KOBE_PUBLIC_URL is plain http: session cookies are not Secure and passkeys need https",
     );
   }
+  const s3HttpWarning = s3 ? plainHttpEndpointWarning(s3) : undefined;
+  if (s3HttpWarning) logger.warn(s3HttpWarning);
 }
 
 // Gallery agents (KOBE-87), the chart's branding defaults while unset (KOBE-503) and Kobe's own

@@ -64,12 +64,12 @@ valueFrom:
     {{- end }}
 {{- end -}}
 
-{{/* A memory quantity (Ki/Mi/Gi/Ti, K/M/G/T or plain bytes) in bytes, for the shim's sizing check. */}}
+{{/* A memory quantity (Ki/Mi/Gi/Ti, k/K/M/G/T, m or plain bytes) in bytes, for sizing checks. */}}
 {{- define "kobe.memoryBytes" -}}
 {{- $q := toString . -}}
 {{- $n := regexFind "^[0-9.]+" $q | float64 -}}
 {{- $unit := trimPrefix (regexFind "^[0-9.]+" $q) $q -}}
-{{- $mult := dict "" 1.0 "Ki" 1024.0 "Mi" 1048576.0 "Gi" 1073741824.0 "Ti" 1099511627776.0 "K" 1000.0 "M" 1000000.0 "G" 1000000000.0 "T" 1000000000000.0 -}}
+{{- $mult := dict "" 1.0 "Ki" 1024.0 "Mi" 1048576.0 "Gi" 1073741824.0 "Ti" 1099511627776.0 "m" 0.001 "k" 1000.0 "K" 1000.0 "M" 1000000.0 "G" 1000000000.0 "T" 1000000000000.0 -}}
 {{- if not (hasKey $mult $unit) -}}{{- fail (printf "unsupported memory quantity %q" $q) -}}{{- end -}}
 {{- mulf $n (index $mult $unit) | int64 -}}
 {{- end -}}

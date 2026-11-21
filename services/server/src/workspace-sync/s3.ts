@@ -121,6 +121,17 @@ export function loadS3Settings(
 }
 
 /**
+ * KOBE-743: the startup warning for a plain-HTTP endpoint (every workspace byte and the request
+ * signatures travel unencrypted). Names the endpoint's host only; undefined for https or the SDK's
+ * default (AWS, https).
+ */
+export function plainHttpEndpointWarning(settings: S3Settings): string | undefined {
+  if (!settings.endpoint?.toLowerCase().startsWith("http:")) return undefined;
+  const host = new URL(settings.endpoint).host;
+  return `KOBE_S3_ENDPOINT is plain http (${host}): object-store traffic, including every workspace file, travels in clear`;
+}
+
+/**
  * Only S3's `NoSuchKey` means "no such object". A bare 404, `NoSuchBucket` (a wrong or missing
  * bucket) or anything else is an error: readers must never take it for missing content (KOBE-475
  * marks missing content lost).
