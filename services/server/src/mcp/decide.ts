@@ -100,6 +100,10 @@ interface Checked {
   readonly runs: readonly ActiveRunContext[];
   /** The run whose thread the sandbox named: its approvals are the ones that can authorise. */
   readonly named: ActiveRunContext;
+  /** The thread the sandbox named (the named run's). */
+  readonly threadId: string;
+  /** The audit facts, run included. */
+  readonly facts: AuditFacts;
   readonly toolCallId: string;
 }
 
@@ -139,7 +143,7 @@ export async function decideMcpCall(
   try {
     const tool = await checkTool(c);
     if ("denied" in tool) return tool.denied;
-    const run = await checkRun(c, tool.connector);
+    const run = await checkRun(c, tool.connector, tool.facts);
     if ("denied" in run) return run.denied;
     const k: Checked = {
       ...tool,
@@ -173,6 +177,7 @@ async function checkTool(c: Deciding): Promise<
       readonly connector: EnabledConnector;
       readonly pinned: PinnedTool;
       readonly descriptor: ToolDescriptor;
+      readonly facts: AuditFacts;
     }
 > {
   const { deps, principal, request } = c;
@@ -195,12 +200,13 @@ async function checkTool(c: Deciding): Promise<
     };
   }
   const pinned: PinnedTool | undefined = connector.tools.find((t) => t.name === request.tool);
-  c.facts = {
+  let facts: AuditFacts = {
     connectorId: connector.id,
     piName: pinned?.pi_name ?? fallbackPiName(connector.name, request.tool),
     ...(request.threadId === undefined ? {} : { threadId: request.threadId }),
     ...(request.toolCallId === undefined ? {} : { toolCallId: request.toolCallId }),
   };
+  c.facts = facts;
   if (!pinned) {
     return {
       denied: await c.denied(
@@ -210,7 +216,8 @@ async function checkTool(c: Deciding): Promise<
     };
   }
   const descriptor = describePinnedTool(connector.id, pinned);
-  c.facts = { ...c.facts, risk: descriptor.risk };
+  facts = { ...facts, risk: descriptor.risk };
+  c.facts = facts;
 
   // Team exposure (KOBE-106), checked before any run is looked at and independent of the
   // engine's own gate: a drifted tool, or one the team's exposure does not include (read_only =
@@ -243,19 +250,22 @@ async function checkTool(c: Deciding): Promise<
       ),
     };
   }
-  return { connector, pinned, descriptor };
+  return { connector, pinned, descriptor, facts };
 }
 
 /** A valid input, and an active run of the named thread in this sandbox that has the connector. */
 async function checkRun(
   c: Deciding,
   connector: EnabledConnector,
+  toolFacts: AuditFacts,
 ): Promise<
   | Denied
   | {
       readonly input: JsonObject;
       readonly runs: readonly ActiveRunContext[];
       readonly named: ActiveRunContext;
+      readonly threadId: string;
+      readonly facts: AuditFacts;
     }
 > {
   const { deps, principal, request } = c;
@@ -268,7 +278,8 @@ async function checkRun(
       ),
     };
   }
-  if (request.threadId === undefined) {
+  const threadId = request.threadId;
+  if (threadId === undefined) {
     return {
       denied: await c.denied("run_not_active", "The call names no thread, so it was denied."),
     };
@@ -280,7 +291,7 @@ async function checkRun(
     };
   }
   // The run whose thread the sandbox named: its approvals are the ones that can authorise.
-  const named = loaded.runs.find((r) => r.threadId === request.threadId);
+  const named = loaded.runs.find((r) => r.threadId === threadId);
   if (!named) {
     return {
       denied: await c.denied(
@@ -289,7 +300,8 @@ async function checkRun(
       ),
     };
   }
-  c.facts = { ...c.facts, runId: named.runId } as AuditFacts;
+  const facts: AuditFacts = { ...toolFacts, runId: named.runId };
+  c.facts = facts;
   // KOBE-451 review HIGH-1: only a connector of the named run's run.start.mcp (not one the
   // owner turned off for the thread, nor one the agent doesn't name) whatever the sandbox sends.
   if (!runHasConnector(named, connector.id)) {
@@ -300,7 +312,7 @@ async function checkRun(
       ),
     };
   }
-  return { input: input.data, runs: loaded.runs, named };
+  return { input: input.data, runs: loaded.runs, named, threadId, facts };
 }
 
 /**
@@ -494,10 +506,10 @@ async function allowCall(
   approvalId: string | undefined,
   ruleId: string | undefined,
 ): Promise<McpCallDecision> {
-  const { deps, principal, request } = c;
+  const { deps, principal } = c;
   const { connector, pinned, named } = k;
   const capture = await captureFor(deps, principal, {
-    threadId: request.threadId as string,
+    threadId: k.threadId,
     runId: named.runId,
     connectorId: connector.id,
     tool: pinned,
@@ -507,7 +519,7 @@ async function allowCall(
     now: c.now(),
   });
   // The record of the call comes first: no audit row, no upstream call.
-  await audit(deps, principal, c.facts as AuditFacts, {
+  await audit(deps, principal, k.facts, {
     decision: "allowed",
     reason,
     ...(approvalId === undefined ? {} : { approvalId }),
