@@ -36,6 +36,39 @@ describe("loadConfig", () => {
     }
   });
 
+  it("defaults the retention table sweeps to the owner's periods; 0 turns one off (KOBE-741)", () => {
+    expect(loadConfig(REQUIRED).retentionSweeps).toEqual({
+      eventsDays: 30,
+      readNotificationsDays: 180,
+      runUsageMonths: 13,
+      evalHistoryMonths: 12,
+    });
+    const c = loadConfig({
+      ...REQUIRED,
+      KOBE_RETENTION_EVENTS_DAYS: "0",
+      KOBE_RETENTION_READ_NOTIFICATIONS_DAYS: "90",
+      KOBE_RETENTION_RUN_USAGE_MONTHS: "0",
+      KOBE_RETENTION_EVAL_HISTORY_MONTHS: "24",
+    });
+    expect(c.retentionSweeps).toEqual({
+      eventsDays: null,
+      readNotificationsDays: 90,
+      runUsageMonths: null,
+      evalHistoryMonths: 24,
+    });
+    for (const [name, bad] of [
+      // Inside the scheduler's grace window plus a day.
+      ["KOBE_RETENTION_EVENTS_DAYS", "1"],
+      ["KOBE_RETENTION_READ_NOTIFICATIONS_DAYS", "-1"],
+      // The ledger's trigger refuses rows younger than 90 days.
+      ["KOBE_RETENTION_RUN_USAGE_MONTHS", "3"],
+      ["KOBE_RETENTION_EVAL_HISTORY_MONTHS", "1.5"],
+      ["KOBE_RETENTION_EVAL_HISTORY_MONTHS", "121"],
+    ] as const) {
+      expect(() => loadConfig({ ...REQUIRED, [name]: bad })).toThrow(new RegExp(name));
+    }
+  });
+
   it("defaults the port to 8080 and the process to the API server", () => {
     expect(loadConfig(REQUIRED)).toMatchObject({ port: 8080, process: "server" });
   });

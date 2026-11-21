@@ -630,6 +630,7 @@ const stopServerJobs = serverDeps
           hourUtc: config.retentionHourUtc,
           paused: config.retentionPaused,
           uploadOrphanHours: uploadSettings.orphanHours,
+          sweeps: config.retentionSweeps,
         },
         connectorRefreshSeconds: config.connectorRefreshSeconds,
         models:

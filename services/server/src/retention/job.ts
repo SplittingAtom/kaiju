@@ -62,6 +62,12 @@ import { PERIOD_DAYS, effectiveAt } from "./periods.js";
 import { readMaximumLayer, readTeamLayer } from "./settings.js";
 import { compactRunEvents, type CompactionCounts } from "./compaction.js";
 import {
+  NO_TABLE_SWEEP_COUNTS,
+  sweepTables,
+  type TableSweepCounts,
+  type TableSweepSettings,
+} from "./table-sweeps.js";
+import {
   NO_PURGE,
   purgeThreads,
   type PurgeBatchResult,
@@ -94,6 +100,9 @@ import {
  *     (KOBE-651, SM28).
  * 10b. expire Site memory proposals still open after 30 days (the proposer and the confirming Team
  *     admin told once; frozen by a Site-wide hold) (KOBE-653, SM22).
+ * 11. sweep tables that otherwise grow for ever, each past its own configured period: processed
+ *     events, read notifications, model usage rows, finished agent evals (KOBE-741,
+ *     `table-sweeps.ts`; the audit log is kept).
  * Every step skips data under legal hold and is audited with counts only (system actor).
  *
  * Every server replica runs the timer; a session-level advisory lock on a dedicated connection
@@ -146,6 +155,8 @@ export interface TeamPassResult {
   readonly skillDraftBundles: { readonly drafts: number };
   /** Finished skill eval runs past the window, and their objects (KOBE-325). */
   readonly skillEvals: EvalPurgeCounts;
+  /** Rows of ever-growing tables past their configured periods (KOBE-741). */
+  readonly tables: TableSweepCounts;
   /** A step failed (logged); the others still ran. */
   readonly failed: boolean;
 }
@@ -171,6 +182,8 @@ export interface PassDeps {
   readonly orphanGraceMs?: number;
   /** Commits kept per project at most (GV2/GV3); default `PROJECT_HISTORY_MAX_COMMITS`. */
   readonly projectHistoryMaxCommits?: number;
+  /** Periods of the table sweeps (KOBE-741, chart `retention.sweeps`); absent: none run. */
+  readonly tableSweeps?: TableSweepSettings | undefined;
   readonly logger: Logger;
 }
 
@@ -413,6 +426,13 @@ async function teamPass(
         const cutoff = days === null ? null : new Date(Date.now() - days * 86_400_000);
         return purgeSkillEvals(db, deps.blobs, teamId, cutoff, { stop });
       });
+  const tableSweeps = deps.tableSweeps;
+  const tables =
+    tableSweeps && !stop()
+      ? await step("table_sweeps", NO_TABLE_SWEEP_COUNTS, () =>
+          sweepTables(db, teamId, tableSweeps, { stop }),
+        )
+      : NO_TABLE_SWEEP_COUNTS;
   return {
     teamId,
     trash,
@@ -433,6 +453,7 @@ async function teamPass(
     skillDraftHistory,
     skillDraftBundles,
     skillEvals,
+    tables,
     failed,
   };
 }

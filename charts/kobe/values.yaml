@@ -670,6 +670,29 @@ postgres:
 # sweep deletes bodies the restored database does not know about.
 retention:
   paused: false
+  # Table sweeps of the nightly pass (KOBE-741): tables that would otherwise grow for ever lose
+  # rows older than their period. Set enabled: false to keep a table for ever. Rows of members under
+  # a legal hold are kept. The audit log is never swept. docs/install.md "Retention sweeps".
+  sweeps:
+    # Processed and failed events (schedule fires and skips, egress blocks); never pending work or
+    # a schedule's latest fire. Days, 2-3650.
+    events:
+      enabled: true
+      days: 30
+    # Notifications a member has read; unread ones are kept. Days, 1-3650.
+    readNotifications:
+      enabled: true
+      days: 180
+    # Model usage rows, one per model call (the usage page's detail). Budgets and spend totals use
+    # daily rollups, which are kept. Months, 4-120.
+    runUsage:
+      enabled: true
+      months: 13
+    # Finished agent evals, except each agent's latest and those that published a version.
+    # Months, 1-120.
+    evalHistory:
+      enabled: true
+      months: 12
 
 # Branding defaults for GitOps installs (KOBE-503, theming T7). The API server writes each set
 # value into the site settings at start ONLY while that setting is unset: an admin's change on the

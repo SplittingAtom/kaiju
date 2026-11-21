@@ -202,3 +202,11 @@ the site budget, and read usage and the audit log. Each change shows an **Admin 
 ("Whole site") first and is audited "via agent". Site roles, ownership, break-glass, legal hold,
 retention, deletions, connector registration, provider keys and the site settings themselves stay
 in the console. See [Admin from a conversation](admin-from-a-conversation.md).
+
+## What Kobe deletes on its own
+
+Each night Kobe deletes, after periods set in the chart (`retention.sweeps`): processed background
+events after 30 days (never pending work or a schedule's latest run), read notifications after 180
+days, per-call model usage after 13 months (daily spend totals stay), and finished agent evals
+after 12 months (each agent's latest stays). Nothing under a **Legal hold** is deleted, and the
+audit log is never swept.

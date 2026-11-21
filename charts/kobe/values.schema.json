@@ -1320,6 +1320,44 @@
       "properties": {
         "paused": {
           "type": "boolean"
+        },
+        "sweeps": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "events": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "days": { "type": "integer", "minimum": 2, "maximum": 3650 }
+              }
+            },
+            "readNotifications": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "days": { "type": "integer", "minimum": 1, "maximum": 3650 }
+              }
+            },
+            "runUsage": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "months": { "type": "integer", "minimum": 4, "maximum": 120 }
+              }
+            },
+            "evalHistory": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "months": { "type": "integer", "minimum": 1, "maximum": 120 }
+              }
+            }
+          }
         }
       }
     },

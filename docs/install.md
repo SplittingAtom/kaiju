@@ -1883,6 +1883,27 @@ EXISTS` an invalid leftover.
   a session-level advisory lock, so the server needs a direct (or session-mode pooled) Postgres
   connection; transaction-mode poolers break session locks. `KOBE_RETENTION_HOUR_UTC` (0-23,
   default 3) sets the hour.
+- **Retention sweeps (KOBE-741).** The nightly pass also deletes rows of tables that would
+  otherwise grow for ever, each past its own period (chart `retention.sweeps`; `enabled: false`
+  keeps a table for ever):
+
+  | Value                                | Default   | What goes                                                                                                                                             |
+  | ------------------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `retention.sweeps.events`            | 30 days   | Processed and failed events (schedule fires and skips, egress blocks); never pending work, a scheduled event or a schedule's latest fire/skip         |
+  | `retention.sweeps.readNotifications` | 180 days  | Notifications read that long ago; unread ones stay                                                                                                    |
+  | `retention.sweeps.runUsage`          | 13 months | Model usage rows (one per model call; the Usage pages read them, so they show at most this far back); budgets count the daily rollups, which are kept |
+  | `retention.sweeps.evalHistory`       | 12 months | Finished agent evals, except each agent's latest and those that published a version                                                                   |
+
+  Ranges: events 2-3650 days, notifications 1-3650 days, usage 4-120 months (the usage ledger
+  refuses deletes of rows younger than 90 days whatever is set), evals 1-120 months. Rows of a
+  member under a legal hold are kept (events, which name no member, are all kept while any hold is
+  active in the team). Each team is swept in batches of 1000 rows, at most 50 batches per table per
+  night; a large backlog after an upgrade clears over several nights. Every batch is audited
+  (`retention.table_swept`, counts only). The audit log is never swept: plan its growth (about one
+  row per audited action) with your Postgres storage. Conversations are not affected: their
+  history is in `thread_entries`, kept by the team's retention period. Migration
+  `*_retention_sweep_indexes` builds two partial indexes concurrently (no write lock) for the
+  sweeps.
 
 ## Backup and restore
 
