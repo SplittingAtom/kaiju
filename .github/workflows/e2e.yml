@@ -101,10 +101,18 @@ jobs:
       matrix:
         include:
           - { name: web, dockerfile: apps/web/Dockerfile }
-          - { name: server, dockerfile: services/server/Dockerfile }
-          - { name: mcp-proxy, dockerfile: services/mcp-proxy/Dockerfile }
-          - { name: egress-proxy, dockerfile: services/egress-proxy/Dockerfile }
-          - { name: model-gateway, dockerfile: services/model-gateway/Dockerfile }
+          - { name: server, dockerfile: services/Dockerfile, build-args: SERVICE=server }
+          - { name: mcp-proxy, dockerfile: services/Dockerfile, build-args: SERVICE=mcp-proxy }
+          - {
+              name: egress-proxy,
+              dockerfile: services/Dockerfile,
+              build-args: SERVICE=egress-proxy,
+            }
+          - {
+              name: model-gateway,
+              dockerfile: services/Dockerfile,
+              build-args: SERVICE=model-gateway,
+            }
           - { name: sandbox, dockerfile: images/sandbox/Dockerfile }
           # KOBE-232: the pre-publish Orbit eval Job's image, for the gate4 shard only (its archive is
           # named e2e-extra-*, so the other shards don't download or import it).
@@ -141,6 +149,7 @@ jobs:
         with:
           context: .
           file: ${{ matrix.dockerfile }}
+          build-args: ${{ matrix.build-args }}
           platforms: linux/amd64
           provenance: false
           sbom: false
