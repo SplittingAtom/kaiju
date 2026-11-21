@@ -460,4 +460,6 @@ INITIALLY DEFERRED` (the owner may do this), so FK cycles such as `threads.leaf_
   sequences may already have moved forward. This is harmless (ids skip), but the target is not
   byte-identical to a new site.
 - Each backup is a full copy, and there is no point-in-time recovery. For that, use
-  CloudNativePG's own backups or your managed Postgres in addition.
+  CloudNativePG's own backups (`postgres.cnpg.backup`, passed to the Cluster; see
+  [install.md, Bundled Postgres](install.md#bundled-postgres-cloudnativepg)) or your managed
+  Postgres in addition.

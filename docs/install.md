@@ -646,7 +646,9 @@ memory page says so.
 
 - **Enable it.** pgvector is not a trusted extension and Kobe's migration role is never a
   superuser, so install the pgvector package for your Postgres 17 server (or use a Postgres image
-  that has it), then once, as a superuser, in Kobe's database: `CREATE EXTENSION vector;`. The
+  that has it), then once, as a superuser, in Kobe's database: `CREATE EXTENSION vector;` (bundled
+  CloudNativePG does this itself for a new Cluster; see
+  [Bundled Postgres](#bundled-postgres-cloudnativepg) for an existing one). The
   next Kobe upgrade (or migration run) adds the vector columns; nothing else changes. If the
   migration role may create the extension itself, the migration does it.
 - **Check it.** Site console › Settings › Memory shows "Search by meaning" with a count of
@@ -1253,6 +1255,8 @@ credentials). Certificates are always verified. Credentials come only from `smtp
 setting shows up as `"emailSent": false` on new invitations and as errors in the server log, not
 as a failed start.
 
+### Bundled Postgres (CloudNativePG)
+
 With bundled Postgres instead, install the [CloudNativePG operator](https://cloudnative-pg.io)
 first and set `postgres.mode=cnpg`; the chart creates the Cluster, the `kobe_owner` database owner
 and a separate `kobe_app` login role. The chart generates and keeps the `kobe_app` password; with
@@ -1263,6 +1267,54 @@ scratch. The Cluster's NetworkPolicy admits only the pods that use the database 
 scheduler, egress proxy, model gateway and the migrate Job), the Postgres instances themselves and
 the operator's namespace; reach it from outside with `kubectl port-forward` (as in
 [backup and restore](backup-restore.md)), which NetworkPolicy does not filter.
+
+**pgvector.** The default image (`postgres.cnpg.imageName`, `ghcr.io/cloudnative-pg/postgresql:17`)
+ships pgvector (0.8.6 in the image checked on 2026-11-21). A new Cluster creates the extension
+when it is bootstrapped (`bootstrap.initdb.postInitApplicationSQL`, as the superuser, only when the
+image has it), so memory search by meaning works without a manual step (see
+[Vector search for memory](#vector-search-for-memory-pgvector)). A Cluster created by an older
+chart did not; CloudNativePG runs bootstrap SQL only once, so create it by hand, then run the
+migrations again (`helm upgrade` with the same values), which adds the vector columns:
+
+```bash
+PRIMARY=$(kubectl -n kobe get cluster kobe-pg -o jsonpath='{.status.currentPrimary}')
+kubectl -n kobe exec "$PRIMARY" -c postgres -- \
+  psql -d kobe -c 'CREATE EXTENSION IF NOT EXISTS vector SCHEMA public'
+```
+
+(`kobe-pg` is `<release fullname>-pg`; `kubectl cnpg psql kobe-pg -- -d kobe` works too with the
+CloudNativePG kubectl plugin.)
+
+**Production.** Bundled CloudNativePG is a supported production option, but the chart's defaults
+are for evaluation: one instance, a 10 GiB volume, no backups. For production configure:
+
+- **Backups.** `postgres.cnpg.backup` is passed verbatim to the Cluster's `spec.backup` (and
+  `postgres.cnpg.plugins` to `spec.plugins`, for the Barman Cloud plugin that CloudNativePG 1.26
+  and later recommend instead of `barmanObjectStore`). Point it at a bucket other than Kobe's, add
+  a `ScheduledBackup` resource for base backups, and test a restore. Kobe's own `kobe backup`
+  ([backup-restore.md](backup-restore.md)) remains the portable logical backup; CloudNativePG's
+  WAL archive adds point-in-time recovery. The instances' egress is not restricted by the chart.
+
+  ```yaml
+  postgres:
+    cnpg:
+      backup:
+        retentionPolicy: 30d
+        barmanObjectStore:
+          destinationPath: s3://kobe-pg-backups/
+          endpointURL: https://s3.example.com
+          s3Credentials:
+            accessKeyId: { name: pg-backup-s3, key: access-key-id }
+            secretAccessKey: { name: pg-backup-s3, key: secret-access-key }
+  ```
+
+- **Instances.** `postgres.cnpg.instances: 3` (or at least 2) for a standby that CloudNativePG
+  promotes when the primary's node fails; with 1, a lost node stops Kobe until the volume is back.
+- **Storage.** `postgres.cnpg.storage.size` (default `10Gi`) and a StorageClass that can expand
+  (`postgres.cnpg.storage.storageClass`). Postgres holds conversations, run events, memory and
+  audit, not file contents (those are in S3); size for growth and watch usage. CloudNativePG grows
+  a volume when you raise the size, if the StorageClass allows expansion.
+- **Settings.** `postgres.cnpg.parameters` (see [Postgres connections](#postgres-connections)).
 
 ClamAV (`clamav.enabled`) gets an egress NetworkPolicy too: DNS and public addresses on 443 and 80,
 for its signature downloads from `database.clamav.net`. A private signature mirror needs a rule in

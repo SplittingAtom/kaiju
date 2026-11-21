@@ -48,10 +48,25 @@ spec:
       {{ $k }}: {{ $v | quote }}
       {{- end }}
   {{- end }}
+  {{- with .Values.postgres.cnpg.backup }}
+  # Passed verbatim (KOBE-737): e.g. barmanObjectStore and retentionPolicy (docs/install.md).
+  backup:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.postgres.cnpg.plugins }}
+  # Passed verbatim (KOBE-737): e.g. the Barman Cloud plugin for backups (docs/install.md).
+  plugins:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   bootstrap:
     initdb:
       database: kobe
       owner: kobe_owner
+      # Run once as the superuser in the new kobe database (KOBE-737): pgvector for semantic
+      # memory, when the image has it (the default image does). The migration role is never a
+      # superuser and cannot create it; existing clusters: docs/install.md.
+      postInitApplicationSQL:
+        - "DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'vector') THEN CREATE EXTENSION IF NOT EXISTS vector SCHEMA public; END IF; END $$"
   managed:
     roles:
       - name: kobe_app
