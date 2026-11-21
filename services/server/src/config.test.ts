@@ -56,6 +56,14 @@ describe("loadConfig", () => {
       runUsageMonths: null,
       evalHistoryMonths: 24,
     });
+    // An empty value is the default, never "off".
+    expect(
+      loadConfig({
+        ...REQUIRED,
+        KOBE_RETENTION_EVENTS_DAYS: "",
+        KOBE_RETENTION_RUN_USAGE_MONTHS: " ",
+      }).retentionSweeps,
+    ).toMatchObject({ eventsDays: 30, runUsageMonths: 13 });
     for (const [name, bad] of [
       // Inside the scheduler's grace window plus a day.
       ["KOBE_RETENTION_EVENTS_DAYS", "1"],

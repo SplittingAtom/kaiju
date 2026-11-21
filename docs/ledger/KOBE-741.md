@@ -57,13 +57,30 @@ value (`retention.sweeps.*`) → env (`KOBE_RETENTION_EVENTS_DAYS`,
   renumbers both. `run_usage_team_at_idx` and `orbit_evals_agent_idx` already serve the others.
 - **A pass without `tableSweeps`** (tests, tools) runs no sweep; production always passes the
   config (defaults = the owner's periods).
-- **Docs:** no "Retention and deletion" guide page on main, so the content went into
-  `docs/guide/admin/site-admin.md` (new section "What Kobe deletes on its own"); install.md
+- **Docs:** `docs/guide/reference/retention-and-deletion.md` (main's page; site-admin.md links to
+  it); install.md
   "Retention sweeps" (values, ranges, holds, audit-log growth note); audit-log.md row.
 
-## Open questions (for Chris or the coordinator)
+- **Invariant (review g63, MEDIUM): only the sweep sets `kobe.run_usage_retention`.** Set only
+  transaction-locally (`set_config('kobe.run_usage_retention', 'on', true)`) inside each
+  `run_usage` batch's own `withTeam()` transaction (`retention/table-sweeps.ts` sweepBatch). Guard:
+  `packages/db/src/run-usage-retention-setting.test.ts` fails when any other tracked source, script
+  or migration names the setting (built-up names included; tests excluded), and when the sweep sets
+  it any other way. Allowed: the sweep, migration 0239 (the trigger that reads it), and
+  `models/secret-box.ts` (an HKDF label `kobe.${purpose}` the pattern also matches). Bounded even if
+  misused: RLS keeps it to the team in force, the 90-day floor holds, rollups are untouched. The
+  CLAUDE.md non-negotiables entry is the coordinator's to raise with the owner.
+- **Review fixes (g63 LOW):** one table's failure is logged per table and the others still run
+  (`sweepTables` `onError`); an empty `KOBE_RETENTION_*` value means the default, only an explicit
+  0 turns a sweep off; the Usage pages show a one-line note when the chosen range starts before
+  the kept period (`retention_months` in `/v1/team/usage` and `/v1/site/usage`); the guide's
+  deletion list now lives in `reference/retention-and-deletion.md` (moved from site-admin.md after
+  main added that page). Agent inventory lifetime tokens also count only the kept 13 months.
+- **Scan history left out (review answer):** `personal_skill_scans`, `team_skill_reviews`,
+  `skill_hash_checks`, `skill_rescan_runs` and `registry_review_events` are current state or tiny,
+  not growing history; skill eval runs have their own retention (KOBE-325).
 
-- Move the guide section to the "Retention and deletion" page once that page lands.
+## Open questions (for Chris or the coordinator)
 
 ## Evidence (acceptance criteria → test or command output)
 

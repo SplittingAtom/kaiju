@@ -22,12 +22,16 @@ function sweepPeriod(
   limits: { readonly min: number; readonly max: number },
 ) {
   const range = `${name} must be 0 (off) or between ${limits.min} and ${limits.max}`;
-  return z.coerce
-    .number({ error: `${name} must be a number` })
-    .int(`${name} must be an integer`)
-    .refine((v) => v === 0 || (v >= limits.min && v <= limits.max), range)
-    .default(fallback ?? 0)
-    .transform((v) => (v === 0 ? null : v));
+  // Unset or empty means the default; only an explicit 0 turns the sweep off.
+  return z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.coerce
+      .number({ error: `${name} must be a number` })
+      .int(`${name} must be an integer`)
+      .refine((v) => v === 0 || (v >= limits.min && v <= limits.max), range)
+      .default(fallback ?? 0)
+      .transform((v) => (v === 0 ? null : v)),
+  );
 }
 
 const configSchema = z.object({

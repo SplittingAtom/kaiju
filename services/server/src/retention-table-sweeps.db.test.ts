@@ -318,6 +318,21 @@ describe("batches, switches and the pass", () => {
     expect(await sweepTable(db, teamA, "events", DEFAULT_TABLE_SWEEPS, { batch: 2 })).toBe(1);
   });
 
+  it("one table's failure is reported and the other tables still run", async () => {
+    await event(teamA, daysAgo(40));
+    const read = await notification(teamA, member, daysAgo(200));
+    const failed: string[] = [];
+    const broken = { ...DEFAULT_TABLE_SWEEPS, eventsDays: "x" as unknown as number };
+    const counts = await sweepTables(h.deps.database.db, teamA, broken, {
+      onError: (table) => failed.push(table),
+    });
+    expect(failed).toEqual(["events"]);
+    expect(counts.notifications).toBe(1);
+    expect(await ids("notifications", teamA)).not.toContain(read);
+    // Without a handler the failure surfaces after the other tables ran.
+    await expect(sweepTables(h.deps.database.db, teamA, broken)).rejects.toThrow();
+  });
+
   it("does nothing for a sweep switched off, or for a pass without sweep settings", async () => {
     const old = await event(teamA, daysAgo(400));
     const read = await notification(teamA, member, daysAgo(400));

@@ -431,7 +431,13 @@ async function teamPass(
   const tables =
     tableSweeps && !stop()
       ? await step("table_sweeps", NO_TABLE_SWEEP_COUNTS, () =>
-          sweepTables(db, teamId, tableSweeps, { stop }),
+          sweepTables(db, teamId, tableSweeps, {
+            stop,
+            onError: (table, err) => {
+              failed = true;
+              logger.error({ err, teamId, step: "table_sweeps", table }, "retention step failed");
+            },
+          }),
         )
       : NO_TABLE_SWEEP_COUNTS;
   return {

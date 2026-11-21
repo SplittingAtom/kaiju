@@ -13,7 +13,7 @@ audience: member
 - **Threads past the workspace's retention period** are deleted for good; your team admin sets it.
 - **Memories** follow that period too (see [Memory](../memory.md#how-long-memories-are-kept)).
 
-- **Housekeeping records** go after periods your install admin sets (chart `retention.sweeps`):
+- **Housekeeping records** go after periods your site admin sets (chart `retention.sweeps`):
   processed background events after 30 days (never pending work or a schedule's latest run), read
   notifications after 180 days (unread ones stay), per-call model usage after 13 months (so the
   Usage pages show at most that far back; the daily spend totals budgets count stay), and finished

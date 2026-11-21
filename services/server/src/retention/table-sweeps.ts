@@ -97,6 +97,11 @@ export const NO_TABLE_SWEEP_COUNTS: TableSweepCounts = {
 
 export interface SweepOptions {
   readonly stop?: () => boolean;
+  /**
+   * A table's sweep failed (a lock timeout, say): called, then the other tables still run. Without
+   * it the failure is rethrown after the remaining tables ran.
+   */
+  readonly onError?: (table: SweptTable, err: unknown) => void;
   readonly batch?: number;
   readonly maxBatches?: number;
 }
@@ -219,7 +224,10 @@ export async function sweepTable(
   return total;
 }
 
-/** Every table sweep of one team, in order; a table's failure is the caller's (step) to log. */
+/**
+ * Every table sweep of one team, in order. One table's failure never skips the others: it is
+ * reported to `onError` (or rethrown once all tables ran) and that table counts 0.
+ */
 export async function sweepTables(
   db: KobeDb,
   teamId: string,
@@ -227,9 +235,16 @@ export async function sweepTables(
   options: SweepOptions = {},
 ): Promise<TableSweepCounts> {
   const counts: Record<SweptTable, number> = { ...NO_TABLE_SWEEP_COUNTS };
+  let failure: { readonly err: unknown } | undefined;
   for (const table of SWEPT_TABLES) {
     if (options.stop?.()) break;
-    counts[table] = await sweepTable(db, teamId, table, settings, options);
+    try {
+      counts[table] = await sweepTable(db, teamId, table, settings, options);
+    } catch (err) {
+      if (options.onError) options.onError(table, err);
+      else failure ??= { err };
+    }
   }
+  if (failure) throw failure.err;
   return counts;
 }

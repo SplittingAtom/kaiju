@@ -71,7 +71,11 @@ export function teamUsageRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariabl
   app.get("/", async (c) => {
     const r = range(c);
     if (r instanceof Response) return r;
-    return c.json(await teamUsage(deps.database.db, c.get("team").id, r));
+    return c.json({
+      ...(await teamUsage(deps.database.db, c.get("team").id, r)),
+      // KOBE-741: per-call usage older than this is deleted; the page says so.
+      retention_months: deps.usageRetentionMonths,
+    });
   });
   return app;
 }
@@ -83,7 +87,10 @@ export function siteUsageRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
   app.get("/", async (c) => {
     const r = range(c);
     if (r instanceof Response) return r;
-    return c.json(await siteUsage(deps.database.db, r));
+    return c.json({
+      ...(await siteUsage(deps.database.db, r)),
+      retention_months: deps.usageRetentionMonths,
+    });
   });
   return app;
 }

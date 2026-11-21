@@ -142,6 +142,7 @@ if (config.process === "scheduler") {
     listen: { applicationName: "kobe-server-listen" },
     eventStream: { poolMax: config.dbPools.streamMax },
     retentionPaused: config.retentionPaused,
+    usageRetentionMonths: config.retentionSweeps.runUsageMonths,
     brandingDefaults: config.branding ?? {},
     ...auth,
     ...(approvalKey ? { approvalKeys: approvalKeyring(approvalKey) } : {}),
