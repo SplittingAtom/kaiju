@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { AUTH_LINK, AuthPanel } from "../../components/auth/auth-panel";
+import { Button, Field, Notice, TextInput } from "../../components/ui/console";
 import { authClient } from "../../lib/auth-client";
 import { tokenFromHash, validateNewPassword } from "../../lib/invites";
 
@@ -29,50 +31,66 @@ export default function ResetPasswordPage() {
 
   if (token === undefined)
     return (
-      <main>
-        <p>Loading…</p>
-      </main>
+      <AuthPanel>
+        <p className="m-0" role="status">
+          Loading…
+        </p>
+      </AuthPanel>
     );
   if (done)
     return (
-      <main>
-        <h1>Password changed</h1>
-        <p>
-          You were signed out everywhere. <a href="/sign-in">Sign in</a> with your new password.
+      <AuthPanel title="Password changed">
+        <p className="m-0">
+          You were signed out everywhere.{" "}
+          <a href="/sign-in" className={AUTH_LINK}>
+            Sign in
+          </a>{" "}
+          with your new password.
         </p>
-      </main>
+      </AuthPanel>
     );
   if (token === null)
     return (
-      <main>
-        <h1>Link not valid</h1>
-        <p>
-          <a href="/forgot-password">Request a new reset link.</a>
+      <AuthPanel title="Link not valid">
+        <p className="m-0">
+          <a href="/forgot-password" className={AUTH_LINK}>
+            Request a new reset link.
+          </a>
         </p>
-      </main>
+      </AuthPanel>
     );
   return (
-    <main>
-      <h1>Choose a new password</h1>
-      <form onSubmit={onSubmit}>
-        <label>
-          New password{" "}
-          <input
+    <AuthPanel title="Choose a new password">
+      {error && (
+        <Notice tone="error" className="my-0">
+          {error}
+        </Notice>
+      )}
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        <Field label="New password">
+          <TextInput
             name="password"
             type="password"
             autoComplete="new-password"
             minLength={12}
             maxLength={128}
             required
+            className="w-full min-h-9"
           />
-        </label>
-        <label>
-          Confirm password{" "}
-          <input name="confirm" type="password" autoComplete="new-password" required />
-        </label>
-        <button type="submit">Change password</button>
+        </Field>
+        <Field label="Confirm password">
+          <TextInput
+            name="confirm"
+            type="password"
+            autoComplete="new-password"
+            required
+            className="w-full min-h-9"
+          />
+        </Field>
+        <Button type="submit" variant="primary" className="w-full min-h-9">
+          Change password
+        </Button>
       </form>
-      {error && <p role="alert">{error}</p>}
-    </main>
+    </AuthPanel>
   );
 }

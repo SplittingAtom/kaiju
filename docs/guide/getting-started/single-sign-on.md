@@ -7,7 +7,8 @@ audience: member
 ---
 
 If your site uses single sign-on, the sign-in page shows a **Sign in with _your organization_**
-button (for example "Sign in with Contoso") above the passkey and password options. It takes you
+button (for example "Sign in with Contoso") below the email and password, after the **or** line,
+next to **Sign in with a passkey**. It takes you
 to your organization's sign-in page and back to Kobe, signed in. Your organization decides who may
 use Kobe and in which team, through the roles or groups it gives you.
 
