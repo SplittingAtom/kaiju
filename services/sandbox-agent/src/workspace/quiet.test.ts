@@ -51,4 +51,12 @@ describe("sandbox quiet check (KOBE-733)", () => {
     expect(await sandboxQuiet(root, 7)).toBe(true);
     expect(await sandboxQuiet(path.join(root, "missing"), 7)).toBe(false);
   });
+
+  it("is not quiet when a process's status cannot be read for another reason than it is gone", async () => {
+    const root = await proc([init, agent]);
+    // A status that is a directory: EISDIR, neither ENOENT nor ESRCH.
+    await mkdir(path.join(root, "55", "status"), { recursive: true });
+    expect(await processesInTheWay(root, 7)).toBeUndefined();
+    expect(await sandboxQuiet(root, 7)).toBe(false);
+  });
 });

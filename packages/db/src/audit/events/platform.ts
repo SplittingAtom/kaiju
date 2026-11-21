@@ -142,11 +142,6 @@ export const PLATFORM_EVENTS = {
    */
   "sandbox.woken": event("team", { sandboxId: id, userId: id }),
   /**
-   * The dormant-volume reaper deleted a sandbox hibernated for `dormantDays` or more, with its
-   * workspace volume, after proving the object-store copy covered the volume (KOBE-733; system
-   * actor). The next wake starts a new sandbox and restores the workspace from that copy.
-   */
-  /**
    * A hibernated sandbox's agent sent its shutdown proof that the workspace copy is complete
    * (KOBE-733; system actor): `accepted`, or refused with `reason` (`not_hibernated`: before the
    * hibernation was committed; `refused`: another sandbox or connection, an upload in flight).
@@ -157,6 +152,11 @@ export const PLATFORM_EVENTS = {
     accepted: z.boolean(),
     reason: z.enum(["not_hibernated", "refused"]).optional(),
   }),
+  /**
+   * The dormant-volume reaper deleted a sandbox hibernated for `dormantDays` or more, with its
+   * workspace volume, after proving the object-store copy covered the volume (KOBE-733; system
+   * actor). The next wake starts a new sandbox and restores the workspace from that copy.
+   */
   "sandbox.volume_reclaimed": event("team", {
     sandboxId: id,
     userId: id,

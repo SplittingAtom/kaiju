@@ -399,6 +399,37 @@ describe("workspace sync (agent)", () => {
     expect(server.flushed).toEqual([CONN]);
   });
 
+  it("never records a file written just before hashing; a same-size rewrite is caught (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "page.db", "AAAA");
+    // Pushed at once: inside the racy window, so the push records no stamp for it.
+    await sync.push();
+    const before = await stat(path.join(root, "page.db"));
+    // A same-size rewrite that, in the same kernel tick, would leave ctime equal as well.
+    await writeFile(path.join(root, "page.db"), "BBBB");
+    await utimes(path.join(root, "page.db"), before.atime, before.mtime);
+    await sync.flush(10_000, PROOF);
+    expect(server.content("page.db")).toBe("BBBB");
+    expect(sync.lastProofRehashed).toBeGreaterThanOrEqual(1);
+    expect(server.flushed).toEqual([CONN]);
+  });
+
+  it("a wake on the same volume proves without re-hashing unchanged files (KOBE-733)", async () => {
+    const root = await volume();
+    const first = await started(root);
+    await put(root, "a.txt", "aaaa");
+    await put(root, "b/c.txt", "cccc");
+    await first.flush(10_000, PROOF);
+    expect(server.flushed).toEqual([CONN]);
+    server.flushed.length = 0;
+    // The next agent on this volume (a wake) remembers what the last one verified.
+    const second = await started(root);
+    await second.flush(10_000, PROOF);
+    expect(server.flushed).toEqual([CONN]);
+    expect(second.lastProofRehashed).toBe(0);
+  });
+
   it("sends no proof when other processes are alive or a cleanup failed (KOBE-733)", async () => {
     const root = await volume();
     const sync = await started(root);

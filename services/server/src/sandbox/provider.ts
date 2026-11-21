@@ -60,10 +60,10 @@ import { podTermination, type PodTermination } from "./pod-termination.js";
 import { diagnoseStall, isPodReady, type StallDiagnosis } from "./stall-diagnosis.js";
 import { reconcileTeamNamespaces, type TeamReconcileSummary } from "./team-reconcile.js";
 
-/** A team namespace converged except for these scoped ResourceQuotas (members are unaffected). */
 /** KOBE-733: how long a new claim waits for a reclaimed volume of the same name to go. */
 const VOLUME_TERMINATING_WAIT_MS = 60_000;
 
+/** A team namespace converged except for these scoped ResourceQuotas (members are unaffected). */
 export class TeamQuotaDegradedError extends Error {
   constructor(
     readonly namespace: string,
@@ -971,7 +971,13 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
     const end = now() + VOLUME_TERMINATING_WAIT_MS;
     for (;;) {
       const pvc = await kube.get(PVC(namespace, pvcName));
-      if (!pvc?.metadata.deletionTimestamp || now() >= end) return;
+      if (!pvc?.metadata.deletionTimestamp) return;
+      if (now() >= end) {
+        logger.warn({ namespace, pvc: pvcName }, "old workspace volume still being deleted");
+        throw new SandboxProvisioningError(
+          `Old workspace volume ${namespace}/${pvcName} still being deleted; retry`,
+        );
+      }
       await sleep(1000);
     }
   };

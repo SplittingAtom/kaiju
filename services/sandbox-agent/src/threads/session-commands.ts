@@ -22,6 +22,9 @@ export async function runPiCommand(
   frame: Frame<"pi.command">,
 ): Promise<CommandOutcome> {
   const { id: _serverId, ...command } = frame.command;
+  // Never starts a Pi while the sandbox drains (KOBE-733: nothing may start between the quiet
+  // check, the final scan and the reclaim proof).
+  if (port.draining()) return fail("pi_unavailable", "sandbox is shutting down");
   if (thread.restoring) return fail("pi_rejected", "session restore in progress");
   // Nothing reaches Pi around a compaction in progress (KOBE-213); its entry is read after it.
   if (thread.compacting) return fail("pi_rejected", "the thread is compacting");

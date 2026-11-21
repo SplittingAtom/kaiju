@@ -556,6 +556,54 @@ describe("collection, sharing and restore reports", () => {
     expect(owner.userId).toBe(b.person.id);
   });
 
+  it("takes the shutdown reclaim proof only as stated, and audits every answer (KOBE-733)", async () => {
+    const b = await box();
+    const conn = randomUUID();
+    const proofs = async () =>
+      (
+        await fx.admin.query<{ target: Record<string, unknown> }>(
+          `SELECT target FROM audit_log WHERE team_id = $1 AND action = 'sandbox.volume_proof'
+            ORDER BY seq`,
+          [b.teamId],
+        )
+      ).rows.map((r) => r.target);
+    // Without Pi identities: refused by the contract, nothing recorded.
+    expect((await call(b, "POST", "/flushed", { connection_id: conn })).status).toBe(400);
+    // Running: not hibernated yet (the agent retries once).
+    await fx.admin.query(
+      `INSERT INTO sandboxes (team_id, user_id, sandbox_id, state) VALUES ($1, $2, $3, 'running')`,
+      [b.teamId, b.person.id, b.sandboxId],
+    );
+    await fx.admin.query(
+      `INSERT INTO sandbox_connections (team_id, user_id, sandbox_id, connection_id, replica_id)
+       VALUES ($1, $2, $3, $4, 'r')`,
+      [b.teamId, b.person.id, b.sandboxId, conn],
+    );
+    await fx.admin.query(
+      `INSERT INTO workspace_sync (team_id, user_id) VALUES ($1, $2)
+      ON CONFLICT DO NOTHING`,
+      [b.teamId, b.person.id],
+    );
+    const early = await call(b, "POST", "/flushed", { connection_id: conn, pi_identities: true });
+    expect(await early.json()).toEqual({ proven: false, reason: "not_hibernated" });
+    // Hibernated, closing that connection in the same transaction: accepted.
+    await fx.admin.query(`BEGIN`);
+    await fx.admin.query(
+      `UPDATE sandboxes SET state = 'hibernated', state_changed_at = now() WHERE team_id = $1`,
+      [b.teamId],
+    );
+    await fx.admin.query(`UPDATE sandbox_connections SET closed_at = now() WHERE team_id = $1`, [
+      b.teamId,
+    ]);
+    await fx.admin.query(`COMMIT`);
+    const ok = await call(b, "POST", "/flushed", { connection_id: conn, pi_identities: true });
+    expect(await ok.json()).toEqual({ proven: true });
+    expect(await proofs()).toEqual([
+      { sandboxId: b.sandboxId, userId: b.person.id, accepted: false, reason: "not_hibernated" },
+      { sandboxId: b.sandboxId, userId: b.person.id, accepted: true },
+    ]);
+  });
+
   it("records restores; a full restore onto an empty volume is audited", async () => {
     const b = await box();
     const report = { mode: "full", files: 12, bytes: 3456, duration_ms: 789 };

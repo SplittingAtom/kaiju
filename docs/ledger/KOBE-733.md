@@ -38,6 +38,20 @@ Owner decision: reclaim ships **off** (`sandbox.hibernation.reclaim.enabled: fal
   logged and audited (`sandbox.volume_proof`). The reaper no longer holds the hold and row locks
   while the PVC terminates; instead the provider waits (≤ 60 s) for a terminating volume of the
   same name before creating a new claim.
+- **Review g63-3 (racily clean, HIGH):** stamps are nanosecond (`bigint` stats: size, mtime,
+  ctime, inode) and compared with strict equality, so a rewrite after a clock step back is caught
+  too. A stamp is recorded only when the file's ctime and mtime are ≥ 2 s older than the volume's
+  clock when the plan began (mtime of `.kobe/workspace-clock`, rewritten first): younger files stay
+  unverified (`sync/stamps.ts`). The proof's strict pass re-hashes every unverified file after the
+  quiet check; if any is still inside the window it waits it out once (≤ flush deadline) and
+  re-hashes, else no proof. Liveness: verified stamps are saved on the volume
+  (`.kobe/workspace-verified.json`, agent-only) at every flush and loaded at restore, so a wake on
+  the same volume proves without re-hashing unchanged files. Freshly downloaded files are not
+  recorded at write time: they are inside the window by definition, so the racy rule leaves them
+  unverified; periodic pushes verify them (200 per push) and the next flush remembers them.
+  `pi.command` is refused while draining; the /proc check fails on any read error but
+  ENOENT/ESRCH; a wake whose old volume is still terminating after 60 s fails with a retryable
+  `SandboxProvisioningError` (logged) instead of creating the claim.
 - **What does not block, by decision:** `.kobe/` (Pi sessions and agent state; D15: sessions are
   rebuilt from Postgres, so a reclaimed volume resumes conversations), interrupted-download temp
   files, the rebuildable `node_modules`/`__pycache__`/`.venv`, and **empty folders, which are not

@@ -1,4 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
+import type { BigIntStats } from "node:fs";
+import { stampOf, type FileStamp } from "./sync/stamps.js";
 import { constants as FS, existsSync, type Stats } from "node:fs";
 import {
   lstat,
@@ -39,12 +41,8 @@ export interface LocalFile {
   /** Whole milliseconds. */
   readonly mtimeMs: number;
   readonly executable: boolean;
-  /**
-   * KOBE-733: status-change time and inode. Unlike size and mtime they cannot be set back by a
-   * tool (`touch -r`, `cp -p`, `rsync -t`, archive extraction), so a rewrite always moves them.
-   */
-  readonly ctimeMs?: number;
-  readonly ino?: number;
+  /** KOBE-733: the scan's nanosecond stamp (ctime, mtime, inode, size): `sync/stamps.ts`. */
+  readonly stamp?: FileStamp;
 }
 
 export interface ScanResult {
@@ -105,20 +103,24 @@ export async function localProjectSlugs(root: string): Promise<string[]> {
   }
 }
 
-export function toLocal(stat: {
-  size: number;
-  mtimeMs: number;
-  mode: number;
-  ctimeMs?: number;
-  ino?: number;
-}): LocalFile {
+export function toLocal(stat: { size: number; mtimeMs: number; mode: number }): LocalFile {
   return {
     size: stat.size,
     // Rounded: an mtime set from whole milliseconds may read back a hair below them.
     mtimeMs: Math.round(stat.mtimeMs),
     executable: (stat.mode & 0o100) !== 0,
-    ...(stat.ctimeMs === undefined ? {} : { ctimeMs: stat.ctimeMs }),
-    ...(stat.ino === undefined ? {} : { ino: stat.ino }),
+  };
+}
+
+/** {@link toLocal} of a `bigint: true` stat, with its stamp (KOBE-733). */
+export function toLocalStamped(stat: BigIntStats): LocalFile {
+  return {
+    ...toLocal({
+      size: Number(stat.size),
+      mtimeMs: Number(stat.mtimeNs) / 1e6,
+      mode: Number(stat.mode),
+    }),
+    stamp: stampOf(stat),
   };
 }
 
@@ -162,12 +164,12 @@ export async function scanWorkspace(
         skipped += 1; // a symlink or a special file
       } else {
         try {
-          const stat = await lstat(path.join(root, child));
+          const stat = await lstat(path.join(root, child), { bigint: true });
           if (!stat.isFile()) {
             skipped += 1;
             continue;
           }
-          files.set(child, toLocal(stat));
+          files.set(child, toLocalStamped(stat));
         } catch {
           continue; // vanished meanwhile
         }

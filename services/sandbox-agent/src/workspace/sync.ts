@@ -5,6 +5,7 @@ import { pull } from "./sync/pull.js";
 import { planPush, push, pushOne } from "./sync/push.js";
 import { restoreUntilDone } from "./sync/restore.js";
 import { serial, warn, type SyncState } from "./sync/state.js";
+import { RACY_WINDOW_MS, saveStamps, type SavedStamp } from "./sync/stamps.js";
 import {
   DEFAULT_SKIP_DIRS,
   PushPathError,
@@ -72,6 +73,7 @@ export class WorkspaceSync {
   /** Settles once the startup restore succeeded, or the server said it has no workspace sync. */
   #ready: Promise<void> | undefined;
   #timer: NodeJS.Timeout | undefined;
+  #lastProofRehashed = 0;
   #soon: NodeJS.Timeout | undefined;
 
   constructor(options: WorkspaceSyncOptions) {
@@ -224,6 +226,7 @@ export class WorkspaceSync {
         const proven = await Promise.race([this.#prove(proof), timeout]);
         this.#s.o.logger.info({ proven: proven === true }, "workspace reclaim proof");
       }
+      await this.#saveStamps();
       return stats;
     } catch (error) {
       warn(this.#s, "workspace flush failed", error);
@@ -286,12 +289,39 @@ export class WorkspaceSync {
   /** After a push: whether a fresh plan finds every local change in the durable copy. */
   async #complete(): Promise<boolean> {
     const s = this.#s;
-    const plan = await serial(s, () => planPush(s, { strict: true }));
-    return (
-      plan.changes.length === 0 &&
-      plan.resends.length === 0 &&
-      plan.leftOut === 0 &&
-      !plan.partialScan
+    let plan = await serial(s, () => planPush(s, { strict: true }));
+    this.#lastProofRehashed = plan.rehashed;
+    const clean = (p: typeof plan) =>
+      p.changes.length === 0 && p.resends.length === 0 && p.leftOut === 0 && !p.partialScan;
+    if (!clean(plan)) return false;
+    if (plan.unverified > 0) {
+      // Racily clean files (KOBE-733): wait out the window (nothing runs any more), re-hash once.
+      await new Promise((r) => setTimeout(r, RACY_WINDOW_MS + 100).unref());
+      plan = await serial(s, () => planPush(s, { strict: true }));
+      this.#lastProofRehashed += plan.rehashed;
+      if (!clean(plan) || plan.unverified > 0) return false;
+    }
+    return true;
+  }
+
+  /** Files the last proof's check re-hashed to verify them (tests, diagnostics; KOBE-733). */
+  get lastProofRehashed(): number {
+    return this.#lastProofRehashed;
+  }
+
+  /**
+   * Remembers the verified files on the volume (KOBE-733), so the next wake on this volume does
+   * not re-hash them; a failure only costs that re-hash.
+   */
+  async #saveStamps(): Promise<void> {
+    const verified: [string, SavedStamp][] = [];
+    for (const [p, k] of this.#s.known) {
+      if (!k.deleted && k.stamp !== undefined && k.sha256 !== undefined) {
+        verified.push([p, { sha256: k.sha256, stamp: k.stamp }]);
+      }
+    }
+    await saveStamps(this.#s.o.root, verified).catch((error: unknown) =>
+      warn(this.#s, "could not remember the verified workspace files", error),
     );
   }
 

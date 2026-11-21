@@ -28,8 +28,10 @@ export async function processesInTheWay(
       const uid = Number(/^Uid:\s+(\d+)/m.exec(text)?.[1] ?? "-1");
       const zombie = /^State:\s+Z/m.test(text);
       status.set(Number(name), { ppid, uid, zombie });
-    } catch {
-      // Gone since the listing: it cannot write any more.
+    } catch (error) {
+      // Gone since the listing (it cannot write any more); anything else: not provably quiet.
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT" && code !== "ESRCH") return undefined;
     }
   }
   const selfUid = status.get(self)?.uid;

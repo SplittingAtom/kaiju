@@ -19,6 +19,7 @@ import {
   type LocalFile,
 } from "../fs.js";
 import { conflictCopy, downloadSafely, revertLocal } from "./local.js";
+import { racy, sameStamp, volumeNow } from "./stamps.js";
 import {
   COMMIT_BATCH,
   MISSING_BATCH,
@@ -161,36 +162,29 @@ export async function push(s: SyncState): Promise<PushStats> {
   };
 }
 
-/** `k` with the ctime and inode of the local file it is known equal to. */
-function withCtime(k: Known, file: LocalFile): Known {
-  return {
-    ...k,
-    ...(file.ctimeMs === undefined ? {} : { ctimeMs: file.ctimeMs }),
-    ...(file.ino === undefined ? {} : { ino: file.ino }),
-  };
+/** `k` verified against `file`'s stamp (KOBE-733), or `k` unverified when it has none. */
+function withStamp(k: Known, file: LocalFile | undefined): Known {
+  const { stamp: _old, ...rest } = k;
+  return file?.stamp ? { ...rest, stamp: file.stamp } : rest;
 }
 
-/** Files without a recorded ctime re-hashed per ordinary push (the rest wait; KOBE-733). */
+/** Files without a recorded stamp re-hashed per ordinary push (the rest wait; KOBE-733). */
 export const VERIFY_PER_PUSH = 200;
 
 /**
- * Whether `file` is unchanged since `k` by its ctime and inode (KOBE-733): `true` proven,
- * `false` changed since (ctime newer, another inode), `undefined` nothing recorded yet.
- */
-function unchangedByCtime(file: LocalFile, k: Known): boolean | undefined {
-  if (k.ctimeMs === undefined || file.ctimeMs === undefined) return undefined;
-  return file.ino === k.ino && file.ctimeMs <= k.ctimeMs;
-}
-
-/**
- * `strict` (the reclaim proof, KOBE-733): every file whose size and mtime match but whose ctime is
- * newer or unrecorded is re-hashed. Otherwise those with a newer ctime always are, and at most
- * {@link VERIFY_PER_PUSH} unrecorded ones per push (so the first proof after a wake is cheap).
+ * Unchanged size and mtime are not enough (KOBE-733): a file counts as unchanged only when its
+ * stamp (`sync/stamps.ts`) equals the recorded one. Otherwise it is re-hashed: always when a
+ * stamp was recorded and differs; when none was recorded, every such file in `strict` mode (the
+ * reclaim proof) and at most {@link VERIFY_PER_PUSH} per ordinary push. A file re-hashed equal is
+ * recorded only outside the racy window of `start`, the volume's clock when this plan began;
+ * younger ones are counted as `unverified`.
  */
 export async function planPush(
   s: SyncState,
   options: { readonly strict?: boolean } = {},
 ): Promise<PushPlan> {
+  // The volume's clock before the scan: every stamp read below is compared against it.
+  const start = await volumeNow(s.o.root);
   const scan = await scanWorkspace(s.o.root, {
     skipDirs: s.o.skipDirs,
     maxFiles: s.o.maxFiles,
@@ -200,6 +194,10 @@ export async function planPush(
   // Symlinks, special files and names the sync refuses stay local only (KOBE-733).
   let leftOut = scan.skipped;
   let verifyBudget = options.strict ? Infinity : VERIFY_PER_PUSH;
+  let unverified = 0;
+  let rehashed = 0;
+  const verifiable = (file: LocalFile) =>
+    file.stamp !== undefined && !racy(file.stamp, start) ? ({ verifiable: true } as const) : {};
   for (const [path, file] of scan.files) {
     const k = s.known.get(path);
     if (locked(s, path)) {
@@ -207,18 +205,24 @@ export async function planPush(
       continue;
     }
     if (k && !k.deleted && sameAs(file, k) && file.executable === k.executable) {
-      const byCtime = unchangedByCtime(file, k);
-      if (byCtime === true) continue;
-      if (byCtime === undefined && verifyBudget <= 0) continue; // verified on a later push
-      if (byCtime === undefined) verifyBudget -= 1;
+      if (sameStamp(k.stamp, file.stamp)) continue;
+      const recorded = k.stamp !== undefined;
+      if (!recorded && verifyBudget <= 0) continue; // verified on a later push
+      if (!recorded) verifyBudget -= 1;
       // Same size and mtime, but the content may have been rewritten: hash it.
+      rehashed += 1;
       const again = await hashFile(s.o.root, path);
       if (!again || again.size !== file.size) {
         leftOut += 1;
         continue;
       }
       if (again.sha256 === k.sha256) {
-        s.known.set(path, withCtime(k, file));
+        if ("verifiable" in verifiable(file)) s.known.set(path, withStamp(k, file));
+        else {
+          // Too young to tell a same-tick rewrite apart: stays unverified (racily clean).
+          s.known.set(path, withStamp(k, undefined));
+          unverified += 1;
+        }
         continue;
       }
       changes.push({
@@ -230,6 +234,7 @@ export async function planPush(
         mtime_ms: file.mtimeMs,
         executable: file.executable,
         local: file,
+        ...verifiable(file),
       });
       continue;
     }
@@ -257,6 +262,7 @@ export async function planPush(
       mtime_ms: file.mtimeMs,
       executable: file.executable,
       local: file,
+      ...verifiable(file),
     });
   }
   const unsure = (path: string) =>
@@ -294,6 +300,8 @@ export async function planPush(
     resends: await resends(s, scan.files, changes),
     leftOut,
     partialScan: scan.truncated || scan.incomplete.length > 0,
+    unverified,
+    rehashed,
   };
 }
 
@@ -386,9 +394,12 @@ export async function applyResult(
 ): Promise<void> {
   if (result.status === "applied") {
     const entry = known(result.entry);
-    // The local file this content was read from (KOBE-733): later rewrites move its ctime.
-    const local = change.op === "put" && change.sha256 === entry.sha256 ? change.local : undefined;
-    s.known.set(result.path, local ? withCtime(entry, local) : entry);
+    // The scanned file this content was read from, outside the racy window (KOBE-733): verified.
+    const local =
+      change.op === "put" && change.verifiable && change.sha256 === entry.sha256
+        ? change.local
+        : undefined;
+    s.known.set(result.path, withStamp(entry, local));
     s.refused.delete(result.path);
   } else if (result.status === "noop") {
     s.known.delete(result.path);

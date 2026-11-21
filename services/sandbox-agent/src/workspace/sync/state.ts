@@ -2,6 +2,7 @@ import type { WorkspaceChange, WorkspaceEntry } from "@kobe/protocol";
 import { SyncHttpError } from "../client.js";
 import { isLockedPath, type Checkouts, type LocalFile } from "../fs.js";
 import type { MoveReplay } from "../moves.js";
+import type { FileStamp } from "./stamps.js";
 import type { ConflictListener, WorkspaceSyncOptions } from "./types.js";
 
 /** Last known state of a path in the durable copy (what the local file was synced from). */
@@ -20,12 +21,11 @@ export interface Known {
    */
   readonly moved?: true;
   /**
-   * KOBE-733: the local file's ctime and inode when it was last known equal to this content
-   * (pushed from it, or re-hashed and found equal). Absent (a restored or pulled file, or state
-   * from before): its content is re-hashed once before it counts as unchanged for the proof.
+   * KOBE-733: the local file's stamp when it was last verified to hold this content (pushed from
+   * it, re-hashed equal, or remembered on the volume), outside the racy window. Absent: the file
+   * is unverified and re-hashed before it counts as unchanged for the proof.
    */
-  readonly ctimeMs?: number;
-  readonly ino?: number;
+  readonly stamp?: FileStamp;
 }
 
 export const COMMIT_BATCH = 250;
@@ -83,7 +83,14 @@ export async function parallel<T>(
   if (failure !== undefined) throw failure.error;
 }
 
-export type PlannedChange = WorkspaceChange & { readonly local?: LocalFile };
+/**
+ * `local`: the scanned file the content was read from; `verifiable` (KOBE-733): its stamp was
+ * outside the racy window when hashing started, so it may be recorded once the push lands.
+ */
+export type PlannedChange = WorkspaceChange & {
+  readonly local?: LocalFile;
+  readonly verifiable?: true;
+};
 
 export interface PushPlan {
   readonly changes: PlannedChange[];
@@ -101,6 +108,10 @@ export interface PushPlan {
   readonly leftOut: number;
   /** The scan stopped early (file cap) or could not read a folder: deletions were not inferred. */
   readonly partialScan: boolean;
+  /** Files re-hashed equal but too young to record (racy window): verified on a later pass. */
+  readonly unverified: number;
+  /** Files whose content this plan re-hashed only to verify them (unchanged size and mtime). */
+  readonly rehashed: number;
 }
 
 export type ResolvedSyncOptions = Required<Omit<WorkspaceSyncOptions, "skipDirs">> & {
