@@ -1,77 +1,37 @@
 "use client";
 
-import { agentSlugSchema, slugFromName } from "@kobe/agent-file";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   createTeamAgent,
-  getAgentVersion,
   getTeamAgent,
   rollbackTeamAgent,
   saveTeamAgent,
-  setTeamAgentMemory,
   type AgentDetail,
   type AgentEval,
 } from "../../../../lib/admin/api/team/agent-builder";
-import {
-  EMPTY_FORM,
-  firstTabWithError,
-  fromFrontmatter,
-  validateForm,
-  type BuilderTab,
-  type FieldErrors,
-  type FormState,
-} from "../../../../lib/admin/agent-builder/form-model";
-import { isSkillSlug } from "../../../../lib/admin/skills/reach";
-import {
-  Button,
-  Field,
-  Notice,
-  PageHeader,
-  Section,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-  TextInput,
-  useConfirm,
-  useUnsavedChanges,
-} from "../../../ui/console";
+import { firstTabWithError, type BuilderTab } from "../../../../lib/admin/agent-builder/form-model";
+import { PageHeader, useConfirm, useUnsavedChanges } from "../../../ui/console";
 import { useTeamAccess } from "../../console-context";
 import { MutationStatus } from "../../error-notice";
 import { ResourceView } from "../../parts";
 import { useMutation, useResource } from "../../use-resource";
-import { SharedCasesSummary } from "../eval-cases/shared-cases-summary";
-import { AgentQuality } from "./agent-quality";
-import { EvalStatus } from "./eval-status";
-import { fieldError } from "./field-errors";
-import { BehaviourFields } from "./behaviour-fields";
+import { AgentLifecycle } from "./builder-lifecycle";
+import {
+  baselineOf,
+  HOME,
+  restoreNotes,
+  useBuilderErrors,
+  withSkill,
+  type BuilderScope,
+} from "./builder-model";
+import { AgentTools, BuilderForm, BuilderNotices } from "./builder-sections";
 import { DangerousBadge } from "./dangerous-badge";
-import { IdentityFields } from "./identity-fields";
-import { MEMORY_SETTING_LABELS, MemorySetting } from "./memory-setting";
-import { OrbitExportButton } from "./orbit-export-button";
-import { PublishDialog } from "./publish-dialog";
-import { leftOutText, SkillUpdates } from "./skill-updates";
-import { AgentTestPane } from "./test-pane";
-import { VersionHistory, type MemoryChange } from "./version-history";
+import { MEMORY_SETTING_LABELS } from "./memory-setting";
+import type { MemoryChange } from "./version-history";
 import { useNavigate } from "../../../shell/use-navigate";
-import { TEAM_TAB_HREF } from "../../../../lib/agents/redirects";
 
-export type BuilderScope = "team" | "personal";
-
-/** Where each scope's builder lives: the admin console for team agents, Agents otherwise. */
-const HOME: Readonly<
-  Record<BuilderScope, { base: string; list: string; back: string; title: string }>
-> = {
-  // The list of team agents is the Agents page's Team tab (KOBE-570); the builder stays here.
-  team: {
-    base: "/admin/team/agents",
-    list: TEAM_TAB_HREF,
-    back: "All team agents",
-    title: "New team agent",
-  },
-  personal: { base: "/agents", list: "/agents", back: "Agents", title: "New personal agent" },
-};
+export type { BuilderScope };
 
 /**
  * Create, edit and publish an agent from one page (spec D19; `/v1/agents`, KOBE-84). The same
@@ -142,24 +102,6 @@ function BackLink({ scope }: { readonly scope: BuilderScope }) {
   );
 }
 
-/** The form with `slug` appended to its skills (unless listed already or not a skill name). */
-function withSkill(form: FormState, slug: string | undefined): FormState {
-  if (slug === undefined || !isSkillSlug(slug)) return form;
-  const listed = form.skills.split("\n").map((l) => l.trim());
-  if (listed.includes(slug)) return form;
-  return { ...form, skills: [...listed.filter((l) => l !== ""), slug].join("\n") };
-}
-
-interface Baseline {
-  readonly form: FormState;
-  readonly prompt: string;
-}
-
-const baselineOf = (agent: AgentDetail | null): Baseline =>
-  agent
-    ? { form: fromFrontmatter(agent.frontmatter), prompt: agent.prompt }
-    : { form: EMPTY_FORM, prompt: "" };
-
 function Builder({
   teamId,
   initial,
@@ -197,20 +139,13 @@ function Builder({
   const publishButton = useRef<HTMLButtonElement>(null);
 
   const readOnly = agent !== null && (!agent.canEdit || Boolean(agent.archivedAt));
-  const validation = useMemo(() => validateForm(form, prompt), [form, prompt]);
-  const slugErrors = useMemo(() => {
-    if (agent || slug === "" || agentSlugSchema.safeParse(slug).success) return [];
-    return [
-      "The slug needs 1-64 lowercase letters, digits or hyphens, starting and ending alphanumeric.",
-    ];
-  }, [agent, slug]);
-  const errors: FieldErrors = attempted
-    ? {
-        ...(validation.ok ? {} : validation.errors),
-        ...(slugErrors.length ? { slug: slugErrors } : {}),
-      }
-    : {};
-  const problemCount = Object.values(errors).reduce((n, list) => n + (list?.length ?? 0), 0);
+  const { validation, slugErrors, errors, problemCount } = useBuilderErrors(
+    form,
+    prompt,
+    agent,
+    slug,
+    attempted,
+  );
   const dirty = JSON.stringify({ form, prompt }) !== JSON.stringify(baseline);
   // In its panel (KOBE-452), closing asks while the form has edits not saved.
   useUnsavedChanges(dirty);
@@ -259,14 +194,7 @@ function Builder({
   async function restore(version: number, trigger: HTMLElement | null, memory?: MemoryChange) {
     if (!agent) return;
     // KOBE-646 (review L2): a restore brings back that version's memory setting; say so.
-    const notes = [
-      ...(memory
-        ? [
-            `Memory: ${MEMORY_SETTING_LABELS[memory.from].label} → ${MEMORY_SETTING_LABELS[memory.to].label}.`,
-          ]
-        : []),
-      ...(dirty ? ["Your unsaved changes in the form are replaced."] : []),
-    ];
+    const notes = restoreNotes(memory, dirty);
     const yes = await confirm(
       {
         title: `Restore version ${version} as the newest version?`,
@@ -311,6 +239,8 @@ function Builder({
   // Exporting needs the right to read the definition, not edit rights (archived agents export too).
   const canExport = agent !== null && agent.canExport === true && !rosterView;
 
+  const shared = { teamId, scope, historyKey, rosterView, canPublish, canExport };
+
   return (
     <>
       <PageHeader
@@ -318,121 +248,45 @@ function Builder({
         back={<Link href={home.list}>{home.back}</Link>}
         {...(agent?.dangerous ? { actions: <DangerousBadge /> } : {})}
       />
-      {rosterView && (
-        <Notice tone="info">
-          <p>
-            You&apos;re viewing v{rosterVersion}, the version this roster runs. Only its owner edits
-            it; fork it from the Agents page to make your own copy.
-          </p>
-        </Notice>
-      )}
-      {agent?.archivedAt && (
-        <Notice tone="warn">
-          <p>This agent is archived, so it can&apos;t be changed.</p>
-        </Notice>
-      )}
-      {agent?.status === "suspended" && (
-        <Notice tone="warn">
-          <p>
-            This agent is suspended by a team admin, so it can&apos;t start new runs. You can still
-            edit and publish it.
-          </p>
-        </Notice>
-      )}
-      {attempted && problemCount > 0 && (
-        <Notice tone="error">
-          <p>
-            Fix {problemCount} {problemCount === 1 ? "problem" : "problems"} before saving.
-          </p>
-        </Notice>
-      )}
-      {added !== undefined && dirty && (
-        <p role="status" className="text-sm text-console-muted">
-          Added {added} to this agent&apos;s skills. Save the draft and publish it to use the skill.
-        </p>
-      )}
+      <BuilderNotices
+        agent={agent}
+        rosterVersion={rosterVersion}
+        attempted={attempted}
+        problemCount={problemCount}
+        added={added}
+        dirty={dirty}
+      />
       <MutationStatus error={mutation.error} notice={published ?? mutation.notice} />
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!readOnly) void save();
-        }}
-        noValidate
-      >
-        <Tabs value={tab} onValueChange={(v) => setTab(v as BuilderTab)}>
-          <TabsList label="Agent settings">
-            <TabsTrigger value="identity">Identity</TabsTrigger>
-            <TabsTrigger value="behaviour">Behaviour</TabsTrigger>
-          </TabsList>
-          {/* Both panels stay mounted (state and errors survive a switch); the inactive one is hidden. */}
-          <TabsContent value="identity" forceMount className="data-[state=inactive]:hidden">
-            {!agent && (
-              <Field
-                label="Slug"
-                hint={`Optional and permanent. Defaults to ${slugFromName(form.name)}.`}
-                error={fieldError(errors.slug)}
-                className="my-4"
-              >
-                <TextInput type="text" value={slug} onChange={(e) => setSlug(e.target.value)} />
-              </Field>
-            )}
-            <IdentityFields
-              form={form}
-              prompt={prompt}
-              errors={errors}
-              readOnly={readOnly}
-              onChange={setForm}
-              onPromptChange={setPrompt}
-            />
-          </TabsContent>
-          <TabsContent value="behaviour" forceMount className="data-[state=inactive]:hidden">
-            <BehaviourFields form={form} errors={errors} readOnly={readOnly} onChange={setForm} />
-          </TabsContent>
-        </Tabs>
-        {errors.form && (
-          <p role="alert" className="m-0 mt-2 text-sm font-medium text-console-danger">
-            {errors.form.join(" ")}
-          </p>
-        )}
-        {!readOnly && (
-          <div className="my-4 flex flex-wrap items-center gap-2">
-            <Button type="submit" variant="primary" disabled={mutation.pending}>
-              {agent ? "Save draft" : "Create agent"}
-            </Button>
-            {canPublish && (
-              <Button
-                ref={publishButton}
-                disabled={dirty || mutation.pending || evaluating}
-                onClick={() => setPublishing(true)}
-              >
-                {evaluating ? "Evaluating…" : "Publish…"}
-              </Button>
-            )}
-            {canPublish && dirty && (
-              <span className="text-sm text-console-muted">Save your changes to publish them.</span>
-            )}
-            {agent && !dirty && (
-              <span className="text-sm text-console-muted">
-                {agent.currentVersion === null
-                  ? "Never published."
-                  : `Current version: v${agent.currentVersion}.`}
-              </span>
-            )}
-          </div>
-        )}
-      </form>
-      {agent && !rosterView && (
-        <MemorySetting
-          key={`${agent.currentVersion ?? 0}:${historyKey}`}
-          agentId={agent.id}
-          api={{
-            readVersion: (version) => getAgentVersion(teamId, agent.id, version),
-            save: (memory) => setTeamAgentMemory(teamId, agent.id, memory),
-          }}
-          currentVersion={agent.currentVersion}
-          canChange={canPublish}
+      <BuilderForm
+        agent={agent}
+        form={form}
+        prompt={prompt}
+        slug={slug}
+        errors={errors}
+        tab={tab}
+        readOnly={readOnly}
+        canPublish={canPublish}
+        dirty={dirty}
+        pending={mutation.pending}
+        evaluating={evaluating}
+        publishButton={publishButton}
+        onTabChange={setTab}
+        onSlugChange={setSlug}
+        onFormChange={setForm}
+        onPromptChange={setPrompt}
+        onSubmit={() => void save()}
+        onPublish={() => setPublishing(true)}
+      />
+      {agent && (
+        <AgentTools
+          {...shared}
+          agent={agent}
+          readOnly={readOnly}
+          dirty={dirty}
           busy={mutation.pending || evaluating}
-          onChanged={(result, memory) => {
+          testing={testing}
+          onTestingChange={setTesting}
+          onMemoryChanged={(result, memory) => {
             apply(result.agent);
             setHistoryKey((k) => k + 1);
             setPublished(
@@ -441,96 +295,26 @@ function Builder({
           }}
         />
       )}
-      {agent && scope === "team" && agent.currentVersion !== null && (
-        <SkillUpdates
-          key={`${agent.currentVersion}:${historyKey}`}
-          teamId={teamId}
-          agentId={agent.id}
-          version={agent.currentVersion}
-        />
-      )}
-      {agent && !readOnly && (
-        <Section
-          id="test-chat-heading"
-          title="Test chat"
-          description={`Chat with the unpublished draft as last saved${dirty ? " (save your edits first)" : ""}. It runs with the same policy, approvals and budgets as a published agent.`}
-        >
-          {testing ? (
-            <>
-              <AgentTestPane key={agent.id} teamId={teamId} agentId={agent.id} />
-              <Button onClick={() => setTesting(false)}>Close test chat</Button>
-            </>
-          ) : (
-            <Button onClick={() => setTesting(true)}>Test chat</Button>
-          )}
-        </Section>
-      )}
-      {agent && canExport && agent.currentVersion !== null && (
-        <div className="my-4 flex flex-wrap items-center gap-2">
-          <OrbitExportButton
-            teamId={teamId}
-            agentId={agent.id}
-            agentSlug={agent.slug}
-            version={agent.currentVersion}
-          />
-          <span className="text-sm text-console-muted">
-            Downloads v{agent.currentVersion} as Orbit YAML for safety evaluation.
-          </span>
-        </div>
-      )}
-      {agent && !agent.archivedAt && !rosterView && (
-        <EvalStatus
-          teamId={teamId}
-          agentId={agent.id}
-          started={evalStarted}
-          canRetry={canPublish && !dirty}
-          onActiveChange={setEvaluating}
-          onFinished={(finished) => void evalFinished(finished)}
-          onRetry={() => setPublishing(true)}
-        />
-      )}
-      {publishing && agent && validation.ok && (
-        <PublishDialog
-          teamId={teamId}
+      {agent && (
+        <AgentLifecycle
+          {...shared}
           agent={agent}
-          warnings={validation.warnings}
-          // The Publish button, or, while an evaluation it started runs (the button is disabled),
-          // the evaluation's heading.
-          returnFocus={() =>
-            publishButton.current?.disabled === false
-              ? publishButton.current
-              : document.getElementById("eval-heading")
-          }
-          onClose={() => setPublishing(false)}
-          onEvaluating={(started) => {
-            setEvalStarted(started);
-            setPublishing(false);
-          }}
-          onPublished={(result, version) => {
+          validation={validation}
+          dirty={dirty}
+          pending={mutation.pending}
+          publishing={publishing}
+          evalStarted={evalStarted}
+          publishButton={publishButton}
+          onPublishingChange={setPublishing}
+          onEvalStarted={setEvalStarted}
+          onEvaluatingChange={setEvaluating}
+          onEvalFinished={evalFinished}
+          onPublished={(result, notice) => {
             apply(result.agent);
             setHistoryKey((k) => k + 1);
-            // KOBE-318: named team skills with no loadable version are left out of the version.
-            const leftOut = (result.skillsLeftOut ?? []).map((s) => leftOutText(s, version));
-            setPublished([`Published v${version}.`, ...leftOut].join(" "));
-            setPublishing(false);
+            setPublished(notice);
           }}
-        />
-      )}
-      {agent && !rosterView && <AgentQuality teamId={teamId} agentId={agent.id} />}
-      {agent && !rosterView && (
-        <SharedCasesSummary teamId={teamId} agentId={agent.id} scope={scope} />
-      )}
-      {agent && (
-        <VersionHistory
-          key={historyKey}
-          teamId={teamId}
-          agentId={agent.id}
-          currentVersion={agent.currentVersion}
-          agentSlug={agent.slug}
-          canExport={canExport}
-          canRestore={canPublish}
-          restoring={mutation.pending}
-          onRestore={(v, trigger, memory) => void restore(v, trigger, memory)}
+          onRestore={restore}
         />
       )}
       {confirmDialog}
