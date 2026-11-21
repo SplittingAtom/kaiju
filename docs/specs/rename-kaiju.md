@@ -1,8 +1,9 @@
 # Rename: Kobe becomes Kaiju
 
-Status: **draft for Chris** (2026-11-21). Nothing is built and no tickets are filed. The questions
-in §9 need answers first; each has a recommendation, and the rest of this spec assumes the
-recommendations. Request (Chris, 2026-11-21): rename the project from Kobe to Kaiju.
+Status: **approved** (Chris, 2026-11-21): every recommendation in §9 accepted. Hadron spec
+`7423e332`; tickets RN-1..RN-10 filed (§10). Work starts after the 2026-11-20 review tickets have
+merged (RN7). RN1, whether the name is clear to use, is Chris's check before the first step.
+Request (Chris, 2026-11-21): rename the project from Kobe to Kaiju.
 
 ## 1. Summary
 
@@ -164,9 +165,9 @@ install that upgrades in place instead:
 6. `pnpm verify`, the DB suites, the licence check and image builds are green; the repository is
    reachable under its new name and the old URL redirects.
 
-## 9. Questions for Chris
+## 9. Decisions (Chris, 2026-11-21: all recommendations accepted)
 
-| Id  | Question                                                                                                                                                                 | Recommendation                                                                                |
+| Id  | Question                                                                                                                                                                 | Decision                                                                                      |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
 | RN1 | Is the name clear to use? "Kaiju" is a common word and is used by other software projects; trademark, the GitHub name, ghcr namespace and any domain are yours to check. | Check before step 1; nothing else in this spec depends on the answer except whether to start. |
 | RN2 | Do new tickets keep the `KOBE-` key?                                                                                                                                     | Yes. One key across the project's history; a second key splits every search.                  |
@@ -177,17 +178,17 @@ install that upgrades in place instead:
 | RN7 | When? The rename conflicts with every open branch.                                                                                                                       | After the 2026-11-20 review tickets have merged and before the next feature spec starts.      |
 | RN8 | Does the generic-Kubernetes work (if you want it) go before or after?                                                                                                    | After: it adds chart values and docs that would otherwise be renamed twice.                   |
 
-## 10. Tickets (to file when the questions are answered)
+## 10. Tickets
 
-| Id    | Ticket                                                                                                  | Size |
-| ----- | ------------------------------------------------------------------------------------------------------- | ---- |
-| RN-1  | Guard test and allowlist of remaining `kobe`; `scripts/rename/` with the per-step pattern lists         | S    |
-| RN-2  | User-facing text: web UI, emails, guide, prompts, `/llms.txt`, README, notices; browser specs           | M    |
-| RN-3  | Packages, binaries, file paths, identifiers, log fields; lockfile and licence inventory                 | L    |
-| RN-4  | Environment variables `KAIJU_*` with one-release fallback and warning; chart templates; operator docs   | M    |
-| RN-5  | Headers, cookies, browser storage keys, telemetry attribute names                                       | M    |
-| RN-6  | Chart `charts/kaiju`, image names, publish and e2e workflows                                            | M    |
-| RN-7  | Team namespace prefix as configuration: default for new installs, detected for existing, start-up check | M    |
-| RN-8  | Repository rename, remotes, CI runner set and secrets, deploy script, `CLAUDE.md`                       | S    |
-| RN-9  | Fresh test install under the new name with restore from backup; full browser suite; rename release note | M    |
-| RN-10 | Next release: remove the `KOBE_*` and `x-kobe-team` fallbacks                                           | S    |
+| Id               | Ticket                                                                                                  | Size |
+| ---------------- | ------------------------------------------------------------------------------------------------------- | ---- |
+| RN-1 (KOBE-745)  | Guard test and allowlist of remaining `kobe`; `scripts/rename/` with the per-step pattern lists         | S    |
+| RN-2 (KOBE-746)  | User-facing text: web UI, emails, guide, prompts, `/llms.txt`, README, notices; browser specs           | M    |
+| RN-3 (KOBE-747)  | Packages, binaries, file paths, identifiers, log fields; lockfile and licence inventory                 | L    |
+| RN-4 (KOBE-748)  | Environment variables `KAIJU_*` with one-release fallback and warning; chart templates; operator docs   | M    |
+| RN-5 (KOBE-749)  | Headers, cookies, browser storage keys, telemetry attribute names                                       | M    |
+| RN-6 (KOBE-750)  | Chart `charts/kaiju`, image names, publish and e2e workflows                                            | M    |
+| RN-7 (KOBE-751)  | Team namespace prefix as configuration: default for new installs, detected for existing, start-up check | M    |
+| RN-8 (KOBE-752)  | Repository rename, remotes, CI runner set and secrets, deploy script, `CLAUDE.md`                       | S    |
+| RN-9 (KOBE-753)  | Fresh test install under the new name with restore from backup; full browser suite; rename release note | M    |
+| RN-10 (KOBE-754) | Next release: remove the `KOBE_*` and `x-kobe-team` fallbacks                                           | S    |
