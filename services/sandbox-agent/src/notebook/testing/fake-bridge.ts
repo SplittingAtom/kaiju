@@ -22,13 +22,15 @@ export interface FakeBridgeControl {
   readonly launched: string[];
   readonly killed: string[];
   readonly interrupts: string[];
+  /** Every cell the bridges were asked to run, in order (`<thread id>:<code>`). */
+  readonly executed: string[];
 }
 
 export function fakeLauncher(options: FakeBridgeOptions = {}): {
   launch: BridgeLauncher;
   control: FakeBridgeControl;
 } {
-  const control: FakeBridgeControl = { launched: [], killed: [], interrupts: [] };
+  const control: FakeBridgeControl = { launched: [], killed: [], interrupts: [], executed: [] };
   const launch: BridgeLauncher = (threadId) => {
     control.launched.push(threadId);
     return Promise.resolve(fakeBridge(threadId, control, options));
@@ -89,6 +91,7 @@ function fakeBridge(
   });
   const run = (id: string, code: string) => {
     current = { id, code };
+    control.executed.push(`${threadId}:${code}`);
     if (code.startsWith("print:")) {
       send({
         ev: "output",
