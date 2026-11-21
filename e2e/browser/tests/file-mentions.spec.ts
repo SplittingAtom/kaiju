@@ -3,13 +3,17 @@ import { expect, test } from "./support/chat.js";
 import { RUN_TIMEOUT_MS } from "./support/constants.js";
 import { FAKE_MODEL } from "./support/gate5.js";
 
-/** The fake model (CI) runs `bash: <command>`; a real one is asked to read the file. */
-const LEAD = FAKE_MODEL ? "bash: cat" : "Use a tool to read";
+/**
+ * The fake model (CI) runs `bash: <command>`; a real one is asked to read the file. The chip's
+ * marker goes after the text on a line of its own (KOBE-756), so the fake's command reads the
+ * path from the rest of the message.
+ */
+const LEAD = FAKE_MODEL ? "bash: xargs cat <<'EOF'" : "Use a tool to read the mentioned file";
 
 /**
  * KOBE-223 (CE22): a file dropped into the member's workspace (`uploads/`, the rail's drop
- * folder) is mentioned with `@` in the composer: the picker lists it, Enter picks it, a chip shows,
- * and the sent prompt names the file's absolute sandbox path, which the agent's tool call reads.
+ * folder) is mentioned with `@` in the composer: the picker lists it, Enter picks it, the typed
+ * `@query` leaves the text and a file chip shows (KOBE-756), and the sent prompt names the file's absolute sandbox path, which the agent's tool call reads.
  * The file is deleted again at the end. The k3d suite (`e2e/run.sh`, "mentions") proves the read
  * with the fake model; this spec shows the picker and the real agent on a deployment.
  */
@@ -57,13 +61,18 @@ test("@file mention: pick a workspace file, the agent reads it by its absolute p
     await expect(chat.composer).toHaveAttribute("aria-expanded", "true");
     await chat.composer.press("Enter");
     await expect(list).toBeHidden();
-    await expect(chat.composer).toHaveValue(`${LEAD} @file(uploads/${name}) `);
-    // The marker is the mention: no chip repeats it.
-    await expect(page.getByRole("list", { name: "Mentioned files" })).toHaveCount(0);
+    // KOBE-756: the @query left the text; the file is a chip, as a drop from the Files tree.
+    await expect(chat.composer).toHaveValue(`${LEAD} `);
+    const chips = page.getByRole("list", { name: "Mentioned files" });
+    await expect(chips.getByRole("listitem")).toHaveCount(1);
+    await expect(chips.getByRole("listitem")).toHaveText(`@uploads/${name}`);
+    await expect(chips.getByRole("listitem")).toHaveAttribute("title", absolute);
     if (!FAKE_MODEL)
       await chat.composer.pressSequentially("and quote its one line. Do nothing else.");
     await chat.composer.press("Enter");
     await chat.threadId();
+    // A successful send clears the chip (KOBE-415).
+    await expect(chips).toHaveCount(0);
 
     // The server rewrote the marker: the prompt shows the absolute sandbox path.
     await expect(chat.userMessages.last()).toContainText(absolute, { timeout: RUN_TIMEOUT_MS });

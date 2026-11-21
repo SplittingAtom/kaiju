@@ -13,8 +13,8 @@ import {
   fileItem,
   MENTION_TRIGGER,
   mentionable,
-  mentionFormatter,
   mentionQueryAt,
+  mentionStartAt,
 } from "../../lib/chat/mentions";
 import { sandboxPathOf } from "@kobe/protocol";
 import { useChatSession } from "./kobe-runtime";
@@ -71,21 +71,35 @@ function useMentionSearch(
  * The `@` picker (CE22, KOBE-223) on assistant-ui's trigger popover: a listbox of the member's
  * workspace files (own files, project mounts, uploads) under the composer's `TriggerPopoverRoot`.
  * The input is the combobox (ARIA wired by `ComposerPrimitive.Input`): arrows move, Enter or Tab
- * picks, Escape closes. Picking writes the protocol's `@file(...)` marker into the text; the
- * server turns it into the absolute sandbox path. The popover stays closed while there is nothing
- * to pick, so Enter still sends a message that merely contains an `@`.
+ * picks, Escape closes and leaves the text. Picking (KOBE-756) removes the typed `@query`, caret
+ * where the `@` was, and hands the file to `onPick`, which adds the same chip as a drop from the
+ * Files tree (or says why not); the send appends its `@file(...)` marker, which the server turns
+ * into the absolute sandbox path. The popover stays closed while there is nothing to pick, so
+ * Enter still sends a message that merely contains an `@`.
  */
 export function MentionPicker({
-  draft,
   input,
+  onPick,
 }: {
-  /** The composer draft the picks belong to (thread id, or the new-thread draft). */
-  readonly draft: string;
   readonly input: RefObject<HTMLTextAreaElement | null>;
+  /** Takes the picked workspace path into the draft as a chip. */
+  readonly onPick: (path: string) => void;
 }) {
   const session = useChatSession();
   const { found, loading } = useMentionSearch(session.files, input);
   const items = found?.items;
+  // The input still shows the `@query` here (the new text renders next): the caret goes back to
+  // where its `@` was once it has.
+  const execute = (item: TriggerItem) => {
+    const el = input.current;
+    const at = el === null ? null : mentionStartAt(el.value, el.selectionStart);
+    onPick(item.id);
+    if (el !== null && at !== null) {
+      requestAnimationFrame(() => {
+        if (el.value.length >= at) el.setSelectionRange(at, at);
+      });
+    }
+  };
   const adapter = useMemo<TriggerAdapter | undefined>(
     () =>
       items === undefined || items.length === 0
@@ -101,10 +115,7 @@ export function MentionPicker({
       aria-label="Workspace files"
       className="bg-popover text-popover-foreground border-foreground/10 absolute bottom-full left-0 z-20 mb-2 max-h-72 w-full overflow-y-auto rounded-xl border p-1 shadow-lg"
     >
-      <ComposerPrimitive.TriggerPopover.Directive
-        formatter={mentionFormatter}
-        onInserted={(item) => session.mentions.add(draft, item.id)}
-      />
+      <ComposerPrimitive.TriggerPopover.Action onExecute={execute} removeOnExecute />
       <ComposerPrimitive.TriggerPopoverItems aria-label="Files">
         {(list) =>
           list.map((item, index) => (
@@ -133,9 +144,9 @@ const CHIP =
   "border-foreground/10 bg-background flex min-w-0 max-w-80 items-center gap-1.5 rounded-lg border px-2 py-1 text-xs";
 
 /**
- * The files dropped on the draft (from the Files tree, or "Mention in message"), as chips above
- * the input; their @file markers stay out of the text until the send appends them. Each chip
- * shows the whole workspace path; removing it drops the mention.
+ * The files mentioned in the draft (picked with `@`, dropped from the Files tree, or "Mention in
+ * message"), as chips above the input; their @file markers stay out of the text until the send
+ * appends them. Each chip shows the whole workspace path; removing it drops the mention.
  */
 export function MentionChips({ draft }: { readonly draft: string }) {
   const { mentions: store } = useChatSession();

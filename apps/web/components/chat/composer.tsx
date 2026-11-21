@@ -92,6 +92,22 @@ function wantsEditLast(e: KeyboardEvent<HTMLTextAreaElement>): boolean {
   );
 }
 
+/** Backspace with nothing to delete: an empty input, no modifier, no IME composing. */
+function wantsChipBack(e: KeyboardEvent<HTMLTextAreaElement>): boolean {
+  const el = e.currentTarget;
+  return (
+    e.key === "Backspace" &&
+    !e.shiftKey &&
+    !e.altKey &&
+    !e.ctrlKey &&
+    !e.metaKey &&
+    !e.nativeEvent.isComposing &&
+    e.nativeEvent.keyCode !== 229 &&
+    el.value === "" &&
+    el.selectionStart === 0
+  );
+}
+
 /**
  * The composer (D17). Idle: Enter sends. While a run holds the thread the primary button reads
  * **Queue** and Enter queues the message (it runs next, in order); Ctrl/Cmd+Shift+Enter steers it
@@ -232,6 +248,16 @@ export function Composer({
       controller?.clearContinue();
       return;
     }
+    // Backspace in an empty input takes back the last file chip (KOBE-756).
+    if (wantsChipBack(e)) {
+      const chips = session.mentions.chips(draft);
+      const last = chips.at(-1);
+      if (last !== undefined) {
+        e.preventDefault();
+        session.mentions.removeChip(draft, last);
+      }
+      return;
+    }
     if (wantsEditLast(e)) {
       if (editLast?.onSelect && !editLast.blocker) {
         e.preventDefault();
@@ -335,7 +361,7 @@ export function Composer({
             "border-foreground/10 data-[dragging]:border-primary data-[dragging]:bg-primary/5 bg-muted/30 flex w-full cursor-text flex-col gap-2 rounded-2xl border p-2",
           )}
         >
-          <MentionPicker draft={draft} input={input} />
+          <MentionPicker input={input} onPick={rowDrop.pick} />
           <SlashMenu input={input} />
           <ComposerAttachments draft={draft} threadId={remoteId} />
           <MentionChips draft={draft} />

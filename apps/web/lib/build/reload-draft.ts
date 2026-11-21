@@ -2,7 +2,7 @@
  * The composer's draft across the new-build banner's Reload (KOBE-487 ac-4). The banner marks the
  * reload as requested; each composer stashes its text when the page then unloads (`pagehide`,
  * so nothing is kept if the member cancels the unsaved-edits prompt) and takes it back once
- * after the reload. Kept per tab in sessionStorage; where storage is blocked the draft is lost
+ * after the reload, with the files it mentions as chips (KOBE-756). Kept per tab in sessionStorage; where storage is blocked the draft is lost
  * like on any reload. The stash lasts {@link RELOAD_DRAFT_TTL_MS} and sign-out clears it, so a
  * person signing in on the same tab later never gets another's draft.
  */
@@ -10,9 +10,27 @@ const KEY = "kobe.reload-drafts";
 /** A reload takes seconds; anything older is not from the banner's Reload. */
 export const RELOAD_DRAFT_TTL_MS = 10 * 60_000;
 
+/** A composer's text and the workspace paths of its file chips. */
+export interface ReloadDraft {
+  readonly text: string;
+  readonly mentions: readonly string[];
+}
+
 interface Stash {
   readonly savedAt: number;
-  readonly drafts: Readonly<Record<string, string>>;
+  readonly drafts: Readonly<Record<string, ReloadDraft>>;
+}
+
+/** A kept entry: the current shape, or a plain text (kept before KOBE-756). */
+function draftOf(value: unknown): ReloadDraft | undefined {
+  if (typeof value === "string") return { text: value, mentions: [] };
+  if (typeof value !== "object" || value === null) return undefined;
+  const { text, mentions } = value as { text?: unknown; mentions?: unknown };
+  if (typeof text !== "string") return undefined;
+  const paths = Array.isArray(mentions)
+    ? mentions.filter((m): m is string => typeof m === "string")
+    : [];
+  return { text, mentions: paths };
 }
 
 let reloadRequested = false;
@@ -30,7 +48,7 @@ export function resetReloadRequest(): void {
   reloadRequested = false;
 }
 
-function readStash(): Readonly<Record<string, string>> {
+function readStash(): Readonly<Record<string, ReloadDraft>> {
   try {
     const raw = sessionStorage.getItem(KEY);
     if (raw === null) return {};
@@ -44,14 +62,17 @@ function readStash(): Readonly<Record<string, string>> {
       return {};
     }
     return Object.fromEntries(
-      Object.entries(drafts).filter((e): e is [string, string] => typeof e[1] === "string"),
+      Object.entries(drafts).flatMap(([key, value]) => {
+        const draft = draftOf(value);
+        return draft === undefined ? [] : [[key, draft] as const];
+      }),
     );
   } catch {
     return {}; // blocked storage or a garbled value: nothing to restore
   }
 }
 
-function writeStash(drafts: Readonly<Record<string, string>>): void {
+function writeStash(drafts: Readonly<Record<string, ReloadDraft>>): void {
   try {
     if (Object.keys(drafts).length === 0) sessionStorage.removeItem(KEY);
     else sessionStorage.setItem(KEY, JSON.stringify({ savedAt: Date.now(), drafts }));
@@ -65,17 +86,24 @@ export function forgetReloadDrafts(): void {
   writeStash({});
 }
 
-/** Keeps `text` for the composer of `draftKey` when the banner's Reload unloads the page. */
-export function stashDraftForReload(draftKey: string, text: string): void {
-  if (!reloadRequested || text.trim() === "") return;
-  writeStash({ ...readStash(), [draftKey]: text });
+/**
+ * Keeps `text` and the chips' `mentions` for the composer of `draftKey` when the banner's Reload
+ * unloads the page (nothing when both are empty).
+ */
+export function stashDraftForReload(
+  draftKey: string,
+  text: string,
+  mentions: readonly string[] = [],
+): void {
+  if (!reloadRequested || (text.trim() === "" && mentions.length === 0)) return;
+  writeStash({ ...readStash(), [draftKey]: { text, mentions: [...mentions] } });
 }
 
 /** The draft kept for `draftKey` by the last Reload, once. */
-export function takeReloadDraft(draftKey: string): string | undefined {
+export function takeReloadDraft(draftKey: string): ReloadDraft | undefined {
   const stash = readStash();
-  const text = stash[draftKey];
-  if (text === undefined) return undefined;
+  const draft = stash[draftKey];
+  if (draft === undefined) return undefined;
   writeStash(Object.fromEntries(Object.entries(stash).filter(([k]) => k !== draftKey)));
-  return text;
+  return draft;
 }
