@@ -15,6 +15,7 @@ import {
 import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
 import { TestBrowser } from "./testing/browser.js";
 import { MemoryMailer } from "./testing/mailer.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 /**
  * KOBE-627 (spec sso-oidc-scim §7, SSO2/SSO6/SSO10): the access-mapping engine and its rules, the
@@ -115,6 +116,7 @@ beforeAll(async () => {
   adminPg = new pg.Client({ connectionString: database.adminUrl });
   await adminPg.connect();
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "s".repeat(48),

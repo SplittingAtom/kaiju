@@ -45,12 +45,14 @@ import {
 import {
   DbRunOrchestrator,
   PINNED_AGENTS,
+  createRunWorkspace,
   withDraftTests,
   withSkillEvals,
   type RunOrchestratorOptions,
+  type RunWorkspaceSlot,
   type ServerRunOrchestrator,
 } from "./runs/index.js";
-import type { RunAgentResolver } from "./runs/seams.js";
+import type { IsolationProbe, RunAgentResolver } from "./runs/seams.js";
 import { createOffboarding, type Offboarding } from "./offboarding/index.js";
 import { stopUserSchedules } from "./schedules/offboard.js";
 import { endUserShares } from "./threads/share-scope.js";
@@ -159,8 +161,16 @@ export interface ServerDepsOptions {
   readonly background?: BackgroundTasks;
   /** Sandbox wire seams and tuning (KOBE-24): approvals, UI, run hooks, wake, policy context. */
   readonly sandboxWire?: Partial<Omit<SandboxWireOptions, "db" | "databaseUrl">>;
+  /**
+   * D4: the process's isolation check (`IsolationGate.status()` in index.ts). Required, no
+   * default (KOBE-708): new runs start only while it answers `available`. Tests pass a fake from
+   * `testing/isolation.ts`.
+   */
+  readonly isolation: IsolationProbe;
   /** Run orchestrator seams and tuning (KOBE-30): agent resolution, budgets, timings. */
-  readonly runs?: Partial<Omit<RunOrchestratorOptions, "db" | "router">>;
+  readonly runs?: Partial<
+    Omit<RunOrchestratorOptions, "db" | "router" | "isolation" | "notebooks" | "workspace">
+  >;
   /** Where registered connectors may point (KOBE-100); default: https, port 443, public addresses. */
   readonly connectors?: Partial<ConnectorUrlPolicy>;
   /** Probes a registered connector's tools through the MCP proxy (KOBE-101); unset = cannot pin. */
@@ -388,6 +398,8 @@ export interface ServerDeps {
   readonly skillDraftTool: SkillDraftTool;
   /** Notebook cells and outputs in members' workspaces (KOBE-464); bound like `skillDraftTool`. */
   readonly notebookFiles: NotebookFiles;
+  /** A run's attachments and viewed file (KOBE-144, KOBE-462); bound like `skillDraftTool`. */
+  readonly runWorkspace: RunWorkspaceSlot;
   /** Exports answer ratings as Langfuse scores (KOBE-275); undefined when tracing has no scores. */
   readonly feedbackScores: FeedbackScores | undefined;
   /** Creates an email+password user (and optional site role) atomically, without sign-up. */
@@ -609,8 +621,13 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     listen,
   });
   const modelTokenDefaults = options.modelTokenDefaults ?? MODEL_TOKEN_DEFAULTS;
+  // Attachments and the viewed file (KOBE-144, KOBE-462); `index.ts` binds the workspace store.
+  const runWorkspace = createRunWorkspace();
   const runs: ServerRunOrchestrator = new DbRunOrchestrator({
     ...options.runs,
+    isolation: options.isolation,
+    notebooks: notebookFiles,
+    workspace: runWorkspace,
     modelTokenDefaults,
     agents: runAgents,
     budget: options.runs?.budget ?? DB_RUN_BUDGET_GATE,
@@ -620,7 +637,6 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     prefetchQuery: (query) => memoryEmbeddings.prefetchQuery(query),
   });
   late.runs = runs;
-  runs.useNotebooks(notebookFiles);
   approvals.bind({
     router: sandboxWire.router,
     onRunEnded: (event) => runs.onRunEnded(event),
@@ -797,6 +813,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     projectMounts,
     skillDraftTool,
     notebookFiles,
+    runWorkspace,
     feedbackScores,
     async createUserWithPassword({ email, name, password }, { siteRole, recordSetup } = {}) {
       const ctx = await auth.$context;

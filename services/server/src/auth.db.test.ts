@@ -7,6 +7,7 @@ import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
 import { MemoryMailer } from "./testing/mailer.js";
 import { SoftwareAuthenticator } from "./testing/webauthn.js";
 import { totpFromUri } from "./testing/totp.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 const PUBLIC_URL = "http://kobe.test";
 const SETUP_TOKEN = "setup-token-for-tests-0123456789";
@@ -101,6 +102,7 @@ beforeAll(async () => {
   database = await createTestDatabase(testServerUrl());
   admin = new pg.Pool({ connectionString: database.adminUrl });
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "s".repeat(48),

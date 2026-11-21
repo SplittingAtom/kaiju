@@ -26,6 +26,7 @@ import { loadEgressHeaderSecrets } from "./egress/config.js";
 import { deliverNotificationEmails } from "./notifications/email.js";
 import { EvalRunner } from "./agents/eval/service.js";
 import { createIsolationGate } from "./isolation/gate.js";
+import type { IsolationProbe } from "./runs/seams.js";
 import { listRuntimeClasses } from "./isolation/kubernetes.js";
 import { logger } from "./logger.js";
 import { createSmtpMailer } from "./mail/mailer.js";
@@ -115,12 +116,41 @@ const serverCallKey = serverCallKeyFromEnv(process.env);
 // The wire is built before the sandbox provider exists: its waker is set once the provider is.
 const waker = createDeferredWaker();
 const isServer = config.process === "server";
+// Spec D4: the process's own isolation check (startup + periodic). Agent work must go through
+// isolation.require(); without a verified gVisor/Kata RuntimeClass the server keeps serving.
+// Created before the dependencies: the run orchestrator requires its probe (KOBE-708). Its
+// audit needs their database, so it is bound once they exist (before `isolation.start()`).
+const isolationAudit: { record?: ReturnType<typeof isolationAuditor> } = {};
+const isolation = createIsolationGate({
+  runtimeClassName: config.runtimeClassName,
+  listRuntimeClasses,
+  // A transient API failure at boot is retried before the pod can turn ready (KOBE-125).
+  startupAttempts: 5,
+  onChange: (status) => {
+    void isolationAudit.record?.(status);
+    if (status.state === "verified") {
+      logger.info(
+        { runtimeClass: status.runtimeClassName, handler: status.handler },
+        "isolation verified: agents enabled",
+      );
+    } else if (status.state === "missing") {
+      logger.error({ runtimeClass: status.runtimeClassName }, `agents disabled: ${status.message}`);
+    }
+  },
+});
+// New runs are refused at once unless the isolation runtime is verified (sandbox creation
+// enforces it regardless through isolation.require()).
+const isolationProbe: IsolationProbe = () => {
+  const { state } = isolation.status();
+  return state === "verified" ? "available" : state;
+};
 let deps: ServerDeps | undefined;
 if (config.process === "scheduler") {
   // KOBE-174: the scheduler fires runs through the same orchestrator and sandbox wire router.
   deps = createServerDeps({
     databaseUrl: config.databaseUrl,
     dbTimeouts: config.dbTimeouts,
+    isolation: isolationProbe,
     // KOBE-736: the scheduler serves no event streams, so its stream pool never opens.
     dbPool: { max: config.dbPools.max, applicationName: "kobe-scheduler" },
     listen: { applicationName: "kobe-scheduler-listen" },
@@ -137,6 +167,7 @@ if (config.process === "scheduler") {
   deps = createServerDeps({
     databaseUrl: config.databaseUrl,
     dbTimeouts: config.dbTimeouts,
+    isolation: isolationProbe,
     dbPool: { max: config.dbPools.max, applicationName: "kobe-server" },
     listen: { applicationName: "kobe-server-listen" },
     eventStream: { poolMax: config.dbPools.streamMax },
@@ -276,32 +307,7 @@ function checkConnectionBudgetSoon(): void {
   );
 }
 
-// Spec D4: the process's own isolation check (startup + periodic). Agent work must go through
-// isolation.require(); without a verified gVisor/Kata RuntimeClass the server keeps serving.
-const auditIsolation = deps ? isolationAuditor(deps.database.db) : undefined;
-const isolation = createIsolationGate({
-  runtimeClassName: config.runtimeClassName,
-  listRuntimeClasses,
-  // A transient API failure at boot is retried before the pod can turn ready (KOBE-125).
-  startupAttempts: 5,
-  onChange: (status) => {
-    void auditIsolation?.(status);
-    if (status.state === "verified") {
-      logger.info(
-        { runtimeClass: status.runtimeClassName, handler: status.handler },
-        "isolation verified: agents enabled",
-      );
-    } else if (status.state === "missing") {
-      logger.error({ runtimeClass: status.runtimeClassName }, `agents disabled: ${status.message}`);
-    }
-  },
-});
-// New runs are refused at once while the isolation runtime is missing (sandbox creation enforces
-// it regardless through isolation.require()).
-deps?.runs.useIsolation(() => {
-  const { state } = isolation.status();
-  return state === "verified" ? "available" : state;
-});
+if (deps) isolationAudit.record = isolationAuditor(deps.database.db);
 // The scheduler only fires runs: the server's background jobs below run on server replicas.
 const serverDeps = isServer ? deps : undefined;
 isolation.start().catch((err: unknown) => logger.error({ err }, "isolation check failed"));
@@ -366,11 +372,15 @@ if (workspaceSync && deps) {
   deps.skillDraftTool.use(workspaceSync);
   // Notebook cells and their outputs (KOBE-464) live in the same store.
   deps.notebookFiles.use(workspaceSync);
-  deps.runs.useAttachments(
-    createAttachmentStager({ db: deps.database.db, sync: workspaceSync, settings: uploadSettings }),
-  );
   // A message's viewed file (KOBE-462) is read from the member's synced workspace.
-  deps.runs.useViewing(createViewingReader(deps.database.db, workspaceSync));
+  deps.runWorkspace.use({
+    attachments: createAttachmentStager({
+      db: deps.database.db,
+      sync: workspaceSync,
+      settings: uploadSettings,
+    }),
+    viewing: createViewingReader(deps.database.db, workspaceSync),
+  });
 }
 if (sandbox && syncSettings?.enabled && !s3) {
   logger.warn("object storage is not configured (s3.bucket): workspace sync is off");

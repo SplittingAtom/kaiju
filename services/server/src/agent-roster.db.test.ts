@@ -9,6 +9,7 @@ import { seedGalleryAgents } from "./gallery/seed.js";
 import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
 import { TestBrowser } from "./testing/browser.js";
 import { MemoryMailer } from "./testing/mailer.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 /**
  * Agent rosters (KOBE-566, spec agents-roster AR6, AR7, AR16, §5, §6.3-6.5, §6.8, §6.9): the
@@ -45,6 +46,7 @@ async function sql<T extends pg.QueryResultRow>(text: string, args: unknown[] = 
 beforeAll(async () => {
   database = await createTestDatabase(testServerUrl());
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "t".repeat(48),
