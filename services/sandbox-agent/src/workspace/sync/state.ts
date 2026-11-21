@@ -19,6 +19,13 @@ export interface Known {
    * new path's rows (review R2); the next row of this path replaces it.
    */
   readonly moved?: true;
+  /**
+   * KOBE-733: the local file's ctime and inode when it was last known equal to this content
+   * (pushed from it, or re-hashed and found equal). Absent (a restored or pulled file, or state
+   * from before): its content is re-hashed once before it counts as unchanged for the proof.
+   */
+  readonly ctimeMs?: number;
+  readonly ino?: number;
 }
 
 export const COMMIT_BATCH = 250;

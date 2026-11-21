@@ -2019,8 +2019,13 @@ true` lets the hibernation sweep delete a sandbox hibernated for `dormantDays` (
   only, and so blocking: symlinks, special files, names the sync refuses, files over
   `sandbox.workspaceSync.maxFileSize`, unreadable files. Not restored by design: `.venv`,
   `node_modules`, `__pycache__`, empty folders and `.kobe/` (Pi sessions, rebuilt from Postgres).
-  The reaper also refuses content marked lost in storage, waiting commands and legal holds, and
-  keeps the row locked until the old PVC is gone so the next wake gets a fresh volume. Needs
+  The proof also needs a quiet sandbox: no kill or reclaim failed during the agent's life, and
+  `/proc` shows no process but the agent's own; agents without Pi identities never send it, and the
+  server refuses one that does not say it runs them. Each proof is audited (`sandbox.volume_proof`,
+  accepted or refused). The reaper also refuses content marked lost in storage, waiting commands and
+  legal holds; a wake that comes while the old PVC is still terminating waits for it (≤ 60 s). Of
+  file modes only the executable bit is restored. There is no k3d end-to-end test of
+  wake-after-reclaim yet. Needs
   `sandbox.workspaceSync.enabled` and `s3.*` (otherwise the server logs a warning and reclaims
   nothing). Each reclaim is audited as `sandbox.volume_reclaimed`. The server needs `get` on
   `resourcequotas` in team namespaces (chart RBAC) to report a full quota.

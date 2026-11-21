@@ -72,11 +72,6 @@ class Provider implements LifecycleProvider {
   deleteVolume = async (_team: unknown, pvc: string): Promise<void> => {
     this.calls.push(`deleteVolume:${pvc}`);
   };
-
-  awaitVolumeGone = async (_team: unknown, pvc: string): Promise<boolean> => {
-    this.calls.push(`gone:${pvc}`);
-    return true;
-  };
 }
 
 let h: Harness;
@@ -118,9 +113,15 @@ async function awake(): Promise<string> {
 }
 
 /** The agent's `POST flushed` at the end of its shutdown, as the route records it. */
-const flushed = (sandboxId: string, connectionId = CONN) =>
+const flushed = async (sandboxId: string, connectionId = CONN) =>
+  (
+    await withTeam(h.deps.database.db, team, (tx) =>
+      recordFlushProof(tx, { teamId: team, userId: member, sandboxId }, connectionId),
+    )
+  ).proven;
+const flushedOutcome = (sandboxId: string) =>
   withTeam(h.deps.database.db, team, (tx) =>
-    recordFlushProof(tx, { teamId: team, userId: member, sandboxId }, connectionId),
+    recordFlushProof(tx, { teamId: team, userId: member, sandboxId }, CONN),
   );
 
 /** A hibernated row, `days` ago, with or without a proof taken at its hibernation. */
@@ -211,8 +212,8 @@ describe("the agent's shutdown proof", () => {
 
   it("is refused before the hibernation, from another sandbox, or from an earlier connection", async () => {
     const sandboxId = await awake();
-    // Still running: a shutdown that is not a hibernation proves nothing.
-    expect(await flushed(sandboxId)).toBe(false);
+    // Still running: a shutdown that is not a hibernation proves nothing (the agent retries once).
+    expect(await flushedOutcome(sandboxId)).toEqual({ proven: false, reason: "not_hibernated" });
     await lifecycle(true).hibernate(target());
     expect(await flushed(randomUUID())).toBe(false);
     expect(await flushed(sandboxId, randomUUID())).toBe(false);
@@ -276,11 +277,9 @@ describe("the dormant-volume reaper", () => {
     const lc = lifecycle(true);
     const result = await lc.sweep();
     expect(result.reclaimed).toEqual([target()]);
-    // The row stays locked until the old volume is gone: a wake never meets it Terminating.
     expect(provider.calls).toEqual([
       `destroy:${member}:drop`,
       `deleteVolume:workspace-u-${member}`,
-      `gone:workspace-u-${member}`,
     ]);
     expect(await row()).toMatchObject({
       state: "hibernated",

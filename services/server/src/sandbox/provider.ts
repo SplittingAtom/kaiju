@@ -61,6 +61,9 @@ import { diagnoseStall, isPodReady, type StallDiagnosis } from "./stall-diagnosi
 import { reconcileTeamNamespaces, type TeamReconcileSummary } from "./team-reconcile.js";
 
 /** A team namespace converged except for these scoped ResourceQuotas (members are unaffected). */
+/** KOBE-733: how long a new claim waits for a reclaimed volume of the same name to go. */
+const VOLUME_TERMINATING_WAIT_MS = 60_000;
+
 export class TeamQuotaDegradedError extends Error {
   constructor(
     readonly namespace: string,
@@ -309,11 +312,6 @@ export interface SandboxProvider {
   ): Promise<DestroyResult>;
   /** Deletes a retained workspace volume (`workspace-u-<user>`) of the team; missing is fine. */
   deleteVolume(team: TeamRef, pvcName: string): Promise<void>;
-  /**
-   * KOBE-733: waits until the workspace volume is gone (not just Terminating), at most `timeoutMs`;
-   * true when it is. A reclaim waits for it so the next wake never meets the old volume.
-   */
-  awaitVolumeGone(team: TeamRef, pvcName: string, timeoutMs: number): Promise<boolean>;
   /** Verifies a sandbox pod's bootstrap token (TokenReview) and resolves who it is. */
   identifyBootstrapToken(token: string): Promise<BootstrapIdentity>;
   /**
@@ -625,6 +623,11 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
   ): Promise<KubeObject> => {
     const name = evalSpec ? evalClaimName(evalSpec.threadId) : claimName(userId);
     let claim = await kube.get(CLAIM(namespace, name));
+    if (!claim && !evalSpec) {
+      // KOBE-733: right after a reclaim the old volume (same name) may still be terminating; a
+      // new claim must not meet it. Wait for it to go, bounded (GC finishes it otherwise).
+      await untilVolumeNotTerminating(namespace, workspacePvcName(name));
+    }
     if (!claim) {
       try {
         claim = await kube.create(
@@ -964,15 +967,11 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
     }
   };
 
-  const awaitVolumeGone = async (
-    team: TeamRef,
-    pvcName: string,
-    timeoutMs: number,
-  ): Promise<boolean> => {
-    const end = now() + timeoutMs;
+  const untilVolumeNotTerminating = async (namespace: string, pvcName: string): Promise<void> => {
+    const end = now() + VOLUME_TERMINATING_WAIT_MS;
     for (;;) {
-      if (!(await kube.get(PVC(teamNamespaceName(team), pvcName)))) return true;
-      if (now() >= end) return false;
+      const pvc = await kube.get(PVC(namespace, pvcName));
+      if (!pvc?.metadata.deletionTimestamp || now() >= end) return;
       await sleep(1000);
     }
   };
@@ -1247,7 +1246,6 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
     hibernateSandbox,
     destroySandbox,
     deleteVolume,
-    awaitVolumeGone,
     identifyBootstrapToken,
     recheckAssignment,
     reconcileIsolation,

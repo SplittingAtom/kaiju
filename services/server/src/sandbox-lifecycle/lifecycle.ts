@@ -70,7 +70,7 @@ function recordWakeSpans(spans: readonly TimingSpan[], runId: string | undefined
 
 export type LifecycleProvider = Pick<SandboxProvider, "wakeSandbox" | "hibernateSandbox"> &
   Partial<ReadyProvider> &
-  Partial<Pick<SandboxProvider, "destroySandbox" | "deleteVolume" | "awaitVolumeGone">>;
+  Partial<Pick<SandboxProvider, "destroySandbox" | "deleteVolume">>;
 
 export interface LifecycleOptions {
   readonly db: KobeDb;
@@ -129,8 +129,6 @@ export interface SandboxLifecycle {
 }
 
 const WAKE_SAMPLES = 64;
-/** How long a reclaim waits for the old workspace volume to be deleted (KOBE-733). */
-const VOLUME_GONE_WAIT_MS = 60_000;
 
 type WakingReason =
   "hibernated" | "first_start" | "restarted_out_of_space" | "restarted_out_of_memory" | "restarted";
@@ -396,13 +394,9 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
         await deleteVolume(team, locked.pvc).catch((err: unknown) =>
           log.warn({ err, team_id: target.teamId }, "reclaim: volume delete failed; left to GC"),
         );
-        // A wake waits on this row lock: keep it until the old volume is really gone, so the new
-        // sandbox (same PVC name) never meets it Terminating. Bounded; GC finishes it otherwise.
-        const gone = await provider.awaitVolumeGone?.(team, locked.pvc, VOLUME_GONE_WAIT_MS);
-        if (gone === false) {
-          log.warn({ team_id: target.teamId }, "reclaim: old volume still terminating");
-        }
       }
+      // The hold and row locks are not kept while the volume terminates: a wake that comes now
+      // waits for it in the provider before creating the new claim (KOBE-733).
       await forgetReclaimedSandbox(tx, target);
       await tx.execute(sql.raw(`SET LOCAL lock_timeout = '0'`));
       await recordAudit(tx, {

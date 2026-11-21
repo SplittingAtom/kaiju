@@ -26,6 +26,18 @@ Owner decision: reclaim ships **off** (`sandbox.hibernation.reclaim.enabled: fal
   `reserveUpload`/`saveState`) and any wake (`beginWake`) clear it. No call (killed pod, failed
   push, timeout, older image, old server answering 404) = never reclaimed. The earlier sync-now
   `complete` variant (capability, bus hint) was removed; Refresh keeps its KOBE-599 meaning.
+- **Review g63-2 hardening:** the proof also needs (a) no failed kill-all or reclaim at any time in
+  the agent's life (`PiIdentities.cleanupFailed`, never reset) and (b) a quiet `/proc` right before
+  the final check (only the agent, its ancestors and its own agent-uid children; zombies ignored;
+  unreadable = not quiet). Without Pi identities the agent offers no proof and the server's schema
+  refuses one without `pi_identities: true`. "Unchanged" now needs ctime and inode too: a file
+  whose ctime is newer (or another inode) is re-hashed, and an unrecorded one (restored, pulled, or
+  after a restart: the migration) is re-hashed once (all of them in the proof's strict check, at
+  most 200 per ordinary push). The server locks the row before checking, so a proof that races the
+  hibernation commit waits for it; `not_hibernated` gets one agent retry after 2 s. Every proof is
+  logged and audited (`sandbox.volume_proof`). The reaper no longer holds the hold and row locks
+  while the PVC terminates; instead the provider waits (≤ 60 s) for a terminating volume of the
+  same name before creating a new claim.
 - **What does not block, by decision:** `.kobe/` (Pi sessions and agent state; D15: sessions are
   rebuilt from Postgres, so a reclaimed volume resumes conversations), interrupted-download temp
   files, the rebuildable `node_modules`/`__pycache__`/`.venv`, and **empty folders, which are not

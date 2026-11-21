@@ -321,9 +321,21 @@ export type WorkspaceRestoreReport = z.infer<typeof workspaceRestoreReportSchema
  * open (the hibernation closed it) and nothing is pending; any later upload or manifest change
  * clears the proof, and so does any wake. Never sent by an agent that is not sure.
  */
-export const workspaceFlushedRequestSchema = z.strictObject({ connection_id: uuidSchema });
+export const workspaceFlushedRequestSchema = z.strictObject({
+  connection_id: uuidSchema,
+  /** The agent runs every Pi, tool and kernel under identity uids (KOBE-71); required. */
+  pi_identities: z.literal(true),
+});
 export type WorkspaceFlushedRequest = z.infer<typeof workspaceFlushedRequestSchema>;
-export const workspaceFlushedResponseSchema = z.strictObject({ proven: z.boolean() });
+/**
+ * `reason` when not proven: `not_hibernated` (the hibernation is not committed yet; the agent
+ * retries once), `refused` (another sandbox or connection, an upload in flight).
+ */
+export const WORKSPACE_FLUSH_REFUSALS = ["not_hibernated", "refused"] as const;
+export const workspaceFlushedResponseSchema = z.strictObject({
+  proven: z.boolean(),
+  reason: z.enum(WORKSPACE_FLUSH_REFUSALS).optional(),
+});
 export type WorkspaceFlushedResponse = z.infer<typeof workspaceFlushedResponseSchema>;
 
 /** Error body of every non-2xx answer. */

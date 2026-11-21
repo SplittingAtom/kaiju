@@ -27,6 +27,17 @@ export {
 } from "./sync/types.js";
 
 const RUN_END_DEBOUNCE_MS = 2_000;
+/** KOBE-733: the pause before the one retry of a proof the server got before the hibernation. */
+const PROOF_RETRY_MS = 2_000;
+
+/** What the agent hands its final flush to prove the copy complete (KOBE-733). */
+export interface ReclaimProof {
+  /** The agent's last wire connection (`hello.ack`), which the hibernation closed. */
+  readonly connectionId: string;
+  /** Run right before the completeness check: no other process alive, no failed cleanup. */
+  readonly quiet: () => Promise<boolean>;
+  readonly retryDelayMs?: number;
+}
 
 /**
  * kobe-sandbox-agent's side of workspace sync (KOBE-27, D13: the agent "syncs S3 ↔ /workspace").
@@ -181,12 +192,13 @@ export class WorkspaceSync {
    * or pull in flight finishes first (within the deadline): nothing of this sync writes into the
    * workspace after the flush, its saved revision (KOBE-304) included.
    *
-   * KOBE-733: with `connectionId` (the agent's last wire connection), called once every Pi, tool
-   * process and kernel is gone, a successful push is followed by a fresh completeness check; only
-   * when it finds nothing local-only is the reclaim proof sent (`POST flushed`). Any failure,
+   * KOBE-733: with `proof` (the agent's last wire connection and its quiet check), called once
+   * every Pi, tool process and kernel is gone, a successful push is followed by the quiet check
+   * and a fresh completeness check; only when both pass is the reclaim proof sent (`POST
+   * flushed`), retried once if the server has not committed the hibernation yet. Any failure,
    * timeout or doubt sends nothing, so the volume is kept.
    */
-  async flush(deadlineMs: number, connectionId?: string): Promise<PushStats | undefined> {
+  async flush(deadlineMs: number, proof?: ReclaimProof): Promise<PushStats | undefined> {
     this.#s.stopped = true;
     clearInterval(this.#timer);
     clearTimeout(this.#soon);
@@ -208,8 +220,8 @@ export class WorkspaceSync {
         return undefined;
       }
       this.#s.o.logger.info({ ...stats }, "workspace flushed");
-      if (connectionId !== undefined) {
-        const proven = await Promise.race([this.#prove(connectionId), timeout]);
+      if (proof !== undefined) {
+        const proven = await Promise.race([this.#prove(proof), timeout]);
         this.#s.o.logger.info({ proven: proven === true }, "workspace reclaim proof");
       }
       return stats;
@@ -253,10 +265,18 @@ export class WorkspaceSync {
   }
 
   /** The completeness check, then the proof (false on any doubt or error; never throws). */
-  async #prove(connectionId: string): Promise<boolean> {
+  async #prove(proof: ReclaimProof): Promise<boolean> {
     try {
+      if (!(await proof.quiet())) {
+        this.#s.o.logger.warn({}, "workspace reclaim proof not sent: other processes alive");
+        return false;
+      }
       if (!(await this.#complete())) return false;
-      return await this.#s.o.client.flushed(connectionId);
+      const first = await this.#s.o.client.flushed(proof.connectionId);
+      if (first.proven || first.reason !== "not_hibernated") return first.proven;
+      // The server may still be committing the hibernation: once more, shortly after.
+      await new Promise((r) => setTimeout(r, proof.retryDelayMs ?? PROOF_RETRY_MS).unref());
+      return (await this.#s.o.client.flushed(proof.connectionId)).proven;
     } catch (error) {
       warn(this.#s, "workspace reclaim proof not sent", error);
       return false;
@@ -266,7 +286,7 @@ export class WorkspaceSync {
   /** After a push: whether a fresh plan finds every local change in the durable copy. */
   async #complete(): Promise<boolean> {
     const s = this.#s;
-    const plan = await serial(s, () => planPush(s));
+    const plan = await serial(s, () => planPush(s, { strict: true }));
     return (
       plan.changes.length === 0 &&
       plan.resends.length === 0 &&

@@ -39,6 +39,12 @@ export interface LocalFile {
   /** Whole milliseconds. */
   readonly mtimeMs: number;
   readonly executable: boolean;
+  /**
+   * KOBE-733: status-change time and inode. Unlike size and mtime they cannot be set back by a
+   * tool (`touch -r`, `cp -p`, `rsync -t`, archive extraction), so a rewrite always moves them.
+   */
+  readonly ctimeMs?: number;
+  readonly ino?: number;
 }
 
 export interface ScanResult {
@@ -99,12 +105,20 @@ export async function localProjectSlugs(root: string): Promise<string[]> {
   }
 }
 
-export function toLocal(stat: { size: number; mtimeMs: number; mode: number }): LocalFile {
+export function toLocal(stat: {
+  size: number;
+  mtimeMs: number;
+  mode: number;
+  ctimeMs?: number;
+  ino?: number;
+}): LocalFile {
   return {
     size: stat.size,
     // Rounded: an mtime set from whole milliseconds may read back a hair below them.
     mtimeMs: Math.round(stat.mtimeMs),
     executable: (stat.mode & 0o100) !== 0,
+    ...(stat.ctimeMs === undefined ? {} : { ctimeMs: stat.ctimeMs }),
+    ...(stat.ino === undefined ? {} : { ino: stat.ino }),
   };
 }
 

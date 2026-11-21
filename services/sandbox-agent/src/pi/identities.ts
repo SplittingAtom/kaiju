@@ -95,6 +95,16 @@ export class PiIdentities {
   readonly #waiting: ((identity: PiIdentity) => void)[] = [];
   readonly #run: HelperRunner;
   readonly #killing = new Map<number, Promise<void>>();
+  #cleanupFailed = false;
+
+  /**
+   * KOBE-733: some kill-all or reclaim failed at some point in this agent's life, so a process of
+   * a Pi or kernel identity may still be running. Never reset: the agent then never proves its
+   * workspace copy complete.
+   */
+  get cleanupFailed(): boolean {
+    return this.#cleanupFailed;
+  }
 
   constructor(
     helper: string,
@@ -205,7 +215,10 @@ export class PiIdentities {
         const { code, stderr } = await this.#run(this.helper, [String(target.uid), "--kill-all"]);
         if (code !== 0) failures.push(`kill-all as ${target.uid} failed: ${stderr}`);
       }
-      if (failures.length > 0) throw new PiIdentityError(failures.join("; "));
+      if (failures.length > 0) {
+        this.#cleanupFailed = true;
+        throw new PiIdentityError(failures.join("; "));
+      }
     });
     const settled = next.catch(() => undefined);
     this.#killing.set(identity.uid, settled);
@@ -226,7 +239,10 @@ export class PiIdentities {
     const next = previous.then(async () => {
       const target = partnerOf(identity);
       const { code, stderr } = await this.#run(this.helper, [String(target.uid), "--kill-all"]);
-      if (code !== 0) throw new PiIdentityError(`kill-all as ${target.uid} failed: ${stderr}`);
+      if (code !== 0) {
+        this.#cleanupFailed = true;
+        throw new PiIdentityError(`kill-all as ${target.uid} failed: ${stderr}`);
+      }
     });
     const settled = next.catch(() => undefined);
     this.#killing.set(identity.uid, settled);
@@ -285,6 +301,7 @@ export class PiIdentities {
       if (code === 0) return;
       const delay = delays[attempt];
       if (delay === undefined) {
+        this.#cleanupFailed = true;
         throw new PiIdentityError(
           `reclaim as ${identity.uid} failed${code === null ? " (timed out)" : ""}: ${stderr}`,
         );
@@ -319,11 +336,12 @@ export class PiIdentities {
   /** Synchronous {@link killAll} for the agent's own exit (no event loop left to wait on). */
   killAllSync(identity: PiIdentity): void {
     for (const target of this.#uidsOf(identity)) {
-      spawnSync(this.helper, [String(target.uid), "--kill-all"], {
+      const out = spawnSync(this.helper, [String(target.uid), "--kill-all"], {
         stdio: "ignore",
         env: { PATH: "/usr/local/bin:/usr/bin:/bin" },
         timeout: HELPER_TIMEOUT_MS,
       });
+      if (out.status !== 0) this.#cleanupFailed = true;
     }
   }
 

@@ -26,16 +26,28 @@ export interface ReclaimSettings {
   readonly batchPerTeam?: number;
 }
 
+export type FlushProofOutcome =
+  | { readonly proven: true }
+  | { readonly proven: false; readonly reason: "not_hibernated" | "refused" };
+
 /**
  * The agent's shutdown proof (`POST flushed`): sets `volume_synced_at` when the caller's sandbox is
  * the hibernated one, the named connection is the one its hibernation closed, and no upload is
- * reserved. Returns whether it was recorded.
+ * reserved. The row is locked first and checked in a separate statement, so a proof that arrives
+ * while the hibernation is still committing waits for it and then sees it. `not_hibernated`: the
+ * row is not hibernated (yet), and the agent retries once.
  */
 export async function recordFlushProof(
   tx: KobeTx,
   caller: SandboxTarget & { readonly sandboxId: string },
   connectionId: string,
-): Promise<boolean> {
+): Promise<FlushProofOutcome> {
+  const row = await tx.execute<{ state: string; sandbox_id: string | null }>(sql`
+    SELECT state, sandbox_id FROM sandboxes
+     WHERE team_id = ${caller.teamId} AND user_id = ${caller.userId} FOR UPDATE`);
+  const current = row.rows[0];
+  if (current?.sandbox_id !== caller.sandboxId) return { proven: false, reason: "refused" };
+  if (current.state !== "hibernated") return { proven: false, reason: "not_hibernated" };
   const res = await tx.execute(sql`
     UPDATE sandboxes s SET volume_synced_at = now()
      WHERE s.team_id = ${caller.teamId} AND s.user_id = ${caller.userId}
@@ -49,7 +61,7 @@ export async function recordFlushProof(
          SELECT 1 FROM workspace_sync w
           WHERE w.team_id = ${caller.teamId} AND w.user_id = ${caller.userId}
             AND w.pending_blobs = 0)`);
-  return (res.rowCount ?? 0) > 0;
+  return (res.rowCount ?? 0) > 0 ? { proven: true } : { proven: false, reason: "refused" };
 }
 
 /** Any upload or manifest change after the proof: the volume is no longer proven covered. */

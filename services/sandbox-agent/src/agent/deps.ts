@@ -5,6 +5,7 @@ import type { McpWiring } from "../mcp/pi-mcp-config.js";
 import type { ModelWiring } from "../models/types.js";
 import type { KernelManager } from "../notebook/manager.js";
 import type { PiIdentities } from "../pi/identities.js";
+import type { ReclaimProof } from "../workspace/sync.js";
 import type { SkillEvalHooks } from "../skill-eval/hooks.js";
 import type { SkillStore } from "../skills/store.js";
 import type { ExecWiring } from "../threads/exec-wiring.js";
@@ -47,6 +48,8 @@ export interface AgentDeps {
   readonly mcp?: McpWiring | undefined;
   /** Pi identities (KOBE-71); absent: Pi runs as the agent's uid. */
   readonly identities?: PiIdentities | undefined;
+  /** `/proc` for the reclaim proof's quiet check (KOBE-733); tests point it at a fake. */
+  readonly procRoot?: string;
   /** Workspace sync (KOBE-27): restore before runs, push after them and before stopping. */
   readonly workspace?: WorkspaceHooks;
   /**
@@ -85,7 +88,7 @@ export interface WorkspaceHooks {
    * Final push at shutdown; with `connectionId` (KOBE-733) also the reclaim proof when the copy is
    * then complete.
    */
-  flush(deadlineMs: number, connectionId?: string): Promise<unknown>;
+  flush(deadlineMs: number, proof?: ReclaimProof): Promise<unknown>;
   /**
    * The member moved files (`workspace.moved`, KOBE-304): replay the server's moves as local
    * renames now. Present: the agent announces `workspace_moves`.

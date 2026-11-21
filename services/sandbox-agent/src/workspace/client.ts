@@ -148,14 +148,14 @@ export class SyncClient {
   }
 
   /**
-   * KOBE-733: the reclaim proof at the end of a shutdown (`POST flushed`); true when the server
-   * recorded it. Never retried past the busy retries: a missing proof only keeps the volume.
+   * KOBE-733: the reclaim proof at the end of a shutdown (`POST flushed`; sent only by an agent
+   * running Pi identities). `proven` when the server recorded it; `reason` says why not.
    */
-  async flushed(connectionId: string): Promise<boolean> {
-    const out = await this.#json(workspaceFlushedResponseSchema, "POST", "/flushed", {
+  async flushed(connectionId: string): Promise<{ proven: boolean; reason?: string | undefined }> {
+    return this.#json(workspaceFlushedResponseSchema, "POST", "/flushed", {
       connection_id: connectionId,
+      pi_identities: true,
     });
-    return out.proven;
   }
 
   async restoreReport(report: WorkspaceRestoreReport): Promise<void> {

@@ -22,6 +22,8 @@ import { isConflictCopyOf } from "@kobe/protocol";
 import { WorkspaceSync, type ConflictReport } from "./sync.js";
 
 const CONN = "6f1d2c3b-4a59-4e6d-8c7b-9a0b1c2d3e4f";
+/** The agent's proof: its last connection, and a quiet sandbox (KOBE-733). */
+const PROOF = { connectionId: CONN, quiet: () => Promise.resolve(true), retryDelayMs: 10 };
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
 const quiet = {
@@ -51,6 +53,7 @@ afterEach(async () => {
   server.blobs.clear();
   server.reports.length = 0;
   server.flushed.length = 0;
+  server.flushAnswers.length = 0;
   server.failWith = undefined;
   server.failDownloads = 0;
   server.horizon = 0;
@@ -360,8 +363,63 @@ describe("workspace sync (agent)", () => {
     const root = await volume();
     const sync = await started(root);
     await put(root, "late.txt", "written just before hibernation");
-    await sync.flush(5_000, CONN);
+    await sync.flush(5_000, PROOF);
     expect(server.content("late.txt")).toBe("written just before hibernation");
+    expect(server.flushed).toEqual([CONN]);
+  });
+
+  it("pushes a rewrite that kept size and mtime (ctime moved) before proving (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "data.txt", "aaaa");
+    await sync.push();
+    const before = await stat(path.join(root, "data.txt"));
+    // `cp -p` / `touch -r`: same size, mtime set back, different content.
+    await new Promise((r) => setTimeout(r, 20));
+    await writeFile(path.join(root, "data.txt"), "bbbb");
+    await utimes(path.join(root, "data.txt"), before.atime, before.mtime);
+    await sync.flush(5_000, PROOF);
+    expect(server.content("data.txt")).toBe("bbbb");
+    expect(server.flushed).toEqual([CONN]);
+  });
+
+  it("re-hashes once what it has no ctime for (a restart on a kept volume) (KOBE-733)", async () => {
+    const root = await volume();
+    const first = await started(root);
+    await put(root, "kept.txt", "1111");
+    await first.push();
+    await first.flush(5_000);
+    // A new agent on the same volume: its state comes from the manifest, without ctimes.
+    const second = await started(root);
+    const before = await stat(path.join(root, "kept.txt"));
+    await writeFile(path.join(root, "kept.txt"), "2222");
+    await utimes(path.join(root, "kept.txt"), before.atime, before.mtime);
+    await second.flush(5_000, PROOF);
+    expect(server.content("kept.txt")).toBe("2222");
+    expect(server.flushed).toEqual([CONN]);
+  });
+
+  it("sends no proof when other processes are alive or a cleanup failed (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "a.txt", "a");
+    await sync.flush(5_000, { connectionId: CONN, quiet: () => Promise.resolve(false) });
+    expect(server.content("a.txt")).toBe("a");
+    expect(server.flushed).toEqual([]);
+  });
+
+  it("retries the proof once when the hibernation is not committed yet (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    server.flushAnswers.push({ proven: false, reason: "not_hibernated" });
+    await sync.flush(5_000, PROOF);
+    expect(server.flushed).toEqual([CONN, CONN]);
+    // Refused for any other reason: never retried.
+    const other = await volume();
+    const again = await started(other);
+    server.flushed.length = 0;
+    server.flushAnswers.push({ proven: false, reason: "refused" });
+    await again.flush(5_000, PROOF);
     expect(server.flushed).toEqual([CONN]);
   });
 
@@ -375,7 +433,7 @@ describe("workspace sync (agent)", () => {
     const failing = await started(other);
     await put(other, "x.txt", "x");
     server.failWith = 500;
-    await failing.flush(5_000, CONN);
+    await failing.flush(5_000, PROOF);
     server.failWith = undefined;
     expect(server.flushed).toEqual([]);
   });
@@ -386,7 +444,7 @@ describe("workspace sync (agent)", () => {
     await put(root, "ok.txt", "synced");
     await put(root, "secret.txt", "owner-only");
     await chmod(path.join(root, "secret.txt"), 0o000);
-    await sync.flush(5_000, CONN);
+    await sync.flush(5_000, PROOF);
     expect(server.content("ok.txt")).toBe("synced");
     expect(server.flushed).toEqual([]);
   });
@@ -396,13 +454,13 @@ describe("workspace sync (agent)", () => {
     const sync = await started(root);
     await put(root, "real.txt", "real");
     await symlink("real.txt", path.join(root, "link.txt"));
-    await sync.flush(5_000, CONN);
+    await sync.flush(5_000, PROOF);
     expect(server.flushed).toEqual([]);
 
     const other = await volume();
     const named = await started(other);
     await put(other, "back\\slash.txt", "refused name");
-    await named.flush(5_000, CONN);
+    await named.flush(5_000, PROOF);
     expect(server.flushed).toEqual([]);
   });
 
@@ -414,7 +472,7 @@ describe("workspace sync (agent)", () => {
     await put(root, ".kobe/sessions/t.jsonl", "rebuilt from the server");
     await mkdir(path.join(root, "empty-folder"));
     await put(root, "app/main.py", "print(1)");
-    await sync.flush(5_000, CONN);
+    await sync.flush(5_000, PROOF);
     expect(server.content("app/main.py")).toBe("print(1)");
     expect(server.flushed).toEqual([CONN]);
   });
@@ -425,7 +483,7 @@ describe("workspace sync (agent)", () => {
     await put(old, "notes/plan.md", "the plan");
     await put(old, "data.csv", "a,b\n1,2\n");
     // The shutdown push and the proof the reaper needs.
-    await before.flush(5_000, CONN);
+    await before.flush(5_000, PROOF);
     expect(server.flushed).toEqual([CONN]);
     // Reclaimed: the next wake gets a new, empty volume.
     const fresh = await volume();

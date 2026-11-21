@@ -75,8 +75,9 @@ sandbox:
     # process stopped, then nothing local-only: no symlink, special file, unsyncable name, refused
     # or unreadable file), and no upload, wake or legal hold came after. Older sandbox images never
     # prove it. The member's next message starts a new sandbox that restores the workspace (empty
-    # folders, node_modules, __pycache__, .venv and .kobe are not restored). Needs workspaceSync and
-    # s3.*. Audited as sandbox.volume_reclaimed.
+    # folders, node_modules, __pycache__, .venv and .kobe are not restored, and of file modes only
+    # the executable bit is). Needs workspaceSync and s3.*. Audited as sandbox.volume_reclaimed.
+    # There is no k3d end-to-end test of wake-after-reclaim yet.
     reclaim:
       enabled: false
       dormantDays: 30

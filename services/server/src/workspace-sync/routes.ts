@@ -589,10 +589,26 @@ export function workspaceRoutes(deps: WorkspaceRoutesDeps): Hono<Vars> {
     if (limited) return limited;
     const body = workspaceFlushedRequestSchema.safeParse(await readJson(c));
     if (!body.success) return error(c, 400, "invalid_request", "Expected {connection_id}.");
-    const proven = await tx(caller, "other", (t) =>
-      recordFlushProof(t, caller, body.data.connection_id),
+    const outcome = await tx(caller, "other", async (t) => {
+      const result = await recordFlushProof(t, caller, body.data.connection_id);
+      await recordAudit(t, {
+        action: "sandbox.volume_proof",
+        actor: SYSTEM_ACTOR,
+        teamId: caller.teamId,
+        target: {
+          sandboxId: caller.sandboxId,
+          userId: caller.userId,
+          accepted: result.proven,
+          ...(result.proven ? {} : { reason: result.reason }),
+        },
+      });
+      return result;
+    });
+    log.info(
+      { team_id: caller.teamId, sandbox_id: caller.sandboxId, ...outcome },
+      "workspace reclaim proof",
     );
-    return c.json({ proven });
+    return c.json(outcome);
   });
 
   app.post("/restore-report", async (c) => {

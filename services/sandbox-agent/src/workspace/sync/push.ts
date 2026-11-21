@@ -28,6 +28,7 @@ import {
   sameAs,
   serial,
   warn,
+  type Known,
   type PlannedChange,
   type PushPlan,
   type SyncState,
@@ -160,7 +161,36 @@ export async function push(s: SyncState): Promise<PushStats> {
   };
 }
 
-export async function planPush(s: SyncState): Promise<PushPlan> {
+/** `k` with the ctime and inode of the local file it is known equal to. */
+function withCtime(k: Known, file: LocalFile): Known {
+  return {
+    ...k,
+    ...(file.ctimeMs === undefined ? {} : { ctimeMs: file.ctimeMs }),
+    ...(file.ino === undefined ? {} : { ino: file.ino }),
+  };
+}
+
+/** Files without a recorded ctime re-hashed per ordinary push (the rest wait; KOBE-733). */
+export const VERIFY_PER_PUSH = 200;
+
+/**
+ * Whether `file` is unchanged since `k` by its ctime and inode (KOBE-733): `true` proven,
+ * `false` changed since (ctime newer, another inode), `undefined` nothing recorded yet.
+ */
+function unchangedByCtime(file: LocalFile, k: Known): boolean | undefined {
+  if (k.ctimeMs === undefined || file.ctimeMs === undefined) return undefined;
+  return file.ino === k.ino && file.ctimeMs <= k.ctimeMs;
+}
+
+/**
+ * `strict` (the reclaim proof, KOBE-733): every file whose size and mtime match but whose ctime is
+ * newer or unrecorded is re-hashed. Otherwise those with a newer ctime always are, and at most
+ * {@link VERIFY_PER_PUSH} unrecorded ones per push (so the first proof after a wake is cheap).
+ */
+export async function planPush(
+  s: SyncState,
+  options: { readonly strict?: boolean } = {},
+): Promise<PushPlan> {
   const scan = await scanWorkspace(s.o.root, {
     skipDirs: s.o.skipDirs,
     maxFiles: s.o.maxFiles,
@@ -169,13 +199,40 @@ export async function planPush(s: SyncState): Promise<PushPlan> {
   let reverted = false;
   // Symlinks, special files and names the sync refuses stay local only (KOBE-733).
   let leftOut = scan.skipped;
+  let verifyBudget = options.strict ? Infinity : VERIFY_PER_PUSH;
   for (const [path, file] of scan.files) {
     const k = s.known.get(path);
     if (locked(s, path)) {
       if (await revertLocal(s, path, file)) reverted = true;
       continue;
     }
-    if (k && !k.deleted && sameAs(file, k) && file.executable === k.executable) continue;
+    if (k && !k.deleted && sameAs(file, k) && file.executable === k.executable) {
+      const byCtime = unchangedByCtime(file, k);
+      if (byCtime === true) continue;
+      if (byCtime === undefined && verifyBudget <= 0) continue; // verified on a later push
+      if (byCtime === undefined) verifyBudget -= 1;
+      // Same size and mtime, but the content may have been rewritten: hash it.
+      const again = await hashFile(s.o.root, path);
+      if (!again || again.size !== file.size) {
+        leftOut += 1;
+        continue;
+      }
+      if (again.sha256 === k.sha256) {
+        s.known.set(path, withCtime(k, file));
+        continue;
+      }
+      changes.push({
+        op: "put",
+        path,
+        base_rev: k.rev,
+        sha256: again.sha256,
+        size: again.size,
+        mtime_ms: file.mtimeMs,
+        executable: file.executable,
+        local: file,
+      });
+      continue;
+    }
     const refused = s.refused.get(path);
     if (refused && sameAs(file, refused)) {
       leftOut += 1;
@@ -328,7 +385,10 @@ export async function applyResult(
   reject: () => void,
 ): Promise<void> {
   if (result.status === "applied") {
-    s.known.set(result.path, known(result.entry));
+    const entry = known(result.entry);
+    // The local file this content was read from (KOBE-733): later rewrites move its ctime.
+    const local = change.op === "put" && change.sha256 === entry.sha256 ? change.local : undefined;
+    s.known.set(result.path, local ? withCtime(entry, local) : entry);
     s.refused.delete(result.path);
   } else if (result.status === "noop") {
     s.known.delete(result.path);
