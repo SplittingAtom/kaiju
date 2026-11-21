@@ -1,8 +1,9 @@
 # Rename: Kobe becomes Kaiju
 
 Status: **approved** (Chris, 2026-11-21): every recommendation in §9 accepted. Hadron spec
-`7423e332`; tickets RN-1..RN-10 filed (§10). Work starts after the 2026-11-20 review tickets have
-merged (RN7). RN1, whether the name is clear to use, is Chris's check before the first step.
+`7423e332`; tickets RN-1..RN-10 filed (§10). Work starts after the 2026-11-20 review tickets and the
+Workspace git integration (`docs/specs/workspace-git.md`, KOBE-757..769) have merged (RN7, order
+revised by Chris 2026-11-21). RN1, whether the name is clear to use, is Chris's check before the first step.
 Request (Chris, 2026-11-21): rename the project from Kobe to Kaiju.
 
 ## 1. Summary
@@ -167,16 +168,16 @@ install that upgrades in place instead:
 
 ## 9. Decisions (Chris, 2026-11-21: all recommendations accepted)
 
-| Id  | Question                                                                                                                                                                 | Decision                                                                                      |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| RN1 | Is the name clear to use? "Kaiju" is a common word and is used by other software projects; trademark, the GitHub name, ghcr namespace and any domain are yours to check. | Check before step 1; nothing else in this spec depends on the answer except whether to start. |
-| RN2 | Do new tickets keep the `KOBE-` key?                                                                                                                                     | Yes. One key across the project's history; a second key splits every search.                  |
-| RN3 | Do Postgres settings, roles, functions and persisted schema ids stay `kobe` (§3)?                                                                                        | Yes. Invisible, and each change is a risky data migration.                                    |
-| RN4 | Test cluster: fresh install under the new name with a restore, or upgrade in place?                                                                                      | Fresh install with restore.                                                                   |
-| RN5 | How long are `KOBE_*` variables and `x-kobe-team` accepted?                                                                                                              | One release, then removed.                                                                    |
-| RN6 | Spelling in running text: "Kaiju" always, lower case `kaiju` in code and commands?                                                                                       | Yes.                                                                                          |
-| RN7 | When? The rename conflicts with every open branch.                                                                                                                       | After the 2026-11-20 review tickets have merged and before the next feature spec starts.      |
-| RN8 | Does the generic-Kubernetes work (if you want it) go before or after?                                                                                                    | After: it adds chart values and docs that would otherwise be renamed twice.                   |
+| Id  | Question                                                                                                                                                                 | Decision                                                                                                                         |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| RN1 | Is the name clear to use? "Kaiju" is a common word and is used by other software projects; trademark, the GitHub name, ghcr namespace and any domain are yours to check. | Check before step 1; nothing else in this spec depends on the answer except whether to start.                                    |
+| RN2 | Do new tickets keep the `KOBE-` key?                                                                                                                                     | Yes. One key across the project's history; a second key splits every search.                                                     |
+| RN3 | Do Postgres settings, roles, functions and persisted schema ids stay `kobe` (§3)?                                                                                        | Yes. Invisible, and each change is a risky data migration.                                                                       |
+| RN4 | Test cluster: fresh install under the new name with a restore, or upgrade in place?                                                                                      | Fresh install with restore.                                                                                                      |
+| RN5 | How long are `KOBE_*` variables and `x-kobe-team` accepted?                                                                                                              | One release, then removed.                                                                                                       |
+| RN6 | Spelling in running text: "Kaiju" always, lower case `kaiju` in code and commands?                                                                                       | Yes.                                                                                                                             |
+| RN7 | When? The rename conflicts with every open branch.                                                                                                                       | After the 2026-11-20 review tickets and, by Chris's revision of 2026-11-21, after the Workspace git integration (KOBE-757..769). |
+| RN8 | Does the generic-Kubernetes work (if you want it) go before or after?                                                                                                    | After: it adds chart values and docs that would otherwise be renamed twice.                                                      |
 
 ## 10. Tickets
 
