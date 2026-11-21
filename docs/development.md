@@ -11,6 +11,20 @@ old names: Workspace = the team row, so the routes stay `/v1/team`, `/v1/me/team
 `x-kobe-team` header, and permission names stay `team.*` (Workspaces spec WS1-WS3,
 `docs/specs/workspaces.md`). The team role `builder` is now `contributor` in the API and the UI.
 
+## OpenAPI document
+
+`services/server/openapi.json` (generated from `services/server/src/openapi/document.ts`) lists
+every route of the member and admin API on the user-facing listener. Some areas are fully
+described (bodies and errors, in `openapi/<area>.ts`); the rest are one line each in
+`openapi/catalog/` and marked `x-kobe-detail: summary`: summary, tag and path parameters, no
+bodies yet. Left out on purpose, each with a reason in `openapi/undocumented-allowlist.ts`: health
+probes, Better Auth's `/api/auth/*`, SCIM (`/v1/scim/v2`), the OAuth redirect and client-metadata
+endpoints, the web app's telemetry beacon, a catch-all refusal, and the sandbox-facing and
+internal listeners. `openapi/coverage.test.ts` reads the routes of the real mounted apps and fails
+on a route that is neither documented nor allowlisted, and on a stale entry in either list. After
+adding a route, add its line to the catalog (or a full description) and regenerate:
+`UPDATE_OPENAPI=1 pnpm --filter @kobe/server exec vitest run src/openapi && pnpm format`.
+
 ## Dev loop
 
 Prerequisites: Docker (local, or remote via `DOCKER_HOST=ssh://user@host`), k3d, kubectl, Helm 3,
