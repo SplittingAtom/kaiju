@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { AuthPanel } from "../../components/auth/auth-panel";
 import { useBranding } from "../../components/shell/branding-context";
+import { Button, Field, Notice, TextInput } from "../../components/ui/console";
 import { tokenFromHash, validateNewPassword } from "../../lib/invites";
 
 type State =
@@ -54,48 +56,71 @@ export default function InvitePage() {
 
   if (state.step === "checking")
     return (
-      <main>
-        <p>{error ?? "Checking your invitation…"}</p>
-      </main>
+      <AuthPanel>
+        {error ? (
+          <Notice tone="error" className="my-0">
+            {error}
+          </Notice>
+        ) : (
+          <p className="m-0" role="status">
+            Checking your invitation…
+          </p>
+        )}
+      </AuthPanel>
     );
   if (state.step === "invalid")
     return (
-      <main>
-        <h1>Invitation not valid</h1>
-        <p>
+      <AuthPanel title="Invitation not valid">
+        <p className="m-0">
           This invitation link is invalid, already used, or expired. Ask an admin for a new one.
         </p>
-      </main>
+      </AuthPanel>
     );
   return (
-    <main>
-      <h1>Join {appName}</h1>
-      <p>
+    <AuthPanel title={`Join ${appName}`}>
+      <p className="m-0">
         You were invited as <strong>{state.email}</strong>. Choose a name and a password; you can
         add a passkey after signing in.
       </p>
-      <form onSubmit={onSubmit}>
-        <label>
-          Name <input name="name" autoComplete="name" maxLength={100} required />
-        </label>
-        <label>
-          Password{" "}
-          <input
+      {error && (
+        <Notice tone="error" className="my-0">
+          {error}
+        </Notice>
+      )}
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        <Field label="Name">
+          <TextInput
+            name="name"
+            autoComplete="name"
+            maxLength={100}
+            required
+            className="w-full min-h-9"
+          />
+        </Field>
+        <Field label="Password">
+          <TextInput
             name="password"
             type="password"
             autoComplete="new-password"
             minLength={12}
             maxLength={128}
             required
+            className="w-full min-h-9"
           />
-        </label>
-        <label>
-          Confirm password{" "}
-          <input name="confirm" type="password" autoComplete="new-password" required />
-        </label>
-        <button type="submit">Create account</button>
+        </Field>
+        <Field label="Confirm password">
+          <TextInput
+            name="confirm"
+            type="password"
+            autoComplete="new-password"
+            required
+            className="w-full min-h-9"
+          />
+        </Field>
+        <Button type="submit" variant="primary" className="w-full min-h-9">
+          Create account
+        </Button>
       </form>
-      {error && <p role="alert">{error}</p>}
-    </main>
+    </AuthPanel>
   );
 }

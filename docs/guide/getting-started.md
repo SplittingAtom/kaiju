@@ -13,19 +13,20 @@ sign-in screen to your first answer.
 
 ## Sign in
 
-Open your organization's Kobe address and use one of the options on **Sign in to Kobe** (your site
-may show its own name instead of Kobe):
+Open your organization's Kobe address. The sign-in page is one panel in your site's colours and
+logo, titled **Sign in to Kobe** (your site may show its own name instead of Kobe). From the top:
 
-- **Sign in with _your organization_** (for example "Sign in with Contoso"), if your site uses
-  single sign-on: you sign in on your organization's page and come back signed in. See
-  [Signing in with your organization](getting-started/single-sign-on.md), also for linking it to
-  an account you already have;
-- **Sign in with a passkey**, if you have saved one, or
-- your **Email** and **Password**, then **Sign in**.
+- your **Email** and **Password**, then **Sign in**, and the **Forgot your password?** link;
+- below an **or** line, the other ways to sign in, when your site offers them:
+  - **Sign in with _your organization_** (for example "Sign in with Contoso"), one button per
+    organization account your site accepts: you sign in on your organization's page and come back
+    signed in. See [Signing in with your organization](getting-started/single-sign-on.md), also
+    for linking it to an account you already have;
+  - **Sign in with a passkey**, if you have saved one (shown when your browser supports passkeys).
 
-If your account has two-factor sign-in turned on, Kobe then asks for your **Authenticator code**
-(six digits) and **Verify**. Forgot your password? Use **Forgot your password?** on the sign-in
-page and follow the link Kobe emails you.
+If your account has two-factor sign-in turned on, the panel then asks for your **Authenticator
+code** (six digits) and **Verify**. Forgot your password? Use **Forgot your password?** and follow
+the link Kobe emails you. Messages about a failed sign-in show at the top of the panel.
 
 There is no open sign-up. You join through an invitation, or through your organization's sign-in
 when your organization has given you access to Kobe. With an invitation: the link in the invitation email opens

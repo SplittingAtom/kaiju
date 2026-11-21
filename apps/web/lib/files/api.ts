@@ -29,8 +29,8 @@ export interface FolderListing {
   readonly path: string;
   readonly entries: readonly FileEntry[];
   /**
-   * Next page. TODO(KOBE-184): the server returns this once its paging cursor lands (PR #150);
-   * until then it is always absent and the listing is capped server side.
+   * The next page's cursor (the server's `next_cursor`, camelized; KOBE-184): pass it back as
+   * `cursor`. Absent on the last page.
    */
   readonly nextCursor?: string | null;
 }

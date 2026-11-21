@@ -14,8 +14,7 @@ import { usableSiteKeyIds } from "../connectors/site-key.js";
 import { exposedTools, type TeamConnector } from "../mcp/catalog.js";
 
 /**
- * Which connectors a run really has (KOBE-111, 62a of KOBE-62): the replacement of the resolver's
- * `TODO(KOBE-61)` stub. A connector is effective when it is team-exposed (KOBE-104/106), the run's
+ * Which connectors a run really has (KOBE-111, 62a of KOBE-62). A connector is effective when it is team-exposed (KOBE-104/106), the run's
  * user has a usable grant (an API key, or an OAuth grant whose access token has not expired;
  * KOBE-110 refreshes) or the connector has a usable site-wide key (KOBE-303, KOBE-449), and the
  * agent's tool list allows at least one of its exposed tools. The

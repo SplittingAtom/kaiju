@@ -25,7 +25,7 @@ describe("reload drafts", () => {
     expect(isReloadRequested()).toBe(true);
     stashDraftForReload("t1", "half a thought");
     expect(takeReloadDraft("t2")).toBeUndefined();
-    expect(takeReloadDraft("t1")).toBe("half a thought");
+    expect(takeReloadDraft("t1")).toEqual({ text: "half a thought", mentions: [] });
     expect(takeReloadDraft("t1")).toBeUndefined(); // taken once
   });
 
@@ -39,8 +39,23 @@ describe("reload drafts", () => {
     requestReload();
     stashDraftForReload("new", "a");
     stashDraftForReload("t9", "b");
-    expect(takeReloadDraft("t9")).toBe("b");
-    expect(takeReloadDraft("new")).toBe("a");
+    expect(takeReloadDraft("t9")).toEqual({ text: "b", mentions: [] });
+    expect(takeReloadDraft("new")).toEqual({ text: "a", mentions: [] });
+  });
+
+  it("keeps the draft's file chips (KOBE-756), even with no text", () => {
+    requestReload();
+    stashDraftForReload("t1", "see", ["a.csv", "b/c.md"]);
+    stashDraftForReload("t2", "", ["d.txt"]);
+    expect(takeReloadDraft("t1")).toEqual({ text: "see", mentions: ["a.csv", "b/c.md"] });
+    expect(takeReloadDraft("t2")).toEqual({ text: "", mentions: ["d.txt"] });
+  });
+
+  it("reads a stash kept before chips were kept, and drops non-string paths", () => {
+    const drafts = { t1: "plain", t2: { text: "x", mentions: ["a.csv", 3, null] } };
+    sessionStorage.setItem("kobe.reload-drafts", JSON.stringify({ savedAt: Date.now(), drafts }));
+    expect(takeReloadDraft("t1")).toEqual({ text: "plain", mentions: [] });
+    expect(takeReloadDraft("t2")).toEqual({ text: "x", mentions: ["a.csv"] });
   });
 
   it("ignores a garbled stash", () => {
@@ -67,7 +82,7 @@ describe("reload drafts", () => {
     requestReload();
     stashDraftForReload("t1", "mine");
     vi.advanceTimersByTime(RELOAD_DRAFT_TTL_MS - 1);
-    expect(takeReloadDraft("t1")).toBe("mine");
+    expect(takeReloadDraft("t1")).toEqual({ text: "mine", mentions: [] });
   });
 
   it("is dropped on sign-out", () => {
