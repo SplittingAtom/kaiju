@@ -189,7 +189,7 @@ export function createOffboarding(options: OffboardingOptions): Offboarding {
       log.error({ err }, "departed starters' skill evals purge failed");
     }
     try {
-      grants = await sweepDepartedGrants(ctx.db);
+      grants = await sweepDepartedGrants(ctx.db, { log });
     } catch (err) {
       failed += 1;
       log.error({ err }, "departed members' connector grants cleanup failed");

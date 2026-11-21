@@ -10,13 +10,14 @@ export const CONNECTOR_GRANTS_EVENTS = {
   /**
    * A user's grant was removed: by the user, by a connector change, or (KOBE-696) because the
    * member left: `userId` and `reason` then say whose and why (removed from the team, deactivated
-   * by a Site admin, or deprovisioned by an identity provider).
+   * by a Site admin, or deprovisioned by an identity provider; `reactivated`: grants a failed
+   * deactivation step left behind, deleted when the person is reactivated).
    */
   "mcp.grant.removed": event("team", {
     connectorId: id,
     name: z.string().max(64),
     userId: id.optional(),
-    reason: z.enum(["member_removed", "deactivated", "deprovisioned"]).optional(),
+    reason: z.enum(["member_removed", "deactivated", "deprovisioned", "reactivated"]).optional(),
   }),
   /** A stored OAuth token was not served because it was issued for another server (KOBE-109). */
   "mcp.grant.refused": event("team", {

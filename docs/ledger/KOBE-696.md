@@ -43,3 +43,9 @@
 - Checks: `pnpm verify` green except the load-sensitive `model-gateway budget-gate.test.ts` timing
   test (passes alone, 32/32; untouched code); `@kobe/server test:db` 3295/3295,
   `@kobe/db test:db` 2044/2044.
+- Review follow-up (LOW 3-5): the sweep judges the departure inside one DELETE … RETURNING (a
+  member re-added meanwhile keeps a key they stored), caps each team's pass
+  (`GRANT_SWEEP_LIMIT` 500) and logs and skips a failing team; reactivation deletes any grants a
+  failed deactivation step left (`reactivated` reason, lifecycle hook). Tests in
+  `connector-grant-departures.db.test.ts` (cap, returning member, reactivation); the per-team
+  failure path has no test (no seam to make one team's transaction fail).

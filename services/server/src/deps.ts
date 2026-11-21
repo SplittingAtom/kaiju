@@ -62,7 +62,10 @@ import {
   resolveAll,
   type ConnectorUrlPolicy,
 } from "./connectors/url-policy.js";
-import { deleteDeactivatedUserGrants } from "./connectors/grant-departures.js";
+import {
+  deleteDeactivatedUserGrants,
+  deleteReactivatedUserGrants,
+} from "./connectors/grant-departures.js";
 import { NO_PROBE, type ConnectorProbe } from "./connectors/probe.js";
 import type { AppResultsDeps } from "./apps/results.js";
 import { captureKey } from "./apps/capture-ticket.js";
@@ -662,6 +665,13 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
         { db: database.db, mailer: options.mailer, publicUrl: new URL(options.publicUrl).origin },
         skills,
       );
+    },
+  });
+  // Grants a failed "connector-grants" deactivation step left behind never work again (KOBE-696).
+  lifecycle.on("reactivated", {
+    name: "connector-grants",
+    run: async (userId) => {
+      await deleteReactivatedUserGrants(database.db, userId);
     },
   });
   lifecycle.on("reactivated", {

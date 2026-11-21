@@ -239,11 +239,48 @@ describe("the offboarding sweep deletes grants left behind (ac-3)", () => {
     expect(await sweepDepartedGrants(h.deps.database.db)).toBe(0);
   });
 
+  it("caps each team's pass and finishes on later passes (review)", async () => {
+    // T: gone's 2 and inactive's 2; U: inactive's 2. One row per team per pass: T takes 4.
+    expect(await sweepDepartedGrants(h.deps.database.db, { limit: 1 })).toBe(2);
+    let passes = 1;
+    while ((await sweepDepartedGrants(h.deps.database.db, { limit: 1 })) > 0) passes += 1;
+    expect(passes).toBe(4);
+    expect(await grantsOf(gone)).toHaveLength(2);
+    expect(await grantsOf(inactive)).toEqual([]);
+    expect(await grantsOf(active)).toHaveLength(4);
+  });
+
+  it("keeps a returning member's key: the departure is judged in the DELETE itself (review)", async () => {
+    // gone came back to T and stored a key again; inactive was reactivated.
+    await member(teamT, gone);
+    await grant(teamT, gone, keyed);
+    await h.admin.query(`UPDATE users SET deactivated_at = NULL WHERE id = $1`, [inactive]);
+    expect(await sweepDepartedGrants(h.deps.database.db)).toBe(0);
+    expect(await grantsOf(gone)).toHaveLength(4);
+    expect(await grantsOf(inactive)).toHaveLength(4);
+  });
+
   it("runs as part of the offboarding sweep", async () => {
     const summary = await h.deps.offboarding.sweep();
     expect(summary.grants).toBeGreaterThanOrEqual(6);
     expect(await grantsOf(gone)).toHaveLength(2);
     expect(await grantsOf(inactive)).toEqual([]);
     expect(await grantsOf(active)).toHaveLength(4);
+  });
+});
+
+describe("reactivation deletes grants a failed deactivation hook left behind (review)", () => {
+  it("deletes the user's old grants, audited with reason reactivated", async () => {
+    const gina = await memberWithGrants("gina@departures.test");
+    // Deactivated without the hooks (as if the grants hook had failed), then reactivated.
+    await h.admin.query(`UPDATE users SET deactivated_at = now() WHERE id = $1`, [gina]);
+    const res = await owner.post(`/v1/site/users/${gina}/reactivate`, {});
+    expect(res.status, res.text).toBe(200);
+    expect(await grantsOf(gina)).toEqual([]);
+    const rows = await removedAudits(gina);
+    expect(rows).toHaveLength(4);
+    for (const row of rows) {
+      expect(row).toMatchObject({ actor_kind: "system", target: { reason: "reactivated" } });
+    }
   });
 });
