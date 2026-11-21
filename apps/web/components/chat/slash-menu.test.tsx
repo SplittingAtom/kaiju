@@ -412,12 +412,13 @@ describe("how the text arrives (ac-3)", { timeout: 30_000 }, () => {
         name: /summary\.md/,
       }),
     );
-    await waitFor(() => expect(input.value).toBe("/hello see @file(reports/summary.md) "));
+    // KOBE-756: the pick is a chip; its marker goes after the text on send.
+    await waitFor(() => expect(input.value).toBe("/hello see "));
     noMenu();
     await user.keyboard("{Enter}");
     await waitFor(() => expect(messagePosts()).toHaveLength(1));
     expect(messagePosts()[0]?.body).toMatchObject({
-      content: "/hello see @file(reports/summary.md)",
+      content: "/hello see\n\n@file(reports/summary.md)",
       mentions: ["reports/summary.md"],
     });
   });

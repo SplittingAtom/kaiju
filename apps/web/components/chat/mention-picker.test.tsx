@@ -8,8 +8,8 @@ import { composer, openApp } from "./testing";
 
 /**
  * KOBE-223 (CE22): `@` in the composer opens a listbox of the member's workspace files; picking
- * one writes the protocol marker into the text and shows a chip; the message carries the marker,
- * which the server turns into the absolute sandbox path.
+ * one (KOBE-756) removes the typed `@query` and shows a file chip; the send appends the chip's
+ * marker, which the server turns into the absolute sandbox path.
  */
 let fake: FakeKobe;
 
@@ -38,7 +38,7 @@ const listed = () => posts().map((b) => b?.mentions);
 const picker = () => screen.findByRole("listbox", { name: "Workspace files" });
 
 describe("the @ picker (ac-1)", () => {
-  it("lists matching files; arrows and Enter pick one; the marker is the only trace; the send carries it", async () => {
+  it("lists matching files; arrows and Enter pick one; the pick is a chip, its marker goes on send", async () => {
     openApp(fake, fake.addThread("Sales"));
     const user = userEvent.setup();
     const input = await composer();
@@ -56,14 +56,20 @@ describe("the @ picker (ac-1)", () => {
     await user.keyboard("{ArrowDown}");
     expect(input.getAttribute("aria-activedescendant")).toBe(options[1]?.id);
     await user.keyboard("{ArrowUp}{Enter}");
-    await waitFor(() => expect(input.value).toBe("Compare @file(data/sales%20q3.csv) "));
+    // KOBE-756: the typed @query leaves the text; the file is a chip, the caret where @ was.
+    await waitFor(() => expect(input.value).toBe("Compare "));
+    expect(input.selectionStart).toBe("Compare ".length);
     expect(screen.queryByRole("listbox", { name: "Workspace files" })).toBeNull();
-    // The marker in the text is the mention: no chip repeats it.
-    expect(screen.queryByRole("list", { name: "Mentioned files" })).toBeNull();
+    const chips = screen.getByRole("list", { name: "Mentioned files" });
+    const chip = within(chips).getByRole("listitem");
+    expect(chip.textContent).toBe("@data/sales q3.csv");
+    expect(chip.getAttribute("title")).toBe("/workspace/data/sales q3.csv");
     await user.type(input, "please{Enter}");
-    await waitFor(() => expect(sent()).toEqual(["Compare @file(data/sales%20q3.csv) please"]));
+    await waitFor(() => expect(sent()).toEqual(["Compare please\n\n@file(data/sales%20q3.csv)"]));
     // The picked path is listed: the server rewrites only listed markers.
     expect(listed()).toEqual([["data/sales q3.csv"]]);
+    // A successful send clears the chip (KOBE-415).
+    await waitFor(() => expect(screen.queryByRole("list", { name: "Mentioned files" })).toBeNull());
   });
 
   it("a typed or pasted @file(...) goes as literal text, without mentions", async () => {
@@ -94,7 +100,7 @@ describe("the @ picker (ac-1)", () => {
     ]);
   });
 
-  it("Escape closes the list without picking; deleting a picked marker removes its mention", async () => {
+  it("Escape closes the list without picking and leaves the text; a click picks; removing the chip drops the mention", async () => {
     openApp(fake, fake.addThread("Sales"));
     const user = userEvent.setup();
     const input = await composer();
@@ -105,14 +111,16 @@ describe("the @ picker (ac-1)", () => {
       expect(screen.queryByRole("listbox", { name: "Workspace files" })).toBeNull(),
     );
     expect(input.value).toBe("@sum");
+    expect(screen.queryByRole("list", { name: "Mentioned files" })).toBeNull();
     await user.clear(input);
     await user.type(input, "see @sum");
     await user.click(within(await picker()).getByRole("option", { name: /summary\.md/ }));
-    await waitFor(() => expect(input.value).toBe("see @file(reports/summary.md) "));
+    await waitFor(() => expect(input.value).toBe("see "));
+    const chips = screen.getByRole("list", { name: "Mentioned files" });
+    await user.click(within(chips).getByRole("button", { name: "Remove mention of summary.md" }));
     expect(screen.queryByRole("list", { name: "Mentioned files" })).toBeNull();
-    await user.clear(input);
     await user.type(input, "no file{Enter}");
-    await waitFor(() => expect(sent()).toEqual(["no file"]));
+    await waitFor(() => expect(sent()).toEqual(["see no file"]));
     expect(listed()).toEqual([undefined]);
   });
 
@@ -127,10 +135,10 @@ describe("the @ picker (ac-1)", () => {
     await user.type(input, "then @summ");
     await picker();
     await user.keyboard("{Enter}");
-    await waitFor(() => expect(input.value).toBe("then @file(reports/summary.md) "));
+    await waitFor(() => expect(input.value).toBe("then "));
     expect(sent()).toEqual(["go"]);
     await user.keyboard("{Enter}");
-    await waitFor(() => expect(sent()).toEqual(["go", "then @file(reports/summary.md)"]));
+    await waitFor(() => expect(sent()).toEqual(["go", "then\n\n@file(reports/summary.md)"]));
     expect(listed()).toEqual([undefined, ["reports/summary.md"]]);
   });
 

@@ -21,7 +21,11 @@ whole site (see [Switching it off](#switching-it-off)).
 **Add provider** asks for:
 
 - **Kind**: **Microsoft Entra ID** or **Other OpenID Connect provider**.
-- **Display name**: what the sign-in button says ("Sign in with Contoso").
+- **Display name**: what the sign-in button says ("Sign in with Contoso"). On the sign-in page
+  each provider that is on gets one full-width button, below the email and password form and an
+  **or** line, sorted by display name, beside **Sign in with a passkey**. A provider you turn on
+  shows there within about 15 seconds. There is no setting that hides the password form: local
+  sign-in stays available beside single sign-on (keep it for break-glass access).
 - **Slug**: a short name in the provider's addresses. It can't change later.
 - **Directory (tenant) ID** for Entra, or the exact **Issuer** for another provider. A provider
   that admits any organization (`common`, `organizations`, `consumers`) is refused.

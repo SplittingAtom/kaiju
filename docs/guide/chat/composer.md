@@ -42,8 +42,17 @@ save a changed copy elsewhere.
 
 ## Mention a file
 
-Type **@** to pick one of your files, or use **Mention in message** in a file's **⋯** menu in the
-Files panel. When a file is open in the artifact column, the composer shows a removable
+Type **@** and part of a file's name, then pick the file from the list (arrows, then Enter or Tab,
+or a click; Escape closes the list and leaves what you typed). You can also drag a file from the
+Files panel onto the composer, or use **Mention in message** in a file's **⋯** menu. Each way
+adds the same file chip above the message box and removes the `@…` you typed: the chip shows the
+file's workspace path (hover for where the agent finds it) and **×** removes it. With the message
+box empty, Backspace removes the last chip. A file is only mentioned once, a message can mention
+at most 20 files, and folders can't be mentioned. When you send, the agent is told each
+mentioned file's full path. Text you type or paste yourself, such as `@notes/todo.md`, stays
+plain text.
+
+When a file is open in the artifact column, the composer shows a removable
 "Viewing _file_" chip: the agent is told which file you are looking at and proposes changes to it
 for you to review instead of writing it directly. See [Editing files](../files/file-editor.md).
 
