@@ -15,10 +15,15 @@ const PROBE_HTML =
   `parent.postMessage({probe:${JSON.stringify(PROBE)},rtc:typeof window.RTCPeerConnection,` +
   "dc:typeof window.RTCDataChannel},'*')</script></body></html>";
 
+/** What the probe posts: its marker (the script ran in the frame) and the WebRTC globals it saw. */
 interface Report {
+  readonly probe: string;
   readonly rtc: string;
   readonly dc: string;
 }
+
+/** WebRTC blocked, from a probe that ran: the same check for both frames. */
+const BLOCKED: Report = { probe: PROBE, rtc: "undefined", dc: "undefined" };
 
 /** Loads `src` in an iframe of Kobe's page (as the panel does) and waits for the probe. */
 async function probeFrame(page: Page, src: string): Promise<Report> {
@@ -71,7 +76,7 @@ test("artifact and workspace HTML frames: no WebRTC, no top-level load (KOBE-690
   expect(await workspaceFile(page, file, PROBE_HTML)).toBeLessThan(300);
   try {
     const src = `/v1/workspace/frame?${new URLSearchParams({ path: file, team: team ?? "" })}`;
-    expect(await probeFrame(page, src)).toEqual({ rtc: "undefined", dc: "undefined" });
+    expect(await probeFrame(page, src)).toEqual(BLOCKED);
     expect(await topLevelStatus(page, src)).toBe(403);
   } finally {
     await deleteWorkspacePath(page, file);
@@ -90,7 +95,7 @@ test("artifact and workspace HTML frames: no WebRTC, no top-level load (KOBE-690
   expect(artifact, "the agent created the html artifact").toBeDefined();
   const base = `/v1/artifacts/${artifact?.id ?? ""}/versions/1`;
   const src = `${base}/frame?team=${team ?? ""}`;
-  expect(await probeFrame(page, src)).toEqual({ rtc: "undefined", dc: "undefined" });
+  expect(await probeFrame(page, src)).toEqual(BLOCKED);
   expect(await topLevelStatus(page, src)).toBe(403);
   // Downloads still work top-level (an attachment).
   expect(await topLevelStatus(page, `${base}/content?team=${team ?? ""}`)).toBe(200);

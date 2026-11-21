@@ -196,7 +196,9 @@ can turn it off (**Nudge to learn**).
 When a pass ends, Kobe says how many suggestions it found, or why it stopped (try again from the
 same menu). If it found something while you are on the conversation, To review opens by itself
 (see [To review](#to-review)). If Kobe can't confirm that a pass finished within a few minutes, the
-spinner stops and Kobe asks you to try again. Learn is only for the conversation's author: people it is shared with don't see it,
+spinner stops and Kobe asks you to try again. If something else is changing the conversation at
+that moment, Kobe says it is busy (when you start, or if it stays busy while Kobe saves what it
+learned) and you try again. Learn is only for the conversation's author: people it is shared with don't see it,
 and Workbench, agent test and eval chats are refused. When Learn can't run, the menu item stays
 visible and says why: memories or Learn are switched off, no learning model is available (see
 [The learning model](#the-learning-model)), a budget is used up, you already started 20 passes in

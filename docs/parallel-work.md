@@ -125,7 +125,11 @@ hand-written migration too; how to write one is in
     database and role counts and `pnpm --filter @kobe/db test:lanes drop <lane>` drops one (its
     `kobe_lane_<lane>` database, its throwaway databases and roles). Drop a worktree's lane when you
     remove the worktree. Leftovers named without a lane (`kobe_test_<hex>`) predate lanes or come
-    from runs with `KOBE_TEST_DB_LANE=""`.
+    from runs with `KOBE_TEST_DB_LANE=""`. Every DB suite's setup also drops, on the
+    `KOBE_TEST_DATABASE_URL` server, up to 100 throwaway databases (`kobe_test_<hex>[_<lane>]`,
+    `kobe_up_<hex>[_<lane>]`, any lane) created more than a day ago with no session connected (a
+    plain `DROP DATABASE`, which Postgres refuses while anyone connects), and removes
+    `kobe-upgrade-*` temp dirs older than an hour (KOBE-743). Leftover roles are not swept.
 - **Tilt against the real cluster:** each agent uses its own namespace and port-forward:
 
   ```bash

@@ -376,6 +376,7 @@
             },
             "maxFileSize": {
               "type": "string",
+              "description": "Largest file workspace sync stores; at most 5Gi (S3 single PutObject/CopyObject limit; the chart refuses more)",
               "pattern": "^[0-9]+(\\.[0-9]+)?(m|k|M|G|T|Ki|Mi|Gi|Ti)?$"
             },
             "maxWorkspaceSize": {
@@ -1262,6 +1263,15 @@
             "parameters": {
               "type": "object",
               "additionalProperties": { "type": "string" }
+            },
+            "backup": {
+              "type": "object",
+              "description": "Passed verbatim to the CloudNativePG Cluster's spec.backup (e.g. barmanObjectStore, retentionPolicy)"
+            },
+            "plugins": {
+              "type": "array",
+              "items": { "type": "object" },
+              "description": "Passed verbatim to the CloudNativePG Cluster's spec.plugins (e.g. the Barman Cloud plugin)"
             },
             "instances": {
               "type": "integer",

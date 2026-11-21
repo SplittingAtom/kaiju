@@ -29,6 +29,16 @@ export const IDLE_MINUTES_MAX = 60;
 const quantity = z
   .string()
   .regex(/^\d+(\.\d+)?(m|k|M|G|T|Ki|Mi|Gi|Ti)?$/, "must be a Kubernetes quantity (e.g. 500m, 4Gi)");
+/**
+ * KOBE-743: S3 accepts at most 5 GiB in one PutObject or CopyObject, and workspace sync pushes each
+ * file with one PutObject (uploads copy staging to the content key with one CopyObject), so a
+ * larger per-file limit would only turn into S3 errors on every push.
+ */
+export const S3_SINGLE_REQUEST_MAX_BYTES = 5 * 2 ** 30;
+const maxFileSizeQuantity = quantity.refine(
+  (q) => quantityBytes(q) <= S3_SINGLE_REQUEST_MAX_BYTES,
+  "must be at most 5Gi: S3 accepts at most 5 GiB in a single PutObject/CopyObject request",
+);
 const dnsLabel = z
   .string()
   .max(63)
@@ -143,7 +153,7 @@ export const sandboxSettingsSchema = z.strictObject({
     .strictObject({
       enabled: z.boolean(),
       pushIntervalSeconds: z.number().int().min(5).max(3600),
-      maxFileSize: quantity,
+      maxFileSize: maxFileSizeQuantity,
       maxWorkspaceSize: quantity.optional(),
       maxFiles: z.number().int().min(1).max(1_000_000),
       collectSeconds: z.number().int().min(60).max(86_400),

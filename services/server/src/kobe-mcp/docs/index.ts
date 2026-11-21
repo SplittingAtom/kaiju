@@ -51,11 +51,8 @@ export type KobeDocsExecution =
     }
   | { readonly ok: false; readonly code: string; readonly message: string };
 
-/**
- * The full text's cap: well inside a model's context; larger asks for one section. 272 KiB since
- * KOBE-733/741 (the guide had reached 256 KiB; about 68k tokens).
- */
-export const DOCS_FULL_MAX_BYTES = 272 * 1024;
+/** The full text's cap: well inside a model's context; larger asks for one section. */
+export const DOCS_FULL_MAX_BYTES = 256 * 1024;
 const SLUG_MAX = 200;
 
 const docsTool = <I>(tool: KobeDocsTool<I>): KobeDocsTool => tool as unknown as KobeDocsTool;

@@ -257,8 +257,9 @@ export type MemoryPassStage = z.infer<typeof memoryPassStageSchema>;
 /**
  * Why a pass failed (`memory.pass.failed.code`): the budget is used up (refused at 100 %), no
  * learning model is set or enabled for the Workspace (never a fallback), semantic memory is off,
- * the reply failed the schema after its retry, the call timed out, the provider failed, or the
- * author cancelled it.
+ * the reply failed the schema after its retry, the call timed out, the provider failed, the
+ * author cancelled it, or the thread stayed locked by another change while the result was being
+ * saved (`thread_busy`, after a few tries; KOBE-770).
  */
 export const MEMORY_PASS_FAILURE_CODES = [
   "budget_exhausted",
@@ -268,6 +269,7 @@ export const MEMORY_PASS_FAILURE_CODES = [
   "timeout",
   "model_error",
   "cancelled",
+  "thread_busy",
 ] as const;
 export const memoryPassFailureCodeSchema = z.enum(MEMORY_PASS_FAILURE_CODES);
 export type MemoryPassFailureCode = z.infer<typeof memoryPassFailureCodeSchema>;

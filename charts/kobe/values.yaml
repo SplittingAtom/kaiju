@@ -88,7 +88,8 @@ sandbox:
     enabled: true
     # Sandboxes push changes this often (also after every run and before hibernating).
     pushIntervalSeconds: 60
-    # Larger files are not synced (they stay on the volume only).
+    # Larger files are not synced (they stay on the volume only). At most 5Gi: S3 stores each file
+    # with one PutObject/CopyObject request, limited to 5 GiB (the chart refuses more).
     maxFileSize: 1Gi
     # Per workspace; empty = the /workspace volume size. Teams' storage quota (D26) comes later.
     maxWorkspaceSize: ""
@@ -675,6 +676,13 @@ postgres:
     # string values, e.g. {max_connections: "200", shared_buffers: "512MB"}. Size max_connections
     # from docs/install.md "Postgres connections"; the default 100 fits the chart defaults only.
     parameters: {}
+    # Passed verbatim to the Cluster's spec.backup (KOBE-737), e.g. barmanObjectStore (WAL archive
+    # and base backups to S3) and retentionPolicy. Empty: no backups. Production installs set it
+    # and add a ScheduledBackup (docs/install.md "Bundled Postgres (CloudNativePG)").
+    backup: {}
+    # Passed verbatim to the Cluster's spec.plugins (KOBE-737), e.g. the Barman Cloud plugin, which
+    # replaces barmanObjectStore on CloudNativePG 1.26 and later. Empty: none.
+    plugins: []
 
 # External S3-compatible object storage (no bundled S3).
 # The nightly retention pass (KOBE-18). Set paused: true after restoring the database from an older

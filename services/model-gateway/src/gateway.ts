@@ -1,1063 +1,390 @@
 import { randomUUID } from "node:crypto";
-import {
-  createServer,
-  request as httpRequest,
-  Agent as HttpAgent,
-  type IncomingMessage,
-  type Server,
-  type ServerResponse,
-} from "node:http";
-import { request as httpsRequest, Agent as HttpsAgent } from "node:https";
-import {
-  serverCallBoundToRun,
-  serverCallNamesPass,
-  serverCallRunOptional,
-  type ServerCallClaims,
-  type SessionTokenClaims,
-  type ThinkingLevel,
-  SERVER_CALL_EMBEDDINGS_PATH,
-} from "@kobe/protocol";
-import { SessionTokenError, type SessionVerifyKeys } from "@kobe/session-token";
-import {
-  contentAttributes,
-  idAttributes,
-  injectTraceHeaders,
-  telemetryState,
-  traceNodeRequest,
-  type Context,
-  type RequestSpan,
-} from "@kobe/telemetry";
-import type { Logger } from "pino";
-import { extractCredential } from "./credentials.js";
-import { forwardRequestHeaders, forwardResponseHeaders } from "./headers.js";
-import { topLevelModel, withStreamUsage } from "./body-model.js";
-import type { ByteBudget, CallLimiter, RequestRate } from "./limits.js";
-import type { PrincipalCache, Resolution } from "./principals.js";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import type { ServerCallClaims } from "@kobe/protocol";
+import { telemetryState, traceNodeRequest, type RequestSpan } from "@kobe/telemetry";
+import type { Resolution } from "./principals.js";
 import { resolveRunAttribution } from "./run-attribution.js";
-import { placeRequestSpan, type GatewayTracing } from "./trace-placement.js";
-import {
-  authenticateServerCall,
-  checkServerCallBody,
-  isServerCall,
-  serverCallBodyLimit,
-  type ServerCallOptions,
-} from "./server-call.js";
-import { MODEL_LIST_MAX_BYTES, filterModelList } from "./model-list.js";
+import { placeRequestSpan } from "./trace-placement.js";
+import { isServerCall, serverCallBodyLimit } from "./server-call.js";
 import { classify, forwardedQuery, routeTemplate, type Route, type RouteKind } from "./routes.js";
-import { applyThinking, callThinkingLevel } from "./thinking.js";
-import type { RunTokenSubject } from "@kobe/db";
-import type { CallContext, CallGate, UsageSink } from "./seams.js";
-import { chargedOutput } from "./usage/charge.js";
-import { UsageMeter, type UsageReading } from "./usage/meter.js";
+import {
+  authenticate,
+  NO_SESSION,
+  serverCallAttribution,
+  type CallerIdentity,
+} from "./gateway/auth.js";
+import { REASONS, sendError } from "./gateway/errors.js";
+import { serveEvalCases } from "./gateway/eval-cases.js";
+import { createUpstream, forward, type Upstream } from "./gateway/forward.js";
+import type { GatewayOptions } from "./gateway/options.js";
+import { prepareBody } from "./gateway/prepare-body.js";
+import { readBody } from "./gateway/read-body.js";
+import { finishRequest, newRequestState, type RequestState } from "./gateway/usage.js";
 
-/**
- * The model gateway shim (KOBE-40, spec D30; principle 2 "secrets never enter the sandbox"). The
- * only way a sandbox reaches a model:
- *
- * 1. the sandbox's `kobe.model-gateway` session token (EdDSA pinned, own public key; other
- *    audiences' tokens fail) in any header a model SDK uses for its API key;
- * 2. an inference path (routes.ts) — never Bifrost's admin API;
- * 3. the token's member and sandbox still live (principals.ts; cached ≤ a few seconds);
- * 4. run attribution: a run token (`x-kobe-run-token`, KOBE-118: verified, recorded and active,
- *    bound to this team and sandbox, the run id comes from it), else the legacy advisory
- *    `x-kobe-run-id` (must be leased to this sandbox) unless the token is mandatory;
- * 5. concurrency limits and the {@link CallGate} seam (KOBE-42);
- * 6. forwarded to Bifrost with only allowlisted headers plus `x-bf-vk: <member's virtual key>`,
- *    so Bifrost applies that member's team model allowlist (and, with KOBE-42, budgets);
- * 7. the response streamed back unbuffered; a client that goes away cancels the upstream call.
- *
- * Server calls (KOBE-234, server-call.ts) take the same path with their own identity: the
- * `x-kobe-server-call` token instead of 1., the member without a sandbox in 3., the token's run
- * in 4., the contract's body and the token's model and cap, and the purpose's budget soft limit.
- */
-export interface GatewayOptions {
-  readonly verify: (token: string) => SessionTokenClaims;
-  readonly principals: PrincipalCache;
-  /** Whether `runId` is an active run leased to `sandboxId` in `teamId` (cached by the caller). */
-  readonly isRunLeased: (teamId: string, runId: string, sandboxId: string) => Promise<boolean>;
-  /** Run-bound tokens (KOBE-118). */
-  readonly runTokens: {
-    /** Public key(s) of the model-gateway pair (KOBE-521): the gateway verifies, never signs. */
-    readonly keys: SessionVerifyKeys;
-    /** The server's record: not revoked or expired, run active on that sandbox (cached by caller). */
-    readonly isActive: (subject: RunTokenSubject) => Promise<boolean>;
-    /** Enforcement: a call without a run token is refused (off for rollout). */
-    readonly require: boolean;
-  };
-  /**
-   * A run's recorded thinking level (KOBE-260; cached by the caller, it never changes). Absent:
-   * calls use the model's default level.
-   */
-  readonly runThinking?: (
-    teamId: string,
-    runId: string,
-  ) => Promise<ThinkingLevel | null | undefined>;
-  /** Run traces (KOBE-274); absent: spans of sandbox calls hang under the run's root. */
-  readonly tracing?: GatewayTracing;
-  /** Server-originated calls (KOBE-234); without it every server-call token is refused. */
-  readonly serverCalls?: ServerCallOptions;
-  /**
-   * Shared eval cases for a running Orbit eval Job (KOBE-276): `GET /kobe/eval-cases` with the
-   * eval's own token answers its `cases.json` (null: not that member's running eval, or none).
-   * Absent: the route is a 404.
-   */
-  readonly evalCases?: {
-    readonly load: (teamId: string, userId: string, evalId: string) => Promise<string | null>;
-  };
-  readonly bifrostUrl: string;
-  readonly limiter: CallLimiter;
-  /** Request bytes held in memory, per sandbox and in total. */
-  readonly bytes: ByteBudget;
-  /** Requests per sandbox per second (before anything touches the database). */
-  readonly rate: RequestRate;
-  readonly gate: CallGate;
-  readonly sink: UsageSink;
-  /** Bifrost refused a virtual key Kobe holds: ask the sync to re-push (NOTIFY `resync`). */
-  readonly onBifrostForgotKey: () => void;
-  readonly logger: Logger;
-  readonly settings: { readonly maxBodyBytes: number; readonly idleTimeoutMs: number };
-  readonly ready: () => boolean;
-}
+export type { GatewayOptions } from "./gateway/options.js";
 
 /** Where an Orbit eval Job reads its shared cases (KOBE-276); never forwarded to Bifrost. */
 export const EVAL_CASES_PATH = "/kobe/eval-cases";
 
-/** Bifrost's error types meaning "this virtual key does not exist here". */
-const KEY_UNKNOWN = new Set(["access_not_found", "virtual_key_required"]);
-const GEMINI_STATUS: Readonly<Record<number, string>> = {
-  400: "INVALID_ARGUMENT",
-  401: "UNAUTHENTICATED",
-  403: "PERMISSION_DENIED",
-  404: "NOT_FOUND",
-  413: "INVALID_ARGUMENT",
-  429: "RESOURCE_EXHAUSTED",
-  503: "UNAVAILABLE",
-};
-
-/** An error in the shape the route's SDK parses (so Pi shows the message). */
-function sendError(
-  res: ServerResponse,
-  kind: RouteKind,
-  status: number,
-  code: string,
-  message: string,
-  retryAfterSeconds?: number,
-): void {
-  if (res.headersSent) {
-    res.destroy();
-    return;
-  }
-  const body =
-    kind === "anthropic"
-      ? { type: "error", error: { type: code, message } }
-      : kind === "gemini"
-        ? {
-            error: {
-              code: status,
-              message,
-              status: GEMINI_STATUS[status] ?? "UNKNOWN",
-              // Gemini carries no string code: Kobe's goes in an ErrorInfo detail.
-              details: [
-                {
-                  "@type": "type.googleapis.com/google.rpc.ErrorInfo",
-                  reason: code,
-                  domain: "kobe",
-                },
-              ],
-            },
-          }
-        : { error: { message, type: code, code } };
-  const payload = JSON.stringify(body);
-  res.writeHead(status, {
-    "content-type": "application/json",
-    "content-length": Buffer.byteLength(payload),
-    ...(retryAfterSeconds !== undefined ? { "retry-after": String(retryAfterSeconds) } : {}),
-  });
-  res.end(payload);
+/** One gateway: its options and its Bifrost connection. */
+interface Gateway {
+  readonly options: GatewayOptions;
+  readonly upstream: Upstream;
 }
 
-type BodyResult = Buffer | "too_large" | "busy";
-
-/**
- * Reads a request body of at most `max` bytes, taking its bytes from the budget first. With a
- * declared length the body is copied into one buffer of that size as it arrives (≈1× in memory);
- * without one (chunked) the chunks are joined at the end, briefly ≈2×, so chunked bodies are
- * charged twice their size. `taken` reports what to give back.
- */
-function readBody(
-  req: IncomingMessage,
-  max: number,
-  take: (bytes: number) => boolean,
-  taken: (bytes: number) => void,
-): Promise<BodyResult> {
-  return new Promise((resolve, reject) => {
-    const header = req.headers["content-length"];
-    const declared = header === undefined ? undefined : Number(header);
-    if (declared !== undefined && (!Number.isSafeInteger(declared) || declared > max)) {
-      resolve("too_large");
-      return;
-    }
-    if (declared !== undefined) {
-      if (!take(declared)) {
-        resolve("busy");
-        return;
-      }
-      taken(declared);
-    }
-    const fixed = declared !== undefined ? Buffer.allocUnsafe(declared) : undefined;
-    const chunks: Buffer[] = [];
-    let size = 0;
-    let done = false;
-    const finish = (r: BodyResult) => {
-      if (done) return;
-      done = true;
-      if (typeof r === "string") req.pause();
-      resolve(r);
-    };
-    req.on("data", (chunk: Buffer) => {
-      if (done) return;
-      if (size + chunk.length > max || (fixed && size + chunk.length > fixed.length)) {
-        return finish("too_large");
-      }
-      if (fixed) {
-        chunk.copy(fixed, size);
-      } else {
-        if (!take(2 * chunk.length)) return finish("busy");
-        taken(2 * chunk.length);
-        chunks.push(chunk);
-      }
-      size += chunk.length;
-    });
-    req.on("end", () => finish(fixed ? fixed.subarray(0, size) : Buffer.concat(chunks)));
-    req.on("error", reject);
-  });
+/** One authenticated inference request on a known route, past the per-sandbox limits. */
+interface InferenceRequest {
+  readonly req: IncomingMessage;
+  readonly res: ServerResponse;
+  readonly span: RequestSpan;
+  readonly url: URL;
+  readonly route: Route;
+  readonly kind: RouteKind;
+  readonly identity: CallerIdentity;
+  readonly serverCall: ServerCallClaims | undefined;
+  readonly evalSandbox: boolean | undefined;
+  /** Logs a refused server call (sandbox calls are not logged). */
+  readonly skipped: (reason: string) => void;
 }
 
-const REASONS: Readonly<
-  Record<Exclude<Resolution, { ok: true }>["reason"], [number, string, string]>
-> = {
-  not_member: [401, "session_revoked", "This sandbox's user is no longer a member of the team."],
-  sandbox_revoked: [401, "session_revoked", "This sandbox's session has been revoked."],
-  no_key: [503, "model_access_pending", "Model access for this user is being set up; retry."],
-  key_unreadable: [503, "model_access_unavailable", "Model access is unavailable; retry later."],
-};
-
-/**
- * A server call's run attribution (KOBE-234 review L1): the token's run must be a completed run of
- * its thread leased to its member, else 403. A run-less purpose ({@link serverCallBoundToRun}
- * false, KOBE-564) carries no run or thread by contract, so there is nothing to check: the call is
- * the member's own, under their budget lines, and its usage row names no run.
- */
-async function serverCallAttribution(
-  options: Pick<GatewayOptions, "serverCalls">,
-  claims: ServerCallClaims,
-): Promise<
-  | { readonly ok: true; readonly runId: string | undefined }
-  | { readonly ok: false; readonly status: 403; readonly code: string; readonly message: string }
-> {
-  // KOBE-409: an optional-run purpose may name no run; one that names a run must name a live run
-  // (still starting, running or completed, never a terminal failure) of that thread and member.
-  const optional = serverCallRunOptional(claims.purpose);
-  if (optional && claims.run_id === undefined) return { ok: true, runId: undefined };
-  if (!optional && !serverCallBoundToRun(claims.purpose)) return { ok: true, runId: undefined };
-  const matches =
-    claims.run_id !== undefined &&
-    claims.thread_id !== undefined &&
-    (await options.serverCalls?.runMatches({
-      teamId: claims.team_id,
-      runId: claims.run_id,
-      threadId: claims.thread_id,
-      userId: claims.user_id,
-      // A learning pass is the thread author's own (KOBE-391): its lease check admits only them.
-      ...(serverCallNamesPass(claims.purpose) ? { authorOnly: true } : {}),
-      ...(optional ? { live: true as const } : {}),
-    }));
-  if (!matches) {
-    return {
-      ok: false,
-      status: 403,
-      code: "server_call_run_mismatch",
-      message: optional
-        ? "That run is not a live run of this thread and member."
-        : serverCallNamesPass(claims.purpose)
-          ? "That run is not a completed run of this thread by its author."
-          : "That run is not a completed run of this thread and member.",
-    };
-  }
-  // A learning pass's token names its pass (KOBE-391): running now, this thread's, this member's.
-  if (serverCallNamesPass(claims.purpose)) {
-    const running =
-      claims.pass_id !== undefined &&
-      claims.thread_id !== undefined &&
-      (await options.serverCalls?.passRunning({
-        teamId: claims.team_id,
-        passId: claims.pass_id,
-        threadId: claims.thread_id,
-        userId: claims.user_id,
-      }));
-    if (!running) {
-      return {
-        ok: false,
-        status: 403,
-        code: "server_call_pass_mismatch",
-        message: "That learning pass is not running on this thread for this member.",
-      };
-    }
-  }
-  return { ok: true, runId: claims.run_id };
-}
+type Resolved = Extract<Resolution, { ok: true }>;
 
 export function createModelGateway(options: GatewayOptions): Server {
-  const { logger, settings } = options;
-  const target = new URL(options.bifrostUrl);
-  const secure = target.protocol === "https:";
-  const send = secure ? httpsRequest : httpRequest;
-  const agent = secure
-    ? new HttpsAgent({ keepAlive: true, maxSockets: 256 })
-    : new HttpAgent({ keepAlive: true, maxSockets: 256 });
-
-  type Caller =
-    | {
-        readonly ok: true;
-        readonly identity: {
-          readonly teamId: string;
-          readonly userId: string;
-          readonly sandboxId: string | undefined;
-        };
-        readonly serverCall: ServerCallClaims | undefined;
-        /** A skill eval's own sandbox (its token names an `eval_thread`, KOBE-327). */
-        readonly evalSandbox?: boolean;
-      }
-    | {
-        readonly ok: false;
-        readonly status: number;
-        readonly code: string;
-        readonly message: string;
-      };
-
-  const NO_SESSION = {
-    ok: false,
-    status: 401,
-    code: "invalid_session_token",
-    message: "A valid sandbox session token is required.",
-  } as const;
-
-  /** Who calls: a server call (its header decides, KOBE-234) or a sandbox (its session token). */
-  function authenticate(req: IncomingMessage, url: URL, route: Route | undefined): Caller {
-    if (isServerCall(req.headers)) {
-      const auth = authenticateServerCall(
-        options.serverCalls,
-        req.headers,
-        url.searchParams,
-        route,
-        req.method,
-      );
-      if (!auth.ok) return auth;
-      const { team_id: teamId, user_id: userId } = auth.claims;
-      return {
-        ok: true,
-        identity: { teamId, userId, sandboxId: undefined },
-        serverCall: auth.claims,
-      };
-    }
-    const credential = extractCredential(req.headers, url.searchParams);
-    if (!credential.ok) return NO_SESSION;
-    let claims: SessionTokenClaims;
-    try {
-      claims = options.verify(credential.token);
-    } catch (err) {
-      if (!(err instanceof SessionTokenError)) throw err;
-      return NO_SESSION;
-    }
-    return {
-      ok: true,
-      identity: { teamId: claims.team_id, userId: claims.user_id, sandboxId: claims.sub },
-      serverCall: undefined,
-      ...(claims.eval_thread === undefined ? {} : { evalSandbox: true }),
-    };
-  }
-
-  /**
-   * An Orbit eval Job's shared cases (KOBE-276 review S2): the case text stays in Postgres until
-   * the Job asks for it with its eval token. The eval must be live for that member (the
-   * principal), within the request rate, and the store answers only that member's running eval.
-   */
-  async function serveEvalCases(
-    req: IncomingMessage,
-    res: ServerResponse,
-    identity: {
-      readonly teamId: string;
-      readonly userId: string;
-      readonly sandboxId: string | undefined;
-    },
-  ): Promise<void> {
-    const evalId = identity.sandboxId;
-    if (!options.evalCases || req.method !== "GET" || evalId === undefined) {
-      sendError(res, "openai", 404, "not_found", "Not a model inference endpoint.");
-      return;
-    }
-    if (!options.rate.allow(evalId)) {
-      sendError(res, "openai", 429, "rate_limited", "Too many requests.", 1);
-      return;
-    }
-    const who = await options.principals.resolve(identity.teamId, identity.userId, evalId);
-    if (!who.ok) {
-      sendError(res, "openai", 403, "forbidden", "This eval can't read shared cases.");
-      return;
-    }
-    let file: string | null;
-    try {
-      file = await options.evalCases.load(identity.teamId, identity.userId, evalId);
-    } catch (err) {
-      logger.error({ err, teamId: identity.teamId, evalId }, "eval cases could not be read");
-      sendError(res, "openai", 503, "unavailable", "Shared cases are unavailable.");
-      return;
-    }
-    if (file === null) {
-      sendError(res, "openai", 404, "not_found", "No shared cases for this eval.");
-      return;
-    }
-    res.writeHead(200, {
-      "content-type": "application/json",
-      "cache-control": "no-store",
-      "x-content-type-options": "nosniff",
-    });
-    res.end(file);
-  }
-
-  async function handle(
-    req: IncomingMessage,
-    res: ServerResponse,
-    span: RequestSpan,
-  ): Promise<void> {
-    const url = new URL(req.url ?? "/", "http://gateway.invalid");
-    if (url.pathname === "/healthz" && req.method === "GET") {
-      span.setAttributes({ "http.route": "/healthz" });
-      const ready = options.ready();
-      res.writeHead(ready ? 200 : 503, { "content-type": "application/json" });
-      res.end(JSON.stringify({ status: ready ? "ok" : "draining", service: "model-gateway" }));
-      return;
-    }
-    const route = classify(req.method ?? "", url.pathname, isServerCall(req.headers));
-    const kind = route?.kind ?? "openai";
-    // Route templates only (KOBE-525): the per-route latency query groups by them.
-    if (route) span.setAttributes({ "http.route": routeTemplate(route) });
-    else if (url.pathname === EVAL_CASES_PATH)
-      span.setAttributes({ "http.route": EVAL_CASES_PATH });
-
-    // 1. The caller: a server call's token (KOBE-234), else the sandbox's session token (any SDK's
-    // API-key header). No route detail before authentication.
-    const caller = authenticate(req, url, route);
-    if (!caller.ok) {
-      sendError(res, kind, caller.status, caller.code, caller.message);
-      return;
-    }
-    if (url.pathname === EVAL_CASES_PATH && !caller.serverCall) {
-      await serveEvalCases(req, res, caller.identity);
-      return;
-    }
-    // 2. Inference paths only.
-    if (!route) {
-      sendError(res, kind, 404, "not_found", "Not a model inference endpoint.");
-      return;
-    }
-    const { identity, serverCall, evalSandbox } = caller;
-    // Limits are per sandbox; server calls have their own, per team (review L4).
-    const limitKey = identity.sandboxId ?? `server-call:${identity.teamId}`;
-    const limits = serverCall && options.serverCalls ? options.serverCalls : options;
-    const skipped = (reason: string) => {
-      if (serverCall) {
-        logger.warn(
-          {
-            teamId: identity.teamId,
-            runId: serverCall.run_id,
-            purpose: serverCall.purpose,
-            reason,
-          },
-          "server call skipped",
-        );
-      }
-    };
-
-    // 3. Per-sandbox request rate and concurrent calls, before anything touches the database.
-    if (!limits.rate.allow(limitKey)) {
-      skipped("rate_limited");
-      sendError(res, kind, 429, "rate_limited", "Too many model requests; slow down.", 1);
-      return;
-    }
-    const release = limits.limiter.acquire(limitKey);
-    if (!release) {
-      skipped("too_many_concurrent_calls");
-      sendError(res, kind, 429, "too_many_concurrent_calls", "Too many concurrent model calls.", 1);
-      return;
-    }
-    const started = Date.now();
-    let bytesIn = 0;
-    let promptBody: Buffer | undefined;
-    let usage: UsageReading | undefined;
-    let ttfbMs: number | undefined;
-    let releaseGate: ((written: boolean) => void) | undefined;
-    let bytesOut = 0;
-    let bytesHeld = 0;
-    let status = 0;
-    let errorType: string | undefined;
-    let aborted = false;
-    let call: CallContext | undefined;
-    let traceContext: Context | undefined;
-    let thinkingLevel: ThinkingLevel | undefined;
-    try {
-      // 4. Liveness, the member's virtual key and the team's enabled models.
-      let resolution = await options.principals.resolve(
-        identity.teamId,
-        identity.userId,
-        identity.sandboxId,
-      );
-      if (!resolution.ok) {
-        const [code, errCode, message] = REASONS[resolution.reason];
-        status = code;
-        if (code === 401) {
-          logger.info(
-            { ...identity, reason: resolution.reason },
-            "refused a revoked session token",
-          );
-        }
-        sendError(res, kind, code, errCode, message, code === 503 ? 5 : undefined);
-        return;
-      }
-
-      // 5. Run attribution: the run token when sent (it must verify, no fallback), else the legacy
-      // advisory header, unless enforcement makes the token mandatory (KOBE-118).
-      // A server call's run is its token's: the completed run that triggered it, of the token's
-      // thread and member in the record (review L1). A run-less purpose (KOBE-564: a member's own
-      // request, `skill_manifest`) names no run: its row is attributed to the member alone.
-      const attribution = serverCall
-        ? await serverCallAttribution(options, serverCall)
-        : identity.sandboxId === undefined
-          ? NO_SESSION
-          : await resolveRunAttribution(options, req.headers, {
-              teamId: identity.teamId,
-              sandboxId: identity.sandboxId,
-            });
-      if (!attribution.ok) {
-        status = attribution.status;
-        sendError(res, kind, attribution.status, attribution.code, attribution.message);
-        return;
-      }
-      const runId = attribution.runId;
-      // The span opens only now, in the attributed run's trace (KOBE-274 listener rule).
-      const placement = await placeRequestSpan(options.tracing, req.headers, {
-        teamId: identity.teamId,
-        runId,
-        serverCall,
-      });
-      span.setAttributes(placement.attributes);
-      traceContext = span.open(placement.parent);
-
-      // 6. The body (bounded, within the byte budget), its model, the team's enablement.
-      const body = await readBody(
-        req,
-        serverCall
-          ? serverCallBodyLimit(settings.maxBodyBytes, serverCall.purpose)
-          : settings.maxBodyBytes,
-        (n) => options.bytes.tryTake(limitKey, n),
-        (n) => {
-          bytesHeld += n;
-        },
-      );
-      if (body === "too_large" || body === "busy") {
-        res.setHeader("connection", "close");
-        status = body === "too_large" ? 413 : 429;
-        if (body === "too_large") {
-          sendError(res, kind, 413, "request_too_large", "The request body is too large.");
-        } else {
-          sendError(res, kind, 429, "too_many_bytes_in_flight", "The gateway is busy; retry.", 1);
-        }
-        return;
-      }
-      bytesIn = body.length;
-      if (telemetryState().captureContent) promptBody = body;
-      let forwardBody = body;
-      let model = route.pathModel;
-      // Count-only endpoints generate nothing (KOBE-43 review): no output allowance.
-      const countOnly = route.path.endsWith("/count_tokens") || route.path.endsWith(":countTokens");
-      let outputAllowance = chargedOutput(undefined, 1, countOnly);
-      const embeddings = route.path === SERVER_CALL_EMBEDDINGS_PATH;
-      if (serverCall) {
-        // The contract's shape, the token's model and cap (no tools, no streaming).
-        const checked = checkServerCallBody(
-          body,
-          serverCall,
-          resolution.reasoningModels.has(serverCall.model),
-          resolution.outputCaps.get(serverCall.model),
-        );
-        if (!checked.ok) {
-          status = checked.status;
-          sendError(res, kind, checked.status, checked.code, checked.message);
-          return;
-        }
-        model = serverCall.model;
-        outputAllowance = chargedOutput(checked.maxOutputTokens, 1, embeddings);
-      } else if (req.method === "POST") {
-        const scanned = topLevelModel(body);
-        if (!scanned.ok) {
-          status = 400;
-          sendError(
-            res,
-            kind,
-            400,
-            "invalid_request",
-            "The body must be a JSON object with one string model.",
-          );
-          return;
-        }
-        if (!route.pathModel) model = scanned.model;
-        outputAllowance = chargedOutput(scanned.maxOutputTokens, scanned.choices, countOnly);
-        // KOBE-43: deferred (background) Responses are billed after the call ends, out of the
-        // ledger's sight: refused.
-        if (scanned.background) {
-          status = 400;
-          sendError(
-            res,
-            kind,
-            400,
-            "background_not_supported",
-            "Background responses are not supported through the model gateway.",
-          );
-          return;
-        }
-        // KOBE-260 review S5: Bifrost's `fallbacks` would reach other models past every
-        // per-model check (enablement, thinking): never from a sandbox.
-        if (scanned.fallbacks) {
-          status = 400;
-          sendError(
-            res,
-            kind,
-            400,
-            "fallbacks_not_supported",
-            "Model fallbacks are not accepted through the model gateway; the run's model is fixed.",
-          );
-          return;
-        }
-        // KOBE-260: the thinking level the server decided, in the model's control's form.
-        const policy = model === undefined ? undefined : resolution.thinking.get(model);
-        if (policy !== undefined) {
-          const runLevel =
-            runId === undefined ? undefined : await options.runThinking?.(identity.teamId, runId);
-          const level = callThinkingLevel(policy, runLevel ?? undefined, {
-            eval: resolution.eval,
-          });
-          const rewritten = applyThinking(body, route, policy, level);
-          if (!rewritten.ok) {
-            status = rewritten.status;
-            sendError(res, kind, rewritten.status, rewritten.code, rewritten.message);
-            return;
-          }
-          forwardBody = rewritten.body;
-          thinkingLevel = rewritten.level;
-          // Review S7: a written thinking budget is output the reservation must hold.
-          if (rewritten.budgetTokens !== undefined && !countOnly) {
-            outputAllowance = Math.max(
-              outputAllowance,
-              chargedOutput(rewritten.budgetTokens, scanned.choices, false),
-            );
-          }
-        }
-        // KOBE-43: a streaming Chat Completions call always asks for its usage report.
-        if (scanned.stream && route.path === "/v1/chat/completions") {
-          forwardBody = withStreamUsage(forwardBody);
-        }
-      }
-      call = {
-        ...identity,
-        callId: randomUUID(),
-        runId,
-        ...(serverCall ? { purpose: serverCall.purpose } : {}),
-        ...(evalSandbox ? { eval: true } : {}),
-        route: route.kind,
-        path: route.path,
-        model,
-        inputEstimate: Math.ceil(body.length / 4),
-        outputAllowance,
-      };
-      // Every model call names a model the team enabled (checked here too, so a disable holds even
-      // when a push to Bifrost failed). Listing models (GET) names none.
-      // KOBE-409: the Site embedding model is a Site choice, never a Workspace's chat model (it is
-      // in no catalog, so in no picker): a server-signed `memory_embed` token names it, and the
-      // member's virtual key allows it only because the sync adds the Site's embedding model to
-      // every key, so Bifrost still refuses any other model.
-      const siteEmbedding = serverCall?.purpose === "memory_embed";
-      if (
-        req.method === "POST" &&
-        (!model || (!siteEmbedding && !resolution.enabledModels.has(model)))
-      ) {
-        status = 403;
-        sendError(
-          res,
-          kind,
-          403,
-          "model_not_enabled",
-          "That model is not enabled for this team (use a model from the team's catalog).",
-        );
-        return;
-      }
-      const decision = await options.gate.admit(call);
-      if (decision.ok && decision.release) releaseGate = decision.release;
-      if (!decision.ok) {
-        skipped(decision.code);
-        status = decision.status;
-        sendError(
-          res,
-          kind,
-          decision.status,
-          decision.code,
-          decision.message,
-          decision.retryAfterSeconds,
-        );
-        return;
-      }
-
-      // 6.–7. Forward; retry once if Bifrost no longer knows the virtual key (restarted, resynced).
-      const path = `${route.path}${forwardedQuery(url.searchParams)}`;
-      for (let attempt = 0; ; attempt++) {
-        const outcome = await forward(
-          req,
-          res,
-          path,
-          forwardBody,
-          resolution.virtualKey,
-          attempt === 0,
-          {
-            kind: route.kind,
-            started,
-            outputAllowance,
-            embeddings,
-            // KOBE-409 L4: a listing names only the team's enabled models.
-            ...(req.method === "GET" && route.path === "/v1/models"
-              ? { listModels: resolution.enabledModels }
-              : {}),
-          },
-          traceContext,
-        );
-        status = outcome.status;
-        errorType = outcome.errorType;
-        bytesOut = outcome.bytesOut;
-        aborted = outcome.aborted;
-        usage = outcome.usage;
-        ttfbMs = outcome.ttfbMs;
-        if (outcome.kind !== "key_unknown") return;
-        options.onBifrostForgotKey();
-        const fresh = await options.principals.resolve(
-          identity.teamId,
-          identity.userId,
-          identity.sandboxId,
-          true,
-        );
-        if (attempt === 0 && fresh.ok && fresh.virtualKey !== resolution.virtualKey) {
-          resolution = fresh;
-          continue;
-        }
-        status = 503;
-        sendError(
-          res,
-          kind,
-          503,
-          "model_gateway_resyncing",
-          "The model gateway is resyncing; retry.",
-          2,
-        );
-        return;
-      }
-    } finally {
-      release();
-      if (call) {
-        // Metadata only; the prompt joins only when content capture is on.
-        span.setAttributes({
-          ...idAttributes({
-            teamId: call.teamId,
-            userId: call.userId,
-            sandboxId: call.sandboxId,
-            runId: call.runId,
-          }),
-          "kobe.call_id": call.callId,
-          "kobe.usage_kind": call.purpose ?? (call.eval ? "eval" : "run"),
-          "kobe.route": call.route,
-          ...(thinkingLevel === undefined ? {} : { "kobe.thinking_level": thinkingLevel }),
-          ...(call.model === undefined ? {} : { "gen_ai.request.model": call.model }),
-          ...(usage === undefined
-            ? {}
-            : {
-                "gen_ai.usage.input_tokens": usage.counts.input,
-                "gen_ai.usage.output_tokens": usage.counts.output,
-              }),
-          "http.response.status_code": status,
-          "http.request.body.size": bytesIn,
-          "http.response.body.size": bytesOut,
-          "kobe.aborted": aborted,
-          ...(promptBody
-            ? contentAttributes({ "gen_ai.prompt": promptBody.toString("utf8") })
-            : {}),
-        });
-      }
-      // The reservation lasts until the call's ledger row lands (usageRecordOf: forwarded calls
-      // that named a model), so the gate never sees spend that is neither reserved nor recorded.
-      releaseGate?.(usage !== undefined && call?.model !== undefined);
-      options.bytes.give(limitKey, bytesHeld);
-      if (call) {
-        options.sink.record({
-          ...call,
-          status,
-          startedAt: new Date(started),
-          durationMs: Date.now() - started,
-          ttfbMs,
-          usage,
-          bytesIn,
-          bytesOut,
-          errorType,
-          aborted,
-        });
-      }
-    }
-  }
-
-  type Outcome = {
-    readonly kind: "done" | "key_unknown";
-    readonly status: number;
-    readonly errorType: string | undefined;
-    readonly bytesOut: number;
-    readonly aborted: boolean;
-    /** Tokens this attempt used (zero for an error answer); undefined when nothing came back. */
-    readonly usage: UsageReading | undefined;
-    readonly ttfbMs: number | undefined;
-  };
-
-  const NO_TOKENS: UsageReading = {
-    source: "reported",
-    counts: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-  };
-  const unanswered = (requestBytes: number, allowance: number): UsageReading => ({
-    source: "estimated",
-    counts: {
-      input: Math.ceil(requestBytes / 4),
-      output: allowance,
-      cacheRead: 0,
-      cacheWrite: 0,
-    },
-  });
-
-  function forward(
-    req: IncomingMessage,
-    res: ServerResponse,
-    path: string,
-    body: Buffer,
-    virtualKey: string,
-    mayRetry: boolean,
-    call: {
-      readonly kind: RouteKind;
-      readonly started: number;
-      readonly outputAllowance: number;
-      /** Embeddings generate no text: output is 0, the vectors are not counted (KOBE-409). */
-      readonly embeddings: boolean;
-      /** `GET /v1/models`: keep only these ids in the listing (`model-list.ts`). */
-      readonly listModels?: ReadonlySet<string>;
-    },
-    traceContext: Context | undefined,
-  ): Promise<Outcome> {
-    return new Promise((resolve) => {
-      let bytesOut = 0;
-      let settled = false;
-      let meter: UsageMeter | undefined;
-      let ttfbMs: number | undefined;
-      let errorAnswer = false;
-      let requestSent = false;
-      const done = (o: Omit<Outcome, "bytesOut" | "usage" | "ttfbMs">) => {
-        if (settled) return;
-        settled = true;
-        // Usage counts what the upstream produced: a stream cut short still cost its tokens, and
-        // a request Bifrost received but never answered (the sandbox hung up first, a reset) is
-        // charged its input: the provider may already have it.
-        // A 4xx is a refusal (nothing consumed); a 5xx or a call that never answered may have
-        // been processed upstream, so it is charged like a call cut short (usage/charge.ts).
-        const usage = meter
-          ? meter.finish(!o.aborted, body.length, call.outputAllowance)
-          : errorAnswer
-            ? o.status >= 500
-              ? unanswered(body.length, call.outputAllowance)
-              : NO_TOKENS
-            : requestSent
-              ? unanswered(body.length, call.outputAllowance)
-              : undefined;
-        resolve({ ...o, bytesOut, usage, ttfbMs });
-      };
-      const upstream = send(
-        {
-          protocol: target.protocol,
-          hostname: target.hostname,
-          port: target.port || (secure ? 443 : 80),
-          method: req.method,
-          path,
-          agent,
-          headers: {
-            ...forwardRequestHeaders(req.headers, virtualKey, body.length),
-            ...(traceContext === undefined ? {} : injectTraceHeaders({}, traceContext)),
-          },
-        },
-        (up) => {
-          ttfbMs = Date.now() - call.started;
-          const upStatus = up.statusCode ?? 502;
-          errorAnswer = upStatus >= 400;
-          const small = upStatus >= 400 && Number(up.headers["content-length"] ?? 0) <= 65_536;
-          if (upStatus >= 400 && small) {
-            // Buffer error bodies (small): read Bifrost's error type; spot a forgotten key.
-            const chunks: Buffer[] = [];
-            up.on("data", (c: Buffer) => chunks.push(c));
-            up.on("end", () => {
-              const text = Buffer.concat(chunks);
-              let type: string | undefined;
-              try {
-                const parsed = JSON.parse(text.toString("utf8")) as { type?: unknown };
-                type = typeof parsed.type === "string" ? parsed.type : undefined;
-              } catch {
-                type = undefined;
-              }
-              if (mayRetry && upStatus === 401 && type && KEY_UNKNOWN.has(type)) {
-                done({ kind: "key_unknown", status: upStatus, errorType: type, aborted: false });
-                return;
-              }
-              if (!res.headersSent) {
-                res.writeHead(upStatus, {
-                  ...forwardResponseHeaders(up.headers),
-                  "content-length": text.length,
-                });
-              }
-              bytesOut = text.length;
-              res.end(text);
-              done({ kind: "done", status: upStatus, errorType: type, aborted: false });
-            });
-            up.on("error", () =>
-              done({ kind: "done", status: upStatus, errorType: undefined, aborted: true }),
-            );
-            return;
-          }
-          if (call.listModels !== undefined && !errorAnswer) {
-            readModelList(up, call.listModels, res, (o, bytes) => {
-              bytesOut = bytes;
-              done(o);
-            });
-            return;
-          }
-          res.writeHead(upStatus, forwardResponseHeaders(up.headers));
-          res.flushHeaders();
-          if (!errorAnswer) {
-            meter = new UsageMeter({
-              kind: call.kind,
-              embeddings: call.embeddings,
-              contentType: up.headers["content-type"],
-              contentEncoding: up.headers["content-encoding"],
-            });
-          }
-          up.on("data", (chunk: Buffer) => {
-            bytesOut += chunk.length;
-            meter?.write(chunk);
-            if (!res.write(chunk)) up.pause();
-          });
-          res.on("drain", () => up.resume());
-          up.on("end", () => {
-            res.end();
-            done({ kind: "done", status: upStatus, errorType: undefined, aborted: false });
-          });
-          up.on("error", () => {
-            res.destroy();
-            done({ kind: "done", status: upStatus, errorType: undefined, aborted: true });
-          });
-        },
-      );
-      upstream.on("finish", () => {
-        requestSent = true;
-      });
-      upstream.setTimeout(settings.idleTimeoutMs, () => upstream.destroy(new Error("idle")));
-      upstream.on("error", (err) => {
-        if (settled) return;
-        if (!res.headersSent) {
-          logger.warn({ err: err.message }, "bifrost unreachable");
-          sendError(
-            res,
-            "openai",
-            502,
-            "model_gateway_unavailable",
-            "The model gateway is unavailable.",
-          );
-          done({ kind: "done", status: 502, errorType: undefined, aborted: false });
-        } else {
-          res.destroy();
-          done({ kind: "done", status: res.statusCode, errorType: undefined, aborted: true });
-        }
-      });
-      // The sandbox went away: cancel the upstream call (Bifrost cancels the provider request).
-      res.on("close", () => {
-        if (!res.writableFinished) {
-          upstream.destroy();
-          done({ kind: "done", status: res.statusCode, errorType: undefined, aborted: true });
-        }
-      });
-      upstream.end(body);
-    });
-  }
-
-  /** Reads Bifrost's whole model listing and answers with the enabled entries only. */
-  function readModelList(
-    up: IncomingMessage,
-    enabled: ReadonlySet<string>,
-    res: ServerResponse,
-    done: (o: Omit<Outcome, "bytesOut" | "usage" | "ttfbMs">, bytesOut: number) => void,
-  ): void {
-    const upStatus = up.statusCode ?? 502;
-    const chunks: Buffer[] = [];
-    let size = 0;
-    const fail = () => {
-      if (!res.headersSent) {
-        sendError(res, "openai", 502, "model_gateway_unavailable", "The model list is unreadable.");
-      }
-      done({ kind: "done", status: 502, errorType: undefined, aborted: false }, 0);
-    };
-    up.on("data", (c: Buffer) => {
-      size += c.length;
-      if (size > MODEL_LIST_MAX_BYTES) {
-        up.destroy();
-        fail();
-        return;
-      }
-      chunks.push(c);
-    });
-    up.on("end", () => {
-      if (size > MODEL_LIST_MAX_BYTES) return;
-      const text = filterModelList(Buffer.concat(chunks), enabled);
-      if (text === undefined) {
-        fail();
-        return;
-      }
-      const headers = forwardResponseHeaders(up.headers);
-      delete headers["content-encoding"];
-      res.writeHead(upStatus, { ...headers, "content-length": text.length });
-      res.end(text);
-      done({ kind: "done", status: upStatus, errorType: undefined, aborted: false }, text.length);
-    });
-    up.on("error", fail);
-  }
+  const { logger } = options;
+  const upstream = createUpstream(options);
+  const gateway: Gateway = { options, upstream };
 
   const server = createServer((req, res) => {
-    traceNodeRequest("model_gateway.request", req, res, (span) => handle(req, res, span)).catch(
-      (err: unknown) => {
-        logger.error({ err }, "model gateway request failed");
-        if (!res.headersSent) sendError(res, "openai", 500, "internal_error", "Internal error.");
-        else res.destroy();
-      },
-    );
+    traceNodeRequest("model_gateway.request", req, res, (span) =>
+      handle(gateway, req, res, span),
+    ).catch((err: unknown) => {
+      logger.error({ err }, "model gateway request failed");
+      if (!res.headersSent) sendError(res, "openai", 500, "internal_error", "Internal error.");
+      else res.destroy();
+    });
   });
   // Slow-loris bounds: headers within 10 s, the request body within 2 minutes; responses
   // (streams) are bounded by the upstream idle timeout instead.
   server.headersTimeout = 10_000;
   server.requestTimeout = 120_000;
   server.keepAliveTimeout = 5_000;
-  server.on("close", () => agent.destroy());
+  server.on("close", () => upstream.agent.destroy());
   return server;
+}
+
+async function handle(
+  gateway: Gateway,
+  req: IncomingMessage,
+  res: ServerResponse,
+  span: RequestSpan,
+): Promise<void> {
+  const { options } = gateway;
+  const { logger } = options;
+  const url = new URL(req.url ?? "/", "http://gateway.invalid");
+  if (url.pathname === "/healthz" && req.method === "GET") {
+    span.setAttributes({ "http.route": "/healthz" });
+    const ready = options.ready();
+    res.writeHead(ready ? 200 : 503, { "content-type": "application/json" });
+    res.end(JSON.stringify({ status: ready ? "ok" : "draining", service: "model-gateway" }));
+    return;
+  }
+  const route = classify(req.method ?? "", url.pathname, isServerCall(req.headers));
+  const kind = route?.kind ?? "openai";
+  // Route templates only (KOBE-525): the per-route latency query groups by them.
+  if (route) span.setAttributes({ "http.route": routeTemplate(route) });
+  else if (url.pathname === EVAL_CASES_PATH) span.setAttributes({ "http.route": EVAL_CASES_PATH });
+
+  // 1. The caller: a server call's token (KOBE-234), else the sandbox's session token (any SDK's
+  // API-key header). No route detail before authentication.
+  const caller = authenticate(options, req, url, route);
+  if (!caller.ok) {
+    sendError(res, kind, caller.status, caller.code, caller.message);
+    return;
+  }
+  if (url.pathname === EVAL_CASES_PATH && !caller.serverCall) {
+    await serveEvalCases(options, req, res, caller.identity);
+    return;
+  }
+  // 2. Inference paths only.
+  if (!route) {
+    sendError(res, kind, 404, "not_found", "Not a model inference endpoint.");
+    return;
+  }
+  const { identity, serverCall, evalSandbox } = caller;
+  // Limits are per sandbox; server calls have their own, per team (review L4).
+  const limitKey = identity.sandboxId ?? `server-call:${identity.teamId}`;
+  const limits = serverCall && options.serverCalls ? options.serverCalls : options;
+  const skipped = (reason: string) => {
+    if (serverCall) {
+      logger.warn(
+        {
+          teamId: identity.teamId,
+          runId: serverCall.run_id,
+          purpose: serverCall.purpose,
+          reason,
+        },
+        "server call skipped",
+      );
+    }
+  };
+
+  // 3. Per-sandbox request rate and concurrent calls, before anything touches the database.
+  if (!limits.rate.allow(limitKey)) {
+    skipped("rate_limited");
+    sendError(res, kind, 429, "rate_limited", "Too many model requests; slow down.", 1);
+    return;
+  }
+  const release = limits.limiter.acquire(limitKey);
+  if (!release) {
+    skipped("too_many_concurrent_calls");
+    sendError(res, kind, 429, "too_many_concurrent_calls", "Too many concurrent model calls.", 1);
+    return;
+  }
+  const state = newRequestState(Date.now(), limitKey);
+  const request: InferenceRequest = {
+    req,
+    res,
+    span,
+    url,
+    route,
+    kind,
+    identity,
+    serverCall,
+    evalSandbox,
+    skipped,
+  };
+  try {
+    await serveInference(gateway, request, state);
+  } finally {
+    release();
+    finishRequest(options, span, state);
+  }
+}
+
+/** Steps 4.–7. of an inference call; `state` collects what the call's metering needs. */
+async function serveInference(
+  gateway: Gateway,
+  request: InferenceRequest,
+  state: RequestState,
+): Promise<void> {
+  const { options } = gateway;
+  const { logger, settings } = options;
+  const { req, res, span, route, kind, identity, serverCall } = request;
+  // 4. Liveness, the member's virtual key and the team's enabled models.
+  const resolution = await options.principals.resolve(
+    identity.teamId,
+    identity.userId,
+    identity.sandboxId,
+  );
+  if (!resolution.ok) {
+    const [code, errCode, message] = REASONS[resolution.reason];
+    state.status = code;
+    if (code === 401) {
+      logger.info({ ...identity, reason: resolution.reason }, "refused a revoked session token");
+    }
+    sendError(res, kind, code, errCode, message, code === 503 ? 5 : undefined);
+    return;
+  }
+
+  // 5. Run attribution: the run token when sent (it must verify, no fallback), else the legacy
+  // advisory header, unless enforcement makes the token mandatory (KOBE-118).
+  // A server call's run is its token's: the completed run that triggered it, of the token's
+  // thread and member in the record (review L1). A run-less purpose (KOBE-564: a member's own
+  // request, `skill_manifest`) names no run: its row is attributed to the member alone.
+  const attribution = serverCall
+    ? await serverCallAttribution(options, serverCall)
+    : identity.sandboxId === undefined
+      ? NO_SESSION
+      : await resolveRunAttribution(options, req.headers, {
+          teamId: identity.teamId,
+          sandboxId: identity.sandboxId,
+        });
+  if (!attribution.ok) {
+    state.status = attribution.status;
+    sendError(res, kind, attribution.status, attribution.code, attribution.message);
+    return;
+  }
+  const runId = attribution.runId;
+  // The span opens only now, in the attributed run's trace (KOBE-274 listener rule).
+  const placement = await placeRequestSpan(options.tracing, req.headers, {
+    teamId: identity.teamId,
+    runId,
+    serverCall,
+  });
+  span.setAttributes(placement.attributes);
+  state.traceContext = span.open(placement.parent);
+
+  // 6. The body (bounded, within the byte budget), its model, the team's enablement.
+  const body = await readBody(
+    req,
+    serverCall
+      ? serverCallBodyLimit(settings.maxBodyBytes, serverCall.purpose)
+      : settings.maxBodyBytes,
+    (n) => options.bytes.tryTake(state.limitKey, n),
+    (n) => {
+      state.bytesHeld += n;
+    },
+  );
+  if (body === "too_large" || body === "busy") {
+    res.setHeader("connection", "close");
+    state.status = body === "too_large" ? 413 : 429;
+    if (body === "too_large") {
+      sendError(res, kind, 413, "request_too_large", "The request body is too large.");
+    } else {
+      sendError(res, kind, 429, "too_many_bytes_in_flight", "The gateway is busy; retry.", 1);
+    }
+    return;
+  }
+  state.bytesIn = body.length;
+  if (telemetryState().captureContent) state.promptBody = body;
+  const prepared = await prepareBody(
+    options,
+    req,
+    route,
+    serverCall,
+    resolution,
+    identity.teamId,
+    runId,
+    body,
+  );
+  if (!prepared.ok) {
+    state.status = prepared.status;
+    sendError(res, kind, prepared.status, prepared.code, prepared.message);
+    return;
+  }
+  state.thinkingLevel = prepared.thinkingLevel;
+  if (!(await admitCall(gateway, request, state, resolution, runId, body, prepared))) return;
+  await forwardWithRetry(gateway, request, state, resolution, prepared);
+}
+
+/** The call's context, the team's enablement of its model and the {@link CallGate}. */
+async function admitCall(
+  gateway: Gateway,
+  request: InferenceRequest,
+  state: RequestState,
+  resolution: Resolved,
+  runId: string | undefined,
+  body: Buffer,
+  prepared: { readonly model: string | undefined; readonly outputAllowance: number },
+): Promise<boolean> {
+  const { req, res, route, kind, identity, serverCall, evalSandbox } = request;
+  const { model, outputAllowance } = prepared;
+  state.call = {
+    ...identity,
+    callId: randomUUID(),
+    runId,
+    ...(serverCall ? { purpose: serverCall.purpose } : {}),
+    ...(evalSandbox ? { eval: true } : {}),
+    route: route.kind,
+    path: route.path,
+    model,
+    inputEstimate: Math.ceil(body.length / 4),
+    outputAllowance,
+  };
+  // Every model call names a model the team enabled (checked here too, so a disable holds even
+  // when a push to Bifrost failed). Listing models (GET) names none.
+  // KOBE-409: the Site embedding model is a Site choice, never a Workspace's chat model (it is
+  // in no catalog, so in no picker): a server-signed `memory_embed` token names it, and the
+  // member's virtual key allows it only because the sync adds the Site's embedding model to
+  // every key, so Bifrost still refuses any other model.
+  const siteEmbedding = serverCall?.purpose === "memory_embed";
+  if (
+    req.method === "POST" &&
+    (!model || (!siteEmbedding && !resolution.enabledModels.has(model)))
+  ) {
+    state.status = 403;
+    sendError(
+      res,
+      kind,
+      403,
+      "model_not_enabled",
+      "That model is not enabled for this team (use a model from the team's catalog).",
+    );
+    return false;
+  }
+  const decision = await gateway.options.gate.admit(state.call);
+  if (decision.ok && decision.release) state.releaseGate = decision.release;
+  if (!decision.ok) {
+    request.skipped(decision.code);
+    state.status = decision.status;
+    sendError(
+      res,
+      kind,
+      decision.status,
+      decision.code,
+      decision.message,
+      decision.retryAfterSeconds,
+    );
+    return false;
+  }
+  return true;
+}
+
+/** 6.–7. Forward; retry once if Bifrost no longer knows the virtual key (restarted, resynced). */
+async function forwardWithRetry(
+  gateway: Gateway,
+  request: InferenceRequest,
+  state: RequestState,
+  admitted: Resolved,
+  prepared: {
+    readonly forwardBody: Buffer;
+    readonly outputAllowance: number;
+    readonly embeddings: boolean;
+  },
+): Promise<void> {
+  const { options, upstream } = gateway;
+  const { req, res, url, route, kind, identity } = request;
+  const { forwardBody, outputAllowance, embeddings } = prepared;
+  let resolution = admitted;
+  const path = `${route.path}${forwardedQuery(url.searchParams)}`;
+  for (let attempt = 0; ; attempt++) {
+    const outcome = await forward(
+      upstream,
+      req,
+      res,
+      path,
+      forwardBody,
+      resolution.virtualKey,
+      attempt === 0,
+      {
+        kind: route.kind,
+        started: state.started,
+        outputAllowance,
+        embeddings,
+        // KOBE-409 L4: a listing names only the team's enabled models.
+        ...(req.method === "GET" && route.path === "/v1/models"
+          ? { listModels: resolution.enabledModels }
+          : {}),
+      },
+      state.traceContext,
+    );
+    state.status = outcome.status;
+    state.errorType = outcome.errorType;
+    state.bytesOut = outcome.bytesOut;
+    state.aborted = outcome.aborted;
+    state.usage = outcome.usage;
+    state.ttfbMs = outcome.ttfbMs;
+    if (outcome.kind !== "key_unknown") return;
+    options.onBifrostForgotKey();
+    const fresh = await options.principals.resolve(
+      identity.teamId,
+      identity.userId,
+      identity.sandboxId,
+      true,
+    );
+    if (attempt === 0 && fresh.ok && fresh.virtualKey !== resolution.virtualKey) {
+      resolution = fresh;
+      continue;
+    }
+    state.status = 503;
+    sendError(
+      res,
+      kind,
+      503,
+      "model_gateway_resyncing",
+      "The model gateway is resyncing; retry.",
+      2,
+    );
+    return;
+  }
 }

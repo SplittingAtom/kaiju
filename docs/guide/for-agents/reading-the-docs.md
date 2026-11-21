@@ -23,7 +23,7 @@ called `kobe-builtin`).
 | `docs_index`  | The index, exactly as `/llms.txt` below.                                              |
 | `docs_page`   | One page as Markdown, by its slug (for example `memory` or `admin/team-admin`).       |
 | `docs_search` | Pages whose titles, summaries or headings match a query, ranked, with slugs and URLs. |
-| `docs_full`   | Every page in one text, as `/llms-full.txt`, or only one section's pages.             |
+| `docs_full`   | One section's pages in one text; the whole guide only while it fits one result.       |
 
 The **kobe-guide** skill, which Kobe installs in every team, says how to use them: for any
 question about using or administering Kobe, start with `docs_index`, read the pages that fit with
@@ -54,8 +54,10 @@ All paths are on the same address as the Kobe site itself.
    the page answers. Pick the pages that match the user's question.
 2. **Read only what you need**, one page at a time (`docs_page`, or `/docs/<slug>.md`). Prefer this
    over the full text when your context is limited.
-3. **Use the full text** (`docs_full`, or `/llms-full.txt`) when you need the whole picture at
-   once, for example to answer many questions in a row.
+3. **Use a section's full text** (`docs_full` with `section`) when you need much of one area at
+   once, for example to answer many questions in a row. Without a section it returns the whole
+   guide (as `/llms-full.txt`) only while that fits one result, and otherwise `too_large` with
+   the section names.
 4. **Follow the links.** Links between pages are absolute links to the pages' `.md` files; with
    the docs tools, pass the part after `/docs/` to `docs_page`.
 

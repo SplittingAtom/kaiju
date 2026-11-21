@@ -382,7 +382,8 @@ async function teamPass(
           }),
         )
       : NO_ORPHANS;
-  if (orphans.staging + orphans.forks > 0) logger.info({ teamId, ...orphans }, "orphans swept");
+  if (Object.values(orphans).some((n) => n > 0))
+    logger.info({ teamId, ...orphans }, "orphans swept");
   const feedbackHistory = stop()
     ? { rows: 0 }
     : await step("feedback_history", { rows: 0 }, () =>

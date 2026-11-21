@@ -113,7 +113,8 @@ read a person's portable preferences either; reading them needs its own break-gl
   audit forwarding. A short note above the events says so.
 - **Usage and spend**: spend by team, user, agent and model, and the site budget every team's
   spend counts against.
-- **Retention maximum**: the longest retention any team may choose.
+- **Retention maximum**: the longest retention any team may choose. What else Kobe deletes on its
+  own is in [Retention and deletion](../reference/retention-and-deletion.md).
 - **Legal hold**: suspend purges for a team or user, or hold the Site's own memory with a
   **Site-wide hold** (each needs two people). See
   [Memory](../memory.md#legal-hold-on-site-memory).
@@ -202,11 +203,3 @@ the site budget, and read usage and the audit log. Each change shows an **Admin 
 ("Whole site") first and is audited "via agent". Site roles, ownership, break-glass, legal hold,
 retention, deletions, connector registration, provider keys and the site settings themselves stay
 in the console. See [Admin from a conversation](admin-from-a-conversation.md).
-
-## What Kobe deletes on its own
-
-Each night Kobe deletes, after periods set in the chart (`retention.sweeps`): processed background
-events after 30 days (never pending work or a schedule's latest run), read notifications after 180
-days, per-call model usage after 13 months (daily spend totals stay), and finished agent evals
-after 12 months (each agent's latest stays). Nothing under a **Legal hold** is deleted, and the
-audit log is never swept.

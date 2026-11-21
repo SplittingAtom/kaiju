@@ -56,6 +56,7 @@ export const MEMORY_PASS_AUDIT_FAILURE_CODES = [
   "timeout",
   "model_error",
   "cancelled",
+  "thread_busy",
   "interrupted",
 ] as const;
 

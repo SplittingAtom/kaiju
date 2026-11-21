@@ -56,6 +56,7 @@ const MESSAGES: Readonly<Record<MemoryPassFailureCode, string>> = {
   timeout: "The learning model took too long to answer. Try again.",
   model_error: "The learning model couldn't be reached. Try again.",
   cancelled: "The pass was cancelled.",
+  thread_busy: "The chat stayed busy while Kobe saved what it learned. Try again.",
 };
 
 /** Whether "Try again" is offered (not for a used-up budget, a switch or a missing model). */

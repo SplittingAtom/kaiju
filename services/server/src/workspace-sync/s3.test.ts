@@ -10,6 +10,7 @@ import {
   S3_IDLE_TIMEOUT_MS,
   createS3ObjectStore,
   loadS3Settings,
+  plainHttpEndpointWarning,
   s3RequestHandlerOptions,
 } from "./s3.js";
 
@@ -68,6 +69,22 @@ describe("loadS3Settings", () => {
       /set together/,
     );
     expect(() => loadS3Settings({ KOBE_S3_BUCKET: "b", KOBE_S3_PREFIX: "/abs/" })).toThrow();
+  });
+});
+
+describe("plainHttpEndpointWarning (KOBE-743)", () => {
+  const settings = (endpoint: string) =>
+    loadS3Settings({ KOBE_S3_BUCKET: "b", KOBE_S3_ENDPOINT: endpoint });
+  it("warns for a plain-HTTP endpoint, naming the host only", () => {
+    const s = settings("http://s3.lan.example:9000");
+    expect(s && plainHttpEndpointWarning(s)).toMatch(/plain http.*in clear/);
+    expect(s && plainHttpEndpointWarning(s)).toContain("s3.lan.example:9000");
+  });
+  it("is quiet for https and for the SDK's default endpoint", () => {
+    const https = settings("https://s3.example.com");
+    expect(https && plainHttpEndpointWarning(https)).toBeUndefined();
+    const aws = loadS3Settings({ KOBE_S3_BUCKET: "b" });
+    expect(aws && plainHttpEndpointWarning(aws)).toBeUndefined();
   });
 });
 

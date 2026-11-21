@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { llmsFullTxt, llmsTxt, pageMarkdown, PAGES } from "@kobe/guide";
+import { groupBySection, llmsFullTxt, llmsTxt, pageMarkdown, PAGES } from "@kobe/guide";
 import { kobePinnedTool } from "../pinned.js";
 import {
   DOCS_FULL_MAX_BYTES,
@@ -78,13 +78,29 @@ describe("the docs tools", () => {
     expect(run("docs_page", {}).ok).toBe(false);
   });
 
-  it("docs_full is every page, or one section's", () => {
-    expect(textOf(run("docs_full", {}))).toBe(llmsFullTxt(PAGES, CTX));
-    expect(textOf(run("docs_full", { section: "For agents" }))).toBe(
-      llmsFullTxt(PAGES, CTX, "For agents"),
-    );
+  // The cap bounds one result (about 65k tokens); the guide as a whole may outgrow it, so the
+  // contract is: every section fits, and the whole guide is served only while it fits.
+  it("docs_full serves every section under the cap", () => {
+    for (const { section } of groupBySection(PAGES)) {
+      const text = llmsFullTxt(PAGES, CTX, section);
+      expect(Buffer.byteLength(text), section).toBeLessThan(DOCS_FULL_MAX_BYTES);
+      expect(textOf(run("docs_full", { section }))).toBe(text);
+    }
     expect(run("docs_full", { section: "Nope" }).ok).toBe(false);
-    expect(Buffer.byteLength(llmsFullTxt(PAGES, CTX))).toBeLessThan(DOCS_FULL_MAX_BYTES);
+  });
+
+  it("docs_full without a section is the whole guide while it fits, too_large once it does not", () => {
+    const whole = llmsFullTxt(PAGES, CTX);
+    const out = run("docs_full", {});
+    if (Buffer.byteLength(whole) <= DOCS_FULL_MAX_BYTES) {
+      expect(textOf(out)).toBe(whole);
+    } else {
+      expect(out.ok).toBe(false);
+      if (!out.ok) {
+        expect(out.code).toBe("too_large");
+        for (const { section } of groupBySection(PAGES)) expect(out.message).toContain(section);
+      }
+    }
   });
 
   it("docs_full refuses a text above the cap and points at sections", () => {
@@ -94,7 +110,10 @@ describe("the docs tools", () => {
     }));
     const out = run("docs_full", {}, big);
     expect(out.ok).toBe(false);
-    if (!out.ok) expect(out.message).toMatch(/section/);
+    if (!out.ok) {
+      expect(out.code).toBe("too_large");
+      expect(out.message).toMatch(/section/);
+    }
   });
 
   it("docs_search finds pages by title, summary and heading, ranked and capped", () => {
