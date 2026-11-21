@@ -39,6 +39,34 @@ drain timeout + 1 s, as before).
 - **Out of scope:** retention internals (another branch); only how the pass is scheduled (it is
   still the `retention` server job). Routes, sandbox-wire, sandbox untouched.
 
+## Review follow-ups (review-g65, 2026-11-21)
+
+- **Scheduler after isolation:** the `scheduler` job starts its runner once the isolation gate's
+  startup check has settled, so no due occurrence is refused `isolation_unavailable` (and fired a
+  tick late) at every start. Test: "starts the scheduler's runner only once the isolation check
+  has settled".
+- **Every job in the start/stop test:** a case with a sandbox configuration (KUBECONFIG pointing
+  at a closed port, so nothing reaches a cluster), FakeS3 object storage and the internal key
+  starts all jobs (`RunningServer.jobs` names them) and stops them with no live timer or socket.
+  It found the skill eval runner's 8 s shutdown deadline timer left live: now cleared.
+- **In-flight passes:** each job's stop now resolves once its pass in flight has ended (audit
+  anchor, PII erasure, forwarding, break-glass, approvals, egress requests, notification emails,
+  memory reminders, learning-pass sweep, header re-seal, offboarding, connector refresh, the four
+  skills loops, workspace collection, skill mirror, scheduler, the interval sweeps in
+  `process-jobs.ts`). `startServerJobs` bounds each wait (`stopTimeoutMs`, 8 s from `startServer`)
+  and logs a job that overruns. The test log no longer shows "Cannot use a pool after calling
+  end". Left as before: retention (its pass checks `stop()` itself; retention internals belong
+  to another branch) and the sandbox runtime's reconcilers and hibernation (`sandbox/**`,
+  another branch).
+- **`stop()` memoised:** a second call (SIGTERM then SIGINT) returns the first call's promise.
+
+### Intended behaviour changes (exit codes)
+
+- The process now exits 1 when closing the deps (pools, LISTEN client, mailer) or telemetry
+  fails during shutdown; before, only a failed close of the user-facing listener did.
+- A job stop that hangs is no longer waited on past 8 s; the deps then close and the exit code
+  follows the rest of the shutdown. The hard exit (1) at the drain timeout + 1 s is unchanged.
+
 ## Docs
 
 No `docs/guide/` change: start-up, shutdown and every job's schedule are unchanged for

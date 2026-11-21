@@ -53,6 +53,8 @@ export class ApprovalService {
   readonly #hooks: ApprovalRunHooks = {};
   readonly #sweepMs: number;
   #timer: NodeJS.Timeout | undefined;
+  /** The sweep in flight (never rejects). */
+  #current: Promise<unknown> = Promise.resolve();
 
   constructor(options: ApprovalServiceOptions) {
     const log = options.log ?? rootLogger.child({ component: "approvals" });
@@ -140,7 +142,7 @@ export class ApprovalService {
     const tick = () => {
       this.#timer = setTimeout(
         () => {
-          this.sweep()
+          this.#current = this.sweep()
             .catch((err: unknown) => this.#ctx.log.error({ err }, "approval sweep failed"))
             .finally(() => {
               if (this.#timer) tick();
@@ -153,8 +155,10 @@ export class ApprovalService {
     tick();
   }
 
-  stop(): void {
+  /** Stops the sweep; resolves once a pass in flight has ended (KOBE-709). */
+  stop(): Promise<unknown> {
     if (this.#timer) clearTimeout(this.#timer);
     this.#timer = undefined;
+    return this.#current;
   }
 }

@@ -52,20 +52,53 @@ export interface ProcessJobsContext {
 
 const job = (name: string, start: () => () => unknown): ProcessJob => ({ name, start });
 
-/** A sweep on an interval (unref'd, so it never holds the process open). */
-function every(name: string, ms: number, tick: () => void): ProcessJob {
+/**
+ * A sweep on an interval (unref'd, so it never holds the process open); a failed pass is logged
+ * as `<what> failed` (`fireAndLog`). The stop waits for the passes in flight (KOBE-709).
+ */
+function every(
+  name: string,
+  ms: number,
+  log: Logger,
+  what: string,
+  pass: () => Promise<unknown>,
+): ProcessJob {
   return job(name, () => {
-    const timer = setInterval(tick, ms);
+    const inFlight = new Set<Promise<unknown>>();
+    const timer = setInterval(() => {
+      const run = pass();
+      fireAndLog(log, what, run);
+      const settled: Promise<unknown> = run
+        .then(
+          () => undefined,
+          () => undefined,
+        )
+        .finally(() => inFlight.delete(settled));
+      inFlight.add(settled);
+    }, ms);
     timer.unref();
-    return () => clearInterval(timer);
+    return async () => {
+      clearInterval(timer);
+      await Promise.all(inFlight);
+    };
   });
 }
 
-function startupJobs(c: ProcessJobsContext): ProcessJob[] {
+/** When the isolation gate's startup check has settled (`verified` or `missing`). */
+interface IsolationSettled {
+  done: Promise<unknown>;
+}
+
+function startupJobs(c: ProcessJobsContext, isolationSettled: IsolationSettled): ProcessJob[] {
   const jobs: ProcessJob[] = [
     // Spec D4: the process's own isolation check (startup + periodic re-checks).
     job("isolation", () => {
-      c.isolation.start().catch((err: unknown) => c.log.error({ err }, "isolation check failed"));
+      const started = c.isolation.start();
+      started.catch((err: unknown) => c.log.error({ err }, "isolation check failed"));
+      isolationSettled.done = started.then(
+        () => undefined,
+        () => undefined,
+      );
       return () => c.isolation.stop();
     }),
   ];
@@ -88,8 +121,8 @@ function skillJobs(c: ProcessJobsContext): ProcessJob[] {
   const { externalScan, skillMirror, skillEvalHub, skillEvalRunner } = c;
   if (externalScan) {
     jobs.push(
-      every("external-scan-sweep", EVAL_SWEEP_MS, () =>
-        fireAndLog(c.log, "external skill scan sweep", externalScan.sweep()),
+      every("external-scan-sweep", EVAL_SWEEP_MS, c.log, "external skill scan sweep", () =>
+        externalScan.sweep(),
       ),
     );
   }
@@ -100,7 +133,10 @@ function skillJobs(c: ProcessJobsContext): ProcessJob[] {
         const timer = setInterval(() => skillMirror.kick(), SKILL_MIRROR_SWEEP_MS);
         timer.unref();
         skillMirror.kick();
-        return () => clearInterval(timer);
+        return () => {
+          clearInterval(timer);
+          return skillMirror.idle();
+        };
       }),
     );
   }
@@ -134,13 +170,9 @@ function skillJobs(c: ProcessJobsContext): ProcessJob[] {
   if (lock && deps && provider) {
     // One replica at a time reaps what a dead replica left.
     jobs.push(
-      every("skill-eval-reaper", SKILL_EVAL_REAPER_MS, () =>
-        fireAndLog(
-          c.log,
-          "skill eval reaper",
-          lock.runExclusive(() =>
-            reapSkillEvals({ db: deps.database.db, provider, runs: deps.runs, log: c.log }),
-          ),
+      every("skill-eval-reaper", SKILL_EVAL_REAPER_MS, c.log, "skill eval reaper", () =>
+        lock.runExclusive(() =>
+          reapSkillEvals({ db: deps.database.db, provider, runs: deps.runs, log: c.log }),
         ),
       ),
     );
@@ -202,7 +234,7 @@ function logTeamReconcile(log: Logger, s: TeamReconcileSummary): void {
 }
 
 /** Scheduled runs (KOBE-174, D32) and their end hook. */
-function scheduleJobs(c: ProcessJobsContext): ProcessJob[] {
+function scheduleJobs(c: ProcessJobsContext, isolationSettled: IsolationSettled): ProcessJob[] {
   const deps = c.deps;
   if (!deps) return [];
   const jobs: ProcessJob[] = [];
@@ -215,9 +247,18 @@ function scheduleJobs(c: ProcessJobsContext): ProcessJob[] {
       graceMs: c.config.scheduler.graceMinutes * 60_000,
     });
     jobs.push(
+      // It ticks once the isolation check has settled: while it is still `checking` every run
+      // is refused, so each due occurrence would only log a warning and fire a tick late.
       job("scheduler", () => {
-        runner.start(c.config.scheduler.tickSeconds * 1000);
-        return () => runner.stop();
+        let stopped = false;
+        const started = isolationSettled.done.then(() => {
+          if (!stopped) runner.start(c.config.scheduler.tickSeconds * 1000);
+        });
+        return async () => {
+          stopped = true;
+          await started;
+          await runner.stop();
+        };
       }),
     );
   }
@@ -242,17 +283,19 @@ function scheduleJobs(c: ProcessJobsContext): ProcessJob[] {
  */
 export function processJobs(c: ProcessJobsContext): ProcessJob[] {
   const evalRunner = c.evalRunner;
+  // Set by the `isolation` job, which starts first.
+  const isolationSettled: IsolationSettled = { done: Promise.resolve() };
   return [
-    ...startupJobs(c),
+    ...startupJobs(c, isolationSettled),
     ...skillJobs(c),
     ...(c.deps && c.serverJobs ? serverJobs({ ...c.serverJobs, deps: c.deps, logger: c.log }) : []),
     ...sandboxJobs(c),
-    ...scheduleJobs(c),
+    ...scheduleJobs(c, isolationSettled),
     // Orbit evals whose driver died with a server (restart mid-eval) are finished or errored.
     ...(evalRunner
       ? [
-          every("orbit-eval-sweep", EVAL_SWEEP_MS, () =>
-            fireAndLog(c.log, "orbit eval sweep", evalRunner.sweep()),
+          every("orbit-eval-sweep", EVAL_SWEEP_MS, c.log, "orbit eval sweep", () =>
+            evalRunner.sweep(),
           ),
         ]
       : []),

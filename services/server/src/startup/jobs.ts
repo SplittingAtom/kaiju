@@ -321,14 +321,19 @@ function sweepJobs(o: ServerJobsOptions): ServerJob[] {
     job(
       "memory-learn-sweep",
       () => {
-        const sweep = () =>
-          void deps.learningPasses
+        let current: Promise<unknown> = Promise.resolve();
+        const sweep = () => {
+          current = deps.learningPasses
             .sweep()
             .catch((err: unknown) => o.logger.warn({ err }, "learning pass sweep failed"));
+        };
         sweep();
         const timer = setInterval(sweep, LEARN_SWEEP_MS);
         timer.unref();
-        return () => clearInterval(timer);
+        return () => {
+          clearInterval(timer);
+          return current;
+        };
       },
       () => deps.learningPasses.sweep(),
     ),
@@ -399,8 +404,8 @@ function siteJobs(o: ServerJobsOptions): ServerJob[] {
       job(
         "egress-header-reseal",
         () => {
-          void reseal();
-          return () => undefined;
+          const pass = reseal();
+          return () => pass;
         },
         reseal,
       ),
@@ -490,21 +495,37 @@ export function serverJobs(o: ServerJobsOptions): ServerJob[] {
 
 /**
  * Starts the jobs in order; returns one function that stops them all (each stop is called in the
- * same order without waiting for the one before, then all are awaited). A job that fails to stop
- * (a held advisory lock, a hung connection) is logged with its name and never stops the others.
+ * same order without waiting for the one before, then all are awaited). A stop may return a
+ * promise (a pass in flight ending, KOBE-709); with `stopTimeoutMs` one that takes longer is
+ * logged and no longer waited for. A job that fails to stop (a held advisory lock, a hung
+ * connection) is logged with its name and never stops the others.
  */
 export function startServerJobs(
   jobs: readonly ProcessJob[],
   log: Pick<Logger, "warn"> = rootLogger,
+  stopTimeoutMs?: number,
 ): () => Promise<void> {
   const stops = jobs.map((j) => ({ name: j.name, stop: j.start() }));
   return async () => {
     await Promise.all(
       stops.map(async ({ name, stop }) => {
+        let timer: NodeJS.Timeout | undefined;
         try {
-          await stop();
+          const stopped = Promise.resolve(stop()).then(() => true);
+          const late =
+            stopTimeoutMs === undefined
+              ? new Promise<never>(() => undefined)
+              : new Promise<false>((resolve) => {
+                  timer = setTimeout(() => resolve(false), stopTimeoutMs);
+                  timer.unref();
+                });
+          if (!(await Promise.race([stopped, late]))) {
+            log.warn({ job: name, timeoutMs: stopTimeoutMs }, "server job did not stop in time");
+          }
         } catch (err) {
           log.warn({ err, job: name }, "server job failed to stop");
+        } finally {
+          clearTimeout(timer);
         }
       }),
     );

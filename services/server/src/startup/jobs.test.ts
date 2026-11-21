@@ -32,4 +32,29 @@ describe("startServerJobs (KOBE-705, review CODE-41)", () => {
     );
     expect(warn).toHaveBeenCalledTimes(2);
   });
+
+  it("waits for a stop's pass in flight, at most the stop timeout (KOBE-709)", async () => {
+    const warn = vi.fn();
+    let finish: () => void = () => undefined;
+    const pass = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const order: string[] = [];
+    const stopAll = startServerJobs(
+      [
+        job("draining", () => pass.then(() => order.push("drained"))),
+        job("hung", () => new Promise(() => undefined)),
+      ],
+      { warn },
+      50,
+    );
+    const stopped = stopAll().then(() => order.push("stopped"));
+    finish();
+    await stopped;
+    expect(order).toEqual(["drained", "stopped"]);
+    expect(warn).toHaveBeenCalledWith(
+      { job: "hung", timeoutMs: 50 },
+      "server job did not stop in time",
+    );
+  });
 });

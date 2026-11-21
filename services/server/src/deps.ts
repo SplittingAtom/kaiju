@@ -711,7 +711,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
       return typeof candidate === "string" && timingSafeEqual(digest(candidate), setupDigest);
     },
     async close() {
-      approvals.stop();
+      await approvals.stop();
       await budgets.close();
       runs.close();
       await sandboxWire.close();

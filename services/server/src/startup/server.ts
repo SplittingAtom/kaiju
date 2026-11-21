@@ -25,7 +25,7 @@ import { createViewingReader } from "../workspace-files/viewing.js";
 import { createWorkspaceSync, type WorkspaceSync } from "../workspace-sync/index.js";
 import { checkConnectionBudget } from "./db-budget.js";
 import { seedAtStart, startServerJobs } from "./jobs.js";
-import { processJobs, type ProcessJobsContext } from "./process-jobs.js";
+import { DRAIN_TIMEOUT_MS, processJobs, type ProcessJobsContext } from "./process-jobs.js";
 import { startListeners } from "./listeners.js";
 import {
   checkSealedKeysAtStart,
@@ -35,6 +35,9 @@ import {
   type ProcessEnv,
   type ProcessSettings,
 } from "./server-deps.js";
+
+/** How long `stop()` waits for one job's pass in flight (under the drain timeout). */
+const JOB_STOP_TIMEOUT_MS = DRAIN_TIMEOUT_MS - 2_000;
 
 export interface StartServerOptions {
   /** The environment the per-feature settings are read from (default `process.env`). */
@@ -47,10 +50,13 @@ export interface StartServerOptions {
 export interface RunningServer {
   /** The user-facing port, listening. */
   readonly port: number;
+  /** The background jobs it started, by name, in start order. */
+  readonly jobs: readonly string[];
   /**
    * Stops every job and timer (in `processJobs` order), closes the listeners, then the
    * dependencies (pools, the LISTEN client, the mailer) and telemetry. Rejects when the
-   * user-facing listener failed to close; everything else is closed regardless.
+   * user-facing listener failed to close, or the deps or telemetry failed to close. Memoised:
+   * later calls return the first call's promise.
    */
   stop(): Promise<void>;
 }
@@ -355,7 +361,10 @@ export async function startServer(
           )
         : undefined,
   };
-  const stopJobs = startServerJobs(processJobs(context), log);
+  // A job's stop waits for its pass in flight, bounded so the deps still close before the entry
+  // point's hard exit (the drain timeout + 1 s).
+  const jobs = processJobs(context);
+  const stopJobs = startServerJobs(jobs, log, JOB_STOP_TIMEOUT_MS);
   const app: AppOptions = {
     isolation: isolation.gate,
     hstsIncludeSubDomains: config.auth?.hstsIncludeSubDomains ?? false,
@@ -370,19 +379,23 @@ export async function startServer(
   };
   const listeners = await startListeners({ config, log, deps, sandbox, workspaceSync, app });
   checkConnectionBudgetSoon(config, deps, log);
+  const stopOnce = async () => {
+    const jobsStopped = stopJobs();
+    const closed = listeners.close().then(
+      () => undefined,
+      (err: unknown) => err,
+    );
+    await jobsStopped;
+    const err = await closed;
+    if (err) log.error({ err }, "shutdown error");
+    await Promise.all([deps?.close(), telemetry.shutdown()]);
+    if (err) throw err;
+  };
+  // Memoised: SIGTERM then SIGINT (or any second caller) waits for the same shutdown.
+  let stopping: Promise<void> | undefined;
   return {
     port: listeners.port,
-    async stop() {
-      const jobsStopped = stopJobs();
-      const closed = listeners.close().then(
-        () => undefined,
-        (err: unknown) => err,
-      );
-      await jobsStopped;
-      const err = await closed;
-      if (err) log.error({ err }, "shutdown error");
-      await Promise.all([deps?.close(), telemetry.shutdown()]);
-      if (err) throw err;
-    },
+    jobs: jobs.map((j) => j.name),
+    stop: () => (stopping ??= stopOnce()),
   };
 }

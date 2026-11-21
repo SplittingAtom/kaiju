@@ -189,12 +189,14 @@ export const DEFAULT_SYNC_EVERY_MS = 10_000;
 /** Runs {@link defaultSyncOnce} whenever a job is due; returns a stop function. */
 export function startDefaultSync(
   deps: DefaultSyncDeps & { readonly everyMs?: number },
-): () => void {
+): () => Promise<unknown> {
   let running = false;
+  // The pass in flight (never rejects): the stop function waits for it (KOBE-709).
+  let current: Promise<unknown> = Promise.resolve();
   const tick = () => {
     if (running) return;
     running = true;
-    nextJob(deps.database.db)
+    current = nextJob(deps.database.db)
       .then(([job]) => (job ? defaultSyncOnce(deps) : null))
       .catch((err: unknown) => deps.log.error({ err }, "skills: Default sync failed"))
       .finally(() => {
@@ -204,5 +206,8 @@ export function startDefaultSync(
   tick();
   const timer = setInterval(tick, deps.everyMs ?? DEFAULT_SYNC_EVERY_MS);
   timer.unref();
-  return () => clearInterval(timer);
+  return () => {
+    clearInterval(timer);
+    return current;
+  };
 }

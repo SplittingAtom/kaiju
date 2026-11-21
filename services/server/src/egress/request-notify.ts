@@ -269,6 +269,8 @@ export async function sweepEgressRequestNotifications(
 export class EgressRequestSweeper {
   private timer: ReturnType<typeof setInterval> | undefined;
   private running = false;
+  /** The pass in flight (never rejects): `stop()` waits for it (KOBE-709). */
+  private current: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly deps: Pick<ServerDeps, "database" | "mailer" | "publicUrl">) {}
 
@@ -276,7 +278,7 @@ export class EgressRequestSweeper {
     const run = () => {
       if (this.running) return;
       this.running = true;
-      void sweepEgressRequestNotifications(this.deps).finally(() => {
+      this.current = sweepEgressRequestNotifications(this.deps).finally(() => {
         this.running = false;
       });
     };
@@ -284,8 +286,9 @@ export class EgressRequestSweeper {
     this.timer.unref();
   }
 
-  stop(): void {
+  stop(): Promise<unknown> {
     if (this.timer) clearInterval(this.timer);
     this.timer = undefined;
+    return this.current;
   }
 }

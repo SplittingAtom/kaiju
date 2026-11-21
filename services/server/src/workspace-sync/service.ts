@@ -66,7 +66,8 @@ export interface WorkspaceSync {
   /** Resolves when the quota-pressure collection in flight (if any) has fully finished. */
   settled(): Promise<void>;
   /** Runs `collect` every `everyMs` (jittered); returns a stop function. */
-  startCollector(everyMs: number): () => void;
+  /** Collects on a jittered timer; the stop function resolves once a pass in flight ended. */
+  startCollector(everyMs: number): () => Promise<unknown>;
   /**
    * A server write into a workspace (KOBE-53/54/57): `store.putServerFile` with this site's
    * key prefix (the object must be under the team's tree, and inside `users/` the user's own)
@@ -157,11 +158,12 @@ export function createWorkspaceSync(options: WorkspaceSyncOptions): WorkspaceSyn
     startCollector(everyMs) {
       let timer: NodeJS.Timeout | undefined;
       let stopped = false;
+      let current: Promise<unknown> = Promise.resolve();
       const schedule = () => {
         if (stopped) return;
         timer = setTimeout(
           () => {
-            collect()
+            current = collect()
               .catch((err: unknown) => log.error({ err }, "workspace collection failed"))
               .finally(schedule);
           },
@@ -173,6 +175,7 @@ export function createWorkspaceSync(options: WorkspaceSyncOptions): WorkspaceSyn
       return () => {
         stopped = true;
         clearTimeout(timer);
+        return current;
       };
     },
   };
