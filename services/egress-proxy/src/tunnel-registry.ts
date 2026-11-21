@@ -1,6 +1,6 @@
 import type { Logger } from "pino";
 import type { EgressDecision } from "./allowlist.js";
-import type { ProxyPolicy } from "./proxy.js";
+import type { ProxyPolicy } from "./proxy-deps.js";
 
 /**
  * Open tunnels, so revocation reaches connections that are already established (KOBE-38 review):
