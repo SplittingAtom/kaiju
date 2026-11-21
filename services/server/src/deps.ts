@@ -62,6 +62,7 @@ import {
   resolveAll,
   type ConnectorUrlPolicy,
 } from "./connectors/url-policy.js";
+import { deleteDeactivatedUserGrants } from "./connectors/grant-departures.js";
 import { NO_PROBE, type ConnectorProbe } from "./connectors/probe.js";
 import type { AppResultsDeps } from "./apps/results.js";
 import { captureKey } from "./apps/capture-ticket.js";
@@ -643,6 +644,14 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   lifecycle.on("deactivated", {
     name: "workspace-changes",
     run: (userId) => notifyWorkspaceAccess(database.db, userId),
+  });
+  // Their connector keys and OAuth tokens in every team are deleted (KOBE-696); the offboarding
+  // sweep finishes the job if this fails.
+  lifecycle.on("deactivated", {
+    name: "connector-grants",
+    run: async (userId) => {
+      await deleteDeactivatedUserGrants(database.db, userId);
+    },
   });
   // The last active maintainer of a catalog skill leaves: Unmaintained, Site admins emailed (KOBE-332).
   lifecycle.on("deactivated", {

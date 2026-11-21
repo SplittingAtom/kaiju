@@ -15,6 +15,7 @@ import {
   type TeamRole,
 } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
+import { auditRemovedGrants, deleteMemberGrantsInTx } from "../connectors/grant-departures.js";
 import { revokeWorkspaceStewardInTx } from "../memory/stewards.js";
 import { revokeInvitesSentBy } from "../invitations/team-invites.js";
 import { endProjectStandingInTx } from "../projects/offboard.js";
@@ -343,6 +344,9 @@ export async function removeMemberInTx(
   // Their checkouts are discarded and their project rows go (Workspaces PJ3/MT4); the caller
   // reconciles their mounts after the commit.
   await endProjectStandingInTx(tx, teamId, userId);
+  // Their connector keys and OAuth tokens here are deleted (KOBE-696); a re-added member enters
+  // them again. Audited after the removal itself.
+  const grants = await deleteMemberGrantsInTx(tx, teamId, userId);
   await recordAudit(tx, {
     action: "identity.member.removed",
     teamId,
@@ -353,6 +357,8 @@ export async function removeMemberInTx(
       ...originAudit(via ? undefined : origin),
     },
   });
+  const reason = typeof via === "object" ? "deprovisioned" : "member_removed";
+  await auditRemovedGrants(tx, teamId, userId, grants, reason);
   return OK;
 }
 

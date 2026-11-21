@@ -18,6 +18,7 @@ import {
 import { reinstateReturning } from "./reinstate.js";
 import { reopenRetentionInTx, reopenReturnedInTx } from "./reopen.js";
 import { sweepDepartedDrafts } from "../retention/skill-drafts.js";
+import { sweepDepartedGrants } from "../connectors/grant-departures.js";
 import {
   purgePortableForUser,
   type PortablePurgeOutcome,
@@ -50,6 +51,12 @@ export interface SweepSummary {
    * team (KOBE-320), whether or not the author ever had a sandbox there.
    */
   readonly drafts: number;
+  /**
+   * Connector grants of members who left the team or were deactivated (KOBE-696): deleted at once
+   * by the removal or the deactivation; the sweep deletes any left behind, including grants from
+   * before KOBE-696 (the one-off cleanup).
+   */
+  readonly grants: number;
   readonly failed: number;
 }
 
@@ -121,10 +128,11 @@ export function createOffboarding(options: OffboardingOptions): Offboarding {
     let purged = 0;
     let held = 0;
     let drafts = 0;
+    let grants = 0;
     let failed = 0;
     // After a restore from an older backup, "departed" and "due" are judged from stale rows: a
     // member re-added since would look long gone and lose their live volume (KOBE-243).
-    if (ctx.paused) return { offboarded, purged, held, drafts, failed };
+    if (ctx.paused) return { offboarded, purged, held, drafts, grants, failed };
     // KOBE-386 review H1 backstop: a returned member's record is reopened before anything is due.
     for (const team of await ctx.db.select({ id: teams.id }).from(teams)) {
       await withTeam(ctx.db, team.id, (tx) => reopenReturnedInTx(tx, team.id)).catch(
@@ -180,7 +188,13 @@ export function createOffboarding(options: OffboardingOptions): Offboarding {
       failed += 1;
       log.error({ err }, "departed starters' skill evals purge failed");
     }
-    return { offboarded, purged, held, drafts, failed };
+    try {
+      grants = await sweepDepartedGrants(ctx.db);
+    } catch (err) {
+      failed += 1;
+      log.error({ err }, "departed members' connector grants cleanup failed");
+    }
+    return { offboarded, purged, held, drafts, grants, failed };
   };
 
   return {
@@ -222,7 +236,7 @@ export function createOffboarding(options: OffboardingOptions): Offboarding {
           .then((outcome) => {
             if (!outcome.ran) return log.debug("offboarding sweep: another replica runs it");
             const s = outcome.value;
-            if (s.offboarded + s.purged + s.held + s.drafts + s.failed > 0)
+            if (s.offboarded + s.purged + s.held + s.drafts + s.grants + s.failed > 0)
               log.info(s, "offboarding sweep");
           })
           .catch((err: unknown) => log.warn({ err }, "offboarding sweep failed"))

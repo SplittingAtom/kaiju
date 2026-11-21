@@ -33,7 +33,8 @@ workspace; switch workspace first to manage another.
 ## Team
 
 - **Members and roles**: who is in the team; change a role or remove a member. A removed member's
-  checkouts are discarded and their sandbox is cleaned up. Their own memories in the workspace are
+  checkouts are discarded, their sandbox is cleaned up and their connector keys for this workspace
+  are deleted (a re-added member enters them again). Their own memories in the workspace are
   deleted 30 days later (unless they come back first or a legal hold covers them), with what
   Learn from this chat kept for them and the proposals and project suggestions they made; Workspace
   memories they wrote or a curator approved from their proposals stay. A member a site admin added from the
