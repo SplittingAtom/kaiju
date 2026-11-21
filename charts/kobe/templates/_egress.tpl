@@ -12,7 +12,8 @@ predates these keys still renders. Keep in sync with values.yaml.
   "headerSecret" ""
   "upgrade" (dict "maxRequestBytes" 104857600 "maxResponseBytes" 2147483648 "timeoutSeconds" 600)
   "limits" (dict "connectionsPerSandbox" 64 "connections" 4096 "bandwidthBytesPerSecond" 20971520 "idleTimeoutSeconds" 300 "maxTunnelSeconds" 3600 "unauthenticatedPerSource" 16 "unauthenticated" 1024)
-  "networkPolicy" (dict "restrictEgress" true "databasePeers" (list) "databasePort" 5432 "extraEgress" (list)) -}}
+  "networkPolicy" (dict "restrictEgress" true "databasePeers" (list) "databasePort" 5432 "extraEgress" (list))
+  "database" (dict "poolMax" 10) -}}
 {{- $e := mustMergeOverwrite $defaults (deepCopy (.Values.egressProxy | default dict)) -}}
 {{- with $e.clusterIngress }}
 {{- if .enabled }}
@@ -63,6 +64,8 @@ session-token public key only (never a private key, never the other audiences', 
 {{- define "kobe.egressProxyEnv" -}}
 {{- $e := include "kobe.egressProxyValues" . | fromJson -}}
 {{ include "kobe.databaseEnv" . }}
+- name: KOBE_DB_POOL_MAX
+  value: {{ int $e.database.poolMax | quote }}
 {{ include "kobe.sessionVerifyKeyEnv" (dict "root" . "env" "EGRESS_PROXY" "aud" "egress-proxy") }}
 - name: KOBE_EGRESS_ALLOWED_PORTS
   value: {{ join "," $e.allowedPorts | quote }}

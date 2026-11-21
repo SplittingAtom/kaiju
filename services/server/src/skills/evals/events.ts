@@ -4,32 +4,38 @@ import {
   skillEvalProgressPayloadSchema,
   type SkillEvalRunView,
 } from "@kobe/protocol";
-import pg from "pg";
-import type { Logger } from "pino";
+import type { ListenClient } from "../../pg-listen.js";
 import { SKILL_EVAL_CHANNEL } from "./store.js";
 import { doneExecutions, readEvalRun, type EvalViewer } from "./views.js";
 
 // Skill eval progress (KOBE-325): Postgres is the record (`skill_eval_runs.progress_done`, the
-// result rows); `NOTIFY kobe_skill_eval '<team>:<eval run>'` only says "look again". One LISTEN
-// connection per process fans hints out to the open streams; each stream also re-reads on a timer
+// result rows); `NOTIFY kobe_skill_eval '<team>:<eval run>'` only says "look again". The process's
+// shared LISTEN connection (KOBE-704) fans hints out to the open streams; each stream also re-reads on a timer
 // (the safety net for a lost hint). Events carry ids, statuses and numbers only.
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export class SkillEvalHub {
   readonly #subs = new Map<string, Set<() => void>>();
-  readonly #connectionString: string;
-  readonly #log: Pick<Logger, "warn">;
-  #client: pg.Client | undefined;
+  readonly #listen: ListenClient;
+  #unlisten: (() => void) | undefined;
   #closed = false;
 
-  constructor(connectionString: string, log: Pick<Logger, "warn">) {
-    this.#connectionString = connectionString;
-    this.#log = log;
+  /** `listen`: the process's shared LISTEN connection (never closed here). */
+  constructor(listen: ListenClient) {
+    this.#listen = listen;
   }
 
   start(): void {
-    void this.#listen();
+    if (this.#closed || this.#unlisten) return;
+    // No resync on (re)connect: every stream re-reads on its own timer anyway.
+    this.#unlisten = this.#listen.subscribe(SKILL_EVAL_CHANNEL, {
+      notification: (payload) => {
+        const id = payload.split(":")[1];
+        if (!id || !UUID.test(id)) return;
+        for (const hint of [...(this.#subs.get(id) ?? [])]) hint();
+      },
+    });
   }
 
   /** Calls `hint` for every notification about that eval run until the returned function runs. */
@@ -43,39 +49,11 @@ export class SkillEvalHub {
     };
   }
 
-  async close(): Promise<void> {
+  close(): Promise<void> {
     this.#closed = true;
-    await this.#client?.end().catch(() => undefined);
-  }
-
-  async #listen(): Promise<void> {
-    if (this.#closed) return;
-    const client = new pg.Client({
-      connectionString: this.#connectionString,
-      connectionTimeoutMillis: 10_000,
-    });
-    const retry = () => {
-      if (this.#client !== client) return;
-      this.#client = undefined;
-      client.end().catch(() => undefined);
-      if (!this.#closed) setTimeout(() => void this.#listen(), 2_000).unref();
-    };
-    client.on("error", retry);
-    client.on("end", retry);
-    client.on("notification", (n) => {
-      if (n.channel !== SKILL_EVAL_CHANNEL) return;
-      const id = n.payload?.split(":")[1];
-      if (!id || !UUID.test(id)) return;
-      for (const hint of this.#subs.get(id) ?? []) hint();
-    });
-    try {
-      this.#client = client;
-      await client.connect();
-      await client.query(`LISTEN ${SKILL_EVAL_CHANNEL}`);
-    } catch (err) {
-      this.#log.warn({ err }, "skill eval events could not listen");
-      retry();
-    }
+    this.#unlisten?.();
+    this.#unlisten = undefined;
+    return Promise.resolve();
   }
 }
 

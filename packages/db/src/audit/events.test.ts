@@ -1,10 +1,12 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
 import {
   AUDIT_ACTIONS,
   AUDIT_CATEGORIES,
+  AUDIT_EVENT_AREAS,
   AUDIT_EVENTS,
+  type AuditAction,
   HISTORICAL_AUDIT_ACTIONS,
   auditActionNames,
   auditCategoryNames,
@@ -356,5 +358,22 @@ describe("audit event taxonomy", () => {
   it("is documented: docs/audit-log.md lists every action", () => {
     const doc = readFileSync(new URL("../../../../docs/audit-log.md", import.meta.url), "utf8");
     expect(AUDIT_ACTIONS.filter((a) => !doc.includes(`\`${a}\``))).toEqual([]);
+  });
+});
+
+describe("audit event areas (KOBE-701)", () => {
+  type AreaKeys<T> = T extends readonly (infer E)[] ? (E extends unknown ? keyof E : never) : never;
+
+  it("AuditAction is the union of every area's action names", () => {
+    expectTypeOf<AuditAction>().toEqualTypeOf<AreaKeys<typeof AUDIT_EVENT_AREAS>>();
+    expectTypeOf<"auth.sign_in.succeeded">().toExtend<AuditAction>();
+    expectTypeOf<string>().not.toExtend<AuditAction>();
+  });
+
+  it("no action name is defined in two areas, and every area is spread into AUDIT_EVENTS", () => {
+    const names = AUDIT_EVENT_AREAS.flatMap((area) => Object.keys(area));
+    expect(names.length).toBe(new Set(names).size);
+    expect(Object.keys(AUDIT_EVENTS).length).toBe(names.length);
+    expect(AUDIT_ACTIONS).toEqual(names);
   });
 });

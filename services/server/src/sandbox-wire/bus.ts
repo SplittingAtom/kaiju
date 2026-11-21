@@ -1,7 +1,7 @@
-import pg from "pg";
 import { z } from "zod";
 import { sql, type KobeDb, type KobeTx } from "@kobe/db";
 import { logger as rootLogger } from "../logger.js";
+import { createListenClient, type ListenClient } from "../pg-listen.js";
 import { SANDBOX_CHANNEL } from "./constants.js";
 
 /**
@@ -78,34 +78,42 @@ export interface SandboxBus {
 }
 
 export interface BusOptions {
-  readonly connectionString: string;
+  /** The process's shared LISTEN connection (KOBE-704); the bus never closes it. */
+  readonly listen?: ListenClient;
+  /** Without `listen`: app-role URL of a LISTEN connection of the bus's own (operator CLI, tests). */
+  readonly connectionString?: string;
   readonly onHint: (hint: BusHint) => void;
   /** Hints may have been missed (listener (re)connected or down): re-read everything. */
   readonly onResync: () => void;
-  readonly reconnectMinMs: number;
-  readonly reconnectMaxMs: number;
+  /** Own LISTEN connection only: its reconnect backoff. */
+  readonly reconnectMinMs?: number;
+  readonly reconnectMaxMs?: number;
   readonly degradedPollMs?: number;
-  readonly pingMs?: number;
-  readonly pingTimeoutMs?: number;
 }
 
 /**
- * One dedicated LISTEN connection per server process on {@link SANDBOX_CHANNEL}, outside the query
- * pool (same design as the event-stream hub, KOBE-31: reconnect with jittered backoff, resync after
- * every (re)connect, poll while down, ping to catch half-open TCP). Needs a direct or session-mode
- * connection to Postgres.
+ * {@link SANDBOX_CHANNEL} on the process's shared LISTEN connection (KOBE-704; same design as the
+ * event-stream hub, KOBE-31): resync after every (re)connect, poll while down. The connection
+ * reconnects with jittered backoff and pings to catch half-open TCP. Needs a direct or
+ * session-mode connection to Postgres.
  */
 export function createSandboxBus(options: BusOptions): SandboxBus {
   const log = rootLogger.child({ component: "sandbox-bus" });
   const pollMs = options.degradedPollMs ?? 1_000;
-  const pingMs = options.pingMs ?? 30_000;
-  const pingTimeoutMs = options.pingTimeoutMs ?? 10_000;
-  let state: BusState = "idle";
-  let client: pg.Client | undefined;
-  let attempt = 0;
-  let reconnectTimer: NodeJS.Timeout | undefined;
+  const owned = options.listen
+    ? undefined
+    : createListenClient({
+        connectionString: requiredUrl(options.connectionString),
+        applicationName: "kobe-sandbox-bus",
+        ...(options.reconnectMinMs === undefined ? {} : { reconnectMinMs: options.reconnectMinMs }),
+        ...(options.reconnectMaxMs === undefined ? {} : { reconnectMaxMs: options.reconnectMaxMs }),
+      });
+  const listen = options.listen ?? (owned as ListenClient);
+  let started = false;
+  let closed = false;
+  let listening = false;
+  let unlisten: (() => void) | undefined;
   let pollTimer: NodeJS.Timeout | undefined;
-  let pingTimer: NodeJS.Timeout | undefined;
 
   const safely = (fn: () => void) => {
     try {
@@ -124,89 +132,34 @@ export function createSandboxBus(options: BusOptions): SandboxBus {
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = undefined;
   };
-  const stopPing = () => {
-    if (pingTimer) clearInterval(pingTimer);
-    pingTimer = undefined;
-  };
-
-  const scheduleReconnect = () => {
-    if (state === "closed" || reconnectTimer) return;
-    const base = Math.min(options.reconnectMaxMs, options.reconnectMinMs * 2 ** attempt);
-    attempt += 1;
-    reconnectTimer = setTimeout(
-      () => {
-        reconnectTimer = undefined;
-        void connect();
-      },
-      Math.round(base / 2 + Math.random() * (base / 2)),
-    );
-    reconnectTimer.unref();
-  };
-
-  const lost = (lostClient: pg.Client, err?: unknown) => {
-    if (lostClient !== client) return;
-    client = undefined;
-    stopPing();
-    lostClient.removeAllListeners("notification");
-    lostClient.end().catch(() => undefined);
-    (
-      lostClient as unknown as { connection?: { stream?: { destroy?: () => void } } }
-    ).connection?.stream?.destroy?.();
-    if (state === "closed") return;
-    state = "down";
-    log.warn({ err }, "sandbox bus LISTEN connection lost; polling until it is back");
-    startPolling();
-    resync();
-    scheduleReconnect();
-  };
-
-  const connect = async (): Promise<void> => {
-    if (state === "closed") return;
-    state = "connecting";
-    const next = new pg.Client({
-      connectionString: options.connectionString,
-      keepAlive: true,
-      application_name: "kobe-sandbox-bus",
-      query_timeout: pingTimeoutMs,
-      connectionTimeoutMillis: pingTimeoutMs,
-    });
-    client = next;
-    next.on("notification", (msg) => {
-      if (msg.channel !== SANDBOX_CHANNEL) return;
-      const hint = decodeBusHint(msg.payload);
-      if (hint) safely(() => options.onHint(hint));
-    });
-    next.on("error", (err) => lost(next, err));
-    next.on("end", () => lost(next));
-    try {
-      await next.connect();
-      await next.query(`LISTEN ${SANDBOX_CHANNEL}`);
-    } catch (err) {
-      lost(next, err);
-      return;
-    }
-    if ((state as BusState) === "closed" || client !== next) {
-      await next.end().catch(() => undefined);
-      return;
-    }
-    state = "listening";
-    attempt = 0;
-    stopPolling();
-    pingTimer = setInterval(() => {
-      next.query("SELECT 1").catch((err: unknown) => lost(next, err));
-    }, pingMs);
-    pingTimer.unref();
-    resync();
-  };
 
   return {
-    get state() {
-      return state;
+    get state(): BusState {
+      if (closed) return "closed";
+      if (!started) return "idle";
+      if (listening) return "listening";
+      return listen.state === "connecting" ? "connecting" : "down";
     },
     start() {
-      if (state !== "idle") return;
-      startPolling();
-      void connect();
+      if (started || closed) return;
+      started = true;
+      unlisten = listen.subscribe(SANDBOX_CHANNEL, {
+        notification: (payload) => {
+          const hint = decodeBusHint(payload);
+          if (hint) safely(() => options.onHint(hint));
+        },
+        listening: () => {
+          listening = true;
+          stopPolling();
+          resync();
+        },
+        polling: () => {
+          const wasListening = listening;
+          listening = false;
+          startPolling();
+          if (wasListening) resync();
+        },
+      });
     },
     async notifyInTx(tx, hint) {
       await notifyHintInTx(tx, hint);
@@ -215,17 +168,17 @@ export function createSandboxBus(options: BusOptions): SandboxBus {
       await db.execute(sql`SELECT pg_notify(${SANDBOX_CHANNEL}, ${encodeBusHint(hint)})`);
     },
     async close() {
-      if (state === "closed") return;
-      state = "closed";
+      if (closed) return;
+      closed = true;
+      listening = false;
       stopPolling();
-      stopPing();
-      if (reconnectTimer) clearTimeout(reconnectTimer);
-      const current = client;
-      client = undefined;
-      if (current) {
-        current.removeAllListeners("notification");
-        await current.end().catch(() => undefined);
-      }
+      unlisten?.();
+      await owned?.close();
     },
   };
+}
+
+function requiredUrl(url: string | undefined): string {
+  if (!url) throw new Error("the sandbox bus needs a shared LISTEN client or a connection string");
+  return url;
 }

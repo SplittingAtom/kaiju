@@ -71,6 +71,7 @@ export class ChangeListener {
     const { cache, logger } = this.options;
     const client = new pg.Client({
       connectionString: this.options.connectionString,
+      application_name: "kobe-egress-proxy-listen",
       connectionTimeoutMillis: 10_000,
     });
     client.on("error", (err) => {

@@ -30,6 +30,12 @@ export interface MemoryItem {
   readonly asOf: string | null;
   readonly version: number;
   readonly updatedAt: string;
+  /**
+   * KOBE-386: an active item not changed or dated within the Site's stale threshold. A computed
+   * flag the server may send on any item (optional in the contract), not a status: `status` stays
+   * active, archived or superseded.
+   */
+  readonly stale?: boolean;
 }
 
 export interface MemoryItemList {
@@ -89,6 +95,8 @@ export interface ListQuery {
   readonly kind?: ItemKind | undefined;
   /** Site only: Policy items, or everything but Policy. */
   readonly policy?: boolean | undefined;
+  /** KOBE-386: only stale items (true) or only fresh ones (false); see {@link MemoryItem.stale}. */
+  readonly stale?: boolean | undefined;
   readonly cursor?: string | null;
 }
 
@@ -100,6 +108,7 @@ export function listPath(q: ListQuery): string {
   if (q.pinned !== undefined) params.set("pinned", String(q.pinned));
   if (q.kind !== undefined) params.set("kind", q.kind);
   if (q.policy !== undefined) params.set("policy", String(q.policy));
+  if (q.stale !== undefined) params.set("stale", String(q.stale));
   params.set("limit", String(ITEM_PAGE_SIZE));
   if (q.cursor) params.set("cursor", q.cursor);
   return `${BASE}?${params.toString()}`;

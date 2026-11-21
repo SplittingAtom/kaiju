@@ -85,7 +85,11 @@ async function takeOverOrphans(
         site_role: "user" as const,
         team_role: "member" as const,
       };
-      await deps.runs.cancel(actor, row.run_id).catch(() => undefined);
+      await deps.runs
+        .cancel(actor, row.run_id)
+        .catch((err: unknown) =>
+          deps.log.warn({ err, run_id: row.run_id }, "skill eval reaper: stopping a run failed"),
+        );
     }
     await deps.provider.deleteEvalSandbox(team, row.thread_id).catch(() => false);
     // Requeued without using the attempt, up to SKILL_EVAL_MAX_TAKEOVERS times; an execution that

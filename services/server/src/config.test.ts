@@ -11,6 +11,31 @@ const REQUIRED = {
 };
 
 describe("loadConfig", () => {
+  it("reads the pool sizes and the connection budget inputs (KOBE-736)", () => {
+    expect(loadConfig(REQUIRED)).toMatchObject({
+      dbPools: { max: 10, streamMax: 4 },
+      dbBudget: undefined,
+    });
+    const c = loadConfig({
+      ...REQUIRED,
+      KOBE_DB_POOL_MAX: "20",
+      KOBE_DB_STREAM_POOL_MAX: "6",
+      KOBE_DB_BUDGET_SERVER_REPLICAS: "3",
+      KOBE_DB_BUDGET_PEER_CONNECTIONS: "44",
+    });
+    expect(c.dbPools).toEqual({ max: 20, streamMax: 6 });
+    expect(c.dbBudget).toEqual({ serverReplicas: 3, peerConnections: 44 });
+    for (const [name, bad] of [
+      ["KOBE_DB_POOL_MAX", "0"],
+      ["KOBE_DB_POOL_MAX", "201"],
+      ["KOBE_DB_STREAM_POOL_MAX", "x"],
+      ["KOBE_DB_BUDGET_SERVER_REPLICAS", "0"],
+      ["KOBE_DB_BUDGET_PEER_CONNECTIONS", "-1"],
+    ] as const) {
+      expect(() => loadConfig({ ...REQUIRED, [name]: bad })).toThrow(new RegExp(name));
+    }
+  });
+
   it("defaults the port to 8080 and the process to the API server", () => {
     expect(loadConfig(REQUIRED)).toMatchObject({ port: 8080, process: "server" });
   });

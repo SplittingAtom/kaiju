@@ -16,6 +16,8 @@ import { createLangfuseScoreSink, initTelemetry, loadTelemetryConfig } from "@ko
 import { loadConfig } from "./config.js";
 import { seedAtStart, serverJobs, startServerJobs } from "./startup/jobs.js";
 import { checkSealedKeys, sealedFamilies } from "./startup/sealed-keys.js";
+import { checkConnectionBudget } from "./startup/db-budget.js";
+import { fireAndLog } from "./async-util.js";
 import { loadConnectorUrlPolicy } from "./connectors/config.js";
 import { loadSsoSettings } from "./sso/settings.js";
 import { createProxyProbe, PROBE_TIMEOUT_MS } from "./connectors/probe.js";
@@ -117,6 +119,9 @@ if (config.process === "scheduler") {
   deps = createServerDeps({
     databaseUrl: config.databaseUrl,
     dbTimeouts: config.dbTimeouts,
+    // KOBE-736: the scheduler serves no event streams, so its stream pool never opens.
+    dbPool: { max: config.dbPools.max, applicationName: "kobe-scheduler" },
+    listen: { applicationName: "kobe-scheduler-listen" },
     ...schedulerAuthStandIn(),
     // No run-token key: the wire host that delivers run.start mints run tokens, not the scheduler.
     sandboxWire: { waker },
@@ -130,6 +135,9 @@ if (config.process === "scheduler") {
   deps = createServerDeps({
     databaseUrl: config.databaseUrl,
     dbTimeouts: config.dbTimeouts,
+    dbPool: { max: config.dbPools.max, applicationName: "kobe-server" },
+    listen: { applicationName: "kobe-server-listen" },
+    eventStream: { poolMax: config.dbPools.streamMax },
     retentionPaused: config.retentionPaused,
     brandingDefaults: config.branding ?? {},
     ...auth,
@@ -231,6 +239,29 @@ if (deps && config.process === "server") {
   });
   await checkSealedKeys(deps.database.db, families, logger).catch((err: unknown) =>
     logger.error({ err }, "the sealed key check failed"),
+  );
+}
+
+/**
+ * KOBE-736: the connection budget of the configured replicas against max_connections (a warning
+ * only; the chart passes the inputs). Run once the server listens, never awaited: a slow database
+ * must not delay the start.
+ */
+function checkConnectionBudgetSoon(): void {
+  if (!deps || config.process !== "server" || !config.dbBudget) return;
+  fireAndLog(
+    logger,
+    "the postgres connection budget check",
+    checkConnectionBudget(
+      deps.database.pool,
+      {
+        serverReplicas: config.dbBudget.serverReplicas,
+        poolMax: config.dbPools.max,
+        streamPoolMax: config.dbPools.streamMax,
+        peerConnections: config.dbBudget.peerConnections,
+      },
+      logger,
+    ),
   );
 }
 
@@ -417,7 +448,7 @@ skillMirror?.kick();
 // Skill evals (KOBE-325): every server replica runs eval executions in ephemeral sandboxes (the
 // per-team cap is atomic across replicas), streams progress, and one replica at a time reaps what
 // a dead replica left. Needs the sandbox provider and object storage.
-const skillEvalHub = isServer && deps ? new SkillEvalHub(config.databaseUrl, logger) : undefined;
+const skillEvalHub = isServer && deps ? new SkillEvalHub(deps.listen) : undefined;
 skillEvalHub?.start();
 const skillEvalRunner =
   isServer && sandbox && deps?.blobs
@@ -504,6 +535,7 @@ const server = serve(
   },
   (info) => {
     logger.info({ port: info.port, process: config.process }, "listening");
+    checkConnectionBudgetSoon();
   },
 );
 
@@ -592,7 +624,6 @@ const stopServerJobs = serverDeps
   ? startServerJobs(
       serverJobs({
         deps: serverDeps,
-        databaseUrl: config.databaseUrl,
         logger,
         auditForwarding: config.auditForwarding,
         retention: {
@@ -604,6 +635,7 @@ const stopServerJobs = serverDeps
         models:
           modelsConfig && bifrostAdmin ? { config: modelsConfig, admin: bifrostAdmin } : undefined,
       }),
+      logger,
     )
   : undefined;
 const lifecycle =
@@ -713,7 +745,7 @@ function shutdown(signal: string): void {
   server.close((err) => {
     if (err) logger.error({ err }, "shutdown error");
     void evalsStopped
-      .catch(() => undefined)
+      .catch((err: unknown) => logger.warn({ err }, "skill eval shutdown failed"))
       .then(() => Promise.all([deps?.close(), telemetry.shutdown()]))
       .finally(() => process.exit(err ? 1 : 0));
   });

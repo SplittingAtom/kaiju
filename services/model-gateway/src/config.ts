@@ -22,6 +22,8 @@ const configSchema = z.object({
   KOBE_DATABASE_URL: z
     .string({ error: "KOBE_DATABASE_URL is required" })
     .min(1, "KOBE_DATABASE_URL is required"),
+  /** Query pool size per pod (KOBE-736; chart `<component>.database.poolMax`). */
+  KOBE_DB_POOL_MAX: int("KOBE_DB_POOL_MAX", 1, 200, 10),
   // Shared with the server for `k_trace` (sandbox span id remapping, KOBE-274) and the budget
   // reservation salt; authorises nothing (KOBE-521: run and server-call tokens are Ed25519).
   KOBE_TRACE_SPAN_KEY: z
@@ -103,6 +105,8 @@ const configSchema = z.object({
 export interface Config {
   readonly port: number;
   readonly databaseUrl: string;
+  /** Query pool size (KOBE_DB_POOL_MAX, KOBE-736); one LISTEN connection comes on top. */
+  readonly dbPoolMax: number;
   /**
    * The trace-span secret (KOBE_TRACE_SPAN_KEY, KOBE-521): `k_trace` and the budget reservation
    * salt derive from it. A pseudonymisation secret: no credential any service accepts derives
@@ -170,6 +174,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
   return {
     port: c.PORT,
     databaseUrl: c.KOBE_DATABASE_URL,
+    dbPoolMax: c.KOBE_DB_POOL_MAX,
     traceSpanSecret: c.KOBE_TRACE_SPAN_KEY,
     sessionVerifyKeys: verifyKeysFromEnv(env, "kobe.model-gateway"),
     virtualKeySecret: c.KOBE_MODELS_VIRTUAL_KEY_SECRET,

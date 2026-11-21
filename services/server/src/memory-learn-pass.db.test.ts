@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { sql, type KobeTx } from "@kobe/db";
 import { MEMORY_PASS_MAX_MS, type MemoryExtractorCandidate } from "@kobe/protocol";
 import { InMemorySpanExporter, initTelemetry } from "@kobe/telemetry";
 import { BackgroundTasks } from "./background.js";
@@ -35,7 +36,7 @@ class FakeGateway implements ServerCallClient {
   async complete(input: ServerCallInput): Promise<string> {
     this.calls.push(input);
     const queued = this.replies.shift() ?? { candidates: [], skill_hints: [] };
-    const next = typeof queued === "function" ? queued(input) : queued;
+    const next = typeof queued === "function" ? await queued(input) : queued;
     if (next instanceof Error) throw next;
     return typeof next === "string" ? next : JSON.stringify(next);
   }
@@ -44,13 +45,27 @@ class FakeGateway implements ServerCallClient {
 let gateway: FakeGateway;
 let background: BackgroundTasks;
 let passes: LearningPasses;
-const passesOn = (replica: number) =>
+const passesOn = (replica: number, beforeClaim?: (tx: KobeTx) => Promise<void>) =>
   createLearningPasses({
     db: fx.replica(replica).deps.database.db,
     client: gateway,
     background,
     log: NO_LOG,
+    ...(beforeClaim ? { beforeClaim } : {}),
   });
+
+/** A latch: `opened` settles once `open()` is called. */
+function latch() {
+  let open: () => void = () => undefined;
+  const opened = new Promise<void>((resolve) => (open = resolve));
+  return { open, opened };
+}
+
+/** A gateway reply that holds the pass inside its model call until `held` opens. */
+const heldReply = (held: { opened: Promise<void> }) => async () => {
+  await held.opened;
+  return { candidates: [], skill_hints: [] };
+};
 
 beforeAll(async () => {
   await fx.setup([{}, {}]);
@@ -685,14 +700,69 @@ describe("one pass per thread, across replicas (ac-3)", () => {
   });
 
   it("two replicas starting at once: the database lets exactly one through", async () => {
+    // KOBE-770: the winner's pass is held in its model call, so it is still running when the
+    // other start claims: the overlap is real, not a pass that already finished.
     const s = await seedThread("I prefer metric units.");
+    const held = latch();
+    gateway.replies = [heldReply(held)];
     const results = await Promise.all([
       passesOn(0).start(viewer(), s.threadId),
       passesOn(1).start(viewer(), s.threadId),
     ]);
-    await background.idle();
     expect(results.filter((r) => r.ok)).toHaveLength(1);
     expect(results.find((r) => !r.ok)).toMatchObject({ code: "pass_running" });
+    held.open();
+    await background.idle();
+    expect(gateway.calls).toHaveLength(1);
+  });
+
+  it("a start after the pass finished has nothing new to learn", async () => {
+    const s = await seedThread("I prefer metric units.");
+    expect(await passesOn(0).start(viewer(), s.threadId)).toMatchObject({ ok: true });
+    await background.idle();
+    expect(await passesOn(1).start(viewer(), s.threadId)).toMatchObject({
+      ok: false,
+      code: "nothing_to_learn",
+    });
+    expect(gateway.calls).toHaveLength(1);
+  });
+
+  it("a pass that finishes while another replica's start is checking cannot let it learn the same messages", async () => {
+    // KOBE-770: the second start has read the old watermark and is about to claim when the first
+    // pass's model call returns. Its completion must wait for the start (thread lock), so the
+    // claim still meets the running row; otherwise both passes learn u1..a1.
+    const s = await seedThread("I prefer metric units.");
+    const held = latch();
+    gateway.replies = [heldReply(held)];
+    const first = await passesOn(0).start(viewer(), s.threadId);
+    if (!first.ok) throw new Error(`first start refused: ${first.code}`);
+    const second = await passesOn(1, async (tx) => {
+      const pid = (await tx.execute<{ pid: number }>(sql`SELECT pg_backend_pid() AS pid`)).rows[0]
+        ?.pid;
+      held.open();
+      // The first pass either completes (its row leaves `running`) or waits behind this start.
+      await vi.waitFor(
+        async () => {
+          const { rows } = await fx.admin.query<{ status: string; blocked: boolean }>(
+            `SELECT (SELECT status FROM memory_learning_passes WHERE id = $1) AS status,
+                    EXISTS (SELECT 1 FROM pg_stat_activity WHERE $2 = ANY (pg_blocking_pids(pid)))
+                      AS blocked`,
+            [first.passId, pid],
+          );
+          expect(rows[0]?.status !== "running" || rows[0]?.blocked).toBe(true);
+        },
+        { timeout: 10_000, interval: 20 },
+      );
+    }).start(viewer(), s.threadId);
+    expect(second).toMatchObject({ ok: false, code: "pass_running" });
+    await background.idle();
+    expect(await passRow(first.passId)).toMatchObject({ status: "completed" });
+    const { rows } = await fx.admin.query<{ n: string }>(
+      `SELECT count(*) AS n FROM memory_learning_passes WHERE team_id = $1 AND thread_id = $2`,
+      [team, s.threadId],
+    );
+    expect(Number(rows[0]?.n)).toBe(1);
+    expect(gateway.calls).toHaveLength(1);
   });
 
   it("a pass left running by a stopped server is failed (Retry) and frees the thread", async () => {

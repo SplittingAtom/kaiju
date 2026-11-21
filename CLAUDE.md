@@ -76,11 +76,27 @@ services/<svc>/Dockerfile .`), runtime `USER 1000:1000` (numeric, for `runAsNonR
   via `egress-proxy`.
 - Every team table: `team_id NOT NULL`, `ENABLE` + `FORCE ROW LEVEL SECURITY`, policy on
   `current_setting('kobe.team_id')` set with `SET LOCAL` inside `withTeam()`. App connects as a non-owner
-  role. The cross-team probe suite must stay green on every migration. One accepted exception
-  (KOBE-120, user-approved 2026-10-10): the budget reservation functions (`kobe_reserve_budget` and
-  friends) set the team themselves with transaction-local `set_config(..., true)` to stay one round
-  trip; they are invoker-rights (never `SECURITY DEFINER`), pin `search_path`, and refuse when a
-  different team is already in force. No other code may set the team outside `withTeam()`.
+  role. The cross-team probe suite must stay green on every migration. Accepted exceptions, each
+  setting the team only transaction-locally (`set_config(..., true)`):
+  - (KOBE-120, user-approved 2026-10-10) the budget reservation functions (`kobe_reserve_budget` and
+    friends) set the team themselves to stay one round trip; they are invoker-rights (never
+    `SECURITY DEFINER`), pin `search_path`, and refuse when a different team is already in force.
+  - (KOBE-697, user-approved 2026-11-20) `scanTeams()` in `packages/db/src/team-scan.ts` visits
+    every team in its own transaction: refuses when a team is already set, takes team ids only from
+    `teams` (bound parameters), clears the setting before it returns.
+  - (KOBE-697) the Site break-glass Workspace lookup in `packages/db/src/break-glass/portable-read.ts`
+    (`workspacesOf`), inside `readPortableWithSiteBreakGlass()`'s own transaction, which refuses
+    when a team is already set: team ids only from `teams` (bound parameters), membership reads
+    only, cleared before the audit writes.
+  - (KOBE-697) the event-stream reader `inTeam()` in `services/server/src/event-stream/read.ts`, on
+    its own pool, sends `BEGIN READ ONLY` and `set_config` as one simple query to save a round
+    trip: the team id is interpolated only after an anchored UUID check and lowercasing, every call
+    is a fresh transaction, and the setting ends with its COMMIT or ROLLBACK.
+  - No other code may set the team outside `withTeam()`: `packages/db/src/team-setters.test.ts`
+    fails on any other tracked source, script or migration that does, or that names the setting
+    other than to read it (tests excluded). Its allowlist also holds the migrations of the budget
+    functions and migration `0047_budgets_rls.sql`, a one-off backfill that set the team per team
+    at migration time (KOBE-42).
 - Server decides every tool call; approvals are HMAC-signed over (run_id, tool_call_id, canonical input).
   No approval bypass.
 - Pi `1.4.x` in RPC mode behind `kobe-sandbox-agent`, which dials out over WSS; sandboxes accept no

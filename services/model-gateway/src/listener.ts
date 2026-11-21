@@ -79,6 +79,7 @@ export class ModelsListener {
     const { cache, logger } = this.options;
     const client = new pg.Client({
       connectionString: this.options.connectionString,
+      application_name: "kobe-gateway-listen",
       connectionTimeoutMillis: 10_000,
     });
     client.on("error", (err) => {
