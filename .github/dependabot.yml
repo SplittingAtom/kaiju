@@ -23,7 +23,8 @@ updates:
         patterns: ["python"]
         group-by: dependency-name
   - package-ecosystem: github-actions
-    directory: /
+    # The workflows, and the composite actions they share (KOBE-721).
+    directories: ["/", "/.github/actions/*"]
     schedule: { interval: weekly }
   - package-ecosystem: npm
     directory: /
