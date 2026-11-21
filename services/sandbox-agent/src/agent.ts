@@ -1,27 +1,4 @@
 import {
-  CAPABILITY_ARTIFACTS,
-  CAPABILITY_APP_CARDS,
-  CAPABILITY_MCP,
-  CAPABILITY_MEMORY,
-  CAPABILITY_SEMANTIC_MEMORY,
-  CAPABILITY_SEMANTIC_MEMORY_PLACEMENT,
-  CAPABILITY_FILES,
-  CAPABILITY_PROJECTS,
-  CAPABILITY_SKILL_DRAFTS,
-  CAPABILITY_FILE_EDITS,
-  CAPABILITY_NOTEBOOKS,
-  CAPABILITY_NOTEBOOK_START,
-  CAPABILITY_RUN_TOKEN,
-  CAPABILITY_SKILL_BUNDLES,
-  CAPABILITY_THREAD_BRANCH_SUMMARY,
-  CAPABILITY_THREAD_COMPACT,
-  CAPABILITY_TRACE_SPANS,
-  CAPABILITY_SESSION_RENEW,
-  CAPABILITY_SKILL_EVAL,
-  CAPABILITY_WORKSPACE_MOVES,
-  CAPABILITY_WORKSPACE_SYNC_NOW,
-  CAPABILITY_THREAD_CONTEXT,
-  CAPABILITY_SYNC_CONFLICTS,
   KOBE_EVENT_DROPPED_TYPE,
   type HelloAckFrame,
   type HelloFrame,
@@ -32,129 +9,27 @@ import {
   type ThreadBranchSummaryFrame,
   type ThreadCompactFrame,
 } from "@kobe/protocol";
-import type { Config } from "./config.js";
 import type { PiExit, PiRecord } from "./pi/pi-process.js";
 import { PolicyBroker } from "./policy/broker.js";
-import { ArtifactBroker } from "./tools/broker.js";
-import { FileShareBroker } from "./tools/share-broker.js";
-import { ProjectCommitBroker } from "./tools/project-commit-broker.js";
-import { SkillDraftBroker } from "./tools/skill-draft-broker.js";
-import { FileEditBroker } from "./tools/file-edit-broker.js";
-import { FileOpenBroker } from "./tools/file-open-broker.js";
-import { NotebookBroker } from "./tools/notebook-broker.js";
-import type { KernelManager } from "./notebook/manager.js";
-import { MemoryBroker } from "./tools/memory-broker.js";
-import { toolsError } from "./tools/channel.js";
-import type { ConflictListener, PushedFile } from "./workspace/sync.js";
 import { ConflictReporter } from "./workspace/conflict-reporter.js";
-import type { SkillStore } from "./skills/store.js";
 import { ThreadManager } from "./threads/manager.js";
 import { fail, ok, type CommandOutcome } from "./threads/outcome.js";
-import type { SkillEvalHooks } from "./skill-eval/hooks.js";
 import { compactFailure, type CompactReply } from "./threads/compact.js";
 import { branchSummaryFailure, type BranchSummaryReply } from "./threads/branch-summary.js";
 import { WireClient, type FatalReason, type WireLogger } from "./wire/client.js";
 import { encodeOutbound } from "./wire/encode.js";
 import { Outbox } from "./wire/outbox.js";
 import { TraceRecorder } from "./trace/recorder.js";
-import type { BackoffPolicy } from "./wire/backoff.js";
-import type { PaceLimits } from "./wire/pacer.js";
-import type { EgressWiring } from "./egress/egress-wiring.js";
-import type { McpWiring } from "./mcp/pi-mcp-config.js";
-import type { ModelWiring } from "./models/types.js";
-import type { PiIdentities } from "./pi/identities.js";
-import type { ExecWiring } from "./threads/exec-wiring.js";
+import { capabilitiesOf, helloCapabilities, type Capabilities } from "./agent/capabilities.js";
+import type { AgentDeps } from "./agent/deps.js";
+import {
+  createToolBrokers,
+  routeToolResult,
+  routeToolsRequest,
+  type ToolBrokers,
+} from "./agent/wiring.js";
 
-/**
- * kobe-sandbox-agent: glues the outbound wire (WireClient), per-run delivery (Outbox), the Pi
- * supervisor (ThreadManager) and the kobe-policy relay (PolicyBroker) together, implementing the
- * sandbox side of packages/protocol `sandbox-wire/connection.ts`.
- */
-export interface AgentDeps {
-  readonly config: Config;
-  readonly logger: WireLogger;
-  readonly readToken: () => Promise<string>;
-  /** The server refused the wire token (KOBE-522): the session client re-trades. */
-  readonly onTokenRejected?: (token: string, reason: string) => void;
-  readonly agentVersion: string;
-  readonly piVersion: string;
-  readonly home: string;
-  readonly parentEnv: Readonly<Record<string, string | undefined>>;
-  readonly onExit: (code: number) => void;
-  readonly backoff?: BackoffPolicy;
-  readonly heartbeatTimeoutMs?: number;
-  /** Outbound send pace (KOBE-429); default `SANDBOX_SEND_PACE`. Tests only. */
-  readonly pace?: PaceLimits;
-  readonly policyReadyTimeoutMs?: number;
-  /** SIGTERM: how long a lost run's report waits for its frames to be acked (KOBE-444). */
-  readonly lostAckTimeoutMs?: number;
-  /**
-   * Root-owned extensions (or `builtin:<name>`) loaded before kobe-policy, which is always last
-   * (KOBE-62 adds `builtin:mcp` here).
-   */
-  readonly extensions?: readonly string[];
-  /** Model gateway wiring (KOBE-41); absent when the sandbox has no model access. */
-  readonly models?: ModelWiring | undefined;
-  /** Egress for Pi's tools (KOBE-39); absent outside Kobe's pods. */
-  readonly egress?: EgressWiring | undefined;
-  /** The root-owned BASH_ENV script for tools when egress is not wired (KOBE-235). */
-  readonly toolEnvScript?: string | undefined;
-  /** mcp-proxy wiring (KOBE-111); absent: no `mcp` capability, runs get no connector tools. */
-  readonly mcp?: McpWiring | undefined;
-  /** Pi identities (KOBE-71); absent: Pi runs as the agent's uid. */
-  readonly identities?: PiIdentities | undefined;
-  /** Workspace sync (KOBE-27): restore before runs, push after them and before stopping. */
-  readonly workspace?: WorkspaceHooks;
-  /**
-   * kobe-tools (KOBE-128): the root-owned extension file, as checked at startup. Present: Pi gets
-   * the fd-4 channel and the agent announces the `artifacts` capability.
-   */
-  readonly toolsExtension?: string | undefined;
-  /**
-   * The tool executor (KOBE-167): the root-owned kobe-exec extension file and where the executor
-   * program lives. Present: every Pi's built-in tools run in an executor under its partner uid.
-   */
-  readonly exec?: { readonly extension: string; readonly wiring: ExecWiring } | undefined;
-  /** Skills store (KOBE-82); absent: runs that list skills fail instead of starting without them. */
-  readonly skills?: SkillStore;
-  /** Skill eval fixtures and snapshots (KOBE-325); present: the agent announces `skill_eval`. */
-  readonly skillEval?: SkillEvalHooks;
-  /** Thread kernels (KOBE-464); present: the agent announces `notebooks`. */
-  readonly kernels?: KernelManager | undefined;
-}
-
-/** What the agent needs of workspace sync (`workspace/sync.ts`). */
-export interface WorkspaceHooks {
-  beforeRun(frame: RunStartFrame): Promise<void>;
-  runEnded(): void;
-  /**
-   * Push one file now and return its synced entry (`share_file`, KOBE-149). Absent: this agent
-   * has no workspace sync, so it does not announce the `files` capability.
-   */
-  pushPath?(rel: string): Promise<PushedFile>;
-  /**
-   * Push every local change now (`commit_project`, KOBE-580: the server commits what the
-   * manifest holds). Absent: `commit_project` answers `not_allowed`.
-   */
-  pushAll?(): Promise<unknown>;
-  flush(deadlineMs: number): Promise<unknown>;
-  /**
-   * The member moved files (`workspace.moved`, KOBE-304): replay the server's moves as local
-   * renames now. Present: the agent announces `workspace_moves`.
-   */
-  movedOnServer?(): void;
-  /**
-   * Push every local change now and resolve whether it committed (`workspace.sync_now`,
-   * KOBE-599: the Files panel's Refresh). Never rejects. Present: the agent announces
-   * `workspace_sync_now`.
-   */
-  syncNow?(): Promise<boolean>;
-  /**
-   * Hear about conflict copies the sync makes (KOBE-492). Present (with kobe-tools, which tells
-   * the model): the agent announces `sync_conflicts` and reports each one to the server.
-   */
-  onConflict?(listener: ConflictListener): void;
-}
+export type { AgentDeps, WorkspaceHooks } from "./agent/deps.js";
 
 /** The final workspace push before the process exits (inside the pod's 30 s grace period). */
 export const WORKSPACE_FLUSH_MS = 15_000;
@@ -187,22 +62,21 @@ const DRAIN_ON_FATAL_MS = 5000;
 
 type PiExitedFrameT = Extract<SandboxToServerFrame, { type: "pi.exited" }>;
 
+/**
+ * kobe-sandbox-agent: glues the outbound wire (WireClient), per-run delivery (Outbox), the Pi
+ * supervisor (ThreadManager) and the kobe-policy relay (PolicyBroker) together, implementing the
+ * sandbox side of packages/protocol `sandbox-wire/connection.ts`. Its deps are in `agent/deps.ts`,
+ * the capabilities it offers in `agent/capabilities.ts`, the kobe-tools brokers in `agent/wiring.ts`.
+ */
 export class Agent {
   readonly #deps: AgentDeps;
   readonly #outbox: Outbox;
   readonly #wire: WireClient;
   readonly #threads: ThreadManager;
   readonly #broker: PolicyBroker;
-  readonly #artifacts: ArtifactBroker;
-  readonly #shares: FileShareBroker;
-  readonly #commits: ProjectCommitBroker;
+  readonly #tools: ToolBrokers;
   /** Runs whose `run.start.project.access` is `write` (KOBE-580): only they may commit. */
   readonly #projectWriteRuns = new Set<string>();
-  readonly #skillDrafts: SkillDraftBroker;
-  readonly #fileEdits: FileEditBroker;
-  readonly #fileOpens: FileOpenBroker;
-  readonly #notebooks: NotebookBroker;
-  readonly #memory: MemoryBroker;
   /** Run spans relayed to the server (KOBE-274); records only runs started with a trace context. */
   readonly #traces: TraceRecorder;
   /** Sync conflict copies reported to the server (KOBE-492). */
@@ -221,43 +95,17 @@ export class Agent {
       onModelParent: (runId, traceparent) => this.#threads.setTraceparent(runId, traceparent),
     });
     this.#broker = new PolicyBroker({ send: (frame) => this.#wire.send(frame) });
-    this.#artifacts = new ArtifactBroker({ send: (frame) => this.#wire.send(frame) });
-    this.#fileEdits = new FileEditBroker({ send: (frame) => this.#wire.send(frame) });
-    this.#memory = new MemoryBroker({ send: (frame) => this.#wire.send(frame) });
+    this.#tools = createToolBrokers(deps, {
+      send: (frame) => this.#wire.send(frame),
+      canCommit: (runId) => this.#projectWriteRuns.has(runId),
+    });
     this.#conflicts = new ConflictReporter({
       ready: () => this.#wire.ready,
       send: (frame) => this.#wire.send(frame),
     });
-    if (this.#syncConflictsEnabled()) {
+    if (this.#caps().syncConflicts) {
       deps.workspace?.onConflict?.((report) => this.#conflicts.report(report));
     }
-    const pushPath = deps.workspace?.pushPath?.bind(deps.workspace);
-    this.#shares = new FileShareBroker({
-      root: config.workspaceDir,
-      send: (frame) => this.#wire.send(frame),
-      pushPath: pushPath ?? (() => Promise.reject(new Error("workspace sync is not available"))),
-    });
-    const pushAll = deps.workspace?.pushAll?.bind(deps.workspace);
-    this.#commits = new ProjectCommitBroker({
-      send: (frame) => this.#wire.send(frame),
-      push: pushAll ?? (() => Promise.reject(new Error("workspace sync is not available"))),
-      canCommit: (runId) => this.#projectWriteRuns.has(runId),
-    });
-    this.#fileOpens = new FileOpenBroker({
-      root: config.workspaceDir,
-      send: (frame) => this.#wire.send(frame),
-      pushPath,
-    });
-    this.#notebooks = new NotebookBroker({
-      root: config.workspaceDir,
-      send: (frame) => this.#wire.send(frame),
-      pushPath,
-    });
-    this.#skillDrafts = new SkillDraftBroker({
-      root: config.workspaceDir,
-      send: (frame) => this.#wire.send(frame),
-      pushPath: pushPath ?? (() => Promise.reject(new Error("workspace sync is not available"))),
-    });
     this.#threads = new ThreadManager({
       bin: config.piBin,
       runtimeDir: config.piRuntimeDir,
@@ -270,12 +118,12 @@ export class Agent {
       exec: deps.exec?.wiring,
       piPrivateRoot: deps.parentEnv.TMPDIR ?? "/tmp",
       execExtension: deps.exec?.extension,
-      shareFiles: this.#filesEnabled(),
-      projectTools: this.#projectsEnabled(),
-      skillDraftTools: this.#skillDraftsEnabled(),
-      fileEditTools: this.#fileEditsEnabled(),
-      notebookTools: this.#notebookToolsEnabled(),
-      memoryTools: this.#memoryEnabled(),
+      shareFiles: this.#caps().files,
+      projectTools: this.#caps().projects,
+      skillDraftTools: this.#caps().skillDrafts,
+      fileEditTools: this.#caps().fileEdits,
+      notebookTools: this.#caps().notebookTools,
+      memoryTools: this.#caps().memory,
       traceparentOf: (runId) => this.#traces.modelParentOf(runId),
       ...(deps.extensions === undefined ? {} : { extensions: deps.extensions }),
       ...(deps.policyReadyTimeoutMs === undefined
@@ -309,16 +157,16 @@ export class Agent {
           this.#traces.runEnded(runId);
           this.#outbox.finish(runId);
           this.#broker.failRun(runId, "run ended");
-          this.#artifacts.failRun(runId, "run ended");
-          this.#shares.failRun(runId, "run ended");
-          this.#commits.failRun(runId, "run ended");
+          this.#tools.artifacts.failRun(runId, "run ended");
+          this.#tools.shares.failRun(runId, "run ended");
+          this.#tools.commits.failRun(runId, "run ended");
           this.#projectWriteRuns.delete(runId);
-          this.#skillDrafts.failRun(runId, "run ended");
-          this.#fileEdits.failRun(runId, "run ended");
-          this.#fileOpens.failRun(runId, "run ended");
-          this.#notebooks.failRun(runId, "run ended");
+          this.#tools.skillDrafts.failRun(runId, "run ended");
+          this.#tools.fileEdits.failRun(runId, "run ended");
+          this.#tools.fileOpens.failRun(runId, "run ended");
+          this.#tools.notebooks.failRun(runId, "run ended");
           deps.kernels?.runEnded(runId);
-          this.#memory.failRun(runId, "run ended");
+          this.#tools.memory.failRun(runId, "run ended");
           deps.workspace?.runEnded();
         },
         uiRequest: (threadId, runId, request) => {
@@ -343,60 +191,18 @@ export class Agent {
           logger.debug({ thread_id: threadId, reason }, "policy channel closed");
           this.#broker.failThread(threadId, reason);
         },
-        toolsRequest: (threadId, runId, request, reply) => {
-          if (
-            request.op === "memory.put" ||
-            request.op === "memory.read" ||
-            request.op === "memory.show"
-          ) {
-            if (this.#memoryEnabled()) this.#memory.request(threadId, runId, request, reply);
-            else reply(toolsError(request.id, "not_allowed", "memory is not available"));
-            return;
-          }
-          if (request.op === "project.commit") {
-            if (this.#projectCommitsEnabled()) {
-              this.#commits.commit(threadId, runId, request, reply);
-            } else
-              reply(toolsError(request.id, "not_allowed", "project commits are not available"));
-            return;
-          }
-          if (request.op === "notebook.run") {
-            if (this.#notebookToolsEnabled()) this.#notebooks.run(threadId, runId, request, reply);
-            else reply(toolsError(request.id, "not_allowed", "notebooks are not available"));
-            return;
-          }
-          if (request.op === "file.edit_propose") {
-            if (this.#fileEditsEnabled()) this.#fileEdits.propose(threadId, runId, request, reply);
-            else reply(toolsError(request.id, "not_allowed", "file edits are not available"));
-            return;
-          }
-          if (request.op === "file.open") {
-            if (this.#fileEditsEnabled()) this.#fileOpens.open(threadId, runId, request, reply);
-            else reply(toolsError(request.id, "not_allowed", "opening files is not available"));
-            return;
-          }
-          if (request.op === "skill.draft_save") {
-            if (this.#skillDraftsEnabled()) this.#skillDrafts.save(threadId, runId, request, reply);
-            else reply(toolsError(request.id, "not_allowed", "skill drafts are not available"));
-            return;
-          }
-          if (request.op === "file.share") {
-            if (this.#filesEnabled()) this.#shares.share(threadId, runId, request, reply);
-            else reply(toolsError(request.id, "not_allowed", "file sharing is not available"));
-            return;
-          }
-          this.#artifacts.put(threadId, runId, request, reply);
-        },
+        toolsRequest: (threadId, runId, request, reply) =>
+          routeToolsRequest(this.#tools, this.#caps(), threadId, runId, request, reply),
         toolsChannelClosed: (threadId, reason) => {
           logger.debug({ thread_id: threadId, reason }, "tools channel closed");
-          this.#artifacts.failThread(threadId, reason);
-          this.#shares.failThread(threadId, reason);
-          this.#commits.failThread(threadId, reason);
-          this.#skillDrafts.failThread(threadId, reason);
-          this.#fileEdits.failThread(threadId, reason);
-          this.#fileOpens.failThread(threadId, reason);
-          this.#notebooks.failThread(threadId, reason);
-          this.#memory.failThread(threadId, reason);
+          this.#tools.artifacts.failThread(threadId, reason);
+          this.#tools.shares.failThread(threadId, reason);
+          this.#tools.commits.failThread(threadId, reason);
+          this.#tools.skillDrafts.failThread(threadId, reason);
+          this.#tools.fileEdits.failThread(threadId, reason);
+          this.#tools.fileOpens.failThread(threadId, reason);
+          this.#tools.notebooks.failThread(threadId, reason);
+          this.#tools.memory.failThread(threadId, reason);
         },
         diagnostic: (threadId, message) => logger.debug({ thread_id: threadId }, message),
         warning: (threadId, message) => logger.warn({ thread_id: threadId }, message),
@@ -411,14 +217,14 @@ export class Agent {
       onFrame: (frame) => this.#onFrame(frame),
       onDisconnected: () => {
         this.#broker.failAll("connection to Kobe server lost");
-        this.#artifacts.failAll("connection to Kobe server lost");
-        this.#shares.failAll("connection to Kobe server lost");
-        this.#commits.failAll("connection to Kobe server lost");
-        this.#skillDrafts.failAll("connection to Kobe server lost");
-        this.#fileEdits.failAll("connection to Kobe server lost");
-        this.#fileOpens.failAll("connection to Kobe server lost");
-        this.#notebooks.failAll("connection to Kobe server lost");
-        this.#memory.failAll("connection to Kobe server lost");
+        this.#tools.artifacts.failAll("connection to Kobe server lost");
+        this.#tools.shares.failAll("connection to Kobe server lost");
+        this.#tools.commits.failAll("connection to Kobe server lost");
+        this.#tools.skillDrafts.failAll("connection to Kobe server lost");
+        this.#tools.fileEdits.failAll("connection to Kobe server lost");
+        this.#tools.fileOpens.failAll("connection to Kobe server lost");
+        this.#tools.notebooks.failAll("connection to Kobe server lost");
+        this.#tools.memory.failAll("connection to Kobe server lost");
         void this.#threads.abortRestores();
       },
       onFatal: (reason) => void this.#onFatal(reason),
@@ -508,10 +314,6 @@ export class Agent {
   }
 
   /**
-   * `share_file` needs the tools channel (fd 4) and workspace sync (push-then-share): without
-   * either this agent neither registers the tool nor announces `files`.
-   */
-  /**
    * `workspace.sync_now` (KOBE-599): push now, then answer `workspace.synced` with the same id.
    * An answer that cannot be sent (the connection dropped) is lost; the server's wait is bounded.
    */
@@ -523,94 +325,13 @@ export class Agent {
     });
   }
 
-  #filesEnabled(): boolean {
-    return this.#deps.toolsExtension !== undefined && this.#deps.workspace?.pushPath !== undefined;
-  }
-
-  /** `commit_project` needs what `share_file` needs (the tools channel and workspace sync). */
-  #projectsEnabled(): boolean {
-    return this.#filesEnabled();
-  }
-
-  /** `commit_project` (KOBE-580) pushes the whole working copy first: projects plus a full push. */
-  #projectCommitsEnabled(): boolean {
-    return this.#projectsEnabled() && this.#deps.workspace?.pushAll !== undefined;
-  }
-
-  /** `save_skill_draft` (KOBE-442) pushes the folder first, so it needs what `share_file` needs. */
-  /**
-   * `propose_file_edit` (KOBE-462) needs only the tools channel: it pushes nothing. `open_file`
-   * (KOBE-484) rides the same capability; it pushes when sync is on, else opens the synced copy.
-   */
-  #fileEditsEnabled(): boolean {
-    return this.#deps.toolsExtension !== undefined;
-  }
-
-  /** `run_python` (KOBE-464) needs a kernel and the tools channel. */
-  #notebookToolsEnabled(): boolean {
-    return this.#deps.kernels !== undefined && this.#deps.toolsExtension !== undefined;
-  }
-
-  #skillDraftsEnabled(): boolean {
-    return this.#filesEnabled();
-  }
-
-  /** Conflict reports (KOBE-492) need sync to see them and kobe-tools to tell the model. */
-  #syncConflictsEnabled(): boolean {
-    return (
-      this.#deps.workspace?.onConflict !== undefined && this.#deps.toolsExtension !== undefined
-    );
-  }
-
-  /** `remember` / `recall` need the tools channel (fd 4); without it neither is registered nor announced. */
-  #memoryEnabled(): boolean {
-    return this.#deps.toolsExtension !== undefined;
+  /** The optional tools and features this agent offers (`agent/capabilities.ts`). */
+  #caps(): Capabilities {
+    return capabilitiesOf(this.#deps);
   }
 
   #hello(): HelloFrame {
-    const capabilities = [
-      ...(this.#deps.skills === undefined ? [] : [CAPABILITY_SKILL_BUNDLES]),
-      ...(this.#deps.toolsExtension === undefined ? [] : [CAPABILITY_ARTIFACTS]),
-      ...(this.#filesEnabled() ? [CAPABILITY_FILES] : []),
-      ...(this.#projectsEnabled() ? [CAPABILITY_PROJECTS] : []),
-      ...(this.#skillDraftsEnabled() ? [CAPABILITY_SKILL_DRAFTS] : []),
-      ...(this.#fileEditsEnabled() ? [CAPABILITY_FILE_EDITS] : []),
-      // Thread kernels (KOBE-464): the kernel commands, and `run_python` with the tools channel.
-      ...(this.#deps.kernels === undefined
-        ? []
-        : [CAPABILITY_NOTEBOOKS, CAPABILITY_NOTEBOOK_START]),
-      ...(this.#memoryEnabled() ? [CAPABILITY_MEMORY] : []),
-      // What Kobe knows (KOBE-383): rendered from run.start.memory.semantic, so only with memory.
-      ...(this.#memoryEnabled() ? [CAPABILITY_SEMANTIC_MEMORY] : []),
-      // Memory placement (KOBE-658): picks beside the newest user message, held picks.
-      ...(this.#memoryEnabled() ? [CAPABILITY_SEMANTIC_MEMORY_PLACEMENT] : []),
-      // Per-session MCP config (KOBE-111) needs the proxy URL, a session to trade tokens with, and
-      // Pi's MCP extension (built into Pi 1.0.x).
-      ...(this.#deps.mcp === undefined ? [] : [CAPABILITY_MCP]),
-      // The run token reaches Pi through the models extension, so only with model wiring.
-      ...(this.#deps.models === undefined ? [] : [CAPABILITY_RUN_TOKEN]),
-      // App cards (KOBE-440): appended to the session before the run, like the branch marker.
-      CAPABILITY_APP_CARDS,
-      // Compaction (KOBE-213) summarizes through the gateway with the run's token: same condition.
-      ...(this.#deps.models === undefined ? [] : [CAPABILITY_THREAD_COMPACT]),
-      // Branch summaries (KOBE-548) go through kobe-models the same way.
-      ...(this.#deps.models === undefined ? [] : [CAPABILITY_THREAD_BRANCH_SUMMARY]),
-      // Run spans over this wire (KOBE-274); sent only for runs the server gave a trace context.
-      CAPABILITY_TRACE_SPANS,
-      // Fresh session tokens handed to the live connection, so expiry never drops it (KOBE-483).
-      CAPABILITY_SESSION_RENEW,
-      // Server moves replayed as local renames (KOBE-304).
-      ...(this.#deps.workspace?.movedOnServer === undefined ? [] : [CAPABILITY_WORKSPACE_MOVES]),
-      // Refresh in the Files panel pushes now and says when it is done (KOBE-599).
-      ...(this.#deps.workspace?.syncNow === undefined ? [] : [CAPABILITY_WORKSPACE_SYNC_NOW]),
-      // Sync conflict copies reported, and the model told (KOBE-492).
-      ...(this.#syncConflictsEnabled() ? [CAPABILITY_SYNC_CONFLICTS] : []),
-      // The latest model call's context for its owner (KOBE-470): read from Pi's capture or the
-      // session file, so it needs nothing but the thread's files.
-      CAPABILITY_THREAD_CONTEXT,
-      // Skill eval fixtures in, workspace snapshot out (KOBE-325; sent only to eval sandboxes).
-      ...(this.#deps.skillEval === undefined ? [] : [CAPABILITY_SKILL_EVAL]),
-    ];
+    const capabilities = helloCapabilities(this.#deps);
     return {
       v: 1,
       type: "hello",
@@ -678,6 +399,7 @@ export class Agent {
       void this.#runBranchSummary(frame);
       return;
     }
+    if (routeToolResult(this.#tools, frame)) return;
     switch (frame.type) {
       case "pi.ui_response":
         this.#threads.uiResponse(frame);
@@ -689,32 +411,8 @@ export class Agent {
         this.#traces.noteDecision(frame.run_id, frame.tool_call_id, frame.decision);
         this.#broker.onResult(frame);
         return;
-      case "artifact.result":
-        this.#artifacts.onResult(frame);
-        return;
-      case "file.share_result":
-        this.#shares.onResult(frame);
-        return;
-      case "project.commit_result":
-        this.#commits.onResult(frame);
-        return;
-      case "skill.draft_save_result":
-        this.#skillDrafts.onResult(frame);
-        return;
-      case "file.edit_propose_result":
-        this.#fileEdits.onResult(frame);
-        return;
-      case "file.open_result":
-        this.#fileOpens.onResult(frame);
-        return;
-      case "notebook.run_result":
-        this.#notebooks.onResult(frame);
-        return;
       case "web_search.result":
         // Retired (KOBE-606): this agent never sends `web_search.query`, so nothing waits for it.
-        return;
-      case "memory.result":
-        this.#memory.onResult(frame);
         return;
       case "ack":
         this.#outbox.ack(frame.run_id, frame.seq);

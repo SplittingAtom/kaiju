@@ -81,6 +81,10 @@ export const files = pgTable(
     index("files_thread_idx").on(t.teamId, t.threadId, t.createdAt),
     // Quota usage: a user's / the team's bytes.
     index("files_user_idx").on(t.teamId, t.userId),
+    // files_run_fk: a purged run's foreign-key check (KOBE-735, migration is no-transaction).
+    index("files_run_idx")
+      .on(t.teamId, t.runId)
+      .where(sql`${t.runId} IS NOT NULL`),
     check("files_kind", sql`${t.kind} IN ('upload', 'shared')`),
     check("files_scan_status", sql`${t.scanStatus} IN ('none', 'clean', 'rejected')`),
     check("files_name_length", sql`char_length(${t.name}) BETWEEN 1 AND 255`),

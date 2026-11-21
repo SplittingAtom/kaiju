@@ -11,12 +11,25 @@ export interface ListClient {
   }>;
 }
 
-export function createS3Client(settings: S3Settings): S3Client {
+/**
+ * Connection and socket-idle timeouts (KOBE-732, as the server's client): a store that accepts and
+ * never answers fails the backup instead of hanging it. Idle, not total: a long listing is fine.
+ */
+export const S3_HANDLER_TIMEOUTS = { connectionTimeout: 5_000, socketTimeout: 60_000 } as const;
+
+export function createS3Client(
+  settings: S3Settings,
+  timeouts: {
+    readonly connectionTimeout: number;
+    readonly socketTimeout: number;
+  } = S3_HANDLER_TIMEOUTS,
+): S3Client {
   return new S3Client({
     region: settings.region,
     forcePathStyle: settings.forcePathStyle,
     ...(settings.endpoint ? { endpoint: settings.endpoint } : {}),
     ...(settings.credentials ? { credentials: settings.credentials } : {}),
+    requestHandler: { ...timeouts },
   });
 }
 

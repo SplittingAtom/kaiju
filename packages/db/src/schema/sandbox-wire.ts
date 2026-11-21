@@ -134,6 +134,8 @@ export const sandboxCommands = pgTable(
       .on(t.teamId, t.userId, t.createdAt)
       .where(sql`${t.status} IN ('pending', 'delivered')`),
     index("sandbox_commands_expiry_idx").on(t.teamId, t.expiresAt),
+    // sandbox_commands_thread_fk: the cascade from a purged thread (KOBE-735).
+    index("sandbox_commands_thread_idx").on(t.teamId, t.threadId),
     check(
       "sandbox_commands_kind",
       sql`${t.kind} IN (${sql.raw(SANDBOX_COMMAND_KINDS.map((k) => `'${k}'`).join(", "))})`,
@@ -177,5 +179,7 @@ export const sandboxRunLeases = pgTable(
       foreignColumns: [threads.teamId, threads.id],
     }).onDelete("cascade"),
     index("sandbox_run_leases_user_idx").on(t.teamId, t.userId),
+    // sandbox_run_leases_thread_fk: the cascade from a purged thread (KOBE-735).
+    index("sandbox_run_leases_thread_idx").on(t.teamId, t.threadId),
   ],
 );

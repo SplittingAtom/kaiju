@@ -9,6 +9,7 @@ import {
 } from "@kobe/protocol";
 import { and, asc, desc, eq, isNull, memoryDocVersions, memoryDocs, type KobeTx } from "@kobe/db";
 import type { BlobStore } from "../retention/blobs.js";
+import { TX_OBJECT_CALL_TIMEOUT_MS } from "../workspace-sync/object-store.js";
 import { memoryBlobKey } from "./keys.js";
 
 /**
@@ -138,7 +139,10 @@ export async function findDoc(
 
 async function putObject(blobs: BlobStore, key: string, bytes: Buffer): Promise<void> {
   try {
-    await blobs.objects.put(key, Readable.from([bytes]), bytes.length);
+    // Inside the caller's transaction, which holds the doc row lock: bounded (KOBE-732).
+    await blobs.objects.put(key, Readable.from([bytes]), bytes.length, {
+      signal: AbortSignal.timeout(TX_OBJECT_CALL_TIMEOUT_MS),
+    });
   } catch (err) {
     throw new MemoryStorageError("memory content could not be stored", { cause: err });
   }
@@ -308,7 +312,9 @@ export async function restoreMemory(
   const version = doc.currentVersion + 1;
   const blobRef = memoryBlobKey(blobs.prefix, teamId, docId, version);
   try {
-    await blobs.objects.copy(from.blobRef, blobRef);
+    await blobs.objects.copy(from.blobRef, blobRef, {
+      signal: AbortSignal.timeout(TX_OBJECT_CALL_TIMEOUT_MS),
+    });
   } catch (err) {
     throw new MemoryStorageError("memory content could not be copied", { cause: err });
   }

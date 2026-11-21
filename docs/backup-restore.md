@@ -247,6 +247,11 @@ CREATE ROLE kobe_backup LOGIN NOSUPERUSER BYPASSRLS IN ROLE pg_read_all_data;
 CloudNativePG leaves unmanaged roles alone. With external Postgres, run the same statements as
 your administrator.
 
+Do not give this role a `statement_timeout` or `idle_in_transaction_session_timeout` default (the
+app role has them, KOBE-732): `kobe backup` holds its snapshot transaction open, idle, while
+`pg_dump` reads, and turns both off for its own sessions. Its S3 listing gives up on a store that
+does not connect within 5 s or stays silent for 60 s.
+
 ## Back up
 
 ```bash

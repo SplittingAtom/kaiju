@@ -92,7 +92,8 @@ export const artifactVersions = pgTable(
   },
   (t) => [
     primaryKey({ columns: [t.teamId, t.artifactId, t.version] }),
-    unique("artifact_versions_artifact_version").on(t.artifactId, t.version),
+    // The primary key already makes a version unique per artifact; KOBE-735 dropped a second
+    // unique constraint on (artifact_id, version) (write cost only, artifact ids are random).
     unique("artifact_versions_tool_call").on(t.teamId, t.toolCallId),
     foreignKey({
       name: "artifact_versions_artifact_fk",
@@ -112,6 +113,8 @@ export const artifactVersions = pgTable(
     // Retention looks blob keys up by (team, key) (BLOB_REF_COLUMNS thread: true).
     index("artifact_versions_blob_ref_idx").on(t.teamId, t.blobRef),
     index("artifact_versions_thread_idx").on(t.teamId, t.threadId),
+    // artifact_versions_run_fk: a purged run's foreign-key check (KOBE-735).
+    index("artifact_versions_run_idx").on(t.teamId, t.runId),
     check("artifact_versions_version", sql`${t.version} >= 1`),
     check("artifact_versions_size", sql`${t.sizeBytes} >= 0`),
     check("artifact_versions_sha256", sql`${t.sha256} ~ '^[0-9a-f]{64}$'`),

@@ -1,8 +1,9 @@
+import { createServer, type Socket } from "node:net";
 import type { ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { describe, expect, it } from "vitest";
 import type { S3Settings } from "./config.js";
 import { collect } from "./objects.js";
-import { s3Lister, type ListClient } from "./s3.js";
+import { createS3Client, s3Lister, type ListClient } from "./s3.js";
 
 const settings: S3Settings = {
   endpoint: "https://s3.example.com",
@@ -52,4 +53,25 @@ describe("s3Lister", () => {
     };
     await expect(collect(s3Lister(settings, client))).rejects.toThrow(/truncated/);
   });
+});
+
+describe("createS3Client timeouts (KOBE-732)", () => {
+  it("gives up on a store that accepts and never answers", async () => {
+    const sockets: Socket[] = [];
+    const server = createServer((s) => {
+      sockets.push(s);
+      s.on("error", () => undefined);
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    if (address === null || typeof address === "string") throw new Error("no port");
+    const silent = { ...settings, endpoint: `http://127.0.0.1:${address.port}` };
+    try {
+      const client = createS3Client(silent, { connectionTimeout: 1_000, socketTimeout: 300 });
+      await expect(collect(s3Lister(silent, client))).rejects.toThrow(/timed out/);
+    } finally {
+      for (const s of sockets) s.destroy();
+      await new Promise((resolve) => server.close(resolve));
+    }
+  }, 20_000);
 });
