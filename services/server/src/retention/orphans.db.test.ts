@@ -19,6 +19,7 @@ let user = "";
 let admin = "";
 let member = "";
 let ghost = "";
+let otherTeam = "";
 const DAY = 86_400_000;
 const hex = (s: string) => createHash("sha256").update(s).digest("hex");
 
@@ -35,11 +36,11 @@ function put(key: string, ageMs: number): string {
 }
 const sweep = () => sweepOrphanObjects(h.deps.database.db, team, store);
 
-async function placeHold(userId: string | null): Promise<string> {
+async function placeHold(userId: string | null, teamId = team): Promise<string> {
   const { rows } = await h.admin.query<{ id: string }>(
     `INSERT INTO legal_holds (team_id, user_id, reason, placed_by) VALUES ($1, $2, 'matter', $3)
      RETURNING id`,
-    [team, userId, admin],
+    [teamId, userId, admin],
   );
   const id = rows[0]?.id ?? "";
   await h.admin.query(`UPDATE legal_holds SET status = 'active', approved_by = $2 WHERE id = $1`, [
@@ -61,6 +62,12 @@ beforeAll(async () => {
     )
   ).id;
   ghost = await h.createUser("ghost@orphans.test");
+  otherTeam = (
+    await runWithAuditContext(
+      { actor: { kind: "user", id: user }, ip: null, userAgent: null },
+      () => createTeamWithAdmin(h.deps.database.db, { slug: "orphans-2", name: "orphans 2" }, user),
+    )
+  ).id;
   await h.admin.query(
     `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'member')`,
     [team, member],
@@ -149,6 +156,51 @@ describe("staging objects of removed members (KOBE-243)", () => {
     const other = put(`${PREFIX}teams/${team}/users/${ghost}/shared/${randomUUID()}`, 3 * DAY);
     expect(await sweep()).toEqual({ staging: 0, forks: 0, uploads: 0, skills: 0, evals: 0 });
     expect(objects.keys().sort()).toEqual([odd, other].sort());
+  });
+});
+
+describe("personal skill bundles under a hold in another team (KOBE-773)", () => {
+  const personal = (userId: string) =>
+    `${PREFIX}skills/users/${userId}/${hex(randomUUID())}/${randomUUID()}`;
+  const release = async (id: string) => {
+    await h.admin.query(
+      `UPDATE legal_holds SET release_requested_by = $2, release_requested_at = now(),
+              release_reason = 'done' WHERE id = $1`,
+      [id, admin],
+    );
+    await h.admin.query(
+      `UPDATE legal_holds SET status = 'released', released_by = $2, released_at = now()
+        WHERE id = $1`,
+      [id, user],
+    );
+  };
+
+  it("keeps a member's uncommitted uploads while a hold names them in any team", async () => {
+    const mine = put(personal(member), 3 * DAY);
+    const theirs = put(personal(user), 3 * DAY);
+    const hold = await placeHold(member, otherTeam);
+    expect((await sweep()).skills).toBe(1);
+    expect(objects.keys()).toEqual([mine]);
+    expect(objects.deleted).toEqual([theirs]);
+    await release(hold);
+    expect((await sweep()).skills).toBe(1);
+    expect(objects.keys()).toEqual([]);
+  });
+
+  it("a hold on another user, or a team-wide hold in a team they are not in, does not keep them", async () => {
+    put(personal(member), 3 * DAY);
+    await placeHold(ghost, otherTeam);
+    await placeHold(null, otherTeam);
+    expect((await sweep()).skills).toBe(1);
+  });
+
+  it("a pending hold does not keep them", async () => {
+    put(personal(member), 3 * DAY);
+    await h.admin.query(
+      `INSERT INTO legal_holds (team_id, user_id, reason, placed_by) VALUES ($1, $2, 'matter', $3)`,
+      [otherTeam, member, admin],
+    );
+    expect((await sweep()).skills).toBe(1);
   });
 });
 
