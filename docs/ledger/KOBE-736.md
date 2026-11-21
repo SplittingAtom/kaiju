@@ -36,3 +36,4 @@
 - Full server db suite after the last commit: 258/265 files green; the 7 failures were six
   `beforeAll` harness timeouts (shared dev Postgres under load from other lanes) and the
   pg-listen check not yet excluding the new `kobe-server` pool name (fixed); all 7 re-run green.
+- Review follow-up: the budget check runs with fireAndLog once the server listens (never delays the start).

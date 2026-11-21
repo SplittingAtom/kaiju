@@ -17,6 +17,7 @@ import { loadConfig } from "./config.js";
 import { seedAtStart, serverJobs, startServerJobs } from "./startup/jobs.js";
 import { checkSealedKeys, sealedFamilies } from "./startup/sealed-keys.js";
 import { checkConnectionBudget } from "./startup/db-budget.js";
+import { fireAndLog } from "./async-util.js";
 import { loadConnectorUrlPolicy } from "./connectors/config.js";
 import { loadSsoSettings } from "./sso/settings.js";
 import { createProxyProbe, PROBE_TIMEOUT_MS } from "./connectors/probe.js";
@@ -241,19 +242,27 @@ if (deps && config.process === "server") {
   );
 }
 
-// KOBE-736: the connection budget of the configured replicas against max_connections (a warning
-// only; the chart passes the inputs). Never stops the start.
-if (deps && config.process === "server" && config.dbBudget) {
-  await checkConnectionBudget(
-    deps.database.pool,
-    {
-      serverReplicas: config.dbBudget.serverReplicas,
-      poolMax: config.dbPools.max,
-      streamPoolMax: config.dbPools.streamMax,
-      peerConnections: config.dbBudget.peerConnections,
-    },
+/**
+ * KOBE-736: the connection budget of the configured replicas against max_connections (a warning
+ * only; the chart passes the inputs). Run once the server listens, never awaited: a slow database
+ * must not delay the start.
+ */
+function checkConnectionBudgetSoon(): void {
+  if (!deps || config.process !== "server" || !config.dbBudget) return;
+  fireAndLog(
     logger,
-  ).catch((err: unknown) => logger.warn({ err }, "the postgres connection budget check failed"));
+    "the postgres connection budget check",
+    checkConnectionBudget(
+      deps.database.pool,
+      {
+        serverReplicas: config.dbBudget.serverReplicas,
+        poolMax: config.dbPools.max,
+        streamPoolMax: config.dbPools.streamMax,
+        peerConnections: config.dbBudget.peerConnections,
+      },
+      logger,
+    ),
+  );
 }
 
 // Spec D4: the process's own isolation check (startup + periodic). Agent work must go through
@@ -526,6 +535,7 @@ const server = serve(
   },
   (info) => {
     logger.info({ port: info.port, process: config.process }, "listening");
+    checkConnectionBudgetSoon();
   },
 );
 
