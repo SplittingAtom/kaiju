@@ -1,3 +1,4 @@
+import { fireAndLog } from "../../async-util.js";
 import { siteSkillSettings, sql, teams, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
 import {
   evalOutputWalkRoots,
@@ -184,7 +185,10 @@ export class SkillEvalRunner {
     const started = Date.now();
     const state: AttemptState = { runId: null };
     const beat = setInterval(() => {
-      void heartbeat(this.#o.db, claim).catch(() => undefined);
+      fireAndLog(this.#o.log, "skill evals: heartbeat", heartbeat(this.#o.db, claim), {
+        eval_run_id: claim.evalRunId,
+        case_id: claim.caseId,
+      });
     }, this.#t.heartbeatMs);
     beat.unref();
     let attempt: EvalAttempt | null;
@@ -203,7 +207,12 @@ export class SkillEvalRunner {
       if (state.runId)
         await this.#o.runs
           .cancel(ownerActor(claim.teamId, claim.userId), state.runId)
-          .catch(() => undefined);
+          .catch((cancelErr: unknown) =>
+            this.#o.log.warn(
+              { err: cancelErr, run_id: state.runId },
+              "skill evals: stopping the failed execution's run failed",
+            ),
+          );
       attempt = shutdown ? null : errorAttempt(claim.threadId, state.runId, Date.now() - started);
     } finally {
       // Cleanup on every path (KOBE-325): the claim's shutdownTime and the reaper are backstops.
@@ -276,7 +285,14 @@ export class SkillEvalRunner {
     await markExecution(this.#o.db, claim, "running", runId);
     const end = await this.#waitRun(claim, runId, c.expect.max_turns, deadline);
     if (end !== "ended") {
-      await this.#o.runs.cancel(actor, runId).catch(() => undefined);
+      await this.#o.runs
+        .cancel(actor, runId)
+        .catch((err: unknown) =>
+          this.#o.log.warn(
+            { err, run_id: runId },
+            "skill evals: stopping an unfinished run failed",
+          ),
+        );
       if (end === "cancelled" || end === "shutdown") {
         state.runId = null;
         throw new EvalAbort(end);

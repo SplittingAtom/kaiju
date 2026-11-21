@@ -6,6 +6,7 @@ import {
   deriveKey,
 } from "@kobe/db";
 import type { Logger } from "pino";
+import { logger as rootLogger } from "../logger.js";
 import { AUDIT_FORWARD_LOCK, AuditForwarder } from "../audit/forward/forwarder.js";
 import type { AuditForwardingConfig } from "../audit/forward/config.js";
 import { destinationsOf, sinksFor } from "../audit/forward/index.js";
@@ -483,10 +484,24 @@ export function serverJobs(o: ServerJobsOptions): ServerJob[] {
   return [...auditJobs(o), ...sweepJobs(o), ...siteJobs(o), ...modelJobs(o), ...skillJobs(o)];
 }
 
-/** Starts the jobs; returns one function that stops them all. */
-export function startServerJobs(jobs: readonly ServerJob[]): () => Promise<void> {
-  const stops = jobs.map((j) => j.start());
+/**
+ * Starts the jobs; returns one function that stops them all. A job that fails to stop (a held
+ * advisory lock, a hung connection) is logged with its name and never stops the others.
+ */
+export function startServerJobs(
+  jobs: readonly ServerJob[],
+  log: Pick<Logger, "warn"> = rootLogger,
+): () => Promise<void> {
+  const stops = jobs.map((j) => ({ name: j.name, stop: j.start() }));
   return async () => {
-    await Promise.all(stops.map((stop) => Promise.resolve(stop()).catch(() => undefined)));
+    await Promise.all(
+      stops.map(async ({ name, stop }) => {
+        try {
+          await stop();
+        } catch (err) {
+          log.warn({ err, job: name }, "server job failed to stop");
+        }
+      }),
+    );
   };
 }

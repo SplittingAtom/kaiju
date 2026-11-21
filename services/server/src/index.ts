@@ -603,6 +603,7 @@ const stopServerJobs = serverDeps
         models:
           modelsConfig && bifrostAdmin ? { config: modelsConfig, admin: bifrostAdmin } : undefined,
       }),
+      logger,
     )
   : undefined;
 const lifecycle =
@@ -712,7 +713,7 @@ function shutdown(signal: string): void {
   server.close((err) => {
     if (err) logger.error({ err }, "shutdown error");
     void evalsStopped
-      .catch(() => undefined)
+      .catch((err: unknown) => logger.warn({ err }, "skill eval shutdown failed"))
       .then(() => Promise.all([deps?.close(), telemetry.shutdown()]))
       .finally(() => process.exit(err ? 1 : 0));
   });
