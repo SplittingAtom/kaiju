@@ -182,7 +182,9 @@ async function finish(
       await complete(ctx, pass, input, screen, output, usage, span, tuning.lockTimeoutMs);
       return;
     } catch (err) {
-      // Rolled back whole on a lock timeout: running it again is safe.
+      // Rolled back whole on a lock timeout: running it again is safe. The timeout covers every
+      // lock the completion takes (the thread row first, also the review-notice lock), so
+      // `thread_busy` means the completion could not get its locks, whichever one was held.
       if (!isLockTimeout(err)) throw err;
       const delay = tuning.retryDelaysMs[attempt];
       if (delay === undefined) throw new PassFailure("thread_busy", "lock_timeout");
