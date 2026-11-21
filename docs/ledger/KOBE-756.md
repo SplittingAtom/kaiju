@@ -33,10 +33,13 @@ sends `text\n\n@file(path)` instead of the marker inline where it was typed.
   appended twice (unchanged `contentFor` rule).
 - **Picking a file already chipped**: no second chip; the typed `@query` is still removed.
 - **20-mention limit**: the 21st pick is refused with the drop's message (`MENTION_LIMIT_REFUSED`)
-  under the composer; the `@query` is removed anyway (the library strips it before the handler
-  runs; restoring it would mean overriding its selection internals).
+  under the composer and the text stays exactly as typed (review follow-up: the picker decides
+  the edit itself from the input's text, without `removeOnExecute`). Same for a refused name.
+- **Focus**: a click on an option keeps the focus in the input; removing a chip returns it there.
+  The caret is set by the picker a frame after the edit (assistant-ui only tracks its own cursor
+  state; the caret test fails without it).
 - **Folders / unmentionable names**: the picker never offers them (unchanged); `mention()` refuses
-  them anyway with the drop's messages.
+  them anyway with the drop's messages, leaving the typed text.
 - **Escape** closes the list and leaves the typed text. **Enter/Tab** pick; Shift+Tab does not.
 - **IME composition**: assistant-ui ignores composition keys before the picker's keyboard handler,
   so an Enter that commits a composition never picks; Backspace-removes-chip also skips composing

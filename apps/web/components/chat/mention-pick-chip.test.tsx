@@ -3,7 +3,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { requestReload, resetReloadRequest } from "../../lib/build/reload-draft";
-import { MENTION_LIMIT_REFUSED } from "../../lib/chat/mention-insert";
+import { MENTION_LIMIT_REFUSED, MENTION_NAME_REFUSED } from "../../lib/chat/mention-insert";
 import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
 import { must } from "../../lib/testing/must";
 import { composer, openApp } from "./testing";
@@ -134,7 +134,7 @@ describe("picking a file with @ makes a chip (KOBE-756)", { timeout: 30_000 }, (
     await waitFor(() => expect(chipNames()).toEqual(["@reports/summary.md"]), WAIT);
   });
 
-  it("the 21st file is refused like a drop, with the same reason; the 20 stay", async () => {
+  it("the 21st file is refused like a drop, with the same reason; the 20 and the typed text stay", async () => {
     const t = fake.addThread("Sales");
     const many = Array.from({ length: 20 }, (_, i) => `f${i}.txt`);
     sessionStorage.setItem(
@@ -150,6 +150,53 @@ describe("picking a file with @ makes a chip (KOBE-756)", { timeout: 30_000 }, (
     await screen.findByText(MENTION_LIMIT_REFUSED, undefined, WAIT);
     expect(chipNames()).toHaveLength(20);
     expect(chipNames()).not.toContain("@reports/summary.md");
+    // What the member typed is left exactly as typed.
+    expect(input.value).toBe("x @sum");
+  });
+
+  it("a file with an unmentionable name is refused and the typed text stays", async () => {
+    // The server's search would leave it out; a stale or odd result must still be refused.
+    fake.workspaceFiles.set(".kobe/notes-summary.md", new Uint8Array(1));
+    const realFetch = fake.fetch;
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.startsWith("/v1/workspace/files/search")) {
+        return Response.json({
+          entries: [
+            {
+              name: "notes-summary.md",
+              path: ".kobe/notes-summary.md",
+              type: "file",
+              size_bytes: 1,
+              mtime: "2026-11-01T00:00:00.000Z",
+              area: "workspace",
+            },
+          ],
+        });
+      }
+      return realFetch(input, init);
+    });
+    openApp(fake, fake.addThread("Sales"));
+    const user = userEvent.setup();
+    const input = await composer();
+    await user.type(input, "see @notes");
+    await pickWithEnter(/notes-summary/);
+    await screen.findByText(MENTION_NAME_REFUSED, undefined, WAIT);
+    expect(input.value).toBe("see @notes");
+    expect(screen.queryByRole("list", { name: "Mentioned files" })).toBeNull();
+  });
+
+  it("a click on an option leaves the focus in the input; removing a chip gives it back", async () => {
+    openApp(fake, fake.addThread("Sales"));
+    const user = userEvent.setup();
+    const input = await composer();
+    await user.type(input, "@sum");
+    await user.click(await within(await picker()).findByRole("option", { name: /summary/ }, WAIT));
+    await waitFor(() => expect(chipNames()).toEqual(["@reports/summary.md"]));
+    expect(document.activeElement).toBe(input);
+    await user.click(screen.getByRole("button", { name: "Remove mention of summary.md" }));
+    expect(screen.queryByRole("list", { name: "Mentioned files" })).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(input));
   });
 
   it("edit-last: the sent text is edited as written and goes without mentions, as before", async () => {

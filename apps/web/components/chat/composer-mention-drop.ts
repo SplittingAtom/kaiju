@@ -58,8 +58,8 @@ export interface ComposerMentionDrop {
   /** Why the last drop or menu mention was refused (shown under the composer), else "". */
   readonly notice: string;
   clearNotice(): void;
-  /** A file picked with `@` (KOBE-756): its chip, or the refusal as the notice. */
-  pick(path: string): void;
+  /** A file picked with `@` (KOBE-756): its chip, or the refusal as the notice (and the answer). */
+  pick(path: string): string | undefined;
   /** Each answers whether the event was a workspace row's (then it is handled). */
   over(e: DragEvent): boolean;
   drop(e: DragEvent): boolean;
@@ -151,7 +151,11 @@ export function useComposerMentionDrop({
     rowDrop,
     notice,
     clearNotice: () => setNotice(""),
-    pick: (path) => setNotice(mention(path) ?? ""),
+    pick(path) {
+      const refused = mention(path);
+      setNotice(refused ?? "");
+      return refused;
+    },
     over(e) {
       if (writable && carriesLakehouseItem(e.dataTransfer)) {
         e.preventDefault();

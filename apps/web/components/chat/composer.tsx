@@ -364,7 +364,7 @@ export function Composer({
           <MentionPicker input={input} onPick={rowDrop.pick} />
           <SlashMenu input={input} />
           <ComposerAttachments draft={draft} threadId={remoteId} />
-          <MentionChips draft={draft} />
+          <MentionChips draft={draft} onRemoved={() => input.current?.focus()} />
           <AppContextChips draft={draft} />
           <AppItemChips draft={draft} />
           <SkillPickChip draft={draft} />
