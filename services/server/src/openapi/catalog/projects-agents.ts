@@ -1,0 +1,187 @@
+import type { CatalogArea } from "./build.js";
+
+/** OpenAPI catalog: projects, agents and the site gallery (KOBE-727). */
+export const projectsAgentsAreas: readonly CatalogArea[] = [
+  {
+    tag: "Projects",
+    description:
+      "Projects: shared instructions, files and members. Team-scoped: send X-Kobe-Team on changes.",
+    entries: [
+      ["get", "/v1/projects", "List the projects the member can see"],
+      ["post", "/v1/projects", "Create a project", "Answers 201."],
+      ["delete", "/v1/projects/{id}", "Delete a project", "Answers 204."],
+      ["get", "/v1/projects/{id}", "Read one project"],
+      ["patch", "/v1/projects/{id}", "Change a project's fields", "Project managers."],
+      ["get", "/v1/projects/{id}/files", "List a project's files"],
+      [
+        "post",
+        "/v1/projects/{id}/files",
+        "Upload a file to a project",
+        "multipart/form-data. Answers 201.",
+      ],
+      ["delete", "/v1/projects/{id}/files/{file_id}", "Remove a file from a project"],
+      [
+        "post",
+        "/v1/projects/{id}/files/import",
+        "Add an artifact version or workspace file to a project",
+        "Answers 201 with the copied file.",
+      ],
+      ["get", "/v1/projects/{id}/members", "List a project's members"],
+      [
+        "post",
+        "/v1/projects/{id}/members",
+        "Add a member to a project",
+        "Answers 201. Role owner or editor.",
+      ],
+      ["delete", "/v1/projects/{id}/members/{user_id}", "Remove a member from a project"],
+      ["patch", "/v1/projects/{id}/members/{user_id}", "Change a project member's role"],
+      [
+        "post",
+        "/v1/projects/{id}/owner",
+        "Hand a project to another member",
+        "Project owners and team admins.",
+      ],
+      [
+        "get",
+        "/v1/projects/no-owner",
+        "List projects whose only owner left the workspace",
+        "Team admins.",
+      ],
+    ],
+  },
+  {
+    tag: "Agents",
+    description:
+      "Agents of the active team: personal, team and gallery. Team-scoped: send X-Kobe-Team on changes.",
+    entries: [
+      ["get", "/v1/agents", "List the agents the member can see", "`scope` filters."],
+      ["post", "/v1/agents", "Create an agent"],
+      [
+        "delete",
+        "/v1/agents/{id}",
+        "Delete an agent, or archive it once published",
+        "204 when deleted, 200 when archived.",
+      ],
+      ["get", "/v1/agents/{id}", "Read one agent with its definition"],
+      ["put", "/v1/agents/{id}", "Save an agent's draft", "Uses `If-Match` with the ETag."],
+      [
+        "get",
+        "/v1/agents/{id}/evals",
+        "List an agent's Orbit evals",
+        "Newest first, plus the running one.",
+      ],
+      ["get", "/v1/agents/{id}/evals/{evalId}", "Read one eval with its report"],
+      ["get", "/v1/agents/{id}/export", "Export an agent definition", "File download; audited."],
+      [
+        "post",
+        "/v1/agents/{id}/memory",
+        "Change an agent's memory setting by republishing",
+        "Setting is all, notes_only or off.",
+      ],
+      [
+        "post",
+        "/v1/agents/{id}/publish",
+        "Publish the agent's draft as a new version",
+        "May start an eval first; rate limited.",
+      ],
+      [
+        "post",
+        "/v1/agents/{id}/rollback",
+        "Republish an earlier version as the newest",
+        "Rate limited.",
+      ],
+      [
+        "get",
+        "/v1/agents/{id}/skill-updates",
+        "List newer skill versions a republish would freeze",
+      ],
+      [
+        "put",
+        "/v1/agents/{id}/status",
+        "Suspend or reactivate an agent",
+        "Team admins for team agents.",
+      ],
+      ["post", "/v1/agents/{id}/unarchive", "Restore an archived agent"],
+      ["get", "/v1/agents/{id}/versions", "List an agent's published versions"],
+      ["get", "/v1/agents/{id}/versions/{version}", "Read one published version"],
+      [
+        "get",
+        "/v1/agents/{id}/versions/{version}/orbit",
+        "Export a published version as Orbit YAML",
+        "Audited.",
+      ],
+      ["get", "/v1/agents/gallery-scores", "List the gallery agents' published Orbit scores"],
+      ["get", "/v1/agents/inventory", "List the team's agents for admins"],
+      [
+        "put",
+        "/v1/agents/inventory/{id}/status",
+        "Suspend or reactivate an agent from the inventory",
+        "Team admins.",
+      ],
+      ["get", "/v1/agents/runnable", "List the agents the member can start a chat with"],
+    ],
+  },
+  {
+    tag: "Site: gallery",
+    description:
+      "Gallery agents, edited and published by site admins (`site.gallery.manage`). Not team-scoped.",
+    entries: [
+      ["get", "/v1/site/gallery/agents", "List gallery agents"],
+      ["get", "/v1/site/gallery/agents/{id}", "Read one gallery agent and its repository state"],
+      ["put", "/v1/site/gallery/agents/{id}", "Save a gallery agent's draft"],
+      [
+        "get",
+        "/v1/site/gallery/agents/{id}/compare",
+        "Compare a gallery agent with its repository definition",
+      ],
+      [
+        "post",
+        "/v1/site/gallery/agents/{id}/eval",
+        "Run the Orbit eval for the current version",
+        "Answers 202; needs a `teamId` the caller belongs to.",
+      ],
+      [
+        "get",
+        "/v1/site/gallery/agents/{id}/export",
+        "Export a gallery agent definition",
+        "File download; audited.",
+      ],
+      [
+        "post",
+        "/v1/site/gallery/agents/{id}/memory",
+        "Change a gallery agent's memory setting by republishing",
+      ],
+      ["post", "/v1/site/gallery/agents/{id}/publish", "Publish a gallery agent's draft"],
+      [
+        "post",
+        "/v1/site/gallery/agents/{id}/reset",
+        "Reset a gallery agent to the repository definition",
+        "404 `not_customized` when it already follows it.",
+      ],
+      [
+        "post",
+        "/v1/site/gallery/agents/{id}/rollback",
+        "Republish an earlier gallery version as the newest",
+      ],
+      [
+        "get",
+        "/v1/site/gallery/agents/{id}/skill-updates",
+        "List newer skill versions for a gallery agent",
+      ],
+      [
+        "post",
+        "/v1/site/gallery/agents/{id}/unarchive",
+        "Unarchive a gallery agent (not allowed)",
+        "Always answers 405 `gallery_read_only`.",
+      ],
+      ["get", "/v1/site/gallery/agents/{id}/versions", "List a gallery agent's versions"],
+      ["get", "/v1/site/gallery/agents/{id}/versions/{version}", "Read one gallery agent version"],
+      [
+        "get",
+        "/v1/site/gallery/agents/builder-options",
+        "List the models and connectors the gallery editor offers",
+      ],
+      ["get", "/v1/site/gallery/agents/scores", "List the gallery agents' Orbit scores"],
+    ],
+  },
+];
