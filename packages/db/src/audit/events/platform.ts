@@ -142,6 +142,16 @@ export const PLATFORM_EVENTS = {
    */
   "sandbox.woken": event("team", { sandboxId: id, userId: id }),
   /**
+   * The dormant-volume reaper deleted a sandbox hibernated for `dormantDays` or more, with its
+   * workspace volume, after proving the object-store copy covered the volume (KOBE-733; system
+   * actor). The next wake starts a new sandbox and restores the workspace from that copy.
+   */
+  "sandbox.volume_reclaimed": event("team", {
+    sandboxId: id,
+    userId: id,
+    dormantDays: z.number().int().min(1).max(3650),
+  }),
+  /**
    * A wake found the sandbox's pod ended (evicted, killed) and deleted it so agent-sandbox starts a
    * new one; claim, Sandbox and workspace volume are kept (KOBE-636; system actor, or the user
    * whose request woke it). `cause` in plain terms, `podReason` the pod's own (`Evicted`); the
@@ -172,6 +182,7 @@ export const PLATFORM_EVENTS = {
       "scheduling",
       "image_pull",
       "pod_failed",
+      "volume_quota",
       "unknown",
     ]),
     detail: z

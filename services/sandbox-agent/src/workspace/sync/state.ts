@@ -87,6 +87,13 @@ export interface PushPlan {
    * committed (their rows already point at that content).
    */
   readonly resends: PlannedChange[];
+  /**
+   * Local files this plan left out: refused earlier and unchanged since, unreadable, or changing
+   * while hashed (KOBE-733: a push is complete only when this is 0 and the scan was whole).
+   */
+  readonly leftOut: number;
+  /** The scan stopped early (file cap) or could not read a folder: deletions were not inferred. */
+  readonly partialScan: boolean;
 }
 
 export type ResolvedSyncOptions = Required<Omit<WorkspaceSyncOptions, "skipDirs">> & {

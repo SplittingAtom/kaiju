@@ -13,6 +13,8 @@
 /** Metadata keys of Workspace events the Site audit view shows (no thread-derived ids or counts). */
 export const SITE_VIEW_TARGET_KEYS: ReadonlySet<string> = new Set([
   "access",
+  // KOBE-733 sandbox.volume_reclaimed: the configured dormancy period.
+  "dormantDays",
   // KOBE-741 retention.table_swept: which table (a fixed name, never content).
   "table",
   "acknowledged",

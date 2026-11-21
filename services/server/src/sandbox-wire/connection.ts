@@ -13,6 +13,7 @@ import {
   CAPABILITY_SYNC_CONFLICTS,
   LEGACY_WEB_SEARCH_MESSAGE,
   CAPABILITY_WORKSPACE_MOVES,
+  CAPABILITY_WORKSPACE_SYNC_COMPLETE,
   CAPABILITY_WORKSPACE_SYNC_NOW,
   builtinToolDescriptor,
   PI_PINNED_VERSION,
@@ -316,8 +317,12 @@ export class SandboxConnection implements RegisteredConnection {
    * ready, too many asks in flight) is answered `unsynced` at once, so the requester lists without
    * waiting.
    */
-  workspaceSyncNow(requestId: string): void {
-    const ready = this.#state === "ready" && this.hasCapability(CAPABILITY_WORKSPACE_SYNC_NOW);
+  workspaceSyncNow(requestId: string, complete = false): void {
+    // KOBE-733: a completeness proof only from an agent whose `ok` means complete.
+    const ready =
+      this.#state === "ready" &&
+      this.hasCapability(CAPABILITY_WORKSPACE_SYNC_NOW) &&
+      (!complete || this.hasCapability(CAPABILITY_WORKSPACE_SYNC_COMPLETE));
     if (!ready || this.#syncRequests.size >= MAX_SYNC_REQUESTS) {
       this.#syncAnswered(requestId, false);
       return;

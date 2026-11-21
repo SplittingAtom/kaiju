@@ -45,6 +45,13 @@ export const sandboxes = pgTable(
     stateChangedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     /** Offboarding (KOBE-28): the volume is deleted after this. */
     retainUntil: timestamp({ withTimezone: true }),
+    /**
+     * Proof that the workspace's object-store copy covers the volume (KOBE-733): when a sync-now
+     * asked right before this hibernation was answered complete (every local change committed)
+     * and nothing happened on the sandbox after it was asked. Set with the hibernation, cleared by
+     * every wake; null: not proven, so the dormant-volume reaper never reclaims the volume.
+     */
+    volumeSyncedAt: timestamp({ withTimezone: true }),
   },
   (t) => [
     primaryKey({ columns: [t.teamId, t.userId] }),
@@ -54,5 +61,9 @@ export const sandboxes = pgTable(
       .where(sql`${t.state} = 'running'`),
     check("sandboxes_pvc", sql`${t.pvc} IS NULL OR char_length(${t.pvc}) BETWEEN 1 AND 253`),
     check("sandboxes_retain_until", sql`${t.retainUntil} IS NULL OR ${t.state} = 'destroyed'`),
+    check(
+      "sandboxes_volume_synced_at",
+      sql`${t.volumeSyncedAt} IS NULL OR ${t.state} = 'hibernated'`,
+    ),
   ],
 );

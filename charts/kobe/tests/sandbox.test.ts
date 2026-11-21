@@ -222,6 +222,7 @@ describe("server sandbox configuration", () => {
       enabled: true,
       idleMinutes: 15,
       sweepSeconds: 60,
+      reclaim: { enabled: false, dormantDays: 30, syncTimeoutSeconds: 30 },
     });
     expect(
       sandboxConfig(render({ "sandbox.hibernation.idleMinutes": "30" })).hibernation,
@@ -650,6 +651,34 @@ describe("sandbox RBAC (least privilege; D11)", () => {
     expect(all).toContainEqual({ apiGroups: [""], resources: ["events"], verbs: ["list"] });
   });
 
+  it("lets the server read team ResourceQuotas to diagnose a full volume quota (KOBE-733)", () => {
+    expect(rules("ClusterRole", manager)).toContainEqual({
+      apiGroups: [""],
+      resources: ["resourcequotas"],
+      verbs: ["get"],
+    });
+  });
+
+  it("renders dormant-volume reclaim off by default, and its settings when on (KOBE-733)", () => {
+    const off = sandboxConfig(render());
+    expect(off.hibernation.reclaim).toEqual({
+      enabled: false,
+      dormantDays: 30,
+      syncTimeoutSeconds: 30,
+    });
+    const on = sandboxConfig(
+      render({
+        "sandbox.hibernation.reclaim.enabled": "true",
+        "sandbox.hibernation.reclaim.dormantDays": "45",
+      }),
+    );
+    expect(on.hibernation.reclaim).toEqual({
+      enabled: true,
+      dormantDays: 45,
+      syncTimeoutSeconds: 30,
+    });
+  });
+
   // KOBE-126: the team-namespace reconcile (server/src/sandbox/team-reconcile.ts) lists namespaces by
   // label (orchestrator role), reads both NetworkPolicies, and server-side applies (PATCH, plus
   // create when missing) every kind below. Exactly these verbs, per kind, in the manager role.
@@ -662,7 +691,8 @@ describe("sandbox RBAC (least privilege; D11)", () => {
     const applyOnly = ["create", "patch"];
     const expected: [string, string, string[]][] = [
       ["networking.k8s.io", "networkpolicies", ["create", "get", "patch"]],
-      ["", "resourcequotas", applyOnly],
+      // get: a wake with a missing volume reads the quota (KOBE-733).
+      ["", "resourcequotas", ["create", "get", "patch"]],
       ["", "limitranges", applyOnly],
       ["", "serviceaccounts", applyOnly],
       ["", "secrets", applyOnly],

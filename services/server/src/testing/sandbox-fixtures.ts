@@ -73,7 +73,12 @@ export const SETTINGS: SandboxSettings = {
     pods: "50",
   },
   warmPool: { replicasPerTeam: 1 },
-  hibernation: { enabled: true, idleMinutes: 15, sweepSeconds: 60 },
+  hibernation: {
+    enabled: true,
+    idleMinutes: 15,
+    sweepSeconds: 60,
+    reclaim: { enabled: false, dormantDays: 30, syncTimeoutSeconds: 30 },
+  },
   workspaceSync: {
     enabled: true,
     pushIntervalSeconds: 60,

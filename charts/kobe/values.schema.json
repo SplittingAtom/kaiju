@@ -326,6 +326,15 @@
               "type": "integer",
               "minimum": 10,
               "maximum": 3600
+            },
+            "reclaim": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "dormantDays": { "type": "integer", "minimum": 1, "maximum": 3650 },
+                "syncTimeoutSeconds": { "type": "integer", "minimum": 5, "maximum": 300 }
+              }
             }
           }
         },

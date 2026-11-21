@@ -65,7 +65,15 @@ created by hand. Every team namespace gets:
   resolve through `/etc/hosts` (`*.kobe.internal` → the Services' ClusterIPs), so DNS cannot be
   used to leak data past the egress proxy;
 - a **ResourceQuota** (`sandbox.teamQuota`: requests and limits for CPU, memory and ephemeral
-  storage, pods, PVCs and requested storage) and a LimitRange with per-container defaults;
+  storage, pods, PVCs and requested storage) and a LimitRange with per-container defaults. **Size
+  it for every member who ever used Kobe, not for those online:** a hibernated sandbox keeps its
+  workspace volume, so `persistentvolumeclaims` must be at least members + warm pool + members in
+  their 30-day offboarding hold, and `requests.storage` that many times `sandbox.workspace.size`.
+  The defaults (50 PVCs, 500Gi, 10Gi volumes, warm pool 1) stop a team at about 48 members; the
+  49th member's first wake then fails with its own message ("your team has used all of its
+  workspace storage", run failure `workspace_quota_exhausted`, audit `sandbox.wake_stalled` cause
+  `volume_quota` with the quota's numbers) instead of a generic error. Raise the quota, or turn on
+  dormant-volume reclaim (below) so long-asleep volumes free their slot (KOBE-733);
 - a `SandboxTemplate` and a **warm pool** of `sandbox.warmPool.replicasPerTeam` pre-started
   sandboxes (agent-sandbox warm pools are per namespace; each counts against the team's quota);
 - Pod Security Admission `baseline` (see below for why not `restricted`).
@@ -1879,6 +1887,21 @@ EXISTS` an invalid leftover.
   As above, check `pg_index.indisvalid` for `threads_folder_idx` and
   `DROP INDEX CONCURRENTLY IF EXISTS` an invalid leftover.
 
+- **Dormant-volume reclaim (KOBE-733, off by default).** `sandbox.hibernation.reclaim.enabled:
+true` lets the hibernation sweep delete a sandbox hibernated for `dormantDays` (default 30) with
+  its claim and workspace volume, freeing the team's PVC and storage quota and the Longhorn replica.
+  Only a volume whose object-store copy is proven complete is reclaimed: right before hibernating,
+  the server asks the sandbox's agent to sync now and waits up to `syncTimeoutSeconds` (default 30,
+  which also delays each hibernation by that much at most) for an answer that a fresh scan found
+  every local change committed (agents announcing `workspace_sync_complete`; older sandbox images
+  never prove it, so their volumes are kept). Nothing may happen on the sandbox after that ask, the
+  workspace must have no upload in flight and no content marked lost from storage, and no legal hold
+  may cover the member. The member's next wake starts a new sandbox from the warm pool and restores
+  `/workspace` from object storage; `.venv`, `node_modules` and `__pycache__` are never synced and
+  must be rebuilt, and a sandbox holding a file above `sandbox.workspaceSync.maxFileSize` is never
+  reclaimed. Needs `sandbox.workspaceSync.enabled` and `s3.*` (otherwise the server logs a warning
+  and reclaims nothing). Each reclaim is audited as `sandbox.volume_reclaimed`. The server needs
+  `get` on `resourcequotas` in team namespaces (chart RBAC) to report a full quota.
 - **Retention job (KOBE-18).** One server replica at a time runs the nightly retention pass under
   a session-level advisory lock, so the server needs a direct (or session-mode pooled) Postgres
   connection; transaction-mode poolers break session locks. `KOBE_RETENTION_HOUR_UTC` (0-23,

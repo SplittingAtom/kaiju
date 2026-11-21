@@ -19,6 +19,7 @@ import {
   CAPABILITY_SESSION_RENEW,
   CAPABILITY_SKILL_EVAL,
   CAPABILITY_WORKSPACE_MOVES,
+  CAPABILITY_WORKSPACE_SYNC_COMPLETE,
   CAPABILITY_WORKSPACE_SYNC_NOW,
   CAPABILITY_THREAD_CONTEXT,
   CAPABILITY_SYNC_CONFLICTS,
@@ -136,6 +137,8 @@ export function helloCapabilities(deps: AgentDeps): string[] {
     ...(deps.workspace?.movedOnServer === undefined ? [] : [CAPABILITY_WORKSPACE_MOVES]),
     // Refresh in the Files panel pushes now and says when it is done (KOBE-599).
     ...(deps.workspace?.syncNow === undefined ? [] : [CAPABILITY_WORKSPACE_SYNC_NOW]),
+    // Its `ok` means the durable copy is complete (KOBE-733: dormant-volume reclaim proof).
+    ...(deps.workspace?.syncNow === undefined ? [] : [CAPABILITY_WORKSPACE_SYNC_COMPLETE]),
     // Sync conflict copies reported, and the model told (KOBE-492).
     ...(caps.syncConflicts ? [CAPABILITY_SYNC_CONFLICTS] : []),
     // The latest model call's context for its owner (KOBE-470): read from Pi's capture or the

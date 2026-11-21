@@ -331,7 +331,9 @@ describe("workspace sync (agent)", () => {
     await put(root, "b.txt", "b");
     await Promise.resolve();
     const [one, two] = await Promise.all([first, same]);
-    expect([one, two]).toEqual([true, true]);
+    // One push, one answer. (b.txt, written while it may be running, can make that answer false:
+    // `ok` means complete since KOBE-733.)
+    expect(one).toBe(two);
     expect(server.content("a.txt")).toBe("a");
     // While a push runs, a new request gets its own push, which starts after it.
     const running = sync.syncNow();
@@ -352,6 +354,35 @@ describe("workspace sync (agent)", () => {
     server.failWith = undefined;
     await sync.flush(5_000);
     await expect(sync.syncNow()).resolves.toBe(false);
+  });
+
+  it("answers false while a file stays local only, true once it is synced (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "ok.txt", "synced");
+    await put(root, "secret.txt", "owner-only");
+    await chmod(path.join(root, "secret.txt"), 0o000);
+    // The push commits ok.txt, but secret.txt cannot be read: the copy is not complete.
+    await expect(sync.syncNow()).resolves.toBe(false);
+    expect(server.content("ok.txt")).toBe("synced");
+    await chmod(path.join(root, "secret.txt"), 0o644);
+    await expect(sync.syncNow()).resolves.toBe(true);
+    expect(server.content("secret.txt")).toBe("owner-only");
+  });
+
+  it("a volume proven complete restores whole onto the new volume after a reclaim (KOBE-733)", async () => {
+    const old = await volume();
+    const before = await started(old);
+    await put(old, "notes/plan.md", "the plan");
+    await put(old, "data.csv", "a,b\n1,2\n");
+    // The proof the server asks for before hibernating.
+    await expect(before.syncNow()).resolves.toBe(true);
+    await before.flush(5_000);
+    // Reclaimed: the next wake gets a new, empty volume.
+    const fresh = await volume();
+    await started(fresh);
+    expect(await text(fresh, "notes/plan.md")).toBe("the plan");
+    expect(await text(fresh, "data.csv")).toBe("a,b\n1,2\n");
   });
 
   it("lets a restore in flight finish before the flush returns: nothing is written after it", async () => {

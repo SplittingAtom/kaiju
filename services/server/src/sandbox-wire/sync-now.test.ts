@@ -86,4 +86,21 @@ describe("sync now requests (KOBE-599)", () => {
     expect(decodeBusHint(`synced:${req}${"x".repeat(40)}`)).toBeUndefined();
     expect(decodeBusHint(`mv:${CONN}`)).toEqual({ kind: "mv", id: CONN });
   });
+
+  it("asks for a completeness proof when told to (KOBE-733), on the bus as its own hint", async () => {
+    const h = harness(CONN);
+    const answer = h.requests.request(owner, 5000, { complete: true });
+    await tick();
+    const hint = h.sent[0];
+    expect(hint).toMatchObject({ kind: "sync", id: CONN, complete: true });
+    if (hint?.kind !== "sync") throw new Error("no sync hint");
+    expect(encodeBusHint(hint)).toBe(`syncc:${CONN}:${hint.request}`);
+    expect(decodeBusHint(encodeBusHint(hint))).toEqual(hint);
+    h.requests.answered(hint.request, true);
+    await expect(answer).resolves.toBe("synced");
+    // A plain request carries no flag.
+    void h.requests.request(owner, 20);
+    await tick();
+    expect(h.sent[1]).not.toHaveProperty("complete");
+  });
 });

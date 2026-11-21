@@ -53,6 +53,7 @@ import { runTokenKeyFromEnv, traceSpanKeyFromEnv } from "./sandbox-wire/run-toke
 import { serverCallKeyFromEnv } from "./models/gateway-client.js";
 import { providerLiveness, sandboxWireVerifier } from "./sandbox-wire/provider-auth.js";
 import { createDeferredWaker, createSandboxLifecycle } from "./sandbox-lifecycle/index.js";
+import type { ReclaimSettings } from "./sandbox-lifecycle/reclaim.js";
 import {
   PROVIDER_KEY_PURPOSE,
   SecretBox,
@@ -639,6 +640,30 @@ const stopServerJobs = serverDeps
       logger,
     )
   : undefined;
+/**
+ * Dormant-volume reclaim (KOBE-733): only with the chart switch on and workspace sync running (the
+ * object-store copy is what the next wake restores from). The proof is a sync-now answered
+ * complete by the sandbox's agent.
+ */
+function reclaimSettings(): { reclaim?: ReclaimSettings } {
+  const reclaim = providerRuntime?.settings.hibernation.reclaim;
+  if (!reclaim?.enabled || !deps) return {};
+  if (!workspaceSync) {
+    logger.warn(
+      "sandbox.hibernation.reclaim is on but workspace sync is off: nothing is reclaimed",
+    );
+    return {};
+  }
+  const wire = deps.sandboxWire;
+  const timeoutMs = reclaim.syncTimeoutSeconds * 1000;
+  return {
+    reclaim: {
+      dormantDays: reclaim.dormantDays,
+      proveSync: async (target) =>
+        (await wire.syncWorkspace(target, timeoutMs, { complete: true })) === "synced",
+    },
+  };
+}
 const lifecycle =
   providerRuntime && deps
     ? createSandboxLifecycle({
@@ -647,6 +672,7 @@ const lifecycle =
         idleMinutes: providerRuntime.settings.hibernation.idleMinutes,
         // A returning member's offboarded sandbox is replaced by a new one (KOBE-28, D12).
         reinstate: (target) => deps.offboarding.reinstate(target),
+        ...reclaimSettings(),
       })
     : undefined;
 if (lifecycle) waker.set(lifecycle.waker);

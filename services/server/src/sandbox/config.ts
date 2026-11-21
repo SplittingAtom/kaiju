@@ -19,6 +19,9 @@ import { KOBE_ENDPOINTS, type KobeEndpoint } from "./constants.js";
  * KOBE_SESSION_VERIFY_KEY_* (KOBE-513). Validated at startup; invalid config fails fast.
  */
 
+/** KOBE-733: dormant-volume reclaim ships off; 30 days once an install turns it on. */
+export const RECLAIM_DEFAULTS = { enabled: false, dormantDays: 30, syncTimeoutSeconds: 30 };
+
 /** D14: idle time before hibernation, team range 5–60 minutes. */
 export const IDLE_MINUTES_MIN = 5;
 export const IDLE_MINUTES_MAX = 60;
@@ -115,8 +118,21 @@ export const sandboxSettingsSchema = z.strictObject({
       enabled: z.boolean(),
       idleMinutes: z.number().int().min(IDLE_MINUTES_MIN).max(IDLE_MINUTES_MAX),
       sweepSeconds: z.number().int().min(10).max(3600),
+      /**
+       * KOBE-733: dormant-volume reclaim, off by default (owner decision). A sandbox hibernated for
+       * `dormantDays`, whose workspace copy was proven complete when it hibernated (a sync-now
+       * answered complete within `syncTimeoutSeconds`), loses its claim and volume; the next wake
+       * restores from object storage (`sandbox-lifecycle/reclaim.ts`).
+       */
+      reclaim: z
+        .strictObject({
+          enabled: z.boolean(),
+          dormantDays: z.number().int().min(1).max(3650),
+          syncTimeoutSeconds: z.number().int().min(5).max(300),
+        })
+        .default(RECLAIM_DEFAULTS),
     })
-    .default({ enabled: true, idleMinutes: 15, sweepSeconds: 60 }),
+    .default({ enabled: true, idleMinutes: 15, sweepSeconds: 60, reclaim: RECLAIM_DEFAULTS }),
   /**
    * KOBE-27: /workspace ↔ S3 through the server. Sandboxes push changes every
    * `pushIntervalSeconds` (and after each run, and when stopping for hibernation) and restore

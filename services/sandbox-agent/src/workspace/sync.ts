@@ -2,7 +2,7 @@ import { isExcludedPath, type RunStartFrame } from "@kobe/protocol";
 import { MoveReplay } from "./moves.js";
 import { NO_CHECKOUTS, statLocal, type Checkouts } from "./fs.js";
 import { pull } from "./sync/pull.js";
-import { push, pushOne } from "./sync/push.js";
+import { planPush, push, pushOne } from "./sync/push.js";
 import { restoreUntilDone } from "./sync/restore.js";
 import { serial, warn, type SyncState } from "./sync/state.js";
 import {
@@ -211,8 +211,11 @@ export class WorkspaceSync {
    * Sync now (`workspace.sync_now`, KOBE-599: the Files panel's Refresh): one push that starts
    * after this call, so every file written before it is pushed. Requests made while that push has
    * not started yet share it; a request made while it runs waits for the next one. Resolves true
-   * once the push committed (or found nothing to push), false when sync is off, stopping, still
-   * restoring after `restoreWaitMs`, or the push failed. Never rejects.
+   * once the push left the durable copy complete (KOBE-733, capability `workspace_sync_complete`:
+   * a fresh plan after it finds nothing to push, nothing left out and no lost content to resend),
+   * false when sync is off, stopping, still restoring after `restoreWaitMs`, the push failed, or
+   * something stays local only (a refused, unreadable or changing file, a partial scan). Never
+   * rejects.
    */
   syncNow(): Promise<boolean> {
     if (!this.enabled || this.#s.stopped) return Promise.resolve(false);
@@ -228,7 +231,7 @@ export class WorkspaceSync {
         ]);
         if (!this.#s.restored || this.#s.stopped) return false;
         await push(this.#s);
-        return true;
+        return await this.#complete();
       } catch (error) {
         warn(this.#s, "workspace push on request failed", error);
         return false;
@@ -238,6 +241,18 @@ export class WorkspaceSync {
     });
     this.#nowQueued = next;
     return next;
+  }
+
+  /** After a push: whether a fresh plan finds every local change in the durable copy. */
+  async #complete(): Promise<boolean> {
+    const s = this.#s;
+    const plan = await serial(s, () => planPush(s));
+    return (
+      plan.changes.length === 0 &&
+      plan.resends.length === 0 &&
+      plan.leftOut === 0 &&
+      !plan.partialScan
+    );
   }
 
   /** One push now (tests, operators). */

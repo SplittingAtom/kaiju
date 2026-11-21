@@ -167,6 +167,7 @@ export async function planPush(s: SyncState): Promise<PushPlan> {
   });
   const changes: PlannedChange[] = [];
   let reverted = false;
+  let leftOut = 0;
   for (const [path, file] of scan.files) {
     const k = s.known.get(path);
     if (locked(s, path)) {
@@ -175,13 +176,20 @@ export async function planPush(s: SyncState): Promise<PushPlan> {
     }
     if (k && !k.deleted && sameAs(file, k) && file.executable === k.executable) continue;
     const refused = s.refused.get(path);
-    if (refused && sameAs(file, refused)) continue;
+    if (refused && sameAs(file, refused)) {
+      leftOut += 1;
+      continue;
+    }
     const hashed = await hashFile(s.o.root, path);
     if (!hashed) {
+      leftOut += 1;
       await noteUnreadable(s, path);
       continue; // changing right now, or unreadable: next time
     }
-    if (hashed.size !== file.size) continue; // changing right now: next time
+    if (hashed.size !== file.size) {
+      leftOut += 1;
+      continue; // changing right now: next time
+    }
     changes.push({
       op: "put",
       path,
@@ -222,7 +230,13 @@ export async function planPush(s: SyncState): Promise<PushPlan> {
     seen.add(c.sha256);
     return true;
   });
-  return { changes, uploads, resends: await resends(s, scan.files, changes) };
+  return {
+    changes,
+    uploads,
+    resends: await resends(s, scan.files, changes),
+    leftOut,
+    partialScan: scan.truncated || scan.incomplete.length > 0,
+  };
 }
 
 /**

@@ -3,7 +3,7 @@ import {
   type IsolationGate,
   type VerifiedIsolation,
 } from "../isolation/gate.js";
-import type { SandboxSettings } from "./config.js";
+import { quantityBytes, type SandboxSettings } from "./config.js";
 import { isIsolationHandler } from "../isolation/runtime-class.js";
 import {
   ANNOTATION_EVAL_RUN,
@@ -880,6 +880,7 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
           found.pvcName,
           since,
           now(),
+          quantityBytes(settings.workspace.size),
         );
         // Only a definite signal ends the wait early; otherwise the sandbox gets the whole budget.
         if (last || stall.definite) return { ready: false, sandboxId: found.sandboxId, stall };

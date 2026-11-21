@@ -64,6 +64,13 @@ Past either limit, new attachments, My files backups and project commits are ref
 message that the workspace's storage quota (or object budget) is full. Nothing already stored is
 removed. Free space by deleting files, dropping project history, or asking a team admin.
 
+## When your volume is reclaimed
+
+Your site may free the volume of a sandbox asleep for a long time (30 days by default; off unless
+turned on), but only once the backup is proven complete. Your next message starts a new sandbox
+and restores My files from the backup; `.venv`, `node_modules` and `__pycache__` are not backed up
+and must be rebuilt.
+
 ## Sandbox temporary space
 
 Besides My files, each sandbox has two small scratch areas that are emptied whenever the sandbox

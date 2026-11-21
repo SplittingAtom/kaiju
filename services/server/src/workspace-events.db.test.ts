@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  CAPABILITY_WORKSPACE_SYNC_COMPLETE,
   CAPABILITY_WORKSPACE_SYNC_NOW,
   workspaceEventSchema,
   type WorkspaceEvent,
@@ -181,6 +182,37 @@ describe("POST /v1/workspace/sync (KOBE-599)", () => {
     const late = await refresh(w2.alice, w2.team);
     expect(late.body.status).toBe("timeout");
     expect(late.ms).toBeGreaterThanOrEqual(SYNC_WAIT_MS - 50);
+  });
+
+  it("a completeness proof (KOBE-733) is asked only of an agent that can give one", async () => {
+    const w = await world();
+    const wire = fx.replica(0).deps.sandboxWire;
+    const owner = { teamId: w.team, userId: w.alice.id };
+    // An agent with sync-now but without workspace_sync_complete: its ok would prove nothing.
+    const plain = await sandboxOf(w.team, w.alice, [CAPABILITY_WORKSPACE_SYNC_NOW]);
+    plain.respond = (frame) => {
+      if (frame.type !== "workspace.sync_now") return undefined;
+      plain.send({ v: 1, type: "workspace.synced", request_id: frame.request_id, ok: true });
+      return null;
+    };
+    expect(await wire.syncWorkspace(owner, SYNC_WAIT_MS, { complete: true })).toBe("not_synced");
+    expect(plain.frames("workspace.sync_now")).toHaveLength(0);
+    plain.close();
+    await plain.waitClosed();
+
+    const w2 = await world();
+    const able = await sandboxOf(w2.team, w2.alice, [
+      CAPABILITY_WORKSPACE_SYNC_NOW,
+      CAPABILITY_WORKSPACE_SYNC_COMPLETE,
+    ]);
+    able.respond = (frame) => {
+      if (frame.type !== "workspace.sync_now") return undefined;
+      able.send({ v: 1, type: "workspace.synced", request_id: frame.request_id, ok: true });
+      return null;
+    };
+    const owner2 = { teamId: w2.team, userId: w2.alice.id };
+    expect(await wire.syncWorkspace(owner2, SYNC_WAIT_MS, { complete: true })).toBe("synced");
+    expect(able.frames("workspace.sync_now")).toHaveLength(1);
   });
 
   it("an answer from another member's sandbox is dropped", async () => {

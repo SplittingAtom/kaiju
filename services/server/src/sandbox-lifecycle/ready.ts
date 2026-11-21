@@ -17,6 +17,13 @@ export const WORKSPACE_UNAVAILABLE_MESSAGE =
 export const SANDBOX_FAILED_MESSAGE =
   "Your sandbox stopped (it may have run out of temporary space or memory) and could not be restarted. Your files in /workspace are kept. Send your message again; if this keeps happening, ask your site admin.";
 
+/**
+ * What a member sees when the team's volume quota has no room for their workspace (KOBE-733). Same
+ * text as `FAILURE_MESSAGES.workspace_quota_exhausted`.
+ */
+export const WORKSPACE_QUOTA_MESSAGE =
+  "Your workspace could not be started because your team has used all of its workspace storage. Ask your team admin or site admin to free or raise the team's workspace quota, then try again.";
+
 /** What a site admin can do, by cause; appended to the audit detail (docs/install.md). */
 export const REMEDY: Readonly<Record<StallDiagnosis["cause"], string>> = {
   volume_unschedulable:
@@ -27,6 +34,8 @@ export const REMEDY: Readonly<Record<StallDiagnosis["cause"], string>> = {
   image_pull: "Remedy: check the sandbox image tag, registry and pull secrets",
   pod_failed:
     "Remedy: an eviction for the home or tmp emptyDir means raise sandbox.homeSize or sandbox.tmpSize; the next message replaces the pod again",
+  volume_quota:
+    "Remedy: raise sandbox.teamQuota (persistentvolumeclaims, requests.storage: members x workspace size + warm pool) or turn on sandbox.hibernation.reclaim (docs/install.md, team quota sizing)",
   unknown: "Remedy: kubectl describe the sandbox pod in the team namespace",
 };
 
@@ -73,6 +82,9 @@ export async function ensureReady(options: EnsureReadyOptions): Promise<void> {
   await options.onStalled(report).catch((err: unknown) => log.error({ err }, "audit failed"));
   if (report.stall.cause === "pod_failed") {
     throw new SandboxWakeError("sandbox_failed", SANDBOX_FAILED_MESSAGE);
+  }
+  if (report.stall.cause === "volume_quota") {
+    throw new SandboxWakeError("workspace_quota_exhausted", WORKSPACE_QUOTA_MESSAGE);
   }
   throw new SandboxWakeError("workspace_unavailable", WORKSPACE_UNAVAILABLE_MESSAGE);
 }
