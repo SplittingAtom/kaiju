@@ -67,7 +67,9 @@ CI splits the k3d suite into shards that run in parallel, each on its own cluste
 sections up to KOBE-25, with its trials), `gate1-prep` followed by `e2e/gate1.sh` (the install
 plus the KOBE-40 model setup Gate 1 needs) and `gate1-prep` followed by `e2e/gate2.sh` (the same
 install, for the Gate 2 safety checks; see [gates/gate-2.md](gates/gate-2.md)). Unset, `e2e/run.sh` runs every section, as before. A
-new section needs no shard change: it runs in `suite`. The required `k3d` check passes only when
+new section needs no shard change: it runs in `suite`. `e2e/run.sh` is the entry point (settings, shard
+dispatch); the helpers are in `e2e/lib/run-common.sh` and the sections in `e2e/run/NN-*.sh`, sourced in
+numeric order (a new section is a new file plus a `source` line in `run.sh`). The required `k3d` check passes only when
 every image build and every shard passed.
 
 ## Migrations
