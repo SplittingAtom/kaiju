@@ -1,5 +1,6 @@
 import {
   exhaustedLine,
+  isLockTimeout,
   loadMemberBudgetState,
   teams,
   withTeam,
@@ -13,7 +14,7 @@ import type { Viewer } from "../../threads/repository.js";
 import { learnAvailability, type LearnUnavailableReason } from "../learning-model.js";
 import { readSwitches } from "../switches.js";
 import { auditPassStarted } from "./audit.js";
-import { executePass, type RunningPass } from "./execute.js";
+import { executePass, type CompletionTuning, type RunningPass } from "./execute.js";
 import {
   assembleLearningInput,
   type LearningInputOptions,
@@ -54,7 +55,7 @@ export type LearnStartRefusal =
       readonly message: string;
     }
   | {
-      readonly code: "learn_rate_limited" | "budget_exhausted" | "pass_running";
+      readonly code: "learn_rate_limited" | "budget_exhausted" | "pass_running" | "thread_busy";
       readonly message: string;
     }
   | {
@@ -97,6 +98,8 @@ export interface LearningPassesOptions {
   readonly log: Pick<Logger, "info" | "warn">;
   /** Test seam: the call's timeout. */
   readonly timeoutMs?: number;
+  /** Test seam: how the completion waits for the thread lock and retries (KOBE-770 review). */
+  readonly completion?: CompletionTuning;
   /** Test seam: runs in the start's transaction just before the pass row is claimed. */
   readonly beforeClaim?: (tx: KobeTx) => Promise<void>;
 }
@@ -123,6 +126,7 @@ export const RATE_LIMITED_MESSAGE = `You can teach Kobe ${LEARN_PASSES_PER_DAY} 
 export const BUDGET_MESSAGE =
   "A budget is used up, so Kobe can't learn from this chat until it resets or an admin raises it.";
 export const PASS_RUNNING_MESSAGE = "Kobe is already learning from this thread.";
+export const THREAD_BUSY_MESSAGE = "The chat is busy right now. Try again in a moment.";
 export const SERVER_CALLS_OFF_MESSAGE = "This server has no model gateway for its own model calls.";
 
 const refuse = (r: LearnStartRefusal): LearnStartResult => ({ ok: false, ...r });
@@ -201,9 +205,17 @@ export function createLearningPasses(options: LearningPassesOptions): LearningPa
           reason: "server_calls_off",
           message: SERVER_CALLS_OFF_MESSAGE,
         });
-      const prepared = await withTeam(db, viewer.teamId, (tx) =>
-        prepare(tx, viewer, threadId, startOptions, options.beforeClaim),
-      );
+      let prepared: Prepared;
+      try {
+        prepared = await withTeam(db, viewer.teamId, (tx) =>
+          prepare(tx, viewer, threadId, startOptions, options.beforeClaim),
+        );
+      } catch (err) {
+        // Another change held the thread past THREAD_LOCK_TIMEOUT (55P03): busy, try again.
+        if (isLockTimeout(err))
+          return refuse({ code: "thread_busy", message: THREAD_BUSY_MESSAGE });
+        throw err;
+      }
       if (!prepared.ok) return prepared.result;
       const { pass, input } = prepared;
       const ctx = {
@@ -211,6 +223,7 @@ export function createLearningPasses(options: LearningPassesOptions): LearningPa
         client,
         log,
         ...(options.timeoutMs ? { timeoutMs: options.timeoutMs } : {}),
+        ...(options.completion ? { completion: options.completion } : {}),
       };
       background.run("learning pass failed", () => executePass(ctx, pass, input), {
         pass_id: pass.passId,

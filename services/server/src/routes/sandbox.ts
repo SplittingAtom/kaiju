@@ -22,6 +22,7 @@ import {
 } from "../sandbox/session-hold.js";
 import { issueSessionTokens } from "../sandbox/session-token.js";
 import type { WorkspaceSync } from "../workspace-sync/service.js";
+import { notFound } from "../http/request.js";
 
 /** How long an unclaimed warm-pool pod waits before asking again (a client that did not wait). */
 export const UNASSIGNED_RETRY_MS = 2_000;
@@ -82,7 +83,7 @@ export function createSandboxApp(deps: SandboxRoutesDeps): Hono {
   // Sandbox endpoints are cluster-internal: anything that came through the ingress is refused.
   app.use("/v1/sandbox/*", async (c, next) => {
     if (FORWARDED_HEADERS.some((h) => c.req.header(h) !== undefined)) {
-      return c.json({ code: "not_found", message: "Not found." }, 404);
+      return notFound(c, "not_found", "Not found.");
     }
     await next();
   });
@@ -124,7 +125,7 @@ export function sandboxRoutes(deps: SandboxRoutesDeps): Hono {
 
   app.use(async (c, next) => {
     if (FORWARDED_HEADERS.some((h) => c.req.header(h) !== undefined)) {
-      return c.json({ code: "not_found", message: "Not found." }, 404);
+      return notFound(c, "not_found", "Not found.");
     }
     c.header("Cache-Control", "no-store");
     await next();

@@ -6,7 +6,7 @@ import {
   type UploadErrorCode,
   type UploadResponse,
 } from "@kobe/protocol";
-import { files, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { files, sql, withTeam, type KobeDb, type KobeTx, pgCodeOf } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";
 import { threadKey, type BlobStore } from "../retention/blobs.js";
@@ -26,7 +26,8 @@ import type { UploadSettings } from "./settings.js";
  *  2. the bytes stream to S3 under a server-derived key through a meter (size limit enforced
  *     mid-stream, SHA-256 and the first bytes for sniffing computed on the way). A threaded key
  *     is queued in `retention_blob_deletions` first (due in an hour), so a crash leaves nothing
- *     the retention pass can't delete;
+ *     the retention pass can't delete; a member-level key (no thread) lies outside every tree the
+ *     queue deletes in, and the orphan sweep takes it once old and unreferenced (KOBE-740);
  *  3. the optional virus scan (`uploads/clamd.ts`, KOBE-146): a hit or an unreachable scanner
  *     deletes the object, audits `workspace.upload_scan_refused` and refuses (422 / 503);
  *  4. one transaction under the team's storage lock: usage + size against the quota, then the
@@ -232,12 +233,6 @@ interface Stored {
   readonly scan: "none" | "clean";
 }
 
-function pgCode(err: unknown): string | undefined {
-  const e = err as { code?: unknown; cause?: { code?: unknown } };
-  const code = e.cause?.code ?? e.code;
-  return typeof code === "string" ? code : undefined;
-}
-
 async function commit(
   deps: UploadDeps,
   caller: UploadCaller,
@@ -360,7 +355,7 @@ export async function storeUpload(
       await auditRefused(deps, caller, "quota_exceeded", size);
       return OBJECT_BUDGET;
     }
-    if (pgCode(err) === "23503") return THREAD_NOT_FOUND;
+    if (pgCodeOf(err) === "23503") return THREAD_NOT_FOUND;
     logger.error({ err, teamId }, "upload could not be recorded");
     return STORAGE_UNAVAILABLE;
   }

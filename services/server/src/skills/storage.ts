@@ -41,7 +41,8 @@ export function putSkillBundle(blobs: BlobStore, key: string, zip: Uint8Array): 
 /**
  * Best-effort removal of the bundle this attempt wrote for an upload that then failed. The key is
  * the attempt's own, so nothing committed can reference it. Never throws: a failure logs the key
- * (a hash and ids, no content) for a later sweep.
+ * (a hash and ids, no content); the orphan sweep (`retention/orphans.ts`, KOBE-740) deletes such
+ * leftovers, and those of a crash between the put and the commit, once old and unreferenced.
  */
 export async function discardAttemptBundle(blobs: BlobStore, key: string): Promise<void> {
   try {

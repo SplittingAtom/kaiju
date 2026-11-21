@@ -16,7 +16,13 @@ export {
   type WorkspaceLimits,
 } from "./quota.js";
 export { repairWorkspaces, type RepairOptions, type RepairResult } from "./repair.js";
-export { createS3ObjectStore, loadS3Settings, type S3Settings } from "./s3.js";
+export { checkBucketLifecycle } from "./bucket-check.js";
+export {
+  createS3ObjectStore,
+  loadS3Settings,
+  plainHttpEndpointWarning,
+  type S3Settings,
+} from "./s3.js";
 export {
   COLLECT_DEFAULTS,
   createWorkspaceSync,

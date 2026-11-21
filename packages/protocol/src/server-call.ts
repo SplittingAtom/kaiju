@@ -295,7 +295,8 @@ export function serverCallNamesPass(purpose: ServerCallTokenPurpose): boolean {
 
 /**
  * Longest a learning pass may append pass events after it started (the server's append guard):
- * the extractor call and its one retry, plus reading the thread and checking the candidates.
+ * the extractor call and its one retry, plus reading the thread and checking the candidates,
+ * plus the completion's retries when the thread is locked (KOBE-770: up to about 19 s of it).
  */
 export const MEMORY_PASS_MARGIN_MS = 30_000;
 export const MEMORY_PASS_MAX_MS =

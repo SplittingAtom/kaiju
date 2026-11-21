@@ -153,9 +153,16 @@ pod labels and port for the team NetworkPolicy).
 {{- toJson $cfg -}}
 {{- end -}}
 
-{{/* KOBE-27 workspace sync settings; maxWorkspaceSize is omitted when empty (the volume size). */}}
+{{/*
+KOBE-27 workspace sync settings; maxWorkspaceSize is omitted when empty (the volume size).
+maxFileSize is capped at 5Gi (KOBE-743): each file is pushed with one S3 PutObject (uploads copy it
+with one CopyObject), and S3 accepts at most 5 GiB in a single request.
+*/}}
 {{- define "kobe.workspaceSyncConfig" -}}
 {{- $w := .workspaceSync -}}
+{{- if gt (include "kobe.memoryBytes" $w.maxFileSize | int64) (int64 5368709120) -}}
+{{- fail (printf "sandbox.workspaceSync.maxFileSize %s exceeds 5Gi: S3 accepts at most 5 GiB in a single PutObject/CopyObject request, which is how workspace sync stores each file" (toString $w.maxFileSize)) -}}
+{{- end -}}
 {{- $out := dict
   "enabled" $w.enabled
   "pushIntervalSeconds" (int $w.pushIntervalSeconds)

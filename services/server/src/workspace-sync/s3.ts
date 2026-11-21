@@ -121,6 +121,17 @@ export function loadS3Settings(
 }
 
 /**
+ * KOBE-743: the startup warning for a plain-HTTP endpoint (every workspace byte and the request
+ * signatures travel unencrypted). Names the endpoint's host only; undefined for https or the SDK's
+ * default (AWS, https).
+ */
+export function plainHttpEndpointWarning(settings: S3Settings): string | undefined {
+  if (!settings.endpoint?.toLowerCase().startsWith("http:")) return undefined;
+  const host = new URL(settings.endpoint).host;
+  return `KOBE_S3_ENDPOINT is plain http (${host}): object-store traffic, including every workspace file, travels in clear`;
+}
+
+/**
  * Only S3's `NoSuchKey` means "no such object". A bare 404, `NoSuchBucket` (a wrong or missing
  * bucket) or anything else is an error: readers must never take it for missing content (KOBE-475
  * marks missing content lost).
@@ -134,20 +145,23 @@ function isNotFound(err: unknown): boolean {
 const PART_BYTES = 8 * 1024 * 1024;
 const QUEUE_SIZE = 2;
 
+/** The SDK client for the configured store. */
+export function createS3Client(settings: S3Settings): S3Client {
+  return new S3Client({
+    region: settings.region,
+    forcePathStyle: settings.forcePathStyle,
+    ...(settings.endpoint ? { endpoint: settings.endpoint } : {}),
+    ...(settings.credentials ? { credentials: settings.credentials } : {}),
+    requestHandler: s3RequestHandlerOptions(settings),
+    // Plain requests that S3-compatible stores understand: no aws-chunked trailing checksums.
+    // Integrity is the server's own SHA-256 check on the way in (verifyingStream).
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
+  });
+}
+
 export function createS3ObjectStore(settings: S3Settings, client?: S3Client): ObjectStore {
-  const s3 =
-    client ??
-    new S3Client({
-      region: settings.region,
-      forcePathStyle: settings.forcePathStyle,
-      ...(settings.endpoint ? { endpoint: settings.endpoint } : {}),
-      ...(settings.credentials ? { credentials: settings.credentials } : {}),
-      requestHandler: s3RequestHandlerOptions(settings),
-      // Plain requests that S3-compatible stores understand: no aws-chunked trailing checksums.
-      // Integrity is the server's own SHA-256 check on the way in (verifyingStream).
-      requestChecksumCalculation: "WHEN_REQUIRED",
-      responseChecksumValidation: "WHEN_REQUIRED",
-    });
+  const s3 = client ?? createS3Client(settings);
   const Bucket = settings.bucket;
   return {
     async put(key, body, size, options = {}) {

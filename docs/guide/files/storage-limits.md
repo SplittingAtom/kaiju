@@ -27,7 +27,7 @@ My files is your own volume, mounted at `/workspace` in every conversation's san
 - **Files:** up to 100,000.
 - **Backup:** Kobe copies your files to the site's object storage about once a minute, after every
   run and before your sandbox sleeps, so they come back when it wakes or moves to another machine.
-  Files larger than 1 GiB are not copied: they stay on the volume only and are lost if the volume
+  Files larger than 1 GiB (the site's limit, which can be at most 5 GiB) are not copied: they stay on the volume only and are lost if the volume
   is. Keep anything that large somewhere else as well.
 - **Editing:** text files up to 1 MB open in the editor; larger ones open read-only. See
   [Editing files](file-editor.md).

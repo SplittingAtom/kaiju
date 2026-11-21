@@ -7,6 +7,7 @@ import {
   eq,
   projectFiles,
   projects,
+  sql,
   withTeam,
   type KobeDb,
   type KobeTx,
@@ -24,7 +25,7 @@ import { resolveMime, SNIFF_BYTES } from "../uploads/mime.js";
 import { UploadMeter, UploadTooLargeError } from "../uploads/meter.js";
 import { lockTeamStorage } from "../uploads/quota.js";
 import { DEFAULT_TEAM_MAX_OBJECTS, overLimit } from "./storage.js";
-import { commitFiles } from "./tree.js";
+import { commitFiles, queueProjectBlobs } from "./tree.js";
 
 /**
  * Project files (KOBE-162, D23): the project's own copy of each file lives in object storage at
@@ -32,7 +33,8 @@ import { commitFiles } from "./tree.js";
  * touches it) and is described by one `project_files` row. {@link ProjectMounts} makes the rows
  * visible read-only in members' workspaces. Upload bytes stream through a staging object (bounded
  * memory, hash and size known at the end), are copied to their key, and the row, the team storage
- * quota check and the audit event commit together. Names and paths never reach the audit log.
+ * quota check and the audit event commit together. Both keys are reserved for the blob deleter
+ * before the first byte (KOBE-740), so a crash in between leaves no permanent object. Names and paths never reach the audit log.
  */
 export type ProjectFileFailure =
   | "invalid_path"
@@ -114,11 +116,46 @@ export const projectFileKey = (
 const stagingKey = (blobs: BlobStore, teamId: string, projectId: string): string =>
   `${blobs.prefix}teams/${teamId}/projects/${projectId}/staging/${randomUUID()}`;
 
-async function discard(blobs: BlobStore, key: string): Promise<void> {
+/** Deletes the object (best effort); true when it is gone. */
+async function discard(blobs: BlobStore, key: string): Promise<boolean> {
   try {
     await blobs.objects.delete([key]);
+    return true;
   } catch (err) {
     logger.warn({ err }, "project file: could not delete an object");
+    return false;
+  }
+}
+
+/**
+ * KOBE-740: an upload's staging and file keys are reserved in `retention_blob_deletions` (due in
+ * hours, `queueProjectBlobs`) before any byte is written, so a crash between the put and the
+ * commit leaves nothing the blob deleter won't take. The commit clears the file key (`writeCommit`);
+ * a key deleted here is cleared too, and one that could not be deleted stays queued.
+ */
+async function reserve(deps: ProjectFileDeps, target: FileTarget, keys: string[]): Promise<void> {
+  await withTeam(deps.db, target.teamId, (tx) =>
+    queueProjectBlobs(tx, target.teamId, target.projectId, target.userId, keys, "reservation"),
+  );
+}
+
+/** Discards the object and, once it is gone, drops its reservation (best effort). */
+async function discardReserved(
+  deps: ProjectFileDeps,
+  blobs: BlobStore,
+  teamId: string,
+  key: string,
+): Promise<void> {
+  if (!(await discard(blobs, key))) return;
+  try {
+    await withTeam(deps.db, teamId, (tx) =>
+      tx.execute(
+        sql`DELETE FROM retention_blob_deletions WHERE team_id = ${teamId} AND key = ${key}`,
+      ),
+    );
+  } catch (err) {
+    // The queued row then only makes the deleter delete an absent key.
+    logger.warn({ err, teamId }, "project file: could not clear a reservation");
   }
 }
 
@@ -230,7 +267,7 @@ export async function commitProjectFile(
     return { ok: true, file: stored };
   } catch (err) {
     if (err instanceof Refused) {
-      await discard(blobs, file.blobRef);
+      await discardReserved(deps, blobs, target.teamId, file.blobRef);
       return { ok: false, error: err.failure };
     }
     // Ambiguous failures keep the object (a committed row may reference it).
@@ -277,35 +314,36 @@ export async function uploadProjectFile(
   if (path === undefined) return { ok: false, error: "invalid_path" };
   const limit = Math.min(PROJECT_FILE_MAX_BYTES, deps.maxFileBytes);
   const staging = stagingKey(blobs, target.teamId, target.projectId);
+  const id = randomUUID();
+  const key = projectFileKey(blobs, target.teamId, target.projectId, id);
   const meter = new UploadMeter(limit);
   try {
+    await reserve(deps, target, [staging, key]);
     pipeline(incoming.body, meter, () => undefined);
     await blobs.objects.putStream(staging, meter);
   } catch (err) {
     meter.destroy();
     incoming.body.destroy();
-    await discard(blobs, staging);
+    await discardReserved(deps, blobs, target.teamId, staging);
     if (err instanceof UploadTooLargeError || meter.bytes > limit) {
       return { ok: false, error: "file_too_large" };
     }
     logger.error({ err, teamId: target.teamId }, "project file upload failed");
     return { ok: false, error: "storage_failed" };
   }
-  const id = randomUUID();
-  const key = projectFileKey(blobs, target.teamId, target.projectId, id);
   try {
     await blobs.objects.copy(staging, key);
   } catch (err) {
     logger.error({ err, teamId: target.teamId }, "project file copy failed");
-    await discard(blobs, staging);
+    await discardReserved(deps, blobs, target.teamId, staging);
     return { ok: false, error: "storage_failed" };
   }
-  await discard(blobs, staging);
+  await discardReserved(deps, blobs, target.teamId, staging);
   let mime: string;
   try {
     mime = resolveMime(await headOf(blobs, key), incoming.declaredMime);
   } catch {
-    await discard(blobs, key);
+    await discardReserved(deps, blobs, target.teamId, key);
     return { ok: false, error: "storage_failed" };
   }
   return commitProjectFile(deps, blobs, target, {
