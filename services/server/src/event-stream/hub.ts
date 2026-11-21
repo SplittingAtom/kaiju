@@ -1,6 +1,4 @@
-import { randomUUID } from "node:crypto";
-import pg from "pg";
-import { logger as rootLogger } from "../logger.js";
+import { createListenClient, type ListenClient } from "../pg-listen.js";
 import {
   decodeAccessHint,
   decodeHint,
@@ -55,8 +53,13 @@ export interface RunEventHub {
 export type HubState = "idle" | "connecting" | "listening" | "down" | "closed";
 
 export interface HubOptions {
-  /** App-role URL. Must reach Postgres directly or via a session-mode pooler (LISTEN is per session). */
-  readonly connectionString: string;
+  /** The process's shared LISTEN connection (KOBE-704); the hub never closes it. */
+  readonly listen?: ListenClient;
+  /**
+   * Without `listen`: app-role URL of a LISTEN connection of the hub's own (tests). Must reach
+   * Postgres directly or via a session-mode pooler (LISTEN is per session).
+   */
+  readonly connectionString?: string;
   readonly maxStreamsPerUser?: number;
   /**
    * Concurrent workspace streams per user on this replica: a page holds up to two (file tabs'
@@ -68,13 +71,14 @@ export interface HubOptions {
    * a page, so they are not polled at the run streams' rate).
    */
   readonly workspaceDegradedPollMs?: number;
+  /** Own LISTEN connection only (without `listen`): its reconnect backoff. */
   readonly reconnectMinMs?: number;
   readonly reconnectMaxMs?: number;
   /** While the listener is down, subscribers re-read this often instead of waiting for hints. */
   readonly degradedPollMs?: number;
-  /** Health check of the LISTEN connection (detects half-open TCP). */
+  /** Own LISTEN connection only: its health check (detects half-open TCP). */
   readonly pingMs?: number;
-  /** A ping (or LISTEN, or the probe) not answered within this is a lost connection. */
+  /** Own LISTEN connection only: a ping, LISTEN or the probe not answered within this is lost. */
   readonly pingTimeoutMs?: number;
   /** Resyncs after a (re)connect are spread over this window, one random delay per run. */
   readonly resyncJitterMs?: number;
@@ -92,31 +96,41 @@ export const HUB_DEFAULTS = {
   resyncJitterMs: 1_000,
 } as const;
 
-const CONNECT_TIMEOUT_MS = 10_000;
-const PROBE_PREFIX = "probe:";
+/** Probe payloads of hubs before KOBE-704 (they probed on this channel): ignored. */
+const LEGACY_PROBE_PREFIX = "probe:";
 
 /**
- * Postgres LISTEN/NOTIFY fan-out for one server process (spec D16, no Redis). Exactly one dedicated
- * connection per process listens on {@link RUN_EVENTS_CHANNEL}, however many streams are open, so
- * streams never exhaust connections; it lives outside the query pool so a stream never holds a
- * pool slot while idle. Notifications are only hints dispatched to the subscribers of that run;
- * after any (re)connect every subscriber resyncs, and while the listener is down subscribers are
- * polled, so a missed notification delays an event but never loses it.
+ * Postgres LISTEN/NOTIFY fan-out for one server process (spec D16, no Redis). The process's one
+ * shared LISTEN connection ({@link ListenClient}, KOBE-704) carries {@link RUN_EVENTS_CHANNEL},
+ * however many streams are open, so streams never exhaust connections; it lives outside the query
+ * pool so a stream never holds a pool slot while idle. Notifications are only hints dispatched to
+ * the subscribers of that run; after any (re)connect every subscriber resyncs, and while the
+ * listener is down subscribers are polled, so a missed notification delays an event but never
+ * loses it.
  */
 export function createRunEventHub(options: HubOptions): RunEventHub {
   const opts = { ...HUB_DEFAULTS, ...options };
-  const log = rootLogger.child({ component: "run-event-hub" });
   const byRun = new Map<string, Set<HubSubscriber>>();
   const byUser = new Map<string, Set<WorkspaceHubSubscriber>>();
   const slots = new Map<string, number>();
   const workspaceSlots = new Map<string, number>();
   let lastWorkspacePoll = 0;
-  let state: HubState = "idle";
-  let client: pg.Client | undefined;
-  let attempt = 0;
-  let reconnectTimer: NodeJS.Timeout | undefined;
+  const owned = options.listen
+    ? undefined
+    : createListenClient({
+        connectionString: requiredUrl(options.connectionString),
+        applicationName: "kobe-event-hub",
+        reconnectMinMs: opts.reconnectMinMs,
+        reconnectMaxMs: opts.reconnectMaxMs,
+        pingMs: opts.pingMs,
+        pingTimeoutMs: opts.pingTimeoutMs,
+      });
+  const listen = options.listen ?? (owned as ListenClient);
+  let started = false;
+  let closed = false;
+  let listening = false;
+  let unlisten: (() => void) | undefined;
   let pollTimer: NodeJS.Timeout | undefined;
-  let pingTimer: NodeJS.Timeout | undefined;
 
   const each = (fn: (s: { close(): void }) => void) => {
     for (const set of byRun.values()) for (const s of [...set]) fn(s);
@@ -157,13 +171,8 @@ export function createRunEventHub(options: HubOptions): RunEventHub {
     }
   };
 
-  let probe: { nonce: string; resolve: () => void } | undefined;
-
-  const dispatch = (payload: string | undefined) => {
-    if (payload?.startsWith(PROBE_PREFIX)) {
-      if (probe && payload === PROBE_PREFIX + probe.nonce) probe.resolve();
-      return;
-    }
+  const dispatch = (payload: string) => {
+    if (payload.startsWith(LEGACY_PROBE_PREFIX)) return;
     const workspaceUser = decodeWorkspaceHint(payload);
     if (workspaceUser !== undefined) {
       const watchers = byUser.get(workspaceUser);
@@ -201,110 +210,27 @@ export function createRunEventHub(options: HubOptions): RunEventHub {
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = undefined;
   };
-  const stopPing = () => {
-    if (pingTimer) clearInterval(pingTimer);
-    pingTimer = undefined;
-  };
-
-  const scheduleReconnect = () => {
-    if (state === "closed" || reconnectTimer) return;
-    const base = Math.min(opts.reconnectMaxMs, opts.reconnectMinMs * 2 ** attempt);
-    const delay = Math.round(base / 2 + Math.random() * (base / 2));
-    attempt += 1;
-    reconnectTimer = setTimeout(() => {
-      reconnectTimer = undefined;
-      void connect();
-    }, delay);
-    reconnectTimer.unref();
-  };
-
-  const lost = (lostClient: pg.Client, err?: unknown) => {
-    if (lostClient !== client) return;
-    client = undefined;
-    stopPing();
-    lostClient.removeAllListeners("notification");
-    lostClient.end().catch(() => undefined);
-    // end() waits for the server, which never answers on a half-open socket: drop the socket too.
-    (
-      lostClient as unknown as { connection?: { stream?: { destroy?: () => void } } }
-    ).connection?.stream?.destroy?.();
-    if (state === "closed") return;
-    state = "down";
-    log.warn({ err }, "LISTEN connection lost; polling until it is back");
-    startPolling();
-    resyncAll(0);
-    scheduleReconnect();
-  };
-
-  const connect = async (): Promise<void> => {
-    if (state === "closed") return;
-    state = "connecting";
-    const next = new pg.Client({
-      connectionString: opts.connectionString,
-      keepAlive: true,
-      application_name: "kobe-event-hub",
-      query_timeout: opts.pingTimeoutMs,
-      connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
+  /** Subscribes to the shared connection on first use; kept until close(). */
+  const start = () => {
+    if (started) return;
+    started = true;
+    unlisten = listen.subscribe(RUN_EVENTS_CHANNEL, {
+      notification: dispatch,
+      listening: () => {
+        listening = true;
+        stopPolling();
+        // Anything committed before LISTEN took effect was not heard: everyone re-reads once.
+        resyncAll(opts.resyncJitterMs);
+      },
+      polling: () => {
+        const wasListening = listening;
+        listening = false;
+        startPolling();
+        // A lost connection: hints may have been missed, re-read now.
+        if (wasListening) resyncAll(0);
+      },
     });
-    client = next;
-    next.on("notification", (msg) => {
-      if (msg.channel === RUN_EVENTS_CHANNEL) dispatch(msg.payload);
-    });
-    next.on("error", (err) => lost(next, err));
-    next.on("end", () => lost(next));
-    try {
-      await next.connect();
-      await next.query(`LISTEN ${RUN_EVENTS_CHANNEL}`);
-      await probeDelivery(next);
-    } catch (err) {
-      lost(next, err);
-      return;
-    }
-    // close() may have run while we were connecting.
-    if ((state as HubState) === "closed" || client !== next) {
-      await next.end().catch(() => undefined);
-      return;
-    }
-    state = "listening";
-    attempt = 0;
-    stopPolling();
-    pingTimer = setInterval(() => {
-      next.query("SELECT 1").catch((err: unknown) => lost(next, err));
-    }, opts.pingMs);
-    pingTimer.unref();
-    // Anything committed before LISTEN took effect was not heard: everyone re-reads once.
-    resyncAll(opts.resyncJitterMs);
   };
-
-  /**
-   * Proves the session hears notifications: it notifies itself and waits for the echo. Behind a
-   * transaction-mode pooler (PgBouncer `pool_mode=transaction`) LISTEN "succeeds" on some backend
-   * and the echo never comes back; that is reported loudly and the hub stays in polling mode.
-   */
-  async function probeDelivery(c: pg.Client): Promise<void> {
-    const nonce = randomUUID();
-    let timer: NodeJS.Timeout | undefined;
-    const heard = new Promise<void>((resolve, reject) => {
-      probe = { nonce, resolve };
-      timer = setTimeout(
-        () =>
-          reject(
-            new Error(
-              "LISTEN connection does not receive notifications: KOBE_DATABASE_URL must reach " +
-                "Postgres directly or through a session-mode pooler (not transaction mode)",
-            ),
-          ),
-        opts.pingTimeoutMs,
-      );
-    });
-    try {
-      await c.query(`SELECT pg_notify($1, $2)`, [RUN_EVENTS_CHANNEL, PROBE_PREFIX + nonce]);
-      await heard;
-    } finally {
-      clearTimeout(timer);
-      probe = undefined;
-    }
-  }
 
   /** Takes one of `userId`'s slots in `slots` (null at `max`); returns its release. */
   function takeSlot(slots: Map<string, number>, userId: string, max: number) {
@@ -327,10 +253,7 @@ export function createRunEventHub(options: HubOptions): RunEventHub {
     let set = map.get(key);
     if (!set) map.set(key, (set = new Set()));
     set.add(subscriber);
-    if (state === "idle") {
-      startPolling(); // until the first LISTEN is up
-      void connect();
-    }
+    start(); // polls until the first LISTEN is up
     return () => {
       const current = map.get(key);
       if (!current) return;
@@ -340,8 +263,11 @@ export function createRunEventHub(options: HubOptions): RunEventHub {
   }
 
   return {
-    get state() {
-      return state;
+    get state(): HubState {
+      if (closed) return "closed";
+      if (!started) return "idle";
+      if (listening) return "listening";
+      return listen.state === "connecting" ? "connecting" : "down";
     },
     get size() {
       let n = 0;
@@ -350,14 +276,14 @@ export function createRunEventHub(options: HubOptions): RunEventHub {
       return n;
     },
     subscribe(runId, subscriber) {
-      if (state === "closed") {
+      if (closed) {
         queueMicrotask(() => subscriber.close());
         return () => undefined;
       }
       return register(byRun, runId, subscriber);
     },
     subscribeWorkspace(userId, subscriber) {
-      if (state === "closed") {
+      if (closed) {
         queueMicrotask(() => subscriber.close());
         return () => undefined;
       }
@@ -367,21 +293,20 @@ export function createRunEventHub(options: HubOptions): RunEventHub {
     acquireWorkspaceSlot: (userId) =>
       takeSlot(workspaceSlots, userId, opts.maxWorkspaceStreamsPerUser),
     async close() {
-      if (state === "closed") return;
-      state = "closed";
+      if (closed) return;
+      closed = true;
+      listening = false;
       stopPolling();
-      stopPing();
-      if (reconnectTimer) clearTimeout(reconnectTimer);
+      unlisten?.();
       each((s) => s.close());
       byRun.clear();
       byUser.clear();
-      probe = undefined;
-      const current = client;
-      client = undefined;
-      if (current) {
-        current.removeAllListeners("notification");
-        await current.end().catch(() => undefined);
-      }
+      await owned?.close();
     },
   };
+}
+
+function requiredUrl(url: string | undefined): string {
+  if (!url) throw new Error("the event hub needs a shared LISTEN client or a connection string");
+  return url;
 }

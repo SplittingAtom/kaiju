@@ -44,7 +44,10 @@ const RESYNC_EVERY_MS = 5_000;
 
 const config = loadConfig(process.env);
 const telemetry = initTelemetry(loadTelemetryConfig(process.env, "model-gateway"));
-const database = createDb(config.databaseUrl, { max: 10 });
+const database = createDb(config.databaseUrl, {
+  max: config.dbPoolMax,
+  applicationName: "kobe-gateway",
+});
 const db = database.db;
 
 const principals = new PrincipalCache(

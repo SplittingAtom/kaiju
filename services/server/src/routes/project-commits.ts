@@ -376,7 +376,7 @@ export function projectCommitRoutes(
     const body = await parseBody(c, revertProjectRequestSchema);
     if (!body) return invalidRequest(c, "Optionally give a message (1 to 500 characters).");
     const result = await revertTo(
-      { db, mounts: deps.projectMounts },
+      { db, mounts: deps.projectMounts, log: logger },
       owner(c),
       id.data,
       seq.data,

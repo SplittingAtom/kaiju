@@ -1,6 +1,7 @@
 /**
- * Thread–file links for `FakeKobe` (KOBE-612, spec thread-file-map): `GET /v1/threads/file-links`
- * and `GET /v1/workspace/file-threads` from one set of links a test adds with `link`. Wire casing.
+ * Thread–file links for `FakeKobe` (KOBE-612, spec thread-file-map): `GET /v1/threads/file-links`,
+ * `GET /v1/threads/{id}/file-links` and `GET /v1/workspace/file-threads` from one set of links a
+ * test adds with `link`. Wire casing.
  * Reads are recorded (`linkReads`, `fileReads`) so tests can assert batching.
  */
 
@@ -43,27 +44,38 @@ export class FakeFileLinks {
     this.links.set(threadId, [...(this.links.get(threadId) ?? []), ...files]);
   }
 
-  /** `/v1/threads/file-links`, or undefined for any other path. */
+  #linksOf(id: string) {
+    return {
+      thread_id: id,
+      files: (this.links.get(id) ?? []).map((f) => ({
+        path: f.path,
+        project_id: f.projectId ?? null,
+        access: f.access,
+        last_at: f.lastAt ?? LAST_AT,
+        deleted: f.deleted ?? false,
+      })),
+      hidden_count: this.hidden.get(id) ?? 0,
+    };
+  }
+
+  /** `/v1/threads/file-links`, `/v1/threads/{id}/file-links`, or undefined for any other path. */
   route(url: URL): Response | undefined {
     if (url.pathname === "/v1/threads/file-links") {
       const ids = split(url.searchParams.get("threads"));
       this.linkReads.push(ids);
       if (ids.length > 50) return answer(400, { code: "invalid_request", message: "too many" });
       return answer(200, {
-        links: ids
-          .filter((id) => this.titleOf(id) !== undefined)
-          .map((id) => ({
-            thread_id: id,
-            files: (this.links.get(id) ?? []).map((f) => ({
-              path: f.path,
-              project_id: f.projectId ?? null,
-              access: f.access,
-              last_at: f.lastAt ?? LAST_AT,
-              deleted: f.deleted ?? false,
-            })),
-            hidden_count: this.hidden.get(id) ?? 0,
-          })),
+        links: ids.filter((id) => this.titleOf(id) !== undefined).map((id) => this.#linksOf(id)),
       });
+    }
+    // One thread's links (KOBE-611): 404 when the viewer may not read it.
+    const one = /^\/v1\/threads\/([^/]+)\/file-links$/u.exec(url.pathname);
+    if (one) {
+      const id = decodeURIComponent(one[1] ?? "");
+      if (this.titleOf(id) === undefined) {
+        return answer(404, { code: "thread_not_found", message: "No thread with that id." });
+      }
+      return answer(200, this.#linksOf(id));
     }
     if (url.pathname === "/v1/workspace/file-threads") {
       const paths = split(url.searchParams.get("paths"));

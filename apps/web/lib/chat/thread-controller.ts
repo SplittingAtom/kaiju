@@ -4,12 +4,7 @@
  * queue, Steer, Stop; D14: Retry / Continue without retry; branch switch and edit-and-regenerate).
  * The server decides everything; this only shows what it says and asks again after each change.
  */
-import {
-  isTerminalRunStatus,
-  type ItemReference,
-  type KobeEvent,
-  type ThinkingLevel,
-} from "@kobe/protocol";
+import type { ItemReference, KobeEvent, ThinkingLevel } from "@kobe/protocol";
 import type { ApiError, ApiResult } from "../api/client";
 import type {
   AppContextWire,
@@ -19,15 +14,9 @@ import type {
   ForkOptions,
 } from "./api";
 import { newIdempotencyKey } from "./keys";
-import {
-  browserResumeStore,
-  clearResumePoint,
-  loadResumePoint,
-  saveResumePoint,
-  type ResumeStore,
-} from "./resume";
-import { branchLeafOf, headOf, isBrowsing, onBranchOf, pathOf, settleHead } from "./head";
-import { applyRunEvents, newLiveRun, type CommittedEntry } from "./live";
+import { browserResumeStore, clearResumePoint, saveResumePoint, type ResumeStore } from "./resume";
+import { settleHead } from "./head";
+import { applyRunEvents } from "./live";
 import {
   openRunStream,
   type EventSourceFactory,
@@ -35,14 +24,9 @@ import {
   type StreamSignal,
 } from "./stream";
 import {
-  canRegenerateWith,
-  currentRunId,
   initialThreadState,
-  isThreadRunning,
   mergeCommittedEntries,
   mergeServerEntries,
-  promptSaved,
-  queuedRuns,
   runToStream,
   settleStop,
   type ThreadState,
@@ -50,22 +34,36 @@ import {
 import type { MessageFiles } from "./attachments";
 import type { EvalCaseOptions } from "./eval-cases";
 import type { FeedbackChange } from "./feedback";
-import { SHARED_ANNOUNCEMENT } from "./share";
-import { viewingBody, type ViewingChoice } from "./viewing";
-import type { ThreadEntry, ThreadRuns, ThreadSummary, ThreadVisibility } from "./types";
+import type { ViewingChoice } from "./viewing";
+import type { ThreadSummary, ThreadVisibility } from "./types";
+import {
+  followupsShown,
+  planAfterClose,
+  planSignal,
+  planTerminal,
+} from "./thread-controller/after-close";
+import * as branches from "./thread-controller/branches";
+import {
+  historyOf,
+  liveFileRequest,
+  maxSeq,
+  mayBeUnsavedPrompt,
+  readThread,
+  withPending,
+  withRuns,
+  withStreamedRun,
+} from "./thread-controller/history";
+import * as queue from "./thread-controller/queue";
+import {
+  CLIENT_ERROR,
+  sendMessage,
+  steerRun,
+  type SendArgs,
+  type SendPort,
+} from "./thread-controller/send";
+import * as settings from "./thread-controller/settings";
 
-const NO_THREAD: ApiError = {
-  status: 0,
-  code: "thread_not_found",
-  message: "Send a message first: there is no conversation to compact.",
-};
-
-/** The web offers a carried summary only off the leaf's branch (CT11; the server allows it). */
-export const ON_LEAF_BRANCH: ApiError = {
-  status: 0,
-  code: "on_leaf_branch",
-  message: "This message is on the current branch: there is no other branch to summarize.",
-};
+export { ON_LEAF_BRANCH } from "./thread-controller/branches";
 
 export interface ControllerOptions {
   readonly api: ChatApi;
@@ -86,21 +84,6 @@ export interface ControllerOptions {
   /** Every streamed batch of the thread's runs (KOBE-465: the notebook panel's executions). */
   readonly onRunEvents?: ((threadId: string, events: readonly KobeEvent[]) => void) | undefined;
 }
-
-const MAX_REOPEN_ATTEMPTS = 5;
-const MAX_ENTRY_PAGES = 40;
-const REGENERATE_NOT_SENT: ApiError = {
-  status: 0,
-  code: "regenerate_not_sent",
-  message: "The answer could not be regenerated, so the model was not changed. Try again.",
-};
-
-const CLIENT_ERROR: ApiError = {
-  status: 0,
-  code: "client_error",
-  message: "Your message was not sent. Try again.",
-};
-const PARTIAL_HISTORY = "Part of this conversation could not be loaded. Reload to see all of it.";
 
 type Listener = () => void;
 
@@ -136,6 +119,8 @@ export class ThreadController {
    */
   readonly #historySeq = new Map<string, number>();
   readonly #ownRuns = new Set<string>();
+  /** What the action modules see of this controller (KOBE-716). */
+  readonly #port: SendPort;
 
   constructor(threadId: string | null, options: ControllerOptions) {
     this.#state = initialThreadState(threadId);
@@ -148,6 +133,26 @@ export class ThreadController {
     this.#onRetitled = options.onRetitled;
     this.#onRunEvents = options.onRunEvents;
     this.#onLeafMoved = options.onLeafMoved;
+    this.#port = {
+      api: this.#api,
+      state: () => this.#state,
+      set: (change) => this.#set(change),
+      busy: (action, fn) => this.#busy(action, fn),
+      fail: (error, draft) => this.#fail(error, draft),
+      announce: (text) => this.#announce(text),
+      refresh: () => this.refresh(),
+      bumpLeafVersion: () => {
+        this.#leafVersion += 1;
+      },
+      leafMoved: (threadId) => this.#onLeafMoved?.(threadId),
+      newKey: () => this.#newKey(),
+      disposed: () => this.#disposed,
+      ownRun: (runId) => this.#ownRuns.add(runId),
+      startStream: (runId) => {
+        this.#closeStream();
+        this.#open(runId);
+      },
+    };
   }
 
   // --- store ----------------------------------------------------------------------------------
@@ -163,40 +168,23 @@ export class ThreadController {
   readonly runUsage = (runId: string) => this.#api.runUsage(runId);
 
   /** Usage of each of this thread's runs (KOBE-208: the answers' footers); null for a draft. */
-  readonly threadUsage = () => {
-    const id = this.#state.threadId;
-    return id === null ? null : this.#api.threadUsage(id);
-  };
+  readonly threadUsage = () => this.#ofThread((id) => this.#api.threadUsage(id));
 
   /** The thread's stored blocked-egress notices (KOBE-605); null for a draft. */
-  readonly threadEgressBlocked = () => {
-    const id = this.#state.threadId;
-    return id === null ? null : this.#api.threadEgressBlocked(id);
-  };
+  readonly threadEgressBlocked = () => this.#ofThread((id) => this.#api.threadEgressBlocked(id));
 
   /** The context of this thread's latest model call (KOBE-471); null for a draft. */
-  readonly threadContext = () => {
-    const id = this.#state.threadId;
-    return id === null ? null : this.#api.threadContext(id);
-  };
+  readonly threadContext = () => this.#ofThread((id) => this.#api.threadContext(id));
 
   /** The memories this thread's latest run was given (KOBE-382); null for a draft. */
-  readonly threadContextMemories = () => {
-    const id = this.#state.threadId;
-    return id === null ? null : this.#api.threadContextMemories(id);
-  };
+  readonly threadContextMemories = () =>
+    this.#ofThread((id) => this.#api.threadContextMemories(id));
 
   /** How this thread's runs ended and its approvals were decided (KOBE-209); null for a draft. */
-  readonly threadMarkers = () => {
-    const id = this.#state.threadId;
-    return id === null ? null : this.#api.threadMarkers(id);
-  };
+  readonly threadMarkers = () => this.#ofThread((id) => this.#api.threadMarkers(id));
 
   /** The thread's rateable answers and the member's own ratings (KOBE-275); null for a draft. */
-  readonly threadFeedback = () => {
-    const id = this.#state.threadId;
-    return id === null ? null : this.#api.threadFeedback(id);
-  };
+  readonly threadFeedback = () => this.#ofThread((id) => this.#api.threadFeedback(id));
 
   /** Rates an answer of this thread for the member, or changes their rating (KOBE-275). */
   readonly rateAnswer = (runId: string, change: FeedbackChange) =>
@@ -217,13 +205,17 @@ export class ThreadController {
   readonly withdrawEvalCase = (caseId: string) => this.#api.withdrawEvalCase(caseId);
 
   /** A tool output of this thread in full (KOBE-208: a large one, when its card opens). */
-  readonly toolOutput = (entryId: string) => {
-    const id = this.#state.threadId;
-    return id === null ? null : this.#api.toolOutput(id, entryId);
-  };
+  readonly toolOutput = (entryId: string) =>
+    this.#ofThread((id) => this.#api.toolOutput(id, entryId));
 
   /** The member's budget status (KOBE-42; the chat's warning banner). */
   readonly budgetStatus = () => this.#api.budgetStatus();
+
+  /** A read of the open thread; null for a draft. */
+  #ofThread<T>(read: (threadId: string) => T): T | null {
+    const id = this.#state.threadId;
+    return id === null ? null : read(id);
+  }
 
   #set(change: (state: ThreadState) => ThreadState): void {
     if (this.#disposed) return;
@@ -272,28 +264,20 @@ export class ThreadController {
     const threadId = this.#state.threadId;
     if (threadId === null || this.#loadStarted) return;
     this.#loadStarted = true;
-    const detail = await this.#api.getThread(threadId);
-    if (this.#disposed) return;
-    if (!detail.ok) {
+    const read = await readThread(this.#api, threadId, undefined, this.#port);
+    if (read === undefined) return;
+    if (!read.ok) {
       this.#loadStarted = false; // "Try again" may load again
-      this.#set((s) => ({ ...s, phase: "error", loadError: detail.error }));
+      this.#set((s) => ({ ...s, phase: "error", loadError: read.error }));
       return;
     }
-    const {
-      entries: firstPage,
-      nextEntriesAfter,
-      agentCurrentVersion,
-      agentModel,
-      ...summary
-    } = detail.data;
-    const entries = await this.#readMoreEntries(threadId, firstPage, nextEntriesAfter);
-    if (this.#disposed) return;
+    const { summary, entries, agentModel, agentCurrentVersion } = read.data;
     this.#set((s) => ({
       ...s,
       phase: "ready",
       loadError: undefined,
       summary,
-      agentModel: agentModel ?? null,
+      agentModel,
       agentCurrentVersion,
       entries: mergeServerEntries(s.entries, entries),
       serverSeq: maxSeq(entries, s.serverSeq),
@@ -311,27 +295,6 @@ export class ThreadController {
     void this.load();
   };
 
-  async #readMoreEntries(
-    threadId: string,
-    first: readonly ThreadEntry[],
-    nextAfter: number | null,
-  ): Promise<readonly ThreadEntry[]> {
-    const all = [...first];
-    let after = nextAfter;
-    for (let page = 0; after !== null && page < MAX_ENTRY_PAGES; page++) {
-      const res = await this.#api.listEntries(threadId, after);
-      if (this.#disposed) break;
-      if (!res.ok) {
-        // What we have is still a valid prefix of the tree; say that the rest is missing.
-        this.#fail({ ...res.error, message: PARTIAL_HISTORY });
-        break;
-      }
-      all.push(...res.data.entries);
-      after = res.data.nextEntriesAfter;
-    }
-    return all;
-  }
-
   /** Reads runs and pending messages; false (and an error shown) when the runs are unknown. */
   async #readRuns(threadId: string): Promise<boolean> {
     const [runs, pending] = await Promise.all([
@@ -339,41 +302,11 @@ export class ThreadController {
       this.#api.pendingMessages(threadId),
     ]);
     if (this.#disposed) return false;
-    if (runs.ok) this.#applyRuns(runs.data);
+    if (runs.ok) this.#set((s) => withRuns(s, runs.data));
     else this.#fail(runs.error);
     if (!pending.ok) this.#fail(pending.error);
-    else {
-      const messages = pending.data.messages;
-      this.#set((s) => {
-        const live = s.live;
-        const prompt = live ? messages.find((m) => m.runId === live.runId) : undefined;
-        return {
-          ...s,
-          pending: messages,
-          livePrompt:
-            prompt !== undefined
-              ? {
-                  text: prompt.content,
-                  parentEntryId: prompt.parentEntryId,
-                  files: s.livePrompt?.files,
-                }
-              : s.livePrompt,
-        };
-      });
-    }
+    else this.#set((s) => withPending(s, pending.data.messages));
     return runs.ok;
-  }
-
-  #applyRuns(data: ThreadRuns): void {
-    this.#set((s) => {
-      const active = data.runs.some(
-        (r) => r.status === "running" || r.status === "waiting_approval",
-      );
-      const queued = data.runs.some((r) => r.status === "queued");
-      // The server's flag when it sends one; otherwise ours holds until a run starts or the queue empties.
-      const queuePaused = data.queuePaused ?? (s.queuePaused && !active && queued);
-      return { ...s, runs: data.runs, interruptedRun: data.interruptedRun, queuePaused };
-    });
   }
 
   /** New entries, the summary (leaf, status), runs and pending messages; then the right stream. */
@@ -401,24 +334,16 @@ export class ThreadController {
     if (threadId === null || this.#disposed) return;
     const after = this.#state.serverSeq;
     const leafVersion = this.#leafVersion;
-    const detail = await this.#api.getThread(threadId, after);
-    if (this.#disposed) return;
-    if (!detail.ok) {
-      this.#fail(detail.error);
+    const read = await readThread(this.#api, threadId, after, this.#port);
+    if (read === undefined) return;
+    if (!read.ok) {
+      this.#fail(read.error);
       return;
     }
-    const {
-      entries: firstPage,
-      nextEntriesAfter,
-      agentCurrentVersion,
-      agentModel,
-      ...summary
-    } = detail.data;
-    const incoming = await this.#readMoreEntries(threadId, firstPage, nextEntriesAfter);
-    if (this.#disposed) return;
+    const { summary, entries: incoming, agentModel, agentCurrentVersion } = read.data;
     this.#set((s) => ({
       ...s,
-      agentModel: agentModel ?? null,
+      agentModel,
       agentCurrentVersion,
       // A branch chosen while this read was on its way wins over the leaf it read.
       summary:
@@ -463,27 +388,16 @@ export class ThreadController {
     // A run the server keeps refusing (reopened from here) keeps its backoff.
     if (this.#lastStreamedRun !== runId) this.#reopenAttempts = 0;
     this.#lastStreamedRun = runId;
-    this.#set((s) => {
-      if (s.live?.runId === runId) return s;
-      const prompt = s.pending.find((m) => m.runId === runId);
-      return {
-        ...s,
-        // After a reload, resume after what the entries already hold (else replay from 0).
-        live:
-          loadResumePoint(this.#resume, runId, new Set(s.entries.map((e) => e.entryId))) ??
-          newLiveRun(runId),
-        livePrompt: prompt
-          ? { text: prompt.content, parentEntryId: prompt.parentEntryId }
-          : undefined,
-      };
-    });
+    this.#set((s) => withStreamedRun(s, runId, this.#resume));
     this.#open(runId);
   }
 
   #open(runId: string): void {
     if (this.#disposed) return;
     const after = this.#state.live?.runId === runId ? this.#state.live.lastSeq : 0;
-    if (!this.#historySeq.has(runId)) this.#historySeq.set(runId, this.#historyOf(runId, after));
+    if (!this.#historySeq.has(runId)) {
+      this.#historySeq.set(runId, historyOf(this.#state, this.#ownRuns, runId, after));
+    }
     this.#set((s) => ({ ...s, connection: "connecting" }));
     this.#stream = openRunStream(
       runId,
@@ -508,8 +422,9 @@ export class ThreadController {
     const wasStarted = live.started;
     const applied = applyRunEvents(live, events);
     const now = new Date().toISOString();
-    const opened = this.#liveFileRequest("file.opened", runId, live.lastSeq, events);
-    const proposed = this.#liveFileRequest("file.edit_proposed", runId, live.lastSeq, events);
+    const history = this.#historySeq.get(runId);
+    const opened = liveFileRequest("file.opened", runId, live.lastSeq, history, events);
+    const proposed = liveFileRequest("file.edit_proposed", runId, live.lastSeq, history, events);
     this.#set((s) => ({
       ...s,
       live: applied.run,
@@ -530,26 +445,11 @@ export class ThreadController {
       this.#set((s) => (s.followups ? { ...s, followups: undefined } : s));
       this.#announce("The agent is working on your message.");
       void this.refresh();
-    } else if (this.#mayBeUnsavedPrompt(applied.entries)) {
+    } else if (mayBeUnsavedPrompt(this.#state, applied.entries)) {
       // A prompt over 64 KiB is streamed without its body (KOBE-288): read it, so the stored
       // entry replaces the copy shown from the send.
       void this.refresh();
     }
-  }
-
-  /**
-   * A body-less message entry that may be the run's prompt: no stream message bound to it (an
-   * answer has one) while the prompt is not known to be saved. Large answers and tool outputs
-   * once the prompt is saved are left to the reads that follow the run.
-   */
-  #mayBeUnsavedPrompt(entries: readonly CommittedEntry[]): boolean {
-    const s = this.#state;
-    if (s.live === undefined || s.livePrompt === undefined || promptSaved(s.live, s.entries)) {
-      return false;
-    }
-    return entries.some(
-      (e) => e.payload === undefined && e.type === "message" && e.messageId === undefined,
-    );
   }
 
   /**
@@ -583,12 +483,7 @@ export class ThreadController {
     payload: { readonly thread_id: string; readonly suggestions: readonly string[] },
   ): void {
     const s = this.#state;
-    const current =
-      payload.thread_id === s.threadId &&
-      s.live?.runId === runId &&
-      s.sending === undefined &&
-      !isThreadRunning(s);
-    if (!current) return;
+    if (!followupsShown(s, runId, payload.thread_id)) return;
     this.#set((st) => ({ ...st, followups: { runId, suggestions: payload.suggestions } }));
     // Chips appear after the answer: screen readers hear about them (review N4).
     if (s.summary?.readOnly !== true) this.#announce("Follow-up suggestions are available.");
@@ -596,23 +491,14 @@ export class ThreadController {
 
   #onTerminal(terminal: NonNullable<ThreadState["live"]>["terminal"]): void {
     if (!terminal) return;
-    const messages: Record<typeof terminal.type, string> = {
-      "run.completed": "The agent finished.",
-      "run.failed": "The run failed.",
-      "run.interrupted": "The run was stopped.",
-      "run.budget_stopped": "The run stopped: the budget is used up.",
-    };
-    let message = messages[terminal.type];
-    if (terminal.type === "run.interrupted" && terminal.payload.reason === "sandbox_lost") {
-      message = "The run was interrupted. You can retry it.";
-    }
-    if (terminal.type === "run.completed" && terminal.payload.leaf_entry_id != null) {
-      // The run's own answer: its follow-ups arrive after it (KOBE-222), so they are kept.
-      this.#leafMoved(terminal.payload.leaf_entry_id, false);
-    }
-    this.#set((s) => ({ ...s, announcement: message, announcementSeq: s.announcementSeq + 1 }));
-    // A run.completed that announces an epilogue: its stream stays open for the results.
-    if (terminal.type === "run.completed" && (terminal.payload.epilogue?.length ?? 0) > 0) {
+    const plan = planTerminal(terminal);
+    if (plan.leaf !== undefined) this.#leafMoved(plan.leaf, false);
+    this.#set((s) => ({
+      ...s,
+      announcement: plan.announcement,
+      announcementSeq: s.announcementSeq + 1,
+    }));
+    if (plan.keepEpilogue) {
       this.#epilogue?.close();
       this.#epilogue = this.#stream;
     }
@@ -640,52 +526,21 @@ export class ThreadController {
     );
   }
 
-  /**
-   * Where history ends for a run whose stream opens now: nothing for a run this tab started;
-   * else the server's `last_seq` from the run list (a reload's or another tab's run), never below
-   * the resume point; unknown (older server) means everything already sent is history.
-   */
-  #historyOf(runId: string, after: number): number {
-    if (this.#ownRuns.has(runId)) return 0;
-    const snapshot = [...this.#state.runs, this.#state.interruptedRun].find(
-      (r) => r?.runId === runId,
-    );
-    return Math.max(after, snapshot?.lastSeq ?? Number.POSITIVE_INFINITY);
-  }
-
-  /**
-   * The newest `file.opened` (KOBE-484) or `file.edit_proposed` (KOBE-489) of this batch that is
-   * new to this client and above the run's history: a replayed backlog never opens a tab, live
-   * events do.
-   */
-  #liveFileRequest(
-    type: "file.opened" | "file.edit_proposed",
-    runId: string,
-    afterSeq: number,
-    events: readonly KobeEvent[],
-  ): ThreadState["fileOpenRequest"] {
-    const history = Math.max(afterSeq, this.#historySeq.get(runId) ?? Number.POSITIVE_INFINITY);
-    const last = events.findLast((e) => e.type === type && e.seq > history);
-    if (last?.type !== "file.opened" && last?.type !== "file.edit_proposed") return undefined;
-    return { runId, toolCallId: last.payload.tool_call_id, path: last.payload.path };
-  }
-
   #onSignal(runId: string, signal: StreamSignal): void {
-    if (this.#epilogue?.runId === runId && this.#stream?.runId !== runId) {
-      // The epilogue's stream ended (all results arrived, or the window closed): nothing to do.
-      if (signal.kind === "closed") this.#epilogue = undefined;
-      return;
-    }
-    if (this.#stream?.runId !== runId && signal.kind !== "closed") return;
-    if (signal.kind === "open") {
+    const plan = planSignal(runId, signal, {
+      streamRunId: this.#stream?.runId,
+      epilogueRunId: this.#epilogue?.runId,
+      live: this.#state.live,
+    });
+    if (plan.kind === "epilogue_closed") this.#epilogue = undefined;
+    else if (plan.kind === "open") {
       this.#reopenAttempts = 0;
       this.#set((s) => ({ ...s, connection: "open" }));
-    } else if (signal.kind === "reconnecting") {
+    } else if (plan.kind === "reconnecting") {
       this.#set((s) => ({ ...s, connection: "reconnecting" }));
-    } else {
+    } else if (plan.kind !== "ignore") {
       if (this.#stream?.runId === runId) this.#stream = undefined;
-      if (this.#state.live?.runId === runId && this.#state.live.terminal !== undefined) return;
-      void this.#afterClose(runId);
+      if (plan.kind === "closed") void this.#afterClose(runId);
     }
   }
 
@@ -693,29 +548,24 @@ export class ThreadController {
   async #afterClose(runId: string): Promise<void> {
     const res = await this.#api.getRun(runId);
     if (this.#disposed) return;
-    if (!res.ok) {
-      this.#set((s) => ({ ...s, connection: "lost" }));
-      this.#fail(res.error);
-      return;
-    }
-    if (isTerminalRunStatus(res.data.status) || res.data.status === "queued") {
-      // Ended (204 on reconnect, or 410: events compacted) → the entries are the record.
+    const plan = planAfterClose(res, this.#reopenAttempts, this.#reopenDelay);
+    if (plan.kind === "refresh") {
       await this.refresh();
       return;
     }
-    if (this.#reopenAttempts >= MAX_REOPEN_ATTEMPTS) {
+    if (plan.kind === "lost") {
       this.#set((s) => ({ ...s, connection: "lost" }));
+      if (plan.error !== undefined) this.#fail(plan.error);
       return;
     }
-    const delay = this.#reopenDelay(this.#reopenAttempts);
-    this.#reopenAttempts += 1;
+    this.#reopenAttempts = plan.attempts;
     this.#set((s) => ({ ...s, connection: "reconnecting" }));
     this.#reopenTimer = setTimeout(() => {
       this.#reopenTimer = undefined;
       if (!this.#disposed && this.#stream === undefined && runToStream(this.#state) === runId) {
         this.#open(runId);
       }
-    }, delay);
+    }, plan.delayMs);
   }
 
   /** "Reconnect" after the stream was given up on. */
@@ -747,7 +597,7 @@ export class ThreadController {
     references?: readonly ItemReference[],
   ): Promise<boolean> => {
     try {
-      return await this.#send(
+      const args: SendArgs = [
         text,
         parentEntryId,
         attach,
@@ -756,7 +606,8 @@ export class ThreadController {
         skill,
         viewing,
         references,
-      );
+      ];
+      return await sendMessage(this.#port, ...args);
     } catch {
       // Whatever failed, the composer must not stay stuck: the message is offered back.
       this.#set((s) => ({ ...s, sending: undefined }));
@@ -765,312 +616,65 @@ export class ThreadController {
     }
   };
 
-  async #send(
-    text: string,
-    parentEntryId?: string,
-    attach?: MessageFiles,
-    mentions?: readonly string[],
-    appContext?: readonly AppContextWire[],
-    skill?: string,
-    viewing?: ViewingChoice,
-    references?: readonly ItemReference[],
-  ): Promise<boolean> {
-    const threadId = this.#state.threadId;
-    // One message at a time: a second Enter before the server answered is not a second message.
-    if (threadId === null || this.#state.sending !== undefined) return false;
-    const key = this.#newKey();
-    const queues = currentRunId(this.#state) !== undefined;
-    // From a browsed branch (CT3): the message continues the head, which makes it current.
-    const head = this.#state.head;
-    // Continue from here (CT8): the answer's last entry, as an edit names its prompt's parent.
-    const from = this.#state.continueFrom;
-    const explicit = parentEntryId ?? from;
-    const parent = explicit ?? (isBrowsing(this.#state) ? head : undefined);
-    const branchFrom = parent ?? this.#state.summary?.leafEntryId ?? null;
-    const followups = this.#state.followups;
-    this.#set((s) => ({
-      ...s,
-      // An edit from a browsed branch shows under the edited prompt (its new branch); a plain
-      // send continues the head, which then settles once its run starts (`settleHead`).
-      ...(explicit !== undefined && !queues ? { head: undefined } : {}),
-      continueFrom: undefined,
-      sending: { key, text, parentEntryId: branchFrom, queues, files: attach?.files },
-      actionError: undefined,
-      followups: undefined, // shown until the next send (KOBE-222)
-      queuePaused: false, // sending releases a queue held by Stop
-    }));
-    const body = {
-      content: text,
-      parentEntryId: parent,
-      fileIds: attach?.fileIds,
-      mentions,
-      appContext,
-      skill,
-      ...viewingBody(viewing),
-      references,
-    };
-    let res = await this.#api.sendMessage(threadId, body, key);
-    if (!res.ok && res.error.status === 0) res = await this.#api.sendMessage(threadId, body, key);
-    if (this.#disposed) return res.ok;
-    if (!res.ok) {
-      // Nothing was sent: the follow-ups come back with the draft (review N2).
-      this.#set((s) => ({
-        ...s,
-        sending: undefined,
-        followups: s.followups ?? followups,
-        head: s.head ?? head,
-        continueFrom: s.continueFrom ?? from,
-      }));
-      this.#fail(res.error, text);
-      return false;
-    }
-    const { runId, queued } = res.data;
-    this.#ownRuns.add(runId);
-    this.#set((s) => ({
-      ...s,
-      // A queued message stays shown as "sending" until the queue read below lists it.
-      sending: queued && s.sending ? { ...s.sending, runId } : undefined,
-      announcement: queued ? "Message queued. It runs after the current one." : "Message sent.",
-      announcementSeq: s.announcementSeq + 1,
-      ...(queued
-        ? {}
-        : {
-            live: { ...newLiveRun(runId), started: true },
-            livePrompt: { text, parentEntryId: branchFrom, files: attach?.files },
-            runs: [
-              { runId, threadId, status: "running" as const, trigger: "user" as const },
-              ...s.runs.filter((r) => r.status === "queued"),
-            ],
-          }),
-    }));
-    if (!queued) {
-      this.#closeStream();
-      this.#open(runId);
-    }
-    await this.refresh();
-    this.#set((s) => (s.sending?.key === key ? { ...s, sending: undefined } : s));
-    return true;
-  }
-
   /** Steer now (D17): inject into the current run at Pi's next safe point. */
-  readonly steer = async (text: string, mentions?: readonly string[]): Promise<boolean> => {
-    const runId = currentRunId(this.#state);
-    if (runId === undefined) return this.send(text, undefined, undefined, mentions);
-    const res = await this.#busy("steer", () => this.#api.steer(runId, text, mentions));
-    if (!res.ok) {
-      this.#fail(res.error, text);
-      return false;
-    }
-    this.#announce("Sent to the running agent.");
-    return true;
-  };
+  readonly steer = (text: string, mentions?: readonly string[]): Promise<boolean> =>
+    steerRun(this.#port, text, mentions, this.send);
 
-  /** Stop (D17): cancels the current run; queued messages stay and the next one starts. */
   /** Stop (D17): cancels the current run; queued messages are held until "Resume queue". */
-  readonly stop = async (): Promise<void> => {
-    const runId = currentRunId(this.#state);
-    if (runId === undefined) return;
-    const holds = queuedRuns(this.#state).length > 0;
-    // Optimistic (KOBE-269): the part stops fading at the click; a refused cancel undoes it.
-    this.#set((s) => ({ ...s, stopRequested: runId, queuePaused: holds || s.queuePaused }));
-    const res = await this.#busy("stop", () => this.#api.cancel(runId));
-    if (!res.ok) {
-      this.#set((s) => ({
-        ...s,
-        queuePaused: false,
-        stopRequested: s.stopRequested === runId ? undefined : s.stopRequested,
-      }));
-      this.#fail(res.error);
-    } else this.#announce(holds ? "Stopped. The queue is paused." : "Stopping…");
-  };
+  readonly stop = (): Promise<void> => queue.stopRun(this.#port);
 
-  readonly cancelQueued = async (runId: string): Promise<void> => {
-    const res = await this.#busy(`delete:${runId}`, () => this.#api.cancel(runId));
-    if (!res.ok) this.#fail(res.error);
-    else this.#announce("Queued message deleted.");
-    await this.refresh();
-  };
+  readonly cancelQueued = (runId: string): Promise<void> => queue.cancelQueued(this.#port, runId);
 
-  readonly editQueued = async (runId: string, text: string): Promise<boolean> => {
-    const res = await this.#busy(`edit:${runId}`, () => this.#api.editQueued(runId, text));
-    if (!res.ok) {
-      this.#fail(res.error, text);
-      await this.refresh();
-      return false;
-    }
-    this.#announce("Queued message updated.");
-    await this.refresh();
-    return true;
-  };
+  readonly editQueued = (runId: string, text: string): Promise<boolean> =>
+    queue.editQueued(this.#port, runId, text);
 
   /** "Retry from last entry" (D14): a new run of the interrupted message, ahead of the queue. */
-  readonly retry = async (): Promise<void> => {
-    const interrupted = this.#state.interruptedRun;
-    if (!interrupted) return;
-    const res = await this.#busy("retry", () => this.#api.retry(interrupted.runId));
-    if (!res.ok) {
-      this.#fail(res.error);
-      await this.refresh();
-      return;
-    }
-    this.#announce("Retrying.");
-    this.#set((s) => ({ ...s, interruptedRun: null, livePrompt: undefined }));
-    await this.refresh();
-  };
+  readonly retry = (): Promise<void> => queue.retryInterrupted(this.#port);
 
   /** "Continue without retry" (D14): the interrupted thread's queue resumes. */
-  readonly continueWithoutRetry = async (): Promise<void> =>
-    this.#resumeQueue("Continuing without retry.");
+  readonly continueWithoutRetry = (): Promise<void> =>
+    queue.resumeQueue(this.#port, "Continuing without retry.");
 
   /** "Resume queue" after Stop: the held messages run in order. */
-  readonly resumeQueue = async (): Promise<void> => this.#resumeQueue("The queue resumed.");
+  readonly resumeQueue = (): Promise<void> => queue.resumeQueue(this.#port, "The queue resumed.");
 
   /** Pause (CE10): the queued messages wait after the current run until resumed or a send. */
-  readonly pauseQueue = async (): Promise<void> => {
-    const threadId = this.#state.threadId;
-    if (threadId === null) return;
-    const res = await this.#busy("pause", () => this.#api.pauseQueue(threadId));
-    if (!res.ok) {
-      this.#fail(res.error);
-      return;
-    }
-    this.#applyRuns(res.data);
-    this.#announce("The queue is paused.");
-  };
+  readonly pauseQueue = (): Promise<void> => queue.pauseQueue(this.#port);
 
   /**
    * Reorder (CE10): `runIds` is the whole queue in its new order. Shown at once, with retries kept
    * first as the server keeps them (D14). The server's answer is applied as is; a stale list
    * (`queue_changed`) or any other refusal shows the error and reads the queue again.
    */
-  readonly reorderQueue = async (runIds: readonly string[]): Promise<void> => {
-    const threadId = this.#state.threadId;
-    if (threadId === null) return;
-    const retries = new Set(
-      this.#state.runs.filter((r) => r.retryOfRunId !== undefined).map((r) => r.runId),
-    );
-    const order = [
-      ...runIds.filter((id) => retries.has(id)),
-      ...runIds.filter((id) => !retries.has(id)),
-    ];
-    this.#setQueuePositions(new Map(order.map((id, i) => [id, i + 1] as const)));
-    const res = await this.#busy("reorder", () => this.#api.reorderQueue(threadId, order));
-    if (!res.ok) {
-      this.#fail(res.error);
-      await this.refresh();
-      return;
-    }
-    this.#applyRuns(res.data);
-    this.#setQueuePositions(
-      new Map(
-        res.data.runs.flatMap((r) => (r.queuePos === undefined ? [] : [[r.runId, r.queuePos]])),
-      ),
-    );
-    this.#announce("Queue reordered.");
-  };
-
-  #setQueuePositions(positions: ReadonlyMap<string, number>): void {
-    this.#set((s) => ({
-      ...s,
-      pending: s.pending.map((m) => {
-        const pos = positions.get(m.runId);
-        return pos === undefined ? m : { ...m, queuePos: pos };
-      }),
-    }));
-  }
-
-  async #resumeQueue(announcement: string): Promise<void> {
-    const threadId = this.#state.threadId;
-    if (threadId === null) return;
-    const res = await this.#busy("resume", () => this.#api.resumeQueue(threadId));
-    if (!res.ok) {
-      this.#fail(res.error);
-      return;
-    }
-    this.#set((s) => ({ ...s, queuePaused: false }));
-    this.#applyRuns({ ...res.data, queuePaused: res.data.queuePaused ?? false });
-    this.#announce(announcement);
-    await this.refresh();
-  }
+  readonly reorderQueue = (runIds: readonly string[]): Promise<void> =>
+    queue.reorderQueue(this.#port, runIds);
 
   /**
    * Chooses the thread's model for its next runs (KOBE-44): an alias the team enabled, or null for
    * the team's default. The server refuses one the team didn't enable (`model_not_enabled`).
    */
-  readonly setModel = async (model: string | null): Promise<boolean> => {
-    const threadId = this.#state.threadId;
-    if (threadId === null) return false;
-    const res = await this.#busy("model", () => this.#api.setThreadModel(threadId, model));
-    if (!res.ok) {
-      this.#fail(res.error);
-      return false;
-    }
-    this.#set((s) => ({ ...s, summary: res.data }));
-    this.#announce(model === null ? "The team's default model is used." : "Model changed.");
-    return true;
-  };
+  readonly setModel = (model: string | null): Promise<boolean> =>
+    settings.setModel(this.#port, model);
 
   /**
    * Moves the thread to its agent's current version (D19, U8, KOBE-420): the next run uses it, and
    * the server marks the switch on that run. Refused while a run is active (`thread_busy`).
    */
-  readonly switchAgentVersion = async (): Promise<boolean> => {
-    const threadId = this.#state.threadId;
-    const target = this.#state.agentCurrentVersion;
-    if (threadId === null || target == null || this.#state.busy.includes("agent-version")) {
-      return false;
-    }
-    const res = await this.#busy("agent-version", () =>
-      this.#api.switchAgentVersion(threadId, target),
-    );
-    if (!res.ok) {
-      this.#fail(res.error);
-      return false;
-    }
-    this.#set((s) => ({ ...s, summary: res.data }));
-    this.#announce(`Switched to v${target}. Your next message uses it.`);
-    // A version published meanwhile is offered next (the switch answer has no current version).
-    void this.refresh();
-    return true;
-  };
+  readonly switchAgentVersion = (): Promise<boolean> => settings.switchAgentVersion(this.#port);
 
   /**
    * Gives this agentless thread the agent picked in the composer (KOBE-458 ac-3): the next run uses
    * it and its connectors. Once only; refused while a run is active (`thread_busy`).
    */
-  readonly chooseAgent = async (agent: { readonly id: string; readonly name: string }) => {
-    const threadId = this.#state.threadId;
-    if (threadId === null || this.#state.busy.includes("agent")) return false;
-    const res = await this.#busy("agent", () => this.#api.chooseThreadAgent(threadId, agent.id));
-    if (!res.ok) {
-      this.#fail(res.error);
-      return false;
-    }
-    this.#set((s) => ({ ...s, summary: res.data }));
-    this.#announce(`Chatting with ${agent.name}. Your next message uses it.`);
-    // The read adds the agent's name, status and current version (the answer is a summary).
-    void this.refresh();
-    return true;
-  };
+  readonly chooseAgent = (agent: { readonly id: string; readonly name: string }) =>
+    settings.chooseAgent(this.#port, agent);
 
   /**
    * Chooses the thread's thinking level for its next runs (KOBE-260); null = the model's default.
    * Each run is clamped to the site and team settings of its model by the server.
    */
-  readonly setThinkingLevel = async (level: ThinkingLevel | null): Promise<boolean> => {
-    const threadId = this.#state.threadId;
-    if (threadId === null) return false;
-    const res = await this.#busy("thinking", () => this.#api.setThreadThinking(threadId, level));
-    if (!res.ok) {
-      this.#fail(res.error);
-      return false;
-    }
-    this.#set((s) => ({ ...s, summary: res.data }));
-    this.#announce(
-      level === null ? "The model's default thinking level is used." : `Thinking: ${level}.`,
-    );
-    return true;
-  };
+  readonly setThinkingLevel = (level: ThinkingLevel | null): Promise<boolean> =>
+    settings.setThinkingLevel(this.#port, level);
 
   /**
    * Regenerate with another model (CE17, KOBE-217): saves `model` as the thread's (null: follow
@@ -1079,66 +683,27 @@ export class ThreadController {
    * change runs nothing; a message that doesn't go puts the previous model back and keeps the
    * failure in the banner, so the thread is never left switched without its new version.
    */
-  readonly regenerateWith = async (
+  readonly regenerateWith = (
     model: string | null,
     text: string,
     parentEntryId: string,
     promptEntryId?: string,
     references?: readonly ItemReference[],
-  ): Promise<boolean> => {
-    if (!canRegenerateWith(this.#state)) return false;
-    const previous = this.#state.summary?.model ?? null;
-    const switching = model !== previous;
-    try {
-      // No await before these: each marks the thread busy at once (`model`, then `sending`).
-      if (switching && !(await this.setModel(model))) return false;
-      // The prompt's viewed file goes again, read anew (KOBE-467).
-      const viewing = promptEntryId === undefined ? undefined : { fromEntry: promptEntryId };
-      const sent = await this.send(
-        text,
-        parentEntryId,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        viewing,
-        references,
-      );
-      if (sent) return true;
-    } catch {
-      this.#fail(CLIENT_ERROR);
-    }
-    if (switching) await this.#restoreModel(previous);
-    return false;
-  };
-
-  /** Puts the thread's previous model back after a failed regenerate, keeping its error shown. */
-  async #restoreModel(previous: string | null): Promise<void> {
-    const threadId = this.#state.threadId;
-    const failure = this.#state.actionError ?? { error: REGENERATE_NOT_SENT };
-    if (threadId !== null) {
-      const res = await this.#busy("model", () => this.#api.setThreadModel(threadId, previous));
-      if (res.ok) this.#set((s) => ({ ...s, summary: res.data }));
-    }
-    this.#set((s) => ({ ...s, actionError: failure }));
-  }
+  ): Promise<boolean> =>
+    settings.regenerateWith(this.#port, this.send, this.setModel, {
+      model,
+      text,
+      parentEntryId,
+      promptEntryId,
+      references,
+    });
 
   /**
    * Shares the thread with its project or the team, or makes it private again (owner only; the
    * server decides).
    */
-  readonly setVisibility = async (visibility: ThreadVisibility): Promise<boolean> => {
-    const threadId = this.#state.threadId;
-    if (threadId === null) return false;
-    const res = await this.#busy("share", () => this.#api.shareThread(threadId, visibility));
-    if (!res.ok) {
-      this.#fail(res.error);
-      return false;
-    }
-    this.#set((s) => ({ ...s, summary: { ...res.data, readOnly: false } }));
-    this.#announce(SHARED_ANNOUNCEMENT[visibility]);
-    return true;
-  };
+  readonly setVisibility = (visibility: ThreadVisibility): Promise<boolean> =>
+    settings.setVisibility(this.#port, visibility);
 
   /**
    * Compact now (CE15, KOBE-213): Pi summarizes the older conversation (optional focus); the
@@ -1146,15 +711,8 @@ export class ThreadController {
    * server's fixed message per code) is reported like any action's, so it is seen even when the
    * dialog was closed meanwhile, and the thread is read again (a `thread_busy` means it changed).
    */
-  readonly compact = async (focus?: string): Promise<ApiResult<CompactResult>> => {
-    const threadId = this.#state.threadId;
-    if (threadId === null) return { ok: false, error: NO_THREAD };
-    const res = await this.#busy("compact", () => this.#api.compactThread(threadId, focus));
-    if (res.ok) this.#announce("The conversation was compacted.");
-    else this.#fail(res.error);
-    await this.refresh();
-    return res;
-  };
+  readonly compact = (focus?: string): Promise<ApiResult<CompactResult>> =>
+    settings.compact(this.#port, focus);
 
   /**
    * Make it current and carry a summary (KOBE-548, CT11): Pi summarizes the branch the thread
@@ -1162,160 +720,66 @@ export class ThreadController {
    * on it); the summary is the new leaf, so the head follows it and the thread is read again. A
    * refusal shows in the dialog (and, except `thread_busy`, as the thread's error); no re-read.
    */
-  readonly carrySummary = async (
+  readonly carrySummary = (
     target: string,
     focus?: string,
-  ): Promise<ApiResult<BranchSummaryResult> | undefined> => {
-    const { threadId, summary, entries } = this.#state;
-    if (threadId === null || !summary || summary.readOnly === true) return undefined;
-    const leaf = summary.leafEntryId;
-    if (leaf === null || onBranchOf(entries, leaf, target))
-      return { ok: false, error: ON_LEAF_BRANCH };
-    if (this.#state.busy.includes("leaf")) return undefined;
-    this.#leafVersion += 1;
-    const res = await this.#busy("leaf", () =>
-      this.#api.branchSummary(threadId, {
-        to_entry_id: target,
-        ...(focus === undefined ? {} : { focus }),
-      }),
-    );
-    if (!res.ok) {
-      // As Make it current: the dialog shows every refusal; a busy one stays there alone.
-      if (res.error.code !== "thread_busy") this.#fail(res.error);
-      return res;
-    }
-    this.#set((s) => ({ ...s, followups: undefined, head: undefined }));
-    await this.refresh();
-    this.#onLeafMoved?.(threadId);
-    this.#announce("This branch is now current");
-    return res;
-  };
+  ): Promise<ApiResult<BranchSummaryResult> | undefined> =>
+    branches.carrySummary(this.#port, target, focus);
 
   /**
    * Forks the thread (any reader, or the owner) and returns the new thread's id: up to an entry
    * with a title ("Fork to a new thread", CE16), or the whole branch by default. A refusal is
    * the caller's to show (the fork dialog, the read-only banner), not the thread's error banner.
    */
-  readonly fork = async (options?: ForkOptions): Promise<ApiResult<{ threadId: string }>> => {
-    const threadId = this.#state.threadId;
-    if (threadId === null) return { ok: false, error: NO_THREAD };
-    return this.#busy("fork", () => this.#api.forkThread(threadId, options));
-  };
+  readonly fork = (options?: ForkOptions): Promise<ApiResult<{ threadId: string }>> =>
+    settings.fork(this.#port, options);
 
   /** Shows another branch (assistant-ui's branch picker) and makes it the thread's leaf. */
-  readonly switchLeaf = async (entryId: string): Promise<void> => {
-    const threadId = this.#state.threadId;
-    const summary = this.#state.summary;
-    if (threadId === null || !summary) return;
-    // Back to the leaf's own version: a local move, nothing to write.
-    if (summary.leafEntryId === entryId) {
-      this.#moveHead(undefined);
-      return;
-    }
-    const previous = summary.leafEntryId;
-    const head = this.#state.head;
-    this.#leafVersion += 1;
-    // Another branch: the follow-ups were for the answer that is no longer shown (review N1).
-    this.#set((s) =>
-      s.summary
-        ? {
-            ...s,
-            followups: undefined,
-            head: undefined,
-            summary: { ...s.summary, leafEntryId: entryId },
-          }
-        : s,
-    );
-    const res = await this.#busy("leaf", () => this.#api.setLeaf(threadId, entryId));
-    if (!res.ok) {
-      this.#set((s) =>
-        s.summary ? { ...s, head, summary: { ...s.summary, leafEntryId: previous } } : s,
-      );
-      this.#fail(res.error);
-      return;
-    }
-    this.#set((s) => ({ ...s, summary: res.data }));
-    this.#onLeafMoved?.(threadId);
-  };
+  readonly switchLeaf = (entryId: string): Promise<void> =>
+    branches.switchLeaf(this.#port, entryId);
 
   // --- the local head (CT3, KOBE-544) ----------------------------------------------------------
-
-  /** Moves this tab's head (never the leaf); "Showing another branch" when the bar comes up. */
-  #moveHead(head: string | undefined, reveal?: string, continueFrom?: string): void {
-    const was = isBrowsing(this.#state);
-    this.#set((s) => ({
-      ...s,
-      head,
-      // Another branch shown drops Continue from here (CT8), unless that is what moved the head.
-      continueFrom,
-      ...(reveal === undefined
-        ? {}
-        : { reveal: { entryId: reveal, seq: (s.reveal?.seq ?? 0) + 1 } }),
-    }));
-    if (!was && isBrowsing(this.#state)) this.#announce("Showing another branch");
-  }
 
   /**
    * Shows the newest branch at or below an entry (the tree, KOBE-546); the leaf stays. `reveal`:
    * the entry to scroll to once it shows (the tree's node).
    */
-  readonly showBranch = (entryId: string, reveal?: string): void => {
-    const tip = branchLeafOf(this.#state.entries, entryId);
-    const leaf = this.#state.summary?.leafEntryId ?? null;
-    if (tip !== undefined) this.#moveHead(tip === leaf ? undefined : tip, reveal);
-  };
+  readonly showBranch = (entryId: string, reveal?: string): void =>
+    branches.showBranch(this.#port, entryId, reveal);
 
   /** Scrolls the conversation to an entry already on screen (the tree's node, KOBE-546). */
-  readonly reveal = (entryId: string): void => {
-    this.#set((s) => ({ ...s, reveal: { entryId, seq: (s.reveal?.seq ?? 0) + 1 } }));
-  };
+  readonly reveal = (entryId: string): void => branches.reveal(this.#port, entryId);
 
   /** Shows the version a reader's branch picker chose, ending at that entry (never writes). */
-  readonly showVersion = (entryId: string): void => {
-    if (this.#state.entries.some((e) => e.entryId === entryId)) this.#moveHead(entryId);
-  };
+  readonly showVersion = (entryId: string): void => branches.showVersion(this.#port, entryId);
 
   /**
    * Continue from here (CT8, KOBE-546): the conversation shows the path through the answer (the
    * head stays when the answer is on screen, else moves to the newest branch below it), scrolled
    * to it; the next send continues from `entryId` (the answer's last entry). Nothing is written.
    */
-  readonly continueFrom = (entryId: string): void => {
-    const s = this.#state;
-    if (!s.entries.some((e) => e.entryId === entryId)) return;
-    const onScreen = pathOf(s.entries, headOf(s)).has(entryId);
-    const leaf = s.summary?.leafEntryId ?? null;
-    const tip = onScreen ? s.head : branchLeafOf(s.entries, entryId);
-    this.#moveHead(tip === leaf ? undefined : tip, entryId, entryId);
-    this.#announce("Continuing from this answer");
-  };
+  readonly continueFrom = (entryId: string): void =>
+    branches.continueFromAnswer(this.#port, entryId);
 
   /** Escape, the chip's ✕, another thread: the next send continues the branch on screen again. */
-  readonly clearContinue = (): void => {
-    if (this.#state.continueFrom !== undefined)
-      this.#set((s) => ({ ...s, continueFrom: undefined }));
-  };
+  readonly clearContinue = (): void => branches.clearContinue(this.#port);
 
   /** A line for the chat's polite region (the tree's "Label saved", KOBE-546). */
   readonly announce = (text: string): void => this.#announce(text);
 
   /** ✕ on the bar: back to the leaf's branch. */
-  readonly showLeaf = (): void => this.#moveHead(undefined);
+  readonly showLeaf = (): void => branches.moveHead(this.#port, undefined);
 
   /**
    * A search hit opened (CT15): off the leaf's branch, the head moves to the hit's branch; either
    * way the conversation scrolls to it. Before the thread is read, it waits for the read.
    */
   readonly showHit = (entryId: string): void => {
-    const s = this.#state;
-    if (s.phase !== "ready") {
+    if (this.#state.phase !== "ready") {
       this.#pendingHit = entryId;
       return;
     }
-    if (!s.entries.some((e) => e.entryId === entryId)) return;
-    const leaf = s.summary?.leafEntryId ?? null;
-    const off = !onBranchOf(s.entries, leaf, entryId);
-    this.#moveHead(off ? branchLeafOf(s.entries, entryId) : undefined, entryId);
+    branches.showHitNow(this.#port, entryId);
   };
 
   /**
@@ -1323,39 +787,8 @@ export class ThreadController {
    * The answer is the caller's (the bar shows `thread_busy` as its own note); other refusals show
    * as the thread's error. The follow-ups go, as on any branch switch.
    */
-  readonly makeCurrent = async (
+  readonly makeCurrent = (
     /** The tree's node (KOBE-546): its newest branch, without browsing it first. */
     entryId?: string,
-  ): Promise<ApiResult<ThreadSummary> | undefined> => {
-    const { threadId, summary, entries } = this.#state;
-    if (threadId === null || !summary || summary.readOnly === true) return undefined;
-    const head =
-      entryId === undefined
-        ? isBrowsing(this.#state)
-          ? this.#state.head
-          : undefined
-        : branchLeafOf(entries, entryId);
-    if (head === undefined || head === summary.leafEntryId) return undefined;
-    if (this.#state.busy.includes("leaf")) return undefined;
-    this.#leafVersion += 1;
-    const res = await this.#busy("leaf", () => this.#api.setLeaf(threadId, head));
-    if (!res.ok) {
-      if (res.error.code !== "thread_busy") this.#fail(res.error);
-      return res;
-    }
-    this.#set((s) => ({
-      ...s,
-      followups: undefined,
-      summary: res.data,
-      // The tree's node is current now: the conversation shows it.
-      ...(entryId === undefined ? {} : { head: undefined }),
-    }));
-    this.#onLeafMoved?.(threadId);
-    this.#announce("This branch is now current");
-    return res;
-  };
-}
-
-function maxSeq(entries: readonly ThreadEntry[], floor: number): number {
-  return entries.reduce((max, e) => Math.max(max, e.seq), floor);
+  ): Promise<ApiResult<ThreadSummary> | undefined> => branches.makeCurrent(this.#port, entryId);
 }
