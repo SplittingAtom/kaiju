@@ -3,6 +3,9 @@ import {
   BRANCH_SUMMARIES_MAX,
   branchSummaryError,
   COMPACT_THREAD_ERROR_MESSAGES,
+  type BranchSummaryResponse,
+  type CompactThreadResponse,
+  type ThreadLineageResponse,
 } from "@kobe/protocol";
 import type { FakeCore } from "./core";
 import { error, json, NOW, type FakeThread, type Json } from "./state";
@@ -12,7 +15,7 @@ import { error, json, NOW, type FakeThread, type Json } from "./state";
  * (`forked_from_thread_id`), root first; a fork whose source is unnamed has a hidden root unless
  * `forked_from_purged`; siblings and forks newest activity first.
  */
-export function lineage(k: FakeCore, thread: FakeThread): Json {
+export function lineage(k: FakeCore, thread: FakeThread): ThreadLineageResponse {
   const all = [...k.threads.values()].filter((t) => t.is_test !== true);
   const forksOf = (id: string) =>
     all
@@ -22,7 +25,7 @@ export function lineage(k: FakeCore, thread: FakeThread): Json {
         thread_id: t.thread_id,
         title: t.title,
         deleted_at: t.deleted_at,
-        owner: t.read_only === true ? "other" : "me",
+        owner: t.read_only === true ? ("other" as const) : ("me" as const),
         forked_at_entry_id: t.forked_at_entry_id ?? null,
       }));
   const parentOf = (t: FakeThread) =>
@@ -147,7 +150,7 @@ export function compact(k: FakeCore, thread: FakeThread, body: Json | undefined)
     summary,
     first_kept_entry_id: parent ?? id,
     tokens_before: 1234,
-  });
+  } satisfies CompactThreadResponse);
 }
 
 /**
@@ -191,5 +194,10 @@ export function branchSummary(k: FakeCore, thread: FakeThread, body: Json | unde
     created_at: NOW,
   });
   thread.leaf_entry_id = id;
-  return json(200, { thread_id: thread.thread_id, entry_id: id, leaf_entry_id: id });
+  const done: BranchSummaryResponse = {
+    thread_id: thread.thread_id,
+    entry_id: id,
+    leaf_entry_id: id,
+  };
+  return json(200, done);
 }

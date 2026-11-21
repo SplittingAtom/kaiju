@@ -40,6 +40,9 @@ export function threadAction(
     return toolOutput(k, thread, sub);
   }
   if (action === "entries") return json(200, k.entryPage(thread, url));
+  if (action === "file-links" && method === "GET") {
+    return k.fileLinks.route(url) ?? error(404, "not_found");
+  }
   if (action === "learn") return learnRoute(k, method, thread, body);
   if (action === "connectors" && method === "GET") return connectorsAnswer(k, thread.thread_id);
   if (action === "connectors" && method === "PUT" && sub !== undefined) {

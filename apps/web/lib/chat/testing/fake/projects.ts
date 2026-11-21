@@ -1,4 +1,5 @@
 /** Projects, their files and commits (KOBE-163/585/586/592) (KOBE-717 area). */
+import type { ProjectCommit, ProjectFile } from "@kobe/protocol";
 import type { FakeCore } from "./core";
 import { error, json, NOW, uuid, type FakeAnswer, type FakeRequest, type Json } from "./state";
 
@@ -12,8 +13,21 @@ export function projectCommits(
   if (!k.projects.some((p) => p.id === id)) return error(404, "not_found");
   const head = k.projectHeads.get(id) ?? { seq: 0, files: new Map<string, string>() };
   if (method === "GET" && rest.length === 0) {
-    const commits =
-      head.seq === 0 ? [] : [{ id: uuid(11, head.seq), project_id: id, seq: head.seq }];
+    const commit: ProjectCommit = {
+      id: uuid(11, head.seq),
+      project_id: id,
+      seq: head.seq,
+      parent_id: head.seq > 1 ? uuid(11, head.seq - 1) : null,
+      author_user_id: uuid(3, 1),
+      author_kind: "user",
+      thread_id: null,
+      run_id: null,
+      message: "Update",
+      file_count: head.files.size,
+      bytes: 1,
+      created_at: NOW,
+    };
+    const commits = head.seq === 0 ? [] : [commit];
     return json(200, { commits, next_before: null });
   }
   if (method === "GET" && rest[1] === "files") {
@@ -45,7 +59,7 @@ export function projectFiles(
 ) {
   if (!k.projects.some((p) => p.id === id)) return error(404, "not_found");
   const held = k.projectFiles.get(id) ?? [];
-  const file = (path: string) => ({
+  const file = (path: string): ProjectFile => ({
     id: uuid(11, held.indexOf(path) + 1),
     project_id: id,
     path,

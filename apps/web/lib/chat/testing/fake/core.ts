@@ -111,7 +111,7 @@ export class FakeCore extends FakeStore {
     const thread = this.thread(threadId);
     this.counters.card += 1;
     const id = `ka-${String(this.counters.card).padStart(24, "0")}`;
-    const ref = opts.ref ?? `card-ref-${this.counters.card}`;
+    const ref = opts.ref ?? uuid(12, this.counters.card);
     const parentId = thread.leaf_entry_id;
     const details = {
       connector_id: app.connectorId,
@@ -119,7 +119,7 @@ export class FakeCore extends FakeStore {
       tool: app.tool,
       template_sha256: app.sha256,
       result_ref: ref,
-      opened_by: "u-1",
+      opened_by: uuid(3, 1),
     };
     thread.entries.push({
       entry_id: id,
