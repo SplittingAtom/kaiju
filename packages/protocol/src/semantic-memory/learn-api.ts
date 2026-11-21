@@ -40,6 +40,7 @@ export const LEARN_REFUSAL_CODES = [
   "break_glass",
   "not_current_branch",
   "nothing_to_learn",
+  "thread_busy",
 ] as const;
 export const learnRefusalCodeSchema = z.enum(LEARN_REFUSAL_CODES);
 export type LearnRefusalCode = z.infer<typeof learnRefusalCodeSchema>;
@@ -58,6 +59,7 @@ export const LEARN_REFUSAL_HTTP_STATUS = {
   break_glass: 403,
   not_current_branch: 409,
   nothing_to_learn: 409,
+  thread_busy: 409,
 } as const satisfies Record<LearnRefusalCode, number>;
 
 export const learnRefusalSchema = z.strictObject({

@@ -1,8 +1,9 @@
-import { cpSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_MIGRATIONS_FOLDER } from "../migrate.js";
+import { sweepStaleTempDirs } from "./sweep.js";
 import { assertJournalExtendsBase, readJournal } from "./upgrade.js";
 
 interface Entry {
@@ -13,9 +14,20 @@ interface Entry {
   breakpoints: boolean;
 }
 
+// Each copy of the migrations folder is ~100 MB, and temp dirs may be RAM-backed (KOBE-743): every
+// copy is removed after the file, and copies left by killed runs are swept first.
+const copies: string[] = [];
+beforeAll(() => {
+  sweepStaleTempDirs();
+});
+afterAll(() => {
+  for (const dir of copies) rmSync(dir, { recursive: true, force: true });
+});
+
 /** A copy of the real migrations with `extra` appended to the journal (and an empty SQL file). */
 function branchWith(extra: (last: Entry) => Entry[]): string {
   const dir = mkdtempSync(join(tmpdir(), "kobe-upgrade-"));
+  copies.push(dir);
   cpSync(DEFAULT_MIGRATIONS_FOLDER, dir, { recursive: true });
   const path = join(dir, "meta", "_journal.json");
   const journal = JSON.parse(readFileSync(path, "utf8")) as { entries: Entry[] };

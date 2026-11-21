@@ -64,10 +64,12 @@ import { quantityBytes } from "./sandbox/config.js";
 import { createViewingReader } from "./workspace-files/viewing.js";
 import { createAttachmentStager } from "./uploads/attach.js";
 import {
+  checkBucketLifecycle,
   createS3ObjectStore,
   createSandboxAuthenticator,
   createWorkspaceSync,
   loadS3Settings,
+  plainHttpEndpointWarning,
 } from "./workspace-sync/index.js";
 
 /** Open streams (SSE) get this long to finish before being cut; stays under k8s' 30 s grace period. */
@@ -214,6 +216,15 @@ if (config.process === "scheduler") {
       { publicUrl: config.auth.publicUrl },
       "KOBE_PUBLIC_URL is plain http: session cookies are not Secure and passkeys need https",
     );
+  }
+  const s3HttpWarning = s3 ? plainHttpEndpointWarning(s3) : undefined;
+  if (s3HttpWarning) logger.warn(s3HttpWarning);
+  // KOBE-738: a versioned bucket without noncurrent-version expiry keeps deleted data for ever.
+  // Advisory and in the background: never delays or stops the start.
+  if (s3) {
+    void checkBucketLifecycle(s3).then((warning) => {
+      if (warning) logger.warn({ bucket: s3.bucket }, warning);
+    });
   }
 }
 

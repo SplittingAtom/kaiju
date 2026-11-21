@@ -252,6 +252,14 @@ describe("server sandbox configuration", () => {
     expect(renderError({ "sandbox.workspaceSync.maxFileSize": "lots" })).toMatch(
       /maxFileSize|pattern/,
     );
+    expect(
+      sandboxConfig(render({ "sandbox.workspaceSync.maxFileSize": "5Gi" })).workspaceSync,
+    ).toMatchObject({ maxFileSize: "5Gi" });
+    for (const big of ["5.5Gi", "6G", "1Ti"]) {
+      expect(renderError({ "sandbox.workspaceSync.maxFileSize": big })).toMatch(
+        /maxFileSize .* exceeds 5Gi/,
+      );
+    }
   });
 
   it("keeps Pi's tools in Pi until the install turns the executor on (KOBE-167)", () => {
