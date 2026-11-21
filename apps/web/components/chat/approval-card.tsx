@@ -1,26 +1,17 @@
 "use client";
 
-import { ShieldAlertIcon } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { KobeEventPayload } from "@kobe/protocol";
 import type { ApiError } from "../../lib/api/client";
 import type { ChatApi } from "../../lib/chat/api";
-import type { RememberOptions } from "../../lib/chat/types";
-import { changeRows } from "../../lib/chat/admin-change";
 import { visible } from "../../lib/security/visible";
-import { cn } from "../../lib/utils";
-import { toneClass } from "../ui/status";
+import { AdminChange, ApprovalTitle, InputPreview } from "./approval-card-parts";
 import { RememberControls, type RememberChoice } from "./approval-remember";
+import { useApprovalInput, useRememberOptions } from "./use-approval-card";
 import styles from "./chat.module.css";
 
 type Requested = KobeEventPayload<"approval.requested">;
 type Resolved = KobeEventPayload<"approval.resolved">;
-
-const RISK_LABEL: Record<Requested["risk"], string> = {
-  read: "Reads data",
-  write: "Changes data",
-  destructive: "Can delete or overwrite",
-};
 
 const EXPIRED_TEXT: Record<Exclude<Resolved["cause"], "user">, string> = {
   ttl: "The approval request expired after 1 hour without an answer. The tool did not run.",
@@ -42,105 +33,7 @@ export function resolvedText(resolved: Resolved): string {
 }
 
 export { visible };
-
-/** Pretty JSON of the input, with invisible characters escaped (the newlines are formatting). */
-export function pretty(input: unknown): string {
-  try {
-    return visible(JSON.stringify(input, null, 2) ?? "");
-  } catch {
-    return "";
-  }
-}
-
-interface RememberInput {
-  readonly scope: string;
-  readonly path: string;
-  readonly content: string;
-  readonly mode: string | undefined;
-}
-
-function rememberInput(tool: string, input: unknown): RememberInput | undefined {
-  if (tool !== "remember" || input === null || typeof input !== "object") return undefined;
-  const { scope, path, content, mode } = input as Record<string, unknown>;
-  if (typeof path !== "string" || typeof content !== "string") return undefined;
-  if (scope !== "user" && scope !== "project") return undefined;
-  return { scope, path, content, mode: typeof mode === "string" ? mode : undefined };
-}
-
-/**
- * The input being approved. A `remember` call (KOBE-158) shows the text exactly as it would be
- * stored: plain text only (never HTML or markdown, so no links or images), hidden characters as
- * visible escapes. Anything else is the JSON of the input.
- */
-function ApprovedInput({ tool, input }: { readonly tool: string; readonly input: unknown }) {
-  const mem = rememberInput(tool, input);
-  if (!mem) {
-    return (
-      <pre className={styles.toolPre} aria-label="Input to approve">
-        {pretty(input)}
-      </pre>
-    );
-  }
-  return (
-    <>
-      <p>
-        Saved to{" "}
-        <strong>{mem.scope === "project" ? "project memory" : "your personal memory"}</strong> in{" "}
-        <span className={styles.toolName}>{visible(mem.path)}</span> (
-        {mem.mode === "append" ? "added to the end of the file" : "replaces the file"}):
-      </p>
-      <pre className={styles.toolPre} aria-label="Memory to store">
-        {visible(mem.content)}
-      </pre>
-    </>
-  );
-}
-
-/**
- * A Kobe admin write's header (KOBE-623, spec kobe-admin-mcp §6): where it applies, the server's
- * summary built from the input (names resolved, never model text) and the change before → after.
- * The exact input is still shown in full below it.
- */
-function AdminChange({
-  admin,
-  input,
-}: {
-  readonly admin: NonNullable<Requested["admin"]>;
-  readonly input: unknown;
-}) {
-  const rows = changeRows(input);
-  return (
-    <div data-kobe-admin-change="">
-      <p className={styles.who}>
-        Scope: <strong>{visible(admin.scope_label)}</strong>
-      </p>
-      <p aria-label="Change summary">{visible(admin.summary)}</p>
-      {rows.length > 0 && (
-        <table aria-label="Before and after" className={styles.toolPre}>
-          <thead>
-            <tr>
-              <th scope="col">Field</th>
-              <th scope="col">Before</th>
-              <th scope="col">After</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.field}>
-                <th scope="row">{visible(r.field)}</th>
-                <td>{visible(r.before)}</td>
-                <td>{visible(r.after)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      <p className={styles.hint}>
-        Admin changes are asked every time: never remembered, never approved with others.
-      </p>
-    </div>
-  );
-}
+export { pretty } from "./approval-card-parts";
 
 /** Smooth unless the member asked for less motion. */
 function scrollBehavior(): ScrollBehavior {
@@ -161,9 +54,6 @@ export function scrollToPendingApproval(root: ParentNode = document): void {
     .querySelector<HTMLElement>('[data-kobe-approval="pending"]')
     ?.scrollIntoView({ block: "nearest", behavior: scrollBehavior() });
 }
-
-/** Anything outside printable ASCII in a tool name (lookalike letters, hidden characters). */
-const NON_ASCII = /[^\x20-\x7e]/;
 
 function timeOf(iso: string): string {
   const d = new Date(iso);
@@ -206,17 +96,8 @@ export function ApprovalCard({
     scope: undefined,
     exact: false,
   });
-  const [options, setOptions] = useState<RememberOptions | undefined>(undefined);
   const [confirmAll, setConfirmAll] = useState(false);
   const approvalId = requested.approval_id;
-  // A resumed run keeps no inputs in its resume point: read the exact input back. Until it is
-  // here, Allow stays off — the card must never approve an input it isn't showing.
-  const inputMissing = Object.keys(requested.input).length === 0;
-  const [input, setInput] = useState<unknown>(requested.input);
-  const [inputState, setInputState] = useState<"ready" | "loading" | "failed">(
-    inputMissing ? "loading" : "ready",
-  );
-  const [attempt, setAttempt] = useState(0);
   const card = useRef<HTMLElement>(null);
   // A Kobe admin write (KOBE-623): never remembered, never in "Approve all waiting".
   const admin = requested.admin;
@@ -231,40 +112,13 @@ export function ApprovalCard({
       el.scrollIntoView({ block: "nearest", behavior: scrollBehavior() });
     }
   }, [approvalId, askable]);
-  // What may be remembered, and whether "Approve all waiting" is offered: the server's answer.
-  useEffect(() => {
-    const load = api?.rememberOptions;
-    if (!askable || !load || admin !== undefined) return;
-    let live = true;
-    load(approvalId)
-      .then((res) => {
-        if (live && res.ok) setOptions(res.data);
-      })
-      .catch(() => undefined);
-    return () => {
-      live = false;
-    };
-  }, [api, approvalId, askable, admin]);
-  useEffect(() => {
-    if (!inputMissing || resolved || !api) return;
-    let live = true;
-    setInputState("loading");
-    api
-      .getApproval(approvalId)
-      .then((res) => {
-        if (!live) return;
-        if (res.ok) {
-          setInput(res.data.input);
-          setInputState("ready");
-        } else setInputState("failed");
-      })
-      .catch(() => {
-        if (live) setInputState("failed");
-      });
-    return () => {
-      live = false;
-    };
-  }, [api, approvalId, inputMissing, resolved, attempt]);
+  const options = useRememberOptions(api, approvalId, askable, admin);
+  const { input, inputState, retry } = useApprovalInput(
+    api,
+    approvalId,
+    requested.input,
+    resolved !== undefined,
+  );
 
   if (resolved) {
     return (
@@ -327,43 +181,10 @@ export function ApprovalCard({
       aria-describedby={`${ids}-why`}
       data-kobe-approval={expired || sent ? "answered" : "pending"}
     >
-      <p id={`${ids}-title`} className={styles.approvalTitle}>
-        <ShieldAlertIcon aria-hidden className={cn(styles.approvalIcon, toneClass("attention"))} />
-        {admin !== undefined && (
-          <>
-            <strong>Admin change:</strong>{" "}
-          </>
-        )}
-        <strong>Approval needed</strong> to run <span className={styles.toolName}>{toolShown}</span>{" "}
-        <span className={styles.badge}>{RISK_LABEL[requested.risk]}</span>
-      </p>
-      {NON_ASCII.test(requested.tool) && (
-        <p className={styles.denied} role="note">
-          This tool name contains non-ASCII characters (shown escaped). It may imitate another
-          tool&apos;s name.
-        </p>
-      )}
-      <ul id={`${ids}-why`} className={styles.approvalReasons}>
-        {requested.reasons.map((r) => (
-          <li key={`${r.stage}:${r.code}:${r.rule_id ?? ""}`}>{r.message}</li>
-        ))}
-      </ul>
+      <ApprovalTitle ids={ids} requested={requested} toolShown={toolShown} />
       {admin !== undefined && <AdminChange admin={admin} input={input} />}
       <p className={styles.who}>Exactly this input runs if you allow it:</p>
-      {inputState === "ready" ? (
-        <ApprovedInput tool={requested.tool} input={input} />
-      ) : inputState === "loading" ? (
-        <p className={styles.hint} role="status">
-          Loading the exact input…
-        </p>
-      ) : (
-        <p className={styles.errorText} role="alert">
-          The input could not be loaded, so it can&apos;t be approved yet.{" "}
-          <button type="button" onClick={() => setAttempt((n) => n + 1)}>
-            Try again
-          </button>
-        </p>
-      )}
+      <InputPreview tool={requested.tool} input={input} state={inputState} onRetry={retry} />
       {expired ? (
         <p className={styles.denied} role="note">
           This approval request expired. The tool did not run.

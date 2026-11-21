@@ -1,29 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { FolderIcon, UploadIcon } from "lucide-react";
-import { WORKSPACE_DROP_FOLDER } from "@kobe/protocol";
-import type { ApiError } from "../../lib/api/client";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FileEntry, FilesApi } from "../../lib/files/api";
-import { saveBytes } from "../../lib/files/save";
-import { describeFileError, isReadOnlyPath, parentPath } from "../../lib/files/format";
-import { folderError, type DroppedItems } from "../../lib/files/drop";
-import {
-  baseName,
-  canUploadInto,
-  expandedKey,
-  joinPath,
-  splitProjectRows,
-} from "../../lib/files/tree";
+import { expandedKey, splitProjectRows } from "../../lib/files/tree";
 import { ErrorNotice } from "../admin/error-notice";
-import { copyText } from "../../lib/clipboard";
-import type { MenuBindings } from "../../lib/shell/menu";
-import { cn } from "../../lib/utils";
-import { ConfirmDelete, MoveForm, RenameForm } from "./file-dialogs";
-import { DROP_FOLDER_ATTR, FileTreeView, type Dragging, type TreeFocus } from "./file-tree";
-import { useFileTree, type FileTree } from "./use-file-tree";
+import { FileTreeView } from "./file-tree";
+import { useFileTree } from "./use-file-tree";
 import type { FileLinksApi } from "../../lib/threads/file-links";
-import { threadsUsing, usedInLabel } from "../../lib/threads/file-map";
 import { useFileThreads } from "../shell/use-file-links";
 import { useProjectHeads } from "./project-heads";
 import {
@@ -35,286 +18,21 @@ import {
   WorkspaceHeader,
 } from "./workspace-tree";
 import { ProjectWorkPanel, type ProjectRef, type WorkAction } from "../projects/project-work";
-import { isProjectFolder, projectSlugOf, PROJECTS_FOLDER } from "../../lib/projects/workspace";
-import { createProjectsApi, type Project } from "../../lib/projects/api";
-import { offersPromote } from "../../lib/projects/promote";
+import { createProjectsApi } from "../../lib/projects/api";
 import { useWorkspaceProjects } from "../projects/workspace-projects";
-import { PromoteDialog } from "./promote-dialog";
 import { useNavigate } from "../shell/use-navigate";
-import type { WorkspaceEventFeed, WorkspaceMoved } from "../../lib/files/workspace-events";
-
-const COPY_FAILED = {
-  status: 0,
-  code: "client_error",
-  message: "The path could not be copied: the browser refused the clipboard.",
-} as const;
+import type { WorkspaceEventFeed } from "../../lib/files/workspace-events";
+import { FolderErrors, FolderNote, RootHeader, Status } from "./file-browser-parts";
+import { FileBrowserDialog } from "./file-browser-dialogs";
+import { treeActions } from "./file-tree-actions";
+import { useFileActions } from "./use-file-actions";
+import { useTreeFocus } from "./use-tree-focus";
+import { useWake, useWorkspaceEvents } from "./use-wake";
 
 /** The sandbox syncs shortly after it starts; read the listing again after this. */
 const DEFAULT_REFRESH_AFTER_WAKE_MS = 4000;
 
-/**
- * Wakes the sandbox on mount, listing again after its first sync; tracks "last synced" until that
- * refresh. Each later `key` (Refresh, Show files: the member asked for the files again) is a sync
- * now (KOBE-599): the running sandbox pushes first, then everything on screen lists again
- * (`relist`); `syncing` meanwhile. A sandbox that was asleep is woken by the server and listed
- * again once more after its first sync.
- */
-function useWake(
-  api: FilesApi,
-  relist: () => void,
-  refreshMs: number,
-  key: number,
-): { readonly waking: boolean; readonly syncing: boolean } {
-  const [doneKey, setDoneKey] = useState<number | null>(null);
-  const [syncedKey, setSyncedKey] = useState<number | null>(null);
-  const mounted = useRef(false);
-  const firstKey = useRef(key);
-  useEffect(() => {
-    let current = true;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const later = () => {
-      timer = setTimeout(() => {
-        relist();
-        setDoneKey(key);
-      }, refreshMs);
-    };
-    if (!mounted.current) {
-      // The first listing is the tree's own.
-      mounted.current = true;
-      void api.wake().then((res) => {
-        if (!current) return;
-        if (!res.ok) return setDoneKey(key);
-        later();
-      });
-    } else {
-      void api.syncNow().then((res) => {
-        if (!current) return;
-        relist();
-        setSyncedKey(key);
-        if (res.ok && res.data.status === "asleep") later();
-        else setDoneKey(key);
-      });
-    }
-    return () => {
-      current = false;
-      clearTimeout(timer);
-    };
-    // relist is stable; the wake or sync runs once per ask.
-  }, [api, refreshMs, key]);
-  return {
-    // The first wake, or a Refresh that found the sandbox asleep, until its first sync is listed.
-    waking: doneKey !== key && (key === firstKey.current || syncedKey === key),
-    syncing: key !== firstKey.current && syncedKey !== key,
-  };
-}
-
-/**
- * Lists again whenever the workspace says something changed (KOBE-599): a sandbox push, an
- * upload in another tab, a project commit. Debounced by the feed; open folders stay open.
- */
-function useWorkspaceEvents(
-  events: WorkspaceEventFeed | undefined,
-  onMoved: (moved: WorkspaceMoved) => void,
-): void {
-  const latest = useRef(onMoved);
-  latest.current = onMoved;
-  useEffect(() => events?.subscribe((moved) => latest.current(moved)), [events]);
-}
-
-type Dialog = {
-  readonly kind: "delete" | "rename" | "move" | "promote";
-  readonly entry: FileEntry;
-} | null;
-
-const where = (folder: string) => (folder === "" ? "My files" : folder);
-
-/**
- * A row's ⋯ menu (KOBE-292, KOBE-304): Open, Mention in message (files, KOBE-374), Download,
- * Rename, Move to…, Copy path, Promote to project… (a My files folder, KOBE-586), Delete.
- */
-function rowBindings(
-  entry: FileEntry,
-  checkedOut: ReadonlySet<string> | undefined,
-  handlers: {
-    readonly onOpen: (() => void) | undefined;
-    readonly onMention: (() => void) | undefined;
-    readonly onDownload: () => void;
-    readonly onRename: () => void;
-    readonly onMove: () => void;
-    readonly onCopyPath: () => void;
-    readonly onDelete: () => void;
-    /** Present only where the row offers it (PF1: a My files folder, team admins and contributors). */
-    readonly onPromote: (() => void) | undefined;
-  },
-): MenuBindings {
-  const readOnly = isReadOnlyPath(entry.path, checkedOut);
-  const change = (onSelect: () => void, destructive = false) => ({
-    onSelect,
-    movesFocus: true,
-    ...(destructive ? { destructive } : {}),
-  });
-  return {
-    ...(handlers.onOpen ? { "open-file": { onSelect: handlers.onOpen } } : {}),
-    // Focus goes to the composer, so the menu doesn't give it back to its button.
-    ...(entry.type === "file" && handlers.onMention
-      ? { "mention-file": { onSelect: handlers.onMention, movesFocus: true } }
-      : {}),
-    ...(entry.type === "file" ? { "download-file": { onSelect: handlers.onDownload } } : {}),
-    ...(readOnly
-      ? {}
-      : { "rename-file": change(handlers.onRename), "move-file": change(handlers.onMove) }),
-    "copy-file-path": { onSelect: handlers.onCopyPath },
-    ...(handlers.onPromote ? { "promote-to-project": change(handlers.onPromote) } : {}),
-    ...(readOnly ? {} : { "delete-file": change(handlers.onDelete, true) }),
-  };
-}
-
-/**
- * My files' top row (Workspaces FP1; the member's scratchspace): a drop target for its top level
- * and Upload (into the focused folder).
- */
-function RootHeader({
-  drag,
-  folder,
-  busy,
-  checkedOut,
-  onUpload,
-}: {
-  readonly drag: Parameters<Parameters<typeof FileTreeView>[0]["header"]>[0];
-  readonly folder: string;
-  readonly busy: boolean;
-  readonly checkedOut: ReadonlySet<string> | undefined;
-  onUpload(files: FileList | null): void;
-}) {
-  const label = `Upload a file to ${where(folder)}`;
-  return (
-    <div
-      {...{ [DROP_FOLDER_ATTR]: "" }}
-      {...(drag.target === "" ? { "data-drop-target": "" } : {})}
-      className={cn(
-        "flex h-6.5 items-center gap-1 rounded-sm ps-0.5 text-xs font-medium",
-        drag.target === "" && "bg-accent ring-ring ring-1 ring-inset",
-      )}
-      onDragOver={(e) => drag.handlers.over(e, "", true)}
-      onDrop={(e) => drag.handlers.drop(e, "", true)}
-    >
-      <FolderIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
-      <span className="min-w-0 flex-1 truncate">My files</span>
-      {takesUploads(folder, checkedOut) && (
-        <label
-          className={cn(
-            "hover:bg-muted flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md",
-            busy && "pointer-events-none opacity-50",
-          )}
-          title={label}
-        >
-          <UploadIcon aria-hidden className="size-3.5" />
-          <input
-            type="file"
-            multiple
-            className="sr-only"
-            disabled={busy}
-            aria-label={label}
-            onChange={(e) => {
-              onUpload(e.currentTarget.files);
-              e.currentTarget.value = "";
-            }}
-          />
-        </label>
-      )}
-    </div>
-  );
-}
-
-/**
- * Whether Upload may target `folder`: inside a project, whether it takes files (a checked-out
- * project's own folder does, CM3); elsewhere today's read-only rule.
- */
-function takesUploads(folder: string, checkedOut: ReadonlySet<string> | undefined): boolean {
-  return projectSlugOf(folder) !== undefined
-    ? canUploadInto(folder, checkedOut)
-    : !isReadOnlyPath(folder);
-}
-
-function FolderNote({
-  folder,
-  checkedOut,
-}: {
-  readonly folder: string;
-  readonly checkedOut: ReadonlySet<string> | undefined;
-}) {
-  if (takesUploads(folder, checkedOut)) return null;
-  return (
-    <p className="text-muted-foreground m-0 text-xs">
-      {folder === WORKSPACE_DROP_FOLDER
-        ? "Drop files on the rail to add them here. Files your threads attached are read-only."
-        : projectSlugOf(folder) !== undefined
-          ? "This project is read-only here: check it out to change its files."
-          : "This folder is read-only: files here cannot be uploaded or deleted."}
-    </p>
-  );
-}
-
-function Status({ tree, empty }: { readonly tree: FileTree; readonly empty: boolean }) {
-  const { root } = tree;
-  if (root.loading && root.entries.length === 0 && !root.error) {
-    return (
-      <p role="status" className="m-0 text-xs">
-        Loading files…
-      </p>
-    );
-  }
-  if (!root.loading && !root.error && empty) {
-    return <p className="text-muted-foreground m-0 text-xs">No files yet.</p>;
-  }
-  return null;
-}
-
-function FolderErrors({ tree }: { readonly tree: FileTree }): ReactNode {
-  return (
-    <>
-      {tree.root.error && <ErrorNotice error={describeFileError(tree.root.error)} />}
-      {tree.errors.map(({ folder, load }) =>
-        load.error ? (
-          <ErrorNotice
-            key={folder}
-            error={{
-              ...describeFileError(load.error),
-              message: `${folder}: ${describeFileError(load.error).message}`,
-            }}
-          />
-        ) : null,
-      )}
-    </>
-  );
-}
-
-/**
- * The workspace rail's Files (KOBE-148, KOBE-304): a compact tree of the caller's synced
- * workspace with file-type icons. Files open in the artifact column (KOBE-268); each row has the
- * ⋯ menu (KOBE-292); files and folders move by drag and drop or Move to…, and rename with F2 or
- * the menu, through the server's move API, which decides; files dropped from the computer onto a
- * folder upload there (anywhere else on the rail they go to uploads/, KOBE-199).
- */
-export function FileBrowser({
-  api,
-  workspaceName = "",
-  refreshAfterWakeMs = DEFAULT_REFRESH_AFTER_WAKE_MS,
-  wakeKey = 0,
-  showFolder = null,
-  onOpenFile,
-  onMoved,
-  onMention,
-  onRefresh,
-  activeProjectId = null,
-  showEditing = true,
-  onNewConversationIn,
-  onMoveHere,
-  canCreateProjects = false,
-  onPromoted,
-  events,
-  fileLinks,
-}: {
+type FileBrowserProps = {
   readonly api: FilesApi;
   /**
    * The threads that used each file (KOBE-612, TFM4): "Used in (N threads)" in a file's menu,
@@ -363,7 +81,34 @@ export function FileBrowser({
   readonly wakeKey?: number;
   /** Reveals this folder, once per `seq` (uploads/ after a rail drop, KOBE-199). */
   readonly showFolder?: { readonly path: string; readonly seq: number } | null;
-}) {
+};
+
+/**
+ * The workspace rail's Files (KOBE-148, KOBE-304): a compact tree of the caller's synced
+ * workspace with file-type icons. Files open in the artifact column (KOBE-268); each row has the
+ * ⋯ menu (KOBE-292); files and folders move by drag and drop or Move to…, and rename with F2 or
+ * the menu, through the server's move API, which decides; files dropped from the computer onto a
+ * folder upload there (anywhere else on the rail they go to uploads/, KOBE-199).
+ */
+export function FileBrowser({
+  api,
+  workspaceName = "",
+  refreshAfterWakeMs = DEFAULT_REFRESH_AFTER_WAKE_MS,
+  wakeKey = 0,
+  showFolder = null,
+  onOpenFile,
+  onMoved,
+  onMention,
+  onRefresh,
+  activeProjectId = null,
+  showEditing = true,
+  onNewConversationIn,
+  onMoveHere,
+  canCreateProjects = false,
+  onPromoted,
+  events,
+  fileLinks,
+}: FileBrowserProps) {
   const heads = useProjectHeads(api);
   const tree = useFileTree(heads, expandedKey(api.teamId));
   const workspaceProjects = useWorkspaceProjects();
@@ -386,14 +131,9 @@ export function FileBrowser({
   const stableRelist = useCallback(() => relistRef.current(), []);
   const { waking, syncing } = useWake(api, stableRelist, refreshAfterWakeMs, wakeKey);
   useWorkspaceEvents(events, (moved) => relistRef.current(moved.projects));
-  const [focus, setFocus] = useState<TreeFocus>({ path: null, folder: "" });
-  const [dialog, setDialog] = useState<Dialog>(null);
-  const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<ApiError | null>(null);
-  const [notice, setNotice] = useState("");
-  const [focusRequest, setFocusRequest] = useState<{ path: string; seq: number } | null>(null);
+  const { focus, focusRequest, focusFrom, enterTree, focusRow } = useTreeFocus();
   const shownSeq = useRef(showFolder?.seq ?? 0);
-  const { reveal, moved } = tree;
+  const { reveal } = tree;
   const work = useProjectsInTree(tree, activeProjectId, showEditing);
   const { checkedOut } = work;
   const shownFiles = useMemo(
@@ -406,26 +146,6 @@ export function FileBrowser({
     [fileLinks, tree.rows],
   );
   const fileThreads = useFileThreads(fileLinks?.api ?? null, shownFiles);
-  /** "Used in (N threads)" (TFM4): the threads that read or wrote the file, as a submenu. */
-  const usedIn = (entry: FileEntry): MenuBindings => {
-    if (fileLinks === undefined || entry.type !== "file") return {};
-    const uses = threadsUsing(entry.path, false, new Map(), fileThreads);
-    const count = uses.length + (fileThreads.get(entry.path)?.more ?? 0);
-    if (count === 0) return {};
-    return {
-      "file-used-in":
-        uses.length === 0
-          ? { label: usedInLabel(count), blocker: "Only in threads you can't open." }
-          : {
-              label: usedInLabel(count),
-              choices: uses.map((t) => ({
-                key: t.threadId,
-                label: t.title || "Untitled conversation",
-                onSelect: () => fileLinks.openThread(t.threadId),
-              })),
-            },
-    };
-  };
   const split = useMemo(() => splitProjectRows(tree.rows), [tree.rows]);
   const projectsTree = useMemo(() => ({ ...tree, rows: work.rows }), [tree, work.rows]);
   const myTree = useMemo(() => ({ ...tree, rows: split.mine }), [tree, split]);
@@ -438,34 +158,17 @@ export function FileBrowser({
     () => workspaceProjects?.projects ?? createProjectsApi(api.teamId),
     [workspaceProjects?.projects, api.teamId],
   );
-  // Two trees report focus. Only the one holding the focus (DOM focus moved into it last) sets
-  // the Upload target and the folder note; the other's reports are kept for when it is entered.
-  const focusSource = useRef<"projects" | "mine">("mine");
-  const lastFocus = useRef<Record<"projects" | "mine", TreeFocus>>({
-    projects: { path: null, folder: "" },
-    mine: { path: null, folder: "" },
+  const act = useFileActions({
+    api,
+    tree,
+    mentionRefusal: work.mentionRefusal,
+    retryProjects: work.retry,
+    focusRow,
+    onMention,
+    onMoved,
+    onPromoted,
+    onMoveHere,
   });
-  const focusFrom = useMemo(() => {
-    const from = (which: "projects" | "mine") => (next: TreeFocus) => {
-      lastFocus.current[which] = next;
-      if (focusSource.current === which) setFocus(next);
-    };
-    return { projects: from("projects"), mine: from("mine") };
-  }, []);
-  const enterTree = (which: "projects" | "mine") => () => {
-    if (focusSource.current === which) return;
-    focusSource.current = which;
-    setFocus(lastFocus.current[which]);
-  };
-
-  const focusRow = useCallback(
-    (path: string) => setFocusRequest((prev) => ({ path, seq: (prev?.seq ?? 0) + 1 })),
-    [],
-  );
-  const start = () => {
-    setActionError(null);
-    setNotice("");
-  };
 
   const firstShow = useRef(true);
   useEffect(() => {
@@ -476,212 +179,22 @@ export function FileBrowser({
     reveal(showFolder.path); // a drop landed there: open it and list it again
   }, [showFolder, reveal]);
 
-  const closeDialog = (entry: FileEntry) => {
-    setDialog(null);
-    focusRow(entry.path);
-  };
-
-  const download = async (entry: FileEntry) => {
-    start();
-    const res = await api.download(entry.path);
-    if (!res.ok) return setActionError(describeFileError(res.error));
-    saveBytes(entry.name, res.data);
-    setNotice(`Downloaded ${entry.name}`);
-  };
-
-  const mention = (entry: FileEntry) => {
-    start();
-    const refused = work.mentionRefusal(entry.path) ?? onMention?.(entry);
-    if (refused !== undefined) {
-      focusRow(entry.path);
-      return setActionError({ status: 0, code: "client_error", message: refused });
-    }
-    setNotice(`Mentioned ${entry.name} in your message`);
-  };
-
-  /** The path inside the workspace (the agent's working directory), as the listing names it. */
-  const copyPath = (entry: FileEntry) => {
-    copyText(entry.path).then(
-      () => setNotice(`Copied the path of ${entry.name}`),
-      () => setActionError(COPY_FAILED),
-    );
-  };
-
-  const remove = async (entry: FileEntry) => {
-    setBusy(true);
-    start();
-    const res = await api.remove(entry.path);
-    setBusy(false);
-    setDialog(null);
-    if (!res.ok) {
-      focusRow(entry.path);
-      return setActionError(describeFileError(res.error));
-    }
-    setNotice(`Deleted ${entry.name}`);
-    reveal(parentPath(entry.path));
-    focusRow(parentPath(entry.path));
-  };
-
-  const move = async (from: string, to: string, verb: "Moved" | "Renamed") => {
-    setBusy(true);
-    start();
-    const res = await api.move(from, to);
-    setBusy(false);
-    setDialog(null);
-    if (!res.ok) {
-      focusRow(from);
-      return setActionError(describeFileError(res.error));
-    }
-    moved(from, to);
-    reveal(parentPath(from));
-    if (parentPath(to) !== parentPath(from)) reveal(parentPath(to));
-    onMoved?.(from, to);
-    setNotice(
-      verb === "Renamed"
-        ? `Renamed ${baseName(from)} to ${baseName(to)}`
-        : `Moved ${baseName(from)} to ${where(parentPath(to))}`,
-    );
-    focusRow(to);
-  };
-
-  const uploadInto = async (folder: string, items: DroppedItems) => {
-    setBusy(true);
-    start();
-    const done: string[] = [];
-    if (items.folders.length > 0) setActionError(folderError(items.folders));
-    for (const file of items.files) {
-      const res = await api.upload(folder, file);
-      if (!res.ok) {
-        const described = describeFileError(res.error);
-        setActionError({ ...described, message: `${file.name}: ${described.message}` });
-        if (res.error.code === "quota_exceeded") break;
-        continue;
-      }
-      done.push(res.data.name);
-    }
-    setBusy(false);
-    if (done.length > 0) {
-      setNotice(`Uploaded ${done.join(", ")}`);
-      reveal(folder);
-    }
-  };
-
-  /** PF6: the tree lists again and reveals the new project under Projects. */
-  const promoted = (entry: FileEntry, project: Project) => {
-    setDialog(null);
-    start();
-    setNotice(`Moved ${entry.name} into the new project ${project.name}`);
-    work.retry();
-    tree.reloadAll();
-    reveal(PROJECTS_FOLDER);
-    focusRow(`${PROJECTS_FOLDER}/${project.slug}`);
-    onPromoted?.({ id: project.id, name: project.name });
-  };
-
-  // A file of a project that is not mounted is listed, not in the sandbox: it opens nowhere.
-  const notMounted = (entry: FileEntry) => work.mentionRefusal(entry.path) !== undefined;
-  const openHere = onOpenFile
-    ? (entry: FileEntry) => {
-        const refused = work.mentionRefusal(entry.path);
-        if (refused === undefined) return onOpenFile(entry);
-        start();
-        setNotice(refused.replace("to mention its files", "to open its files"));
-      }
-    : undefined;
-  const actions = {
-    onOpenFile: openHere,
-    mentionRefusal: work.mentionRefusal,
-    bindings: (entry: FileEntry): MenuBindings =>
-      entry.type === "file" && notMounted(entry)
-        ? ({} as MenuBindings)
-        : {
-            ...usedIn(entry),
-            ...rowBindings(entry, checkedOut, {
-              onOpen:
-                entry.type === "dir"
-                  ? () => {
-                      tree.expand(entry.path);
-                      focusRow(entry.path);
-                    }
-                  : openHere && (() => openHere(entry)),
-              onMention: onMention && (() => mention(entry)),
-              onDownload: () => void download(entry),
-              onRename: () => setDialog({ kind: "rename", entry }),
-              onMove: () => setDialog({ kind: "move", entry }),
-              onCopyPath: () => copyPath(entry),
-              onDelete: () => setDialog({ kind: "delete", entry }),
-              onPromote: offersPromote(entry, canCreateProjects)
-                ? () => setDialog({ kind: "promote", entry })
-                : undefined,
-            }),
-          },
-    onRename: (entry: FileEntry) => setDialog({ kind: "rename", entry }),
-    onDelete: (entry: FileEntry) => setDialog({ kind: "delete", entry }),
-    onMove: (dragging: Dragging, folder: string) =>
-      void move(dragging.path, joinPath(folder, baseName(dragging.path)), "Moved"),
-    onUpload: (folder: string, items: DroppedItems) => void uploadInto(folder, items),
-    checkedOut,
-    dropRefusal: work.dropRefusal,
-    onRefusedDrop: (reason: string) => {
-      setActionError(null);
-      setNotice(reason);
-    },
-  };
-  const moveHere = async (ref: ProjectRef) => {
-    start();
-    const refused = await onMoveHere?.(ref);
-    if (refused !== undefined) {
-      return setActionError({ status: 0, code: "client_error", message: refused });
-    }
-    setNotice(`Moved this conversation to ${ref.name}`);
-  };
-  const projectActions = {
-    ...actions,
-    decorate: work.decorate,
-    bindings: (entry: FileEntry) => {
-      const own = actions.bindings(entry);
-      const project = isProjectFolder(entry.path) ? work.projectOf(entry.path) : undefined;
-      if (!project) return own;
-      const ref = { id: project.project.id, name: project.project.name };
-      const act = (action: WorkAction) => ({
-        onSelect: () => setProjectAction({ project: ref, action }),
-        movesFocus: true,
-      });
-      return {
-        ...own,
-        ...(project.kind === "checked_out"
-          ? {
-              "commit-project": act("commit"),
-              "update-project": act("update"),
-              "discard-project": { ...act("discard"), destructive: true },
-            }
-          : project.kind === "editable"
-            ? { "checkout-project": act("checkout") }
-            : {}),
-        ...(project.project.id === activeProjectId
-          ? {}
-          : {
-              ...(onNewConversationIn
-                ? {
-                    "new-conversation-in-project": {
-                      onSelect: () => onNewConversationIn(ref),
-                      movesFocus: true,
-                    },
-                  }
-                : {}),
-              ...(onMoveHere
-                ? {
-                    "move-conversation-here": {
-                      onSelect: () => void moveHere(ref),
-                      movesFocus: true,
-                    },
-                  }
-                : {}),
-            }),
-        "open-project-page": { onSelect: () => navigate(`/me/projects/${project.project.id}`) },
-      };
-    },
-  };
+  const { actions, projectActions } = treeActions({
+    work,
+    act,
+    tree,
+    fileThreads,
+    fileLinks,
+    focusRow,
+    onOpenFile,
+    onMention,
+    canCreateProjects,
+    activeProjectId,
+    onNewConversationIn,
+    onMoveHere,
+    onProjectAction: (project, action) => setProjectAction({ project, action }),
+    onOpenProjectPage: (id) => navigate(`/me/projects/${id}`),
+  });
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-auto px-2 py-1.5">
@@ -691,7 +204,7 @@ export function FileBrowser({
         </p>
       )}
       <FolderErrors tree={tree} />
-      {actionError && <ErrorNotice error={actionError} />}
+      {act.actionError && <ErrorNotice error={act.actionError} />}
       <WorkspaceHeader name={workspaceName} onRefresh={onRefresh} syncing={syncing} />
       {work.failed && (
         <p role="alert" className="m-0 text-xs">
@@ -740,10 +253,10 @@ export function FileBrowser({
             <RootHeader
               drag={drag}
               folder={focus.folder}
-              busy={busy}
+              busy={act.busy}
               checkedOut={checkedOut}
               onUpload={(files) =>
-                void uploadInto(focus.folder, { files: Array.from(files ?? []), folders: [] })
+                void act.uploadInto(focus.folder, { files: Array.from(files ?? []), folders: [] })
               }
             />
           )}
@@ -751,46 +264,19 @@ export function FileBrowser({
       </div>
       <Status tree={tree} empty={split.mine.length === 0} />
       <FolderNote folder={focus.folder} checkedOut={checkedOut} />
-      {dialog?.kind === "delete" && (
-        <ConfirmDelete
-          entry={dialog.entry}
-          busy={busy}
-          onConfirm={() => void remove(dialog.entry)}
-          onCancel={() => closeDialog(dialog.entry)}
-        />
-      )}
-      {dialog?.kind === "rename" && (
-        <RenameForm
-          entry={dialog.entry}
-          busy={busy}
-          onRename={(name) =>
-            void move(dialog.entry.path, joinPath(parentPath(dialog.entry.path), name), "Renamed")
-          }
-          onCancel={() => closeDialog(dialog.entry)}
-        />
-      )}
-      {dialog?.kind === "promote" && (
-        <PromoteDialog
-          entry={dialog.entry}
-          api={projectsApi}
-          onDone={(project) => promoted(dialog.entry, project)}
-          onCancel={() => closeDialog(dialog.entry)}
-        />
-      )}
-      {dialog?.kind === "move" && (
-        <MoveForm
-          entry={dialog.entry}
-          checkedOut={checkedOut}
-          folders={tree.knownFolders}
-          busy={busy}
-          onMove={(folder) =>
-            void move(dialog.entry.path, joinPath(folder, baseName(dialog.entry.path)), "Moved")
-          }
-          onCancel={() => closeDialog(dialog.entry)}
-        />
-      )}
+      <FileBrowserDialog
+        dialog={act.dialog}
+        busy={act.busy}
+        checkedOut={checkedOut}
+        folders={tree.knownFolders}
+        projectsApi={projectsApi}
+        onRemove={(entry) => void act.remove(entry)}
+        onMove={(from, to, verb) => void act.move(from, to, verb)}
+        onPromoted={act.promoted}
+        onClose={act.closeDialog}
+      />
       <p role="status" className="sr-only">
-        {notice}
+        {act.notice}
       </p>
     </div>
   );
