@@ -110,6 +110,11 @@ export const LISTEN_DEFAULTS: ListenTuning = {
 export const LISTEN_PROBE_CHANNEL = "kobe_listen_probe";
 
 const CHANNEL = /^[a-z_][a-z0-9_]{0,62}$/;
+/** How long close() waits for `end()` before dropping the socket. */
+const CLOSE_TIMEOUT_MS = 2_000;
+/** Server-side TCP keepalives of the LISTEN session: a dead client is dropped in ~1 min. */
+const KEEPALIVES =
+  "SET tcp_keepalives_idle = 30; SET tcp_keepalives_interval = 10; SET tcp_keepalives_count = 3";
 /** SQLSTATE 42704: a server without `idle_session_timeout` (before PostgreSQL 14). */
 const UNDEFINED_OBJECT = "42704";
 
@@ -173,6 +178,8 @@ export function createListenClient(options: ListenClientOptions): ListenClient {
   const byChannel = new Map<string, Set<Entry>>();
   /** Channels LISTENed (or being LISTENed) on the current connection. */
   const listened = new Set<string>();
+  /** Of those, the ones whose LISTEN has not completed yet (announced on completion). */
+  const pending = new Set<string>();
   let state: ListenState = "idle";
   let client: ListenConnection | undefined;
   let session: Session | undefined;
@@ -257,6 +264,7 @@ export function createListenClient(options: ListenClientOptions): ListenClient {
     session = undefined;
     probe = undefined;
     listened.clear();
+    pending.clear();
     stopPing();
     drop(lostClient);
     if (state === "closed") return;
@@ -279,8 +287,13 @@ export function createListenClient(options: ListenClientOptions): ListenClient {
     const s = session;
     if (!c || !s || listened.has(channel)) return;
     listened.add(channel);
+    pending.add(channel);
     withTimeout(c.query(`LISTEN ${channel}`), unanswered("LISTEN")).then(
-      () => announce(channel, s),
+      () => {
+        if (client !== c) return;
+        pending.delete(channel);
+        announce(channel, s);
+      },
       (err: unknown) => lost(c, err),
     );
   };
@@ -289,6 +302,7 @@ export function createListenClient(options: ListenClientOptions): ListenClient {
     const c = client;
     if (!c || !listened.has(channel)) return;
     listened.delete(channel);
+    pending.delete(channel);
     withTimeout(c.query(`UNLISTEN ${channel}`), unanswered("UNLISTEN")).catch((err: unknown) =>
       lost(c, err),
     );
@@ -319,6 +333,14 @@ export function createListenClient(options: ListenClientOptions): ListenClient {
       // A role default must never end the listener for idling: it idles by design.
       await next.query("SET idle_session_timeout = 0").catch((err: unknown) => {
         if ((err as { code?: unknown } | null)?.code !== UNDEFINED_OBJECT) throw err;
+      });
+      // Server-side keepalives (KOBE-704 review): when this client vanishes behind a half-open
+      // socket, Postgres ends its backend (and the session locks it holds, such as the gateway
+      // sync's leader lock) in about a minute instead of after the OS default of ~2 h. A pooler
+      // or managed Postgres may ignore or refuse them; that is logged, not fatal.
+      await next.query(KEEPALIVES).catch((err: unknown) => {
+        if (client !== next) throw err;
+        log.warn({ err }, "LISTEN connection: server-side TCP keepalives not set");
       });
       for (const channel of [LISTEN_PROBE_CHANNEL, ...channels]) {
         if (client !== next) throw new Error("closed while connecting");
@@ -396,8 +418,8 @@ export function createListenClient(options: ListenClientOptions): ListenClient {
       if (state === "listening" && session) {
         const s = session;
         if (first || !listened.has(channel)) listenChannel(channel);
-        // Already in force: told on the next tick (never inside subscribe()).
-        else queueMicrotask(() => announce(channel, s));
+        // In flight: told when it completes. Already in force: told on the next tick.
+        else if (!pending.has(channel)) queueMicrotask(() => announce(channel, s));
       } else {
         entry.polled = true;
         guarded("polling", channel, () => subscriber.polling?.());
@@ -424,6 +446,7 @@ export function createListenClient(options: ListenClientOptions): ListenClient {
       reconnectTimer = undefined;
       byChannel.clear();
       listened.clear();
+      pending.clear();
       if (session) session.active = false;
       session = undefined;
       probe = undefined;
@@ -431,7 +454,26 @@ export function createListenClient(options: ListenClientOptions): ListenClient {
       client = undefined;
       if (current) {
         current.removeAllListeners("notification");
-        await current.end().catch(() => undefined);
+        // end() waits for the server, which never answers on a half-open socket: give it a
+        // moment, then drop the socket so shutdown cannot hang.
+        let timer: NodeJS.Timeout | undefined;
+        const ended = await Promise.race([
+          current.end().then(
+            () => true,
+            () => true,
+          ),
+          new Promise<false>((resolve) => {
+            timer = setTimeout(() => resolve(false), CLOSE_TIMEOUT_MS);
+          }),
+        ]);
+        clearTimeout(timer);
+        if (!ended) {
+          try {
+            current.destroy();
+          } catch {
+            // no socket
+          }
+        }
       }
     },
   };

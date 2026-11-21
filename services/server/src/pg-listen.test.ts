@@ -39,6 +39,7 @@ class FakeClient extends EventEmitter implements ListenConnection {
   }
   async end(): Promise<void> {
     this.ended = true;
+    await this.behaviour.end?.();
   }
   destroy(): void {
     this.destroyed = true;
@@ -57,6 +58,7 @@ class FakeClient extends EventEmitter implements ListenConnection {
 interface Behaviour {
   connect(c: FakeClient): Promise<void>;
   query?(c: FakeClient, text: string, values?: unknown[]): Promise<{ rows: unknown[] }> | undefined;
+  end?(): Promise<void>;
 }
 
 const ok: Behaviour = { connect: () => Promise.resolve() };
@@ -129,6 +131,10 @@ describe("createListenClient", () => {
     const c = clients[0] as FakeClient;
     expect(c.config.application_name).toBe("kobe-test-listen");
     expect(c.queries[0]).toBe("SET idle_session_timeout = 0");
+    // Server-side keepalives: Postgres drops a dead client (and its locks) in about a minute.
+    expect(c.queries[1]).toBe(
+      "SET tcp_keepalives_idle = 30; SET tcp_keepalives_interval = 10; SET tcp_keepalives_count = 3",
+    );
     expect(c.listened()).toContain("kobe_a");
     expect(c.queries.some((q) => q.startsWith("SELECT pg_notify"))).toBe(true);
     expect(l.state).toBe("listening");
@@ -312,6 +318,61 @@ describe("createListenClient", () => {
     expect((clients[0] as FakeClient).queries).toContain("SELECT pg_try_advisory_lock($1)");
     (clients[0] as FakeClient).fail();
     await expect(session.query("SELECT 1")).rejects.toThrow(/not listening/);
+  });
+
+  it("tells a subscriber joining a channel whose LISTEN is in flight only once LISTEN is done", async () => {
+    let releaseListen: (() => void) | undefined;
+    const l = make({
+      connect: () => Promise.resolve(),
+      query: (_c, text) =>
+        text === "LISTEN kobe_b"
+          ? new Promise((r) => (releaseListen = () => r({ rows: [] })))
+          : undefined,
+    });
+    l.subscribe("kobe_a", recorder().sub);
+    await settle();
+    expect(l.state).toBe("listening");
+    const first = recorder();
+    const second = recorder();
+    l.subscribe("kobe_b", first.sub);
+    await settle();
+    l.subscribe("kobe_b", second.sub);
+    await settle();
+    expect(first.events).toEqual([]);
+    expect(second.events).toEqual([]); // not before LISTEN completed
+    releaseListen?.();
+    await settle();
+    expect(first.events).toEqual(["listening"]);
+    expect(second.events).toEqual(["listening"]);
+  });
+
+  it("goes on when the server refuses the keepalive settings (a pooler)", async () => {
+    const l = make({
+      connect: () => Promise.resolve(),
+      query: (_c, text) =>
+        text.startsWith("SET tcp_keepalives")
+          ? Promise.reject(Object.assign(new Error("unsupported"), { code: "08P01" }))
+          : undefined,
+    });
+    l.subscribe("kobe_a", recorder().sub);
+    await settle();
+    expect(l.state).toBe("listening");
+  });
+
+  it("destroys the socket when end() does not return on close (half-open)", async () => {
+    const l = make({ connect: () => Promise.resolve(), end: () => new Promise(() => undefined) });
+    l.subscribe("kobe_a", recorder().sub);
+    await settle();
+    expect(l.state).toBe("listening");
+    let closed = false;
+    void l.close().then(() => (closed = true));
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(closed).toBe(false);
+    expect((clients[0] as FakeClient).destroyed).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await settle();
+    expect((clients[0] as FakeClient).destroyed).toBe(true);
+    expect(closed).toBe(true);
   });
 
   it("refuses channel names that are not plain identifiers", () => {

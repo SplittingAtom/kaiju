@@ -1135,6 +1135,16 @@ SELECT application_name, count(*) FROM pg_stat_activity
  WHERE datname = 'kobe' GROUP BY 1 ORDER BY 2 DESC;
 ```
 
+The LISTEN connections set server-side TCP keepalives (`tcp_keepalives_idle = 30`,
+`tcp_keepalives_interval = 10`, `tcp_keepalives_count = 3`), so Postgres drops the backend of a
+pod that vanished (node lost, half-open socket) in about a minute, together with the model
+gateway sync's leader lock it may hold. A replica that lost its own connection also ends its old
+backend itself when that still holds the lock (same role, same `application_name`, same
+`backend_start`). A pooler or a managed Postgres may ignore or refuse these settings (a warning in
+the server log); if the role may not end its old backend either, the lock frees only once the
+operating system's TCP keepalive gives up, by default after about two hours, and the gateway
+configuration is not synced until then.
+
 At start each server works out this budget for the configured replicas (from the values above,
 which the chart passes as `KOBE_DB_BUDGET_SERVER_REPLICAS` and `KOBE_DB_BUDGET_PEER_CONNECTIONS`)
 and logs a warning (`postgres connection budget exceeds max_connections`) when it comes to more

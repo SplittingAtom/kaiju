@@ -60,3 +60,16 @@ its last, `close()`. `createServerDeps` builds it (`deps.listen`, application_na
 - budgets, egress, models, models-discovery, startup-seeds, skill-eval-runner db tests green.
 - ac-3: `event-stream*.test.ts`, `event-stream.db`, `event-stream-scale.db`, `sandbox-wire.db` green.
 - Docs: no member/admin-visible change (connection plumbing); operator docs come with KOBE-736.
+
+## Review follow-ups (2026-11-21)
+
+- MEDIUM: a half-open leader connection left the old backend holding the gateway sync's lock
+  (~2 h of TCP keepalive). Now (a) the LISTEN session sets server-side keepalives 30/10/3 (a pooler
+  may refuse them: warned, not fatal; documented in install.md), and (b) `models/leader-lock.ts`
+  records `pg_backend_pid()`, `backend_start` and `application_name` when it takes the lock and,
+  after losing its own connection, ends that backend once if all three still match, then retries.
+  The app role may end its own role's backends (PostgreSQL allows it for members of the target's
+  role, no superuser needed); `leader-lock.db.test.ts` proves it as the non-superuser test app
+  role. Refused (42501): logged, keepalives remain.
+- LOW: a subscriber joining a channel whose LISTEN is in flight is told on completion (`pending`).
+- LOW: `close()` destroys the socket when `end()` does not return within 2 s.

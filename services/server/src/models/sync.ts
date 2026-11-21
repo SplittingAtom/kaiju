@@ -36,6 +36,7 @@ import type { LocalEmbeddingConfig } from "./config.js";
 import { withLocalEmbedding } from "./local-embedding.js";
 import { readMemorySiteSettings } from "../memory/site-settings.js";
 import { reconcile } from "./reconcile.js";
+import { SessionLeaderLock } from "./leader-lock.js";
 
 /** Session advisory lock held by the one replica that syncs the gateway ("kobe" + 40). */
 export const MODELS_SYNC_LOCK_KEY = 0x6b6f_6265_0040;
@@ -96,6 +97,7 @@ export class ModelGatewaySync {
   /** The LISTEN session the leader lock is (to be) taken on; undefined while it is down. */
   private session: ListenSession | undefined;
   private leader = false;
+  private lock: SessionLeaderLock | undefined;
   private closed = false;
   private running: Promise<void> | undefined;
   private dirty = false;
@@ -107,6 +109,11 @@ export class ModelGatewaySync {
   private localConflictLogged = false;
 
   constructor(private readonly options: ModelGatewaySyncOptions) {}
+
+  private get leaderLock(): SessionLeaderLock {
+    this.lock ??= new SessionLeaderLock(MODELS_SYNC_LOCK_KEY, this.options.logger);
+    return this.lock;
+  }
 
   get isLeader(): boolean {
     return this.leader;
@@ -191,6 +198,8 @@ export class ModelGatewaySync {
         if (this.leader) this.options.logger.warn("model gateway sync: leader connection lost");
         this.session = undefined;
         this.leader = false;
+        // The old backend may keep the lock a while (half-open socket): reclaimed on the next try.
+        this.leaderLock.lost();
       },
     });
   }
@@ -198,10 +207,13 @@ export class ModelGatewaySync {
   private async tryLead(session: ListenSession): Promise<void> {
     if (this.closed || this.session !== session || !session.active) return;
     try {
-      const res = await session.query<{ ok: boolean }>("SELECT pg_try_advisory_lock($1) AS ok", [
-        MODELS_SYNC_LOCK_KEY,
-      ]);
-      if (res.rows[0]?.ok) {
+      const result = await this.leaderLock.tryAcquire(session);
+      if (result === "reclaimed") {
+        // Our own stale backend was ended; its lock frees as it exits.
+        this.later(1_000, () => void this.tryLead(session));
+        return;
+      }
+      if (result === "acquired") {
         if (this.closed || this.session !== session) {
           // Closed meanwhile on a connection that lives on: give the lock back.
           await this.unlock(session);
@@ -221,9 +233,8 @@ export class ModelGatewaySync {
   }
 
   private async unlock(session: ListenSession): Promise<void> {
-    if (!session.active) return;
-    await session
-      .query("SELECT pg_advisory_unlock($1)", [MODELS_SYNC_LOCK_KEY])
+    await this.leaderLock
+      .release(session)
       .catch((err: unknown) =>
         this.options.logger.warn({ err }, "model gateway sync could not release the leader lock"),
       );
