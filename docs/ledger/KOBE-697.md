@@ -38,3 +38,7 @@
 - `pnpm verify` green except the load-sensitive timing test `model-gateway budget-gate.test.ts`
   ("holds a settled reservation..."), which passes alone (255/255); `@kobe/db test:db` 2044/2044,
   `@kobe/server test:db` 3287/3287.
+- Review follow-up (LOW 1-2): the guard also fails on any other file naming `TEAM_ID_SETTING` or
+  `kobe.team_id` beyond reads, plain imports and comments (aliases, copies, concatenated names,
+  quoted `SET LOCAL "kobe.team_id"`), scans `.sh`/`.py` too, with an allowlist of mentions
+  (definition, span attributes, an HKDF label, prose); CLAUDE.md names migration 0047.
