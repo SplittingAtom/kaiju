@@ -50,6 +50,11 @@
   panel 4.5:1, brand link 4.5:1, brand primary fg on primary 4.5:1, brand focus and control border
   3:1); the error Notice uses the fixed status colours. Focus rings are the console's
   `FOCUS_RING` (3 px brand-focus outline) on inputs, buttons, provider links and plain links.
+- **Review follow-up:** a failed provider read is kept 2 s (a down server no longer holds every
+  sign-in render for the 1 s timeout). The panel no longer uses `kobe-panel`: in the build,
+  /sign-in gets the shared Tailwind stylesheet (chat-global.css via `WorkspaceHost`), where that
+  rule exists only under `[data-kobe-chat]`/`[data-kobe-console]`; the same glow is now spelled
+  out in utilities on the panel.
 - **Small wording additions:** "Back to sign in" footer on /forgot-password; a one-line hint on
   the TOTP step; the setup token's explanation is now the field's hint.
 - Authentication logic is unchanged (same Better Auth calls, same pending-link redirect).

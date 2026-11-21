@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { createProvidersLoader, PROVIDERS_CACHE_MS } from "./sign-in-providers-server";
+import {
+  createProvidersLoader,
+  PROVIDERS_CACHE_MS,
+  PROVIDERS_FAILURE_CACHE_MS,
+} from "./sign-in-providers-server";
 
 /** KOBE-755: the sign-in page's providers, read in the server render. */
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -58,5 +62,19 @@ describe("createProvidersLoader", () => {
     now = PROVIDERS_CACHE_MS;
     await load();
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps a failure for about 2 s, so a down server never slows every sign-in render", async () => {
+    let now = 0;
+    const fetch = vi.fn(async () => json({}, 503));
+    const load = createProvidersLoader({ serverUrl: "http://server", fetch, now: () => now });
+    expect(await load()).toBeNull();
+    now = PROVIDERS_FAILURE_CACHE_MS - 1;
+    expect(await load()).toBeNull();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    now = PROVIDERS_FAILURE_CACHE_MS;
+    await load();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(PROVIDERS_FAILURE_CACHE_MS).toBe(2000);
   });
 });

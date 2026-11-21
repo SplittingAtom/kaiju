@@ -13,6 +13,18 @@ export const AUTH_LINK = cn(
 );
 
 /**
+ * The panel's look, in utilities only: the signed-out pages get the app's Tailwind build but sit
+ * under neither the chat nor the console root, whose `kobe-panel` rule they would miss. So the
+ * hover glow (KOBE-550's tokens) is spelled out here, same colours, hover devices only, no easing
+ * for reduced motion.
+ */
+const PANEL = [
+  "box-border flex w-full max-w-[400px] flex-col gap-5 rounded-xl border border-console-border bg-console-bg p-6 shadow-sm sm:p-8",
+  "transition-[border-color,box-shadow] duration-300 motion-reduce:transition-none",
+  "[@media(hover:hover)]:hover:border-[var(--kobe-panel-border-hover)] [@media(hover:hover)]:hover:shadow-[var(--kobe-glow-panel)]",
+].join(" ");
+
+/**
  * The signed-out pages' layout (KOBE-755): sign-in, forgot and reset password, invitation, setup
  * and the SSO-link confirmation. One panel, centred horizontally and vertically on the themed page
  * background, at most 400 px wide with a 16 px gutter on a phone. It carries the Site's theme like
@@ -44,7 +56,7 @@ export function AuthPanel({
         <section
           data-auth-panel=""
           aria-labelledby={title === undefined ? undefined : titleId}
-          className="kobe-panel box-border flex w-full max-w-[400px] flex-col gap-5 rounded-xl border border-console-border bg-console-bg p-6 shadow-sm sm:p-8"
+          className={PANEL}
         >
           {(logo !== null || title !== undefined) && (
             <header className="flex flex-col items-center gap-3 text-center">

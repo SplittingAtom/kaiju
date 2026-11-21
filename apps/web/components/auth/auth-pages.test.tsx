@@ -70,6 +70,9 @@ describe("AuthPanel (ac-2)", () => {
     expect(panel.className).toMatch(/max-w-\[400px\]/);
     expect(panel.className).toMatch(/w-full/);
     expect(panel.className).toMatch(/bg-console-bg/);
+    // Self-contained: no class whose rules live only under the chat or console roots.
+    expect(panel.className).not.toMatch(/(^|\s)kobe-panel(\s|$)/);
+    expect(panel.className).toContain("hover:border-[var(--kobe-panel-border-hover)]");
     expect(within(panel).getByRole("contentinfo").textContent).toBe("Back");
   });
 
