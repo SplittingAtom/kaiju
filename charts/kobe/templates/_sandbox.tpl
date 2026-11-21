@@ -12,7 +12,7 @@ predates the `sandbox` key still renders. Keep in sync with values.yaml.
   "modelGatewayAccess" true
   "teamQuota" (dict "requests.cpu" "20" "requests.memory" "40Gi" "limits.cpu" "40" "limits.memory" "80Gi" "requests.ephemeral-storage" "40Gi" "limits.ephemeral-storage" "160Gi" "requests.storage" "500Gi" "persistentvolumeclaims" "50" "pods" "50")
   "warmPool" (dict "replicasPerTeam" 1)
-  "hibernation" (dict "enabled" true "idleMinutes" 15 "sweepSeconds" 60 "reclaim" (dict "enabled" false "dormantDays" 30 "syncTimeoutSeconds" 30))
+  "hibernation" (dict "enabled" true "idleMinutes" 15 "sweepSeconds" 60 "reclaim" (dict "enabled" false "dormantDays" 30))
   "workspaceSync" (dict "enabled" true "pushIntervalSeconds" 60 "maxFileSize" "1Gi" "maxWorkspaceSize" "" "maxFiles" 100000 "collectSeconds" 3600)
   "toolExecutor" (dict "enabled" false)
   "skillEval" (dict "maxConcurrentPerTeam" 4 "workspaceSize" "2Gi")
@@ -134,8 +134,7 @@ pod labels and port for the team NetworkPolicy).
     "sweepSeconds" (int $s.hibernation.sweepSeconds)
     "reclaim" (dict
       "enabled" $s.hibernation.reclaim.enabled
-      "dormantDays" (int $s.hibernation.reclaim.dormantDays)
-      "syncTimeoutSeconds" (int $s.hibernation.reclaim.syncTimeoutSeconds)))
+      "dormantDays" (int $s.hibernation.reclaim.dormantDays)))
   "workspaceSync" (include "kobe.workspaceSyncConfig" $s | fromJson)
   "toolExecutor" (dict "enabled" $s.toolExecutor.enabled)
   "skillEval" (dict "maxConcurrentPerTeam" (int $s.skillEval.maxConcurrentPerTeam) "workspaceSize" (toString $s.skillEval.workspaceSize))

@@ -2010,18 +2010,20 @@ EXISTS` an invalid leftover.
 - **Dormant-volume reclaim (KOBE-733, off by default).** `sandbox.hibernation.reclaim.enabled:
 true` lets the hibernation sweep delete a sandbox hibernated for `dormantDays` (default 30) with
   its claim and workspace volume, freeing the team's PVC and storage quota and the Longhorn replica.
-  Only a volume whose object-store copy is proven complete is reclaimed: right before hibernating,
-  the server asks the sandbox's agent to sync now and waits up to `syncTimeoutSeconds` (default 30,
-  which also delays each hibernation by that much at most) for an answer that a fresh scan found
-  every local change committed (agents announcing `workspace_sync_complete`; older sandbox images
-  never prove it, so their volumes are kept). Nothing may happen on the sandbox after that ask, the
-  workspace must have no upload in flight and no content marked lost from storage, and no legal hold
-  may cover the member. The member's next wake starts a new sandbox from the warm pool and restores
-  `/workspace` from object storage; `.venv`, `node_modules` and `__pycache__` are never synced and
-  must be rebuilt, and a sandbox holding a file above `sandbox.workspaceSync.maxFileSize` is never
-  reclaimed. Needs `sandbox.workspaceSync.enabled` and `s3.*` (otherwise the server logs a warning
-  and reclaims nothing). Each reclaim is audited as `sandbox.volume_reclaimed`. The server needs
-  `get` on `resourcequotas` in team namespaces (chart RBAC) to report a full quota.
+  Only a volume proven covered by its object-store copy is reclaimed. The proof comes from the
+  agent's shutdown when the sandbox hibernates: after every Pi, tool process and kernel has stopped,
+  the agent pushes, re-scans, and only when nothing is local-only calls `POST flushed` on the sync
+  API with its last wire connection; the server records it only if that connection is the one the
+  hibernation closed and no upload is reserved. Any later upload or manifest change, and any wake,
+  clears it; no proof (a killed pod, a failed push, an older sandbox image) keeps the volume. Local
+  only, and so blocking: symlinks, special files, names the sync refuses, files over
+  `sandbox.workspaceSync.maxFileSize`, unreadable files. Not restored by design: `.venv`,
+  `node_modules`, `__pycache__`, empty folders and `.kobe/` (Pi sessions, rebuilt from Postgres).
+  The reaper also refuses content marked lost in storage, waiting commands and legal holds, and
+  keeps the row locked until the old PVC is gone so the next wake gets a fresh volume. Needs
+  `sandbox.workspaceSync.enabled` and `s3.*` (otherwise the server logs a warning and reclaims
+  nothing). Each reclaim is audited as `sandbox.volume_reclaimed`. The server needs `get` on
+  `resourcequotas` in team namespaces (chart RBAC) to report a full quota.
 - **Retention job (KOBE-18).** One server replica at a time runs the nightly retention pass under
   a session-level advisory lock, so the server needs a direct (or session-mode pooled) Postgres
   connection; transaction-mode poolers break session locks. `KOBE_RETENTION_HOUR_UTC` (0-23,

@@ -11,26 +11,29 @@ Owner decision: reclaim ships **off** (`sandbox.hibernation.reclaim.enabled: fal
 
 ## Decisions
 
-- **The proof that the object-store copy covers the volume** (the hard part). The server cannot
-  read a hibernated volume, and `workspace_sync.last_push_at` proves nothing (a push only commits
-  what changed; refused, unreadable or changing files stay local, and a run that wrote nothing
-  never pushes). So the proof is taken **at hibernation**, while the sandbox still runs:
-  1. with reclaim on, `hibernateOne` asks the member's sandbox to sync now with
-     `{ complete: true }` (`SandboxWire.syncWorkspace`, new bus hint `syncc:`), waiting up to
-     `syncTimeoutSeconds` (30) outside the row lock;
-  2. the agent answers `ok: true` only when, after the push, a **fresh plan** finds no change, no
-     file left out (refused earlier, unreadable, changing while hashed), no lost content to resend,
-     over a whole scan (`WorkspaceSync.#complete`, `planPush` now reports `leftOut`/`partialScan`);
-  3. the agent announces this meaning with new hello capability `workspace_sync_complete`
-     (`@kobe/protocol`, additive). An agent without it is answered `not_synced` by its connection
-     holder at once, so **older sandbox images never prove anything** and are never reclaimed;
-  4. `markHibernated` stores the ask time in new column `sandboxes.volume_synced_at` only if
-     nothing happened after the ask (no activity touch, no run of the member ended or created, no
-     command created or completed); otherwise NULL. Every wake and offboarding clears it (CHECK:
-     only on `hibernated` rows). A hibernated sandbox runs nothing, so its volume cannot change.
-     Side effect: the Files panel's Refresh now reports `not_synced` while a file stays local only
-     (more honest; documented in the protocol comment). An agent test needed its race assertion
-     relaxed for this (`one === two` instead of both true).
+- **The proof that the object-store copy covers the volume** (reworked after review g63, HIGH:
+  a proof taken by a sync-now before suspension missed files that background processes wrote
+  afterwards, and the stop push was never confirmed). Now it comes only from the agent's shutdown
+  path (`Agent.#finishStop`): every Pi is stopped with its uid's processes killed (tools, `nohup`
+  jobs) and kernels stopped, so nothing writes any more; then the final push; then a fresh plan
+  must find no change, no file left out (refused, unreadable, changing, or a scan-skipped symlink,
+  special file or unsyncable name: `ScanResult.skipped`) and no lost content over a whole scan; only
+  then the agent calls new sync endpoint `POST flushed {connection_id}` (`@kobe/protocol`
+  `workspaceFlushedRequestSchema`). The server (`recordFlushProof`) sets `volume_synced_at` only
+  when the token's sandbox is the hibernated one, the named connection is the one the hibernation
+  closed (`sandbox_connections.closed_at = sandboxes.state_changed_at`, same transaction), and no
+  upload is reserved. Any later upload reservation or manifest change (`clearFlushProof` in
+  `reserveUpload`/`saveState`) and any wake (`beginWake`) clear it. No call (killed pod, failed
+  push, timeout, older image, old server answering 404) = never reclaimed. The earlier sync-now
+  `complete` variant (capability, bus hint) was removed; Refresh keeps its KOBE-599 meaning.
+- **What does not block, by decision:** `.kobe/` (Pi sessions and agent state; D15: sessions are
+  rebuilt from Postgres, so a reclaimed volume resumes conversations), interrupted-download temp
+  files, the rebuildable `node_modules`/`__pycache__`/`.venv`, and **empty folders, which are not
+  preserved** (the manifest records files only). All documented in storage-limits.md and install.md.
+- **Wake right after a reclaim:** the reaper keeps the row lock until the old PVC is gone
+  (`awaitVolumeGone`, ≤ 60 s), so the wake (which waits on that lock) gets a fresh volume.
+- **Quota lag:** quota numbers alone give cause `volume_quota` but not definite (the wake waits its
+  budget); an "exceeded quota" event of this wake is definite.
 - **Reaper** (`sandbox-lifecycle/reclaim.ts`, run in the existing hibernation sweep after each
   team's hibernations; no new timer): candidates hibernated longer than `dormantDays` with a proof;
   per candidate, in `withTeam()` with the legal-hold lock: row `FOR UPDATE SKIP LOCKED` and

@@ -4,14 +4,6 @@ import type { WorkspaceSyncStatus } from "@kobe/protocol";
 import type { BusHint, SandboxBus } from "./bus.js";
 import { liveConnection } from "./commands.js";
 
-export interface SyncNowOptions {
-  /**
-   * KOBE-733: `synced` only when the agent proves the durable copy complete (capability
-   * `workspace_sync_complete`); any other agent is answered `not_synced`.
-   */
-  readonly complete?: boolean;
-}
-
 /** The member's own sandbox: never an eval sandbox (those have no workspace sync). */
 export interface SyncNowTarget {
   readonly teamId: string;
@@ -52,11 +44,7 @@ export class SyncNowRequests {
     this.#waiting.get(requestId)?.(ok);
   }
 
-  async request(
-    target: SyncNowTarget,
-    timeoutMs: number,
-    options: SyncNowOptions = {},
-  ): Promise<WorkspaceSyncStatus> {
+  async request(target: SyncNowTarget, timeoutMs: number): Promise<WorkspaceSyncStatus> {
     const connectionId = await this.#find({ teamId: target.teamId, userId: target.userId });
     if (connectionId === undefined) return "asleep";
     const requestId = randomUUID();
@@ -71,12 +59,7 @@ export class SyncNowRequests {
       this.#waiting.set(requestId, finish);
     });
     try {
-      await this.#notify({
-        kind: "sync",
-        id: connectionId,
-        request: requestId,
-        ...(options.complete ? { complete: true as const } : {}),
-      });
+      await this.#notify({ kind: "sync", id: connectionId, request: requestId });
     } catch {
       this.answered(requestId, false);
     }

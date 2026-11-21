@@ -167,7 +167,8 @@ export async function planPush(s: SyncState): Promise<PushPlan> {
   });
   const changes: PlannedChange[] = [];
   let reverted = false;
-  let leftOut = 0;
+  // Symlinks, special files and names the sync refuses stay local only (KOBE-733).
+  let leftOut = scan.skipped;
   for (const [path, file] of scan.files) {
     const k = s.known.get(path);
     if (locked(s, path)) {

@@ -81,7 +81,11 @@ export interface WorkspaceHooks {
    * manifest holds). Absent: `commit_project` answers `not_allowed`.
    */
   pushAll?(): Promise<unknown>;
-  flush(deadlineMs: number): Promise<unknown>;
+  /**
+   * Final push at shutdown; with `connectionId` (KOBE-733) also the reclaim proof when the copy is
+   * then complete.
+   */
+  flush(deadlineMs: number, connectionId?: string): Promise<unknown>;
   /**
    * The member moved files (`workspace.moved`, KOBE-304): replay the server's moves as local
    * renames now. Present: the agent announces `workspace_moves`.

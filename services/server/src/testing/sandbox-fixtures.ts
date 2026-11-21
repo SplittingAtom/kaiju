@@ -77,7 +77,7 @@ export const SETTINGS: SandboxSettings = {
     enabled: true,
     idleMinutes: 15,
     sweepSeconds: 60,
-    reclaim: { enabled: false, dormantDays: 30, syncTimeoutSeconds: 30 },
+    reclaim: { enabled: false, dormantDays: 30 },
   },
   workspaceSync: {
     enabled: true,

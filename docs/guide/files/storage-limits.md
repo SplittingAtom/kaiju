@@ -67,9 +67,13 @@ removed. Free space by deleting files, dropping project history, or asking a tea
 ## When your volume is reclaimed
 
 Your site may free the volume of a sandbox asleep for a long time (30 days by default; off unless
-turned on), but only once the backup is proven complete. Your next message starts a new sandbox
-and restores My files from the backup; `.venv`, `node_modules` and `__pycache__` are not backed up
-and must be rebuilt.
+turned on). It does so only when your sandbox, as it went to sleep, proved the backup complete:
+every process stopped, a last backup ran, and nothing was left on the volume only. A symlink, a
+socket or pipe, a file the backup refused (too large, unreadable) or a name it cannot store
+(backslash, control character, longer than 1024 bytes) means the volume is kept. Your next message
+starts a new sandbox and restores My files from the backup. Not restored, by design: `.venv`,
+`node_modules` and `__pycache__` folders (rebuild them), empty folders, and the agent's own
+`.kobe/` folder (conversations are rebuilt from Kobe's records).
 
 ## Sandbox temporary space
 

@@ -26,6 +26,8 @@ export class FakeSyncServer {
   readonly blobs = new Map<string, Buffer>();
   readonly rows = new Map<string, WorkspaceEntry>();
   readonly reports: WorkspaceRestoreReport[] = [];
+  /** Reclaim proofs received (`POST flushed`, KOBE-733): the connection ids. */
+  readonly flushed: string[] = [];
   /** The move journal (KOBE-304), with each move's file count. */
   readonly moves: (WorkspaceMoveRecord & { files: number })[] = [];
   readonly requests: string[] = [];
@@ -249,6 +251,11 @@ export class FakeSyncServer {
       });
       res.end(data);
       return;
+    }
+    if (req.method === "POST" && route === "/flushed") {
+      const { connection_id } = JSON.parse(body.toString()) as { connection_id: string };
+      this.flushed.push(connection_id);
+      return json(200, { proven: true });
     }
     if (req.method === "POST" && route === "/restore-report") {
       this.reports.push(JSON.parse(body.toString()) as WorkspaceRestoreReport);

@@ -1,4 +1,5 @@
 import { Readable } from "node:stream";
+import { recordFlushProof } from "../sandbox-lifecycle/reclaim.js";
 import { SYSTEM_ACTOR, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
 import {
   WORKSPACE_ENTRY_HEADER,
@@ -8,6 +9,7 @@ import {
   workspaceBlobsMissingRequestSchema,
   workspaceCommitRequestSchema,
   workspacePathSchema,
+  workspaceFlushedRequestSchema,
   workspaceRestoreReportSchema,
 } from "@kobe/protocol";
 import { Hono, type Context } from "hono";
@@ -578,6 +580,19 @@ export function workspaceRoutes(deps: WorkspaceRoutesDeps): Hono<Vars> {
         [WORKSPACE_ENTRY_HEADER]: encodeWorkspaceEntryHeader(publicEntry(entry)),
       },
     });
+  });
+
+  // KOBE-733: the agent's shutdown proof that the copy covers the volume (reclaim.ts).
+  app.post("/flushed", async (c) => {
+    const caller = c.get("caller");
+    const limited = metaAllowed(caller, c);
+    if (limited) return limited;
+    const body = workspaceFlushedRequestSchema.safeParse(await readJson(c));
+    if (!body.success) return error(c, 400, "invalid_request", "Expected {connection_id}.");
+    const proven = await tx(caller, "other", (t) =>
+      recordFlushProof(t, caller, body.data.connection_id),
+    );
+    return c.json({ proven });
   });
 
   app.post("/restore-report", async (c) => {

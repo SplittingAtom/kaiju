@@ -222,7 +222,7 @@ describe("server sandbox configuration", () => {
       enabled: true,
       idleMinutes: 15,
       sweepSeconds: 60,
-      reclaim: { enabled: false, dormantDays: 30, syncTimeoutSeconds: 30 },
+      reclaim: { enabled: false, dormantDays: 30 },
     });
     expect(
       sandboxConfig(render({ "sandbox.hibernation.idleMinutes": "30" })).hibernation,
@@ -672,7 +672,6 @@ describe("sandbox RBAC (least privilege; D11)", () => {
     expect(off.hibernation.reclaim).toEqual({
       enabled: false,
       dormantDays: 30,
-      syncTimeoutSeconds: 30,
     });
     const on = sandboxConfig(
       render({
@@ -683,7 +682,6 @@ describe("sandbox RBAC (least privilege; D11)", () => {
     expect(on.hibernation.reclaim).toEqual({
       enabled: true,
       dormantDays: 45,
-      syncTimeoutSeconds: 30,
     });
   });
 

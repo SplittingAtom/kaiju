@@ -28,7 +28,7 @@ Your files are kept. Send your message again; if it keeps happening, ask your si
 the reason in the audit log).
 
 **"Your team has used all of its workspace storage".** The team's quota of sandbox volumes is
-full, so yours could not be created; your files are safe in the backup. Ask your team or site admin
+full, so yours could not be created. Nothing of yours was deleted. Ask your team or site admin
 to free or raise the quota, then send your message again.
 
 **The agent seems stuck.** Look for an approval card waiting for you higher up in the answer. If

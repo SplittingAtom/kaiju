@@ -6,6 +6,7 @@ import {
   workspaceBlobsLostResponseSchema,
   workspaceBlobsMissingResponseSchema,
   workspaceCommitResponseSchema,
+  workspaceFlushedResponseSchema,
   workspaceManifestPageSchema,
   workspaceMovesPageSchema,
   type WorkspaceChange,
@@ -144,6 +145,17 @@ export class SyncClient {
       throw new SyncHttpError(502, "bad_response", "file response without a valid entry");
     }
     return { entry, body: Readable.fromWeb(res.body as never) };
+  }
+
+  /**
+   * KOBE-733: the reclaim proof at the end of a shutdown (`POST flushed`); true when the server
+   * recorded it. Never retried past the busy retries: a missing proof only keeps the volume.
+   */
+  async flushed(connectionId: string): Promise<boolean> {
+    const out = await this.#json(workspaceFlushedResponseSchema, "POST", "/flushed", {
+      connection_id: connectionId,
+    });
+    return out.proven;
   }
 
   async restoreReport(report: WorkspaceRestoreReport): Promise<void> {

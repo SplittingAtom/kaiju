@@ -6,6 +6,7 @@ import {
   type WorkspaceChangeResult,
   type WorkspaceEntry,
 } from "@kobe/protocol";
+import { clearFlushProof } from "../sandbox-lifecycle/reclaim.js";
 import { sql, type KobeTx } from "@kobe/db";
 import { encodeWorkspaceHint, RUN_EVENTS_CHANNEL } from "../event-stream/notify.js";
 import { checkoutOf, checkoutSlugs } from "./checkouts.js";
@@ -121,6 +122,8 @@ export async function saveState(
              WHERE team_id = ${owner.teamId} AND user_id = ${owner.userId}) old
      WHERE w.team_id = ${owner.teamId} AND w.user_id = ${owner.userId}
     RETURNING old.head_rev <> w.head_rev AS moved`);
+  // A manifest change after the shutdown proof clears it (KOBE-733).
+  if (res.rows[0]?.moved === true || push) await clearFlushProof(tx, owner);
   if (res.rows[0]?.moved === true) {
     await tx.execute(
       sql`SELECT pg_notify(${RUN_EVENTS_CHANNEL}, ${encodeWorkspaceHint(owner.userId)})`,
@@ -248,6 +251,8 @@ export async function reserveUpload(
   await tx.execute(sql`
     INSERT INTO workspace_sync (team_id, user_id) VALUES (${owner.teamId}, ${owner.userId})
     ON CONFLICT (team_id, user_id) DO NOTHING`);
+  // An upload after the shutdown proof: the volume is no longer proven covered (KOBE-733).
+  await clearFlushProof(tx, owner);
   const res = await tx.execute(sql`
     UPDATE workspace_sync
        SET pending_blobs = pending_blobs + 1, pending_bytes = pending_bytes + ${size},

@@ -85,6 +85,8 @@ export class Agent {
   #seenCommands = new Set<string>();
   #queuedExits: { runId: string; frame: PiExitedFrameT }[] = [];
   #stopping = false;
+  /** The last accepted wire connection (`hello.ack`): binds the shutdown's reclaim proof. */
+  #connectionId: string | undefined;
 
   constructor(deps: AgentDeps) {
     this.#deps = deps;
@@ -292,8 +294,9 @@ export class Agent {
   async #finishStop(code: number): Promise<void> {
     // Kernels never outlive the agent (NB2): they stop before the last workspace push.
     await this.#deps.kernels?.stopAll();
-    // Pi is gone, so the workspace is settled: push what changed since the last sync.
-    await this.#deps.workspace?.flush(WORKSPACE_FLUSH_MS);
+    // Pi, its tools (killed with their uid) and the kernels are gone, so nothing writes to the
+    // workspace any more: push what changed, then prove the copy complete (KOBE-733).
+    await this.#deps.workspace?.flush(WORKSPACE_FLUSH_MS, this.#connectionId);
     this.#traces.flush();
     this.#traces.close();
     await this.#wire.stop(1000, "agent stopping");
@@ -345,6 +348,7 @@ export class Agent {
   }
 
   #onReady(ack: HelloAckFrame): void {
+    this.#connectionId = ack.connection_id;
     this.#seenCommands = new Set();
     this.#outbox.resetConnectionState();
     const listed = new Map(ack.runs.map((run) => [run.run_id, run]));

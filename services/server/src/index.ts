@@ -653,8 +653,8 @@ const stopServerJobs = serverDeps
   : undefined;
 /**
  * Dormant-volume reclaim (KOBE-733): only with the chart switch on and workspace sync running (the
- * object-store copy is what the next wake restores from). The proof is a sync-now answered
- * complete by the sandbox's agent.
+ * object-store copy is what the next wake restores from). The proof is the agent's shutdown
+ * `POST flushed` (sandbox-lifecycle/reclaim.ts).
  */
 function reclaimSettings(): { reclaim?: ReclaimSettings } {
   const reclaim = providerRuntime?.settings.hibernation.reclaim;
@@ -665,15 +665,7 @@ function reclaimSettings(): { reclaim?: ReclaimSettings } {
     );
     return {};
   }
-  const wire = deps.sandboxWire;
-  const timeoutMs = reclaim.syncTimeoutSeconds * 1000;
-  return {
-    reclaim: {
-      dormantDays: reclaim.dormantDays,
-      proveSync: async (target) =>
-        (await wire.syncWorkspace(target, timeoutMs, { complete: true })) === "synced",
-    },
-  };
+  return { reclaim: { dormantDays: reclaim.dormantDays } };
 }
 const lifecycle =
   providerRuntime && deps

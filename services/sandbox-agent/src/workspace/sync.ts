@@ -180,8 +180,13 @@ export class WorkspaceSync {
    * Final push before the sandbox stops (hibernation, shutdown), bounded by `deadlineMs`. A restore
    * or pull in flight finishes first (within the deadline): nothing of this sync writes into the
    * workspace after the flush, its saved revision (KOBE-304) included.
+   *
+   * KOBE-733: with `connectionId` (the agent's last wire connection), called once every Pi, tool
+   * process and kernel is gone, a successful push is followed by a fresh completeness check; only
+   * when it finds nothing local-only is the reclaim proof sent (`POST flushed`). Any failure,
+   * timeout or doubt sends nothing, so the volume is kept.
    */
-  async flush(deadlineMs: number): Promise<PushStats | undefined> {
+  async flush(deadlineMs: number, connectionId?: string): Promise<PushStats | undefined> {
     this.#s.stopped = true;
     clearInterval(this.#timer);
     clearTimeout(this.#soon);
@@ -198,8 +203,15 @@ export class WorkspaceSync {
     const pushing = push(this.#s);
     try {
       const stats = await Promise.race([pushing, timeout]);
-      if (stats === undefined) this.#s.o.logger.warn({ deadlineMs }, "workspace flush timed out");
-      else this.#s.o.logger.info({ ...stats }, "workspace flushed");
+      if (stats === undefined) {
+        this.#s.o.logger.warn({ deadlineMs }, "workspace flush timed out");
+        return undefined;
+      }
+      this.#s.o.logger.info({ ...stats }, "workspace flushed");
+      if (connectionId !== undefined) {
+        const proven = await Promise.race([this.#prove(connectionId), timeout]);
+        this.#s.o.logger.info({ proven: proven === true }, "workspace reclaim proof");
+      }
       return stats;
     } catch (error) {
       warn(this.#s, "workspace flush failed", error);
@@ -211,11 +223,8 @@ export class WorkspaceSync {
    * Sync now (`workspace.sync_now`, KOBE-599: the Files panel's Refresh): one push that starts
    * after this call, so every file written before it is pushed. Requests made while that push has
    * not started yet share it; a request made while it runs waits for the next one. Resolves true
-   * once the push left the durable copy complete (KOBE-733, capability `workspace_sync_complete`:
-   * a fresh plan after it finds nothing to push, nothing left out and no lost content to resend),
-   * false when sync is off, stopping, still restoring after `restoreWaitMs`, the push failed, or
-   * something stays local only (a refused, unreadable or changing file, a partial scan). Never
-   * rejects.
+   * once the push committed (or found nothing to push), false when sync is off, stopping, still
+   * restoring after `restoreWaitMs`, or the push failed. Never rejects.
    */
   syncNow(): Promise<boolean> {
     if (!this.enabled || this.#s.stopped) return Promise.resolve(false);
@@ -231,7 +240,7 @@ export class WorkspaceSync {
         ]);
         if (!this.#s.restored || this.#s.stopped) return false;
         await push(this.#s);
-        return await this.#complete();
+        return true;
       } catch (error) {
         warn(this.#s, "workspace push on request failed", error);
         return false;
@@ -241,6 +250,17 @@ export class WorkspaceSync {
     });
     this.#nowQueued = next;
     return next;
+  }
+
+  /** The completeness check, then the proof (false on any doubt or error; never throws). */
+  async #prove(connectionId: string): Promise<boolean> {
+    try {
+      if (!(await this.#complete())) return false;
+      return await this.#s.o.client.flushed(connectionId);
+    } catch (error) {
+      warn(this.#s, "workspace reclaim proof not sent", error);
+      return false;
+    }
   }
 
   /** After a push: whether a fresh plan finds every local change in the durable copy. */

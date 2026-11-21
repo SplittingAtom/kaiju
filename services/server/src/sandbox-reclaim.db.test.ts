@@ -7,15 +7,18 @@ import {
   type LifecycleProvider,
   type SandboxLifecycle,
 } from "./sandbox-lifecycle/index.js";
-import type { ReclaimSettings } from "./sandbox-lifecycle/reclaim.js";
+import { withTeam } from "@kobe/db";
+import { recordFlushProof, type ReclaimSettings } from "./sandbox-lifecycle/reclaim.js";
+import { lockWorkspace, reserveUpload, saveState } from "./workspace-sync/store.js";
 import type { DestroyResult, HibernateOutcome, WakeResult } from "./sandbox/provider.js";
 import type { SandboxTarget } from "./sandbox-wire/types.js";
 import { createTeamWithAdmin } from "./teams/members.js";
 import { openHarness, type Harness } from "./testing/harness.js";
 
 /**
- * Dormant-volume reclaim (KOBE-733) against a real Postgres: off by default, the sync proof taken
- * at hibernation, the reaper's refusals (unproven, unsynced uploads, lost content, legal hold, not
+ * Dormant-volume reclaim (KOBE-733) against a real Postgres: off by default, the agent's shutdown
+ * proof (bound to the connection the hibernation closed; cleared by later uploads, commits and
+ * wakes), the reaper's refusals (unproven, unsynced uploads, lost content, legal hold, not
  * dormant yet), and the wake after a reclaim starting a new sandbox.
  */
 
@@ -69,6 +72,11 @@ class Provider implements LifecycleProvider {
   deleteVolume = async (_team: unknown, pvc: string): Promise<void> => {
     this.calls.push(`deleteVolume:${pvc}`);
   };
+
+  awaitVolumeGone = async (_team: unknown, pvc: string): Promise<boolean> => {
+    this.calls.push(`gone:${pvc}`);
+    return true;
+  };
 }
 
 let h: Harness;
@@ -78,18 +86,9 @@ let member = "";
 let admin = "";
 const log = pino({ level: "silent" });
 let provider: Provider;
-let proofAnswer = true;
-let duringProof: (() => Promise<void>) | undefined;
-let proofCalls = 0;
+const CONN = "7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
 
-const reclaim: ReclaimSettings = {
-  dormantDays: 30,
-  proveSync: async () => {
-    proofCalls += 1;
-    await duringProof?.();
-    return proofAnswer;
-  },
-};
+const reclaim: ReclaimSettings = { dormantDays: 30 };
 
 const lifecycle = (withReclaim: boolean): SandboxLifecycle =>
   createSandboxLifecycle({
@@ -102,7 +101,7 @@ const lifecycle = (withReclaim: boolean): SandboxLifecycle =>
 
 const target = (): SandboxTarget => ({ teamId: team, userId: member });
 
-/** An awake sandbox row the provider knows, idle for an hour. */
+/** An awake sandbox row the provider knows, idle for an hour, connected on `CONN`. */
 async function awake(): Promise<string> {
   const sandboxId = provider.idOf(member);
   await h.admin.query(
@@ -110,8 +109,19 @@ async function awake(): Promise<string> {
      VALUES ($1, $2, $3, 'running', $4, now() - interval '1 hour', now() - interval '1 hour')`,
     [team, member, sandboxId, `workspace-u-${member}`],
   );
+  await h.admin.query(
+    `INSERT INTO sandbox_connections (team_id, user_id, sandbox_id, connection_id, replica_id)
+     VALUES ($1, $2, $3, $4, 'replica-a')`,
+    [team, member, sandboxId, CONN],
+  );
   return sandboxId;
 }
+
+/** The agent's `POST flushed` at the end of its shutdown, as the route records it. */
+const flushed = (sandboxId: string, connectionId = CONN) =>
+  withTeam(h.deps.database.db, team, (tx) =>
+    recordFlushProof(tx, { teamId: team, userId: member, sandboxId }, connectionId),
+  );
 
 /** A hibernated row, `days` ago, with or without a proof taken at its hibernation. */
 async function dormant(days: number, proven: boolean): Promise<string> {
@@ -121,7 +131,7 @@ async function dormant(days: number, proven: boolean): Promise<string> {
        state_changed_at, volume_synced_at)
      VALUES ($1, $2, $3, 'hibernated', $4, now() - make_interval(days => $5::int + 1),
        now() - make_interval(days => $5::int),
-       ${proven ? "now() - make_interval(days => $5::int) - interval '1 minute'" : "NULL"})`,
+       ${proven ? "now() - make_interval(days => $5::int) + interval '1 minute'" : "NULL"})`,
     [team, member, sandboxId, `workspace-u-${member}`, days],
   );
   return sandboxId;
@@ -169,11 +179,9 @@ afterAll(() => h?.close());
 
 beforeEach(async () => {
   provider = new Provider();
-  proofAnswer = true;
-  duringProof = undefined;
-  proofCalls = 0;
   await h.admin.query(`DELETE FROM legal_holds`);
   await h.admin.query(`DELETE FROM sandboxes`);
+  await h.admin.query(`DELETE FROM sandbox_connections`);
   await h.admin.query(`DELETE FROM workspace_blobs`);
   await h.admin.query(`DELETE FROM workspace_sync`);
   await h.admin.query(`INSERT INTO workspace_sync (team_id, user_id) VALUES ($1, $2)`, [
@@ -183,13 +191,7 @@ beforeEach(async () => {
 });
 
 describe("off by default", () => {
-  it("asks for no proof and reclaims nothing without the reclaim setting", async () => {
-    await awake();
-    expect(await lifecycle(false).hibernate(target())).toBe(true);
-    expect(proofCalls).toBe(0);
-    expect((await row()).volume_synced_at).toBeNull();
-    // Even a dormant, proven row is left alone while reclaim is off.
-    await h.admin.query(`DELETE FROM sandboxes`);
+  it("reclaims nothing without the reclaim setting, even a dormant, proven volume", async () => {
     await dormant(90, true);
     const result = await lifecycle(false).sweep();
     expect(result.reclaimed).toEqual([]);
@@ -198,43 +200,69 @@ describe("off by default", () => {
   });
 });
 
-describe("the proof taken at hibernation", () => {
-  it("records when a complete sync was asked for, if the sandbox answered complete", async () => {
-    await awake();
+describe("the agent's shutdown proof", () => {
+  it("starts empty at hibernation and is recorded from the connection the hibernation closed", async () => {
+    const sandboxId = await awake();
     expect(await lifecycle(true).hibernate(target())).toBe(true);
-    expect(proofCalls).toBe(1);
-    const r = await row();
-    expect(r.state).toBe("hibernated");
-    expect(r.volume_synced_at).not.toBeNull();
-  });
-
-  it("records none when the sandbox could not prove the copy complete", async () => {
-    await awake();
-    proofAnswer = false;
-    await lifecycle(true).hibernate(target());
     expect((await row()).volume_synced_at).toBeNull();
+    expect(await flushed(sandboxId)).toBe(true);
+    expect((await row()).volume_synced_at).not.toBeNull();
   });
 
-  it("records none when something happened on the sandbox after the ask", async () => {
-    await awake();
-    duringProof = async () => {
-      await h.admin.query(
-        `UPDATE sandboxes SET last_active_at = clock_timestamp() WHERE team_id = $1 AND user_id = $2`,
-        [team, member],
-      );
-    };
-    // Forced, so the fresh activity does not stop the hibernation itself.
-    await lifecycle(true).hibernate(target(), { force: true });
-    const r = await row();
-    expect(r.state).toBe("hibernated");
-    expect(r.volume_synced_at).toBeNull();
+  it("is refused before the hibernation, from another sandbox, or from an earlier connection", async () => {
+    const sandboxId = await awake();
+    // Still running: a shutdown that is not a hibernation proves nothing.
+    expect(await flushed(sandboxId)).toBe(false);
+    await lifecycle(true).hibernate(target());
+    expect(await flushed(randomUUID())).toBe(false);
+    expect(await flushed(sandboxId, randomUUID())).toBe(false);
+    expect((await row()).volume_synced_at).toBeNull();
+    // A connection that had already closed before the hibernation (the hibernation closed none).
+    await h.admin.query(`DELETE FROM sandboxes`);
+    await h.admin.query(`DELETE FROM sandbox_connections`);
+    const again = await awake();
+    await h.admin.query(`UPDATE sandbox_connections SET closed_at = now() - interval '1 minute'`);
+    await lifecycle(true).hibernate(target());
+    expect(await flushed(again)).toBe(false);
+  });
+
+  it("is refused while an upload is reserved (the shutdown upload did not finish)", async () => {
+    const sandboxId = await awake();
+    await lifecycle(true).hibernate(target());
+    await h.admin.query(
+      `UPDATE workspace_sync SET pending_blobs = 1, pending_bytes = 5, pending_since = now()
+        WHERE team_id = $1`,
+      [team],
+    );
+    expect(await flushed(sandboxId)).toBe(false);
+  });
+
+  it("is cleared by an upload or a manifest change after it, so the volume is kept", async () => {
+    const sandboxId = await awake();
+    const lc = lifecycle(true);
+    await lc.hibernate(target());
+    expect(await flushed(sandboxId)).toBe(true);
+    const owner = { teamId: team, userId: member };
+    await withTeam(h.deps.database.db, team, (tx) =>
+      reserveUpload(tx, owner, 1, { maxBlobBytes: 1e9, maxUncommittedBlobs: 100 }),
+    );
+    expect((await row()).volume_synced_at).toBeNull();
+    await h.admin.query(`UPDATE workspace_sync SET pending_blobs = 0, pending_bytes = 0`);
+    expect(await flushed(sandboxId)).toBe(true);
+    await withTeam(h.deps.database.db, team, async (tx) =>
+      saveState(tx, owner, await lockWorkspace(tx, owner), true),
+    );
+    expect((await row()).volume_synced_at).toBeNull();
+    // Dormant now, but unproven: kept.
+    await h.admin.query(`UPDATE sandboxes SET state_changed_at = now() - interval '40 days'`);
+    expect((await lc.sweep()).reclaimed).toEqual([]);
   });
 
   it("is cleared by a wake", async () => {
-    await awake();
+    const sandboxId = await awake();
     const lc = lifecycle(true);
     await lc.hibernate(target());
-    expect((await row()).volume_synced_at).not.toBeNull();
+    await flushed(sandboxId);
     await lc.waker.wake(target());
     const r = await row();
     expect(r.state).toBe("running");
@@ -248,9 +276,11 @@ describe("the dormant-volume reaper", () => {
     const lc = lifecycle(true);
     const result = await lc.sweep();
     expect(result.reclaimed).toEqual([target()]);
+    // The row stays locked until the old volume is gone: a wake never meets it Terminating.
     expect(provider.calls).toEqual([
       `destroy:${member}:drop`,
       `deleteVolume:workspace-u-${member}`,
+      `gone:workspace-u-${member}`,
     ]);
     expect(await row()).toMatchObject({
       state: "hibernated",

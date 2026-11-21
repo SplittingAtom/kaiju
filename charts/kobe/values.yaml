@@ -71,16 +71,15 @@ sandbox:
     sweepSeconds: 60
     # Dormant-volume reclaim (KOBE-733), off by default. When on, a sandbox hibernated for
     # dormantDays loses its claim and workspace volume, freeing the team's PVC quota, but only when
-    # its workspace copy in object storage is proven complete: right before hibernating, the server
-    # asks the sandbox to sync and waits up to syncTimeoutSeconds for an answer that every local
-    # change is committed; nothing may happen on the sandbox after that, no upload may be pending or
-    # lost, and no legal hold may cover the member. The member's next message starts a new sandbox
-    # that restores the workspace from object storage (node_modules, __pycache__ and .venv are not
-    # synced and must be rebuilt). Needs workspaceSync and s3.*. Audited as sandbox.volume_reclaimed.
+    # its agent proved at shutdown that the object-storage copy is complete (final push after every
+    # process stopped, then nothing local-only: no symlink, special file, unsyncable name, refused
+    # or unreadable file), and no upload, wake or legal hold came after. Older sandbox images never
+    # prove it. The member's next message starts a new sandbox that restores the workspace (empty
+    # folders, node_modules, __pycache__, .venv and .kobe are not restored). Needs workspaceSync and
+    # s3.*. Audited as sandbox.volume_reclaimed.
     reclaim:
       enabled: false
       dormantDays: 30
-      syncTimeoutSeconds: 30
   # Durable copy of every sandbox's /workspace in object storage (s3.*), so losing or rebuilding a
   # volume loses no files (KOBE-27). The server brokers every transfer on its sandbox port:
   # sandboxes hold no storage credentials and gain no network access. Off without s3.bucket.

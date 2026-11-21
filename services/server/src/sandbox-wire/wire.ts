@@ -35,7 +35,7 @@ import { newMetrics, type LeaseViolation, type WireContext, type WireMetrics } f
 import { attachSandboxGateway } from "./gateway.js";
 import { DENY_APPROVALS } from "./policy-check.js";
 import { ConnectionRegistry } from "./registry.js";
-import { syncNowRequests, type SyncNowOptions, type SyncNowTarget } from "./sync-now.js";
+import { syncNowRequests, type SyncNowTarget } from "./sync-now.js";
 import type { SkillDraftTool } from "../skills/drafts/tool.js";
 import { CommandRouter } from "./router.js";
 import { RelayBudget } from "./trace-budget.js";
@@ -126,11 +126,7 @@ export interface SandboxWire {
    * Refresh in the Files panel (KOBE-599): ask the member's running sandbox to push now and wait
    * for it, at most `timeoutMs` (`sync-now.ts`). Never rejects for sandbox-side problems.
    */
-  syncWorkspace(
-    target: SyncNowTarget,
-    timeoutMs: number,
-    options?: SyncNowOptions,
-  ): Promise<WorkspaceSyncStatus>;
+  syncWorkspace(target: SyncNowTarget, timeoutMs: number): Promise<WorkspaceSyncStatus>;
   /** One lost-sandbox sweep + command expiry now. */
   sweep(): Promise<SweepResult>;
   metrics(): WireMetrics & { readonly connections: number; readonly waiting: number };
@@ -211,7 +207,7 @@ export function createSandboxWire(options: SandboxWireOptions): SandboxWire {
         registry.get(hint.id)?.workspaceMoved();
         return;
       case "sync":
-        registry.get(hint.id)?.workspaceSyncNow(hint.request, hint.complete === true);
+        registry.get(hint.id)?.workspaceSyncNow(hint.request);
         return;
       case "synced":
       case "unsynced":
@@ -546,8 +542,8 @@ export function createSandboxWire(options: SandboxWireOptions): SandboxWire {
       userListeners.add(listener);
       return () => userListeners.delete(listener);
     },
-    syncWorkspace: (target, timeoutMs, syncOptions) =>
-      closed ? Promise.resolve("not_synced") : syncNow.request(target, timeoutMs, syncOptions),
+    syncWorkspace: (target, timeoutMs) =>
+      closed ? Promise.resolve("not_synced") : syncNow.request(target, timeoutMs),
     sweep,
     metrics() {
       return { ...metrics, connections: registry.size, waiting: router.waiting };

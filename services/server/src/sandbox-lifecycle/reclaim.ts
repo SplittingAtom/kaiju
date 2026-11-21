@@ -1,4 +1,4 @@
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, type KobeTx } from "@kobe/db";
 import type { SandboxTarget } from "../sandbox-wire/types.js";
 
 /**
@@ -7,37 +7,57 @@ import type { SandboxTarget } from "../sandbox-wire/types.js";
  * team stops at about 48 members who ever used Kobe. When an install turns reclaim on
  * (`sandbox.hibernation.reclaim`, off by default), the hibernation sweep deletes the sandbox and its
  * volume once it has been hibernated for `dormantDays` and its workspace copy in object storage is
- * **proven** complete; the next wake starts a new sandbox whose agent restores the workspace from
- * that copy (the existing full restore of an empty volume).
+ * **proven** complete; the next wake starts a new sandbox whose agent restores the workspace.
  *
- * The proof (`sandboxes.volume_synced_at`, set only by `markHibernated`): right before hibernating,
- * the server asked the sandbox to sync now and it answered complete (capability
- * `workspace_sync_complete`: a fresh look after the push found nothing local only), and nothing
- * happened on the sandbox after the ask. A hibernated sandbox runs nothing, so its volume cannot
- * change afterwards. Checked again here under the row lock: the workspace's upload reservations are
- * all settled, no content is marked lost from storage (`workspace_blobs.lost_at`: only the volume
- * still holds it), no command waits, and no legal hold covers the member. Anything unproven is
- * never reclaimed.
+ * The proof (`sandboxes.volume_synced_at`) comes only from the agent's shutdown: after every Pi,
+ * tool process and kernel is gone, the agent pushes, checks that nothing is local-only, and calls
+ * `POST flushed` with its last wire connection. {@link recordFlushProof} accepts it only for the
+ * sandbox the session token names, while it is hibernated, when that connection is the one the
+ * hibernation closed, and with no upload reserved. Any later upload or manifest change
+ * (`clearFlushProof`) and any wake clear it. No proof (a killed pod, an older image, a timeout, a
+ * failed push): the volume is kept. Checked again under the row lock before reclaiming: no content
+ * marked lost, no command waiting, no legal hold.
  */
 
 export interface ReclaimSettings {
   /** Days a sandbox stays hibernated before its volume may be reclaimed. */
   readonly dormantDays: number;
-  /**
-   * Asks the member's running sandbox for a complete sync before it hibernates; true only when it
-   * answered complete (`SandboxWire.syncWorkspace(..., { complete: true })` → `synced`).
-   */
-  readonly proveSync: (target: SandboxTarget) => Promise<boolean>;
   /** Most volumes one sweep reclaims per team (spreads Kubernetes deletes). */
   readonly batchPerTeam?: number;
 }
 
-/** The database's clock now (the proof is compared with timestamps the database wrote). */
-export async function databaseNow(db: KobeDb): Promise<Date> {
-  const res = await db.execute<{ now: Date | string }>(sql`SELECT clock_timestamp() AS now`);
-  const now = res.rows[0]?.now;
-  if (now === undefined) throw new Error("clock_timestamp() returned no row");
-  return new Date(now);
+/**
+ * The agent's shutdown proof (`POST flushed`): sets `volume_synced_at` when the caller's sandbox is
+ * the hibernated one, the named connection is the one its hibernation closed, and no upload is
+ * reserved. Returns whether it was recorded.
+ */
+export async function recordFlushProof(
+  tx: KobeTx,
+  caller: SandboxTarget & { readonly sandboxId: string },
+  connectionId: string,
+): Promise<boolean> {
+  const res = await tx.execute(sql`
+    UPDATE sandboxes s SET volume_synced_at = now()
+     WHERE s.team_id = ${caller.teamId} AND s.user_id = ${caller.userId}
+       AND s.state = 'hibernated' AND s.sandbox_id = ${caller.sandboxId}
+       AND EXISTS (
+         SELECT 1 FROM sandbox_connections c
+          WHERE c.team_id = ${caller.teamId} AND c.user_id = ${caller.userId}
+            AND c.sandbox_id = ${caller.sandboxId} AND c.connection_id = ${connectionId}
+            AND c.closed_at = s.state_changed_at)
+       AND EXISTS (
+         SELECT 1 FROM workspace_sync w
+          WHERE w.team_id = ${caller.teamId} AND w.user_id = ${caller.userId}
+            AND w.pending_blobs = 0)`);
+  return (res.rowCount ?? 0) > 0;
+}
+
+/** Any upload or manifest change after the proof: the volume is no longer proven covered. */
+export async function clearFlushProof(tx: KobeTx, owner: SandboxTarget): Promise<void> {
+  await tx.execute(sql`
+    UPDATE sandboxes SET volume_synced_at = NULL
+     WHERE team_id = ${owner.teamId} AND user_id = ${owner.userId}
+       AND volume_synced_at IS NOT NULL`);
 }
 
 /** Hibernated sandboxes of a team past the dormancy period with a proof (unlocked read). */
@@ -75,7 +95,7 @@ export async function lockReclaimable(
     SELECT sandbox_id, pvc FROM sandboxes
      WHERE team_id = ${target.teamId} AND user_id = ${target.userId}
        AND state = 'hibernated' AND sandbox_id IS NOT NULL AND volume_synced_at IS NOT NULL
-       AND volume_synced_at <= state_changed_at
+       AND volume_synced_at >= state_changed_at
        AND state_changed_at < now() - make_interval(days => ${dormantDays})
      FOR UPDATE SKIP LOCKED`);
   const row = locked.rows[0];

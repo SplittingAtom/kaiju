@@ -158,37 +158,16 @@ export async function forgetSandboxIdentity(
 /**
  * Records the hibernation (inside the transaction that holds the lock) and closes the sandbox's
  * connection row, so nothing is routed to a pod on its way out. Returns the connection to close.
- *
- * `syncProvenAt` (KOBE-733): when a sync-now asked at that moment was answered complete. It becomes
- * the volume's proof (`volume_synced_at`) only if nothing happened on the sandbox since it was
- * asked: no activity touch, no run of the member's ended, no command created or completed. Else,
- * and without one, the proof is cleared and the volume is never reclaimed.
+ * The volume's reclaim proof starts empty (KOBE-733): only the agent's shutdown proof
+ * (`recordFlushProof`), bound to the connection closed here, sets it.
  */
 export async function markHibernated(
   tx: KobeTx,
   target: SandboxTarget,
-  syncProvenAt: Date | null = null,
 ): Promise<string | undefined> {
-  const proof = syncProvenAt === null ? null : syncProvenAt.toISOString();
   await tx.execute(sql`
-    UPDATE sandboxes s SET state = 'hibernated', state_changed_at = now(),
-           volume_synced_at = CASE
-             WHEN ${proof}::timestamptz IS NOT NULL
-              AND s.last_active_at < ${proof}::timestamptz
-              AND NOT EXISTS (
-                SELECT 1 FROM runs r
-                  JOIN threads t ON t.team_id = r.team_id AND t.id = r.thread_id
-                 WHERE r.team_id = ${target.teamId} AND t.team_id = ${target.teamId}
-                   AND t.owner_user_id = ${target.userId}
-                   AND (r.ended_at >= ${proof}::timestamptz
-                        OR r.created_at >= ${proof}::timestamptz))
-              AND NOT EXISTS (
-                SELECT 1 FROM sandbox_commands c
-                 WHERE c.team_id = ${target.teamId} AND c.user_id = ${target.userId}
-                   AND (c.created_at >= ${proof}::timestamptz
-                        OR c.completed_at >= ${proof}::timestamptz))
-             THEN ${proof}::timestamptz END
-     WHERE s.team_id = ${target.teamId} AND s.user_id = ${target.userId}`);
+    UPDATE sandboxes SET state = 'hibernated', state_changed_at = now(), volume_synced_at = NULL
+     WHERE team_id = ${target.teamId} AND user_id = ${target.userId}`);
   const closed = await tx.execute<{ connection_id: string }>(sql`
     UPDATE sandbox_connections SET closed_at = now()
      WHERE team_id = ${target.teamId} AND user_id = ${target.userId} AND closed_at IS NULL

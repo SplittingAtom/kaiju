@@ -21,6 +21,7 @@ import { createHash } from "node:crypto";
 import { isConflictCopyOf } from "@kobe/protocol";
 import { WorkspaceSync, type ConflictReport } from "./sync.js";
 
+const CONN = "6f1d2c3b-4a59-4e6d-8c7b-9a0b1c2d3e4f";
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
 const quiet = {
@@ -49,6 +50,7 @@ afterEach(async () => {
   server.rows.clear();
   server.blobs.clear();
   server.reports.length = 0;
+  server.flushed.length = 0;
   server.failWith = undefined;
   server.failDownloads = 0;
   server.horizon = 0;
@@ -331,9 +333,7 @@ describe("workspace sync (agent)", () => {
     await put(root, "b.txt", "b");
     await Promise.resolve();
     const [one, two] = await Promise.all([first, same]);
-    // One push, one answer. (b.txt, written while it may be running, can make that answer false:
-    // `ok` means complete since KOBE-733.)
-    expect(one).toBe(two);
+    expect([one, two]).toEqual([true, true]);
     expect(server.content("a.txt")).toBe("a");
     // While a push runs, a new request gets its own push, which starts after it.
     const running = sync.syncNow();
@@ -356,18 +356,67 @@ describe("workspace sync (agent)", () => {
     await expect(sync.syncNow()).resolves.toBe(false);
   });
 
-  it("answers false while a file stays local only, true once it is synced (KOBE-733)", async () => {
+  it("sends the reclaim proof after a complete shutdown push, bound to the connection (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "late.txt", "written just before hibernation");
+    await sync.flush(5_000, CONN);
+    expect(server.content("late.txt")).toBe("written just before hibernation");
+    expect(server.flushed).toEqual([CONN]);
+  });
+
+  it("sends no proof without a connection, or when the shutdown push fails (KOBE-733)", async () => {
+    const root = await volume();
+    const quietSync = await started(root);
+    await quietSync.flush(5_000);
+    expect(server.flushed).toEqual([]);
+
+    const other = await volume();
+    const failing = await started(other);
+    await put(other, "x.txt", "x");
+    server.failWith = 500;
+    await failing.flush(5_000, CONN);
+    server.failWith = undefined;
+    expect(server.flushed).toEqual([]);
+  });
+
+  it("sends no proof while a file stays local only (KOBE-733)", async () => {
     const root = await volume();
     const sync = await started(root);
     await put(root, "ok.txt", "synced");
     await put(root, "secret.txt", "owner-only");
     await chmod(path.join(root, "secret.txt"), 0o000);
-    // The push commits ok.txt, but secret.txt cannot be read: the copy is not complete.
-    await expect(sync.syncNow()).resolves.toBe(false);
+    await sync.flush(5_000, CONN);
     expect(server.content("ok.txt")).toBe("synced");
-    await chmod(path.join(root, "secret.txt"), 0o644);
-    await expect(sync.syncNow()).resolves.toBe(true);
-    expect(server.content("secret.txt")).toBe("owner-only");
+    expect(server.flushed).toEqual([]);
+  });
+
+  it("sends no proof with a symlink or a name the sync refuses (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "real.txt", "real");
+    await symlink("real.txt", path.join(root, "link.txt"));
+    await sync.flush(5_000, CONN);
+    expect(server.flushed).toEqual([]);
+
+    const other = await volume();
+    const named = await started(other);
+    await put(other, "back\\slash.txt", "refused name");
+    await named.flush(5_000, CONN);
+    expect(server.flushed).toEqual([]);
+  });
+
+  it("still proves with only rebuildable folders, agent state and empty folders unsynced (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "app/.venv/lib/x.py", "rebuildable");
+    await put(root, "app/node_modules/m/index.js", "rebuildable");
+    await put(root, ".kobe/sessions/t.jsonl", "rebuilt from the server");
+    await mkdir(path.join(root, "empty-folder"));
+    await put(root, "app/main.py", "print(1)");
+    await sync.flush(5_000, CONN);
+    expect(server.content("app/main.py")).toBe("print(1)");
+    expect(server.flushed).toEqual([CONN]);
   });
 
   it("a volume proven complete restores whole onto the new volume after a reclaim (KOBE-733)", async () => {
@@ -375,9 +424,9 @@ describe("workspace sync (agent)", () => {
     const before = await started(old);
     await put(old, "notes/plan.md", "the plan");
     await put(old, "data.csv", "a,b\n1,2\n");
-    // The proof the server asks for before hibernating.
-    await expect(before.syncNow()).resolves.toBe(true);
-    await before.flush(5_000);
+    // The shutdown push and the proof the reaper needs.
+    await before.flush(5_000, CONN);
+    expect(server.flushed).toEqual([CONN]);
     // Reclaimed: the next wake gets a new, empty volume.
     const fresh = await volume();
     await started(fresh);

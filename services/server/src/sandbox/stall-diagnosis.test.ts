@@ -268,25 +268,25 @@ describe("classifyStall: a full team volume quota (KOBE-733)", () => {
       volumeBytes: 10 * GI,
     });
 
-  it("is definite when no PVC is left in the quota", () => {
+  it("names the quota when no PVC is left, but keeps waiting (its numbers lag)", () => {
     const d = noVolume({
       quota: quota({ persistentvolumeclaims: "50" }, { persistentvolumeclaims: "50" }),
     });
-    expect(d).toMatchObject({ cause: "volume_quota", definite: true });
+    expect(d).toMatchObject({ cause: "volume_quota", definite: false });
     expect(d.detail).toMatch(/persistentvolumeclaims used 50 of 50/);
   });
 
-  it("is definite when the storage left is smaller than one workspace", () => {
+  it("names the quota when the storage left is smaller than one workspace", () => {
     const d = noVolume({
       quota: quota(
         { persistentvolumeclaims: "50", "requests.storage": "500Gi" },
         { persistentvolumeclaims: "41", "requests.storage": "495Gi" },
       ),
     });
-    expect(d).toMatchObject({ cause: "volume_quota", definite: true });
+    expect(d).toMatchObject({ cause: "volume_quota", definite: false });
   });
 
-  it("reads a controller's exceeded-quota event when the quota cannot be read", () => {
+  it("is definite with a controller's exceeded-quota event of this wake", () => {
     const refused: KubeObject = {
       ...event(
         "Sandbox",

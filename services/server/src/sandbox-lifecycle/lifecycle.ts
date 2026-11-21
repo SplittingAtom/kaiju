@@ -25,7 +25,6 @@ import { resolveIdleMinutes, TEAM_IDLE_MINUTES } from "./idle.js";
 import { ensureReady, REMEDY, type ReadyProvider } from "./ready.js";
 import { wakeSpans, type TimingSpan } from "./timing.js";
 import {
-  databaseNow,
   forgetReclaimedSandbox,
   lockReclaimable,
   reclaimCandidates,
@@ -71,7 +70,7 @@ function recordWakeSpans(spans: readonly TimingSpan[], runId: string | undefined
 
 export type LifecycleProvider = Pick<SandboxProvider, "wakeSandbox" | "hibernateSandbox"> &
   Partial<ReadyProvider> &
-  Partial<Pick<SandboxProvider, "destroySandbox" | "deleteVolume">>;
+  Partial<Pick<SandboxProvider, "destroySandbox" | "deleteVolume" | "awaitVolumeGone">>;
 
 export interface LifecycleOptions {
   readonly db: KobeDb;
@@ -130,6 +129,8 @@ export interface SandboxLifecycle {
 }
 
 const WAKE_SAMPLES = 64;
+/** How long a reclaim waits for the old workspace volume to be deleted (KOBE-733). */
+const VOLUME_GONE_WAIT_MS = 60_000;
 
 type WakingReason =
   "hibernated" | "first_start" | "restarted_out_of_space" | "restarted_out_of_memory" | "restarted";
@@ -372,19 +373,6 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
     },
   };
 
-  /** The moment a complete sync was asked for, when the sandbox answered complete (KOBE-733). */
-  const proveSync = async (team: TeamRef, target: SandboxTarget): Promise<Date | null> => {
-    const { reclaim } = options;
-    if (!reclaim) return null;
-    try {
-      const askedAt = await databaseNow(db);
-      return (await reclaim.proveSync(target)) ? askedAt : null;
-    } catch (err) {
-      log.warn({ err, team_id: team.id }, "sync proof before hibernation failed");
-      return null;
-    }
-  };
-
   /**
    * Reclaims one dormant volume (KOBE-733) under the row lock and the legal-hold lock: Kubernetes
    * first (claim, pod, then the volume), then the row forgets the sandbox. A failed delete rolls the
@@ -408,6 +396,12 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
         await deleteVolume(team, locked.pvc).catch((err: unknown) =>
           log.warn({ err, team_id: target.teamId }, "reclaim: volume delete failed; left to GC"),
         );
+        // A wake waits on this row lock: keep it until the old volume is really gone, so the new
+        // sandbox (same PVC name) never meets it Terminating. Bounded; GC finishes it otherwise.
+        const gone = await provider.awaitVolumeGone?.(team, locked.pvc, VOLUME_GONE_WAIT_MS);
+        if (gone === false) {
+          log.warn({ team_id: target.teamId }, "reclaim: old volume still terminating");
+        }
       }
       await forgetReclaimedSandbox(tx, target);
       await tx.execute(sql.raw(`SET LOCAL lock_timeout = '0'`));
@@ -453,9 +447,6 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
     idleMinutes: number,
     force: boolean,
   ): Promise<boolean> => {
-    // KOBE-733: with reclaim on, ask for a complete sync first (outside the row lock: it waits for
-    // the agent's push). The answer counts only if nothing happens after the ask (markHibernated).
-    const syncProvenAt = await proveSync(team, target);
     const done = await withTeam(db, target.teamId, async (tx) => {
       const locked = await lockIfIdle(tx, target, idleMinutes, force);
       // No claim recorded yet (its wake failed half-way): nothing known to suspend; the next wake
@@ -472,7 +463,7 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
         log.warn({ team_id: target.teamId, sandbox_id: sandboxId }, "hibernate: no such sandbox");
         return false;
       }
-      const connection = await markHibernated(tx, target, syncProvenAt);
+      const connection = await markHibernated(tx, target);
       if (connection) await notifyHintInTx(tx, { kind: "hib", id: connection });
       // `already_suspended`: a previous hibernation whose commit failed; record the state only.
       if (outcome === "suspended") {

@@ -182,14 +182,16 @@ export function classifyStall(input: {
   // help. The quota's own numbers, or a controller's "exceeded quota" event of this wake (it names
   // the volume, which has no uid yet, so any object's event counts).
   if (!pvc) {
-    const shortfall = quotaShortfall(input.quota, input.volumeBytes);
-    if (shortfall) return make("volume_quota", shortfall, true);
     const refused = input.events
       .map(toEvent)
       .filter((e) => e.type !== "Normal" && e.at >= since)
       .sort((a, b) => b.at - a.at)
       .find((e) => QUOTA_EVENT.test(e.message) && QUOTA_VOLUME.test(e.message));
     if (refused) return make("volume_quota", line(refused), true);
+    // The quota's own numbers lag its controller (just after volumes were freed): the cause, but
+    // not definite on its own, so the wake keeps waiting for its budget.
+    const shortfall = quotaShortfall(input.quota, input.volumeBytes);
+    if (shortfall) return make("volume_quota", shortfall, false);
   }
   // Longhorn's replica scheduling (FailedAttachVolume etc.); the scheduler's own words below.
   const replica = events.find(

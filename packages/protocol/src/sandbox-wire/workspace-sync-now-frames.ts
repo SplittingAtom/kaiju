@@ -10,15 +10,6 @@ import { SANDBOX_WIRE_VERSION } from "./connection.js";
  */
 export const CAPABILITY_WORKSPACE_SYNC_NOW = "workspace_sync_now";
 
-/**
- * KOBE-733: an agent that announces this answers `workspace.synced` `ok: true` only when the push
- * left the durable copy complete: a fresh look after it finds no local change, no file left out
- * (refused, unreadable, changing) and no lost content to resend, over a whole scan. The server
- * proves a hibernated volume reclaimable only with such an answer; from an agent without it, `ok`
- * keeps the KOBE-599 meaning (the push ran) and proves nothing.
- */
-export const CAPABILITY_WORKSPACE_SYNC_COMPLETE = "workspace_sync_complete";
-
 function frame<T extends string, S extends z.ZodRawShape>(type: T, shape: S) {
   return z.strictObject({ v: z.literal(SANDBOX_WIRE_VERSION), type: z.literal(type), ...shape });
 }

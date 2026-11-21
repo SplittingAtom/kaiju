@@ -309,6 +309,11 @@ export interface SandboxProvider {
   ): Promise<DestroyResult>;
   /** Deletes a retained workspace volume (`workspace-u-<user>`) of the team; missing is fine. */
   deleteVolume(team: TeamRef, pvcName: string): Promise<void>;
+  /**
+   * KOBE-733: waits until the workspace volume is gone (not just Terminating), at most `timeoutMs`;
+   * true when it is. A reclaim waits for it so the next wake never meets the old volume.
+   */
+  awaitVolumeGone(team: TeamRef, pvcName: string, timeoutMs: number): Promise<boolean>;
   /** Verifies a sandbox pod's bootstrap token (TokenReview) and resolves who it is. */
   identifyBootstrapToken(token: string): Promise<BootstrapIdentity>;
   /**
@@ -959,6 +964,19 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
     }
   };
 
+  const awaitVolumeGone = async (
+    team: TeamRef,
+    pvcName: string,
+    timeoutMs: number,
+  ): Promise<boolean> => {
+    const end = now() + timeoutMs;
+    for (;;) {
+      if (!(await kube.get(PVC(teamNamespaceName(team), pvcName)))) return true;
+      if (now() >= end) return false;
+      await sleep(1000);
+    }
+  };
+
   const identifyBootstrapToken = async (token: string): Promise<BootstrapIdentity> => {
     if (!/^[A-Za-z0-9_.-]{20,8192}$/.test(token)) throw new SandboxAuthError("malformed token");
     const review = await kube.reviewToken(token, [BOOTSTRAP_TOKEN_AUDIENCE]);
@@ -1229,6 +1247,7 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
     hibernateSandbox,
     destroySandbox,
     deleteVolume,
+    awaitVolumeGone,
     identifyBootstrapToken,
     recheckAssignment,
     reconcileIsolation,
