@@ -17,7 +17,7 @@ Gate 7 closes v1.3 Semantic Memory: every story U39–U54 proven on k3d and on t
 
 `e2e/gate7.sh` (KOBE-675) proves U39–U54 on a fresh k3d install, one verdict per story, in CI's
 e2e shards `gate7-a` (U39–U46) and `gate7-b` (U47–U54), each on its own cluster after the
-`gate1-prep` install. A story passes when its API checks (`e2e/gate7/client.mjs`, run in a server
+`gate1-prep` install. A story passes when its API checks (`e2e/gate7/client/*.mjs`, run in a server
 pod) and its browser checks (Playwright in Chromium, `e2e/browser`) all pass; the shard's last line
 is its verdict, read by `e2e/gate-verdicts.sh` in the `stories` job.
 
@@ -38,7 +38,7 @@ server's unit tests. Time-based rules (14-day candidates, 30-day proposals and o
 are proven by the DB tests the earlier gate docs cite; on k3d one proposal's clock is moved back in
 its row (U42) and the day's pass count is seeded (U47).
 
-| Story | API checks (`e2e/gate7/client.mjs`)                                                                                                                                                                                                                                                                                                                                               | Browser checks (`e2e/browser/tests/`)                                                                                                  |
+| Story | API checks (`e2e/gate7/client/*.mjs`)                                                                                                                                                                                                                                                                                                                                             | Browser checks (`e2e/browser/tests/`)                                                                                                  |
 | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | U39   | A pass over 12 scripted facts stores 10; every quote is a verbatim span of the person's message; nothing saved before Save, one item after; a Team admin reading the shared thread gets 403 `read_only` on the Learn state and on a start                                                                                                                                         | `learn-from-chat.spec.ts` (+ menu, `/learn`, the ? sheet); `gate7/u39-review.spec.ts` (Mod+Shift+L, To review, the quote)              |
 | U40   | Save applies in this workspace only (not in the person's other one); Undo takes it back; portable needs `confirm_portable`; a portable fact is refused; the confirmed preference is listed and given to a run in the other workspace                                                                                                                                              | `memory-editor.spec.ts`; `gate7/u39-review.spec.ts` (Save, "Memory saved.", Undo)                                                      |

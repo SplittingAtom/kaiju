@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Gate 7 (KOBE-675, v1.3 Semantic Memory) on k3d: user stories U39-U54 (spec 4b0acbf3), one
-# verdict per story. A story is proven by its API checks in a server pod (e2e/gate7/client.mjs:
+# verdict per story. A story is proven by its API checks in a server pod (e2e/gate7/client/*.mjs:
 # learning passes end to end with the fake model's scripted extractor, proposals, Site curation,
 # Policy, switches, budgets, holds, break-glass) and, where it has some, its browser checks
 # (Playwright in Chromium, e2e/browser: the memory specs written for its tickets and
@@ -53,7 +53,7 @@ source e2e/lib/gate-turns.sh
 
 # shellcheck disable=SC2034 # read by client() in gate-common.sh
 CLIENT_JS="$(for f in e2e/gate1/client.mjs e2e/gate2/client.mjs e2e/gate3/client.mjs; do sed '/^const MODES = {/,$d' "$f"; done
-  cat e2e/gate7/client.mjs)"
+  cat e2e/gate7/client/*.mjs)" # one file per scenario, run as one script: numeric prefixes fix the order (KOBE-728)
 WORK=$(mktemp -d)
 chmod 700 "$WORK"
 PODS=()
