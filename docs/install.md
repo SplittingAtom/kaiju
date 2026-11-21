@@ -1059,6 +1059,44 @@ request signatures then travel unencrypted, and the server logs a warning at eve
 larger files stay on the volume only. It can be at most `5Gi`, the largest object S3 accepts in a
 single PutObject or CopyObject request; the chart and the server refuse more.
 
+**Versioning, lifecycle rules and object lock.** Kobe deletes objects with plain `DeleteObject`
+(thread purges, Trash, offboarding, retention periods, workspace collection). On a versioned bucket
+that only adds a delete marker: the bytes stay as a noncurrent version until a lifecycle rule
+removes them. Versioning is still recommended (it lets you recover objects deleted or overwritten
+by mistake; see [Backup and restore](#backup-and-restore)), together with these lifecycle rules on
+the bucket (or on Kobe's `s3.prefix`):
+
+| Rule                                                     | Recommended | Why                                                                                                                                                                                    |
+| -------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NoncurrentVersionExpiration`                            | 30 days     | the recovery window, and the delay after which data Kobe deletes is erased from storage (the guide's [Retention and deletion](guide/reference/retention-and-deletion.md) page says so) |
+| `Expiration` with `ExpiredObjectDeleteMarker: true`      | on          | removes delete markers left once their noncurrent versions are gone                                                                                                                    |
+| `AbortIncompleteMultipartUpload` (`DaysAfterInitiation`) | 3 days      | a server stopped mid-upload leaves parts no listing shows and no Kobe sweep can remove                                                                                                 |
+
+You may choose another noncurrent period; it is then the erasure delay your members should be
+told. For example, with the AWS CLI (most S3-compatible stores accept the same document):
+
+```bash
+aws s3api put-bucket-lifecycle-configuration --bucket kobe --lifecycle-configuration '{
+  "Rules": [{
+    "ID": "kobe-erasure", "Status": "Enabled", "Filter": {"Prefix": ""},
+    "NoncurrentVersionExpiration": {"NoncurrentDays": 30},
+    "Expiration": {"ExpiredObjectDeleteMarker": true},
+    "AbortIncompleteMultipartUpload": {"DaysAfterInitiation": 3}
+  }]
+}'
+```
+
+At start the server reads the bucket's versioning and lifecycle configuration and logs a warning
+("bucket versioning is enabled and no lifecycle rule expires noncurrent versions") when
+versioning is on and no enabled rule expires noncurrent versions of Kobe's objects. Stores that do
+not implement those calls, or credentials that may not read them, give no warning.
+
+Object lock, if you use it, must be in **governance mode** with a retention period no longer than
+the noncurrent period above (30 days): locked versions cannot be removed before their lock ends,
+so Kobe's deletes then take effect only after it. **Compliance mode is advised against**: nobody,
+not even the account owner, can shorten it, so a purge, an offboarding or an erasure request
+cannot reach the bytes until the lock expires.
+
 `s3.prefix` (default empty) puts every object under a key prefix, for a bucket shared with other
 applications. It must be relative and end in `/` (for example `kobe/`; letters, digits and
 `! _ . * ' ( ) / -` only); the chart rejects anything else. It is applied on the server and the

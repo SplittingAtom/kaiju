@@ -64,6 +64,7 @@ import { quantityBytes } from "./sandbox/config.js";
 import { createViewingReader } from "./workspace-files/viewing.js";
 import { createAttachmentStager } from "./uploads/attach.js";
 import {
+  checkBucketLifecycle,
   createS3ObjectStore,
   createSandboxAuthenticator,
   createWorkspaceSync,
@@ -218,6 +219,13 @@ if (config.process === "scheduler") {
   }
   const s3HttpWarning = s3 ? plainHttpEndpointWarning(s3) : undefined;
   if (s3HttpWarning) logger.warn(s3HttpWarning);
+  // KOBE-738: a versioned bucket without noncurrent-version expiry keeps deleted data for ever.
+  // Advisory and in the background: never delays or stops the start.
+  if (s3) {
+    void checkBucketLifecycle(s3).then((warning) => {
+      if (warning) logger.warn({ bucket: s3.bucket }, warning);
+    });
+  }
 }
 
 // Gallery agents (KOBE-87), the chart's branding defaults while unset (KOBE-503) and Kobe's own

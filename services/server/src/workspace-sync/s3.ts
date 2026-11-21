@@ -145,20 +145,23 @@ function isNotFound(err: unknown): boolean {
 const PART_BYTES = 8 * 1024 * 1024;
 const QUEUE_SIZE = 2;
 
+/** The SDK client for the configured store. */
+export function createS3Client(settings: S3Settings): S3Client {
+  return new S3Client({
+    region: settings.region,
+    forcePathStyle: settings.forcePathStyle,
+    ...(settings.endpoint ? { endpoint: settings.endpoint } : {}),
+    ...(settings.credentials ? { credentials: settings.credentials } : {}),
+    requestHandler: s3RequestHandlerOptions(settings),
+    // Plain requests that S3-compatible stores understand: no aws-chunked trailing checksums.
+    // Integrity is the server's own SHA-256 check on the way in (verifyingStream).
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
+  });
+}
+
 export function createS3ObjectStore(settings: S3Settings, client?: S3Client): ObjectStore {
-  const s3 =
-    client ??
-    new S3Client({
-      region: settings.region,
-      forcePathStyle: settings.forcePathStyle,
-      ...(settings.endpoint ? { endpoint: settings.endpoint } : {}),
-      ...(settings.credentials ? { credentials: settings.credentials } : {}),
-      requestHandler: s3RequestHandlerOptions(settings),
-      // Plain requests that S3-compatible stores understand: no aws-chunked trailing checksums.
-      // Integrity is the server's own SHA-256 check on the way in (verifyingStream).
-      requestChecksumCalculation: "WHEN_REQUIRED",
-      responseChecksumValidation: "WHEN_REQUIRED",
-    });
+  const s3 = client ?? createS3Client(settings);
   const Bucket = settings.bucket;
   return {
     async put(key, body, size, options = {}) {

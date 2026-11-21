@@ -193,8 +193,22 @@ After a restore:
 ### Object storage
 
 The backup does not copy S3 objects; spec D31 settles this. Object durability is the bucket's job:
-**enable bucket versioning, and object lock or replication**, so that objects deleted or
-overwritten by mistake can be recovered.
+**enable bucket versioning (or replication)**, so that objects deleted or overwritten by mistake
+can be recovered, **with lifecycle rules** that expire noncurrent versions after 30 days, clean up
+expired delete markers and abort incomplete multipart uploads after a few days (the rules and an
+example are in [install.md, Object storage](install.md#object-storage-s3)).
+
+The trade-off: Kobe's deletes (thread purges, Trash, offboarding, retention periods) are plain
+`DeleteObject` calls, so on a versioned bucket the bytes stay recoverable as noncurrent versions
+for the noncurrent period, and are erased from storage only when it ends. Without a
+noncurrent-version expiry they are never erased, which defeats Kobe's retention and erasure
+promises; the server logs a warning at start when it finds that configuration. A restore within
+the period can recover objects deleted after the backup was taken (restore their noncurrent
+version), which is the point of the window.
+
+Object lock is optional: governance mode only, with a retention period no longer than the
+noncurrent period (30 days). Compliance mode is advised against: its locks cannot be shortened,
+so deleted data could not be erased before they end.
 
 The backup records what existed. It also checks, inside its Postgres snapshot, that every object
 key stored in a blob-ref column is in that listing, and refuses to continue otherwise. Blob-ref
