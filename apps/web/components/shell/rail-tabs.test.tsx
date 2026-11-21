@@ -14,6 +14,11 @@ import { composer, openApp, pressModShift } from "../chat/testing";
  */
 let fake: FakeKobe;
 const WAIT = { timeout: 10_000 };
+/** Lets effects and any late request started by a tab switch run, so "no new wake" is a real check. */
+const settle = () =>
+  act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
 const APP = {
   appId: "a".repeat(64),
   connectorId: "11111111-1111-4111-8111-111111111111",
@@ -95,9 +100,11 @@ describe("Files | Apps (ac-1, ac-3)", () => {
     expect(wakes()).toBe(1);
     await user.click(tab("Apps"));
     await waitFor(() => expect(tab("Apps").getAttribute("aria-selected")).toBe("true"));
+    await settle();
     expect(wakes()).toBe(1);
     await user.click(tab("Files"));
     await waitFor(() => expect(tab("Files").getAttribute("aria-selected")).toBe("true"));
+    await settle();
     expect(wakes()).toBe(1);
     expect(listings()).toBe(1);
     // Mod+Shift+F still lists again.
