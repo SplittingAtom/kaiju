@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { AUTH_LINK, AuthPanel } from "../../components/auth/auth-panel";
 import { useBranding } from "../../components/shell/branding-context";
+import { Button, Field, Notice, TextInput } from "../../components/ui/console";
 import { validateSetup } from "../../lib/setup";
 
 /** First-run wizard: creates the Owner while Kobe has no users, then disables itself. */
@@ -41,61 +43,91 @@ export default function SetupPage() {
     else setError("Setup failed. Check the details and try again.");
   }
 
+  const signIn = (
+    <a href="/sign-in" className={AUTH_LINK}>
+      Sign in
+    </a>
+  );
   if (done)
     return (
-      <main>
-        <h1>Owner created</h1>
-        <p>
-          <a href="/sign-in">Sign in</a> to finish setting up {appName}.
+      <AuthPanel title="Owner created">
+        <p className="m-0">
+          {signIn} to finish setting up {appName}.
         </p>
-      </main>
+      </AuthPanel>
     );
   if (required === false)
     return (
-      <main>
-        <h1>{appName} is set up</h1>
-        <p>
-          <a href="/sign-in">Sign in</a>
-        </p>
-      </main>
+      <AuthPanel title={`${appName} is set up`}>
+        <p className="m-0">{signIn}</p>
+      </AuthPanel>
     );
   if (required === null)
     return (
-      <main>
-        <p>{error ?? "Loading…"}</p>
-      </main>
+      <AuthPanel>
+        {error ? (
+          <Notice tone="error" className="my-0">
+            {error}
+          </Notice>
+        ) : (
+          <p className="m-0" role="status">
+            Loading…
+          </p>
+        )}
+      </AuthPanel>
     );
   return (
-    <main>
-      <h1>Set up {appName}</h1>
-      <p>Create the Owner account. You can invite everyone else afterwards.</p>
-      <form onSubmit={onSubmit}>
-        <label>
-          Setup token <input name="setupToken" autoComplete="off" spellCheck={false} required />
-        </label>
-        <p>
-          Prove you control this site: run the <code>kubectl … setup-token</code> command printed by{" "}
-          <code>helm install</code>.
-        </p>
-        <label>
-          Name <input name="name" autoComplete="name" required />
-        </label>
-        <label>
-          Email <input name="email" type="email" autoComplete="email" required />
-        </label>
-        <label>
-          Password{" "}
-          <input
+    <AuthPanel title={`Set up ${appName}`}>
+      <p className="m-0">Create the Owner account. You can invite everyone else afterwards.</p>
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        <Field
+          label="Setup token"
+          hint={
+            <>
+              Prove you control this site: run the <code>kubectl … setup-token</code> command
+              printed by <code>helm install</code>.
+            </>
+          }
+        >
+          <TextInput
+            name="setupToken"
+            autoComplete="off"
+            spellCheck={false}
+            required
+            className="w-full min-h-9"
+          />
+        </Field>
+        <Field label="Name">
+          <TextInput name="name" autoComplete="name" required className="w-full min-h-9" />
+        </Field>
+        <Field label="Email">
+          <TextInput
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            className="w-full min-h-9"
+          />
+        </Field>
+        <Field label="Password">
+          <TextInput
             name="password"
             type="password"
             autoComplete="new-password"
             minLength={12}
             required
+            className="w-full min-h-9"
           />
-        </label>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit">Create Owner</button>
+        </Field>
+        {error && (
+          <Notice tone="error" className="my-0">
+            {error}
+          </Notice>
+        )}
+        <Button type="submit" variant="primary" className="w-full min-h-9">
+          Create Owner
+        </Button>
       </form>
-    </main>
+    </AuthPanel>
   );
 }

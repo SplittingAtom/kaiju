@@ -184,9 +184,17 @@ describe("cascade layers (KOBE-294)", () => {
 const CONSOLE_DIRS = [
   "app/admin",
   "app/agents",
+  "app/forgot-password",
+  "app/invite",
+  "app/link-sign-in",
   "app/me",
+  "app/reset-password",
+  "app/setup",
+  "app/sign-in",
   "components/admin",
   "components/agents",
+  // The signed-out pages' AuthPanel (KOBE-755) is built on the console primitives.
+  "components/auth",
   "components/me",
   "components/memory",
   "components/projects",

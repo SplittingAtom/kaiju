@@ -15,13 +15,12 @@ describe("dropped-file chips in the MentionStore", () => {
     expect(store.forText("t1", content)).toEqual(["a.csv", "dir/b.md"]);
   });
 
-  it("does not repeat a marker the text already holds and merges picks", () => {
+  it("does not repeat a marker the text already holds; other markers stay literal text", () => {
     const store = new MentionStore();
-    store.add("t1", "p.txt");
     store.addChip("t1", "a.csv");
     const text = `See ${mentionMarker("a.csv")} and ${mentionMarker("p.txt")}`;
     expect(store.contentFor("t1", text)).toBe(text);
-    expect(store.forText("t1", text)).toEqual(["a.csv", "p.txt"]);
+    expect(store.forText("t1", text)).toEqual(["a.csv"]);
   });
 
   it("settles, clears, removes and moves chips", () => {

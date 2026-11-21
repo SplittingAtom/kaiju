@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { BudgetLine, MemberBudgetState } from "@kobe/db";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { BudgetGate } from "./budget-gate.js";
 import type { ReservationStore } from "./reservations.js";
 import { parseVerdict } from "./reservations-db.js";
@@ -562,17 +562,25 @@ describe("BudgetGate (KOBE-42)", () => {
         { load: async () => lines(), prices: async () => new Map() },
         { ttlMs: 1_000, reservations: store, settleHoldMs: 1_000, heartbeatMs: 10 },
       );
-      const c = call(randomUUID());
-      const d = await g.admit(c);
-      if (!d.ok) throw new Error("refused");
-      await new Promise((r) => setTimeout(r, 60));
-      expect(beats).toBeGreaterThanOrEqual(2);
-      d.release?.(true);
-      const seen = beats;
-      await new Promise((r) => setTimeout(r, 40));
-      expect(beats).toBe(seen); // the heartbeat stops with the call
-      g.settle(teamId, [c.callId ?? ""]);
-      expect(ended).toEqual([1_000]);
+      // KOBE-724: the heartbeat runs on fake intervals, so a loaded event loop cannot fold beats
+      // together (real timers at 10 ms missed the second beat inside 60 ms under full runs).
+      vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+      try {
+        const c = call(randomUUID());
+        const d = await g.admit(c);
+        if (!d.ok) throw new Error("refused");
+        expect(beats).toBe(0);
+        vi.advanceTimersByTime(30);
+        expect(beats).toBe(3);
+        d.release?.(true); // the written call's reservation is renewed once more
+        expect(beats).toBe(4);
+        vi.advanceTimersByTime(1_000);
+        expect(beats).toBe(4); // the heartbeat stops with the call
+        g.settle(teamId, [c.callId ?? ""]);
+        expect(ended).toEqual([1_000]);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it("a refused reservation gives the rate-limit token back", async () => {

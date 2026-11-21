@@ -7,6 +7,7 @@ import {
   getPendingSsoLink,
   type PendingSsoLink,
 } from "../../lib/admin/api/site/sso-links";
+import { Button, Notice } from "../ui/console";
 
 type State =
   | { readonly status: "loading" }
@@ -55,41 +56,55 @@ export function ConfirmSsoLink({
     onDone();
   }
 
-  if (state.status === "loading") return <p role="status">Checking…</p>;
+  if (state.status === "loading")
+    return (
+      <p className="m-0" role="status">
+        Checking…
+      </p>
+    );
   if (state.status === "none") {
     return (
       <>
-        <p>Nothing is waiting to be linked.</p>
-        <button type="button" onClick={onDone}>
+        <p className="m-0">Nothing is waiting to be linked.</p>
+        <Button variant="primary" onClick={onDone} className="w-full min-h-9">
           Continue
-        </button>
+        </Button>
       </>
     );
   }
   if (state.status === "error") {
     return (
       <>
-        <p role="alert">{state.message}</p>
-        <button type="button" onClick={onDone}>
+        <Notice tone="error" className="my-0">
+          {state.message}
+        </Notice>
+        <Button variant="primary" onClick={onDone} className="w-full min-h-9">
           Continue
-        </button>
+        </Button>
       </>
     );
   }
   const { providerName, email } = state.pending;
   return (
     <>
-      <p>
+      <p className="m-0">
         Link the {providerName} sign-in <strong>{email}</strong> to your account? After that you can
         also sign in with {providerName}. Only link it if you just signed in with {providerName}{" "}
         yourself.
       </p>
-      <button type="button" disabled={busy} onClick={() => void decide(true)}>
-        Link {providerName}
-      </button>{" "}
-      <button type="button" disabled={busy} onClick={() => void decide(false)}>
-        Don&apos;t link
-      </button>
+      <div className="flex flex-col gap-2">
+        <Button
+          variant="primary"
+          disabled={busy}
+          onClick={() => void decide(true)}
+          className="w-full min-h-9"
+        >
+          Link {providerName}
+        </Button>
+        <Button disabled={busy} onClick={() => void decide(false)} className="w-full min-h-9">
+          Don&apos;t link
+        </Button>
+      </div>
     </>
   );
 }

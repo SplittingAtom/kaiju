@@ -58,6 +58,8 @@ export interface ComposerMentionDrop {
   /** Why the last drop or menu mention was refused (shown under the composer), else "". */
   readonly notice: string;
   clearNotice(): void;
+  /** A file picked with `@` (KOBE-756): its chip, or the refusal as the notice (and the answer). */
+  pick(path: string): string | undefined;
   /** Each answers whether the event was a workspace row's (then it is handled). */
   over(e: DragEvent): boolean;
   drop(e: DragEvent): boolean;
@@ -67,7 +69,8 @@ export interface ComposerMentionDrop {
 /**
  * Workspace files into the composer (KOBE-374): a row dragged from the Files tree and dropped
  * here, or "Mention in message" in its menu (through the session's `composerMentions`), becomes
- * a file chip above the input (no text); the send appends its @file marker and lists it in
+ * a file chip above the input (no text), as does a pick in the `@` picker (`pick`, KOBE-756);
+ * the send appends its @file marker and lists it in
  * `mentions[]` exactly as a pick (KOBE-223), so the server validates it. Folders and
  * names the rules refuse are refused here with a reason. Only a writable composer listens.
  *
@@ -148,6 +151,11 @@ export function useComposerMentionDrop({
     rowDrop,
     notice,
     clearNotice: () => setNotice(""),
+    pick(path) {
+      const refused = mention(path);
+      setNotice(refused ?? "");
+      return refused;
+    },
     over(e) {
       if (writable && carriesLakehouseItem(e.dataTransfer)) {
         e.preventDefault();

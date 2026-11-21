@@ -97,6 +97,8 @@ export interface LearningPassesOptions {
   readonly log: Pick<Logger, "info" | "warn">;
   /** Test seam: the call's timeout. */
   readonly timeoutMs?: number;
+  /** Test seam: runs in the start's transaction just before the pass row is claimed. */
+  readonly beforeClaim?: (tx: KobeTx) => Promise<void>;
 }
 
 export const SWITCH_REASONS: ReadonlySet<LearnUnavailableReason> = new Set([
@@ -134,6 +136,7 @@ async function prepare(
   viewer: Viewer,
   threadId: string,
   options: LearningInputOptions,
+  beforeClaim?: (tx: KobeTx) => Promise<void>,
 ): Promise<Prepared> {
   const { teamId, userId } = viewer;
   const no = (r: LearnStartRefusal): Prepared => ({ ok: false, result: refuse(r) });
@@ -163,6 +166,7 @@ async function prepare(
   if (runId === null)
     return no({ code: "no_completed_run", message: INPUT_MESSAGES.no_completed_run });
   await failStalePasses(tx, teamId, threadId);
+  await beforeClaim?.(tx);
   const passId = await insertRunningPass(tx, {
     teamId,
     threadId,
@@ -198,7 +202,7 @@ export function createLearningPasses(options: LearningPassesOptions): LearningPa
           message: SERVER_CALLS_OFF_MESSAGE,
         });
       const prepared = await withTeam(db, viewer.teamId, (tx) =>
-        prepare(tx, viewer, threadId, startOptions),
+        prepare(tx, viewer, threadId, startOptions, options.beforeClaim),
       );
       if (!prepared.ok) return prepared.result;
       const { pass, input } = prepared;

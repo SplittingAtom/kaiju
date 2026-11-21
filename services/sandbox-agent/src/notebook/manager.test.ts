@@ -3,7 +3,12 @@ import type { NotebookExecuteFrame, NotebookOutput } from "@kobe/protocol";
 import { describe, expect, it } from "vitest";
 import { OUTPUT_LIMITS } from "./outputs.js";
 import { KernelManager, type KernelManagerOptions } from "./manager.js";
-import { fakeLauncher, type FakeBridgeOptions } from "./testing/fake-bridge.js";
+import {
+  fakeLauncher,
+  type FakeBridgeControl,
+  type FakeBridgeOptions,
+} from "./testing/fake-bridge.js";
+import { until } from "../testing/until.js";
 
 const T1 = randomUUID();
 const T2 = randomUUID();
@@ -36,6 +41,10 @@ function frame(threadId: string, code: string, timeoutMs = 10_000): NotebookExec
     timeout_ms: timeoutMs,
   };
 }
+
+/** Waits until the thread's kernel is running `code` (KOBE-724: not a fixed sleep). */
+const runningCell = (control: FakeBridgeControl, threadId: string, code: string) =>
+  until(() => control.executed.includes(`${threadId}:${code}`));
 
 async function run(manager: KernelManager, f: NotebookExecuteFrame) {
   const outputs: { index: number; output: NotebookOutput }[] = [];
@@ -81,7 +90,7 @@ describe("KernelManager (NB2, NB7, NB8)", () => {
   it("interrupts a running cell and keeps the kernel", async () => {
     const { manager, control } = setup();
     const running = run(manager, frame(T1, "sleep"));
-    await new Promise((r) => setTimeout(r, 20));
+    await runningCell(control, T1, "sleep");
     expect(manager.interrupt(T1)).toEqual({ ok: true, data: { status: "interrupted" } });
     const { outcome, outputs } = await running;
     expect(outcome).toMatchObject({ ok: true, data: { status: "interrupted" } });
@@ -114,7 +123,7 @@ describe("KernelManager (NB2, NB7, NB8)", () => {
     const { manager, control } = setup();
     const running = run(manager, frame(T1, "hang"));
     const queued = run(manager, frame(T1, "print:later"));
-    await new Promise((r) => setTimeout(r, 20));
+    await runningCell(control, T1, "hang");
     expect(await manager.restart(T1)).toEqual({ ok: true, data: { status: "restarted" } });
     expect((await running).outcome).toMatchObject({ ok: true, data: { status: "restarted" } });
     expect((await queued).outcome).toMatchObject({ ok: true, data: { status: "restarted" } });
@@ -136,7 +145,7 @@ describe("KernelManager (NB2, NB7, NB8)", () => {
     await run(manager, frame(T2, "print:b"));
     expect(control.killed).toEqual([T1]);
     const busy = run(manager, frame(T2, "hang"));
-    await new Promise((r) => setTimeout(r, 20));
+    await runningCell(control, T2, "hang");
     const refused = await run(manager, frame(T1, "print:c"));
     expect(refused.outcome).toMatchObject({ ok: false, code: "kernel_unavailable" });
     await manager.stopAll();
@@ -161,7 +170,7 @@ describe("KernelManager (NB2, NB7, NB8)", () => {
   it("stops an idle kernel after idleMs", async () => {
     const { manager, control } = setup({ idleMs: 30 });
     await run(manager, frame(T1, "print:a"));
-    await new Promise((r) => setTimeout(r, 80));
+    await until(() => control.killed.length > 0);
     expect(control.killed).toEqual([T1]);
     expect(manager.size).toBe(0);
   });
@@ -180,7 +189,7 @@ describe("KernelManager (NB2, NB7, NB8)", () => {
   it("interrupts the cell of a run that ended", async () => {
     const { manager, control } = setup();
     const running = run(manager, frame(T1, "sleep"));
-    await new Promise((r) => setTimeout(r, 20));
+    await runningCell(control, T1, "sleep");
     manager.runEnded(randomUUID());
     expect(control.interrupts).toEqual([]);
     manager.runEnded(RUN);
@@ -189,10 +198,10 @@ describe("KernelManager (NB2, NB7, NB8)", () => {
   });
 
   it("an interrupt also drops executions still waiting, which never run", async () => {
-    const { manager } = setup();
+    const { manager, control } = setup();
     const running = run(manager, frame(T1, "sleep"));
     const queued = run(manager, frame(T1, "print:never"));
-    await new Promise((r) => setTimeout(r, 20));
+    await runningCell(control, T1, "sleep");
     expect(manager.interrupt(T1)).toEqual({ ok: true, data: { status: "interrupted" } });
     expect((await running).outcome).toMatchObject({ ok: true, data: { status: "interrupted" } });
     const skipped = await queued;
@@ -205,12 +214,12 @@ describe("KernelManager (NB2, NB7, NB8)", () => {
   });
 
   it("drops the waiting executions of a run that ended, and only those", async () => {
-    const { manager } = setup();
+    const { manager, control } = setup();
     const firstRun = randomUUID();
     const running = run(manager, { ...frame(T1, "sleep"), run_id: firstRun });
     const mine = run(manager, frame(T1, "print:mine"));
     const other = run(manager, { ...frame(T1, "print:other"), run_id: randomUUID() });
-    await new Promise((r) => setTimeout(r, 20));
+    await runningCell(control, T1, "sleep");
     manager.runEnded(RUN);
     manager.runEnded(firstRun);
     expect((await running).outcome).toMatchObject({ data: { status: "interrupted" } });
@@ -240,7 +249,7 @@ describe("KernelManager (NB2, NB7, NB8)", () => {
     const first = await run(manager, frame(T1, "result:1"));
     expect(first.outcome).toMatchObject({ ok: true, data: { status: "ok", execution_count: 1 } });
     const running = run(manager, frame(T1, "hang"));
-    await new Promise((r) => setTimeout(r, 20));
+    await runningCell(control, T1, "hang");
     expect(await manager.start(T1)).toEqual({ ok: true, data: { status: "busy" } });
     expect(control.launched).toEqual([T1]);
     await manager.stopAll();
@@ -250,7 +259,7 @@ describe("KernelManager (NB2, NB7, NB8)", () => {
   it("a started kernel nobody uses stops after idleMs; a failed start is kernel_unavailable", async () => {
     const { manager, control } = setup({ idleMs: 30 });
     await manager.start(T1);
-    await new Promise((r) => setTimeout(r, 80));
+    await until(() => control.killed.length > 0);
     expect(control.killed).toEqual([T1]);
     expect(manager.size).toBe(0);
     const fatal = setup({}, { fatal: "No module named ipykernel" });

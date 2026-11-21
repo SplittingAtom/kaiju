@@ -1,23 +1,22 @@
 /**
- * `@file` mentions in the composer (CE22, KOBE-223). A picked file goes into the message text as
- * the protocol's marker, `@file(<path>)`, and into the draft's picked set ({@link MentionStore});
- * a send lists the picked paths whose marker is still in the text (`mentions`), and the server
- * rewrites exactly those markers to absolute `/workspace/...` paths. A typed or pasted
- * `@file(...)` is never picked, so it stays literal text.
- *
- * A file dropped from the Files tree (or "Mention in message") is a chip instead: no marker in the
- * text while composing; the send appends its marker ({@link MentionStore.contentFor}), so the
- * server sees exactly a pick.
+ * `@file` mentions in the composer (CE22, KOBE-223). A file picked with `@` (KOBE-756), dropped
+ * from the Files tree or sent there with "Mention in message" (KOBE-374) is a chip of the draft
+ * ({@link MentionStore}): no marker in the text while composing; the send appends the protocol's
+ * marker, `@file(<path>)`, for each chip ({@link MentionStore.contentFor}) and lists the paths in
+ * `mentions`, and the server rewrites exactly those markers to absolute `/workspace/...` paths.
+ * A typed or pasted `@file(...)` or `@path` is never a chip, so it stays literal text.
  */
-import type { DirectiveFormatter, DirectiveSegment, TriggerItem } from "@assistant-ui/react";
+import type { TriggerItem } from "@assistant-ui/react";
 import {
   decodeMentionPath,
   findMentionMarkers,
+  MENTION_MAX_PER_MESSAGE,
   mentionMarker,
   mentionPathIssue,
   sandboxPathOf,
 } from "@kobe/protocol";
 import type { FileEntry } from "../files/api";
+import { mentionRefusal } from "./mention-insert";
 
 /** The trigger character of file mentions (`/` is the command menu's, KOBE-224). */
 export const MENTION_TRIGGER = "@";
@@ -37,8 +36,8 @@ export interface ComposerMention {
 const nameOf = (path: string) => path.slice(path.lastIndexOf("/") + 1);
 
 /**
- * The picked mentions in a composer text, in order, one per distinct marker: markers of paths in
- * `picked` written exactly as the picker writes them (anything else is literal text).
+ * The mentions of `picked` paths in a text, in order, one per distinct marker: markers written
+ * exactly as the send writes them (anything else is literal text).
  */
 export function mentionsIn(text: string, picked: ReadonlySet<string>): readonly ComposerMention[] {
   const seen = new Set<string>();
@@ -54,19 +53,23 @@ export function mentionsIn(text: string, picked: ReadonlySet<string>): readonly 
 }
 
 /**
- * The query of an `@` being typed at `caret`, as assistant-ui's default trigger detection reads
+ * Where the `@` being typed at `caret` starts, as assistant-ui's default trigger detection reads
  * it (the `@` starts the text or follows whitespace; no whitespace after it), or null.
  */
-export function mentionQueryAt(text: string, caret: number): string | null {
+export function mentionStartAt(text: string, caret: number): number | null {
   const upTo = text.slice(0, caret);
   for (let i = upTo.length - 1; i >= 0; i -= 1) {
     const c = upTo[i] ?? "";
     if (/\s/u.test(c)) return null;
-    if (c === MENTION_TRIGGER && (i === 0 || /\s/u.test(upTo[i - 1] ?? ""))) {
-      return upTo.slice(i + 1);
-    }
+    if (c === MENTION_TRIGGER && (i === 0 || /\s/u.test(upTo[i - 1] ?? ""))) return i;
   }
   return null;
+}
+
+/** The query of an `@` being typed at `caret` (the text after it), or null. */
+export function mentionQueryAt(text: string, caret: number): string | null {
+  const start = mentionStartAt(text, caret);
+  return start === null ? null : text.slice(start + 1, caret);
 }
 
 /** Whether the picker may offer a file: never one whose name holds invisible characters (B1). */
@@ -74,15 +77,13 @@ export function mentionable(entry: FileEntry): boolean {
   return entry.type === "file" && mentionPathIssue(entry.path) === undefined;
 }
 
-const NO_PICKS: ReadonlySet<string> = new Set();
 const NO_CHIPS: readonly string[] = [];
 
 /**
- * The files picked with `@` per composer draft (the thread id, or the new-thread draft), for this
- * tab. Picks are only ever added by the picker; a send lists those still marked in the text.
+ * The files mentioned per composer draft (the thread id, or the new-thread draft), for this tab,
+ * as chips in the order they were added. Picks, drops and "Mention in message" all add chips.
  */
 export class MentionStore {
-  #picked = new Map<string, ReadonlySet<string>>();
   #chips = new Map<string, readonly string[]>();
   readonly #listeners = new Set<() => void>();
 
@@ -91,16 +92,10 @@ export class MentionStore {
     return () => this.#listeners.delete(listener);
   };
 
-  readonly get = (draft: string): ReadonlySet<string> => this.#picked.get(draft) ?? NO_PICKS;
-
-  /** The files dropped on the draft, shown as chips (no marker in the text), in drop order. */
+  /** The files mentioned in the draft, shown as chips (no marker in the text), in order. */
   readonly chips = (draft: string): readonly string[] => this.#chips.get(draft) ?? NO_CHIPS;
 
-  add(draft: string, path: string): void {
-    this.#set(draft, new Set([...this.get(draft), path]));
-  }
-
-  /** A dropped file: a chip until the send, which appends its marker. */
+  /** A mentioned file: a chip until the send, which appends its marker. Never twice. */
   addChip(draft: string, path: string): void {
     const chips = this.chips(draft);
     if (chips.includes(path)) return;
@@ -114,6 +109,21 @@ export class MentionStore {
       draft,
       chips.filter((p) => p !== path),
     );
+  }
+
+  /**
+   * Chips kept with a draft in storage (KOBE-756), back on the draft: each is checked as a pick
+   * would be (storage is not trusted), so nothing the rules refuse and never more than 20.
+   */
+  restore(draft: string, paths: readonly string[]): void {
+    let chips = this.chips(draft);
+    for (const path of paths) {
+      if (typeof path !== "string" || chips.includes(path)) continue;
+      if (chips.length >= MENTION_MAX_PER_MESSAGE) break;
+      if (mentionRefusal(path, "file", chips) !== undefined) continue;
+      chips = [...chips, path];
+    }
+    if (chips !== this.chips(draft)) this.#setChips(draft, chips);
   }
 
   /**
@@ -131,55 +141,34 @@ export class MentionStore {
   }
 
   /**
-   * The paths a send lists in `mentions`: the picked or chipped paths whose marker is in `text`
-   * (pass {@link contentFor}'s result to include the chips), or, for a composer text, what it
-   * mentions now (its picks plus its chips).
+   * The paths a send lists in `mentions`: the draft's chips (their markers are in
+   * {@link contentFor}'s result). `_text` is kept for the callers' symmetry with `contentFor`.
    */
-  forText(draft: string, text: string): string[] {
-    const all = new Set([...this.get(draft), ...this.chips(draft)]);
-    const marked = mentionsIn(text, all).map((m) => m.path);
-    return [...new Set([...marked, ...this.chips(draft)])];
+  forText(draft: string, _text: string): string[] {
+    return [...this.chips(draft)];
   }
 
   clear(draft: string): void {
-    if (this.#picked.has(draft)) this.#set(draft, undefined);
     if (this.#chips.has(draft)) this.#setChips(draft, []);
   }
 
   /**
-   * After a send (KOBE-415): drops the picks and chips that went with it, unless the text left in
-   * the composer still mentions them; picks and chips added meanwhile stay.
+   * After a send (KOBE-415): drops the chips that went with it; chips added meanwhile stay.
+   * `_remaining` (the text left in the composer) never holds a chip's marker.
    */
-  settleSent(draft: string, sent: readonly string[], remaining: string): void {
-    const picks = this.get(draft);
-    const still = new Set(mentionsIn(remaining, picks).map((m) => m.path));
-    const next = new Set([...picks].filter((p) => !sent.includes(p) || still.has(p)));
-    if (next.size !== picks.size) this.#set(draft, next.size === 0 ? undefined : next);
+  settleSent(draft: string, sent: readonly string[], _remaining: string): void {
     const chips = this.chips(draft);
     const left = chips.filter((p) => !sent.includes(p));
     if (left.length !== chips.length) this.#setChips(draft, left);
   }
 
-  /** A new thread was created by a send that failed: the picks follow the draft to it. */
+  /** A new thread was created by a send that failed: the chips follow the draft to it. */
   move(from: string, to: string): void {
-    const picks = this.#picked.get(from);
-    if (picks !== undefined) {
-      this.#set(from, undefined);
-      this.#set(to, picks);
-    }
     const chips = this.#chips.get(from);
     if (chips !== undefined) {
       this.#setChips(from, []);
       this.#setChips(to, chips);
     }
-  }
-
-  #set(draft: string, picks: ReadonlySet<string> | undefined): void {
-    const next = new Map(this.#picked);
-    if (picks === undefined) next.delete(draft);
-    else next.set(draft, picks);
-    this.#picked = next;
-    this.#notify();
   }
 
   #setChips(draft: string, chips: readonly string[]): void {
@@ -206,21 +195,3 @@ export function fileItem(entry: FileEntry): TriggerItem {
     metadata: { area: entry.area },
   };
 }
-
-/** Writes and reads `@file(...)` markers for the trigger popover's directive behaviour. */
-export const mentionFormatter: DirectiveFormatter = {
-  serialize: (item) => mentionMarker(item.id),
-  parse(text) {
-    const segments: DirectiveSegment[] = [];
-    let at = 0;
-    for (const m of findMentionMarkers(text)) {
-      const path = decodeMentionPath(m.encoded);
-      if (path === undefined) continue;
-      if (m.index > at) segments.push({ kind: "text", text: text.slice(at, m.index) });
-      segments.push({ kind: "mention", type: MENTION_ITEM_TYPE, label: nameOf(path), id: path });
-      at = m.index + m.raw.length;
-    }
-    if (at < text.length) segments.push({ kind: "text", text: text.slice(at) });
-    return segments;
-  },
-};
