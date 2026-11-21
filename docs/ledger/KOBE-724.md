@@ -61,6 +61,19 @@ Testing Library's `waitFor` and user-event cooperate with, which means changing 
 (`apps/web/vitest.setup.ts`, off limits: changed on another branch) or the chat test helpers being
 refactored now. Left for a follow-up once those branches land.
 
+## Added: `e2e/browser/tests/artifact-frame.spec.ts` (KOBE-690 browser spec) — test bug
+
+On the test install the workspace frame's probe reported
+`{ rtc: "undefined", dc: "undefined", probe: "kobe-690-probe" }` and the spec expected exactly
+`{ rtc, dc }` with `toEqual`: WebRTC was blocked as intended; the extra key is the probe's own
+marker (`probeFrame` resolves the posted message, which always carries it). Both frames load the
+same probe document and go through the same `probeFrame`, so the artifact case would have failed
+the same way (it never ran: the workspace case failed first). Now the `Report` type includes
+`probe` and both frames are checked against one `BLOCKED` value
+`{ probe: "kobe-690-probe", rtc: "undefined", dc: "undefined" }`: the probe script ran, and found
+neither `RTCPeerConnection` nor `RTCDataChannel`. Not runnable here (needs the test install):
+verified on the next deploy.
+
 ## Docs
 
 No `docs/guide` change: tests only.
