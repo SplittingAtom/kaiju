@@ -83,10 +83,10 @@ describe("staging objects", () => {
   it("deletes an old one and keeps a young one", async () => {
     const orphan = put(staging(), ORPHAN_GRACE_MS + 60_000);
     const young = put(staging(), ORPHAN_GRACE_MS - 60_000);
-    expect(await sweep()).toEqual({ staging: 1, forks: 0 });
+    expect(await sweep()).toEqual({ staging: 1, forks: 0, uploads: 0, skills: 0, evals: 0 });
     expect(objects.keys()).toEqual([young]);
     expect(objects.deleted).toEqual([orphan]);
-    expect(await sweep()).toEqual({ staging: 0, forks: 0 });
+    expect(await sweep()).toEqual({ staging: 0, forks: 0, uploads: 0, skills: 0, evals: 0 });
   });
 
   it("keeps one a row references", async () => {
@@ -96,7 +96,7 @@ describe("staging objects", () => {
        VALUES ($1, $2, 'a.txt', 1, $3, $4, 1, 1, 'server')`,
       [team, user, hex("a"), key],
     );
-    expect(await sweep()).toEqual({ staging: 0, forks: 0 });
+    expect(await sweep()).toEqual({ staging: 0, forks: 0, uploads: 0, skills: 0, evals: 0 });
     expect(objects.keys()).toEqual([key]);
   });
 
@@ -116,7 +116,7 @@ describe("staging objects", () => {
     const odd = put(`${PREFIX}teams/${team}/users/${user}/workspace/incoming/not-a-uuid`, 3 * DAY);
     const content = put(`${PREFIX}teams/${team}/users/${user}/workspace/${hex("c")}`, 3 * DAY);
     const foreign = put(staging(randomUUID(), user), 3 * DAY);
-    expect(await sweep()).toEqual({ staging: 0, forks: 0 });
+    expect(await sweep()).toEqual({ staging: 0, forks: 0, uploads: 0, skills: 0, evals: 0 });
     expect(objects.keys().sort()).toEqual([odd, content, foreign].sort());
   });
 });
@@ -126,7 +126,7 @@ describe("staging objects of removed members (KOBE-243)", () => {
     const orphan = put(staging(team, ghost), 3 * DAY);
     const gone = put(staging(team, randomUUID()), 3 * DAY);
     const young = put(staging(team, ghost), 60_000);
-    expect(await sweep()).toEqual({ staging: 2, forks: 0 });
+    expect(await sweep()).toEqual({ staging: 2, forks: 0, uploads: 0, skills: 0, evals: 0 });
     expect(objects.keys()).toEqual([young]);
     expect(objects.deleted.sort()).toEqual([orphan, gone].sort());
   });
@@ -147,8 +147,31 @@ describe("staging objects of removed members (KOBE-243)", () => {
       3 * DAY,
     );
     const other = put(`${PREFIX}teams/${team}/users/${ghost}/shared/${randomUUID()}`, 3 * DAY);
-    expect(await sweep()).toEqual({ staging: 0, forks: 0 });
+    expect(await sweep()).toEqual({ staging: 0, forks: 0, uploads: 0, skills: 0, evals: 0 });
     expect(objects.keys().sort()).toEqual([odd, other].sort());
+  });
+});
+
+describe("user folders (KOBE-740 review)", () => {
+  it("are listed once per sweep, shared by staging and uploads", async () => {
+    const root = `${PREFIX}teams/${team}/users/`;
+    let folderListings = 0;
+    const counting: BlobStore = {
+      prefix: PREFIX,
+      objects: Object.assign(Object.create(objects) as MemoryObjects, {
+        list: (prefix: string, o?: Parameters<MemoryObjects["list"]>[1]) => {
+          if (prefix === root && o?.delimiter === "/") folderListings++;
+          return objects.list(prefix, o);
+        },
+      }),
+    };
+    put(staging(team, ghost), 3 * DAY);
+    put(`${PREFIX}teams/${team}/users/${ghost}/uploads/${randomUUID()}`, 3 * DAY);
+    expect(await sweepOrphanObjects(h.deps.database.db, team, counting)).toMatchObject({
+      staging: 1,
+      uploads: 1,
+    });
+    expect(folderListings).toBe(1);
   });
 });
 
@@ -189,7 +212,7 @@ describe("fork-copied entry bodies", () => {
     const id = randomUUID();
     const orphan = put(forkKey(id), 2 * DAY);
     const young = put(forkKey(id), 60_000);
-    expect(await sweep()).toEqual({ staging: 0, forks: 1 });
+    expect(await sweep()).toEqual({ staging: 0, forks: 1, uploads: 0, skills: 0, evals: 0 });
     expect(objects.keys()).toEqual([young]);
     expect(objects.deleted).toEqual([orphan]);
   });
@@ -246,6 +269,9 @@ describe("boundaries and limits", () => {
     expect(await sweepOrphanObjects(db, team, store, { maxDeletions: 2 })).toEqual({
       staging: 2,
       forks: 0,
+      uploads: 0,
+      skills: 0,
+      evals: 0,
     });
     expect(objects.keys()).toHaveLength(3);
     await sweepOrphanObjects(db, team, store, { maxDeletions: 10 });
@@ -259,7 +285,13 @@ describe("boundaries and limits", () => {
       blobs: store,
       logger: pino({ level: "silent" }),
     });
-    expect(res.teams.find((t) => t.teamId === team)?.orphans).toEqual({ staging: 1, forks: 0 });
+    expect(res.teams.find((t) => t.teamId === team)?.orphans).toEqual({
+      staging: 1,
+      forks: 0,
+      uploads: 0,
+      skills: 0,
+      evals: 0,
+    });
     expect(objects.keys()).toEqual([]);
   });
 });

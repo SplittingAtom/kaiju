@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import pg from "pg";
+import { sweepStaleTempDirs, sweepStaleTestDatabases } from "./sweep.js";
 
 /**
  * Test database lanes (KOBE-482). Several worktrees ("lanes") run DB suites against one dev
@@ -163,11 +164,15 @@ export async function dropTestLane(serverUrl: string, lane: string): Promise<Lan
 }
 
 /**
- * Vitest global setup step for every DB suite: creates the lane's maintenance database when this
- * run has a lane. Returns the lane (undefined in CI).
+ * Vitest global setup step for every DB suite: sweeps leftovers of crashed runs (KOBE-743: stale
+ * throwaway databases on the KOBE_TEST_DATABASE_URL server, stale `kobe-upgrade-*` temp dirs), then
+ * creates the lane's maintenance database when this run has a lane. Returns the lane (undefined in
+ * CI).
  */
 export async function prepareTestLane(): Promise<string | undefined> {
   const base = process.env.KOBE_TEST_DATABASE_URL;
+  sweepStaleTempDirs();
+  if (base) await sweepStaleTestDatabases(base);
   const lane = resolveTestLane();
   if (base && lane) await ensureLaneDatabase(base, lane);
   return lane;
