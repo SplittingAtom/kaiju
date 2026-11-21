@@ -150,7 +150,7 @@ describe("LISTEN connection loss (ac-2)", () => {
 
     await fx.admin.query(
       `SELECT pg_terminate_backend(pid) FROM pg_stat_activity
-        WHERE application_name = 'kobe-event-hub' AND datname = current_database()`,
+        WHERE application_name = 'kobe-server-listen' AND datname = current_database()`,
     );
     await appendRunEvents(fx.db, team, run, [delta("during outage")]);
     const t0 = Date.now();

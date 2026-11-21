@@ -9,6 +9,8 @@ import {
   type TeamVariables,
 } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
+import { fireAndLog } from "../async-util.js";
+import { logger } from "../logger.js";
 import {
   getSiteLimits,
   memberBudgetStatus,
@@ -140,7 +142,7 @@ export function teamBudgetsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVaria
     const { expected, ...change } = input;
     const set = await setTeamBudget(db, teamId, change, c.get("user").id, expected);
     if (set === "changed_since_approval") return c.json(CHANGED, 409);
-    void deps.budgets.evaluate(teamId).catch(() => undefined);
+    fireAndLog(logger, "budget evaluation", deps.budgets.evaluate(teamId), { teamId });
     return c.json(await teamBudgetsView(db, teamId));
   });
 
@@ -165,7 +167,7 @@ export function teamBudgetsRoutes(deps: ServerDeps): Hono<{ Variables: TeamVaria
         404,
       );
     }
-    void deps.budgets.evaluate(teamId).catch(() => undefined);
+    fireAndLog(logger, "budget evaluation", deps.budgets.evaluate(teamId), { teamId });
     return c.json(await teamBudgetsView(db, teamId));
   });
 

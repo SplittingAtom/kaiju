@@ -65,6 +65,7 @@ export {
   IdleInTransactionTimeoutError,
   appSessionHook,
   createDb,
+  DEFAULT_POOL_MAX,
   type AppSessionOptions,
   type ConnectionErrorLog,
   type CreateDbOptions,

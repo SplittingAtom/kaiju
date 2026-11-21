@@ -107,11 +107,17 @@ import type { SsoNet } from "./sso/net.js";
 import type { ProviderStore } from "./sso/providers.js";
 import { SSO_OFF, ssoNet, type SsoSettings } from "./sso/settings.js";
 import type { DbTimeouts } from "./config.js";
+import { createListenClient, type ListenClient, type ListenTuning } from "./pg-listen.js";
 
 export interface ServerDepsOptions {
   readonly databaseUrl: string;
   /** App-role connection timeouts (KOBE-732); the @kobe/db defaults when absent. */
   readonly dbTimeouts?: DbTimeouts;
+  /**
+   * The query pool (KOBE-736): its size (default 10) and `application_name` (default
+   * `kobe-server`; the scheduler passes `kobe-scheduler`).
+   */
+  readonly dbPool?: { readonly max?: number; readonly applicationName?: string };
   readonly publicUrl: string;
   /** KOBE_RETENTION_PAUSED (KOBE-243): shown to site admins; the deleting jobs honour it. */
   readonly retentionPaused?: boolean;
@@ -121,9 +127,22 @@ export interface ServerDepsOptions {
   /** One-time secret proving possession of the install for first-run setup. */
   readonly setupToken: string;
   readonly trustedProxies: readonly string[];
+  /**
+   * The process's one LISTEN connection (KOBE-704): its `application_name` (default
+   * `kobe-server-listen`) and tuning (tests shorten the timers).
+   */
+  readonly listen?: Partial<ListenTuning> & { readonly applicationName?: string };
   /** Kobe Event Stream tuning (tests shorten the timers). */
   readonly eventStream?: {
-    readonly hub?: Omit<HubOptions, "connectionString">;
+    readonly hub?: Omit<
+      HubOptions,
+      | "connectionString"
+      | "listen"
+      | "reconnectMinMs"
+      | "reconnectMaxMs"
+      | "pingMs"
+      | "pingTimeoutMs"
+    >;
     readonly timings?: Partial<StreamTimings>;
     /** Connections of the stream read pool (default STREAM_POOL_MAX). */
     readonly poolMax?: number;
@@ -248,7 +267,12 @@ export interface ServerDeps {
   readonly retentionPaused: boolean;
   /** Chart-seeded branding defaults (KOBE-503); empty when none is configured. */
   readonly brandingDefaults: BrandingDefaults;
-  /** Kobe Event Stream fan-out (one LISTEN connection per process) and SSE timings (KOBE-31). */
+  /**
+   * The process's one LISTEN connection (KOBE-704): the event hub, the sandbox bus, budgets, skill
+   * eval progress, the egress relay and the gateway sync subscribe to their channels on it.
+   */
+  readonly listen: ListenClient;
+  /** Kobe Event Stream fan-out (on the shared LISTEN connection) and SSE timings (KOBE-31). */
   readonly eventStream: {
     readonly hub: RunEventHub;
     readonly reader: StreamReader;
@@ -391,7 +415,11 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     onConnectionError: (err: unknown, sqlstate: string | undefined) =>
       logger.warn({ err, sqlstate }, "database connection lost"),
   };
-  const database = createDb(options.databaseUrl, session);
+  const database = createDb(options.databaseUrl, {
+    ...session,
+    ...(options.dbPool?.max === undefined ? {} : { max: options.dbPool.max }),
+    applicationName: options.dbPool?.applicationName ?? "kobe-server",
+  });
   const authAttempts = new AuthAttemptAudit(database.db);
   authAttempts.start();
   const background = options.background ?? new BackgroundTasks();
@@ -425,10 +453,13 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     },
   });
   const setupDigest = digest(options.setupToken);
-  const hub = createRunEventHub({
-    ...options.eventStream?.hub,
+  const { applicationName = "kobe-server-listen", ...listenTuning } = options.listen ?? {};
+  const listen = createListenClient({
+    ...listenTuning,
     connectionString: options.databaseUrl,
+    applicationName,
   });
+  const hub = createRunEventHub({ ...options.eventStream?.hub, listen });
   const reader = createStreamReader({
     connectionString: options.databaseUrl,
     session,
@@ -575,6 +606,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     },
     db: database.db,
     databaseUrl: options.databaseUrl,
+    listen,
   });
   const modelTokenDefaults = options.modelTokenDefaults ?? MODEL_TOKEN_DEFAULTS;
   const runs: ServerRunOrchestrator = new DbRunOrchestrator({
@@ -626,7 +658,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   });
   const budgets = new BudgetMonitor({
     db: database.db,
-    connectionString: options.databaseUrl,
+    listen,
     runs,
     mailer: options.mailer,
     publicUrl: new URL(options.publicUrl).origin,
@@ -721,6 +753,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     publicUrl: new URL(options.publicUrl).origin,
     retentionPaused: options.retentionPaused ?? false,
     brandingDefaults: options.brandingDefaults ?? {},
+    listen,
     eventStream: { hub, reader, timings: { ...STREAM_DEFAULTS, ...options.eventStream?.timings } },
     mailer: options.mailer,
     agentLimits: { ...AGENT_LIMIT_DEFAULTS, ...options.agents },
@@ -815,6 +848,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
       await background.idle();
       await feedbackScores?.idle();
       await hub.close();
+      await listen.close();
       await reader.close();
       options.mailer.close();
       await authAttempts.stop();

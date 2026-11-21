@@ -93,3 +93,11 @@ describe("app-role connection timeouts (KOBE-732)", () => {
     expect(await setting(d, "idle_in_transaction_session_timeout")).toBe("0");
   });
 });
+
+describe("pool size and application_name (KOBE-736)", () => {
+  it("names every pooled session and keeps to the configured size", async () => {
+    const d = open({ max: 3, applicationName: "kobe-test-pool" });
+    expect(d.pool.options.max).toBe(3);
+    expect(await setting(d, "application_name")).toBe("kobe-test-pool");
+  });
+});

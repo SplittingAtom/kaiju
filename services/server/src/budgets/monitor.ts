@@ -16,11 +16,11 @@ import {
   type KobeTx,
 } from "@kobe/db";
 import type { BudgetStopCommand } from "@kobe/protocol";
-import pg from "pg";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import type { Mailer } from "../mail/mailer.js";
 import { deliverBudgetEmails } from "./outbox.js";
+import { createListenClient, type ListenClient } from "../pg-listen.js";
 
 /**
  * Watches spend against budgets (KOBE-42, D30) and acts on it:
@@ -33,13 +33,17 @@ import { deliverBudgetEmails } from "./outbox.js";
  *   pending approvals expire. The run gate and the model gateway's call gate refuse new runs and
  *   new model calls from the same numbers.
  *
- * Triggered by the shims' `spend:<team>` hints (right after usage rows land) and by a sweep over
- * every team (`intervalMs`), which also delivers the email outbox. Every replica may evaluate:
+ * Triggered by the shims' `spend:<team>` hints (right after usage rows land, on the process's shared
+ * LISTEN connection, KOBE-704) and by a sweep over every team (`intervalMs`), which also delivers
+ * the email outbox; the sweep is the safety net for hints missed while that connection was down. Every replica may evaluate:
  * alerts are unique per period in Postgres and `stopForBudget` is idempotent.
  */
 export interface BudgetMonitorOptions {
   readonly db: KobeDb;
-  readonly connectionString: string;
+  /** The process's shared LISTEN connection (KOBE-704); never closed here. */
+  readonly listen?: ListenClient;
+  /** Without `listen`: app-role URL of a LISTEN connection of the monitor's own (tests). */
+  readonly connectionString?: string;
   readonly runs: { stopForBudget(command: BudgetStopCommand): Promise<readonly string[]> };
   readonly mailer: Mailer;
   readonly publicUrl: string;
@@ -61,7 +65,8 @@ export interface Evaluation {
 }
 
 export class BudgetMonitor {
-  private client: pg.Client | undefined;
+  private owned: ListenClient | undefined;
+  private unlisten: (() => void) | undefined;
   private timer: NodeJS.Timeout | undefined;
   private readonly pending = new Map<string, NodeJS.Timeout>();
   private readonly running = new Map<string, Promise<Evaluation>>();
@@ -77,7 +82,7 @@ export class BudgetMonitor {
   }
 
   start(): void {
-    void this.listen();
+    this.listen();
     this.timer = setInterval(() => void this.sweep(), this.options.intervalMs ?? 30_000);
     this.timer.unref();
   }
@@ -87,37 +92,29 @@ export class BudgetMonitor {
     if (this.timer) clearInterval(this.timer);
     for (const t of this.pending.values()) clearTimeout(t);
     this.pending.clear();
-    await this.client?.end().catch(() => undefined);
+    this.unlisten?.();
+    await this.owned?.close();
     await Promise.allSettled([...this.running.values(), ...this.following.values()]);
   }
 
-  private async listen(): Promise<void> {
-    if (this.closed) return;
-    const client = new pg.Client({
-      connectionString: this.options.connectionString,
-      connectionTimeoutMillis: 10_000,
-    });
-    const retry = () => {
-      if (this.client !== client) return;
-      this.client = undefined;
-      client.end().catch(() => undefined);
-      if (!this.closed) setTimeout(() => void this.listen(), 2_000).unref();
-    };
-    client.on("error", retry);
-    client.on("end", retry);
-    client.on("notification", (n) => {
-      if (n.channel !== MODELS_CHANNEL || !n.payload?.startsWith(MODELS_SPEND_PREFIX)) return;
-      const teamId = n.payload.slice(MODELS_SPEND_PREFIX.length);
-      if (UUID.test(teamId)) this.soon(teamId.toLowerCase());
-    });
-    try {
-      this.client = client;
-      await client.connect();
-      await client.query(`LISTEN ${MODELS_CHANNEL}`);
-    } catch (err) {
-      this.options.logger.warn({ err }, "budget monitor could not listen");
-      retry();
+  private listen(): void {
+    if (this.closed || this.unlisten) return;
+    let listen = this.options.listen;
+    if (!listen) {
+      if (!this.options.connectionString) throw new Error("budget monitor: no LISTEN connection");
+      listen = this.owned = createListenClient({
+        connectionString: this.options.connectionString,
+        applicationName: "kobe-budgets",
+      });
     }
+    // No resync on (re)connect: the periodic sweep re-reads every team anyway.
+    this.unlisten = listen.subscribe(MODELS_CHANNEL, {
+      notification: (payload) => {
+        if (!payload.startsWith(MODELS_SPEND_PREFIX)) return;
+        const teamId = payload.slice(MODELS_SPEND_PREFIX.length);
+        if (UUID.test(teamId)) this.soon(teamId.toLowerCase());
+      },
+    });
   }
 
   /** Evaluates a team shortly (hints for one team within 100 ms share one evaluation). */

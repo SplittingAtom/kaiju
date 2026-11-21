@@ -41,6 +41,13 @@ spec:
     {{- with .Values.postgres.cnpg.storage.storageClass }}
     storageClass: {{ . }}
     {{- end }}
+  {{- with .Values.postgres.cnpg.parameters }}
+  postgresql:
+    parameters:
+      {{- range $k, $v := . }}
+      {{ $k }}: {{ $v | quote }}
+      {{- end }}
+  {{- end }}
   bootstrap:
     initdb:
       database: kobe
