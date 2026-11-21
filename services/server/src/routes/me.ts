@@ -13,7 +13,7 @@ import type { ServerDeps } from "../deps.js";
 import { grantsOf } from "../skills/registry/grants.js";
 import { retract } from "../skills/registry/review-decide.js";
 import { mySubmissions } from "../skills/registry/submissions.js";
-import { invalidRequest, parseBody } from "../teams/http.js";
+import { invalidRequest, param, parseBody } from "../http/request.js";
 
 const INVALID = "Send known layout preferences within their bounds.";
 
@@ -39,7 +39,7 @@ export function meRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables }> {
 
   /** The submitter takes a submission back before a decision (KOBE-334 review M3). */
   app.post("/skill-submissions/:id/retract", async (c) => {
-    const id = z.uuid().safeParse(c.req.param("id"));
+    const id = param(c, "id", z.uuid());
     const notFound = { code: "not_found", message: "No such submission of yours." };
     if (!id.success) return c.json(notFound, 404);
     const r = await retract(db, id.data, c.get("user").id);

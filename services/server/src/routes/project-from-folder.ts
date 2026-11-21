@@ -8,9 +8,9 @@ import { logger } from "../logger.js";
 import { decide, loadAccess } from "../projects/access.js";
 import { promoteFolder, type PromoteResult } from "../projects/promote.js";
 import { toProject } from "../projects/repository.js";
-import { invalidRequest, parseBody } from "../teams/http.js";
 import { DEFAULT_TEAM_MAX_OBJECTS, DEFAULT_UPLOAD_SETTINGS } from "../uploads/settings.js";
 import type { WorkspaceSync } from "../workspace-sync/service.js";
+import { invalidRequest, parseBody } from "../http/request.js";
 
 type Ctx = Context<{ Variables: TeamVariables }>;
 

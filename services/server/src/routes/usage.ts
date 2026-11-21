@@ -20,9 +20,9 @@ import {
   type UsageTotals,
 } from "../models/usage-store.js";
 import { RunError } from "../runs/errors.js";
-import { invalidRequest } from "../teams/http.js";
 import { uuidSchema } from "../threads/schemas.js";
 import { actorOf } from "../authz/actor.js";
+import { invalidRequest, param } from "../http/request.js";
 
 /** Longest range one request may aggregate. */
 export const MAX_RANGE_DAYS = 400;
@@ -122,7 +122,7 @@ export function runUsageRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariable
   app.use(requireTeam(deps));
   app.use(requireTeamPermission("team.chat"));
   app.get("/:id/usage", async (c) => {
-    const id = uuidSchema.safeParse(c.req.param("id"));
+    const id = param(c, "id", uuidSchema);
     if (!id.success) return invalidRequest(c);
     return visible(c, async () => {
       const actor = actorOf(c);
@@ -148,7 +148,7 @@ export function threadUsageRoutes(deps: ServerDeps): Hono<{ Variables: TeamVaria
   app.use(requireTeam(deps));
   app.use(requireTeamPermission("team.chat"));
   app.get("/:id/usage", async (c) => {
-    const id = uuidSchema.safeParse(c.req.param("id"));
+    const id = param(c, "id", uuidSchema);
     if (!id.success) return invalidRequest(c);
     return visible(c, async () => {
       const actor = actorOf(c);

@@ -12,13 +12,13 @@ import type { ServerDeps } from "../deps.js";
 import { refuseEvalThreadWrites } from "./eval-thread-guard.js";
 import { RunError } from "../runs/errors.js";
 import { queueOrderBodySchema } from "../runs/queue-order.js";
-import { invalidRequest, parseBody } from "../teams/http.js";
 import { uuidSchema } from "../threads/schemas.js";
 import { prepareTestChat } from "../skills/drafts/test-chat.js";
 import { actorOf } from "../authz/actor.js";
+import { invalidRequest, param, parseBody } from "../http/request.js";
 
 function idParam(c: Context): string | undefined {
-  const parsed = uuidSchema.safeParse(c.req.param("id"));
+  const parsed = param(c, "id", uuidSchema);
   return parsed.success ? parsed.data : undefined;
 }
 

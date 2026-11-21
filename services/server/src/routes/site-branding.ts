@@ -42,6 +42,7 @@ import {
 import type { ServerDeps } from "../deps.js";
 import { openUpload } from "../uploads/parse.js";
 import { readCappedStream } from "../http/read-capped.js";
+import { param, readJson } from "../http/request.js";
 
 /**
  * Site branding (theming plan §4.2, TH4-TH8, TH12). The two GETs are public (no session, mounted
@@ -108,7 +109,7 @@ export function siteBrandingPublicRoutes(deps: ServerDeps): Hono {
   app.get("/assets/:kind", context, async (c) => {
     c.header("X-Content-Type-Options", "nosniff");
     c.header("Content-Security-Policy", ASSET_CSP);
-    const kind = brandingAssetKindSchema.safeParse(c.req.param("kind"));
+    const kind = param(c, "kind", brandingAssetKindSchema);
     const asset = kind.success
       ? servedFile(await cache.get(), kind.data, c.req.query("inline") === "1")
       : undefined;
@@ -176,7 +177,7 @@ export function siteBrandingRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
   };
 
   app.put("/", async (c) => {
-    const parsed = brandingPutSchema.safeParse(await c.req.json().catch(() => null));
+    const parsed = brandingPutSchema.safeParse(await readJson(c, null));
     if (!parsed.success) {
       return fail(
         c,
@@ -251,7 +252,7 @@ export function siteBrandingRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
   });
 
   app.put("/assets/:kind", async (c) => {
-    const parsedKind = brandingAssetKindSchema.safeParse(c.req.param("kind"));
+    const parsedKind = param(c, "kind", brandingAssetKindSchema);
     if (!parsedKind.success) return fail(c, 404, "not_found", "No such branding file.");
     const kind = parsedKind.data;
     if (!c.req.header("content-type")?.toLowerCase().startsWith("multipart/form-data")) {
@@ -313,7 +314,7 @@ export function siteBrandingRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
   });
 
   app.delete("/assets/:kind", async (c) => {
-    const parsedKind = brandingAssetKindSchema.safeParse(c.req.param("kind"));
+    const parsedKind = param(c, "kind", brandingAssetKindSchema);
     if (!parsedKind.success) return fail(c, 404, "not_found", "No such branding file.");
     const kind = parsedKind.data;
     const removed = await db.transaction(async (tx) => {

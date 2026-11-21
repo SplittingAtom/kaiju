@@ -8,10 +8,10 @@ import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz
 import type { ServerDeps } from "../deps.js";
 import { BranchSummaryError } from "../runs/branch-summary.js";
 import { RunError } from "../runs/errors.js";
-import { invalidRequest, parseBody } from "../teams/http.js";
 import { uuidSchema } from "../threads/schemas.js";
 import { refuseEvalThreadWrites } from "./eval-thread-guard.js";
 import { actorOf } from "../authz/actor.js";
+import { invalidRequest, param, parseBody } from "../http/request.js";
 
 const ENTRY_NOT_FOUND = {
   code: "entry_not_found",
@@ -32,7 +32,7 @@ export function threadBranchSummaryRoutes(deps: ServerDeps): Hono<{ Variables: T
   app.use("/:id/branch-summary", refuseEvalThreadWrites(deps, "thread"));
 
   app.post("/:id/branch-summary", async (c) => {
-    const id = uuidSchema.safeParse(c.req.param("id"));
+    const id = param(c, "id", uuidSchema);
     const body = await parseBody(c, branchSummaryRequestSchema);
     if (!id.success || !body) {
       return invalidRequest(c, "Give the entry to switch to and an optional one-line focus.");
