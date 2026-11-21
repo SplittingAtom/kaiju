@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   learnRefusalSchema,
@@ -266,6 +267,30 @@ describe("POST /v1/threads/{id}/learn (KOBE-395)", () => {
     const res = await owner.browser.post(path(t), { mode: "new" });
     expect(res.status).toBe(409);
     expect(learnRefusalSchema.parse(res.json).code).toBe("pass_running");
+  });
+
+  it("answers thread_busy (409) while another change holds the thread (KOBE-770 review)", async () => {
+    const t = await seedThread();
+    const locker = new pg.Client({ connectionString: fx.database.adminUrl });
+    await locker.connect();
+    try {
+      await locker.query("BEGIN");
+      await locker.query(`SELECT 1 FROM threads WHERE team_id = $1 AND id = $2 FOR NO KEY UPDATE`, [
+        team,
+        t,
+      ]);
+      const res = await owner.browser.post(path(t), {});
+      expect(res.status, JSON.stringify(res.json)).toBe(409);
+      expect(learnRefusalSchema.parse(res.json)).toMatchObject({ code: "thread_busy" });
+    } finally {
+      await locker.query("ROLLBACK");
+      await locker.end();
+    }
+    const { rows } = await fx.admin.query<{ n: string }>(
+      `SELECT count(*) AS n FROM memory_learning_passes WHERE team_id = $1 AND thread_id = $2`,
+      [team, t],
+    );
+    expect(Number(rows[0]?.n)).toBe(0);
   });
 
   it("shows the last failure and the rate limit", async () => {

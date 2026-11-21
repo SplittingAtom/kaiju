@@ -74,3 +74,26 @@ window is now refused like any other overlapping start).
 - 30 consecutive single-file runs: 30 passed, 0 failed; once more beside
   `packages/db` `budget-reservations.db.test.ts`: 21/21.
 - `src/memory*` db tests (31 files, 360 tests) green; server typecheck and lint clean.
+
+## Review follow-ups (PR #648 review, two LOWs)
+
+1. **Completion behind a busy thread.** `finish` waited for the thread lock with the 5 s
+   append lock timeout; a longer holder failed the pass as `model_error` after the model call was
+   paid for. The completion transaction now runs again on a lock timeout (55P03; it rolled back
+   whole, so a rerun is safe) after 1 s and 3 s (3 tries, at most ~19 s, inside the pass's 30 s
+   event margin), reusing the model answer; then the pass fails with the new code `thread_busy`
+   (`thread_busy: lock_timeout` on the row, retryable, its own message). New code added to
+   `MEMORY_PASS_FAILURE_CODES` (protocol), `MEMORY_PASS_AUDIT_FAILURE_CODES` (db audit vocab) and
+   `docs/audit-log.md`. Tests (`memory-learn-pass.db.test.ts`, "completion behind a busy thread"):
+   the thread locked by another connection after the start; freed before the first retry → the
+   pass completes with one model call; never freed → `thread_busy` event, row and audit, watermark
+   kept. Both failed against the previous `execute.ts` (no retry).
+2. **Start behind a busy thread.** A start that waited past `THREAD_LOCK_TIMEOUT` (2 s) threw 55P03
+   and the route answered 500 (confirmed by running the new test without the mapping). It is now
+   the refusal `thread_busy` (409, "The chat is busy right now. Try again in a moment."), the same
+   code and status the other thread-lock routes answer; mapped in `LearningPasses.start`, so
+   `/learn` and every other caller get it. Test in `memory-learn-route.db.test.ts` holds the
+   thread's row lock from another connection: 409 `thread_busy`, no pass row.
+
+Docs: `docs/guide/memory.md` (Learn from this chat) now says Kobe answers "busy" when something
+else is changing the conversation, at the start or while saving, and you try again.
