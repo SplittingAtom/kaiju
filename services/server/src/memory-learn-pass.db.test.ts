@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import pg from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { sql, type KobeTx } from "@kobe/db";
 import { MEMORY_PASS_MAX_MS, type MemoryExtractorCandidate } from "@kobe/protocol";
@@ -12,7 +13,11 @@ import {
 } from "./models/gateway-client.js";
 import { LEARN_PASSES_PER_DAY } from "./memory/learn/passes.js";
 import { CURRENT_EXTRACTOR_PROMPT } from "./memory/learn/prompt/index.js";
-import { createLearningPasses, type LearningPasses } from "./memory/learn/run.js";
+import {
+  createLearningPasses,
+  type LearningPasses,
+  type LearningPassesOptions,
+} from "./memory/learn/run.js";
 import { statementHash } from "./memory/learn/validate.js";
 import { EventStreamFixture, delta, type Person } from "./testing/event-stream-fixture.js";
 
@@ -45,14 +50,37 @@ class FakeGateway implements ServerCallClient {
 let gateway: FakeGateway;
 let background: BackgroundTasks;
 let passes: LearningPasses;
-const passesOn = (replica: number, beforeClaim?: (tx: KobeTx) => Promise<void>) =>
+const passesOn = (
+  replica: number,
+  beforeClaim?: (tx: KobeTx) => Promise<void>,
+  completion?: LearningPassesOptions["completion"],
+) =>
   createLearningPasses({
     db: fx.replica(replica).deps.database.db,
     client: gateway,
     background,
     log: NO_LOG,
     ...(beforeClaim ? { beforeClaim } : {}),
+    ...(completion ? { completion } : {}),
   });
+
+/** Another connection holding the thread's change lock, as a long change on it would. */
+async function holdThread(threadId: string) {
+  const locker = new pg.Client({ connectionString: fx.database.adminUrl });
+  await locker.connect();
+  await locker.query("BEGIN");
+  await locker.query(`SELECT 1 FROM threads WHERE team_id = $1 AND id = $2 FOR NO KEY UPDATE`, [
+    team,
+    threadId,
+  ]);
+  let released = false;
+  return async () => {
+    if (released) return;
+    released = true;
+    await locker.query("ROLLBACK");
+    await locker.end();
+  };
+}
 
 /** A latch: `opened` settles once `open()` is called. */
 function latch() {
@@ -786,6 +814,94 @@ describe("one pass per thread, across replicas (ac-3)", () => {
       },
     ]);
     expect(await startAndWait(s)).toMatchObject({ ok: true });
+  });
+});
+
+describe("completion behind a busy thread (KOBE-770 review)", () => {
+  it("retries the completion when the thread lock times out, and completes once it is free", async () => {
+    // A statement of its own: earlier tests saved "metric units" for this person (a known one).
+    const said = `My build host is called h${randomBytes(3).toString("hex")}.`;
+    const s = await seedThread(said);
+    // The model call is held until the thread is locked: the start itself takes that lock.
+    const answered = latch();
+    gateway.replies = [
+      async () => {
+        await answered.opened;
+        return reply(
+          candidate({ statement: said, evidence: [{ entry_id: "u1", quote: said.slice(0, -1) }] }),
+        );
+      },
+    ];
+    const retries: number[] = [];
+    let release: () => Promise<void> = async () => undefined;
+    try {
+      const started = await passesOn(0, undefined, {
+        lockTimeoutMs: 100,
+        retryDelaysMs: [0, 0],
+        beforeRetry: async (attempt) => {
+          retries.push(attempt);
+          await release();
+        },
+      }).start(viewer(), s.threadId);
+      if (!started.ok) throw new Error(`refused: ${started.code}`);
+      release = await holdThread(s.threadId);
+      answered.open();
+      await background.idle();
+      expect(retries).toEqual([1]);
+      expect(await passRow(started.passId)).toMatchObject({ status: "completed" });
+      expect(await candidatesOf(started.passId)).toHaveLength(1);
+      expect(await watermarkOf(s.threadId)).toBe("a1");
+      expect(gateway.calls).toHaveLength(1); // the model result was reused, not asked again
+    } finally {
+      await release();
+    }
+  });
+
+  it("fails as thread_busy (not model_error) when the thread stays locked, the watermark kept", async () => {
+    // A statement of its own: earlier tests saved "metric units" for this person (a known one).
+    const said = `My build host is called h${randomBytes(3).toString("hex")}.`;
+    const s = await seedThread(said);
+    // The model call is held until the thread is locked: the start itself takes that lock.
+    const answered = latch();
+    gateway.replies = [
+      async () => {
+        await answered.opened;
+        return reply(
+          candidate({ statement: said, evidence: [{ entry_id: "u1", quote: said.slice(0, -1) }] }),
+        );
+      },
+    ];
+    const retries: number[] = [];
+    let release: () => Promise<void> = async () => undefined;
+    try {
+      const started = await passesOn(0, undefined, {
+        lockTimeoutMs: 100,
+        retryDelaysMs: [0, 0],
+        beforeRetry: async (attempt) => {
+          retries.push(attempt);
+        },
+      }).start(viewer(), s.threadId);
+      if (!started.ok) throw new Error(`refused: ${started.code}`);
+      release = await holdThread(s.threadId);
+      answered.open();
+      await background.idle();
+      expect(retries).toEqual([1, 2]);
+      const row = await passRow(started.passId);
+      expect(row).toMatchObject({ status: "failed" });
+      expect(row?.error).toMatch(/^thread_busy: lock_timeout/);
+      expect(await candidatesOf(started.passId)).toHaveLength(0);
+      expect(await watermarkOf(s.threadId)).toBeNull();
+      expect((await passEvents(s.runId)).at(-1)).toMatchObject({
+        type: "memory.pass.failed",
+        payload: { code: "thread_busy", retryable: true },
+      });
+      expect((await passAudits(started.passId)).at(-1)).toMatchObject({
+        action: "memory.pass.failed",
+        target: { reason: "thread_busy" },
+      });
+    } finally {
+      await release();
+    }
   });
 });
 

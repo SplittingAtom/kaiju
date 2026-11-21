@@ -7,7 +7,8 @@ import {
   type MemoryPassFailureCode,
   type MemoryPassStage,
 } from "@kobe/protocol";
-import { withTeam, type KobeDb } from "@kobe/db";
+import { setTimeout as sleep } from "node:timers/promises";
+import { isLockTimeout, sql, withTeam, type KobeDb } from "@kobe/db";
 import { SpanKind, withSpan, type Span } from "@kobe/telemetry";
 import type { Logger } from "pino";
 import { appendRunEventsInTx, withAppendTx } from "../../event-stream/append.js";
@@ -46,7 +47,24 @@ export interface PassContext {
   readonly log: Pick<Logger, "info" | "warn">;
   /** The call's timeout (default the purpose's `timeout_ms`). */
   readonly timeoutMs?: number;
+  /** How the completion waits for the thread lock and retries (default {@link COMPLETION}). */
+  readonly completion?: CompletionTuning;
 }
+
+/**
+ * The completion transaction waits `lockTimeoutMs` for the thread lock (and every other lock it
+ * takes); on a lock timeout (55P03) it runs again after each of `retryDelaysMs`, then the pass
+ * fails `thread_busy` (KOBE-770 review). The model's answer is in hand, so it is never asked
+ * again: 3 tries over at most ~19 s, inside the pass's event window (MEMORY_PASS_MARGIN_MS).
+ */
+export interface CompletionTuning {
+  readonly lockTimeoutMs: number;
+  readonly retryDelaysMs: readonly number[];
+  /** Test seam: before retry `attempt` (1-based). */
+  readonly beforeRetry?: (attempt: number) => Promise<void>;
+}
+
+export const COMPLETION: CompletionTuning = { lockTimeoutMs: 5_000, retryDelaysMs: [1_000, 3_000] };
 
 export interface RunningPass {
   readonly teamId: string;
@@ -158,7 +176,37 @@ async function finish(
   span: Span,
 ): Promise<void> {
   const screen = screenExtractorOutput(output, input.prompt, nonce);
+  const tuning = ctx.completion ?? COMPLETION;
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await complete(ctx, pass, input, screen, output, usage, span, tuning.lockTimeoutMs);
+      return;
+    } catch (err) {
+      // Rolled back whole on a lock timeout: running it again is safe. The timeout covers every
+      // lock the completion takes (the thread row first, also the review-notice lock), so
+      // `thread_busy` means the completion could not get its locks, whichever one was held.
+      if (!isLockTimeout(err)) throw err;
+      const delay = tuning.retryDelaysMs[attempt];
+      if (delay === undefined) throw new PassFailure("thread_busy", "lock_timeout");
+      await tuning.beforeRetry?.(attempt + 1);
+      if (delay > 0) await sleep(delay);
+    }
+  }
+}
+
+/** The completion transaction: candidates, the completed event, the pass row, the watermark. */
+async function complete(
+  ctx: PassContext,
+  pass: RunningPass,
+  input: LearningPassInput,
+  screen: ReturnType<typeof screenExtractorOutput>,
+  output: MemoryExtractorOutput,
+  usage: Record<string, unknown>,
+  span: Span,
+  lockTimeoutMs: number,
+): Promise<void> {
   await withAppendTx(ctx.db, pass.teamId, async (tx) => {
+    await tx.execute(sql`SELECT set_config('lock_timeout', ${`${lockTimeoutMs}ms`}, true)`);
     // KOBE-770: first, the thread's change lock that a start holds from its watermark read to its
     // claim (thread before run, KOBE-29). Without it this pass could complete inside another
     // replica's start, which then claims past the finished row on the old watermark and learns
