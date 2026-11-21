@@ -1,11 +1,31 @@
 import { lookup as dnsLookup, type LookupAddress } from "node:dns";
-import { isIP } from "node:net";
-import { SpanKind, SpanStatusCode, withSpan } from "@kobe/telemetry";
-import { Agent, fetch as undiciFetch, type Dispatcher } from "undici";
-import { AddressPolicy, type AddressChecker } from "./address-policy.js";
-import type { UpstreamPolicy } from "./config.js";
+import { AddressPolicy } from "./address-policy.js";
 import { readUiResources } from "./ui-resources.js";
+import { createDispatcher } from "./upstream-connect.js";
+import { inSession, request, type UpstreamTransport } from "./upstream-session.js";
+import type {
+  ListToolsOptions,
+  UpstreamBase,
+  UpstreamCall,
+  UpstreamClient,
+  UpstreamOptions,
+  UpstreamResult,
+} from "./upstream-types.js";
+import { UpstreamError } from "./upstream-wire.js";
 import { upstreamModelVisible } from "./visibility.js";
+
+export type {
+  ListToolsOptions,
+  UpstreamBase,
+  UpstreamCall,
+  UpstreamClient,
+  UpstreamFailure,
+  UpstreamKind,
+  UpstreamOptions,
+  UpstreamResult,
+} from "./upstream-types.js";
+export { checkUpstreamUrl } from "./upstream-connect.js";
+export { CLIENT_INFO, UPSTREAM_PROTOCOL_VERSIONS } from "./upstream-session.js";
 
 /**
  * The proxy's MCP client towards remote servers (D27: Streamable HTTP only, no stdio). One short
@@ -17,104 +37,12 @@ import { upstreamModelVisible } from "./visibility.js";
  * explicitly allowed), the port, and every address the host resolves to (the egress proxy's
  * ranges: private, loopback, link-local/metadata, …, unless an operator allowed them). The proxy
  * connects only to an address it checked (rebinding-safe) and never follows redirects. Responses
- * are capped in size and time.
+ * are capped in size and time. Connection checks: upstream-connect.ts; sessions:
+ * upstream-session.ts; response reading: upstream-wire.ts.
  */
-
-export const CLIENT_INFO = { name: "kobe-mcp-proxy", version: "1.0.0" } as const;
-/** Upstream protocol versions the proxy speaks (newest first). */
-export const UPSTREAM_PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"] as const;
-
-export type UpstreamFailure =
-  | "url_not_allowed"
-  | "forbidden_address"
-  | "unreachable"
-  | "timeout"
-  | "auth_required"
-  | "http_error"
-  | "protocol_error"
-  | "too_large"
-  /** The upstream offers this tool only to apps, or no longer lists it (KOBE-435 review M3). */
-  | "not_offered";
-
-export type UpstreamResult =
-  | { readonly ok: true; readonly result: Record<string, unknown> }
-  | {
-      readonly ok: false;
-      readonly failure: "rpc_error";
-      readonly code: number;
-      readonly message: string;
-    }
-  | { readonly ok: false; readonly failure: UpstreamFailure };
 
 /** Most `tools/list` pages a probe follows (KOBE-101). */
 export const MAX_TOOL_PAGES = 20;
-
-/**
- * Which Kobe path an upstream session serves, for its span (KOBE-527/528): a sandbox's MCP call,
- * the server's pinning probe, or an MCP App's own call. Default: `mcp` for a call, `probe` for a
- * list.
- */
-export type UpstreamKind = "mcp" | "probe" | "app";
-
-export interface UpstreamBase {
-  readonly url: string;
-  readonly kind?: UpstreamKind;
-  /** Credential headers (KOBE-61); never logged. */
-  readonly headers: Readonly<Record<string, string>>;
-  readonly signal: AbortSignal;
-}
-
-export interface UpstreamCall extends UpstreamBase {
-  readonly tool: string;
-  readonly arguments: Record<string, unknown>;
-  /**
-   * List the upstream's tools first, in the same session, and refuse (`not_offered`) unless it
-   * lists this tool as visible to the model. Set when the server's allow did not say it checked
-   * MCP Apps visibility (an older server pod, KOBE-435 review M3).
-   */
-  readonly checkModelVisible?: boolean;
-}
-
-export interface UpstreamClient {
-  callTool(call: UpstreamCall): Promise<UpstreamResult>;
-  /**
-   * The live `tools/list` (all pages) as `{ tools: unknown[] }`, for the server's pinning probe;
-   * with `uiResources`, also `ui_resources`: the `ui://` templates the tools name (KOBE-433).
-   */
-  listTools(call: UpstreamBase, options?: ListToolsOptions): Promise<UpstreamResult>;
-  /** Session DELETEs still in flight (bounded by `maxPendingDeletes`). */
-  readonly pendingDeletes: number;
-  close(): Promise<void>;
-}
-
-export interface ListToolsOptions {
-  readonly uiResources?: boolean;
-}
-
-export interface UpstreamOptions {
-  readonly policy: UpstreamPolicy;
-  readonly maxResponseBytes: number;
-  /** Sockets per upstream origin (default 32). */
-  readonly connectionsPerOrigin?: number;
-  /** Best-effort session DELETEs in flight at once; beyond it they are skipped (default 64). */
-  readonly maxPendingDeletes?: number;
-  /** DNS resolution (tests resolve names to loopback). */
-  readonly resolve?: (host: string) => Promise<LookupAddress[]>;
-  /**
-   * The address check, built from `policy` when unset. Tests that reach a local fake upstream
-   * inject one that adds loopback, which `policy` can never allow (KOBE-694).
-   */
-  readonly addresses?: AddressChecker;
-}
-
-class UpstreamError extends Error {
-  constructor(readonly failure: UpstreamFailure) {
-    super(failure);
-  }
-}
-
-const isObject = (v: unknown): v is Record<string, unknown> =>
-  typeof v === "object" && v !== null && !Array.isArray(v);
 
 function defaultResolve(host: string): Promise<LookupAddress[]> {
   return new Promise((resolve, reject) => {
@@ -122,50 +50,6 @@ function defaultResolve(host: string): Promise<LookupAddress[]> {
       err ? reject(err) : resolve(addresses),
     );
   });
-}
-
-/** Checks scheme, port and literal addresses; names are checked at connect time. */
-export function checkUpstreamUrl(
-  raw: string,
-  policy: UpstreamPolicy,
-  addresses: AddressChecker,
-): URL | undefined {
-  let url: URL;
-  try {
-    url = new URL(raw);
-  } catch {
-    return undefined;
-  }
-  const httpsOnly = url.protocol === "https:";
-  if (!httpsOnly && !(url.protocol === "http:" && policy.allowInsecureHttp)) return undefined;
-  if (url.username !== "" || url.password !== "") return undefined;
-  const port = url.port === "" ? (httpsOnly ? 443 : 80) : Number(url.port);
-  if (!policy.allowedPorts.includes(port)) return undefined;
-  const host = url.hostname.replace(/^\[|\]$/g, "");
-  if (isIP(host) !== 0 && addresses.check(host) !== "allowed") return undefined;
-  return url;
-}
-
-/** One SSE event's data lines joined, per the EventSource rules (enough for JSON-RPC payloads). */
-function* sseEvents(buffer: { text: string }): Generator<string> {
-  for (;;) {
-    const match = /\r?\n\r?\n/.exec(buffer.text);
-    if (!match) return;
-    const block = buffer.text.slice(0, match.index);
-    buffer.text = buffer.text.slice(match.index + match[0].length);
-    const data = block
-      .split(/\r?\n/)
-      .filter((line) => line.startsWith("data:"))
-      .map((line) => line.slice(5).replace(/^ /, ""))
-      .join("\n");
-    if (data !== "") yield data;
-  }
-}
-
-/** The JSON-RPC response to `id` in a parsed message, if it is one. */
-function responseFor(message: unknown, id: number): Record<string, unknown> | undefined {
-  if (!isObject(message) || message.id !== id) return undefined;
-  return "result" in message || "error" in message ? message : undefined;
 }
 
 export function createUpstreamClient(options: UpstreamOptions): UpstreamClient {
@@ -176,363 +60,103 @@ export function createUpstreamClient(options: UpstreamOptions): UpstreamClient {
       extraDenied: options.policy.deniedCidrs,
     });
   const resolve = options.resolve ?? defaultResolve;
-
-  // Every name is resolved once and all of its addresses must pass; connect uses a checked one.
-  const dispatcher: Dispatcher = new Agent({
-    connect: {
-      lookup(hostname, lookupOptions, callback) {
-        resolve(hostname).then(
-          (found) => {
-            const usable = found.filter((a) => isIP(a.address) !== 0);
-            if (addresses.checkAll(usable.map((a) => a.address)) !== "allowed") {
-              callback(new UpstreamError("forbidden_address"), "", 0);
-              return;
-            }
-            const ordered = [...usable].sort((a, b) => a.family - b.family);
-            if ((lookupOptions as { all?: boolean }).all) {
-              (callback as unknown as (e: null, a: LookupAddress[]) => void)(null, ordered);
-            } else {
-              const first = ordered[0] as LookupAddress;
-              callback(null, first.address, first.family);
-            }
-          },
-          (err: unknown) => callback(err as NodeJS.ErrnoException, "", 0),
-        );
-      },
+  const transport: UpstreamTransport = {
+    options,
+    addresses,
+    dispatcher: createDispatcher(resolve, addresses, options.connectionsPerOrigin),
+    maxPendingDeletes: options.maxPendingDeletes ?? 64,
+    pendingDeletes: 0,
+  };
+  return {
+    callTool: (call) => callTool(transport, call),
+    listTools: (call, listOptions) => listTools(transport, call, listOptions),
+    get pendingDeletes() {
+      return transport.pendingDeletes;
     },
-    connectTimeout: 10_000,
-    // Per origin (one MCP server): the proxy's own concurrency limits bound the rest.
-    connections: options.connectionsPerOrigin ?? 32,
+    close: () => transport.dispatcher.close(),
+  };
+}
+
+type Next = (method: string, params: Record<string, unknown>) => Promise<UpstreamResult>;
+
+/** Every `tools/list` page, or the failure. */
+async function allTools(next: Next): Promise<UpstreamResult> {
+  const tools: unknown[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < MAX_TOOL_PAGES; page += 1) {
+    const answer = await next("tools/list", cursor === undefined ? {} : { cursor });
+    if (!answer.ok) return answer;
+    const pageTools = answer.result.tools;
+    if (!Array.isArray(pageTools)) return { ok: false, failure: "protocol_error" };
+    tools.push(...pageTools);
+    const nextCursor = answer.result.nextCursor;
+    if (typeof nextCursor !== "string" || nextCursor === "") return { ok: true, result: { tools } };
+    cursor = nextCursor;
+  }
+  return { ok: false, failure: "too_large" };
+}
+
+const callTool = (t: UpstreamTransport, call: UpstreamCall): Promise<UpstreamResult> =>
+  inSession(t, call, "tools/call", async (url, session) => {
+    let id = 2;
+    const next: Next = (method, params) => request(t, url, call, session, id++, method, params);
+    if (call.checkModelVisible === true) {
+      const listed = await allTools(next);
+      if (!listed.ok) return listed;
+      const tools = listed.result.tools as unknown[];
+      const tool = tools.find(
+        (tl) =>
+          typeof tl === "object" && tl !== null && (tl as { name?: unknown }).name === call.tool,
+      );
+      if (tool === undefined || !upstreamModelVisible(tool)) {
+        return { ok: false, failure: "not_offered" };
+      }
+    }
+    return next("tools/call", { name: call.tool, arguments: call.arguments });
   });
 
-  async function readLimited(body: ReadableStream<Uint8Array> | null): Promise<string> {
-    if (!body) return "";
-    const reader = body.getReader();
-    const decoder = new TextDecoder();
-    let size = 0;
-    let text = "";
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) return text + decoder.decode();
-      size += value.byteLength;
-      if (size > options.maxResponseBytes) {
-        await reader.cancel();
-        throw new UpstreamError("too_large");
-      }
-      text += decoder.decode(value, { stream: true });
-    }
-  }
-
-  /** Reads an SSE stream until the response to `id`, within the size cap. */
-  async function readSse(
-    body: ReadableStream<Uint8Array> | null,
-    id: number,
-  ): Promise<Record<string, unknown>> {
-    if (!body) throw new UpstreamError("protocol_error");
-    const reader = body.getReader();
-    const decoder = new TextDecoder();
-    const buffer = { text: "" };
-    let size = 0;
+/**
+ * The template part of a probe (KOBE-433): `ui_resources`, or `ui_resources_skipped` with a
+ * reason. Never fails the tool probe; a read answered too large is that template's error.
+ */
+async function uiPart(
+  tools: readonly unknown[],
+  next: (method: string, params: Record<string, unknown>) => Promise<UpstreamResult>,
+  signal: AbortSignal,
+): Promise<Record<string, unknown>> {
+  const tolerant = async (method: string, params: Record<string, unknown>) => {
     try {
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) throw new UpstreamError("protocol_error");
-        size += value.byteLength;
-        if (size > options.maxResponseBytes) throw new UpstreamError("too_large");
-        buffer.text += decoder.decode(value, { stream: true });
-        for (const data of sseEvents(buffer)) {
-          let message: unknown;
-          try {
-            message = JSON.parse(data);
-          } catch {
-            continue;
-          }
-          const response = responseFor(message, id);
-          if (response) return response;
-        }
-      }
-    } finally {
-      await reader.cancel().catch(() => undefined);
-    }
-  }
-
-  interface Session {
-    id?: string;
-    version?: string;
-    /** HTTP requests sent in this session (its span's `kobe.upstream.requests`). */
-    requests: number;
-  }
-
-  async function post(
-    url: URL,
-    call: UpstreamBase,
-    session: Session,
-    message: Record<string, unknown>,
-  ): Promise<Record<string, unknown> | undefined> {
-    session.requests += 1;
-    const res = await undiciFetch(url, {
-      method: "POST",
-      dispatcher,
-      redirect: "error",
-      signal: call.signal,
-      headers: {
-        ...call.headers,
-        accept: "application/json, text/event-stream",
-        "content-type": "application/json",
-        ...(session.id === undefined ? {} : { "mcp-session-id": session.id }),
-        ...(session.version === undefined ? {} : { "mcp-protocol-version": session.version }),
-      },
-      body: JSON.stringify(message),
-    });
-    if (res.status === 401 || res.status === 403) {
-      await res.body?.cancel();
-      throw new UpstreamError("auth_required");
-    }
-    if (!("id" in message)) {
-      await res.body?.cancel();
-      if (res.status >= 200 && res.status < 300) return undefined;
-      throw new UpstreamError("http_error");
-    }
-    if (res.status !== 200) {
-      await res.body?.cancel();
-      throw new UpstreamError("http_error");
-    }
-    const sessionId = res.headers.get("mcp-session-id");
-    if (sessionId !== null && session.id === undefined) {
-      if (!/^[\x21-\x7e]{1,256}$/.test(sessionId)) throw new UpstreamError("protocol_error");
-      session.id = sessionId;
-    }
-    const type = (res.headers.get("content-type") ?? "").split(";")[0]?.trim().toLowerCase();
-    const id = message.id as number;
-    if (type === "text/event-stream") return readSse(res.body, id);
-    if (type !== "application/json") {
-      await res.body?.cancel();
-      throw new UpstreamError("protocol_error");
-    }
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(await readLimited(res.body));
+      return await next(method, params);
     } catch (err) {
-      if (err instanceof UpstreamError) throw err;
-      throw new UpstreamError("protocol_error");
-    }
-    const response = responseFor(parsed, id);
-    if (!response) throw new UpstreamError("protocol_error");
-    return response;
-  }
-
-  // Session DELETEs are best effort and fire after the call's slot is released: bounded separately
-  // so a slow upstream cannot pile them up (review L5).
-  let pendingDeletes = 0;
-  const maxPendingDeletes = options.maxPendingDeletes ?? 64;
-
-  function endSession(url: URL, call: UpstreamBase, session: Session): void {
-    if (session.id === undefined || pendingDeletes >= maxPendingDeletes) return;
-    pendingDeletes += 1;
-    void undiciFetch(url, {
-      method: "DELETE",
-      dispatcher,
-      redirect: "error",
-      signal: AbortSignal.timeout(5_000),
-      headers: {
-        ...call.headers,
-        "mcp-session-id": session.id,
-        ...(session.version === undefined ? {} : { "mcp-protocol-version": session.version }),
-      },
-    })
-      .then((res) => res.body?.cancel())
-      .catch(() => undefined)
-      .finally(() => {
-        pendingDeletes -= 1;
-      });
-  }
-
-  /**
-   * One upstream session as a client span `mcp.upstream` (KOBE-527/528), so a trace separates the
-   * upstream's time from Kobe's. Low-cardinality attributes only: the path's kind, the MCP method,
-   * the outcome (`ok` or the failure kind), an error flag and the request count; never the
-   * connector, its URL, the tool or any content. The best-effort session DELETE is not in it.
-   */
-  function inSession(
-    call: UpstreamBase,
-    method: "tools/call" | "tools/list",
-    run: (url: URL, session: Session) => Promise<UpstreamResult>,
-  ): Promise<UpstreamResult> {
-    const kind = call.kind ?? (method === "tools/call" ? "mcp" : "probe");
-    const session: Session = { requests: 0 };
-    return withSpan(
-      "mcp.upstream",
-      {
-        kind: SpanKind.CLIENT,
-        attributes: { "kobe.upstream.kind": kind, "kobe.upstream.method": method },
-      },
-      async (span) => {
-        const result = await sessionResult(call, session, run);
-        span.setAttributes({
-          "kobe.upstream.outcome": result.ok ? "ok" : result.failure,
-          "kobe.upstream.error": !result.ok,
-          "kobe.upstream.requests": session.requests,
-        });
-        if (!result.ok) span.setStatus({ code: SpanStatusCode.ERROR });
-        return result;
-      },
-    );
-  }
-
-  /** initialize → initialized → `run` → session DELETE; maps every failure to a result. */
-  async function sessionResult(
-    call: UpstreamBase,
-    session: Session,
-    run: (url: URL, session: Session) => Promise<UpstreamResult>,
-  ): Promise<UpstreamResult> {
-    const url = checkUpstreamUrl(call.url, options.policy, addresses);
-    if (!url) return { ok: false, failure: "url_not_allowed" };
-    try {
-      const init = await post(url, call, session, {
-        jsonrpc: "2.0",
-        id: 1,
-        method: "initialize",
-        params: {
-          protocolVersion: UPSTREAM_PROTOCOL_VERSIONS[0],
-          capabilities: {},
-          clientInfo: CLIENT_INFO,
-        },
-      });
-      const initResult = init?.result;
-      const version = isObject(initResult) ? initResult.protocolVersion : undefined;
-      if (
-        typeof version !== "string" ||
-        !(UPSTREAM_PROTOCOL_VERSIONS as readonly string[]).includes(version)
-      ) {
-        return { ok: false, failure: "protocol_error" };
+      if (err instanceof UpstreamError && err.failure === "too_large" && !signal.aborted) {
+        return { ok: false as const, failure: "too_large" as const };
       }
-      session.version = version;
-      await post(url, call, session, { jsonrpc: "2.0", method: "notifications/initialized" });
-      return await run(url, session);
-    } catch (err) {
-      if (err instanceof UpstreamError) return { ok: false, failure: err.failure };
-      const cause = (err as { cause?: unknown }).cause;
-      if (cause instanceof UpstreamError) return { ok: false, failure: cause.failure };
-      if (call.signal.aborted) return { ok: false, failure: "timeout" };
-      return { ok: false, failure: "unreachable" };
-    } finally {
-      endSession(url, call, session);
+      throw err;
     }
-  }
-
-  /** One request after initialize, its `result` object or the failure. */
-  async function request(
-    url: URL,
-    call: UpstreamBase,
-    session: Session,
-    id: number,
-    method: string,
-    params: Record<string, unknown>,
-  ): Promise<UpstreamResult> {
-    const response = await post(url, call, session, { jsonrpc: "2.0", id, method, params });
-    if (response && isObject(response.error)) {
-      const { code, message } = response.error;
-      return {
-        ok: false,
-        failure: "rpc_error",
-        code: typeof code === "number" && Number.isSafeInteger(code) ? code : -32603,
-        message: typeof message === "string" ? message.slice(0, 1000) : "Upstream error.",
-      };
-    }
-    if (!response || !isObject(response.result)) return { ok: false, failure: "protocol_error" };
-    return { ok: true, result: response.result };
-  }
-
-  type Next = (method: string, params: Record<string, unknown>) => Promise<UpstreamResult>;
-
-  /** Every `tools/list` page, or the failure. */
-  async function allTools(next: Next): Promise<UpstreamResult> {
-    const tools: unknown[] = [];
-    let cursor: string | undefined;
-    for (let page = 0; page < MAX_TOOL_PAGES; page += 1) {
-      const answer = await next("tools/list", cursor === undefined ? {} : { cursor });
-      if (!answer.ok) return answer;
-      const pageTools = answer.result.tools;
-      if (!Array.isArray(pageTools)) return { ok: false, failure: "protocol_error" };
-      tools.push(...pageTools);
-      const nextCursor = answer.result.nextCursor;
-      if (typeof nextCursor !== "string" || nextCursor === "")
-        return { ok: true, result: { tools } };
-      cursor = nextCursor;
-    }
-    return { ok: false, failure: "too_large" };
-  }
-
-  const callTool = (call: UpstreamCall): Promise<UpstreamResult> =>
-    inSession(call, "tools/call", async (url, session) => {
-      let id = 2;
-      const next: Next = (method, params) => request(url, call, session, id++, method, params);
-      if (call.checkModelVisible === true) {
-        const listed = await allTools(next);
-        if (!listed.ok) return listed;
-        const tools = listed.result.tools as unknown[];
-        const tool = tools.find(
-          (t) =>
-            typeof t === "object" && t !== null && (t as { name?: unknown }).name === call.tool,
-        );
-        if (tool === undefined || !upstreamModelVisible(tool)) {
-          return { ok: false, failure: "not_offered" };
-        }
-      }
-      return next("tools/call", { name: call.tool, arguments: call.arguments });
-    });
-
-  /**
-   * The template part of a probe (KOBE-433): `ui_resources`, or `ui_resources_skipped` with a
-   * reason. Never fails the tool probe; a read answered too large is that template's error.
-   */
-  async function uiPart(
-    tools: readonly unknown[],
-    next: (method: string, params: Record<string, unknown>) => Promise<UpstreamResult>,
-    signal: AbortSignal,
-  ): Promise<Record<string, unknown>> {
-    const tolerant = async (method: string, params: Record<string, unknown>) => {
-      try {
-        return await next(method, params);
-      } catch (err) {
-        if (err instanceof UpstreamError && err.failure === "too_large" && !signal.aborted) {
-          return { ok: false as const, failure: "too_large" as const };
-        }
-        throw err;
-      }
-    };
-    try {
-      const ui = await readUiResources(tools, tolerant);
-      return ui.ok ? { ui_resources: ui.resources } : { ui_resources_skipped: ui.skipped };
-    } catch (err) {
-      const cause = (err as { cause?: unknown }).cause;
-      const known =
-        err instanceof UpstreamError ? err : cause instanceof UpstreamError ? cause : undefined;
-      const failure = known?.failure ?? (signal.aborted ? "timeout" : "unreachable");
-      return { ui_resources_skipped: failure };
-    }
-  }
-
-  async function listTools(
-    call: UpstreamBase,
-    listOptions: ListToolsOptions = {},
-  ): Promise<UpstreamResult> {
-    return inSession(call, "tools/list", async (url, session) => {
-      let id = 2;
-      const next: Next = (method, params) => request(url, call, session, id++, method, params);
-      const listed = await allTools(next);
-      if (!listed.ok || !listOptions.uiResources) return listed;
-      const tools = listed.result.tools as unknown[];
-      return { ok: true, result: { tools, ...(await uiPart(tools, next, call.signal)) } };
-    });
-  }
-
-  return {
-    callTool,
-    listTools,
-    get pendingDeletes() {
-      return pendingDeletes;
-    },
-    close: () => dispatcher.close(),
   };
+  try {
+    const ui = await readUiResources(tools, tolerant);
+    return ui.ok ? { ui_resources: ui.resources } : { ui_resources_skipped: ui.skipped };
+  } catch (err) {
+    const cause = (err as { cause?: unknown }).cause;
+    const known =
+      err instanceof UpstreamError ? err : cause instanceof UpstreamError ? cause : undefined;
+    const failure = known?.failure ?? (signal.aborted ? "timeout" : "unreachable");
+    return { ui_resources_skipped: failure };
+  }
+}
+
+async function listTools(
+  t: UpstreamTransport,
+  call: UpstreamBase,
+  listOptions: ListToolsOptions = {},
+): Promise<UpstreamResult> {
+  return inSession(t, call, "tools/list", async (url, session) => {
+    let id = 2;
+    const next: Next = (method, params) => request(t, url, call, session, id++, method, params);
+    const listed = await allTools(next);
+    if (!listed.ok || !listOptions.uiResources) return listed;
+    const tools = listed.result.tools as unknown[];
+    return { ok: true, result: { tools, ...(await uiPart(tools, next, call.signal)) } };
+  });
 }
