@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { sql } from "@kobe/db";
 import { EgressBlockedRelay } from "./egress/blocked-relay.js";
 import { SkillEvalHub } from "./skills/evals/events.js";
 import { openHarness, type Harness } from "./testing/harness.js";
@@ -64,6 +65,19 @@ describe("shared LISTEN connection (KOBE-704)", () => {
       unsubscribe();
       await relay.close();
       await evals.close();
+    }
+  });
+
+  it("names every app-role session of the process (KOBE-736)", async () => {
+    await h.deps.database.db.execute(sql`SELECT 1`);
+    const { rows } = await h.admin.query<{ name: string }>(
+      `SELECT DISTINCT application_name AS name FROM pg_stat_activity
+        WHERE datname = current_database() AND usename <> current_user AND backend_type = 'client backend'`,
+    );
+    const names = rows.map((r) => r.name);
+    expect(names).toContain("kobe-server");
+    for (const name of names) {
+      expect(["kobe-server", "kobe-server-listen", "kobe-event-stream"]).toContain(name);
     }
   });
 });

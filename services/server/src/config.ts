@@ -1,4 +1,9 @@
-import { APP_IDLE_IN_TRANSACTION_TIMEOUT_MS, APP_STATEMENT_TIMEOUT_MS } from "@kobe/db";
+import {
+  APP_IDLE_IN_TRANSACTION_TIMEOUT_MS,
+  APP_STATEMENT_TIMEOUT_MS,
+  DEFAULT_POOL_MAX,
+} from "@kobe/db";
+import { STREAM_POOL_MAX } from "./event-stream/read.js";
 import { z } from "zod";
 import { loadAuditForwardingConfig, type AuditForwardingConfig } from "./audit/forward/config.js";
 import { brandingDefaultsSchema, type BrandingDefaults } from "./branding/defaults-config.js";
@@ -99,6 +104,20 @@ const configSchema = z.object({
     .int("KOBE_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS must be an integer")
     .min(0, "KOBE_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS must be 0 or more")
     .default(APP_IDLE_IN_TRANSACTION_TIMEOUT_MS),
+  // Connection budget (KOBE-736): pool sizes per pod and, for the start-up check, the replica
+  // count and the other components' connections the chart computes.
+  KOBE_DB_POOL_MAX: poolSize("KOBE_DB_POOL_MAX", 200, DEFAULT_POOL_MAX),
+  KOBE_DB_STREAM_POOL_MAX: poolSize("KOBE_DB_STREAM_POOL_MAX", 100, STREAM_POOL_MAX),
+  KOBE_DB_BUDGET_SERVER_REPLICAS: z.coerce
+    .number({ error: "KOBE_DB_BUDGET_SERVER_REPLICAS must be a number" })
+    .int("KOBE_DB_BUDGET_SERVER_REPLICAS must be an integer")
+    .min(1, "KOBE_DB_BUDGET_SERVER_REPLICAS must be 1 or more")
+    .optional(),
+  KOBE_DB_BUDGET_PEER_CONNECTIONS: z.coerce
+    .number({ error: "KOBE_DB_BUDGET_PEER_CONNECTIONS must be a number" })
+    .int("KOBE_DB_BUDGET_PEER_CONNECTIONS must be an integer")
+    .min(0, "KOBE_DB_BUDGET_PEER_CONNECTIONS must be 0 or more")
+    .optional(),
   // Seconds between reconciles of every team namespace's managed objects (KOBE-115); 0 turns the
   // interval off (the run at server start stays).
   KOBE_TEAM_RECONCILE_SECONDS: z.coerce
@@ -193,6 +212,24 @@ export interface AuthConfig {
   readonly hstsIncludeSubDomains: boolean;
 }
 
+/** A connection pool size, 1..`max` (KOBE-736). */
+function poolSize(name: string, max: number, fallback: number) {
+  return z.coerce
+    .number({ error: `${name} must be a number` })
+    .int(`${name} must be an integer`)
+    .min(1, `${name} must be between 1 and ${max}`)
+    .max(max, `${name} must be between 1 and ${max}`)
+    .default(fallback);
+}
+
+/** Pool sizes of this process (KOBE-736). */
+export interface DbPools {
+  /** Query pool (`KOBE_DB_POOL_MAX`). */
+  readonly max: number;
+  /** Event-stream read pool (`KOBE_DB_STREAM_POOL_MAX`; the scheduler opens none). */
+  readonly streamMax: number;
+}
+
 export interface DbTimeouts {
   readonly statementTimeoutMs: number;
   readonly idleInTransactionTimeoutMs: number;
@@ -204,6 +241,11 @@ export interface Config {
   readonly databaseUrl: string;
   /** App-role connection timeouts (KOBE-732). */
   readonly dbTimeouts: DbTimeouts;
+  /** Pool sizes (KOBE-736). */
+  readonly dbPools: DbPools;
+  /** Start-up budget check inputs from the chart (KOBE-736); undefined: no check. */
+  readonly dbBudget:
+    { readonly serverReplicas: number; readonly peerConnections: number } | undefined;
   /** Sandbox RuntimeClass; undefined means agents stay disabled. */
   readonly runtimeClassName: string | undefined;
   /** Published versions per agent (KOBE-46). */
@@ -261,6 +303,14 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
       statementTimeoutMs: base.data.KOBE_DB_STATEMENT_TIMEOUT_MS,
       idleInTransactionTimeoutMs: base.data.KOBE_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS,
     },
+    dbPools: { max: base.data.KOBE_DB_POOL_MAX, streamMax: base.data.KOBE_DB_STREAM_POOL_MAX },
+    dbBudget:
+      base.data.KOBE_DB_BUDGET_SERVER_REPLICAS === undefined
+        ? undefined
+        : {
+            serverReplicas: base.data.KOBE_DB_BUDGET_SERVER_REPLICAS,
+            peerConnections: base.data.KOBE_DB_BUDGET_PEER_CONNECTIONS ?? 0,
+          },
     runtimeClassName: base.data.KOBE_RUNTIME_CLASS,
     agentMaxVersions: base.data.KOBE_AGENT_MAX_VERSIONS,
     internalPort: base.data.KOBE_INTERNAL_PORT,

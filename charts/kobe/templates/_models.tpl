@@ -20,7 +20,8 @@ predates these keys still renders (KOBE-40). Keep in sync with values.yaml.
   "resources" (dict "requests" (dict "cpu" "50m" "memory" "256Mi") "limits" (dict "cpu" "1" "memory" "512Mi"))
   "limits" (dict "maxBodyBytes" 8388608 "inflightBytes" 134217728 "inflightBytesPerSandbox" 33554432 "callsPerSandbox" 16 "calls" 1024 "idleTimeoutSeconds" 300 "requestBurst" 60 "requestsPerSecond" 10)
   "cacheTtlSeconds" 5
-  "networkPolicy" (dict "restrictEgress" true "databasePeers" (list) "databasePort" 5432 "extraEgress" (list)) -}}
+  "networkPolicy" (dict "restrictEgress" true "databasePeers" (list) "databasePort" 5432 "extraEgress" (list))
+  "database" (dict "poolMax" 10) -}}
 {{- mustMergeOverwrite $defaults (deepCopy (.Values.modelGateway | default dict)) | toJson -}}
 {{- end -}}
 
@@ -112,6 +113,8 @@ only (never provider keys, Bifrost's admin password or any key that mints a cred
 {{- define "kobe.modelGatewayEnv" -}}
 {{- $g := include "kobe.modelGatewayValues" . | fromJson -}}
 {{ include "kobe.databaseEnv" . }}
+- name: KOBE_DB_POOL_MAX
+  value: {{ int $g.database.poolMax | quote }}
 {{ include "kobe.sessionVerifyKeyEnv" (dict "root" . "env" "MODEL_GATEWAY" "aud" "model-gateway") }}
 - name: KOBE_TRACE_SPAN_KEY
   valueFrom:

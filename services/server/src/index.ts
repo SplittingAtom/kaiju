@@ -16,6 +16,7 @@ import { createLangfuseScoreSink, initTelemetry, loadTelemetryConfig } from "@ko
 import { loadConfig } from "./config.js";
 import { seedAtStart, serverJobs, startServerJobs } from "./startup/jobs.js";
 import { checkSealedKeys, sealedFamilies } from "./startup/sealed-keys.js";
+import { checkConnectionBudget } from "./startup/db-budget.js";
 import { loadConnectorUrlPolicy } from "./connectors/config.js";
 import { loadSsoSettings } from "./sso/settings.js";
 import { createProxyProbe, PROBE_TIMEOUT_MS } from "./connectors/probe.js";
@@ -117,6 +118,9 @@ if (config.process === "scheduler") {
   deps = createServerDeps({
     databaseUrl: config.databaseUrl,
     dbTimeouts: config.dbTimeouts,
+    // KOBE-736: the scheduler serves no event streams, so its stream pool never opens.
+    dbPool: { max: config.dbPools.max, applicationName: "kobe-scheduler" },
+    listen: { applicationName: "kobe-scheduler-listen" },
     ...schedulerAuthStandIn(),
     // No run-token key: the wire host that delivers run.start mints run tokens, not the scheduler.
     sandboxWire: { waker },
@@ -130,6 +134,9 @@ if (config.process === "scheduler") {
   deps = createServerDeps({
     databaseUrl: config.databaseUrl,
     dbTimeouts: config.dbTimeouts,
+    dbPool: { max: config.dbPools.max, applicationName: "kobe-server" },
+    listen: { applicationName: "kobe-server-listen" },
+    eventStream: { poolMax: config.dbPools.streamMax },
     retentionPaused: config.retentionPaused,
     brandingDefaults: config.branding ?? {},
     ...auth,
@@ -232,6 +239,21 @@ if (deps && config.process === "server") {
   await checkSealedKeys(deps.database.db, families, logger).catch((err: unknown) =>
     logger.error({ err }, "the sealed key check failed"),
   );
+}
+
+// KOBE-736: the connection budget of the configured replicas against max_connections (a warning
+// only; the chart passes the inputs). Never stops the start.
+if (deps && config.process === "server" && config.dbBudget) {
+  await checkConnectionBudget(
+    deps.database.pool,
+    {
+      serverReplicas: config.dbBudget.serverReplicas,
+      poolMax: config.dbPools.max,
+      streamPoolMax: config.dbPools.streamMax,
+      peerConnections: config.dbBudget.peerConnections,
+    },
+    logger,
+  ).catch((err: unknown) => logger.warn({ err }, "the postgres connection budget check failed"));
 }
 
 // Spec D4: the process's own isolation check (startup + periodic). Agent work must go through

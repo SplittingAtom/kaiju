@@ -40,6 +40,8 @@ const configSchema = z.object({
   KOBE_DATABASE_URL: z
     .string({ error: "KOBE_DATABASE_URL is required" })
     .min(1, "KOBE_DATABASE_URL is required"),
+  /** Query pool size per pod (KOBE-736; chart `<component>.database.poolMax`). */
+  KOBE_DB_POOL_MAX: int("KOBE_DB_POOL_MAX", 1, 200, 10),
   /** Destination ports a sandbox may CONNECT to (HTTPS only by default). */
   KOBE_EGRESS_ALLOWED_PORTS: list,
   /**
@@ -123,6 +125,8 @@ const configSchema = z.object({
 export interface Config {
   readonly port: number;
   readonly databaseUrl: string;
+  /** Query pool size (KOBE_DB_POOL_MAX, KOBE-736); one LISTEN connection comes on top. */
+  readonly dbPoolMax: number;
   /** Public key(s) of the `kobe.egress-proxy` audience (KOBE-513): verify only, never sign. */
   readonly sessionVerifyKeys: SessionVerifyKeys;
   readonly allowedPorts: readonly number[];
@@ -192,6 +196,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
   return {
     port: c.PORT,
     databaseUrl: c.KOBE_DATABASE_URL,
+    dbPoolMax: c.KOBE_DB_POOL_MAX,
     sessionVerifyKeys,
     allowedPorts,
     allowedInternalCidrs: c.KOBE_EGRESS_ALLOWED_INTERNAL_CIDRS,

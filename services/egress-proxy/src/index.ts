@@ -27,7 +27,10 @@ const DRAIN_TIMEOUT_MS = 20_000;
 
 const config = loadConfig(process.env);
 const telemetry = initTelemetry(loadTelemetryConfig(process.env, "egress-proxy"));
-const database = createDb(config.databaseUrl, { max: 10 });
+const database = createDb(config.databaseUrl, {
+  max: config.dbPoolMax,
+  applicationName: "kobe-egress-proxy",
+});
 const db = database.db;
 
 const cache = new AllowlistCache(

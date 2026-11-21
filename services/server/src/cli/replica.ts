@@ -27,7 +27,7 @@ export function joinAsReplica(
 ): CliReplica | string {
   const databaseUrl = env.KOBE_DATABASE_URL;
   if (!databaseUrl) return "KOBE_DATABASE_URL is not set";
-  const database = createDb(databaseUrl, { max: 4 });
+  const database = createDb(databaseUrl, { max: 4, applicationName: "kobe-cli" });
   const isolation = createIsolationGate({
     runtimeClassName: env.KOBE_RUNTIME_CLASS?.trim() || undefined,
     listRuntimeClasses,

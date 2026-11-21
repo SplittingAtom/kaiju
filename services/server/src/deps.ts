@@ -109,6 +109,11 @@ export interface ServerDepsOptions {
   readonly databaseUrl: string;
   /** App-role connection timeouts (KOBE-732); the @kobe/db defaults when absent. */
   readonly dbTimeouts?: DbTimeouts;
+  /**
+   * The query pool (KOBE-736): its size (default 10) and `application_name` (default
+   * `kobe-server`; the scheduler passes `kobe-scheduler`).
+   */
+  readonly dbPool?: { readonly max?: number; readonly applicationName?: string };
   readonly publicUrl: string;
   /** KOBE_RETENTION_PAUSED (KOBE-243): shown to site admins; the deleting jobs honour it. */
   readonly retentionPaused?: boolean;
@@ -406,7 +411,11 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     onConnectionError: (err: unknown, sqlstate: string | undefined) =>
       logger.warn({ err, sqlstate }, "database connection lost"),
   };
-  const database = createDb(options.databaseUrl, session);
+  const database = createDb(options.databaseUrl, {
+    ...session,
+    ...(options.dbPool?.max === undefined ? {} : { max: options.dbPool.max }),
+    applicationName: options.dbPool?.applicationName ?? "kobe-server",
+  });
   const authAttempts = new AuthAttemptAudit(database.db);
   authAttempts.start();
   const background = options.background ?? new BackgroundTasks();

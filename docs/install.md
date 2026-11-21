@@ -1088,6 +1088,59 @@ A stuck network call must never pin a database transaction, its locks or a poole
 - **Kubernetes.** Each Kubernetes API call of the server gives up after 10 s, including those
   made under a row or legal-hold lock (hibernation, workspace volume deletes).
 
+### Postgres connections
+
+Every Kobe pod that uses the database holds up to a fixed number of connections (KOBE-736). Pools
+open lazily, so a quiet install uses far fewer; size Postgres for the full pools, because peaks
+and rollouts fill them.
+
+| Component     | Per pod (chart value)                                                                                        | Default pods | Default total |
+| ------------- | ------------------------------------------------------------------------------------------------------------ | ------------ | ------------- |
+| server        | query pool `server.database.poolMax` (10) + event-stream pool `server.database.streamPoolMax` (4) + 1 LISTEN | 2            | 30            |
+| scheduler     | `scheduler.database.poolMax` (10) + 1 LISTEN                                                                 | 1            | 11            |
+| model gateway | `modelGateway.database.poolMax` (10) + 1 LISTEN                                                              | 2            | 22            |
+| egress proxy  | `egressProxy.database.poolMax` (10) + 1 LISTEN                                                               | 1            | 11            |
+| **total**     | connections = replicas x (pool + stream pool + listener), summed over components                             |              | **74**        |
+
+On top of that: a rollout starts one extra pod per Deployment before the old one stops (server
++15, model gateway +11, scheduler and egress proxy +11 each at the defaults), the migration Job
+uses 2, `kobe backup` 1 to 2, and Postgres reserves `superuser_reserved_connections` (3) for
+superusers. At the defaults a rollout peaks near 125, above PostgreSQL's default
+`max_connections` of 100 if every pool were full at once; in practice pools rarely are, but give
+Postgres headroom when you add replicas or raise pool sizes:
+
+- **External Postgres:** raise `max_connections` on the server, or lower the pool sizes above.
+  A session-mode PgBouncer in front works (LISTEN and advisory locks need session mode; never
+  transaction mode).
+- **Bundled CloudNativePG** (`postgres.mode=cnpg`, supported in production): set
+  `postgres.cnpg.parameters`, passed verbatim to the Cluster's `spec.postgresql.parameters`
+  (string values; CloudNativePG restarts the instances for settings that need it):
+
+  ```yaml
+  postgres:
+    cnpg:
+      parameters:
+        max_connections: "200"
+        shared_buffers: "512MB"
+  ```
+
+Each connection names its service in `pg_stat_activity.application_name`: `kobe-server` /
+`kobe-scheduler` (query pool), `kobe-event-stream` (the server's stream pool),
+`kobe-server-listen` / `kobe-scheduler-listen` (the one LISTEN connection per process, which
+carries every notification channel), `kobe-gateway` and `kobe-gateway-listen`,
+`kobe-egress-proxy` and `kobe-egress-proxy-listen`, `kobe-migrate`, `kobe-cli`:
+
+```sql
+SELECT application_name, count(*) FROM pg_stat_activity
+ WHERE datname = 'kobe' GROUP BY 1 ORDER BY 2 DESC;
+```
+
+At start each server works out this budget for the configured replicas (from the values above,
+which the chart passes as `KOBE_DB_BUDGET_SERVER_REPLICAS` and `KOBE_DB_BUDGET_PEER_CONNECTIONS`)
+and logs a warning (`postgres connection budget exceeds max_connections`) when it comes to more
+than `SHOW max_connections` minus 10. It is an estimate of full pools in steady state: rollout
+pods, the migration Job and backups are not counted, and nothing is refused because of it.
+
 ### Sandbox tool executor
 
 By default Pi's built-in tools (`bash`, `read`, `write`, `edit`, `ls`, `grep`, `find`) run inside
@@ -1308,6 +1361,15 @@ Migrations report what an upgrade changed in the migration Job's log (`"msg":"mi
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
 
+- **One LISTEN connection per server and connection budget (KOBE-704, KOBE-736).** A server pod
+  now holds one LISTEN connection for every notification channel instead of up to six, so a
+  default install needs about 74 connections with full pools instead of about 93. Pool sizes are
+  chart values (`server.database.poolMax`, `server.database.streamPoolMax`,
+  `scheduler.database.poolMax`, `modelGateway.database.poolMax`, `egressProxy.database.poolMax`,
+  defaults unchanged), bundled CloudNativePG takes `postgres.cnpg.parameters`, every connection
+  carries an `application_name`, and the server warns at start when the budget nears
+  `max_connections` ([Postgres connections](#postgres-connections)). Nothing to do unless you
+  run more replicas than the defaults.
 - **Foreign-key indexes (KOBE-735).** Migration `0236_fk_covering_indexes` builds six indexes
   that make thread and run purges cheap (`files_run_idx`, `artifact_versions_run_idx`,
   `approvals_thread_idx`, `workspace_sync_conflicts_thread_idx`, `sandbox_commands_thread_idx`,
