@@ -26,7 +26,8 @@ import type { UploadSettings } from "./settings.js";
  *  2. the bytes stream to S3 under a server-derived key through a meter (size limit enforced
  *     mid-stream, SHA-256 and the first bytes for sniffing computed on the way). A threaded key
  *     is queued in `retention_blob_deletions` first (due in an hour), so a crash leaves nothing
- *     the retention pass can't delete;
+ *     the retention pass can't delete; a member-level key (no thread) lies outside every tree the
+ *     queue deletes in, and the orphan sweep takes it once old and unreferenced (KOBE-740);
  *  3. the optional virus scan (`uploads/clamd.ts`, KOBE-146): a hit or an unreachable scanner
  *     deletes the object, audits `workspace.upload_scan_refused` and refuses (422 / 503);
  *  4. one transaction under the team's storage lock: usage + size against the quota, then the
