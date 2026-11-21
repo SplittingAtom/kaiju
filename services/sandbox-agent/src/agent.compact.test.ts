@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { SandboxToServerFrame } from "@kobe/protocol";
+import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
 import { parseModelFile } from "./kobe-models/protocol.js";
 import type { ModelWiring } from "./models/types.js";
 import { RUN_2, THREAD, runStart, startHarness, until, type Harness } from "./testing/harness.js";

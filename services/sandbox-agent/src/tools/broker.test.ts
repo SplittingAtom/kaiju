@@ -1,9 +1,5 @@
-import type {
-  ArtifactPutFrame,
-  ArtifactResultFrame,
-  KobeToolsRequest,
-  KobeToolsResponse,
-} from "@kobe/protocol";
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { ArtifactPutFrame, ArtifactResultFrame } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { ArtifactBroker, MAX_PENDING_PUTS_PER_THREAD } from "./broker.js";
 

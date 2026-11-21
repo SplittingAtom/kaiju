@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { SANDBOX_CLOSE_CODES } from "@kobe/protocol";
+import { SANDBOX_CLOSE_CODES } from "@kobe/protocol/sandbox-wire";
 import { SYSTEM_ACTOR, runs, threads, withTeam } from "@kobe/db";
 import { recordAuditAfter } from "./audit/record.js";
 import { IsolationRuntimeMissingError } from "./isolation/gate.js";

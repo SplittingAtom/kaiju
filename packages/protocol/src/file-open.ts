@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { idSchema } from "./common.js";
 import { fileEditProposeErrorSchema, proposeFileEditInputSchema } from "./file-editor.js";
-import { workspacePathSchema } from "./sandbox-wire/workspace-sync.js";
+import { workspacePathSchema } from "./workspace-paths.js";
 
 /**
  * `open_file` (KOBE-484): the model asks the member's web client to open a workspace file in the

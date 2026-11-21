@@ -5,15 +5,14 @@ import {
   UPLOAD_ERROR_CODES,
   UPLOAD_ERROR_HTTP_STATUS,
   UPLOAD_MAX_FILES_PER_MESSAGE,
-  decodeServerFrame,
   submitMessageBodySchema,
   uploadErrorSchema,
   uploadFieldsSchema,
   uploadFileNameSchema,
   uploadResponseSchema,
   UPLOAD_ATTACHMENT_ROOT,
-  sandboxAttachmentSchema,
 } from "./index.js";
+import { decodeServerFrame, sandboxAttachmentSchema } from "./sandbox-wire/index.js";
 import { EXAMPLE_IDS } from "./testing/index.js";
 
 const MIB = 1024 * 1024;

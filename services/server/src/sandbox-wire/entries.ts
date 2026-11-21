@@ -1,11 +1,9 @@
+import { APP_CARD_ENTRY_PREFIX, jsonValueSchema, parseEventPayload } from "@kobe/protocol";
 import {
-  APP_CARD_ENTRY_PREFIX,
-  jsonValueSchema,
-  parseEventPayload,
   piGetEntriesDataSchema,
   type PiGetEntriesData,
   type PiSessionEntry,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import { sql, threadEntries, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
 import type { NewRunEvent } from "../event-stream/append.js";
 import { SKIPPED_ENTRY_TYPE } from "../policy/skipped-summary.js";

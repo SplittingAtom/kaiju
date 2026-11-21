@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { THREAD_COMPACT_FOCUS_MAX_CHARS, THREAD_COMPACT_SUMMARY_MAX_BYTES } from "../index.js";
 import {
   SANDBOX_FRAME_MAX_BYTES_BY_TYPE,
   SANDBOX_SMALL_FRAME_MAX_BYTES,
-  THREAD_COMPACT_FOCUS_MAX_CHARS,
-  THREAD_COMPACT_SUMMARY_MAX_BYTES,
   THREAD_COMPACT_WIRE_ERROR_CODES,
   decodeSandboxFrame,
   decodeServerFrame,
@@ -11,7 +10,7 @@ import {
   piBridgeCommandSchema,
   threadCompactFrameSchema,
   threadCompactResultFrameSchema,
-} from "../index.js";
+} from "../sandbox-wire/index.js";
 import { EXAMPLE_IDS } from "../testing/index.js";
 
 const THREAD = EXAMPLE_IDS.thread;

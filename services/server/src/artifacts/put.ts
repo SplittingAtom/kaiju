@@ -2,10 +2,10 @@ import { createHash, randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import {
   artifactToolInputSchema,
-  type ArtifactPutFrame,
   type CreateArtifactInput,
   type UpdateArtifactInput,
 } from "@kobe/protocol";
+import { type ArtifactPutFrame } from "@kobe/protocol/sandbox-wire";
 import {
   and,
   artifactVersions,

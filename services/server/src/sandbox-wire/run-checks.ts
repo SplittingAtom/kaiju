@@ -1,4 +1,4 @@
-import type { SandboxErrorCode } from "@kobe/protocol";
+import { type SandboxErrorCode } from "@kobe/protocol/sandbox-wire";
 import type { Logger } from "pino";
 import type { LeaseViolation, WireMetrics } from "./context.js";
 import type { RunCheck } from "./gated-frame.js";

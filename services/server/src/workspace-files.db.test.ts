@@ -5,8 +5,8 @@ import {
   workspaceFileErrorSchema,
   workspaceListResponseSchema,
   workspaceSearchResponseSchema,
-  type WorkspaceChange,
 } from "@kobe/protocol";
+import { type WorkspaceChange } from "@kobe/protocol/sandbox-wire";
 import { withTeam } from "@kobe/db";
 import { createApp } from "./app.js";
 import { SEARCH_RATE_LIMIT } from "./routes/workspace-files.js";

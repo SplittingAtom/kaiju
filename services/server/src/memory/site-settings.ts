@@ -12,12 +12,12 @@ import {
 import {
   SEMANTIC_MEMORY_PLACEMENT_DEFAULT,
   semanticMemoryPlacementSchema,
-  gatewayModelSchema,
   SEMANTIC_MEMORY_BLOCK_DEFAULT_BYTES,
   SEMANTIC_MEMORY_BLOCK_MAX_BYTES,
   SEMANTIC_MEMORY_BLOCK_MIN_BYTES,
   SEMANTIC_MEMORY_SCOPE_MAX_ITEMS,
 } from "@kobe/protocol";
+import { gatewayModelSchema } from "@kobe/protocol/sandbox-wire";
 import { logger } from "../logger.js";
 
 /**

@@ -6,10 +6,9 @@ import {
   APP_CARD_CUSTOM_TYPE,
   CAPABILITY_APP_CARDS,
   appCardEntryId,
-  parseTranslatedPiEvent,
   type AppCardEntry,
-  type SandboxToServerFrame,
 } from "@kobe/protocol";
+import { parseTranslatedPiEvent, type SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   RUN,

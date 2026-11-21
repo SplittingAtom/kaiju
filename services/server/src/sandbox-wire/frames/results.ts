@@ -1,4 +1,5 @@
-import type { CommandResultFrame, ErrorInfo, SandboxToServerFrame } from "@kobe/protocol";
+import { type CommandResultFrame, type SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
+import type { ErrorInfo } from "@kobe/protocol";
 import type { LeaseViolation } from "../context.js";
 import type { CommandDelivery } from "../delivery.js";
 import type { NotebookIntake } from "../notebook-intake.js";

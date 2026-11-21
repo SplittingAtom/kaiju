@@ -1,5 +1,10 @@
+import {
+  type PiGetEntriesData,
+  type ServerToSandboxFrame,
+  type RunStartFrame,
+} from "@kobe/protocol/sandbox-wire";
 import { randomUUID } from "node:crypto";
-import type { PiGetEntriesData, ServerToSandboxFrame, RunStartFrame } from "@kobe/protocol";
+
 import { withTeam, type SandboxCommandKind } from "@kobe/db";
 import type { Logger } from "pino";
 import { recordRunMemory } from "../memory/items/run-records.js";

@@ -1,12 +1,14 @@
 import {
   EVAL_OUTPUT_READ_MAX_BYTES,
-  EVAL_READ_MAX_FILES,
-  EVAL_READ_MAX_TOTAL_BYTES,
-  evalReadResultSchema,
   judgeOutputText,
   type EvalWorkspaceEntry,
   type SkillEvalJudgeOutput,
 } from "@kobe/protocol";
+import {
+  EVAL_READ_MAX_FILES,
+  EVAL_READ_MAX_TOTAL_BYTES,
+  evalReadResultSchema,
+} from "@kobe/protocol/sandbox-wire";
 import type { SandboxRouter, SandboxTarget } from "../../sandbox-wire/types.js";
 
 /**

@@ -1,9 +1,5 @@
-import type {
-  KobeToolsRequest,
-  KobeToolsResponse,
-  PiExtensionUiRequest,
-  RunMcpContext,
-} from "@kobe/protocol";
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { PiExtensionUiRequest, RunMcpContext } from "@kobe/protocol/sandbox-wire";
 import type { EgressWiring } from "../egress/egress-wiring.js";
 import type { ExecRelay } from "../exec/relay.js";
 import type { McpWiring } from "../mcp/pi-mcp-config.js";

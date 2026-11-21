@@ -1,5 +1,6 @@
+import { type PiGetEntriesData } from "@kobe/protocol/sandbox-wire";
 import { sql, withTeam, type KobeTx } from "@kobe/db";
-import type { PiGetEntriesData } from "@kobe/protocol";
+
 import { appendRunEventsInTx, withAppendTx } from "../../event-stream/append.js";
 import { failureInfo } from "../../runs/failure-codes.js";
 import { keepRunPromptInTx, type PromptSource } from "../../runs/run-prompt.js";

@@ -1,11 +1,9 @@
+import { isExcludedPath, isServerOwnedPath, workspacePathIssue } from "@kobe/protocol";
 import {
-  isExcludedPath,
-  isServerOwnedPath,
-  workspacePathIssue,
   type WorkspaceChange,
   type WorkspaceChangeResult,
   type WorkspaceEntry,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import { sql, type KobeTx } from "@kobe/db";
 import { encodeWorkspaceHint, RUN_EVENTS_CHANNEL } from "../event-stream/notify.js";
 import { checkoutOf, checkoutSlugs } from "./checkouts.js";

@@ -1,9 +1,5 @@
-import type {
-  KobeToolsRequest,
-  KobeToolsResponse,
-  ProjectCommitFrame,
-  ProjectCommitResultFrame,
-} from "@kobe/protocol";
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { ProjectCommitFrame, ProjectCommitResultFrame } from "@kobe/protocol/sandbox-wire";
 import { PushPathError } from "../workspace/sync.js";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";

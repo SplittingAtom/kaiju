@@ -1,22 +1,20 @@
 import { describe, expect, it } from "vitest";
+import { SYSTEM_PROMPT_MAX_BYTES, type ApprovalToken, type PolicyReason } from "../index.js";
 import {
   KOBE_EVENT_DROPPED_TYPE,
   MODEL_LIMITS_MAX_TOKENS,
   SANDBOX_FRAME_MAX_BYTES_BY_TYPE,
   SANDBOX_MAX_FRAME_BYTES,
   SANDBOX_SMALL_FRAME_MAX_BYTES,
-  SYSTEM_PROMPT_MAX_BYTES,
   decodeSandboxFrame,
   decodeServerFrame,
   encodeFrame,
   kobeEventDroppedSchema,
   parseTranslatedPiEvent,
   piGetEntriesDataSchema,
-  type ApprovalToken,
-  type PolicyReason,
   type SandboxToServerFrame,
   type ServerToSandboxFrame,
-} from "../index.js";
+} from "../sandbox-wire/index.js";
 import { EXAMPLE_IDS } from "../testing/index.js";
 
 const RUN = EXAMPLE_IDS.run;

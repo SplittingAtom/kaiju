@@ -1,4 +1,4 @@
-import type { PolicyCheckFrame } from "@kobe/protocol";
+import type { PolicyCheckFrame } from "@kobe/protocol/sandbox-wire";
 import { EXAMPLE_IDS } from "@kobe/protocol/testing";
 import { describe, expect, it } from "vitest";
 import {

@@ -1,11 +1,10 @@
 import {
   narrowThinkingPolicy,
   strictestThinkingPolicy,
-  type PiModelApi,
-  type PiThreadConfig,
   type ThinkingLevel,
   type ThinkingPolicy,
 } from "@kobe/protocol";
+import { type PiModelApi, type PiThreadConfig } from "@kobe/protocol/sandbox-wire";
 import { catalogThinking } from "../models/thinking.js";
 import type { CatalogTokenLimits } from "../models/token-limits.js";
 import {

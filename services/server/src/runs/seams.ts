@@ -1,11 +1,5 @@
-import type {
-  ApprovalMode,
-  ErrorInfo,
-  PiThreadConfig,
-  RunMcpContext,
-  RunTrigger,
-  SkillBundleRef,
-} from "@kobe/protocol";
+import type { ApprovalMode, ErrorInfo, RunTrigger } from "@kobe/protocol";
+import type { PiThreadConfig, RunMcpContext, SkillBundleRef } from "@kobe/protocol/sandbox-wire";
 import type { AgentScope, KobeTx, RunSkillRef } from "@kobe/db";
 import type { Omission, SkillRef } from "../resolver/resolve.js";
 

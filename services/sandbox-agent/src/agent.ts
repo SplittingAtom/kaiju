@@ -8,7 +8,7 @@ import {
   type ServerToSandboxFrame,
   type ThreadBranchSummaryFrame,
   type ThreadCompactFrame,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import type { PiExit, PiRecord } from "./pi/pi-process.js";
 import { PolicyBroker } from "./policy/broker.js";
 import { ConflictReporter } from "./workspace/conflict-reporter.js";

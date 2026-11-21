@@ -5,11 +5,7 @@ import {
   uploadFileNameSchema,
   uploadResponseSchema,
 } from "./uploads.js";
-import {
-  sha256HexSchema,
-  workspaceOriginSchema,
-  workspacePathSchema,
-} from "./sandbox-wire/workspace-sync.js";
+import { sha256HexSchema, workspaceOriginSchema, workspacePathSchema } from "./workspace-paths.js";
 
 /**
  * Files contract (KOBE-147 = 54a of KOBE-54; notes in docs/ledger/KOBE-147.md). Additive: an agent

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { runMcpContextSchema, runStartFrameSchema, SANDBOX_WIRE_VERSION } from "../index.js";
+import {
+  runMcpContextSchema,
+  runStartFrameSchema,
+  SANDBOX_WIRE_VERSION,
+} from "../sandbox-wire/index.js";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 const server = {

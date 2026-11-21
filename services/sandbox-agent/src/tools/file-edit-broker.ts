@@ -1,9 +1,5 @@
-import type {
-  KobeToolsRequest,
-  KobeToolsResponse,
-  FileEditProposeFrame,
-  FileEditProposeResultFrame,
-} from "@kobe/protocol";
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { FileEditProposeFrame, FileEditProposeResultFrame } from "@kobe/protocol/sandbox-wire";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
 

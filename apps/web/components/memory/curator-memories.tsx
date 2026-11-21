@@ -1,64 +1,21 @@
 "use client";
 
-import { SEMANTIC_MEMORY_KINDS, SEMANTIC_MEMORY_SCOPE_LABELS } from "@kobe/protocol";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { ApiError } from "../../lib/api/client";
-import {
-  createMemoryItemsApi,
-  describeItemError,
-  type ItemKind,
-  type ItemStatus,
-  type MemoryItem,
-  type MemoryItemList,
-} from "../../lib/memory/items-api";
+import { SEMANTIC_MEMORY_SCOPE_LABELS } from "@kobe/protocol";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { createMemoryItemsApi, type MemoryItem } from "../../lib/memory/items-api";
 import { ErrorNotice } from "../admin/error-notice";
-import { Button, EmptyState, Field, Section, Select, TextInput } from "../ui/console";
+import { Button, EmptyState, Section } from "../ui/console";
 import { CuratorAdd } from "./curator-add";
+import { CuratorFilters, type Filters, type ListedScope } from "./curator-filters";
 import { itemAnchor } from "./item-checks";
-import { KIND_LABELS } from "./item-fields";
 import { ItemRow, type Done, type FocusAfter } from "./item-row";
 import { UndoBar, UsageNotice } from "./my-memories";
 import { PolicyBudget } from "./policy-budget";
+import { useCuratedList } from "./use-curated-list";
 
-export type SharedScope = "team" | "site";
-
-/** One scope the console lists, and whether the caller curates it there. */
-export interface ListedScope {
-  readonly scope: SharedScope;
-  readonly curate: boolean;
-}
-
-/**
- * Status filter: the contract's three statuses. Staleness (KOBE-386) is not a status but a flag on
- * items and a `stale` list filter (`MemoryItem.stale`, `ListQuery.stale`); not shown here yet.
- */
-const STATUS_LABELS: Readonly<Record<ItemStatus, string>> = {
-  active: "Active",
-  archived: "Archived",
-  superseded: "Superseded",
-};
-type PolicyFilter = "all" | "policy" | "ordinary";
-
-interface Filters {
-  readonly scope: SharedScope;
-  readonly status: ItemStatus;
-  readonly kind: ItemKind | "";
-  readonly tag: string;
-  readonly policy: PolicyFilter;
-}
-
-type ListState =
-  | { readonly status: "loading" }
-  | { readonly status: "error"; readonly error: ApiError }
-  | {
-      readonly status: "ready";
-      readonly items: readonly MemoryItem[];
-      readonly nextCursor: string | null;
-      readonly usage: MemoryItemList["usage"];
-    };
+export type { ListedScope, SharedScope } from "./curator-filters";
 
 const LIST_HEADING = "curated-memories";
-const worded = (error: ApiError): ApiError => ({ ...error, message: describeItemError(error) });
 
 /**
  * The curators' Memories tab (KOBE-385; SM8, SM21) on the Workspace and Site console Memory
@@ -88,36 +45,11 @@ export function CuratorMemories({
     tag: "",
     policy: "all",
   });
-  const [state, setState] = useState<ListState>({ status: "loading" });
-  const [pageError, setPageError] = useState<ApiError | null>(null);
   const [done, setDone] = useState<{ readonly n: number; readonly done: Done } | null>(null);
   const [focus, setFocus] = useState<FocusAfter | null>(null);
   const curate = scopes.find((s) => s.scope === filters.scope)?.curate === true;
   const site = filters.scope === "site";
-
-  const query = useCallback(
-    (cursor: string | null) =>
-      api.list({
-        scope: filters.scope,
-        status: filters.status,
-        kind: filters.kind === "" ? undefined : filters.kind,
-        policy: site && filters.policy !== "all" ? filters.policy === "policy" : undefined,
-        cursor,
-      }),
-    [api, filters.scope, filters.status, filters.kind, filters.policy, site],
-  );
-
-  const load = useCallback(async () => {
-    setState({ status: "loading" });
-    const res = await query(null);
-    setState(
-      res.ok ? { status: "ready", ...res.data } : { status: "error", error: worded(res.error) },
-    );
-  }, [query]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const { state, pageError, load, more, place, refreshUsage } = useCuratedList(api, filters, site);
 
   useEffect(() => {
     if (focus === null) return;
@@ -125,45 +57,6 @@ export function CuratorMemories({
     (el ?? document.getElementById(LIST_HEADING))?.focus();
     setFocus(null);
   }, [focus, state]);
-
-  const more = async () => {
-    if (state.status !== "ready" || !state.nextCursor) return;
-    setPageError(null);
-    const res = await query(state.nextCursor);
-    if (!res.ok) return setPageError(worded(res.error));
-    setState({
-      ...state,
-      items: [...state.items, ...res.data.items],
-      nextCursor: res.data.nextCursor,
-    });
-  };
-
-  /**
-   * The answer replaces its row; a row that no longer matches the filters leaves the list. The
-   * active count follows the item's move in or out of `active` (a new item comes from nowhere).
-   */
-  const place = (item: MemoryItem) =>
-    setState((prev) => {
-      if (prev.status !== "ready") return prev;
-      const before = prev.items.find((i) => i.id === item.id);
-      const fits = item.scope === filters.scope && item.status === filters.status;
-      const items = !fits
-        ? prev.items.filter((i) => i.id !== item.id)
-        : before
-          ? prev.items.map((i) => (i.id === item.id ? item : i))
-          : [item, ...prev.items];
-      const was = before ? before.status === "active" : false;
-      const is = item.status === "active";
-      const count = prev.usage.count + (is === was ? 0 : is ? 1 : -1);
-      return { ...prev, items, usage: { ...prev.usage, count } };
-    });
-
-  /** Policy counts move with Policy changes the list can't see: ask again (Site only). */
-  const refreshUsage = async () => {
-    const res = await query(null);
-    if (res.ok)
-      setState((prev) => (prev.status === "ready" ? { ...prev, usage: res.data.usage } : prev));
-  };
 
   const changed = (item: MemoryItem, d: Done, target: FocusAfter) => {
     place(item);
@@ -214,66 +107,7 @@ export function CuratorMemories({
           onReload={() => void load()}
         />
       )}
-      <form
-        aria-label="Filter memories"
-        className="my-4 flex flex-wrap items-end gap-3"
-        onSubmit={(e) => e.preventDefault()}
-      >
-        {scopes.length > 1 && (
-          <Field label="Scope" className="w-fit">
-            <Select
-              value={filters.scope}
-              onChange={(e) => set({ scope: e.target.value as SharedScope, policy: "all" })}
-            >
-              {scopes.map((s) => (
-                <option key={s.scope} value={s.scope}>
-                  {SEMANTIC_MEMORY_SCOPE_LABELS[s.scope]}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        )}
-        <Field label="Kind" className="w-fit">
-          <Select
-            value={filters.kind}
-            onChange={(e) => set({ kind: e.target.value as ItemKind | "" })}
-          >
-            <option value="">All kinds</option>
-            {SEMANTIC_MEMORY_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {KIND_LABELS[k]}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Status" className="w-fit">
-          <Select
-            value={filters.status}
-            onChange={(e) => set({ status: e.target.value as ItemStatus })}
-          >
-            {(Object.keys(STATUS_LABELS) as ItemStatus[]).map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABELS[s]}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        {site && (
-          <Field label="Policy" className="w-fit">
-            <Select
-              value={filters.policy}
-              onChange={(e) => set({ policy: e.target.value as PolicyFilter })}
-            >
-              <option value="all">Policy and other memories</option>
-              <option value="policy">Policy only</option>
-              <option value="ordinary">Not Policy</option>
-            </Select>
-          </Field>
-        )}
-        <Field label="Tag" hint="Matches the memories loaded so far.">
-          <TextInput value={filters.tag} onChange={(e) => set({ tag: e.target.value })} />
-        </Field>
-      </form>
+      <CuratorFilters scopes={scopes} filters={filters} site={site} set={set} />
       <Section
         id={LIST_HEADING}
         title={title}

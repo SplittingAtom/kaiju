@@ -1,5 +1,5 @@
 import { Readable } from "node:stream";
-import { SKILL_EVAL_FIXTURES_PATH, type EvalPrepareFrame } from "@kobe/protocol";
+import { SKILL_EVAL_FIXTURES_PATH, type EvalPrepareFrame } from "@kobe/protocol/sandbox-wire";
 import { writeFileAtomic } from "../workspace/fs.js";
 
 // A skill eval case's fixtures into its empty workspace (KOBE-325): fetched one by one from the

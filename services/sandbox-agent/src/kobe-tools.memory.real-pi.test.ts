@@ -1,6 +1,6 @@
 import { readdir } from "node:fs/promises";
 import path from "node:path";
-import type { SandboxToServerFrame } from "@kobe/protocol";
+import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import { RUN_2, runStart, startHarness, until, type Harness } from "./testing/harness.js";
 import {

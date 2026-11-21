@@ -14,6 +14,11 @@ import { composer, openApp, pressModShift } from "../chat/testing";
  */
 let fake: FakeKobe;
 const WAIT = { timeout: 10_000 };
+/** Lets effects and any late request started by a tab switch run, so "no new wake" is a real check. */
+const settle = () =>
+  act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
 const APP = {
   appId: "a".repeat(64),
   connectorId: "11111111-1111-4111-8111-111111111111",
@@ -83,19 +88,23 @@ describe("Files | Apps (ac-1, ac-3)", () => {
     const listings = () => fake.workspaceListings.length;
     await withApps();
     await waitFor(() => expect(tab("Apps").getAttribute("aria-selected")).toBe("true"));
-    await new Promise((r) => setTimeout(r, 50));
+    // Settled on the stored tab: Files is not mounted, so nothing woke or listed.
+    await waitFor(() => expect(rail().hasAttribute("data-settled")).toBe(true), WAIT);
     expect(wakes()).toBe(0);
     expect(listings()).toBe(0);
     const user = userEvent.setup();
     await user.click(tab("Files"));
     await waitFor(() => expect(wakes()).toBe(1), WAIT);
-    await new Promise((r) => setTimeout(r, 50));
+    // The tree's own first listing came after the wake: one wake for it.
+    await waitFor(() => expect(listings()).toBe(1), WAIT);
     expect(wakes()).toBe(1);
     await user.click(tab("Apps"));
-    await new Promise((r) => setTimeout(r, 50));
+    await waitFor(() => expect(tab("Apps").getAttribute("aria-selected")).toBe("true"));
+    await settle();
     expect(wakes()).toBe(1);
     await user.click(tab("Files"));
-    await new Promise((r) => setTimeout(r, 50));
+    await waitFor(() => expect(tab("Files").getAttribute("aria-selected")).toBe("true"));
+    await settle();
     expect(wakes()).toBe(1);
     expect(listings()).toBe(1);
     // Mod+Shift+F still lists again.
@@ -179,10 +188,13 @@ describe("no apps (ac-2)", () => {
     fake.preferences = { rail_tab: "apps" };
     openApp(fake);
     await composer();
-    await new Promise((r) => setTimeout(r, 100));
+    // Files shows once the (empty) apps list is read; until then the stored tab hides it.
+    await waitFor(
+      () => expect(within(rail()).getByRole("region", { name: "Files" }).hidden).toBe(false),
+      WAIT,
+    );
     expect(screen.queryByRole("tablist")).toBeNull();
     expect(screen.queryByRole("tab", { name: "Apps" })).toBeNull();
-    expect(within(rail()).getByRole("region", { name: "Files" }).hidden).toBe(false);
   });
 
   it("a key to add is enough for the Apps tab", async () => {
@@ -262,8 +274,10 @@ describe("review fixes (KOBE-448)", () => {
     await user.keyboard("{ArrowRight}{ArrowRight}{ArrowRight}");
     await waitFor(() => expect(puts()).toHaveLength(1), WAIT);
     expect(puts()[0]?.body).toEqual({ rail_tab: "apps" });
-    await new Promise((r) => setTimeout(r, 900));
-    expect(puts()).toHaveLength(1);
+    // A later change saves on its own: had the burst queued a second save, it would come first.
+    await user.keyboard("{ArrowLeft}");
+    await waitFor(() => expect(puts()).toHaveLength(2), WAIT);
+    expect(puts().map((p) => p.body)).toEqual([{ rail_tab: "apps" }, { rail_tab: "files" }]);
   });
 
   it("the Files tab's panel is the one Files element: no region inside it", async () => {

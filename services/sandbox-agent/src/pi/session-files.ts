@@ -2,12 +2,8 @@ import { randomBytes } from "node:crypto";
 import { constants, createReadStream } from "node:fs";
 import { mkdir, open, readdir, rename, rm, stat, type FileHandle } from "node:fs/promises";
 import path from "node:path";
-import {
-  uuidSchema,
-  type AppCardEntry,
-  type PiSessionEntry,
-  type PiSessionHeader,
-} from "@kobe/protocol";
+import { uuidSchema, type AppCardEntry } from "@kobe/protocol";
+import { type PiSessionEntry, type PiSessionHeader } from "@kobe/protocol/sandbox-wire";
 import { LineSplitter, encodeJsonl } from "../jsonl.js";
 import { openAgentTemp } from "../atomic-file.js";
 import { assertOnVolume, shareOnVolume } from "../workspace/volume.js";

@@ -1,4 +1,4 @@
-import { PI_PINNED_VERSION, PI_PREVIOUS_MINORS } from "@kobe/protocol";
+import { PI_PINNED_VERSION, PI_PREVIOUS_MINORS } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { admitPiVersion, supportedPiVersion } from "./connection.js";
 

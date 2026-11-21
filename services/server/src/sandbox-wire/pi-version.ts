@@ -1,5 +1,3 @@
-import { PI_PINNED_VERSION, PI_PREVIOUS_MINORS } from "@kobe/protocol";
-
 /** The minor (`1.4`) of a `major.minor.patch` version, or undefined when it is not one. */
 function piMinor(version: string): string | undefined {
   return /^(\d+\.\d+)\.\d+$/.exec(version)?.[1];
@@ -40,3 +38,4 @@ export function admitPiVersion(
   }
   return true;
 }
+import { PI_PINNED_VERSION, PI_PREVIOUS_MINORS } from "@kobe/protocol/sandbox-wire";

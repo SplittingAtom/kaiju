@@ -1,10 +1,10 @@
 import type {
-  NotebookExecuteFrame,
   NotebookExecuteResult,
   NotebookKernelResponse,
   NotebookOutput,
   NotebookStartResult,
 } from "@kobe/protocol";
+import type { NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
 import { fail, ok, type CommandOutcome } from "../threads/outcome.js";
 import { OUTPUT_LIMITS, OutputLimiter, type OutputLimits } from "./outputs.js";
 import { KernelSession, type BridgeLauncher } from "./session.js";
