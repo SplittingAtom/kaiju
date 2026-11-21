@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { formatTraceparent, runRootSpanId, runTraceId } from "../index.js";
 import {
   SANDBOX_SPAN_ATTRIBUTES,
   SANDBOX_SPAN_CONTENT_MAX_CHARS,
@@ -11,12 +12,9 @@ import {
   decodeSandboxFrame,
   decodeServerFrame,
   encodeFrame,
-  formatTraceparent,
   parseSandboxSpan,
-  runRootSpanId,
-  runTraceId,
   traceSpansFrameSchema,
-} from "../index.js";
+} from "../sandbox-wire/index.js";
 import { EXAMPLE_IDS } from "../testing/index.js";
 
 const RUN = EXAMPLE_IDS.run;

@@ -1,4 +1,5 @@
-import type { SkillDraftSaveFrame, SKILL_DRAFT_SAVE_ERROR_CODES } from "@kobe/protocol";
+import type { SKILL_DRAFT_SAVE_ERROR_CODES } from "@kobe/protocol";
+import type { SkillDraftSaveFrame } from "@kobe/protocol/sandbox-wire";
 import { getMembership, sql, withTeam, type KobeDb, type SKILL_DRAFT_REFUSALS } from "@kobe/db";
 import { runWithAuditContext } from "../../audit/context.js";
 import { appendRunEventsInTx, withAppendTx } from "../../event-stream/append.js";

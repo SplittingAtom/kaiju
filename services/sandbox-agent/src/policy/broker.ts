@@ -1,4 +1,4 @@
-import type { PolicyCheckFrame } from "@kobe/protocol";
+import type { PolicyCheckFrame } from "@kobe/protocol/sandbox-wire";
 import { MAX_PENDING_CHECKS } from "../kobe-policy/protocol.js";
 import { localDeny, type PolicyChannelCheck, type PolicyChannelReply } from "./channel.js";
 

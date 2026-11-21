@@ -1,11 +1,8 @@
 import { chmod, mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type {
-  KobeToolsRequest,
-  KobeToolsResponse,
-  SkillDraftSaveResultFrame,
-} from "@kobe/protocol";
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { SkillDraftSaveResultFrame } from "@kobe/protocol/sandbox-wire";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { PushPathError, type PushedFile } from "../workspace/sync.js";
 import { SkillDraftBroker } from "./skill-draft-broker.js";

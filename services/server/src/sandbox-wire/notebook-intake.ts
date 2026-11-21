@@ -1,9 +1,6 @@
 import { sql, type KobeDb } from "@kobe/db";
-import {
-  NOTEBOOK_EXEC_OUTPUT_MAX_BYTES,
-  NOTEBOOK_EXEC_OUTPUTS_MAX,
-  type NotebookOutputFrame,
-} from "@kobe/protocol";
+import { NOTEBOOK_EXEC_OUTPUT_MAX_BYTES, NOTEBOOK_EXEC_OUTPUTS_MAX } from "@kobe/protocol";
+import { type NotebookOutputFrame } from "@kobe/protocol/sandbox-wire";
 import type { Logger } from "pino";
 import { MAX_APPEND_BATCH, appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import type { NotebookExec } from "./delivery.js";

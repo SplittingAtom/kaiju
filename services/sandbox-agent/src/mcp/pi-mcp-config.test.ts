@@ -3,7 +3,7 @@ import { mkdtemp, readdir, rm, stat, symlink, unlink, writeFile } from "node:fs/
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { RunMcpContext } from "@kobe/protocol";
+import type { RunMcpContext } from "@kobe/protocol/sandbox-wire";
 import {
   buildPiMcpConfig,
   MCP_CONFIG_FILE,

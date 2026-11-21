@@ -1,13 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-  CAPABILITY_THREAD_CONTEXT,
-  THREAD_CONTEXT_MAX_BYTES,
   threadContextError,
   threadContextSchema,
-  type ServerToSandboxFrame,
   type ThreadContextErrorCode,
 } from "@kobe/protocol";
+import {
+  CAPABILITY_THREAD_CONTEXT,
+  THREAD_CONTEXT_MAX_BYTES,
+  type ServerToSandboxFrame,
+} from "@kobe/protocol/sandbox-wire";
 import { sealReply } from "@kobe/protocol/node";
 import { RunFixture, type FakeWorkspace, type RunWorld } from "./testing/run-fixture.js";
 import type { TestResponse } from "./testing/browser.js";

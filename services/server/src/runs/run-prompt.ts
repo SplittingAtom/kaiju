@@ -1,4 +1,4 @@
-import type { PiGetEntriesData, PiSessionEntry } from "@kobe/protocol";
+import type { PiGetEntriesData, PiSessionEntry } from "@kobe/protocol/sandbox-wire";
 import { sql, threadEntries, type KobeTx } from "@kobe/db";
 import type { NewRunEvent } from "../event-stream/append.js";
 import { WIRE_DEFAULTS } from "../sandbox-wire/constants.js";

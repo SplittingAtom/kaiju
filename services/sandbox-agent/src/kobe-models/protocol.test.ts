@@ -7,7 +7,7 @@ import {
   MODEL_RUN_ERROR_CODES as PROTOCOL_CODES,
   PI_MODEL_APIS as PROTOCOL_APIS,
   piThreadConfigSchema,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import {
   GATEWAY_MODEL,

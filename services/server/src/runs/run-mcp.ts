@@ -9,7 +9,8 @@ import {
   type ConnectorGrantKind,
   type KobeTx,
 } from "@kobe/db";
-import { matchGlob, type RunMcpContext } from "@kobe/protocol";
+import { matchGlob } from "@kobe/protocol";
+import { type RunMcpContext } from "@kobe/protocol/sandbox-wire";
 import { usableSiteKeyIds } from "../connectors/site-key.js";
 import { exposedTools, type TeamConnector } from "../mcp/catalog.js";
 

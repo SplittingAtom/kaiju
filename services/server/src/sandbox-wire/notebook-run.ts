@@ -4,10 +4,12 @@ import {
   NOTEBOOK_CODE_MAX_BYTES,
   NOTEBOOK_TIMEOUT_DEFAULT_S,
   workspaceToolPath,
+} from "@kobe/protocol";
+import {
   type NotebookExecuteFrame,
   type NotebookRunFrame,
   type ServerToSandboxFrame,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import type { Logger } from "pino";
 import type { AllowedVerdict } from "../artifacts/allowed.js";
 import {

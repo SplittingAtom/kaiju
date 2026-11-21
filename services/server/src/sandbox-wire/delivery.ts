@@ -1,36 +1,38 @@
 import { randomUUID } from "node:crypto";
 import {
-  CAPABILITY_TRACE_SPANS,
   parseTraceparent,
   runTraceId,
-  type WireTraceContext,
   CAPABILITY_APP_CARDS,
-  CAPABILITY_MCP,
   CAPABILITY_MEMORY,
   CAPABILITY_SEMANTIC_MEMORY,
   CAPABILITY_SEMANTIC_MEMORY_PLACEMENT,
   CAPABILITY_FILE_EDITS,
   CAPABILITY_PROJECTS,
   CAPABILITY_RUN_TOKEN,
-  CAPABILITY_SKILL_BUNDLES,
-  CAPABILITY_SKILL_EVAL,
   CAPABILITY_NOTEBOOKS,
   CAPABILITY_NOTEBOOK_START,
   CAPABILITY_THREAD_BRANCH_SUMMARY,
   CAPABILITY_THREAD_COMPACT,
-  CAPABILITY_THREAD_CONTEXT,
   CAPABILITY_SYNC_CONFLICTS,
+  type RunSemanticMemory,
+  type RunSemanticMemoryItem,
+} from "@kobe/protocol";
+import {
+  CAPABILITY_TRACE_SPANS,
+  type WireTraceContext,
+  CAPABILITY_MCP,
+  CAPABILITY_SKILL_BUNDLES,
+  CAPABILITY_SKILL_EVAL,
+  CAPABILITY_THREAD_CONTEXT,
   serverToSandboxFrameSchema,
   threadBranchSummaryFrameSchema,
   threadCompactFrameSchema,
   type PiGetEntriesData,
-  type RunSemanticMemory,
-  type RunSemanticMemoryItem,
   type RunStartFrame,
   type ServerToSandboxFrame,
   type ThreadBranchSummaryFrame,
   type ThreadCompactFrame,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import { sql, withTeam, type KobeTx, type SandboxCommandKind } from "@kobe/db";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { keepRunPromptInTx, type PromptSource } from "../runs/run-prompt.js";

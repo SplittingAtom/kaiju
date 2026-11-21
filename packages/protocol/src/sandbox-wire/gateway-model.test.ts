@@ -4,7 +4,7 @@ import {
   GATEWAY_MODEL_PATTERN,
   gatewayModelSchema,
   piThreadConfigSchema,
-} from "../index.js";
+} from "../sandbox-wire/index.js";
 
 /**
  * KOBE-280: one gateway-model limit. The wire schema and the kobe-models model file (which keeps

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { NO_CONTROL_CHARS, THREAD_TITLE_MAX, uuidSchema } from "./common.js";
-import { gatewayModelSchema } from "./sandbox-wire/frames.js";
+import { gatewayModelSchema } from "./sandbox-wire/frames/model.js";
 import {
   MEMORY_EMBED_MAX_INPUT_CHARS,
   SERVER_CALL_EMBEDDINGS_PATH,

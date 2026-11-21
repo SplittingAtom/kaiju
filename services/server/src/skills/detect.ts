@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { SkillBundleRef } from "@kobe/protocol";
+import type { SkillBundleRef } from "@kobe/protocol/sandbox-wire";
 import type { RunSkillRef, RunSkillUse } from "@kobe/db";
 import type { SkillRef } from "../resolver/resolve.js";
 import { SKILLS_DIR, SKILLS_STORE_SUBDIR } from "../sandbox/constants.js";

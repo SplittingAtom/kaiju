@@ -1,9 +1,8 @@
+import { THREAD_COMPACT_SUMMARY_MAX_BYTES, utf8ByteLength } from "@kobe/protocol";
 import {
-  THREAD_COMPACT_SUMMARY_MAX_BYTES,
-  utf8ByteLength,
   type ThreadCompactFrame,
   type ThreadCompactResultFrame,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import { gatewayBaseUrl } from "../kobe-models/protocol.js";
 import { PiProcessError } from "../pi/pi-process.js";
 import type { RunModel } from "../models/types.js";

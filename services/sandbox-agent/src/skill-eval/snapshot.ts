@@ -3,12 +3,12 @@ import { lstat, open, readdir, readlink } from "node:fs/promises";
 import path from "node:path";
 import {
   EVAL_WORKSPACE_MAX_FILES,
-  SANDBOX_MAX_FRAME_BYTES,
   isReservedWorkspacePath,
   type EvalWorkspaceEntry,
   type EvalWorkspaceSnapshot,
   type EvalWorkspaceWalk,
 } from "@kobe/protocol";
+import { SANDBOX_MAX_FRAME_BYTES } from "@kobe/protocol/sandbox-wire";
 import { hashFile } from "../workspace/fs.js";
 
 // The after-snapshot of a skill eval's workspace (KOBE-325, contract KOBE-324 `outputs.ts`):

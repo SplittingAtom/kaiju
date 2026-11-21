@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
-import type { SkillBundleRef } from "@kobe/protocol";
+import type { SkillBundleRef } from "@kobe/protocol/sandbox-wire";
 import { canonicalZip, SkillPackageError } from "@kobe/protocol";
 import { and, eq, teamMembers, withTeam, type KobeDb, type KobeTx, type TeamRole } from "@kobe/db";
 import { RULE_SET, type ScanResult } from "@kobe/skill-scanner";

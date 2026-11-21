@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { timestampSchema, uuidSchema } from "./common.js";
-import { sha256HexSchema, workspacePathSchema } from "./sandbox-wire/workspace-sync.js";
+import { sha256HexSchema, workspacePathSchema } from "./workspace-paths.js";
 
 /**
  * Workspace sync conflicts (KOBE-492). When the member saves a file the agent also changed and

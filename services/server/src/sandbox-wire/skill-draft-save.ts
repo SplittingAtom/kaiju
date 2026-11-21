@@ -1,4 +1,4 @@
-import type { ServerToSandboxFrame, SkillDraftSaveFrame } from "@kobe/protocol";
+import type { ServerToSandboxFrame, SkillDraftSaveFrame } from "@kobe/protocol/sandbox-wire";
 import type { Logger } from "pino";
 import type { AllowedVerdict } from "../artifacts/allowed.js";
 import type { SkillDraftRefusal, SkillDraftToolResult } from "../skills/drafts/tool.js";

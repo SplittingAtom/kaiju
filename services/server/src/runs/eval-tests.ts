@@ -1,5 +1,5 @@
 import { sql, type KobeTx } from "@kobe/db";
-import type { SkillBundleRef } from "@kobe/protocol";
+import type { SkillBundleRef } from "@kobe/protocol/sandbox-wire";
 import { isBlocked } from "../skills/blocklist.js";
 import type { RunAgentResolver } from "./seams.js";
 

@@ -1,11 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import {
-  CAPABILITY_PROJECTS,
-  projectCommitResultFrameSchema,
-  type PolicyDecision,
-  type PolicyEngine,
-} from "@kobe/protocol";
+import { CAPABILITY_PROJECTS, type PolicyDecision, type PolicyEngine } from "@kobe/protocol";
+import { projectCommitResultFrameSchema } from "@kobe/protocol/sandbox-wire";
 import { approvalKeyring } from "./approvals/index.js";
 import { createApp } from "./app.js";
 import { diffHash } from "./projects/tree.js";

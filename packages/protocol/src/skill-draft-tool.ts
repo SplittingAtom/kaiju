@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { idSchema, uuidSchema } from "./common.js";
 import { SKILL_NAME_PATTERN } from "./skill-package/layout.js";
-import { sha256HexSchema, workspacePathSchema } from "./sandbox-wire/workspace-sync.js";
+import { sha256HexSchema, workspacePathSchema } from "./workspace-paths.js";
 
 /**
  * `save_skill_draft` contract (KOBE-442). Additive: an agent without

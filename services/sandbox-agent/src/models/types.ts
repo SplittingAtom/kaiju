@@ -1,4 +1,4 @@
-import type { PiModelApi } from "@kobe/protocol";
+import type { PiModelApi } from "@kobe/protocol/sandbox-wire";
 
 /**
  * Model wiring for the Pi processes of this sandbox (KOBE-41): where the model gateway is, the

@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  BUILTIN_TOOLS,
-  kobeToolsRequestSchema,
-  kobeToolsResponseSchema,
-  sandboxToServerFrameSchema,
-  serverToSandboxFrameSchema,
-} from "./index.js";
+import { BUILTIN_TOOLS, kobeToolsRequestSchema, kobeToolsResponseSchema } from "./index.js";
+import { sandboxToServerFrameSchema, serverToSandboxFrameSchema } from "./sandbox-wire/index.js";
 import {
   CAPABILITY_SKILL_DRAFTS,
   SAVE_SKILL_DRAFT_TOOL,

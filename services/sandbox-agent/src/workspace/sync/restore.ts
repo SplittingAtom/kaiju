@@ -2,8 +2,8 @@ import {
   WORKSPACE_SERVER_OWNED_PREFIXES,
   isExcludedPath,
   workspacePathIssue,
-  type WorkspaceEntry,
 } from "@kobe/protocol";
+import { type WorkspaceEntry } from "@kobe/protocol/sandbox-wire";
 import { SyncHttpError } from "../client.js";
 import { hashFile, lockServerOwned, removeFile, scanWorkspace, type Checkouts } from "../fs.js";
 import { applyPulledCheckouts, conflictCopy, downloadSafely, evict } from "./local.js";

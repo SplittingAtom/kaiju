@@ -1,10 +1,6 @@
 import { sql, type KobeDb } from "@kobe/db";
-import {
-  workspaceToolPath,
-  type FileOpenFrame,
-  type FileOpenedPayload,
-  type ServerToSandboxFrame,
-} from "@kobe/protocol";
+import { workspaceToolPath, type FileOpenedPayload } from "@kobe/protocol";
+import { type FileOpenFrame, type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
 import type { Logger } from "pino";
 import type { AllowedVerdict } from "../artifacts/allowed.js";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";

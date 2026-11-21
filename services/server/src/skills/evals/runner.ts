@@ -2,7 +2,6 @@ import { fireAndLog } from "../../async-util.js";
 import { siteSkillSettings, sql, teams, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
 import {
   evalOutputWalkRoots,
-  evalSnapshotResultSchema,
   fixtureWorkspacePath,
   skillEvalLimitsSchema,
   type ActorContext,
@@ -10,6 +9,7 @@ import {
   type SkillEvalCase,
   type SkillEvalLimits,
 } from "@kobe/protocol";
+import { evalSnapshotResultSchema } from "@kobe/protocol/sandbox-wire";
 import { judgeOutputs } from "./judge-outputs.js";
 import type { SkillEvalJudge } from "./judge.js";
 import type { Logger } from "pino";

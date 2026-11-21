@@ -1,10 +1,6 @@
 import { randomUUID } from "node:crypto";
-import {
-  FILE_SHARE_MAX_BYTES,
-  uploadFileNameSchema,
-  type FileShareFrame,
-  type SharedFile,
-} from "@kobe/protocol";
+import { FILE_SHARE_MAX_BYTES, uploadFileNameSchema, type SharedFile } from "@kobe/protocol";
+import { type FileShareFrame } from "@kobe/protocol/sandbox-wire";
 import { files, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
 import { AppendError, appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";

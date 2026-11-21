@@ -1,16 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
   CAPABILITY_SYNC_CONFLICTS,
-  SANDBOX_SMALL_FRAME_MAX_BYTES,
-  decodeSandboxFrame,
-  decodeServerFrame,
-  encodeFrame,
   isConflictCopyOf,
-  runStartFrameSchema,
   syncConflictActionBodySchema,
   syncConflictSchema,
   threadSyncConflictsResponseSchema,
 } from "./index.js";
+import {
+  SANDBOX_SMALL_FRAME_MAX_BYTES,
+  decodeSandboxFrame,
+  decodeServerFrame,
+  encodeFrame,
+  runStartFrameSchema,
+} from "./sandbox-wire/index.js";
 
 const SHA_M = "a".repeat(64);
 const SHA_A = "b".repeat(64);

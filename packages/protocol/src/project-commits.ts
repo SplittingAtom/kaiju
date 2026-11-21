@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { idSchema, uuidSchema, timestampSchema } from "./common.js";
-import { sha256HexSchema, workspacePathSchema } from "./sandbox-wire/workspace-sync.js";
+import { sha256HexSchema, workspacePathSchema } from "./workspace-paths.js";
 
 /**
  * Project commits contract (KOBE-576, Workspaces WS-1; docs/specs/workspaces.md CM1-CM7, GV2-GV4).

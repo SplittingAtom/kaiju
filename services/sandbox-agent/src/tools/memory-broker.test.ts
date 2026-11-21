@@ -1,4 +1,5 @@
-import type { KobeToolsRequest, KobeToolsResponse, MemoryResultFrame } from "@kobe/protocol";
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { MemoryResultFrame } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { MemoryBroker } from "./memory-broker.js";
 

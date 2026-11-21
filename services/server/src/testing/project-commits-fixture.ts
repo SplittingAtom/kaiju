@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, expect } from "vitest";
 import { withTeam } from "@kobe/db";
-import { WORKSPACE_SYNC_PATH } from "@kobe/protocol";
+import { WORKSPACE_SYNC_PATH } from "@kobe/protocol/sandbox-wire";
 import { unzipSync } from "fflate";
 import { createApp } from "../app.js";
 import { exportZip } from "../retention/export.js";

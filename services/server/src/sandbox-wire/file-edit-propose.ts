@@ -6,10 +6,9 @@ import {
   PROJECT_FILE_MAX_BYTES,
   PROJECT_FILES_MAX,
   workspaceToolPath,
-  type FileEditProposeFrame,
   type FileEditProposedPayload,
-  type ServerToSandboxFrame,
 } from "@kobe/protocol";
+import { type FileEditProposeFrame, type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
 import type { Logger } from "pino";
 import type { AllowedVerdict } from "../artifacts/allowed.js";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";

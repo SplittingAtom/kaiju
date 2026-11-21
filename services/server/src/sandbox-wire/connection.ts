@@ -8,20 +8,22 @@ import {
   CAPABILITY_SEMANTIC_MEMORY,
   CAPABILITY_PROJECTS,
   CAPABILITY_SKILL_DRAFTS,
+  CAPABILITY_SYNC_CONFLICTS,
+  builtinToolDescriptor,
+  type ErrorInfo,
+} from "@kobe/protocol";
+import {
   CAPABILITY_TRACE_SPANS,
   CAPABILITY_SESSION_RENEW,
-  CAPABILITY_SYNC_CONFLICTS,
   LEGACY_WEB_SEARCH_MESSAGE,
   CAPABILITY_WORKSPACE_MOVES,
   CAPABILITY_WORKSPACE_SYNC_NOW,
-  builtinToolDescriptor,
   PI_PINNED_VERSION,
   PI_PREVIOUS_MINORS,
   SANDBOX_CLOSE_CODES,
   decodeSandboxFrame,
   type ArtifactPutFrame,
   type CommandResultFrame,
-  type ErrorInfo,
   type FileShareFrame,
   type HelloFrame,
   type PiEventFrame,
@@ -39,7 +41,7 @@ import {
   type TraceSpansFrame,
   type LegacyWebSearchQueryFrame,
   type ServerToSandboxFrame,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import { withTeam } from "@kobe/db";
 import { recordSpan, telemetryState } from "@kobe/telemetry";
 import { withAppendTx } from "../event-stream/append.js";

@@ -2,7 +2,8 @@ import { execFileSync } from "node:child_process";
 import { link, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { EVAL_OUTPUT_READ_MAX_BYTES, EVAL_READ_MAX_TOTAL_BYTES } from "@kobe/protocol";
+import { EVAL_OUTPUT_READ_MAX_BYTES } from "@kobe/protocol";
+import { EVAL_READ_MAX_TOTAL_BYTES } from "@kobe/protocol/sandbox-wire";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { readOutputs } from "./read.js";
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SANDBOX_MAX_FRAME_BYTES, SANDBOX_SEND_PACE } from "@kobe/protocol";
+import { SANDBOX_MAX_FRAME_BYTES, SANDBOX_SEND_PACE } from "@kobe/protocol/sandbox-wire";
 import { SendPacer, type PaceLimits } from "./pacer.js";
 
 const LIMITS: PaceLimits = { framesPerSec: 100, frameBurst: 10, bytesPerSec: 1000, byteBurst: 100 };
