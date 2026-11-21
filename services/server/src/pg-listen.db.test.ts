@@ -57,7 +57,7 @@ describe("shared LISTEN connection (KOBE-704)", () => {
       const listed = await h.admin.query<{ n: number }>(
         `SELECT count(*)::int AS n FROM pg_stat_activity
           WHERE datname = current_database() AND application_name LIKE 'kobe-%'
-            AND application_name NOT IN ('kobe-server-listen', 'kobe-event-stream')`,
+            AND application_name NOT IN ('kobe-server', 'kobe-server-listen', 'kobe-event-stream')`,
       );
       // No other dedicated LISTEN session (the pre-KOBE-704 kobe-event-hub, kobe-sandbox-bus).
       expect(listed.rows[0]?.n).toBe(0);

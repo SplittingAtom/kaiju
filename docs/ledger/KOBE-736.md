@@ -33,3 +33,6 @@
   bounds, CNPG parameters passthrough and string-only values).
 - ac-3: `startup/db-budget.test.ts`.
 - ac-4: `docs/install.md`.
+- Full server db suite after the last commit: 258/265 files green; the 7 failures were six
+  `beforeAll` harness timeouts (shared dev Postgres under load from other lanes) and the
+  pg-listen check not yet excluding the new `kobe-server` pool name (fixed); all 7 re-run green.
