@@ -1,44 +1,53 @@
 import { appInputDigest } from "../apps/input-canonical.js";
 import { modelVisible } from "../connectors/visibility.js";
-import { appIdOf } from "../apps/app-id.js";
-import { signCaptureTicket } from "../apps/capture-ticket.js";
-import { servedTemplateHash } from "../connectors/template-store.js";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import {
-  canonicalJson,
   toolInputSchema,
   type JsonObject,
   type PolicyDecision,
-  type PolicyInput,
-  type PolicyReason,
   type PolicyReasonCode,
-  type RiskClass,
   type ToolDescriptor,
 } from "@kobe/protocol";
-import { withTeam, type ConnectorAuthKind, type KobeDb, type PinnedTool } from "@kobe/db";
-import { recordAudit } from "../audit/record.js";
+import type { PinnedTool } from "@kobe/db";
 import { logger } from "../logger.js";
-import type { RunPolicyContextSource } from "../sandbox-wire/types.js";
-import type { McpApprovalFailure, McpApprovalVerifier } from "./approvals.js";
+import type { McpApprovalFailure } from "./approvals.js";
 import {
   credentialUsed,
   describePinnedTool,
   exposedTools,
   loadTeamConnector,
   type EnabledConnector,
-  type TeamConnector,
 } from "./catalog.js";
+import { combineDecisions, policyInputFor, type Combined } from "./decide-policy.js";
 import {
-  DECISION_CONCURRENCY,
-  distinctSiblings,
-  engineForCall,
-  mapLimited,
-  type PolicySources,
-} from "./fan-out.js";
+  audit,
+  captureFor,
+  deny,
+  fallbackPiName,
+  inputDigest,
+  recordSkipped,
+  type AuditFacts,
+} from "./decide-records.js";
+import type {
+  McpCallDecision,
+  McpCallRequest,
+  McpDecideDeps,
+  McpPrincipal,
+} from "./decide-types.js";
+import { DECISION_CONCURRENCY, distinctSiblings, engineForCall, mapLimited } from "./fan-out.js";
 import { loadActiveRuns, runHasConnector, type ActiveRunContext } from "./run-context.js";
 import { appliedUserRule, recordRuleApplied } from "../policy/rule-applied.js";
 import { appliedDangerousMode, recordDangerousApplied } from "../policy/dangerous-mode.js";
-import { recordSkippedActionInTx } from "../policy/skipped-actions.js";
+
+export type {
+  McpCallDecision,
+  McpCallRequest,
+  McpDecideDeps,
+  McpPrincipal,
+  McpUpstreamTarget,
+} from "./decide-types.js";
+export { combineDecisions } from "./decide-policy.js";
+export { inputDigest } from "./decide-records.js";
 
 /**
  * The MCP proxy's policy re-check (D27, D29 "MCP calls are enforced a second time at the MCP
@@ -54,280 +63,44 @@ import { recordSkippedActionInTx } from "../policy/skipped-actions.js";
  *    clamped mode, trigger and agent tool lists), combined by `combineDecisions`: the sandbox's
  *    thread claim selects whose approval may authorise, never which policy applies (review M1);
  * 4. needing approval → a signed approval for exactly the named run, tool and input must verify
- *    and be consumed ({@link McpApprovalVerifier}); anything else is a deny;
+ *    and be consumed (`McpApprovalVerifier`); anything else is a deny;
  * 5. the decision is audited (`mcp.tool_call`); an allowed call whose audit row cannot be written
  *    is refused. Every error is a deny.
+ *
+ * Audit rows, denials and capture tickets: decide-records.ts; the policy input and the combination
+ * of run decisions: decide-policy.ts.
  */
 
-export interface McpPrincipal {
-  readonly sandboxId: string;
-  readonly teamId: string;
-  readonly userId: string;
-  /** A skill eval's sandbox (KOBE-325): never given the member's personal credentials. */
-  readonly evalThreadId?: string;
+/** One call being decided: its inputs, what its audit row knows so far, and its denial. */
+interface Deciding {
+  readonly deps: McpDecideDeps;
+  readonly principal: McpPrincipal;
+  readonly request: McpCallRequest;
+  readonly now: () => Date;
+  facts: AuditFacts | undefined;
+  /** Audits (when facts are known and the throttle allows), logs and returns a deny. */
+  readonly denied: (
+    code: PolicyReasonCode,
+    message: string,
+    approvalFailure?: McpApprovalFailure,
+  ) => Promise<McpCallDecision>;
 }
 
-export interface McpCallRequest {
-  readonly connectorId: string;
-  /** The upstream MCP tool name (`tools/call` `params.name`). */
-  readonly tool: string;
-  readonly arguments: unknown;
-  /** The thread whose Pi process makes the call (per-session header, KOBE-62). */
-  readonly threadId?: string;
-  /** `_meta["kobe.dev/tool_call_id"]` when the client sends one. */
-  readonly toolCallId?: string;
+/** A stage refused the call: this is its (already audited) answer. */
+interface Denied {
+  readonly denied: McpCallDecision;
 }
 
-export interface McpUpstreamTarget {
-  readonly id: string;
-  readonly name: string;
-  readonly url: string;
-  readonly auth_kind: ConnectorAuthKind;
-}
-
-export type McpCallDecision =
-  | {
-      readonly decision: "allow";
-      readonly connector: McpUpstreamTarget;
-      /**
-       * `model_visible: true` (KOBE-435 review M3): this server checked the tool's MCP Apps
-       * visibility. A proxy that gets an allow without it (an older server mid-rollout) checks
-       * the upstream's own `tools/list` before calling.
-       */
-      readonly tool: {
-        readonly name: string;
-        readonly pi_name: string;
-        readonly model_visible: true;
-      };
-      /** SHA-256 (hex) of `canonicalJson(input)`: the proxy forwards exactly these bytes. */
-      readonly input_sha256: string;
-      readonly reason: PolicyReasonCode;
-      readonly approval_id?: string;
-      /**
-       * The run the call was decided for and the tool call id it was decided under (KOBE-619: the
-       * Kobe MCP executor's delegation). Server-internal: the proxy's schema ignores them.
-       */
-      readonly run_id?: string;
-      readonly tool_call_id?: string;
-      /**
-       * MCP Apps (KOBE-438): the tool opens a pinned, approved `ui://` template, so the proxy
-       * reports the upstream's full result with this signed ticket (`capture-ticket.ts`). Absent
-       * for every other tool, and from a server without a capture key.
-       */
-      readonly app_capture?: { readonly ticket: string };
-    }
-  | {
-      readonly decision: "deny";
-      readonly code: PolicyReasonCode;
-      readonly message: string;
-      readonly approval_failure?: McpApprovalFailure;
-    };
-
-export interface McpDecideDeps {
-  readonly db: KobeDb;
-  /** The engine's inputs; each call decides with its own memoising engine (fan-out.ts). */
-  readonly policy: PolicySources;
-  readonly runContext: RunPolicyContextSource;
-  readonly approvals: McpApprovalVerifier;
-  readonly now?: () => Date;
-  /** Whether a denied call of this sandbox may be audited now (per-sandbox throttle). */
-  readonly mayAuditDenied?: (sandboxId: string) => boolean;
-  /** Signs MCP Apps capture tickets (KOBE-438); unset: results are never captured. */
-  readonly captureKey?: Buffer;
-  /**
-   * The connector as enabled in the team (default {@link loadTeamConnector}). The built-in Kobe
-   * connector (KOBE-619) supplies its catalog here instead of a pinned snapshot.
-   */
-  readonly loadConnector?: (
-    teamId: string,
-    connectorId: string,
-  ) => Promise<EnabledConnector | undefined>;
-  /**
-   * A refusal decided before any run is looked at (KOBE-619: the person's permission, the Kobe
-   * switches, the admin limits); audited like every deny.
-   */
-  readonly refuse?: (
-    tool: PinnedTool,
-    descriptor: ToolDescriptor,
-  ) => Promise<{ readonly code: PolicyReasonCode; readonly message: string } | undefined>;
-  /**
-   * Applied to each run's engine decision before they are combined (KOBE-619: the Kobe admin
-   * guard, which asks for writes in every mode and denies where nobody can be asked).
-   */
-  readonly guard?: (
-    decision: PolicyDecision,
-    input: PolicyInput,
-    run: ActiveRunContext,
-  ) => PolicyDecision;
-}
-
-/** Same grammar as the `mcp.tool_call` audit field: other ids are decided on but not recorded. */
-const PLAIN_ID = /^[A-Za-z0-9_.:/-]{1,128}$/;
-
-export function inputDigest(input: JsonObject): string {
-  return createHash("sha256").update(canonicalJson(input)).digest("hex");
-}
-
-function deny(
-  code: PolicyReasonCode,
-  message: string,
-  approvalFailure?: McpApprovalFailure,
-): Extract<McpCallDecision, { decision: "deny" }> {
-  return {
-    decision: "deny",
-    code,
-    message: message.slice(0, 1000),
-    ...(approvalFailure === undefined ? {} : { approval_failure: approvalFailure }),
-  };
-}
-
-interface AuditFacts {
-  readonly connectorId: string;
-  readonly piName: string;
-  readonly runId?: string;
-  readonly threadId?: string;
-  readonly toolCallId?: string;
-  readonly risk?: RiskClass;
-}
-
-async function audit(
-  deps: McpDecideDeps,
-  principal: McpPrincipal,
-  facts: AuditFacts,
-  outcome:
-    | {
-        decision: "allowed";
-        reason: PolicyReasonCode;
-        approvalId?: string;
-        ruleId?: string;
-        credential: "none" | "member" | "site";
-      }
-    | { decision: "denied"; reason: PolicyReasonCode; approvalFailure?: McpApprovalFailure },
-): Promise<void> {
-  await withTeam(deps.db, principal.teamId, (tx) =>
-    recordAudit(tx, {
-      action: "mcp.tool_call",
-      teamId: principal.teamId,
-      actor: { kind: "user", id: principal.userId },
-      target: {
-        sandboxId: principal.sandboxId,
-        userId: principal.userId,
-        connectorId: facts.connectorId,
-        tool: facts.piName,
-        ...(facts.runId === undefined ? {} : { runId: facts.runId }),
-        ...(facts.threadId === undefined ? {} : { threadId: facts.threadId }),
-        ...(facts.toolCallId !== undefined && PLAIN_ID.test(facts.toolCallId)
-          ? { toolCallId: facts.toolCallId }
-          : {}),
-        ...(facts.risk === undefined ? {} : { risk: facts.risk }),
-        decision: outcome.decision,
-        reason: outcome.reason,
-        ...("approvalId" in outcome && outcome.approvalId !== undefined
-          ? { approvalId: outcome.approvalId }
-          : {}),
-        ...("approvalFailure" in outcome && outcome.approvalFailure !== undefined
-          ? { approvalFailure: outcome.approvalFailure }
-          : {}),
-        ...("ruleId" in outcome && outcome.ruleId !== undefined ? { ruleId: outcome.ruleId } : {}),
-        ...("credential" in outcome ? { credential: outcome.credential } : {}),
-      },
-    }),
-  );
-}
-
-/** Pi's name for an unpinned upstream tool (audit only): same sanitising as Pi 1.0.0. */
-function fallbackPiName(connectorName: string, tool: string): string {
-  const segment = (s: string) => s.replace(/[^A-Za-z0-9_]/g, "_");
-  return `mcp__${segment(connectorName) || "_"}__${segment(tool) || "_"}`.slice(0, 256);
-}
-
-function policyInputFor(
-  principal: McpPrincipal,
-  run: ActiveRunContext,
-  tool: ToolDescriptor,
-  toolCallId: string,
-  input: JsonObject,
-  connector: TeamConnector,
-): PolicyInput {
-  return {
-    actor: { user_id: principal.userId, kind: run.trigger },
-    team_id: principal.teamId,
-    agent: {
-      agent_id: run.agentId,
-      version: run.agentVersion,
-      tools_allow: run.toolsAllow,
-      tools_deny: run.toolsDeny,
-      dangerous_tools: [...(run.dangerousTools ?? [])],
-    },
-    run: { run_id: run.runId, thread_id: run.threadId, approval_mode: run.mode },
-    tool,
-    tool_call_id: toolCallId,
-    input,
-    context: {
-      enforcement_point: "mcp_proxy",
-      connector_exposure: connector.exposure,
-      ...(run.projectId === undefined ? {} : { project_id: run.projectId }),
-    },
-  };
-}
-
-type Combined =
-  | { readonly effect: "allow" | "require_approval"; readonly reason: PolicyReason }
-  | { readonly effect: "deny"; readonly reason: PolicyReason };
-
-const POLICY_ERROR: PolicyReason = {
-  code: "policy_error",
-  stage: "site_deny",
-  message: "Policy could not be evaluated, so the call was denied.",
-};
-
-/**
- * One decision for a call that may come from any of the sandbox's active runs (review M1):
- * - the named run denies → deny (its own policy forbids it, approval or not);
- * - every run allows → allow (no run's policy asks for more);
- * - otherwise (the named run asks, or a sibling run asks or denies) → the user's signed approval
- *   of exactly this input in the named run is required. That approval is the user's consent to
- *   this exact call, whichever of their processes runs it; without one, a laxer sibling (a
- *   scheduled `auto` run, a broader allow list) can never stand in for the run that asks.
- */
-export function combineDecisions(
-  named: PolicyDecision,
-  siblings: readonly PolicyDecision[],
-): Combined {
-  const first = (d: PolicyDecision) => d.reasons[0] ?? POLICY_ERROR;
-  if (named.effect === "deny") return { effect: "deny", reason: first(named) };
-  const strict = siblings.find((d) => d.effect !== "allow");
-  if (named.effect === "allow" && strict === undefined)
-    return { effect: "allow", reason: first(named) };
-  return {
-    effect: "require_approval",
-    reason: named.effect === "require_approval" ? first(named) : first(strict ?? named),
-  };
-}
-
-async function recordSkipped(
-  deps: McpDecideDeps,
-  principal: McpPrincipal,
-  runId: string,
-  toolCallId: string,
-  tool: string,
-  descriptor: ToolDescriptor,
-  reason: PolicyReasonCode,
-): Promise<void> {
-  try {
-    await withTeam(deps.db, principal.teamId, (tx) =>
-      recordSkippedActionInTx(tx, {
-        teamId: principal.teamId,
-        runId,
-        toolCallId,
-        tool,
-        risk: descriptor.risk,
-        reason,
-      }),
-    );
-  } catch (err) {
-    logger.error({ err, runId }, "mcp: skipped action could not be recorded");
-  }
+/** What the checks before the policy engine established. */
+interface Checked {
+  readonly connector: EnabledConnector;
+  readonly pinned: PinnedTool;
+  readonly descriptor: ToolDescriptor;
+  readonly input: JsonObject;
+  readonly runs: readonly ActiveRunContext[];
+  /** The run whose thread the sandbox named: its approvals are the ones that can authorise. */
+  readonly named: ActiveRunContext;
+  readonly toolCallId: string;
 }
 
 /** Decides one call; never throws (every failure is a deny). */
@@ -336,282 +109,51 @@ export async function decideMcpCall(
   principal: McpPrincipal,
   request: McpCallRequest,
 ): Promise<McpCallDecision> {
-  const now = deps.now ?? (() => new Date());
   const mayAuditDenied = deps.mayAuditDenied ?? (() => true);
-  let facts: AuditFacts | undefined;
-
-  const denied = async (
-    code: PolicyReasonCode,
-    message: string,
-    approvalFailure?: McpApprovalFailure,
-  ): Promise<McpCallDecision> => {
-    if (facts && mayAuditDenied(principal.sandboxId)) {
-      try {
-        await audit(deps, principal, facts, {
-          decision: "denied",
-          reason: code,
-          ...(approvalFailure === undefined ? {} : { approvalFailure }),
-        });
-      } catch (err) {
-        logger.error({ err, code }, "mcp: denied call could not be audited");
+  const c: Deciding = {
+    deps,
+    principal,
+    request,
+    now: deps.now ?? (() => new Date()),
+    facts: undefined,
+    denied: async (code, message, approvalFailure) => {
+      if (c.facts && mayAuditDenied(principal.sandboxId)) {
+        try {
+          await audit(deps, principal, c.facts, {
+            decision: "denied",
+            reason: code,
+            ...(approvalFailure === undefined ? {} : { approvalFailure }),
+          });
+        } catch (err) {
+          logger.error({ err, code }, "mcp: denied call could not be audited");
+        }
       }
-    }
-    logger.info(
-      { sandboxId: principal.sandboxId, teamId: principal.teamId, code, approvalFailure },
-      "mcp call denied",
-    );
-    return deny(code, message, approvalFailure);
+      logger.info(
+        { sandboxId: principal.sandboxId, teamId: principal.teamId, code, approvalFailure },
+        "mcp call denied",
+      );
+      return deny(code, message, approvalFailure);
+    },
   };
 
   try {
-    const connector = await (deps.loadConnector ?? ((t, c) => loadTeamConnector(deps.db, t, c)))(
-      principal.teamId,
-      request.connectorId,
-    );
-    if (!connector) {
-      // Not enabled (or not registered): the name is unknown, the refusal is still audited.
-      facts = {
-        connectorId: request.connectorId,
-        piName: fallbackPiName("unknown", request.tool),
-        ...(request.threadId === undefined ? {} : { threadId: request.threadId }),
-      };
-      return await denied("connector_not_enabled", "This connector is not enabled in your team.");
-    }
-    const pinned: PinnedTool | undefined = connector.tools.find((t) => t.name === request.tool);
-    facts = {
-      connectorId: connector.id,
-      piName: pinned?.pi_name ?? fallbackPiName(connector.name, request.tool),
-      ...(request.threadId === undefined ? {} : { threadId: request.threadId }),
-      ...(request.toolCallId === undefined ? {} : { toolCallId: request.toolCallId }),
+    const tool = await checkTool(c);
+    if ("denied" in tool) return tool.denied;
+    const run = await checkRun(c, tool.connector);
+    if ("denied" in run) return run.denied;
+    const k: Checked = {
+      ...tool,
+      ...run,
+      toolCallId: request.toolCallId ?? `mcp-proxy-${randomUUID()}`,
     };
-    if (!pinned) {
-      return await denied(
-        "unknown_tool",
-        `${request.tool.slice(0, 128)} is not a pinned tool of this connector.`,
-      );
-    }
-    const descriptor = describePinnedTool(connector.id, pinned);
-    facts = { ...facts, risk: descriptor.risk };
-
-    // Team exposure (KOBE-106), checked before any run is looked at and independent of the
-    // engine's own gate: a drifted tool, or one the team's exposure does not include (read_only =
-    // readOnlyHint tools only, so unannotated tools are out; custom = ticked tools), is refused
-    // with its own reason whatever the sandbox sent.
-    if (pinned.status !== "pinned") {
-      return await denied(
-        "tool_drifted",
-        `${pinned.pi_name} changed since it was approved and is disabled until an admin re-approves it.`,
-      );
-    }
-    // An app-only tool (KOBE-435) is not offered to agents: for Pi it does not exist.
-    if (!modelVisible(pinned)) {
-      return await denied(
-        "unknown_tool",
-        `${pinned.pi_name} is offered only to apps, not to agents.`,
-      );
-    }
-    const refused = await deps.refuse?.(pinned, descriptor);
-    if (refused !== undefined) return await denied(refused.code, refused.message);
-    if (!exposedTools(connector).some((t) => t.pi_name === pinned.pi_name)) {
-      return await denied(
-        "connector_exposure",
-        `${pinned.pi_name} is not exposed to agents in your team (${connector.exposure.replace("_", "-")}).`,
-      );
-    }
-
-    const input = toolInputSchema.safeParse(request.arguments ?? {});
-    if (!input.success) {
-      return await denied("invalid_input", "The tool input is not valid, so the call was denied.");
-    }
-    if (request.threadId === undefined) {
-      return await denied("run_not_active", "The call names no thread, so it was denied.");
-    }
-    const loaded = await loadActiveRuns(deps.db, deps.runContext, principal);
-    if (!loaded.ok) {
-      return await denied("run_not_active", "Too many active runs in this sandbox; try again.");
-    }
-    // The run whose thread the sandbox named: its approvals are the ones that can authorise.
-    const named = loaded.runs.find((r) => r.threadId === request.threadId);
-    if (!named) {
-      return await denied("run_not_active", "No active run of this thread runs in this sandbox.");
-    }
-    facts = { ...facts, runId: named.runId };
-    // KOBE-451 review HIGH-1: only a connector of the named run's run.start.mcp (not one the
-    // owner turned off for the thread, nor one the agent doesn't name) whatever the sandbox sends.
-    if (!runHasConnector(named, connector.id)) {
-      return await denied(
-        "connector_not_in_run",
-        "This connector is not available to this run (it is off for this conversation, or the agent does not use it).",
-      );
-    }
-
-    const toolCallId = request.toolCallId ?? `mcp-proxy-${randomUUID()}`;
-    const engine = engineForCall(deps.policy);
-    const decide = async (run: ActiveRunContext) => {
-      const policyInput = policyInputFor(
-        principal,
-        run,
-        descriptor,
-        toolCallId,
-        input.data,
-        connector,
-      );
-      const decision = await engine.decide(policyInput);
-      return deps.guard === undefined ? decision : deps.guard(decision, policyInput, run);
-    };
-    // The sandbox's claim picks the named run, but cannot pick its policy: the call is decided
-    // under every distinct policy context of its active runs (review M1), bounded (fan-out.ts).
-    const namedDecision = await decide(named);
-    // A remembered approval can be bound to a thread or a run (KOBE-289): then the answer depends
-    // on the run itself, not only on its policy context, so every other active run is decided on
-    // its own (review S1). A rule of thread A never allows a call while thread B also runs.
-    const others =
-      appliedUserRule(namedDecision) === undefined
-        ? distinctSiblings(named, loaded.runs)
-        : loaded.runs.filter((r) => r.runId !== named.runId);
-    const siblings = await mapLimited(others, DECISION_CONCURRENCY, decide);
-    const combined = combineDecisions(namedDecision, siblings);
-    // A scheduled run (D32) is never asked and has no approvals: a deny, or an ask (a stricter
-    // sibling run), both end the call, and it is recorded as a skipped action of the run.
-    const skip = async (code: PolicyReasonCode, message: string) => {
-      if (named.trigger === "schedule") {
-        await recordSkipped(
-          deps,
-          principal,
-          named.runId,
-          toolCallId,
-          pinned.pi_name,
-          descriptor,
-          code,
-        );
-      }
-      return await denied(code, message);
-    };
-    if (combined.effect === "deny") {
-      return await skip(combined.reason.code, combined.reason.message);
-    }
-    if (combined.effect === "require_approval" && named.skillEval) {
-      return await skip(
-        "eval_run_no_prompt",
-        "Skill eval runs never ask for approval; this call was denied.",
-      );
-    }
-    if (combined.effect === "require_approval" && named.trigger === "schedule") {
-      return await skip(
-        "scheduled_run_no_prompt",
-        "Scheduled runs only run allow-listed and read-only tools; this call was skipped.",
-      );
-    }
-
-    let reason: PolicyReasonCode = combined.reason.code;
-    let approvalId: string | undefined;
-    if (combined.effect === "require_approval") {
-      const approved = await deps.approvals.authorize({
-        teamId: principal.teamId,
-        userId: principal.userId,
-        runId: named.runId,
-        tool: pinned.pi_name,
-        ...(request.toolCallId === undefined ? {} : { toolCallId: request.toolCallId }),
-        input: input.data,
-        now: now(),
-      });
-      if (!approved.ok) {
-        return await denied(
-          reason,
-          "This call needs your approval and no valid signed approval exists for it, so it was denied.",
-          approved.reason,
-        );
-      }
-      reason = "approval_granted";
-      approvalId = approved.approvalId;
-    }
-
-    // A remembered approval allowed it (KOBE-289): its own audit row and last use, at this
-    // enforcement point too; a rule revoked since the decision denies the call.
-    const rule = combined.effect === "allow" ? appliedUserRule(namedDecision) : undefined;
-    // A skill eval (KOBE-325) never runs on its starter's remembered approvals: without the rule
-    // the call would ask, and an eval never asks.
-    if (rule !== undefined && named.skillEval) {
-      return await skip(
-        "eval_run_no_prompt",
-        "Skill eval runs don't use your remembered approvals; this call was denied.",
-      );
-    }
-    if (rule?.rule_id !== undefined) {
-      const recorded = await recordRuleApplied(deps.db, {
-        teamId: principal.teamId,
-        userId: principal.userId,
-        runId: named.runId,
-        toolCallId,
-        tool: pinned.pi_name,
-        ruleId: rule.rule_id,
-        enforcementPoint: "mcp_proxy",
-        runMaxEvents: 0,
-        announce: false,
-      });
-      if (!recorded) {
-        return await denied(
-          "policy_error",
-          "The remembered approval for this call was revoked, so it was denied.",
-        );
-      }
-    }
-
-    // An admin's Dangerous agent allowed it (AC1): its own audit row at this enforcement point
-    // too, before the call runs (a failed write throws: the call is denied).
-    if (combined.effect === "allow" && appliedDangerousMode(namedDecision) !== undefined) {
-      if (named.skillEval) {
-        return await skip(
-          "eval_run_no_prompt",
-          "Skill eval runs never ask for approval; this call was denied.",
-        );
-      }
-      await recordDangerousApplied(deps.db, {
-        teamId: principal.teamId,
-        userId: principal.userId,
-        runId: named.runId,
-        agentId: named.agentId,
-        agentVersion: named.agentVersion,
-        toolCallId,
-        tool: pinned.pi_name,
-        enforcementPoint: "mcp_proxy",
-      });
-    }
-
-    const capture = await captureFor(deps, principal, {
-      threadId: request.threadId,
-      runId: named.runId,
-      connectorId: connector.id,
-      tool: pinned,
-      // The capture's digest is of the canonical input (KOBE-441): the claim digests Pi's raw
-      // arguments the same way, so Pi's conversions and schema defaults do not drop the app.
-      inputSha256: appInputDigest(pinned.input_schema as Record<string, unknown>, input.data),
-      now: now(),
-    });
-    // The record of the call comes first: no audit row, no upstream call.
-    await audit(deps, principal, facts, {
-      decision: "allowed",
-      reason,
-      ...(approvalId === undefined ? {} : { approvalId }),
-      ...(rule?.rule_id === undefined ? {} : { ruleId: rule.rule_id }),
-      credential: credentialUsed(connector),
-    });
-    return {
-      decision: "allow",
-      connector: {
-        id: connector.id,
-        name: connector.name,
-        url: connector.url,
-        auth_kind: connector.authKind,
-      },
-      tool: { name: pinned.name, pi_name: pinned.pi_name, model_visible: true },
-      input_sha256: inputDigest(input.data),
-      reason,
-      ...(approvalId === undefined ? {} : { approval_id: approvalId }),
-      run_id: named.runId,
-      tool_call_id: toolCallId,
-      ...(capture === undefined ? {} : { app_capture: { ticket: capture } }),
-    };
+    const decided = await decideUnderRuns(c, k);
+    if ("denied" in decided) return decided.denied;
+    const { combined, namedDecision } = decided;
+    const approval = await approve(c, k, combined);
+    if ("denied" in approval) return approval.denied;
+    const applied = await recordApplied(c, k, combined, namedDecision);
+    if ("denied" in applied) return applied.denied;
+    return await allowCall(c, k, approval.reason, approval.approvalId, applied.ruleId);
   } catch (err) {
     logger.error(
       { err, sandboxId: principal.sandboxId },
@@ -624,39 +166,368 @@ export async function decideMcpCall(
   }
 }
 
-/** A capture ticket when the tool opens a pinned, approved template (KOBE-438). */
-async function captureFor(
-  deps: McpDecideDeps,
-  principal: McpPrincipal,
-  call: {
-    readonly threadId: string;
-    readonly runId: string;
-    readonly connectorId: string;
-    readonly tool: PinnedTool;
-    readonly inputSha256: string;
-    readonly now: Date;
-  },
-): Promise<string | undefined> {
-  const uri = call.tool.ui?.resource_uri;
-  if (deps.captureKey === undefined || uri === undefined) return undefined;
-  const templateSha256 = await servedTemplateHash(deps.db, call.connectorId, uri);
-  if (templateSha256 === undefined) return undefined;
-  return signCaptureTicket(
-    deps.captureKey,
-    {
+/** The connector is enabled, the tool pinned, approved, offered to agents and exposed. */
+async function checkTool(c: Deciding): Promise<
+  | Denied
+  | {
+      readonly connector: EnabledConnector;
+      readonly pinned: PinnedTool;
+      readonly descriptor: ToolDescriptor;
+    }
+> {
+  const { deps, principal, request } = c;
+  const connector = await (deps.loadConnector ?? ((t, id) => loadTeamConnector(deps.db, t, id)))(
+    principal.teamId,
+    request.connectorId,
+  );
+  if (!connector) {
+    // Not enabled (or not registered): the name is unknown, the refusal is still audited.
+    c.facts = {
+      connectorId: request.connectorId,
+      piName: fallbackPiName("unknown", request.tool),
+      ...(request.threadId === undefined ? {} : { threadId: request.threadId }),
+    };
+    return {
+      denied: await c.denied(
+        "connector_not_enabled",
+        "This connector is not enabled in your team.",
+      ),
+    };
+  }
+  const pinned: PinnedTool | undefined = connector.tools.find((t) => t.name === request.tool);
+  c.facts = {
+    connectorId: connector.id,
+    piName: pinned?.pi_name ?? fallbackPiName(connector.name, request.tool),
+    ...(request.threadId === undefined ? {} : { threadId: request.threadId }),
+    ...(request.toolCallId === undefined ? {} : { toolCallId: request.toolCallId }),
+  };
+  if (!pinned) {
+    return {
+      denied: await c.denied(
+        "unknown_tool",
+        `${request.tool.slice(0, 128)} is not a pinned tool of this connector.`,
+      ),
+    };
+  }
+  const descriptor = describePinnedTool(connector.id, pinned);
+  c.facts = { ...c.facts, risk: descriptor.risk };
+
+  // Team exposure (KOBE-106), checked before any run is looked at and independent of the
+  // engine's own gate: a drifted tool, or one the team's exposure does not include (read_only =
+  // readOnlyHint tools only, so unannotated tools are out; custom = ticked tools), is refused
+  // with its own reason whatever the sandbox sent.
+  if (pinned.status !== "pinned") {
+    return {
+      denied: await c.denied(
+        "tool_drifted",
+        `${pinned.pi_name} changed since it was approved and is disabled until an admin re-approves it.`,
+      ),
+    };
+  }
+  // An app-only tool (KOBE-435) is not offered to agents: for Pi it does not exist.
+  if (!modelVisible(pinned)) {
+    return {
+      denied: await c.denied(
+        "unknown_tool",
+        `${pinned.pi_name} is offered only to apps, not to agents.`,
+      ),
+    };
+  }
+  const refused = await deps.refuse?.(pinned, descriptor);
+  if (refused !== undefined) return { denied: await c.denied(refused.code, refused.message) };
+  if (!exposedTools(connector).some((t) => t.pi_name === pinned.pi_name)) {
+    return {
+      denied: await c.denied(
+        "connector_exposure",
+        `${pinned.pi_name} is not exposed to agents in your team (${connector.exposure.replace("_", "-")}).`,
+      ),
+    };
+  }
+  return { connector, pinned, descriptor };
+}
+
+/** A valid input, and an active run of the named thread in this sandbox that has the connector. */
+async function checkRun(
+  c: Deciding,
+  connector: EnabledConnector,
+): Promise<
+  | Denied
+  | {
+      readonly input: JsonObject;
+      readonly runs: readonly ActiveRunContext[];
+      readonly named: ActiveRunContext;
+    }
+> {
+  const { deps, principal, request } = c;
+  const input = toolInputSchema.safeParse(request.arguments ?? {});
+  if (!input.success) {
+    return {
+      denied: await c.denied(
+        "invalid_input",
+        "The tool input is not valid, so the call was denied.",
+      ),
+    };
+  }
+  if (request.threadId === undefined) {
+    return {
+      denied: await c.denied("run_not_active", "The call names no thread, so it was denied."),
+    };
+  }
+  const loaded = await loadActiveRuns(deps.db, deps.runContext, principal);
+  if (!loaded.ok) {
+    return {
+      denied: await c.denied("run_not_active", "Too many active runs in this sandbox; try again."),
+    };
+  }
+  // The run whose thread the sandbox named: its approvals are the ones that can authorise.
+  const named = loaded.runs.find((r) => r.threadId === request.threadId);
+  if (!named) {
+    return {
+      denied: await c.denied(
+        "run_not_active",
+        "No active run of this thread runs in this sandbox.",
+      ),
+    };
+  }
+  c.facts = { ...c.facts, runId: named.runId } as AuditFacts;
+  // KOBE-451 review HIGH-1: only a connector of the named run's run.start.mcp (not one the
+  // owner turned off for the thread, nor one the agent doesn't name) whatever the sandbox sends.
+  if (!runHasConnector(named, connector.id)) {
+    return {
+      denied: await c.denied(
+        "connector_not_in_run",
+        "This connector is not available to this run (it is off for this conversation, or the agent does not use it).",
+      ),
+    };
+  }
+  return { input: input.data, runs: loaded.runs, named };
+}
+
+/**
+ * A scheduled run (D32) is never asked and has no approvals: a deny, or an ask (a stricter
+ * sibling run), both end the call, and it is recorded as a skipped action of the run.
+ */
+async function skip(
+  c: Deciding,
+  k: Checked,
+  code: PolicyReasonCode,
+  message: string,
+): Promise<Denied> {
+  if (k.named.trigger === "schedule") {
+    await recordSkipped(
+      c.deps,
+      c.principal,
+      k.named.runId,
+      k.toolCallId,
+      k.pinned.pi_name,
+      k.descriptor,
+      code,
+    );
+  }
+  return { denied: await c.denied(code, message) };
+}
+
+/** The engine's decision under every active run, combined (review M1); refusals end the call. */
+async function decideUnderRuns(
+  c: Deciding,
+  k: Checked,
+): Promise<Denied | { readonly combined: Combined; readonly namedDecision: PolicyDecision }> {
+  const { deps, principal } = c;
+  const { named } = k;
+  const engine = engineForCall(deps.policy);
+  const decide = async (run: ActiveRunContext) => {
+    const policyInput = policyInputFor(
+      principal,
+      run,
+      k.descriptor,
+      k.toolCallId,
+      k.input,
+      k.connector,
+    );
+    const decision = await engine.decide(policyInput);
+    return deps.guard === undefined ? decision : deps.guard(decision, policyInput, run);
+  };
+  // The sandbox's claim picks the named run, but cannot pick its policy: the call is decided
+  // under every distinct policy context of its active runs (review M1), bounded (fan-out.ts).
+  const namedDecision = await decide(named);
+  // A remembered approval can be bound to a thread or a run (KOBE-289): then the answer depends
+  // on the run itself, not only on its policy context, so every other active run is decided on
+  // its own (review S1). A rule of thread A never allows a call while thread B also runs.
+  const others =
+    appliedUserRule(namedDecision) === undefined
+      ? distinctSiblings(named, k.runs)
+      : k.runs.filter((r) => r.runId !== named.runId);
+  const siblings = await mapLimited(others, DECISION_CONCURRENCY, decide);
+  const combined = combineDecisions(namedDecision, siblings);
+  if (combined.effect === "deny") {
+    return await skip(c, k, combined.reason.code, combined.reason.message);
+  }
+  if (combined.effect === "require_approval" && named.skillEval) {
+    return await skip(
+      c,
+      k,
+      "eval_run_no_prompt",
+      "Skill eval runs never ask for approval; this call was denied.",
+    );
+  }
+  if (combined.effect === "require_approval" && named.trigger === "schedule") {
+    return await skip(
+      c,
+      k,
+      "scheduled_run_no_prompt",
+      "Scheduled runs only run allow-listed and read-only tools; this call was skipped.",
+    );
+  }
+  return { combined, namedDecision };
+}
+
+/** Needing approval: a signed approval of exactly this call in the named run, consumed. */
+async function approve(
+  c: Deciding,
+  k: Checked,
+  combined: Combined,
+): Promise<
+  Denied | { readonly reason: PolicyReasonCode; readonly approvalId: string | undefined }
+> {
+  const { deps, principal, request } = c;
+  let reason: PolicyReasonCode = combined.reason.code;
+  let approvalId: string | undefined;
+  if (combined.effect === "require_approval") {
+    const approved = await deps.approvals.authorize({
       teamId: principal.teamId,
       userId: principal.userId,
-      sandboxId: principal.sandboxId,
-      threadId: call.threadId,
-      runId: call.runId,
-      connectorId: call.connectorId,
-      tool: call.tool.name,
-      piName: call.tool.pi_name,
-      inputSha256: call.inputSha256,
-      templateUri: uri,
-      templateSha256,
-      appId: appIdOf(call.connectorId, uri),
+      runId: k.named.runId,
+      tool: k.pinned.pi_name,
+      ...(request.toolCallId === undefined ? {} : { toolCallId: request.toolCallId }),
+      input: k.input,
+      now: c.now(),
+    });
+    if (!approved.ok) {
+      return {
+        denied: await c.denied(
+          reason,
+          "This call needs your approval and no valid signed approval exists for it, so it was denied.",
+          approved.reason,
+        ),
+      };
+    }
+    reason = "approval_granted";
+    approvalId = approved.approvalId;
+  }
+  return { reason, approvalId };
+}
+
+/** A remembered approval's or a Dangerous agent's own record at this enforcement point. */
+async function recordApplied(
+  c: Deciding,
+  k: Checked,
+  combined: Combined,
+  namedDecision: PolicyDecision,
+): Promise<Denied | { readonly ruleId: string | undefined }> {
+  const { deps, principal } = c;
+  const { named } = k;
+  // A remembered approval allowed it (KOBE-289): its own audit row and last use, at this
+  // enforcement point too; a rule revoked since the decision denies the call.
+  const rule = combined.effect === "allow" ? appliedUserRule(namedDecision) : undefined;
+  // A skill eval (KOBE-325) never runs on its starter's remembered approvals: without the rule
+  // the call would ask, and an eval never asks.
+  if (rule !== undefined && named.skillEval) {
+    return await skip(
+      c,
+      k,
+      "eval_run_no_prompt",
+      "Skill eval runs don't use your remembered approvals; this call was denied.",
+    );
+  }
+  if (rule?.rule_id !== undefined) {
+    const recorded = await recordRuleApplied(deps.db, {
+      teamId: principal.teamId,
+      userId: principal.userId,
+      runId: named.runId,
+      toolCallId: k.toolCallId,
+      tool: k.pinned.pi_name,
+      ruleId: rule.rule_id,
+      enforcementPoint: "mcp_proxy",
+      runMaxEvents: 0,
+      announce: false,
+    });
+    if (!recorded) {
+      return {
+        denied: await c.denied(
+          "policy_error",
+          "The remembered approval for this call was revoked, so it was denied.",
+        ),
+      };
+    }
+  }
+
+  // An admin's Dangerous agent allowed it (AC1): its own audit row at this enforcement point
+  // too, before the call runs (a failed write throws: the call is denied).
+  if (combined.effect === "allow" && appliedDangerousMode(namedDecision) !== undefined) {
+    if (named.skillEval) {
+      return await skip(
+        c,
+        k,
+        "eval_run_no_prompt",
+        "Skill eval runs never ask for approval; this call was denied.",
+      );
+    }
+    await recordDangerousApplied(deps.db, {
+      teamId: principal.teamId,
+      userId: principal.userId,
+      runId: named.runId,
+      agentId: named.agentId,
+      agentVersion: named.agentVersion,
+      toolCallId: k.toolCallId,
+      tool: k.pinned.pi_name,
+      enforcementPoint: "mcp_proxy",
+    });
+  }
+  return { ruleId: rule?.rule_id };
+}
+
+/** The allow: its capture ticket, its audit row first (no row, no upstream call), the answer. */
+async function allowCall(
+  c: Deciding,
+  k: Checked,
+  reason: PolicyReasonCode,
+  approvalId: string | undefined,
+  ruleId: string | undefined,
+): Promise<McpCallDecision> {
+  const { deps, principal, request } = c;
+  const { connector, pinned, named } = k;
+  const capture = await captureFor(deps, principal, {
+    threadId: request.threadId as string,
+    runId: named.runId,
+    connectorId: connector.id,
+    tool: pinned,
+    // The capture's digest is of the canonical input (KOBE-441): the claim digests Pi's raw
+    // arguments the same way, so Pi's conversions and schema defaults do not drop the app.
+    inputSha256: appInputDigest(pinned.input_schema as Record<string, unknown>, k.input),
+    now: c.now(),
+  });
+  // The record of the call comes first: no audit row, no upstream call.
+  await audit(deps, principal, c.facts as AuditFacts, {
+    decision: "allowed",
+    reason,
+    ...(approvalId === undefined ? {} : { approvalId }),
+    ...(ruleId === undefined ? {} : { ruleId }),
+    credential: credentialUsed(connector),
+  });
+  return {
+    decision: "allow",
+    connector: {
+      id: connector.id,
+      name: connector.name,
+      url: connector.url,
+      auth_kind: connector.authKind,
     },
-    call.now,
-  );
+    tool: { name: pinned.name, pi_name: pinned.pi_name, model_visible: true },
+    input_sha256: inputDigest(k.input),
+    reason,
+    ...(approvalId === undefined ? {} : { approval_id: approvalId }),
+    run_id: named.runId,
+    tool_call_id: k.toolCallId,
+    ...(capture === undefined ? {} : { app_capture: { ticket: capture } }),
+  };
 }
