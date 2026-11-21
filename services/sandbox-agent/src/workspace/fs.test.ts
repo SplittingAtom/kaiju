@@ -16,7 +16,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   conflictCopyName,
   ensureParents,
+  entryExists,
   lockServerOwned,
+  lstatIfExists,
+  removeFile,
   pruneEmptyParents,
   renameWithin,
   truncateUtf8,
@@ -130,4 +133,28 @@ describe("workspace fs helpers", () => {
     expect(await pruneEmptyParents(root, "uploads/t/x")).toBe(0);
     expect(await readdir(path.join(root, "uploads"))).toEqual(["t"]);
   });
+
+  // CODE-25: only a missing entry is absent; one the agent cannot stat is an error, never "gone".
+  it.skipIf(process.getuid?.() === 0)(
+    "treats only ENOENT/ENOTDIR as missing, never an unreadable directory",
+    async () => {
+      const root = await dir();
+      await mkdir(path.join(root, "locked"));
+      await writeFile(path.join(root, "locked/f.txt"), "kept");
+      await writeFile(path.join(root, "plain"), "x");
+      expect(await lstatIfExists(path.join(root, "absent"))).toBeUndefined();
+      expect(await lstatIfExists(path.join(root, "plain/child"))).toBeUndefined(); // ENOTDIR
+      await chmod(path.join(root, "locked"), 0o000);
+      try {
+        await expect(lstatIfExists(path.join(root, "locked/f.txt"))).rejects.toMatchObject({
+          code: "EACCES",
+        });
+        await expect(entryExists(root, "locked/f.txt")).rejects.toMatchObject({ code: "EACCES" });
+        await expect(removeFile(root, "locked/f.txt")).rejects.toMatchObject({ code: "EACCES" });
+      } finally {
+        await chmod(path.join(root, "locked"), 0o755);
+      }
+      expect(await readFile(path.join(root, "locked/f.txt"), "utf8")).toBe("kept");
+    },
+  );
 });

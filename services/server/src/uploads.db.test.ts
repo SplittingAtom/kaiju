@@ -7,12 +7,13 @@ import { EventStreamFixture, must, type Person } from "./testing/event-stream-fi
 import { RawBody } from "./testing/browser.js";
 import { MemoryObjects } from "./testing/memory-objects.js";
 import { runWithAuditContext } from "./audit/context.js";
-import { exportZip } from "./retention/export.js";
+import { exportResponseBody, exportZip } from "./retention/export.js";
 import { blobRecorder } from "./retention/job.js";
 import { deleteReleasedBlobs, purgeThreads } from "./retention/index.js";
 import { expireOrphanUploads } from "./uploads/expire.js";
 import { storeUpload } from "./uploads/store.js";
 import type { UploadSettings } from "./uploads/settings.js";
+import type { ObjectStore } from "./workspace-sync/object-store.js";
 
 /**
  * KOBE-143: POST /v1/uploads end to end: S3 first then the files row, limits, the per-team quota
@@ -330,5 +331,43 @@ describe("retention and export", () => {
     expect(await rowsOf(team)).toEqual([]);
     await deleteReleasedBlobs(fx.db, team, blobs, blobRecorder(team), { maxBatches: 5 });
     expect(objects.keys(`${PREFIX}teams/${team}/`)).toEqual([]);
+  });
+
+  it("ends the export with an error when an object download is cut (KOBE-732)", async () => {
+    // The S3 client's socket-idle timeout cuts a download whose reader stalled (a paused
+    // browser): the body errors mid-file. The export stream must fail, not hang or crash.
+    const { owner, team } = await world();
+    const runId = await fx.run(team, owner);
+    const { rows } = await fx.admin.query<{ thread_id: string }>(
+      `SELECT thread_id FROM runs WHERE team_id = $1 AND id = $2`,
+      [team, runId],
+    );
+    const threadId = must(rows[0], "thread").thread_id;
+    await upload(owner, new TextEncoder().encode("cut short"), { threadId });
+    const cutting: ObjectStore = Object.assign(Object.create(objects) as MemoryObjects, {
+      get: () =>
+        Promise.resolve({
+          size: 9,
+          body: new Readable({
+            read() {
+              this.push(Buffer.from("cut"));
+              this.destroy(
+                Object.assign(new Error("socket timed out after 60000 ms of inactivity"), {
+                  name: "TimeoutError",
+                }),
+              );
+            },
+          }),
+        }),
+    });
+    const reader = exportResponseBody(
+      fx.db,
+      { teamId: team, userId: owner.id },
+      { objects: cutting, prefix: PREFIX },
+    ).getReader();
+    const drain = async () => {
+      for (;;) if ((await reader.read()).done) return;
+    };
+    await expect(drain()).rejects.toThrow(/inactivity/);
   });
 });

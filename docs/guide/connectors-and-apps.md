@@ -46,6 +46,11 @@ connector keys**, `/me/connectors`):
 Until you add a key, your runs cannot use that connector ("Your runs can't use it until you add
 one."). An app that is missing only your key shows **Add your key**, linking to this page.
 
+Your keys (and sign-ins for connectors that use OAuth) belong to one workspace. When you are
+removed from a workspace, your account is deactivated, or your identity provider removes your
+access, Kobe deletes them for that workspace (each deletion is in the workspace's **Audit** as
+`mcp.grant.removed`). If you are added back, add your keys and sign in again.
+
 ## Turn connectors on or off for a conversation
 
 In the composer, **+** → **Connectors** lists your connectors in this workspace. Each working one

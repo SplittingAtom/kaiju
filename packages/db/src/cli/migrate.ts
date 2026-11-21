@@ -4,7 +4,7 @@ import pg from "pg";
 import { pino } from "pino";
 import { z } from "zod";
 import { isRetryableConnectError } from "../connect-errors.js";
-import { runMigrations } from "../migrate.js";
+import { MigrationCancelledError, runMigrations } from "../migrate.js";
 
 // Entry point for the Helm pre-install/pre-upgrade migration Job.
 const logger = pino({ base: { service: "kobe-migrate" } });
@@ -36,6 +36,17 @@ async function waitForDatabase(url: string, timeoutMs: number): Promise<void> {
   }
 }
 
+// Kubernetes stops the Job at its deadline (activeDeadlineSeconds) with SIGTERM: cancel the
+// running statement in Postgres so no build keeps going (and holding the migration lock) after
+// the pod is gone (KOBE-734).
+const stop = new AbortController();
+for (const sig of ["SIGTERM", "SIGINT"] as const) {
+  process.once(sig, () => {
+    logger.warn({ signal: sig }, "stopping: cancelling the running migration statement");
+    stop.abort(new Error(sig));
+  });
+}
+
 async function main(): Promise<void> {
   const parsed = envSchema.safeParse(process.env);
   if (!parsed.success) {
@@ -50,11 +61,20 @@ async function main(): Promise<void> {
     appRole: parsed.data.KOBE_DB_APP_ROLE,
     // Upgrade notes a migration raises (no content beyond ids and setting values).
     onNotice: (message) => logger.warn({ notice: message }, "migration notice"),
+    signal: stop.signal,
   });
   logger.info({ appRole: parsed.data.KOBE_DB_APP_ROLE }, "migrations applied");
 }
 
 main().catch((err: unknown) => {
+  if (err instanceof MigrationCancelledError) {
+    logger.error(
+      { err },
+      "migration stopped before it finished (Job deadline or SIGTERM); the migrations before the " +
+        "running one are applied, re-run the upgrade to continue (see postgres.migrateJob)",
+    );
+    process.exit(1);
+  }
   logger.error({ err }, "migration failed");
   process.exit(1);
 });

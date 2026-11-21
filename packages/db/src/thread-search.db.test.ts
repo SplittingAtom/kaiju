@@ -578,7 +578,8 @@ describe("statement timeout (review 3)", () => {
       expect(outcome.err).toMatchObject({ code: "timeout" });
       const message = (outcome.err as Error).message;
       expect(message).not.toMatch(/select|websearch|puffin|Failed query/i);
-      expect(outcome.after).toEqual({ team: teamA, timeout: "0" });
+      // The app role's connection default (KOBE-732), restored after the search's own.
+      expect(outcome.after).toEqual({ team: teamA, timeout: "2min" });
     } finally {
       await locker.query("ROLLBACK");
       locker.release();

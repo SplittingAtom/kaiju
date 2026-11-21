@@ -3,6 +3,7 @@ import {
   BLOB_REF_COLUMNS,
   isLegalHoldViolation,
   isLockConflict,
+  JOB_STATEMENT_TIMEOUT,
   lockLegalHolds,
   sql,
   withTeam,
@@ -257,6 +258,8 @@ export async function purgeBatchInTx(
 ): Promise<PurgeBatchResult> {
   // Before the hold lock: a pending hold approval must not make a purge wait without bound.
   await tx.execute(sql.raw(`SET LOCAL lock_timeout = '${LOCK_TIMEOUT}'`));
+  // A batch's cascade may outlast the app role's default statement timeout (KOBE-732).
+  await tx.execute(sql.raw(`SET LOCAL statement_timeout = '${JOB_STATEMENT_TIMEOUT}'`));
   await lockLegalHolds(tx);
   let retentionDays = 0;
   if (selection.kind === "retention") {

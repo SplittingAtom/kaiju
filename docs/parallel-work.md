@@ -97,6 +97,10 @@ anyway, rebase it by hand:
 SQL-only objects (indexes, policies, `NOT VALID` checks) are not in the snapshot, so they need no
 step 3.
 
+A concurrent index migration (`-- kobe:no-transaction` on the second line, KOBE-734) is a
+hand-written migration too; how to write one is in
+[development.md](development.md#migrations).
+
 ## Shared environments
 
 - **Postgres for tests:** `KOBE_TEST_DATABASE_URL` points at a server, not a database. Each test

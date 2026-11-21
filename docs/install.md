@@ -1039,6 +1039,55 @@ scheduler (`KOBE_S3_PREFIX`). Changing it on an existing site hides the objects 
 the old prefix, so move them first or keep the old value. `kobe backup` and `kobe restore` read
 `KOBE_S3_PREFIX` too; set it to the same value.
 
+### Timeouts (Postgres and S3)
+
+A stuck network call must never pin a database transaction, its locks or a pooled connection
+(KOBE-732). Kobe bounds both sides:
+
+- **App-role sessions.** Every connection the server (its event-stream reader included),
+  scheduler, model gateway and egress proxy open as the app role runs `SET statement_timeout = 120000` (2 min) and
+  `SET idle_in_transaction_session_timeout = 300000` (5 min) before first use. A statement
+  running longer is cancelled (SQLSTATE `57014`); a transaction left idle longer is ended by
+  Postgres and its locks released. Nothing retries the cut work automatically: the request fails
+  with an error (logged as `database connection lost` with `sqlstate: 25P03`, the error an
+  `IdleInTransactionTimeoutError`), and a background job picks the work up on its next pass. The nightly
+  retention purge and run-event compaction batches raise the statement timeout to 10 min for
+  their own transaction. The server and scheduler read `KOBE_DB_STATEMENT_TIMEOUT_MS` and
+  `KOBE_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS` (milliseconds, `0` turns one off); the chart does not
+  set them, so the defaults apply. The settings are sent with `SET`, not as startup parameters,
+  so a session-mode PgBouncer in front works unchanged.
+- **New connections only.** The timeouts take effect on connections opened by this release's
+  pods; the upgrade's rollout replaces every pod, so nothing is left to do for Kobe itself.
+- **External Postgres: role defaults for every other client.** Give the app role the same
+  defaults, so a session opened outside Kobe's services (a `psql` as `kobe_app`, a debugging
+  tool) is bounded too. Run as a superuser (or a role with `CREATEROLE` and `ADMIN` on the app
+  role; the migration Job's owner role has neither, so Kobe cannot set them itself):
+
+  ```sql
+  ALTER ROLE kobe_app IN DATABASE kobe SET statement_timeout = '2min';
+  ALTER ROLE kobe_app IN DATABASE kobe SET idle_in_transaction_session_timeout = '5min';
+  ```
+
+  Role defaults, too, apply only to sessions opened afterwards. Do not set them on the database
+  owner or on the backup role: migrations build indexes and backfill for longer, and
+  `kobe backup` holds its snapshot transaction open, idle, for the whole dump (it turns both
+  timeouts off for its own session anyway). With bundled CloudNativePG the same commands work
+  in `psql` on the primary (`kubectl -n kobe exec -it kobe-pg-1 -c postgres -- psql -d kobe`);
+  they are optional there.
+
+- **Object storage.** The server's and the `kobe` CLI's S3 clients give up on a connection that
+  is not established within 5 s and on a request whose socket stays silent for 60 s (nothing
+  sent or received; the SDK then retries). This is an idle timeout, not a total one: an upload or
+  download of a large file runs as long as bytes keep moving. It also applies to a download whose
+  reader stalls: a browser that pauses a thread export (ZIP) or a file download for more than
+  60 s leaves the object stream silent, the download is cut, and the browser reports it failed
+  (start it again). Object calls made while a
+  transaction holds locks also have a total bound: deletes 30 s (then aborted, 10 s to settle),
+  memory writes and restores 30 s. Override with `KOBE_S3_CONNECT_TIMEOUT_MS` and
+  `KOBE_S3_IDLE_TIMEOUT_MS` on the server.
+- **Kubernetes.** Each Kubernetes API call of the server gives up after 10 s, including those
+  made under a row or legal-hold lock (hibernation, workspace volume deletes).
+
 ### Sandbox tool executor
 
 By default Pi's built-in tools (`bash`, `read`, `write`, `edit`, `ls`, `grep`, `find`) run inside
@@ -1224,7 +1273,27 @@ superuser, `BYPASSRLS`, owns tables, or is a member of another role.
 Migrations are written expand/contract, except where an upgrade note says otherwise: the
 previous release keeps serving while an upgrade's migration runs, and `helm rollback` runs older
 code against the newer schema (no down migrations). A migration that waits more than 10 s for a lock fails the Job instead of stalling
-live traffic. Rolling a bundled-CloudNativePG release back to its first revision re-runs that
+live traffic. Each migration commits on its own, with its row in `drizzle.__drizzle_migrations`
+(since KOBE-734; before, one upgrade's migrations shared one transaction): an early migration's
+locks are released before the next starts, and a failed upgrade leaves the migrations before the
+failing one applied, so re-running the upgrade continues from that one. Migrations marked
+`-- kobe:no-transaction` build or drop indexes `CONCURRENTLY` (reads and writes continue; each
+statement may wait up to 2 min for older transactions); an interrupted build's INVALID index is
+dropped and rebuilt on the next run.
+
+The Job stops after `postgres.migrateJob.activeDeadlineSeconds` (default 1800, 30 min; minimum
+300). At the deadline Kubernetes sends SIGTERM: the runner cancels its running statement in
+Postgres (and ends its own backend if needed), so no build keeps going and the migration lock is
+free, and exits non-zero with "migration stopped before it finished"; the migrations before that
+one stay applied. Run `helm upgrade` with a `--timeout` longer than the deadline (Helm waits for
+hook Jobs within it). On a site with large tables (millions of rows in `files`, `runs`,
+`run_events`, `thread_entries`), either raise the deadline or pre-build the release's indexes
+`CONCURRENTLY` beforehand with the definitions in its upgrade note: the migration's `IF NOT EXISTS`
+then skips them. If a run fails because "the migration lock is held by another session", the
+error names that session (pid, `application_name`, state, start times): a migration, a
+`kobe backup`/`kobe restore` (`application_name` of your client), or a backend of a stopped Job
+still working. Wait for it, or end it with `SELECT pg_terminate_backend(<pid>)`, and run the
+upgrade again. Rolling a bundled-CloudNativePG release back to its first revision re-runs that
 revision's initial migration Job, which resets app-role grants to that build's matrix; the next
 upgrade restores them.
 
@@ -1238,6 +1307,21 @@ on by default), migrations `0216`–`0235` and the upgrade steps. The notes belo
 Migrations report what an upgrade changed in the migration Job's log (`"msg":"migration notice"`,
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
+
+- **Foreign-key indexes (KOBE-735).** Migration `0236_fk_covering_indexes` builds six indexes
+  that make thread and run purges cheap (`files_run_idx`, `artifact_versions_run_idx`,
+  `approvals_thread_idx`, `workspace_sync_conflicts_thread_idx`, `sandbox_commands_thread_idx`,
+  `sandbox_run_leases_thread_idx`) and drops the redundant `thread_app_results_thread_idx`, all
+  `CONCURRENTLY` outside a transaction (KOBE-734): traffic continues during the build, no
+  pre-build needed. If the Job fails part-way, re-run the upgrade; an INVALID leftover is rebuilt.
+  `0237_drop_artifact_versions_unique` drops the constraint `artifact_versions_artifact_version`
+  (the primary key already covers it; a brief catalog-only lock). On a `helm rollback` the previous
+  release works with or without them.
+
+- **Timeouts (KOBE-732).** App-role connections now run with a 2 min statement timeout and a
+  5 min idle-in-transaction timeout, and the S3 client with 5 s connection and 60 s socket-idle
+  timeouts: see [Timeouts](#timeouts-postgres-and-s3). No migration; on external Postgres,
+  optionally add the same role defaults for other clients of the app role (commands there).
 
 - **MCP proxy internal port and keys (KOBE-693).** The server's probe and app calls move to the
   MCP proxy's own port 8081 (NetworkPolicy: server pods only); sandboxes keep port 8080. The

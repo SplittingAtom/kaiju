@@ -62,6 +62,10 @@ import {
   resolveAll,
   type ConnectorUrlPolicy,
 } from "./connectors/url-policy.js";
+import {
+  deleteDeactivatedUserGrants,
+  deleteReactivatedUserGrants,
+} from "./connectors/grant-departures.js";
 import { NO_PROBE, type ConnectorProbe } from "./connectors/probe.js";
 import type { AppResultsDeps } from "./apps/results.js";
 import { captureKey } from "./apps/capture-ticket.js";
@@ -102,9 +106,12 @@ import type { BrandingDefaults } from "./branding/defaults-config.js";
 import type { SsoNet } from "./sso/net.js";
 import type { ProviderStore } from "./sso/providers.js";
 import { SSO_OFF, ssoNet, type SsoSettings } from "./sso/settings.js";
+import type { DbTimeouts } from "./config.js";
 
 export interface ServerDepsOptions {
   readonly databaseUrl: string;
+  /** App-role connection timeouts (KOBE-732); the @kobe/db defaults when absent. */
+  readonly dbTimeouts?: DbTimeouts;
   readonly publicUrl: string;
   /** KOBE_RETENTION_PAUSED (KOBE-243): shown to site admins; the deleting jobs honour it. */
   readonly retentionPaused?: boolean;
@@ -378,7 +385,13 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   configureUsageKey(options.authSecret);
   // Tag fingerprints in the held Site item audit (KOBE-647, review P2-L3).
   configureTagFingerprintKey(options.authSecret);
-  const database = createDb(options.databaseUrl);
+  // App-role sessions: timeouts and lost-connection logging (KOBE-732), for both pools below.
+  const session = {
+    ...options.dbTimeouts,
+    onConnectionError: (err: unknown, sqlstate: string | undefined) =>
+      logger.warn({ err, sqlstate }, "database connection lost"),
+  };
+  const database = createDb(options.databaseUrl, session);
   const authAttempts = new AuthAttemptAudit(database.db);
   authAttempts.start();
   const background = options.background ?? new BackgroundTasks();
@@ -418,6 +431,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   });
   const reader = createStreamReader({
     connectionString: options.databaseUrl,
+    session,
     ...(options.eventStream?.poolMax ? { max: options.eventStream.poolMax } : {}),
   });
 
@@ -644,6 +658,14 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     name: "workspace-changes",
     run: (userId) => notifyWorkspaceAccess(database.db, userId),
   });
+  // Their connector keys and OAuth tokens in every team are deleted (KOBE-696); the offboarding
+  // sweep finishes the job if this fails.
+  lifecycle.on("deactivated", {
+    name: "connector-grants",
+    run: async (userId) => {
+      await deleteDeactivatedUserGrants(database.db, userId);
+    },
+  });
   // The last active maintainer of a catalog skill leaves: Unmaintained, Site admins emailed (KOBE-332).
   lifecycle.on("deactivated", {
     name: "catalog-maintainers",
@@ -653,6 +675,13 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
         { db: database.db, mailer: options.mailer, publicUrl: new URL(options.publicUrl).origin },
         skills,
       );
+    },
+  });
+  // Grants a failed "connector-grants" deactivation step left behind never work again (KOBE-696).
+  lifecycle.on("reactivated", {
+    name: "connector-grants",
+    run: async (userId) => {
+      await deleteReactivatedUserGrants(database.db, userId);
     },
   });
   lifecycle.on("reactivated", {

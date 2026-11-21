@@ -6,6 +6,7 @@ import type {
 } from "@kobe/protocol";
 import { PushPathError, type PushedFile } from "../workspace/sync.js";
 import { toolsError } from "./channel.js";
+import { PendingRequests } from "./pending-requests.js";
 import { resolveSharePath, SharePathError } from "./share-path.js";
 
 /**
@@ -21,13 +22,6 @@ export const MAX_PENDING_RUNS_PER_THREAD = 2;
 
 type RunRequest = Extract<KobeToolsRequest, { op: "notebook.run" }>;
 
-interface Pending {
-  readonly threadId: string;
-  readonly runId: string;
-  readonly extensionId: string;
-  readonly reply: (response: KobeToolsResponse) => void;
-}
-
 export interface NotebookBrokerDeps {
   readonly root: string;
   readonly send: (frame: NotebookRunFrame) => boolean;
@@ -37,8 +31,11 @@ export interface NotebookBrokerDeps {
 
 export class NotebookBroker {
   readonly #deps: NotebookBrokerDeps;
-  readonly #pending = new Map<string, Pending>();
-  #next = 1;
+  readonly #pending = new PendingRequests({
+    prefix: "nb",
+    max: MAX_PENDING_RUNS,
+    maxPerThread: MAX_PENDING_RUNS_PER_THREAD,
+  });
 
   constructor(deps: NotebookBrokerDeps) {
     this.#deps = deps;
@@ -54,23 +51,17 @@ export class NotebookBroker {
       reply(toolsError(request.id, "not_allowed", "no active run on this thread"));
       return;
     }
-    const perThread = [...this.#pending.values()].filter((p) => p.threadId === threadId).length;
-    if (this.#pending.size >= MAX_PENDING_RUNS || perThread >= MAX_PENDING_RUNS_PER_THREAD) {
+    const requestId = this.#pending.add(threadId, runId, request.id, reply);
+    if (requestId === undefined) {
       reply(toolsError(request.id, "unavailable", "too many executions in flight"));
       return;
     }
-    const requestId = `nb_${this.#next++}`;
-    this.#pending.set(requestId, { threadId, runId, extensionId: request.id, reply });
     void this.#send(requestId, threadId, runId, request);
   }
 
   async #send(requestId: string, threadId: string, runId: string, request: RunRequest) {
-    const fail = (code: string, message: string) => {
-      const pending = this.#pending.get(requestId);
-      if (pending === undefined) return;
-      this.#pending.delete(requestId);
-      pending.reply(toolsError(pending.extensionId, code, message));
-    };
+    // A no-op once answered (run ended, connection lost).
+    const fail = (code: string, message: string) => this.#pending.fail(requestId, code, message);
     try {
       const path = request.input.path;
       if (path !== undefined) {
@@ -102,31 +93,22 @@ export class NotebookBroker {
 
   /** `notebook.run_result` from the server; false when nothing waits for it. */
   onResult(frame: NotebookRunResultFrame): boolean {
-    const pending = this.#pending.get(frame.request_id);
+    const pending = this.#pending.take(frame.request_id);
     if (pending === undefined) return false;
-    this.#pending.delete(frame.request_id);
     const { v: _v, type: _type, request_id: _request, ...body } = frame;
     pending.reply({ id: pending.extensionId, ...body });
     return true;
   }
 
   failAll(message: string): void {
-    this.#failWhere(() => true, message);
+    this.#pending.failAll(message);
   }
 
   failRun(runId: string, message: string): void {
-    this.#failWhere((p) => p.runId === runId, message);
+    this.#pending.failRun(runId, message);
   }
 
   failThread(threadId: string, message: string): void {
-    this.#failWhere((p) => p.threadId === threadId, message);
-  }
-
-  #failWhere(match: (pending: Pending) => boolean, message: string): void {
-    for (const [id, pending] of this.#pending) {
-      if (!match(pending)) continue;
-      this.#pending.delete(id);
-      pending.reply(toolsError(pending.extensionId, "unavailable", message));
-    }
+    this.#pending.failThread(threadId, message);
   }
 }

@@ -13,6 +13,16 @@ import { Upload } from "@aws-sdk/lib-storage";
 import { z } from "zod";
 import type { ObjectStore } from "./object-store.js";
 
+/** Longest wait for the TCP (and TLS) connection to the object store. */
+export const S3_CONNECT_TIMEOUT_MS = 5_000;
+/**
+ * Longest time a request's socket may stay silent (nothing sent or received). An idle timeout,
+ * not a total one: a large file streams for as long as bytes keep moving, while a store that
+ * stops answering is given up on (the SDK then retries). Calls made inside a transaction bound
+ * their total time on top with an abort signal.
+ */
+export const S3_IDLE_TIMEOUT_MS = 60_000;
+
 /**
  * S3-compatible object storage from the chart's `s3` values (spec D4: an external endpoint; the
  * chart bundles none — MinIO is AGPL). The server is the only Kobe component holding these
@@ -40,6 +50,17 @@ const settingsSchema = z
       .refine((v) => v === "" || (/^[A-Za-z0-9!_.*'()/-]+\/$/.test(v) && !v.startsWith("/")), {
         message: "KOBE_S3_PREFIX must be a relative key prefix ending in /",
       }),
+    // KOBE-732: a store that accepts and never answers must not hang a caller (or a lock it holds).
+    KOBE_S3_CONNECT_TIMEOUT_MS: z.coerce
+      .number({ error: "KOBE_S3_CONNECT_TIMEOUT_MS must be a number" })
+      .int("KOBE_S3_CONNECT_TIMEOUT_MS must be an integer")
+      .min(1, "KOBE_S3_CONNECT_TIMEOUT_MS must be positive")
+      .default(S3_CONNECT_TIMEOUT_MS),
+    KOBE_S3_IDLE_TIMEOUT_MS: z.coerce
+      .number({ error: "KOBE_S3_IDLE_TIMEOUT_MS must be a number" })
+      .int("KOBE_S3_IDLE_TIMEOUT_MS must be an integer")
+      .min(1, "KOBE_S3_IDLE_TIMEOUT_MS must be positive")
+      .default(S3_IDLE_TIMEOUT_MS),
     KOBE_S3_ACCESS_KEY_ID: z.string().default(""),
     KOBE_S3_SECRET_ACCESS_KEY: z.string().default(""),
   })
@@ -55,6 +76,21 @@ export interface S3Settings {
   readonly prefix: string;
   /** Absent: the SDK's default credential chain. */
   readonly credentials: { readonly accessKeyId: string; readonly secretAccessKey: string } | null;
+  /** Default {@link S3_CONNECT_TIMEOUT_MS}. */
+  readonly connectTimeoutMs?: number;
+  /** Default {@link S3_IDLE_TIMEOUT_MS}. */
+  readonly idleTimeoutMs?: number;
+}
+
+/** The SDK's Node HTTP handler options: connection and socket-idle timeouts (KOBE-732). */
+export function s3RequestHandlerOptions(settings: S3Settings): {
+  readonly connectionTimeout: number;
+  readonly socketTimeout: number;
+} {
+  return {
+    connectionTimeout: settings.connectTimeoutMs ?? S3_CONNECT_TIMEOUT_MS,
+    socketTimeout: settings.idleTimeoutMs ?? S3_IDLE_TIMEOUT_MS,
+  };
 }
 
 /** Undefined when no bucket is configured (workspace sync then stays off); throws when invalid. */
@@ -79,6 +115,8 @@ export function loadS3Settings(
       e.KOBE_S3_ACCESS_KEY_ID === ""
         ? null
         : { accessKeyId: e.KOBE_S3_ACCESS_KEY_ID, secretAccessKey: e.KOBE_S3_SECRET_ACCESS_KEY },
+    connectTimeoutMs: e.KOBE_S3_CONNECT_TIMEOUT_MS,
+    idleTimeoutMs: e.KOBE_S3_IDLE_TIMEOUT_MS,
   };
 }
 
@@ -104,6 +142,7 @@ export function createS3ObjectStore(settings: S3Settings, client?: S3Client): Ob
       forcePathStyle: settings.forcePathStyle,
       ...(settings.endpoint ? { endpoint: settings.endpoint } : {}),
       ...(settings.credentials ? { credentials: settings.credentials } : {}),
+      requestHandler: s3RequestHandlerOptions(settings),
       // Plain requests that S3-compatible stores understand: no aws-chunked trailing checksums.
       // Integrity is the server's own SHA-256 check on the way in (verifyingStream).
       requestChecksumCalculation: "WHEN_REQUIRED",
@@ -111,10 +150,14 @@ export function createS3ObjectStore(settings: S3Settings, client?: S3Client): Ob
     });
   const Bucket = settings.bucket;
   return {
-    async put(key, body, size) {
+    async put(key, body, size, options = {}) {
       // A body that errors (a failed hash check) must abort the request: piping does not forward
       // the error, and S3 would wait for the bytes it was promised.
       const abort = new AbortController();
+      const caller = options.signal;
+      const onAbort = () => abort.abort(caller?.reason);
+      if (caller?.aborted) onAbort();
+      else caller?.addEventListener("abort", onAbort, { once: true });
       let failure: unknown;
       const onError = (err: unknown) => {
         failure = err;
@@ -129,6 +172,7 @@ export function createS3ObjectStore(settings: S3Settings, client?: S3Client): Ob
         throw failure ?? err;
       } finally {
         body.off("error", onError);
+        caller?.removeEventListener("abort", onAbort);
       }
       if (failure !== undefined) throw failure;
     },
@@ -163,13 +207,14 @@ export function createS3ObjectStore(settings: S3Settings, client?: S3Client): Ob
         throw err;
       }
     },
-    async copy(from, to) {
+    async copy(from, to, options = {}) {
       await s3.send(
         new CopyObjectCommand({
           Bucket,
           Key: to,
           CopySource: `${Bucket}/${from.split("/").map(encodeURIComponent).join("/")}`,
         }),
+        options.signal ? { abortSignal: options.signal } : {},
       );
     },
     async list(prefix, options = {}) {

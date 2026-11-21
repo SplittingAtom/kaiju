@@ -136,7 +136,8 @@ Provisioning works only while the provider is turned on. What SCIM does:
   signed out in the browser. Deleting the user at the provider
   deactivates and unlinks them; Kobe never deletes accounts. The memories that follow the person
   across workspaces are kept until a site admin purges them (Site console › Users › **Purge
-  memories**); their own memories in each workspace go 30 days later. See
+  memories**); their own memories in each workspace go 30 days later. Their connector keys are
+  deleted at once, as when a mapping removes them from a team. See
   [Memory](../memory.md#how-long-memories-are-kept).
 - **Reactivates** only accounts SCIM itself deactivated. Someone a site admin deactivated stays
   deactivated until a site admin reactivates them (`identity.scim.reactivation_refused`). A

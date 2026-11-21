@@ -8,6 +8,7 @@ import {
 } from "@kobe/db";
 import type { Logger } from "pino";
 import { workspaceBlobKey, type WorkspaceOwner } from "./keys.js";
+import { DELETE_TIMEOUT_MS, deleteBounded } from "../retention/bounded-delete.js";
 import type { ObjectStore } from "./object-store.js";
 import type { StoredEntry } from "./store.js";
 
@@ -159,6 +160,8 @@ export async function reportMissingContent(
  * collection's own protocol so a concurrent upload of the same content is never hurt: the row is
  * claimed `deleting` first (committed: uploads then wait and retry), then the object goes, then
  * the claim. Under a legal hold nothing is deleted: the content is recorded and counted instead.
+ * The delete is bounded (it runs under the legal-hold lock): on timeout the transaction rolls
+ * back and the claim stays `deleting` for collection to finish.
  */
 export async function discardOrphanedResend(
   db: KobeDb,
@@ -167,6 +170,8 @@ export async function discardOrphanedResend(
   prefix: string,
   sha256: string,
   size: number,
+  /** Bound on the object delete, made while the legal-hold lock is held (KOBE-732). */
+  deleteTimeoutMs: number = DELETE_TIMEOUT_MS,
 ): Promise<"discarded" | "kept"> {
   const claim = await withTeam(db, owner.teamId, async (tx) => {
     const ours = await tx.execute(sql`
@@ -189,7 +194,7 @@ export async function discardOrphanedResend(
     if (claim === "collecting") {
       // Collection's row: it is deleting this content (under a hold it unmarks and keeps it).
       if (held) return "kept" as const;
-      await objects.delete([workspaceBlobKey(prefix, owner, sha256)]);
+      await deleteBounded(objects, [workspaceBlobKey(prefix, owner, sha256)], deleteTimeoutMs);
       return "discarded" as const;
     }
     if (held) {
@@ -205,7 +210,7 @@ export async function discardOrphanedResend(
       }
       return "kept" as const;
     }
-    await objects.delete([workspaceBlobKey(prefix, owner, sha256)]);
+    await deleteBounded(objects, [workspaceBlobKey(prefix, owner, sha256)], deleteTimeoutMs);
     await tx.execute(sql`
       DELETE FROM workspace_blobs
        WHERE team_id = ${owner.teamId} AND user_id = ${owner.userId} AND sha256 = ${sha256}

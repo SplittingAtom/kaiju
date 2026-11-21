@@ -5,7 +5,7 @@ import {
   type KobeEventType,
   type ServerCallPurpose,
 } from "@kobe/protocol";
-import type { TeamRole } from "@kobe/db";
+import { appSessionHook, type AppSessionOptions, type TeamRole } from "@kobe/db";
 
 /** Most events one read returns: what a stream holds in memory at a time. */
 export const PAGE_MAX_ROWS = 50;
@@ -158,12 +158,15 @@ interface PageRow {
 export function createStreamReader(options: {
   readonly connectionString: string;
   readonly max?: number;
+  /** Session timeouts and lost-connection logging, as every app-role pool (KOBE-732). */
+  readonly session?: AppSessionOptions;
 }): StreamReader {
   const pool = new pg.Pool({
     connectionString: options.connectionString,
     max: options.max ?? STREAM_POOL_MAX,
     application_name: "kobe-event-stream",
     connectionTimeoutMillis: 10_000,
+    onConnect: appSessionHook(options.session),
   });
   // An idle client's error (e.g. server restart) must not crash the process; the pool drops it.
   pool.on("error", () => undefined);
@@ -172,7 +175,8 @@ export function createStreamReader(options: {
   /**
    * One read-only transaction scoped to the team in three round trips: BEGIN + set_config as one
    * simple query (the team id is a validated UUID literal, never free text), the statement, COMMIT.
-   * Same RLS context as withTeam(); the setting ends with the transaction.
+   * Same RLS context as withTeam(); the setting ends with the transaction. An accepted exception to
+   * "only withTeam() sets the team" (KOBE-697, CLAUDE.md; guarded by team-setters.test.ts).
    */
   async function inTeam<R extends pg.QueryResultRow>(
     teamId: string,

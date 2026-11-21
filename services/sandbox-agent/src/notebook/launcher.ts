@@ -10,7 +10,7 @@ import {
 } from "../egress/egress-wiring.js";
 import { removeRuntimeDir } from "../models/runtime-dir.js";
 import { partnerOf, type PiIdentities, type PiIdentity } from "../pi/identities.js";
-import { SHARED_SCRATCH_DIRS } from "../threads/thread.js";
+import { SHARED_SCRATCH_DIRS } from "../threads/thread-env.js";
 import type { BridgeLauncher, BridgeProcess } from "./session.js";
 
 /**

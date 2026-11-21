@@ -1207,6 +1207,16 @@
             }
           }
         },
+        "migrateJob": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "activeDeadlineSeconds": {
+              "type": "integer",
+              "minimum": 300
+            }
+          }
+        },
         "cnpg": {
           "type": "object",
           "additionalProperties": false,

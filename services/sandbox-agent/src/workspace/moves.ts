@@ -9,7 +9,7 @@ import {
 import { openAgentTemp, tempPathFor } from "../atomic-file.js";
 import type { WireLogger } from "../wire/client.js";
 import type { SyncClient } from "./client.js";
-import { ensureParents, parentsAreDirs, pruneEmptyParents } from "./fs.js";
+import { ensureParents, lstatIfExists, parentsAreDirs, pruneEmptyParents } from "./fs.js";
 import { assertOnVolume } from "./volume.js";
 
 /**
@@ -45,7 +45,7 @@ async function existingParentsAreDirs(root: string, rel: string): Promise<boolea
   let current = root;
   for (const part of rel.split("/").slice(0, -1)) {
     current = path.join(current, part);
-    const stat = await lstat(current).catch(() => undefined);
+    const stat = await lstatIfExists(current);
     if (!stat) return true;
     if (!stat.isDirectory()) return false;
   }
@@ -60,12 +60,12 @@ export async function applyLocalMove(
   const { from, to } = move;
   if (!own(from) || !own(to) || to === from || to.startsWith(`${from}/`)) return "refused";
   if (!(await parentsAreDirs(root, from))) return "absent";
-  const src = await lstat(path.join(root, from)).catch(() => undefined);
+  const src = await lstatIfExists(path.join(root, from));
   if (!src) return "absent";
   if (src.isSymbolicLink()) return "refused";
   if (move.type === "dir" ? !src.isDirectory() : !src.isFile()) return "refused";
   if (!(await existingParentsAreDirs(root, to))) return "refused";
-  if (await lstat(path.join(root, to)).catch(() => undefined)) return "exists";
+  if (await lstatIfExists(path.join(root, to))) return "exists";
   try {
     await ensureParents(root, to);
   } catch {
@@ -93,7 +93,7 @@ export async function applyLocalMove(
 /** Something is at `rel` (its parents real directories). */
 async function present(root: string, rel: string): Promise<boolean> {
   if (!(await parentsAreDirs(root, rel))) return false;
-  return (await lstat(path.join(root, rel)).catch(() => undefined)) !== undefined;
+  return (await lstatIfExists(path.join(root, rel))) !== undefined;
 }
 
 /** Where the agent remembers the last revision it pulled, for the replay on wake. */
@@ -129,11 +129,22 @@ export class MoveReplay {
     for (let page = 0; page < 100; page += 1) {
       const { moves, more } = await this.#client.moves(since, after);
       for (const move of moves) {
-        const outcome = await applyLocalMove(this.#root, move).catch(() => "refused" as const);
+        let outcome: LocalMoveOutcome | "unreadable" = await applyLocalMove(this.#root, move).catch(
+          () => "refused" as const,
+        );
+        // A destination the agent cannot stat (CODE-25 review) skips this move only.
+        let there = false;
+        if (outcome === "absent") {
+          try {
+            there = await present(this.#root, move.to);
+          } catch {
+            outcome = "unreadable";
+          }
+        }
         if (outcome === "renamed") applied.push({ from: move.from, to: move.to, now: true });
-        else if (outcome === "absent" && (await present(this.#root, move.to))) {
+        else if (there) {
           applied.push({ from: move.from, to: move.to, now: false });
-        } else if (outcome === "exists" || outcome === "refused") {
+        } else if (outcome === "exists" || outcome === "refused" || outcome === "unreadable") {
           // The pull alone converges (download the new path, keep a conflicting local file).
           this.#logger.warn(
             { rev: move.rev, outcome },
@@ -165,7 +176,7 @@ export class MoveReplay {
   async save(seenRev: number): Promise<void> {
     try {
       const dir = path.join(this.#root, STATE_DIR);
-      const stat = await lstat(dir).catch(() => undefined);
+      const stat = await lstatIfExists(dir);
       if (!stat) await mkdir(dir, { mode: 0o700 });
       else if (!stat.isDirectory()) return;
       // Written on the volume only: a `.kobe` swapped for a link must not make the agent write

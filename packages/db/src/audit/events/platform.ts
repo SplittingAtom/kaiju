@@ -1,0 +1,183 @@
+import { z } from "zod";
+import {
+  event,
+  id,
+  isolationState,
+  label,
+  rememberLimits,
+  toolCallId,
+  toolName,
+  toolRule,
+  version,
+  type AuditEventDef,
+} from "./fragments.js";
+
+export const PLATFORM_EVENTS = {
+  // ── site: site-wide settings ──
+  "site.settings.updated": event("site", {
+    /** `kobe_mcp_mode` (KOBE-623): the Kobe MCP site switch, value `off`, `docs` or `admin`. */
+    setting: z.enum(["require_two_factor", "audit_pii_retention_hours", "kobe_mcp_mode"]),
+    value: z.union([z.boolean(), z.number().int().nonnegative(), label]),
+  }),
+  /**
+   * Site branding changed (KOBE-497, theming TH12): one event per setting. `value` is the new name,
+   * the theme's label (a preset id, or `custom` with its accent, corners and font), the new
+   * asset's hex sha256, or `default` when the setting was cleared or reset; never the bytes.
+   */
+  "site.branding.updated": event("site", {
+    setting: z.enum([
+      "app_name",
+      "show_name",
+      "theme",
+      "logo",
+      "logo_dark",
+      "favicon",
+      "logo_theme_color",
+    ]),
+    value: z.union([z.string().regex(/^[0-9a-f]{64}$/), label]),
+  }),
+
+  // ── platform: isolation runtime, restore (actor: system) ──
+  /** A server replica's isolation state changed (spec D4); boot-time "verified" is not recorded. */
+  "platform.isolation.changed": event("site", {
+    from: isolationState,
+    to: isolationState,
+    runtimeClass: z.string().max(253).optional(),
+    handler: z.string().max(63).optional(),
+    replica: z.string().max(253),
+  }),
+  /** `kobe restore` loaded a backup into this database (written by the restore transaction). */
+  "platform.restore.completed": event("site", {
+    backupCreatedAt: z.iso.datetime(),
+    tables: z.number().int().nonnegative(),
+    rows: z.number().int().nonnegative(),
+    /** Who ran the restore (OS user or `--operator`). */
+    operator: z.string().regex(/^[A-Za-z0-9._@-]{1,64}$/),
+    /** Head of the restored chain, verified inside the restore transaction (absent if empty). */
+    auditHeadSeq: z.number().int().positive().optional(),
+    auditHeadHash: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/)
+      .optional(),
+    /**
+     * The started target's own chain, replaced by the backup's (KOBE-422: only its start-up
+     * events): its head before the restore and its row count. Explains anchors the fresh site
+     * logged before the restore. Absent when the target's log was empty.
+     */
+    replacedAuditHeadSeq: z.number().int().positive().optional(),
+    replacedAuditHeadHash: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/)
+      .optional(),
+    replacedAuditRows: z.number().int().positive().optional(),
+  }),
+
+  // ── policy: tool rules and switches (D29, KOBE-35); site rules site-only, others team ──
+  "policy.rule.created": event("any", toolRule),
+  "policy.rule.updated": event("any", toolRule),
+  /** Includes a member revoking their own remember-rule (scope `user`). */
+  "policy.rule.deleted": event("any", toolRule),
+  /**
+   * A member's remembered approval let a call run without asking (KOBE-289), at the sandbox's
+   * policy check or the MCP proxy's: one row per call, naming the rule. Never the input.
+   */
+  "policy.rule.applied": event("team", {
+    ruleId: id,
+    runId: id,
+    toolCallId,
+    tool: toolName,
+    rememberScope: z.enum(["thread", "today", "run", "day", "month", "forever"]),
+    enforcementPoint: z.enum(["sandbox", "mcp_proxy"]),
+  }),
+  /**
+   * An admin's Dangerous agent (AC1, KOBE-476) let a call run without asking, at the sandbox's
+   * policy check or the MCP proxy's: one row per call and enforcement point. Never the input.
+   */
+  "policy.dangerous_mode.applied": event("team", {
+    runId: id,
+    toolCallId,
+    tool: toolName,
+    agentId: id.optional(),
+    agentVersion: version.optional(),
+    enforcementPoint: z.enum(["sandbox", "mcp_proxy"]),
+  }),
+  /** The site floor's or a team's limits on remembered approvals were saved (KOBE-289). */
+  "policy.remember_limits.updated": event("any", rememberLimits),
+  "policy.settings.updated": event("site", {
+    setting: z.enum(["prompt_sandbox_writes"]),
+    value: z.boolean(),
+  }),
+
+  // ── sandbox: lifecycle metadata only, never pod logs (KOBE-22, D11) ──
+  /** A user's sandbox in a team was claimed (system actor, or the user whose request did it). */
+  "sandbox.created": event("team", { sandboxId: id, userId: id }),
+  /**
+   * The server deleted a sandbox (its claim) or a pod because it was not running under the
+   * verified isolation runtime, or because isolation was lost (pods only; claims and volumes kept).
+   */
+  "sandbox.destroyed": event("team", {
+    sandboxId: id.optional(),
+    userId: id.optional(),
+    pod: z
+      .string()
+      .max(253)
+      .regex(/^[a-z0-9]([-a-z0-9.]*[a-z0-9])?$/)
+      .optional(),
+    reason: z.enum(["isolation_mismatch", "isolation_lost"]),
+  }),
+  /**
+   * The server hibernated an idle sandbox (D14: agent-sandbox `Suspended`, volume kept, /tmp
+   * wiped) after `idleMinutes` without activity (system actor).
+   */
+  "sandbox.hibernated": event("team", {
+    sandboxId: id,
+    userId: id,
+    idleMinutes: z.number().int().min(0).max(1440),
+    /** idle: the D14 policy; operator: forced by an operator tool (idle time skipped). */
+    trigger: z.enum(["idle", "operator"]),
+  }),
+  /**
+   * The server resumed a hibernated sandbox (D14: a command needed it) through the isolation gate,
+   * with the current pod template (system actor, or the user whose request woke it).
+   */
+  "sandbox.woken": event("team", { sandboxId: id, userId: id }),
+  /**
+   * A wake found the sandbox's pod ended (evicted, killed) and deleted it so agent-sandbox starts a
+   * new one; claim, Sandbox and workspace volume are kept (KOBE-636; system actor, or the user
+   * whose request woke it). `cause` in plain terms, `podReason` the pod's own (`Evicted`); the
+   * kubelet's message names volumes and limits and stays in the server log.
+   */
+  "sandbox.restarted": event("team", {
+    sandboxId: id,
+    userId: id,
+    cause: z.enum(["out_of_space", "out_of_memory", "stopped"]),
+    podReason: z
+      .string()
+      .max(64)
+      // eslint-disable-next-line no-control-regex
+      .regex(/^[^\u0000-\u001f\u007f]*$/),
+  }),
+  /**
+   * A woken sandbox was not Ready within the wake timeout and its run failed
+   * `workspace_unavailable` (KOBE-192; system actor). Site scope: `detail` is the cluster's own
+   * reason (events, volume phase) and may name nodes and volumes, so team members never see it.
+   */
+  "sandbox.wake_stalled": event("site", {
+    teamId: id,
+    sandboxId: id,
+    userId: id,
+    cause: z.enum([
+      "volume_unschedulable",
+      "volume_attach",
+      "scheduling",
+      "image_pull",
+      "pod_failed",
+      "unknown",
+    ]),
+    detail: z
+      .string()
+      .max(600)
+      // eslint-disable-next-line no-control-regex
+      .regex(/^[^\u0000-\u001f\u007f]*$/),
+  }),
+} as const satisfies Record<string, AuditEventDef>;
