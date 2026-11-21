@@ -417,7 +417,7 @@ skillMirror?.kick();
 // Skill evals (KOBE-325): every server replica runs eval executions in ephemeral sandboxes (the
 // per-team cap is atomic across replicas), streams progress, and one replica at a time reaps what
 // a dead replica left. Needs the sandbox provider and object storage.
-const skillEvalHub = isServer && deps ? new SkillEvalHub(config.databaseUrl, logger) : undefined;
+const skillEvalHub = isServer && deps ? new SkillEvalHub(deps.listen) : undefined;
 skillEvalHub?.start();
 const skillEvalRunner =
   isServer && sandbox && deps?.blobs
@@ -592,7 +592,6 @@ const stopServerJobs = serverDeps
   ? startServerJobs(
       serverJobs({
         deps: serverDeps,
-        databaseUrl: config.databaseUrl,
         logger,
         auditForwarding: config.auditForwarding,
         retention: {

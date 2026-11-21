@@ -63,8 +63,6 @@ export interface ServerJob {
 
 export interface ServerJobsOptions {
   readonly deps: ServerDeps;
-  /** Direct (or session-mode) Postgres URL for LISTEN connections. */
-  readonly databaseUrl: string;
   readonly logger: Logger;
   readonly auditForwarding: AuditForwardingConfig;
   readonly retention: {
@@ -336,7 +334,7 @@ function siteJobs(o: ServerJobsOptions): ServerJob[] {
   const { deps } = o;
   const db = deps.database.db;
   // Blocked egress attempts → `egress.blocked` run events (KOBE-38); every replica listens.
-  const relay = new EgressBlockedRelay({ db, connectionString: o.databaseUrl });
+  const relay = new EgressBlockedRelay({ db, listen: deps.listen });
   const jobs: ServerJob[] = [
     job(
       "egress-blocked",
@@ -412,7 +410,7 @@ function modelJobs(o: ServerJobsOptions): ServerJob[] {
   // Bifrost config sync (KOBE-40): every replica listens; one leads and reconciles.
   const sync = new ModelGatewaySync({
     db: o.deps.database.db,
-    connectionString: o.databaseUrl,
+    listen: o.deps.listen,
     admin,
     providerKeys: new SecretBox(config.providerKeySecrets, PROVIDER_KEY_PURPOSE),
     virtualKeys: new SecretBox(config.virtualKeySecrets, VIRTUAL_KEY_PURPOSE),

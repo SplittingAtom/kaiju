@@ -29,11 +29,34 @@ its last, `close()`. `createServerDeps` builds it (`deps.listen`, application_na
   on servers without the setting). The KOBE-732 session hook only applies to pools, not here.
 - The hub's probe moved from `kobe_run_events` (`probe:` payloads) to `kobe_listen_probe`; the hub
   still ignores `probe:` payloads from not-yet-upgraded replicas during a rollout.
+- The other four, per listener (kept = deliberate, removed = accidental):
+  - **Budgets** (`kobe_models`, `spend:` hints): kept no resync on reconnect, the 30 s sweep over
+    every team is the safety net. Removed: fixed 2 s retry without jitter, no ping, no
+    application_name, warn only on connect failure.
+  - **Skill eval progress** (`kobe_skill_eval`): kept no resync, each stream re-reads every 5 s.
+    Removed: fixed 2 s retry, no ping; the constructor now takes the shared client.
+  - **Egress relay** (`kobe_egress_blocked`): kept the sweep on every (re)connect (`listening`)
+    and the 30 s sweep. Removed: fixed 5 s retry without jitter, no connect timeout, no ping.
+  - **Gateway sync** (`kobe_models`, shares the channel with budgets): kept the leader lock as a
+    session advisory lock on the LISTEN connection (`ListenSession.query`), leadership dropped on
+    `polling`, re-tried on `listening`, `leaderRetryMs` loop. New: `close()` unlocks explicitly
+    since the shared connection outlives it; a half-open leader connection is now noticed by the
+    ping (before, a replica could keep "leading" on a dead socket until TCP gave up).
+  - Same backoff (250 ms doubling to 10 s, half jitter), ping 30 s / 10 s, connect timeout 10 s,
+    keepAlive and the delivery probe for all six now.
+- Each component still accepts a `connectionString` and then owns a connection (tests, CLI),
+  named `kobe-budgets`, `kobe-egress-relay`, `kobe-model-sync`, `kobe-event-hub`, `kobe-sandbox-bus`.
+- `ServerJobsOptions.databaseUrl` removed (no job opens its own LISTEN connection any more).
 - Payloads: all ids (largest the bus `sync:<uuid>:<uuid>`, 78 bytes), far below the 8000-byte limit.
 
 ## Evidence (acceptance criteria → test or command output)
 
 - ac-1: `pg-listen.test.ts` (fake client): growing retry delay, error → polling → listening,
   half-open ping, probe without echo, close() during connect, subscriber isolation, UNLISTEN on last.
+- ac-2: all six on `deps.listen`; no `as unknown as { connection... }` cast left (the typed
+  `client.connection.stream.destroy()` is used in `pgListenConnection`).
+- `pg-listen.db.test.ts`: hub, bus, budgets, skill evals and egress relay on one session
+  (`pg_stat_activity` shows one `kobe-server-listen`, no other dedicated listener).
+- budgets, egress, models, models-discovery, startup-seeds, skill-eval-runner db tests green.
 - ac-3: `event-stream*.test.ts`, `event-stream.db`, `event-stream-scale.db`, `sandbox-wire.db` green.
 - Docs: no member/admin-visible change (connection plumbing); operator docs come with KOBE-736.

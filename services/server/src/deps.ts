@@ -645,7 +645,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   });
   const budgets = new BudgetMonitor({
     db: database.db,
-    connectionString: options.databaseUrl,
+    listen,
     runs,
     mailer: options.mailer,
     publicUrl: new URL(options.publicUrl).origin,

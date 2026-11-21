@@ -13,10 +13,10 @@ import {
   type KobeTx,
 } from "@kobe/db";
 import { EGRESS_BLOCKED_REASONS, type EgressBlockedReason } from "@kobe/protocol";
-import pg from "pg";
 import { z } from "zod";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { logger as rootLogger } from "../logger.js";
+import { createListenClient, type ListenClient } from "../pg-listen.js";
 
 /**
  * Turns the egress proxy's blocked attempts into `egress.blocked` run events (spec D28, §6.2).
@@ -147,16 +147,17 @@ async function activeNotebookRun(
 
 export interface BlockedRelayOptions {
   readonly db: KobeDb;
-  /** App-role URL for the LISTEN connection (direct or session-mode pooler). */
-  readonly connectionString: string;
+  /** The process's shared LISTEN connection (KOBE-704); never closed here. */
+  readonly listen?: ListenClient;
+  /** Without `listen`: app-role URL of a LISTEN connection of the relay's own (tests). */
+  readonly connectionString?: string;
   readonly sweepMs?: number;
-  readonly reconnectMs?: number;
 }
 
 export class EgressBlockedRelay {
-  private client: pg.Client | undefined;
+  private owned: ListenClient | undefined;
+  private unlisten: (() => void) | undefined;
   private sweepTimer: NodeJS.Timeout | undefined;
-  private reconnectTimer: NodeJS.Timeout | undefined;
   private closed = false;
   private readonly busy = new Map<string, Promise<void>>();
   private readonly again = new Set<string>();
@@ -165,7 +166,7 @@ export class EgressBlockedRelay {
   constructor(private readonly options: BlockedRelayOptions) {}
 
   start(): void {
-    void this.listen();
+    this.listen();
     this.sweepTimer = setInterval(() => void this.sweep(), this.options.sweepMs ?? 30_000);
     this.sweepTimer.unref();
   }
@@ -204,44 +205,31 @@ export class EgressBlockedRelay {
     }
   }
 
-  private async listen(): Promise<void> {
-    if (this.closed) return;
-    const client = new pg.Client({ connectionString: this.options.connectionString });
-    const lost = () => {
-      if (this.client !== client) return;
-      this.client = undefined;
-      client.end().catch(() => undefined);
-      if (this.closed) return;
-      this.reconnectTimer = setTimeout(() => void this.listen(), this.options.reconnectMs ?? 5_000);
-      this.reconnectTimer.unref();
-    };
-    client.on("error", (err) => {
-      this.log.warn({ err }, "egress.blocked listener error");
-      lost();
-    });
-    client.on("end", lost);
-    client.on("notification", (n) => {
-      const team = n.payload?.split(":")[0];
-      if (team && UUID.test(team)) void this.process(team.toLowerCase());
-    });
-    this.client = client;
-    try {
-      await client.connect();
-      await client.query(`LISTEN ${EGRESS_BLOCKED_CHANNEL}`);
-      void this.sweep(); // anything recorded while nobody listened
-    } catch (err) {
-      this.log.warn({ err }, "egress.blocked listener could not connect");
-      lost();
+  private listen(): void {
+    if (this.closed || this.unlisten) return;
+    let listen = this.options.listen;
+    if (!listen) {
+      if (!this.options.connectionString) throw new Error("egress relay: no LISTEN connection");
+      listen = this.owned = createListenClient({
+        connectionString: this.options.connectionString,
+        applicationName: "kobe-egress-relay",
+      });
     }
+    this.unlisten = listen.subscribe(EGRESS_BLOCKED_CHANNEL, {
+      notification: (payload) => {
+        const team = payload.split(":")[0];
+        if (team && UUID.test(team)) void this.process(team.toLowerCase());
+      },
+      // Anything recorded while nobody listened (first connect and every reconnect).
+      listening: () => void this.sweep(),
+    });
   }
 
   async close(): Promise<void> {
     this.closed = true;
     if (this.sweepTimer) clearInterval(this.sweepTimer);
-    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    const client = this.client;
-    this.client = undefined;
-    await client?.end().catch(() => undefined);
+    this.unlisten?.();
+    await this.owned?.close();
     await Promise.all([...this.busy.values()]);
   }
 }

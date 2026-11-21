@@ -22,8 +22,8 @@ import {
   type KobeDb,
   type SecretBox,
 } from "@kobe/db";
-import pg from "pg";
 import type { Logger } from "pino";
+import { createListenClient, type ListenClient, type ListenSession } from "../pg-listen.js";
 import type { BifrostAdmin } from "./bifrost-admin.js";
 import {
   buildDesiredState,
@@ -42,8 +42,13 @@ export const MODELS_SYNC_LOCK_KEY = 0x6b6f_6265_0040;
 
 export interface ModelGatewaySyncOptions {
   readonly db: KobeDb;
-  /** Direct (or session-mode) connection for LISTEN and the leader lock. */
-  readonly connectionString: string;
+  /**
+   * The process's shared LISTEN connection (KOBE-704), which also holds the leader lock; never
+   * closed here.
+   */
+  readonly listen?: ListenClient;
+  /** Without `listen`: direct (or session-mode) URL of a LISTEN connection of the sync's own. */
+  readonly connectionString?: string;
   readonly admin: BifrostAdmin;
   readonly providerKeys: SecretBox;
   readonly virtualKeys: SecretBox;
@@ -79,13 +84,17 @@ interface TeamSnapshot extends TeamInput {
 
 /**
  * Keeps Bifrost in step with Kobe (KOBE-40, spec D30; "No Redis"). Every replica LISTENs on
- * `kobe_models`; the one holding {@link MODELS_SYNC_LOCK_KEY} (a session lock on its LISTEN
- * connection, released if that replica dies) runs the passes: on every change hint (debounced),
+ * `kobe_models` (on its shared LISTEN connection, KOBE-704); the one holding
+ * {@link MODELS_SYNC_LOCK_KEY} (a session lock on that connection, released if the connection or
+ * the replica dies) runs the passes: on every change hint (debounced),
  * every `intervalMs`, and on becoming leader. A pass that fails retries with backoff. Each pass
  * records its progress in `model_gateway_state` (`synced_version` = the version it applied).
  */
 export class ModelGatewaySync {
-  private client: pg.Client | undefined;
+  private owned: ListenClient | undefined;
+  private unlisten: (() => void) | undefined;
+  /** The LISTEN session the leader lock is (to be) taken on; undefined while it is down. */
+  private session: ListenSession | undefined;
   private leader = false;
   private closed = false;
   private running: Promise<void> | undefined;
@@ -93,7 +102,6 @@ export class ModelGatewaySync {
   private failures = 0;
   private timers = new Set<NodeJS.Timeout>();
   private periodic: NodeJS.Timeout | undefined;
-  private attempt = 0;
 
   /** The reserved-id conflict (KOBE-659) is logged once, not on every pass. */
   private localConflictLogged = false;
@@ -105,7 +113,7 @@ export class ModelGatewaySync {
   }
 
   start(): void {
-    void this.connect();
+    this.listen();
     this.periodic = setInterval(() => this.request(), this.options.intervalMs);
     this.periodic.unref();
   }
@@ -149,89 +157,92 @@ export class ModelGatewaySync {
     if (this.dirty) void this.drain();
   }
 
-  private async connect(): Promise<void> {
-    if (this.closed) return;
-    const { logger } = this.options;
-    const client = new pg.Client({
-      connectionString: this.options.connectionString,
-      connectionTimeoutMillis: 10_000,
-    });
-    client.on("error", (err) => {
-      logger.warn({ err }, "model gateway sync listener error");
-      this.lost(client);
-    });
-    client.on("end", () => this.lost(client));
-    client.on("notification", (n) => {
-      if (n.channel !== MODELS_CHANNEL) return;
-      // `keys:<team>` is the sync's own output for the shims; spend and budget hints are for the
-      // budget monitor and the shims' caches (a rate-limit change bumps the desired version).
-      const payload = n.payload ?? "";
-      if (
-        payload.startsWith(MODELS_KEYS_PREFIX) ||
-        payload.startsWith(MODELS_SPEND_PREFIX) ||
-        payload.startsWith(MODELS_BUDGETS_PREFIX)
-      ) {
-        return;
-      }
-      this.request();
-    });
-    try {
-      await client.connect();
-      await client.query(`LISTEN ${MODELS_CHANNEL}`);
-      if (this.closed) {
-        await client.end();
-        return;
-      }
-      this.client = client;
-      this.attempt = 0;
-      await this.tryLead(client);
-    } catch (err) {
-      logger.warn({ err }, "model gateway sync listener could not connect");
-      this.lost(client);
+  private listen(): void {
+    if (this.closed || this.unlisten) return;
+    let listen = this.options.listen;
+    if (!listen) {
+      if (!this.options.connectionString)
+        throw new Error("model gateway sync: no LISTEN connection");
+      listen = this.owned = createListenClient({
+        connectionString: this.options.connectionString,
+        applicationName: "kobe-model-sync",
+      });
     }
+    this.unlisten = listen.subscribe(MODELS_CHANNEL, {
+      notification: (payload) => {
+        // `keys:<team>` is the sync's own output for the shims; spend and budget hints are for the
+        // budget monitor and the shims' caches (a rate-limit change bumps the desired version).
+        if (
+          payload.startsWith(MODELS_KEYS_PREFIX) ||
+          payload.startsWith(MODELS_SPEND_PREFIX) ||
+          payload.startsWith(MODELS_BUDGETS_PREFIX)
+        ) {
+          return;
+        }
+        this.request();
+      },
+      // A new connection: try to lead (becoming leader runs a pass, covering missed hints).
+      listening: (session) => {
+        this.session = session;
+        void this.tryLead(session);
+      },
+      // The lock went with the connection: another replica may take over.
+      polling: () => {
+        if (this.leader) this.options.logger.warn("model gateway sync: leader connection lost");
+        this.session = undefined;
+        this.leader = false;
+      },
+    });
   }
 
-  private async tryLead(client: pg.Client): Promise<void> {
-    if (this.closed || this.client !== client) return;
+  private async tryLead(session: ListenSession): Promise<void> {
+    if (this.closed || this.session !== session || !session.active) return;
     try {
-      const res = await client.query<{ ok: boolean }>("SELECT pg_try_advisory_lock($1) AS ok", [
+      const res = await session.query<{ ok: boolean }>("SELECT pg_try_advisory_lock($1) AS ok", [
         MODELS_SYNC_LOCK_KEY,
       ]);
       if (res.rows[0]?.ok) {
+        if (this.closed || this.session !== session) {
+          // Closed meanwhile on a connection that lives on: give the lock back.
+          await this.unlock(session);
+          return;
+        }
         this.leader = true;
         this.options.logger.info("model gateway sync: leading");
         this.request();
         return;
       }
     } catch (err) {
+      if (!session.active) return; // lost: the next connection tries again
       this.options.logger.warn({ err }, "model gateway sync could not take the leader lock");
     }
     // Another replica leads: check again later (it releases the lock when its connection ends).
-    this.later(this.options.leaderRetryMs ?? 10_000, () => void this.tryLead(client));
+    this.later(this.options.leaderRetryMs ?? 10_000, () => void this.tryLead(session));
   }
 
-  private lost(client: pg.Client): void {
-    if (this.client !== undefined && this.client !== client) return;
-    if (this.client === undefined && this.closed) return;
-    const wasCurrent = this.client === client;
-    this.client = undefined;
-    this.leader = false;
-    client.end().catch(() => undefined);
-    if (this.closed || !wasCurrent) return;
-    const delay = Math.min(10_000, 250 * 2 ** this.attempt++) * (0.5 + Math.random() / 2);
-    this.later(delay, () => void this.connect());
+  private async unlock(session: ListenSession): Promise<void> {
+    if (!session.active) return;
+    await session
+      .query("SELECT pg_advisory_unlock($1)", [MODELS_SYNC_LOCK_KEY])
+      .catch((err: unknown) =>
+        this.options.logger.warn({ err }, "model gateway sync could not release the leader lock"),
+      );
   }
 
   async close(): Promise<void> {
     this.closed = true;
+    const wasLeader = this.leader;
     this.leader = false;
     if (this.periodic) clearInterval(this.periodic);
     for (const t of this.timers) clearTimeout(t);
     this.timers.clear();
     await this.running;
-    const client = this.client;
-    this.client = undefined;
-    await client?.end().catch(() => undefined);
+    const session = this.session;
+    this.session = undefined;
+    this.unlisten?.();
+    // The shared connection outlives this sync: release the lock so another replica leads now.
+    if (wasLeader && session && !this.owned) await this.unlock(session);
+    await this.owned?.close();
   }
 
   /** One full pass (also called directly by tests). */
