@@ -1,7 +1,8 @@
 # Workspaces: Git organizations (GitHub, Gitea, Forgejo)
 
-Status: **draft for Chris** (2026-11-21). Nothing is built and no tickets are filed. §12 lists the
-questions; each has a recommendation, and the rest of this spec assumes the recommendations.
+Status: **approved** (Chris, 2026-11-21): every recommendation in §12 accepted. Hadron spec
+`6d287131`; tickets GIT-1..GIT-13 filed (§13). Built after the rename to Kaiju (GQ9), so new code,
+tables and documentation use the new name from the start.
 
 Request (Chris, 2026-11-21): let a Workspace be connected to a git organization. The admin sets up
 either a personal access token or a GitHub App, and the agent uses that to create repositories and
@@ -313,9 +314,9 @@ linked|unlinked`, `git.pull_request.opened`, `git.issue.created`, `git.comment.c
 7. The e2e suite runs the flow against an in-cluster Forgejo; the GitHub flow runs against a test
    organization at the gate.
 
-## 12. Questions for Chris
+## 12. Decisions (Chris, 2026-11-21: all recommendations accepted)
 
-| Id   | Question                                                                                                            | Recommendation                                                                                           |
+| Id   | Question                                                                                                            | Decision                                                                                                 |
 | ---- | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | GQ1  | One connection per Workspace, or several?                                                                           | Several, up to 5 (G2).                                                                                   |
 | GQ2  | May agents push from the sandbox (G11), or only act through tools?                                                  | Both. Without push from the sandbox an agent cannot work in a repository the normal way.                 |
@@ -332,23 +333,23 @@ linked|unlinked`, `git.pull_request.opened`, `git.issue.created`, `git.comment.c
 | GQ9  | Order against the other queued work (review tickets, the rename to Kaiju, the sign-in page)?                        | After the rename, so new code, tables and docs are written once under the new name.                      |
 | GQ10 | Should Kobe set the commit author to the member's real email, or a no-reply address?                                | The member's Kobe email, with a Workspace setting to use a no-reply form instead.                        |
 
-## 13. Phases and tickets (to file when the questions are answered)
+## 13. Phases and tickets
 
-| Phase | Id     | Ticket                                                                                                               | Size |
-| ----- | ------ | -------------------------------------------------------------------------------------------------------------------- | ---- |
-| 1     | GIT-1  | Tables, sealing purpose, permission `team.git.manage`, Site switch and host limit; probe fixtures                    | M    |
-| 1     | GIT-2  | Provider adapters: GitHub (App tokens and fine-grained tokens, github.com and Enterprise Server)                     | M    |
-| 1     | GIT-3  | Provider adapter: Gitea and Forgejo (one adapter, version check); in-cluster Forgejo for e2e                         | M    |
-| 1     | GIT-4  | Connection routes: create with test, update, replace credential, remove; health and token-expiry notices             | M    |
-| 1     | GIT-5  | Git section in the Workspace admin console; members' read-only view                                                  | M    |
-| 2     | GIT-6  | Git host tools with policy defaults, approval cards and audit                                                        | L    |
-| 3     | GIT-7  | Egress proxy: git smart-HTTP for connected organizations, per-repository credentials, read/write, limits             | L    |
-| 3     | GIT-8  | Sandbox agent: git configuration, authorship, guide page for agents                                                  | S    |
-| 4     | GIT-9  | Convert to repo: repository creation, history carried as git commits, project marked as a Repo                       | L    |
-| 4     | GIT-10 | Repo mirror: refresh on push, open and timer; read-only state when the host repository goes away                     | M    |
-| 4     | GIT-11 | Committing to a Repo from Kobe's commit flow (branch and pull request, conflicts); Repo mounts as a git working copy | L    |
-| 4     | GIT-12 | Files panel: Repos among Projects with the git icon, host link, branch and ahead/behind; Convert to repo dialog      | M    |
-| 5     | GIT-13 | Guide, install notes, release note; gate run on GitHub, Gitea and Forgejo                                            | M    |
+| Phase | Id                | Ticket                                                                                                               | Size |
+| ----- | ----------------- | -------------------------------------------------------------------------------------------------------------------- | ---- |
+| 1     | GIT-1 (KOBE-757)  | Tables, sealing purpose, permission `team.git.manage`, Site switch and host limit; probe fixtures                    | M    |
+| 1     | GIT-2 (KOBE-758)  | Provider adapters: GitHub (App tokens and fine-grained tokens, github.com and Enterprise Server)                     | M    |
+| 1     | GIT-3 (KOBE-759)  | Provider adapter: Gitea and Forgejo (one adapter, version check); in-cluster Forgejo for e2e                         | M    |
+| 1     | GIT-4 (KOBE-760)  | Connection routes: create with test, update, replace credential, remove; health and token-expiry notices             | M    |
+| 1     | GIT-5 (KOBE-761)  | Git section in the Workspace admin console; members' read-only view                                                  | M    |
+| 2     | GIT-6 (KOBE-762)  | Git host tools with policy defaults, approval cards and audit                                                        | L    |
+| 3     | GIT-7 (KOBE-763)  | Egress proxy: git smart-HTTP for connected organizations, per-repository credentials, read/write, limits             | L    |
+| 3     | GIT-8 (KOBE-764)  | Sandbox agent: git configuration, authorship, guide page for agents                                                  | S    |
+| 4     | GIT-9 (KOBE-765)  | Convert to repo: repository creation, history carried as git commits, project marked as a Repo                       | L    |
+| 4     | GIT-10 (KOBE-766) | Repo mirror: refresh on push, open and timer; read-only state when the host repository goes away                     | M    |
+| 4     | GIT-11 (KOBE-767) | Committing to a Repo from Kobe's commit flow (branch and pull request, conflicts); Repo mounts as a git working copy | L    |
+| 4     | GIT-12 (KOBE-768) | Files panel: Repos among Projects with the git icon, host link, branch and ahead/behind; Convert to repo dialog      | M    |
+| 5     | GIT-13 (KOBE-769) | Guide, install notes, release note; gate run on GitHub, Gitea and Forgejo                                            | M    |
 
 Each phase is usable on its own: after phase 1 an admin can connect and test; after phase 2 agents
 can create repositories and open pull requests; after phase 3 they can clone and push; after
