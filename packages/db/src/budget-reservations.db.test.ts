@@ -55,6 +55,14 @@ const count = (team: string) =>
     ),
   );
 
+const expiresAt = (team: string, call: string) =>
+  withTeam(app.db, team, async (tx) => {
+    const { rows } = await tx.execute<{ expires_at: string }>(
+      sql`SELECT expires_at FROM budget_reservations WHERE team_id = ${team} AND call_id = ${call}`,
+    );
+    return rows[0]?.expires_at ?? null;
+  });
+
 beforeAll(async () => {
   const owner = createDb(inject("ownerUrl"));
   await owner.db.insert(teams).values([
@@ -99,13 +107,19 @@ describe("kobe_reserve_budget", () => {
   it("an expired reservation does not count before any sweep (ac-2) and a crash frees it (ac-1)", async () => {
     const who = randomUUID();
     const lines = [line("user", "tokens", 100)];
-    // A replica reserves with a 100 ms expiry and then "crashes": nothing settles it.
-    expect(await reserve(teamA, who, randomUUID(), 100, lines, 100)).toBe("ok");
-    expect(await reserve(teamA, who, randomUUID(), 100, lines, 100)).toBe("full:0");
-    await new Promise((r) => setTimeout(r, 250));
+    // A replica reserves and then "crashes": nothing settles it. KOBE-724: the hold's expiry is
+    // set explicitly below rather than waited out, so how fast the calls run does not matter.
+    const crashed = randomUUID();
+    expect(await reserve(teamA, who, crashed, 100, lines)).toBe("ok");
+    expect(await reserve(teamA, who, randomUUID(), 100, lines)).toBe("full:0");
+    // Its expiry passes: a second ago, inside the minute before the reserve-time sweep removes it.
+    await withTeam(app.db, teamA, (tx) =>
+      tx.execute(sql`UPDATE budget_reservations SET expires_at = clock_timestamp() - interval '1 second'
+                      WHERE team_id = ${teamA} AND call_id = ${crashed}`),
+    );
     expect(await reserve(teamA, who, randomUUID(), 100, lines)).toBe("ok");
     // The expired row is still there (no sweeper ran) yet did not count.
-    expect(await count(teamA)).toBeGreaterThan(1);
+    expect(await expiresAt(teamA, crashed)).not.toBeNull();
   });
 
   it("counts the site line across teams, with the site-wide rows", async () => {
