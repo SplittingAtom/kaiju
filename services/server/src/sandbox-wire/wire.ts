@@ -28,6 +28,7 @@ import { createPolicyEngine } from "../policy/engine.js";
 import { createToolRegistry } from "../policy/registry.js";
 import { createDbRuleSource, createDbSettingsSource } from "../policy/rule-store.js";
 import { createSandboxBus, type BusHint } from "./bus.js";
+import type { ListenClient } from "../pg-listen.js";
 import { SandboxConnection } from "./connection.js";
 import { WIRE_DEFAULTS, type WireTuning } from "./constants.js";
 import { newMetrics, type LeaseViolation, type WireContext, type WireMetrics } from "./context.js";
@@ -54,8 +55,13 @@ import type {
 
 export interface SandboxWireOptions {
   readonly db: KobeDb;
-  /** App-role URL for the LISTEN connection (direct or session-mode pooler). */
+  /**
+   * App-role URL for a LISTEN connection of the wire's own, used only without `listen` (the
+   * operator CLI's router-only replica). Direct or session-mode pooler.
+   */
   readonly databaseUrl: string;
+  /** The process's shared LISTEN connection (KOBE-704). */
+  readonly listen?: ListenClient;
   readonly engine?: PolicyEngine;
   readonly tools?: ToolRegistry;
   readonly approvals?: ApprovalBroker;
@@ -210,7 +216,7 @@ export function createSandboxWire(options: SandboxWireOptions): SandboxWire {
     }
   };
   const bus = createSandboxBus({
-    connectionString: options.databaseUrl,
+    ...(options.listen ? { listen: options.listen } : { connectionString: options.databaseUrl }),
     onHint,
     onResync: () => {
       router.resync();

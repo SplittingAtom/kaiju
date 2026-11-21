@@ -6,6 +6,7 @@ import {
   deriveKey,
 } from "@kobe/db";
 import type { Logger } from "pino";
+import { logger as rootLogger } from "../logger.js";
 import { AUDIT_FORWARD_LOCK, AuditForwarder } from "../audit/forward/forwarder.js";
 import type { AuditForwardingConfig } from "../audit/forward/config.js";
 import { destinationsOf, sinksFor } from "../audit/forward/index.js";
@@ -63,8 +64,6 @@ export interface ServerJob {
 
 export interface ServerJobsOptions {
   readonly deps: ServerDeps;
-  /** Direct (or session-mode) Postgres URL for LISTEN connections. */
-  readonly databaseUrl: string;
   readonly logger: Logger;
   readonly auditForwarding: AuditForwardingConfig;
   readonly retention: {
@@ -336,7 +335,7 @@ function siteJobs(o: ServerJobsOptions): ServerJob[] {
   const { deps } = o;
   const db = deps.database.db;
   // Blocked egress attempts → `egress.blocked` run events (KOBE-38); every replica listens.
-  const relay = new EgressBlockedRelay({ db, connectionString: o.databaseUrl });
+  const relay = new EgressBlockedRelay({ db, listen: deps.listen });
   const jobs: ServerJob[] = [
     job(
       "egress-blocked",
@@ -412,7 +411,7 @@ function modelJobs(o: ServerJobsOptions): ServerJob[] {
   // Bifrost config sync (KOBE-40): every replica listens; one leads and reconciles.
   const sync = new ModelGatewaySync({
     db: o.deps.database.db,
-    connectionString: o.databaseUrl,
+    listen: o.deps.listen,
     admin,
     providerKeys: new SecretBox(config.providerKeySecrets, PROVIDER_KEY_PURPOSE),
     virtualKeys: new SecretBox(config.virtualKeySecrets, VIRTUAL_KEY_PURPOSE),
@@ -485,10 +484,24 @@ export function serverJobs(o: ServerJobsOptions): ServerJob[] {
   return [...auditJobs(o), ...sweepJobs(o), ...siteJobs(o), ...modelJobs(o), ...skillJobs(o)];
 }
 
-/** Starts the jobs; returns one function that stops them all. */
-export function startServerJobs(jobs: readonly ServerJob[]): () => Promise<void> {
-  const stops = jobs.map((j) => j.start());
+/**
+ * Starts the jobs; returns one function that stops them all. A job that fails to stop (a held
+ * advisory lock, a hung connection) is logged with its name and never stops the others.
+ */
+export function startServerJobs(
+  jobs: readonly ServerJob[],
+  log: Pick<Logger, "warn"> = rootLogger,
+): () => Promise<void> {
+  const stops = jobs.map((j) => ({ name: j.name, stop: j.start() }));
   return async () => {
-    await Promise.all(stops.map((stop) => Promise.resolve(stop()).catch(() => undefined)));
+    await Promise.all(
+      stops.map(async ({ name, stop }) => {
+        try {
+          await stop();
+        } catch (err) {
+          log.warn({ err, job: name }, "server job failed to stop");
+        }
+      }),
+    );
   };
 }

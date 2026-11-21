@@ -9,6 +9,13 @@ const base = {
 };
 
 describe("loadConfig", () => {
+  it("reads the query pool size (KOBE-736): default 10, 1..200", () => {
+    expect(loadConfig(base).dbPoolMax).toBe(10);
+    expect(loadConfig({ ...base, KOBE_DB_POOL_MAX: "25" }).dbPoolMax).toBe(25);
+    expect(() => loadConfig({ ...base, KOBE_DB_POOL_MAX: "0" })).toThrow(/KOBE_DB_POOL_MAX/);
+    expect(() => loadConfig({ ...base, KOBE_DB_POOL_MAX: "x" })).toThrow(/KOBE_DB_POOL_MAX/);
+  });
+
   it("defaults: port 8080, HTTPS only, limits on", () => {
     const c = loadConfig(base);
     expect(c.port).toBe(8080);

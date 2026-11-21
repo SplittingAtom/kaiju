@@ -10,6 +10,7 @@
 {{- $refresh := printf "- name: KOBE_CONNECTOR_REFRESH_SECONDS\n  value: %s" (.Values.server.connectorRefreshSeconds | int | toString | quote) -}}
 {{- $sessionTtl := printf "- name: KOBE_SESSION_TOKEN_TTL_SECONDS\n  value: %s" (.Values.server.sessionTokenTtlSeconds | int | toString | quote) -}}
 {{- $schedTick := printf "- name: KOBE_SCHEDULER_TICK_SECONDS\n  value: %s" (.Values.scheduler.tickSeconds | int | toString | quote) -}}
+{{- $schedPool := printf "- name: KOBE_DB_POOL_MAX\n  value: %s" (.Values.scheduler.database.poolMax | int | toString | quote) -}}
 {{- $schedGrace := printf "- name: KOBE_SCHEDULER_GRACE_MINUTES\n  value: %s" (.Values.scheduler.catchUpGraceMinutes | int | toString | quote) -}}
 {{- /* KOBE-500 (TH5): the server's in-cluster origin, for the site branding of every render.
   KOBE-616: the public origin too, for the guide's absolute links in /llms.txt. */ -}}
@@ -26,12 +27,12 @@
       "extraPorts" "- name: sandbox\n  containerPort: 8081\n- name: internal\n  containerPort: 8082"
       "extraServicePorts" "- name: sandbox\n  port: 8081\n  targetPort: sandbox\n- name: internal\n  port: 8082\n  targetPort: internal"
       "extraMounts" (include "kobe.extraCaMounts" .) "extraVolumes" (include "kobe.extraCaVolumes" .)
-      "env" (printf "- name: KOBE_PROCESS\n  value: server\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s" $runtime $reconcile $refresh $sessionTtl (include "kobe.uploadEnv" .) $common (include "kobe.authEnv" .) (include "kobe.smtpEnv" .) (include "kobe.sandboxEnv" .) (include "kobe.serverInternalEnv" .) (include "kobe.serverModelsEnv" .) (include "kobe.egressHeaderEnv" .) (include "kobe.envelopeEnv" .) (include "kobe.telemetryEnv" .) (include "kobe.auditForwardingEnv" .) (include "kobe.retentionEnv" .) (include "kobe.modelDefaultsEnv" .) (include "kobe.skillMirrorEnv" .) (include "kobe.extraCaEnv" .) (include "kobe.brandingEnv" .))) }}
+      "env" (printf "- name: KOBE_PROCESS\n  value: server\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s" $runtime $reconcile $refresh $sessionTtl (include "kobe.uploadEnv" .) (printf "%s\n%s" $common (include "kobe.serverDbEnv" .)) (include "kobe.authEnv" .) (include "kobe.smtpEnv" .) (include "kobe.sandboxEnv" .) (include "kobe.serverInternalEnv" .) (include "kobe.serverModelsEnv" .) (include "kobe.egressHeaderEnv" .) (include "kobe.envelopeEnv" .) (include "kobe.telemetryEnv" .) (include "kobe.auditForwardingEnv" .) (include "kobe.retentionEnv" .) (include "kobe.modelDefaultsEnv" .) (include "kobe.skillMirrorEnv" .) (include "kobe.extraCaEnv" .) (include "kobe.brandingEnv" .))) }}
 ---
 {{ include "kobe.nodeService" (dict "root" . "component" "scheduler" "image" "server" "values" .Values.scheduler
       "serviceAccount" (printf "%s-server" $fullname) "automountToken" true "preflight" true "migrations" true
       "annotations" $dbAnnotations
-      "env" (printf "- name: KOBE_PROCESS\n  value: scheduler\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s" $runtime $common (include "kobe.telemetryEnv" .) (include "kobe.retentionEnv" .) (include "kobe.sandboxConfigEnv" .) $schedTick $schedGrace (include "kobe.modelDefaultsEnv" .))) }}
+      "env" (printf "- name: KOBE_PROCESS\n  value: scheduler\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s" $runtime (printf "%s\n%s" $common $schedPool) (include "kobe.telemetryEnv" .) (include "kobe.retentionEnv" .) (include "kobe.sandboxConfigEnv" .) $schedTick $schedGrace (include "kobe.modelDefaultsEnv" .))) }}
 ---
 {{/* MCP proxy (KOBE-58): no database; its own session key and the two internal keys only. The
   server's routes (probe, app calls) listen on their own port (KOBE-693). */}}

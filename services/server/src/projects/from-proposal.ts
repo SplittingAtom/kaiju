@@ -1,3 +1,4 @@
+import { fireAndLog } from "../async-util.js";
 import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
 import { sql, withTeam, type KobeTx } from "@kobe/db";
@@ -316,7 +317,12 @@ export async function commitProposal(deps: Deps, req: ProposalRequest): Promise<
     const written = await write(deps, req, mime);
     if (written === "again") continue;
     if (written.status === "committed") {
-      void deps.mounts?.reconcileProject(req.owner.teamId, req.projectId).catch(() => undefined);
+      fireAndLog(
+        deps.log,
+        "project mount reconcile",
+        deps.mounts?.reconcileProject(req.owner.teamId, req.projectId),
+        { team_id: req.owner.teamId, project_id: req.projectId },
+      );
     }
     return written;
   }

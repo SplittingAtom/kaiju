@@ -90,7 +90,6 @@ async function start(): Promise<void> {
   });
   const jobs = serverJobs({
     deps: h.deps,
-    databaseUrl: h.appUrl,
     logger,
     auditForwarding: {
       syslog: { host: "127.0.0.1", port: 9, tls: false },

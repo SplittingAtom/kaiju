@@ -236,6 +236,11 @@ web:
 server:
   # Stateless; at least two replicas from day one (spec D2).
   replicas: 2
+  # Postgres connections per pod (KOBE-736): the query pool and the event-stream read pool, plus
+  # one LISTEN connection. Budget: docs/install.md "Postgres connections".
+  database:
+    poolMax: 10
+    streamPoolMax: 4
   # Replicated workloads (KOBE-515), applied only while replicas > 1: a PodDisruptionBudget
   # (minAvailable 1) so a node drain keeps one replica serving, and a soft topology spread
   # (maxSkew 1, ScheduleAnyway) so replicas land on different nodes when they can.
@@ -336,6 +341,9 @@ scheduler:
   # Replicas > 1 are safe: each due occurrence is claimed under a row lease and a unique index
   # (exactly once across replicas, KOBE-174); more replicas only add failover.
   replicas: 1
+  # Query pool per pod (KOBE-736), plus one LISTEN connection.
+  database:
+    poolMax: 10
   # PodDisruptionBudget and soft topology spread while replicas > 1 (see server, KOBE-515).
   podDisruptionBudget:
     enabled: true
@@ -417,6 +425,9 @@ telemetry:
 # to domains their team enabled within the site's egress ceiling (admin consoles).
 egressProxy:
   replicas: 1
+  # Query pool per pod (KOBE-736), plus one LISTEN connection.
+  database:
+    poolMax: 10
   # PodDisruptionBudget and soft topology spread while replicas > 1 (see server, KOBE-515).
   podDisruptionBudget:
     enabled: true
@@ -493,6 +504,9 @@ egressProxy:
 modelGateway:
   # Two replicas: one shim restarting or busy does not cut every team off from models.
   replicas: 2
+  # Query pool per pod (KOBE-736), plus one LISTEN connection.
+  database:
+    poolMax: 10
   # PodDisruptionBudget and soft topology spread while replicas > 1 (see server, KOBE-515).
   podDisruptionBudget:
     enabled: true
@@ -645,6 +659,10 @@ postgres:
     storage:
       size: 10Gi
       storageClass: ""
+    # PostgreSQL settings passed verbatim to the Cluster's spec.postgresql.parameters (KOBE-736),
+    # string values, e.g. {max_connections: "200", shared_buffers: "512MB"}. Size max_connections
+    # from docs/install.md "Postgres connections"; the default 100 fits the chart defaults only.
+    parameters: {}
 
 # External S3-compatible object storage (no bundled S3).
 # The nightly retention pass (KOBE-18). Set paused: true after restoring the database from an older

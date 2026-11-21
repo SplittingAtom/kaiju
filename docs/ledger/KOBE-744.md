@@ -4,7 +4,7 @@
 - **Branch / worktree:** `group-54-web-chat` in `../Kobe-g54`
 - **Depends on:** none
 
-## Root cause (ac-1)
+## Root cause (ac-1): inferred, not reproduced
 
 - The only Radix HoverCard in the web app is the rail's thread card
   (`components/shell/rail-thread-card.tsx`: `HoverCard.Root openDelay={600} closeDelay={100}`),
@@ -37,3 +37,13 @@
 - `components/shell` + `draft-project`: 36 files / 432 tests green; full web suite: 427 files / 3821
   tests green, no errors. Typecheck, lint, prettier green; the full `pnpm verify` runs once with
   the group's last commit (test setup only here).
+
+## Review note (2026-11-21)
+
+The failure was not reproduced locally, so the fix is a probable mitigation, not a confirmed
+cure: the shared `afterEach` clears timers pending at the end of each test and unmounts before the
+window goes away, but a timer scheduled during file teardown, after `afterEach`, could still fire.
+If the unhandled `window is not defined` error shows up in CI again, reopen this ticket with the
+run link rather than filing a new one. The setup replaces `window.setTimeout` with a wrapper;
+where `window` is the global object that also replaces the global `setTimeout` and drops Node's
+`promisify.custom` symbol, so a test using `promisify(setTimeout)` would need the real timer.

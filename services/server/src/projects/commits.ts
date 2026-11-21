@@ -1,3 +1,4 @@
+import { fireAndLog } from "../async-util.js";
 import { Transform, type TransformCallback } from "node:stream";
 import { isLegalHoldViolation, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
 import { PROJECT_FILE_MAX_BYTES, PROJECT_FILES_MAX, workspacePathSchema } from "@kobe/protocol";
@@ -338,7 +339,12 @@ export async function commitWorkingCopy(
     if (written !== "again") {
       if (written.status === "committed") {
         // CM9: other mounted members see the new head; never inside the commit's transaction.
-        void deps.mounts?.reconcileProject(owner.teamId, projectId).catch(() => undefined);
+        fireAndLog(
+          deps.log,
+          "project mount reconcile",
+          deps.mounts?.reconcileProject(owner.teamId, projectId),
+          { team_id: owner.teamId, project_id: projectId },
+        );
       }
       return written;
     }
@@ -441,7 +447,7 @@ export async function previewCommit(
  * are all held already, so no copy and no quota check. Audited `project.commit_reverted`.
  */
 export async function revertTo(
-  deps: Pick<CommitDeps, "db" | "mounts">,
+  deps: Pick<CommitDeps, "db" | "mounts" | "log">,
   owner: WorkspaceOwner,
   projectId: string,
   seq: number,
@@ -490,7 +496,12 @@ export async function revertTo(
     },
   );
   if (result.status === "committed") {
-    void deps.mounts?.reconcileProject(owner.teamId, projectId).catch(() => undefined);
+    fireAndLog(
+      deps.log,
+      "project mount reconcile",
+      deps.mounts?.reconcileProject(owner.teamId, projectId),
+      { team_id: owner.teamId, project_id: projectId },
+    );
   }
   return result;
 }

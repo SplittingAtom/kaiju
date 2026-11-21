@@ -79,8 +79,13 @@ export interface AppSessionOptions {
 }
 
 export interface CreateDbOptions extends AppSessionOptions {
-  /** Pool size (default 10). */
+  /** Pool size (default {@link DEFAULT_POOL_MAX}). */
   readonly max?: number;
+  /**
+   * `application_name` of the pool's sessions (KOBE-736), so `pg_stat_activity` attributes each
+   * connection to its service (e.g. `kobe-server`, `kobe-gateway`).
+   */
+  readonly applicationName?: string;
   /** How long to wait for a free pooled connection before failing (default 10 s). */
   readonly acquireTimeoutMs?: number;
 }
@@ -138,11 +143,15 @@ export function appSessionHook(
   };
 }
 
+/** Default query pool size of a service (KOBE-736: `KOBE_DB_POOL_MAX` overrides it). */
+export const DEFAULT_POOL_MAX = 10;
+
 /** Connects as the app role. Team data is reachable only through `withTeam()`. */
 export function createDb(connectionString: string, options: CreateDbOptions = {}): KobeDatabase {
   const pool = new pg.Pool({
     connectionString,
-    max: options.max ?? 10,
+    max: options.max ?? DEFAULT_POOL_MAX,
+    ...(options.applicationName ? { application_name: options.applicationName } : {}),
     connectionTimeoutMillis: options.acquireTimeoutMs ?? 10_000,
     // Awaited by the pool before it hands the connection out (a failure fails the acquire).
     onConnect: appSessionHook(options),

@@ -418,6 +418,14 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "database": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "poolMax": { "type": "integer", "minimum": 1, "maximum": 200 },
+            "streamPoolMax": { "type": "integer", "minimum": 1, "maximum": 100 }
+          }
+        },
         "replicas": {
           "type": "integer",
           "minimum": 2
@@ -570,6 +578,13 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "database": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "poolMax": { "type": "integer", "minimum": 1, "maximum": 200 }
+          }
+        },
         "replicas": {
           "type": "integer",
           "minimum": 1
@@ -716,6 +731,13 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "database": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "poolMax": { "type": "integer", "minimum": 1, "maximum": 200 }
+          }
+        },
         "replicas": {
           "type": "integer",
           "minimum": 1
@@ -890,6 +912,13 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "database": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "poolMax": { "type": "integer", "minimum": 1, "maximum": 200 }
+          }
+        },
         "replicas": {
           "type": "integer",
           "minimum": 1
@@ -1221,6 +1250,10 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "parameters": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            },
             "instances": {
               "type": "integer",
               "minimum": 1
