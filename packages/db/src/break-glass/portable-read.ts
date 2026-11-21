@@ -161,7 +161,10 @@ async function lockActiveGrant(tx: KobeTx, access: SiteBreakGlassAccess): Promis
     : new SiteBreakGlassDenied("grant_not_found");
 }
 
-/** Step 2: the person's Workspaces, each visited under its own team policy, then cleared. */
+/**
+ * Step 2: the person's Workspaces, each visited under its own team policy, then cleared. An accepted
+ * exception to "only withTeam() sets the team" (KOBE-697, CLAUDE.md; team-setters.test.ts).
+ */
 async function workspacesOf(tx: KobeTx, userId: string): Promise<string[]> {
   const all = await tx.select({ id: teams.id }).from(teams).orderBy(asc(teams.id));
   const found: string[] = [];

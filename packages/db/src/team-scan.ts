@@ -15,7 +15,8 @@ export interface ScannedTeam {
  * Visits every team in one transaction, setting `kobe.team_id` transaction-locally for each, so a
  * per-user question ("which teams am I in?", "which teams invited me?") can be answered while team
  * tables stay behind their one canonical RLS policy (no bypass, no SECURITY DEFINER). Teams are
- * visited by name; `visit` returns a result to keep or undefined. Cost: one query per team.
+ * visited by name; `visit` returns a result to keep or undefined. Cost: one query per team. An
+ * accepted exception to "only withTeam() sets the team" (KOBE-697, CLAUDE.md; team-setters.test.ts).
  */
 export async function scanTeams<T>(
   db: KobeDb,
