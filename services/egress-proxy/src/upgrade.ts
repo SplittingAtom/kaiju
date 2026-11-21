@@ -5,7 +5,9 @@ import { normalizeHost, type InjectedHeader } from "@kobe/db";
 import type { EgressDecision } from "./allowlist.js";
 import { authenticate, type SandboxIdentity } from "./auth.js";
 import type { ConnectionReason, ConnectionRecord } from "./connection-audit.js";
-import type { ConnectionBytes, ProxyDeps } from "./proxy.js";
+import type { ConnectionBytes, ProxyDeps, UpgradeSettings } from "./proxy-deps.js";
+
+export type { HeaderOpener, UpgradeSettings } from "./proxy-deps.js";
 
 /**
  * Header injection by upgrade (spec D28, KOBE-39; user decision 2026-10-03). For a domain whose team
@@ -30,20 +32,6 @@ import type { ConnectionBytes, ProxyDeps } from "./proxy.js";
  * Responses never carry the injected values back in headers: a response header containing one is
  * dropped. A response body is the upstream's own (see docs/install.md for that trust boundary).
  */
-export interface UpgradeSettings {
-  /** Request body limit (uploads, e.g. `twine upload`). */
-  readonly maxRequestBytes: number;
-  /** Response body limit (downloads). */
-  readonly maxResponseBytes: number;
-  /** Whole exchange, from the request head to the last response byte. */
-  readonly timeoutMs: number;
-}
-
-export interface HeaderOpener {
-  /** The team's headers for the pattern (throws when the sealed value does not open). */
-  open(teamId: string, pattern: string, sealed: string): InjectedHeader[];
-}
-
 export interface UpgradeAttempt {
   readonly identity: SandboxIdentity;
   readonly host: string | undefined;
