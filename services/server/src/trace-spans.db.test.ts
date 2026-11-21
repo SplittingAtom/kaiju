@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   CAPABILITY_TRACE_SPANS,
   SANDBOX_CLOSE_CODES,
@@ -143,15 +143,48 @@ const runSpan = (parent: string, over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-async function waitExported(runId: string) {
-  const deadline = Date.now() + 5_000;
-  for (;;) {
-    const spans = await exportedFor(runId);
-    if (spans.length > 0) return spans;
-    if (Date.now() > deadline) throw new Error("no relayed span");
-    await new Promise((r) => setTimeout(r, 50));
-  }
+/** Waits until `check` holds (a condition, never a fixed sleep; KOBE-724). */
+const until = (check: () => boolean | Promise<boolean>, what: string) =>
+  vi.waitFor(
+    async () => {
+      if (!(await check())) throw new Error(`still waiting: ${what}`);
+    },
+    { timeout: 10_000, interval: 20 },
+  );
+
+async function waitExported(runId: string, atLeast = 1) {
+  let spans: Awaited<ReturnType<typeof exportedFor>> = [];
+  await until(async () => (spans = await exportedFor(runId)).length >= atLeast, "relayed spans");
+  return spans;
 }
+
+/** The replica's wire counters for relayed spans. */
+const counters = (replica = 0) => {
+  const m = fx.replica(replica).deps.sandboxWire.metrics();
+  return {
+    framesDropped: m.traceFramesDropped,
+    spans: m.traceSpansRelayed + m.traceSpansDropped,
+    runsCompleted: m.runsCompleted,
+  };
+};
+
+/**
+ * Waits until the replica has handled frames sent after `before`: a frame is handled on receipt
+ * (dropped whole, or each of its spans relayed or dropped), so once the counters moved by `frames`
+ * whole-frame drops plus `spans` spans, nothing about those frames is still to come.
+ */
+const handled = (
+  before: ReturnType<typeof counters>,
+  expected: { frames?: number; spans?: number },
+  replica = 0,
+) =>
+  until(() => {
+    const now = counters(replica);
+    return (
+      now.framesDropped - before.framesDropped + (now.spans - before.spans) >=
+      (expected.frames ?? 0) + (expected.spans ?? 0)
+    );
+  }, "frames handled");
 
 async function exportedFor(runId: string) {
   await spanRelay()?.flush();
@@ -196,6 +229,7 @@ describe("trace.spans over the wire (KOBE-274)", () => {
     const w = await world();
     const { sb, start } = await started(w, []);
     expect(start.trace).toBeUndefined();
+    const before = counters();
     sb.send({
       v: 1,
       type: "trace.spans",
@@ -203,7 +237,7 @@ describe("trace.spans over the wire (KOBE-274)", () => {
       thread_id: w.threadId,
       spans: [runSpan("aaaaaaaaaaaaaaaa")],
     });
-    await new Promise((r) => setTimeout(r, 200));
+    await handled(before, { frames: 1 });
     expect(await exportedFor(w.runId)).toHaveLength(0);
     expect(sb.closed).toBeUndefined();
     expect(sb.frames("error")).toHaveLength(0);
@@ -218,6 +252,7 @@ describe("trace.spans over the wire (KOBE-274)", () => {
     ).parentSpanId;
     sb.send({ v: 1, type: "trace.spans", run_id: w.runId, thread_id: w.threadId, spans: [] });
     await sb.until(() => sb.frames("error").find((e) => e.code === "malformed_frame"));
+    const before = counters();
     sb.send({
       v: 1,
       type: "trace.spans",
@@ -225,7 +260,7 @@ describe("trace.spans over the wire (KOBE-274)", () => {
       thread_id: w.threadId,
       spans: [{ name: "sandbox.http" }, runSpan(parent, { attributes: { "user.id": "forged" } })],
     });
-    await new Promise((r) => setTimeout(r, 200));
+    await handled(before, { spans: 2 });
     expect(await exportedFor(w.runId)).toHaveLength(0);
     expect(sb.frames("error")).toHaveLength(1);
     expect(sb.closed).toBeUndefined();
@@ -269,9 +304,11 @@ describe("trace.spans over the wire (KOBE-274)", () => {
       { type: "turn_end", message: { role: "assistant" } },
       { type: "agent_settled" },
     ];
+    const before = counters();
     events.forEach((e, i) => sb.event(w.runId, w.threadId, i + 1, e));
     await sb.until(() => sb.acked(w.runId) >= events.length);
-    await new Promise((r) => setTimeout(r, 200));
+    // The run has ended on the connection (its lease too) before the span frame is sent.
+    await until(() => counters().runsCompleted > before.runsCompleted, "run ended");
     sb.send({
       v: 1,
       type: "trace.spans",
@@ -291,7 +328,7 @@ describe("trace.spans over the wire (KOBE-274)", () => {
       parseTraceparent(must(start.trace, "trace").traceparent),
       "tp",
     ).parentSpanId;
-    const before = fx.replica(0).deps.sandboxWire.metrics().traceFramesDropped;
+    const before = counters();
     for (let i = 0; i < 40; i++) {
       const span = runSpan(parent, { span_id: (i + 1).toString(16).padStart(16, "0") });
       // `type` before `v`: no prefix sniffing can classify this frame.
@@ -305,12 +342,12 @@ describe("trace.spans over the wire (KOBE-274)", () => {
         }),
       );
     }
-    await waitExported(w.runId);
-    await new Promise((r) => setTimeout(r, 300));
+    // Each of the 40 one-span frames is dropped by the rate, or its span relayed or dropped.
+    await handled(before, { frames: 40 });
     const exported = await exportedFor(w.runId);
     expect(exported.length).toBeGreaterThan(0);
     expect(exported.length).toBeLessThan(30);
-    expect(fx.replica(0).deps.sandboxWire.metrics().traceFramesDropped - before).toBeGreaterThan(0);
+    expect(counters().framesDropped - before.framesDropped).toBeGreaterThan(0);
     expect(sb.closed).toBeUndefined();
   });
 
@@ -331,6 +368,7 @@ describe("trace.spans over the wire (KOBE-274)", () => {
       runs: [{ run_id: w.runId, thread_id: w.threadId, last_seq: 0 }],
     });
     expect((await again.ready()).runs.map((r) => r.run_id)).toContain(w.runId);
+    const before = counters();
     send(again, [
       runSpan(parent),
       runSpan(parent, {
@@ -339,11 +377,8 @@ describe("trace.spans over the wire (KOBE-274)", () => {
         attributes: { "kobe.turn.index": 0 },
       }),
     ]);
-    const deadline = Date.now() + 5_000;
-    while ((await exportedFor(w.runId)).length < 2 && Date.now() < deadline) {
-      await new Promise((r) => setTimeout(r, 50));
-    }
-    await new Promise((r) => setTimeout(r, 200));
+    // Both spans of the frame handled: the new one relayed, the reused one dropped.
+    await handled(before, { spans: 2 });
     const ids = (await exportedFor(w.runId)).map((s) => s.spanContext().spanId).sort();
     expect(ids).toEqual(
       [
@@ -360,6 +395,7 @@ describe("trace.spans over the wire (KOBE-274)", () => {
     const w = await world();
     const { sb, start } = await started(w, [CAPABILITY_TRACE_SPANS], 1);
     expect(start.trace).toBeUndefined();
+    const before = counters(1);
     sb.send({
       v: 1,
       type: "trace.spans",
@@ -367,7 +403,7 @@ describe("trace.spans over the wire (KOBE-274)", () => {
       thread_id: w.threadId,
       spans: [runSpan("aaaaaaaaaaaaaaaa")],
     });
-    await new Promise((r) => setTimeout(r, 300));
+    await handled(before, { frames: 1 }, 1);
     expect(await exportedFor(w.runId)).toHaveLength(0);
     expect(sb.frames("error")).toHaveLength(0);
     expect(sb.closed).toBeUndefined();

@@ -144,6 +144,18 @@ function open(
   return { reader: new SseReader(body), ends };
 }
 
+/**
+ * Reads keep-alives until the stream has re-read the log at least once more, still open: the
+ * condition a fixed sleep stood for (KOBE-724). A re-read of an ended run whose epilogue window
+ * had closed would have ended the stream instead.
+ */
+async function stillOpenAfterReread(reader: SseReader, log: FakeLog): Promise<void> {
+  const reads = log.reads;
+  for (let i = 0; i < 100 && log.reads <= reads; i++)
+    expect((await reader.next())?.comment).toBe("keepalive");
+  expect(log.reads).toBeGreaterThan(reads);
+}
+
 const seqs = (events: KobeEvent[]) => events.map((e) => e.seq);
 const range = (from: number, to: number) =>
   Array.from({ length: to - from + 1 }, (_, i) => from + i);
@@ -179,7 +191,7 @@ describe("run event stream", () => {
       expect((await reader.nextEvent())?.seq).toBe(1);
       expect((await reader.nextEvent())?.seq).toBe(2);
       expect((await reader.nextEvent())?.type).toBe("run.completed");
-      await new Promise((r) => setTimeout(r, 60));
+      await stillOpenAfterReread(reader, log);
       expect(ends).toEqual([]);
       log.titled();
       hub.hint(4);
@@ -216,7 +228,8 @@ describe("run event stream", () => {
         written: new Set(),
         completedAtMs,
       });
-      await new Promise((r) => setTimeout(r, 60));
+      expect((await reader.next())?.retry).toBe(2_000);
+      await stillOpenAfterReread(reader, log);
       expect(ends).toEqual([]);
       log.titled();
       hub.hint(2);
@@ -270,6 +283,8 @@ describe("run event stream", () => {
   });
 
   it("does not read ahead for a client that is not reading (Postgres is the buffer)", async () => {
+    // KOBE-724: fake timers, so "no read ahead" is checked over a known number of ticks.
+    vi.useFakeTimers();
     const log = new FakeLog();
     const hub = new FakeHub();
     const { reader, ends } = open(log, hub, 0, {
@@ -278,13 +293,13 @@ describe("run event stream", () => {
       stallTimeoutMs: 10_000,
     });
     await reader.next(); // retry consumed; one pull may run
-    await new Promise((r) => setTimeout(r, 30));
+    await vi.advanceTimersByTimeAsync(30);
     const readsBefore = log.reads;
     for (let i = 0; i < 100; i++) {
       log.append(10);
       hub.hint(log.events.length);
     }
-    await new Promise((r) => setTimeout(r, 50));
+    await vi.advanceTimersByTimeAsync(50);
     // At most one page was read for the chunk waiting in the queue; hints only set a flag.
     expect(log.reads - readsBefore).toBeLessThanOrEqual(1);
     const got: number[] = [];
@@ -300,8 +315,7 @@ describe("run event stream", () => {
     log.append(PAGE_MAX_ROWS * 4);
     const { reader, ends } = open(log, hub, 0, { keepaliveMs: 10, stallTimeoutMs: 60 });
     await reader.next();
-    await new Promise((r) => setTimeout(r, 200));
-    expect(ends).toEqual(["slow_consumer"]);
+    await vi.waitFor(() => expect(ends).toEqual(["slow_consumer"]));
     expect(hub.size).toBe(0);
     await expect(
       (async () => {
@@ -327,11 +341,8 @@ describe("run event stream", () => {
     expect((await reader.nextEvent())?.seq).toBe(1);
     log.allowed = false;
     hub.accessChanged();
-    const ended = await Promise.race([
-      reader.rest().then(() => true),
-      new Promise<boolean>((r) => setTimeout(() => r(false), 1_000)),
-    ]);
-    expect(ended).toBe(true);
+    // Ends well inside the test's timeout, long before the periodic recheck could.
+    expect(await reader.rest()).toEqual([]);
     expect(ends).toEqual(["revoked"]);
   });
 
@@ -354,15 +365,17 @@ describe("run event stream", () => {
     expect((await reader.nextEvent())?.seq).toBe(1);
     // The next read hangs until released; the revoke's hint lands while it is in flight.
     let release: () => void = () => undefined;
+    let inFlight = false;
     const read = log.source.read;
     log.source.read = async (after) => {
+      inFlight = true;
       await new Promise<void>((r) => (release = r));
       log.source.read = read;
       return read(after);
     };
     log.append(2);
     hub.hint(3);
-    await new Promise((r) => setTimeout(r, 30));
+    await vi.waitFor(() => expect(inFlight).toBe(true));
     log.allowed = false;
     hub.accessChanged();
     release();
@@ -413,7 +426,7 @@ describe("run event stream", () => {
       for (let i = 0; i < 40; i++) {
         log.append(1 + (i % 3));
         if (i % 2) hub.hint(log.events.length);
-        await new Promise((r) => setTimeout(r, 1));
+        await new Promise((r) => setImmediate(r)); // let reads and ticks interleave
       }
       log.append(1, true);
       hub.hint(log.events.length);
