@@ -63,6 +63,21 @@ describe("bucketLifecycleWarning (KOBE-738)", () => {
     ).toBeUndefined();
   });
 
+  it("logs a skipped check at debug with the bucket and the error name only", async () => {
+    const lines: unknown[] = [];
+    const secret = Object.assign(new Error("key AKIA-secret refused"), { name: "AccessDenied" });
+    await bucketLifecycleWarning(store("Enabled", secret), "kobe-bucket", "", (f, m) =>
+      lines.push([f, m]),
+    );
+    expect(lines).toEqual([
+      [
+        { bucket: "kobe-bucket", call: "GetBucketLifecycleConfiguration", error: "AccessDenied" },
+        "bucket lifecycle check skipped",
+      ],
+    ]);
+    expect(JSON.stringify(lines)).not.toContain("AKIA");
+  });
+
   it("tolerates stores that do not implement or allow the calls", async () => {
     expect(
       await bucketLifecycleWarning(store(named("NotImplemented"), []), "b", ""),

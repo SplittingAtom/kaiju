@@ -153,14 +153,15 @@ async function candidatesIn(
 }
 
 async function stagingCandidates(
-  db: KobeDb,
+  _db: KobeDb,
   teamId: string,
   store: BlobStore,
   cutoff: number,
   max: number,
   stop: () => boolean,
+  users: () => Promise<string[]>,
 ): Promise<Candidate[]> {
-  const listings = (await stagingUsers(db, teamId, store)).map((userId) => ({
+  const listings = (await users()).map((userId) => ({
     prefix: `${store.prefix}teams/${teamId}/users/${userId}/workspace/incoming/`,
     tail: UUID,
     holdUser: userId,
@@ -170,14 +171,15 @@ async function stagingCandidates(
 
 /** KOBE-740: member-level uploads (`uploads/store.ts`), also of removed members (KOBE-243). */
 async function uploadCandidates(
-  db: KobeDb,
+  _db: KobeDb,
   teamId: string,
   store: BlobStore,
   cutoff: number,
   max: number,
   stop: () => boolean,
+  users: () => Promise<string[]>,
 ): Promise<Candidate[]> {
-  const listings = (await stagingUsers(db, teamId, store)).map((userId) => ({
+  const listings = (await users()).map((userId) => ({
     prefix: `${store.prefix}teams/${teamId}/users/${userId}/uploads/`,
     tail: UUID,
     holdUser: userId,
@@ -349,6 +351,8 @@ type Finder = (
   cutoff: number,
   max: number,
   stop: () => boolean,
+  /** The team's user folders ({@link stagingUsers}), listed once per sweep and shared. */
+  users: () => Promise<string[]>,
 ) => Promise<Candidate[]>;
 
 const SHAPES: readonly (readonly [keyof OrphanCounts, Finder])[] = [
@@ -369,6 +373,8 @@ export async function sweepOrphanObjects(
   const max = options.maxDeletions ?? MAX_DELETIONS;
   const stop = options.stop ?? (() => false);
   const counts: Record<keyof OrphanCounts, number> = { ...NO_ORPHANS };
+  let listed: Promise<string[]> | undefined;
+  const users = () => (listed ??= stagingUsers(db, teamId, store));
   let deleted = 0;
   for (const [i, [shape, find]] of SHAPES.entries()) {
     // The first shape always runs (as before KOBE-740); the others only with time and room left.
@@ -377,7 +383,7 @@ export async function sweepOrphanObjects(
       db,
       teamId,
       store,
-      await find(db, teamId, store, cutoff, max - deleted, stop),
+      await find(db, teamId, store, cutoff, max - deleted, stop, users),
     );
     deleted += counts[shape];
   }

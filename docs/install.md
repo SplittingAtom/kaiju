@@ -1062,17 +1062,20 @@ larger files stay on the volume only. It can be at most `5Gi`, the largest objec
 single PutObject or CopyObject request; the chart and the server refuse more.
 
 **Versioning, lifecycle rules and object lock.** Kobe deletes objects with plain `DeleteObject`
-(thread purges, Trash, offboarding, retention periods, workspace collection). On a versioned bucket
+(thread purges, Trash, offboarding, retention periods from its nightly retention pass;
+workspace collection every `sandbox.workspaceSync.collectSeconds`): an object leaves the bucket
+within about a day of the deletion in Kobe, later while the pass is paused (`retention.paused`)
+or behind. On a versioned bucket
 that only adds a delete marker: the bytes stay as a noncurrent version until a lifecycle rule
 removes them. Versioning is still recommended (it lets you recover objects deleted or overwritten
 by mistake; see [Backup and restore](#backup-and-restore)), together with these lifecycle rules on
 the bucket (or on Kobe's `s3.prefix`):
 
-| Rule                                                     | Recommended | Why                                                                                                                                                                                    |
-| -------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NoncurrentVersionExpiration`                            | 30 days     | the recovery window, and the delay after which data Kobe deletes is erased from storage (the guide's [Retention and deletion](guide/reference/retention-and-deletion.md) page says so) |
-| `Expiration` with `ExpiredObjectDeleteMarker: true`      | on          | removes delete markers left once their noncurrent versions are gone                                                                                                                    |
-| `AbortIncompleteMultipartUpload` (`DaysAfterInitiation`) | 3 days      | a server stopped mid-upload leaves parts no listing shows and no Kobe sweep can remove                                                                                                 |
+| Rule                                                     | Recommended | Why                                                                                                                                                                                                                                                                                                                                                          |
+| -------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NoncurrentVersionExpiration`                            | 30 days     | the recovery window, and the delay after which data Kobe deletes is erased from storage, counted from the nightly retention pass that deletes the object (within about a day of the deletion; longer while `retention.paused` is set or the pass falls behind); the guide's [Retention and deletion](guide/reference/retention-and-deletion.md) page says so |
+| `Expiration` with `ExpiredObjectDeleteMarker: true`      | on          | removes delete markers left once their noncurrent versions are gone                                                                                                                                                                                                                                                                                          |
+| `AbortIncompleteMultipartUpload` (`DaysAfterInitiation`) | 3 days      | a server stopped mid-upload leaves parts no listing shows and no Kobe sweep can remove                                                                                                                                                                                                                                                                       |
 
 You may choose another noncurrent period; it is then the erasure delay your members should be
 told. For example, with the AWS CLI (most S3-compatible stores accept the same document):

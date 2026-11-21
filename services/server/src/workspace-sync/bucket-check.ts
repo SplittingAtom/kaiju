@@ -3,6 +3,7 @@ import {
   GetBucketVersioningCommand,
   type LifecycleRule,
 } from "@aws-sdk/client-s3";
+import { logger } from "../logger.js";
 import { createS3Client, type S3Settings } from "./s3.js";
 
 /**
@@ -52,19 +53,32 @@ export function expiresNoncurrentVersions(
 }
 
 /** The warning to log, or undefined (no versioning, a rule in place, or nothing could be read). */
+/** Where a skipped check is reported: the bucket name and the error's name only, never content. */
+export type BucketCheckDebug = (
+  fields: { readonly bucket: string; readonly call: string; readonly error: string },
+  message: string,
+) => void;
+
+const defaultDebug: BucketCheckDebug = (fields, message) => logger.debug(fields, message);
+
 export async function bucketLifecycleWarning(
   send: BucketCheckSend,
   bucket: string,
   prefix: string,
+  debug: BucketCheckDebug = defaultDebug,
 ): Promise<string | undefined> {
+  const skipped = (call: string, err: unknown): undefined => {
+    debug({ bucket, call, error: errorName(err) ?? "unknown" }, "bucket lifecycle check skipped");
+    return undefined;
+  };
   let status: string | undefined;
   try {
     const versioning = (await send(new GetBucketVersioningCommand({ Bucket: bucket }))) as {
       Status?: string;
     };
     status = versioning.Status;
-  } catch {
-    return undefined;
+  } catch (err) {
+    return skipped("GetBucketVersioning", err);
   }
   if (status !== "Enabled" && status !== "Suspended") return undefined;
   let rules: readonly LifecycleRule[];
@@ -74,7 +88,9 @@ export async function bucketLifecycleWarning(
     )) as { Rules?: LifecycleRule[] };
     rules = lifecycle.Rules ?? [];
   } catch (err) {
-    if (errorName(err) !== "NoSuchLifecycleConfiguration") return undefined;
+    if (errorName(err) !== "NoSuchLifecycleConfiguration") {
+      return skipped("GetBucketLifecycleConfiguration", err);
+    }
     rules = [];
   }
   if (expiresNoncurrentVersions(rules, prefix)) return undefined;
@@ -97,7 +113,11 @@ export async function checkBucketLifecycle(settings: S3Settings): Promise<string
       settings.bucket,
       settings.prefix,
     );
-  } catch {
+  } catch (err) {
+    defaultDebug(
+      { bucket: settings.bucket, call: "client", error: errorName(err) ?? "unknown" },
+      "bucket lifecycle check skipped",
+    );
     return undefined;
   } finally {
     client.destroy();

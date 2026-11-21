@@ -151,7 +151,10 @@ export class PostgresSkillStore implements SkillStore {
     };
     const discard = () => Promise.all(written.map((k) => discardAttemptBundle(this.blobs, k)));
     // Reuse only an object that is still there and still these bytes: re-uploading repairs a
-    // version whose object was lost or damaged.
+    // version whose object was lost or damaged. Reuse never races the orphan sweep (KOBE-740):
+    // candidates come only from committed version rows, which are immutable (the
+    // `*_skill_versions_immutable` triggers refuse UPDATE and DELETE), and the sweep deletes a key
+    // only after re-checking, under its own transaction, that no version row names it.
     const intact = async (candidates: readonly Candidate[], hash: string) => {
       for (const c of candidates)
         if ((await readVerified(this.blobs, c.key, hash, c.size).catch(() => null)) !== null)

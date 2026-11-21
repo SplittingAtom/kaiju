@@ -256,6 +256,48 @@ describe("skill bundles (skills/storage.ts)", () => {
     expect(objects.keys(`${PREFIX}skills/`)).toEqual(kept);
   });
 
+  it("a reused bundle key stays: the version naming it can never be deleted", async () => {
+    const location: SkillLocation = { scope: "team", teamId: team };
+    const skill = (files: Record<string, string>) => {
+      const bytes = zipSync(
+        Object.fromEntries(
+          Object.entries({
+            "SKILL.md": "---\nname: t-reuse\ndescription: Skill t-reuse\n---\nBody.\n",
+            ...files,
+          }).map(([k, v]) => [k, strToU8(v)]),
+        ) as Zippable,
+      );
+      const result = validateZipBundle(bytes);
+      if (!result.ok) throw new Error(result.error.code);
+      return result.value;
+    };
+    const putBundle = (bundle: ReturnType<typeof skill>) =>
+      asUser(() =>
+        new PostgresSkillStore(h.deps.database.db, store).putPackage(location, {
+          bundle,
+          source: "zip",
+          uploadedBy: user,
+          scan: scanSkillBundle([]),
+        }),
+      );
+    expect((await putBundle(skill({}))).ok).toBe(true);
+    const [runtimeKey] = objects.keys(`${PREFIX}skills/teams/${team}/`);
+    ageAll(3 * DAY);
+    // Same runtime, a new package (evals added): the runtime object is reused, not rewritten.
+    expect((await putBundle(skill({ "evals/cases.yaml": "cases: []\n" }))).ok).toBe(true);
+    const { rows } = await h.admin.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM team_skill_versions WHERE team_id = $1 AND storage_key = $2`,
+      [team, runtimeKey],
+    );
+    expect(rows[0]?.n).toBe(2);
+    await expect(
+      h.admin.query(`DELETE FROM team_skill_versions WHERE team_id = $1`, [team]),
+    ).rejects.toThrow(/immutable/);
+    ageAll(3 * DAY);
+    expect((await sweepOrphanObjects(h.deps.database.db, team, store)).skills).toBe(0);
+    expect(objects.keys(`${PREFIX}skills/teams/${team}/`)).toContain(runtimeKey);
+  });
+
   it("keeps a team attempt while any hold is active in the team", async () => {
     await expect(putSkill(crashing(), { scope: "team", teamId: team }, "t-held")).rejects.toThrow();
     ageAll(3 * DAY);

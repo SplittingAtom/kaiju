@@ -152,6 +152,29 @@ describe("staging objects of removed members (KOBE-243)", () => {
   });
 });
 
+describe("user folders (KOBE-740 review)", () => {
+  it("are listed once per sweep, shared by staging and uploads", async () => {
+    const root = `${PREFIX}teams/${team}/users/`;
+    let folderListings = 0;
+    const counting: BlobStore = {
+      prefix: PREFIX,
+      objects: Object.assign(Object.create(objects) as MemoryObjects, {
+        list: (prefix: string, o?: Parameters<MemoryObjects["list"]>[1]) => {
+          if (prefix === root && o?.delimiter === "/") folderListings++;
+          return objects.list(prefix, o);
+        },
+      }),
+    };
+    put(staging(team, ghost), 3 * DAY);
+    put(`${PREFIX}teams/${team}/users/${ghost}/uploads/${randomUUID()}`, 3 * DAY);
+    expect(await sweepOrphanObjects(h.deps.database.db, team, counting)).toMatchObject({
+      staging: 1,
+      uploads: 1,
+    });
+    expect(folderListings).toBe(1);
+  });
+});
+
 describe("a hanging delete (KOBE-243)", () => {
   it("is aborted and settled before the transaction, and so the hold lock, is released", async () => {
     const key = put(staging(), 3 * DAY);

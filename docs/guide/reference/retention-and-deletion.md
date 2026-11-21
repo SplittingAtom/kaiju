@@ -17,8 +17,9 @@ A legal hold keeps everything it covers until it is released.
 
 ## When the bytes are gone
 
-A deletion removes the data at once from Kobe and its database, and file contents from the site's
-object storage. Many sites keep that storage versioned, so files deleted by mistake can be
-recovered: there, deleted contents stay recoverable by the site's operators for a set period
-(Kobe recommends **30 days**; ask them which applies), then are erased. Without versioning they
-are erased at once.
+A deletion removes the data at once from Kobe and its database. File contents in the site's object
+storage are removed by Kobe's nightly clean-up, so within about a day; longer if the clean-up
+falls behind or the site's operators have paused it (for example after restoring a backup). Many
+sites keep that storage versioned, so files deleted by mistake can be recovered: there, deleted
+contents stay recoverable by the site's operators for a set period after that (Kobe recommends
+**30 days**; ask them which applies), then are erased.
