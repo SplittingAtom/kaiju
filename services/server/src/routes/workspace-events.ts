@@ -9,7 +9,7 @@ import { hitRateLimit } from "../rate-limit.js";
 import type { SandboxWaker } from "../sandbox-wire/types.js";
 import { createWorkspaceEventStream } from "../workspace-files/event-stream.js";
 import { readWorkspaceVersions } from "../workspace-files/events.js";
-import { nodeResponseDestroyer, SSE_HEADERS } from "./workspace-changes.js";
+import { nodeResponseDestroyer, SSE_HEADERS } from "../http/sse.js";
 
 /** Refreshes (sync now) per member per minute: each may hold a sandbox push. */
 export const SYNC_RATE_LIMIT = { windowMs: 60_000, max: 30 };

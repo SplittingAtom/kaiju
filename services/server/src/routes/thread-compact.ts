@@ -10,6 +10,7 @@ import { CompactionError } from "../runs/compaction.js";
 import { RunError } from "../runs/errors.js";
 import { invalidRequest, parseBody } from "../teams/http.js";
 import { uuidSchema } from "../threads/schemas.js";
+import { actorOf } from "../authz/actor.js";
 
 /**
  * `POST /v1/threads/{id}/compact` (KOBE-213, CE15; contract KOBE-212): the owner compacts an idle
@@ -28,18 +29,8 @@ export function threadCompactRoutes(deps: ServerDeps): Hono<{ Variables: TeamVar
     const id = uuidSchema.safeParse(c.req.param("id"));
     const body = await parseBody(c, compactThreadRequestSchema);
     if (!id.success || !body) return invalidRequest(c, "Give an optional one-line focus, or {}.");
-    const team = c.get("team");
     try {
-      const result = await deps.runs.compact(
-        {
-          user_id: c.get("user").id,
-          team_id: team.id,
-          site_role: c.get("siteRole") ?? "user",
-          team_role: team.role,
-        },
-        id.data,
-        body.focus,
-      );
+      const result = await deps.runs.compact(actorOf(c), id.data, body.focus);
       return c.json(result);
     } catch (err) {
       if (err instanceof CompactionError) {

@@ -15,6 +15,7 @@ import {
   readEvalRun,
   type EvalViewer,
 } from "../skills/evals/views.js";
+import { SSE_HEADERS } from "../http/sse.js";
 
 // Skill evals (KOBE-325; contract `@kobe/protocol` skill-evals `api.ts`), in the caller's active
 // team: start one for a draft's current revision or a saved version, read it, its history, cancel
@@ -31,12 +32,6 @@ type Ctx = Context<{ Variables: TeamVariables }>;
 
 const uuid = z.uuid();
 const seq = z.coerce.number().int().min(1).max(1_000_000);
-
-const SSE_HEADERS = {
-  "content-type": "text/event-stream; charset=utf-8",
-  "cache-control": "no-cache",
-  "x-accel-buffering": "no",
-} as const;
 
 const viewerOf = (c: Ctx): EvalViewer => ({
   teamId: c.get("team").id,

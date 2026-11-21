@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { eq, sql, users } from "@kobe/db";
+import { eq, sql, users, pgCodeOf } from "@kobe/db";
 import {
   readUiPreferences,
   scheduleTimezoneSchema,
@@ -16,12 +16,6 @@ import { mySubmissions } from "../skills/registry/submissions.js";
 import { invalidRequest, parseBody } from "../teams/http.js";
 
 const INVALID = "Send known layout preferences within their bounds.";
-
-function pgCode(err: unknown): string | undefined {
-  const e = err as { code?: unknown; cause?: { code?: unknown } };
-  const code = e.cause?.code ?? e.code;
-  return typeof code === "string" ? code : undefined;
-}
 
 export function meRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables }> {
   const app = new Hono<{ Variables: AuthVariables }>();
@@ -96,7 +90,7 @@ export function meRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables }> {
         return c.json({ preferences: readUiPreferences(row?.prefs ?? null) });
       } catch (err) {
         // users_ui_preferences CHECK: the merged document is too large (or not an object).
-        if (pgCode(err) === "23514") return invalidRequest(c, INVALID);
+        if (pgCodeOf(err) === "23514") return invalidRequest(c, INVALID);
         throw err;
       }
     },

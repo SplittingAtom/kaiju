@@ -41,6 +41,7 @@ import {
 } from "../branding/store.js";
 import type { ServerDeps } from "../deps.js";
 import { openUpload } from "../uploads/parse.js";
+import { readCappedStream } from "../http/read-capped.js";
 
 /**
  * Site branding (theming plan §4.2, TH4-TH8, TH12). The two GETs are public (no session, mounted
@@ -161,22 +162,6 @@ async function audited(tx: KobeTx, setting: Setting, value: string): Promise<voi
   await recordAudit(tx, { action: "site.branding.updated", target: { setting, value } });
 }
 
-/** Reads the one file part, at most `max` bytes; null when it is larger. */
-async function readCapped(file: Readable, max: number): Promise<Buffer | null> {
-  const chunks: Buffer[] = [];
-  let size = 0;
-  for await (const chunk of file) {
-    const buf = chunk as Buffer;
-    size += buf.length;
-    if (size > max) {
-      file.destroy();
-      return null;
-    }
-    chunks.push(buf);
-  }
-  return Buffer.concat(chunks);
-}
-
 /** The admin routes under `/v1/site/branding` (Owner/Admin: `site.settings.manage`). */
 export function siteBrandingRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables }> {
   const app = new Hono<{ Variables: AuthVariables }>();
@@ -294,8 +279,8 @@ export function siteBrandingRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
       noFields,
     );
     if (!opened.ok) return fail(c, 400, "invalid_request", opened.reason);
-    const bytes = await readCapped(opened.upload.file, maxBytes);
-    if (bytes === null) {
+    const bytes = await readCappedStream(opened.upload.file, maxBytes);
+    if (bytes === undefined) {
       return fail(
         c,
         413,

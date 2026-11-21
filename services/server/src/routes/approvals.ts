@@ -1,28 +1,13 @@
 import type { Context } from "hono";
 import { Hono } from "hono";
-import {
-  approvalResolutionBodySchema,
-  approveAllBodySchema,
-  type ActorContext,
-} from "@kobe/protocol";
+import { approvalResolutionBodySchema, approveAllBodySchema } from "@kobe/protocol";
 import { ApprovalError } from "../approvals/index.js";
 import { approvalListQuerySchema } from "../approvals/view.js";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { invalidRequest, parseBody } from "../teams/http.js";
 import { uuidSchema } from "../threads/schemas.js";
-
-type ApprovalContext = Context<{ Variables: TeamVariables }>;
-
-function actorOf(c: ApprovalContext): ActorContext {
-  const team = c.get("team");
-  return {
-    user_id: c.get("user").id,
-    team_id: team.id,
-    site_role: c.get("siteRole") ?? "user",
-    team_role: team.role,
-  };
-}
+import { actorOf } from "../authz/actor.js";
 
 async function answer(c: Context, fn: () => Promise<Response>): Promise<Response> {
   try {

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { asc, eq, teams } from "@kobe/db";
+import { asc, eq, teams, isUniqueViolation } from "@kobe/db";
 import type { AuthVariables } from "../auth/session.js";
 import { recordAudit } from "../audit/record.js";
 import { requireSitePermission } from "../authz/middleware.js";
@@ -8,13 +8,6 @@ import { invalidRequest, parseBody } from "../teams/http.js";
 import { createTeamWithAdmin, findTeam, findUserId, listMembers } from "../teams/members.js";
 import { createTeamSchema, idSchema, renameTeamSchema } from "../teams/schemas.js";
 import { siteTeamMembersRoutes } from "./site-team-members.js";
-
-const UNIQUE_VIOLATION = "23505";
-
-function isUniqueViolation(err: unknown): boolean {
-  const e = err as { code?: string; cause?: { code?: string } } | undefined;
-  return e?.code === UNIQUE_VIOLATION || e?.cause?.code === UNIQUE_VIOLATION;
-}
 
 /**
  * Site admins create teams and name each team's first team admin (spec D8), rename teams and

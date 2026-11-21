@@ -3,7 +3,7 @@ import type { ReadableStream as WebReadableStream } from "node:stream/web";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
-import { isLegalHoldViolation, withTeam, type KobeTx } from "@kobe/db";
+import { isLegalHoldViolation, withTeam, type KobeTx, isUniqueViolation } from "@kobe/db";
 import {
   addProjectMemberRequestSchema,
   createProjectRequestSchema,
@@ -114,13 +114,7 @@ const idParam = z.uuid();
 const SLUG_UNIQUE = "projects_slug_unique";
 
 function isSlugConflict(err: unknown): boolean {
-  const e = err as {
-    code?: string;
-    constraint?: string;
-    cause?: { code?: string; constraint?: string };
-  };
-  const cause = e.cause ?? e;
-  return cause.code === "23505" && cause.constraint === SLUG_UNIQUE;
+  return isUniqueViolation(err, SLUG_UNIQUE);
 }
 
 /**

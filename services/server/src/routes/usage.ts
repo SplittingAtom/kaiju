@@ -1,7 +1,6 @@
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
-import type { ActorContext } from "@kobe/protocol";
 import type { AuthVariables } from "../auth/session.js";
 import {
   requireSitePermission,
@@ -23,6 +22,7 @@ import {
 import { RunError } from "../runs/errors.js";
 import { invalidRequest } from "../teams/http.js";
 import { uuidSchema } from "../threads/schemas.js";
+import { actorOf } from "../authz/actor.js";
 
 /** Longest range one request may aggregate. */
 export const MAX_RANGE_DAYS = 400;
@@ -86,16 +86,6 @@ export function siteUsageRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
     return c.json(await siteUsage(deps.database.db, r));
   });
   return app;
-}
-
-function actorOf(c: Context<{ Variables: TeamVariables }>): ActorContext {
-  const team = c.get("team");
-  return {
-    user_id: c.get("user").id,
-    team_id: team.id,
-    site_role: c.get("siteRole") ?? "user",
-    team_role: team.role,
-  };
 }
 
 const EMPTY: UsageTotals = {

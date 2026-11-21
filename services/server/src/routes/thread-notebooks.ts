@@ -1,5 +1,5 @@
 import { Hono, type Context } from "hono";
-import { notebookRunBodySchema, type ActorContext } from "@kobe/protocol";
+import { notebookRunBodySchema } from "@kobe/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { NOTEBOOK_ERROR_STATUS, NotebookRunError } from "../notebooks/user-run.js";
@@ -7,6 +7,7 @@ import { RunError } from "../runs/errors.js";
 import { invalidRequest, parseBody } from "../teams/http.js";
 import { uuidSchema } from "../threads/schemas.js";
 import { refuseEvalThreadWrites } from "./eval-thread-guard.js";
+import { actorOf } from "../authz/actor.js";
 
 type Ctx = Context<{ Variables: TeamVariables }>;
 
@@ -56,16 +57,6 @@ export function threadNotebookRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
   }
 
   return app;
-}
-
-function actorOf(c: Ctx): ActorContext {
-  const team = c.get("team");
-  return {
-    user_id: c.get("user").id,
-    team_id: team.id,
-    site_role: c.get("siteRole") ?? "user",
-    team_role: team.role,
-  };
 }
 
 async function answer(c: Ctx, fn: () => Promise<Response>): Promise<Response> {
