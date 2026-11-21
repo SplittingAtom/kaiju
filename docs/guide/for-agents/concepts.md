@@ -82,7 +82,10 @@ with `show_memory_item`, but never write them.
 
 **Artifact.** Content you create for the user to keep with `create_artifact` (kinds: html, svg,
 markdown, mermaid, code, csv), shown in the **artifact column**, the right-hand column of tabs.
-Update it with `update_artifact`.
+Update it with `update_artifact`. HTML and SVG artifacts, like HTML files the user opens from the
+workspace, run in a locked-down frame: inline scripts and styles only, no network (no fetch, no
+remote images or fonts, no WebRTC), no nested frames or workers. Put data and images inline. The
+frame opens only inside Kobe; the user downloads a copy to keep it elsewhere.
 
 **Proposal.** A file change offered with `propose_file_edit`. Nothing is written until the user
 commits it.

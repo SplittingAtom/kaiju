@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type {
@@ -208,4 +208,22 @@ describe("SkillDraftBroker (KOBE-442)", () => {
       },
     ]);
   });
+
+  // CODE-25 review: a folder the agent cannot read is said to be unreadable, not missing.
+  it.skipIf(process.getuid?.() === 0)(
+    "refuses an unreadable folder as such, not as missing",
+    async () => {
+      const u = setup();
+      await chmod(path.join(root, "skills"), 0o000);
+      try {
+        u.broker.save(THREAD, RUN, request("close-helper"), u.reply);
+        await u.settle();
+      } finally {
+        await chmod(path.join(root, "skills"), 0o755);
+      }
+      expect(u.frames).toEqual([]);
+      expect(codeOf(u.replies[0])).toBe("invalid_path");
+      expect(JSON.stringify(u.replies[0])).toMatch(/cannot be read/);
+    },
+  );
 });

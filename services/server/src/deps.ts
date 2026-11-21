@@ -106,9 +106,12 @@ import type { BrandingDefaults } from "./branding/defaults-config.js";
 import type { SsoNet } from "./sso/net.js";
 import type { ProviderStore } from "./sso/providers.js";
 import { SSO_OFF, ssoNet, type SsoSettings } from "./sso/settings.js";
+import type { DbTimeouts } from "./config.js";
 
 export interface ServerDepsOptions {
   readonly databaseUrl: string;
+  /** App-role connection timeouts (KOBE-732); the @kobe/db defaults when absent. */
+  readonly dbTimeouts?: DbTimeouts;
   readonly publicUrl: string;
   /** KOBE_RETENTION_PAUSED (KOBE-243): shown to site admins; the deleting jobs honour it. */
   readonly retentionPaused?: boolean;
@@ -382,7 +385,13 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   configureUsageKey(options.authSecret);
   // Tag fingerprints in the held Site item audit (KOBE-647, review P2-L3).
   configureTagFingerprintKey(options.authSecret);
-  const database = createDb(options.databaseUrl);
+  // App-role sessions: timeouts and lost-connection logging (KOBE-732), for both pools below.
+  const session = {
+    ...options.dbTimeouts,
+    onConnectionError: (err: unknown, sqlstate: string | undefined) =>
+      logger.warn({ err, sqlstate }, "database connection lost"),
+  };
+  const database = createDb(options.databaseUrl, session);
   const authAttempts = new AuthAttemptAudit(database.db);
   authAttempts.start();
   const background = options.background ?? new BackgroundTasks();
@@ -422,6 +431,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   });
   const reader = createStreamReader({
     connectionString: options.databaseUrl,
+    session,
     ...(options.eventStream?.poolMax ? { max: options.eventStream.poolMax } : {}),
   });
 

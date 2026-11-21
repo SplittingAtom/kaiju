@@ -307,7 +307,11 @@ equal the CONNECT host. It never decrypts traffic. Plain HTTP and other ports ar
   matches pods after Service translation). The domain must still be in the ceiling and enabled.
   `allowedInternalCidrs` is install-wide: every allowlisted host may then reach those ranges. For
   hosts served by this cluster's own ingress use `clusterIngress` (see [Same-cluster
-  hosts](#same-cluster-hosts-internal)).
+  hosts](#same-cluster-hosts-internal)). Loopback, link-local (cloud metadata), unspecified,
+  multicast and IPv4-embedding IPv6 addresses stay refused even inside a listed range, and an
+  entry that starts in or covers one of those ranges (`0.0.0.0/0`, `169.254.0.0/16`,
+  `128.0.0.0/1`) fails the chart schema and the proxy's startup; a private range such as
+  `192.168.10.4/30` is fine.
 - **External Postgres:** the proxy reads allowlists and writes its connection log as the app role.
   Set `egressProxy.networkPolicy.databasePeers` (an `ipBlock` or selector for your database) so its
   NetworkPolicy reaches only the database on `databasePort`; when empty it may reach any address on
@@ -680,7 +684,10 @@ servers only (no stdio), registered by site admins, enabled per team with an exp
 its own. For every request it checks the sandbox's `kobe.mcp-proxy` session token, then asks the
 server on its **internal port 8082** (reachable only from the proxy's pods, and keyed with the
 chart-generated `<release>-mcp-proxy-internal` Secret, or `mcpProxy.internalKeySecret` for offline
-renders). The server lists only the team's exposed, pinned tools, and decides every `tools/call`
+renders). The server's own calls to the proxy (the pinning probe and MCP Apps' calls) use the
+proxy's **internal port 8081**, which its NetworkPolicy opens to server pods only, with a second
+key from the same Secret (`routes-key`, one key per direction), and only for a connector's
+registered URL. The server lists only the team's exposed, pinned tools, and decides every `tools/call`
 with the same policy engine as the sandbox (D29): a call that needs approval runs only with a
 valid signed approval for exactly that run, tool and input, used once. Every allowed call is
 written to the audit log (`mcp.tool_call`) before the proxy forwards it.
@@ -691,7 +698,10 @@ the MCP proxy is not a sandbox. Its own NetworkPolicy allows DNS, the server's i
 public addresses on `mcpProxy.allowedPorts` (default 443). It resolves each connector's host itself
 and refuses private, loopback, link-local (cloud metadata) and reserved addresses unless listed in
 `mcpProxy.allowedInternalCidrs` (an on-premises MCP server; add a matching
-`mcpProxy.networkPolicy.extraEgress` peer for in-cluster targets). Connector URLs must be HTTPS
+`mcpProxy.networkPolicy.extraEgress` peer for in-cluster targets). Loopback, link-local (cloud
+metadata), unspecified, multicast and IPv4-embedding addresses are refused even when a listed range
+covers them, and an entry that starts in or covers such a range fails the chart schema and
+startup. Connector URLs must be HTTPS
 (`mcpProxy.allowInsecureHttp` exists for development and CI only); redirects are not followed.
 Limits per proxy replica: `mcpProxy.limits.callsPerSandbox` (8 concurrent), `requestBurst` /
 `requestsPerSecond` (60, then 10/s), `maxRequestBytes` (1 MiB), `maxResponseBytes` (4 MiB),
@@ -871,7 +881,8 @@ is proven by an `amr` value in `mfaRule.amr_any` (default `mfa`, `hwk`, `swk`, `
   `auth.sso.networkPolicy.cidrs`) **beside** your own allow rules for Postgres, S3, SMTP and the
   Kubernetes API, since it makes the server's other egress default-deny.
 - **An on-premises provider** on a private address: list its range in
-  `auth.sso.allowedInternalCidrs`, and give its CA in `server.extraCaBundle`
+  `auth.sso.allowedInternalCidrs` (a private range; loopback, link-local and metadata ranges are
+  refused, as for the proxies), and give its CA in `server.extraCaBundle`
   ([Private certificate authorities](#private-certificate-authorities)).
 - **SCIM is inbound:** Entra's provisioning service must reach `https://<kobe>/v1/scim/v2/<slug>`
   from the internet. For a Kobe that is not reachable from outside, Microsoft's on-premises
@@ -973,6 +984,14 @@ helm install kobe charts/kobe -n kobe \
   --set smtp.existingSecret=kobe-smtp
 ```
 
+**HTTPS and HSTS.** When the public URL is https (`ingress.tls.enabled`, the default, or an https
+`publicUrl`), the server and the web send `Strict-Transport-Security: max-age=31536000`, so
+browsers refuse plain HTTP to that host for a year. A plain-HTTP install sends none. Set
+`ingress.hsts.includeSubDomains=true` only when every subdomain of the public host's domain
+serves HTTPS; leave it off (the default) when Kobe shares a parent domain with other sites. The
+server also sends `X-Content-Type-Options: nosniff` and `X-Frame-Options: DENY` on every response
+except the frames Kobe embeds in its own page.
+
 ### First run: to the first chat
 
 `helm install` leaves a site with no users. To get to a first chat (not on a site you are about
@@ -1019,6 +1038,55 @@ applications. It must be relative and end in `/` (for example `kobe/`; letters, 
 scheduler (`KOBE_S3_PREFIX`). Changing it on an existing site hides the objects written under
 the old prefix, so move them first or keep the old value. `kobe backup` and `kobe restore` read
 `KOBE_S3_PREFIX` too; set it to the same value.
+
+### Timeouts (Postgres and S3)
+
+A stuck network call must never pin a database transaction, its locks or a pooled connection
+(KOBE-732). Kobe bounds both sides:
+
+- **App-role sessions.** Every connection the server (its event-stream reader included),
+  scheduler, model gateway and egress proxy open as the app role runs `SET statement_timeout = 120000` (2 min) and
+  `SET idle_in_transaction_session_timeout = 300000` (5 min) before first use. A statement
+  running longer is cancelled (SQLSTATE `57014`); a transaction left idle longer is ended by
+  Postgres and its locks released. Nothing retries the cut work automatically: the request fails
+  with an error (logged as `database connection lost` with `sqlstate: 25P03`, the error an
+  `IdleInTransactionTimeoutError`), and a background job picks the work up on its next pass. The nightly
+  retention purge and run-event compaction batches raise the statement timeout to 10 min for
+  their own transaction. The server and scheduler read `KOBE_DB_STATEMENT_TIMEOUT_MS` and
+  `KOBE_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS` (milliseconds, `0` turns one off); the chart does not
+  set them, so the defaults apply. The settings are sent with `SET`, not as startup parameters,
+  so a session-mode PgBouncer in front works unchanged.
+- **New connections only.** The timeouts take effect on connections opened by this release's
+  pods; the upgrade's rollout replaces every pod, so nothing is left to do for Kobe itself.
+- **External Postgres: role defaults for every other client.** Give the app role the same
+  defaults, so a session opened outside Kobe's services (a `psql` as `kobe_app`, a debugging
+  tool) is bounded too. Run as a superuser (or a role with `CREATEROLE` and `ADMIN` on the app
+  role; the migration Job's owner role has neither, so Kobe cannot set them itself):
+
+  ```sql
+  ALTER ROLE kobe_app IN DATABASE kobe SET statement_timeout = '2min';
+  ALTER ROLE kobe_app IN DATABASE kobe SET idle_in_transaction_session_timeout = '5min';
+  ```
+
+  Role defaults, too, apply only to sessions opened afterwards. Do not set them on the database
+  owner or on the backup role: migrations build indexes and backfill for longer, and
+  `kobe backup` holds its snapshot transaction open, idle, for the whole dump (it turns both
+  timeouts off for its own session anyway). With bundled CloudNativePG the same commands work
+  in `psql` on the primary (`kubectl -n kobe exec -it kobe-pg-1 -c postgres -- psql -d kobe`);
+  they are optional there.
+
+- **Object storage.** The server's and the `kobe` CLI's S3 clients give up on a connection that
+  is not established within 5 s and on a request whose socket stays silent for 60 s (nothing
+  sent or received; the SDK then retries). This is an idle timeout, not a total one: an upload or
+  download of a large file runs as long as bytes keep moving. It also applies to a download whose
+  reader stalls: a browser that pauses a thread export (ZIP) or a file download for more than
+  60 s leaves the object stream silent, the download is cut, and the browser reports it failed
+  (start it again). Object calls made while a
+  transaction holds locks also have a total bound: deletes 30 s (then aborted, 10 s to settle),
+  memory writes and restores 30 s. Override with `KOBE_S3_CONNECT_TIMEOUT_MS` and
+  `KOBE_S3_IDLE_TIMEOUT_MS` on the server.
+- **Kubernetes.** Each Kubernetes API call of the server gives up after 10 s, including those
+  made under a row or legal-hold lock (hibernation, workspace volume deletes).
 
 ### Sandbox tool executor
 
@@ -1205,7 +1273,27 @@ superuser, `BYPASSRLS`, owns tables, or is a member of another role.
 Migrations are written expand/contract, except where an upgrade note says otherwise: the
 previous release keeps serving while an upgrade's migration runs, and `helm rollback` runs older
 code against the newer schema (no down migrations). A migration that waits more than 10 s for a lock fails the Job instead of stalling
-live traffic. Rolling a bundled-CloudNativePG release back to its first revision re-runs that
+live traffic. Each migration commits on its own, with its row in `drizzle.__drizzle_migrations`
+(since KOBE-734; before, one upgrade's migrations shared one transaction): an early migration's
+locks are released before the next starts, and a failed upgrade leaves the migrations before the
+failing one applied, so re-running the upgrade continues from that one. Migrations marked
+`-- kobe:no-transaction` build or drop indexes `CONCURRENTLY` (reads and writes continue; each
+statement may wait up to 2 min for older transactions); an interrupted build's INVALID index is
+dropped and rebuilt on the next run.
+
+The Job stops after `postgres.migrateJob.activeDeadlineSeconds` (default 1800, 30 min; minimum
+300). At the deadline Kubernetes sends SIGTERM: the runner cancels its running statement in
+Postgres (and ends its own backend if needed), so no build keeps going and the migration lock is
+free, and exits non-zero with "migration stopped before it finished"; the migrations before that
+one stay applied. Run `helm upgrade` with a `--timeout` longer than the deadline (Helm waits for
+hook Jobs within it). On a site with large tables (millions of rows in `files`, `runs`,
+`run_events`, `thread_entries`), either raise the deadline or pre-build the release's indexes
+`CONCURRENTLY` beforehand with the definitions in its upgrade note: the migration's `IF NOT EXISTS`
+then skips them. If a run fails because "the migration lock is held by another session", the
+error names that session (pid, `application_name`, state, start times): a migration, a
+`kobe backup`/`kobe restore` (`application_name` of your client), or a backend of a stopped Job
+still working. Wait for it, or end it with `SELECT pg_terminate_backend(<pid>)`, and run the
+upgrade again. Rolling a bundled-CloudNativePG release back to its first revision re-runs that
 revision's initial migration Job, which resets app-role grants to that build's matrix; the next
 upgrade restores them.
 
@@ -1219,6 +1307,46 @@ on by default), migrations `0216`–`0235` and the upgrade steps. The notes belo
 Migrations report what an upgrade changed in the migration Job's log (`"msg":"migration notice"`,
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
+
+- **Foreign-key indexes (KOBE-735).** Migration `0236_fk_covering_indexes` builds six indexes
+  that make thread and run purges cheap (`files_run_idx`, `artifact_versions_run_idx`,
+  `approvals_thread_idx`, `workspace_sync_conflicts_thread_idx`, `sandbox_commands_thread_idx`,
+  `sandbox_run_leases_thread_idx`) and drops the redundant `thread_app_results_thread_idx`, all
+  `CONCURRENTLY` outside a transaction (KOBE-734): traffic continues during the build, no
+  pre-build needed. If the Job fails part-way, re-run the upgrade; an INVALID leftover is rebuilt.
+  `0237_drop_artifact_versions_unique` drops the constraint `artifact_versions_artifact_version`
+  (the primary key already covers it; a brief catalog-only lock). On a `helm rollback` the previous
+  release works with or without them.
+
+- **Timeouts (KOBE-732).** App-role connections now run with a 2 min statement timeout and a
+  5 min idle-in-transaction timeout, and the S3 client with 5 s connection and 60 s socket-idle
+  timeouts: see [Timeouts](#timeouts-postgres-and-s3). No migration; on external Postgres,
+  optionally add the same role defaults for other clients of the app role (commands there).
+
+- **MCP proxy internal port and keys (KOBE-693).** The server's probe and app calls move to the
+  MCP proxy's own port 8081 (NetworkPolicy: server pods only); sandboxes keep port 8080. The
+  generated `<release>-mcp-proxy-internal` Secret gains a second key, `routes-key`, on upgrade
+  (the existing `key` is kept), so no manual step is needed; the server and the proxy restart with
+  it, and probes or app calls made while only one of them has rolled are refused. With your own
+  `mcpProxy.internalKeySecret`, add a `routes-key` (32 or more characters) to it; until then the
+  one `key` serves both directions and the proxy logs a warning at startup.
+
+- **Internal CIDRs (KOBE-694).** `mcpProxy.allowedInternalCidrs`,
+  `egressProxy.allowedInternalCidrs` and `auth.sso.allowedInternalCidrs` no longer reach
+  loopback, link-local (cloud metadata), unspecified, multicast or IPv4-embedding IPv6 addresses,
+  even inside a listed range. An entry that starts in or covers such a range (for example
+  `0.0.0.0/0`, `169.254.0.0/16`, `128.0.0.0/1`, `::/0`) now fails the chart schema, and the
+  services refuse to start with it; IPv4 entries need /8 or narrower and IPv6 entries /16 or
+  narrower (ULA `fc00::/7` excepted). Private LAN and cluster ranges keep working unchanged.
+  The schema catches the common mistakes; the services validate finally. An entry they reject
+  (an invalid CIDR such as one with leading zeros, or an always-refused range) makes the pod
+  crash-loop with `Invalid configuration: KOBE_..._ALLOWED_INTERNAL_CIDRS: ...` in its log
+  (`kubectl logs deploy/<release>-mcp-proxy`, `-egress-proxy` or `-server`).
+
+- **HSTS (KOBE-695).** An install with an https public URL now sends
+  `Strict-Transport-Security` (one year, no `includeSubDomains` unless
+  `ingress.hsts.includeSubDomains` is set). Browsers then refuse plain HTTP to the host; moving
+  the install back to plain HTTP later needs the browsers' HSTS entries to expire.
 
 - **Narrower bundled-Postgres and ClamAV policies (KOBE-699).** With `postgres.mode=cnpg`, the
   Postgres NetworkPolicy no longer admits every pod in the release namespace: only the server,

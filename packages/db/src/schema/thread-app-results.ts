@@ -102,7 +102,8 @@ export const threadAppResults = pgTable(
     unique("thread_app_results_tool_call").on(t.teamId, t.runId, t.toolCallId),
     unique("thread_app_results_placed").on(t.teamId, t.threadId, t.promptEntryId, t.toolCallId),
     unique("thread_app_results_entry").on(t.teamId, t.threadId, t.entryId),
-    index("thread_app_results_thread_idx").on(t.teamId, t.threadId),
+    // (team_id, thread_id) lookups use the two unique indexes above (KOBE-735 dropped the
+    // separate thread index, a prefix of both).
     // The claim: the oldest unclaimed row of a run, tool and input.
     index("thread_app_results_unclaimed_idx")
       .on(t.teamId, t.runId, t.piName, t.inputSha256, t.createdAt)

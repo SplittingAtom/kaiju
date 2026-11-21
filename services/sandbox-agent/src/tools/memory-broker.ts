@@ -7,6 +7,7 @@ import type {
   MemoryShowFrame,
 } from "@kobe/protocol";
 import { toolsError } from "./channel.js";
+import { PendingRequests } from "./pending-requests.js";
 
 /**
  * Routes `remember` / `recall` / `show_memory_item` kobe-tools requests (`memory.put`,
@@ -25,13 +26,6 @@ type MemoryRequest = Extract<
 >;
 type MemoryFrame = MemoryPutFrame | MemoryReadFrame | MemoryShowFrame;
 
-interface Pending {
-  readonly threadId: string;
-  readonly runId: string;
-  readonly extensionId: string;
-  readonly reply: (response: KobeToolsResponse) => void;
-}
-
 export interface MemoryBrokerDeps {
   /** Send a frame now; false when the wire is not ready. */
   readonly send: (frame: MemoryFrame) => boolean;
@@ -39,8 +33,11 @@ export interface MemoryBrokerDeps {
 
 export class MemoryBroker {
   readonly #deps: MemoryBrokerDeps;
-  readonly #pending = new Map<string, Pending>();
-  #next = 1;
+  readonly #pending = new PendingRequests({
+    prefix: "mem",
+    max: MAX_PENDING_MEMORY,
+    maxPerThread: MAX_PENDING_MEMORY_PER_THREAD,
+  });
 
   constructor(deps: MemoryBrokerDeps) {
     this.#deps = deps;
@@ -56,12 +53,11 @@ export class MemoryBroker {
       reply(toolsError(request.id, "not_allowed", "no active run on this thread"));
       return;
     }
-    const perThread = [...this.#pending.values()].filter((p) => p.threadId === threadId).length;
-    if (this.#pending.size >= MAX_PENDING_MEMORY || perThread >= MAX_PENDING_MEMORY_PER_THREAD) {
+    const requestId = this.#pending.add(threadId, runId, request.id, reply);
+    if (requestId === undefined) {
       reply(toolsError(request.id, "unavailable", "too many memory requests in flight"));
       return;
     }
-    const requestId = `mem_${this.#next++}`;
     const base = {
       v: 1 as const,
       request_id: requestId,
@@ -75,40 +71,29 @@ export class MemoryBroker {
         : request.op === "memory.read"
           ? { ...base, type: "memory.read", input: request.input }
           : { ...base, type: "memory.show", input: request.input };
-    this.#pending.set(requestId, { threadId, runId, extensionId: request.id, reply });
     if (!this.#deps.send(frame)) {
-      this.#pending.delete(requestId);
-      reply(toolsError(request.id, "unavailable", "Kobe server not reachable"));
+      this.#pending.fail(requestId, "unavailable", "Kobe server not reachable");
     }
   }
 
   /** `memory.result` from the server; false when nothing waits for it. */
   onResult(frame: MemoryResultFrame): boolean {
-    const pending = this.#pending.get(frame.request_id);
+    const pending = this.#pending.take(frame.request_id);
     if (pending === undefined) return false;
-    this.#pending.delete(frame.request_id);
     const { v: _v, type: _type, request_id: _request, ...body } = frame;
     pending.reply({ id: pending.extensionId, ...body } as KobeToolsResponse);
     return true;
   }
 
   failAll(message: string): void {
-    this.#failWhere(() => true, message);
+    this.#pending.failAll(message);
   }
 
   failRun(runId: string, message: string): void {
-    this.#failWhere((p) => p.runId === runId, message);
+    this.#pending.failRun(runId, message);
   }
 
   failThread(threadId: string, message: string): void {
-    this.#failWhere((p) => p.threadId === threadId, message);
-  }
-
-  #failWhere(match: (pending: Pending) => boolean, message: string): void {
-    for (const [id, pending] of this.#pending) {
-      if (!match(pending)) continue;
-      this.#pending.delete(id);
-      pending.reply(toolsError(pending.extensionId, "unavailable", message));
-    }
+    this.#pending.failThread(threadId, message);
   }
 }

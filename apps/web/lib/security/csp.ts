@@ -57,3 +57,20 @@ export const SECURITY_HEADERS: readonly { readonly key: string; readonly value: 
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=(), payment=()" },
 ];
+
+const HSTS_MAX_AGE_SECONDS = 31_536_000;
+
+/**
+ * KOBE-695: `Strict-Transport-Security` for page responses when the install's public URL
+ * (`KOBE_PUBLIC_URL`) is https; undefined otherwise (a plain-HTTP install must not pin itself).
+ * Read per request (`proxy.ts`): `next.config.ts` headers are fixed at build time, and one image
+ * serves every install. `includeSubDomains` only with `KOBE_HSTS_INCLUDE_SUBDOMAINS=true` (chart
+ * `ingress.hsts.includeSubDomains`, default off: an install under a shared parent domain must not
+ * force HTTPS on its siblings). The server sends the same header on `/v1` and `/api/auth`.
+ */
+export function hstsHeader(env: Readonly<Record<string, string | undefined>>): string | undefined {
+  const raw = env.KOBE_PUBLIC_URL?.trim() ?? "";
+  if (!URL.canParse(raw) || new URL(raw).protocol !== "https:") return undefined;
+  const sub = env.KOBE_HSTS_INCLUDE_SUBDOMAINS === "true" ? "; includeSubDomains" : "";
+  return `max-age=${HSTS_MAX_AGE_SECONDS}${sub}`;
+}

@@ -11,9 +11,10 @@ import {
   type SkillDraftSaveFrame,
   type SkillDraftSaveResultFrame,
 } from "@kobe/protocol";
-import { TEMP_PREFIX } from "../workspace/fs.js";
+import { TEMP_PREFIX, lstatIfExists } from "../workspace/fs.js";
 import { DEFAULT_SKIP_DIRS, PushPathError, type PushedFile } from "../workspace/sync.js";
 import { toolsError } from "./channel.js";
+import { PendingRequests } from "./pending-requests.js";
 
 /**
  * The agent side of `save_skill_draft` (KOBE-442; contract: packages/protocol
@@ -28,13 +29,6 @@ import { toolsError } from "./channel.js";
  */
 export const MAX_PENDING_SKILL_SAVES = 4;
 export const MAX_PENDING_SKILL_SAVES_PER_THREAD = 1;
-
-interface Pending {
-  readonly threadId: string;
-  readonly runId: string;
-  readonly extensionId: string;
-  readonly reply: (response: KobeToolsResponse) => void;
-}
 
 export interface SkillDraftBrokerDeps {
   /** The workspace root (`KOBE_WORKSPACE_DIR`). */
@@ -61,7 +55,13 @@ const SKIP_DIRS: ReadonlySet<string> = new Set(DEFAULT_SKIP_DIRS);
 async function folderDir(root: string, folder: string): Promise<string> {
   const rel = `skills/${folder}`;
   const dir = path.join(root, rel);
-  const stat = await lstat(dir).catch(() => undefined);
+  let stat;
+  try {
+    stat = await lstatIfExists(dir);
+  } catch {
+    // Not missing: something the agent may not read (CODE-25 review).
+    throw new FolderError("invalid_path", `/workspace/${rel}/ cannot be read by the agent`);
+  }
   if (!stat) throw new FolderError("not_found", `/workspace/${rel}/ does not exist`);
   const real = await realpath(dir).catch(() => undefined);
   const realRoot = await realpath(root).catch(() => undefined);
@@ -113,8 +113,11 @@ async function listFiles(root: string, folder: string): Promise<string[]> {
 
 export class SkillDraftBroker {
   readonly #deps: SkillDraftBrokerDeps;
-  readonly #pending = new Map<string, Pending>();
-  #next = 1;
+  readonly #pending = new PendingRequests({
+    prefix: "sd",
+    max: MAX_PENDING_SKILL_SAVES,
+    maxPerThread: MAX_PENDING_SKILL_SAVES_PER_THREAD,
+  });
 
   constructor(deps: SkillDraftBrokerDeps) {
     this.#deps = deps;
@@ -134,27 +137,18 @@ export class SkillDraftBroker {
       reply(toolsError(request.id, "not_allowed", "no active run on this thread"));
       return;
     }
-    const perThread = [...this.#pending.values()].filter((p) => p.threadId === threadId).length;
-    if (
-      this.#pending.size >= MAX_PENDING_SKILL_SAVES ||
-      perThread >= MAX_PENDING_SKILL_SAVES_PER_THREAD
-    ) {
+    // Registered before the (slow) pushes, so a run that ends meanwhile answers it exactly once.
+    const requestId = this.#pending.add(threadId, runId, request.id, reply);
+    if (requestId === undefined) {
       reply(toolsError(request.id, "unavailable", "a skill is already being saved"));
       return;
     }
-    const requestId = `sd_${this.#next++}`;
-    // Registered before the (slow) pushes, so a run that ends meanwhile answers it exactly once.
-    this.#pending.set(requestId, { threadId, runId, extensionId: request.id, reply });
     void this.#run(requestId, threadId, runId, request);
   }
 
   async #run(requestId: string, threadId: string, runId: string, request: SaveRequest) {
-    const fail = (code: string, message: string) => {
-      const pending = this.#pending.get(requestId);
-      if (pending === undefined) return; // already answered (run ended, connection lost)
-      this.#pending.delete(requestId);
-      pending.reply(toolsError(pending.extensionId, code, message));
-    };
+    // A no-op once answered (run ended, connection lost).
+    const fail = (code: string, message: string) => this.#pending.fail(requestId, code, message);
     try {
       const listed = await listFiles(this.#deps.root, request.input.folder);
       const files: SkillDraftSaveFile[] = [];
@@ -190,9 +184,8 @@ export class SkillDraftBroker {
 
   /** `skill.draft_save_result` from the server; false when nothing waits for it. */
   onResult(frame: SkillDraftSaveResultFrame): boolean {
-    const pending = this.#pending.get(frame.request_id);
+    const pending = this.#pending.take(frame.request_id);
     if (pending === undefined) return false;
-    this.#pending.delete(frame.request_id);
     if (!frame.ok) {
       pending.reply({ id: pending.extensionId, ok: false, error: frame.error });
       return true;
@@ -203,22 +196,14 @@ export class SkillDraftBroker {
   }
 
   failAll(message: string): void {
-    this.#failWhere(() => true, message);
+    this.#pending.failAll(message);
   }
 
   failRun(runId: string, message: string): void {
-    this.#failWhere((p) => p.runId === runId, message);
+    this.#pending.failRun(runId, message);
   }
 
   failThread(threadId: string, message: string): void {
-    this.#failWhere((p) => p.threadId === threadId, message);
-  }
-
-  #failWhere(match: (pending: Pending) => boolean, message: string): void {
-    for (const [id, pending] of this.#pending) {
-      if (!match(pending)) continue;
-      this.#pending.delete(id);
-      pending.reply(toolsError(pending.extensionId, "unavailable", message));
-    }
+    this.#pending.failThread(threadId, message);
   }
 }

@@ -16,15 +16,18 @@ export const fileStem = artifactFileStem;
 
 /**
  * The frame route's headers (D-6): an opaque origin (CSP `sandbox` without `allow-same-origin`),
- * no network, nothing but inline script and style, data/blob media. `X-Frame-Options: SAMEORIGIN`
- * is set on this route only; every other route stays unframeable.
+ * no network, nothing but inline script and style, data/blob media, no child frames or workers,
+ * and WebRTC blocked where the browser knows the directive (KOBE-690, as the app frames: KOBE-437).
+ * `X-Frame-Options: SAMEORIGIN` is set on the frame routes only; every other route stays
+ * unframeable.
  */
 export const FRAME_HEADERS: Readonly<Record<string, string>> = {
   "content-type": "text/html; charset=utf-8",
   "content-security-policy":
     "sandbox allow-scripts allow-forms; default-src 'none'; script-src 'unsafe-inline'; " +
     "style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; " +
-    "connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'self'",
+    "connect-src 'none'; frame-src 'none'; child-src 'none'; worker-src 'none'; " +
+    "form-action 'none'; base-uri 'none'; frame-ancestors 'self'; webrtc 'block'",
   "x-frame-options": "SAMEORIGIN",
   "referrer-policy": "no-referrer",
   "cache-control": "private, no-store",

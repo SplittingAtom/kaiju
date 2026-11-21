@@ -115,6 +115,8 @@ export const approvals = pgTable(
       .on(t.teamId, t.expiresAt)
       .where(sql`${t.status} = 'pending'`),
     index("approvals_user_idx").on(t.teamId, t.userId, t.createdAt),
+    // approvals_thread_fk: the cascade from a purged thread (KOBE-735).
+    index("approvals_thread_idx").on(t.teamId, t.threadId),
     check("approvals_tool_call_id", sql`char_length(${t.toolCallId}) BETWEEN 1 AND 128`),
     check("approvals_tool", sql`char_length(${t.tool}) BETWEEN 1 AND 256`),
     check(

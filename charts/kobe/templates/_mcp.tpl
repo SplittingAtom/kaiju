@@ -23,9 +23,12 @@ predates these keys still renders. Keep in sync with values.yaml.
 {{/* The server's internal listener port (MCP proxy policy re-check). */}}
 {{- define "kobe.serverInternalPort" -}}8082{{- end -}}
 
+{{/* The MCP proxy's internal routes (probe, app calls): their own port, server pods only (KOBE-693). */}}
+{{- define "kobe.mcpProxyInternalPort" -}}8081{{- end -}}
+
 {{/*
-Server env: the internal listener and the key the MCP proxy must present, the proxy's address
-(the pinning probe, KOBE-101; it presents the same key), and the connector URL policy (the proxy's own values, so the registry accepts only what the proxy will connect to).
+Server env: the internal listener and the key the MCP proxy must present, the proxy's internal
+routes (the pinning probe, KOBE-101, and app calls; their own port and key since KOBE-693), and the connector URL policy (the proxy's own values, so the registry accepts only what the proxy will connect to).
 */}}
 {{- define "kobe.serverInternalEnv" -}}
 {{- $m := include "kobe.mcpProxyValues" . | fromJson -}}
@@ -40,12 +43,19 @@ Server env: the internal listener and the key the MCP proxy must present, the pr
 - name: KOBE_INTERNAL_PORT
   value: {{ include "kobe.serverInternalPort" . | quote }}
 - name: KOBE_MCP_PROXY_URL
-  value: {{ printf "http://%s-mcp-proxy" (include "kobe.fullname" .) | quote }}
+  value: {{ printf "http://%s-mcp-proxy:%s" (include "kobe.fullname" .) (include "kobe.mcpProxyInternalPort" .) | quote }}
 - name: KOBE_MCP_PROXY_INTERNAL_KEY
   valueFrom:
     secretKeyRef:
       name: {{ include "kobe.mcpInternalKeySecretName" . }}
       key: key
+{{- /* Optional: an operator's own Secret may predate it; then the one key serves both ways. */}}
+- name: KOBE_MCP_PROXY_ROUTES_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "kobe.mcpInternalKeySecretName" . }}
+      key: routes-key
+      optional: true
 {{- end -}}
 
 {{/*
@@ -61,6 +71,14 @@ database: the server decides every call.
     secretKeyRef:
       name: {{ include "kobe.mcpInternalKeySecretName" . }}
       key: key
+- name: KOBE_MCP_ROUTES_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "kobe.mcpInternalKeySecretName" . }}
+      key: routes-key
+      optional: true
+- name: KOBE_MCP_INTERNAL_PORT
+  value: {{ include "kobe.mcpProxyInternalPort" . | quote }}
 - name: KOBE_MCP_SERVER_URL
   value: {{ printf "http://%s-server:%s" (include "kobe.fullname" .) (include "kobe.serverInternalPort" .) | quote }}
 - name: KOBE_MCP_ALLOW_INSECURE_HTTP

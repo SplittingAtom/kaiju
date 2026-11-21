@@ -24,6 +24,24 @@ describe("loadConfig", () => {
     expect(config.limits.upstreamTimeoutMs).toBeLessThan(60_000);
   });
 
+  it("serves the server's routes on their own port with their own key (KOBE-693)", () => {
+    const config = loadConfig({ ...ENV, KOBE_MCP_ROUTES_KEY: "r".repeat(32) });
+    expect(config.internalPort).toBe(8081);
+    expect(config.routesKey).toBe("r".repeat(32));
+    expect(config.routesKeyShared).toBe(false);
+    expect(loadConfig({ ...ENV, KOBE_MCP_INTERNAL_PORT: "9091" }).internalPort).toBe(9091);
+    // An existing Secret without the second key: the one key serves both ways, flagged.
+    const shared = loadConfig(ENV);
+    expect(shared.routesKey).toBe("i".repeat(32));
+    expect(shared.routesKeyShared).toBe(true);
+    expect(() => loadConfig({ ...ENV, KOBE_MCP_ROUTES_KEY: "short" })).toThrow(
+      /KOBE_MCP_ROUTES_KEY/,
+    );
+    expect(() => loadConfig({ ...ENV, KOBE_MCP_INTERNAL_PORT: "8080" })).toThrow(
+      /KOBE_MCP_INTERNAL_PORT must differ from PORT/,
+    );
+  });
+
   it("has no approval key: KOBE_APPROVAL_KEY in the environment is ignored (KOBE-520)", () => {
     const config = loadConfig({ ...ENV, KOBE_APPROVAL_KEY: "a".repeat(48) });
     expect(JSON.stringify(config)).not.toContain("a".repeat(48));
@@ -36,14 +54,14 @@ describe("loadConfig", () => {
       PORT: "9090",
       KOBE_MCP_ALLOW_INSECURE_HTTP: "true",
       KOBE_MCP_ALLOWED_PORTS: "443, 8443",
-      KOBE_MCP_ALLOWED_INTERNAL_CIDRS: "10.0.5.0/24",
+      KOBE_MCP_ALLOWED_INTERNAL_CIDRS: "10.0.5.0/24,192.168.10.4/30",
       KOBE_MCP_DENIED_CIDRS: "100.100.0.0/16",
     });
     expect(config.port).toBe(9090);
     expect(config.upstream).toEqual({
       allowInsecureHttp: true,
       allowedPorts: [443, 8443],
-      allowedInternalCidrs: ["10.0.5.0/24"],
+      allowedInternalCidrs: ["10.0.5.0/24", "192.168.10.4/30"],
       deniedCidrs: ["100.100.0.0/16"],
     });
   });
@@ -68,6 +86,16 @@ describe("loadConfig", () => {
   ])("rejects %s with a clear error", (_, override, message) => {
     expect(() => loadConfig({ ...ENV, ...override })).toThrow(message);
   });
+
+  // KOBE-694: install-wide internal targets never re-open metadata or loopback.
+  it.each(["0.0.0.0/0", "169.254.0.0/16", "127.0.0.0/8", "128.0.0.0/1", "::/0"])(
+    "rejects the always-refused internal CIDR %s",
+    (cidr) => {
+      expect(() =>
+        loadConfig({ ...ENV, KOBE_MCP_ALLOWED_INTERNAL_CIDRS: `192.168.10.4/30,${cidr}` }),
+      ).toThrow(/KOBE_MCP_ALLOWED_INTERNAL_CIDRS: CIDR .* never reachable/);
+    },
+  );
 
   it("never echoes key values in errors", () => {
     try {
