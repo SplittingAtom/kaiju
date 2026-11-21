@@ -173,6 +173,90 @@ exports[`tool frame gate: artifact.put > refuses without the artifacts capabilit
 }
 `;
 
+exports[`tool frame gate: each kind's own stages (KOBE-706 review) > refuses file.edit_propose from a skill eval's sandbox before the run check 1`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "not_allowed",
+        "message": "Skill evals never propose edits to the member's files.",
+      },
+      "ok": false,
+      "type": "file.edit_propose_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [],
+  "executed": false,
+  "reached": [],
+}
+`;
+
+exports[`tool frame gate: each kind's own stages (KOBE-706 review) > refuses file.open from a skill eval's sandbox before the run check 1`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "not_allowed",
+        "message": "Skill evals never open the member's files.",
+      },
+      "ok": false,
+      "type": "file.open_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [],
+  "executed": false,
+  "reached": [],
+}
+`;
+
+exports[`tool frame gate: each kind's own stages (KOBE-706 review) > refuses notebook.run when the replica has no notebook storage 1`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "not_allowed",
+        "message": "This sandbox did not announce notebooks.",
+      },
+      "ok": false,
+      "type": "notebook.run_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [],
+  "executed": false,
+  "reached": [],
+}
+`;
+
+exports[`tool frame gate: each kind's own stages (KOBE-706 review) > refuses skill.draft_save when skill drafts are not configured, after the allowance 1`] = `
+{
+  "answers": [
+    {
+      "error": {
+        "code": "storage_failed",
+        "message": "Skill drafts are not available here.",
+      },
+      "ok": false,
+      "type": "skill.draft_save_result",
+      "v": 1,
+    },
+  ],
+  "audits": [],
+  "closed": undefined,
+  "errors": [],
+  "executed": false,
+  "reached": [],
+}
+`;
+
 exports[`tool frame gate: file.edit_propose > closes the connection for a run never leased here 1`] = `
 {
   "answers": [],

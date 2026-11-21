@@ -140,6 +140,32 @@ describe("runGatedToolFrame (KOBE-706)", () => {
     expect(calls).toEqual(["run:file.open", "check:recall"]);
   });
 
+  it("refuses a frame naming no tool when the spec names none either, asking nothing", () => {
+    type Read = Extract<SandboxToServerFrame, { type: "memory.read" }>;
+    const read: Read = {
+      v: 1,
+      type: "memory.read",
+      request_id: "r1",
+      run_id: frame.run_id,
+      thread_id: frame.thread_id,
+      tool_call_id: "c1",
+      input: { query: "tea" },
+    };
+    const { g, calls } = gate();
+    const refusals: GateRefusal<"check">[] = [];
+    const act = vi.fn();
+    const s: ToolFrameSpec<Read, "check"> = {
+      capabilities: ["file_edits"],
+      allowance: "check",
+      refuse: (_f, r) => refusals.push(r),
+      act,
+    };
+    runGatedToolFrame(g, s, read);
+    expect(refusals).toEqual([{ stage: "verdict", verdict: "not_allowed" }]);
+    expect(calls).toEqual(["run:memory.read"]);
+    expect(act).not.toHaveBeenCalled();
+  });
+
   it("stops at a kind's check after the allowance (no slot taken)", () => {
     const { g } = gate({ max: 1 });
     const inFlight = { count: 0 };

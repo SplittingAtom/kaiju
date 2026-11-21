@@ -113,7 +113,9 @@ function allowanceOf<F extends ToolFrame, M extends AllowanceMode>(
   frame: F,
 ): GateVerdict<M> {
   const named: unknown = (frame as { tool?: unknown }).tool;
-  const tool = spec.tool ?? (typeof named === "string" ? named : frame.type);
+  const tool = spec.tool ?? (typeof named === "string" ? named : undefined);
+  // Fail closed: a frame that names no tool (and a spec that names none) is never allowed.
+  if (tool === undefined) return "not_allowed";
   const { run_id: runId, tool_call_id: toolCallId, input } = frame;
   return (
     spec.allowance === "consume"

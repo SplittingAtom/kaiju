@@ -18,9 +18,11 @@ import type WebSocket from "ws";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AllowedArtifactCalls } from "../artifacts/allowed.js";
 import type * as Commands from "./commands.js";
+import { RecalledItems } from "../memory/recalled.js";
 import { SandboxConnection } from "./connection.js";
 import { WIRE_DEFAULTS } from "./constants.js";
 import { newMetrics, type WireContext } from "./context.js";
+import { toolFrameSpecs } from "./frames/tool-frames.js";
 import type { ConnectionRegistry } from "./registry.js";
 import type * as RunState from "./run-state.js";
 
@@ -97,6 +99,9 @@ interface Kind {
   readonly fields: Record<string, unknown>;
   /** Kinds with a per-connection in-flight cap answered `storage_failed`. */
   readonly capped: boolean;
+  /** How the allowance is taken (`consume`: single use) and for which tool. */
+  readonly allowance: "check" | "consume";
+  readonly tool: string;
 }
 
 const KINDS: readonly Kind[] = [
@@ -106,6 +111,8 @@ const KINDS: readonly Kind[] = [
     capabilities: [CAPABILITY_ARTIFACTS],
     fields: { tool: "create_artifact", input: { kind: "markdown", title: "Plan", content: "# x" } },
     capped: true,
+    allowance: "check",
+    tool: "create_artifact",
   },
   {
     type: "file.share",
@@ -117,6 +124,8 @@ const KINDS: readonly Kind[] = [
       workspace: { path: "x.txt", rev: 1, sha256: SHA, size: 3 },
     },
     capped: true,
+    allowance: "check",
+    tool: "share_file",
   },
   {
     type: "memory.put",
@@ -124,6 +133,8 @@ const KINDS: readonly Kind[] = [
     capabilities: [CAPABILITY_MEMORY],
     fields: { input: { scope: "user", path: "prefs.md", content: "likes tea" } },
     capped: true,
+    allowance: "check",
+    tool: "remember",
   },
   {
     type: "memory.read",
@@ -131,6 +142,8 @@ const KINDS: readonly Kind[] = [
     capabilities: [CAPABILITY_MEMORY],
     fields: { input: { query: "tea" } },
     capped: true,
+    allowance: "check",
+    tool: "recall",
   },
   {
     type: "memory.show",
@@ -138,6 +151,8 @@ const KINDS: readonly Kind[] = [
     capabilities: [CAPABILITY_MEMORY, CAPABILITY_SEMANTIC_MEMORY],
     fields: { input: { id: OTHER_RUN } },
     capped: true,
+    allowance: "check",
+    tool: "show_memory_item",
   },
   {
     type: "project.commit",
@@ -145,6 +160,8 @@ const KINDS: readonly Kind[] = [
     capabilities: [CAPABILITY_PROJECTS],
     fields: { tool: "commit_project", input: { message: "m" } },
     capped: false,
+    allowance: "check",
+    tool: "commit_project",
   },
   {
     type: "file.edit_propose",
@@ -152,6 +169,8 @@ const KINDS: readonly Kind[] = [
     capabilities: [CAPABILITY_FILE_EDITS],
     fields: { tool: "propose_file_edit", input: { path: "a.md", content: "b\n", summary: "b" } },
     capped: false,
+    allowance: "consume",
+    tool: "propose_file_edit",
   },
   {
     type: "file.open",
@@ -159,6 +178,8 @@ const KINDS: readonly Kind[] = [
     capabilities: [CAPABILITY_FILE_EDITS],
     fields: { tool: "open_file", input: { path: "a.md" } },
     capped: false,
+    allowance: "consume",
+    tool: "open_file",
   },
   {
     type: "notebook.run",
@@ -166,6 +187,8 @@ const KINDS: readonly Kind[] = [
     capabilities: [CAPABILITY_NOTEBOOKS],
     fields: { tool: "run_python", input: { code: "print(1)" } },
     capped: false,
+    allowance: "consume",
+    tool: "run_python",
   },
   {
     type: "skill.draft_save",
@@ -177,6 +200,8 @@ const KINDS: readonly Kind[] = [
       files: [{ path: "my-skill/SKILL.md", rev: 1, sha256: SHA, size: 3 }],
     },
     capped: true,
+    allowance: "consume",
+    tool: "save_skill_draft",
   },
 ];
 
@@ -206,7 +231,14 @@ const tick = async (n = 5) => {
   for (let i = 0; i < n; i++) await new Promise((r) => setImmediate(r));
 };
 
-function harness() {
+interface HarnessOptions {
+  /** A skill eval's sandbox (KOBE-325): its eval thread. */
+  readonly evalThreadId?: string;
+  /** Storage left unconfigured on the replica. */
+  readonly without?: readonly ("notebooks" | "skillDrafts")[];
+}
+
+function harness(opts: HarnessOptions = {}) {
   const audits: { kind: string; reason: unknown }[] = [];
   const audit = (kind: string) => (_t: unknown, _s: unknown, refusal: { reason: unknown }) =>
     audits.push({ kind, reason: refusal.reason });
@@ -222,8 +254,8 @@ function harness() {
     fileShare: recorder("fileShare"),
     memory: recorder("memory"),
     projectCommits: recorder("projectCommits"),
-    skillDrafts: recorder("skillDrafts"),
-    notebooks: recorder("notebooks"),
+    skillDrafts: opts.without?.includes("skillDrafts") ? undefined : recorder("skillDrafts"),
+    notebooks: opts.without?.includes("notebooks") ? undefined : recorder("notebooks"),
     ui: recorder("ui"),
     hooks: recorder("hooks"),
     liveness: { isLive: () => Promise.resolve(true) },
@@ -253,14 +285,20 @@ function harness() {
   const conn = new SandboxConnection(
     ctx,
     socket as unknown as WebSocket,
-    { sandboxId: SANDBOX, teamId: TEAM, userId: USER, exp: Date.now() / 1000 + 900 },
+    {
+      sandboxId: SANDBOX,
+      teamId: TEAM,
+      userId: USER,
+      exp: Date.now() / 1000 + 900,
+      ...(opts.evalThreadId === undefined ? {} : { evalThreadId: opts.evalThreadId }),
+    },
     registry,
   );
   return { conn, socket, audits };
 }
 
-async function connected(capabilities: readonly string[]) {
-  const h = harness();
+async function connected(capabilities: readonly string[], opts: HarnessOptions = {}) {
+  const h = harness(opts);
   h.conn.start();
   h.socket.deliver({
     v: 1,
@@ -308,10 +346,12 @@ function outcome(h: Awaited<ReturnType<typeof connected>>, kind: Kind) {
 }
 
 type Verdict = "ok" | "not_allowed" | "input_mismatch";
+/** Stubs the allowance; the spies record what each kind asked (mode, tool, input). */
 function verdict(v: Verdict) {
-  vi.spyOn(AllowedArtifactCalls.prototype, "check").mockReturnValue(v);
-  vi.spyOn(AllowedArtifactCalls.prototype, "consume").mockReturnValue(v);
+  const check = vi.spyOn(AllowedArtifactCalls.prototype, "check").mockReturnValue(v);
+  const consume = vi.spyOn(AllowedArtifactCalls.prototype, "consume").mockReturnValue(v);
   vi.spyOn(AllowedArtifactCalls.prototype, "ruleAllowed").mockReturnValue(true);
+  return { check, consume };
 }
 
 beforeEach(() => {
@@ -324,13 +364,19 @@ afterEach(() => {
 
 describe.each(KINDS)("tool frame gate: $type", (kind) => {
   it("reaches its action when every stage of the gate passes (control)", async () => {
-    verdict("ok");
+    const spies = verdict("ok");
     const h = await connected(ALL_CAPABILITIES);
-    h.socket.deliver(frameOf(kind));
+    const frame = frameOf(kind);
+    h.socket.deliver(frame);
     await tick();
     const o = outcome(h, kind);
     expect(o.reached.length > 0 || o.executed).toBe(true);
     expect(o.closed).toBeUndefined();
+    // The allowance this kind asks: its mode (consume = single use) and tool, for this input.
+    const asked = kind.allowance === "consume" ? spies.consume : spies.check;
+    const other = kind.allowance === "consume" ? spies.check : spies.consume;
+    expect(asked.mock.calls).toEqual([[RUN, frame.tool_call_id, kind.tool, frame.input]]);
+    expect(other).not.toHaveBeenCalled();
   });
 
   it.each(kind.capabilities)("refuses without the %s capability", async (missing) => {
@@ -418,6 +464,104 @@ describe.each(KINDS)("tool frame gate: $type", (kind) => {
     expect(o.reached).toEqual([]);
     expect(o.answers).toHaveLength(1);
     expect(o.answers[0]).toMatchObject({ ok: false, error: { code: "storage_failed" } });
+    expect(o).toMatchSnapshot();
+  });
+});
+
+describe("tool frame specs (KOBE-706 review)", () => {
+  it("pin each kind's allowance mode and tool", () => {
+    const port = {
+      ctx: { tuning: WIRE_DEFAULTS } as unknown as WireContext,
+      target: { teamId: TEAM, userId: USER },
+      sandboxId: SANDBOX,
+      connectionId: "c",
+      log: silentLog,
+      send: () => true,
+    };
+    const specs = toolFrameSpecs({
+      port,
+      inFlight: {
+        artifacts: { count: 0 },
+        fileShares: { count: 0 },
+        memory: { count: 0 },
+        skillDrafts: { count: 0 },
+      },
+      allowed: new AllowedArtifactCalls(),
+      recalled: new RecalledItems(),
+      pendingCommits: new Set(),
+      signal: new AbortController().signal,
+      notebookExecute: () => hang(),
+    });
+    const pinned = Object.fromEntries(
+      Object.entries(specs).map(([type, spec]) => [
+        type,
+        { allowance: spec.allowance, tool: spec.tool ?? "(frame.tool)" },
+      ]),
+    );
+    expect(pinned).toEqual({
+      "artifact.put": { allowance: "check", tool: "(frame.tool)" },
+      "file.share": { allowance: "check", tool: "(frame.tool)" },
+      "memory.put": { allowance: "check", tool: "remember" },
+      "memory.read": { allowance: "check", tool: "recall" },
+      "memory.show": { allowance: "check", tool: "show_memory_item" },
+      "project.commit": { allowance: "check", tool: "(frame.tool)" },
+      "file.edit_propose": { allowance: "consume", tool: "(frame.tool)" },
+      "file.open": { allowance: "consume", tool: "(frame.tool)" },
+      "notebook.run": { allowance: "consume", tool: "(frame.tool)" },
+      "skill.draft_save": { allowance: "consume", tool: "(frame.tool)" },
+    });
+  });
+});
+
+describe("tool frame gate: each kind's own stages (KOBE-706 review)", () => {
+  const kindOf = (type: string): Kind => {
+    const kind = KINDS.find((k) => k.type === type);
+    if (!kind) throw new Error(type);
+    return kind;
+  };
+
+  it.each(["file.edit_propose", "file.open"])(
+    "refuses %s from a skill eval's sandbox before the run check",
+    async (type) => {
+      const spies = verdict("ok");
+      const kind = kindOf(type);
+      const h = await connected(ALL_CAPABILITIES, { evalThreadId: THREAD });
+      h.socket.deliver(frameOf(kind));
+      await tick();
+      const o = outcome(h, kind);
+      expect(o.reached).toEqual([]);
+      expect(o.answers).toHaveLength(1);
+      expect(o.answers[0]).toMatchObject({ ok: false, error: { code: "not_allowed" } });
+      expect(spies.consume).not.toHaveBeenCalled();
+      expect(o).toMatchSnapshot();
+    },
+  );
+
+  it("refuses notebook.run when the replica has no notebook storage", async () => {
+    const spies = verdict("ok");
+    const kind = kindOf("notebook.run");
+    const h = await connected(ALL_CAPABILITIES, { without: ["notebooks"] });
+    h.socket.deliver(frameOf(kind));
+    await tick();
+    const o = outcome(h, kind);
+    expect(o.executed).toBe(false);
+    expect(o.answers).toHaveLength(1);
+    expect(o.answers[0]).toMatchObject({ ok: false, error: { code: "not_allowed" } });
+    expect(spies.consume).not.toHaveBeenCalled();
+    expect(o).toMatchSnapshot();
+  });
+
+  it("refuses skill.draft_save when skill drafts are not configured, after the allowance", async () => {
+    const spies = verdict("ok");
+    const kind = kindOf("skill.draft_save");
+    const h = await connected(ALL_CAPABILITIES, { without: ["skillDrafts"] });
+    h.socket.deliver(frameOf(kind));
+    await tick();
+    const o = outcome(h, kind);
+    expect(o.reached).toEqual([]);
+    expect(o.answers).toHaveLength(1);
+    expect(o.answers[0]).toMatchObject({ ok: false, error: { code: "storage_failed" } });
+    expect(spies.consume).toHaveBeenCalledTimes(1);
     expect(o).toMatchSnapshot();
   });
 });
