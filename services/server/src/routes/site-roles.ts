@@ -5,7 +5,7 @@ import { giveGrant, listGrants, takeGrant } from "../skills/registry/grants.js";
 import { and, asc, eq, lockSsoRequired, siteRoles, ne, users } from "@kobe/db";
 import type { AuthVariables } from "../auth/session.js";
 import { recordAudit } from "../audit/record.js";
-import { OwnerWouldLoseSignInError, assertOwnerKeepsSignIn } from "../sso/required.js";
+import { OwnerWouldLoseSignInError, assertOwnerKeepsSignIn } from "../sso/owner-invariant.js";
 import { requireSitePermission } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { findUserId } from "../teams/members.js";
