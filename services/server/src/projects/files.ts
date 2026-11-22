@@ -282,7 +282,7 @@ export async function commitProjectFile(
   }
 }
 
-async function headOf(blobs: BlobStore, key: string): Promise<Uint8Array> {
+async function sniffHead(blobs: BlobStore, key: string): Promise<Uint8Array> {
   const object = await blobs.objects.get(key);
   if (!object) throw new Error("project file copy is missing");
   const chunks: Buffer[] = [];
@@ -358,7 +358,7 @@ export async function uploadProjectFile(
   await discardReserved(deps, blobs, target.teamId, staging);
   let mime: string;
   try {
-    mime = resolveMime(await headOf(blobs, key), incoming.declaredMime);
+    mime = resolveMime(await sniffHead(blobs, key), incoming.declaredMime);
   } catch {
     await discardReserved(deps, blobs, target.teamId, key);
     return { ok: false, error: "storage_failed" };

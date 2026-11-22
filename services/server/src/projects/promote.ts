@@ -15,7 +15,6 @@ import {
 } from "@kobe/protocol";
 import type { Logger } from "pino";
 import type { BlobStore } from "../retention/blobs.js";
-import { resolveMime } from "../uploads/mime.js";
 import { lockTeamStorage } from "../uploads/quota.js";
 import { deleteWorkspaceFiles } from "../workspace-files/delete.js";
 import { areaOf, isInternalPath } from "../workspace-files/paths.js";
@@ -23,13 +22,14 @@ import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import type { WorkspaceSync } from "../workspace-sync/service.js";
 import { currentEntry, listLive, lockWorkspace } from "../workspace-sync/store.js";
 import type { ProjectRow } from "./access.js";
-import { copyVerified, sourceCheck, type Copy } from "./commits.js";
+import { sourceCheck } from "./commits.js";
+import { copyFrom, copyThenWrite, sumSizes, type Copy } from "./copy-loop.js";
 import type { ProjectMounts } from "./mounts.js";
 import { fitsMount, isConflictCopy } from "./paths.js";
 import { createProject } from "./repository.js";
 import { deriveSlug } from "./slug.js";
 import { overLimit, type TeamLimits } from "./storage.js";
-import { projectBlobKey, queueProjectBlobs, writeCommit, type TreeFile } from "./tree.js";
+import { projectBlobKey, writeCommit, type TreeFile } from "./tree.js";
 
 /**
  * Promote a My files folder to a project (KOBE-586, projects-in-conversations PF3-PF4). Like a
@@ -105,8 +105,6 @@ class PathTooLong extends Error {
   }
 }
 
-const sumSizes = (copies: readonly Copy[]): number => copies.reduce((n, c) => n + c.size, 0);
-
 /**
  * Step 1 (and again in step 3). `slug` is the one the name derives (KOBE-780: every path must fit
  * once mounted under it); the write step checks again under the slug the project really gets.
@@ -169,8 +167,6 @@ async function plan(
   };
 }
 
-const MAX_ROUNDS = 3;
-
 export async function promoteFolder(
   deps: PromoteDeps,
   owner: WorkspaceOwner,
@@ -180,48 +176,43 @@ export async function promoteFolder(
   if (!sync || !blobs) return refused("storage_failed");
   const projectId = randomUUID();
   const planDeps = { limits: deps.limits, prefix: blobs.prefix };
-  const mimes = new Map<string, string>();
-  for (let round = 0; round < MAX_ROUNDS; round++) {
-    const planned = await withTeam(deps.db, owner.teamId, (tx) =>
-      plan(tx, planDeps, owner, request.path, projectId, deriveSlug(request.name)),
-    );
-    if ("status" in planned) return planned;
-    const missing = planned.copies.filter((c) => !mimes.has(c.sha256));
-    if (missing.length > 0) {
-      // Fail fast on the quota before moving bytes (the write step checks again under the lock).
-      const early = await withTeam(deps.db, owner.teamId, (tx) =>
-        overLimit(tx, owner.teamId, deps.limits, sumSizes(planned.copies), planned.copies.length),
+  const slug = deriveSlug(request.name);
+  // The first plan, to tell a folder that changed between plan and write (its fingerprint).
+  let planned: Plan | undefined;
+  const written = await copyThenWrite<Plan, PromoteResult>({
+    db: deps.db,
+    teamId: owner.teamId,
+    projectId,
+    userId: owner.userId,
+    limits: deps.limits,
+    log: deps.log,
+    failure: "promote to project: a copy failed",
+    plan: async () => {
+      const p = await withTeam(deps.db, owner.teamId, (tx) =>
+        plan(tx, planDeps, owner, request.path, projectId, slug),
       );
-      if (early !== undefined) return refused("quota_exceeded", { limit: early });
-      await withTeam(deps.db, owner.teamId, (tx) =>
-        queueProjectBlobs(
-          tx,
-          owner.teamId,
-          projectId,
-          owner.userId,
-          missing.map((c) => c.key),
-          "reservation",
-        ),
-      );
-      for (const copy of missing) {
-        try {
-          mimes.set(copy.sha256, resolveMime(await copyVerified(blobs.objects, copy), undefined));
-        } catch (err) {
-          deps.log.warn({ err, team_id: owner.teamId }, "promote to project: a copy failed");
-          return refused("storage_failed");
-        }
-      }
-    }
-    const written = await writeStep(deps, sync, owner, request, projectId, planned, mimes);
-    if (written === "again") continue;
-    if (written.status === "created") {
-      // PF3: the creator sees the project under Projects at once (failures only log; the next
-      // run start reconciles again).
-      await deps.mounts.reconcileUser(owner.teamId, owner.userId);
-    }
-    return written;
+      if (!("status" in p)) planned = p;
+      return p;
+    },
+    isPlan: (p): p is Plan => !("status" in p),
+    copiesOf: (p) => p.copies,
+    store: copyFrom(blobs.objects),
+    write: (mimes) =>
+      planned === undefined
+        ? Promise.resolve("again" as const)
+        : writeStep(deps, sync, owner, request, projectId, planned, mimes),
+    refuse: {
+      quota: (limit) => refused("quota_exceeded", { limit }),
+      storage: () => refused("storage_failed"),
+      changed: () => refused("changed"),
+    },
+  });
+  if (written.status === "created") {
+    // PF3: the creator sees the project under Projects at once (failures only log; the next
+    // run start reconciles again).
+    await deps.mounts.reconcileUser(owner.teamId, owner.userId);
   }
-  return refused("changed");
+  return written;
 }
 
 async function writeStep(
