@@ -62,6 +62,23 @@
   instead of the password form while the setting is in force; component test.
 - **ac-6:** gate-sso stays a follow-up (below); the coordinator runs the browser spec on gate1.
 
+## Second review: one invariant
+
+"While Require single sign-on is stored on, every active Owner has an identity at an enabled
+provider." Every write that could break it takes `lockSsoRequired` before changing anything and
+calls `assertOwnerKeepsSignIn` after (throw → rollback → 409): turn-on; provider disable and delete
+(`owner_would_lose_sign_in`; the last-provider auto-off still runs first, as the safety valve,
+since disabling the last provider necessarily strands the Owner); ownership transfer
+(`owner_not_linked`); unlink by the user or an admin (`last_sign_in_method`; while the setting is
+stored on only another identity at an enabled provider counts, not a password or passkey). The
+start-up Helm seed can't refuse, so it turns the setting off (`owner_unlinked`, system, email).
+Race test: a provider disable blocked on the lock sees a turn-on that commits meanwhile and refuses.
+Other writers checked: SCIM never deactivates or unlinks a site-role holder or the setup Owner
+(`isProtected`, refused 403; the check runs before its transaction, a pre-existing narrow race
+with an ownership transfer); provider issuer/tenant/subject can't change while identities are
+linked (`identity_settings_locked`), so no reconfiguration deletes links; reactivation touches no
+identities. The Owner can't be deactivated (`owner_cannot_be_deactivated`, site-users.ts).
+
 ## Docs
 
 Guide: `admin/single-sign-on.md` (new "Requiring single sign-on" section, break-glass command,

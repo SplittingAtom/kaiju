@@ -373,6 +373,7 @@ describe("the last enabled provider going (ac-5)", () => {
   });
 
   it("stays on while another enabled provider remains", async () => {
+    await linkIdentity(ownerId);
     const admin = await h.signIn(adminEmail);
     const id = await consoleProvider(admin, `other-${randomUUID().slice(0, 8)}`);
     const sso = await ssoBrowser(adminEmail, adminId);
@@ -395,5 +396,157 @@ describe("the last enabled provider going (ac-5)", () => {
       target: { reason: "last_provider", providerId: corpId, slug: "corp" },
       actor_kind: "system",
     });
+  });
+});
+
+describe("the Owner keeps a sign-in while it is required (second review)", () => {
+  /** A console provider, turned on, made by a local admin session before the setting goes on. */
+  async function second(): Promise<string> {
+    const admin = await h.signIn(adminEmail);
+    const res = await admin.post(PROVIDERS, {
+      kind: "entra",
+      slug: `b-${randomUUID().slice(0, 8)}`,
+      displayName: "Second",
+      tenantId: TENANT,
+      clientId: "11111111-aaaa-4bbb-8ccc-222222222222",
+      clientSecret: SECRET,
+    });
+    expect(res.status, JSON.stringify(res.json)).toBe(201);
+    const id = res.json.provider.id as string;
+    expect((await admin.patch(`${PROVIDERS}/${id}`, { enabled: true })).status).toBe(200);
+    return id;
+  }
+
+  async function corpEnabled(): Promise<boolean> {
+    const { rows } = await h.admin.query<{ enabled: boolean }>(
+      `SELECT enabled FROM sso_providers WHERE id = $1`,
+      [corpId],
+    );
+    return rows[0]?.enabled === true;
+  }
+
+  it("refuses to disable the Owner's only enabled provider; allows it once linked elsewhere", async () => {
+    const b = await second();
+    await linkIdentity(ownerId);
+    const admin = await ssoBrowser(adminEmail, adminId, b);
+    await setRequired(true);
+    // corp stands in for a console provider here (Helm ones are read-only in the console).
+    await h.admin.query(
+      `UPDATE sso_providers SET managed_by = 'console',
+      client_secret_sealed = 'e1.x', client_secret_key_id = 'k' WHERE id = $1`,
+      [corpId],
+    );
+    try {
+      const res = await admin.patch(`${PROVIDERS}/${corpId}`, { enabled: false });
+      expect(res.status).toBe(409);
+      expect(res.json.code).toBe("owner_would_lose_sign_in");
+      expect(await corpEnabled()).toBe(true);
+      expect(await storedRequired()).toBe("true");
+      await linkIdentity(ownerId, b);
+      expect((await admin.patch(`${PROVIDERS}/${corpId}`, { enabled: false })).status).toBe(200);
+      expect(await storedRequired()).toBe("true");
+    } finally {
+      await h.admin.query(
+        `UPDATE sso_providers SET managed_by = 'helm',
+        client_secret_sealed = NULL, client_secret_key_id = NULL WHERE id = $1`,
+        [corpId],
+      );
+      await h.admin.query(`UPDATE sso_providers SET enabled = false WHERE id = $1`, [b]);
+    }
+  });
+
+  it("refuses to hand ownership to someone without a usable identity", async () => {
+    await linkIdentity(ownerId);
+    const owner = await ssoBrowser(ownerEmail, ownerId);
+    await setRequired(true);
+    try {
+      const res = await owner.post("/v1/site/roles/transfer-ownership", { userId: adminId });
+      expect(res.status).toBe(409);
+      expect(res.json.code).toBe("owner_not_linked");
+      await linkIdentity(adminId);
+      const ok = await owner.post("/v1/site/roles/transfer-ownership", { userId: adminId });
+      expect(ok.status, JSON.stringify(ok.json)).toBe(200);
+    } finally {
+      await h.admin.query(`UPDATE site_roles SET role = 'admin' WHERE user_id = $1`, [adminId]);
+      await h.admin.query(`UPDATE site_roles SET role = 'owner' WHERE user_id = $1`, [ownerId]);
+    }
+  });
+
+  it("a password is not another sign-in: the only usable identity can't be unlinked", async () => {
+    await linkIdentity(ownerId);
+    await linkIdentity(adminId);
+    const owner = await ssoBrowser(ownerEmail, ownerId);
+    const admin = await ssoBrowser(adminEmail, adminId);
+    await setRequired(true);
+    const mine = await owner.delete(`/v1/me/sso/links/${corpId}`);
+    expect(mine.status).toBe(409);
+    expect(mine.json.code).toBe("last_sign_in_method");
+    const theirs = await owner.delete(`/v1/site/sso/users/${adminId}/links/${corpId}`);
+    expect(theirs.status).toBe(409);
+    expect(theirs.json.code).toBe("last_sign_in_method");
+    // With the setting off, the password counts again.
+    await setRequired(false);
+    expect((await admin.delete(`/v1/me/sso/links/${corpId}`)).status).toBe(200);
+  });
+
+  it("the chart leaving the Owner unlinked turns it off at start-up (system)", async () => {
+    await linkIdentity(ownerId);
+    await h.admin.query(`UPDATE sso_providers SET enabled = true WHERE managed_by = 'console'`);
+    await setRequired(true);
+    try {
+      const result = await seedHelmProviders(
+        h.deps.database.db,
+        helmEnv([{ ...HELM_PROVIDER, enabled: false }]),
+      );
+      expect(result.ssoRequiredTurnedOff).toBe(true);
+      expect(await storedRequired()).toBe("false");
+      expect((await requiredAudit()).at(-1)).toMatchObject({
+        action: "identity.sso.required.disabled",
+        target: { reason: "owner_unlinked", providerId: corpId },
+        actor_kind: "system",
+      });
+    } finally {
+      await h.admin.query(`UPDATE sso_providers SET enabled = false WHERE managed_by = 'console'`);
+      await seedHelmProviders(h.deps.database.db, settings);
+    }
+  });
+
+  it("a provider change waits for the setting's lock and sees turn-on (race)", async () => {
+    const b = await second();
+    await linkIdentity(ownerId);
+    await linkIdentity(adminId, b);
+    const admin = await ssoBrowser(adminEmail, adminId, b);
+    await h.admin.query(
+      `UPDATE sso_providers SET managed_by = 'console',
+      client_secret_sealed = 'e1.x', client_secret_key_id = 'k' WHERE id = $1`,
+      [corpId],
+    );
+    const locker = new (await import("pg")).default.Client({ connectionString: h.adminUrl });
+    await locker.connect();
+    try {
+      await locker.query("BEGIN");
+      await locker.query(`SELECT pg_advisory_xact_lock(hashtext('kobe.sso.required'))`);
+      const pending = admin.patch(`${PROVIDERS}/${corpId}`, { enabled: false });
+      await new Promise((r) => setTimeout(r, 300));
+      expect(await corpEnabled()).toBe(true); // blocked before changing anything
+      // A turn-on commits while the disable waits.
+      await locker.query(
+        `INSERT INTO site_settings (key, value) VALUES ('require_sso', 'true')
+         ON CONFLICT (key) DO UPDATE SET value = 'true'`,
+      );
+      await locker.query("COMMIT");
+      const res = await pending;
+      expect(res.status).toBe(409);
+      expect(res.json.code).toBe("owner_would_lose_sign_in");
+      expect(await corpEnabled()).toBe(true);
+    } finally {
+      await locker.end();
+      await h.admin.query(
+        `UPDATE sso_providers SET managed_by = 'helm',
+        client_secret_sealed = NULL, client_secret_key_id = NULL WHERE id = $1`,
+        [corpId],
+      );
+      await h.admin.query(`UPDATE sso_providers SET enabled = false WHERE id = $1`, [b]);
+    }
   });
 });

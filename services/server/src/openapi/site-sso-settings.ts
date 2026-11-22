@@ -68,7 +68,11 @@ export function siteSsoSettingsOpenApiPaths(): Record<string, Record<string, unk
           "password sign-in, password reset, invitation acceptance and passkey sign-in " +
           "(`403 SSO_REQUIRED` on `/api/auth/*`). It turns itself off when the last enabled " +
           "provider is disabled or deleted, and `kobe sso allow-local-sign-in` turns it off " +
-          "with cluster access (`identity.sso.required.disabled`).",
+          "with cluster access (`identity.sso.required.disabled`). While it is stored on, the " +
+          "Owner keeps an identity at an enabled provider: disabling or deleting the Owner's only " +
+          "one answers 409 `owner_would_lose_sign_in`, transferring ownership to an unlinked user " +
+          "409 `owner_not_linked`, unlinking an account's only usable identity 409 " +
+          "`last_sign_in_method`.",
         requestBody: {
           required: true,
           content: {

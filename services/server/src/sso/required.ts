@@ -114,6 +114,57 @@ export async function unlinkedCounts(db: KobeDb | KobeTx): Promise<UnlinkedCount
   };
 }
 
+/**
+ * The invariant (second review): while the setting is stored on, every active Owner has an
+ * identity at an enabled provider. Every write that could break it takes {@link lockSsoRequired}
+ * before changing anything and calls {@link assertOwnerKeepsSignIn} after: turning it on, disabling
+ * or deleting a provider, transferring ownership, unlinking an identity. Thrown to roll the change
+ * back; callers turn it into a 409.
+ */
+export class OwnerWouldLoseSignInError extends Error {
+  constructor() {
+    super("the Owner would have no identity at an enabled provider");
+    this.name = "OwnerWouldLoseSignInError";
+  }
+}
+
+/** Active Owners without an identity at an enabled provider. */
+async function unlinkedOwners(tx: KobeTx): Promise<number> {
+  const res = await tx.execute<{ n: number }>(sql`
+    SELECT count(*)::int AS n FROM site_roles r JOIN users u ON u.id = r.user_id
+     WHERE r.role = 'owner' AND u.deactivated_at IS NULL
+       AND NOT EXISTS (
+         SELECT 1 FROM sso_identities i JOIN sso_providers p ON p.id = i.provider_id
+          WHERE i.user_id = u.id AND p.enabled)`);
+  return Number(res.rows[0]?.n ?? 0);
+}
+
+/** Under the lock, after the change: throws {@link OwnerWouldLoseSignInError} if it broke the rule. */
+export async function assertOwnerKeepsSignIn(tx: KobeTx): Promise<void> {
+  if (!(await readSsoRequiredIn(tx))) return;
+  if ((await unlinkedOwners(tx)) > 0) throw new OwnerWouldLoseSignInError();
+}
+
+/**
+ * The chart's providers (start-up) can't be refused: when they leave an Owner without an identity
+ * at an enabled provider, the setting turns off instead (system, `owner_unlinked`). True if so.
+ */
+export async function releaseIfOwnerUnlinked(
+  tx: KobeTx,
+  provider: { readonly providerId: string; readonly slug: string },
+): Promise<boolean> {
+  await lockSsoRequired(tx);
+  if (!(await readSsoRequiredIn(tx))) return false;
+  if ((await unlinkedOwners(tx)) === 0) return false;
+  await storeSsoRequired(tx, false);
+  await recordAudit(tx, {
+    actor: SYSTEM_ACTOR,
+    action: "identity.sso.required.disabled",
+    target: { reason: "owner_unlinked", ...provider },
+  });
+  return true;
+}
+
 export type TurnOnOutcome =
   | { readonly ok: true; readonly sessionsEnded: number }
   | { readonly ok: false; readonly failure: "sso_session_required" }

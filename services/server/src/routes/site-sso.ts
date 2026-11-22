@@ -116,6 +116,10 @@ const FAILURES = {
     409,
     "People have signed in with this provider. Disable it instead of deleting it.",
   ],
+  owner_would_lose_sign_in: [
+    409,
+    "Single sign-on is required and this is the Owner's only sign-in at an enabled identity provider: the Owner could no longer sign in. Turn Require single sign-on off first, or link the Owner to another provider.",
+  ],
   identity_settings_locked: [
     409,
     "People have signed in with this provider, so its tenant, issuer and subject claim can't change (the same identity would mean someone else). Add a new provider instead.",

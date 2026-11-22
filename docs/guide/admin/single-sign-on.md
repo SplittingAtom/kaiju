@@ -146,12 +146,30 @@ and will be unable to sign in, and names the break-glass command below. Only the
 off again. Turning it on and off is in the audit log (`identity.sso.required.enabled`,
 `identity.sso.required.disabled`).
 
+While it is on, the Owner always keeps a sign-in at a provider that is on. Kobe refuses, with a
+message saying what to do instead:
+
+- turning off or deleting a provider that is the Owner's only linked one while another provider
+  stays on (`owner_would_lose_sign_in`): link the Owner to another provider first, or turn
+  **Require single sign-on** off;
+- transferring ownership to someone without a linked sign-in at a provider that is on
+  (`owner_not_linked`): they link their account first;
+- unlinking an organization sign-in that is the account's only one at a provider that is on
+  (`last_sign_in_method`), for anyone: while single sign-on is required a password or passkey is
+  not another way in.
+
+If the chart's values leave the Owner without such a sign-in (a provider turned off there), the
+setting turns itself off at start-up instead (`reason: owner_unlinked`), with an email to the site
+admins.
+
 It never leaves the site without a way in:
 
 - **The last provider goes:** turning off or deleting the last provider that is on (in the console
   or in the chart's values) turns **Require single sign-on** off in the same step. The audit log
   records why (`reason: last_provider`) and, from the console, which admin did it (`byUserId`),
-  and every site admin gets an email. This is a deliberate safety valve: it is the one way an
+  and every site admin gets an email. Turning off the last provider necessarily leaves the Owner
+  without a sign-in, so here the setting goes off rather than the change being refused. This is a
+  deliberate safety valve: it is the one way an
   Admin, not only the Owner, ends the requirement, so the Owner sees it in the audit log and email.
 - **Not in force:** while no provider can finish a sign-in (for example a provider from the
   chart's values whose secret is missing) or single sign-on is switched off for the whole site

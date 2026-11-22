@@ -14,10 +14,16 @@ import {
   SYSTEM_ACTOR,
   type KobeDb,
   type KobeTx,
+  lockSsoRequired,
   pgCodeOf,
 } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
-import { releaseIfNoProvider } from "./required.js";
+import {
+  OwnerWouldLoseSignInError,
+  assertOwnerKeepsSignIn,
+  releaseIfNoProvider,
+  releaseIfOwnerUnlinked,
+} from "./required.js";
 import type { MfaRule } from "./schemas.js";
 import type { SsoSettings } from "./settings.js";
 
@@ -233,7 +239,26 @@ export async function endSsoSessionsWhenOff(db: KobeDb, settings: SsoSettings): 
 }
 
 export type ChangeFailure =
-  "not_found" | "managed_by_helm" | "credentials_unavailable" | "identity_settings_locked";
+  | "not_found"
+  | "managed_by_helm"
+  | "credentials_unavailable"
+  | "identity_settings_locked"
+  /** KOBE-774: single sign-on is required and the Owner would have no usable identity left. */
+  | "owner_would_lose_sign_in";
+
+/** Runs a provider change; the invariant's refusal becomes `owner_would_lose_sign_in`. */
+async function keepingOwner<T>(
+  run: () => Promise<T>,
+): Promise<T | { readonly ok: false; readonly failure: "owner_would_lose_sign_in" }> {
+  try {
+    return await run();
+  } catch (err) {
+    if (err instanceof OwnerWouldLoseSignInError) {
+      return { ok: false, failure: "owner_would_lose_sign_in" };
+    }
+    throw err;
+  }
+}
 
 /**
  * The settings that decide which IdP account an identity row means: the issuer (tenant) and the
@@ -295,86 +320,108 @@ export async function updateProvider(
   if (patch.clientSecret !== undefined && !s.envelope) {
     return { ok: false, failure: "credentials_unavailable" };
   }
-  return s.db.transaction(async (tx): Promise<UpdateOutcome> => {
-    const row = await lockRow(tx, id);
-    if (!row) return { ok: false, failure: "not_found" };
-    if (row.managedBy === "helm") return { ok: false, failure: "managed_by_helm" };
-    const identityMoves = IDENTITY_KEYS.some(
-      (k) => patch[k] !== undefined && !same(patch[k], row[k]),
-    );
-    if (identityMoves && (await hasIdentities(tx, id))) {
-      return { ok: false, failure: "identity_settings_locked" };
-    }
-    const changed = settingsChanged(row, patch);
-    const sealed =
-      patch.clientSecret !== undefined && s.envelope
-        ? s.envelope.seal(patch.clientSecret, clientSecretContext(id))
-        : undefined;
-    const toggled = patch.enabled !== undefined && patch.enabled !== row.enabled;
-    if (changed || sealed !== undefined || toggled) {
-      const { clientSecret: _secret, allowedEmailDomains, ...plain } = patch;
-      await tx
-        .update(ssoProviders)
-        .set({
-          ...plain,
-          ...(allowedEmailDomains ? { allowedEmailDomains: [...allowedEmailDomains] } : {}),
-          ...(sealed !== undefined
-            ? { clientSecretSealed: sealed, clientSecretKeyId: Envelope.keyIdOf(sealed) }
-            : {}),
-          updatedAt: sql`now()`,
-        })
-        .where(eq(ssoProviders.id, id));
-    }
-    const target = { providerId: id, slug: row.slug };
-    // A changed MFA rule ends the provider's sessions: their mfa_satisfied was decided by the old
-    // rule (KOBE-629 review L2). Audited with the count.
-    const ruleMoved = patch.mfaRule !== undefined && !same(patch.mfaRule, row.mfaRule);
-    const ended = ruleMoved ? { sessionsEnded: await endProviderSessions(tx, id) } : {};
-    if (changed || sealed !== undefined) {
-      await recordAudit(tx, {
-        action: "identity.sso.provider.updated",
-        target: { ...target, ...ended },
-      });
-    }
-    let ssoRequiredTurnedOff = false;
-    if (toggled) {
-      if (patch.enabled === false) await endProviderSessions(tx, id);
-      await recordAudit(tx, {
-        action: patch.enabled ? "identity.sso.provider.enabled" : "identity.sso.provider.disabled",
-        target,
-      });
-      if (patch.enabled === false) ssoRequiredTurnedOff = await releaseIfNoProvider(tx, target);
-    }
-    const provider = await getProvider(s, id, tx);
-    if (!provider) return { ok: false, failure: "not_found" };
-    return { ok: true, provider, ssoRequiredTurnedOff };
-  });
+  return keepingOwner(() =>
+    s.db.transaction(async (tx): Promise<UpdateOutcome> => {
+      // The setting's lock first, before any change (KOBE-774 invariant; same order everywhere).
+      await lockSsoRequired(tx);
+      const row = await lockRow(tx, id);
+      if (!row) return { ok: false, failure: "not_found" };
+      if (row.managedBy === "helm") return { ok: false, failure: "managed_by_helm" };
+      const identityMoves = IDENTITY_KEYS.some(
+        (k) => patch[k] !== undefined && !same(patch[k], row[k]),
+      );
+      if (identityMoves && (await hasIdentities(tx, id))) {
+        return { ok: false, failure: "identity_settings_locked" };
+      }
+      const changed = settingsChanged(row, patch);
+      const sealed =
+        patch.clientSecret !== undefined && s.envelope
+          ? s.envelope.seal(patch.clientSecret, clientSecretContext(id))
+          : undefined;
+      const toggled = patch.enabled !== undefined && patch.enabled !== row.enabled;
+      if (changed || sealed !== undefined || toggled) {
+        const { clientSecret: _secret, allowedEmailDomains, ...plain } = patch;
+        await tx
+          .update(ssoProviders)
+          .set({
+            ...plain,
+            ...(allowedEmailDomains ? { allowedEmailDomains: [...allowedEmailDomains] } : {}),
+            ...(sealed !== undefined
+              ? { clientSecretSealed: sealed, clientSecretKeyId: Envelope.keyIdOf(sealed) }
+              : {}),
+            updatedAt: sql`now()`,
+          })
+          .where(eq(ssoProviders.id, id));
+      }
+      const target = { providerId: id, slug: row.slug };
+      // A changed MFA rule ends the provider's sessions: their mfa_satisfied was decided by the old
+      // rule (KOBE-629 review L2). Audited with the count.
+      const ruleMoved = patch.mfaRule !== undefined && !same(patch.mfaRule, row.mfaRule);
+      const ended = ruleMoved ? { sessionsEnded: await endProviderSessions(tx, id) } : {};
+      if (changed || sealed !== undefined) {
+        await recordAudit(tx, {
+          action: "identity.sso.provider.updated",
+          target: { ...target, ...ended },
+        });
+      }
+      let ssoRequiredTurnedOff = false;
+      if (toggled) {
+        if (patch.enabled === false) await endProviderSessions(tx, id);
+        await recordAudit(tx, {
+          action: patch.enabled
+            ? "identity.sso.provider.enabled"
+            : "identity.sso.provider.disabled",
+          target,
+        });
+        if (patch.enabled === false) {
+          // The last enabled provider: the setting turns off (the safety valve). Otherwise the
+          // Owner must keep an identity at an enabled provider, or the change is refused.
+          ssoRequiredTurnedOff = await releaseIfNoProvider(tx, target);
+          await assertOwnerKeepsSignIn(tx);
+        }
+      }
+      const provider = await getProvider(s, id, tx);
+      if (!provider) return { ok: false, failure: "not_found" };
+      return { ok: true, provider, ssoRequiredTurnedOff };
+    }),
+  );
 }
 
 export type DeleteOutcome =
   | { readonly ok: true; readonly ssoRequiredTurnedOff: boolean }
-  | { readonly ok: false; readonly failure: "not_found" | "managed_by_helm" | "identities_linked" };
+  | {
+      readonly ok: false;
+      readonly failure:
+        "not_found" | "managed_by_helm" | "identities_linked" | "owner_would_lose_sign_in";
+    };
 
 /** Deletes a console provider no identity is linked to (otherwise: disable it). */
 export function deleteProvider(s: ProviderStore, id: string): Promise<DeleteOutcome> {
-  return s.db.transaction(async (tx): Promise<DeleteOutcome> => {
-    const row = await lockRow(tx, id);
-    if (!row) return { ok: false, failure: "not_found" };
-    if (row.managedBy === "helm") return { ok: false, failure: "managed_by_helm" };
-    const [linked] = await tx
-      .select({ n: sql<number>`count(*)::int` })
-      .from(ssoIdentities)
-      .where(eq(ssoIdentities.providerId, id));
-    if (Number(linked?.n ?? 0) > 0) return { ok: false, failure: "identities_linked" };
-    await endProviderSessions(tx, id);
-    await tx.delete(ssoProviders).where(eq(ssoProviders.id, id));
-    await recordAudit(tx, {
-      action: "identity.sso.provider.deleted",
-      target: { providerId: id, slug: row.slug },
-    });
-    const ssoRequiredTurnedOff = await releaseIfNoProvider(tx, { providerId: id, slug: row.slug });
-    return { ok: true, ssoRequiredTurnedOff };
-  });
+  return keepingOwner(() =>
+    s.db.transaction(async (tx): Promise<DeleteOutcome> => {
+      await lockSsoRequired(tx);
+      const row = await lockRow(tx, id);
+      if (!row) return { ok: false, failure: "not_found" };
+      if (row.managedBy === "helm") return { ok: false, failure: "managed_by_helm" };
+      const [linked] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(ssoIdentities)
+        .where(eq(ssoIdentities.providerId, id));
+      if (Number(linked?.n ?? 0) > 0) return { ok: false, failure: "identities_linked" };
+      await endProviderSessions(tx, id);
+      await tx.delete(ssoProviders).where(eq(ssoProviders.id, id));
+      await recordAudit(tx, {
+        action: "identity.sso.provider.deleted",
+        target: { providerId: id, slug: row.slug },
+      });
+      const ssoRequiredTurnedOff = await releaseIfNoProvider(tx, {
+        providerId: id,
+        slug: row.slug,
+      });
+      await assertOwnerKeepsSignIn(tx);
+      return { ok: true, ssoRequiredTurnedOff };
+    }),
+  );
 }
 
 /**
@@ -435,7 +482,8 @@ export async function seedHelmProviders(
   settings: SsoSettings,
 ): Promise<HelmSeedResult> {
   return db.transaction(async (tx) => {
-    // One writer at a time across replicas starting together.
+    // The setting's lock first (KOBE-774), then one writer at a time across replicas.
+    await lockSsoRequired(tx);
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('kobe.sso.helm_seed'))`);
     const created: string[] = [];
     const updated: string[] = [];
@@ -542,7 +590,10 @@ export async function seedHelmProviders(
       disabled.push({ providerId: row.id, slug: row.slug });
     }
     const last = disabled.at(-1);
-    const off = last ? await releaseIfNoProvider(tx, last, { system: true }) : false;
+    const off = last
+      ? (await releaseIfNoProvider(tx, last, { system: true })) ||
+        (await releaseIfOwnerUnlinked(tx, last))
+      : false;
     return {
       created,
       updated,
