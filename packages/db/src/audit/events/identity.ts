@@ -162,6 +162,25 @@ export const IDENTITY_EVENTS = {
   "identity.sso.provider.deleted": event("site", { providerId: id, slug }),
   "identity.sso.provider.enabled": event("site", { providerId: id, slug }),
   "identity.sso.provider.disabled": event("site", { providerId: id, slug }),
+  /**
+   * The Site setting "Require single sign-on" was turned on (KOBE-774); `sessionsEnded`: the
+   * sessions not signed in through an identity provider that ended with it.
+   */
+  "identity.sso.required.enabled": event("site", { sessionsEnded: count }),
+  /**
+   * It was turned off: by the Owner (`admin`), by the last enabled provider being disabled or
+   * deleted (`last_provider`, naming it), or by the Site owner's `kobe sso allow-local-sign-in`
+   * break-glass command (`break_glass`, with the operator it recorded).
+   */
+  "identity.sso.required.disabled": event("site", {
+    reason: z.enum(["admin", "last_provider", "break_glass"]),
+    providerId: id.optional(),
+    slug: slug.optional(),
+    operator: z
+      .string()
+      .regex(/^[A-Za-z0-9._@-]{1,64}$/)
+      .optional(),
+  }),
   "identity.sso.mapping.created": event("site", {
     providerId: id,
     mappingId: id,

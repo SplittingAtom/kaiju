@@ -188,6 +188,7 @@ describe("sign-in page data", () => {
         { slug: "corp", displayName: "Contoso" },
         { slug: "kc", displayName: "Keycloak" },
       ],
+      ssoRequired: false,
     });
   });
 

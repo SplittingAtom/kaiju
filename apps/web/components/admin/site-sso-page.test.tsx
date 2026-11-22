@@ -173,3 +173,69 @@ describe("site single sign-on page (KOBE-626)", () => {
     expect(body(calls, "PATCH")).toEqual({ enabled: false });
   });
 });
+
+describe("Require single sign-on (KOBE-774)", () => {
+  const SETTINGS = "/v1/site/sso/settings";
+  const enabledProvider = provider({ enabled: true });
+
+  it("can't be turned on from a session that did not sign in with a provider", async () => {
+    stubApi({
+      [`GET ${BASE}`]: [200, { providers: [enabledProvider] }],
+      [`GET ${SETTINGS}`]: [200, { require_sso: false, in_force: false, can_turn_on: false }],
+    });
+    renderSite(<SiteSsoPage />);
+    const toggle = await screen.findByRole("switch", { name: "Require single sign-on" });
+    expect((toggle as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText(/sign in with an enabled identity provider/i)).toBeTruthy();
+  });
+
+  it("turns on after a confirmation that names the break-glass command", async () => {
+    const calls = stubApi({
+      [`GET ${BASE}`]: [200, { providers: [enabledProvider] }],
+      [`GET ${SETTINGS}`]: [
+        [200, { require_sso: false, in_force: false, can_turn_on: true }],
+        [200, { require_sso: true, in_force: true, can_turn_on: true }],
+      ],
+      [`PUT ${SETTINGS}`]: [200, { require_sso: true, in_force: true, can_turn_on: true }],
+    });
+    renderSite(<SiteSsoPage />);
+    await userEvent.click(await screen.findByRole("switch", { name: "Require single sign-on" }));
+    const text = await answerConfirm(/Require single sign-on\?/, "Require single sign-on");
+    expect(text).toContain("kobe sso allow-local-sign-in");
+    expect(text).toMatch(/password/i);
+    expect(body(calls, "PUT")).toEqual({ requireSso: true });
+    expect(await screen.findByText(/Single sign-on is now required/)).toBeTruthy();
+  });
+
+  it("turns off after a confirmation", async () => {
+    const calls = stubApi({
+      [`GET ${BASE}`]: [200, { providers: [enabledProvider] }],
+      [`GET ${SETTINGS}`]: [200, { require_sso: true, in_force: true, can_turn_on: true }],
+      [`PUT ${SETTINGS}`]: [200, { require_sso: false, in_force: false, can_turn_on: true }],
+    });
+    renderSite(<SiteSsoPage />, "owner");
+    await userEvent.click(await screen.findByRole("switch", { name: "Require single sign-on" }));
+    await answerConfirm(/Stop requiring single sign-on\?/, "Stop requiring");
+    expect(body(calls, "PUT")).toEqual({ requireSso: false });
+  });
+
+  it("only the Owner can turn it off", async () => {
+    stubApi({
+      [`GET ${BASE}`]: [200, { providers: [enabledProvider] }],
+      [`GET ${SETTINGS}`]: [200, { require_sso: true, in_force: true, can_turn_on: true }],
+    });
+    renderSite(<SiteSsoPage />, "admin");
+    const toggle = await screen.findByRole("switch", { name: "Require single sign-on" });
+    expect((toggle as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText(/Only the Owner can turn this off/)).toBeTruthy();
+  });
+
+  it("says when it is stored on but not in force", async () => {
+    stubApi({
+      [`GET ${BASE}`]: [200, { providers: [] }],
+      [`GET ${SETTINGS}`]: [200, { require_sso: true, in_force: false, can_turn_on: false }],
+    });
+    renderSite(<SiteSsoPage />);
+    expect(await screen.findByText(/not in force/i)).toBeTruthy();
+  });
+});

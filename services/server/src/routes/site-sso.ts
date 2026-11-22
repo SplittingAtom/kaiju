@@ -7,6 +7,14 @@ import { hitRateLimit } from "../rate-limit.js";
 import { validateDiscovery, type DiscoveryReport, type DiscoveryTarget } from "../sso/discovery.js";
 import { issuerFor } from "../sso/issuer.js";
 import {
+  readSsoRequired,
+  signedInThroughEnabledProvider,
+  ssoRequired,
+  turnOffSsoRequired,
+  turnOnSsoRequired,
+} from "../sso/required.js";
+import { notifySsoRequiredOff } from "../sso/required-notify.js";
+import {
   createProvider,
   deleteProvider,
   getProvider,
@@ -87,6 +95,9 @@ const patchSchema = z
   })
   .strict();
 
+/** KOBE-774: the "Require single sign-on" switch. */
+export const ssoSettingsSchema = z.strictObject({ requireSso: z.boolean() });
+
 const notFound = (c: Context) =>
   c.json({ code: "not_found", message: "No such single sign-on provider." }, 404);
 
@@ -156,6 +167,55 @@ export function siteSsoRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables
       },
       422,
     );
+
+  /** Emails the site admins after a provider change turned "Require single sign-on" off. */
+  const notifyOff = (slug: string) =>
+    deps.background.run("require single sign-on notice failed", () =>
+      notifySsoRequiredOff(
+        { db: deps.database.db, mailer: deps.mailer, publicUrl: deps.publicUrl },
+        slug,
+      ),
+    );
+
+  /**
+   * KOBE-774: `requireSso` (stored), `inForce` (stored, and a provider can finish a sign-in), and
+   * `canTurnOn` (this session was signed in through an enabled provider).
+   */
+  const ssoSettingsOf = async (c: Context<{ Variables: AuthVariables }>) => ({
+    requireSso: await readSsoRequired(deps.database.db),
+    inForce: await ssoRequired(deps.database.db, deps.sso.settings),
+    canTurnOn: await signedInThroughEnabledProvider(deps.database.db, c.get("sessionId")),
+  });
+
+  app.get("/settings", async (c) => c.json(await ssoSettingsOf(c)));
+
+  app.put("/settings", async (c) => {
+    const body = await parseBody(c, ssoSettingsSchema);
+    if (!body) return invalidRequest(c, "Send requireSso (true or false).");
+    if (body.requireSso) {
+      const outcome = await turnOnSsoRequired(deps.database.db, c.get("sessionId"));
+      if (!outcome.ok) {
+        return c.json(
+          {
+            code: "sso_session_required",
+            message:
+              "Turn this on from a session signed in through an enabled identity provider: sign out, sign in with single sign-on, and try again. This proves the provider works and that you can still sign in.",
+          },
+          409,
+        );
+      }
+    } else {
+      // Lowering the requirement weakens every account: Owner only (as with required 2FA).
+      if (c.get("siteRole") !== "owner") {
+        return c.json(
+          { code: "forbidden", message: "Only the Owner can stop requiring single sign-on." },
+          403,
+        );
+      }
+      await turnOffSsoRequired(deps.database.db);
+    }
+    return c.json(await ssoSettingsOf(c));
+  });
 
   app.get("/providers", async (c) => c.json({ providers: await listProviders(storeOf()) }));
 
@@ -265,14 +325,19 @@ export function siteSsoRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables
     const result = await updateProvider(storeOf(), id.data, patch);
     if (!result.ok)
       return result.failure === "not_found" ? notFound(c) : failure(c, result.failure);
+    if (result.ssoRequiredTurnedOff) notifyOff(current.slug);
     return c.json({ provider: result.provider, ...(discovery ? { discovery } : {}) });
   });
 
   app.delete("/providers/:id", async (c) => {
     const id = param(c, "id", idSchema);
     if (!id.success) return notFound(c);
+    const before = await getProvider(storeOf(), id.data);
     const result = await deleteProvider(storeOf(), id.data);
-    if (result.ok) return c.body(null, 204);
+    if (result.ok) {
+      if (result.ssoRequiredTurnedOff && before) notifyOff(before.slug);
+      return c.body(null, 204);
+    }
     return result.failure === "not_found" ? notFound(c) : failure(c, result.failure);
   });
 

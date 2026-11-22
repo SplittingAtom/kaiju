@@ -1,14 +1,14 @@
 "use client";
 
 import { KeyRoundIcon } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { getPendingSsoLink } from "../../lib/admin/api/site/sso-links";
 import { authClient } from "../../lib/auth-client";
 import { ssoErrorMessage } from "../../lib/sso-errors";
 import { useBranding } from "../shell/branding-context";
 import { Button, Field, Notice, TextInput } from "../ui/console";
 import { AUTH_LINK, AuthDivider, AuthPanel } from "./auth-panel";
-import { SsoButtons, useSsoProviders, type SsoProviderButton } from "./sso-sign-in";
+import { SsoButtons, useSignInOptions, type SsoProviderButton } from "./sso-sign-in";
 
 /**
  * Whether this browser can use a passkey (WebAuthn). True for the server render and the first
@@ -31,19 +31,34 @@ function usePasskeys(): boolean {
  * failed SSO sign-in's `?sso_error=<code>`, show in the panel as an alert. Authentication itself is
  * unchanged (Better Auth's client; a pending SSO link goes to /link-sign-in first, KOBE-630 M1).
  *
- * `providers` is the server render's list (no late arrival, nothing moves), or null when it could
- * not be read there: then the browser asks the public providers route.
+ * While the Site requires single sign-on (KOBE-774) the panel offers only the provider buttons:
+ * no password form, reset link or passkey (the server refuses those anyway).
+ *
+ * `providers` and `ssoRequired` are the server render's (no late arrival, nothing moves), or null
+ * when they could not be read there: then the browser asks the public providers route.
  */
 export function SignInForm({
-  providers: known = null,
+  providers: knownProviders = null,
+  ssoRequired: knownRequired = null,
 }: {
   readonly providers?: readonly SsoProviderButton[] | null;
+  readonly ssoRequired?: boolean | null;
 }) {
   const [step, setStep] = useState<"password" | "totp">("password");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const { appName } = useBranding();
-  const providers = useSsoProviders(known);
+  const known = useMemo(
+    () =>
+      knownProviders === null
+        ? null
+        : {
+            providers: knownProviders,
+            ssoRequired: knownRequired === true && knownProviders.length > 0,
+          },
+    [knownProviders, knownRequired],
+  );
+  const { providers, ssoRequired } = useSignInOptions(known);
   const passkeys = usePasskeys();
 
   useEffect(() => {
@@ -109,7 +124,21 @@ export function SignInForm({
           {error}
         </Notice>
       )}
-      {step === "password" ? (
+      {ssoRequired ? (
+        <>
+          <p className="m-0 text-sm text-console-muted">
+            This site requires single sign-on. Sign in with your organization&apos;s account.
+          </p>
+          <div
+            role="group"
+            aria-label="Ways to sign in"
+            data-auth-sso-only=""
+            className="flex flex-col gap-2"
+          >
+            <SsoButtons providers={providers} />
+          </div>
+        </>
+      ) : step === "password" ? (
         <>
           <form onSubmit={onPassword} className="flex flex-col gap-4">
             <Field label="Email">

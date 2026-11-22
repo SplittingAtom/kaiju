@@ -93,6 +93,12 @@ export { quoteIdent } from "./roles.js";
 export { listTeamInvitationsFor, type PendingTeamInvitation } from "./team-invitations.js";
 export { scanTeams, type ScannedTeam } from "./team-scan.js";
 export {
+  REQUIRE_SSO_KEY,
+  lockSsoRequired,
+  readSsoRequiredIn,
+  storeSsoRequired,
+} from "./sso-required.js";
+export {
   listTeamChoices,
   readLastTeam,
   rememberLastTeam,

@@ -17,6 +17,7 @@ import {
   pgCodeOf,
 } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
+import { releaseIfNoProvider } from "./required.js";
 import type { MfaRule } from "./schemas.js";
 import type { SsoSettings } from "./settings.js";
 
@@ -250,7 +251,12 @@ async function hasIdentities(tx: KobeTx, providerId: string): Promise<boolean> {
   return row !== undefined;
 }
 export type UpdateOutcome =
-  | { readonly ok: true; readonly provider: ProviderView }
+  | {
+      readonly ok: true;
+      readonly provider: ProviderView;
+      /** KOBE-774: the change turned "Require single sign-on" off (last enabled provider). */
+      readonly ssoRequiredTurnedOff: boolean;
+    }
   | { readonly ok: false; readonly failure: ChangeFailure };
 
 /** The stored row of a provider, locked for a change. */
@@ -330,21 +336,23 @@ export async function updateProvider(
         target: { ...target, ...ended },
       });
     }
+    let ssoRequiredTurnedOff = false;
     if (toggled) {
       if (patch.enabled === false) await endProviderSessions(tx, id);
       await recordAudit(tx, {
         action: patch.enabled ? "identity.sso.provider.enabled" : "identity.sso.provider.disabled",
         target,
       });
+      if (patch.enabled === false) ssoRequiredTurnedOff = await releaseIfNoProvider(tx, target);
     }
     const provider = await getProvider(s, id, tx);
     if (!provider) return { ok: false, failure: "not_found" };
-    return { ok: true, provider };
+    return { ok: true, provider, ssoRequiredTurnedOff };
   });
 }
 
 export type DeleteOutcome =
-  | { readonly ok: true }
+  | { readonly ok: true; readonly ssoRequiredTurnedOff: boolean }
   | { readonly ok: false; readonly failure: "not_found" | "managed_by_helm" | "identities_linked" };
 
 /** Deletes a console provider no identity is linked to (otherwise: disable it). */
@@ -364,7 +372,8 @@ export function deleteProvider(s: ProviderStore, id: string): Promise<DeleteOutc
       action: "identity.sso.provider.deleted",
       target: { providerId: id, slug: row.slug },
     });
-    return { ok: true };
+    const ssoRequiredTurnedOff = await releaseIfNoProvider(tx, { providerId: id, slug: row.slug });
+    return { ok: true, ssoRequiredTurnedOff };
   });
 }
 
@@ -406,6 +415,12 @@ export interface HelmSeedResult {
    * linked (review finding 5): left as they are, nothing applied.
    */
   readonly locked: readonly string[];
+  /**
+   * KOBE-774: disabling or retiring a provider left none enabled, so "Require single sign-on"
+   * turned itself off (audited as the system); the slug that did it, for the admins' email.
+   */
+  readonly ssoRequiredTurnedOff: boolean;
+  readonly ssoRequiredReleasedBy?: string;
 }
 
 /**
@@ -427,6 +442,7 @@ export async function seedHelmProviders(
     const conflicts: string[] = [];
     const retired: string[] = [];
     const locked: string[] = [];
+    const disabled: { providerId: string; slug: string }[] = [];
     const existing = await tx.select().from(ssoProviders);
     const bySlug = new Map(existing.map((r) => [r.slug, r]));
     for (const p of settings.helmProviders) {
@@ -497,7 +513,10 @@ export async function seedHelmProviders(
         });
       }
       if (enabled !== row.enabled) {
-        if (!enabled) await endProviderSessions(tx, row.id);
+        if (!enabled) {
+          await endProviderSessions(tx, row.id);
+          disabled.push(target);
+        }
         await recordAudit(tx, {
           actor: SYSTEM_ACTOR,
           action: enabled ? "identity.sso.provider.enabled" : "identity.sso.provider.disabled",
@@ -520,7 +539,18 @@ export async function seedHelmProviders(
         target: { providerId: row.id, slug: row.slug },
       });
       retired.push(row.slug);
+      disabled.push({ providerId: row.id, slug: row.slug });
     }
-    return { created, updated, conflicts, retired, locked };
+    const last = disabled.at(-1);
+    const off = last ? await releaseIfNoProvider(tx, last, { system: true }) : false;
+    return {
+      created,
+      updated,
+      conflicts,
+      retired,
+      locked,
+      ssoRequiredTurnedOff: off,
+      ...(off && last ? { ssoRequiredReleasedBy: last.slug } : {}),
+    };
   });
 }

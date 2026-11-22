@@ -13,6 +13,7 @@ import type { SiteRole } from "../authz/permissions.js";
 import type { ServerDeps } from "../deps.js";
 import { DELEGATED_SESSION_PREFIX, delegationOf, type Delegation } from "../kobe-mcp/delegation.js";
 import { delegationBacking } from "../kobe-mcp/delegation-live.js";
+import { ssoRequired } from "../sso/required.js";
 import { hasLocalPassword } from "./reset-links.js";
 
 export type { SiteRole } from "../authz/permissions.js";
@@ -170,6 +171,11 @@ async function cookieSession(deps: ServerDeps, headers: Headers): Promise<Sessio
       await deps.database.db.delete(sessions).where(eq(sessions.id, session.session.id));
       return unauthenticated;
     }
+  } else if (await ssoRequired(deps.database.db, deps.sso.settings)) {
+    // KOBE-774: the Site requires single sign-on, so a session not signed in through a provider
+    // ends at its next check (turning the setting on already ended those that existed then).
+    await deps.database.db.delete(sessions).where(eq(sessions.id, session.session.id));
+    return unauthenticated;
   }
   const user: SessionUser = {
     id: session.user.id,

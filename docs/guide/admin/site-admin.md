@@ -36,8 +36,9 @@ read a person's portable preferences either; reading them needs its own break-gl
   automatically when its verified address matches theirs and lies in one of the provider's
   verified domains (once, within 14 days). The Owner and Admins link only by signing in themselves.
 - **Single sign-on** and **SSO access mappings**: let people sign in with Microsoft Entra ID or
-  another OpenID Connect provider, decide which app roles or groups give which team role, and
-  create SCIM tokens so the provider provisions and deactivates accounts. See
+  another OpenID Connect provider, decide which app roles or groups give which team role,
+  create SCIM tokens so the provider provisions and deactivates accounts, and **Require single
+  sign-on** (password and passkey sign-in off). See
   [Single sign-on](single-sign-on.md).
 - **Invitations**: invite people by email; resend or revoke open invitations.
 - **Site roles**: who is Owner and who are Admins, and two grants that sit beside the roles and

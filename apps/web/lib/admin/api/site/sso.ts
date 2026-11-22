@@ -159,3 +159,23 @@ export function revokeScimToken(
     method: "POST",
   });
 }
+
+/** "Require single sign-on" (KOBE-774, `/v1/site/sso/settings`). */
+export interface SsoSettings {
+  /** Stored: password and passkey sign-in are off. */
+  readonly requireSso: boolean;
+  /** Stored on, and a provider can finish a sign-in (else password sign-in still works). */
+  readonly inForce: boolean;
+  /** This session was signed in through an enabled identity provider. */
+  readonly canTurnOn: boolean;
+}
+
+const SETTINGS = "/v1/site/sso/settings";
+
+export function getSsoSettings(): Promise<ApiResult<SsoSettings>> {
+  return apiRequest(SETTINGS);
+}
+
+export function putSsoSettings(requireSso: boolean): Promise<ApiResult<SsoSettings>> {
+  return apiRequest(SETTINGS, { method: "PUT", json: { requireSso } });
+}

@@ -1,6 +1,6 @@
 ---
 title: Single sign-on
-summary: How site admins connect Microsoft Entra ID or another OpenID Connect provider, map app roles or groups to teams, trust the provider's multi-factor authentication, provision accounts with SCIM and keep a break-glass sign-in.
+summary: How site admins connect Microsoft Entra ID or another OpenID Connect provider, map app roles or groups to teams, trust the provider's multi-factor authentication, provision accounts with SCIM, require single sign-on and keep a break-glass sign-in.
 section: Site admin
 order: 2
 audience: admin
@@ -8,7 +8,7 @@ audience: admin
 
 With single sign-on, people sign in with your organization's account (**Sign in with
 _provider_**) instead of a Kobe password. Local sign-in with passwords and passkeys keeps working
-beside it. Kobe works with Microsoft Entra ID and any other OpenID Connect provider; the
+beside it, unless you [require single sign-on](#requiring-single-sign-on). Kobe works with Microsoft Entra ID and any other OpenID Connect provider; the
 registration on the provider's side is in the installation guide (`docs/install.md`, "Single
 sign-on").
 
@@ -24,8 +24,8 @@ whole site (see [Switching it off](#switching-it-off)).
 - **Display name**: what the sign-in button says ("Sign in with Contoso"). On the sign-in page
   each provider that is on gets one full-width button, below the email and password form and an
   **or** line, sorted by display name, beside **Sign in with a passkey**. A provider you turn on
-  shows there within about 15 seconds. There is no setting that hides the password form: local
-  sign-in stays available beside single sign-on (keep it for break-glass access).
+  shows there within about 15 seconds. The password form stays beside the buttons unless you
+  [require single sign-on](#requiring-single-sign-on).
 - **Slug**: a short name in the provider's addresses. It can't change later.
 - **Directory (tenant) ID** for Entra, or the exact **Issuer** for another provider. A provider
   that admits any organization (`common`, `organizations`, `consumers`) is refused.
@@ -98,7 +98,9 @@ their team, read-only, under **Show access mappings** in the Team console.
 - **Break-glass.** The Owner created when Kobe was set up always keeps local sign-in: no single
   sign-on step links it away, removes its password or passkey, or deactivates it. Local sign-in
   never contacts the provider, so it works while the provider is down. Keep that account's
-  password or passkey somewhere safe.
+  password or passkey somewhere safe. While single sign-on is
+  [required](#requiring-single-sign-on), local sign-in is off for this account too; the
+  break-glass path is then the `kobe sso allow-local-sign-in` command.
 
 ## Multi-factor authentication
 
@@ -115,6 +117,50 @@ for `c1`): create the context and a Conditional Access policy that requires MFA 
 refused. Other providers prove MFA with the `amr` claim (for example `mfa`, `otp`, `hwk`).
 When you turn the setting on, every SSO session whose sign-in did not prove MFA is refused from
 its next request.
+
+## Requiring single sign-on
+
+**Require single sign-on** (at the bottom of the **Single sign-on** page) turns local sign-in off,
+so people sign in only with your identity provider. While it is on:
+
+- the sign-in page shows only the **Sign in with _provider_** buttons: no email and password, no
+  **Forgot your password?**, no passkey;
+- Kobe itself refuses password sign-in, password-reset requests and resets, password invitations
+  (an invited person signs in with the provider instead, so give them access through a mapping,
+  or **Expect SSO link** for an existing account) and passkey sign-in, whatever page or tool sends
+  them (`SSO_REQUIRED`);
+- every session that was not signed in through a provider ends at once when you turn it on, and
+  any that still turns up ends at its next request. Sessions signed in through a provider are
+  unaffected, and so are API keys and SCIM tokens;
+- linking an existing account by signing in with its password is not possible: use **Expect SSO
+  link** (Users → **Single sign-on**) for people who still need a link.
+
+You can turn it on only from a session signed in through a provider that is on: sign out, sign in
+with **Sign in with _provider_** and turn it on. That proves the provider works and that you can
+still get in. The confirmation names the break-glass command below. Only the Owner can turn it
+off again. Turning it on and off is in the audit log (`identity.sso.required.enabled`,
+`identity.sso.required.disabled`).
+
+It never leaves the site without a way in:
+
+- **The last provider goes:** turning off or deleting the last provider that is on (in the console
+  or in the chart's values) turns **Require single sign-on** off in the same step. The audit log
+  records why (`reason: last_provider`) and every site admin gets an email.
+- **Not in force:** while no provider can finish a sign-in (for example a provider from the
+  chart's values whose secret is missing) or single sign-on is switched off for the whole site
+  (`auth.sso.enabled: false`), local sign-in works even though the setting is stored on; the page
+  says **Stored on but not in force**.
+- **The provider is down or misconfigured** (nobody can sign in through the web): the Site owner
+  turns the setting off with cluster access, from wherever they run `kobe backup`, with the
+  installation's owner database role:
+
+  ```bash
+  KOBE_DB_MIGRATE_URL=<the chart's migrate URL> kobe sso allow-local-sign-in --operator <your name>
+  ```
+
+  Password and passkey sign-in work again at once (the setup Owner's password included); the audit
+  log records `identity.sso.required.disabled` with `reason: break_glass` and the operator. Fix the
+  provider, sign in through it and turn the setting back on.
 
 ## SCIM provisioning
 
@@ -158,7 +204,7 @@ backup would work again).
 - **One provider:** **Turn off** (sessions signed in with it end at once).
 - **The whole site:** the installation's `auth.sso.enabled: false` (the kill switch) hides every
   provider, button and console page, refuses SCIM and ends every session signed in through single
-  sign-on. Local sign-in keeps working; nothing in the database changes, so switching it back on
+  sign-on. Local sign-in keeps working (also while **Require single sign-on** is stored on); nothing in the database changes, so switching it back on
   restores the providers as they were.
 
 Every change here (providers, mappings, links, tokens, SCIM changes, take-overs) is in the
