@@ -133,21 +133,54 @@ function ProjectView({
     );
   }
 
+  /** KOBE-780 (P2-42): members whose working copy holds changes the delete would discard. */
+  async function uncommittedCount(): Promise<number> {
+    const copies = await commits.workingCopies(project.id);
+    return copies.ok ? copies.data.filter((c) => c.changedFiles > 0).length : 0;
+  }
+
+  const uncommittedNote = (n: number): string =>
+    n === 0
+      ? ""
+      : n === 1
+        ? " 1 member has uncommitted changes in a working copy; deleting the project discards them."
+        : ` ${n} members have uncommitted changes in their working copies; deleting the project discards them.`;
+
+  /**
+   * The delete carries the count the member confirmed; when the server finds more uncommitted
+   * working copies by then (409 `uncommitted_work`), it asks again with the new count.
+   */
   async function remove(trigger: HTMLElement | null) {
-    const yes = await confirm(
-      {
-        title: `Delete ${project.name} for good?`,
-        description: "Archive it instead to keep its history.",
-        confirmLabel: "Delete project",
-      },
-      trigger,
-    );
-    if (!yes) return;
-    const done = await mutation.run(
-      async () => worded(await api.remove(project.id)),
-      () => "Deleted.",
-    );
-    if (done) navigate("/me/projects");
+    let confirmed = await uncommittedCount();
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const yes = await confirm(
+        {
+          title: `Delete ${project.name} for good?`,
+          description: `Archive it instead to keep its history.${uncommittedNote(confirmed)}`,
+          confirmLabel: "Delete project",
+        },
+        trigger,
+      );
+      if (!yes) return;
+      let more: number | undefined;
+      const done = await mutation.run(
+        async () => {
+          const res = await api.remove(project.id, confirmed);
+          const now = res.ok ? undefined : res.error.details?.uncommittedWorkingCopies;
+          if (!res.ok && res.error.code === "uncommitted_work" && typeof now === "number") {
+            more = now;
+          }
+          return worded(res);
+        },
+        () => "Deleted.",
+      );
+      if (done) {
+        navigate("/me/projects");
+        return;
+      }
+      if (more === undefined) return;
+      confirmed = more;
+    }
   }
 
   return (

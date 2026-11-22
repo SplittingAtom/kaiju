@@ -205,6 +205,7 @@ export async function importProjectFile(
     {
       folder: request.folder,
       name,
+      slug: access.project.slug,
       declaredMime: source.declaredMime,
       body,
       importedFrom: source.importedFrom,

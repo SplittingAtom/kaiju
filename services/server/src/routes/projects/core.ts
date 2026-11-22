@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { withTeam } from "@kobe/db";
 import {
   createProjectRequestSchema,
+  deleteProjectQuerySchema,
   listProjectsQuerySchema,
   updateProjectRequestSchema,
 } from "@kobe/protocol";
@@ -16,7 +17,7 @@ import {
   updateProject,
 } from "../../projects/repository.js";
 import { invalidRequest, parseBody } from "../../http/request.js";
-import { failure, isSlugConflict, type ProjectKit } from "./shared.js";
+import { ERRORS, failure, isSlugConflict, type ProjectKit } from "./shared.js";
 
 /** Creating, listing, reading, changing and deleting projects (and the ownerless list, PR5). */
 export function projectCoreRoutes(kit: ProjectKit): Hono<{ Variables: TeamVariables }> {
@@ -92,12 +93,30 @@ export function projectCoreRoutes(kit: ProjectKit): Hono<{ Variables: TeamVariab
     });
   });
 
-  app.delete("/:id", (c) =>
-    withProject(c, "manage", async (tx, access) => {
-      const deleted = await deleteProject(tx, viewerOf(c), access.project.id);
-      return deleted.ok ? c.body(null, 204) : failure(c, deleted.error, deleted.detail);
-    }),
-  );
+  app.delete("/:id", (c) => {
+    const query = deleteProjectQuerySchema.safeParse(c.req.query());
+    if (!query.success) {
+      return invalidRequest(c, "confirmed_uncommitted is a whole number of working copies.");
+    }
+    return withProject(c, "manage", async (tx, access) => {
+      const deleted = await deleteProject(
+        tx,
+        viewerOf(c),
+        access.project.id,
+        query.data.confirmed_uncommitted ?? 0,
+      );
+      if (deleted.ok) return c.body(null, 204);
+      if (deleted.error === "uncommitted_work") {
+        // KOBE-780: more uncommitted work than the caller confirmed; the dialog asks again.
+        const [status, code, message] = ERRORS.uncommitted_work;
+        return c.json(
+          { code, message, uncommitted_working_copies: Number(deleted.detail) },
+          status,
+        );
+      }
+      return failure(c, deleted.error, deleted.detail);
+    });
+  });
 
   return app;
 }

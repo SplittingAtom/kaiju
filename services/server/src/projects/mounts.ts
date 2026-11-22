@@ -16,6 +16,7 @@ import type { WorkspaceSync } from "../workspace-sync/service.js";
 import { listLive, lockWorkspace } from "../workspace-sync/store.js";
 import { viewableBy } from "./access.js";
 import { notifyTeamWorkspaces } from "../event-stream/access.js";
+import { fitsMount, mountPathOf } from "./paths.js";
 
 /**
  * Project files in members' workspaces (KOBE-162, ac-1; mechanism and why in
@@ -155,11 +156,17 @@ interface Mounts {
   readonly wanted: Map<string, Desired>;
   /** Folders (`projects/<slug>/`) of the member's checkouts: their rows are never touched. */
   readonly working: readonly string[];
+  /**
+   * Files left out because their mounted path is too long (rows from before KOBE-780), by
+   * project id: one such row must not stop every other file reaching the member.
+   */
+  readonly skipped: ReadonlyMap<string, number>;
 }
 
 /** The files a user should see, by mount path, and the checked-out folders to leave alone. */
 async function desiredFor(tx: KobeTx, teamId: string, userId: string): Promise<Mounts> {
   const wanted = new Map<string, Desired>();
+  const skipped = new Map<string, number>();
   const { ids, checkedOut } = await openProjects(tx, teamId, userId);
   const working: string[] = [];
   if (checkedOut.size > 0) {
@@ -170,9 +177,10 @@ async function desiredFor(tx: KobeTx, teamId: string, userId: string): Promise<M
     for (const r of rows) working.push(`${AREA}${r.slug}/`);
   }
   const mounted = [...ids].filter((id) => !checkedOut.has(id));
-  if (mounted.length === 0) return { wanted, working };
+  if (mounted.length === 0) return { wanted, working, skipped };
   const rows = await tx
     .select({
+      projectId: projects.id,
       slug: projects.slug,
       path: projectFiles.path,
       sha256: projectFiles.sha256,
@@ -196,7 +204,11 @@ async function desiredFor(tx: KobeTx, teamId: string, userId: string): Promise<M
     )
     .where(and(eq(projectFiles.teamId, teamId), inArray(projectFiles.projectId, mounted)));
   for (const r of rows) {
-    wanted.set(`${AREA}${r.slug}/${r.path}`, {
+    if (!fitsMount(r.slug, r.path)) {
+      skipped.set(r.projectId, (skipped.get(r.projectId) ?? 0) + 1);
+      continue;
+    }
+    wanted.set(mountPathOf(r.slug, r.path), {
       sha256: r.sha256,
       size: r.size,
       blobKey: r.blobRef,
@@ -204,11 +216,11 @@ async function desiredFor(tx: KobeTx, teamId: string, userId: string): Promise<M
       executable: r.executable ?? false,
     });
   }
-  return { wanted, working };
+  return { wanted, working, skipped };
 }
 
 async function diff(tx: KobeTx, teamId: string, userId: string) {
-  const { wanted, working } = await desiredFor(tx, teamId, userId);
+  const { wanted, working, skipped } = await desiredFor(tx, teamId, userId);
   const current = new Map(
     (await listLive(tx, { teamId, userId }, AREA, LIST_LIMIT))
       .filter((e) => !working.some((dir) => e.path.startsWith(dir)))
@@ -223,18 +235,28 @@ async function diff(tx: KobeTx, teamId: string, userId: string) {
     );
   });
   const deletes = [...current.keys()].filter((path) => !wanted.has(path));
-  return { puts, deletes };
+  return { puts, deletes, skipped };
 }
+
+type Warn = Pick<Logger, "warn">;
 
 async function reconcile(
   tx: KobeTx,
   sync: WorkspaceSync,
   teamId: string,
   userId: string,
+  log: Warn,
 ): Promise<void> {
   const owner = { teamId, userId };
   // Nothing to do is the common case (every run start): no lock, no write.
   const first = await diff(tx, teamId, userId);
+  for (const [projectId, files] of first.skipped) {
+    // Ids and counts only (no paths in logs); the project's Files list marks them for its owner.
+    log.warn(
+      { teamId, projectId, files },
+      "project files: skipped files whose path is too long to mount",
+    );
+  }
   if (first.puts.length + first.deletes.length === 0) return;
   // Locked first, so a reconcile that read the data later never loses to one that read it earlier.
   await lockWorkspace(tx, owner);
@@ -289,7 +311,7 @@ export function createProjectMounts(db: KobeDb, log: Pick<Logger, "warn">): Proj
       await Promise.all(
         userIds.slice(i, i + BATCH).map(async (userId) => {
           try {
-            await withTeam(db, teamId, (tx) => reconcile(tx, store, teamId, userId));
+            await withTeam(db, teamId, (tx) => reconcile(tx, store, teamId, userId, log));
           } catch (err) {
             allOk = false;
             log.warn({ err, teamId }, "project files: could not update a workspace");
@@ -349,7 +371,7 @@ export function createProjectMounts(db: KobeDb, log: Pick<Logger, "warn">): Proj
       }
     },
     async reconcileUserIn(tx, teamId, userId) {
-      if (sync) await reconcile(tx, sync, teamId, userId);
+      if (sync) await reconcile(tx, sync, teamId, userId, log);
     },
   };
 }
