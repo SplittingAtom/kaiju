@@ -39,6 +39,7 @@ export type {
   BootstrapIdentity,
   DestroyResult,
   DiscardGuard,
+  DiscardRefusal,
   EvalSandboxInfo,
   HibernateOutcome,
   ReadyOutcome,

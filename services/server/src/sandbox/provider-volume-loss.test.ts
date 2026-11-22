@@ -219,4 +219,80 @@ describe("discardLostVolume (KOBE-739)", () => {
     });
     expect(kube.all("SandboxClaim")).toHaveLength(0);
   });
+
+  it("a leftover discard after a retry and a same-named new claim deletes nothing (review g72-3)", async () => {
+    const kube = createFakeKube();
+    seedCluster(kube);
+    simulateAgentSandbox(kube, {});
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((r) => (release = r));
+    let gated = false;
+    const provider = createSandboxProvider({
+      kube,
+      isolation: gateFor(kube),
+      settings: SETTINGS,
+      // The first retry wait of the leftover discard is held until the new claim exists.
+      sleep: async () => {
+        if (!gated) {
+          gated = true;
+          await gate;
+        }
+      },
+      now: () => NOW,
+    });
+    const old = await provider.ensureSandbox(TEAM, USER);
+    const pvc = seedLocalVolume(kube, old.sandboxName, "compute4");
+    kube.failNext("delete", "SandboxClaim", 500, 1);
+    const leftover = provider.discardLostVolume(TEAM, USER);
+    await new Promise((r) => setTimeout(r, 10));
+    // Meanwhile a retry deleted the old claim and volume, and the member woke a new sandbox
+    // under the same names.
+    await kube.delete({ ...PVC(pvc) });
+    await kube.delete({
+      apiVersion: "extensions.agents.x-k8s.io/v1beta1",
+      kind: "SandboxClaim",
+      name: `u-${USER}`,
+      namespace: NS,
+    });
+    const fresh = await provider.ensureSandbox(TEAM, USER);
+    seedLocalVolume(kube, fresh.sandboxName, "compute1");
+    const freshPvcUid = kube.peek(PVC(pvc))?.metadata.uid;
+    release();
+
+    await expect(leftover).resolves.toMatchObject({ refused: "replaced" });
+    expect(kube.all("SandboxClaim").map((c) => c.metadata.uid)).toEqual([fresh.sandboxId]);
+    expect(kube.peek(PVC(pvc))?.metadata.uid).toBe(freshPvcUid);
+  });
+
+  it("an aborted discard stops its retries", async () => {
+    const kube = createFakeKube();
+    seedCluster(kube);
+    simulateAgentSandbox(kube, {});
+    const controller = new AbortController();
+    const provider = createSandboxProvider({
+      kube,
+      isolation: gateFor(kube),
+      settings: SETTINGS,
+      sleep: async () => controller.abort(),
+      now: () => NOW,
+    });
+    const handle = await provider.ensureSandbox(TEAM, USER);
+    seedLocalVolume(kube, handle.sandboxName, "compute4");
+    kube.failNext("delete", "SandboxClaim", 500, 10);
+    await expect(
+      provider.discardLostVolume(TEAM, USER, undefined, controller.signal),
+    ).rejects.toThrow(/stopped/);
+    expect(kube.calls.filter((c) => c.verb === "delete")).toHaveLength(1);
+    expect(kube.all("SandboxClaim")).toHaveLength(1);
+  });
+
+  it("every delete of the discard names the object's UID", async () => {
+    const { kube, provider } = setup();
+    const handle = await provider.ensureSandbox(TEAM, USER);
+    seedLocalVolume(kube, handle.sandboxName, "compute4");
+    await provider.discardLostVolume(TEAM, USER);
+    const deletes = kube.calls.filter((c) => c.verb === "delete");
+    expect(deletes.length).toBeGreaterThan(0);
+    expect(deletes.every((c) => typeof c.uid === "string")).toBe(true);
+  });
 });

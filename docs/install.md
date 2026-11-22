@@ -239,7 +239,11 @@ On confirm the server re-checks the verdict live under the sandbox row's lock, m
 cluster. Then it deletes the claim without keeping the volume, force-deletes the old pod if it sits
 on a node that is missing or not Ready (it could never finish terminating), deletes the PVC, and
 resets the row, all under the sandbox row's lock with the cluster deletes bounded to 30 s (a
-claim or volume created after the rebuild was confirmed is never deleted); the next message wakes a new sandbox on a fresh volume, which restores from S3.
+claim or volume created after the rebuild was confirmed is never deleted). Every delete carries
+a Kubernetes UID precondition for the object read under the lock, and a timeout aborts the
+remaining deletes, so a cleanup still running after it gave up can never remove a newer claim or
+volume of the same name; if one is found, nothing more is deleted, the member is told to reload
+and `sandbox.volume_rebuild_refused` is audited. The next message wakes a new sandbox on a fresh volume, which restores from S3.
 If the cluster deletes fail, the member is told the rebuild is confirmed and pending (code
 `rebuild_pending`); wakes answer `workspace_rebuilding` meanwhile, and the next confirm or the
 hibernation sweep (rebuilds unfinished after a minute) finishes it. **The old volume is deleted:**

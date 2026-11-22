@@ -12,7 +12,8 @@ import { SandboxProvisioningError } from "./errors.js";
 import { CLAIM, POD, PVC, WORKSPACE_PVC, str, workspacePvcName } from "./kube-objects.js";
 import type { ProviderContext } from "./context.js";
 import type { SandboxProvider } from "./types.js";
-import type { DestroyResult, DiscardGuard } from "./types.js";
+import type { DestroyResult, DiscardGuard, DiscardRefusal } from "./types.js";
+import { isKubeStatus, type ObjectRef } from "../kube.js";
 
 /**
  * Workspace volumes (KOBE-28, KOBE-733, KOBE-739): destroying a sandbox with or without its
@@ -22,6 +23,8 @@ import type { DestroyResult, DiscardGuard } from "./types.js";
 
 /** KOBE-739: a claim with an unrecorded UID must predate a rebuild's mark by this much. */
 const CLOCK_SKEW_MARGIN_MS = 5 * 60_000;
+/** Attempts after the first of an exact (UID-preconditioned) delete. */
+const EXACT_DELETE_RETRIES = 4;
 
 /** KOBE-733: how long a new claim waits for a reclaimed volume of the same name to go. */
 const VOLUME_TERMINATING_WAIT_MS = 60_000;
@@ -54,7 +57,14 @@ export function createVolumeOps(ctx: ProviderContext): VolumeOps {
       await kube.patch(PVC(namespace, pvc), { metadata: { ownerReferences: null } });
       kept = pvc;
     }
-    const claimGone = await deleteWithRetry(CLAIM(namespace, name));
+    // By UID (review g72-3): never a claim that replaced this one under the same name.
+    const claimUid = claim.metadata.uid;
+    const claimGone = claimUid
+      ? await deleteExact(CLAIM(namespace, name), claimUid, undefined).then(
+          () => true,
+          () => false,
+        )
+      : await deleteWithRetry(CLAIM(namespace, name));
     const podGone = await deleteWithRetry(POD(namespace, sandboxName));
     if (!claimGone || !podGone) {
       throw new SandboxProvisioningError(
@@ -103,17 +113,15 @@ export function createVolumeOps(ctx: ProviderContext): VolumeOps {
   };
 
   /** Why the guard refuses to delete what is there now (newer than the confirmed rebuild). */
-  const refusal = async (
-    namespace: string,
-    userId: string,
-    pvcName: string,
+  const refusal = (
+    claim: KubeObject | undefined,
+    pvc: KubeObject | undefined,
     guard: DiscardGuard | undefined,
-  ): Promise<"newer_claim" | "newer_volume" | undefined> => {
+  ): "newer_claim" | "newer_volume" | undefined => {
     if (!guard) return undefined;
     const created = (o: KubeObject | undefined) => Date.parse(o?.metadata.creationTimestamp ?? "");
     const mark = guard.notCreatedAfter.getTime();
     const after = (o: KubeObject | undefined) => created(o) > mark;
-    const claim = await kube.get(CLAIM(namespace, claimName(userId)));
     // Another claim than the one recorded is refused unless it clearly predates the mark (the row
     // can lag the cluster); the margin covers clock skew between the API server and Postgres.
     const otherUid =
@@ -122,28 +130,75 @@ export function createVolumeOps(ctx: ProviderContext): VolumeOps {
       claim.metadata.uid !== guard.claimUid &&
       !(created(claim) < mark - CLOCK_SKEW_MARGIN_MS);
     if (claim && (otherUid || after(claim))) return "newer_claim";
-    if (after(await kube.get(PVC(namespace, pvcName)))) return "newer_volume";
+    if (after(pvc)) return "newer_volume";
     return undefined;
+  };
+
+  /**
+   * Deletes exactly the object read with `uid` (KOBE-739, review g72-3): a UID precondition, so a
+   * call still running after its caller gave up can only ever delete the object it was aimed at.
+   * A 409 (another object under that name now) is `replaced`: stop, never retried by name. The
+   * signal stops the attempts and the waits between them.
+   */
+  const deleteExact = async (
+    target: ObjectRef,
+    uid: string,
+    signal: AbortSignal | undefined,
+    gracePeriodSeconds?: number,
+  ): Promise<"deleted" | "replaced"> => {
+    for (let attempt = 0; ; attempt++) {
+      if (signal?.aborted) {
+        throw new SandboxProvisioningError(`Deleting ${target.kind} ${target.name} was stopped`);
+      }
+      try {
+        await kube.delete(target, {
+          preconditions: { uid },
+          ...(gracePeriodSeconds === undefined ? {} : { gracePeriodSeconds }),
+        });
+        return "deleted";
+      } catch (err) {
+        if (isKubeStatus(err, 409)) return "replaced";
+        if (attempt >= EXACT_DELETE_RETRIES) {
+          throw new SandboxProvisioningError(`${target.kind} ${target.name} could not be deleted`);
+        }
+        await sleep(200 * 2 ** attempt);
+      }
+    }
   };
 
   const discardLostVolume = async (
     team: TeamRef,
     userId: string,
     guard?: DiscardGuard,
-  ): Promise<
-    DestroyResult & { readonly pvc: string; readonly refused?: "newer_claim" | "newer_volume" }
-  > => {
+    signal?: AbortSignal,
+  ): Promise<DestroyResult & { readonly pvc: string; readonly refused?: DiscardRefusal }> => {
     assertTeamRef(team);
     assertUserId(userId);
     const { namespace, sandboxName, pvcName } = await workspaceVolumeOf(team, userId);
-    const refused = await refusal(namespace, userId, pvcName, guard);
-    if (refused) return { pvc: pvcName, refused };
+    if (!WORKSPACE_PVC.test(pvcName)) {
+      throw new SandboxProvisioningError(`${pvcName} is not a workspace volume; not deleting it`);
+    }
+    // Read once; every delete below names these objects by UID.
+    const claim = await kube.get(CLAIM(namespace, claimName(userId)));
+    const pvc = await kube.get(PVC(namespace, pvcName));
     const pod = await kube.get(POD(namespace, sandboxName));
+    const refused = refusal(claim, pvc, guard);
+    if (refused) return { pvc: pvcName, refused };
     const stuck = await onDeadNode(pod);
-    const destroyed = await destroySandbox(team, userId, { retainVolume: false });
-    if (stuck) await kube.delete(POD(namespace, sandboxName), { gracePeriodSeconds: 0 });
-    await deleteVolume(team, pvcName);
-    return { ...(destroyed.sandboxId ? { sandboxId: destroyed.sandboxId } : {}), pvc: pvcName };
+    // The claim (its Sandbox goes with it by owner reference), the pod (at once when it sits on a
+    // dead node: it could never finish terminating), then the volume itself.
+    const steps: [ObjectRef, string | undefined, number | undefined][] = [
+      [CLAIM(namespace, claim?.metadata.name ?? claimName(userId)), claim?.metadata.uid, undefined],
+      [POD(namespace, sandboxName), pod?.metadata.uid, stuck ? 0 : undefined],
+      [PVC(namespace, pvcName), pvc?.metadata.uid, undefined],
+    ];
+    for (const [target, uid, grace] of steps) {
+      if (!uid) continue;
+      if ((await deleteExact(target, uid, signal, grace)) === "replaced") {
+        return { pvc: pvcName, refused: "replaced" };
+      }
+    }
+    return { ...(claim?.metadata.uid ? { sandboxId: claim.metadata.uid } : {}), pvc: pvcName };
   };
 
   const untilVolumeNotTerminating = async (namespace: string, pvcName: string): Promise<void> => {

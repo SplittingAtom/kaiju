@@ -190,6 +190,15 @@ export const PLATFORM_EVENTS = {
     byAdmin: z.boolean(),
   }),
   /**
+   * A confirmed rebuild found, at cleanup, a claim or volume that is not the one it was confirmed
+   * for (created after the confirm, or replaced under the same name while it deleted: `replaced`),
+   * so it deleted nothing more and ended (KOBE-739, review g72-3; system actor).
+   */
+  "sandbox.volume_rebuild_refused": event("team", {
+    userId: id,
+    reason: z.enum(["newer_claim", "newer_volume", "replaced"]),
+  }),
+  /**
    * A wake found the sandbox's pod ended (evicted, killed) and deleted it so agent-sandbox starts a
    * new one; claim, Sandbox and workspace volume are kept (KOBE-636; system actor, or the user
    * whose request woke it). `cause` in plain terms, `podReason` the pod's own (`Evicted`); the

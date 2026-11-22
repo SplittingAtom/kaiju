@@ -49,10 +49,21 @@ class Provider implements RebuildProvider, LifecycleProvider {
   /** While set, a discard waits for it (a slow cluster). */
   gate: Promise<void> | undefined;
 
-  discardLostVolume = async (_team: unknown, userId: string, guard?: DiscardGuard) => {
+  readonly signals: (AbortSignal | undefined)[] = [];
+  /** The cluster shows another claim than the confirmed one (review g72-3). */
+  refuse: "newer_claim" | "replaced" | undefined;
+
+  discardLostVolume = async (
+    _team: unknown,
+    userId: string,
+    guard?: DiscardGuard,
+    signal?: AbortSignal,
+  ) => {
     if (this.failDiscard) throw new Error("Kubernetes API unavailable");
     this.guards.push(guard);
+    this.signals.push(signal);
     this.calls.push(`discard:${userId}`);
+    if (this.refuse) return { pvc: `workspace-u-${userId}`, refused: this.refuse };
     await this.gate;
     this.volumeGone = true;
     return { sandboxId: SANDBOX, pvc: `workspace-u-${userId}` };
@@ -428,6 +439,40 @@ describe("a finished rebuild can never be discarded again (review g72-2 HIGH)", 
       [team, member],
     );
     expect(marked.rows[0].rebuild_started_at).not.toBeNull();
+  });
+});
+
+describe("a discard aims only at the confirmed claim (review g72-3 HIGH)", () => {
+  it("a timed-out discard is aborted, so its remaining deletes and retries stop", async () => {
+    provider.failDiscard = true;
+    await asMember.post("/v1/workspace/rebuild", { confirm: true });
+    provider.failDiscard = false;
+    provider.gate = new Promise(() => undefined);
+    const quiet = pino({ level: "silent" });
+    const team_ = { id: team, slug: "rebuild" };
+    expect(await completeRebuild(h.deps.database.db, provider, team_, member, quiet, 50)).toBe(
+      "pending",
+    );
+    expect(provider.signals.at(-1)?.aborted).toBe(true);
+  });
+
+  it("tells the member the truth when the claim there is not the confirmed one, and audits it", async () => {
+    provider.refuse = "replaced";
+    const res = await asMember.post("/v1/workspace/rebuild", { confirm: true });
+    expect(res).toMatchObject({ status: 409, json: { code: "rebuild_superseded" } });
+    expect(res.json.message).toMatch(/Reload/);
+    const refused = await h.admin.query<{ target: Record<string, unknown> }>(
+      `SELECT target FROM audit_log
+        WHERE action = 'sandbox.volume_rebuild_refused' AND team_id = $1 AND seq > $2`,
+      [team, since],
+    );
+    expect(refused.rows.map((r) => r.target)).toEqual([{ userId: member, reason: "replaced" }]);
+    // Nothing reset: the row keeps the sandbox it has; the mark is gone.
+    const r = await h.admin.query(
+      `SELECT sandbox_id, rebuild_started_at FROM sandboxes WHERE team_id = $1 AND user_id = $2`,
+      [team, member],
+    );
+    expect(r.rows[0]).toEqual({ sandbox_id: SANDBOX, rebuild_started_at: null });
   });
 });
 

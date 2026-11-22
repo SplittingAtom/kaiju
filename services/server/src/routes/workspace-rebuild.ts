@@ -85,6 +85,15 @@ function answer(c: Ctx, outcome: RebuildOutcome) {
       });
     case "already":
       return c.json({ status: "already", last_synced_at: null });
+    case "superseded":
+      return c.json(
+        {
+          code: "rebuild_superseded",
+          message:
+            "This sandbox was already rebuilt or replaced since the rebuild was confirmed, so nothing was deleted. Reload to see its current state.",
+        },
+        409,
+      );
     case "pending":
       return c.json(
         {

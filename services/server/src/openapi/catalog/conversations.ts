@@ -191,7 +191,7 @@ export const conversationsAreas: readonly CatalogArea[] = [
         "post",
         "/v1/workspace/rebuild",
         "Rebuild the member's lost workspace from the last sync",
-        "Team members (`team.chat`). Body `{confirm: true}`. Re-checks the loss live (409 `volume_reachable`, or `volume_not_yet_lost` with `offer_at` while the node's grace period runs), audits `sandbox.volume_rebuilt`, then deletes the old claim and volume; the next wake restores from object storage. 503 `rebuild_pending` when the cleanup is retried; idempotent (`already`).",
+        "Team members (`team.chat`). Body `{confirm: true}`. Re-checks the loss live (409 `volume_reachable`, or `volume_not_yet_lost` with `offer_at` while the node's grace period runs), audits `sandbox.volume_rebuilt`, then deletes the old claim and volume; the next wake restores from object storage. 503 `rebuild_pending` when the cleanup is retried; 409 `rebuild_superseded` when the claim there is not the confirmed one; idempotent (`already`).",
       ],
       [
         "get",

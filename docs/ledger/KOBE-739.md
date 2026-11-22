@@ -98,6 +98,15 @@ let the next wake restore from object storage exactly like a wake after a reclai
   observations restarts `volume_lost_since`; the hibernation sweep re-observes marked rows (20 per
   team) and clears them when the node is back.
 
+## Review g72-3 fix
+
+- The discard reads claim, pod and PVC once and deletes each with a UID precondition (409 =
+  `replaced`: stop, never retried by name); `completeRebuild`'s timeout aborts an `AbortSignal`
+  checked before every attempt. A refusal (newer or replaced object) clears the mark, answers 409
+  `rebuild_superseded` ("reload") and audits `sandbox.volume_rebuild_refused`. The KOBE-733 reaper
+  and offboarding share `destroySandbox`, whose claim delete now also carries the claim's UID (the
+  reaper holds the row lock throughout and has no timeout, so it had no leftover race).
+
 ## Open questions (for Chris or the coordinator)
 
 - Unverified on a real cluster: that Longhorn CSI PVs carry `dataLocality`/`numberOfReplicas` in

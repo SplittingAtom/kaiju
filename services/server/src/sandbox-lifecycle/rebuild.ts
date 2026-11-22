@@ -52,6 +52,8 @@ export type RebuildOutcome =
   | { readonly kind: "rebuilt"; readonly lastSyncedAt: Date | null }
   /** Nothing left to do (another click or the sweep finished it). */
   | { readonly kind: "already" }
+  /** The sandbox there now is not the one the rebuild was confirmed for: nothing deleted. */
+  | { readonly kind: "superseded" }
   /** Confirmed and audited, but the old claim or volume could not be deleted yet: retried. */
   | { readonly kind: "pending" }
   /** The volume is reachable, or its loss cannot be proven now: nothing done. */
@@ -114,13 +116,21 @@ async function readRow(tx: KobeTx, target: SandboxTarget, lock: boolean): Promis
 /** How long the cluster deletes may hold the row lock; on timeout the sweep retries later. */
 export const DISCARD_TIMEOUT_MS = 30_000;
 
-const withTimeout = <T>(work: Promise<T>, ms: number): Promise<T> => {
+/**
+ * Bounds the cluster work: on timeout the race rejects AND the signal aborts, so the discard's
+ * remaining deletes and retries stop (review g72-3); deletes already sent carry a UID precondition.
+ */
+const withTimeout = <T>(work: (signal: AbortSignal) => Promise<T>, ms: number): Promise<T> => {
+  const controller = new AbortController();
   let timer: NodeJS.Timeout | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`cluster cleanup timed out after ${ms} ms`)), ms);
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error(`cluster cleanup timed out after ${ms} ms`));
+    }, ms);
     timer.unref();
   });
-  return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
+  return Promise.race([work(controller.signal), timeout]).finally(() => clearTimeout(timer));
 };
 
 /**
@@ -140,7 +150,7 @@ export async function completeRebuild(
   userId: string,
   log: Pick<Logger, "warn" | "error">,
   timeoutMs: number = DISCARD_TIMEOUT_MS,
-): Promise<"rebuilt" | "already" | "pending"> {
+): Promise<"rebuilt" | "already" | "pending" | "superseded"> {
   try {
     return await withTeam(db, team.id, async (tx) => {
       await tx.execute(sql.raw(`SET LOCAL lock_timeout = '10s'`));
@@ -157,19 +167,26 @@ export async function completeRebuild(
         notCreatedAfter: new Date(row.rebuild_started_at),
       };
       const discarded = await withTimeout(
-        provider.discardLostVolume(team, userId, guard),
+        (signal) => provider.discardLostVolume(team, userId, guard, signal),
         timeoutMs,
       );
       if (discarded.refused) {
-        // A claim newer than the confirmed rebuild: never deleted. Nothing is left to rebuild.
+        // A claim or volume newer than the confirmed rebuild, or one replaced under the same name
+        // while we deleted: never deleted. The rebuild ends here, audited; nothing else changes.
         log.error(
           { team_id: team.id, reason: discarded.refused },
-          "rebuild: the current claim is newer than the confirmed rebuild; not deleted",
+          "rebuild: the current claim or volume is not the one the rebuild was confirmed for",
         );
         await tx.execute(sql`
           UPDATE sandboxes SET rebuild_started_at = NULL
            WHERE team_id = ${team.id} AND user_id = ${userId}`);
-        return "already";
+        await recordAudit(tx, {
+          action: "sandbox.volume_rebuild_refused",
+          actor: SYSTEM_ACTOR,
+          teamId: team.id,
+          target: { userId, reason: discarded.refused },
+        });
+        return "superseded";
       }
       await tx.execute(sql`
         UPDATE sandboxes
@@ -320,6 +337,7 @@ export function createWorkspaceRebuild(options: WorkspaceRebuildOptions): Worksp
       );
       const done = await completeRebuild(db, current, team, userId, log);
       if (done === "pending") return { kind: "pending" };
+      if (done === "superseded") return { kind: "superseded" };
       return done === "rebuilt" ? { kind: "rebuilt", lastSyncedAt } : { kind: "already" };
     },
   };

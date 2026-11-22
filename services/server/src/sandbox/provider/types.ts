@@ -116,6 +116,12 @@ export type SandboxAuditEvent =
  * confirmed for: a claim with another UID, or a claim or volume created after the rebuild was
  * marked, is refused (`refused` in the result) and nothing is deleted.
  */
+/**
+ * Why a discard deleted nothing (more): a claim or volume newer than the confirmed rebuild, or an
+ * object replaced under the same name while the discard ran (a UID precondition failed).
+ */
+export type DiscardRefusal = "newer_claim" | "newer_volume" | "replaced";
+
 export interface DiscardGuard {
   /** The claim UID the row recorded when the rebuild was marked (null: none recorded). */
   readonly claimUid: string | null;
@@ -207,15 +213,16 @@ export interface SandboxProvider {
    * KOBE-739: the Kubernetes half of rebuilding a lost workspace: deletes the claim without
    * keeping the volume, force-deletes its pod when that pod sits on a node that is missing or not
    * Ready (it could never finish terminating, and its volume would stay protected), then deletes
-   * the volume. Idempotent. The caller has decided the volume is lost; object storage is untouched.
+   * the volume. Every delete carries the UID read at the start (a 409 stops it: `replaced`).
+   * Idempotent. The caller has decided the volume is lost; object storage is untouched.
    */
   discardLostVolume(
     team: TeamRef,
     userId: string,
     guard?: DiscardGuard,
-  ): Promise<
-    DestroyResult & { readonly pvc: string; readonly refused?: "newer_claim" | "newer_volume" }
-  >;
+    /** Stops the remaining deletes and their retries (the caller timed out). */
+    signal?: AbortSignal,
+  ): Promise<DestroyResult & { readonly pvc: string; readonly refused?: DiscardRefusal }>;
   /** Verifies a sandbox pod's bootstrap token (TokenReview) and resolves who it is. */
   identifyBootstrapToken(token: string): Promise<BootstrapIdentity>;
   /**
