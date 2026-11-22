@@ -40,6 +40,10 @@ than a minute (10-minute and hourly ones) and the 5-minute resend guard lost the
   at upgrade, i.e. at most one extra window's worth of hits per limit, once. Pending reset-email
   claims are forgotten, so a user may get one more reset email within 5 minutes of the upgrade.
 
+- **Rolling upgrade (review, low):** while old and new replicas run side by side, old ones count
+  in `rate_limits` and new ones in `kobe_rate_limits`, so a caller spread over both can get up to
+  twice a limit until the rollout ends. Accepted: brief, once.
+
 ## Users of `rate_limits` checked (`git grep -n rate_limits`)
 
 `rate-limit.ts`, `auth/reset-links.ts` moved; server DB tests that seed or clear `kobe:*` rows
@@ -53,7 +57,8 @@ exclusion lists keep `rate_limits`. `e2e/gate4-restore.sh` lists only RLS team t
 
 `docs/guide` unchanged: it states limits as configured (for example 30 admin changes an hour) and
 this fix makes them hold as written; no page described the storage or the shortened windows.
-`docs/backup-restore.md` lists the new table among the tables not backed up.
+`docs/backup-restore.md` lists the new table among the tables not backed up. `docs/rate-limits.md`
+(the limits inventory) and `docs/specs/sso-oidc-scim.md` name the new table.
 
 ## Evidence
 
@@ -66,5 +71,5 @@ this fix makes them hold as written; no page described the storage or the shorte
 - ac-3: "deletes expired windows, in bounded batches, when a hit starts a new window" and "also
   deletes reset-email claims past the resend window".
 - ac-4: `@kobe/db` unit and DB/probe suites, server typecheck, the changed server DB tests and the
-  auth/reset tests (`account-lifecycle`, `auth`) green; `docs/rate-limits.md` is not created here
-  (coordinator's instruction).
+  auth/reset tests (`account-lifecycle`, `auth`) green. `docs/rate-limits.md` added from the
+  2026-11-22 inventory, updated to `kobe_rate_limits`; `docs/specs/sso-oidc-scim.md` corrected.
