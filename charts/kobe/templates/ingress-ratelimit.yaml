@@ -6,6 +6,13 @@
 {{- if and (gt (int (default 0 $rl.ipStrategy.depth)) 0) (or $rl.ipStrategy.excludedIPs $rl.ipStrategy.excludeTrustedProxies) }}
 {{- fail "ingress.rateLimit.ipStrategy: set depth or excludedIPs/excludeTrustedProxies, not both (Traefik ignores excludedIPs when depth is set)" }}
 {{- end }}
+{{- if and (eq $rl.ipStrategy.excludeTrustedProxies true) (empty (concat (default list $rl.ipStrategy.excludedIPs) (default list .Values.auth.trustedProxies))) }}
+{{- fail "ingress.rateLimit.ipStrategy.excludeTrustedProxies is true but auth.trustedProxies and excludedIPs are empty: nothing to exclude (unset it to count the connection's address)" }}
+{{- end }}
+{{- include "kobe.ingress.validateExcluded" . }}
+{{- if and (semverCompare "<1.32-0" .Capabilities.KubeVersion.Version) (not $rl.assumeTraefikV3) }}
+{{- fail (printf "ingress.rateLimit needs Traefik v3 (the event-stream Ingress uses the PathRegexp path matcher, which Traefik v2 lacks); this cluster is Kubernetes %s and k3s before 1.32 ships Traefik v2. Upgrade k3s, or set ingress.rateLimit.assumeTraefikV3=true if you run Traefik v3 yourself." .Capabilities.KubeVersion.Version) }}
+{{- end }}
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:

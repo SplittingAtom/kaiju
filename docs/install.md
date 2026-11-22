@@ -4,14 +4,14 @@ Kobe installs with Helm on k3s (single-node k3s is the minimum). There is no `do
 
 ## Prerequisites
 
-| Requirement                  | Notes                                                                                 |
-| ---------------------------- | ------------------------------------------------------------------------------------- |
-| k3s ≥ 1.30 with Helm 3       | Traefik ingress and cert-manager are used when present                                |
-| An isolation runtime         | gVisor (RuntimeClass handler `runsc`) or Kata (`kata*`) — see [Isolation](#isolation) |
-| agent-sandbox controller     | `scripts/install-agent-sandbox.sh`                                                    |
-| Postgres 17                  | External, or bundled via CloudNativePG (`postgres.mode=cnpg`, operator required)      |
-| S3-compatible object storage | External only; Kobe does not bundle an S3 server                                      |
-| Registry access              | Images are private on `ghcr.io/splittingatom`; set `global.imagePullSecrets`          |
+| Requirement                  | Notes                                                                                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| k3s ≥ 1.30 with Helm 3       | Traefik ingress and cert-manager are used when present; the optional [ingress rate limit](#rate-limit-at-the-ingress-optional) needs k3s ≥ 1.32 (Traefik v3) |
+| An isolation runtime         | gVisor (RuntimeClass handler `runsc`) or Kata (`kata*`) — see [Isolation](#isolation)                                                                        |
+| agent-sandbox controller     | `scripts/install-agent-sandbox.sh`                                                                                                                           |
+| Postgres 17                  | External, or bundled via CloudNativePG (`postgres.mode=cnpg`, operator required)                                                                             |
+| S3-compatible object storage | External only; Kobe does not bundle an S3 server                                                                                                             |
+| Registry access              | Images are private on `ghcr.io/splittingatom`; set `global.imagePullSecrets`                                                                                 |
 
 ## Isolation
 
@@ -1456,7 +1456,41 @@ off per workload with `<component>.podDisruptionBudget.enabled` or
 
 Kobe's server limits sign-in, uploads and other costly routes itself. To also cap how many
 requests one client address may send through the ingress, turn on the Traefik rate limit (off by
-default, so upgrades change nothing):
+default, so upgrades change nothing). Two things must be true first:
+
+1. **Traefik v3 (k3s 1.32 or later).** Event streams get their own Ingress with Traefik's
+   `PathRegexp` path matcher, which Traefik v2 (k3s 1.30 and 1.31) lacks: there the stream route
+   would be ignored with only an error in Traefik's log. The chart refuses to render the limit on
+   Kubernetes below 1.32; if you run Traefik v3 yourself on an older cluster, set
+   `ingress.rateLimit.assumeTraefikV3: true`.
+2. **Traefik sees real client addresses.** On stock k3s, ServiceLB fronts Traefik and the Traefik
+   Service defaults to `externalTrafficPolicy: Cluster`, which hides client addresses: Traefik
+   sees a node or pod address, and **every user would share one budget per node** (a busy Site
+   then gets 429s on page loads and chat streams). Set the Traefik Service to
+   `externalTrafficPolicy: Local` before enabling the limit, with this k3s `HelmChartConfig`
+   (on the server node, e.g. `/var/lib/rancher/k3s/server/manifests/traefik-config.yaml`, or
+   `kubectl apply`):
+
+   ```yaml
+   apiVersion: helm.cattle.io/v1
+   kind: HelmChartConfig
+   metadata:
+     name: traefik
+     namespace: kube-system
+   spec:
+     valuesContent: |-
+       service:
+         spec:
+           externalTrafficPolicy: Local
+   ```
+
+   With `Local`, a node does not forward Traefik traffic to another node, so the nodes clients
+   reach must run a Traefik pod. Then check the address Traefik sees, for
+   example in Traefik's access log or with a `whoami` test service: it must be the client's, not
+   a `10.42.x.x` or node address. With another load balancer, use one that preserves the client
+   address (`Local` policy or the PROXY protocol, which Traefik's entry point must then accept).
+
+Then enable it:
 
 ```yaml
 ingress:
@@ -1465,7 +1499,7 @@ ingress:
     average: 100 # requests per period, per client address
     burst: 300 # short bursts above the average
     period: 1s
-    streams: # event streams (SSE) get their own, looser limit
+    streams: # event streams (SSE): a separate budget
       enabled: true
       average: 60
       burst: 120
@@ -1480,24 +1514,23 @@ list in `ingress.annotations` under that key keep working after it. A client ove
 - **Event streams.** Run events, Workspace file events and changes, and skill-eval events
   (`/v1/runs/<id>/events`, `/v1/workspace/events`, `/v1/workspace/changes`,
   `/v1/skill-evals/<id>/events`) are served by a second Ingress, `<release>-streams`, with the
-  `streams` limit (`streams.enabled: false` leaves them unlimited at the ingress). A limit only
-  applies when a request starts, so an open stream is never cut; the separate budget keeps stream
-  reconnects from using up the page budget. This Ingress uses Traefik's `PathRegexp` path matcher,
-  which needs Traefik v3 (k3s 1.32 or later).
+  separate `streams` budget (by default one stream request per second on average, burst 120);
+  `streams.enabled: false` leaves them unlimited at the ingress. A limit only applies when a
+  request starts, so an open stream is never cut, and the separate budget keeps stream reconnects
+  from using up the page budget. The web app reopens a refused stream with backoff.
 - **Sandboxes and MCP.** The sandbox agents' WebSocket (port 8081) and the MCP proxy's internal
   routes are reached inside the cluster, not through the ingress, so the limit never applies to
   them.
-- **Which address counts.** By default Traefik counts each request against the address the
-  connection comes from. **If a load balancer in front of Traefik hides client addresses** (SNAT,
-  or the Traefik Service with `externalTrafficPolicy: Cluster` on some load balancers), every
-  client shares one budget. Then have the load balancer send `X-Forwarded-For`, trust it in
-  Traefik's entry point (`forwardedHeaders.trustedIPs`), and set one of
-  `ingress.rateLimit.ipStrategy.depth` (the Nth address from the right) or
-  `ipStrategy.excludedIPs` (the rightmost address outside these CIDRs).
-  `ipStrategy.excludeTrustedProxies: true` adds `auth.trustedProxies` to the excluded addresses,
-  so Traefik skips the same proxies the server trusts for its own limits. With either set, a
-  request without `X-Forwarded-For` counts against one shared budget, so set them only when the
-  load balancer always adds the header.
+- **Which address counts.** By default, the address the connection comes from (the client's, once
+  the Traefik Service uses `externalTrafficPolicy: Local`). Leave `ingress.rateLimit.ipStrategy`
+  empty on k3s: ServiceLB works at layer 4 and cannot add `X-Forwarded-For`. Set it only when an
+  L7 proxy or load balancer in front of Traefik always adds that header and Traefik's entry point
+  trusts it (`forwardedHeaders.trustedIPs`): `depth` (the Nth address from the right) or
+  `excludedIPs` (the rightmost address outside these addresses or CIDRs; a malformed entry fails
+  the install). `excludeTrustedProxies: true` adds `auth.trustedProxies`, so Traefik skips the same
+  proxies the server trusts for its own limits. **Warning:** with an ipStrategy set and no usable
+  address (header missing or not trusted, or every address excluded), Traefik counts the request
+  against one empty source, so **the whole Site shares one budget**.
 
 ### Audit forwarding (SIEM)
 

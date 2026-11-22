@@ -765,34 +765,45 @@ ingress:
   hsts:
     includeSubDomains: false
   # Optional per-source-IP rate limit at the ingress (KOBE-811), off by default: a Traefik
-  # Middleware (traefik.io/v1alpha1, as k3s ships) on every route of the Ingress. Traefik counts
-  # `average` requests per `period` per client and allows bursts up to `burst`; past that it
-  # answers 429. The application's own limits stay in force behind it. A page load fetches many
-  # assets, so keep the defaults generous.
+  # Middleware (traefik.io/v1alpha1) on every route of the Ingress. Traefik counts `average`
+  # requests per `period` per client and allows bursts up to `burst`; past that it answers 429.
+  # The application's own limits stay in force behind it. A page load fetches many assets, so
+  # keep the defaults generous.
+  # BEFORE ENABLING on stock k3s: ServiceLB with the Traefik Service's default
+  # externalTrafficPolicy Cluster hides client addresses (Traefik sees a node/pod address), so
+  # every user would share one bucket per node. Set the Traefik Service to
+  # externalTrafficPolicy: Local first (k3s HelmChartConfig in docs/install.md, "Rate limit at the
+  # ingress") and check which address Traefik logs.
+  # REQUIRES Traefik v3 (k3s 1.32 or later): the event-stream Ingress below uses the PathRegexp
+  # path matcher, which Traefik v2 lacks. The render fails below Kubernetes 1.32 unless
+  # assumeTraefikV3 is true (you run Traefik v3 yourself on an older cluster).
   rateLimit:
     enabled: false
     average: 100
     burst: 300
     period: 1s
+    assumeTraefikV3: false
     # Event streams (SSE: run events, workspace events and changes, skill-eval events) get their
-    # own Ingress and their own limit, so stream reconnects never spend the page budget and open
-    # streams are never cut (a limit only applies when a request starts). enabled: false leaves
-    # the streams unlimited at the ingress. The sandbox WebSocket and the MCP proxy do not pass
-    # the ingress at all (in-cluster ports), so they need no exclusion.
+    # own Ingress and their own, separate budget (by default stricter per second than the main
+    # one), so stream reconnects never spend the page budget; open streams are never cut (a limit
+    # only applies when a request starts). enabled: false leaves the streams unlimited at the
+    # ingress. The sandbox WebSocket and the MCP proxy do not pass the ingress at all (in-cluster
+    # ports), so they need no exclusion.
     streams:
       enabled: true
       average: 60
       burst: 120
       period: 1m
-    # Which client a request counts against. Default (all empty): the address Traefik receives
-    # the connection from. WARNING: if a load balancer or proxy in front of Traefik hides client
-    # addresses (SNAT, kube-proxy with externalTrafficPolicy Cluster), every client then shares
-    # one bucket. In that case have the proxy set X-Forwarded-For, trust it in Traefik's
-    # entryPoint forwardedHeaders.trustedIPs, and set ONE of: depth (the Nth address from the
-    # right of X-Forwarded-For), or excludedIPs / excludeTrustedProxies (the rightmost address
-    # not in these CIDRs; excludeTrustedProxies adds auth.trustedProxies, so Traefik skips the
-    # same proxies the server trusts). With these set, a request without X-Forwarded-For counts
-    # against one shared empty source, so set them only when the proxy always adds the header.
+    # Which client a request counts against. Default (all empty, recommended): the address
+    # Traefik receives the connection from, which is the client's once externalTrafficPolicy is
+    # Local (see above). Only when an L7 proxy or load balancer in front of Traefik always adds
+    # X-Forwarded-For, and Traefik's entryPoint forwardedHeaders.trustedIPs trusts it, set ONE of:
+    # depth (the Nth address from the right of X-Forwarded-For), or excludedIPs /
+    # excludeTrustedProxies (the rightmost address not in these CIDRs; excludeTrustedProxies adds
+    # auth.trustedProxies, so Traefik skips the same proxies the server trusts). WARNING: with
+    # either set and no usable address (header missing or not trusted, or every address
+    # excluded), Traefik counts the request against one empty source: the whole Site shares one
+    # bucket. ServiceLB (layer 4) cannot add the header, so do not set these on stock k3s.
     ipStrategy:
       depth: 0
       excludedIPs: []

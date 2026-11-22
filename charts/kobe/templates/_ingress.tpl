@@ -6,8 +6,9 @@ request budget of page loads and API calls.
 */}}
 
 {{/* Event-stream paths (SSE) the server serves under /v1: run events, workspace events and
-changes, skill-eval events. Traefik PathRegexp (Go regexp); the path must start with "/" for the
-Kubernetes API, so it is anchored only at the end. */}}
+changes, skill-eval events. Traefik PathRegexp (Go regexp, Traefik v3 only); the path must start
+with "/" for the Kubernetes API, so it cannot carry "^" and is anchored only at the end: it also
+matches e.g. /x/v1/workspace/events, which then reaches the server and gets a 404 (harmless). */}}
 {{- define "kobe.ingress.streamPathRegexp" -}}
 /v1/(runs/[^/]+/events|workspace/(events|changes)|skill-evals/[^/]+/events)$
 {{- end }}
@@ -74,4 +75,20 @@ rateLimit:
         {{- toYaml $excluded | nindent 8 }}
       {{- end }}
   {{- end }}
+{{- end }}
+
+{{/* Every excluded address (excludedIPs plus, with excludeTrustedProxies, auth.trustedProxies) must
+be an IPv4/IPv6 address or CIDR: Traefik rejects a Middleware with a bad entry, and every route that
+references it (the whole Site) then answers 404. The schema checks excludedIPs; this also covers
+auth.trustedProxies. */}}
+{{- define "kobe.ingress.validateExcluded" -}}
+{{- $s := .Values.ingress.rateLimit.ipStrategy -}}
+{{- $all := concat (default list $s.excludedIPs) (ternary (default list .Values.auth.trustedProxies) list (eq $s.excludeTrustedProxies true)) -}}
+{{- $v4 := `^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(/(3[0-2]|[12]?[0-9]))?$` -}}
+{{- $v6 := `^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(([0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4})?::(([0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4})?)(/(12[0-8]|1[01][0-9]|[1-9]?[0-9]))?$` -}}
+{{- range $all }}
+{{- if not (or (regexMatch $v4 (toString .)) (regexMatch $v6 (toString .))) }}
+{{- fail (printf "ingress.rateLimit.ipStrategy: %q is not an IPv4/IPv6 address or CIDR (excludedIPs, or auth.trustedProxies with excludeTrustedProxies)" (toString .)) }}
+{{- end }}
+{{- end }}
 {{- end }}

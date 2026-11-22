@@ -31,12 +31,28 @@ streams move to their own Ingress with their own middleware. Off: rendered outpu
     server's sandbox listener (port 8081, refuses ingress forwarding headers) and the MCP proxy uses
     `/internal/v1/mcp` on port 8082; neither is in any Ingress (chart test asserts every Ingress
     backend is port `http`).
-- **Source IP:** default no `sourceCriterion` (Traefik uses the connection's remote address).
-  `ipStrategy.depth` or `ipStrategy.excludedIPs`; `excludeTrustedProxies: true` adds
-  `auth.trustedProxies` (the `KOBE_TRUSTED_PROXIES` the server uses), so Traefik skips the same
-  proxies. Setting depth with excluded IPs fails the render. Warning in values.yaml and install.md:
-  SNAT in front of Traefik puts every client in one bucket; with an ipStrategy, a request without
-  `X-Forwarded-For` counts against one shared empty source.
+- **Traefik v3 required (review M1):** `PathRegexp` exists only in Traefik v3. With the limit on,
+  the render fails below Kubernetes 1.32 (`semverCompare "<1.32-0" .Capabilities.KubeVersion`,
+  k3s before 1.32 ships Traefik v2); `ingress.rateLimit.assumeTraefikV3: true` overrides for a
+  self-managed Traefik v3. Stated in values.yaml, the install prerequisites and the install section.
+  Chart tests pin `--kube-version` so they do not depend on the helm client's default.
+- **Source IP (review M2):** default no `sourceCriterion` (Traefik uses the connection's remote
+  address). Stock k3s ServiceLB with `externalTrafficPolicy: Cluster` hides client addresses (one
+  bucket per node): values.yaml and install.md say to set `externalTrafficPolicy: Local` first
+  (HelmChartConfig snippet in install.md) and check the address Traefik sees. `ipStrategy` (depth,
+  or excludedIPs / `excludeTrustedProxies` adding `auth.trustedProxies`) is documented only for an
+  L7 proxy that always adds `X-Forwarded-For`; the earlier "have the load balancer send
+  X-Forwarded-For" advice for k3s was removed (ServiceLB is layer 4). Warning: with an ipStrategy
+  and no usable address the whole Site shares one bucket (confirmed by review from Traefik v3.6
+  `pkg/ip/strategy.go`). Render fails on depth plus excluded IPs, and on `excludeTrustedProxies`
+  with nothing to exclude (review L4).
+- **Address validation (review L2):** `excludedIPs` entries must match a strict IPv4 or IPv6
+  address/CIDR pattern in the schema; the template applies the same check to the merged list, so a
+  malformed `auth.trustedProxies` entry also fails when `excludeTrustedProxies` would pass it to
+  Traefik (a bad entry would otherwise break the Middleware and 404 every route).
+- **Stream regex anchoring (review L3):** anchored only at the end (Kubernetes requires a leading
+  `/`, so no `^`); `/x/v1/workspace/events` also matches and gets a 404 from the server. Harmless;
+  noted in `_ingress.tpl`.
 - **Second Ingress and cert-manager:** the streams Ingress reuses the TLS Secret but drops
   `cert-manager.io/*` annotations, so only the main Ingress owns the Certificate.
 - **Operator middlewares:** a `router.middlewares` value in `ingress.annotations` is appended after
@@ -52,10 +68,9 @@ streams move to their own Ingress with their own middleware. Off: rendered outpu
 ## Open questions (for Chris or the coordinator)
 
 - Default stays **off** (ticket's default); Chris may prefer on.
-- `PathRegexp` needs Traefik v3 (k3s 1.32+). Gates run k3s 1.34; the install prerequisite still says
-  k3s 1.30. Not verified on gate1 (no deploy in this ticket).
-- Traefik's behaviour for an empty `X-Forwarded-For` with an ipStrategy (shared empty key) is from
-  Traefik's source as I recall it; worth a check on gate1 before recommending ipStrategy.
+- Not deployed to gate1 in this ticket (gate1: k3s 1.34, Traefik 3.6, Traefik Service already
+  `externalTrafficPolicy: Local`, per the review).
+- ac-3 stays open until the coordinator adds the text below to `docs/rate-limits.md` after PR #682.
 
 ## Text for docs/rate-limits.md, section "Chart and ingress" (add after PR #682 merges)
 
@@ -63,21 +78,24 @@ streams move to their own Ingress with their own middleware. Off: rendered outpu
 > `ingress.rateLimit.enabled: true` renders a Traefik `Middleware` (`traefik.io/v1alpha1`) with
 > `average` requests per `period` and `burst` (defaults 100 per 1s, burst 300) and attaches it to
 > every route of the Kobe Ingress. Event streams (`/v1/runs/<id>/events`, `/v1/workspace/events`,
-> `/v1/workspace/changes`, `/v1/skill-evals/<id>/events`) go through a second Ingress with their own
-> limit (`ingress.rateLimit.streams`, defaults 60 per 1m, burst 120; `enabled: false` leaves them
-> unlimited), so stream reconnects do not spend the page budget and open streams are never cut. The
-> sandbox WebSocket and the MCP proxy's routes never pass the ingress. Over the limit Traefik answers
-> 429 before the request reaches Kobe; the application limits above still apply behind it. By
-> default the client is the connection's remote address; behind a load balancer that hides client
-> addresses set `ingress.rateLimit.ipStrategy` (`depth`, `excludedIPs`, or
-> `excludeTrustedProxies: true` to skip the same proxies as `auth.trustedProxies`). See
+> `/v1/workspace/changes`, `/v1/skill-evals/<id>/events`) go through a second Ingress with a
+> separate budget (`ingress.rateLimit.streams`, defaults 60 per 1m, burst 120; `enabled: false`
+> leaves them unlimited), so stream reconnects do not spend the page budget; open streams are never
+> cut. The sandbox WebSocket and the MCP proxy's routes never pass the ingress. Over the limit
+> Traefik answers 429 before the request reaches Kobe; the application limits above still apply
+> behind it. It needs Traefik v3 (k3s 1.32 or later; the chart refuses older clusters unless
+> `assumeTraefikV3: true`). **Before enabling on k3s**, set the Traefik Service to
+> `externalTrafficPolicy: Local`: with the default `Cluster`, ServiceLB hides client addresses and
+> every user shares one budget per node. Leave `ingress.rateLimit.ipStrategy` empty unless an L7
+> proxy in front of Traefik always adds a trusted `X-Forwarded-For`; with it set and no usable
+> address, the whole Site shares one budget. See
 > [Rate limit at the ingress](install.md#rate-limit-at-the-ingress-optional).
 
 ## Evidence (acceptance criteria → test or command output)
 
-| AC   | Evidence                                                                                                                                                                             |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| ac-1 | `charts/kobe/tests/ingress-rate-limit.test.ts` "adds a traefik.io/v1alpha1 rateLimit Middleware…", "takes average, burst and period from values", ipStrategy cases                   |
-| ac-2 | same file: "routes every SSE endpoint…to the streams Ingress", "knows every server route module that streams", "never exposes the sandbox WebSocket or internal (MCP proxy) ports"   |
-| ac-3 | "ingress.rateLimit off (default)" cases; off render of the main Ingress identical to main (diffed with/without TLS, issuer, annotations); install.md section; rate-limits text above |
-| ac-4 | schema cases ("refuses …" x8) and on/off describes; `pnpm --filter @kobe/chart test` 27 files / 370 tests passed; `helm lint --strict` on and off: 0 failed                          |
+| AC   | Evidence                                                                                                                                                                                                                                                              |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ac-1 | `charts/kobe/tests/ingress-rate-limit.test.ts` "adds a traefik.io/v1alpha1 rateLimit Middleware…", "takes average, burst and period from values", ipStrategy cases                                                                                                    |
+| ac-2 | same file: "routes every SSE endpoint…to the streams Ingress", "knows every server route module that streams", "never exposes the sandbox WebSocket or internal (MCP proxy) ports"                                                                                    |
+| ac-3 | "ingress.rateLimit off (default)" cases; off render of the main Ingress identical to main (diffed with/without TLS, issuer, annotations); install.md section; rate-limits text above                                                                                  |
+| ac-4 | Traefik v3 version gate (refuses 1.30/1.31, renders 1.32, override, off unchecked); schema cases ("refuses …" x13) and on/off describes; `pnpm --filter @kobe/chart test` 27 files / 382 tests passed (34 in the new file); `helm lint --strict` on and off: 0 failed |

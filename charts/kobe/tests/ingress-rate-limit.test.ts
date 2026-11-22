@@ -31,12 +31,19 @@ type Manifest = {
   [k: string]: any;
 };
 
-function helm(values: Record<string, string>): string {
+// Pinned so the result does not depend on the helm client's default Kubernetes version.
+const KUBE = "1.34.0";
+
+function helm(values: Record<string, string>, kubeVersion = KUBE): string {
   const args = Object.entries({ ...BASE, ...values }).flatMap(([k, v]) => ["--set", `${k}=${v}`]);
-  return execFileSync(HELM, ["template", "kobe", CHART_DIR, "-n", "kobe", ...args], {
-    encoding: "utf8",
-    stdio: "pipe",
-  });
+  return execFileSync(
+    HELM,
+    ["template", "kobe", CHART_DIR, "-n", "kobe", "--kube-version", kubeVersion, ...args],
+    {
+      encoding: "utf8",
+      stdio: "pipe",
+    },
+  );
 }
 
 function render(values: Record<string, string> = {}): Manifest[] {
@@ -213,6 +220,35 @@ describe("ingress.rateLimit.ipStrategy", () => {
     ).toEqual(want);
   });
 
+  it("refuses excludeTrustedProxies with nothing to exclude", () => {
+    expect(() =>
+      helm({
+        ...ON,
+        "ingress.rateLimit.ipStrategy.excludeTrustedProxies": "true",
+        "auth.trustedProxies": "null",
+      }),
+    ).toThrow(/nothing to exclude/);
+  });
+
+  it("accepts IPv6 and single addresses", () => {
+    expect(
+      strategy({
+        "ingress.rateLimit.ipStrategy.excludedIPs[0]": "2001:db8::/32",
+        "ingress.rateLimit.ipStrategy.excludedIPs[1]": "192.0.2.7",
+      }),
+    ).toEqual({ ipStrategy: { excludedIPs: ["2001:db8::/32", "192.0.2.7"] } });
+  });
+
+  it("refuses a malformed auth.trustedProxies entry when it would reach the middleware", () => {
+    expect(() =>
+      helm({
+        ...ON,
+        "ingress.rateLimit.ipStrategy.excludeTrustedProxies": "true",
+        "auth.trustedProxies[0]": "10.42.0.0/99",
+      }),
+    ).toThrow(/not an IPv4\/IPv6 address or CIDR/);
+  });
+
   it("refuses depth together with excluded IPs", () => {
     expect(() =>
       helm({
@@ -221,6 +257,27 @@ describe("ingress.rateLimit.ipStrategy", () => {
         "ingress.rateLimit.ipStrategy.excludeTrustedProxies": "true",
       }),
     ).toThrow(/not both/);
+  });
+});
+
+describe("ingress.rateLimit needs Traefik v3 (PathRegexp)", () => {
+  it("refuses to render below Kubernetes 1.32 (k3s ships Traefik v2 there)", () => {
+    expect(() => helm(ON, "1.31.4")).toThrow(/needs Traefik v3/);
+    expect(() => helm(ON, "1.30.0")).toThrow(/assumeTraefikV3/);
+  });
+
+  it("renders on 1.32 and later", () => {
+    expect(helm(ON, "1.32.0")).toContain("kind: Middleware");
+  });
+
+  it("renders below 1.32 when the operator asserts Traefik v3", () => {
+    expect(helm({ ...ON, "ingress.rateLimit.assumeTraefikV3": "true" }, "1.30.0")).toContain(
+      "kind: Middleware",
+    );
+  });
+
+  it("does not check the version while the limit is off", () => {
+    expect(helm({}, "1.30.0")).not.toContain("kind: Middleware");
   });
 });
 
@@ -233,6 +290,11 @@ describe("ingress.rateLimit schema", () => {
     ["ingress.rateLimit.streams.period", "1d"],
     ["ingress.rateLimit.ipStrategy.depth", "-1"],
     ["ingress.rateLimit.ipStrategy.excludedIPs[0]", "not-a-cidr"],
+    ["ingress.rateLimit.ipStrategy.excludedIPs[0]", "..."],
+    ["ingress.rateLimit.ipStrategy.excludedIPs[0]", "10.0.0.0/99"],
+    ["ingress.rateLimit.ipStrategy.excludedIPs[0]", "256.1.1.1"],
+    ["ingress.rateLimit.ipStrategy.excludedIPs[0]", "2001:db8::/129"],
+    ["ingress.rateLimit.assumeTraefikV3", "maybe"],
     ["ingress.rateLimit.nope", "1"],
   ])("refuses %s=%s", (key, value) => {
     expect(() => helm({ ...ON, [key]: value })).toThrow();
