@@ -35,6 +35,7 @@ const asExisting = (i: RunSemanticMemoryItem): ExtractorExistingItem => ({
   kind: i.kind,
   policy: i.policy,
   statement: i.statement,
+  version: i.version,
 });
 
 export interface RelatedQuery {

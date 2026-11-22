@@ -97,6 +97,20 @@ beforeAll(async () => {
     await as[who].put("/v1/me/teams/active", { teamId: team });
     as[who].team = team;
   }
+  // KOBE-787 (P2-48): a deactivated Team admin and steward count for nothing, so hear nothing.
+  const goneAdmin = await h.createUser("gone-admin@limits.test");
+  const goneSteward = await h.createUser("gone-steward@limits.test");
+  await h.admin.query(
+    `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'team_admin'), ($1, $3, 'member')`,
+    [teamA, goneAdmin, goneSteward],
+  );
+  await h.admin.query(
+    `INSERT INTO memory_stewards (team_id, user_id, granted_by) VALUES ($1, $2, $3)`,
+    [teamA, goneSteward, ids.admin],
+  );
+  await h.admin.query(`UPDATE users SET deactivated_at = now() WHERE id = ANY($1::uuid[])`, [
+    [goneAdmin, goneSteward],
+  ]);
   await settings({ scope_limits: { user: 5, portable: 3, team: 5, site: 5 }, version_cap: 5 });
 });
 

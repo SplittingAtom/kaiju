@@ -84,7 +84,7 @@ async function appendStatement(
   checks: MemoryCheckOutcome,
 ): Promise<number> {
   const version = row.current_version + 1;
-  await insertVersion(op.tx, op.loc, {
+  await insertVersion(op, {
     itemId: row.id,
     version,
     statement,
@@ -341,6 +341,8 @@ export function restoreItem(
     await op.tx.execute(sql`
       UPDATE ${op.loc.items} i SET status = 'active', updated_at = now()
        WHERE ${op.loc.where} AND i.id = ${row.id}`);
+    // Back in the agent's context: embedded after commit if its version has no vector yet.
+    op.saved.push(row.id);
     op.pending = await notifyNearFull(op.tx, op.loc, op.settings, before, before + 1);
     const teamId = auditTeam(op.loc);
     const at = { scope, itemId: row.id, version: row.current_version, teamId };

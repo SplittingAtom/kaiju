@@ -63,6 +63,11 @@ export const extractorExistingItemSchema = z.strictObject({
   kind: semanticMemoryKindSchema,
   policy: z.boolean(),
   statement: z.string().min(1).max(SEMANTIC_MEMORY_STATEMENT_MAX),
+  /**
+   * The item's current version when listed (KOBE-779): kept on a candidate that acts on it, so
+   * To review refuses an update once the item moved on. Never shown to the model.
+   */
+  version: z.number().int().positive().optional(),
 });
 export type ExtractorExistingItem = z.infer<typeof extractorExistingItemSchema>;
 

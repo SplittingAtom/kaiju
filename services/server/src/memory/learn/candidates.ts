@@ -110,6 +110,7 @@ export function candidatePayload(c: CheckedCandidate, promptVersion: string) {
     source: k.source,
     operation: k.operation,
     target_id: k.target_id,
+    ...(c.targetVersion === undefined ? {} : { target_version: c.targetVersion }),
     confidence: k.confidence,
     rationale: k.rationale,
     evidence: k.evidence,
