@@ -81,7 +81,8 @@ commits it at once, with no checkout. The agent can commit a checkout itself wit
 
 Deleting a project is possible only once it has no files, conversations or project memory left.
 Members may still have working copies of it: the confirmation names how many hold uncommitted
-changes, and deleting the project discards them.
+changes, and deleting the project discards them. If someone starts more uncommitted work before
+the delete goes through, Kobe asks again with the new count.
 
 An archived project's files are frozen: uploads, deletes, commits, reverts and accepted proposals
 are all refused until an owner unarchives it.

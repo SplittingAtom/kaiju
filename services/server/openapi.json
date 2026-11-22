@@ -14295,7 +14295,7 @@
       "delete": {
         "operationId": "deleteProjectsById",
         "summary": "Delete a project",
-        "description": "Answers 204.",
+        "description": "Answers 204. Query `confirmed_uncommitted` (absent = 0): how many working copies with uncommitted changes the caller agreed to discard; when more hold such changes now, 409 `uncommitted_work` with `uncommitted_working_copies`, to confirm again.",
         "tags": ["Projects"],
         "parameters": [
           {

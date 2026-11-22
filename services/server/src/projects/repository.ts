@@ -45,6 +45,7 @@ export type ProjectFailure =
   | "forbidden"
   | "archived"
   | "in_use"
+  | "uncommitted_work"
   | "legal_hold"
   | "user_deactivated";
 
@@ -278,6 +279,8 @@ export async function deleteProject(
   tx: KobeTx,
   viewer: Viewer,
   projectId: string,
+  /** Working copies with uncommitted changes the caller agreed to discard (KOBE-780). */
+  confirmedUncommitted = 0,
 ): Promise<Outcome<null>> {
   const [t] = await tx
     .select({ n: count() })
@@ -300,7 +303,10 @@ export async function deleteProject(
   if (held.length > 0) return fail("in_use", held.join(", "));
   // KOBE-780 (P2-42): the checkouts end with the project (cascade); each is audited, with how
   // many held uncommitted changes (the web's confirm names them before the delete).
+  // The caller holds the project row lock, so no checkout starts between this count and the delete.
   const copies = await projectCheckouts(tx, viewer.teamId, projectId);
+  const uncommitted = copies.filter((c) => c.changed_files > 0).length;
+  if (uncommitted > confirmedUncommitted) return fail("uncommitted_work", String(uncommitted));
   try {
     // A savepoint: the hold guard over commit history (0200) refuses the cascade with KH001.
     await tx.transaction(async (sp) => {
@@ -339,7 +345,7 @@ export async function deleteProject(
     target: {
       projectId,
       workingCopies: copies.length,
-      uncommittedWorkingCopies: copies.filter((c) => c.changed_files > 0).length,
+      uncommittedWorkingCopies: uncommitted,
     },
   });
   return { ok: true, value: null };

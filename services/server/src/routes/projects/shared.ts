@@ -31,6 +31,11 @@ export const ERRORS = {
   ],
   archived: [409, "archived", "The project is archived."],
   in_use: [409, "project_in_use", "The project still has content."],
+  uncommitted_work: [
+    409,
+    "uncommitted_work",
+    "Members have uncommitted changes in working copies of this project; confirm again to discard them.",
+  ],
   legal_hold: [409, "forbidden", "The team is under a legal hold: the project's history stays."],
   user_deactivated: [
     422,

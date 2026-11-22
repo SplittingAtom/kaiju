@@ -39,7 +39,12 @@
 - **P2-42:** `GET /v1/projects/:id/checkouts` adds `changed_files` per working copy; the delete
   confirmation names how many members have uncommitted changes. The delete audits
   `project.checkout_discarded {reason: project_deleted}` per checkout and `workingCopies`,
-  `uncommittedWorkingCopies` on `project.deleted` (both optional in the event schema). Not done: the
+  `uncommittedWorkingCopies` on `project.deleted` (both optional in the event schema). Review
+  follow-up: `DELETE /v1/projects/:id?confirmed_uncommitted=<n>` carries the count the owner
+  confirmed (absent = 0); under the project row lock the server re-counts and answers 409
+  `uncommitted_work {uncommitted_working_copies}` when more hold changes, and the dialog asks again.
+  `projectCheckouts` still runs one `workingChanges` per checkout (a manifest-vs-tree diff, not a
+  small single query); left as is, it runs only for owners/admins and for deletes of empty projects. Not done: the
   review's alternative of blocking the delete on checkouts (the ticket asked for a warning).
 - **P2-44:** the team storage lock is taken after `writeCommit` (inside a savepoint where needed) by
   `checkLimitsAfterWrite`, which checks `used > limit` for the limits the write added to (same answers

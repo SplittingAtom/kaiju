@@ -265,6 +265,32 @@ describe("project detail (KOBE-164, ac-1)", () => {
     );
   });
 
+  it("sends the confirmed count and asks again when more work appeared (KOBE-780)", async () => {
+    const calls = stubApi({
+      ...base(),
+      [`GET /v1/projects/${P}/checkouts`]: [200, { checkouts: [] }],
+      [`DELETE /v1/projects/${P}?confirmed_uncommitted=0`]: [
+        409,
+        { code: "uncommitted_work", message: "Confirm again.", uncommitted_working_copies: 1 },
+      ],
+      [`DELETE /v1/projects/${P}?confirmed_uncommitted=1`]: [204],
+    });
+    renderTeam(<ProjectDetailPage projectId={P} />, { role: "contributor" });
+    await userEvent.setup().click(await screen.findByRole("button", { name: "Delete project" }));
+    expect(await answerConfirm("Delete Launch for good?", "Delete project")).not.toMatch(
+      /uncommitted/,
+    );
+    expect(await answerConfirm("Delete Launch for good?", "Delete project")).toMatch(
+      /1 member has uncommitted changes in a working copy/,
+    );
+    await waitFor(() =>
+      expect(calls.filter((c) => c.method === "DELETE").map((c) => c.url)).toEqual([
+        `/v1/projects/${P}?confirmed_uncommitted=0`,
+        `/v1/projects/${P}?confirmed_uncommitted=1`,
+      ]),
+    );
+  });
+
   it("makes an archived project read-only for everyone", async () => {
     stubApi(base({ archived_at: "2026-10-03T10:00:00Z" }));
     renderTeam(<ProjectDetailPage projectId={P} />, { role: "team_admin" });

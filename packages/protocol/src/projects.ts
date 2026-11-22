@@ -195,7 +195,25 @@ export type UpdateProjectRequest = z.infer<typeof updateProjectRequestSchema>;
 /** `GET /v1/projects?include_archived=` -> list of projects the caller can view. */
 export const projectListResponseSchema = z.strictObject({ projects: z.array(projectSchema) });
 export type ProjectListResponse = z.infer<typeof projectListResponseSchema>;
-/** `DELETE /v1/projects/:id` -> 204 (owners, admins; threads stay, unshared and project-less). */
+/**
+ * `DELETE /v1/projects/:id?confirmed_uncommitted=<n>` -> 204 (owners, admins; threads stay,
+ * unshared and project-less). `n` (absent = 0) is how many working copies with uncommitted changes
+ * the caller agreed to discard (KOBE-780); when more hold such changes at delete time the answer is
+ * 409 {@link projectUncommittedWorkErrorSchema}, so the confirmation can ask again.
+ */
+export const deleteProjectQuerySchema = z.strictObject({
+  confirmed_uncommitted: z
+    .string()
+    .regex(/^\d{1,6}$/)
+    .transform(Number)
+    .optional(),
+});
+export const projectUncommittedWorkErrorSchema = z.strictObject({
+  code: z.literal("uncommitted_work"),
+  message: z.string(),
+  uncommitted_working_copies: z.number().int().positive(),
+});
+export type ProjectUncommittedWorkError = z.infer<typeof projectUncommittedWorkErrorSchema>;
 
 // ----------------------------------------------------------------------------- REST: members
 
@@ -373,6 +391,7 @@ export const PROJECT_ERROR_CODES = [
   "quota_exceeded", // 413 (with `limit`: see projectQuotaErrorSchema)
   "invalid_input", // 422
   "project_in_use", // 409 delete refused: threads, project memory or files remain
+  "uncommitted_work", // 409 delete: more working copies hold uncommitted changes than confirmed
   ...PROJECT_COMMIT_ERROR_CODES,
 ] as const;
 export const projectErrorCodeSchema = z.enum(PROJECT_ERROR_CODES);

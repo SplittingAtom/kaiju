@@ -260,11 +260,30 @@ describe("deleting a project with working copies (P2-42)", () => {
     );
     expect(byUser).toEqual({ [w.people.bob.id]: 1, [w.people.alice.id]: 0 });
 
-    expect((await w.as.alice.delete(`/v1/projects/${id}`)).status).toBe(204);
+    // The delete carries how many the owner confirmed; more than that now is a 409 with the count.
+    const unconfirmed = await w.as.alice.delete(`/v1/projects/${id}`);
+    expect(unconfirmed.status, JSON.stringify(unconfirmed.json)).toBe(409);
+    expect(unconfirmed.json).toMatchObject({
+      code: "uncommitted_work",
+      uncommitted_working_copies: 1,
+    });
+    // Alice confirmed one, then she starts uncommitted work too: asked again with 2.
+    expect((await workspaceUpload(w.as.alice, `projects/${slug}`, "mine.md", "M")).status).toBe(
+      201,
+    );
+    const stale = await w.as.alice.delete(`/v1/projects/${id}?confirmed_uncommitted=1`);
+    expect(stale.status).toBe(409);
+    expect(stale.json).toMatchObject({ uncommitted_working_copies: 2 });
+    expect((await w.as.alice.delete(`/v1/projects/${id}?confirmed_uncommitted=x`)).status).toBe(
+      400,
+    );
+    expect((await w.as.alice.delete(`/v1/projects/${id}?confirmed_uncommitted=2`)).status).toBe(
+      204,
+    );
     expect((await audits(w.team, "project.deleted")).at(-1)).toEqual({
       projectId: id,
       workingCopies: 2,
-      uncommittedWorkingCopies: 1,
+      uncommittedWorkingCopies: 2,
     });
     const discarded = (await audits(w.team, "project.checkout_discarded")).filter(
       (t) => t.reason === "project_deleted",
