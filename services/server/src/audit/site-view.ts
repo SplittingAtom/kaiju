@@ -263,6 +263,7 @@ export const SITE_VIEW_TARGET_KEYS: ReadonlySet<string> = new Set([
   "treeEntries",
   "trigger",
   "truncated",
+  "uncommittedWorkingCopies",
   "unit",
   "upgraded",
   "userId",
@@ -279,6 +280,7 @@ export const SITE_VIEW_TARGET_KEYS: ReadonlySet<string> = new Set([
   "wasActive",
   "wasInterrupted",
   "watermarks",
+  "workingCopies",
   "workspaceMemoriesEnabled",
   "workspaces",
 ]);

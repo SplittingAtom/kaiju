@@ -9,7 +9,12 @@ export const projectsAgentsAreas: readonly CatalogArea[] = [
     entries: [
       ["get", "/v1/projects", "List the projects the member can see"],
       ["post", "/v1/projects", "Create a project", "Answers 201."],
-      ["delete", "/v1/projects/{id}", "Delete a project", "Answers 204."],
+      [
+        "delete",
+        "/v1/projects/{id}",
+        "Delete a project",
+        "Answers 204. Query `confirmed_uncommitted` (absent = 0): how many working copies with uncommitted changes the caller agreed to discard; when more hold such changes now, 409 `uncommitted_work` with `uncommitted_working_copies`, to confirm again.",
+      ],
       ["get", "/v1/projects/{id}", "Read one project"],
       ["patch", "/v1/projects/{id}", "Change a project's fields", "Project managers."],
       ["get", "/v1/projects/{id}/files", "List a project's files"],

@@ -60,6 +60,11 @@ export interface ProjectFile {
   readonly source: "upload" | "proposal";
   readonly addedBy: string;
   readonly addedAt: string;
+  /**
+   * KOBE-780: the path is too long once mounted as `projects/<slug>/<path>` (a file added before
+   * that rule), so it reaches no member's workspace until it is deleted and added again.
+   */
+  readonly pathTooLong?: true;
 }
 
 /** Add to project (KOBE-585): what the server copies from its own stored bytes. */
@@ -112,7 +117,11 @@ export interface ProjectsApi {
     id: string,
     input: Partial<ProjectInput> & { archived?: boolean },
   ): Promise<ApiResult<Project>>;
-  remove(id: string): Promise<ApiResult<void>>;
+  /**
+   * `confirmed`: working copies with uncommitted changes the member agreed to discard (KOBE-780).
+   * More at delete time: 409 `uncommitted_work`, `error.details.uncommittedWorkingCopies` = the count.
+   */
+  remove(id: string, confirmed: number): Promise<ApiResult<void>>;
   members(id: string): Promise<ApiResult<ProjectMembers>>;
   addMember(id: string, userId: string, role: ProjectMemberRole): Promise<ApiResult<ProjectMember>>;
   setMemberRole(
@@ -172,7 +181,13 @@ export function createProjectsApi(teamId: string, fetchFn?: typeof fetch): Proje
     promoteFolder: (path, name) =>
       call<Project>("/v1/projects/from-folder", "POST", { path, name: name.trim() }),
     update: (id, input) => call<Project>(base(id), "PATCH", toBody(input)),
-    remove: (id) => call(base(id), "DELETE"),
+    remove: (id, confirmed) =>
+      apiRequest(`${base(id)}?confirmed_uncommitted=${confirmed}`, {
+        method: "DELETE",
+        teamId,
+        fetchFn,
+        errorDetails: true,
+      }),
     members: (id) => call<ProjectMembers>(`${base(id)}/members`),
     addMember: (id, userId, role) =>
       call<ProjectMember>(`${base(id)}/members`, "POST", { user_id: userId, role }),
