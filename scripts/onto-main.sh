@@ -28,6 +28,16 @@ die() {
   exit 1
 }
 merging() { git rev-parse -q --verify MERGE_HEAD >/dev/null; }
+build_db() {
+  local log
+  log="$(mktemp)"
+  if ! "$PNPM" --filter @kobe/db build >"$log" 2>&1; then
+    cat "$log" >&2
+    rm -f "$log"
+    die "the @kobe/db build failed (an audit event without its row in events/<area>.doc.ts?)"
+  fi
+  rm -f "$log"
+}
 unmerged() { git diff --name-only --diff-filter=U; }
 
 [[ $# -le 1 ]] || die "usage: scripts/onto-main.sh [base-ref]"
@@ -63,10 +73,13 @@ resolve_generated() {
   fi
   while IFS= read -r file; do
     if [[ "$file" == "$AUDIT_DOC" ]]; then
-      "$PNPM" --filter @kobe/db build >/dev/null
+      build_db
       "$PNPM" --silent --filter @kobe/db audit:doc
       if grep -qE '^(<<<<<<<|=======$|>>>>>>>)' "$AUDIT_DOC"; then
-        die "$AUDIT_DOC has conflicts outside the generated table: resolve them, \`git commit\`, run again"
+        say "$AUDIT_DOC has conflicts outside the generated table. If this branch added rows to the"
+        say "  old hand-written table: git checkout --theirs -- $AUDIT_DOC, move each row to its"
+        say "  area's packages/db/src/audit/events/<area>.doc.ts, git add, git commit, run again"
+        die "otherwise resolve the prose by hand, git add, git commit, run again"
       fi
     else
       git checkout --theirs -- "$file"
@@ -97,8 +110,9 @@ install_if_lock_changed() {
 
 if [[ ! -f "$STASH" ]]; then
   # Regenerates the branch's migrations on the base (stash, merge, regenerate); a branch without
-  # migrations is left as it is and merged below.
-  "$PNPM" --filter @kobe/db db:rebase --base "$BASE"
+  # migrations is left as it is and merged below. The base goes positionally, which db:rebase
+  # took before KOBE-815 too, so a branch that still has the old script works.
+  "$PNPM" --filter @kobe/db db:rebase "$BASE"
   if ! merging && ! git merge-base --is-ancestor "$BASE" HEAD; then
     git merge -q --no-edit "$BASE" || true
   fi
@@ -116,7 +130,7 @@ fi
 install_if_lock_changed
 
 # Regenerate generated files from the merged code, then commit whatever changed.
-"$PNPM" --filter @kobe/db build >/dev/null
+build_db
 "$PNPM" --silent --filter @kobe/db audit:doc
 if [[ -n "$(git status --porcelain -- "$AUDIT_DOC")" ]]; then
   git add -- "$AUDIT_DOC"
