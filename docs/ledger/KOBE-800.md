@@ -74,3 +74,14 @@ Member-visible (new cards), so:
 - `mcp-sibling-runs.db.test.ts` unchanged and green. `remember-scopes.db.test.ts` (thread scope): a
   thread rule now asks in its own thread while another run of the member is active (expected by
   the rule above); the test ends that run before checking the later run in the same thread.
+
+## Owner decision (Chris, 2026-11-22): accept and document
+
+- Guide: approvals page section "When a scheduled or automatic run overlaps a chat" (what a
+  scheduled run skips and where Skipped actions show; connector tools alike; why: the most
+  restrictive run decides), plus agents.md (Schedule an agent) and troubleshooting.
+- Approval card: when the reason comes from an unattended run (`scheduled_run_no_prompt`,
+  `mode_auto_not_allowlisted`, codes the chat's own decision never asks with), the Remember
+  controls say remembering won't stop the asking while that run goes (`askedForUnattendedRun`,
+  apps/web approval-remember.tsx; test in approvals.test.tsx).
+- Migration 0238 not renumbered: the coordinator runs `db:rebase` at landing.

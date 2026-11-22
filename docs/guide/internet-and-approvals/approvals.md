@@ -22,8 +22,9 @@ Whether a call asks depends on the agent's approval mode and your team's rules:
 - **Auto (allow-listed tools only)**: nothing asks; a call that would ask is refused instead.
 - Team and site **ask rules** make particular tools always ask, and **deny rules** refuse them.
 
-Scheduled runs never ask either: a call that would need approval is skipped and reported on the
-run.
+Scheduled runs never ask either: a call that would need approval is skipped and listed under
+**Skipped actions** at the end of the scheduled run's conversation (the "Scheduled run finished"
+notification gives the count).
 
 Connector tools, and the tools Kobe runs for the agent itself (memory, artifacts, sharing and
 opening files, file edit proposals, notebooks, skill drafts and project commits), look at all your
@@ -32,6 +33,22 @@ which of them made a call. Such a call asks whenever any of them would ask for i
 stricter agent or mode in another conversation, or a scheduled run going meanwhile, for example),
 even if this conversation alone would run it. The card then says another conversation of yours is
 running. A call this conversation's own agent refuses stays refused.
+
+### When a scheduled or automatic run overlaps a chat
+
+The most restrictive of your overlapping runs decides. So while you chat, a scheduled run of yours
+(or one in **Auto**) loses every action Kobe runs for the agent that your chat would ask about:
+sharing files, saving project memory and project commits, and running Python where your site asks
+before sandbox writes. In a chat set to **Ask for every tool** that is every such action, reads
+included (recalling memory, opening a file, proposing an edit, skill drafts). Connector tools behave
+the same way. A scheduled run skips them and lists them
+under **Skipped actions** in its conversation; an automatic run refuses them on the tool card.
+They run as usual when the schedule doesn't overlap a turn of yours.
+
+The other way round, while a scheduled or automatic run goes, your chat asks before actions that
+usually run at once (artifacts, personal memory, skill drafts), because that run only does what
+your team allow-listed. Remembering such an approval doesn't stop the asking: unattended runs never
+use remembered approvals, and the card says so. A team allow rule does (team admins add it).
 
 ## The approval card
 

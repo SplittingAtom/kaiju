@@ -129,7 +129,13 @@ Open **My schedules** (`/me/schedules`) and press **New schedule**: pick the **A
 **Prompt**, choose how it **Repeats** (or a cron expression) and the time zone, and optionally
 **Email me when a run ends**. Each schedule can be edited, paused, resumed or deleted; one a team
 admin paused can only be resumed by a team admin. Scheduled runs cannot stop to ask you, so
-a tool call that would need approval is skipped instead; remembered approvals do not apply there.
+a tool call that would need approval is skipped instead and listed under **Skipped actions** at
+the end of the run's conversation; remembered approvals do not apply there. While a scheduled run
+overlaps a chat turn of yours, the most restrictive of the two decides: anything Kobe runs for the
+agent that your chat would ask about (sharing files, project memory, commits, Python where the
+site asks before sandbox writes; in an **Ask for every tool** chat everything, reads included) and
+connector tools your chat would ask about are skipped for the scheduled run too. See
+[Approvals](../internet-and-approvals/approvals.md#when-a-scheduled-or-automatic-run-overlaps-a-chat).
 A team admin who wants a tool to run unattended adds a team allow rule.
 
 ## Related

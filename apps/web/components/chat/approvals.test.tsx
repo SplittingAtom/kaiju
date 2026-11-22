@@ -48,7 +48,7 @@ function asked(overrides: Partial<KobeEventPayload<"approval.requested">> = {}) 
 }
 
 /** A thread with a run whose Jira call waits for approval. */
-async function waitingRun() {
+async function waitingRun(overrides: Partial<KobeEventPayload<"approval.requested">> = {}) {
   const t = fake.addThread("Ops");
   openApp(fake, t);
   const user = userEvent.setup();
@@ -57,7 +57,7 @@ async function waitingRun() {
   const runId = must(fake.activeRun(t)).run_id;
   await streaming(fake, runId);
   fake.agent.toolCall(runId, "tc1", TOOL, { project: "OPS", summary: "Rotate keys" }, "m1");
-  fake.requestApproval(runId, asked());
+  fake.requestApproval(runId, asked(overrides));
   await screen.findByRole("group", { name: /Approval needed/ });
   return { user, runId };
 }
@@ -96,6 +96,27 @@ describe("approval card", () => {
     ]);
     expect(screen.queryByRole("button", { name: "Allow" })).toBeNull();
     expect(screen.queryByText("Waiting for approval")).toBeNull();
+  });
+
+  it("says remembering won't stop the asking while a scheduled run of the member's goes (KOBE-800)", async () => {
+    await waitingRun({
+      reasons: [
+        {
+          code: "scheduled_run_no_prompt",
+          stage: "prompt",
+          message:
+            "Another conversation of yours is running in this sandbox, and under its settings this call needs your approval: Scheduled runs only run allow-listed and read-only tools; this call was skipped.",
+        },
+      ],
+    });
+    await screen.findByRole("checkbox", { name: /Remember: allow/ });
+    expect(screen.getByText(/doesn.t use remembered approvals: Kobe asks again/)).toBeTruthy();
+  });
+
+  it("an ordinary card says nothing about scheduled runs", async () => {
+    await waitingRun();
+    await screen.findByRole("checkbox", { name: /Remember: allow/ });
+    expect(screen.queryByText(/doesn.t use remembered approvals/)).toBeNull();
   });
 
   it("Deny says the tool did not run; remember is never sent with a deny", async () => {
