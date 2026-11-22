@@ -50,6 +50,8 @@ export class SchedulerRunner {
   readonly #log: Logger;
   #timer: NodeJS.Timeout | undefined;
   #running = false;
+  /** The tick in flight (never rejects): `stop()` waits for it (KOBE-709). */
+  #current: Promise<unknown> = Promise.resolve();
 
   constructor(options: SchedulerRunnerOptions) {
     this.#opts = options;
@@ -60,7 +62,7 @@ export class SchedulerRunner {
     const run = () => {
       if (this.#running) return;
       this.#running = true;
-      this.tick()
+      this.#current = this.tick()
         .catch((err: unknown) => this.#log.error({ err }, "scheduler tick failed"))
         .finally(() => {
           this.#running = false;
@@ -71,9 +73,10 @@ export class SchedulerRunner {
     this.#timer.unref();
   }
 
-  stop(): void {
+  stop(): Promise<unknown> {
     if (this.#timer) clearInterval(this.#timer);
     this.#timer = undefined;
+    return this.#current;
   }
 
   /**

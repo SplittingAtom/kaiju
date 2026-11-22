@@ -8,6 +8,7 @@ import { createServerDeps, type ServerDeps } from "./deps.js";
 import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
 import { TestBrowser } from "./testing/browser.js";
 import { MemoryMailer } from "./testing/mailer.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 /**
  * KOBE-638: a Site admin manages a team's members from the Site console (Site console › Teams):
@@ -95,6 +96,7 @@ beforeAll(async () => {
   const background = new BackgroundTasks();
   mailer = new MemoryMailer(background);
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "m".repeat(48),

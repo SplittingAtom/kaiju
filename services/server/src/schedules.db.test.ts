@@ -9,6 +9,7 @@ import { createServerDeps, type ServerDeps } from "./deps.js";
 import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
 import { TestBrowser } from "./testing/browser.js";
 import { MemoryMailer } from "./testing/mailer.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 /** Schedules API (KOBE-173): CRUD under RLS, the per-user cap across teams, next_due_at. */
 const PUBLIC_URL = "http://kobe.test";
@@ -37,6 +38,7 @@ async function activate(who: Person, teamId: string): Promise<void> {
 beforeAll(async () => {
   database = await createTestDatabase(testServerUrl());
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "t".repeat(48),

@@ -90,6 +90,11 @@ export class SkillMirror {
     void this.sweep().catch((err: unknown) => logger.warn({ err }, "skill mirror sweep failed"));
   }
 
+  /** Resolves once the sweep in flight (if any) has ended; never rejects (KOBE-709). */
+  async idle(): Promise<void> {
+    while (this.running) await this.running.catch(() => undefined);
+  }
+
   async sweep(): Promise<SweepResult> {
     if (this.running) {
       this.again = true;

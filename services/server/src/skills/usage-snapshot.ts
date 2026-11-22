@@ -458,14 +458,19 @@ export function startUsageSnapshots(deps: {
   readonly db: KobeDb;
   readonly pool: KobeDatabase["pool"];
   readonly log: { error(obj: object, msg: string): void };
-}): () => void {
+}): () => Promise<unknown> {
+  // The check in flight (never rejects): the stop function waits for it (KOBE-709).
+  let current: Promise<unknown> = Promise.resolve();
   const run = () => {
-    ensureUsageSnapshot(deps).catch((err: unknown) =>
+    current = ensureUsageSnapshot(deps).catch((err: unknown) =>
       deps.log.error({ err }, "skill usage snapshot failed"),
     );
   };
   run();
   const timer = setInterval(run, USAGE_CHECK_MS);
   timer.unref();
-  return () => clearInterval(timer);
+  return () => {
+    clearInterval(timer);
+    return current;
+  };
 }

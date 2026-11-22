@@ -11,6 +11,7 @@ import { appendRunEventsInTx, type NewRunEvent } from "../event-stream/append.js
 import { createTeamWithAdmin } from "../teams/members.js";
 import { waitForAppSessionsToClose } from "./app-sessions.js";
 import { TestBrowser } from "./browser.js";
+import { fakeIsolation, type FakeIsolation } from "./isolation.js";
 import { MemoryMailer } from "./mailer.js";
 import { SseReader } from "./sse.js";
 
@@ -20,6 +21,8 @@ const PASSWORD = "a long enough password";
 export interface Replica {
   readonly deps: ServerDeps;
   readonly app: ReturnType<typeof createApp>;
+  /** The replica's isolation check (KOBE-708): `available` until a test sets it. */
+  readonly isolation: FakeIsolation;
 }
 
 export interface Person {
@@ -52,7 +55,9 @@ export class EventStreamFixture {
     await this.admin.connect();
     this.replicas = tunings.map((eventStream, i) => {
       const options = extra(i);
+      const isolation = fakeIsolation();
       const deps = createServerDeps({
+        isolation: isolation.probe,
         ...options,
         // Every fake sandbox connects from 127.0.0.1, so a whole file shares one upgrade bucket;
         // the production limit (20, refilling 2/s) refused a fast file's 21st connect with 429
@@ -69,7 +74,7 @@ export class EventStreamFixture {
         mailer: new MemoryMailer(),
         eventStream,
       });
-      return { deps, app: createApp(deps) };
+      return { deps, app: createApp(deps), isolation };
     });
   }
 
