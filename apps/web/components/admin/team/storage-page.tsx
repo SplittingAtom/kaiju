@@ -38,6 +38,7 @@ import { useTeamAccess } from "../console-context";
 import { MutationStatus } from "../error-notice";
 import { ResourceView } from "../parts";
 import { useMutation, useResource } from "../use-resource";
+import { WorkspaceRebuildSection } from "./workspace-rebuild-section";
 
 function FigureCells({ of }: { readonly of: StorageFigures }) {
   return (
@@ -67,6 +68,7 @@ export function TeamStoragePage() {
             <>
               <Usage storage={s} />
               <Settings key={JSON.stringify(settingsOf(loaded))} storage={s} onSaved={setSaved} />
+              <WorkspaceRebuildSection />
             </>
           );
         }}

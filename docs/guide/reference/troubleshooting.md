@@ -31,6 +31,11 @@ the reason in the audit log).
 full, so yours could not be created. Nothing of yours was deleted. Ask your team or site admin
 to free or raise the quota, then send your message again.
 
+**"The storage that held it was lost".** The server holding your sandbox's storage is gone. Choose
+**Rebuild sandbox…** under the message (or in the Files panel), check the last sync time it
+shows, and confirm; then send your message again. Changes made after the last sync cannot be
+recovered. See [Storage limits](../files/storage-limits.md#when-your-sandboxs-storage-is-lost).
+
 **The agent seems stuck.** Look for an approval card waiting for you higher up in the answer. If
 there is none, press **Stop** and send your message again, or **Retry** an interrupted answer.
 

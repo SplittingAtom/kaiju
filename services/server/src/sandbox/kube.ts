@@ -50,8 +50,11 @@ export interface KubeClient {
     patch: Readonly<Record<string, unknown>>,
     options?: { readonly resourceVersion?: string },
   ): Promise<KubeObject>;
-  /** Deletes with background propagation; a missing object is not an error. */
-  delete(ref: ObjectRef): Promise<void>;
+  /**
+   * Deletes with background propagation; a missing object is not an error. `gracePeriodSeconds: 0`
+   * removes a pod at once (KOBE-739: one on a lost node can never finish terminating).
+   */
+  delete(ref: ObjectRef, options?: { readonly gracePeriodSeconds?: number }): Promise<void>;
   reviewToken(token: string, audiences: readonly string[]): Promise<TokenReviewResult>;
   /**
    * The (first `limitBytes` of the) log of a pod's container, stdout and stderr together; undefined
@@ -221,10 +224,17 @@ export function createKubeClient(timeoutMs = KUBE_API_TIMEOUT_MS): KubeClient {
           );
         }),
       ),
-    async delete(ref) {
+    async delete(ref, options) {
       try {
         await call(`delete ${describe(ref)}`, () =>
-          objects.delete(header(ref), undefined, undefined, undefined, undefined, "Background"),
+          objects.delete(
+            header(ref),
+            undefined,
+            undefined,
+            options?.gracePeriodSeconds,
+            undefined,
+            "Background",
+          ),
         );
       } catch (err) {
         if (!isKubeStatus(err, 404)) throw err;

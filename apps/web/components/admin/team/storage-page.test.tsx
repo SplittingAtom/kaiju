@@ -110,3 +110,32 @@ describe("storage and history settings (GV2, GV3; ac-1)", () => {
     });
   });
 });
+
+describe("rebuilding a member's lost workspace (KOBE-739)", () => {
+  it("checks the member's volume, shows the last sync and rebuilds on confirm", async () => {
+    const calls = stubApi({
+      "GET /v1/team/storage": [200, view()],
+      "GET /v1/team/members": [200, ROSTER],
+      "GET /v1/team/workspaces/u-me/rebuild": [
+        200,
+        { volume: "lost", last_synced_at: "2026-11-21T10:15:00Z", rebuildable: true },
+      ],
+      "POST /v1/team/workspaces/u-me/rebuild": [
+        200,
+        { status: "rebuilt", last_synced_at: "2026-11-21T10:15:00Z" },
+      ],
+    });
+    renderTeam(<TeamStoragePage />);
+    const member = await screen.findByRole("combobox", { name: "Member" });
+    await userEvent.selectOptions(member, "u-me");
+    await userEvent.click(screen.getByRole("button", { name: "Check and rebuild…" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.textContent).toMatch(/Rebuild Ada's sandbox from the last sync\?/);
+    expect(await within(dialog).findByText(/Last sync:/)).toBeTruthy();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Rebuild sandbox" }));
+    expect(await within(dialog).findByText(/being rebuilt/)).toBeTruthy();
+    const post = calls.find((c) => c.method === "POST");
+    expect(post?.url).toBe("/v1/team/workspaces/u-me/rebuild");
+    expect(JSON.parse(String(post?.body))).toEqual({ confirm: true });
+  });
+});

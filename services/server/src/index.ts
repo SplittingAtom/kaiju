@@ -629,6 +629,10 @@ if (isServer && sandbox && deps && !config.mcpProxyInternalKey) {
 // Hibernation and wake (KOBE-25, D14): the router wakes sandboxes it finds disconnected; every
 // replica sweeps for idle ones (the sandboxes row lock keeps replicas from colliding).
 if (providerRuntime && deps) deps.offboarding.setProvider(providerRuntime.provider);
+// A workspace lost with its node is rebuilt from the last sync (KOBE-739): needs workspace sync.
+if (providerRuntime && deps) {
+  deps.workspaceRebuild.setProvider(providerRuntime.provider, workspaceSync !== undefined);
+}
 // The server replica's own background jobs (startup/jobs.ts, KOBE-422): audit anchor, PII erasure,
 // SIEM forwarding, break-glass, retention, approvals, budgets, email sweeps, egress relay,
 // offboarding, connector refresh, header re-seal and the Bifrost sync. Started after the

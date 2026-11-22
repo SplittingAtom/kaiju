@@ -13913,6 +13913,63 @@
         "x-kobe-detail": "summary"
       }
     },
+    "/v1/workspace/rebuild": {
+      "get": {
+        "operationId": "getWorkspaceRebuild",
+        "summary": "Whether the member's workspace volume is lost, and when the workspace last synced",
+        "description": "Team members (`team.chat`). KOBE-739: `{volume: lost|present|missing|unknown, last_synced_at, rebuildable}`; reads the cluster. 503 `rebuild_unavailable` without workspace storage.",
+        "tags": ["Workspace"],
+        "responses": {
+          "2XX": {
+            "description": "Success (body not described here yet)."
+          },
+          "default": {
+            "description": "Error: `{code, message}`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-kobe-detail": "summary"
+      },
+      "post": {
+        "operationId": "postWorkspaceRebuild",
+        "summary": "Rebuild the member's lost workspace from the last sync",
+        "description": "Team members (`team.chat`). Body `{confirm: true}`. Deletes the lost volume (re-checked as lost first; 409 `volume_reachable` otherwise); the next wake restores from object storage. Idempotent (`already`); audited `sandbox.volume_rebuilt`.",
+        "tags": ["Workspace"],
+        "requestBody": {
+          "required": false,
+          "description": "JSON body as the route validates it (not described here yet).",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Success (body not described here yet)."
+          },
+          "default": {
+            "description": "Error: `{code, message}`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-kobe-detail": "summary"
+      }
+    },
     "/v1/workspace/sync-conflicts": {
       "get": {
         "operationId": "getWorkspaceSyncConflicts",
@@ -21096,6 +21153,83 @@
             }
           }
         ],
+        "responses": {
+          "2XX": {
+            "description": "Success (body not described here yet)."
+          },
+          "default": {
+            "description": "Error: `{code, message}`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-kobe-detail": "summary"
+      }
+    },
+    "/v1/team/workspaces/{userId}/rebuild": {
+      "get": {
+        "operationId": "getTeamWorkspacesByUserIdRebuild",
+        "summary": "Whether a member's workspace volume is lost, and when it last synced",
+        "description": "Team admins (`team.members.manage`). KOBE-739; same answer as `GET /v1/workspace/rebuild`.",
+        "tags": ["Team"],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Success (body not described here yet)."
+          },
+          "default": {
+            "description": "Error: `{code, message}`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-kobe-detail": "summary"
+      },
+      "post": {
+        "operationId": "postTeamWorkspacesByUserIdRebuild",
+        "summary": "Rebuild a member's lost workspace from the last sync",
+        "description": "Team admins (`team.members.manage`). Body `{confirm: true}`; as `POST /v1/workspace/rebuild`, audited with the admin as actor (`byAdmin`).",
+        "tags": ["Team"],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "description": "JSON body as the route validates it (not described here yet).",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
         "responses": {
           "2XX": {
             "description": "Success (body not described here yet)."

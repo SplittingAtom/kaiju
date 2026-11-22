@@ -24,6 +24,13 @@ export const SANDBOX_FAILED_MESSAGE =
 export const WORKSPACE_QUOTA_MESSAGE =
   "Your workspace could not be started because your team has used all of its workspace storage. Ask your team admin or site admin to free or raise the team's workspace quota, then try again.";
 
+/**
+ * What a member sees when their workspace volume is lost (KOBE-739): the node that held its only
+ * copy is gone. Same text as `FAILURE_MESSAGES.workspace_volume_lost`; the web offers the rebuild.
+ */
+export const WORKSPACE_VOLUME_LOST_MESSAGE =
+  "Your workspace could not be started because the storage that held it was lost (the server it lived on is gone). You can rebuild it from the last sync: changes made after the last sync cannot be recovered.";
+
 /** What a site admin can do, by cause; appended to the audit detail (docs/install.md). */
 export const REMEDY: Readonly<Record<StallDiagnosis["cause"], string>> = {
   volume_unschedulable:
@@ -36,6 +43,8 @@ export const REMEDY: Readonly<Record<StallDiagnosis["cause"], string>> = {
     "Remedy: an eviction for the home or tmp emptyDir means raise sandbox.homeSize or sandbox.tmpSize; the next message replaces the pod again",
   volume_quota:
     "Remedy: raise sandbox.teamQuota (persistentvolumeclaims, requests.storage: members x workspace size + warm pool) or turn on sandbox.hibernation.reclaim (docs/install.md, team quota sizing)",
+  volume_lost:
+    "Remedy: the member or a team admin can rebuild the workspace from the last sync (Files panel, or the team's Storage page); or delete the PVC by hand (docs/install.md, when a node is lost)",
   unknown: "Remedy: kubectl describe the sandbox pod in the team namespace",
 };
 
@@ -85,6 +94,9 @@ export async function ensureReady(options: EnsureReadyOptions): Promise<void> {
   }
   if (report.stall.cause === "volume_quota") {
     throw new SandboxWakeError("workspace_quota_exhausted", WORKSPACE_QUOTA_MESSAGE);
+  }
+  if (report.stall.cause === "volume_lost") {
+    throw new SandboxWakeError("workspace_volume_lost", WORKSPACE_VOLUME_LOST_MESSAGE);
   }
   throw new SandboxWakeError("workspace_unavailable", WORKSPACE_UNAVAILABLE_MESSAGE);
 }

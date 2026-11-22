@@ -667,6 +667,16 @@ describe("sandbox RBAC (least privilege; D11)", () => {
     });
   });
 
+  it("lets the server read PersistentVolumes and Nodes to tell a lost volume, read-only (KOBE-739)", () => {
+    const all = rules("ClusterRole", orchestrator);
+    expect(all).toContainEqual({
+      apiGroups: [""],
+      resources: ["persistentvolumes"],
+      verbs: ["get"],
+    });
+    expect(all).toContainEqual({ apiGroups: [""], resources: ["nodes"], verbs: ["get", "list"] });
+  });
+
   it("renders dormant-volume reclaim off by default, and its settings when on (KOBE-733)", () => {
     const off = sandboxConfig(render());
     expect(off.hibernation.reclaim).toEqual({

@@ -6,6 +6,7 @@ import {
   SANDBOX_FAILED_MESSAGE,
   WORKSPACE_QUOTA_MESSAGE,
   WORKSPACE_UNAVAILABLE_MESSAGE,
+  WORKSPACE_VOLUME_LOST_MESSAGE,
   type ReadyProvider,
 } from "./ready.js";
 
@@ -81,5 +82,23 @@ describe("ensureReady", () => {
     expect(WORKSPACE_QUOTA_MESSAGE).not.toMatch(/kobe-team|50 of 50/);
     expect(FAILURE_MESSAGES["workspace_quota_exhausted"]).toBe(WORKSPACE_QUOTA_MESSAGE);
     expect(r.onStalled).toHaveBeenCalledWith({ sandboxId: "sb-1", stall: full });
+  });
+
+  it("a lost volume (KOBE-739) fails with its own code; the member is offered the rebuild", async () => {
+    const lost = {
+      cause: "volume_lost",
+      detail: "volume pvc-abc lives only on node compute4, which no longer exists",
+      definite: true,
+    } as const;
+    const r = run(async () => ({ ready: false, sandboxId: "sb-1", stall: lost }));
+    const err = await r.result.catch((e: unknown) => e);
+    expect(err).toMatchObject({
+      code: "workspace_volume_lost",
+      message: WORKSPACE_VOLUME_LOST_MESSAGE,
+    });
+    expect(WORKSPACE_VOLUME_LOST_MESSAGE).toMatch(/last sync/);
+    expect(WORKSPACE_VOLUME_LOST_MESSAGE).not.toMatch(/compute4|pvc-abc/);
+    expect(FAILURE_MESSAGES["workspace_volume_lost"]).toBe(WORKSPACE_VOLUME_LOST_MESSAGE);
+    expect(r.onStalled).toHaveBeenCalledWith({ sandboxId: "sb-1", stall: lost });
   });
 });

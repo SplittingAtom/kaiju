@@ -52,6 +52,7 @@ import {
 } from "./runs/index.js";
 import type { RunAgentResolver } from "./runs/seams.js";
 import { createOffboarding, type Offboarding } from "./offboarding/index.js";
+import { createWorkspaceRebuild, type WorkspaceRebuild } from "./sandbox-lifecycle/rebuild.js";
 import { stopUserSchedules } from "./schedules/offboard.js";
 import { endUserShares } from "./threads/share-scope.js";
 import { UserLifecycle } from "./users/lifecycle.js";
@@ -301,6 +302,11 @@ export interface ServerDeps {
    * exports it for team admins and deletes it afterwards. The sandbox provider is set later.
    */
   readonly offboarding: Offboarding;
+  /**
+   * Rebuilding a workspace whose volume was lost with its node (KOBE-739): member-confirmed, from
+   * the last sync. The sandbox provider is set later (index.ts), like offboarding's.
+   */
+  readonly workspaceRebuild: WorkspaceRebuild;
   /**
    * Sandbox connection registry and routing (KOBE-24): `router` sends commands to any (user, team)
    * sandbox from any replica; `attach` serves the WebSocket on the sandbox listener only.
@@ -730,6 +736,10 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     paused: options.retentionPaused ?? false,
     log: logger.child({ component: "offboarding" }),
   });
+  const workspaceRebuild = createWorkspaceRebuild({
+    db: database.db,
+    log: logger.child({ component: "workspace-rebuild" }),
+  });
   // Deactivation destroys the user's sandboxes in every team now; volumes stay 30 days (D12).
   lifecycle.on("deactivated", {
     name: "sandbox-offboarding",
@@ -769,6 +779,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     auditForwardingSecrets: options.auditForwardingSecrets ?? [],
     lifecycle,
     offboarding,
+    workspaceRebuild,
     sandboxWire,
     runs,
     runAgents,

@@ -75,6 +75,20 @@ starts a new sandbox and restores My files from the backup. Not restored, by des
 `node_modules` and `__pycache__` folders (rebuild them), empty folders, and the agent's own
 `.kobe/` folder (conversations are rebuilt from Kobe's records).
 
+## When your sandbox's storage is lost
+
+Your site may keep each sandbox's My files volume on the disk of one server only (fast, but a single copy). If
+that server is lost, your next message fails with "the storage that held it was lost", and the
+conversation and the Files panel offer **Rebuild sandbox…**. The dialog shows the time of the
+**last sync** and what cannot come back: every change made after it, and what the backup never
+copies (`.venv`, `node_modules` and `__pycache__` folders, empty folders, and file permissions
+other than the executable bit). Confirm with **Rebuild sandbox**; your next message then starts a
+new sandbox that restores My files from the backup (the first start takes a little longer).
+Kobe offers the rebuild only when it can see that the storage is really gone (its server was
+removed or has been down for more than 10 minutes), never automatically, and conversations are
+never affected. A team admin can rebuild a member's sandbox for them (**Workspace settings →
+Storage and history**).
+
 ## Sandbox temporary space
 
 Besides My files, each sandbox has two small scratch areas that are emptied whenever the sandbox

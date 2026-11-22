@@ -163,6 +163,28 @@ export const PLATFORM_EVENTS = {
     dormantDays: z.number().int().min(1).max(3650),
   }),
   /**
+   * A member's workspace volume was lost with its node (or reported gone or failed by Kubernetes)
+   * and the member, or a team admin for them (`byAdmin`), confirmed rebuilding it from the last
+   * sync (KOBE-739; actor: who confirmed). The claim was deleted without keeping the volume; the
+   * next wake starts a new sandbox that restores from object storage, where nothing was deleted.
+   * `lastSyncedAt`: the last push the member was shown (changes after it are lost). `legalHold`: a
+   * hold covered the member; the lost volume, unreachable, could not be preserved as evidence.
+   */
+  "sandbox.volume_rebuilt": event("team", {
+    sandboxId: id.optional(),
+    userId: id,
+    reason: z.enum([
+      "claim_lost",
+      "volume_missing",
+      "volume_failed",
+      "node_gone",
+      "node_not_ready",
+    ]),
+    lastSyncedAt: z.iso.datetime({ offset: true }).nullable(),
+    legalHold: z.boolean(),
+    byAdmin: z.boolean(),
+  }),
+  /**
    * A wake found the sandbox's pod ended (evicted, killed) and deleted it so agent-sandbox starts a
    * new one; claim, Sandbox and workspace volume are kept (KOBE-636; system actor, or the user
    * whose request woke it). `cause` in plain terms, `podReason` the pod's own (`Evicted`); the
@@ -194,6 +216,7 @@ export const PLATFORM_EVENTS = {
       "image_pull",
       "pod_failed",
       "volume_quota",
+      "volume_lost",
       "unknown",
     ]),
     detail: z

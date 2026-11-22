@@ -91,6 +91,15 @@ rules:
     resources: ["clusterroles"]
     verbs: ["bind"]
     resourceNames: [{{ $manager | quote }}]
+  # KOBE-739: a workspace volume is lost when the PersistentVolume is gone or Failed, or when the one
+  # node holding its only copy (local-path node affinity, Longhorn strict-local) no longer exists or
+  # has not been Ready for 10 minutes. Read-only, by name (list: a hostname label names the node).
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
   # Sandbox bootstrap tokens (projected, audience kobe.sandbox-bootstrap) are verified by TokenReview.
   - apiGroups: ["authentication.k8s.io"]
     resources: ["tokenreviews"]

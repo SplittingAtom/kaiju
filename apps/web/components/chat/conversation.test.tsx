@@ -744,4 +744,36 @@ describe("closing notices (KOBE-468)", () => {
     const alerts = screen.queryAllByRole("alert").map((a) => a.textContent);
     expect(alerts.filter((a) => a?.includes("The run failed"))).toEqual([]);
   });
+
+  it("offers to rebuild a workspace whose storage was lost (KOBE-739)", async () => {
+    const { t } = threadWithHistory();
+    openApp(fake, t);
+    const { user, runId } = await sendAndStart("go", t);
+    fake.failNext.set(
+      "GET /v1/workspace/rebuild",
+      Response.json({ volume: "lost", last_synced_at: "2026-11-21T10:15:00Z", rebuildable: true }),
+    );
+    fake.failNext.set(
+      "POST /v1/workspace/rebuild",
+      Response.json({ status: "rebuilt", last_synced_at: "2026-11-21T10:15:00Z" }),
+    );
+    fake.agent.fail(runId, "workspace_volume_lost", "Your workspace's storage was lost.");
+    await user.click(await screen.findByRole("button", { name: "Rebuild sandbox…" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(await within(dialog).findByText(/Last sync:/)).toBeTruthy();
+    await user.click(within(dialog).getByRole("button", { name: "Rebuild sandbox" }));
+    expect(await within(dialog).findByText(/being rebuilt/)).toBeTruthy();
+    expect(
+      fake.requests.some((q) => q.method === "POST" && q.path === "/v1/workspace/rebuild"),
+    ).toBe(true);
+  });
+
+  it("offers no rebuild for other failures", async () => {
+    const { t } = threadWithHistory();
+    openApp(fake, t);
+    const { runId } = await sendAndStart("go", t);
+    fake.agent.fail(runId, "workspace_unavailable", "The cluster could not provide it.");
+    expect(await screen.findByText(/The run failed: The cluster/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Rebuild sandbox…" })).toBeNull();
+  });
 });

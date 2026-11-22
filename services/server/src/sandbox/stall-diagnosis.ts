@@ -4,11 +4,12 @@ import { podTermination } from "./pod-termination.js";
 import { judgeScheduling } from "./scheduling-message.js";
 import type { KubeClient } from "./kube.js";
 import type { KubeObject } from "./manifests.js";
+import { inspectVolume, type VolumeHealth } from "./volume-loss.js";
 
 /**
  * Why a sandbox pod is not Ready (KOBE-192): classifies the pod's and the workspace volume's
  * events and conditions. `detail` names cluster internals (nodes, volumes) and is for install
- * admins and logs only; members only ever see the fixed `workspace_unavailable` message.
+ * admins and logs only; members only ever see a fixed message per failure code.
  */
 export type StallCause =
   /** The volume's replica could not be scheduled (Longhorn: insufficient storage, strict-local). */
@@ -24,6 +25,12 @@ export type StallCause =
    * the volume cannot be created until volumes are freed or the quota raised.
    */
   | "volume_quota"
+  /**
+   * The workspace volume is lost for good (KOBE-739, `volume-loss.ts`): its only copy was on a
+   * node that is gone, or Kubernetes reports the volume gone or failed. The member may rebuild the
+   * workspace from the last sync.
+   */
+  | "volume_lost"
   | "unknown";
 
 export interface StallDiagnosis {
@@ -151,6 +158,8 @@ export function classifyStall(input: {
   readonly quota?: KubeObject | undefined;
   /** The workspace volume's requested size in bytes. */
   readonly volumeBytes?: number | undefined;
+  /** Whether the workspace volume is lost (KOBE-739), when it could be read. */
+  readonly volume?: VolumeHealth | undefined;
 }): StallDiagnosis {
   const { pod, pvc, since, now } = input;
   const uids = new Set(
@@ -172,6 +181,8 @@ export function classifyStall(input: {
     ...(volumePhase ? { volumePhase } : {}),
   });
 
+  // A lost volume (KOBE-739) can never attach again: nothing else the events say matters.
+  if (input.volume?.state === "lost") return make("volume_lost", input.volume.detail, true);
   // An ended pod never becomes Ready (KOBE-636): say so at once, in the kubelet's words.
   const ended = podTermination(pod);
   if (ended) {
@@ -253,7 +264,11 @@ export async function diagnoseStall(
     : await kube
         .get({ apiVersion: "v1", kind: "ResourceQuota", name: MEMBER_RESOURCE_QUOTA, namespace })
         .catch(() => undefined);
-  return classifyStall({ pod, pvc, events, since, now, quota, volumeBytes });
+  // KOBE-739: only with a volume; a read failure (older RBAC: no PV or Node reads) is no diagnosis.
+  const volume = pvc
+    ? await inspectVolume(kube, namespace, pvcName, now).catch(() => undefined)
+    : undefined;
+  return classifyStall({ pod, pvc, events, since, now, quota, volumeBytes, volume });
 }
 
 /** Whether the pod Ready condition is True. */

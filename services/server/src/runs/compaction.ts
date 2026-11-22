@@ -73,6 +73,7 @@ const HTTP_CODE: Readonly<Record<string, CompactThreadErrorCode>> = {
   isolation_runtime_missing: "sandbox_unavailable",
   workspace_unavailable: "sandbox_unavailable",
   workspace_quota_exhausted: "sandbox_unavailable",
+  workspace_volume_lost: "sandbox_unavailable",
   sandbox_failed: "sandbox_unavailable",
   pi_unavailable: "sandbox_unavailable",
   connection_lost: "sandbox_unavailable",

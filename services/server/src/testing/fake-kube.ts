@@ -19,6 +19,8 @@ export interface Call {
   readonly kind: string;
   readonly namespace?: string;
   readonly name?: string;
+  /** A delete's grace period, when one was given. */
+  readonly gracePeriodSeconds?: number;
 }
 
 const key = (r: { apiVersion: string; kind: string; name: string; namespace?: string }) =>
@@ -211,8 +213,14 @@ export function createFakeKube(): FakeKube {
       fake.afterWrite?.(result, fake);
       return result;
     },
-    async delete(r) {
-      fake.calls.push({ verb: "delete", ...r });
+    async delete(r, options) {
+      fake.calls.push({
+        verb: "delete",
+        ...r,
+        ...(options?.gracePeriodSeconds === undefined
+          ? {}
+          : { gracePeriodSeconds: options.gracePeriodSeconds }),
+      });
       maybeFail("delete", r.kind);
       const obj = store.get(key(r));
       if (!obj) return;

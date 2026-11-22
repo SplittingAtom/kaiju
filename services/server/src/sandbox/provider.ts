@@ -59,6 +59,7 @@ import { logger } from "../logger.js";
 import { podTermination, type PodTermination } from "./pod-termination.js";
 import { diagnoseStall, isPodReady, type StallDiagnosis } from "./stall-diagnosis.js";
 import { reconcileTeamNamespaces, type TeamReconcileSummary } from "./team-reconcile.js";
+import { inspectVolume, type VolumeHealth } from "./volume-loss.js";
 
 /** KOBE-733: how long a new claim waits for a reclaimed volume of the same name to go. */
 const VOLUME_TERMINATING_WAIT_MS = 60_000;
@@ -312,6 +313,23 @@ export interface SandboxProvider {
   ): Promise<DestroyResult>;
   /** Deletes a retained workspace volume (`workspace-u-<user>`) of the team; missing is fine. */
   deleteVolume(team: TeamRef, pvcName: string): Promise<void>;
+  /**
+   * KOBE-739: whether the (team, user) workspace volume is lost (`volume-loss.ts`), found by its
+   * claim's Sandbox name, or by the claim's name when the claim is gone. Read-only; read errors
+   * throw (the caller never treats them as lost).
+   */
+  volumeHealth(team: TeamRef, userId: string): Promise<VolumeHealth>;
+  /**
+   * KOBE-739: the Kubernetes half of rebuilding a lost workspace: deletes the claim without
+   * keeping the volume, force-deletes its pod when that pod sits on `lostNode` (it could never
+   * finish terminating, and its volume would stay protected), then deletes the volume. Idempotent.
+   * The caller has re-checked {@link volumeHealth} and decides; nothing in object storage is touched.
+   */
+  discardLostVolume(
+    team: TeamRef,
+    userId: string,
+    lostNode: string | undefined,
+  ): Promise<DestroyResult & { readonly pvc: string }>;
   /** Verifies a sandbox pod's bootstrap token (TokenReview) and resolves who it is. */
   identifyBootstrapToken(token: string): Promise<BootstrapIdentity>;
   /**
@@ -967,6 +985,38 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
     }
   };
 
+  /** The workspace PVC's name: from the claim's Sandbox, or the claim's own name (they match). */
+  const workspaceVolumeOf = async (team: TeamRef, userId: string) => {
+    const namespace = teamNamespaceName(team);
+    const name = claimName(userId);
+    const claim = await kube.get(CLAIM(namespace, name));
+    const sandboxName = (claim ? str(claim, "status", "sandbox", "name") : undefined) ?? name;
+    return { namespace, sandboxName, pvcName: workspacePvcName(sandboxName) };
+  };
+
+  const volumeHealth = async (team: TeamRef, userId: string): Promise<VolumeHealth> => {
+    assertTeamRef(team);
+    assertUserId(userId);
+    const { namespace, pvcName } = await workspaceVolumeOf(team, userId);
+    return inspectVolume(kube, namespace, pvcName, now());
+  };
+
+  const discardLostVolume = async (
+    team: TeamRef,
+    userId: string,
+    lostNode: string | undefined,
+  ): Promise<DestroyResult & { readonly pvc: string }> => {
+    assertTeamRef(team);
+    assertUserId(userId);
+    const { namespace, sandboxName, pvcName } = await workspaceVolumeOf(team, userId);
+    const pod = await kube.get(POD(namespace, sandboxName));
+    const stuck = lostNode !== undefined && str(pod, "spec", "nodeName") === lostNode;
+    const destroyed = await destroySandbox(team, userId, { retainVolume: false });
+    if (stuck) await kube.delete(POD(namespace, sandboxName), { gracePeriodSeconds: 0 });
+    await deleteVolume(team, pvcName);
+    return { ...(destroyed.sandboxId ? { sandboxId: destroyed.sandboxId } : {}), pvc: pvcName };
+  };
+
   const untilVolumeNotTerminating = async (namespace: string, pvcName: string): Promise<void> => {
     const end = now() + VOLUME_TERMINATING_WAIT_MS;
     for (;;) {
@@ -1252,6 +1302,8 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
     hibernateSandbox,
     destroySandbox,
     deleteVolume,
+    volumeHealth,
+    discardLostVolume,
     identifyBootstrapToken,
     recheckAssignment,
     reconcileIsolation,
