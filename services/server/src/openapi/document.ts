@@ -21,8 +21,13 @@ import { threadsOpenApiPaths, threadsOpenApiSchemas } from "./threads.js";
 import { threadFoldersOpenApiPaths, threadFoldersOpenApiSchemas } from "./thread-folders.js";
 import { threadFileLinksOpenApiPaths, threadFileLinksOpenApiSchemas } from "./thread-file-links.js";
 import { usageOpenApiPaths, usageOpenApiSchemas } from "./usage.js";
-import { catalogOpenApiPaths, catalogOpenApiTags } from "./catalog/index.js";
-import { mergePaths } from "./catalog/build.js";
+import {
+  catalogOpenApiPaths,
+  catalogOpenApiResponses,
+  catalogOpenApiSchemas,
+  catalogOpenApiTags,
+} from "./catalog/index.js";
+import { mergePaths, mergeSchemas } from "./catalog/build.js";
 import {
   teamDefaultAgentOpenApiPaths,
   teamDefaultAgentOpenApiSchemas,
@@ -80,28 +85,32 @@ export function openApiDocument(): Record<string, unknown> {
       catalogOpenApiPaths(),
     ),
     components: {
-      schemas: {
-        ...threadsOpenApiSchemas(),
-        ...threadFoldersOpenApiSchemas(),
-        ...runsOpenApiSchemas(),
-        ...pendingOpenApiSchemas(),
-        ...markersOpenApiSchemas(),
-        ...compactOpenApiSchemas(),
-        ...branchSummaryOpenApiSchemas(),
-        ...contextOpenApiSchemas(),
-        ...approvalsOpenApiSchemas(),
-        ...usageOpenApiSchemas(),
-        ...modelsOpenApiSchemas(),
-        ...feedbackOpenApiSchemas(),
-        ...evalCasesOpenApiSchemas(),
-        ...brandingOpenApiSchemas(),
-        ...agentRosterOpenApiSchemas(),
-        ...projectCommitsOpenApiSchemas(),
-        ...teamDefaultAgentOpenApiSchemas(),
-        ...egressAccessOpenApiSchemas(),
-        ...threadFileLinksOpenApiSchemas(),
-        ...semanticMemoryOpenApiSchemas(),
-      },
+      schemas: mergeSchemas(
+        {
+          ...threadsOpenApiSchemas(),
+          ...threadFoldersOpenApiSchemas(),
+          ...runsOpenApiSchemas(),
+          ...pendingOpenApiSchemas(),
+          ...markersOpenApiSchemas(),
+          ...compactOpenApiSchemas(),
+          ...branchSummaryOpenApiSchemas(),
+          ...contextOpenApiSchemas(),
+          ...approvalsOpenApiSchemas(),
+          ...usageOpenApiSchemas(),
+          ...modelsOpenApiSchemas(),
+          ...feedbackOpenApiSchemas(),
+          ...evalCasesOpenApiSchemas(),
+          ...brandingOpenApiSchemas(),
+          ...agentRosterOpenApiSchemas(),
+          ...projectCommitsOpenApiSchemas(),
+          ...teamDefaultAgentOpenApiSchemas(),
+          ...egressAccessOpenApiSchemas(),
+          ...threadFileLinksOpenApiSchemas(),
+          ...semanticMemoryOpenApiSchemas(),
+        },
+        catalogOpenApiSchemas(),
+      ),
+      responses: catalogOpenApiResponses(),
       securitySchemes: {
         session: { type: "apiKey", in: "cookie", name: "better-auth.session_token" },
       },

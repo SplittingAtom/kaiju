@@ -12785,35 +12785,64 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/LaunchAppCardBody"
               }
             }
           }
         },
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "201": {
+            "description": "The card, inserted at the leaf, or queued while a run is active.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/LaunchAppCardResponse"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "502": {
+            "$ref": "#/components/responses/BadGateway"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/app-cards/{ref}": {
@@ -12838,24 +12867,35 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
+          "204": {
+            "description": "Done; no body."
           },
-          "default": {
-            "description": "Error: `{code, message}`.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/app-results": {
@@ -12872,24 +12912,42 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/AppResultViews"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/app-results/{ref}": {
@@ -12914,24 +12972,48 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "The stored result and the input the upstream ran (null before it was kept).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/StoredAppResult"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/connectors": {
@@ -12948,24 +13030,42 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/ChatConnectorList"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/connectors/{connectorId}": {
@@ -12990,35 +13090,55 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/ThreadConnectorToggleBody"
               }
             }
           }
         },
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/ThreadConnectorToggle"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/export": {
@@ -13035,24 +13155,58 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "team",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The team the page believes is active (a download link cannot send X-Kobe-Team)."
+            }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "The conversation as a Markdown attachment.",
             "content": {
-              "application/json": {
+              "text/markdown": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "type": "string"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/file-edit-proposals": {
@@ -13069,24 +13223,42 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/FileEditProposals"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/files": {
@@ -13103,24 +13275,42 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/ThreadFiles"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/learn": {
@@ -13137,24 +13327,52 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "estimate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["1"],
+              "description": "`1` adds token estimates."
+            }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/LearnState"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       },
       "post": {
         "operationId": "postThreadsByIdLearn",
@@ -13169,35 +13387,61 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/LearnStartBody"
               }
             }
           }
         },
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "202": {
+            "description": "The pass started; a refusal answers with its code and status.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/LearnStartResponse"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/notebook/interrupt": {
@@ -13214,35 +13458,48 @@
             "schema": {
               "type": "string"
             }
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
-        },
+        ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/NotebookKernelResponse"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/notebook/restart": {
@@ -13259,35 +13516,48 @@
             "schema": {
               "type": "string"
             }
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
-        },
+        ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/NotebookKernelResponse"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/notebook/run": {
@@ -13304,35 +13574,58 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/NotebookRunBody"
               }
             }
           }
         },
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "202": {
+            "description": "Accepted; follow `GET /v1/runs/{run_id}/events`.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/NotebookRunResponse"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/notebook/start": {
@@ -13349,35 +13642,48 @@
             "schema": {
               "type": "string"
             }
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
-        },
+        ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "200 once the kernel is up; 202 `waking` (ask again after `retry_after_ms`).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/NotebookStartResponse"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/purge": {
@@ -13394,35 +13700,38 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
-        "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              }
-            }
-          }
-        },
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
+          "204": {
+            "description": "Done; no body."
           },
-          "default": {
-            "description": "Error: `{code, message}`.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/skills": {
@@ -13438,24 +13747,42 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/EffectiveSkillList"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/sync-conflicts": {
@@ -13472,24 +13799,42 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/SyncConflicts"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/{id}/sync-conflicts/{conflictId}": {
@@ -13514,35 +13859,45 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/SyncConflictActionBody"
               }
             }
           }
         },
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
+          "204": {
+            "description": "Done; no body."
           },
-          "default": {
-            "description": "Error: `{code, message}`.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/app-cards": {
@@ -13551,33 +13906,64 @@
         "summary": "Start a new conversation from an app card",
         "description": "Answers 201.",
         "tags": ["Threads"],
+        "parameters": [
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/LaunchNewThreadAppCardBody"
               }
             }
           }
         },
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "201": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/LaunchAppCardResponse"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "502": {
+            "$ref": "#/components/responses/BadGateway"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/connectors": {
@@ -13585,22 +13971,39 @@
         "operationId": "getThreadsConnectors",
         "summary": "List the connectors for a conversation not started yet",
         "tags": ["Threads"],
+        "parameters": [
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/ChatConnectorList"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/export": {
@@ -13609,22 +14012,55 @@
         "summary": "Download all of the member's conversations as a zip",
         "description": "A download link passes `?team=`.",
         "tags": ["Threads"],
-        "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
+        "parameters": [
+          {
+            "name": "team",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The team the page believes is active (a download link cannot send X-Kobe-Team)."
+            }
           },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All of the member's conversations as a zip attachment.",
             "content": {
-              "application/json": {
+              "application/zip": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "type": "string"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/threads/skills": {
@@ -13633,22 +14069,52 @@
         "summary": "List the skills in effect for a new conversation",
         "description": "`agent_id` picks the agent; 404 when it is not available.",
         "tags": ["Threads"],
-        "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
           },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/EffectiveSkillList"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/runs/{id}/usage": {
@@ -13665,24 +14131,42 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/RunUsage"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/runs/{runId}/events": {
@@ -13699,24 +14183,51 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Resume after this event seq (or send the `Last-Event-ID` header)."
+            }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Kobe Event Stream (types in `@kobe/protocol` `events.ts`); 204 when the run has ended and nothing is left to send.",
             "content": {
-              "application/json": {
+              "text/event-stream": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "type": "string"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/artifacts": {
@@ -13725,22 +14236,51 @@
         "summary": "List a conversation's artifacts",
         "description": "Needs `thread_id`.",
         "tags": ["Artifacts"],
-        "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
+        "parameters": [
+          {
+            "name": "thread_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/ArtifactList"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/artifacts/{id}": {
@@ -13756,24 +14296,42 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/ArtifactDetail"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/artifacts/{id}/versions/{n}/content": {
@@ -13798,24 +14356,42 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "The version's content as an attachment.",
             "content": {
-              "application/json": {
+              "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "type": "string"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/artifacts/{id}/versions/{n}/edit-as-file": {
@@ -13840,35 +14416,48 @@
             "schema": {
               "type": "string"
             }
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
-        },
+        ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "201": {
+            "description": "The new file in the member's workspace.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/WorkspaceFileEntry"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/artifacts/{id}/versions/{n}/frame": {
@@ -13893,24 +14482,55 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "team",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The team the page believes is active (a download link cannot send X-Kobe-Team)."
+            }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "The sandboxed HTML document for the artifact panel's iframe.",
             "content": {
-              "application/json": {
+              "text/html": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "type": "string"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/workspace/sync-conflicts": {
@@ -13919,22 +14539,39 @@
         "summary": "List the member's sync conflicts no conversation wrote",
         "description": "Team members (`team.chat`).",
         "tags": ["Workspace"],
+        "parameters": [
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/SyncConflicts"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/workspace/sync-conflicts/{conflictId}": {
@@ -13951,35 +14588,45 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/SyncConflictActionBody"
               }
             }
           }
         },
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
+          "204": {
+            "description": "Done; no body."
           },
-          "default": {
-            "description": "Error: `{code, message}`.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/schedules": {
@@ -13988,54 +14635,103 @@
         "summary": "List schedules with the active count",
         "description": "`scope=team` is for team admins (`team.schedules.pause`).",
         "tags": ["Schedules"],
-        "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "mine",
+              "type": "string",
+              "enum": ["mine", "team"]
+            }
           },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/ScheduleList"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       },
       "post": {
         "operationId": "postSchedules",
         "summary": "Create a schedule",
         "tags": ["Schedules"],
+        "parameters": [
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/CreateScheduleBody"
               }
             }
           }
         },
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "201": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/Schedule"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/schedules/{id}": {
@@ -14052,24 +14748,35 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
+          "204": {
+            "description": "Done; no body."
           },
-          "default": {
-            "description": "Error: `{code, message}`.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       },
       "get": {
         "operationId": "getSchedulesById",
@@ -14083,24 +14790,42 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/Schedule"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       },
       "patch": {
         "operationId": "patchSchedulesById",
@@ -14114,35 +14839,58 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "$ref": "#/components/schemas/PatchScheduleBody"
               }
             }
           }
         },
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/Schedule"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/schedules/{id}/pause": {
@@ -14159,35 +14907,55 @@
             "schema": {
               "type": "string"
             }
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              }
+          },
+          {
+            "name": "expectedActive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true"],
+              "description": "Refuse with 409 when the schedule is no longer active (an approval's guard)."
+            }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
-        },
+        ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/Schedule"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/schedules/{id}/resume": {
@@ -14204,35 +14972,58 @@
             "schema": {
               "type": "string"
             }
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "description": "JSON body as the route validates it (not described here yet).",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object"
-              }
+          },
+          {
+            "name": "expectedActive",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["false"],
+              "description": "Refuse with 409 when the schedule is no longer paused (an approval's guard)."
+            }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
             }
           }
-        },
+        ],
         "responses": {
-          "2XX": {
-            "description": "Success (body not described here yet)."
-          },
-          "default": {
-            "description": "Error: `{code, message}`.",
+          "200": {
+            "description": "Success.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Error"
+                  "$ref": "#/components/schemas/Schedule"
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
           }
-        },
-        "x-kobe-detail": "summary"
+        }
       }
     },
     "/v1/projects": {
@@ -41565,6 +42356,2144 @@
         },
         "required": ["level", "stewards"],
         "additionalProperties": false
+      },
+      "LaunchAppCardBody": {
+        "type": "object",
+        "properties": {
+          "app_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": ["app_id"],
+        "additionalProperties": false
+      },
+      "LaunchAppCardResponse": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "thread_id": {
+                "type": "string",
+                "allOf": [
+                  {
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "pattern": "^[0-9a-f-]+$"
+                  }
+                ]
+              },
+              "entry_id": {
+                "type": "string"
+              },
+              "result_ref": {
+                "type": "string",
+                "allOf": [
+                  {
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "pattern": "^[0-9a-f-]+$"
+                  }
+                ]
+              },
+              "queued": {
+                "type": "boolean",
+                "const": false
+              }
+            },
+            "required": ["thread_id", "entry_id", "result_ref", "queued"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "thread_id": {
+                "type": "string",
+                "allOf": [
+                  {
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "pattern": "^[0-9a-f-]+$"
+                  }
+                ]
+              },
+              "result_ref": {
+                "type": "string",
+                "allOf": [
+                  {
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "pattern": "^[0-9a-f-]+$"
+                  }
+                ]
+              },
+              "queued": {
+                "type": "boolean",
+                "const": true
+              }
+            },
+            "required": ["thread_id", "result_ref", "queued"],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "AppResultViews": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "result_ref": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "run_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "user_entry_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "tool_call_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "entry_id": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "connector_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "connector_name": {
+                  "type": "string"
+                },
+                "tool": {
+                  "type": "string"
+                },
+                "app_id": {
+                  "type": "string"
+                },
+                "template_sha256": {
+                  "type": "string"
+                },
+                "view": {
+                  "type": "string",
+                  "enum": ["app", "text"]
+                },
+                "queued": {
+                  "type": "boolean"
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": ["too_large", "template_changed", "not_app_visible", "no_access"]
+                },
+                "app": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string"
+                    },
+                    "placement": {
+                      "type": "string",
+                      "enum": ["chat", "artifacts", "rail"]
+                    }
+                  },
+                  "required": ["title", "placement"]
+                }
+              },
+              "required": [
+                "result_ref",
+                "run_id",
+                "user_entry_id",
+                "tool_call_id",
+                "entry_id",
+                "connector_id",
+                "connector_name",
+                "tool",
+                "app_id",
+                "template_sha256",
+                "view",
+                "queued"
+              ]
+            }
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": ["results", "truncated"],
+        "x-kobe-untyped": true
+      },
+      "StoredAppResult": {
+        "type": "object",
+        "properties": {
+          "input": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {}
+        },
+        "required": ["input", "result"],
+        "x-kobe-untyped": true
+      },
+      "ChatConnectorList": {
+        "type": "object",
+        "properties": {
+          "connectors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "connector_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "builtin": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": ["kobe"]
+                    },
+                    "admin": {
+                      "type": "string",
+                      "enum": ["off", "read", "read_write"]
+                    }
+                  },
+                  "required": ["kind", "admin"]
+                },
+                "problem": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "no_key",
+                            "not_connected",
+                            "grant_expired",
+                            "site_key_unusable",
+                            "refresh_auth_required",
+                            "tools_awaiting_approval"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "fix": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["code", "message", "fix"]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": ["connector_id", "name", "enabled", "problem"]
+            }
+          }
+        },
+        "required": ["connectors"],
+        "x-kobe-untyped": true
+      },
+      "ThreadConnectorToggleBody": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": ["enabled"],
+        "additionalProperties": false
+      },
+      "ThreadConnectorToggle": {
+        "type": "object",
+        "properties": {
+          "connector": {
+            "type": "object",
+            "properties": {
+              "connector_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "builtin": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": ["kobe"]
+                  },
+                  "admin": {
+                    "type": "string",
+                    "enum": ["off", "read", "read_write"]
+                  }
+                },
+                "required": ["kind", "admin"]
+              },
+              "problem": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string",
+                        "enum": [
+                          "no_key",
+                          "not_connected",
+                          "grant_expired",
+                          "site_key_unusable",
+                          "refresh_auth_required",
+                          "tools_awaiting_approval"
+                        ]
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "fix": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["code", "message", "fix"]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": ["connector_id", "name", "enabled", "problem"]
+          }
+        },
+        "required": ["connector"],
+        "x-kobe-untyped": true
+      },
+      "FileEditProposals": {
+        "type": "object",
+        "properties": {
+          "proposals": {
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tool_call_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+                },
+                "proposal_id": {
+                  "type": "string",
+                  "allOf": [
+                    {
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "pattern": "^[0-9a-f-]+$"
+                    }
+                  ]
+                },
+                "path": {
+                  "type": "string"
+                },
+                "base_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "project_id": {
+                  "type": "string",
+                  "allOf": [
+                    {
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "pattern": "^[0-9a-f-]+$"
+                    }
+                  ]
+                },
+                "base_commit_seq": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "content": {
+                  "type": "string"
+                },
+                "summary": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "run_id": {
+                  "type": "string",
+                  "allOf": [
+                    {
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "pattern": "^[0-9a-f-]+$"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                }
+              },
+              "required": ["tool_call_id", "path", "content", "summary", "run_id", "created_at"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["proposals"],
+        "additionalProperties": false
+      },
+      "ThreadFiles": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255
+                },
+                "path": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["file", "dir"]
+                },
+                "size_bytes": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "mtime": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": ["synced", "live"]
+                },
+                "owner": {
+                  "type": "string",
+                  "enum": ["sandbox", "server"]
+                },
+                "area": {
+                  "type": "string",
+                  "enum": ["workspace", "uploads", "projects"]
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "mime_type": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 255
+                }
+              },
+              "required": [
+                "name",
+                "path",
+                "type",
+                "size_bytes",
+                "mtime",
+                "source",
+                "owner",
+                "area"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["files"],
+        "additionalProperties": false
+      },
+      "LearnState": {
+        "type": "object",
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "allOf": [
+              {
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "pattern": "^[0-9a-f-]+$"
+              }
+            ]
+          },
+          "blocker": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "enum": [
+                      "memory_disabled",
+                      "memory_learning_model_unavailable",
+                      "learn_rate_limited",
+                      "budget_exhausted",
+                      "pass_running",
+                      "no_completed_run",
+                      "thread_not_found",
+                      "read_only",
+                      "thread_in_trash",
+                      "test_thread",
+                      "break_glass",
+                      "not_current_branch",
+                      "nothing_to_learn",
+                      "thread_busy"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  },
+                  "leaf_entry_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": ["code", "message"],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "running": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "pass_id": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f-]+$"
+                      }
+                    ]
+                  },
+                  "started_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                  }
+                },
+                "required": ["pass_id", "started_at"],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "new_messages": {
+            "type": "boolean"
+          },
+          "candidates": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "passes_left": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "last_failure": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "pass_id": {
+                    "type": "string",
+                    "allOf": [
+                      {
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "pattern": "^[0-9a-f-]+$"
+                      }
+                    ]
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "finished_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                  }
+                },
+                "required": ["pass_id", "message", "finished_at"],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "estimate": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "new_tokens": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "all_tokens": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": ["new_tokens", "all_tokens"],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nudge": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "enum": ["messages", "correction"]
+                  },
+                  "key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  }
+                },
+                "required": ["reason", "key"],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "thread_id",
+          "blocker",
+          "running",
+          "new_messages",
+          "candidates",
+          "passes_left",
+          "last_failure",
+          "estimate"
+        ],
+        "additionalProperties": false
+      },
+      "LearnStartBody": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "default": "new",
+            "type": "string",
+            "enum": ["new", "all"]
+          },
+          "viewed_leaf_entry_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "additionalProperties": false
+      },
+      "LearnStartResponse": {
+        "type": "object",
+        "properties": {
+          "pass_id": {
+            "type": "string",
+            "allOf": [
+              {
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "pattern": "^[0-9a-f-]+$"
+              }
+            ]
+          },
+          "run_id": {
+            "type": "string",
+            "allOf": [
+              {
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "pattern": "^[0-9a-f-]+$"
+              }
+            ]
+          },
+          "model_alias": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["new", "all"]
+          },
+          "input": {
+            "type": "object",
+            "properties": {
+              "entries": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "truncated": {
+                "type": "boolean"
+              },
+              "summarised": {
+                "type": "boolean"
+              },
+              "partial": {
+                "type": "boolean"
+              },
+              "estimated_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["entries", "truncated", "summarised", "partial", "estimated_tokens"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["pass_id", "run_id", "model_alias", "mode", "input"],
+        "additionalProperties": false
+      },
+      "NotebookKernelResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["interrupted", "restarted", "idle", "no_kernel"]
+          }
+        },
+        "required": ["status"],
+        "additionalProperties": false
+      },
+      "NotebookRunBody": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "cell_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+          },
+          "timeout_s": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3600
+          }
+        },
+        "required": ["path"],
+        "additionalProperties": false
+      },
+      "NotebookRunResponse": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "allOf": [
+              {
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "pattern": "^[0-9a-f-]+$"
+              }
+            ]
+          },
+          "exec_id": {
+            "type": "string",
+            "allOf": [
+              {
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "pattern": "^[0-9a-f-]+$"
+              }
+            ]
+          }
+        },
+        "required": ["run_id", "exec_id"],
+        "additionalProperties": false
+      },
+      "NotebookStartResponse": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "const": "waking"
+              },
+              "retry_after_ms": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 60000
+              }
+            },
+            "required": ["status", "retry_after_ms"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["idle", "busy"]
+              }
+            },
+            "required": ["status"],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "EffectiveSkillList": {
+        "type": "object",
+        "properties": {
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": ["name"]
+            }
+          }
+        },
+        "required": ["skills"],
+        "x-kobe-untyped": true
+      },
+      "SyncConflicts": {
+        "type": "object",
+        "properties": {
+          "conflicts": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "allOf": [
+                    {
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "pattern": "^[0-9a-f-]+$"
+                    }
+                  ]
+                },
+                "path": {
+                  "type": "string"
+                },
+                "conflict_path": {
+                  "type": "string"
+                },
+                "member_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "agent_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                }
+              },
+              "required": [
+                "id",
+                "path",
+                "conflict_path",
+                "member_sha256",
+                "agent_sha256",
+                "created_at"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["conflicts"],
+        "additionalProperties": false
+      },
+      "SyncConflictActionBody": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": ["resolved", "dismissed"]
+          }
+        },
+        "required": ["action"],
+        "additionalProperties": false
+      },
+      "LaunchNewThreadAppCardBody": {
+        "type": "object",
+        "properties": {
+          "app_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "connectors_off": {
+            "maxItems": 64,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        },
+        "required": ["app_id"],
+        "additionalProperties": false
+      },
+      "RunUsage": {
+        "type": "object",
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "user_entry_id": {
+            "type": ["string", "null"]
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "thinking_level": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["off", "low", "medium", "high"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "calls": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "input_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "output_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "cache_read_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "cache_write_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "cost_usd": {
+            "type": "number",
+            "minimum": 0
+          },
+          "cost_usd_exact": {
+            "type": "string"
+          },
+          "unpriced_calls": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "estimated_calls": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "reasoning_tokens": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reasoning_estimated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "run_id",
+          "user_entry_id",
+          "models",
+          "thinking_level",
+          "calls",
+          "input_tokens",
+          "output_tokens",
+          "cache_read_tokens",
+          "cache_write_tokens",
+          "cost_usd",
+          "cost_usd_exact",
+          "unpriced_calls",
+          "estimated_calls",
+          "reasoning_tokens",
+          "reasoning_estimated"
+        ],
+        "additionalProperties": false
+      },
+      "ArtifactList": {
+        "type": "object",
+        "properties": {
+          "artifacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "allOf": [
+                    {
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "pattern": "^[0-9a-f-]+$"
+                    }
+                  ]
+                },
+                "thread_id": {
+                  "type": "string",
+                  "allOf": [
+                    {
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "pattern": "^[0-9a-f-]+$"
+                    }
+                  ]
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": ["html", "svg", "markdown", "mermaid", "code", "csv"]
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "language": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[a-z0-9][a-z0-9+#.-]{0,31}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "current_version": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                }
+              },
+              "required": [
+                "id",
+                "thread_id",
+                "kind",
+                "title",
+                "language",
+                "current_version",
+                "created_at",
+                "updated_at"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["artifacts"],
+        "additionalProperties": false
+      },
+      "ArtifactDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "allOf": [
+              {
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "pattern": "^[0-9a-f-]+$"
+              }
+            ]
+          },
+          "thread_id": {
+            "type": "string",
+            "allOf": [
+              {
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "pattern": "^[0-9a-f-]+$"
+              }
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["html", "svg", "markdown", "mermaid", "code", "csv"]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9+#.-]{0,31}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current_version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "version": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "size_bytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                }
+              },
+              "required": ["version", "size_bytes", "created_at"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "thread_id",
+          "kind",
+          "title",
+          "language",
+          "current_version",
+          "created_at",
+          "updated_at",
+          "versions"
+        ],
+        "additionalProperties": false
+      },
+      "WorkspaceFileEntry": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "path": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["file", "dir"]
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mtime": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["synced", "live"]
+          },
+          "owner": {
+            "type": "string",
+            "enum": ["sandbox", "server"]
+          },
+          "area": {
+            "type": "string",
+            "enum": ["workspace", "uploads", "projects"]
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "mime_type": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          }
+        },
+        "required": ["name", "path", "type", "size_bytes", "mtime", "source", "owner", "area"],
+        "additionalProperties": false
+      },
+      "ScheduleList": {
+        "type": "object",
+        "properties": {
+          "schedules": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "schedule_id": {
+                  "type": "string",
+                  "allOf": [
+                    {
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "pattern": "^[0-9a-f-]+$"
+                    }
+                  ]
+                },
+                "team_id": {
+                  "type": "string",
+                  "allOf": [
+                    {
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "pattern": "^[0-9a-f-]+$"
+                    }
+                  ]
+                },
+                "user_id": {
+                  "type": "string",
+                  "allOf": [
+                    {
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "pattern": "^[0-9a-f-]+$"
+                    }
+                  ]
+                },
+                "agent_id": {
+                  "type": "string",
+                  "allOf": [
+                    {
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "pattern": "^[0-9a-f-]+$"
+                    }
+                  ]
+                },
+                "prompt": {
+                  "type": "string",
+                  "maxLength": 10000
+                },
+                "mentions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "recurrence": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "cron"
+                        },
+                        "expr": {
+                          "type": "string",
+                          "maxLength": 100
+                        }
+                      },
+                      "required": ["kind", "expr"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "daily"
+                        },
+                        "at": {
+                          "type": "string",
+                          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                        }
+                      },
+                      "required": ["kind", "at"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "weekdays"
+                        },
+                        "at": {
+                          "type": "string",
+                          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                        }
+                      },
+                      "required": ["kind", "at"],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "weekly"
+                        },
+                        "days": {
+                          "minItems": 1,
+                          "maxItems": 7,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+                          }
+                        },
+                        "at": {
+                          "type": "string",
+                          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                        }
+                      },
+                      "required": ["kind", "days", "at"],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "tz": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "active": {
+                  "type": "boolean"
+                },
+                "notify_email": {
+                  "type": "boolean"
+                },
+                "next_due_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "last_run_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "allOf": [
+                        {
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "pattern": "^[0-9a-f-]+$"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "paused_by": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": ["team_admin", "deactivation", "agent_unavailable"]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                }
+              },
+              "required": [
+                "schedule_id",
+                "team_id",
+                "user_id",
+                "agent_id",
+                "prompt",
+                "mentions",
+                "recurrence",
+                "tz",
+                "active",
+                "notify_email",
+                "next_due_at",
+                "last_run_id",
+                "paused_by",
+                "created_at",
+                "updated_at"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "active_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["schedules", "active_count"],
+        "additionalProperties": false
+      },
+      "CreateScheduleBody": {
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "allOf": [
+              {
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "pattern": "^[0-9a-f-]+$"
+              }
+            ]
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "mentions": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          "recurrence": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "cron"
+                  },
+                  "expr": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                },
+                "required": ["kind", "expr"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "daily"
+                  },
+                  "at": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  }
+                },
+                "required": ["kind", "at"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "weekdays"
+                  },
+                  "at": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  }
+                },
+                "required": ["kind", "at"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "weekly"
+                  },
+                  "days": {
+                    "minItems": 1,
+                    "maxItems": 7,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+                    }
+                  },
+                  "at": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  }
+                },
+                "required": ["kind", "days", "at"],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "tz": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "active": {
+            "default": true,
+            "type": "boolean"
+          },
+          "notify_email": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": ["agent_id", "prompt", "recurrence", "tz"],
+        "additionalProperties": false
+      },
+      "Schedule": {
+        "type": "object",
+        "properties": {
+          "schedule_id": {
+            "type": "string",
+            "allOf": [
+              {
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "pattern": "^[0-9a-f-]+$"
+              }
+            ]
+          },
+          "team_id": {
+            "type": "string",
+            "allOf": [
+              {
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "pattern": "^[0-9a-f-]+$"
+              }
+            ]
+          },
+          "user_id": {
+            "type": "string",
+            "allOf": [
+              {
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "pattern": "^[0-9a-f-]+$"
+              }
+            ]
+          },
+          "agent_id": {
+            "type": "string",
+            "allOf": [
+              {
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "pattern": "^[0-9a-f-]+$"
+              }
+            ]
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recurrence": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "cron"
+                  },
+                  "expr": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                },
+                "required": ["kind", "expr"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "daily"
+                  },
+                  "at": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  }
+                },
+                "required": ["kind", "at"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "weekdays"
+                  },
+                  "at": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  }
+                },
+                "required": ["kind", "at"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "weekly"
+                  },
+                  "days": {
+                    "minItems": 1,
+                    "maxItems": 7,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+                    }
+                  },
+                  "at": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  }
+                },
+                "required": ["kind", "days", "at"],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "tz": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "notify_email": {
+            "type": "boolean"
+          },
+          "next_due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_run_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "allOf": [
+                  {
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "pattern": "^[0-9a-f-]+$"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paused_by": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["team_admin", "deactivation", "agent_unavailable"]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "schedule_id",
+          "team_id",
+          "user_id",
+          "agent_id",
+          "prompt",
+          "mentions",
+          "recurrence",
+          "tz",
+          "active",
+          "notify_email",
+          "next_due_at",
+          "last_run_id",
+          "paused_by",
+          "created_at",
+          "updated_at"
+        ],
+        "additionalProperties": false
+      },
+      "PatchScheduleBody": {
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "allOf": [
+              {
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "pattern": "^[0-9a-f-]+$"
+              }
+            ]
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "mentions": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          "recurrence": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "cron"
+                  },
+                  "expr": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                },
+                "required": ["kind", "expr"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "daily"
+                  },
+                  "at": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  }
+                },
+                "required": ["kind", "at"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "weekdays"
+                  },
+                  "at": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  }
+                },
+                "required": ["kind", "at"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "weekly"
+                  },
+                  "days": {
+                    "minItems": 1,
+                    "maxItems": 7,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+                    }
+                  },
+                  "at": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+                  }
+                },
+                "required": ["kind", "days", "at"],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "tz": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "notify_email": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "`invalid_request` (body, query or path parameter not valid) or `team_header_required`.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthenticated": {
+        "description": "`unauthenticated`: no session.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "PaymentRequired": {
+        "description": "`budget_exhausted`: the team's or member's budget is used up.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "`forbidden` (missing permission), `not_a_team_member` or `read_only`; the code says which.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found, or not visible to the caller (another team's or member's).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "The resource's state refuses the change, or `no_active_team` / `team_mismatch` (stale tab).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "PayloadTooLarge": {
+        "description": "`too_large`: the request body is over the route's limit.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unprocessable": {
+        "description": "The request is well-formed but refused (for example an invalid value the code names).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "`rate_limited`: too many requests; retry later.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "BadGateway": {
+        "description": "An upstream (sandbox, connector, model or registry) failed.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unavailable": {
+        "description": "Not available right now (switched off, waking or not configured).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
       }
     },
     "securitySchemes": {

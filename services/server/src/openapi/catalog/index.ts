@@ -1,4 +1,10 @@
-import { catalogPaths, catalogTags, type CatalogArea } from "./build.js";
+import {
+  catalogErrorResponses,
+  catalogPaths,
+  catalogSchemas,
+  catalogTags,
+  type CatalogArea,
+} from "./build.js";
 import { conversationsAreas } from "./conversations.js";
 import { meAreas } from "./me.js";
 import { memoryAreas } from "./memory.js";
@@ -26,3 +32,5 @@ export const CATALOG_AREAS: readonly CatalogArea[] = [
 
 export const catalogOpenApiPaths = () => catalogPaths(CATALOG_AREAS);
 export const catalogOpenApiTags = () => catalogTags(CATALOG_AREAS);
+export const catalogOpenApiSchemas = () => catalogSchemas(CATALOG_AREAS);
+export const catalogOpenApiResponses = () => catalogErrorResponses();

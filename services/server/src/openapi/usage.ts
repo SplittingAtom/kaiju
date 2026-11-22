@@ -28,7 +28,7 @@ const usageTotals = {
   reasoning_tokens: count,
 };
 
-const runUsageSchema = z.strictObject({
+export const runUsageSchema = z.strictObject({
   run_id: z.uuid(),
   /** The run's prompt entry: the chat shows the run's usage under its answer. */
   user_entry_id: z.string().nullable(),
