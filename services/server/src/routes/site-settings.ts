@@ -16,6 +16,12 @@ import { REQUIRE_TWO_FACTOR, readRequireTwoFactor, type AuthVariables } from "..
 import { recordAudit } from "../audit/record.js";
 import { requireSitePermission } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
+import {
+  KOBE_LIMIT_MAX,
+  KOBE_LIMIT_MIN,
+  readKobeLimits,
+  storeKobeLimit,
+} from "../kobe-mcp/limits.js";
 import { readKobeMode, storeKobeMode } from "../kobe-mcp/switches.js";
 import { readJson } from "../http/request.js";
 
@@ -26,12 +32,18 @@ export const settingsSchema = z
     auditPiiRetentionHours: auditPiiRetentionHoursSchema.optional(),
     /** The Kobe MCP site switch (KOBE-623, KA5): `off`, `docs` (default) or `admin`. */
     kobeMcpMode: z.enum(KOBE_MCP_MODES).optional(),
+    /** Per-person Kobe admin reads per minute (KOBE-814): 1-10000, default 60. */
+    kobeReadsPerMinute: z.number().int().min(KOBE_LIMIT_MIN).max(KOBE_LIMIT_MAX).optional(),
+    /** Per-person Kobe admin writes per hour (KOBE-814): 1-10000, default 30. */
+    kobeWritesPerHour: z.number().int().min(KOBE_LIMIT_MIN).max(KOBE_LIMIT_MAX).optional(),
   })
   .refine(
     (v) =>
       v.requireTwoFactor !== undefined ||
       v.auditPiiRetentionHours !== undefined ||
-      v.kobeMcpMode !== undefined,
+      v.kobeMcpMode !== undefined ||
+      v.kobeReadsPerMinute !== undefined ||
+      v.kobeWritesPerHour !== undefined,
     { message: "Change at least one setting." },
   );
 
@@ -49,11 +61,16 @@ export function siteSettingsRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
 
   app.use(requireSitePermission("site.settings.manage"));
 
-  const current = async () => ({
-    requireTwoFactor: await readRequireTwoFactor(deps),
-    auditPiiRetentionHours: await readAuditPiiRetentionHours(db),
-    kobeMcpMode: await readKobeMode(db),
-  });
+  const current = async () => {
+    const limits = await readKobeLimits(db);
+    return {
+      requireTwoFactor: await readRequireTwoFactor(deps),
+      auditPiiRetentionHours: await readAuditPiiRetentionHours(db),
+      kobeMcpMode: await readKobeMode(db),
+      kobeReadsPerMinute: limits.readsPerMinute,
+      kobeWritesPerHour: limits.writesPerHour,
+    };
+  };
 
   app.get("/", async (c) => c.json(await current()));
 
@@ -65,12 +82,18 @@ export function siteSettingsRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
           code: "invalid_request",
           message:
             "Send requireTwoFactor (true or false), auditPiiRetentionHours (1-8760) and/or " +
-            "kobeMcpMode (off, docs or admin).",
+            "kobeMcpMode (off, docs or admin), kobeReadsPerMinute and/or kobeWritesPerHour (1-10000).",
         },
         400,
       );
     }
-    const { requireTwoFactor, auditPiiRetentionHours, kobeMcpMode } = parsed.data;
+    const {
+      requireTwoFactor,
+      auditPiiRetentionHours,
+      kobeMcpMode,
+      kobeReadsPerMinute,
+      kobeWritesPerHour,
+    } = parsed.data;
     // Lowering the requirement weakens every account: Owner only.
     if (requireTwoFactor === false && c.get("siteRole") !== "owner") {
       return c.json(
@@ -102,6 +125,8 @@ export function siteSettingsRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
         });
       }
       if (kobeMcpMode !== undefined) await storeKobeMode(tx, kobeMcpMode);
+      if (kobeReadsPerMinute !== undefined) await storeKobeLimit(tx, "read", kobeReadsPerMinute);
+      if (kobeWritesPerHour !== undefined) await storeKobeLimit(tx, "write", kobeWritesPerHour);
     });
     return c.json(await current());
   });
