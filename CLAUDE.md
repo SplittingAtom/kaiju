@@ -102,8 +102,9 @@ this repository is public, so infrastructure details never go into tracked files
   only `services/server/src/retention/table-sweeps.ts` may set `kobe.run_usage_retention`
   (transaction-locally, `set_config(..., true)`), which lets it delete rows older than 90 days.
   `packages/db/src/run-usage-retention-setting.test.ts` fails on any other tracked source, script
-  or migration that names the setting (its defining migration `0239_run_usage_retention.sql` and
-  tests excluded).
+  or migration that names the setting, including names built up from parts (its defining
+  migration `0239_run_usage_retention.sql` and tests excluded; `secret-box.ts` is allowlisted
+  only because its label `kobe.${purpose}` matches the name pattern).
 - Server decides every tool call; approvals are HMAC-signed over (run_id, tool_call_id, canonical input).
   No approval bypass.
 - Pi `1.4.x` in RPC mode behind `kobe-sandbox-agent`, which dials out over WSS; sandboxes accept no
