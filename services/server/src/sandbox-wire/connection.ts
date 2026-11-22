@@ -567,6 +567,7 @@ export class SandboxConnection implements RegisteredConnection {
     return {
       ctx: this.#ctx,
       target: this.target,
+      sandboxId: this.sandboxId,
       connectionId: this.id,
       pending: this.#policyPending,
       answered: this.#policyAnswered,

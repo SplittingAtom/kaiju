@@ -31,6 +31,7 @@ export async function beginWake(
       ON CONFLICT (team_id, user_id) DO UPDATE
         SET last_active_at = now(),
             state = 'running',
+            volume_synced_at = NULL,
             state_changed_at = CASE WHEN sandboxes.state = 'running'
                                     THEN sandboxes.state_changed_at ELSE now() END`);
     return state;
@@ -157,13 +158,15 @@ export async function forgetSandboxIdentity(
 /**
  * Records the hibernation (inside the transaction that holds the lock) and closes the sandbox's
  * connection row, so nothing is routed to a pod on its way out. Returns the connection to close.
+ * The volume's reclaim proof starts empty (KOBE-733): only the agent's shutdown proof
+ * (`recordFlushProof`), bound to the connection closed here, sets it.
  */
 export async function markHibernated(
   tx: KobeTx,
   target: SandboxTarget,
 ): Promise<string | undefined> {
   await tx.execute(sql`
-    UPDATE sandboxes SET state = 'hibernated', state_changed_at = now()
+    UPDATE sandboxes SET state = 'hibernated', state_changed_at = now(), volume_synced_at = NULL
      WHERE team_id = ${target.teamId} AND user_id = ${target.userId}`);
   const closed = await tx.execute<{ connection_id: string }>(sql`
     UPDATE sandbox_connections SET closed_at = now()

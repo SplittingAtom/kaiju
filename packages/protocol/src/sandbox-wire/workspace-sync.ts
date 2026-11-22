@@ -244,5 +244,31 @@ export const workspaceRestoreReportSchema = z.strictObject({
 });
 export type WorkspaceRestoreReport = z.infer<typeof workspaceRestoreReportSchema>;
 
+/**
+ * `POST flushed` (KOBE-733): sent by the agent once, at the very end of its shutdown, after every
+ * Pi, tool process and kernel is gone and the final push succeeded, only when a fresh look then
+ * found the durable copy complete (no local change, no file left out, no lost content, a whole
+ * scan). `connection_id` is the agent's last wire connection (`hello.ack`). The server records it
+ * as the volume's reclaim proof only if the sandbox was hibernated while that connection was
+ * open (the hibernation closed it) and nothing is pending; any later upload or manifest change
+ * clears the proof, and so does any wake. Never sent by an agent that is not sure.
+ */
+export const workspaceFlushedRequestSchema = z.strictObject({
+  connection_id: uuidSchema,
+  /** The agent runs every Pi, tool and kernel under identity uids (KOBE-71); required. */
+  pi_identities: z.literal(true),
+});
+export type WorkspaceFlushedRequest = z.infer<typeof workspaceFlushedRequestSchema>;
+/**
+ * `reason` when not proven: `not_hibernated` (the hibernation is not committed yet; the agent
+ * retries once), `refused` (another sandbox or connection, an upload in flight).
+ */
+export const WORKSPACE_FLUSH_REFUSALS = ["not_hibernated", "refused"] as const;
+export const workspaceFlushedResponseSchema = z.strictObject({
+  proven: z.boolean(),
+  reason: z.enum(WORKSPACE_FLUSH_REFUSALS).optional(),
+});
+export type WorkspaceFlushedResponse = z.infer<typeof workspaceFlushedResponseSchema>;
+
 /** Error body of every non-2xx answer. */
 export const workspaceErrorSchema = z.strictObject({ code: z.string(), message: z.string() });

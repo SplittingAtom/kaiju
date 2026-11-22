@@ -9,6 +9,30 @@ import { loadAuditForwardingConfig, type AuditForwardingConfig } from "./audit/f
 import { brandingDefaultsSchema, type BrandingDefaults } from "./branding/defaults-config.js";
 import { smtpSchema, type SmtpConfig } from "./mail/config.js";
 import { parseModelTokenDefaults, type ModelTokenDefaults } from "./models/token-limits.js";
+import {
+  DEFAULT_TABLE_SWEEPS,
+  SWEEP_LIMITS,
+  type TableSweepSettings,
+} from "./retention/table-sweeps.js";
+
+/** A table sweep's period (KOBE-741): a whole number within `limits`, or 0 for off (null). */
+function sweepPeriod(
+  name: string,
+  fallback: number | null,
+  limits: { readonly min: number; readonly max: number },
+) {
+  const range = `${name} must be 0 (off) or between ${limits.min} and ${limits.max}`;
+  // Unset or empty means the default; only an explicit 0 turns the sweep off.
+  return z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.coerce
+      .number({ error: `${name} must be a number` })
+      .int(`${name} must be an integer`)
+      .refine((v) => v === 0 || (v >= limits.min && v <= limits.max), range)
+      .default(fallback ?? 0)
+      .transform((v) => (v === 0 ? null : v)),
+  );
+}
 
 const configSchema = z.object({
   PORT: z.coerce
@@ -93,6 +117,28 @@ const configSchema = z.object({
     .enum(["true", "false"], { error: "KOBE_RETENTION_PAUSED must be true or false" })
     .default("false")
     .transform((v) => v === "true"),
+  // Table sweeps of the nightly retention pass (KOBE-741): how long each table keeps its rows;
+  // 0 turns that sweep off. Chart `retention.sweeps`.
+  KOBE_RETENTION_EVENTS_DAYS: sweepPeriod(
+    "KOBE_RETENTION_EVENTS_DAYS",
+    DEFAULT_TABLE_SWEEPS.eventsDays,
+    SWEEP_LIMITS.eventsDays,
+  ),
+  KOBE_RETENTION_READ_NOTIFICATIONS_DAYS: sweepPeriod(
+    "KOBE_RETENTION_READ_NOTIFICATIONS_DAYS",
+    DEFAULT_TABLE_SWEEPS.readNotificationsDays,
+    SWEEP_LIMITS.readNotificationsDays,
+  ),
+  KOBE_RETENTION_RUN_USAGE_MONTHS: sweepPeriod(
+    "KOBE_RETENTION_RUN_USAGE_MONTHS",
+    DEFAULT_TABLE_SWEEPS.runUsageMonths,
+    SWEEP_LIMITS.runUsageMonths,
+  ),
+  KOBE_RETENTION_EVAL_HISTORY_MONTHS: sweepPeriod(
+    "KOBE_RETENTION_EVAL_HISTORY_MONTHS",
+    DEFAULT_TABLE_SWEEPS.evalHistoryMonths,
+    SWEEP_LIMITS.evalHistoryMonths,
+  ),
   // App-role connection timeouts (KOBE-732); 0 turns one off. Defaults in @kobe/db (client.ts).
   KOBE_DB_STATEMENT_TIMEOUT_MS: z.coerce
     .number({ error: "KOBE_DB_STATEMENT_TIMEOUT_MS must be a number" })
@@ -264,6 +310,8 @@ export interface Config {
   readonly retentionHourUtc: number;
   /** The nightly retention pass is paused (KOBE-243). */
   readonly retentionPaused: boolean;
+  /** Periods of the retention pass's table sweeps (KOBE-741); null: that sweep is off. */
+  readonly retentionSweeps: TableSweepSettings;
   /** Seconds between team-namespace reconciles; 0 = only at start (KOBE-115). */
   readonly teamReconcileSeconds: number;
   /** Seconds between connector drift refreshes; 0 = off (KOBE-102). */
@@ -323,6 +371,12 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
         : new URL(base.data.KOBE_MODEL_GATEWAY_URL).origin,
     retentionHourUtc: base.data.KOBE_RETENTION_HOUR_UTC,
     retentionPaused: base.data.KOBE_RETENTION_PAUSED,
+    retentionSweeps: {
+      eventsDays: base.data.KOBE_RETENTION_EVENTS_DAYS,
+      readNotificationsDays: base.data.KOBE_RETENTION_READ_NOTIFICATIONS_DAYS,
+      runUsageMonths: base.data.KOBE_RETENTION_RUN_USAGE_MONTHS,
+      evalHistoryMonths: base.data.KOBE_RETENTION_EVAL_HISTORY_MONTHS,
+    },
     teamReconcileSeconds: base.data.KOBE_TEAM_RECONCILE_SECONDS,
     connectorRefreshSeconds: base.data.KOBE_CONNECTOR_REFRESH_SECONDS,
     sessionTokenTtlSeconds: base.data.KOBE_SESSION_TOKEN_TTL_SECONDS,

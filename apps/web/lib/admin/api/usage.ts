@@ -65,6 +65,8 @@ export interface UsageReport {
   readonly byKind?: readonly KindUsage[];
   /** Site report only. */
   readonly byTeam?: readonly TeamUsageSummary[];
+  /** KOBE-741: months per-call usage is kept (null: for ever); absent on older servers. */
+  readonly retentionMonths?: number | null;
 }
 
 export interface RunUsage extends Omit<UsageTotals, "reasoningTokens"> {

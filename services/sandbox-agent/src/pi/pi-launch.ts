@@ -219,6 +219,10 @@ export function buildPiLaunch(input: PiLaunchInput): PiLaunch {
   if (input.toolsExtension !== undefined && input.toolsNotebooks === true)
     env.KOBE_TOOLS_NOTEBOOKS = "1";
   if (input.toolsExtension !== undefined && input.toolsMemory === true) env.KOBE_TOOLS_MEMORY = "1";
+  // KOBE-776: built-ins Pi is not offered (kobe-policy removes them from its active tools).
+  if (config?.hidden_tools !== undefined && config.hidden_tools.length > 0) {
+    env.KOBE_HIDDEN_TOOLS = config.hidden_tools.join(",");
+  }
 
   // The model is deliberately not part of the key (see `modelsExtension`).
   const key = JSON.stringify({
@@ -229,6 +233,8 @@ export function buildPiLaunch(input: PiLaunchInput): PiLaunch {
     skill_bundles: config?.skill_bundles ?? null,
     mcp_servers: config?.mcp_servers ?? null,
     mcp: mcp ?? null,
+    // Only when set, so the keys of runs without it (and their Pi processes) stay as they were.
+    ...(config?.hidden_tools === undefined ? {} : { hidden_tools: config.hidden_tools }),
   });
   const systemPrompt = config?.system_prompt;
   return {

@@ -128,7 +128,8 @@ read a person's portable preferences either; reading them needs its own break-gl
   audit forwarding. A short note above the events says so.
 - **Usage and spend**: spend by team, user, agent and model, and the site budget every team's
   spend counts against.
-- **Retention maximum**: the longest retention any team may choose.
+- **Retention maximum**: the longest retention any team may choose. What else Kobe deletes on its
+  own is in [Retention and deletion](../reference/retention-and-deletion.md).
 - **Legal hold**: suspend purges for a team or user, or hold the Site's own memory with a
   **Site-wide hold** (each needs two people). See
   [Memory](../memory.md#legal-hold-on-site-memory).

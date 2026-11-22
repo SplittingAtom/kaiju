@@ -577,10 +577,17 @@ describe("effective connectors from grants (KOBE-111)", () => {
     expect(r1.ok && r1.mcp?.servers.flatMap((s) => s.tools.map((t) => t.name))).toEqual([
       "get_issue",
     ]);
+    // KOBE-776: a list naming no built-in leaves Pi's built-ins offered.
+    expect(r1.ok && r1.config?.hidden_tools).toBeUndefined();
     const none = await pinnedThread(w.owner, { connectors: [c.name], tools: { allow: ["read"] } });
     const r2 = await resolveFor(w.team, w.owner.id, none);
     expect(r2.ok && r2.mcp).toEqual({ servers: [] });
     expect(r2.ok && r2.config?.mcp_servers).toBeUndefined();
+    // A list naming a built-in: Pi is not offered the built-ins it leaves out.
+    const hidden = r2.ok ? (r2.config?.hidden_tools ?? []) : [];
+    expect(hidden).toContain("bash");
+    expect(hidden).toContain("write");
+    expect(hidden).not.toContain("read");
   });
   it("KOBE-112 ac-1: every change shows in the next resolve of the same thread (nothing is cached)", async () => {
     const w = await f.world();

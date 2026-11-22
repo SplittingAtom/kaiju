@@ -1,4 +1,5 @@
 import type { JsonObject, PolicyInput, PolicyReason, ToolDescriptor } from "@kobe/protocol";
+import { allowListLimits } from "./agent-allow.js";
 import { matchAgentToolEntry } from "./patterns.js";
 
 export type ConnectorExposure = "read_only" | "all" | "custom";
@@ -40,8 +41,9 @@ export function checkAvailable(tool: ToolDescriptor): PolicyReason[] {
 
 /**
  * Agent frontmatter `tools.deny` / `tools.allow` (D19), part of the team-deny stage. `tools.deny`
- * entries deny; a non-empty `tools.allow` restricts the agent to the listed tools (anything else
- * is denied). Neither ever removes a prompt: an agent file is written by a builder, not the user.
+ * entries deny; `tools.allow` restricts the agent to the listed tools where it limits them
+ * (`allowListLimits`: connector tools whenever it is not empty, built-ins only when it names one;
+ * KOBE-776). Neither ever removes a prompt: an agent file is written by a builder, not the user.
  */
 export function checkAgentTools(
   agent: PolicyInput["agent"],
@@ -59,7 +61,7 @@ export function checkAgentTools(
     ];
   }
   if (
-    agent.tools_allow.length > 0 &&
+    allowListLimits(agent.tools_allow, tool) &&
     !agent.tools_allow.some((e) => matchAgentToolEntry(e, tool, input, "loosen"))
   ) {
     return [
