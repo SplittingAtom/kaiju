@@ -8411,7 +8411,7 @@
       "get": {
         "operationId": "listProjectCheckouts",
         "summary": "Working copies (owners, team admins)",
-        "description": "Who has a checkout of the project, since when, and its base.",
+        "description": "Who has a checkout of the project, since when, its base, and how many files it changes (`changed_files`: uncommitted work a delete would discard).",
         "parameters": [
           {
             "name": "id",
@@ -15619,7 +15619,7 @@
       "delete": {
         "operationId": "deleteProjectsById",
         "summary": "Delete a project",
-        "description": "Answers 204.",
+        "description": "Answers 204. Query `confirmed_uncommitted` (absent = 0): how many working copies with uncommitted changes the caller agreed to discard; when more hold such changes now, 409 `uncommitted_work` with `uncommitted_working_copies`, to confirm again.",
         "tags": ["Projects"],
         "parameters": [
           {
@@ -46267,6 +46267,11 @@
                       "pattern": "^[0-9a-f-]+$"
                     }
                   ]
+                },
+                "changed_files": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
                 }
               },
               "required": [
@@ -46276,7 +46281,8 @@
                 "base_commit_seq",
                 "created_at",
                 "updated_at",
-                "user_id"
+                "user_id",
+                "changed_files"
               ],
               "additionalProperties": false
             }

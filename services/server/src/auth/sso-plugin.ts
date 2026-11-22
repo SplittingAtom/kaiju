@@ -1,14 +1,13 @@
 import { timingSafeEqual } from "node:crypto";
-import type { BetterAuthPlugin } from "better-auth";
-import { APIError, createAuthEndpoint, getSessionFromCtx, isAPIError } from "better-auth/api";
-import { setSessionCookie } from "better-auth/cookies";
+import type { BetterAuthPlugin, GenericEndpointContext } from "better-auth";
+import { APIError, createAuthEndpoint, isAPIError } from "better-auth/api";
 import * as oidc from "openid-client";
 import { z } from "zod";
-import { eq, sessions, sessionSsoContexts, type KobeDb } from "@kobe/db";
+import type { KobeDb } from "@kobe/db";
 import type { AuthAttemptAudit } from "../audit/attempts.js";
-import { recordAuditAfter } from "../audit/record.js";
 import { logger } from "../logger.js";
 import type { SsoFailure } from "../sso/claims.js";
+import { completeSsoSignIn } from "../sso/complete-sign-in.js";
 import type { SsoNet } from "../sso/net.js";
 import {
   OidcClients,
@@ -96,18 +95,6 @@ export const linkIntentCookieName = (secure: boolean): string =>
  * from the token reaches the page or the log. `auth.sso.enabled: false` turns every route into a
  * 404 (the kill switch); local sign-in never reaches this code.
  */
-async function capSessionExpiry<S extends { id: string; expiresAt: Date }>(
-  db: KobeDb,
-  session: S,
-  hours: number | null,
-): Promise<S> {
-  if (hours === null) return session;
-  const cap = new Date(Date.now() + hours * 3_600_000);
-  if (session.expiresAt.getTime() <= cap.getTime()) return session;
-  await db.update(sessions).set({ expiresAt: cap }).where(eq(sessions.id, session.id));
-  return { ...session, expiresAt: cap };
-}
-
 export function ssoPlugin(options: SsoPluginOptions) {
   const off = { enabled: false } as const;
   const o = { ...options, settings: options.sso?.settings ?? off };
@@ -143,6 +130,22 @@ export function ssoPlugin(options: SsoPluginOptions) {
     const secret = await revealClientSecret(runtime().providers, p.id);
     if (!secret) throw new SsoFlowError("provider_unavailable");
     return clients().configure(p, secret);
+  }
+
+  /**
+   * Leaves the link intent of an unlinked identity: the next local sign-in in this browser may
+   * link it (§6).
+   */
+  async function leaveLinkIntent(
+    ctx: GenericEndpointContext,
+    providerId: string,
+    intent: { readonly subject: string; readonly email: string },
+  ): Promise<void> {
+    const sealedIntent = await issueLinkIntent(o.db, linkBox, { providerId, ...intent });
+    ctx.setCookie(linkCookie, sealedIntent, {
+      ...cookieOptions,
+      maxAge: LINK_INTENT_TTL_MS / 1000,
+    });
   }
 
   /** Runs a step; an SSO refusal or an unexpected error becomes the error page's address. */
@@ -244,58 +247,25 @@ export function ssoPlugin(options: SsoPluginOptions) {
             // Not proven while the site requires 2FA → refused before any user or session is
             // made; there is no fallback to Kobe TOTP for SSO sign-ins (SSO7).
             const mfa = mfaEvidence(p.kind, p.mfaRule, identity);
-            const mfaSatisfied = mfa !== null;
-            if (!mfaSatisfied && (await readRequireTwoFactorIn(o.db))) {
+            if (mfa === null && (await readRequireTwoFactorIn(o.db))) {
               throw new SsoFlowError("mfa_missing");
             }
             const outcome = await resolveSsoUser(runtime().afterChange(), p, identity);
             if (!outcome.ok) {
               // An unlinked identity: the next local sign-in in this browser may link it (§6).
-              if (outcome.linkIntent) {
-                const sealedIntent = await issueLinkIntent(o.db, linkBox, {
-                  providerId: p.id,
-                  ...outcome.linkIntent,
-                });
-                ctx.setCookie(linkCookie, sealedIntent, {
-                  ...cookieOptions,
-                  maxAge: LINK_INTENT_TTL_MS / 1000,
-                });
-              }
+              if (outcome.linkIntent) await leaveLinkIntent(ctx, p.id, outcome.linkIntent);
               return refused(outcome.failure, outcome.userId);
             }
             // A successful SSO sign-in discards any pending link intent.
             if (ctx.getCookie(linkCookie))
               ctx.setCookie(linkCookie, "", { ...cookieOptions, maxAge: 0 });
 
-            const adapter = ctx.context.internalAdapter;
-            // A new session id at every sign-in; the browser's previous session ends (fixation).
-            const prior = await getSessionFromCtx(ctx).catch(() => null);
-            if (prior) await adapter.deleteSession(prior.session.token);
-            const created = await adapter.createSession(outcome.userId);
-            const user = await adapter.findUserById(outcome.userId);
-            if (!created || !user) throw new Error("session not created");
-            // max_session_hours caps the expiry (§9, review finding 9a); requireSession also ends
-            // the session once the hours have passed since sign-in, whatever a refresh did.
-            const session = await capSessionExpiry(o.db, created, p.maxSessionHours);
-            try {
-              await o.db.insert(sessionSsoContexts).values({
-                sessionId: session.id,
-                providerId: p.id,
-                mfaSatisfied,
-                amr: [...identity.amr],
-                acr: identity.acr,
-                authTime: identity.authTime,
-              });
-            } catch (err) {
-              await adapter.deleteSession(session.token);
-              throw err;
-            }
-            await setSessionCookie(ctx, { session, user });
-            await recordAuditAfter(o.db, {
-              action: "auth.sign_in.succeeded",
-              actor: { kind: "user", id: outcome.userId },
-              // What proved MFA (review L3; the session row has no acrs column).
-              target: { method: "sso", ...(mfa === null ? {} : { mfa }) },
+            await completeSsoSignIn(ctx, o.db, {
+              provider: p,
+              userId: outcome.userId,
+              identity,
+              mfa,
+              groupsOverage: outcome.groupsOverage === true,
             });
             return `${o.publicOrigin}${flow.returnTo}`;
           });

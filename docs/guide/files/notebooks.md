@@ -46,7 +46,8 @@ inline) and HTML. HTML and SVG output is shown in a locked-down frame with no ne
 
 ## Python files
 
-A `.py` file shows **Run** in the editor toolbar. Run uses the saved file, so save your changes
+A `.py` file opens ready to edit: the code editor (Raw) is the default, with the cursor in it, and
+**Rendered** is one click away. It shows **Run** in the editor toolbar. Run uses the saved file, so save your changes
 first. Running splits the editor: code on top, the live output below. Drag the divider (or use Up,
 Down, Page Up, Page Down, Home and End; Enter goes back to half and half); this browser remembers
 the split. The output stays after the run, can be collapsed to its bar or closed, and opens again

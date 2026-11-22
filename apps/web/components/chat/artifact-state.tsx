@@ -77,7 +77,12 @@ export interface ArtifactPanelApi {
   /** The member opens an artifact: its tab becomes active and the column takes focus. */
   openArtifact(id: string, version?: number): void;
   /** The member opens a workspace file (KOBE-268): like an artifact, keyed by its path. */
-  openFile(path: string): void;
+  openFile(path: string, by?: "agent"): void;
+  /**
+   * Whether a file's editor may take the cursor when it opens (KOBE-802): not for a tab the agent
+   * opened (`autoOpenFile`, `openFile(path, "agent")`), so a member typing elsewhere keeps focus.
+   */
+  focusOnOpen(path: string): boolean;
   /**
    * Opens a workspace file's tab by itself (KOBE-489: a proposed edit with auto-open on): the tab
    * opens and becomes active, the column shows if hidden, focus stays where it is.
@@ -349,10 +354,20 @@ export function ArtifactPanelProvider({
     openArtifact(newest);
     return true;
   }, [sheet, hasTabs, newest, openArtifact, hidden, threadId]);
-  const openFile = useCallback((path: string) => openArtifact(fileTabId(path)), [openArtifact]);
+  const agentOpened = useRef(new Set<string>());
+  const focusOnOpen = useCallback((path: string) => !agentOpened.current.has(path), []);
+  const openFile = useCallback(
+    (path: string, by?: "agent") => {
+      if (by === "agent") agentOpened.current.add(path);
+      else agentOpened.current.delete(path);
+      openArtifact(fileTabId(path));
+    },
+    [openArtifact],
+  );
   const autoOpenTab = t.autoOpen;
   const autoOpenFile = useCallback(
     (path: string) => {
+      agentOpened.current.add(path);
       setHiddenIn(null);
       autoOpenTab(fileTabId(path));
     },
@@ -415,6 +430,7 @@ export function ArtifactPanelProvider({
       hideSheet: sheet.hide,
       openArtifact,
       openFile,
+      focusOnOpen,
       autoOpenFile,
       dropFile,
       moveFiles,
@@ -437,6 +453,7 @@ export function ArtifactPanelProvider({
       hidden,
       toggleColumn,
       openFile,
+      focusOnOpen,
       autoOpenFile,
       dropFile,
       moveFiles,

@@ -22,6 +22,7 @@ import { z } from "zod";
  * not live for the member shows the first live one, with a note.
  * `auto_open_edits` (KOBE-489): the proposed-edit card's "Open edits automatically" switch; a live
  * proposal opens its file with the inline diff. Absent is off.
+ * `editor_line_wrap` (KOBE-806): the code editor's line-wrap toggle; absent is on.
  * `threads_file_rail_width` (KOBE-614): the Threads panel's workspace rail's dragged width; `null`
  * goes back to the default (the rail takes what the thread column leaves).
  */
@@ -110,6 +111,7 @@ export const uiPreferencesSchema = z.strictObject({
     .optional(),
   rail_picker: z.string().regex(APP_ID_PATTERN).nullable().optional(),
   auto_open_edits: z.boolean().optional(),
+  editor_line_wrap: z.boolean().optional(),
   threads_file_rail_width: z
     .number()
     .int()

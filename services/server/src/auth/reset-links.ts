@@ -13,7 +13,7 @@ export const RESET_RESEND_AFTER_MS = 5 * 60_000;
  * through SCIM or SSO have none (SSO9): a reset link would create one and bypass the identity
  * provider, so none is ever mailed to them (KOBE-631, spec sso-oidc-scim §6).
  */
-export async function hasLocalPassword(db: KobeDb, userId: string): Promise<boolean> {
+export async function hasLocalPassword(db: KobeDb | KobeTx, userId: string): Promise<boolean> {
   const [row] = await db
     .select({ id: accounts.id })
     .from(accounts)

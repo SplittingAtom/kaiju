@@ -40,9 +40,15 @@ Projects are shared and versioned, so their limits are tighter than My files:
 - **Files:** 500 in a project's file tree.
 - **History:** at most 1,000 commits are kept per project; a team admin can keep fewer (by count or
   by age) under **Workspace settings → Storage and history**.
+- **Paths:** a file's path, counted as it appears in sandboxes (`projects/<slug>/<folder>/<name>`),
+  is at most 1,024 bytes. A file and a folder cannot have the same name (no file inside a file).
+  Names like `notes.conflict-resolution.md` are fine; only real conflict copies
+  (`<name>.conflict-<time>`) cannot be committed.
 
-A My files folder with a file over 50 MiB, or more than 500 files, cannot be promoted to a project
-as it is. Older versions of a project's files count against the workspace's storage until the
+A My files folder with a file over 50 MiB, more than 500 files, or a path that would be too long in
+the project, cannot be promoted to a project as it is. A file added before the path rule whose path
+is too long is marked "Path too long" in the project's **Files**: it does not appear in members'
+files until an editor deletes it and adds it again with a shorter folder or name. Older versions of a project's files count against the workspace's storage until the
 history that holds them is dropped.
 
 ## Message attachments

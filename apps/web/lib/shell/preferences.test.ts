@@ -73,6 +73,12 @@ describe("wire", () => {
       autoOpenEdits: true,
     });
     expect(readPreferences({ preferences: { autoOpenEdits: "yes" } })).toEqual({});
+    // KOBE-806: the code editor's line-wrap toggle.
+    expect(readPreferences({ preferences: { editorLineWrap: false } })).toEqual({
+      editorLineWrap: false,
+    });
+    expect(readPreferences({ preferences: { editorLineWrap: 0 } })).toEqual({});
+    expect(toWire({ editorLineWrap: false })).toEqual({ editor_line_wrap: false });
   });
 
   it("writes only the keys that changed, in wire casing", () => {
@@ -172,6 +178,22 @@ describe("save", () => {
     saver.save({ railCollapsed: false });
     await vi.advanceTimersByTimeAsync(20);
     await vi.waitFor(() => expect(log).toHaveBeenCalledOnce());
+  });
+});
+
+describe("a refused editor_line_wrap write (an older server, KOBE-806)", () => {
+  it("is logged once, not thrown, and the next write still goes out", async () => {
+    vi.useFakeTimers();
+    const log = vi.fn();
+    const fetchFn = vi.fn(async () => Response.json({ code: "invalid" }, { status: 400 }));
+    const saver = createPreferencesSaver({ fetchFn, delayMs: 10, log });
+    saver.save({ editorLineWrap: false });
+    await vi.advanceTimersByTimeAsync(20);
+    await vi.waitFor(() => expect(log).toHaveBeenCalledOnce());
+    saver.save({ editorLineWrap: true });
+    await vi.advanceTimersByTimeAsync(20);
+    await vi.waitFor(() => expect(fetchFn).toHaveBeenCalledTimes(2));
+    vi.useRealTimers();
   });
 });
 

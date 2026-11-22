@@ -31,6 +31,7 @@ const entraClaims = (over: Record<string, unknown> = {}) => ({
   iat: NOW - 5,
   nbf: NOW - 5,
   exp: NOW + 3600,
+  auth_time: NOW - 5,
   preferred_username: "Ada@Contoso.com",
   name: "Ada Lovelace",
   roles: ["kobe.research.member"],
@@ -90,6 +91,19 @@ describe("checkIdTokenClaims", () => {
     [{ oid: "x".repeat(257) }, "token_invalid", "subject"],
   ])("refuses %j", (over, failure, which) => {
     expect(check(entraClaims(over))).toMatchObject({ ok: false, failure, check: which });
+  });
+
+  it("KOBE-775: a generic provider must send auth_time (Kobe asks with max_age)", () => {
+    const base = { ...entraClaims(), iss: GENERIC.issuer, aud: GENERIC.clientId, sub: "s1" };
+    expect(check({ ...base, auth_time: undefined }, GENERIC)).toMatchObject({
+      ok: false,
+      failure: "token_invalid",
+      check: "auth_time",
+    });
+    expect(check({ ...base, auth_time: NOW - 10 * 60 - 60 }, GENERIC).ok).toBe(true);
+    expect(check({ ...base, auth_time: NOW - 10 * 60 - 61 }, GENERIC).ok).toBe(false);
+    // Entra may leave it out: checked when present only.
+    expect(check(entraClaims({ auth_time: undefined })).ok).toBe(true);
   });
 
   it("allows 60 s of clock skew", () => {
