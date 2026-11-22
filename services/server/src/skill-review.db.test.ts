@@ -8,7 +8,7 @@ import { MemoryObjects } from "./testing/memory-objects.js";
 import { withTeam } from "@kobe/db";
 import pino from "pino";
 import { LateScanner } from "./skills/late-scan.js";
-import { usablePersonalSkills } from "./skills/review.js";
+import { reviewRowsOf, usablePersonalSkills } from "./skills/review.js";
 import { ScanBusyError, incompleteScan, setScanPool } from "./skills/scan-pool.js";
 
 /**
@@ -463,6 +463,18 @@ describe("queue paging", () => {
     expect(all.json.reviews).toHaveLength(200);
     expect(all.json.nextCursor).toBeTruthy();
     expect((await as.alice.get("/v1/team/skill-review?cursor=junk")).status).toBe(400);
+  });
+});
+
+describe("review rows of a page (P2-38)", () => {
+  it("reads only the page's versions, not every version of their skills", async () => {
+    const first = await team("bob", "paged-versions");
+    await as.bob.post("/v1/skills?scope=team", zipOf("paged-versions", { "notes.md": "v2" }));
+    await as.bob.post("/v1/skills?scope=team", zipOf("paged-versions", { "notes.md": "v3" }));
+    const rows = await withTeam(h.deps.database.db, finance, (tx) =>
+      reviewRowsOf(tx, finance, [{ skillId: first.skillId, version: 2 }]),
+    );
+    expect(rows.map((r) => r.version)).toEqual([2]);
   });
 });
 

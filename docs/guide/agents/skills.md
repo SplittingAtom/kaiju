@@ -47,6 +47,14 @@ conversation.
 
 **Share with team builders** lets contributors and team admins open your draft.
 
+You can also run the evals of a saved version. Who may run them for a **team skill** version
+depends on its review:
+
+- **Approved**: any member of the team;
+- **waiting for review** (or suspended by a rescan): the member who saved it, contributors and
+  team admins;
+- **Rejected**: nobody.
+
 From a conversation, **Make a skill from this** (or `/skill`) opens a new skill-writing
 conversation with the current one attached read-only. When the agent has written the skill under
 `skills/<name>/` in My files, **Save skill to Workbench** (or `/saveskill <name>`) brings it into

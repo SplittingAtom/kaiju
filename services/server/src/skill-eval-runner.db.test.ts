@@ -1,10 +1,13 @@
 import { randomUUID } from "node:crypto";
+import { strToU8, zipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { failEvalRun, hasQueuedExecution } from "./skills/evals/store.js";
+import { RawBody } from "./testing/browser.js";
 import { reapSkillEvals } from "./skills/evals/reaper.js";
 import { purgeSkillEvals } from "./retention/skill-evals.js";
 import { skillEvalEventStream } from "./skills/evals/events.js";
 import { evalStreamAccess } from "./skills/evals/views.js";
-import { SkillEvalBench, type FakeEvalProvider } from "./testing/skill-eval-bench.js";
+import { SkillEvalBench, skillMd, type FakeEvalProvider } from "./testing/skill-eval-bench.js";
 import { must, type Person } from "./testing/event-stream-fixture.js";
 
 /**
@@ -608,5 +611,140 @@ describe("skill eval runner (KOBE-325)", () => {
     };
     expect(execution.deniedToolCalls).toBeGreaterThan(0);
     expect(execution.checks.find((c) => c.check === "no_denied_tools")?.reason).toBe("denied");
+  });
+
+  it("evals of a team version follow its review: approved for all, pending for its uploader and publishers, rejected for none (P2-12)", async () => {
+    const w = await world();
+    const admin = f.fx.admin;
+    const member = await f.member(w.team);
+    const contributor = await f.member(w.team);
+    await admin.query(
+      `UPDATE team_members SET role = 'contributor' WHERE team_id = $1 AND user_id = $2`,
+      [w.team, contributor.id],
+    );
+    const zip = zipSync({
+      "SKILL.md": strToU8(skillMd("reviewed")),
+      "evals/cases.yaml": strToU8(
+        ["cases:", "  - id: a", "    prompt: P", "    expect: {contains: Total}", ""].join("\n"),
+      ),
+    });
+    const up = await f
+      .on(0, contributor)
+      .post("/v1/skills?scope=team", new RawBody(zip, "application/zip"));
+    expect(up.status, JSON.stringify(up.json)).toBe(201);
+    const skillId = up.json.skill.id as string;
+    const evalOf = (p: typeof member) =>
+      f.on(0, p).post(`/v1/skills/team/${skillId}/versions/1/evals`, { mode: "with_only" });
+    const estimateOf = (p: typeof member) =>
+      f.on(0, p).get(`/v1/skills/team/${skillId}/versions/1/evals/estimate?mode=with_only`);
+    // Pending: not a plain member (nor its estimate); its uploader may.
+    const refused = await evalOf(member);
+    expect([refused.status, refused.json.code]).toEqual([403, "review_pending"]);
+    expect((await estimateOf(member)).status).toBe(403);
+    const mine = await evalOf(contributor);
+    expect(mine.status, JSON.stringify(mine.json)).toBe(202);
+    // A Team admin (team.skills.review) may too.
+    expect((await evalOf(w.owner)).status).toBe(202);
+    await closeEvals(w.team);
+    // Approved: any member.
+    const decide = (decision: string) =>
+      f.on(0, w.owner).post(`/v1/team/skill-review/${skillId}/versions/1`, { decision });
+    expect((await decide("approved")).status).toBe(200);
+    expect((await evalOf(member)).status).toBe(202);
+    await closeEvals(w.team);
+    // Suspended by a rescan: back to the pending rules.
+    await admin.query(
+      `UPDATE team_skill_reviews SET status = 'pending', suspended_at = now(), reviewed_by = NULL, reviewed_at = NULL
+        WHERE team_id = $1 AND skill_id = $2`,
+      [w.team, skillId],
+    );
+    expect((await evalOf(member)).json.code).toBe("review_pending");
+    // Rejected: nobody, not even its uploader or a Team admin.
+    expect((await decide("rejected")).status).toBe(200);
+    for (const p of [member, contributor, w.owner]) {
+      const r = await evalOf(p);
+      expect([r.status, r.json.code]).toEqual([403, "review_rejected"]);
+    }
+  });
+
+  it("an eval start reads the draft under its row lock: a writer's revision in flight is the one recorded (P2-36)", async () => {
+    const w = await world();
+    const id = await draftWith(
+      w.owner,
+      "locked",
+      ["cases:", "  - id: a", "    prompt: P", "    expect: {contains: Total}", ""].join("\n"),
+      {},
+    );
+    // Another writer (a co-editor's file write) holds the draft row's lock.
+    const writer = f.fx.admin;
+    try {
+      await writer.query("BEGIN");
+      const { rows } = await writer.query<{ rev: number }>(
+        `SELECT rev FROM skill_drafts WHERE id = $1 FOR UPDATE`,
+        [id],
+      );
+      const pending = f.on(0, w.owner).post(`/v1/skills/drafts/${id}/evals`, { mode: "with_only" });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await writer.query(`UPDATE skill_drafts SET rev = rev + 1 WHERE id = $1`, [id]);
+      await writer.query("COMMIT");
+      const started = await pending;
+      expect(started.status, JSON.stringify(started.json)).toBe(202);
+      const run = await f.fx.admin.query<{ subject_rev: number }>(
+        `SELECT subject_rev FROM skill_eval_runs WHERE id = $1`,
+        [started.json.evalRunId],
+      );
+      expect(run.rows[0]?.subject_rev).toBe(Number(rows[0]?.rev) + 1);
+    } finally {
+      await closeEvals(w.team);
+    }
+  });
+
+  it("settles the queued executions of a closed run, so the sweep skips its team (P2-37)", async () => {
+    const w = await world();
+    const suite = [
+      "cases:",
+      "  - id: a",
+      "    prompt: P",
+      "    expect: {contains: Total}",
+      "",
+    ].join("\n");
+    const queued = (evalRunId: string) =>
+      f.fx.admin
+        .query<{ n: number }>(
+          `SELECT count(*)::int AS n FROM skill_eval_results WHERE eval_run_id = $1 AND state = 'queued'`,
+          [evalRunId],
+        )
+        .then((r) => r.rows[0]?.n);
+    const start = async (name: string) => {
+      const draft = await draftWith(w.owner, name, suite, {});
+      const res = await f.on(0, w.owner).post(`/v1/skills/drafts/${draft}/evals`, {
+        mode: "with_only",
+      });
+      expect(res.status, JSON.stringify(res.json)).toBe(202);
+      return res.json.evalRunId as string;
+    };
+    // Cancelled by its starter.
+    const cancelled = await start("settle-cancel");
+    expect(await queued(cancelled)).toBe(1);
+    expect((await f.on(0, w.owner).post(`/v1/skill-evals/${cancelled}/cancel`, {})).status).toBe(
+      202,
+    );
+    expect(await queued(cancelled)).toBe(0);
+    // Failed by the runner.
+    const failed = await start("settle-fail");
+    await failEvalRun(f.fx.db, w.team, failed, { code: "x", message: "x" });
+    expect(await queued(failed)).toBe(0);
+    // Left by an older release (closed without settling): the sweep ignores it, the reaper settles it.
+    const legacy = await start("settle-legacy");
+    await closeEvals(w.team);
+    expect(await queued(legacy)).toBe(1);
+    expect(await hasQueuedExecution(f.fx.db, w.team)).toBe(false);
+    await reapSkillEvals({
+      db: f.fx.db,
+      provider: newProvider(),
+      runs: f.fx.replica(0).deps.runs,
+      log: silent,
+    });
+    expect(await queued(legacy)).toBe(0);
   });
 });

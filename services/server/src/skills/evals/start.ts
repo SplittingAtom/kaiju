@@ -5,6 +5,7 @@ import {
   personalSkillVersions,
   personalSkills,
   siteSkillSettings,
+  teamSkillReviews,
   teamSkillVersions,
   sql,
   withTeam,
@@ -104,7 +105,8 @@ async function loadPackage(
 ): Promise<LoadedPackage | null> {
   if (subject.kind === "draft") {
     return withTeam(db, who.teamId, async (tx) => {
-      const draft = await visibleDraft(tx, who.teamId, subject.draftId, who);
+      // Under the row lock writers take (P2-36): the files are this revision's, as recorded.
+      const draft = await visibleDraft(tx, who.teamId, subject.draftId, who, true);
       if (!draft) return null;
       const files = await readAllFiles(tx, who.teamId, subject.draftId);
       return { kind: "draft" as const, id: subject.draftId, rev: draft.rev, files };
@@ -291,6 +293,48 @@ async function openEvalsRefusal(tx: KobeTx, who: EvalStarter): Promise<string | 
   return null;
 }
 
+/**
+ * Who may evaluate a team version (P2-12, owner decision 2026-11-22): any member once it is
+ * approved and not suspended; while it is pending (or suspended, or has no review row) only its
+ * uploader and holders of `team.skills.publish` or `team.skills.review`; nobody once rejected.
+ */
+async function teamVersionGate(
+  tx: KobeTx,
+  who: EvalStarter,
+  skillId: string,
+  seq: number,
+): Promise<"review_pending" | "review_rejected" | null> {
+  const [row] = await tx
+    .select({
+      status: teamSkillReviews.status,
+      suspendedAt: teamSkillReviews.suspendedAt,
+      uploadedBy: teamSkillVersions.uploadedBy,
+    })
+    .from(teamSkillVersions)
+    .leftJoin(
+      teamSkillReviews,
+      and(
+        eq(teamSkillReviews.teamId, teamSkillVersions.teamId),
+        eq(teamSkillReviews.skillId, teamSkillVersions.skillId),
+        eq(teamSkillReviews.version, teamSkillVersions.version),
+      ),
+    )
+    .where(
+      and(
+        eq(teamSkillVersions.teamId, who.teamId),
+        eq(teamSkillVersions.skillId, skillId),
+        eq(teamSkillVersions.seq, seq),
+      ),
+    );
+  if (row?.status === "rejected") return "review_rejected";
+  if (row?.status === "approved" && row.suspendedAt === null) return null;
+  const mayTest =
+    row?.uploadedBy === who.userId ||
+    teamRoleAllows(who.role, "team.skills.publish") ||
+    teamRoleAllows(who.role, "team.skills.review");
+  return mayTest ? null : "review_pending";
+}
+
 /** The subject's package, validated and gated, with its suite parsed (no scan yet). */
 async function prepareSubject(
   deps: { readonly db: KobeDb; readonly blobs: BlobStore },
@@ -330,13 +374,23 @@ async function prepareSubject(
   const suite = parsed.suite;
   const gate = await withTeam(deps.db, who.teamId, async (tx) => {
     if (await isBlocked(tx, runtimeHash)) return "blocklisted" as const;
-    // A team version passed the team's review; a Registry version is the Registry team's own
-    // review (KOBE-335). Drafts and personal versions are gated like a test chat.
-    if (pkg.kind !== "team" && pkg.kind !== "registry") return testGate(tx, who, runtimeHash);
+    // A team version by its review (P2-12, owner decision 2026-11-22); a Registry version is the
+    // Registry team's own review (KOBE-335). Drafts and personal versions are gated like a test
+    // chat.
+    if (pkg.kind === "team") return teamVersionGate(tx, who, pkg.id, pkg.rev);
+    if (pkg.kind !== "registry") return testGate(tx, who, runtimeHash);
     return null;
   });
   if (gate === "blocklisted")
     return refuse(409, "skill_blocklisted", "This skill is on the site's blocklist.");
+  if (gate === "review_rejected")
+    return refuse(403, gate, "This version was rejected in review, so it can't be evaluated.");
+  if (gate === "review_pending")
+    return refuse(
+      403,
+      gate,
+      "This version is waiting for review: only its uploader and those who publish or review the team's skills can evaluate it.",
+    );
   if (gate) return refuse(403, gate, "This team's settings don't allow evaluating this skill.");
   return { ok: true as const, pkg, valid: valid.value, runtime, runtimeHash, suite, limits };
 }

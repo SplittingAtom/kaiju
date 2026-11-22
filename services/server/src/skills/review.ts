@@ -231,15 +231,7 @@ export function listReviews(
           })
         : null;
     if (pageKeys.length === 0) return { reviews: [], nextCursor };
-    const reviewRows = await tx
-      .select(getTableColumns(teamSkillReviews))
-      .from(teamSkillReviews)
-      .where(
-        and(
-          eq(teamSkillReviews.teamId, teamId),
-          inArray(teamSkillReviews.skillId, [...new Set(pageKeys.map((k) => k.skillId))]),
-        ),
-      );
+    const reviewRows = await reviewRowsOf(tx, teamId, pageKeys);
     // Blocked through any member of the hash's alias group (KOBE-310).
     const blocked = new Set(
       await blockedAmong(
@@ -260,6 +252,31 @@ export function listReviews(
       nextCursor,
     };
   });
+}
+
+/**
+ * The full review rows (findings included) of exactly the given versions, in the caller's
+ * `withTeam` (P2-38: never every version of their skills).
+ */
+export function reviewRowsOf(
+  tx: KobeTx,
+  teamId: string,
+  keys: readonly { readonly skillId: string; readonly version: number }[],
+) {
+  return tx
+    .select(getTableColumns(teamSkillReviews))
+    .from(teamSkillReviews)
+    .where(
+      and(
+        eq(teamSkillReviews.teamId, teamId),
+        inArray(teamSkillReviews.skillId, [...new Set(keys.map((k) => k.skillId))]),
+        or(
+          ...keys.map((k) =>
+            and(eq(teamSkillReviews.skillId, k.skillId), eq(teamSkillReviews.version, k.version)),
+          ),
+        ),
+      ),
+    );
 }
 
 /**
