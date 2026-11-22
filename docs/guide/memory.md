@@ -628,7 +628,7 @@ answer), search uses word matching alone and nothing else changes.
   portable, workspace and site), however it was saved: in My memory, from To review (and its
   **Undo**), by a curator approving a proposal, or by an import. If the model can't be reached
   then, the memory is saved all the same and word matching finds it until **Build vectors** runs. Saving a new model builds vectors for every memory in the
-  background; until a memory has a vector from the current model, word matching finds it. The
+  background (if a build is already running, it carries on with the new model); until a memory has a vector from the current model, word matching finds it. The
   **Search by meaning** section shows how many memories have one (for example "812 of 840") and
   has a **Build vectors** (or **Re-embed**) button to fill the gaps, for example after Kobe was
   upgraded or a build stopped. Nothing runs by itself after an upgrade. An upgrade can also change

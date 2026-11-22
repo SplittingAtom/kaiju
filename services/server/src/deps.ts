@@ -418,6 +418,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     background,
     log: logger.child({ component: "memory-embeddings" }),
     localModel: options.embeddings?.localModel,
+    listen,
     ...(options.embeddings?.queryDeadlineMs === undefined
       ? {}
       : { queryDeadlineMs: options.embeddings.queryDeadlineMs }),

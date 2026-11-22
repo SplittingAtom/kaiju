@@ -657,6 +657,45 @@ describe("start refusals (ac-2)", () => {
     expect(await startAndWait(s)).toMatchObject({ ok: true });
   });
 
+  it("two replicas cannot go past the daily count together (KOBE-787)", async () => {
+    // One person, one pass left today, two threads started at once on two replicas: the second
+    // start must wait for the first one's claim (per-person lock), then count it.
+    const who = await fx.person(`pd${randomBytes(2).toString("hex")}`);
+    await fx.addMember(team, who);
+    const a = await seedThread("I prefer metric units.", who);
+    const b = await seedThread("I prefer short answers.", who);
+    await fx.admin.query(
+      `INSERT INTO memory_learning_passes
+         (team_id, thread_id, user_id, branch_leaf_entry_id, model_alias, prompt_version, status,
+          error, started_at, finished_at)
+       SELECT $1, $2, $3, 'a1', 'm', 'v1', 'failed', 'x', now(), now() FROM generate_series(1, $4)`,
+      [team, a.threadId, who.id, LEARN_PASSES_PER_DAY - 1],
+    );
+    let second: Promise<Awaited<ReturnType<LearningPasses["start"]>>> | undefined;
+    const first = await passesOn(0, async (tx) => {
+      const pid = (await tx.execute<{ pid: number }>(sql`SELECT pg_backend_pid() AS pid`)).rows[0]
+        ?.pid;
+      let settled = false;
+      second = passesOn(1).start(viewer(who), b.threadId);
+      void second.finally(() => (settled = true));
+      // The other start either finished (no lock: it counted without this claim) or waits on us.
+      await vi.waitFor(
+        async () => {
+          const { rows } = await fx.admin.query<{ blocked: boolean }>(
+            `SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE $1 = ANY (pg_blocking_pids(pid)))
+               AS blocked`,
+            [pid],
+          );
+          expect(settled || rows[0]?.blocked).toBe(true);
+        },
+        { timeout: 10_000, interval: 20 },
+      );
+    }).start(viewer(who), a.threadId);
+    expect(first).toMatchObject({ ok: true });
+    expect(await second).toMatchObject({ ok: false, code: "learn_rate_limited" });
+    await background.idle();
+  });
+
   it("refuses at 100 % of a budget line", async () => {
     const who = await fx.person(`pb${randomBytes(2).toString("hex")}`);
     await fx.addMember(team, who);
