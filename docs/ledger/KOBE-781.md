@@ -52,7 +52,7 @@ against the code first; all four held as described.
   versions only take approved rows.
 - **Bounded unfinished rescans** (re-review: per-version clock, stored reason). A rescan under a
   new rule set that doesn't finish (`SCAN_DID_NOT_FINISH` from `scanStored`) starts the row's
-  clock: migration `0238_skill_rescan_incomplete` adds nullable `rescan_incomplete_since`,
+  clock: migration `0246_skill_rescan_incomplete` adds nullable `rescan_incomplete_since`,
   `rescan_incomplete_rule_set` and `suspended_reason` (check: `rescan_block` or
   `rescan_incomplete`) to `team_skill_reviews` and `personal_skill_scans` (RLS unchanged). A newer
   rule set restarts the clock; a finished rescan clears it (`skills/rescan-incomplete.ts`). Once
@@ -69,7 +69,7 @@ against the code first; all four held as described.
   (M1: otherwise the next pass re-suspended it, audited and emailed again); the late scan job
   clears the clock too (L2); a rescan that doesn't finish counts as `unfinished`, not `failed`, so
   a run within the period stays `running` (L3); guide and email say "finishes without blocking"
-  (L1: a Caution result also lifts). Migration 0238 is renumbered by `db:rebase` at landing (M2).
+  (L1: a Caution result also lifts). Migration renumbered to 0246 at landing (M2).
 - **Owner question (not changed):** the mirror keeps a revoked or blocklisted version's commit
   and tag `name/vX` on the remote (append-only by design), so a client with an old catalog, or one
   listing tags, can still fetch a revoked bundle. Deleting such tags would not rewrite branch

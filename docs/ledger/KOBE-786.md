@@ -16,7 +16,7 @@
   filters `team_id IS NOT DISTINCT FROM <context>`.
 - P2-34(b) (held: an admin of three Workspaces and the Site got 35 in a day, the cap being per
   context through RLS). Owner decision (Chris, 2026-11-22): the cap is per person across the Site
-  and every Workspace. New site-wide table `budget_email_daily_counts` (migration 0238):
+  and every Workspace. New site-wide table `budget_email_daily_counts` (migration 0245):
   `(recipient_id, day, sent)`, PK `(recipient_id, day)`, FK to `users` (cascade), no team id and
   nothing from any Workspace, so reading it from any context leaks no Workspace content (only how
   many budget emails a person got on a UTC day). Not a team table, no RLS (tenancy `models.ts`

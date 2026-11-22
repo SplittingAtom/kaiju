@@ -5,7 +5,7 @@
 - **Status:** in review (not pushed; the coordinator opens the PRs)
 - **Branch / worktree:** `group-84-python-run-wire` in `../Kobe-g84`
 - **Depends on:** nothing. **Feeds:** KOBE-804 (Log/Variables tabs), KOBE-808 (completion).
-- **Migration:** yes, `0242_notebook_inspect_command.sql` (adds `notebook.inspect` to the
+- **Migration:** yes, `0247_notebook_inspect_command.sql` (adds `notebook.inspect` to the
   `sandbox_commands_kind` CHECK; generated). It is its own commit (first on the branch) so it can
   land as its own PR; rebase with `db:rebase` if another migration lands first.
 
