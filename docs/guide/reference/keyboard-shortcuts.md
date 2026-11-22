@@ -48,14 +48,21 @@ sheet.
 When the cursor is in a file's raw text, these work like in most code editors (they also appear in
 the `?` sheet):
 
-| Keys        | Action                                        |
-| ----------- | --------------------------------------------- |
-| Mod+F       | Find (the panel has next, previous, Replace)  |
-| Mod+G       | Find next                                     |
-| Shift+Mod+G | Find previous                                 |
-| Mod+Alt+F   | Replace: opens the panel in the Replace field |
-| Mod+Alt+G   | Go to line (also `+5`, `-5`, `50%`, `12:4`)   |
-| Escape      | Close the find panel                          |
+| Keys             | Action                                                              |
+| ---------------- | ------------------------------------------------------------------- |
+| Mod+F            | Find (the panel has next, previous, Replace)                        |
+| Mod+G            | Find next                                                           |
+| Shift+Mod+G      | Find previous                                                       |
+| Mod+Alt+F        | Replace: opens the panel in the Replace field                       |
+| Mod+Alt+G        | Go to line (also `+5`, `-5`, `50%`, `12:4`)                         |
+| Ctrl+Space       | Show completions (on a Mac also Alt+I)                              |
+| Up, Down         | Move through the completions                                        |
+| Tab or Enter     | Accept the selected completion                                      |
+| Ctrl+Shift+Space | Python: the signature and docs of the name or call, from the kernel |
+| Escape           | Close the find panel, the completions or the docs                   |
+
+Completions also open by themselves while you type a name. See [Code
+completion](../files/file-editor.md#code-completion).
 
 ## In panels and lists
 

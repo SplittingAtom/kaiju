@@ -101,6 +101,21 @@ Kobe remembers your choice on every device. In the raw text, **Find** (Mod+F), *
 **Replace** and **Go to line** work with the keyboard; see [Keyboard
 shortcuts](../reference/keyboard-shortcuts.md).
 
+## Code completion
+
+In the raw text of a code file you can edit, the editor suggests completions while you type a name
+(or press **Ctrl+Space**; on a Mac also **Alt+I**). Use the arrow keys to choose, **Tab** or
+**Enter** to accept, **Escape** to close. The suggestions come from the language itself: keywords,
+common snippets and the names already used in the file. Python files get built-in names too;
+JavaScript and TypeScript files get their keywords and snippets. Read-only views never suggest
+anything.
+
+For a `.py` file, the conversation's running Python kernel adds what it knows: variables set by
+earlier runs (yours or the agent's), attributes of live objects, DataFrame column names and the
+members of imported modules. Those suggestions are marked "kernel" and come first. The kernel also
+shows a function's signature above the call while you type its arguments, and a docstring when you
+hover over a name or press **Ctrl+Shift+Space**. See [Notebooks and Python](notebooks.md#code-completion-from-the-kernel).
+
 The file's header also has **Copy path**: it copies the path the agent sees in its sandbox
 (for example `/workspace/notes/plan.md`), the same one an `@` mention uses, and says "Path copied".
 

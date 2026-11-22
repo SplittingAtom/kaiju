@@ -53,6 +53,21 @@ Down, Page Up, Page Down, Home and End; Enter goes back to half and half); this 
 the split. The output stays after the run, can be collapsed to its bar or closed, and opens again
 on the next run, including when the agent runs the file.
 
+## Code completion from the kernel
+
+In a `.py` file's editor, completion also asks the conversation's kernel, so it can suggest
+variables, attributes, DataFrame columns and module members that exist right now (see [Code
+completion](file-editor.md#code-completion)). Asking runs none of your code: Kobe uses the
+kernel's own completer with its safe settings, which never calls functions or property getters,
+and docs come from signatures and docstrings only. Nothing about it is saved.
+
+Kernel completion only works while the kernel runs and is idle. A note under the editor, next to
+the line and column, says when it is off and why: the kernel is not started (press **Start** or run
+the file), your sandbox is asleep (it is never woken just to complete), code is running, the
+kernel did not answer in time, too many requests, or it is not available in your sandbox yet. The
+editor's own completion keeps working in every case. Only the conversation's owner gets kernel
+completion.
+
 ## The agent runs code too
 
 The agent runs Python with its `run_python` tool in the same kernel: it can pick up a DataFrame you
