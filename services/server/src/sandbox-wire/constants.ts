@@ -191,6 +191,8 @@ export const WIRE_DEFAULTS: WireTuning = {
     // KOBE-470: the latest model call's context; the session may need restoring and the agent
     // reads at most a few MiB (the sandbox is already connected: the route wakes it first).
     "thread.context": 120_000,
+    // KOBE-803: a variables snapshot (at most 15 s in the agent); the sandbox is never woken for it.
+    "notebook.inspect": 20_000,
   } satisfies Record<SandboxCommandKind, number>,
 };
 

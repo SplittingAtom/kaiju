@@ -13,6 +13,7 @@ import type { CommandOutcome } from "../sandbox-wire/types.js";
 import { isReadOnlyPath } from "../workspace-files/paths.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import type { NotebookFiles } from "./files.js";
+import { execErrorOf } from "./run-log.js";
 import {
   cellSource,
   parseNotebook,
@@ -117,6 +118,10 @@ export interface ExecutionSummary {
   readonly truncated: boolean;
   readonly saved: NotebookFinishedPayload["saved"];
   readonly saveError?: string;
+  /** KOBE-803: from agents with `notebook_inspect` (absent otherwise). */
+  readonly timing?: NotebookFinishedPayload["timing"];
+  readonly error?: NotebookFinishedPayload["error"];
+  readonly variables?: NotebookFinishedPayload["variables"];
 }
 
 /** Records `notebook.started` on the run (inside the caller's transaction, when it has one). */
@@ -156,13 +161,19 @@ export async function finishExecution(
     ran !== undefined && e.source.notebook !== undefined
       ? await saveOutputs(deps, e, outputs, executionCount)
       : { saved: null };
+  const error = execErrorOf(status, outputs, executionCount);
   const summary: ExecutionSummary = {
     status,
     executionCount,
     outputs,
     truncated: ran?.truncated ?? false,
     ...save,
+    ...(ran?.timing === undefined ? {} : { timing: ran.timing }),
+    ...(error === undefined ? {} : { error }),
+    ...(ran?.variables === undefined ? {} : { variables: ran.variables }),
   };
+  // The run log (KOBE-803): who started it and the path are on `notebook.started`; how it ended,
+  // when and how long, its error and the variables after it are here.
   const finished: NotebookFinishedPayload = {
     exec_id: e.execId,
     status,
@@ -171,6 +182,9 @@ export async function finishExecution(
     truncated: summary.truncated,
     saved: summary.saved,
     ...(summary.saveError === undefined ? {} : { save_error: summary.saveError }),
+    ...(summary.timing === undefined ? {} : { timing: summary.timing }),
+    ...(summary.error === undefined ? {} : { error: summary.error }),
+    ...(summary.variables === undefined ? {} : { variables: summary.variables }),
   };
   await withAppendTx(deps.db, e.owner.teamId, (tx) =>
     appendRunEventsInTx(tx, e.owner.teamId, e.runId, [

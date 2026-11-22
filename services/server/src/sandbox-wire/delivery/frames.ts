@@ -9,7 +9,7 @@ import {
   type WireTraceContext,
   threadCompactFrameSchema,
 } from "@kobe/protocol/sandbox-wire";
-import { parseTraceparent, runTraceId } from "@kobe/protocol";
+import { CAPABILITY_NOTEBOOK_INSPECT, parseTraceparent, runTraceId } from "@kobe/protocol";
 import type { CommandRow } from "../commands.js";
 import { isSummaryCommand } from "../types.js";
 import type { Claimed } from "./claim.js";
@@ -113,5 +113,19 @@ function withoutTrace<F extends RunStartFrame | ThreadCompactFrame | ThreadBranc
   frame: F,
 ): Omit<F, "trace"> {
   const { trace: _trace, ...rest } = frame;
+  return rest;
+}
+
+/**
+ * KOBE-803: `notebook.execute` asks for timing and a variables snapshot (`with_timing`,
+ * `with_variables`) only of agents with `notebook_inspect`; an older agent's strict decoder would
+ * refuse the frame, so the asks are dropped for it and it simply reports neither.
+ */
+export function withNotebookAsks(
+  frame: ServerToSandboxFrame,
+  hasCapability: (name: string) => boolean,
+): ServerToSandboxFrame {
+  if (frame.type !== "notebook.execute" || hasCapability(CAPABILITY_NOTEBOOK_INSPECT)) return frame;
+  const { with_timing: _timing, with_variables: _variables, ...rest } = frame;
   return rest;
 }

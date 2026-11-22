@@ -22,6 +22,7 @@ import type { WireTuning } from "./constants.js";
 import type { ConnectionRegistry } from "./registry.js";
 import { targetForThread } from "./slots.js";
 import {
+  COMMAND_FAILURES,
   SandboxWakeError,
   startsRun,
   type CommandOutcome,
@@ -235,6 +236,9 @@ export class CommandRouter implements SandboxRouter {
       exec_id: request.execId,
       code: request.code,
       timeout_ms: request.timeoutMs,
+      // KOBE-803: timing and a variables snapshot; dropped at delivery for older agents.
+      with_timing: true,
+      with_variables: true,
     });
   }
 
@@ -249,6 +253,21 @@ export class CommandRouter implements SandboxRouter {
       // KOBE-477: starting the kernel is an op of `notebook.restart` (no new command kind).
       ...(request.op === "start" ? { op: "start" } : {}),
     });
+  }
+
+  notebookInspect(
+    target: SandboxTarget,
+    request: Parameters<SandboxRouter["notebookInspect"]>[1],
+    options?: SendOptions,
+  ) {
+    return this.#send(
+      target,
+      "notebook.inspect",
+      request.threadId,
+      undefined,
+      { ...options, wake: false },
+      { thread_id: request.threadId, timeout_ms: request.timeoutMs },
+    );
   }
 
   wake(target: SandboxTarget): Promise<void> {
@@ -365,7 +384,13 @@ export class CommandRouter implements SandboxRouter {
         error: { code: "thread_not_found", message: "no such thread for this sandbox" },
       };
     }
-    if (!queued.live && queued.evalThread) {
+    if (!queued.live && options?.wake === false) {
+      // Never woken for it (KOBE-803): no live connection, no answer.
+      this.#failWith(target.teamId, queued.id, {
+        ok: false,
+        error: { code: COMMAND_FAILURES.notConnected, message: "the sandbox is not connected" },
+      });
+    } else if (!queued.live && queued.evalThread) {
       // An eval thread's sandbox (KOBE-325) is started by the eval runner, never woken here: the
       // command waits for it to connect (or times out). The member's sandbox is never woken for it.
     } else if (!queued.live) {
@@ -421,12 +446,11 @@ export class CommandRouter implements SandboxRouter {
   }
 
   #fail(teamId: string, id: string, err: SandboxWakeError): void {
-    withTeam(this.#db, teamId, (tx) =>
-      completeCommand(tx, this.#bus, teamId, id, {
-        ok: false,
-        error: { code: err.code, message: err.message },
-      }),
-    )
+    this.#failWith(teamId, id, { ok: false, error: { code: err.code, message: err.message } });
+  }
+
+  #failWith(teamId: string, id: string, outcome: CommandOutcome): void {
+    withTeam(this.#db, teamId, (tx) => completeCommand(tx, this.#bus, teamId, id, outcome))
       .then(() => this.onResult(id))
       .catch((e: unknown) => this.#log.warn({ err: e }, "could not fail a command"));
   }

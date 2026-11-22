@@ -156,6 +156,9 @@ async function runForAgent(
       exec_id: execution.execId,
       code: resolved.source.code,
       timeout_ms: timeoutMs,
+      // KOBE-803: timing and a variables snapshot; dropped on the wire for older agents.
+      with_timing: true,
+      with_variables: true,
     },
     timeoutMs + NOTEBOOK_COMMAND_MARGIN_MS,
   );

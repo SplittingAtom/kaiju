@@ -107,6 +107,8 @@ export const COMMAND_FAILURES = {
   branchSummaryUnsupported: "branch_summary_unsupported", // KOBE-548, as compactUnsupported
   contextUnsupported: "context_unsupported", // thread.context to an agent without it (KOBE-470)
   kernelStartUnsupported: "kernel_start_unsupported", // notebook.restart op start, no notebook_start
+  inspectUnsupported: "inspect_unsupported", // notebook.inspect, no notebook_inspect (KOBE-803)
+  notConnected: "sandbox_not_connected", // a command that never wakes the sandbox (KOBE-803)
 } as const;
 
 export interface RunStartRequest {
@@ -197,6 +199,11 @@ export interface PiCommandRequest {
 export interface SendOptions {
   /** How long to wait for the result (default per kind). */
   readonly timeoutMs?: number;
+  /**
+   * False: never wake the sandbox for it (KOBE-803); without a live connection the command fails
+   * `sandbox_not_connected` at once. Default: woken as usual.
+   */
+  readonly wake?: boolean;
 }
 
 /**
@@ -300,6 +307,16 @@ export interface SandboxRouter {
   notebookKernel(
     target: SandboxTarget,
     request: { readonly threadId: string; readonly op: "interrupt" | "restart" | "start" },
+    options?: SendOptions,
+  ): Promise<CommandOutcome>;
+  /**
+   * KOBE-803: a silent snapshot of the thread kernel's variables (`notebook.inspect`; `data`
+   * untrusted: a `notebookInspectResultSchema` to validate). Only to agents with
+   * `notebook_inspect` (else `inspect_unsupported`); never wakes the sandbox.
+   */
+  notebookInspect(
+    target: SandboxTarget,
+    request: { readonly threadId: string; readonly timeoutMs: number },
     options?: SendOptions,
   ): Promise<CommandOutcome>;
   /**

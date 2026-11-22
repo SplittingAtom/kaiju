@@ -13,6 +13,10 @@ import { evalCasesOpenApiPaths, evalCasesOpenApiSchemas } from "./eval-cases.js"
 import { feedbackOpenApiPaths, feedbackOpenApiSchemas } from "./feedback.js";
 import { markersOpenApiPaths, markersOpenApiSchemas } from "./markers.js";
 import { modelsOpenApiPaths, modelsOpenApiSchemas } from "./models.js";
+import {
+  notebookVariablesOpenApiPaths,
+  notebookVariablesOpenApiSchemas,
+} from "./notebook-variables.js";
 import { pendingOpenApiPaths, pendingOpenApiSchemas } from "./pending.js";
 import { projectCommitsOpenApiPaths, projectCommitsOpenApiSchemas } from "./project-commits.js";
 import { runsOpenApiPaths, runsOpenApiSchemas } from "./runs.js";
@@ -64,6 +68,7 @@ export function openApiDocument(): Record<string, unknown> {
         ...compactOpenApiPaths(),
         ...branchSummaryOpenApiPaths(),
         ...contextOpenApiPaths(),
+        ...notebookVariablesOpenApiPaths(),
         ...approvalsOpenApiPaths(),
         ...usageOpenApiPaths(),
         ...modelsOpenApiPaths(),
@@ -91,6 +96,7 @@ export function openApiDocument(): Record<string, unknown> {
         ...compactOpenApiSchemas(),
         ...branchSummaryOpenApiSchemas(),
         ...contextOpenApiSchemas(),
+        ...notebookVariablesOpenApiSchemas(),
         ...approvalsOpenApiSchemas(),
         ...usageOpenApiSchemas(),
         ...modelsOpenApiSchemas(),
