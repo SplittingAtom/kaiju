@@ -54,6 +54,10 @@ export interface McpRouteDeps {
 const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
+/** An upstream 403 (review F3): the account lacks a permission or scope the tool needs. */
+const FORBIDDEN_MESSAGE =
+  "The connector's server refused this call: your account does not have the permission it needs.";
+
 /** A tool error the model sees (MCP `isError` result): the call did not run upstream. */
 function toolError(id: JsonRpcId, text: string) {
   return rpcResult(id, { content: [{ type: "text", text }], isError: true });
@@ -374,6 +378,10 @@ async function decideAndForward(
       "mcp tools/call",
     );
   };
+  // ONE deadline for the whole call (review F1): it starts before the server's decision and
+  // covers the grant fetch, a forced refresh and the upstream call with its retry, so the call
+  // ends under Pi's 60 s MCP request timeout (KOBE_MCP_UPSTREAM_TIMEOUT_MS, 55 s by default).
+  const signal = AbortSignal.timeout(deps.limits.upstreamTimeoutMs);
   try {
     const decided = await deps.server.decide(ctx.token, {
       connectorId: ctx.connectorId,
@@ -405,12 +413,15 @@ async function decideAndForward(
     }
     // The server's own record of the tool: now the name is metadata, not model text.
     annotate({}, { "kobe.tool.name": decision.tool.name });
-    const credentials = await deps.credentials.headersFor({
-      token: ctx.token,
-      teamId: ctx.teamId,
-      userId: ctx.userId,
-      connector: decision.connector,
-    });
+    const credentials = await deps.credentials.headersFor(
+      {
+        token: ctx.token,
+        teamId: ctx.teamId,
+        userId: ctx.userId,
+        connector: decision.connector,
+      },
+      { signal },
+    );
     if (!credentials.ok) {
       log({ outcome: "refused", reason: credentials.code, approvalId: decision.approval_id });
       const why =
@@ -428,16 +439,42 @@ async function decideAndForward(
         ),
       ];
     }
-    const result = await deps.upstream.callTool({
-      url: decision.connector.url,
-      headers: credentials.headers,
-      tool: decision.tool.name,
-      arguments: args,
-      // An allow from a server older than KOBE-435 did not check MCP Apps visibility: the proxy
-      // checks the upstream's own tools/list in the same session (review M3).
-      ...(decision.tool.model_visible === true ? {} : { checkModelVisible: true }),
-      signal: AbortSignal.timeout(deps.limits.upstreamTimeoutMs),
-    });
+    const callWith = (headers: Readonly<Record<string, string>>) =>
+      deps.upstream.callTool({
+        url: decision.connector.url,
+        headers,
+        tool: decision.tool.name,
+        arguments: args,
+        // An allow from a server older than KOBE-435 did not check MCP Apps visibility: the proxy
+        // checks the upstream's own tools/list in the same session (review M3).
+        ...(decision.tool.model_visible === true ? {} : { checkModelVisible: true }),
+        signal,
+      });
+    let result = await callWith(credentials.headers);
+    // Reactive refresh (KOBE-778, P2-28): the upstream refused a member's OAuth token (revoked
+    // early, or issued without a real expiry). A 401 means the call did not run, so ask the
+    // server once for a refreshed token and, if it is a different one, retry once. A 403 is
+    // insufficient permission (scope), which a refresh does not fix: never refreshed (review F3).
+    if (
+      !result.ok &&
+      result.failure === "auth_required" &&
+      result.authStatus === 401 &&
+      decision.connector.auth_kind === "oauth" &&
+      credentials.credential === "member"
+    ) {
+      const refreshed = await deps.credentials.headersFor(
+        {
+          token: ctx.token,
+          teamId: ctx.teamId,
+          userId: ctx.userId,
+          connector: decision.connector,
+        },
+        { refresh: true, signal },
+      );
+      if (refreshed.ok && refreshed.headers.authorization !== credentials.headers.authorization) {
+        result = await callWith(refreshed.headers);
+      }
+    }
     if (result.ok) {
       annotate({}, contentAttributes({ "kobe.tool.output": JSON.stringify(result.result) }));
       // MCP Apps (KOBE-438, spec T11): the full result comes from here, never the sandbox, and is
@@ -463,6 +500,9 @@ async function decideAndForward(
     }
     log({ outcome: "upstream_failed", reason: result.failure, credential: credentials.credential });
     if (result.failure === "rpc_error") return [rpcError(id, result.code, result.message)];
+    if (result.failure === "auth_required" && result.authStatus === 403) {
+      return [toolError(id, FORBIDDEN_MESSAGE)];
+    }
     return [toolError(id, UPSTREAM_MESSAGES[result.failure])];
   } finally {
     release();

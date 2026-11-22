@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
-import { apiKeyHeaders } from "./credentials.js";
+import { apiKeyHeaders, oauthHeaders } from "./credentials.js";
 import { keyMatches } from "./internal-key.js";
 import { logger } from "./logger.js";
 import { checkRegisteredUrl, type RegisteredUrlLookup } from "./registered-url.js";
@@ -11,8 +11,9 @@ import type { UpstreamClient } from "./upstream.js";
  * The server's pinning probe (KOBE-101): `POST /internal/v1/probe {connector_id, url}` returns the connector's
  * live `tools/list`, fetched through the same upstream client (address policy, size and time caps)
  * the sandboxes' calls use. Only the server's internal key may call it; sandboxes cannot, and the
- * answer goes to the server, which pins it, never to a sandbox. Without an `api_key` in the request
- * no credentials are attached, so connectors that need a grant answer `auth_required`.
+ * answer goes to the server, which pins it, never to a sandbox. Without an `api_key` or
+ * `access_token` in the request no credentials are attached, so connectors that need a grant
+ * answer `auth_required`.
  *
  * With `ui_resources: true` (KOBE-433) the answer also carries `ui_resources`: the `ui://`
  * templates the live tools name, read in the same upstream session (see ui-resources.ts). The
@@ -30,17 +31,26 @@ export interface ProbeDeps {
   readonly maxRequestBytes: number;
 }
 
-// `api_key`: a user's grant, sent by the server to pin a connector that needs one (KOBE-108).
-const bodySchema = z.strictObject({
-  // KOBE-693: the connector being pinned or refreshed; `url` must be its registered URL.
-  connector_id: z.uuid(),
-  url: z.string().min(1).max(2048),
-  api_key: z
-    .string()
-    .regex(/^[\x21-\x7e]{1,2048}$/)
-    .optional(),
-  ui_resources: z.literal(true).optional(),
-});
+// `api_key`: a site admin's key (or the site key), sent by the server to pin a connector that
+// needs one (KOBE-108, KOBE-431). `access_token` (KOBE-784): a site admin's own OAuth access token
+// for an `oauth` connector. Either becomes a bearer token for this probe's upstream session
+// (initialize, tools/list, ui:// reads) and nothing else; never both.
+const bodySchema = z
+  .strictObject({
+    // KOBE-693: the connector being pinned or refreshed; `url` must be its registered URL.
+    connector_id: z.uuid(),
+    url: z.string().min(1).max(2048),
+    api_key: z
+      .string()
+      .regex(/^[\x21-\x7e]{1,2048}$/)
+      .optional(),
+    access_token: z
+      .string()
+      .regex(/^[\x21-\x7e]{1,8192}$/)
+      .optional(),
+    ui_resources: z.literal(true).optional(),
+  })
+  .refine((b) => b.api_key === undefined || b.access_token === undefined);
 
 export function probeRoutes(deps: ProbeDeps): Hono {
   const app = new Hono();
@@ -67,7 +77,12 @@ export function probeRoutes(deps: ProbeDeps): Hono {
       const result = await deps.upstream.listTools(
         {
           url: body.data.url,
-          headers: body.data.api_key === undefined ? {} : apiKeyHeaders(body.data.api_key),
+          headers:
+            b.api_key !== undefined
+              ? apiKeyHeaders(b.api_key)
+              : b.access_token !== undefined
+                ? oauthHeaders(b.access_token)
+                : {},
           signal: AbortSignal.timeout(deps.timeoutMs),
         },
         { uiResources: body.data.ui_resources === true },

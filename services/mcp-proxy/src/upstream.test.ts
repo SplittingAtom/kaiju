@@ -126,7 +126,10 @@ describe("upstream MCP client (Streamable HTTP)", () => {
 
   it("reports refused credentials as auth_required and other statuses as http_error", async () => {
     fake.options = { status: 401 };
-    expect(await call()).toEqual({ ok: false, failure: "auth_required" });
+    expect(await call()).toEqual({ ok: false, failure: "auth_required", authStatus: 401 });
+    // A 403 is told apart (review F3): insufficient permission, not a refused token.
+    fake.options = { status: 403 };
+    expect(await call()).toEqual({ ok: false, failure: "auth_required", authStatus: 403 });
     fake.options = { status: 500 };
     expect(await call()).toEqual({ ok: false, failure: "http_error" });
   });
@@ -162,7 +165,7 @@ describe("listTools (pinning probe)", () => {
 
   it("reports an upstream refusal as auth_required", async () => {
     fake.options = { status: 401 };
-    expect(await list()).toEqual({ ok: false, failure: "auth_required" });
+    expect(await list()).toEqual({ ok: false, failure: "auth_required", authStatus: 401 });
   });
 
   it("refuses a URL the policy does not allow", async () => {

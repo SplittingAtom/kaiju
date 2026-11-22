@@ -19,9 +19,11 @@ import { createPgReconcileLock, type ReconcileLock } from "../sandbox/reconcile-
 import { applyDrift, approvedHash } from "./drift.js";
 import { buildSnapshot } from "./pin.js";
 import type { ConnectorProbe } from "./probe.js";
+import type { RefreshSupport } from "./grants.js";
 import {
   auditProbeCredential,
   chooseProbeCredential,
+  probeSecret,
   type ProbeCredential,
 } from "./probe-credential.js";
 import { loadTemplates, writeTemplateDrift } from "./template-store.js";
@@ -116,6 +118,8 @@ export interface RefreshOptions {
    * (KOBE-430). Unset: the periodic choice (`pinned_by`), audited when it changes.
    */
   readonly credential?: ProbeCredential | undefined;
+  /** Refreshes `pinned_by`'s expired OAuth token for the probe (KOBE-784); unset: not refreshed. */
+  readonly oauthRefresh?: RefreshSupport | undefined;
   /** Per-connector lock (KOBE-430): a connector whose lock is held is skipped by the pass. */
   readonly connectorLock?: ((connectorId: string) => ReconcileLock) | undefined;
 }
@@ -191,8 +195,10 @@ export async function refreshConnector(
   if (!row) return skipped("not_pinned");
 
   const credential =
-    options.credential ?? (await periodicCredential(db, options.envelope, connectorId, row.name));
-  const probed = await prober.probe(row.url, credential.apiKey, connectorId);
+    options.credential ??
+    (await periodicCredential(db, options.envelope, connectorId, row.name, options.oauthRefresh));
+  const secret = probeSecret(credential);
+  const probed = await prober.probe(row.url, secret?.value, connectorId, secret?.kind);
   if (!probed.ok) return recordSkip(db, connectorId, row, probed.failure);
   const live = buildSnapshot(row.name, probed.tools);
   if (!live.ok) return recordSkip(db, connectorId, row, live.failure);
@@ -284,8 +290,15 @@ async function periodicCredential(
   envelope: Envelope | undefined,
   connectorId: string,
   name: string,
+  oauthRefresh: RefreshSupport | undefined,
 ): Promise<ProbeCredential> {
-  const credential = await chooseProbeCredential(db, envelope, connectorId, "pinned_by");
+  const credential = await chooseProbeCredential(
+    db,
+    envelope,
+    connectorId,
+    "pinned_by",
+    oauthRefresh,
+  );
   await auditProbeCredential(db, { id: connectorId, name }, "refresh", credential);
   return credential;
 }
@@ -377,6 +390,8 @@ export interface ConnectorRefreshOptions {
   readonly logger: Logger;
   /** Opens probe credentials (KOBE-431); unset: auth-required connectors are skipped. */
   readonly envelope?: Envelope | undefined;
+  /** Refreshes `pinned_by`'s expired OAuth token for the probe (KOBE-784). */
+  readonly oauthRefresh?: RefreshSupport | undefined;
   /** Per-connector lock shared with the Re-probe route (KOBE-430). */
   readonly connectorLock?: ((connectorId: string) => ReconcileLock) | undefined;
   /** After each pass (KOBE-103): emails about drift. Must not throw. */
@@ -396,6 +411,7 @@ export function startConnectorRefresh(options: ConnectorRefreshOptions): () => P
       .runExclusive(async () => {
         const summary = await refreshAllConnectors(options.db, options.prober, options.logger, {
           envelope: options.envelope,
+          oauthRefresh: options.oauthRefresh,
           connectorLock: options.connectorLock,
         });
         await options.afterPass?.();

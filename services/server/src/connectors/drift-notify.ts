@@ -52,6 +52,8 @@ interface DriftEvent {
   readonly invalid: readonly InvalidTemplateNote[];
   /** Skip events: whose key the connector uses, for the remedy text (review L2). */
   readonly source?: "member" | "site";
+  /** Skip events: the connector's auth kind (an OAuth connector needs an admin's account, KOBE-784). */
+  readonly authKind?: string;
 }
 
 /** A bounded bullet list of names. */
@@ -130,12 +132,17 @@ export function driftMessage(
 /** KOBE-431: the refresh cannot check a connector for changes; site admins only. */
 export function skippedMessage(
   publicUrl: string,
-  event: Pick<DriftEvent, "name" | "source">,
+  event: Pick<DriftEvent, "name" | "source" | "authKind">,
   to: string,
 ): MailMessage {
   const name = oneLine(event.name);
-  const fix =
-    event.source === "site"
+  const oauth = event.authKind === "oauth";
+  const fix = oauth
+    ? [
+        "A site admin connects their own account for the connector (My connectors, in a team that",
+        "enabled it), then pins or approves its tools again.",
+      ]
+    : event.source === "site"
       ? [
           `The ${name} connector uses a site-wide key, and it has none Kobe can use (not set, or`,
           "its server URL changed since it was set). Set (or re-enter) its site-wide key.",
@@ -149,8 +156,15 @@ export function skippedMessage(
     subject: `Connector ${name}: tools are not checked for changes`,
     text: [
       `The ${name} connector asks for credentials, and Kobe has none to check its tools with:`,
-      "it has no site-wide key, and the site admin who last pinned or approved its tools has no",
-      "usable key for it (deactivated, no longer an admin, or the key was removed or expired).",
+      ...(oauth
+        ? [
+            "the site admin who last pinned or approved its tools has no usable connected account",
+            "for it (deactivated, no longer an admin, or the sign-in was removed or ended).",
+          ]
+        : [
+            "it has no site-wide key, and the site admin who last pinned or approved its tools has no",
+            "usable key for it (deactivated, no longer an admin, or the key was removed or expired).",
+          ]),
       "Until that changes, new or changed tools on the server are not noticed.",
       "",
       ...fix,
@@ -261,10 +275,16 @@ async function stillDrifted(db: KobeDb, connectorId: string): Promise<boolean> {
  */
 async function stillSkipped(db: KobeDb, event: DriftEvent): Promise<DriftEvent | undefined> {
   const [row] = await db
-    .select({ skipped: connectors.refreshSkipped, source: connectors.credentialSource })
+    .select({
+      skipped: connectors.refreshSkipped,
+      source: connectors.credentialSource,
+      authKind: connectors.authKind,
+    })
     .from(connectors)
     .where(and(eq(connectors.id, event.connectorId), isNull(connectors.deletedAt)));
-  return row?.skipped === "auth_required" ? { ...event, source: row.source } : undefined;
+  return row?.skipped === "auth_required"
+    ? { ...event, source: row.source, authKind: row.authKind }
+    : undefined;
 }
 
 /** Templates still not checked, for the same reason (a checked pass ends the notice). */

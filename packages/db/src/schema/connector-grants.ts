@@ -47,6 +47,13 @@ export const connectorGrants = pgTable(
     expiresAt: timestamp({ withTimezone: true }),
     /** Set when the key is replaced. */
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /**
+     * OAuth refresh lease (KOBE-778): the server replica refreshing the access token holds it
+     * until this time, so no other replica spends the same (rotating) refresh token. Not secret.
+     */
+    refreshLeaseUntil: timestamp({ withTimezone: true }),
+    /** Random id of the refresh holding the lease; only it may write the result or drop the grant. */
+    refreshLeaseOwner: uuid(),
   },
   (t) => [
     primaryKey({ columns: [t.teamId, t.userId, t.connectorId] }),

@@ -22,7 +22,12 @@ export type UpstreamResult =
       readonly code: number;
       readonly message: string;
     }
-  | { readonly ok: false; readonly failure: UpstreamFailure };
+  | {
+      readonly ok: false;
+      readonly failure: UpstreamFailure;
+      /** `auth_required` only: 401 (token refused) or 403 (insufficient permission), review F3. */
+      readonly authStatus?: 401 | 403;
+    };
 
 /**
  * Which Kobe path an upstream session serves, for its span (KOBE-527/528): a sandbox's MCP call,

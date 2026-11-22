@@ -383,6 +383,8 @@ function siteJobs(o: ServerJobsOptions): ServerJob[] {
           intervalMs: o.connectorRefreshSeconds * 1000,
           logger: o.logger,
           envelope: deps.envelope,
+          // pinned_by's OAuth token is refreshed through this process's gate (KOBE-784).
+          oauthRefresh: deps.mcp.oauthRefresh,
           connectorLock: connectorRefreshLocks(deps.database.pool),
           afterPass,
         }),

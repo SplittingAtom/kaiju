@@ -1,6 +1,7 @@
 import {
   connectorGrants,
   connectorSiteKeys,
+  connectors,
   modelGatewayKeys,
   modelProviders,
   scanTeams,
@@ -97,6 +98,13 @@ export function sealedFamilies(keys: {
         secret: envelope,
         keyIds: keys.envelopeKeyIds,
         site: kidCount(sql`${connectorSiteKeys.sealed}`, sql`${connectorSiteKeys}`),
+      },
+      {
+        // KOBE-784: the OAuth client Kobe registered per connector (dynamic client registration).
+        name: "connector OAuth client registrations",
+        secret: envelope,
+        keyIds: keys.envelopeKeyIds,
+        site: kidCount(sql`${connectors.oauthClient}`, sql`${connectors}`),
       },
       {
         // KOBE-626: console-entered SSO client secrets (Helm ones stay in their Secret).
