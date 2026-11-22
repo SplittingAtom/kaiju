@@ -48,6 +48,13 @@ The builder has two tabs, **Identity** and **Behaviour**:
   **Ask on write**, **Ask for every tool** or **Auto (allow-listed tools only)**. The mode is never
   looser than the team's floor.
 
+**Allowed tools** limits the agent: when the list is not empty, Kobe's server refuses every call to
+a tool the list doesn't match, built-in or connector tool (connector tools by their
+`mcp__<connector>__<tool>` name, globs like `mcp__github__*` allowed), whatever the approval mode.
+An empty list limits nothing. **Denied tools** always wins. Neither list ever skips an approval: an
+allowed tool still asks when the mode or a rule says so. Each conversation uses the lists of the
+version it runs.
+
 **Save draft** keeps your changes; **Test chat** tries the draft without publishing. **Publish…**
 creates a new version, after a safety check. Each published version is kept in **Version history**.
 

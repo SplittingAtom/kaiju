@@ -133,7 +133,8 @@ function resolveRunAgent(
  * for the team: error `agent_model_not_enabled`, no fallback), the run's mode (the version's frozen
  * mode under today's site floor, only stricter), and the connectors; `omissions` lists what the
  * resolver left out. The site default agent (no pin) still gets the KOBE-46 site floor.
- * Per-call `versionAllowsCall` gating is KOBE-47.
+ * Per call, the policy engine applies the version's frozen `tools.allow`/`tools.deny`
+ * (`loadRunAgentTools`, KOBE-481/776).
  */
 export const PINNED_AGENTS: RunAgentResolver = {
   /**

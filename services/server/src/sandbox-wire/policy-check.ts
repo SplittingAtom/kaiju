@@ -110,7 +110,7 @@ export const DENY_APPROVALS: ApprovalBroker = {
 /**
  * Run policy context from Postgres: the site floor (`readApprovalFloor`, spec D6: site-wide
  * only, no team floor) and the run's own mode, fixed at creation by the orchestrator
- * (`runs.approval_mode`, KOBE-30). Agent tool lists arrive with KOBE-47. An unreadable floor is the
+ * (`runs.approval_mode`, KOBE-30), and the run's agent's tool lists (KOBE-481, KOBE-776). An unreadable floor is the
  * strictest mode (`ask-all`); a failed read throws, and the call is denied.
  */
 export function createDbRunContextSource(): RunPolicyContextSource {
@@ -123,11 +123,13 @@ export function createDbRunContextSource(): RunPolicyContextSource {
       const mode = approvalModeSchema.safeParse(res.rows[0]?.approval_mode);
       // KOBE-493: the run's viewed file (also set by Retry and regenerate), for the guard.
       const viewedPath = res.rows[0]?.viewed_path ?? undefined;
-      // KOBE-481: the agent's own tools.deny in every mode; AC1: its Dangerous tools.
+      // KOBE-481/776: the agent's own tools.deny and tools.allow in every mode; AC1: its
+      // Dangerous tools.
       const agent = await loadRunAgentTools(tx, run);
       return {
         floor,
         ...(mode.success ? { approvalMode: mode.data } : {}),
+        toolsAllow: agent.toolsAllow,
         toolsDeny: agent.toolsDeny,
         ...(agent.dangerousTools.length > 0 ? { dangerousTools: agent.dangerousTools } : {}),
         ...(viewedPath === undefined ? {} : { viewedPath }),
