@@ -113,6 +113,24 @@ describe("destroySandbox (D12)", () => {
   });
 });
 
+describe("destroySandbox: a claim replaced while it runs (KOBE-739, review g72-4)", () => {
+  it("stops before the pod and volume deletes and throws, deleting nothing of the new claim", async () => {
+    const { kube, provider } = setup();
+    const handle = await provider.ensureSandbox(TEAM, USER);
+    seedVolume(kube, handle.sandboxName);
+    // The claim under this name is replaced between the read and the delete (a 409 precondition).
+    kube.failNext("delete", "SandboxClaim", 409, 1, "Precondition failed: UID in precondition");
+
+    await expect(provider.destroySandbox(TEAM, USER, { retainVolume: false })).rejects.toThrow(
+      /replaced/,
+    );
+    expect(kube.calls.filter((c) => c.verb === "delete").map((c) => c.kind)).toEqual([
+      "SandboxClaim",
+    ]);
+    expect(kube.all("Pod")).toHaveLength(1);
+  });
+});
+
 describe("deleteVolume", () => {
   it("deletes a retained volume and tolerates a missing one", async () => {
     const { kube, provider } = setup();

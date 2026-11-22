@@ -57,14 +57,23 @@ export function createVolumeOps(ctx: ProviderContext): VolumeOps {
       await kube.patch(PVC(namespace, pvc), { metadata: { ownerReferences: null } });
       kept = pvc;
     }
-    // By UID (review g72-3): never a claim that replaced this one under the same name.
+    // By UID (review g72-3): never a claim that replaced this one under the same name. Replaced
+    // (review g72-4): stop before the pod and volume deletes, which go by name and would hit the
+    // replacement's; the caller rolls back (the reclaim reaper keeps the row) and retries.
     const claimUid = claim.metadata.uid;
-    const claimGone = claimUid
-      ? await deleteExact(CLAIM(namespace, name), claimUid, undefined).then(
-          () => true,
-          () => false,
+    const claimOutcome = claimUid
+      ? await deleteExact(CLAIM(namespace, name), claimUid, undefined).catch(
+          () => "failed" as const,
         )
-      : await deleteWithRetry(CLAIM(namespace, name));
+      : (await deleteWithRetry(CLAIM(namespace, name)))
+        ? ("deleted" as const)
+        : ("failed" as const);
+    if (claimOutcome === "replaced") {
+      throw new SandboxProvisioningError(
+        `Sandbox ${namespace}/${name} was replaced while it was being deleted; nothing more deleted`,
+      );
+    }
+    const claimGone = claimOutcome === "deleted";
     const podGone = await deleteWithRetry(POD(namespace, sandboxName));
     if (!claimGone || !podGone) {
       throw new SandboxProvisioningError(
