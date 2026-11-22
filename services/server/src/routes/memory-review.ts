@@ -30,7 +30,7 @@ import { uuidSchema } from "../threads/schemas.js";
 import { issueText, memoryRouteKit, refuseAgentWrites } from "./memory-items.js";
 import { invalidRequest } from "../http/request.js";
 
-const threadQuery = z.object({ thread_id: uuidSchema });
+export const threadQuery = z.object({ thread_id: uuidSchema });
 
 /**
  * To review (`/v1/memory/review`, KOBE-396, SM16): a thread author's learning candidates and
