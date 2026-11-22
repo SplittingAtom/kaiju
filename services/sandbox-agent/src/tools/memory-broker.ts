@@ -1,11 +1,10 @@
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
 import type {
-  KobeToolsRequest,
-  KobeToolsResponse,
   MemoryPutFrame,
   MemoryReadFrame,
   MemoryResultFrame,
   MemoryShowFrame,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
 

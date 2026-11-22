@@ -3,14 +3,10 @@ import {
   ARTIFACT_CONTENT_MAX_BYTES,
   ARTIFACT_KINDS,
   KOBE_TOOLS_FD,
-  SANDBOX_FRAME_MAX_BYTES_BY_TYPE,
   artifactDetailSchema,
   artifactSummarySchema,
   artifactToolInputSchema,
   createArtifactInputSchema,
-  decodeSandboxFrame,
-  decodeServerFrame,
-  encodeFrame,
   kobeToolsRequestSchema,
   kobeToolsResponseSchema,
   updateArtifactInputSchema,
@@ -18,6 +14,12 @@ import {
   artifactFileExtension,
   isArtifactTextKind,
 } from "./index.js";
+import {
+  SANDBOX_FRAME_MAX_BYTES_BY_TYPE,
+  decodeSandboxFrame,
+  decodeServerFrame,
+  encodeFrame,
+} from "./sandbox-wire/index.js";
 import { EXAMPLE_IDS } from "./testing/index.js";
 
 const ID = "11111111-1111-4111-8111-111111111111";

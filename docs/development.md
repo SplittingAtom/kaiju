@@ -11,6 +11,20 @@ old names: Workspace = the team row, so the routes stay `/v1/team`, `/v1/me/team
 `x-kobe-team` header, and permission names stay `team.*` (Workspaces spec WS1-WS3,
 `docs/specs/workspaces.md`). The team role `builder` is now `contributor` in the API and the UI.
 
+## OpenAPI document
+
+`services/server/openapi.json` (generated from `services/server/src/openapi/document.ts`) lists
+every route of the member and admin API on the user-facing listener. Some areas are fully
+described (bodies and errors, in `openapi/<area>.ts`); the rest are one line each in
+`openapi/catalog/` and marked `x-kobe-detail: summary`: summary, tag and path parameters, no
+bodies yet. Left out on purpose, each with a reason in `openapi/undocumented-allowlist.ts`: health
+probes, Better Auth's `/api/auth/*`, SCIM (`/v1/scim/v2`), the OAuth redirect and client-metadata
+endpoints, the web app's telemetry beacon, a catch-all refusal, and the sandbox-facing and
+internal listeners. `openapi/coverage.test.ts` reads the routes of the real mounted apps and fails
+on a route that is neither documented nor allowlisted, and on a stale entry in either list. After
+adding a route, add its line to the catalog (or a full description) and regenerate:
+`UPDATE_OPENAPI=1 pnpm --filter @kobe/server exec vitest run src/openapi && pnpm format`.
+
 ## Dev loop
 
 Prerequisites: Docker (local, or remote via `DOCKER_HOST=ssh://user@host`), k3d, kubectl, Helm 3,
@@ -67,7 +81,9 @@ CI splits the k3d suite into shards that run in parallel, each on its own cluste
 sections up to KOBE-25, with its trials), `gate1-prep` followed by `e2e/gate1.sh` (the install
 plus the KOBE-40 model setup Gate 1 needs) and `gate1-prep` followed by `e2e/gate2.sh` (the same
 install, for the Gate 2 safety checks; see [gates/gate-2.md](gates/gate-2.md)). Unset, `e2e/run.sh` runs every section, as before. A
-new section needs no shard change: it runs in `suite`. The required `k3d` check passes only when
+new section needs no shard change: it runs in `suite`. `e2e/run.sh` is the entry point (settings, shard
+dispatch); the helpers are in `e2e/lib/run-common.sh` and the sections in `e2e/run/NN-*.sh`, sourced in
+numeric order (a new section is a new file plus a `source` line in `run.sh`). The required `k3d` check passes only when
 every image build and every shard passed.
 
 ## Migrations

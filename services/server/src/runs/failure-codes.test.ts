@@ -1,4 +1,4 @@
-import { MODEL_RUN_ERROR_CODES } from "@kobe/protocol";
+import { MODEL_RUN_ERROR_CODES } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { FAILURE_MESSAGES, failureInfo } from "./failure-codes.js";
 

@@ -2,13 +2,13 @@ import {
   CONTEXT_LABEL_MAX_CHARS,
   CONTEXT_MAX_SECTIONS,
   CONTEXT_SECTION_MAX_CHARS,
-  THREAD_CONTEXT_PLAINTEXT_MAX_BYTES,
   contextTruncationMarker,
   type ContextSection,
   type ThreadContextResult as Result,
   type ContextSource,
   type ThreadContextResult,
 } from "@kobe/protocol";
+import { THREAD_CONTEXT_PLAINTEXT_MAX_BYTES } from "@kobe/protocol/sandbox-wire";
 import type { RawSection } from "./system-prompt.js";
 
 /**

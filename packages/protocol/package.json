@@ -8,6 +8,7 @@
   "files": [
     "dist"
   ],
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -16,6 +17,10 @@
     "./node": {
       "types": "./dist/node/index.d.ts",
       "default": "./dist/node/index.js"
+    },
+    "./sandbox-wire": {
+      "types": "./dist/sandbox-wire/index.d.ts",
+      "default": "./dist/sandbox-wire/index.js"
     },
     "./skill-evals": {
       "types": "./dist/skill-evals/entry.d.ts",

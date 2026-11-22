@@ -1,11 +1,7 @@
 import { lstat, mkdir, readFile, realpath, rename, rm } from "node:fs/promises";
 import path from "node:path";
-import {
-  isExcludedPath,
-  isServerOwnedPath,
-  workspacePathIssue,
-  type WorkspaceMoveRecord,
-} from "@kobe/protocol";
+import { isExcludedPath, isServerOwnedPath, workspacePathIssue } from "@kobe/protocol";
+import { type WorkspaceMoveRecord } from "@kobe/protocol/sandbox-wire";
 import { openAgentTemp, tempPathFor } from "../atomic-file.js";
 import type { WireLogger } from "../wire/client.js";
 import type { SyncClient } from "./client.js";

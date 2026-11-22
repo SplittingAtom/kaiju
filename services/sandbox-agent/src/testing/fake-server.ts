@@ -6,7 +6,7 @@ import {
   decodeSandboxFrame,
   type SandboxToServerFrame,
   type ServerToSandboxFrame,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import { WebSocketServer, type WebSocket } from "ws";
 
 /**

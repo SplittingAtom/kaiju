@@ -1,10 +1,10 @@
+import { type RunStartFrame } from "@kobe/protocol/sandbox-wire";
 import { withTeam } from "@kobe/db";
 import {
   CAPABILITY_SEMANTIC_MEMORY,
   CAPABILITY_SEMANTIC_MEMORY_PLACEMENT,
   type RunSemanticMemory,
   type RunSemanticMemoryItem,
-  type RunStartFrame,
 } from "@kobe/protocol";
 import { readRunMemoryPlan, type RunMemoryPlan } from "../../agents/run-memory.js";
 import { buildRunMemory } from "../../memory/agent.js";

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { timestampSchema, uuidSchema } from "./common.js";
-import { sha256HexSchema, workspacePathSchema } from "./sandbox-wire/workspace-sync.js";
+import { sha256HexSchema, workspacePathSchema } from "./workspace-paths.js";
 
 /**
  * Workspace file changes for open file tabs (KOBE-496), additive. `GET /v1/workspace/changes`

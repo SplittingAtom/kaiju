@@ -1,4 +1,4 @@
-import type { TraceSpansFrame } from "@kobe/protocol";
+import { type TraceSpansFrame } from "@kobe/protocol/sandbox-wire";
 import type { LeaseViolation, WireMetrics } from "../context.js";
 import type { RunOwner, TraceFrameRate, TraceIntake } from "../trace-intake.js";
 

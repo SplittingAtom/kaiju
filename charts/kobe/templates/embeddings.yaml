@@ -73,8 +73,12 @@ spec:
                 exit 1
               fi
               echo "downloading $MODEL_FILE"
-              curl -fsSL --retry 5 --retry-delay 5 -o "$f.part" "$MODEL_URL"
-              echo "$MODEL_SHA256  $f.part" | sha256sum -c -
+              # A stalled connection must fail and retry, not hang until the rollout times out:
+              # under 1 KiB/s for 30 s counts as stalled; each retry resumes the partial file.
+              curl -fsSL --connect-timeout 20 --speed-limit 1024 --speed-time 30 \
+                --retry 8 --retry-delay 5 --retry-all-errors -C - -o "$f.part" "$MODEL_URL"
+              # A wrong partial file must not be resumed on the next start.
+              echo "$MODEL_SHA256  $f.part" | sha256sum -c - || { rm -f "$f.part"; exit 1; }
               mv "$f.part" "$f"
           env:
             - name: MODEL_FILE

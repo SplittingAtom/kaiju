@@ -1,6 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { SANDBOX_CLOSE_CODES } from "@kobe/protocol";
+import { SANDBOX_CLOSE_CODES } from "@kobe/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   RUN,

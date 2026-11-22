@@ -1,8 +1,5 @@
-import {
-  CAPABILITY_SKILL_DRAFTS,
-  type ServerToSandboxFrame,
-  type SkillDraftSaveFrame,
-} from "@kobe/protocol";
+import { type ServerToSandboxFrame, type SkillDraftSaveFrame } from "@kobe/protocol/sandbox-wire";
+import { CAPABILITY_SKILL_DRAFTS } from "@kobe/protocol";
 import type { Logger } from "pino";
 import type { SkillDraftRefusal, SkillDraftToolResult } from "../skills/drafts/tool.js";
 import type { WireContext } from "./context.js";

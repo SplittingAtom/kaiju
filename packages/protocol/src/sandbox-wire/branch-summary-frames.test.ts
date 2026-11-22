@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { BRANCH_SUMMARY_FOCUS_MAX_CHARS, branchSummaryResponseSchema } from "../index.js";
 import {
-  BRANCH_SUMMARY_FOCUS_MAX_CHARS,
   THREAD_BRANCH_SUMMARY_WIRE_ERROR_CODES,
-  branchSummaryResponseSchema,
   sandboxToServerFrameSchema,
   serverToSandboxFrameSchema,
   threadBranchSummaryFrameSchema,
   threadBranchSummaryResultFrameSchema,
-} from "../index.js";
+} from "../sandbox-wire/index.js";
 import { EXAMPLE_IDS } from "../testing/index.js";
 
 const summary = {

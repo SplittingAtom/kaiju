@@ -1,12 +1,12 @@
-import { Readable } from "node:stream";
-import { SYSTEM_ACTOR } from "@kobe/db";
 import {
   WORKSPACE_ENTRY_HEADER,
   encodeWorkspaceEntryHeader,
   workspaceCommitRequestSchema,
-  workspacePathSchema,
   workspaceRestoreReportSchema,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
+import { Readable } from "node:stream";
+import { SYSTEM_ACTOR } from "@kobe/db";
+import { workspacePathSchema } from "@kobe/protocol";
 import { Hono } from "hono";
 import { recordAudit } from "../../audit/record.js";
 import { reportMissingContent } from "../lost.js";

@@ -2,15 +2,17 @@ import {
   EventPayloadTooLargeError,
   jsonByteLength,
   parseEventPayload,
-  parseKobeModelError,
-  parseTranslatedPiEvent,
   toolInputSchema,
   type KobeEventType,
-  type ModelRunErrorCode,
-  type PiTranslatedEvent,
   type RiskClass,
   type ToolRegistry,
 } from "@kobe/protocol";
+import {
+  parseKobeModelError,
+  parseTranslatedPiEvent,
+  type ModelRunErrorCode,
+  type PiTranslatedEvent,
+} from "@kobe/protocol/sandbox-wire";
 import type { NewRunEvent } from "../event-stream/append.js";
 import { TOOL_INPUT_MAX_BYTES, TOOL_PREVIEW_MAX_CHARS } from "./constants.js";
 

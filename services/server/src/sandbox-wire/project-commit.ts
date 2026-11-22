@@ -1,10 +1,9 @@
+import { type ServerToSandboxFrame, type ProjectCommitFrame } from "@kobe/protocol/sandbox-wire";
 import {
   APPROVAL_TTL_MS,
   CAPABILITY_PROJECTS,
   type PolicyDecision,
-  type ProjectCommitFrame,
   type ProjectCommitOutcome,
-  type ServerToSandboxFrame,
 } from "@kobe/protocol";
 import { sql, withTeam } from "@kobe/db";
 import type { Logger } from "pino";

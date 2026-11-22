@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { mkdtemp, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { SandboxToServerFrame, SkillBundleRef } from "@kobe/protocol";
+import type { SandboxToServerFrame, SkillBundleRef } from "@kobe/protocol/sandbox-wire";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createSkillFetcher } from "./skills/client.js";
 import { SkillStore } from "./skills/store.js";

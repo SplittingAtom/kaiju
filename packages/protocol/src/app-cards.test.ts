@@ -11,7 +11,8 @@ import {
   launchAppCardBodySchema,
   launchAppCardResponseSchema,
 } from "./app-cards.js";
-import { CAPABILITY_APP_CARDS, runStartFrameSchema, SANDBOX_WIRE_VERSION } from "./index.js";
+import { CAPABILITY_APP_CARDS } from "./index.js";
+import { runStartFrameSchema, SANDBOX_WIRE_VERSION } from "./sandbox-wire/index.js";
 
 const RUN = "8f0e3c1a-5b7d-4e2f-9a1b-2c3d4e5f6a7b";
 const HEX = "a".repeat(64);

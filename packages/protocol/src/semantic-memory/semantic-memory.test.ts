@@ -23,14 +23,12 @@ import {
   semanticMemoryIssueSchema,
   agentVersionMemoryFieldSchema,
   createSemanticMemoryItemSchema,
-  decodeServerFrame,
   memoryStewardListSchema,
   patchSemanticMemoryItemSchema,
   pinSemanticMemoryItemSchema,
   revertSemanticMemoryItemSchema,
   runMemoryContextSchema,
   runSemanticMemorySchema,
-  runStartFrameSchema,
   semanticMemoryErrorSchema,
   semanticMemoryExportDocumentSchema,
   semanticMemoryExportQuerySchema,
@@ -42,6 +40,7 @@ import {
   semanticMemoryListQuerySchema,
   semanticMemoryListResponseSchema,
 } from "../index.js";
+import { decodeServerFrame, runStartFrameSchema } from "../sandbox-wire/index.js";
 
 const FIXTURES = join(import.meta.dirname, "fixtures");
 const fixture = (name: string): Record<string, unknown> =>

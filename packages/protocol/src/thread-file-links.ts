@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { timestampSchema, uuidSchema } from "./common.js";
-import { workspacePathSchema } from "./sandbox-wire/workspace-sync.js";
+import { workspacePathSchema } from "./workspace-paths.js";
 
 /**
  * Thread–file links (KOBE-611, spec docs/specs/thread-file-map.md §4, §6; decisions TFM1, TFM7):

@@ -1,4 +1,4 @@
-import { SANDBOX_MAX_FRAME_BYTES, SANDBOX_SEND_PACE } from "@kobe/protocol";
+import { SANDBOX_MAX_FRAME_BYTES, SANDBOX_SEND_PACE } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { WIRE_DEFAULTS } from "./constants.js";
 

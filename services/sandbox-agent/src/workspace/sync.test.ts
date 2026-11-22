@@ -14,7 +14,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import type { RunStartFrame } from "@kobe/protocol";
+import type { RunStartFrame } from "@kobe/protocol/sandbox-wire";
 import { FakeSyncServer } from "../testing/fake-sync-server.js";
 import { SyncClient } from "./client.js";
 import { createHash } from "node:crypto";

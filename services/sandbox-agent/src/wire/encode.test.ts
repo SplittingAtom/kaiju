@@ -1,4 +1,4 @@
-import type { SandboxToServerFrame } from "@kobe/protocol";
+import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { encodePiEvent } from "../agent.js";
 import { encodeOutbound } from "./encode.js";

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import type { SandboxToServerFrame } from "@kobe/protocol";
+import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
 import type { ModelWiring } from "./models/types.js";
 import { RUN_2, THREAD, runStart, startHarness, type Harness } from "./testing/harness.js";
 

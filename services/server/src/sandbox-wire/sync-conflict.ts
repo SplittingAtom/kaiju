@@ -1,9 +1,8 @@
+import { syncConflictSchema, type SyncConflict } from "@kobe/protocol";
 import {
-  syncConflictSchema,
   type ServerToSandboxFrame,
-  type SyncConflict,
   type WorkspaceConflictFrame,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import type { KobeDb } from "@kobe/db";
 import type { Logger } from "pino";
 import { isInternalPath, isReadOnlyPath } from "../workspace-files/paths.js";

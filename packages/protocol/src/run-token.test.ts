@@ -4,13 +4,11 @@ import {
   MAX_RUN_TOKEN_TTL_SECONDS,
   RUN_TOKEN_HEADER,
   RUN_TOKEN_TYP,
-  decodeSandboxFrame,
-  decodeServerFrame,
-  encodeFrame,
   runTokenClaimsSchema,
   runTokenGrantSchema,
   type RunTokenClaims,
 } from "./index.js";
+import { decodeSandboxFrame, decodeServerFrame, encodeFrame } from "./sandbox-wire/index.js";
 import { EXAMPLE_IDS } from "./testing/index.js";
 
 const NOW = 1_800_000_000;

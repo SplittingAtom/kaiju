@@ -1,22 +1,4 @@
 import { z } from "zod";
-import { approvalTokenSchema } from "../approval.js";
-import {
-  approvalModeSchema,
-  errorInfoSchema,
-  idSchema,
-  SYSTEM_PROMPT_MAX_BYTES,
-  timestampSchema,
-  utf8ByteLength,
-  uuidSchema,
-} from "../common.js";
-import { connectorNameSchema } from "../tools.js";
-import { runTokenGrantSchema } from "../run-token.js";
-import {
-  branchSummaryFocusSchema,
-  threadCompactFocusSchema,
-  threadCompactResultShape,
-} from "../threads.js";
-import { SANDBOX_ERROR_CODES, SANDBOX_WIRE_VERSION } from "./connection.js";
 import {
   memoryPutFrameSchema,
   memoryReadFrameSchema,
@@ -24,12 +6,11 @@ import {
   memoryShowFrameSchema,
 } from "./memory-frames.js";
 import { projectCommitFrameSchema, projectCommitResultFrameSchema } from "./project-frames.js";
-import { runMcpContextSchema } from "./mcp-config.js";
 import {
   legacyWebSearchQueryFrameSchema,
   legacyWebSearchResultFrameSchema,
 } from "./legacy-web-search-frames.js";
-import { traceSpansFrameSchema, wireTraceContextSchema } from "./trace-frames.js";
+import { traceSpansFrameSchema } from "./trace-frames.js";
 import {
   evalPrepareFrameSchema,
   evalReadFrameSchema,
@@ -37,7 +18,6 @@ import {
 } from "./eval-frames.js";
 import { threadContextFrameSchema } from "./context-frames.js";
 import { sessionRenewFrameSchema } from "./session-renew-frames.js";
-import { runProjectContextSchema } from "../projects.js";
 import {
   skillDraftSaveFrameSchema,
   skillDraftSaveResultFrameSchema,
@@ -46,9 +26,6 @@ import {
   workspaceSyncedFrameSchema,
   workspaceSyncNowFrameSchema,
 } from "./workspace-sync-now-frames.js";
-import { APP_CARDS_PER_RUN_MAX, appCardEntrySchema } from "../app-cards.js";
-import { runMemoryContextSchema } from "../memory.js";
-import { runViewingContextSchema } from "../file-editor.js";
 import {
   fileEditProposeFrameSchema,
   fileEditProposeResultFrameSchema,
@@ -57,7 +34,6 @@ import {
   workspaceConflictFrameSchema,
   workspaceConflictNoteFrameSchema,
 } from "./sync-conflict-frames.js";
-import { SYNC_CONFLICT_NOTES_MAX, syncConflictSchema } from "../sync-conflicts.js";
 import { fileOpenFrameSchema, fileOpenResultFrameSchema } from "./file-open-frames.js";
 import {
   notebookExecuteFrameSchema,
@@ -67,278 +43,53 @@ import {
   notebookRunFrameSchema,
   notebookRunResultFrameSchema,
 } from "./notebook-frames.js";
-import { UPLOAD_MAX_FILES_PER_MESSAGE, uploadFileNameSchema } from "../uploads.js";
-import { fileShareCallShape, fileShareOkFields, shareFileWorkspaceRefSchema } from "../files.js";
-import { artifactCallShape, artifactFailFields, artifactOkFields } from "../artifacts.js";
-import { SKILL_BUNDLES_MAX, skillBundleRefSchema } from "./skill-bundles.js";
 import {
-  piBridgeCommandSchema,
-  piExtensionUiRequestSchema,
-  piExtensionUiResponseSchema,
-  piSessionEntrySchema,
-  piSessionEventSchema,
-  piSessionHeaderSchema,
-} from "./pi-rpc.js";
-
-/** Frame schemas for both directions. Semantics are documented in connection.ts. */
-
-const v = z.literal(SANDBOX_WIRE_VERSION);
-const seq = z.number().int().positive();
-const nonce = z.string().min(1).max(64);
-const commandId = idSchema;
-
-function frame<T extends string, S extends z.ZodRawShape>(type: T, shape: S) {
-  return z.strictObject({ v, type: z.literal(type), ...shape });
-}
-
-const pingFrame = frame("ping", { nonce });
-const pongFrame = frame("pong", { nonce });
-/**
- * Forward compatibility (normative). After an upgrade the server is newer than the sandboxes still
- * running, so **server → sandbox informational enums are open**: a code the agent does not know
- * still decodes, as an opaque string of {@link OPEN_CODE_PATTERN} shape (reason codes and stages,
- * error codes, stop and shutdown reasons; extra keys in a reason are kept). The server may add
- * codes freely. **Decisions and modes stay closed** (`policy.result.decision`, `run.stop.mode`, Pi
- * config values): those change behaviour, so a new value is a wire version change. Sandbox →
- * server frames stay strict: the server is never older than the agents it talks to.
- */
-export const OPEN_CODE_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
-const openCode = z.string().regex(OPEN_CODE_PATTERN);
-
-/** A policy reason as the sandbox reads it: known shape, open code and stage. */
-export const wirePolicyReasonSchema = z.looseObject({
-  code: openCode,
-  stage: openCode,
-  message: z.string().max(1000),
-  rule_id: uuidSchema.optional(),
-});
-export type WirePolicyReason = z.infer<typeof wirePolicyReasonSchema>;
-
-const errorFields = {
-  message: z.string().max(2000),
-  /** The `command_id` / `request_id` / frame type the error refers to, if any. */
-  ref: z.string().max(256).optional(),
-};
-/** Sandbox → server: closed codes. */
-const errorFrame = frame("error", { code: z.enum(SANDBOX_ERROR_CODES), ...errorFields });
-/** Server → sandbox: open codes ({@link SANDBOX_ERROR_CODES} today; newer servers may add some). */
-const serverErrorFrame = frame("error", { code: openCode, ...errorFields });
-
-// ----------------------------------------------------------------------------- sandbox → server
-
-export const helloFrameSchema = frame("hello", {
-  sandbox_id: uuidSchema,
-  agent_version: z.string().min(1).max(64),
-  /** Installed Pi; the server refuses (close `unsupported_version`) outside 1.4.x and 1.0.x. */
-  pi_version: z.string().min(1).max(64),
-  /** Runs this agent still has a live Pi process for, with the highest outbound seq sent. */
-  runs: z.array(
-    z.strictObject({
-      run_id: uuidSchema,
-      thread_id: uuidSchema,
-      last_seq: z.number().int().nonnegative(),
-    }),
-  ),
-  /**
-   * Optional features this agent supports (KOBE-82), e.g. `skill_bundles`. Absent = none (older
-   * agents). The server sends a feature's fields only to agents that list it. An agent that sends
-   * this field needs a server that knows it: roll the server out first.
-   */
-  capabilities: z
-    .array(z.string().regex(/^[a-z][a-z0-9_]{0,63}$/))
-    .max(32)
-    .optional(),
-});
-
-/** One raw Pi session event, bridged unchanged (the server translates to Kobe events). */
-export const piEventFrameSchema = frame("pi.event", {
-  run_id: uuidSchema,
-  thread_id: uuidSchema,
-  seq,
-  event: piSessionEventSchema,
-});
+  artifactPutFrameSchema,
+  artifactResultFrameSchema,
+  fileShareFrameSchema,
+  fileShareResultFrameSchema,
+} from "./frames/artifacts-files.js";
+import {
+  threadBranchSummaryFrameSchema,
+  threadBranchSummaryResultFrameSchema,
+  threadCompactFrameSchema,
+  threadCompactResultFrameSchema,
+} from "./frames/compaction.js";
+import {
+  policyCheckFrameSchema,
+  policyPendingFrameSchema,
+  policyResultFrameSchema,
+} from "./frames/policy.js";
+import { runStartFrameSchema, runSteerFrameSchema, runStopFrameSchema } from "./frames/run.js";
+import {
+  ackFrameSchema,
+  commandResultFrameSchema,
+  helloAckFrameSchema,
+  helloFrameSchema,
+  piCommandFrameSchema,
+  piEventFrameSchema,
+  piExitedFrameSchema,
+  piUiRequestFrameSchema,
+  piUiResponseFrameSchema,
+  resendFrameSchema,
+  sessionRestoreFrameSchema,
+  shutdownFrameSchema,
+  workspaceMovedFrameSchema,
+} from "./frames/session.js";
+import { errorFrame, pingFrame, pongFrame, serverErrorFrame } from "./frames/wire.js";
 
 /**
- * An `extension_ui_request` from Pi, forwarded for the server to answer or cancel. Not sequenced:
- * after a reconnect the agent re-sends every dialog still open, so the server must dedupe by
- * `(thread_id, request.id)` and answer each dialog once (KOBE-23/24).
+ * Frame schemas for both directions. Semantics are documented in connection.ts. The frames live in
+ * `frames/*` by domain; this module holds the two unions, so it imports every frame (KOBE-720).
  */
-export const piUiRequestFrameSchema = frame("pi.ui_request", {
-  run_id: uuidSchema.optional(),
-  thread_id: uuidSchema,
-  request: piExtensionUiRequestSchema,
-});
 
-/**
- * kobe-policy (Pi `tool_call` handler, verified in Pi 1.0.0: it may block with `{block, reason}`)
- * asks the server about one call. The extension blocks the call until `policy.result` arrives; a
- * lost connection or any error means block (fail closed). Parallel tool calls each get their own
- * `request_id`. `input` is the input as it will execute: kobe-policy must run after every handler
- * that mutates `event.input` (Pi lets `tool_call` handlers mutate input in place). It checks the
- * executed object as is — plain JSON only, so what it sends is what the tool reads — and
- * deep-freezes that object before asking, so the executed input is exactly the decided one. It
- * does not replace `event.input` (a re-parsed copy would be a no-op in Pi 1.0.0; KOBE-36).
- * Size: at most {@link SANDBOX_FRAME_MAX_BYTES_BY_TYPE}`["policy.check"]` (1 MiB) per frame — it
- * carries a `write`'s content as executed; a larger check closes the connection, so the sandbox
- * blocks such a call locally instead of sending it (kobe-policy caps the line it hands the agent at
- * 1 MiB − 4 KiB, leaving room for the frame envelope the agent adds; KOBE-36).
- */
-export const policyCheckFrameSchema = frame("policy.check", {
-  request_id: idSchema,
-  run_id: uuidSchema,
-  thread_id: uuidSchema,
-  tool_call_id: idSchema,
-  parent_tool_call_id: idSchema.optional(),
-  /**
-   * Tool name only. Source, annotations and risk are derived by the server from its own registry
-   * (tools.ts); anything else the sandbox might claim about a tool is not part of the frame.
-   */
-  tool: z.string().min(1).max(256),
-  /** Must pass `toolInputSchema`; a failing input is a `deny` (`invalid_input`), not a frame error. */
-  input: z.record(z.string(), z.json()),
-});
-
-/**
- * Sandbox -> server (KOBE-127, artifacts.ts), behind hello capability `artifacts`: the
- * `create_artifact` / `update_artifact` call kobe-policy let through. The server answers with
- * `artifact.result` for the same `request_id`. At most 1 MiB (own entry in
- * {@link SANDBOX_FRAME_MAX_BYTES_BY_TYPE}); the server refuses it from a connection that did not
- * announce the capability and checks it against what it allowed for `tool_call_id` (KOBE-129).
- */
-const artifactPutFields = {
-  request_id: idSchema,
-  run_id: uuidSchema,
-  thread_id: uuidSchema,
-  tool_call_id: idSchema,
-};
-export const artifactPutFrameSchema = z.union([
-  frame("artifact.put", { ...artifactPutFields, ...artifactCallShape.create }),
-  frame("artifact.put", { ...artifactPutFields, ...artifactCallShape.update }),
-]);
-
-/**
- * Sandbox -> server (KOBE-147, files.ts), behind hello capability `files`: the `share_file` call
- * kobe-policy let through, sent AFTER the agent pushed the file through workspace sync (push-then-
- * share, files.ts); `workspace` is the pushed entry the server must find unchanged. Answered by
- * `file.share_result` for the same `request_id`. A small frame (no own size entry).
- */
-export const fileShareFrameSchema = frame("file.share", {
-  request_id: idSchema,
-  run_id: uuidSchema,
-  thread_id: uuidSchema,
-  tool_call_id: idSchema,
-  ...fileShareCallShape,
-  workspace: shareFileWorkspaceRefSchema,
-});
-
-/** Exactly one per server command. `data` is the Pi response `data` for `pi.command`. */
-export const commandResultFrameSchema = z.union([
-  frame("command.result", {
-    command_id: commandId,
-    ok: z.literal(true),
-    data: z.unknown().optional(),
-  }),
-  frame("command.result", { command_id: commandId, ok: z.literal(false), error: errorInfoSchema }),
-]);
-
-/**
- * Error codes of `thread.compact_result` (KOBE-212). `thread_busy`: the thread has an active run
- * (Pi's `compact` would abort it). `nothing_to_compact`: Pi's "Nothing to compact (session too
- * small)" or "Already compacted". `compaction_failed`: any other Pi `success:false` (message = Pi's
- * error). `model_not_configured`: no gateway model to summarize with. `runtime_tampered`
- * (KOBE-213 review): the agent found Pi's private runtime changed around the compaction and stopped
- * Pi, as for a run (the server records it as the run's failure; the member sees
- * `compaction_failed`).
- */
-export const THREAD_COMPACT_WIRE_ERROR_CODES = [
-  "thread_busy",
-  "nothing_to_compact",
-  "compaction_failed",
-  "model_not_configured",
-  "pi_unavailable",
-  "internal",
-  "runtime_tampered",
-] as const;
-
-/**
- * Sandbox -> server: the one answer to `thread.compact` (instead of `command.result`), for the same
- * `command_id`. Success carries Pi's `compact` response data in Kobe casing (Pi's `usage` and
- * `details` are dropped: the gateway meters the calls, the mirrored entry keeps `details`). Has its
- * own size entry (`SANDBOX_FRAME_MAX_BYTES_BY_TYPE`); a summary over the cap is left out.
- */
-export const threadCompactResultFrameSchema = z.union([
-  frame("thread.compact_result", {
-    command_id: commandId,
-    thread_id: uuidSchema,
-    ok: z.literal(true),
-    ...threadCompactResultShape,
-  }),
-  frame("thread.compact_result", {
-    command_id: commandId,
-    thread_id: uuidSchema,
-    ok: z.literal(false),
-    error: z.strictObject({
-      code: z.enum(THREAD_COMPACT_WIRE_ERROR_CODES),
-      message: z.string().max(2000),
-    }),
-  }),
-]);
-
-/**
- * Error codes of `thread.branch_summary_result` (KOBE-548, CT11). `thread_busy`: Pi is streaming or
- * compacting, or the thread has another run. `nothing_to_summarize`: the branch left has no entries
- * to summarise (Pi would only move its leaf). `summary_failed`: any other Pi or extension failure
- * (Pi's text only in the agent's log, never in `message`). `model_not_configured`: no gateway model.
- * `runtime_tampered`: as `thread.compact_result`'s.
- */
-export const THREAD_BRANCH_SUMMARY_WIRE_ERROR_CODES = [
-  "thread_busy",
-  "nothing_to_summarize",
-  "summary_failed",
-  "model_not_configured",
-  "pi_unavailable",
-  "internal",
-  "runtime_tampered",
-] as const;
-
-/** The appended `branch_summary` entry (KOBE-548): its id and the parent Pi put it under. */
-export const threadBranchSummaryResultShape = {
-  entry_id: idSchema,
-  /** `to_entry_id`, or its parent when it is a user message (Pi's placement rule). */
-  parent_id: idSchema,
-};
-
-/**
- * Sandbox -> server: the one answer to `thread.branch_summary` (instead of `command.result`), for
- * the same `command_id`. Success names the appended entry; the summary itself reaches the server as
- * the mirrored entry. Errors carry a code and a short fixed message (never Pi's text).
- */
-export const threadBranchSummaryResultFrameSchema = z.union([
-  frame("thread.branch_summary_result", {
-    command_id: commandId,
-    thread_id: uuidSchema,
-    ok: z.literal(true),
-    ...threadBranchSummaryResultShape,
-  }),
-  frame("thread.branch_summary_result", {
-    command_id: commandId,
-    thread_id: uuidSchema,
-    ok: z.literal(false),
-    error: z.strictObject({
-      code: z.enum(THREAD_BRANCH_SUMMARY_WIRE_ERROR_CODES),
-      message: z.string().max(2000),
-    }),
-  }),
-]);
-
-/** A thread's Pi process exited (crash or after shutdown). Active runs on it are lost. */
-export const piExitedFrameSchema = frame("pi.exited", {
-  thread_id: uuidSchema,
-  exit_code: z.number().int().nullable(),
-  signal: z.string().max(32).nullable(),
-  /** Last stderr lines for diagnostics. Must not contain secrets (there are none in the sandbox). */
-  stderr_tail: z.string().max(8192),
-});
+export { OPEN_CODE_PATTERN } from "./frames/wire.js";
+export * from "./frames/artifacts-files.js";
+export * from "./frames/compaction.js";
+export * from "./frames/model.js";
+export * from "./frames/policy.js";
+export * from "./frames/run.js";
+export * from "./frames/session.js";
 
 export const sandboxToServerFrameSchema = z.union([
   helloFrameSchema,
@@ -370,386 +121,6 @@ export const sandboxToServerFrameSchema = z.union([
   errorFrame,
 ]);
 export type SandboxToServerFrame = z.infer<typeof sandboxToServerFrameSchema>;
-
-// ----------------------------------------------------------------------------- server → sandbox
-
-export const helloAckFrameSchema = frame("hello.ack", {
-  connection_id: idSchema,
-  server_time: timestampSchema,
-  heartbeat_interval_ms: z.number().int().positive(),
-  /** Server's last durable outbound seq per run the server still considers active on this sandbox. */
-  runs: z.array(
-    z.strictObject({
-      run_id: uuidSchema,
-      thread_id: uuidSchema,
-      durable_seq: z.number().int().nonnegative(),
-    }),
-  ),
-});
-
-/**
- * How the agent configures a thread's Pi process. SPECULATIVE values (owned by KOBE-41 model wiring,
- * KOBE-47 agent resolution, KOBE-62 MCP wiring); the shape is strict and carries **no URLs and no
- * credentials**: the model gateway and MCP proxy base URLs come from the sandbox's environment
- * (Helm), and the agent builds `<KOBE_MCP_PROXY_URL>/v1/mcp/<connector_id>` itself, so a server bug
- * or a forged frame cannot point Pi at an arbitrary endpoint.
- */
-/**
- * API styles Pi 1.0.x speaks to the model gateway (KOBE-41), by the catalog provider's kind:
- * OpenAI, Ollama and OpenAI-compatible endpoints → `openai-completions` (`<gateway>/v1`),
- * Anthropic → `anthropic-messages` (`<gateway>/anthropic`), Gemini → `google-generative-ai`
- * (`<gateway>/genai/v1beta`). The agent builds the base URL from its own environment.
- */
-export const PI_MODEL_APIS = [
-  "openai-completions",
-  "anthropic-messages",
-  "google-generative-ai",
-] as const;
-export const piModelApiSchema = z.enum(PI_MODEL_APIS);
-export type PiModelApi = z.infer<typeof piModelApiSchema>;
-
-/**
- * `<gateway provider>/<model>` as the model gateway names models (KOBE-40 `gateway_model`): a
- * provider of at most 64 characters and a model of at most 191. The one limit for the wire and the
- * kobe-models model file, which ships on its own and pins a copy (KOBE-280), so a `run.start` the
- * agent accepts never starts Pi on a model its model file refuses.
- */
-export const GATEWAY_MODEL_PATTERN =
-  /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\/[A-Za-z0-9][A-Za-z0-9._:/-]{0,190}$/;
-/** The longest id {@link GATEWAY_MODEL_PATTERN} allows (64 + "/" + 191). */
-export const GATEWAY_MODEL_MAX_LENGTH = 256;
-export const gatewayModelSchema = z
-  .string()
-  .max(GATEWAY_MODEL_MAX_LENGTH)
-  .regex(GATEWAY_MODEL_PATTERN);
-
-/** Upper bound of a model's context window (and so its output limit) on the wire (KOBE-259). */
-export const MODEL_LIMITS_MAX_TOKENS = 10_000_000;
-const tokenCount = z.number().int().min(1).max(MODEL_LIMITS_MAX_TOKENS);
-
-/**
- * The run model's token limits (KOBE-259), as the server resolved them: the catalog's values, else
- * the site defaults (reasoning models get a higher output default). The sandbox gives them to
- * Pi as the model's `maxTokens` (each call's `max_tokens`) and `contextWindow`. A separate key, not
- * part of `model`, because `model` is strict and an older agent must still accept the frame.
- */
-export const modelLimitsSchema = z
-  .strictObject({ max_output_tokens: tokenCount, context_window: tokenCount })
-  .refine((l) => l.max_output_tokens < l.context_window, {
-    message: "max_output_tokens must be below context_window",
-  });
-export type ModelLimits = z.infer<typeof modelLimitsSchema>;
-
-/**
- * Unknown keys are ignored (stripped), not rejected, since KOBE-82: a future additive field must not
- * break an older agent. Known fields stay strictly validated; the frame itself is still strict.
- */
-export const piThreadConfigSchema = z.object({
-  /**
-   * The run's model (D30): the catalog alias plus, resolved by the server from the catalog
-   * (KOBE-41), the gateway's model id and API style. Without `gateway_model` the sandbox has no
-   * model to offer Pi (the run fails `model_not_configured`).
-   */
-  model: z
-    .strictObject({
-      alias: z.string().min(1).max(128),
-      gateway_model: gatewayModelSchema.optional(),
-      api: piModelApiSchema.optional(),
-    })
-    .optional(),
-  /** The model's output limit and context window (KOBE-259); absent from older servers. */
-  model_limits: modelLimitsSchema.optional(),
-  thinking_level: z.enum(["off", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
-  agent: z
-    .strictObject({ agent_id: uuidSchema, version: z.number().int().positive() })
-    .nullable()
-    .optional(),
-  /** At most `SYSTEM_PROMPT_MAX_BYTES` UTF-8 bytes: the same limit as the agent file's prompt. */
-  system_prompt: z
-    .string()
-    .refine((s) => utf8ByteLength(s) <= SYSTEM_PROMPT_MAX_BYTES, {
-      message: `system_prompt is over ${SYSTEM_PROMPT_MAX_BYTES} bytes`,
-    })
-    .optional(),
-  /** Names of the run's effective skills (D22); the bytes are `skill_bundles`. */
-  skills: z
-    .array(z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/))
-    .max(64)
-    .optional(),
-  /**
-   * The bytes behind `skills` (KOBE-82, skill-bundles.ts): the canonical zip's hash and size per
-   * effective skill. The sandbox materializes exactly these and nothing else. Absent = none.
-   */
-  skill_bundles: z.array(skillBundleRefSchema).max(SKILL_BUNDLES_MAX).optional(),
-  /** Connectors to expose; Pi tool names become `mcp__<name>__<tool>` (verified Pi 1.0.0). */
-  mcp_servers: z
-    .array(z.strictObject({ name: connectorNameSchema, connector_id: uuidSchema }))
-    .max(64)
-    .optional(),
-  approval_mode: approvalModeSchema.optional(),
-});
-export type PiThreadConfig = z.infer<typeof piThreadConfigSchema>;
-
-/** One uploaded file as the agent sees it (`run.start.attachments`). */
-export const sandboxAttachmentSchema = z.strictObject({
-  /**
-   * Absolute path of the synced file, normally `{@link UPLOAD_ATTACHMENT_ROOT}/<thread>/<name>`.
-   * The schema only rejects `..` segments: the agent's workspace root is configurable and the agent
-   * refuses paths outside it (`pi_rejected`), so the exact root is not part of the wire shape.
-   */
-  path: z
-    .string()
-    .min(1)
-    .refine((p) => !p.split("/").includes(".."), "path traversal"),
-  mime_type: z.string().min(1),
-  /** Original file name, for the prompt; absent in frames from older servers. */
-  name: uploadFileNameSchema.optional(),
-  size_bytes: z.number().int().nonnegative().optional(),
-  /**
-   * Hint that the model supports this media natively: the agent MAY pass the file to Pi as an
-   * image / document block (read from `path`) in addition to listing it. Absent = text path only.
-   */
-  native_media: z.enum(["image", "pdf"]).optional(),
-});
-export type SandboxAttachment = z.infer<typeof sandboxAttachmentSchema>;
-
-/** Start a run: spawn/reuse the thread's `pi --mode rpc` process and send Pi `prompt`. */
-export const runStartFrameSchema = frame("run.start", {
-  command_id: commandId,
-  run_id: uuidSchema,
-  thread_id: uuidSchema,
-  message: z.string(),
-  /**
-   * Uploaded files already synced into the sandbox (KOBE-141, uploads.ts); absent = none. Older
-   * servers send only `path` and `mime_type`.
-   */
-  attachments: z.array(sandboxAttachmentSchema).max(UPLOAD_MAX_FILES_PER_MESSAGE).optional(),
-  /** Branch point for edit-and-regenerate; absent = continue from the thread's leaf. */
-  parent_entry_id: idSchema.optional(),
-  config: piThreadConfigSchema.optional(),
-  /**
-   * Run-bound model-gateway token (KOBE-117, run-token.ts): bound to this run, delivered to this
-   * thread's Pi only (the agent must not write it to disk or env, nor expose it to tools), sent
-   * as `x-kobe-run-token`. Sent only to agents whose `hello.capabilities` lists
-   * `CAPABILITY_RUN_TOKEN`; absent = legacy (session token + advisory `x-kobe-run-id`).
-   */
-  run_token: runTokenGrantSchema.optional(),
-  /** Memory indexes and enabled scopes (KOBE-153, memory.ts); only for agents with capability `memory`. */
-  memory: runMemoryContextSchema.optional(),
-  /** Project id, name and instructions (KOBE-159, projects.ts); only for agents with capability `projects`. */
-  project: runProjectContextSchema.optional(),
-  /** The run's effective MCP connectors (KOBE-111, mcp-config.ts); only for agents with capability `mcp`. */
-  mcp: runMcpContextSchema.optional(),
-  /**
-   * The workspace file the member had open when sending (KOBE-462, file-editor.ts): fenced as
-   * untrusted data in this run's system prompt only. Only for agents with capability `file_edits`.
-   */
-  viewing: runViewingContextSchema.optional(),
-  /**
-   * Workspace sync conflicts of this thread the agent was not told about yet (KOBE-492,
-   * sync-conflicts.ts): names and hashes, fenced as a note in this run's system prompt only. Only
-   * for agents with capability `sync_conflicts`.
-   */
-  sync_conflicts: z.array(syncConflictSchema).max(SYNC_CONFLICT_NOTES_MAX).optional(),
-  /**
-   * The run's trace context (KOBE-274, trace-frames.ts): only for agents with capability
-   * `trace_spans`, and only when the server traces this run. Absent = record and send no spans.
-   */
-  trace: wireTraceContextSchema.optional(),
-  /**
-   * App cards (KOBE-440, app-cards.ts) the thread got since Pi's last entry, oldest first: only for
-   * agents with capability `app_cards`. With Pi stopped, the agent appends each one it does not
-   * have to the thread's session before the branch marker, so the model sees them in this run.
-   */
-  app_cards: z.array(appCardEntrySchema).max(APP_CARDS_PER_RUN_MAX).optional(),
-});
-
-/** Pi `steer`: delivered after the current turn's tool calls, before the next model call. */
-export const runSteerFrameSchema = frame("run.steer", {
-  command_id: commandId,
-  run_id: uuidSchema,
-  thread_id: uuidSchema,
-  message: z.string().min(1),
-});
-
-/**
- * `abort` = Pi `abort` now (Stop). `after_step` = let the in-flight model step and its tool calls
- * finish (`turn_end`), then abort (D30 budget stop).
- */
-export const runStopFrameSchema = frame("run.stop", {
-  command_id: commandId,
-  run_id: uuidSchema,
-  thread_id: uuidSchema,
-  mode: z.enum(["abort", "after_step"]),
-  /** `user_cancelled` | `budget_exhausted` | `approval_expired` today; open (informational). */
-  reason: openCode,
-});
-
-/**
- * Allow-listed Pi RPC command (`get_entries(since)`, `get_state`, ...; never `fork` or `compact`,
- * see pi-rpc.ts); answered with `command.result`.
- */
-export const piCommandFrameSchema = frame("pi.command", {
-  command_id: commandId,
-  thread_id: uuidSchema,
-  command: piBridgeCommandSchema,
-});
-
-/**
- * Compact a thread's Pi session (KOBE-212, CE15; threads.ts): Pi RPC `compact` with `focus` as
- * `customInstructions`. A compaction is a run (kind compaction): the server creates it under the
- * usual lease and run-start transaction (one active run per thread, so a busy thread is refused
- * before anything is sent) and mints its token there. The summary's model calls are billed to that
- * run: the frame carries its id, model and token, all required (there is no run-less path; the
- * gateway refuses a token whose run is not active and leased). Only to agents whose hello lists
- * both `thread_compact` and `run_token`; answered by exactly one `thread.compact_result`. The
- * agent refuses `thread_busy` if the thread still has another run, and holds the token in memory
- * only, as for `run.start`.
- */
-export const threadCompactFrameSchema = frame("thread.compact", {
-  command_id: commandId,
-  thread_id: uuidSchema,
-  run_id: uuidSchema,
-  focus: threadCompactFocusSchema.optional(),
-  /** The compaction run's model; unlike `run.start`, gateway model and API are required. */
-  model: z.strictObject({
-    alias: z.string().min(1).max(128),
-    gateway_model: gatewayModelSchema,
-    api: piModelApiSchema,
-  }),
-  model_limits: modelLimitsSchema.optional(),
-  /** Run-bound gateway token for `run_id` (run-token.ts), as `run.start.run_token`. */
-  run_token: runTokenGrantSchema,
-  /** The compaction run's trace context (KOBE-274), as `run.start.trace`. */
-  trace: wireTraceContextSchema.optional(),
-});
-
-/**
- * Summarise the branch being left (KOBE-542, CT11, CT20): Pi, through Kobe's Pi extension,
- * summarises the entries between the common ancestor and `from_leaf_entry_id` and appends a
- * `branch_summary` entry whose parent is `to_entry_id`. A run of kind `branch_summary`, created and
- * delivered under the run lock exactly as `thread.compact`, so it carries the same run context.
- * Only to agents whose hello lists `thread_branch_summary` and `run_token` (KOBE-548); answered by
- * exactly one `thread.branch_summary_result`. The agent refuses `thread_busy` if Pi is not idle.
- */
-export const threadBranchSummaryFrameSchema = frame("thread.branch_summary", {
-  command_id: commandId,
-  thread_id: uuidSchema,
-  run_id: uuidSchema,
-  from_leaf_entry_id: idSchema,
-  to_entry_id: idSchema,
-  focus: branchSummaryFocusSchema.optional(),
-  model: z.strictObject({
-    alias: z.string().min(1).max(128),
-    gateway_model: gatewayModelSchema,
-    api: piModelApiSchema,
-  }),
-  model_limits: modelLimitsSchema.optional(),
-  run_token: runTokenGrantSchema,
-  trace: wireTraceContextSchema.optional(),
-});
-
-export const piUiResponseFrameSchema = frame("pi.ui_response", {
-  thread_id: uuidSchema,
-  response: piExtensionUiResponseSchema,
-});
-
-/** The call needs a human; the extension keeps waiting (up to `expires_at`). Informational. */
-export const policyPendingFrameSchema = frame("policy.pending", {
-  request_id: idSchema,
-  run_id: uuidSchema,
-  tool_call_id: idSchema,
-  approval_id: uuidSchema,
-  expires_at: timestampSchema,
-});
-
-/**
- * The server's decision. Only `allow` / `deny` reach the sandbox (`require_approval` is resolved
- * server-side first). `message` becomes Pi's block reason. `approval` (optional, present when the
- * allow came from a human approval) stops at kobe-sandbox-agent: the agent strips it before the
- * decision reaches kobe-policy (KOBE-23), so the token never enters Pi or a tool. For Pi built-ins
- * and kobe tools this frame is itself the authorisation; the MCP proxy finds the approval by
- * (run_id, tool_call_id) server-side (KOBE-58), not through the sandbox.
- */
-export const policyResultFrameSchema = z.union([
-  frame("policy.result", {
-    request_id: idSchema,
-    run_id: uuidSchema,
-    tool_call_id: idSchema,
-    decision: z.literal("allow"),
-    reasons: z.array(wirePolicyReasonSchema).min(1),
-    approval: approvalTokenSchema.optional(),
-  }),
-  frame("policy.result", {
-    request_id: idSchema,
-    run_id: uuidSchema,
-    tool_call_id: idSchema,
-    decision: z.literal("deny"),
-    reasons: z.array(wirePolicyReasonSchema).min(1),
-    message: z.string().max(2000),
-  }),
-]);
-
-/**
- * Server -> sandbox answer to `artifact.put` (KOBE-127). `error.code` is open (known:
- * `ARTIFACT_ERROR_CODES`); the tool result handed to the model is this answer.
- */
-export const artifactResultFrameSchema = z.union([
-  frame("artifact.result", { request_id: idSchema, ...artifactOkFields }),
-  frame("artifact.result", { request_id: idSchema, ...artifactFailFields }),
-]);
-
-/** Server -> sandbox answer to `file.share` (KOBE-147). `error.code` is open (known: `FILE_SHARE_ERROR_CODES`). */
-export const fileShareResultFrameSchema = z.union([
-  frame("file.share_result", { request_id: idSchema, ...fileShareOkFields }),
-  frame("file.share_result", { request_id: idSchema, ...artifactFailFields }),
-]);
-
-/**
- * Rebuild a thread's Pi session JSONL from Postgres (volume lost, D13/D15). Sent in parts, each
- * its own command with its own `command_id`, and **every part gets its own `command.result`**
- * (the server sends the next part after the previous one's result). Part 0 starts (or restarts)
- * the restore and may carry `header` (absent → the agent writes a default one); the agent writes
- * the file only after `final: true`, and a lost connection voids a partial restore (the server
- * starts again from part 0). The agent **rewrites `header.cwd`** to its own workspace directory,
- * whatever the stored header says: Pi 1.0.0 refuses a session whose cwd does not exist.
- * SPECULATIVE chunking (KOBE-24 sends ≤ 2 MiB parts).
- */
-export const sessionRestoreFrameSchema = frame("session.restore", {
-  command_id: commandId,
-  thread_id: uuidSchema,
-  part: z.number().int().nonnegative(),
-  final: z.boolean(),
-  header: piSessionHeaderSchema.optional(),
-  entries: z.array(piSessionEntrySchema),
-});
-
-/** Cumulative ack: every `pi.event` of `run_id` with seq ≤ `seq` is durable. */
-export const ackFrameSchema = frame("ack", { run_id: uuidSchema, seq });
-
-/** Gap on a live socket: re-send this run's `pi.event` frames from `from_seq` (= durable_seq + 1). */
-export const resendFrameSchema = frame("resend", { run_id: uuidSchema, from_seq: seq });
-
-/**
- * `hello.capabilities` entry of an agent that applies server moves as local renames (KOBE-304,
- * `workspace-sync.ts` moves) and takes {@link workspaceMovedFrameSchema}.
- */
-export const CAPABILITY_WORKSPACE_MOVES = "workspace_moves";
-
-/**
- * The member moved or renamed something in the workspace (KOBE-304): replay the server's moves
- * (`GET moves`) and pull now, rather than at the next interval. A hint only: no answer, no
- * content; sent only to agents that announced {@link CAPABILITY_WORKSPACE_MOVES}. A hibernated
- * sandbox gets none and replays on wake, before its first pull.
- */
-export const workspaceMovedFrameSchema = frame("workspace.moved", {});
-
-/** Drain and close: abort nothing in flight unless `deadline_ms` passes. */
-export const shutdownFrameSchema = frame("shutdown", {
-  /** `hibernate` | `destroy` | `replaced` today; open (informational). */
-  reason: openCode,
-  deadline_ms: z.number().int().nonnegative(),
-});
 
 export const serverToSandboxFrameSchema = z.union([
   helloAckFrameSchema,

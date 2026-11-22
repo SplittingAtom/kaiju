@@ -1,13 +1,12 @@
 import { constants as FS, existsSync } from "node:fs";
 import { lstat, open, readlink, type FileHandle } from "node:fs/promises";
 import path from "node:path";
+import { EVAL_OUTPUT_READ_MAX_BYTES, isReservedWorkspacePath } from "@kobe/protocol";
 import {
-  EVAL_OUTPUT_READ_MAX_BYTES,
   EVAL_READ_MAX_TOTAL_BYTES,
-  isReservedWorkspacePath,
   type EvalReadFrame,
   type EvalReadResult,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import { parentsAreDirs } from "../workspace/fs.js";
 import { volumeDevice } from "../workspace/volume.js";
 

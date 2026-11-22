@@ -6,7 +6,11 @@ import {
   type GateDecision,
   type LocalGateway,
 } from "@kobe/model-gateway/testing";
-import { parseKobeModelError, type PiModelApi, type SandboxToServerFrame } from "@kobe/protocol";
+import {
+  parseKobeModelError,
+  type PiModelApi,
+  type SandboxToServerFrame,
+} from "@kobe/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ModelTokenSource, ModelWiring } from "./models/types.js";
 import { RUN, RUN_2, runStart, startHarness, type Harness } from "./testing/harness.js";

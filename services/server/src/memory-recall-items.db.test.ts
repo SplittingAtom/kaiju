@@ -4,11 +4,11 @@ import { sql, withTeam } from "@kobe/db";
 import {
   CAPABILITY_MEMORY,
   CAPABILITY_SEMANTIC_MEMORY,
-  memoryResultFrameSchema,
   runMemoryContextSchema,
   type PolicyEngine,
   type RunMemoryContext,
 } from "@kobe/protocol";
+import { memoryResultFrameSchema } from "@kobe/protocol/sandbox-wire";
 import type { Logger } from "pino";
 import { readMemory, showMemory } from "./memory/agent.js";
 import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";

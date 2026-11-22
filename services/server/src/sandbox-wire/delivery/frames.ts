@@ -1,16 +1,15 @@
 import {
   CAPABILITY_TRACE_SPANS,
-  parseTraceparent,
-  runTraceId,
   serverToSandboxFrameSchema,
   threadBranchSummaryFrameSchema,
-  threadCompactFrameSchema,
   type RunStartFrame,
   type ServerToSandboxFrame,
   type ThreadBranchSummaryFrame,
   type ThreadCompactFrame,
   type WireTraceContext,
-} from "@kobe/protocol";
+  threadCompactFrameSchema,
+} from "@kobe/protocol/sandbox-wire";
+import { parseTraceparent, runTraceId } from "@kobe/protocol";
 import type { CommandRow } from "../commands.js";
 import { isSummaryCommand } from "../types.js";
 import type { Claimed } from "./claim.js";

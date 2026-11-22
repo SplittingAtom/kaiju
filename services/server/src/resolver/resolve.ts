@@ -1,4 +1,5 @@
-import { SKILL_BUNDLES_MAX, type ApprovalMode } from "@kobe/protocol";
+import { type ApprovalMode } from "@kobe/protocol";
+import { SKILL_BUNDLES_MAX } from "@kobe/protocol/sandbox-wire";
 import { agentModelNotEnabled } from "../runs/failure-codes.js";
 import { strictestApprovalMode } from "../policy/approval-floor.js";
 

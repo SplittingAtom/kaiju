@@ -3,14 +3,11 @@ import {
   BUILTIN_TOOLS,
   FILE_EDIT_CONTENT_MAX_BYTES,
   VIEWING_CONTENT_MAX_BYTES,
-  fileEditProposeFrameSchema,
-  fileEditProposeResultFrameSchema,
   fileEditProposalsResponseSchema,
   fileEditProposedPayloadSchema,
   kobeToolsRequestSchema,
   kobeToolsResponseSchema,
   proposeFileEditInputSchema,
-  runStartFrameSchema,
   runViewingContextSchema,
   submitMessageBodySchema,
   workspaceFileErrorSchema,
@@ -18,6 +15,11 @@ import {
   workspaceSaveQuerySchema,
   workspaceToolPath,
 } from "./index.js";
+import {
+  fileEditProposeFrameSchema,
+  fileEditProposeResultFrameSchema,
+  runStartFrameSchema,
+} from "./sandbox-wire/index.js";
 
 const SHA = "b".repeat(64);
 const RUN = "3f2c1d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f";

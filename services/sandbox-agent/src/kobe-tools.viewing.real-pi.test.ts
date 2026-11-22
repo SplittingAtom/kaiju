@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import type { RunViewingContext, SandboxToServerFrame } from "@kobe/protocol";
+import type { RunViewingContext } from "@kobe/protocol";
+import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import { VIEWING_HEADER } from "./memory/viewing-context.js";
 import { THREAD, runStart, startHarness, until, type Harness } from "./testing/harness.js";

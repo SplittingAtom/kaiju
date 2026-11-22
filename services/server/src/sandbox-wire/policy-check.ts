@@ -4,14 +4,13 @@ import {
   PROJECT_TOOLS,
   approvalModeSchema,
   type ApprovalMode,
-  type PolicyCheckFrame,
   type PolicyDecision,
   type PolicyEngine,
   type PolicyInput,
   type PolicyReason,
-  type PolicyResultFrame,
   type ToolRegistry,
 } from "@kobe/protocol";
+import { type PolicyCheckFrame, type PolicyResultFrame } from "@kobe/protocol/sandbox-wire";
 import { eq, getMembership, sql, users, withTeam, type KobeDb } from "@kobe/db";
 import { logger } from "../logger.js";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";

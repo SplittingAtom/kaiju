@@ -14,16 +14,12 @@ import {
   describeSiteChecks,
   type SiteProposalsApi,
 } from "../../../lib/memory/site-proposals-api";
-import { visible } from "../../../lib/security/visible";
-import { InlineLink } from "../../shell/text-links";
-import { Button, Notice, Section } from "../../ui/console";
+import { Button, Section } from "../../ui/console";
 import { createProjectNotesApi, type ProjectNotesApi } from "../../../lib/memory/project-notes-api";
 import { CandidateCard, type CardSeams } from "./candidate-card";
 import { createSuggestionsApi, type SuggestionsApi } from "../../../lib/memory/suggestions-api";
-import { ProjectNotesAction } from "./project-notes-action";
-import { SuggestAction } from "./suggest-action";
+import { projectNotesSeam, ReviewNotices, SkillHints } from "./review-section-parts";
 
-const WORKBENCH_HREF = "/me/skills?tab=workbench";
 export const REVIEW_HEADING = "memory-to-review";
 
 /** The last saves, announced with one Undo for all of them. */
@@ -127,35 +123,7 @@ export function ReviewSection({
   const cardSeams: CardSeams | undefined = notes
     ? {
         ...seams,
-        projectNotes: (c, statement, kind) =>
-          notes.access === "read" ? (
-            <SuggestAction
-              candidate={c}
-              statement={statement}
-              kind={kind}
-              status={notes}
-              api={suggestionsApi}
-              onSuggested={(sg) => {
-                drop([sg.candidateId]);
-                setAdded(
-                  "Suggested to the project's editors. You'll hear when they add it or dismiss it.",
-                );
-              }}
-            />
-          ) : (
-            <ProjectNotesAction
-              candidate={c}
-              statement={statement}
-              status={notes}
-              api={notesApi}
-              onAdded={(a) => {
-                drop([a.candidateId]);
-                setAdded(
-                  "Added to the project's notes. Change or remove it in the project's Notes.",
-                );
-              }}
-            />
-          ),
+        projectNotes: projectNotesSeam({ notes, suggestionsApi, notesApi, drop, setAdded }),
       }
     : seams;
 
@@ -194,34 +162,14 @@ export function ReviewSection({
         Kobe found these in this conversation. Nothing is saved until you choose. Candidates you
         leave expire after 14 days.
       </p>
-      {undoable && (
-        <Notice
-          tone="success"
-          role="status"
-          actions={
-            <Button size="sm" disabled={busy} onClick={() => void undo()}>
-              Undo
-            </Button>
-          }
-        >
-          <p className="m-0">{undoable.message}</p>
-        </Notice>
-      )}
-      {added && (
-        <Notice tone="success" role="status">
-          <p className="m-0">{added}</p>
-        </Notice>
-      )}
-      {proposed && (
-        <Notice tone="success" role="status">
-          <p className="m-0">{proposed}</p>
-        </Notice>
-      )}
-      {error && (
-        <Notice tone="error" role="alert">
-          <p className="m-0">{error}</p>
-        </Notice>
-      )}
+      <ReviewNotices
+        undoable={undoable}
+        added={added}
+        proposed={proposed}
+        error={error}
+        busy={busy}
+        undo={undo}
+      />
       {mine.length > 1 && (
         <div className="my-3">
           <Button variant="primary" disabled={busy} onClick={() => void saveAll()}>
@@ -271,19 +219,7 @@ export function ReviewSection({
           </li>
         ))}
       </ul>
-      {list.skillHints.length > 0 && (
-        <div className="mt-3">
-          <p className="m-0 font-semibold">This could be a skill</p>
-          <ul aria-label="Skill ideas" className="m-0 ps-5">
-            {list.skillHints.map((h, i) => (
-              <li key={i}>
-                <span className="font-semibold">{visible(h.title)}</span>: {visible(h.summary)}{" "}
-                <InlineLink href={WORKBENCH_HREF}>Open the Skill Workbench</InlineLink>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <SkillHints hints={list.skillHints} />
     </Section>
   );
 }

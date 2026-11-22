@@ -2,15 +2,17 @@ import { Hono, type Context } from "hono";
 import { sql, withTeam } from "@kobe/db";
 import {
   THREAD_CONTEXT_ERROR_HTTP_STATUS,
-  THREAD_CONTEXT_MAX_BYTES,
   threadContextError,
-  threadContextCommandResultSchema,
   threadContextResultSchema,
   type ThreadContext,
   type ThreadContextMemories,
   type ThreadContextErrorCode,
   type ThreadContextWaking,
 } from "@kobe/protocol";
+import {
+  THREAD_CONTEXT_MAX_BYTES,
+  threadContextCommandResultSchema,
+} from "@kobe/protocol/sandbox-wire";
 import { sealedReplyKeyPair } from "@kobe/protocol/node";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";

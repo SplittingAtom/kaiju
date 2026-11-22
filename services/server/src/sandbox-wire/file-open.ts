@@ -1,11 +1,6 @@
+import { type FileOpenFrame, type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
 import { sql, type KobeDb } from "@kobe/db";
-import {
-  CAPABILITY_FILE_EDITS,
-  workspaceToolPath,
-  type FileOpenFrame,
-  type FileOpenedPayload,
-  type ServerToSandboxFrame,
-} from "@kobe/protocol";
+import { CAPABILITY_FILE_EDITS, workspaceToolPath, type FileOpenedPayload } from "@kobe/protocol";
 import type { Logger } from "pino";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { isInternalPath } from "../workspace-files/paths.js";

@@ -6,12 +6,8 @@ import {
   FILE_SHARE_ERROR_CODES,
   FILE_SHARE_MAX_BYTES,
   KOBE_TOOLS_FD,
-  SANDBOX_FRAME_MAX_BYTES_BY_TYPE,
-  SANDBOX_SMALL_FRAME_MAX_BYTES,
   UPLOAD_DEFAULT_MAX_FILE_BYTES,
   canonicalJson,
-  decodeSandboxFrame,
-  decodeServerFrame,
   kobeToolsRequestSchema,
   kobeToolsResponseSchema,
   shareFileInputSchema,
@@ -29,6 +25,12 @@ import {
   workspaceMoveResponseSchema,
   WORKSPACE_MOVE_MAX_FILES,
 } from "./index.js";
+import {
+  SANDBOX_FRAME_MAX_BYTES_BY_TYPE,
+  SANDBOX_SMALL_FRAME_MAX_BYTES,
+  decodeSandboxFrame,
+  decodeServerFrame,
+} from "./sandbox-wire/index.js";
 import { EVENT_PAYLOAD_EXAMPLES, EXAMPLE_IDS } from "./testing/index.js";
 
 const SHA = "a".repeat(64);

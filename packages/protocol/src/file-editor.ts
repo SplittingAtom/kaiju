@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { idSchema, timestampSchema, utf8ByteLength, uuidSchema } from "./common.js";
 import { workspaceFileEntrySchema } from "./files.js";
-import { sha256HexSchema, workspacePathSchema } from "./sandbox-wire/workspace-sync.js";
+import { sha256HexSchema, workspacePathSchema } from "./workspace-paths.js";
 
 /**
  * File editor contract (KOBE-462; decisions FE1..FE12 in docs/specs/file-editor.md). Additive: an
