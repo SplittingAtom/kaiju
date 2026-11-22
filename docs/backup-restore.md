@@ -37,6 +37,7 @@ with the operator's backup key. There is no plaintext mode.
   | `verifications`        | one-time email-verification and password-reset tokens                                                                  |
   | `jwks`                 | JWT signing keys of a removed plugin (KOBE-785); unused, kept until a migration drops the table                        |
   | `rate_limits`          | throwaway counters                                                                                                     |
+  | `kobe_rate_limits`     | throwaway counters and password-reset email claims (KOBE-809)                                                          |
   | `session_active_teams` | per-session pointer to the active team; it references `sessions`, so its rows could not be restored                    |
   | `session_sso_contexts` | how a session signed in through SSO (provider, MFA proof); it references `sessions`, so its rows could not be restored |
 

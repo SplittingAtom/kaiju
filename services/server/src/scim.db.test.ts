@@ -317,10 +317,10 @@ describe("authentication and the provider boundary", () => {
 
   it("rate limits each token at 600 requests a minute", async () => {
     const t = await newToken("fabrikam");
-    await h.admin.query("INSERT INTO rate_limits (key, count, last_request) VALUES ($1, 600, $2)", [
-      `kobe:scim:${t.id}`,
-      Date.now(),
-    ]);
+    await h.admin.query(
+      "INSERT INTO kobe_rate_limits (key, count, window_start, expires_at) VALUES ($1, 600, $2, $2::bigint + 3600000)",
+      [`kobe:scim:${t.id}`, Date.now()],
+    );
     const res = await scim("GET", "/fabrikam/Users", t.token);
     expect(res.status).toBe(429);
     expect(res.headers.get("content-type")).toContain(SCIM_TYPE);

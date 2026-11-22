@@ -631,12 +631,12 @@ describe("refusals (review of #485)", () => {
     expect((await assign("bob", agent, "team")).status).toBe(201);
     const exhaust = (who: Person) =>
       sql(
-        `INSERT INTO rate_limits (key, count, last_request) VALUES ($1, 60, $2)
-           ON CONFLICT (key) DO UPDATE SET count = 60, last_request = $2`,
+        `INSERT INTO kobe_rate_limits (key, count, window_start, expires_at) VALUES ($1, 60, $2, $2::bigint + 3600000)
+           ON CONFLICT (key) DO UPDATE SET count = 60, window_start = $2, expires_at = EXCLUDED.expires_at`,
         [`kobe:agent-roster:${ids[who]}`, Date.now()],
       );
     const reset = (who: Person) =>
-      sql(`DELETE FROM rate_limits WHERE key = $1`, [`kobe:agent-roster:${ids[who]}`]);
+      sql(`DELETE FROM kobe_rate_limits WHERE key = $1`, [`kobe:agent-roster:${ids[who]}`]);
     await exhaust("bob");
     await exhaust("alice");
     try {

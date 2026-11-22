@@ -537,14 +537,14 @@ describe("binding, delete, caps and rate (AR8, §6.3, §6.8, ac-3)", () => {
   it("rate-limits roster writes to 60 per user per 10 minutes", async () => {
     const agent = await personal("dave", "Dave Rate");
     await sql(
-      `INSERT INTO rate_limits (key, count, last_request) VALUES ($1, 60, $2)
-       ON CONFLICT (key) DO UPDATE SET count = 60, last_request = $2`,
+      `INSERT INTO kobe_rate_limits (key, count, window_start, expires_at) VALUES ($1, 60, $2, $2::bigint + 3600000)
+       ON CONFLICT (key) DO UPDATE SET count = 60, window_start = $2, expires_at = EXCLUDED.expires_at`,
       [`kobe:agent-roster:${ids.dave}`, Date.now()],
     );
     const res = await assign("dave", agent, "team");
     expect(res.status).toBe(429);
     expect(res.json.code).toBe("rate_limited");
-    await sql(`DELETE FROM rate_limits WHERE key = $1`, [`kobe:agent-roster:${ids.dave}`]);
+    await sql(`DELETE FROM kobe_rate_limits WHERE key = $1`, [`kobe:agent-roster:${ids.dave}`]);
   });
 });
 

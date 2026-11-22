@@ -130,11 +130,11 @@ async function activity(team: string, threadId: string): Promise<string> {
   return rows[0]?.at ?? "";
 }
 
-/** Uses up `max` hits of a member's window for `key` (rate_limits is shared with Better Auth). */
+/** Uses up `max` hits of a member's window for `key` (kobe_rate_limits, KOBE-809). */
 async function exhaust(key: string, userId: string, max: number) {
   await f.fx.admin.query(
-    `INSERT INTO rate_limits (key, count, last_request) VALUES ($1, $2, $3)
-     ON CONFLICT (key) DO UPDATE SET count = EXCLUDED.count, last_request = EXCLUDED.last_request`,
+    `INSERT INTO kobe_rate_limits (key, count, window_start, expires_at) VALUES ($1, $2, $3, $3::bigint + 3600000)
+     ON CONFLICT (key) DO UPDATE SET count = EXCLUDED.count, window_start = EXCLUDED.window_start, expires_at = EXCLUDED.expires_at`,
     [`kobe:${key}:${userId}`, max, Date.now()],
   );
 }
