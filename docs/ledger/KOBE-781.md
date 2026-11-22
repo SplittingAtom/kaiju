@@ -50,16 +50,21 @@ against the code first; all four held as described.
   `personalSkillUsage`; draft tests and personal-version evals refuse a declined hash
   (`testGate`); bundle fetches go through the run's resolved list; installs, the mirror and team
   versions only take approved rows.
-- **Bounded unfinished rescans.** A rescan under a new rule set that keeps not finishing
-  (`SCAN_DID_NOT_FINISH` from `scanStored`) suspends the version once the rule set's run is older
-  than `server.skillRescanIncompleteSuspendHours` (chart, default 24, 0 = never; env
-  `KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS`, zod 0..8760). No migration: the period counts from
-  `skill_rescan_runs.started_at`. Team rows keep `approved` with `suspended_at` (omitted from runs
-  as for a Block, but the approval survives), so a later finished rescan that doesn't block lifts
-  it, or a Team admin approves it again (allowed for an approved, suspended row); personal scans
-  get `suspended_at` (now honoured even while the stored scan is Pass) and are lifted the same way.
-  Audited `skill.rescan.suspended` with `reason: rescan_incomplete`; the suspension email covers
-  both causes.
+- **Bounded unfinished rescans** (re-review: per-version clock, stored reason). A rescan under a
+  new rule set that doesn't finish (`SCAN_DID_NOT_FINISH` from `scanStored`) starts the row's
+  clock: migration `0238_skill_rescan_incomplete` adds nullable `rescan_incomplete_since`,
+  `rescan_incomplete_rule_set` and `suspended_reason` (check: `rescan_block` or
+  `rescan_incomplete`) to `team_skill_reviews` and `personal_skill_scans` (RLS unchanged). A newer
+  rule set restarts the clock; a finished rescan clears it (`skills/rescan-incomplete.ts`). Once
+  a row has not finished for `server.skillRescanIncompleteSuspendHours` (chart, default 24, 0 =
+  never; env `KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS`, zod 0..8760), an approved team row is
+  suspended keeping its approval, and a Pass personal scan is suspended, with
+  `suspended_reason = rescan_incomplete`, audited `skill.rescan.suspended` with
+  `reason: rescan_incomplete`; the email covers both causes. Only rows with that stored reason are
+  lifted by a later finished rescan that doesn't block (Block suspensions now store
+  `rescan_block`; older and other suspensions have no reason and are never lifted by themselves).
+  A Team admin may also approve an approved, suspended row again. Personal scans' `suspended_at`
+  is honoured even while the stored scan is Pass.
 - **Owner question (not changed):** the mirror keeps a revoked or blocklisted version's commit
   and tag `name/vX` on the remote (append-only by design), so a client with an old catalog, or one
   listing tags, can still fetch a revoked bundle. Deleting such tags would not rewrite branch

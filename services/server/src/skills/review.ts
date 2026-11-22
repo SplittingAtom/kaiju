@@ -459,6 +459,7 @@ export function decideReview(
         reviewNote: decision.note,
         // A decision answers a suspension (KOBE-313).
         suspendedAt: null,
+        suspendedReason: null,
       })
       .where(key);
     await recordAudit(tx, {

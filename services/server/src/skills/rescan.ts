@@ -144,7 +144,6 @@ async function runPass(
     ruleSetVersion,
     cache: new ScanCache(),
     incompleteSuspendAfterMs: deps.incompleteSuspendAfterMs ?? RESCAN_INCOMPLETE_SUSPEND_DEFAULT_MS,
-    runStartedAt: new Date(run.startedAt),
   };
   const notify =
     deps.mailer && deps.publicUrl ? { db, mailer: deps.mailer, publicUrl: deps.publicUrl } : null;

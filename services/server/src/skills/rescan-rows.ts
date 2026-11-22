@@ -18,6 +18,7 @@ import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import type { BlobStore } from "../retention/blobs.js";
 import { SCAN_DID_NOT_FINISH, scanStored, type ScanCache } from "./rescan-cache.js";
+import { noteIncompletePersonal, noteIncompleteReview } from "./rescan-incomplete.js";
 import type { SuspendedVersion } from "./rescan-notify.js";
 import { storedScan } from "./review.js";
 
@@ -40,19 +41,10 @@ export interface RowContext {
   readonly cache: ScanCache;
   /**
    * How long a version's rescan under this rule set may keep not finishing before it is suspended
-   * (review g79); 0: never. Counted from the rule set's run start (`runStartedAt`).
+   * (KOBE-781 review); 0: never. Counted per row from its first unfinished rescan.
    */
   readonly incompleteSuspendAfterMs: number;
-  readonly runStartedAt: Date;
 }
-
-/** Rescans of this rule set have not finished for longer than the configured period. */
-const incompleteOverdue = (ctx: RowContext) =>
-  ctx.incompleteSuspendAfterMs > 0 &&
-  Date.now() - ctx.runStartedAt.getTime() >= ctx.incompleteSuspendAfterMs;
-
-/** The audit's reason for a suspension whose rescan never finished. */
-const RESCAN_INCOMPLETE = "rescan_incomplete";
 
 /** What one batch did; the caller writes it to the run row and resets it. */
 export interface Tally {
@@ -68,7 +60,7 @@ type RuleSetColumn = typeof teamSkillReviews.ruleSet | typeof personalSkillScans
 /** Under an older rule set than `n`, or none. */
 export const staleSql = (column: RuleSetColumn, n: number) =>
   sql`(${column} IS NULL OR ${column} < ${n})`;
-const isStale = (ruleSet: number | null, n: number) => ruleSet === null || ruleSet < n;
+export const isStale = (ruleSet: number | null, n: number) => ruleSet === null || ruleSet < n;
 
 const bundleColumns = (t: typeof teamSkillVersions | typeof personalSkillVersions) => ({
   storageKey: t.storageKey,
@@ -90,6 +82,9 @@ const rescanned = (ctx: RowContext, scan: ScanResult) => ({
   ...storedScan(scan),
   ruleSet: ctx.ruleSet,
   scannedAt: new Date(),
+  // A finished rescan stops the unfinished-rescan clock (KOBE-781 review).
+  rescanIncompleteSince: null,
+  rescanIncompleteRuleSet: null,
 });
 
 /** One batch of personal versions' own scans (site-wide); false when none were left. */
@@ -128,7 +123,7 @@ export async function personalBatch(
     });
     if (scan === SCAN_DID_NOT_FINISH) {
       tally.failed += 1;
-      if (incompleteOverdue(ctx)) await suspendIncompletePersonal(ctx, row, tally);
+      await noteIncompletePersonal(ctx, row, tally);
       continue;
     }
     if (!scan) {
@@ -145,7 +140,7 @@ export async function personalBatch(
           findings: personalSkillScans.findings,
           skipped: personalSkillScans.skipped,
           ruleSet: personalSkillScans.ruleSet,
-          suspendedAt: personalSkillScans.suspendedAt,
+          suspendedReason: personalSkillScans.suspendedReason,
         })
         .from(personalSkillScans)
         .where(key)
@@ -154,14 +149,20 @@ export async function personalBatch(
       const before = storedVerdict(cur);
       // A Pass version ran in every team without review: Block now needs each team's approval.
       const suspend = before === "pass" && scan.verdict === "block";
-      // Suspended only because its rescan never finished (it still holds a Pass): lifted now.
-      const lift = !suspend && cur.suspendedAt !== null && before === "pass";
+      // Only a suspension made for an unfinished rescan is lifted by a finished one.
+      const lift = !suspend && cur.suspendedReason === "rescan_incomplete";
       await tx
         .update(personalSkillScans)
         .set({
           ...rescanned(ctx, scan),
-          ...(suspend ? { suspendedAt: new Date(), suspensionNotifiedAt: null } : {}),
-          ...(lift ? { suspendedAt: null, suspensionNotifiedAt: null } : {}),
+          ...(suspend
+            ? {
+                suspendedAt: new Date(),
+                suspensionNotifiedAt: null,
+                suspendedReason: "rescan_block" as const,
+              }
+            : {}),
+          ...(lift ? { suspendedAt: null, suspensionNotifiedAt: null, suspendedReason: null } : {}),
         })
         .where(key);
       tally.scanned += 1;
@@ -180,7 +181,7 @@ export async function personalBatch(
   return last ? { skillId: last.skillId, version: last.version } : undefined;
 }
 
-interface ReviewKey {
+export interface ReviewKey {
   readonly skillId: string;
   readonly version: number;
   readonly scope: "team" | "personal";
@@ -238,7 +239,7 @@ async function applyToReview(
         findings: teamSkillReviews.findings,
         skipped: teamSkillReviews.skipped,
         ruleSet: teamSkillReviews.ruleSet,
-        suspendedAt: teamSkillReviews.suspendedAt,
+        suspendedReason: teamSkillReviews.suspendedReason,
       })
       .from(teamSkillReviews)
       .where(key)
@@ -246,14 +247,14 @@ async function applyToReview(
     if (!cur || !isStale(cur.ruleSet, ctx.ruleSet)) return;
     const before = storedVerdict(cur as { findings: StoredFinding[]; skipped: string[] });
     const suspend = cur.status === "approved" && scan.verdict === "block" && before !== "block";
-    // Approved yet suspended: only a rescan that never finished does that; a finished one that
-    // doesn't block lifts it.
-    const lift = !suspend && cur.status === "approved" && cur.suspendedAt !== null;
+    // Only a suspension made for an unfinished rescan is lifted by a finished one that doesn't
+    // block (its approval was kept).
+    const lift = !suspend && cur.suspendedReason === "rescan_incomplete";
     await tx
       .update(teamSkillReviews)
       .set({
         ...rescanned(ctx, scan),
-        ...(lift ? { suspendedAt: null, suspensionNotifiedAt: null } : {}),
+        ...(lift ? { suspendedAt: null, suspensionNotifiedAt: null, suspendedReason: null } : {}),
         ...(suspend
           ? {
               status: "pending" as const,
@@ -261,6 +262,7 @@ async function applyToReview(
               reviewedAt: null,
               suspendedAt: new Date(),
               suspensionNotifiedAt: null,
+              suspendedReason: "rescan_block" as const,
             }
           : {}),
       })
@@ -276,98 +278,6 @@ async function applyToReview(
       target: { ...at, scope: row.scope, ruleSetVersion: ctx.ruleSetVersion },
     });
     tally.suspended.push({ ...at, scope: row.scope, teamId, authorId });
-  });
-}
-
-/**
- * An approved team version whose rescan under this rule set has not finished for the configured
- * period (review g79): suspended as a Block would be (omitted from runs, audited, its people
- * told), but its approval is kept, so a later finished rescan that doesn't block lifts it again
- * (or a reviewer decides it). The row stays under its old rule set: it is retried.
- */
-async function suspendIncompleteReview(
-  ctx: RowContext,
-  teamId: string,
-  row: ReviewKey,
-  authorId: string,
-  tally: Tally,
-): Promise<void> {
-  await withTeam(ctx.db, teamId, async (tx) => {
-    const key = and(
-      eq(teamSkillReviews.teamId, teamId),
-      eq(teamSkillReviews.skillId, row.skillId),
-      eq(teamSkillReviews.version, row.version),
-    );
-    const [cur] = await tx
-      .select({
-        status: teamSkillReviews.status,
-        ruleSet: teamSkillReviews.ruleSet,
-        suspendedAt: teamSkillReviews.suspendedAt,
-      })
-      .from(teamSkillReviews)
-      .where(key)
-      .for("update");
-    if (!cur || !isStale(cur.ruleSet, ctx.ruleSet)) return;
-    if (cur.status !== "approved" || cur.suspendedAt !== null) return;
-    await tx
-      .update(teamSkillReviews)
-      .set({ suspendedAt: new Date(), suspensionNotifiedAt: null })
-      .where(key);
-    const at = { skillId: row.skillId, slug: row.slug, version: row.version };
-    await recordAudit(tx, {
-      action: "skill.rescan.suspended",
-      actor: SYSTEM_ACTOR,
-      teamId,
-      target: {
-        ...at,
-        scope: row.scope,
-        ruleSetVersion: ctx.ruleSetVersion,
-        reason: RESCAN_INCOMPLETE,
-      },
-    });
-    tally.suspended.push({ ...at, scope: row.scope, teamId, authorId });
-  });
-}
-
-/** The personal counterpart: a Pass version's own scan is suspended (see above). */
-async function suspendIncompletePersonal(
-  ctx: RowContext,
-  row: { skillId: string; version: number; slug: string; ownerId: string },
-  tally: Tally,
-): Promise<void> {
-  await ctx.db.transaction(async (tx) => {
-    const key = and(
-      eq(personalSkillScans.skillId, row.skillId),
-      eq(personalSkillScans.version, row.version),
-    );
-    const [cur] = await tx
-      .select({
-        findings: personalSkillScans.findings,
-        skipped: personalSkillScans.skipped,
-        ruleSet: personalSkillScans.ruleSet,
-        suspendedAt: personalSkillScans.suspendedAt,
-      })
-      .from(personalSkillScans)
-      .where(key)
-      .for("update");
-    if (!cur || !isStale(cur.ruleSet, ctx.ruleSet) || cur.suspendedAt !== null) return;
-    if (storedVerdict(cur) !== "pass") return;
-    await tx
-      .update(personalSkillScans)
-      .set({ suspendedAt: new Date(), suspensionNotifiedAt: null })
-      .where(key);
-    const at = { skillId: row.skillId, slug: row.slug, version: row.version };
-    await recordAudit(tx, {
-      action: "skill.rescan.suspended",
-      actor: SYSTEM_ACTOR,
-      target: {
-        ...at,
-        scope: "personal",
-        ruleSetVersion: ctx.ruleSetVersion,
-        reason: RESCAN_INCOMPLETE,
-      },
-    });
-    tally.suspended.push({ ...at, scope: "personal", authorId: row.ownerId });
   });
 }
 
@@ -405,8 +315,7 @@ export async function teamBatch(
     const scan = version ? await scanStored(ctx, version, ctx.cache, context) : null;
     if (version && scan === SCAN_DID_NOT_FINISH) {
       tally.failed += 1;
-      if (incompleteOverdue(ctx))
-        await suspendIncompleteReview(ctx, teamId, row, version.authorId, tally);
+      await noteIncompleteReview(ctx, teamId, row, version.authorId, tally);
       continue;
     }
     if (!version || !scan || scan === SCAN_DID_NOT_FINISH) {

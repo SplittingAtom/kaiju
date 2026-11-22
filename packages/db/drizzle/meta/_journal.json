@@ -1667,6 +1667,13 @@
       "when": 1795195174401,
       "tag": "0237_drop_artifact_versions_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 238,
+      "version": "7",
+      "when": 1795340840225,
+      "tag": "0238_skill_rescan_incomplete",
+      "breakpoints": true
     }
   ]
 }

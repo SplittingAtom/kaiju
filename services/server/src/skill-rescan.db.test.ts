@@ -330,60 +330,87 @@ describe("a rescan that can't finish (review g79)", () => {
       ruleSetVersion: `test-${ruleSet}`,
       incompleteSuspendAfterMs,
     });
-  const backdate = (ruleSet: number) =>
-    h.admin.query(
-      `UPDATE skill_rescan_runs SET started_at = now() - interval '25 hours' WHERE rule_set = $1`,
-      [ruleSet],
-    );
   const DAY = 24 * 3600_000;
-
-  it("suspends a passed version after the configured period, and lifts it once a rescan passes", async () => {
-    const up = await as.builder.post("/v1/skills?scope=team", zipOf("slow-team"));
+  const timingOut = () => setScanPool({ scan: () => Promise.resolve(incompleteScan()) });
+  /** A team skill approved by the admin, and a personal one of the member's. */
+  async function approved(name: string): Promise<string> {
+    const up = await as.builder.post("/v1/skills?scope=team", zipOf(name));
     expect(up.status, JSON.stringify(up.json)).toBe(201);
     const skillId = up.json.skill.id as string;
     expect(
       (await as.admin.post(`/v1/team/skill-review/${skillId}/versions/1`, { decision: "approved" }))
         .status,
     ).toBe(200);
+    return skillId;
+  }
+  const teamRow = async (skillId: string) =>
+    (
+      await h.admin.query(
+        `SELECT status, suspended_at IS NOT NULL AS suspended, suspended_reason AS reason
+           FROM team_skill_reviews WHERE skill_id = $1`,
+        [skillId],
+      )
+    ).rows[0];
+  const personalRow = async (skillId: string) =>
+    (
+      await h.admin.query(
+        `SELECT suspended_at IS NOT NULL AS suspended, suspended_reason AS reason
+           FROM personal_skill_scans WHERE skill_id = $1`,
+        [skillId],
+      )
+    ).rows[0];
+  /** Pretends each row's first unfinished rescan was 25 hours ago. */
+  const backdateRows = async (...skillIds: string[]) => {
+    for (const table of ["team_skill_reviews", "personal_skill_scans"])
+      await h.admin.query(
+        `UPDATE ${table} SET rescan_incomplete_since = now() - interval '25 hours'
+          WHERE skill_id = ANY($1::uuid[]) AND rescan_incomplete_since IS NOT NULL`,
+        [skillIds],
+      );
+  };
+
+  it("measures the period per version from its first unfinished rescan, and lifts it once one passes", async () => {
+    const early = await approved("slow-team");
     const mine = await as.member.post("/v1/skills?scope=personal", zipOf("slow-mine"));
     expect(mine.status, JSON.stringify(mine.json)).toBe(201);
     const mineId = mine.json.skill.id as string;
-    const teamRow = async () =>
-      (
-        await h.admin.query(
-          `SELECT status, suspended_at IS NOT NULL AS suspended FROM team_skill_reviews
-            WHERE skill_id = $1`,
-          [skillId],
-        )
-      ).rows[0];
-    const personalRow = async () =>
-      (
-        await h.admin.query(
-          `SELECT suspended_at IS NOT NULL AS suspended FROM personal_skill_scans WHERE skill_id = $1`,
-          [mineId],
-        )
-      ).rows[0];
-    const previous = setScanPool({ scan: () => Promise.resolve(incompleteScan()) });
+    let previous = timingOut();
     try {
       // 0: never suspended, however long it keeps failing.
       await rescanWith(2000, 0);
-      await backdate(2000);
+      await backdateRows(early, mineId);
       await rescanWith(2000, 0);
-      expect(await teamRow()).toEqual({ status: "approved", suspended: false });
-      // Within the period: still usable, retried.
+      expect(await teamRow(early)).toMatchObject({ status: "approved", suspended: false });
+      // A new rule set starts each row's clock again; within the period: still usable.
       await rescanWith(2001, DAY);
-      expect(await teamRow()).toEqual({ status: "approved", suspended: false });
+      await rescanWith(2001, DAY);
+      expect(await teamRow(early)).toMatchObject({ suspended: false });
       expect((await facts(ids.member, ["slow-team"])).agent.map((s) => s.name)).toContain(
         "slow-team",
       );
-      // Past it: suspended like a Block, audited with its reason, and its people told.
-      await backdate(2001);
+    } finally {
+      setScanPool(previous);
+    }
+    // A version first tried 30 hours into the run: one timeout doesn't suspend it.
+    const late = await approved("late-team");
+    await h.admin.query(
+      `UPDATE skill_rescan_runs SET started_at = now() - interval '30 hours' WHERE rule_set = 2001`,
+    );
+    previous = timingOut();
+    try {
+      await backdateRows(early, mineId);
       await rescanWith(2001, DAY);
     } finally {
       setScanPool(previous);
     }
-    expect(await teamRow()).toEqual({ status: "approved", suspended: true });
-    expect(await personalRow()).toEqual({ suspended: true });
+    expect(await teamRow(late)).toMatchObject({ status: "approved", suspended: false });
+    // Unfinished for longer than the period: suspended like a Block, reason stored, audited.
+    expect(await teamRow(early)).toEqual({
+      status: "approved",
+      suspended: true,
+      reason: "rescan_incomplete",
+    });
+    expect(await personalRow(mineId)).toEqual({ suspended: true, reason: "rescan_incomplete" });
     const after = await facts(ids.member, ["slow-team"]);
     expect(after.agentSuspended).toEqual(["slow-team"]);
     expect(after.userSuspended).toContain("slow-mine");
@@ -395,10 +422,27 @@ describe("a rescan that can't finish (review g79)", () => {
       "rescan_incomplete",
       "rescan_incomplete",
     ]);
-    // A complete rescan that passes lifts it again.
+    // A complete rescan that passes lifts it and clears the clock.
     await rescanWith(2001, DAY);
-    expect(await teamRow()).toEqual({ status: "approved", suspended: false });
-    expect(await personalRow()).toEqual({ suspended: false });
+    expect(await teamRow(early)).toEqual({ status: "approved", suspended: false, reason: null });
+    expect(await personalRow(mineId)).toEqual({ suspended: false, reason: null });
+    const clock = await h.admin.query(
+      `SELECT rescan_incomplete_since FROM team_skill_reviews WHERE skill_id = ANY($1::uuid[])`,
+      [[early, late]],
+    );
+    expect(clock.rows.every((r) => r.rescan_incomplete_since === null)).toBe(true);
     expect((await facts(ids.member, ["slow-team"])).agentSuspended).toEqual([]);
+  });
+
+  it("never lifts a suspension it didn't make for an unfinished rescan", async () => {
+    const held = await approved("held-team");
+    // Suspended by someone else (no stored reason), while approved and under an old rule set.
+    await h.admin.query(
+      `UPDATE team_skill_reviews SET suspended_at = now(), suspension_notified_at = now()
+        WHERE skill_id = $1`,
+      [held],
+    );
+    await rescanWith(2002, DAY);
+    expect(await teamRow(held)).toEqual({ status: "approved", suspended: true, reason: null });
   });
 });
