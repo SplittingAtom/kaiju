@@ -46,6 +46,8 @@ export interface KernelManagerOptions {
   readonly idleMs: number;
   readonly readyTimeoutMs?: number;
   readonly graceMs?: number;
+  /** How long the snapshot after a member's run may take (default 3 s). */
+  readonly afterRunInspectMs?: number;
   readonly limits?: OutputLimits;
   readonly log: (message: string, threadId?: string) => void;
 }
@@ -88,6 +90,12 @@ export type OutputSink = (index: number, output: NotebookOutput) => void;
 export class KernelManager {
   readonly #o: KernelManagerOptions;
   readonly #kernels = new Map<string, Kernel>();
+  /**
+   * Threads whose automatic (after-run and route) snapshots are paused (KOBE-803 review): one
+   * taken after a run timed out. Kept here, not on the kernel, so it outlives a kernel restart;
+   * gone when the sandbox restarts. Only an explicit `refresh` takes a snapshot then.
+   */
+  readonly #autoPaused = new Set<string>();
   readonly #starting = new Map<string, Promise<Kernel>>();
   #closed = false;
 
@@ -140,25 +148,32 @@ export class KernelManager {
 
   /** `notebook.inspect` (KOBE-803): the thread kernel's variables, never starting a kernel. */
   async inspect(threadId: string, timeoutMs: number, refresh = false): Promise<CommandOutcome> {
+    const paused = this.#autoPaused.has(threadId);
+    const answer = (r: NotebookVariablesResult): CommandOutcome =>
+      ok(paused ? { ...r, auto_paused: "snapshot_timeout" } : r);
     const kernel = this.#kernels.get(threadId);
     if (this.#closed || kernel === undefined || !kernel.session.alive) {
-      return ok({ status: "no_kernel" } satisfies NotebookVariablesResult);
+      return answer({ status: "no_kernel" });
     }
     const kept = kernel.kept;
     if (kernel.queued > 0 || kernel.session.busy || kernel.session.inspecting) {
-      return ok(kept === undefined ? { status: "busy" } : { ...kept, stale: true });
+      return answer(kept === undefined ? { status: "busy" } : { ...kept, stale: true });
     }
-    if (!refresh && kept !== undefined && kernel.keptCurrent) {
-      return ok({ ...kept, stale: false });
+    if (!refresh && kept !== undefined && (kernel.keptCurrent || paused)) {
+      return answer({ ...kept, stale: !kernel.keptCurrent });
     }
+    // Paused: nothing is taken without an explicit refresh.
+    if (!refresh && paused) return answer(UNAVAILABLE);
     kernel.queued += 1;
-    const snap = kernel.tail.then(() => this.#inspectNow(kernel, timeoutMs));
+    // An explicit snapshot that times out only answers `unavailable`: the kernel is left alone
+    // (interrupted once); a later run restarts it only if the snapshot is still stuck then.
+    const snap = kernel.tail.then(() => this.#inspectNow(kernel, timeoutMs, false));
     kernel.tail = snap.catch(() => undefined);
     try {
-      return ok(await snap);
+      return answer(await snap);
     } catch (error) {
       this.#o.log(`variables snapshot failed: ${(error as Error).message}`, threadId);
-      return ok(UNAVAILABLE);
+      return answer(UNAVAILABLE);
     } finally {
       kernel.queued -= 1;
       this.#touch(kernel);
@@ -298,8 +313,17 @@ export class KernelManager {
       duration_ms: Math.max(0, Math.round(performance.now() - started)),
     };
     // A member's run: the snapshot after it is kept for `notebook.inspect`, never returned.
-    if (frame.with_variables === true && snapshot && kernel.session.alive) {
-      await this.#inspectNow(kernel, AFTER_RUN_INSPECT_TIMEOUT_MS);
+    if (
+      frame.with_variables === true &&
+      snapshot &&
+      kernel.session.alive &&
+      !this.#autoPaused.has(kernel.threadId)
+    ) {
+      await this.#inspectNow(
+        kernel,
+        this.#o.afterRunInspectMs ?? AFTER_RUN_INSPECT_TIMEOUT_MS,
+        true,
+      );
     }
     return { ...ran, ...(frame.with_timing === true ? { timing } : {}) };
   }
@@ -339,7 +363,11 @@ export class KernelManager {
    * execution waits for that (at most the grace, `#endInspection`), so the interrupt never reaches
    * a later cell. An `ok` snapshot becomes the kept one.
    */
-  async #inspectNow(kernel: Kernel, timeoutMs: number): Promise<NotebookVariablesResult> {
+  async #inspectNow(
+    kernel: Kernel,
+    timeoutMs: number,
+    auto: boolean,
+  ): Promise<NotebookVariablesResult> {
     if (!kernel.session.alive) return { status: "no_kernel" };
     const takenAt = new Date();
     const pending = kernel.session.inspect(randomUUID(), INSPECT_LIMITS);
@@ -352,6 +380,11 @@ export class KernelManager {
     const log = (m: string) => this.#o.log(m, kernel.threadId);
     if (got === undefined) {
       log("variables snapshot timed out; interrupting it");
+      if (auto) {
+        // One stuck automatic snapshot pauses them for this thread (until the sandbox restarts).
+        this.#autoPaused.add(kernel.threadId);
+        log("automatic variables snapshots paused for this thread");
+      }
       if (kernel.session.inspecting) kernel.session.interrupt();
       return UNAVAILABLE;
     }

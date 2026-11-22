@@ -4990,7 +4990,7 @@
       "post": {
         "operationId": "postThreadNotebookVariables",
         "summary": "Snapshot the variables of the conversation's Python kernel",
-        "description": "The owner reads a snapshot of their kernel's user variables (the Python editor's Variables tab, called after each run and on Refresh). The workspace keeps the snapshot it took after the owner's last run: it answers with it while code runs (`stale`: true) or when nothing ran since, and takes a fresh one when the kernel is idle and code ran since or `refresh` is true. Per variable its name, type, a short repr (capped; empty with `repr_error` when it raised or took too long) and summaries for common types (`len`; `shape` and `dtype` for numpy arrays; `shape`, `columns` and `columns_total` for pandas DataFrames, never their data). Modules, functions and classes are listed by name in `other`; names starting with `_` and IPython's own are left out; `truncated` when a cap left variables out. It runs silently in the kernel (no execution count, not a run, nothing stored) and never wakes a sleeping workspace or starts a kernel: `no_kernel`, `busy` (code is running) and `unavailable` (no answer in time) are answers too. Nothing is stored: snapshots are never in run events and go to the owner only, since a repr can hold a secret. Reprs are untrusted: show them as plain text.",
+        "description": "The owner reads a snapshot of their kernel's user variables (the Python editor's Variables tab, called after each run and on Refresh). The workspace keeps the snapshot it took after the owner's last run: it answers with it while code runs (`stale`: true) or when nothing ran since, and takes a fresh one when the kernel is idle and code ran since or `refresh` is true. After a snapshot taken after a run timed out, automatic snapshots pause for the conversation until the workspace restarts (`auto_paused`: `snapshot_timeout`): only `refresh` takes one then. Per variable its name, type, a short repr (capped; empty with `repr_error` when it raised or took too long) and summaries for common types (`len`; `shape` and `dtype` for numpy arrays; `shape`, `columns` and `columns_total` for pandas DataFrames, never their data). Modules, functions and classes are listed by name in `other`; names starting with `_` and IPython's own are left out; `truncated` when a cap left variables out. It runs silently in the kernel (no execution count, not a run, nothing stored) and never wakes a sleeping workspace or starts a kernel: `no_kernel`, `busy` (code is running) and `unavailable` (no answer in time) are answers too. Nothing is stored: snapshots are never in run events and go to the owner only, since a repr can hold a secret. Reprs are untrusted: show them as plain text.",
         "parameters": [
           {
             "name": "id",
@@ -33806,6 +33806,10 @@
               },
               "stale": {
                 "type": "boolean"
+              },
+              "auto_paused": {
+                "type": "string",
+                "enum": ["snapshot_timeout"]
               }
             },
             "required": [
@@ -33824,6 +33828,10 @@
               "status": {
                 "type": "string",
                 "enum": ["busy", "no_kernel", "unavailable"]
+              },
+              "auto_paused": {
+                "type": "string",
+                "enum": ["snapshot_timeout"]
               }
             },
             "required": ["status"],

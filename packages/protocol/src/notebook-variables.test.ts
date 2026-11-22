@@ -168,6 +168,19 @@ describe("wire and events stay additive (KOBE-803)", () => {
     expect(notebookVariablesSnapshotSchema.safeParse({ ...snapshot, stale: true }).success).toBe(
       true,
     );
+    expect(
+      notebookVariablesResultSchema.safeParse({ ...snapshot, auto_paused: "snapshot_timeout" })
+        .success,
+    ).toBe(true);
+    expect(
+      notebookVariablesResultSchema.safeParse({
+        status: "unavailable",
+        auto_paused: "snapshot_timeout",
+      }).success,
+    ).toBe(true);
+    expect(
+      notebookVariablesResultSchema.safeParse({ status: "busy", auto_paused: "tired" }).success,
+    ).toBe(false);
     expect(notebookVariablesBodySchema.safeParse({}).success).toBe(true);
     expect(notebookVariablesBodySchema.safeParse({ refresh: true }).success).toBe(true);
     expect(notebookVariablesBodySchema.safeParse({ refresh: true, x: 1 }).success).toBe(false);

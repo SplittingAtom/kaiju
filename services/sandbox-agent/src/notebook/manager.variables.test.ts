@@ -19,6 +19,7 @@ function setup() {
     maxKernels: 2,
     idleMs: 60_000,
     graceMs: 50,
+    afterRunInspectMs: 100,
     readyTimeoutMs: 200,
     log: (m) => logs.push(m),
   });
@@ -229,6 +230,59 @@ describe("notebook.inspect on the manager (KOBE-803)", () => {
     manager.interrupt(T1);
     expect(data(await waiting).status).toBe("interrupted");
     expect(control.executed).toEqual([`${T1}:print:a`]);
+    await manager.stopAll();
+  });
+});
+
+describe("automatic snapshots pause after one times out (KOBE-803 re-review)", () => {
+  it("skips them for the thread across a kernel restart; only an explicit refresh takes one", async () => {
+    const { manager, control } = setup();
+    control.inspectMode = "stuck";
+    const first = data(await exec(manager, frame("print:a", { with_variables: true })));
+    expect(first).toMatchObject({ status: "ok", execution_count: 1 });
+    expect(data(await manager.inspect(T1, 1000))).toEqual({
+      status: "busy",
+      auto_paused: "snapshot_timeout",
+    });
+    // The next run needs the kernel: the stuck snapshot gets it restarted, once.
+    expect(data(await exec(manager, frame("print:b", { with_variables: true }))).status).toBe(
+      "restarted",
+    );
+    control.inspectMode = "ok";
+    const inspectedBefore = control.inspected.length;
+    expect(data(await exec(manager, frame("print:c", { with_variables: true }))).status).toBe("ok");
+    expect(data(await exec(manager, frame("print:d", { with_variables: true }))).status).toBe("ok");
+    expect(control.inspected).toHaveLength(inspectedBefore);
+    expect(control.killed).toEqual([T1]);
+    // The route without refresh takes nothing; with refresh it does, and says it is paused.
+    expect(data(await manager.inspect(T1, 1000))).toEqual({
+      status: "unavailable",
+      auto_paused: "snapshot_timeout",
+    });
+    expect(control.inspected).toHaveLength(inspectedBefore);
+    expect(data(await manager.inspect(T1, 1000, true))).toMatchObject({
+      status: "ok",
+      stale: false,
+      auto_paused: "snapshot_timeout",
+    });
+    // A later run makes that one stale, still without taking another.
+    await exec(manager, frame("print:e", { with_variables: true }));
+    expect(data(await manager.inspect(T1, 1000))).toMatchObject({
+      status: "ok",
+      stale: true,
+      auto_paused: "snapshot_timeout",
+    });
+    expect(control.inspected).toHaveLength(inspectedBefore + 1);
+    await manager.stopAll();
+  });
+
+  it("an explicit refresh that times out answers unavailable, pauses nothing, kills nothing", async () => {
+    const { manager, control } = setup();
+    await exec(manager, frame("print:a"));
+    control.inspectMode = "stuck";
+    expect(data(await manager.inspect(T1, 50, true))).toEqual({ status: "unavailable" });
+    expect(control.killed).toEqual([]);
+    expect(data(await manager.inspect(T1, 50))).toEqual({ status: "busy" });
     await manager.stopAll();
   });
 });

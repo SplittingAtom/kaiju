@@ -39,7 +39,9 @@ export function notebookVariablesOpenApiPaths(): Record<string, Record<string, u
           "Variables tab, called after each run and on Refresh). The workspace keeps the snapshot " +
           "it took after the owner's last run: it answers with it while code runs (`stale`: true) " +
           "or when nothing ran since, and takes a fresh one when the kernel is idle and code ran " +
-          "since or `refresh` is true. Per variable its name, type, a short repr (capped; empty " +
+          "since or `refresh` is true. After a snapshot taken after a run timed out, automatic " +
+          "snapshots pause for the conversation until the workspace restarts (`auto_paused`: " +
+          "`snapshot_timeout`): only `refresh` takes one then. Per variable its name, type, a short repr (capped; empty " +
           "with `repr_error` when it raised or took too long) and summaries for common types " +
           "(`len`; `shape` and `dtype` for numpy arrays; `shape`, `columns` and " +
           "`columns_total` for pandas DataFrames, never their data). Modules, functions and " +

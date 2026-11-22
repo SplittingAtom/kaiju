@@ -82,6 +82,14 @@ export const notebookOtherNameSchema = z.strictObject({
 export type NotebookOtherName = z.infer<typeof notebookOtherNameSchema>;
 
 /**
+ * Why the agent stopped taking a snapshot after each run for this thread (only an explicit
+ * `refresh` takes one then): `snapshot_timeout`, one taken after a run did not finish in time (an
+ * object whose repr hangs in C code would otherwise get the kernel restarted after every run).
+ * Lasts until the sandbox restarts.
+ */
+export const notebookAutoPausedSchema = z.enum(["snapshot_timeout"]);
+
+/**
  * A snapshot of the kernel's user namespace, taken silently (no execution count, no `Out`/`_`,
  * not a run). Left out: names starting with `_` and IPython's own (`In`, `Out`, `exit`, `quit`,
  * `get_ipython`). Sorted by name. `truncated`: a cap (count, bytes or the kernel-side budget)
@@ -98,6 +106,7 @@ export const notebookVariablesSnapshotSchema = z
     other: z.array(notebookOtherNameSchema).max(NOTEBOOK_VARIABLES_MAX),
     truncated: z.boolean(),
     stale: z.boolean().optional(),
+    auto_paused: notebookAutoPausedSchema.optional(),
   })
   .refine(
     (s) =>
@@ -114,6 +123,7 @@ export type NotebookVariablesSnapshot = z.infer<typeof notebookVariablesSnapshot
  */
 export const notebookVariablesMissingSchema = z.strictObject({
   status: z.enum(["busy", "no_kernel", "unavailable"]),
+  auto_paused: notebookAutoPausedSchema.optional(),
 });
 
 /**

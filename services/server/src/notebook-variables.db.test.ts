@@ -248,6 +248,11 @@ describe("POST /v1/threads/{id}/notebook/variables (KOBE-803)", () => {
     expect(runs.rowCount).toBe(0);
     const events = await fx.admin.query(`SELECT 1 FROM run_events WHERE team_id = $1`, [w.team]);
     expect(events.rowCount).toBe(0);
+    // The answer's row is gone once the route read it (it holds reprs in plaintext).
+    const rows = await fx.admin.query(`SELECT 1 FROM sandbox_commands WHERE team_id = $1`, [
+      w.team,
+    ]);
+    expect(rows.rowCount).toBe(0);
     // Refresh asks the agent for a fresh one; anything else in the body is refused.
     const refreshed = await w.owner.browser.post(`/v1/threads/${w.threadId}/notebook/variables`, {
       refresh: true,
@@ -271,6 +276,40 @@ describe("POST /v1/threads/{id}/notebook/variables (KOBE-803)", () => {
     answer = { ...SNAPSHOT, variables: [{ name: "x" }] };
     const odd = await variables(w);
     expect([odd.status, odd.json]).toEqual([200, { status: "unavailable" }]);
+  });
+
+  it("purges an unread snapshot within a minute (its requester is gone)", async () => {
+    const w = await world();
+    const insert = (kind: string) =>
+      fx.admin.query(
+        `INSERT INTO sandbox_commands (team_id, user_id, thread_id, kind, frame, status,
+                                       connection_id, requester_replica, result, completed_at,
+                                       expires_at)
+         VALUES ($1, $2, $3, $4, '{}'::jsonb, 'done', gen_random_uuid(), 'gone',
+                 '{"ok":true}'::jsonb, now() - interval '2 minutes', now())`,
+        [w.team, w.owner.id, w.threadId, kind],
+      );
+    await insert("notebook.inspect");
+    await insert("pi.command");
+    await fx.replica(0).deps.sandboxWire.sweep();
+    const left = await fx.admin.query<{ kind: string }>(
+      `SELECT kind FROM sandbox_commands WHERE team_id = $1`,
+      [w.team],
+    );
+    expect(left.rows).toEqual([{ kind: "pi.command" }]);
+  });
+
+  it("passes a paused automatic snapshot's reason through", async () => {
+    const w = await world();
+    await connected(w, NEW_AGENT, () => ({
+      status: "unavailable",
+      auto_paused: "snapshot_timeout",
+    }));
+    const res = await variables(w);
+    expect([res.status, res.json]).toEqual([
+      200,
+      { status: "unavailable", auto_paused: "snapshot_timeout" },
+    ]);
   });
 
   it("never wakes a sandbox that is not connected: no_kernel", async () => {

@@ -51,6 +51,13 @@
   `unavailable` (SIGINT to the kernel). An execution never waits on a snapshot: it interrupts one
   still running and, if it has not ended within the grace (5 s, or the deadline) or Stop arrives,
   the execution returns `restarted` (kernel stopped) or `interrupted` (review L1).
+- **Automatic snapshots pause** (re-review): after one after-run snapshot times out for a
+  thread, the agent takes no automatic snapshot for it (after runs, or a route call without
+  `refresh`) until the sandbox restarts (state on the manager, outliving kernel restarts), so an
+  object whose repr hangs in C code costs one kernel restart, not one per run. Answers then carry
+  `auto_paused: "snapshot_timeout"`. An explicit refresh that times out answers `unavailable` and
+  leaves the kernel alone. Unread `notebook.inspect` results are swept after 60 s (as
+  `thread.context`); the route's read deletes the row at once (`takeResult`).
 - **Wire compatibility.** Capability `notebook_inspect`. Stored `notebook.execute` rows (member
   runs) carry no asks: the delivering replica adds `with_timing` + `with_variables` for a capable
   agent (`withMemberRunAsks`), so an older replica in a rolling deploy still delivers rows a newer
@@ -87,7 +94,8 @@ outputs, truncated, saved, save_error?, timing?: {started_at, finished_at, durat
 - Variables tab: call `POST /v1/threads/{id}/notebook/variables` after each run's
   `notebook.finished` (no body: the snapshot the agent kept after that run) and on Refresh
   (`{"refresh": true}`: a fresh one when idle) → 200 `<VariablesResult>`; show `stale` /
-  `taken_at` ("as of …, code has run since"); errors
+  `taken_at` ("as of …, code has run since") and `auto_paused` ("automatic refresh paused: a
+  snapshot took too long; use Refresh"); errors
   `{code, message}`: 409 `variables_unsupported` (older agent: show "not available yet"),
   409 `notebooks_unsupported`, 409 `skill_eval_thread`, 403 `read_only`, 404 `thread_not_found`,
   429 `rate_limited`, 503 `isolation_unavailable`/`sandbox_unavailable`.
