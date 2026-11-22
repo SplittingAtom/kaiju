@@ -23,6 +23,8 @@ export const EXCLUDED_MARKERS = {
   reset: "RESET-TOKEN-PLAINTEXT-4a5b6c",
   jwks: "JWKS-PRIVATE-KEY-7d8e9f",
   rateLimit: "RATE-LIMIT-KEY-9e8d7c",
+  /** Kobe's own counters (KOBE-809), left out like Better Auth's. */
+  kobeRateLimit: "KOBE-RATE-LIMIT-KEY-3b2a1f",
   /** `session_sso_contexts.acr` (KOBE-625): per-session SSO state, left out with `sessions`. */
   ssoContext: "SSO-SESSION-CONTEXT-5c6d7e",
 } as const;
@@ -134,6 +136,8 @@ export async function seed(db: TestDatabase): Promise<void> {
      INSERT INTO verifications (identifier, value, expires_at) VALUES ('reset', '${RESET_TOKEN}', now() + interval '1 hour');
      INSERT INTO jwks (public_key, private_key) VALUES ('pub', '${JWKS_PRIVATE}');
      INSERT INTO rate_limits (key, count, last_request) VALUES ('${EXCLUDED_MARKERS.rateLimit}', 3, 1);
+     INSERT INTO kobe_rate_limits (key, count, window_start, expires_at)
+       VALUES ('${EXCLUDED_MARKERS.kobeRateLimit}', 3, 1, 2);
      INSERT INTO sso_providers (id, slug, display_name, kind, issuer, client_id, client_secret_sealed,
          client_secret_key_id, tenant_id, subject_claim, access_claim)
        VALUES ('${SSO_PROVIDER}', 'contoso', 'Contoso', 'entra',

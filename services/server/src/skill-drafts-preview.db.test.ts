@@ -268,9 +268,10 @@ describe("scan preview (ac-2)", () => {
     const key = `kobe:skill-draft-preview:${authorId}`;
     const count = async () =>
       (
-        await h.admin.query<{ count: number }>(`SELECT count FROM rate_limits WHERE key = $1`, [
-          key,
-        ])
+        await h.admin.query<{ count: number }>(
+          `SELECT count FROM kobe_rate_limits WHERE key = $1`,
+          [key],
+        )
       ).rows[0]?.count ?? 0;
     const before = await count();
     const busy = await author.get(`/v1/skills/drafts/${d.id}/scan`);
@@ -300,8 +301,8 @@ describe("scan preview (ac-2)", () => {
     expect((await author.get(`/v1/skills/drafts/${d.id}/scan`)).status).toBe(200);
     const key = `kobe:skill-draft-preview:${authorId}`;
     await h.admin.query(
-      `INSERT INTO rate_limits (key, count, last_request) VALUES ($1, $2, $3)
-       ON CONFLICT (key) DO UPDATE SET count = $2, last_request = $3`,
+      `INSERT INTO kobe_rate_limits (key, count, window_start, expires_at) VALUES ($1, $2, $3, $3::bigint + 3600000)
+       ON CONFLICT (key) DO UPDATE SET count = $2, window_start = $3, expires_at = EXCLUDED.expires_at`,
       [key, DRAFT_PREVIEW_RATE.max, Date.now()],
     );
     expect((await author.get(`/v1/skills/drafts/${d.id}/scan`)).status).toBe(200);
@@ -312,7 +313,7 @@ describe("scan preview (ac-2)", () => {
     expect((await author.get(`/v1/skills/drafts/${d.id}/bump?destination=personal`)).status).toBe(
       429,
     );
-    await h.admin.query(`DELETE FROM rate_limits WHERE key = $1`, [key]);
+    await h.admin.query(`DELETE FROM kobe_rate_limits WHERE key = $1`, [key]);
   });
 
   it("gives the verdict and findings the save records for the same files", async () => {

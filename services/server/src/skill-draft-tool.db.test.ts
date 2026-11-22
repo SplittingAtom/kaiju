@@ -506,8 +506,8 @@ describe("save_skill_draft: review fixes (KOBE-442 review)", () => {
     });
     // The shared upload rate (30 per 10 minutes, review L2: shared on purpose).
     await fx.admin.query(
-      `INSERT INTO rate_limits (key, count, last_request) VALUES ($1, 1000, $2)
-       ON CONFLICT (key) DO UPDATE SET count = 1000, last_request = $2`,
+      `INSERT INTO kobe_rate_limits (key, count, window_start, expires_at) VALUES ($1, 1000, $2, $2::bigint + 3600000)
+       ON CONFLICT (key) DO UPDATE SET count = 1000, window_start = $2, expires_at = EXCLUDED.expires_at`,
       [`kobe:skill-upload:${w.owner.id}`, Date.now()],
     );
     expect(await tool().save(target(w), frameOf(w, "o4", "caps", [md]))).toMatchObject({

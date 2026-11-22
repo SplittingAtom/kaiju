@@ -21,6 +21,10 @@ export async function hasLocalPassword(db: KobeDb | KobeTx, userId: string): Pro
   return row !== undefined;
 }
 
+/**
+ * Claims live in `kobe_rate_limits` (KOBE-809), not Better Auth's `rate_limits`, which the library
+ * prunes after 60 s; expired ones go with Kobe's own prune (`rate-limit.ts`).
+ */
 const sentKey = (userId: string) => `kobe:reset-sent:${userId}:`;
 
 /** Better Auth's stored identifier for a reset token (verification.storeIdentifier: "hashed"). */
@@ -32,9 +36,9 @@ export function storedResetIdentifier(token: string): string {
 async function recentResetLinkPending(tx: KobeTx, userId: string, now: number): Promise<boolean> {
   const prefix = sentKey(userId);
   const result = await tx.execute(sql`
-    SELECT 1 FROM rate_limits r
+    SELECT 1 FROM kobe_rate_limits r
     JOIN verifications v ON r.key = ${prefix} || v.identifier
-    WHERE r.key LIKE ${`${prefix}%`} AND r.last_request > ${now - RESET_RESEND_AFTER_MS}
+    WHERE r.key LIKE ${`${prefix}%`} AND r.window_start > ${now - RESET_RESEND_AFTER_MS}
       AND v.value = ${userId} AND v.expires_at > ${new Date(now)}
     LIMIT 1`);
   return result.rows.length > 0;
@@ -58,12 +62,13 @@ export async function claimResetLinkSend(
     if (await recentResetLinkPending(tx, userId, now)) return false;
     // Forget claims older than the resend window.
     await tx.execute(sql`
-      DELETE FROM rate_limits WHERE key LIKE ${`${prefix}%`}
-        AND last_request <= ${now - RESET_RESEND_AFTER_MS}`);
+      DELETE FROM kobe_rate_limits WHERE key LIKE ${`${prefix}%`}
+        AND window_start <= ${now - RESET_RESEND_AFTER_MS}`);
     await tx.execute(sql`
-      INSERT INTO rate_limits (key, count, last_request)
-      VALUES (${prefix + storedResetIdentifier(token)}, 1, ${now})
-      ON CONFLICT (key) DO UPDATE SET last_request = EXCLUDED.last_request`);
+      INSERT INTO kobe_rate_limits (key, count, window_start, expires_at)
+      VALUES (${prefix + storedResetIdentifier(token)}, 1, ${now}, ${now + RESET_RESEND_AFTER_MS})
+      ON CONFLICT (key) DO UPDATE
+        SET window_start = EXCLUDED.window_start, expires_at = EXCLUDED.expires_at`);
     return true;
   });
 }
@@ -75,7 +80,7 @@ export async function releaseResetLinkClaim(
   token: string,
 ): Promise<void> {
   await db.execute(
-    sql`DELETE FROM rate_limits WHERE key = ${sentKey(userId) + storedResetIdentifier(token)}`,
+    sql`DELETE FROM kobe_rate_limits WHERE key = ${sentKey(userId) + storedResetIdentifier(token)}`,
   );
 }
 
@@ -85,5 +90,5 @@ export async function releaseResetLinkClaim(
  */
 export async function revokeResetLinks(db: KobeDb, userId: string): Promise<void> {
   await db.delete(verifications).where(eq(verifications.value, userId));
-  await db.execute(sql`DELETE FROM rate_limits WHERE key LIKE ${`${sentKey(userId)}%`}`);
+  await db.execute(sql`DELETE FROM kobe_rate_limits WHERE key LIKE ${`${sentKey(userId)}%`}`);
 }

@@ -528,7 +528,7 @@ describe("teams are walls (review S3)", () => {
        VALUES ($1, $2, $3, 'pinned', 'available', $4) ON CONFLICT DO NOTHING`,
       [team, creator.skill_id, creator.id, authorId],
     );
-    await h.admin.query(`DELETE FROM rate_limits WHERE key = $1`, [
+    await h.admin.query(`DELETE FROM kobe_rate_limits WHERE key = $1`, [
       `kobe:skill-upload:${authorId}`,
     ]);
     const fork = () =>
@@ -594,9 +594,10 @@ describe("start rates (review S2)", () => {
     const key = `kobe:skill-upload:${builderId}`;
     const count = async () =>
       (
-        await h.admin.query<{ count: number }>(`SELECT count FROM rate_limits WHERE key = $1`, [
-          key,
-        ])
+        await h.admin.query<{ count: number }>(
+          `SELECT count FROM kobe_rate_limits WHERE key = $1`,
+          [key],
+        )
       ).rows[0]?.count ?? 0;
     const before = await count();
     const fork = await builder.post("/v1/skills/drafts/fork", {
@@ -604,19 +605,19 @@ describe("start rates (review S2)", () => {
     });
     expect(fork.status, JSON.stringify(fork.json)).toBe(201);
     expect(await count()).toBe(before + 1);
-    await h.admin.query(`UPDATE rate_limits SET count = 1000 WHERE key = $1`, [key]);
+    await h.admin.query(`UPDATE kobe_rate_limits SET count = 1000 WHERE key = $1`, [key]);
     const refused = await builder.post("/v1/skills/drafts/fork", {
       source: { kind: "personal", skillId: mine.skill.id },
     });
     expect([refused.status, refused.json.code]).toEqual([429, "rate_limited"]);
-    await h.admin.query(`DELETE FROM rate_limits WHERE key = $1`, [key]);
+    await h.admin.query(`DELETE FROM kobe_rate_limits WHERE key = $1`, [key]);
   });
 });
 
 describe("personal saves of the team's skills (review S4)", () => {
   // The file's earlier starts used up most of the shared upload rate.
   beforeEach(async () => {
-    await h.admin.query(`DELETE FROM rate_limits WHERE key = ANY($1)`, [
+    await h.admin.query(`DELETE FROM kobe_rate_limits WHERE key = ANY($1)`, [
       [authorId, builderId].map((id) => `kobe:skill-upload:${id}`),
     ]);
   });

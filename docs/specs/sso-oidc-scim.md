@@ -18,8 +18,8 @@ switch, deactivation that ends every session at once, and Better Auth embedded i
   `twoFactor` (TOTP, secrets sealed with the auth secret), `passkey` (user verification required,
   enforced again in a `before` hook), `jwt` (5-minute tokens carrying `sid`), and `auditPlugin`
   last. Sessions live in Postgres with the cookie cache off, so every request looks them up and
-  revocation is immediate. Rate limits are stored in Postgres (`rate_limits`) and shared by
-  replicas. Verification values are stored hashed.
+  revocation is immediate. Rate limits are stored in Postgres and shared by replicas: Better
+  Auth's in `rate_limits`, Kobe's own in `kobe_rate_limits` (KOBE-809). Verification values are stored hashed.
 - **Session guards.** A `databaseHooks.session.create.before` hook refuses a session for a
   deactivated user, and a trigger on `sessions` backs it up against races. `requireSession`
   (`auth/session.ts`) re-reads `users.deactivated_at` and `site_roles` on every request, and when

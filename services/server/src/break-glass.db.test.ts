@@ -189,7 +189,7 @@ afterEach(async () => {
   );
   await admin.query(`SET session_replication_role = origin`);
   // Requests are rate-limited per admin and hour; tests make many.
-  await admin.query(`DELETE FROM rate_limits WHERE key LIKE 'kobe:break-glass-request:%'`);
+  await admin.query(`DELETE FROM kobe_rate_limits WHERE key LIKE 'kobe:break-glass-request:%'`);
 });
 
 async function waitForAppSessionsToClose(): Promise<void> {
@@ -744,8 +744,8 @@ describe("durable notifications and limits", () => {
 
   it("rate-limits requests per admin (each one emails every site admin)", async () => {
     await admin.query(
-      `INSERT INTO rate_limits (key, count, last_request) VALUES ($1, 10, $2)
-       ON CONFLICT (key) DO UPDATE SET count = 10, last_request = $2`,
+      `INSERT INTO kobe_rate_limits (key, count, window_start, expires_at) VALUES ($1, 10, $2, $2::bigint + 3600000)
+       ON CONFLICT (key) DO UPDATE SET count = 10, window_start = $2, expires_at = EXCLUDED.expires_at`,
       [`kobe:break-glass-request:${ids.investigator}`, Date.now()],
     );
     const res = await as.investigator.post("/v1/site/break-glass", {
@@ -759,15 +759,15 @@ describe("durable notifications and limits", () => {
     const grantId = await activeGrant();
     const key = `kobe:break-glass-read:${ids.investigator}`;
     await admin.query(
-      `INSERT INTO rate_limits (key, count, last_request) VALUES ($1, 120, $2)
-       ON CONFLICT (key) DO UPDATE SET count = 120, last_request = $2`,
+      `INSERT INTO kobe_rate_limits (key, count, window_start, expires_at) VALUES ($1, 120, $2, $2::bigint + 3600000)
+       ON CONFLICT (key) DO UPDATE SET count = 120, window_start = $2, expires_at = EXCLUDED.expires_at`,
       [key, Date.now()],
     );
     try {
       const res = await as.investigator.get(`/v1/site/break-glass/${grantId}/threads`);
       expect([res.status, res.json.code]).toEqual([429, "rate_limited"]);
     } finally {
-      await admin.query(`DELETE FROM rate_limits WHERE key = $1`, [key]);
+      await admin.query(`DELETE FROM kobe_rate_limits WHERE key = $1`, [key]);
     }
   });
 
@@ -780,7 +780,7 @@ describe("durable notifications and limits", () => {
     expect(revoked?.status, JSON.stringify(revoked?.json)).toBe(200);
     expect(reads.every((r) => r.status === 200 || r.status === 403)).toBe(true);
     expect((await as.investigator.get(path)).status).toBe(403);
-    await admin.query(`DELETE FROM rate_limits WHERE key = $1`, [
+    await admin.query(`DELETE FROM kobe_rate_limits WHERE key = $1`, [
       `kobe:break-glass-read:${ids.investigator}`,
     ]);
   });
