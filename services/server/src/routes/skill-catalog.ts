@@ -13,7 +13,7 @@ import {
 } from "../skills/skill-install-requests.js";
 import { invalidRequest, param } from "../http/request.js";
 
-const querySchema = z.object({
+export const querySchema = z.object({
   q: z.string().max(200).optional(),
   tag: z
     .string()

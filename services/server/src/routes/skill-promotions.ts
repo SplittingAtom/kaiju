@@ -26,14 +26,16 @@ import { invalidRequest, notFound, param, parseBody } from "../http/request.js";
 
 type Ctx = Context<{ Variables: TeamVariables }>;
 
-const sourceSchema = z.strictObject({
+export const sourceSchema = z.strictObject({
   scope: z.enum(["team", "personal"]),
   skillId: z.uuid(),
   version: z.coerce.number().int().positive().max(2147483647),
 });
-const declineSchema = z.strictObject({ note: z.string().trim().min(1).max(1000).optional() });
+export const declineSchema = z.strictObject({
+  note: z.string().trim().min(1).max(1000).optional(),
+});
 /** Create kobe.skill.yaml (KOBE-564): the version, the member's model and their license choice. */
-const manifestSchema = sourceSchema.extend({
+export const manifestSchema = sourceSchema.extend({
   model: z.string().min(1).max(128).optional(),
   license: z.string().regex(LICENSE_PATTERN).optional(),
 });
