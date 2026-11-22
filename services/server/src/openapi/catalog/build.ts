@@ -60,18 +60,24 @@ export const ERROR_RESPONSES = {
   ],
   "402": ["PaymentRequired", "`budget_exhausted`: the team's or member's budget is used up."],
   "404": ["NotFound", "Not found, or not visible to the caller (another team's or member's)."],
+  "405": ["MethodNotAllowed", "The operation is refused for this resource (the code says why)."],
   "409": [
     "Conflict",
     "The resource's state refuses the change, or `no_active_team` / `team_mismatch` (stale tab).",
   ],
+  "411": ["LengthRequired", "`length_required`: send a Content-Length for the upload."],
+  "412": ["PreconditionFailed", "`If-Match` no longer matches: the resource changed; reload."],
   "413": ["PayloadTooLarge", "`too_large`: the request body is over the route's limit."],
+  "415": ["UnsupportedMediaType", "The request body's content type is not accepted here."],
   "422": [
     "Unprocessable",
     "The request is well-formed but refused (for example an invalid value the code names).",
   ],
+  "428": ["PreconditionRequired", "Send `If-Match` with the version the change is based on."],
   "429": ["RateLimited", "`rate_limited`: too many requests; retry later."],
   "502": ["BadGateway", "An upstream (sandbox, connector, model or registry) failed."],
   "503": ["Unavailable", "Not available right now (switched off, waking or not configured)."],
+  "507": ["InsufficientStorage", "`storage_full`: the member's or team's storage is full."],
 } as const;
 
 export type ErrorStatus = keyof typeof ERROR_RESPONSES;
@@ -80,6 +86,22 @@ export type ErrorStatus = keyof typeof ERROR_RESPONSES;
 export interface CatalogDetail {
   /** The JSON body the route validates; `null` when the route reads no body. */
   readonly body?: NamedSchema | null;
+  /**
+   * A `multipart/form-data` body instead of JSON: its form fields as JSON Schemas (a file part as
+   * `{type: "string", format: "binary"}`). Use with `body: null`.
+   */
+  readonly multipart?: Readonly<Record<string, JsonSchema>>;
+  /**
+   * A non-JSON body (an upload of raw bytes, a zip, a Markdown file): its accepted media types.
+   * Use with `body: null`; may be combined with `body` when JSON is accepted too.
+   */
+  readonly rawBody?: readonly string[];
+  /** Further success answers (for example 200 when a 201 create finds it already done). */
+  readonly otherSuccess?: Readonly<
+    Partial<Record<"200" | "201" | "202" | "204", { response?: NamedSchema; description: string }>>
+  >;
+  /** Overrides the area's `teamScoped` for this operation. */
+  readonly teamScoped?: boolean;
   /** The body may be left out (the route accepts an empty request). */
   readonly bodyOptional?: boolean;
   /** Query parameters: the route's zod object, or JSON Schemas by name when it reads them by hand. */
@@ -203,7 +225,7 @@ function detailedParts(
   if (hasBody(method) && detail.body === undefined) {
     throw new Error(`catalog ${key}: say what body the route reads (a schema, or null)`);
   }
-  if (!hasBody(method) && detail.body) throw new Error(`catalog ${key}: ${method} has no body`);
+  if (method === "get" && detail.body) throw new Error(`catalog ${key}: get has no body`);
   const status = detail.status ?? 200;
   if (!detail.response && !detail.produces && status !== 204 && status !== 302) {
     throw new Error(`catalog ${key}: a ${status} answer needs a response schema`);
@@ -219,16 +241,40 @@ function detailedParts(
   const errors = [...new Set([...(area.defaultErrors ?? DEFAULT_ERRORS), ...(detail.errors ?? [])])]
     .sort()
     .map((s) => [s, responseRef(s)] as const);
-  return {
-    ...(detail.body
+  const content: Record<string, unknown> = {
+    ...(detail.body ? { "application/json": { schema: schemaRef(detail.body.name) } } : {}),
+    ...(detail.multipart
       ? {
-          requestBody: {
-            required: !detail.bodyOptional,
-            content: { "application/json": { schema: schemaRef(detail.body.name) } },
+          "multipart/form-data": {
+            schema: { type: "object", properties: { ...detail.multipart } },
           },
         }
       : {}),
-    responses: { [String(status)]: success, ...Object.fromEntries(errors) },
+    ...Object.fromEntries(
+      (detail.rawBody ?? []).map((media) => [
+        media,
+        { schema: { type: "string", format: "binary" } },
+      ]),
+    ),
+  };
+  const others = Object.entries(detail.otherSuccess ?? {}).map(([code, other]) => [
+    code,
+    {
+      description: other.description,
+      ...(other.response
+        ? { content: { "application/json": { schema: schemaRef(other.response.name) } } }
+        : {}),
+    },
+  ]);
+  return {
+    ...(Object.keys(content).length > 0
+      ? { requestBody: { required: !detail.bodyOptional, content } }
+      : {}),
+    responses: {
+      [String(status)]: success,
+      ...Object.fromEntries(others),
+      ...Object.fromEntries(errors),
+    },
   };
 }
 
@@ -239,7 +285,7 @@ function operation(area: CatalogArea, entry: CatalogEntry): Record<string, unkno
   const parameters = [
     ...pathParameters(path),
     ...(detail ? queryParameters(detail) : []),
-    ...(area.teamScoped ? [teamHeader(isChange(method))] : []),
+    ...((detail?.teamScoped ?? area.teamScoped) ? [teamHeader(isChange(method))] : []),
   ];
   const head = {
     operationId: catalogOperationId(method, path),
@@ -307,6 +353,9 @@ export function catalogSchemas(areas: readonly CatalogArea[]): Record<string, Js
     for (const detail of Object.values(area.details ?? {})) {
       if (detail.body) add(detail.body, "input");
       if (detail.response) add(detail.response, "output");
+      for (const other of Object.values(detail.otherSuccess ?? {})) {
+        if (other.response) add(other.response, "output");
+      }
     }
   }
   return schemas;
