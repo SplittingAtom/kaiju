@@ -33,6 +33,8 @@ export class RedirectRefusedError extends OauthError {
 export interface OauthIo {
   readonly policy: ConnectorUrlPolicy;
   readonly timeoutMs: number;
+  /** Body cap for {@link rawRequest}; default {@link MAX_BODY_BYTES} (git host APIs, KOBE-759). */
+  readonly maxBodyBytes?: number;
 }
 
 export const MAX_BODY_BYTES = 256 * 1024;
@@ -80,7 +82,8 @@ export interface RawResponse {
 /**
  * One request over a connection pinned to an address the policy approved (see
  * {@link pinnedLookup}); redirects are refused ({@link RedirectRefusedError}), time and size are
- * capped (`text` undefined when the body is larger than {@link MAX_BODY_BYTES}). The caller checks
+ * capped (`text` undefined when the body is larger than `io.maxBodyBytes`, default
+ * {@link MAX_BODY_BYTES}). The caller checks
  * the URL itself first (`checkConnectorUrl`). Also used by SSO discovery (KOBE-626).
  */
 export function rawRequest(
@@ -89,6 +92,7 @@ export function rawRequest(
   init: { method: string; headers: Record<string, string>; body?: string },
 ): Promise<RawResponse> {
   const transport = url.protocol === "https:" ? https : http;
+  const maxBody = io.maxBodyBytes ?? MAX_BODY_BYTES;
   return new Promise((resolve, reject) => {
     const req = transport.request(
       url,
@@ -110,7 +114,7 @@ export function rawRequest(
         let size = 0;
         res.on("data", (chunk: Buffer) => {
           size += chunk.length;
-          if (size > MAX_BODY_BYTES) {
+          if (size > maxBody) {
             res.destroy();
             resolve({ status, headers: res.headers, text: undefined });
             return;
