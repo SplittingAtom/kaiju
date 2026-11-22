@@ -25,7 +25,29 @@ const doc = openApiDocument() as {
 };
 
 /** Areas whose every operation has request and response schemas (extend as areas are done). */
-const DETAILED_TAGS = ["Threads", "Runs", "Artifacts", "Workspace", "Schedules"];
+const DETAILED_TAGS = [
+  "Me",
+  "Files",
+  "Connector grants",
+  "Setup",
+  "Threads",
+  "Runs",
+  "Artifacts",
+  "Workspace",
+  "Schedules",
+  "Projects",
+  "Agents",
+  "Site: gallery",
+  "Memory",
+  "Site: memory",
+  "Skills",
+  "Team",
+  "Team: skills",
+  "Site: people",
+  "Site: compliance",
+  "Site: platform",
+  "Site: skills",
+];
 
 function refs(node: unknown, out: string[] = []): string[] {
   if (Array.isArray(node)) for (const item of node) refs(item, out);
@@ -44,7 +66,8 @@ const operations = Object.entries(doc.paths).flatMap(([path, item]) =>
 
 describe("OpenAPI catalog detail (KOBE-771)", () => {
   it("marks the expected areas detailed", () => {
-    expect(CATALOG_AREAS.filter((a) => a.detailed).map((a) => a.tag)).toEqual(DETAILED_TAGS);
+    const detailed = CATALOG_AREAS.filter((a) => a.detailed).map((a) => a.tag);
+    expect(detailed.sort()).toEqual([...DETAILED_TAGS].sort());
   });
 
   it("gives every operation of a detailed area a 2xx schema and its request body", () => {
@@ -54,18 +77,26 @@ describe("OpenAPI catalog detail (KOBE-771)", () => {
         const name = `${method} ${path}`;
         expect(op, name).toBeDefined();
         expect(op?.["x-kobe-detail"], name).toBeUndefined();
-        const success = Object.entries(op?.responses ?? {}).filter(([s]) => /^2\d\d$/.test(s));
-        expect(success.length, name).toBe(1);
-        const [status, answer] = success[0] ?? ["", {}];
-        if (status !== "204") {
+        const success = Object.entries(op?.responses ?? {}).filter(([s]) =>
+          /^(2\d\d|302)$/.test(s),
+        );
+        expect(success.length, name).toBeGreaterThan(0);
+        for (const [status, answer] of success) {
+          if (status === "204" || status === "302") continue;
           const schemas = Object.values(answer.content ?? {}).map((c) => c.schema);
-          expect(schemas.length, `${name}: success body`).toBeGreaterThan(0);
+          expect(schemas.length, `${name}: ${status} body`).toBeGreaterThan(0);
         }
         const detail = area.details?.[name];
-        if (detail?.body) {
-          expect(op?.requestBody?.content?.["application/json"]?.schema, name).toBeDefined();
-        } else {
+        const media = Object.keys(op?.requestBody?.content ?? {});
+        if (detail?.body) expect(media, name).toContain("application/json");
+        if (detail?.multipart) expect(media, name).toContain("multipart/form-data");
+        for (const raw of detail?.rawBody ?? []) expect(media, name).toContain(raw);
+        if (!detail?.body && !detail?.multipart && !detail?.rawBody?.length) {
           expect(op?.requestBody, `${name}: no body read`).toBeUndefined();
+        }
+        if (["post", "put", "patch"].includes(method) && detail?.body === null) {
+          // An explicit "reads no body" (null) is only honest without another body form.
+          expect(media.includes("application/json"), name).toBe(false);
         }
         // Errors come from the shared responses, never inline.
         for (const [s, response] of Object.entries(op?.responses ?? {})) {

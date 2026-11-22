@@ -40,6 +40,7 @@ import {
 } from "../routes/agent-roster.js";
 import { mountAgentTransferRoutes } from "../routes/agent-transfer.js";
 import type { TeamVariables } from "../authz/middleware.js";
+import { CATALOG_AREAS } from "./catalog/index.js";
 import { openApiDocument } from "./document.js";
 import { teamDefaultAgentRoutes } from "../routes/team-default-agent.js";
 import { projectFromFolderRoutes } from "../routes/project-from-folder.js";
@@ -199,16 +200,15 @@ describe("OpenAPI document (KOBE-34 ac-1)", () => {
         "post /v1/memory/semantic/items/{scope}/{id}/revert",
       ].sort(),
     );
-    // Other /v1/memory routes are listed at summary level by the catalog (KOBE-727).
+    // Other /v1/memory routes are described by the catalog (KOBE-727, KOBE-771).
     const catalogOnly = (op: string) => !op.includes("/v1/memory/semantic/");
+    const catalogOps = new Set(
+      CATALOG_AREAS.flatMap((a) => a.entries.map(([method, path]) => `${method} ${path}`)),
+    );
     expect(
       documented("/v1/memory")
         .filter(catalogOnly)
-        .every((op) => {
-          const [method = "", path = ""] = op.split(" ");
-          const item = (doc.paths as Record<string, Record<string, Record<string, unknown>>>)[path];
-          return item?.[method]?.["x-kobe-detail"] === "summary";
-        }),
+        .every((op) => catalogOps.has(op)),
     ).toBe(true);
     expect(documented("/v1/team/memory/stewards")).toEqual(
       [
