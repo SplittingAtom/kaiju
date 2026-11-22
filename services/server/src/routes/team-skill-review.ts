@@ -1,5 +1,5 @@
-import { MODEL_ALIAS_PATTERN } from "@kobe/db";
-import { Hono } from "hono";
+import { MODEL_ALIAS_PATTERN, type KobeDb } from "@kobe/db";
+import { Hono, type Context } from "hono";
 import { z } from "zod";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import { siteRoleAllows } from "../authz/permissions.js";
@@ -10,6 +10,7 @@ import {
   findingsDigest,
   reviewVerdict,
   listReviews,
+  type DecideError,
   type ReviewRecord,
 } from "../skills/review.js";
 import {
@@ -86,18 +87,11 @@ const reviewJson = (r: ReviewRecord) => ({
   reviewNote: r.reviewNote,
 });
 
-/**
- * Team skill review (`/v1/team/skill-review`, spec D22, KOBE-80). Team admins list the scanned
- * versions waiting for review (flagged first) and approve or reject them; only approved versions
- * are usable. The switch `personalSkillsDisabled` leaves members' personal skills out of the team's
- * runs. Both changes are audited.
- */
-export function teamSkillReviewRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }> {
-  const app = new Hono<{ Variables: TeamVariables }>();
-  const db = deps.database.db;
-  app.use(requireTeam(deps));
+type Ctx = Context<{ Variables: TeamVariables }>;
 
-  app.get("/", requireTeamPermission("team.skills.review"), async (c) => {
+/** `GET /`: a page of the queue. Read only (versions without a finished scan: P2-35's job). */
+function listHandler(db: KobeDb) {
+  return async (c: Ctx) => {
     const filter = filterSchema.safeParse(c.req.query("status") ?? "pending");
     if (!filter.success)
       return invalidRequest(c, "status must be pending, approved, rejected or all.");
@@ -112,116 +106,113 @@ export function teamSkillReviewRoutes(deps: ServerDeps): Hono<{ Variables: TeamV
       ...(cursor ? { cursor } : {}),
     });
     return c.json({ reviews: page.reviews.map(reviewJson), nextCursor: page.nextCursor });
-  });
-
-  app.post(
-    "/:skillId/versions/:version",
-    requireTeamPermission("team.skills.review"),
-    async (c) => {
-      const skillId = param(c, "skillId", idSchema);
-      const version = param(c, "version", versionSchema);
-      const body = await parseBody(c, decisionSchema);
-      if (!skillId.success || !version.success) {
-        return notFound(c, "not_found", "No such skill version.");
-      }
-      if (!body)
-        return invalidRequest(c, "Send decision: approved or rejected, and an optional note.");
-      const result = await decideReview(
-        db,
-        c.get("team").id,
-        { skillId: skillId.data, version: version.data },
-        {
-          status: body.decision,
-          note: body.note || null,
-          reviewerId: c.get("user").id,
-          ...(body.acknowledgedFindings ? { acknowledgedFindings: body.acknowledgedFindings } : {}),
-          ...(body.expectedStatus ? { expectedStatus: body.expectedStatus } : {}),
-          mayOverrideBlock: siteRoleAllows(c.get("siteRole"), "site.skills.override_scan"),
-        },
-      );
-      if (!result.ok) {
-        if (result.error === "not_found") return notFound(c, "not_found", "No such skill version.");
-        if (result.error === "changed_since_approval")
-          return c.json(
-            {
-              code: result.error,
-              message: "The review's status changed meanwhile; nothing was changed.",
-            },
-            409,
-          );
-        if (result.error === "acknowledgement_required")
-          return c.json(
-            {
-              code: result.error,
-              message: "The scan has findings: read them and acknowledge them to approve.",
-            },
-            422,
-          );
-        if (result.error === "findings_changed")
-          return c.json(
-            {
-              code: result.error,
-              message: "The scan's findings changed since you read them: review them again.",
-            },
-            409,
-          );
-        if (result.error === "scan_pending")
-          return c.json(
-            {
-              code: result.error,
-              message: "This version has not been scanned yet: it can be approved once it is.",
-            },
-            409,
-          );
-        if (result.error === "scan_blocked")
-          return c.json(
-            {
-              code: result.error,
-              message:
-                "The scan blocks this version: only a Site admin can approve it, with a reason.",
-            },
-            409,
-          );
-        if (result.error === "override_reason_required")
-          return invalidRequest(c, "Give a reason (note) to approve a version the scan blocks.");
-        if (result.error === "blocklisted")
-          return c.json(
-            {
-              code: "skill_blocklisted",
-              message: "This bundle is on the site's blocklist and can't be approved.",
-            },
-            409,
-          );
-        return c.json(
-          { code: "unchanged", message: `That version is already ${body.decision}.` },
-          409,
-        );
-      }
-      return c.json({ review: reviewJson(result.review) });
-    },
-  );
-
-  // The team's skill switches: personal skills (KOBE-80) and the catalog switches (KOBE-316,
-  // SK25: "Members may add catalog skills for themselves", "Builders may install catalog
-  // skills"). Any member reads them; Team admins change them, each change audited.
-  const settingsJson = async (teamId: string) => {
-    const catalog = await getCatalogSwitches(db, teamId);
-    return {
-      personalSkillsDisabled: await getPersonalSkillsDisabled(db, teamId),
-      membersMayAddCatalog: catalog.membersMayAdd,
-      buildersMayInstallCatalog: catalog.buildersMayInstall,
-      buildersMayPromote: await getBuildersMayPromote(db, teamId),
-      // Null: the team default judges (also when the chosen model was disabled since).
-      evalJudgeAlias: await getEvalJudgeAlias(db, teamId),
-      evalCap: await getEvalCap(db, teamId),
-    };
   };
+}
 
-  app.get("/settings", requireTeamPermission("team.read"), async (c) =>
-    c.json(await settingsJson(c.get("team").id)),
-  );
+/** A refused decision as its HTTP answer. */
+function decideRefusal(c: Ctx, error: DecideError, decision: string) {
+  if (error === "not_found") return notFound(c, "not_found", "No such skill version.");
+  if (error === "changed_since_approval")
+    return c.json(
+      {
+        code: error,
+        message: "The review's status changed meanwhile; nothing was changed.",
+      },
+      409,
+    );
+  if (error === "acknowledgement_required")
+    return c.json(
+      {
+        code: error,
+        message: "The scan has findings: read them and acknowledge them to approve.",
+      },
+      422,
+    );
+  if (error === "findings_changed")
+    return c.json(
+      {
+        code: error,
+        message: "The scan's findings changed since you read them: review them again.",
+      },
+      409,
+    );
+  if (error === "scan_pending")
+    return c.json(
+      {
+        code: error,
+        message: "This version has not been scanned yet: it can be approved once it is.",
+      },
+      409,
+    );
+  if (error === "scan_blocked")
+    return c.json(
+      {
+        code: error,
+        message: "The scan blocks this version: only a Site admin can approve it, with a reason.",
+      },
+      409,
+    );
+  if (error === "override_reason_required")
+    return invalidRequest(c, "Give a reason (note) to approve a version the scan blocks.");
+  if (error === "blocklisted")
+    return c.json(
+      {
+        code: "skill_blocklisted",
+        message: "This bundle is on the site's blocklist and can't be approved.",
+      },
+      409,
+    );
+  return c.json({ code: "unchanged", message: `That version is already ${decision}.` }, 409);
+}
 
-  app.put("/settings", requireTeamPermission("team.skills.review"), async (c) => {
+/** `POST /:skillId/versions/:version`: approve or reject. */
+function decideHandler(db: KobeDb) {
+  return async (c: Ctx) => {
+    const skillId = param(c, "skillId", idSchema);
+    const version = param(c, "version", versionSchema);
+    const body = await parseBody(c, decisionSchema);
+    if (!skillId.success || !version.success) {
+      return notFound(c, "not_found", "No such skill version.");
+    }
+    if (!body)
+      return invalidRequest(c, "Send decision: approved or rejected, and an optional note.");
+    const result = await decideReview(
+      db,
+      c.get("team").id,
+      { skillId: skillId.data, version: version.data },
+      {
+        status: body.decision,
+        note: body.note || null,
+        reviewerId: c.get("user").id,
+        ...(body.acknowledgedFindings ? { acknowledgedFindings: body.acknowledgedFindings } : {}),
+        ...(body.expectedStatus ? { expectedStatus: body.expectedStatus } : {}),
+        mayOverrideBlock: siteRoleAllows(c.get("siteRole"), "site.skills.override_scan"),
+      },
+    );
+    if (!result.ok) return decideRefusal(c, result.error, body.decision);
+    return c.json({ review: reviewJson(result.review) });
+  };
+}
+
+// The team's skill switches: personal skills (KOBE-80) and the catalog switches (KOBE-316,
+// SK25: "Members may add catalog skills for themselves", "Builders may install catalog
+// skills"). Any member reads them; Team admins change them, each change audited.
+async function settingsJson(db: KobeDb, teamId: string) {
+  const catalog = await getCatalogSwitches(db, teamId);
+  return {
+    personalSkillsDisabled: await getPersonalSkillsDisabled(db, teamId),
+    membersMayAddCatalog: catalog.membersMayAdd,
+    buildersMayInstallCatalog: catalog.buildersMayInstall,
+    buildersMayPromote: await getBuildersMayPromote(db, teamId),
+    // Null: the team default judges (also when the chosen model was disabled since).
+    evalJudgeAlias: await getEvalJudgeAlias(db, teamId),
+    evalCap: await getEvalCap(db, teamId),
+  };
+}
+
+/** `PUT /settings`. */
+function putSettingsHandler(db: KobeDb) {
+  return async (c: Ctx) => {
     const body = await parseBody(c, settingsSchema);
     if (!body)
       return invalidRequest(
@@ -256,8 +247,29 @@ export function teamSkillReviewRoutes(deps: ServerDeps): Hono<{ Variables: TeamV
         },
         422,
       );
-    return c.json(await settingsJson(teamId));
-  });
+    return c.json(await settingsJson(db, teamId));
+  };
+}
 
+/**
+ * Team skill review (`/v1/team/skill-review`, spec D22, KOBE-80). Team admins list the scanned
+ * versions waiting for review (flagged first) and approve or reject them; only approved versions
+ * are usable. The switch `personalSkillsDisabled` leaves members' personal skills out of the team's
+ * runs. Both changes are audited.
+ */
+export function teamSkillReviewRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }> {
+  const app = new Hono<{ Variables: TeamVariables }>();
+  const db = deps.database.db;
+  app.use(requireTeam(deps));
+  app.get("/", requireTeamPermission("team.skills.review"), listHandler(db));
+  app.post(
+    "/:skillId/versions/:version",
+    requireTeamPermission("team.skills.review"),
+    decideHandler(db),
+  );
+  app.get("/settings", requireTeamPermission("team.read"), async (c) =>
+    c.json(await settingsJson(db, c.get("team").id)),
+  );
+  app.put("/settings", requireTeamPermission("team.skills.review"), putSettingsHandler(db));
   return app;
 }
