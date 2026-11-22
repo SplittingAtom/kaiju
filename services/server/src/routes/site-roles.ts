@@ -2,9 +2,10 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { SITE_GRANTS } from "@kobe/protocol";
 import { giveGrant, listGrants, takeGrant } from "../skills/registry/grants.js";
-import { and, asc, eq, siteRoles, ne, users } from "@kobe/db";
+import { and, asc, eq, lockSsoRequired, siteRoles, ne, users } from "@kobe/db";
 import type { AuthVariables } from "../auth/session.js";
 import { recordAudit } from "../audit/record.js";
+import { OwnerWouldLoseSignInError, assertOwnerKeepsSignIn } from "../sso/owner-invariant.js";
 import { requireSitePermission } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { findUserId } from "../teams/members.js";
@@ -128,24 +129,56 @@ export function siteRolesRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
     const me = c.get("user").id;
     if (body.userId === me) return invalidRequest(c, "You are already the Owner.");
     if (!(await findUserId(db, { id: body.userId }))) return c.json(userNotFound, 404);
-    const transferred = await db.transaction(async (tx) => {
-      // Conditional on still being Owner: a concurrent transfer by the same Owner finds no row.
-      const demoted = await tx
-        .update(siteRoles)
-        .set({ role: "admin" })
-        .where(and(eq(siteRoles.userId, me), eq(siteRoles.role, "owner")))
-        .returning({ userId: siteRoles.userId });
-      if (demoted.length === 0) return false;
-      await tx
-        .insert(siteRoles)
-        .values({ userId: body.userId, role: "owner" })
-        .onConflictDoUpdate({ target: siteRoles.userId, set: { role: "owner" } });
-      await recordAudit(tx, {
-        action: "identity.ownership.transferred",
-        target: { fromUserId: me, toUserId: body.userId },
+    let transferred: boolean | "deactivated";
+    try {
+      transferred = await db.transaction(async (tx) => {
+        // KOBE-774: the setting's lock before the change; the new Owner must keep a sign-in.
+        await lockSsoRequired(tx);
+        // Never to a deactivated user, whatever the SSO setting (the Site keeps an active
+        // Owner); deactivation checks "is the Owner?" under the same lock.
+        const [to] = await tx
+          .select({ at: users.deactivatedAt })
+          .from(users)
+          .where(eq(users.id, body.userId));
+        if (to?.at) return "deactivated" as const;
+        // Conditional on still being Owner: a concurrent transfer by the same Owner finds no row.
+        const demoted = await tx
+          .update(siteRoles)
+          .set({ role: "admin" })
+          .where(and(eq(siteRoles.userId, me), eq(siteRoles.role, "owner")))
+          .returning({ userId: siteRoles.userId });
+        if (demoted.length === 0) return false;
+        await tx
+          .insert(siteRoles)
+          .values({ userId: body.userId, role: "owner" })
+          .onConflictDoUpdate({ target: siteRoles.userId, set: { role: "owner" } });
+        await assertOwnerKeepsSignIn(tx);
+        await recordAudit(tx, {
+          action: "identity.ownership.transferred",
+          target: { fromUserId: me, toUserId: body.userId },
+        });
+        return true;
       });
-      return true;
-    });
+    } catch (err) {
+      if (!(err instanceof OwnerWouldLoseSignInError)) throw err;
+      return c.json(
+        {
+          code: "owner_not_linked",
+          message:
+            "Single sign-on is required and this person has no sign-in linked at an enabled identity provider, so they could not sign in as Owner. Have them link their account first, or turn Require single sign-on off.",
+        },
+        409,
+      );
+    }
+    if (transferred === "deactivated") {
+      return c.json(
+        {
+          code: "user_deactivated",
+          message: "This account is deactivated. Reactivate it before handing it ownership.",
+        },
+        409,
+      );
+    }
     if (!transferred) {
       return c.json({ code: "forbidden", message: "Only the Owner can transfer ownership." }, 403);
     }

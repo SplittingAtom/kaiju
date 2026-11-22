@@ -20,6 +20,7 @@ import {
   type SsoProvider,
 } from "../sso/oidc-flow.js";
 import { redirectUriFor, revealClientSecret, type ProviderStore } from "../sso/providers.js";
+import { readSsoRequired } from "../sso/required.js";
 import { mfaEvidence } from "../sso/mfa.js";
 import { safeReturnTo } from "../sso/return-to.js";
 import type { SsoSettings } from "../sso/settings.js";
@@ -83,7 +84,8 @@ export const linkIntentCookieName = (secure: boolean): string =>
  * shares Better Auth's Postgres rate limits, session creation (the deactivation hook and trigger),
  * cookies and revocation:
  *
- * - `GET /api/auth/sso/providers` → the enabled providers' slug and name (sign-in buttons);
+ * - `GET /api/auth/sso/providers` → the enabled providers' slug and name (sign-in buttons), and
+ *   `ssoRequired` (KOBE-774: the Site requires single sign-on, so the page offers nothing else);
  * - `GET /api/auth/sso/start/:slug?returnTo=` → redirect to the IdP (code + PKCE S256, `state`,
  *   `nonce`), with the flow sealed in an HttpOnly cookie and `state` recorded for single use;
  * - `GET /api/auth/sso/callback/:slug` → checks and consumes `state`, exchanges the code,
@@ -167,7 +169,9 @@ export function ssoPlugin(options: SsoPluginOptions) {
         if (!o.settings.enabled) throw notFound();
         const providers = await listSignInProviders(o.db, runtime().settings.helmSecrets);
         ctx.setHeader("cache-control", "no-store");
-        return ctx.json({ providers });
+        // KOBE-774: the sign-in page then offers only these buttons (no password, no passkey).
+        const ssoRequired = providers.length > 0 && (await readSsoRequired(o.db));
+        return ctx.json({ providers, ssoRequired });
       }),
 
       ssoStart: createAuthEndpoint("/sso/start/:slug", { method: "GET", query }, async (ctx) => {

@@ -46,6 +46,7 @@ import { teamDefaultAgentRoutes } from "../routes/team-default-agent.js";
 import { projectFromFolderRoutes } from "../routes/project-from-folder.js";
 import { egressRequestRoutes } from "../routes/egress-requests.js";
 import { siteEgressRoutes } from "../routes/site-egress.js";
+import { siteSsoRoutes } from "../routes/site-sso.js";
 
 // Regenerate after changing routes or schemas:
 //   UPDATE_OPENAPI=1 pnpm --filter @kobe/server exec vitest run src/openapi && pnpm format
@@ -120,6 +121,14 @@ describe("OpenAPI document (KOBE-34 ac-1)", () => {
   it("describes exactly the workspace file-threads route (KOBE-611)", () => {
     expect(documented("/v1/workspace/file-threads")).toEqual(
       mountedOperations("/v1/workspace", workspaceFileThreadRoutes(fakeDeps)),
+    );
+  });
+
+  it("describes exactly the site single sign-on settings routes (KOBE-774)", () => {
+    expect(documented("/v1/site/sso/settings")).toEqual(
+      mountedOperations("/v1/site/sso", siteSsoRoutes(fakeDeps)).filter((op) =>
+        op.endsWith("/settings"),
+      ),
     );
   });
 

@@ -266,6 +266,13 @@ accounts (Kobe never deletes users).
 | `KOBE_SSO_MOCK_SLUG`, `_NAME` | Optional: slug (default `e2e-mock`) and display name (default `Mock IdP (e2e)`).        |
 | `KOBE_USER2`, `KOBE_PW2`      | member2 for the link test (password sign-in, no authenticator app); skipped without it. |
 
+`sign-in-sso-only` (KOBE-774) checks the sign-in page with **Require single sign-on** off and on,
+using the same mock and variables: the Owner (`KOBE_USER`/`KOBE_PW`, no authenticator app) links
+their account to the mock once, turns the setting on from that SSO session and off again. Turning
+it on ends every local session, the suite's stored one included, so run it on its own:
+`npx playwright test sign-in-sso-only`. If a run dies with the setting on, turn it off in the Site
+console or with `kobe sso allow-local-sign-in` (see the guide's Single sign-on page).
+
 The spec imports the mock's SCIM client from `../sso/`, so copy `e2e/sso` beside `e2e/browser`
 when you run the suite elsewhere (for example in the Playwright container:
 `tar -c e2e/browser e2e/sso --exclude node_modules`, then `cd e2e/browser`).

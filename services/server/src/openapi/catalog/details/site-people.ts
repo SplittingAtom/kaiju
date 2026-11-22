@@ -391,7 +391,7 @@ export const sitePeopleDetails: Readonly<Record<string, CatalogDetail>> = {
   "post /v1/site/roles/transfer-ownership": {
     body: named("TransferSiteOwnershipBody", transferOwnershipSchema),
     response: untyped("SiteOwnershipTransferred", obj({ ownerUserId: uuid })),
-    errors: ["404"],
+    errors: ["404", "409"],
   },
 
   // SSO providers, mappings, SCIM tokens and links

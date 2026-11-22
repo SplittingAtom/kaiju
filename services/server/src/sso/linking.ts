@@ -18,8 +18,11 @@ import {
   type KobeDb,
   type KobeTx,
   isUniqueViolation,
+  lockSsoRequired,
+  readSsoRequiredIn,
 } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
+import { OwnerWouldLoseSignInError, assertOwnerKeepsSignIn } from "./owner-invariant.js";
 import type { VerifiedIdentity } from "./claims.js";
 import type { LinkIntent } from "./link-intent.js";
 
@@ -363,7 +366,9 @@ export async function hasOtherSignIn(
   userId: string,
   exceptProviderId: string | null,
   exceptPasskeyId: string | null = null,
+  options: { readonly identitiesOnly?: boolean } = {},
 ): Promise<boolean> {
+  if (options.identitiesOnly) return enabledLinkBesides(tx, userId, exceptProviderId);
   const passwords = await tx
     .select({ id: accounts.id })
     .from(accounts)
@@ -376,6 +381,15 @@ export async function hasOtherSignIn(
     .where(eq(passkeys.userId, userId))
     .for("update");
   if (keys.some((k) => k.id !== exceptPasskeyId)) return true;
+  return enabledLinkBesides(tx, userId, exceptProviderId);
+}
+
+/** A link to an enabled provider other than `exceptProviderId`. */
+async function enabledLinkBesides(
+  tx: KobeTx,
+  userId: string,
+  exceptProviderId: string | null,
+): Promise<boolean> {
   const others = await tx
     .select({ providerId: ssoIdentities.providerId })
     .from(ssoIdentities)
@@ -412,13 +426,30 @@ export type UnlinkOutcome =
 /**
  * Removes the user's link to the provider and ends their sessions made through it (§6, §9), in one
  * transaction on the locked user row. Refused when it is the user's only way to sign in (no
- * password, no passkey, no other link): a site admin deactivates such an account instead.
+ * password, no passkey, no other link): a site admin deactivates such an account instead. While
+ * single sign-on is required (KOBE-774) a password or passkey is no way to sign in: only another
+ * link at an enabled provider counts. Takes the setting's lock first and keeps its invariant.
  */
 export async function unlinkIdentity(
   db: KobeDb,
   input: { readonly userId: string; readonly providerId: string; readonly by: "user" | "admin" },
 ): Promise<UnlinkOutcome> {
+  try {
+    return await unlinkInTx(db, input);
+  } catch (err) {
+    if (err instanceof OwnerWouldLoseSignInError)
+      return { ok: false, failure: "last_sign_in_method" };
+    throw err;
+  }
+}
+
+function unlinkInTx(
+  db: KobeDb,
+  input: { readonly userId: string; readonly providerId: string; readonly by: "user" | "admin" },
+): Promise<UnlinkOutcome> {
   return db.transaction(async (tx): Promise<UnlinkOutcome> => {
+    await lockSsoRequired(tx);
+    const identitiesOnly = await readSsoRequiredIn(tx);
     await tx.select({ id: users.id }).from(users).where(eq(users.id, input.userId)).for("update");
     const [link] = await tx
       .select({ subject: ssoIdentities.subject })
@@ -427,7 +458,7 @@ export async function unlinkIdentity(
         and(eq(ssoIdentities.userId, input.userId), eq(ssoIdentities.providerId, input.providerId)),
       );
     if (!link) return { ok: false, failure: "not_linked" };
-    if (!(await hasOtherSignIn(tx, input.userId, input.providerId))) {
+    if (!(await hasOtherSignIn(tx, input.userId, input.providerId, null, { identitiesOnly }))) {
       return { ok: false, failure: "last_sign_in_method" };
     }
     await tx
@@ -446,6 +477,7 @@ export async function unlinkIdentity(
       .delete(sessions)
       .where(inArray(sessions.id, ids))
       .returning({ id: sessions.id });
+    await assertOwnerKeepsSignIn(tx);
     await recordAudit(tx, {
       action: "identity.sso.link.removed",
       target: {

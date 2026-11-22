@@ -4,8 +4,10 @@ import {
   isNotNull,
   isNull,
   listMemberships,
+  lockSsoRequired,
   notifyEgressUserChanged,
   sessions,
+  siteRoles,
   teamMembers,
   users,
   verifications,
@@ -15,6 +17,19 @@ import {
 } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
 import { revokeAllInvitesSentBy } from "../invitations/team-invites.js";
+import { assertOwnerKeepsSignIn } from "../sso/owner-invariant.js";
+
+/**
+ * The target is the Owner (or, with `protectSiteRoles`, any site-role holder or the setup Owner):
+ * refused under the lock that ownership transfer also takes, so the Site never ends up without an
+ * active Owner, whether or not single sign-on is required (KOBE-774 third review).
+ */
+export class DeactivationProtectedError extends Error {
+  constructor() {
+    super("the Owner (or a protected user) can't be deactivated");
+    this.name = "DeactivationProtectedError";
+  }
+}
 
 /** True when the user exists and is deactivated. */
 export async function isDeactivated(db: KobeDb, userId: string): Promise<boolean> {
@@ -36,6 +51,8 @@ export type DeactivatedVia = "admin" | `scim:${string}`;
 
 export interface DeactivationOptions extends ActivationOptions {
   readonly via?: DeactivatedVia;
+  /** Refuse every site-role holder and the setup Owner too (SCIM, SSO8), not only the Owner. */
+  readonly protectSiteRoles?: boolean;
 }
 
 /** How a deactivation was recorded (`users.deactivated_via`); null when active or unknown. */
@@ -53,7 +70,8 @@ export async function deactivatedVia(db: KobeDb | KobeTx, userId: string): Promi
  * verification bound to the user (password-reset tokens, 2FA challenges). The row lock taken by the
  * UPDATE pairs with the sessions trigger, so a sign-in racing this can't leave a live session.
  * Memberships are kept (inert while deactivated) so reactivation restores access. Returns false if
- * the user was already deactivated.
+ * the user was already deactivated. Takes the single sign-on lock first (the lock ownership
+ * transfer takes) and refuses the Owner under it ({@link DeactivationProtectedError}).
  */
 export async function deactivateUser(
   db: KobeDb,
@@ -62,6 +80,16 @@ export async function deactivateUser(
 ): Promise<boolean> {
   const via = options.via ?? "admin";
   const changed = await db.transaction(async (tx) => {
+    await lockSsoRequired(tx);
+    const [target] = await tx
+      .select({ role: siteRoles.role, setupOwner: users.setupOwner })
+      .from(users)
+      .leftJoin(siteRoles, eq(siteRoles.userId, users.id))
+      .where(eq(users.id, userId));
+    const protectedUser =
+      target?.role === "owner" ||
+      (options.protectSiteRoles === true && (target?.role != null || target?.setupOwner === true));
+    if (protectedUser) throw new DeactivationProtectedError();
     const changed = await tx
       .update(users)
       .set({ deactivatedAt: new Date(), deactivatedVia: via, updatedAt: new Date() })
@@ -79,6 +107,7 @@ export async function deactivateUser(
     await tx.delete(sessions).where(eq(sessions.userId, userId));
     await tx.delete(verifications).where(eq(verifications.value, userId));
     await options.inTx?.(tx, changed.length > 0);
+    await assertOwnerKeepsSignIn(tx);
     if (changed.length > 0) {
       // Egress proxies close the user's open tunnels (KOBE-38).
       await notifyEgressUserChanged(tx, userId);
@@ -121,6 +150,7 @@ async function reactivate(
   options: ActivationOptions,
 ): Promise<"reactivated" | "unchanged" | "refused"> {
   return db.transaction(async (tx) => {
+    await lockSsoRequired(tx);
     const [row] = await tx
       .select({ at: users.deactivatedAt, via: users.deactivatedVia })
       .from(users)
@@ -133,6 +163,7 @@ async function reactivate(
       .where(and(eq(users.id, userId), isNotNull(users.deactivatedAt)))
       .returning({ id: users.id });
     await options.inTx?.(tx, changed.length > 0);
+    await assertOwnerKeepsSignIn(tx);
     if (changed.length > 0) {
       await recordAudit(tx, { action: "identity.user.reactivated", target: { userId } });
     }

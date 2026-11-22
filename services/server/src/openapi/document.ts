@@ -17,6 +17,7 @@ import { pendingOpenApiPaths, pendingOpenApiSchemas } from "./pending.js";
 import { projectCommitsOpenApiPaths, projectCommitsOpenApiSchemas } from "./project-commits.js";
 import { runsOpenApiPaths, runsOpenApiSchemas } from "./runs.js";
 import { semanticMemoryOpenApiPaths, semanticMemoryOpenApiSchemas } from "./semantic-memory.js";
+import { siteSsoSettingsOpenApiPaths, siteSsoSettingsOpenApiSchemas } from "./site-sso-settings.js";
 import { threadsOpenApiPaths, threadsOpenApiSchemas } from "./threads.js";
 import { threadFoldersOpenApiPaths, threadFoldersOpenApiSchemas } from "./thread-folders.js";
 import { threadFileLinksOpenApiPaths, threadFileLinksOpenApiSchemas } from "./thread-file-links.js";
@@ -82,6 +83,7 @@ export function openApiDocument(): Record<string, unknown> {
         ...egressAccessOpenApiPaths(),
         ...threadFileLinksOpenApiPaths(),
         ...semanticMemoryOpenApiPaths(),
+        ...siteSsoSettingsOpenApiPaths(),
       },
       catalogOpenApiPaths(),
     ),
@@ -108,6 +110,7 @@ export function openApiDocument(): Record<string, unknown> {
           ...egressAccessOpenApiSchemas(),
           ...threadFileLinksOpenApiSchemas(),
           ...semanticMemoryOpenApiSchemas(),
+          ...siteSsoSettingsOpenApiSchemas(),
         },
         catalogOpenApiSchemas(),
       ),

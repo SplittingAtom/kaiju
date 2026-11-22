@@ -24,6 +24,7 @@ import type { ServerDeps } from "../deps.js";
 import { EgressBlockedRelay } from "../egress/blocked-relay.js";
 import { resealTeamHeaders } from "../egress/header-store.js";
 import { endSsoSessionsWhenOff, seedHelmProviders } from "../sso/providers.js";
+import { notifySsoRequiredOff } from "../sso/required-notify.js";
 import { EgressRequestSweeper, sweepEgressRequestNotifications } from "../egress/request-notify.js";
 import { seedGalleryAgents } from "../gallery/seed.js";
 import { seedKobeBuiltinConnector } from "@kobe/db";
@@ -131,6 +132,20 @@ export async function seedAtStart(deps: ServerDeps, logger: Logger): Promise<Sta
         logger.info(
           { created: seeded.created, updated: seeded.updated, disabled: seeded.retired },
           "single sign-on providers from the chart applied",
+        );
+      }
+      if (seeded.ssoRequiredTurnedOff && seeded.ssoRequiredReleasedBy !== undefined) {
+        const reason = seeded.ssoRequiredReason ?? "last_provider";
+        logger.warn(
+          { slug: seeded.ssoRequiredReleasedBy, reason },
+          reason === "last_provider"
+            ? "the chart left no enabled single sign-on provider: Require single sign-on turned itself off"
+            : "the chart left the Owner without a sign-in at an enabled provider: Require single sign-on turned itself off",
+        );
+        void notifySsoRequiredOff(
+          { db: deps.database.db, mailer: deps.mailer, publicUrl: deps.publicUrl },
+          seeded.ssoRequiredReleasedBy,
+          reason,
         );
       }
       for (const slug of seeded.conflicts) {
