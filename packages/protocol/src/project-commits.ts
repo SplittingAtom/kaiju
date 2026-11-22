@@ -135,9 +135,18 @@ export type ProjectCheckout = z.infer<typeof projectCheckoutSchema>;
 export const checkoutProjectRequestSchema = z.strictObject({});
 export type CheckoutProjectRequest = z.infer<typeof checkoutProjectRequestSchema>;
 
-/** `GET /v1/projects/:id/checkouts` (owners, admins: "Working copies") -> list with the member. */
+/**
+ * `GET /v1/projects/:id/checkouts` (owners, admins: "Working copies") -> list with the member and
+ * `changed_files`, how many files the working copy changes against its base (uncommitted work a
+ * project delete would discard, KOBE-780).
+ */
 export const projectCheckoutsResponseSchema = z.strictObject({
-  checkouts: z.array(projectCheckoutSchema.extend({ user_id: uuidSchema })),
+  checkouts: z.array(
+    projectCheckoutSchema.extend({
+      user_id: uuidSchema,
+      changed_files: z.number().int().nonnegative(),
+    }),
+  ),
 });
 export type ProjectCheckoutsResponse = z.infer<typeof projectCheckoutsResponseSchema>;
 

@@ -46,7 +46,7 @@ export function projectFileRoutes(kit: ProjectKit): Hono<{ Variables: TeamVariab
 
   app.get("/:id/files", (c) =>
     withProject(c, "view", async (tx, access) =>
-      c.json({ files: await listProjectFiles(tx, access.project.teamId, access.project.id) }),
+      c.json({ files: await listProjectFiles(tx, access.project) }),
     ),
   );
 
@@ -89,6 +89,7 @@ export function projectFileRoutes(kit: ProjectKit): Hono<{ Variables: TeamVariab
       {
         folder: upload.fields.path,
         name: upload.name,
+        slug: access.project.slug,
         declaredMime: upload.declaredMime,
         body: upload.file,
       },
@@ -140,6 +141,8 @@ export function projectFileRoutes(kit: ProjectKit): Hono<{ Variables: TeamVariab
     if (!fileId.success) return failure(c, "not_found");
     let key: string | undefined;
     const res = await withProject(c, "edit", async (tx, access) => {
+      // Archive freezes the project's files (P2-41), as it does uploads, commits and reverts.
+      if (access.project.archivedAt !== null) return failure(c, "archived");
       try {
         // A savepoint: the hold guard (KH001) refuses the delete without ending the transaction.
         key = await tx.transaction((sp) =>

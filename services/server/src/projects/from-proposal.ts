@@ -10,17 +10,17 @@ import {
   type ProposalNotAllowedError,
 } from "@kobe/protocol";
 import { resolveMime, SNIFF_BYTES } from "../uploads/mime.js";
-import { lockTeamStorage } from "../uploads/quota.js";
-import { verifyingStream } from "../workspace-sync/object-store.js";
+import { verifyingStream, type ObjectStore } from "../workspace-sync/object-store.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import { loadAccess } from "./access.js";
 import { heldContents, type CommitDeps } from "./commits.js";
-import { overLimit } from "./storage.js";
+import { copyThenWrite, type Copy } from "./copy-loop.js";
+import { clashesInTree, fitsMount, isConflictCopy } from "./paths.js";
+import { checkLimitsAfterWrite, OverLimit } from "./storage.js";
 import {
   headOf,
   loadTree,
   projectBlobKey,
-  queueProjectBlobs,
   writeCommit,
   type Head,
   type Tree,
@@ -86,27 +86,11 @@ interface Plan {
 
 type Deps = Pick<CommitDeps, "db" | "blobs" | "limits" | "mounts" | "log">;
 
-const MAX_ROUNDS = 3;
-
-const isConflictName = (path: string): boolean =>
-  path.slice(path.lastIndexOf("/") + 1).includes(".conflict-");
-
 /** `projects/<slug>/<rest>` -> `<rest>` (the slug may have changed since; the project id decides). */
 function relativePath(path: string): string | undefined {
   const parts = path.split("/");
   if (parts[0] !== "projects" || parts.length < 3) return undefined;
   return parts.slice(2).join("/");
-}
-
-/** A path that would be a file inside a file, or a file where a folder is. */
-export function clashesInTree(tree: Tree, rel: string): boolean {
-  const parts = rel.split("/");
-  for (let i = 1; i < parts.length; i++) {
-    if (tree.has(parts.slice(0, i).join("/"))) return true;
-  }
-  const folder = `${rel}/`;
-  for (const path of tree.keys()) if (path.startsWith(folder)) return true;
-  return false;
 }
 
 async function findProposal(
@@ -203,7 +187,7 @@ async function inspect(
   }
   if (current === undefined) {
     if (tree.size >= PROJECT_FILES_MAX) return { status: "refused", error: "too_many_files" };
-    if (isConflictName(rel) || clashesInTree(tree, rel)) {
+    if (isConflictCopy(rel) || clashesInTree(tree, rel) || !fitsMount(access.project.slug, rel)) {
       return { status: "refused", error: "invalid_path" };
     }
   }
@@ -228,45 +212,27 @@ async function inspect(
 const isPlan = (p: Plan | ProposalResult): p is Plan => "rel" in p;
 
 /** Step 2: the recorded bytes to their content-addressed key, hash and size checked. */
-async function store(deps: Deps, req: ProposalRequest, plan: Plan): Promise<string | undefined> {
-  const blobs = deps.blobs;
-  if (!blobs) return undefined;
-  await withTeam(deps.db, req.owner.teamId, (tx) =>
-    queueProjectBlobs(
-      tx,
-      req.owner.teamId,
-      req.projectId,
-      req.owner.userId,
-      [plan.key],
-      "reservation",
-    ),
-  );
-  const verified = verifyingStream(plan.sha256, plan.content.length);
-  Readable.from([plan.content]).pipe(verified);
-  await blobs.objects.put(plan.key, verified, plan.content.length);
-  return resolveMime(plan.content.subarray(0, SNIFF_BYTES), "text/plain");
-}
+const store =
+  (objects: ObjectStore) =>
+  async (copy: Copy, plan: Plan): Promise<string> => {
+    const verified = verifyingStream(plan.sha256, plan.content.length);
+    Readable.from([plan.content]).pipe(verified);
+    await objects.put(copy.key, verified, plan.content.length);
+    return resolveMime(plan.content.subarray(0, SNIFF_BYTES), "text/plain");
+  };
 
 async function write(
   deps: Deps,
   req: ProposalRequest,
-  mime: string | undefined,
+  mimes: ReadonlyMap<string, string>,
 ): Promise<ProposalResult | "again"> {
   const { teamId } = req.owner;
   return withTeam(deps.db, teamId, async (tx) => {
     const plan = await inspect(tx, deps, req, true);
     if (!isPlan(plan)) return plan;
+    const mime = mimes.get(plan.sha256);
     if (!plan.held && mime === undefined) return "again";
-    await lockTeamStorage(tx, teamId);
     const newObjects = plan.held ? 0 : 1;
-    const over = await overLimit(
-      tx,
-      teamId,
-      deps.limits,
-      newObjects * plan.content.length,
-      newObjects,
-    );
-    if (over !== undefined) return { status: "quota_exceeded", limit: over };
     const file: TreeFile = {
       path: plan.rel,
       sha256: plan.sha256,
@@ -277,54 +243,68 @@ async function write(
     };
     const tree = new Map(plan.tree);
     tree.set(plan.rel, file);
-    const written = await writeCommit(tx, {
-      teamId,
-      projectId: req.projectId,
-      tree,
-      author: {
-        userId: req.owner.userId,
-        kind: "user",
-        threadId: req.threadId,
-        runId: plan.runId,
-        proposalId: req.proposalId,
-      },
-      message: req.message ?? plan.proposal.summary,
-    });
-    return { status: "committed", seq: written.seq, commitId: written.commitId };
+    try {
+      const written = await tx.transaction(async (sp) => {
+        const commit = await writeCommit(sp, {
+          teamId,
+          projectId: req.projectId,
+          tree,
+          author: {
+            userId: req.owner.userId,
+            kind: "user",
+            threadId: req.threadId,
+            runId: plan.runId,
+            proposalId: req.proposalId,
+          },
+          message: req.message ?? plan.proposal.summary,
+        });
+        // The team quota under its lock, after the history aggregate (P2-44).
+        await checkLimitsAfterWrite(sp, teamId, deps.limits, {
+          bytes: newObjects * plan.content.length,
+          objects: newObjects,
+        });
+        return commit;
+      });
+      return { status: "committed", seq: written.seq, commitId: written.commitId };
+    } catch (err) {
+      if (err instanceof OverLimit) return { status: "quota_exceeded", limit: err.limit };
+      throw err;
+    }
   });
 }
 
 /** Accepts a proposal: see the module header. */
 export async function commitProposal(deps: Deps, req: ProposalRequest): Promise<ProposalResult> {
-  let mime: string | undefined;
-  for (let round = 0; round < MAX_ROUNDS; round++) {
-    const plan = await withTeam(deps.db, req.owner.teamId, (tx) => inspect(tx, deps, req, false));
-    if (!isPlan(plan)) return plan;
-    if (!plan.held && mime === undefined) {
-      // Fail fast on the quota before moving bytes (the write checks again under the lock).
-      const early = await withTeam(deps.db, req.owner.teamId, (tx) =>
-        overLimit(tx, req.owner.teamId, deps.limits, plan.content.length, 1),
-      );
-      if (early !== undefined) return { status: "quota_exceeded", limit: early };
-      try {
-        mime = await store(deps, req, plan);
-      } catch (err) {
-        deps.log.warn({ err, team_id: req.owner.teamId }, "proposal commit: storing failed");
-        return { status: "refused", error: "storage_failed" };
-      }
-      if (mime === undefined) return { status: "refused", error: "storage_failed" };
-    }
-    const written = await write(deps, req, mime);
-    if (written === "again") continue;
-    if (written.status === "committed") {
-      fireAndLog(
-        deps.log,
-        "project mount reconcile",
-        deps.mounts?.reconcileProject(req.owner.teamId, req.projectId),
-        { team_id: req.owner.teamId, project_id: req.projectId },
-      );
-    }
-    return written;
+  const written = await copyThenWrite<Plan, ProposalResult>({
+    db: deps.db,
+    teamId: req.owner.teamId,
+    projectId: req.projectId,
+    userId: req.owner.userId,
+    limits: deps.limits,
+    log: deps.log,
+    failure: "proposal commit: storing failed",
+    plan: () => withTeam(deps.db, req.owner.teamId, (tx) => inspect(tx, deps, req, false)),
+    isPlan,
+    copiesOf: (plan) =>
+      plan.held
+        ? []
+        : [{ sha256: plan.sha256, size: plan.content.length, source: "", key: plan.key }],
+    store: deps.blobs ? store(deps.blobs.objects) : undefined,
+    write: (mimes) => write(deps, req, mimes),
+    refuse: {
+      quota: (limit) => ({ status: "quota_exceeded", limit }),
+      storage: () => ({ status: "refused", error: "storage_failed" }),
+      // Kept as before the shared loop (KOBE-780 P2-45 is a pure refactor).
+      changed: () => ({ status: "refused", error: "storage_failed" }),
+    },
+  });
+  if (written.status === "committed") {
+    fireAndLog(
+      deps.log,
+      "project mount reconcile",
+      deps.mounts?.reconcileProject(req.owner.teamId, req.projectId),
+      { team_id: req.owner.teamId, project_id: req.projectId },
+    );
   }
-  return { status: "refused", error: "storage_failed" };
+  return written;
 }
