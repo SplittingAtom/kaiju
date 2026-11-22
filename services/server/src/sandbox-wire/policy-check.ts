@@ -1,5 +1,6 @@
 import {
   APPROVAL_MODES,
+  APPROVAL_TTL_MS,
   MEMORY_TOOLS,
   PROJECT_TOOLS,
   approvalModeSchema,
@@ -17,12 +18,18 @@ import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { readApprovalFloor, strictestApprovalMode } from "../policy/approval-floor.js";
 import { neverPromptReason } from "../policy/evaluate.js";
 import { appliedUserRule, recordRuleApplied } from "../policy/rule-applied.js";
-import { appliedDangerousMode, recordDangerousApplied } from "../policy/dangerous-mode.js";
+import {
+  appliedDangerousMode,
+  dangerousToolsFor,
+  recordDangerousApplied,
+} from "../policy/dangerous-mode.js";
 import { loadRunAgentTools } from "../policy/run-agent-tools.js";
 import { guardViewedFile, proposeAvailable } from "../policy/viewed-file-guard.js";
 import { guardKobeAdmin } from "../policy/kobe-admin-guard.js";
 import { guardKobeAdminCall } from "../kobe-mcp/person-guard.js";
 import { recordSkippedActionInTx } from "../policy/skipped-actions.js";
+import { decideAcrossRuns, policyInputFor } from "../mcp/decide-policy.js";
+import { loadActiveRuns } from "../mcp/run-context.js";
 import { toolCallLink } from "../thread-file-links/paths.js";
 import { recordWorkspaceLink } from "../thread-file-links/record.js";
 import type {
@@ -47,16 +54,7 @@ export function clampApprovalMode(mode: ApprovalMode, floor: ApprovalMode): Appr
   return strictestApprovalMode(mode, floor);
 }
 
-/**
- * The tools a call may run without asking under Dangerous mode (AC1): the run's agent's explicit
- * list when the site floor sets no minimum (`auto`); any stricter site floor turns it off.
- */
-export function dangerousToolsFor(context: {
-  readonly dangerousTools?: readonly string[];
-  readonly floor: ApprovalMode;
-}): string[] {
-  return context.floor === "auto" ? [...(context.dangerousTools ?? [])] : [];
-}
+export { dangerousToolsFor };
 
 /**
  * Tools whose approval the server asks itself, over an input it builds (KOBE-579, CM6): the
@@ -454,12 +452,73 @@ async function recordFileLink(
 }
 
 /**
+ * An MCP call as the MCP proxy will decide it (KOBE-777, review P2-3): one user's runs share one
+ * sandbox, and the proxy cannot tell which of them a `tools/call` comes from, so it decides under
+ * every active run of the sandbox and needs a signed approval unless all of them allow. Here the
+ * same runs and the same rule (`decideAcrossRuns`) apply, so where the proxy will need an approval
+ * the member is asked now (the broker signs it), instead of an allow here and a deny there. The
+ * named run's own decision stands when every run allows it, or when it asks or denies itself.
+ */
+async function acrossSandboxRuns(
+  deps: PolicyCheckDeps,
+  target: SandboxTarget & { readonly sandboxId: string },
+  frame: PolicyCheckFrame,
+  input: PolicyInput,
+  named: PolicyDecision,
+): Promise<PolicyDecision> {
+  if (input.tool.source !== "mcp" || named.effect === "deny") return named;
+  const loaded = await loadActiveRuns(deps.db, deps.runContext, target);
+  if (!loaded.ok) {
+    const message = "Too many active runs in this sandbox; try again.";
+    return { effect: "deny", risk: named.risk, reasons: [denyReason("run_not_active", message)] };
+  }
+  const { combined, siblings } = await decideAcrossRuns(
+    { runId: frame.run_id, decision: named },
+    loaded.runs,
+    async (run) => {
+      const siblingInput = policyInputFor(
+        target,
+        run,
+        input.tool,
+        frame.tool_call_id,
+        input.input,
+        // As the wire's own input: the engine applies the team's real exposure (its state).
+        { enforcementPoint: "sandbox", exposure: "all" },
+      );
+      // The proxy's Kobe connector guard, per run (kobe-mcp/service.ts).
+      return guardKobeAdmin(await deps.engine.decide(siblingInput), {
+        tool: input.tool,
+        input: siblingInput,
+        evalRun: run.skillEval === true,
+        now: new Date(),
+      });
+    },
+  );
+  if (combined.effect !== "require_approval" || named.effect === "require_approval") return named;
+  const strict = siblings.find((d) => d.effect !== "allow");
+  const message =
+    "Another conversation of yours is running in this sandbox, and under its settings this call " +
+    `needs your approval: ${combined.reason.message}`;
+  return {
+    effect: "require_approval",
+    risk: named.risk,
+    reasons: [{ ...combined.reason, message: message.slice(0, 1000) }],
+    expires_at:
+      strict?.effect === "require_approval"
+        ? strict.expires_at
+        : new Date(Date.now() + APPROVAL_TTL_MS).toISOString(),
+  };
+}
+
+/**
  * Decides one call. Never throws: any failure is a deny. `onPending` sends `policy.pending` when a
  * human is asked (the sandbox keeps waiting until `policy.result`).
  */
 export async function decidePolicyCheck(
   deps: PolicyCheckDeps,
   target: SandboxTarget & {
+    /** The connection's sandbox: an MCP call is decided under all of its active runs. */
+    readonly sandboxId: string;
     readonly connectionId: string;
     /** The sandbox announced `file_edits` (KOBE-493: the viewed-file guard denies, else asks). */
     readonly fileEdits?: boolean;
@@ -497,7 +556,7 @@ export async function decidePolicyCheck(
     // measures the skill alone and leaves nothing behind in the member's own state.
     const evalRun = await isEvalThread(deps.db, target.teamId, frame.thread_id);
     // KOBE-619: Kobe admin tools only for a person who may use them now; writes ask in every mode.
-    const decision = await guardKobeAdminCall(
+    const guarded = await guardKobeAdminCall(
       deps.db,
       target,
       guardKobeAdmin(viewedGuarded, {
@@ -509,6 +568,8 @@ export async function decidePolicyCheck(
       evaluated.input.tool,
       frame.input,
     );
+    // KOBE-777: an MCP call under every active run of the sandbox, as the proxy decides it.
+    const decision = await acrossSandboxRuns(deps, target, frame, evaluated.input, guarded);
     if (evalRun && evalIsolatedCall(frame.tool, frame.input)) {
       const reasons = [EVAL_ISOLATED];
       await recordDenied(deps, target.teamId, frame, reasons, mayRecordDenied);
