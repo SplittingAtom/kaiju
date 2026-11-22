@@ -5,7 +5,9 @@ import { gateFor } from "../testing/sandbox-fixtures.js";
 import { createSandboxProvider, workspacePvcName } from "./provider.js";
 import { NODE_LOST_AFTER_MS } from "./volume-loss.js";
 
-/** A workspace volume lost with its node (KOBE-739): detection and the rebuild's Kubernetes half. */
+/**
+ * A workspace volume lost with its node (KOBE-739): detection and the rebuild's Kubernetes half.
+ */
 const NS = "kobe-team-finance";
 const NOW = Date.parse("2026-11-21T12:00:00Z");
 const PVC = (name: string) => ({
