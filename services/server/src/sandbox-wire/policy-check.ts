@@ -9,10 +9,12 @@ import {
   type PolicyEngine,
   type PolicyInput,
   type PolicyReason,
+  type ToolDescriptor,
   type ToolRegistry,
 } from "@kobe/protocol";
 import { type PolicyCheckFrame, type PolicyResultFrame } from "@kobe/protocol/sandbox-wire";
 import { eq, getMembership, sql, users, withTeam, type KobeDb } from "@kobe/db";
+import { isArtifactTool } from "../artifacts/allowed.js";
 import { logger } from "../logger.js";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { readApprovalFloor, strictestApprovalMode } from "../policy/approval-floor.js";
@@ -452,12 +454,29 @@ async function recordFileLink(
 }
 
 /**
- * An MCP call as the MCP proxy will decide it (KOBE-777, review P2-3): one user's runs share one
- * sandbox, and the proxy cannot tell which of them a `tools/call` comes from, so it decides under
- * every active run of the sandbox and needs a signed approval unless all of them allow. Here the
- * same runs and the same rule (`decideAcrossRuns`) apply, so where the proxy will need an approval
- * the member is asked now (the broker signs it), instead of an allow here and a deny there. The
- * named run's own decision stands when every run allows it, or when it asks or denies itself.
+ * Calls decided under every active run of the sandbox, not only the run the frame names: the
+ * server can't tell which of one user's runs issued a call (the sandbox names the run, holds every
+ * run's tokens and sends every run's events; KOBE-800 ledger), so naming a laxer sibling must not
+ * buy a laxer decision where the server itself acts on the decision:
+ * - connector (MCP) calls: the proxy decides them under every run anyway (KOBE-777, review P2-3);
+ * - tools the server runs itself through a gated frame (KOBE-800: memory, project commit, files,
+ *   artifacts, notebook, skill draft): their effects reach state the runs share (the member's
+ *   memory, workspace files, Workbench, projects). These are exactly the tools whose allowance the
+ *   connection records (`BOUND_TOOLS`): a gated frame passes only with one.
+ * Tools the sandbox runs on its own (Pi's file tools, bash) gain nothing here: a compromised
+ * sandbox runs those without asking.
+ */
+export function decidedAcrossRuns(tool: Pick<ToolDescriptor, "name" | "source">): boolean {
+  return tool.source === "mcp" || isArtifactTool(tool.name);
+}
+
+/**
+ * A call {@link decidedAcrossRuns} (KOBE-777, KOBE-800): one user's runs share one sandbox, so the
+ * call is decided under every active run of it with the MCP proxy's rule (`decideAcrossRuns`):
+ * the named run's deny stands, an allow needs every run to allow, and anything else needs the
+ * member's signed approval of exactly this input in the named run (asked now, through the broker;
+ * for `commit_project` by its own frame over the server's input). The named run's own decision
+ * stands when every run allows it, or when it asks or denies itself.
  */
 async function acrossSandboxRuns(
   deps: PolicyCheckDeps,
@@ -466,7 +485,7 @@ async function acrossSandboxRuns(
   input: PolicyInput,
   named: PolicyDecision,
 ): Promise<PolicyDecision> {
-  if (input.tool.source !== "mcp" || named.effect === "deny") return named;
+  if (!decidedAcrossRuns(input.tool) || named.effect === "deny") return named;
   const loaded = await loadActiveRuns(deps.db, deps.runContext, target);
   if (!loaded.ok) {
     const message = "Too many active runs in this sandbox; try again.";
@@ -482,10 +501,11 @@ async function acrossSandboxRuns(
         input.tool,
         frame.tool_call_id,
         input.input,
-        // As the wire's own input: the engine applies the team's real exposure (its state).
+        // As the wire's own input: the engine applies the team's real exposure (its state); a
+        // built-in ignores it.
         { enforcementPoint: "sandbox", exposure: "all" },
       );
-      // The proxy's Kobe connector guard, per run (kobe-mcp/service.ts).
+      // The proxy's Kobe connector guard, per run (kobe-mcp/service.ts); a no-op for built-ins.
       return guardKobeAdmin(await deps.engine.decide(siblingInput), {
         tool: input.tool,
         input: siblingInput,
@@ -512,7 +532,7 @@ async function acrossSandboxRuns(
 
 /** The connection a `policy.check` came from. */
 export type PolicyCheckTarget = SandboxTarget & {
-  /** The connection's sandbox: an MCP call is decided under all of its active runs. */
+  /** The connection's sandbox: MCP and server-run calls are decided under all of its active runs. */
   readonly sandboxId: string;
   readonly connectionId: string;
   /** The sandbox announced `file_edits` (KOBE-493: the viewed-file guard denies, else asks). */
@@ -560,7 +580,10 @@ function allowFrame(
   };
 }
 
-/** The engine's decision through the server's own guards, and for MCP under every active run. */
+/**
+ * The engine's decision through the server's own guards, and for MCP and server-run tools under
+ * every active run.
+ */
 async function guardedDecision(d: Deciding, evaluated: Decided): Promise<PolicyDecision> {
   const { deps, target, frame } = d;
   // KOBE-493: Pi write/edit never change the member's viewed file directly, in any mode.
@@ -587,7 +610,7 @@ async function guardedDecision(d: Deciding, evaluated: Decided): Promise<PolicyD
     evaluated.input.tool,
     frame.input,
   );
-  // KOBE-777: an MCP call under every active run of the sandbox, as the proxy decides it.
+  // KOBE-777/800: an MCP or server-run call under every active run of the sandbox.
   return acrossSandboxRuns(deps, target, frame, evaluated.input, guarded);
 }
 

@@ -25,9 +25,13 @@ Whether a call asks depends on the agent's approval mode and your team's rules:
 Scheduled runs never ask either: a call that would need approval is skipped and reported on the
 run.
 
-Connector tools look at all your conversations running at the same time: your conversations share
-one sandbox, so a connector call asks whenever any of them would ask for it (a stricter agent or
-mode in another conversation, for example), even if this conversation alone would run it.
+Connector tools, and the tools Kobe runs for the agent itself (memory, artifacts, sharing and
+opening files, file edit proposals, notebooks, skill drafts and project commits), look at all your
+conversations running at the same time: your conversations share one sandbox, and Kobe can't tell
+which of them made a call. Such a call asks whenever any of them would ask for it or refuse it (a
+stricter agent or mode in another conversation, or a scheduled run going meanwhile, for example),
+even if this conversation alone would run it. The card then says another conversation of yours is
+running. A call this conversation's own agent refuses stays refused.
 
 ## The approval card
 
@@ -79,10 +83,10 @@ A remembered approval:
 - for "this conversation" ends for good when the thread is archived, deleted or moved to another
   project.
 
-A tool card allowed by one says "Allowed by your rule (_scope_)". For a connector tool, one
-remembered for **this conversation** or **this run only** applies only while no other conversation
-of yours is running: meanwhile Kobe asks again (it can't tell which conversation the connector call
-came from). A longer one, such as **until revoked**, keeps applying.
+A tool card allowed by one says "Allowed by your rule (_scope_)". For a connector tool or a tool
+Kobe runs itself, one remembered for **this conversation** or **this run only** applies only while
+no other conversation of yours is running: meanwhile Kobe asks again (it can't tell which
+conversation the call came from). A longer one, such as **until revoked**, keeps applying.
 
 ## Revoke a remembered approval
 

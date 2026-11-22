@@ -250,6 +250,10 @@ describe("thread scope (this conversation)", () => {
     // Another thread of the same member still asks.
     const other = await newRun(w);
     expect(await outcome(w, other, "share_file", share("c.md"))).toBe("ask");
+    // While it runs, a thread rule asks in its own thread too (KOBE-800: share_file is decided
+    // under every active run of the sandbox, as connector calls are).
+    expect(await outcome(w, w, "share_file", share("c2.md"))).toBe("ask");
+    await endRun(w, other);
 
     // A later run in the same thread keeps it; archiving the thread ends it.
     await endRun(w, w);
