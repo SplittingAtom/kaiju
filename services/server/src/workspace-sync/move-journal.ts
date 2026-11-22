@@ -1,5 +1,5 @@
 import { sql, type KobeTx } from "@kobe/db";
-import { WORKSPACE_MOVES_PAGE, type WorkspaceMoveRecord } from "@kobe/protocol";
+import { WORKSPACE_MOVES_PAGE, type WorkspaceMoveRecord } from "@kobe/protocol/sandbox-wire";
 import type { WorkspaceOwner } from "./keys.js";
 
 /**

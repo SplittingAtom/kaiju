@@ -1,13 +1,15 @@
 import {
   SYNC_CONFLICT_NOTES_MAX,
-  type PiExtensionUiRequest,
-  type PiExtensionUiResponse,
-  type PiRpcResponse,
   type RunMemoryContext,
   type RunProjectContext,
   type RunViewingContext,
   type SyncConflict,
 } from "@kobe/protocol";
+import {
+  type PiExtensionUiRequest,
+  type PiExtensionUiResponse,
+  type PiRpcResponse,
+} from "@kobe/protocol/sandbox-wire";
 import { PolicyChannel } from "../policy/channel.js";
 import { ToolsChannel } from "../tools/channel.js";
 import type { MemoryContextFile } from "../memory/context-file.js";

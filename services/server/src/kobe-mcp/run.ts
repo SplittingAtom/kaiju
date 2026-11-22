@@ -1,6 +1,7 @@
 import { agentConnectors, type AgentFrontmatter } from "@kobe/agent-file";
 import type { KobeTx } from "@kobe/db";
-import { matchGlob, type RunMcpServer } from "@kobe/protocol";
+import { matchGlob } from "@kobe/protocol";
+import { type RunMcpServer } from "@kobe/protocol/sandbox-wire";
 import { allowedKobeTools, loadKobeAccess, loadKobeBuiltin } from "./access.js";
 import { KOBE_DOCS_TOOLS } from "./docs/index.js";
 import { kobePinnedTool } from "./pinned.js";

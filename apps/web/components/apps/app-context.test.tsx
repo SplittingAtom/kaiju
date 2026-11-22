@@ -19,6 +19,7 @@ let fake: FakeKobe;
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -103,6 +104,8 @@ async function appWindow() {
 }
 
 const marker = () => document.querySelector("[data-kobe-app-insert-from]");
+/** Lets React finish the work a key press or a click started (no fixed wait). */
+const flush = () => act(async () => {});
 
 function insert(app: Awaited<ReturnType<typeof appWindow>>, text: string) {
   return app.send({
@@ -142,7 +145,7 @@ describe("ui/message and model context (KOBE-439)", () => {
     const frame = screen.getByTitle("Lakehouse Explorer (app from Catalyst)");
     // Let the chat finish opening (it may focus its composer once) before the app has the focus.
     await composer();
-    await act(() => new Promise((r) => setTimeout(r, 300)));
+    expect(await screen.findByText("Open the explorer")).toBeTruthy();
     frame.focus();
     expect(document.activeElement).toBe(frame);
     const focused = document.activeElement;
@@ -157,18 +160,19 @@ describe("ui/message and model context (KOBE-439)", () => {
     await waitFor(() =>
       expect(app.replies()).toContainEqual({ jsonrpc: "2.0", id: 1, result: {} }),
     );
-    await new Promise((r) => setTimeout(r, 50));
-    expect(document.activeElement).toBe(focused);
-    expect(document.activeElement).not.toBe(box);
+    // The insert is on screen (its marker too): it did not take the focus.
     await waitFor(() =>
       expect(document.querySelector("[data-kobe-app-insert-from]")?.textContent).toContain(
         "From Lakehouse Explorer",
       ),
     );
+    expect(document.activeElement).toBe(focused);
+    expect(document.activeElement).not.toBe(box);
     // The member presses Enter where the focus is: the app's frame. Nothing is sent.
     fireEvent.keyDown(focused ?? document.body, { key: "Enter" });
-    await new Promise((r) => setTimeout(r, 50));
+    await flush();
     expect(posts()).toEqual([]);
+    expect(box.value).toBe("Use table `c.n.t`");
   });
 
   it("does not send inserted text until the member confirms it; one keystroke is not an edit (MEDIUM-2, LOW-J)", async () => {
@@ -185,8 +189,9 @@ describe("ui/message and model context (KOBE-439)", () => {
     // The member's next keystroke (typing around the inserted text) does not lift the gate.
     await user.type(box, "!");
     await user.keyboard("{Enter}");
-    await new Promise((r) => setTimeout(r, 50));
+    await flush();
     expect(posts()).toEqual([]);
+    expect(box.value).toBe("Look at table t!");
     expect(marker()).not.toBeNull();
     // Confirm lifts it, and the member's Enter sends.
     await user.click(screen.getByRole("button", { name: "Confirm" }));
@@ -201,13 +206,15 @@ describe("ui/message and model context (KOBE-439)", () => {
     const app = await appWindow();
     const user = userEvent.setup();
     const box = (await composer()) as HTMLTextAreaElement;
+    // The settle time is read from the clock: stop it, so "right after" is exact.
+    vi.useFakeTimers({ toFake: ["Date"] });
     await insert(app, "Use table `c.n.t`");
     await waitFor(() => expect(box.value).toBe("Use table `c.n.t`"));
     await user.click(box);
     await user.keyboard("{End}{Backspace}");
-    await new Promise((r) => setTimeout(r, 50));
+    await flush();
     expect(marker()).not.toBeNull(); // a reflex keystroke right after the insert
-    await act(() => new Promise((r) => setTimeout(r, INSERT_SETTLE_MS)));
+    vi.setSystemTime(Date.now() + INSERT_SETTLE_MS);
     await user.keyboard("u`");
     await waitFor(() => expect(marker()).toBeNull());
     await user.keyboard("{Enter}");
@@ -235,7 +242,7 @@ describe("ui/message and model context (KOBE-439)", () => {
     const steerNow = await screen.findByRole("button", { name: "Steer now" });
     expect(steerNow.getAttribute("aria-disabled")).toBe("true");
     await user.click(steerNow);
-    await new Promise((r) => setTimeout(r, 50));
+    await flush();
     const steers = chatRequests(fake, "POST").filter((r) => r.path === `/v1/runs/${runId}/steer`);
     expect(steers).toEqual([]);
     expect(box.value).toBe("Use table `c.n.t`");

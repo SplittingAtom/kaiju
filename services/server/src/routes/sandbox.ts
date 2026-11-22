@@ -1,5 +1,9 @@
 import { getConnInfo } from "@hono/node-server/conninfo";
-import { SKILL_BUNDLE_PATH, SKILL_EVAL_FIXTURES_PATH, WORKSPACE_SYNC_PATH } from "@kobe/protocol";
+import {
+  SKILL_BUNDLE_PATH,
+  SKILL_EVAL_FIXTURES_PATH,
+  WORKSPACE_SYNC_PATH,
+} from "@kobe/protocol/sandbox-wire";
 import { Hono, type Context } from "hono";
 import { honoTracing, skipRequestTrace } from "@kobe/telemetry";
 import { IsolationRuntimeMissingError } from "../isolation/gate.js";

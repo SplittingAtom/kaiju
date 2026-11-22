@@ -1,4 +1,5 @@
-import { WORKSPACE_SERVER_OWNED_PREFIXES, type WorkspaceEntry } from "@kobe/protocol";
+import { WORKSPACE_SERVER_OWNED_PREFIXES } from "@kobe/protocol";
+import { type WorkspaceEntry } from "@kobe/protocol/sandbox-wire";
 import { hashFile, lockServerOwned, pruneEmptyParents, removeFile, statLocal } from "../fs.js";
 import { applyPulledCheckouts, conflictCopy, downloadSafely, revertFolder } from "./local.js";
 import { rekey, replayMoves } from "./move-replay.js";

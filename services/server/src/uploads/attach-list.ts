@@ -1,4 +1,5 @@
-import { UPLOAD_ATTACHMENT_ROOT, type SandboxAttachment } from "@kobe/protocol";
+import { UPLOAD_ATTACHMENT_ROOT } from "@kobe/protocol";
+import { type SandboxAttachment } from "@kobe/protocol/sandbox-wire";
 import { sql, type KobeTx } from "@kobe/db";
 import { attachmentPaths } from "./attach-names.js";
 

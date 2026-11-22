@@ -1,7 +1,5 @@
-import { randomUUID } from "node:crypto";
 import {
   CAPABILITY_SESSION_RENEW,
-  CAPABILITY_SYNC_CONFLICTS,
   CAPABILITY_TRACE_SPANS,
   CAPABILITY_WORKSPACE_MOVES,
   CAPABILITY_WORKSPACE_SYNC_NOW,
@@ -14,7 +12,9 @@ import {
   type SandboxToServerFrame,
   type ServerToSandboxFrame,
   type WorkspaceConflictFrame,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
+import { randomUUID } from "node:crypto";
+import { CAPABILITY_SYNC_CONFLICTS } from "@kobe/protocol";
 import type WebSocket from "ws";
 import { AllowedArtifactCalls } from "../artifacts/allowed.js";
 import { RecalledItems } from "../memory/recalled.js";

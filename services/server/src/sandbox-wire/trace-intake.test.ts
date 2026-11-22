@@ -1,4 +1,5 @@
-import { runRootSpanId, runTraceId, type TraceSpansFrame } from "@kobe/protocol";
+import { runRootSpanId, runTraceId } from "@kobe/protocol";
+import { type TraceSpansFrame } from "@kobe/protocol/sandbox-wire";
 import { deriveTraceSpanKey, mapSandboxSpanId } from "@kobe/protocol/node";
 import type { RelaySpan, RunRootSpan } from "@kobe/telemetry";
 import { afterEach, describe, expect, it, vi } from "vitest";

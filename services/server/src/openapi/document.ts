@@ -22,6 +22,8 @@ import { threadsOpenApiPaths, threadsOpenApiSchemas } from "./threads.js";
 import { threadFoldersOpenApiPaths, threadFoldersOpenApiSchemas } from "./thread-folders.js";
 import { threadFileLinksOpenApiPaths, threadFileLinksOpenApiSchemas } from "./thread-file-links.js";
 import { usageOpenApiPaths, usageOpenApiSchemas } from "./usage.js";
+import { catalogOpenApiPaths, catalogOpenApiTags } from "./catalog/index.js";
+import { mergePaths } from "./catalog/build.js";
 import {
   teamDefaultAgentOpenApiPaths,
   teamDefaultAgentOpenApiSchemas,
@@ -29,7 +31,10 @@ import {
 
 /**
  * The server's OpenAPI 3.1 document, committed as `services/server/openapi.json` and checked for
- * drift by `document.test.ts`. Areas add their paths and schemas here (one line each).
+ * drift by `document.test.ts`. Areas add their paths and schemas here (one line each). It covers
+ * every route of the member and admin API on the user-facing listener (`coverage.test.ts`, KOBE-727):
+ * fully described areas here, the rest at summary level from `catalog/`; what is left out on
+ * purpose is in `undocumented-allowlist.ts`.
  */
 export function openApiDocument(): Record<string, unknown> {
   return {
@@ -39,32 +44,43 @@ export function openApiDocument(): Record<string, unknown> {
       version: "0.0.0",
       description:
         "Team-scoped routes act on the session's active team (spec D9); send X-Kobe-Team on " +
-        "changes. Errors are `{code, message}`. Authentication is the Better Auth session cookie.",
+        "changes. Errors are `{code, message}`. Authentication is the Better Auth session cookie.\n\n" +
+        "Coverage: every route of the member and admin API is listed. Operations marked " +
+        "`x-kobe-detail: summary` (tagged by area) document their summary and path parameters " +
+        "only; their request and response bodies are not described yet. The rest are fully " +
+        "described. Not listed on purpose: health probes, Better Auth's own `/api/auth/*` " +
+        "handler, SCIM provisioning (`/v1/scim/v2`, see the SCIM specification), OAuth " +
+        "redirect and client-metadata endpoints, the web app's telemetry beacon, and the " +
+        "sandbox-facing and internal listeners, which are not reachable from outside the cluster.",
     },
-    paths: {
-      ...threadsOpenApiPaths(),
-      ...threadFoldersOpenApiPaths(),
-      ...runsOpenApiPaths(),
-      ...pendingOpenApiPaths(),
-      ...markersOpenApiPaths(),
-      ...compactOpenApiPaths(),
-      ...branchSummaryOpenApiPaths(),
-      ...contextOpenApiPaths(),
-      ...approvalsOpenApiPaths(),
-      ...usageOpenApiPaths(),
-      ...modelsOpenApiPaths(),
-      ...feedbackOpenApiPaths(),
-      ...evalCasesOpenApiPaths(),
-      ...brandingOpenApiPaths(),
-      ...agentRosterOpenApiPaths(),
-      ...agentOwnershipOpenApiPaths(),
-      ...projectCommitsOpenApiPaths(),
-      ...teamDefaultAgentOpenApiPaths(),
-      ...egressAccessOpenApiPaths(),
-      ...threadFileLinksOpenApiPaths(),
-      ...semanticMemoryOpenApiPaths(),
-      ...siteSsoSettingsOpenApiPaths(),
-    },
+    tags: catalogOpenApiTags(),
+    paths: mergePaths(
+      {
+        ...threadsOpenApiPaths(),
+        ...threadFoldersOpenApiPaths(),
+        ...runsOpenApiPaths(),
+        ...pendingOpenApiPaths(),
+        ...markersOpenApiPaths(),
+        ...compactOpenApiPaths(),
+        ...branchSummaryOpenApiPaths(),
+        ...contextOpenApiPaths(),
+        ...approvalsOpenApiPaths(),
+        ...usageOpenApiPaths(),
+        ...modelsOpenApiPaths(),
+        ...feedbackOpenApiPaths(),
+        ...evalCasesOpenApiPaths(),
+        ...brandingOpenApiPaths(),
+        ...agentRosterOpenApiPaths(),
+        ...agentOwnershipOpenApiPaths(),
+        ...projectCommitsOpenApiPaths(),
+        ...teamDefaultAgentOpenApiPaths(),
+        ...egressAccessOpenApiPaths(),
+        ...threadFileLinksOpenApiPaths(),
+        ...semanticMemoryOpenApiPaths(),
+        ...siteSsoSettingsOpenApiPaths(),
+      },
+      catalogOpenApiPaths(),
+    ),
     components: {
       schemas: {
         ...threadsOpenApiSchemas(),

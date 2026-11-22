@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { idSchema, utf8ByteLength, uuidSchema } from "./common.js";
-import { sha256HexSchema, workspacePathSchema } from "./sandbox-wire/workspace-sync.js";
+import { sha256HexSchema, workspacePathSchema } from "./workspace-paths.js";
 
 /**
  * Notebooks contract (KOBE-464; decisions NB1..NB16 in docs/specs/notebooks.md). A live Python

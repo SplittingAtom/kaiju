@@ -1,5 +1,5 @@
 import type { AddressInfo } from "node:net";
-import { SANDBOX_WS_SUBPROTOCOL } from "@kobe/protocol";
+import { SANDBOX_WS_SUBPROTOCOL } from "@kobe/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
 import { WireClient } from "./client.js";

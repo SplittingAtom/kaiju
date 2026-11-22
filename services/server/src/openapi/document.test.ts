@@ -20,7 +20,17 @@ import { threadContextRoutes } from "../routes/thread-context.js";
 import { threadRoutes } from "../routes/threads.js";
 import { threadFolderRoutes } from "../routes/thread-folders.js";
 import { threadFileLinkRoutes, workspaceFileThreadRoutes } from "../routes/thread-file-links.js";
-import { threadUsageRoutes } from "../routes/usage.js";
+import { runUsageRoutes, threadUsageRoutes } from "../routes/usage.js";
+import { runEventsRoutes } from "../routes/run-events.js";
+import { threadAppResultRoutes } from "../routes/thread-app-results.js";
+import { threadAppCardRoutes } from "../routes/thread-app-cards.js";
+import { threadLearnRoutes } from "../routes/thread-learn.js";
+import { threadFileEditRoutes } from "../routes/thread-file-edits.js";
+import { threadSyncConflictRoutes } from "../routes/thread-sync-conflicts.js";
+import { threadNotebookRoutes } from "../routes/thread-notebooks.js";
+import { threadRetentionRoutes } from "../routes/thread-retention.js";
+import { threadConnectorRoutes } from "../routes/thread-connectors.js";
+import { threadSkillRoutes } from "../routes/thread-skills.js";
 import { memoryRoutes } from "../routes/memory.js";
 import { Hono } from "hono";
 import {
@@ -93,6 +103,16 @@ describe("OpenAPI document (KOBE-34 ac-1)", () => {
         ...mountedOperations("/v1/threads", threadUsageRoutes(fakeDeps)),
         ...mountedOperations("/v1/threads", threadFeedbackRoutes(fakeDeps)),
         ...mountedOperations("/v1/threads", threadFileLinkRoutes(fakeDeps)),
+        // Listed by the summary-level catalog (KOBE-727).
+        ...mountedOperations("/v1/threads", threadAppResultRoutes(fakeDeps)),
+        ...mountedOperations("/v1/threads", threadAppCardRoutes(fakeDeps)),
+        ...mountedOperations("/v1/threads", threadLearnRoutes(fakeDeps)),
+        ...mountedOperations("/v1/threads", threadFileEditRoutes(fakeDeps)),
+        ...mountedOperations("/v1/threads", threadSyncConflictRoutes(fakeDeps)),
+        ...mountedOperations("/v1/threads", threadNotebookRoutes(fakeDeps)),
+        ...mountedOperations("/v1/threads", threadRetentionRoutes(fakeDeps)),
+        ...mountedOperations("/v1/threads", threadConnectorRoutes(fakeDeps)),
+        ...mountedOperations("/v1/threads", threadSkillRoutes(fakeDeps)),
       ].sort(),
     );
   });
@@ -188,7 +208,17 @@ describe("OpenAPI document (KOBE-34 ac-1)", () => {
         "post /v1/memory/semantic/items/{scope}/{id}/revert",
       ].sort(),
     );
-    expect(documented("/v1/memory").every((op) => op.includes("/v1/memory/semantic/"))).toBe(true);
+    // Other /v1/memory routes are listed at summary level by the catalog (KOBE-727).
+    const catalogOnly = (op: string) => !op.includes("/v1/memory/semantic/");
+    expect(
+      documented("/v1/memory")
+        .filter(catalogOnly)
+        .every((op) => {
+          const [method = "", path = ""] = op.split(" ");
+          const item = (doc.paths as Record<string, Record<string, Record<string, unknown>>>)[path];
+          return item?.[method]?.["x-kobe-detail"] === "summary";
+        }),
+    ).toBe(true);
     expect(documented("/v1/team/memory/stewards")).toEqual(
       [
         "get /v1/team/memory/stewards",
@@ -250,6 +280,9 @@ describe("OpenAPI document (KOBE-34 ac-1)", () => {
         ...mountedOperations("/v1/runs", runRoutes(fakeDeps)),
         ...mountedOperations("/v1/runs", runFeedbackRoutes(fakeDeps)),
         ...mountedOperations("/v1/runs", runEvalCaseRoutes(fakeDeps)),
+        // Listed by the summary-level catalog (KOBE-727).
+        ...mountedOperations("/v1/runs", runEventsRoutes(fakeDeps)),
+        ...mountedOperations("/v1/runs", runUsageRoutes(fakeDeps)),
       ].sort(),
     );
   });

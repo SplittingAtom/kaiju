@@ -1,6 +1,6 @@
+import { TRACE_DROPPED_ATTRIBUTE, runRootSpanId, runTraceId } from "@kobe/protocol";
 import {
   SANDBOX_SPAN_CONTENT_KEYS,
-  TRACE_DROPPED_ATTRIBUTE,
   TRACE_SPAN_CLOCK_SKEW_MS,
   TRACE_SPAN_MAX_DEPTH,
   TRACE_SPANS_FRAMES_BURST,
@@ -8,11 +8,9 @@ import {
   TRACE_SPANS_LATE_GRACE_MS,
   TRACE_SPANS_PER_RUN_MAX,
   parseSandboxSpan,
-  runRootSpanId,
-  runTraceId,
   type SandboxSpan,
   type TraceSpansFrame,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import { mapSandboxSpanId } from "@kobe/protocol/node";
 import {
   idAttributes,

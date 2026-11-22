@@ -1,7 +1,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { THREAD_CONTEXT_MAX_BYTES } from "@kobe/protocol";
+import { THREAD_CONTEXT_MAX_BYTES } from "@kobe/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import { captureText } from "../kobe-models/context-capture.js";
 import { fromCapture, fromSession, parseCapture, readCapture } from "./assemble.js";

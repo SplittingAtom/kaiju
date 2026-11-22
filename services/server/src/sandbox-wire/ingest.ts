@@ -1,4 +1,5 @@
-import type { PiEventFrame, PiGetEntriesData, ServerCallPurpose } from "@kobe/protocol";
+import type { ServerCallPurpose } from "@kobe/protocol";
+import type { PiEventFrame, PiGetEntriesData } from "@kobe/protocol/sandbox-wire";
 import { sql, withTeam, type KobeDb } from "@kobe/db";
 import {
   appendRunEventsInTx,

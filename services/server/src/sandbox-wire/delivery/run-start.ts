@@ -1,12 +1,14 @@
 import {
+  CAPABILITY_MCP,
+  type RunStartFrame,
+  type ServerToSandboxFrame,
+} from "@kobe/protocol/sandbox-wire";
+import {
   CAPABILITY_APP_CARDS,
   CAPABILITY_FILE_EDITS,
-  CAPABILITY_MCP,
   CAPABILITY_MEMORY,
   CAPABILITY_PROJECTS,
   CAPABILITY_SYNC_CONFLICTS,
-  type RunStartFrame,
-  type ServerToSandboxFrame,
 } from "@kobe/protocol";
 import { untoldNotes, type AgentNotes } from "../../sync-conflicts/store.js";
 import type { CommandRow } from "../commands.js";

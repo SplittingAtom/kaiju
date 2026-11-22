@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { workspacePathIssue } from "./sandbox-wire/workspace-sync.js";
+import { workspacePathIssue } from "./workspace-paths.js";
 
 /**
  * `@file` mentions (CE22, KOBE-223; notes in docs/ledger/KOBE-223.md). The composer writes a

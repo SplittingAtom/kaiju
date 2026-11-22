@@ -1,5 +1,6 @@
 import { sql, type KobeTx } from "@kobe/db";
-import { PROJECT_WORKSPACE_DIR, type WorkspaceCheckoutRef } from "@kobe/protocol";
+import { PROJECT_WORKSPACE_DIR } from "@kobe/protocol";
+import { type WorkspaceCheckoutRef } from "@kobe/protocol/sandbox-wire";
 import type { WorkspaceOwner } from "./keys.js";
 
 /**

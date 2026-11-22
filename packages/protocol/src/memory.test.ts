@@ -4,17 +4,12 @@ import {
   MEMORY_FILE_MAX_BYTES,
   MEMORY_INDEX_FILE,
   MEMORY_INDEX_MAX_LINES,
-  SANDBOX_WIRE_VERSION,
-  decodeSandboxFrame,
-  decodeServerFrame,
   EVENT_PAYLOAD_SCHEMAS,
   memoryDocDetailSchema,
   memoryListResponseSchema,
   memoryPathSchema,
   memorySettingsSchema,
   MEMORY_RECALL_MAX_ITEMS,
-  memoryResultFrameSchema,
-  memoryShowFrameSchema,
   memoryToolInputSchema,
   kobeToolsRequestSchema,
   kobeToolsResponseSchema,
@@ -26,9 +21,16 @@ import {
   recallInputSchema,
   rememberInputSchema,
   runMemoryContextSchema,
-  runStartFrameSchema,
   undoMemoryAction,
 } from "./index.js";
+import {
+  SANDBOX_WIRE_VERSION,
+  decodeSandboxFrame,
+  decodeServerFrame,
+  memoryResultFrameSchema,
+  memoryShowFrameSchema,
+  runStartFrameSchema,
+} from "./sandbox-wire/index.js";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 const ID2 = "22222222-2222-4222-8222-222222222222";

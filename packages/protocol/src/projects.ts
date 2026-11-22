@@ -7,7 +7,7 @@ import {
   utf8ByteLength,
   uuidSchema,
 } from "./common.js";
-import { sha256HexSchema, workspacePathSchema } from "./sandbox-wire/workspace-sync.js";
+import { sha256HexSchema, workspacePathSchema } from "./workspace-paths.js";
 import { PROJECT_COMMIT_ERROR_CODES, commitProjectToolInputSchema } from "./project-commits.js";
 import { uploadFileNameSchema } from "./uploads.js";
 

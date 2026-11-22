@@ -8,9 +8,11 @@ import {
   type KobeToolsRequest,
   type KobeToolsResponse,
   type SkillDraftSaveFile,
+} from "@kobe/protocol";
+import {
   type SkillDraftSaveFrame,
   type SkillDraftSaveResultFrame,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import { TEMP_PREFIX, lstatIfExists } from "../workspace/fs.js";
 import { DEFAULT_SKIP_DIRS, PushPathError, type PushedFile } from "../workspace/sync.js";
 import { toolsError } from "./channel.js";

@@ -1,7 +1,7 @@
 import { mkdtemp, mkdir, readdir, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { SkillBundleRef } from "@kobe/protocol";
+import type { SkillBundleRef } from "@kobe/protocol/sandbox-wire";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { goodBundle, sha256, testZip } from "../testing/zip.js";
 import { SkillError, SkillStore } from "./store.js";

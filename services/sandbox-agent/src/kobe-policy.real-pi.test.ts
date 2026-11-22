@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, readFile, readlink, rm, writeFile } from "node:fs/promi
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { Duplex } from "node:stream";
-import type { SandboxToServerFrame } from "@kobe/protocol";
+import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import { RUN, runStart, startHarness, until, type Harness } from "./testing/harness.js";
 import {

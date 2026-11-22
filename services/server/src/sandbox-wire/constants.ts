@@ -3,13 +3,15 @@ import {
   MAX_RUN_TOKEN_TTL_SECONDS,
   EVENT_ENTRY_PAYLOAD_MAX_BYTES,
   EVENT_TOOL_INPUT_MAX_BYTES,
+} from "@kobe/protocol";
+import {
   SANDBOX_HEARTBEAT_INTERVAL_MS,
   SANDBOX_HEARTBEAT_TIMEOUT_MS,
   SANDBOX_HELLO_TIMEOUT_MS,
   SANDBOX_FRAME_MAX_BYTES_BY_TYPE,
   SANDBOX_MAX_FRAME_BYTES,
   SANDBOX_SMALL_FRAME_MAX_BYTES,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 
 /**
  * Run token lifetime (KOBE-118). Runs have no wall-clock limit (a run may wait for approvals up to

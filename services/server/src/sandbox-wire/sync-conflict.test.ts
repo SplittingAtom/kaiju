@@ -1,5 +1,5 @@
 import type { KobeDb } from "@kobe/db";
-import type { WorkspaceConflictFrame } from "@kobe/protocol";
+import type { WorkspaceConflictFrame } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it, vi } from "vitest";
 import { ConflictRate, checkConflict, onWorkspaceConflict } from "./sync-conflict.js";
 

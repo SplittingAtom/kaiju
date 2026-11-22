@@ -6,7 +6,6 @@ import {
   PROJECT_ERROR_CODES,
   PROJECT_HISTORY_MAX_COMMITS,
   PROJECT_MOUNTS_MAX_PER_MEMBER,
-  SANDBOX_WIRE_VERSION,
   TEAM_ROLES,
   checkoutProjectRequestSchema,
   commitConflictErrorSchema,
@@ -17,8 +16,6 @@ import {
   commitProjectRequestSchema,
   commitProjectResponseSchema,
   commitProjectToolInputSchema,
-  decodeSandboxFrame,
-  decodeServerFrame,
   kobeToolsRequestSchema,
   kobeToolsResponseSchema,
   projectCheckoutSchema,
@@ -31,7 +28,6 @@ import {
   projectTreeEntrySchema,
   revertProjectRequestSchema,
   runProjectContextSchema,
-  runStartFrameSchema,
   teamRoleSchema,
   BUILTIN_TOOLS,
   tooManyMountsErrorSchema,
@@ -39,8 +35,14 @@ import {
   transferOwnerRequestSchema,
   transferOwnerResponseSchema,
   updateCheckoutResponseSchema,
-  workspaceManifestPageSchema,
 } from "./index.js";
+import {
+  SANDBOX_WIRE_VERSION,
+  decodeSandboxFrame,
+  decodeServerFrame,
+  runStartFrameSchema,
+  workspaceManifestPageSchema,
+} from "./sandbox-wire/index.js";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 const ID2 = "22222222-2222-4222-8222-222222222222";

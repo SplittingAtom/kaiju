@@ -1,9 +1,9 @@
 import {
   CONTEXT_MAX_SECTIONS,
   CONTEXT_SECTION_MAX_CHARS,
-  THREAD_CONTEXT_MAX_BYTES,
   threadContextResultSchema,
 } from "@kobe/protocol";
+import { THREAD_CONTEXT_MAX_BYTES } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { finalizeContext, scaleTokens, type ContextFacts } from "./finalize.js";
 import type { RawSection } from "./system-prompt.js";

@@ -1,3 +1,4 @@
+import { PI_PINNED_VERSION, SANDBOX_CLOSE_CODES } from "@kobe/protocol/sandbox-wire";
 import { EventEmitter } from "node:events";
 import {
   CAPABILITY_ARTIFACTS,
@@ -8,8 +9,6 @@ import {
   CAPABILITY_PROJECTS,
   CAPABILITY_SEMANTIC_MEMORY,
   CAPABILITY_SKILL_DRAFTS,
-  PI_PINNED_VERSION,
-  SANDBOX_CLOSE_CODES,
   type ToolRegistry,
 } from "@kobe/protocol";
 import pino from "pino";

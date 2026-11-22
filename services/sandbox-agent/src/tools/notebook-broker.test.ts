@@ -1,7 +1,8 @@
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { KobeToolsRequest, KobeToolsResponse, NotebookRunResultFrame } from "@kobe/protocol";
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { NotebookRunResultFrame } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it, vi } from "vitest";
 import { MAX_PENDING_RUNS_PER_THREAD, NotebookBroker } from "./notebook-broker.js";
 

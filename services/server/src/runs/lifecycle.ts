@@ -5,13 +5,15 @@ import {
   type AppCardEntry,
   type ApprovalMode,
   type ErrorInfo,
-  type PiThreadConfig,
   type RunProjectContext,
-  type RunMcpContext,
   type RunViewingContext,
-  type SandboxAttachment,
   type ThinkingLevel,
 } from "@kobe/protocol";
+import {
+  type PiThreadConfig,
+  type RunMcpContext,
+  type SandboxAttachment,
+} from "@kobe/protocol/sandbox-wire";
 import { projectRunContext } from "../projects/run-context.js";
 import { listRunAttachments } from "../uploads/attach-list.js";
 import { and, eq, runs, sql, type KobeTx } from "@kobe/db";

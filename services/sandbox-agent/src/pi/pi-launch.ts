@@ -1,5 +1,6 @@
 import path from "node:path";
-import { KOBE_TOOLS_FD, type PiThreadConfig, type RunMcpContext } from "@kobe/protocol";
+import { KOBE_TOOLS_FD } from "@kobe/protocol";
+import { type PiThreadConfig, type RunMcpContext } from "@kobe/protocol/sandbox-wire";
 import { EXEC_FD, EXEC_FD_ENV } from "../kobe-exec/protocol.js";
 import { KOBE_PROVIDER_ID } from "../kobe-models/protocol.js";
 import type { RunModel } from "../models/types.js";

@@ -1,4 +1,4 @@
-import { threadBranchSummaryResultShape, type PiGetEntriesData } from "@kobe/protocol";
+import { threadBranchSummaryResultShape, type PiGetEntriesData } from "@kobe/protocol/sandbox-wire";
 import { sql, type KobeTx } from "@kobe/db";
 import { z } from "zod";
 import { appendRunEventsInTx } from "../event-stream/append.js";

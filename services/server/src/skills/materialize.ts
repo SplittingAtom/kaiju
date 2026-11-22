@@ -1,4 +1,4 @@
-import type { SkillBundleRef } from "@kobe/protocol";
+import type { SkillBundleRef } from "@kobe/protocol/sandbox-wire";
 import {
   and,
   eq,

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { PROJECT_FILES_MAX, type FileEditProposeFrame } from "@kobe/protocol";
+import { PROJECT_FILES_MAX } from "@kobe/protocol";
+import { type FileEditProposeFrame } from "@kobe/protocol/sandbox-wire";
 import { proposeFileEdit, type ProposeOutcome } from "./sandbox-wire/file-edit-propose.js";
 import { RawBody, type TestBrowser } from "./testing/browser.js";
 import { must } from "./testing/event-stream-fixture.js";

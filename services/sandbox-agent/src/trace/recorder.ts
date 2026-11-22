@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
-import type { SANDBOX_TURN_STOP_REASONS } from "@kobe/protocol";
+import type { SANDBOX_TURN_STOP_REASONS } from "@kobe/protocol/sandbox-wire";
+import { formatTraceparent, parseTraceparent } from "@kobe/protocol";
 import {
   SANDBOX_SPAN_CONTENT_MAX_CHARS,
   TRACE_SPANS_AGENT_BUFFER_MAX,
@@ -8,13 +9,11 @@ import {
   TRACE_SPANS_FRAME_MAX_BYTES,
   TRACE_SPANS_PER_FRAME_MAX,
   encodeFrame,
-  formatTraceparent,
   parseSandboxSpan,
-  parseTraceparent,
   type SandboxSpan,
   type TraceSpansFrame,
   type WireTraceContext,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 
 /**
  * Run spans of this sandbox (KOBE-274, contract in `@kobe/protocol` sandbox-wire/trace-frames.ts).

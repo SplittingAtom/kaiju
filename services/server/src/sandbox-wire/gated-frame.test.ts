@@ -1,4 +1,4 @@
-import type { SandboxToServerFrame } from "@kobe/protocol";
+import { type SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import {
   GatePassed,

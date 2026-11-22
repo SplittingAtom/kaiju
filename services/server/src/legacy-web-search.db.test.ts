@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { LEGACY_WEB_SEARCH_MESSAGE } from "@kobe/protocol";
+import { LEGACY_WEB_SEARCH_MESSAGE } from "@kobe/protocol/sandbox-wire";
 import { EventStreamFixture } from "./testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
 

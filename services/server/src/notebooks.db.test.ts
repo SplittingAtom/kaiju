@@ -1,11 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import {
-  CAPABILITY_NOTEBOOKS,
-  notebookRunResponseSchema,
-  type PolicyEngine,
-  type ServerToSandboxFrame,
-} from "@kobe/protocol";
+import { CAPABILITY_NOTEBOOKS, notebookRunResponseSchema, type PolicyEngine } from "@kobe/protocol";
+import { type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
 import { withTeam } from "@kobe/db";
 import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
