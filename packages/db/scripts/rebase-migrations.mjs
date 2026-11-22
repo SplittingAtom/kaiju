@@ -12,7 +12,12 @@
 //
 // Usage (from packages/db, clean working tree):
 //   pnpm db:rebase [base]        # steps 1-4; stops after 3 if the merge has conflicts
+//   pnpm db:rebase --base <ref>  # the same (also --base=<ref>, or KOBE_DB_REBASE_BASE=<ref>)
 //   pnpm db:rebase --apply       # step 4 only, after resolving conflicts and committing the merge
+//
+// The base defaults to origin/main. Any other ref stacks the branch on an unmerged branch (for
+// example origin/group-88-x) instead of waiting for it to merge (KOBE-815); run it again with
+// the new base when that branch moves or after it merged. scripts/onto-main.sh wraps this.
 //
 // Hand-written migrations (first line `-- kobe:hand-written`, migration-plan.mjs) keep their SQL
 // and snapshot and are only renumbered; the script refuses when it can't do that safely.
@@ -24,8 +29,10 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  branchOnlyEntries,
   handWrittenBaseProblem,
   isHandWritten,
+  parseRebaseArgs,
   rechainSnapshot,
   regenerationSteps,
   sameSchema,
@@ -73,10 +80,13 @@ function stash(base) {
   if (existsSync(STASH)) fail(`${STASH} exists: run with --apply or delete it`);
   if (base.startsWith("origin/")) git("fetch", "-q", "origin", base.slice("origin/".length));
   const mergeBase = git("merge-base", "HEAD", base);
-  const baseTags = new Set(readJson(JOURNAL, base).entries.map((e) => e.tag));
-  const own = readJson(JOURNAL).entries.filter((e) => !baseTags.has(e.tag));
+  const own = branchOnlyEntries(
+    readJson(JOURNAL).entries,
+    readJson(JOURNAL, base).entries,
+    readJson(JOURNAL, mergeBase).entries,
+  );
   if (own.length === 0) {
-    console.log("db:rebase: no branch-only migrations; plain `git rebase` is enough");
+    console.log(`db:rebase: no branch-only migrations; a plain \`git merge ${base}\` is enough`);
     return null;
   }
   const migrations = own.map((e) => {
@@ -181,10 +191,15 @@ function regenerate(migrations) {
   }
 }
 
-const arg = process.argv[2];
-if (arg === "--apply") {
+let args;
+try {
+  args = parseRebaseArgs(process.argv.slice(2), process.env);
+} catch (error) {
+  fail(error.message);
+}
+if (args.apply) {
   apply();
 } else {
-  const base = stash(arg ?? "origin/main");
+  const base = stash(args.base);
   if (base !== null && merge(base)) apply();
 }

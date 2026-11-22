@@ -92,3 +92,47 @@ export function handWrittenBaseProblem(migrations, forkSnapshot, baseSnapshot) {
 export function rechainSnapshot(kept, { id, prevId }) {
   return { ...kept, id, prevId };
 }
+
+export const DEFAULT_BASE = "origin/main";
+/** Environment variable naming db:rebase's base ref when no argument does (KOBE-815). */
+export const BASE_ENV = "KOBE_DB_REBASE_BASE";
+
+/**
+ * db:rebase's arguments (KOBE-815): `--apply`, or the base ref to bring the branch onto, from
+ * `--base <ref>`, `--base=<ref>`, a positional ref, or `KOBE_DB_REBASE_BASE`, in that order;
+ * default `origin/main`. A base other than main stacks the branch on an unmerged one.
+ */
+export function parseRebaseArgs(argv, env = {}) {
+  let apply = false;
+  let flagBase = null;
+  const positional = [];
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--apply") apply = true;
+    else if (arg === "--base" || arg.startsWith("--base=")) {
+      const value = arg === "--base" ? argv[++i] : arg.slice("--base=".length);
+      if (!value || value.startsWith("-")) throw new Error("--base needs a ref");
+      flagBase = value;
+    } else if (arg.startsWith("-")) throw new Error(`unknown argument ${arg}`);
+    else positional.push(arg);
+  }
+  if (positional.length > 1) throw new Error("give one base ref");
+  if (apply) {
+    if (flagBase || positional.length > 0) {
+      throw new Error("--apply takes no base: the stash names the base it merged");
+    }
+    return { apply: true, base: null };
+  }
+  return { apply: false, base: flagBase ?? positional[0] ?? (env[BASE_ENV] || DEFAULT_BASE) };
+}
+
+/**
+ * The branch's own journal entries: those neither the base nor the fork point (merge base) has.
+ * On a branch off main the fork point's entries are all on main, so this is "not on the base", as
+ * before. On a branch stacked on another that was regenerated since (its migrations renumbered),
+ * the old copies came from the fork point and belong to the base branch, not to this one.
+ */
+export function branchOnlyEntries(headEntries, baseEntries, forkEntries) {
+  const known = new Set([...baseEntries, ...forkEntries].map((e) => e.tag));
+  return headEntries.filter((e) => !known.has(e.tag));
+}

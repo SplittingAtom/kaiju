@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_BASE,
   MAX_GENERATED_NAME,
+  branchOnlyEntries,
   handWrittenBaseProblem,
+  parseRebaseArgs,
   isHandWritten,
   rechainSnapshot,
   regenerationSteps,
@@ -89,5 +92,57 @@ describe("db:rebase names the regenerated migration", () => {
     const [step] = regenerationSteps(many);
     expect(step.name.length).toBeLessThanOrEqual(MAX_GENERATED_NAME);
     expect(step.name).toBe("a_rather_long_migration_name_0_and_19_more");
+  });
+});
+
+describe("db:rebase base ref (KOBE-815)", () => {
+  it("defaults to origin/main, as before", () => {
+    expect(DEFAULT_BASE).toBe("origin/main");
+    expect(parseRebaseArgs([], {})).toEqual({ apply: false, base: "origin/main" });
+  });
+
+  it("takes the base from --base, --base=, a positional ref or KOBE_DB_REBASE_BASE, in that order", () => {
+    const env = { KOBE_DB_REBASE_BASE: "origin/from-env" };
+    expect(parseRebaseArgs(["--base", "origin/stack"], env).base).toBe("origin/stack");
+    expect(parseRebaseArgs(["--base=group-88"], env).base).toBe("group-88");
+    expect(parseRebaseArgs(["origin/positional"], env).base).toBe("origin/positional");
+    expect(parseRebaseArgs([], env).base).toBe("origin/from-env");
+    expect(parseRebaseArgs([], { KOBE_DB_REBASE_BASE: "" }).base).toBe("origin/main");
+  });
+
+  it("--apply takes no base (the stash names it) and unknown or empty arguments are refused", () => {
+    expect(parseRebaseArgs(["--apply"], { KOBE_DB_REBASE_BASE: "x" })).toEqual({
+      apply: true,
+      base: null,
+    });
+    expect(() => parseRebaseArgs(["--apply", "--base", "x"], {})).toThrow(/--apply/);
+    expect(() => parseRebaseArgs(["--base"], {})).toThrow(/--base/);
+    expect(() => parseRebaseArgs(["--base="], {})).toThrow(/--base/);
+    expect(() => parseRebaseArgs(["--bogus"], {})).toThrow(/unknown/);
+    expect(() => parseRebaseArgs(["a", "b"], {})).toThrow(/one base/);
+  });
+});
+
+describe("db:rebase picks the branch's own migrations (KOBE-815)", () => {
+  const e = (...tags) => tags.map((tag, idx) => ({ idx, tag }));
+
+  it("on a branch off main: the entries main does not have (unchanged behaviour)", () => {
+    const fork = e("0000_a", "0001_b");
+    const main = e("0000_a", "0001_b", "0002_main");
+    const head = e("0000_a", "0001_b", "0002_mine");
+    expect(branchOnlyEntries(head, main, fork).map((x) => x.tag)).toEqual(["0002_mine"]);
+  });
+
+  it("stacked on a branch that was regenerated since: the old copies of its migrations are not ours", () => {
+    // C forked from B when B had 0002_b; B was then brought onto main and regenerated as 0003_b.
+    const fork = e("0000_a", "0001_b0", "0002_b");
+    const base = e("0000_a", "0001_b0", "0002_main", "0003_b");
+    const head = e("0000_a", "0001_b0", "0002_b", "0003_c");
+    expect(branchOnlyEntries(head, base, fork).map((x) => x.tag)).toEqual(["0003_c"]);
+  });
+
+  it("nothing of our own: an empty list", () => {
+    const base = e("0000_a", "0001_b");
+    expect(branchOnlyEntries(e("0000_a"), base, e("0000_a"))).toEqual([]);
   });
 });
