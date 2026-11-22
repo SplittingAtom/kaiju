@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
+  audits,
   fx,
   multipart,
   projectUpload,
@@ -187,5 +188,89 @@ describe("conflict copies (P2-43)", () => {
     ).toBe(201);
     const refused = await w.as.alice.post(`/v1/projects/${id}/commit`, { message: "copy" });
     expect(refused.status).toBe(422);
+  });
+});
+
+describe("team quota checked after the project's counters are written (P2-44)", () => {
+  const used = async (team: string) =>
+    (
+      await fx.admin.query<{ bytes: string; objects: string }>(
+        `SELECT (SELECT COALESCE(SUM(live_bytes), 0) FROM workspace_sync WHERE team_id = $1)
+              + (SELECT COALESCE(SUM(size_bytes), 0) FROM files WHERE team_id = $1 AND run_id IS NULL)
+              + (SELECT COALESCE(SUM(live_bytes + history_bytes), 0) FROM projects WHERE team_id = $1)
+                AS bytes,
+                (SELECT COALESCE(SUM(blob_count + pending_blobs), 0) FROM workspace_sync WHERE team_id = $1)
+              + (SELECT count(*) FROM files WHERE team_id = $1 AND run_id IS NULL)
+              + (SELECT COALESCE(SUM(live_objects + history_objects), 0) FROM projects WHERE team_id = $1)
+                AS objects`,
+        [team],
+      )
+    ).rows[0];
+  const quota = (w: World, bytes: number | null, objects: number | null) =>
+    fx.admin.query(
+      `INSERT INTO team_storage_quotas (team_id, max_bytes, max_objects, updated_by)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (team_id) DO UPDATE SET max_bytes = $2, max_objects = $3`,
+      [w.team, bytes, objects, w.admin.id],
+    );
+
+  it("keeps the upload's byte and object limits exact, and a refusal leaves nothing", async () => {
+    const w = await world();
+    const id = w.project.id;
+    await projectUpload(w.as.alice, id, "a.md", "A");
+    const now = await used(w.team);
+    const bytes = Number(now?.bytes);
+    const objects = Number(now?.objects);
+    // Ten bytes more need room for ten: one byte short is refused.
+    await quota(w, bytes + 9, null);
+    const short = await upload(w.as.alice, id, "b.md", "0123456789");
+    expect(short.status, JSON.stringify(short.json)).toBe(507);
+    expect(short.json).toMatchObject({ code: "quota_exceeded", limit: "bytes" });
+    // One more object needs room for one.
+    await quota(w, null, objects);
+    const full = await upload(w.as.alice, id, "b.md", "0123456789");
+    expect(full.json).toMatchObject({ code: "quota_exceeded", limit: "objects" });
+    const commits = await fx.admin.query(`SELECT 1 FROM project_commits WHERE project_id = $1`, [
+      id,
+    ]);
+    expect(commits.rows).toHaveLength(1);
+    expect((await used(w.team))?.bytes).toBe(now?.bytes);
+    // Exactly enough room for both.
+    await quota(w, bytes + 10, objects + 1);
+    expect((await upload(w.as.alice, id, "b.md", "0123456789")).status).toBe(201);
+  });
+});
+
+describe("deleting a project with working copies (P2-42)", () => {
+  it("tells the owner who has uncommitted changes and audits what the delete discards", async () => {
+    const w = await world();
+    const { id, slug } = w.project;
+    // An empty project (nothing blocks the delete), checked out by bob with a new file and by
+    // alice with none.
+    expect((await w.as.bob.post(`/v1/projects/${id}/checkout`, {})).status).toBe(200);
+    expect((await workspaceUpload(w.as.bob, `projects/${slug}`, "new.md", "N")).status).toBe(201);
+    expect((await w.as.alice.post(`/v1/projects/${id}/checkout`, {})).status).toBe(200);
+    const copies = await w.as.alice.get(`/v1/projects/${id}/checkouts`);
+    expect(copies.status).toBe(200);
+    const byUser = Object.fromEntries(
+      (copies.json.checkouts as { user_id: string; changed_files: number }[]).map((c) => [
+        c.user_id,
+        c.changed_files,
+      ]),
+    );
+    expect(byUser).toEqual({ [w.people.bob.id]: 1, [w.people.alice.id]: 0 });
+
+    expect((await w.as.alice.delete(`/v1/projects/${id}`)).status).toBe(204);
+    expect((await audits(w.team, "project.deleted")).at(-1)).toEqual({
+      projectId: id,
+      workingCopies: 2,
+      uncommittedWorkingCopies: 1,
+    });
+    const discarded = (await audits(w.team, "project.checkout_discarded")).filter(
+      (t) => t.reason === "project_deleted",
+    );
+    expect(discarded.map((t) => t.userId).sort()).toEqual(
+      [w.people.alice.id, w.people.bob.id].sort(),
+    );
   });
 });

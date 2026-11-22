@@ -179,15 +179,24 @@ export async function myCheckouts(tx: KobeTx, owner: WorkspaceOwner): Promise<Pr
   return res.rows.map(toProtocol);
 }
 
-/** `GET /v1/projects/:id/checkouts` (owners, team admins): "Working copies". */
+/**
+ * `GET /v1/projects/:id/checkouts` (owners, team admins): "Working copies", each with how many
+ * files it changes against its base (KOBE-780: what deleting the project would discard).
+ */
 export async function projectCheckouts(
   tx: KobeTx,
   teamId: string,
   projectId: string,
-): Promise<(ProjectCheckout & { user_id: string })[]> {
+): Promise<(ProjectCheckout & { user_id: string; changed_files: number })[]> {
   const res = await tx.execute<RawCheckout>(sql`${SELECT_CHECKOUTS}
      WHERE c.team_id = ${teamId} AND c.project_id = ${projectId} ORDER BY c.created_at, c.user_id`);
-  return res.rows.map((r) => ({ ...toProtocol(r), user_id: r.user_id }));
+  const out: (ProjectCheckout & { user_id: string; changed_files: number })[] = [];
+  for (const r of res.rows) {
+    const owner = { teamId, userId: r.user_id };
+    const changes = await workingChanges(tx, owner, r.slug, r.base_commit_id);
+    out.push({ ...toProtocol(r), user_id: r.user_id, changed_files: changes.length });
+  }
+  return out;
 }
 
 /** The object tree an object key lies in, for `putServerFile`'s ownership check. */

@@ -133,11 +133,23 @@ function ProjectView({
     );
   }
 
+  /** KOBE-780 (P2-42): members whose working copy holds changes the delete would discard. */
+  async function uncommittedNote(): Promise<string> {
+    const copies = await commits.workingCopies(project.id);
+    if (!copies.ok) return "";
+    const n = copies.data.filter((c) => c.changedFiles > 0).length;
+    if (n === 0) return "";
+    return n === 1
+      ? " 1 member has uncommitted changes in a working copy; deleting the project discards them."
+      : ` ${n} members have uncommitted changes in their working copies; deleting the project discards them.`;
+  }
+
   async function remove(trigger: HTMLElement | null) {
+    const note = await uncommittedNote();
     const yes = await confirm(
       {
         title: `Delete ${project.name} for good?`,
-        description: "Archive it instead to keep its history.",
+        description: `Archive it instead to keep its history.${note}`,
         confirmLabel: "Delete project",
       },
       trigger,

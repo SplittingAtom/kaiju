@@ -2,7 +2,13 @@ import { sql, type KobeTx } from "@kobe/db";
 import { PROJECT_HISTORY_MAX_COMMITS } from "@kobe/protocol";
 import { z } from "zod";
 import { recordAudit } from "../audit/record.js";
-import { objectLimit, objectsUsed, storageLimit, storageUsed } from "../uploads/quota.js";
+import {
+  lockTeamStorage,
+  objectLimit,
+  objectsUsed,
+  storageLimit,
+  storageUsed,
+} from "../uploads/quota.js";
 import { DEFAULT_TEAM_MAX_OBJECTS } from "../uploads/settings.js";
 import { MOUNTS_MAX_SETTING, mountLimit } from "./mounts.js";
 
@@ -45,8 +51,9 @@ export interface TeamLimits {
 }
 
 /**
- * Which limit `bytes` and `objects` more would pass (GV2), or undefined when they fit. The caller
- * holds the team storage lock (`lockTeamStorage`) and writes in the same transaction.
+ * Which limit `bytes` and `objects` more would pass (GV2), or undefined when they fit. Without the
+ * team storage lock this is the early answer before bytes move; the binding check is
+ * {@link checkLimitsAfterWrite}, in the write's own transaction.
  */
 export async function overLimit(
   tx: KobeTx,
@@ -64,6 +71,38 @@ export async function overLimit(
     if ((await objectsUsed(tx, teamId)) + objects > limit) return "objects";
   }
   return undefined;
+}
+
+/** A write a team limit refuses once its rows are in; thrown so its transaction rolls back. */
+export class OverLimit extends Error {
+  constructor(readonly limit: "bytes" | "objects") {
+    super(`over the team's ${limit} limit`);
+  }
+}
+
+/**
+ * The team limits checked after a project write (KOBE-780, P2-44): the team-wide storage lock is
+ * taken only now, once the write's rows and the project's counters are in, so the history
+ * aggregate of `writeCommit` (`refreshProjectStorage`) never runs while every other upload and
+ * commit of the workspace waits. Throws {@link OverLimit} when the team is now over a limit this
+ * write added to (`added`): the same answer {@link overLimit} gave before the write, as the
+ * counters already hold the added bytes and objects. The caller rolls back on the throw.
+ */
+export async function checkLimitsAfterWrite(
+  tx: KobeTx,
+  teamId: string,
+  limits: TeamLimits,
+  added: { readonly bytes: number; readonly objects: number },
+): Promise<void> {
+  await lockTeamStorage(tx, teamId);
+  if (added.bytes > 0) {
+    const limit = await storageLimit(tx, teamId, limits.quotaDefaultBytes);
+    if ((await storageUsed(tx, teamId)) > limit) throw new OverLimit("bytes");
+  }
+  if (added.objects > 0) {
+    const limit = await objectLimit(tx, teamId, limits.maxObjectsDefault);
+    if ((await objectsUsed(tx, teamId)) > limit) throw new OverLimit("objects");
+  }
 }
 
 /** The team's history rule (GV3); a malformed value counts as `all`. */

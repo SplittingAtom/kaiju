@@ -137,7 +137,16 @@ export const THREADS_EVENTS = {
   "project.created": event("team", { projectId: id, visibility: projectVisibility.optional() }),
   /** `fields` lists which settings changed (names, not values). */
   "project.updated": event("team", { projectId: id, fields: z.array(z.string().max(40)).max(10) }),
-  "project.deleted": event("team", { projectId: id }),
+  /**
+   * KOBE-780: `workingCopies` = the checkouts the delete ended (each also audited as
+   * `project.checkout_discarded {reason: project_deleted}`), `uncommittedWorkingCopies` = those
+   * holding changes that were never committed. Both absent on older rows.
+   */
+  "project.deleted": event("team", {
+    projectId: id,
+    workingCopies: count.optional(),
+    uncommittedWorkingCopies: count.optional(),
+  }),
   "project.member_added": event("team", { projectId: id, userId: id, role: projectRole }),
   "project.member_removed": event("team", { projectId: id, userId: id }),
   /** A file joined the project (KOBE-162); `source` says whether a person uploaded it or an approved agent proposal added it. Never names or content. */
@@ -191,7 +200,7 @@ export const THREADS_EVENTS = {
   "project.checkout_discarded": event("team", {
     projectId: id,
     userId: id,
-    reason: z.enum(["discarded", "member_removed", "access_lost"]),
+    reason: z.enum(["discarded", "member_removed", "access_lost", "project_deleted"]),
   }),
   /**
    * CM5/CM6: a new head. `threadId`/`runId` for an agent's commit_project and for an accepted

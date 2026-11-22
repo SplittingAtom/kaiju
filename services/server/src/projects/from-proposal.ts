@@ -10,14 +10,13 @@ import {
   type ProposalNotAllowedError,
 } from "@kobe/protocol";
 import { resolveMime, SNIFF_BYTES } from "../uploads/mime.js";
-import { lockTeamStorage } from "../uploads/quota.js";
 import { verifyingStream, type ObjectStore } from "../workspace-sync/object-store.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import { loadAccess } from "./access.js";
 import { heldContents, type CommitDeps } from "./commits.js";
 import { copyThenWrite, type Copy } from "./copy-loop.js";
 import { clashesInTree, fitsMount, isConflictCopy } from "./paths.js";
-import { overLimit } from "./storage.js";
+import { checkLimitsAfterWrite, OverLimit } from "./storage.js";
 import {
   headOf,
   loadTree,
@@ -233,16 +232,7 @@ async function write(
     if (!isPlan(plan)) return plan;
     const mime = mimes.get(plan.sha256);
     if (!plan.held && mime === undefined) return "again";
-    await lockTeamStorage(tx, teamId);
     const newObjects = plan.held ? 0 : 1;
-    const over = await overLimit(
-      tx,
-      teamId,
-      deps.limits,
-      newObjects * plan.content.length,
-      newObjects,
-    );
-    if (over !== undefined) return { status: "quota_exceeded", limit: over };
     const file: TreeFile = {
       path: plan.rel,
       sha256: plan.sha256,
@@ -253,20 +243,33 @@ async function write(
     };
     const tree = new Map(plan.tree);
     tree.set(plan.rel, file);
-    const written = await writeCommit(tx, {
-      teamId,
-      projectId: req.projectId,
-      tree,
-      author: {
-        userId: req.owner.userId,
-        kind: "user",
-        threadId: req.threadId,
-        runId: plan.runId,
-        proposalId: req.proposalId,
-      },
-      message: req.message ?? plan.proposal.summary,
-    });
-    return { status: "committed", seq: written.seq, commitId: written.commitId };
+    try {
+      const written = await tx.transaction(async (sp) => {
+        const commit = await writeCommit(sp, {
+          teamId,
+          projectId: req.projectId,
+          tree,
+          author: {
+            userId: req.owner.userId,
+            kind: "user",
+            threadId: req.threadId,
+            runId: plan.runId,
+            proposalId: req.proposalId,
+          },
+          message: req.message ?? plan.proposal.summary,
+        });
+        // The team quota under its lock, after the history aggregate (P2-44).
+        await checkLimitsAfterWrite(sp, teamId, deps.limits, {
+          bytes: newObjects * plan.content.length,
+          objects: newObjects,
+        });
+        return commit;
+      });
+      return { status: "committed", seq: written.seq, commitId: written.commitId };
+    } catch (err) {
+      if (err instanceof OverLimit) return { status: "quota_exceeded", limit: err.limit };
+      throw err;
+    }
   });
 }
 

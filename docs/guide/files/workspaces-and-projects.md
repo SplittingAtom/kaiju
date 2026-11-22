@@ -79,6 +79,10 @@ commits it at once, with no checkout. The agent can commit a checkout itself wit
 `commit_project` tool, after your approval or a team rule allows it. See
 [Editing files](file-editor.md).
 
+Deleting a project is possible only once it has no files, conversations or project memory left.
+Members may still have working copies of it: the confirmation names how many hold uncommitted
+changes, and deleting the project discards them.
+
 An archived project's files are frozen: uploads, deletes, commits, reverts and accepted proposals
 are all refused until an owner unarchives it.
 

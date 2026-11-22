@@ -22,9 +22,8 @@ import { logger } from "../logger.js";
 import type { BlobStore } from "../retention/blobs.js";
 import { resolveMime, SNIFF_BYTES } from "../uploads/mime.js";
 import { UploadMeter, UploadTooLargeError } from "../uploads/meter.js";
-import { lockTeamStorage } from "../uploads/quota.js";
 import { clashesInTree, fitsMount } from "./paths.js";
-import { DEFAULT_TEAM_MAX_OBJECTS, overLimit } from "./storage.js";
+import { checkLimitsAfterWrite, DEFAULT_TEAM_MAX_OBJECTS, OverLimit } from "./storage.js";
 import { commitFiles, queueProjectBlobs } from "./tree.js";
 
 /**
@@ -175,8 +174,8 @@ class Refused extends Error {
 
 /**
  * Checks and inserts the row in `tx` (the caller's transaction, project row already locked):
- * archived, the path once mounted (KOBE-780), file count, name taken, a file inside a file, team
- * storage quota. Throws {@link Refused}.
+ * archived, the path once mounted (KOBE-780), file count, name taken, a file inside a file, and
+ * after the write the team storage quota. Throws {@link Refused} (the caller rolls back).
  */
 export async function insertProjectFile(
   tx: KobeTx,
@@ -214,18 +213,6 @@ export async function insertProjectFile(
   if (held.has(file.path)) throw new Refused("already_exists");
   // P2-9: the head tree never holds a file inside a file (mounts and checkouts could not write it).
   if (clashesInTree(held, file.path)) throw new Refused("path_clash");
-  await lockTeamStorage(tx, teamId);
-  const over = await overLimit(
-    tx,
-    teamId,
-    {
-      quotaDefaultBytes: deps.teamQuotaDefaultBytes,
-      maxObjectsDefault: deps.teamMaxObjectsDefault ?? DEFAULT_TEAM_MAX_OBJECTS,
-    },
-    file.size,
-    1,
-  );
-  if (over !== undefined) throw new Refused(over === "bytes" ? "quota_exceeded" : "object_budget");
   const [row] = await tx
     .insert(projectFiles)
     .values({
@@ -256,6 +243,23 @@ export async function insertProjectFile(
   });
   // Every change of the files is a commit (KOBE-579, CM1): `project_files` stays the head tree.
   await commitFiles(tx, teamId, projectId, { userId, kind: "user" }, `Add ${file.path}`);
+  // The team quota under its lock, after the history aggregate (P2-44); a refusal rolls back.
+  try {
+    await checkLimitsAfterWrite(
+      tx,
+      teamId,
+      {
+        quotaDefaultBytes: deps.teamQuotaDefaultBytes,
+        maxObjectsDefault: deps.teamMaxObjectsDefault ?? DEFAULT_TEAM_MAX_OBJECTS,
+      },
+      { bytes: file.size, objects: 1 },
+    );
+  } catch (err) {
+    if (err instanceof OverLimit) {
+      throw new Refused(err.limit === "bytes" ? "quota_exceeded" : "object_budget");
+    }
+    throw err;
+  }
   return toProjectFile(row);
 }
 

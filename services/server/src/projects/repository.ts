@@ -29,6 +29,7 @@ import type {
   UpdateProjectRequest,
 } from "@kobe/protocol";
 import { canPinAgent, findPinnableAgent } from "../agents/versions.js";
+import { projectCheckouts } from "./checkouts.js";
 import { queueProjectBlobs } from "./tree.js";
 import { recordAudit } from "../audit/record.js";
 import { decide, type ProjectAccess, type ProjectRow } from "./access.js";
@@ -297,6 +298,9 @@ export async function deleteProject(
   ] as const;
   const held = blockers.filter(([n]) => n > 0).map(([n, what]) => `${n} ${what}`);
   if (held.length > 0) return fail("in_use", held.join(", "));
+  // KOBE-780 (P2-42): the checkouts end with the project (cascade); each is audited, with how
+  // many held uncommitted changes (the web's confirm names them before the delete).
+  const copies = await projectCheckouts(tx, viewer.teamId, projectId);
   try {
     // A savepoint: the hold guard over commit history (0200) refuses the cascade with KH001.
     await tx.transaction(async (sp) => {
@@ -321,10 +325,22 @@ export async function deleteProject(
     if (isLegalHoldViolation(err)) return fail("legal_hold");
     throw err;
   }
+  for (const copy of copies) {
+    await recordAudit(tx, {
+      action: "project.checkout_discarded",
+      actor: { kind: "user", id: viewer.userId },
+      teamId: viewer.teamId,
+      target: { projectId, userId: copy.user_id, reason: "project_deleted" },
+    });
+  }
   await recordAudit(tx, {
     action: "project.deleted",
     teamId: viewer.teamId,
-    target: { projectId },
+    target: {
+      projectId,
+      workingCopies: copies.length,
+      uncommittedWorkingCopies: copies.filter((c) => c.changed_files > 0).length,
+    },
   });
   return { ok: true, value: null };
 }

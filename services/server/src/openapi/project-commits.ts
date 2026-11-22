@@ -129,7 +129,7 @@ export function projectCommitsOpenApiPaths(): Record<string, Record<string, unkn
       get: op(
         "listProjectCheckouts",
         "Working copies (owners, team admins)",
-        "Who has a checkout of the project, since when, and its base.",
+        "Who has a checkout of the project, since when, its base, and how many files it changes (`changed_files`: uncommitted work a delete would discard).",
         { "200": json("ProjectCheckouts", "The checkouts.") },
       ),
     },

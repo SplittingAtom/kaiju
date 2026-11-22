@@ -15,7 +15,6 @@ import {
 } from "@kobe/protocol";
 import type { Logger } from "pino";
 import type { BlobStore } from "../retention/blobs.js";
-import { lockTeamStorage } from "../uploads/quota.js";
 import { deleteWorkspaceFiles } from "../workspace-files/delete.js";
 import { areaOf, isInternalPath } from "../workspace-files/paths.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
@@ -28,7 +27,7 @@ import type { ProjectMounts } from "./mounts.js";
 import { fitsMount, isConflictCopy } from "./paths.js";
 import { createProject } from "./repository.js";
 import { deriveSlug } from "./slug.js";
-import { overLimit, type TeamLimits } from "./storage.js";
+import { checkLimitsAfterWrite, OverLimit, type TeamLimits } from "./storage.js";
 import { projectBlobKey, writeCommit, type TreeFile } from "./tree.js";
 
 /**
@@ -240,15 +239,6 @@ async function writeStep(
     if ("status" in again) return again;
     if (again.fingerprint !== planned.fingerprint) return "again";
     if (again.copies.some((c) => !mimes.has(c.sha256))) return "again";
-    await lockTeamStorage(tx, owner.teamId);
-    const over = await overLimit(
-      tx,
-      owner.teamId,
-      deps.limits,
-      sumSizes(again.copies),
-      again.copies.length,
-    );
-    if (over !== undefined) return refused("quota_exceeded", { limit: over });
     const tree = new Map<string, TreeFile>();
     for (const [path, f] of again.files) {
       tree.set(path, { ...f, mime: mimes.get(f.sha256) ?? "application/octet-stream" });
@@ -268,6 +258,11 @@ async function writeStep(
           author: { userId: owner.userId, kind: "user" },
           message: promotedFolderMessage(request.path),
         });
+        // The team quota under its lock, after the history aggregate (P2-44).
+        await checkLimitsAfterWrite(sp, owner.teamId, deps.limits, {
+          bytes: sumSizes(again.copies),
+          objects: again.copies.length,
+        });
         // Only now that the project and its commit exist does the folder leave My files.
         await deleteWorkspaceFiles(sp, sync, owner, again.live);
         return { status: "created", project: created.value.row };
@@ -275,6 +270,7 @@ async function writeStep(
     } catch (err) {
       if (isLegalHoldViolation(err)) return refused("legal_hold");
       if (err instanceof PathTooLong) return refused("invalid_path", { path: err.path });
+      if (err instanceof OverLimit) return refused("quota_exceeded", { limit: err.limit });
       throw err;
     }
   });

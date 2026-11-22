@@ -4,7 +4,6 @@ import { PROJECT_FILE_MAX_BYTES, PROJECT_FILES_MAX } from "@kobe/protocol";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import type { BlobStore } from "../retention/blobs.js";
-import { lockTeamStorage } from "../uploads/quota.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import { lockWorkspace } from "../workspace-sync/store.js";
 import { loadAccess, viewableBy } from "./access.js";
@@ -18,7 +17,7 @@ import {
 } from "./checkouts.js";
 import type { ProjectMounts } from "./mounts.js";
 import { fitsMount, isConflictCopy } from "./paths.js";
-import { overLimit, type TeamLimits } from "./storage.js";
+import { checkLimitsAfterWrite, OverLimit, type TeamLimits } from "./storage.js";
 import {
   diffHash,
   diffVersions,
@@ -337,15 +336,6 @@ async function writeStep(
     const plan = await planCommit(tx, deps, req, { lock: true });
     if (!("files" in plan)) return plan;
     if (plan.copies.some((c) => !mimes.has(c.sha256))) return "again";
-    await lockTeamStorage(tx, owner.teamId);
-    const over = await overLimit(
-      tx,
-      owner.teamId,
-      deps.limits,
-      sumSizes(plan.copies),
-      plan.copies.length,
-    );
-    if (over !== undefined) return refused("quota_exceeded", { limit: over });
     const tree = new Map<string, TreeFile>();
     for (const [path, f] of plan.files) {
       tree.set(path, { ...f, mime: f.mime ?? mimes.get(f.sha256) ?? "application/octet-stream" });
@@ -359,6 +349,11 @@ async function writeStep(
           author: req.author,
           message: req.message,
         });
+        // The team quota under its lock, after the history aggregate (P2-44).
+        await checkLimitsAfterWrite(sp, owner.teamId, deps.limits, {
+          bytes: sumSizes(plan.copies),
+          objects: plan.copies.length,
+        });
         await sp.execute(sql`
           UPDATE project_checkouts SET base_commit_id = ${commit.commitId}, updated_at = now()
            WHERE team_id = ${owner.teamId} AND project_id = ${projectId}
@@ -369,6 +364,7 @@ async function writeStep(
       return { status: "committed", seq: written.seq, commitId: written.commitId };
     } catch (err) {
       if (isLegalHoldViolation(err)) return refused("legal_hold");
+      if (err instanceof OverLimit) return refused("quota_exceeded", { limit: err.limit });
       throw err;
     }
   });

@@ -8377,7 +8377,7 @@
       "get": {
         "operationId": "listProjectCheckouts",
         "summary": "Working copies (owners, team admins)",
-        "description": "Who has a checkout of the project, since when, and its base.",
+        "description": "Who has a checkout of the project, since when, its base, and how many files it changes (`changed_files`: uncommitted work a delete would discard).",
         "parameters": [
           {
             "name": "id",
@@ -38178,6 +38178,11 @@
                       "pattern": "^[0-9a-f-]+$"
                     }
                   ]
+                },
+                "changed_files": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
                 }
               },
               "required": [
@@ -38187,7 +38192,8 @@
                 "base_commit_seq",
                 "created_at",
                 "updated_at",
-                "user_id"
+                "user_id",
+                "changed_files"
               ],
               "additionalProperties": false
             }
