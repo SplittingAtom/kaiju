@@ -10,6 +10,7 @@ export const CONSOLE_PATHS = {
   siteBreakGlass: `${SITE_CONSOLE}/break-glass`,
   siteConnectors: `${SITE_CONSOLE}/connectors`,
   siteEgress: `${SITE_CONSOLE}/egress`,
+  siteSso: `${SITE_CONSOLE}/sso`,
   sitePortableBreakGlass: `${SITE_CONSOLE}/portable-break-glass`,
   siteUsage: `${SITE_CONSOLE}/usage`,
   teamAudit: `${TEAM_CONSOLE}/audit`,

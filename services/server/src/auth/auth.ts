@@ -34,6 +34,8 @@ import {
   revokeResetLinks,
 } from "./reset-links.js";
 import { passkeyIsLastSignIn } from "../sso/linking.js";
+import { ssoRequired } from "../sso/required.js";
+import { SSO_OFF } from "../sso/settings.js";
 import { ssoLinkPlugin } from "./sso-link-plugin.js";
 import { ssoPlugin, SSO_RATE_LIMITS, type SsoRuntime } from "./sso-plugin.js";
 import { isUserVerified } from "./webauthn-flags.js";
@@ -172,6 +174,29 @@ async function ssoContextOf(db: KobeDb, sessionId: string): Promise<SsoContextRo
     .where(eq(sessionSsoContexts.sessionId, sessionId));
   return row;
 }
+
+/**
+ * Local sign-in and its credentials' recovery (KOBE-774): refused while the Site requires single
+ * sign-on (`sso/required.ts`): password sign-in, password reset (request and confirm), password
+ * sign-up (Better Auth's, off anyway, and invitation acceptance, which sets a password) and
+ * passkey sign-in. A session such a path minted before the switch ends at its next check.
+ */
+const LOCAL_SIGN_IN_PATHS = new Set([
+  "/sign-in/email",
+  "/sign-in/username",
+  "/request-password-reset",
+  "/forget-password",
+  "/reset-password",
+  "/sign-up/email",
+  "/invitation/accept",
+  "/passkey/generate-authenticate-options",
+  "/passkey/verify-authentication",
+]);
+
+const SSO_REQUIRED = {
+  code: "SSO_REQUIRED",
+  message: "This site requires single sign-on. Sign in with your organization's identity provider.",
+};
 
 const LAST_SIGN_IN_METHOD = {
   code: "LAST_SIGN_IN_METHOD",
@@ -323,6 +348,12 @@ export function createAuth({
     telemetry: { enabled: false },
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
+        if (
+          LOCAL_SIGN_IN_PATHS.has(ctx.path) &&
+          (await ssoRequired(db, sso?.settings ?? SSO_OFF))
+        ) {
+          throw new APIError("FORBIDDEN", SSO_REQUIRED);
+        }
         if (LOCAL_CREDENTIAL_PATHS.has(ctx.path)) {
           const current = await getSessionFromCtx(ctx).catch(() => null);
           if (current && !(await hasLocalPassword(db, current.user.id))) {
