@@ -10,7 +10,12 @@ import {
 } from "@kobe/protocol";
 import { threadLiveFor } from "./live-rule.js";
 import { allowGlobScoped, isLiteralGlob } from "./patterns.js";
-import { exactArgPattern, exactPinsAllArguments, rememberExpiry } from "./remember-scope.js";
+import {
+  exactArgPattern,
+  exactCanonicalInput,
+  exactPinsAllArguments,
+  rememberExpiry,
+} from "./remember-scope.js";
 import { auditRule, fitsScope, storedTeam, type StoredRule } from "./rule-store.js";
 import { USER_LIMITS } from "./schemas.js";
 import { pruneEndedUserRules } from "./user-rules.js";
@@ -111,6 +116,10 @@ export async function insertUserAllowRule(
   if (refusal) return { ok: false, error: refusal };
   const argPattern = rule.exact ? exactArgPattern(call.tool, call.input) : undefined;
   if (rule.exact && argPattern === undefined) return { ok: false, error: "exact_unavailable" };
+  // Every argument pinned: the rule also stores the input's canonical form (P2-23).
+  const exactKeys = argPattern !== undefined && exactPinsAllArguments(call.tool);
+  const exactInput = exactKeys ? exactCanonicalInput(call.tool, call.input) : undefined;
+  if (exactKeys && exactInput === undefined) return { ok: false, error: "exact_unavailable" };
 
   // A thread already archived, trashed or out of reach can't get a rule: unarchiving would
   // otherwise bring it back (review R1).
@@ -146,7 +155,8 @@ export async function insertUserAllowRule(
       rememberScope: rule.scope,
       threadId: rule.scope === "thread" ? call.threadId : null,
       runId: rule.scope === "run" ? call.runId : null,
-      exactKeys: argPattern !== undefined && exactPinsAllArguments(call.tool),
+      exactKeys,
+      exactInput: exactInput ?? null,
     })
     .returning();
   if (!row) throw new Error("user rule insert returned no row");

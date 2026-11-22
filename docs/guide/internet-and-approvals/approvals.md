@@ -65,6 +65,11 @@ Tick **Remember: allow _tool_** before pressing Allow, and pick how long under *
 **until revoked**. For file tools, **Only this path** limits it to that one file; for other tools it
 can be limited to exactly this input. Your team may offer fewer choices.
 
+Exactly this input means the same values of the same kind: the number `5` and the text `"5"` are
+different inputs, as are a list and the same list written out as text (the order of the fields
+doesn't matter). An approval limited this way before November 2026 asks once more when its input
+holds numbers, true/false or nested values; remember it again to keep it.
+
 A remembered approval:
 
 - applies only to you, in this workspace, and only in conversations where you are present (never in

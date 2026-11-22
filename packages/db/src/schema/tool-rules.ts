@@ -100,6 +100,12 @@ export const toolRules = pgTable(
      * matches only inputs whose top-level keys are exactly its pattern's (no extra, none missing).
      */
     exactKeys: boolean().notNull().default(false),
+    /**
+     * With `exactKeys`: the canonical JSON of the exact input the rule allows (KOBE-783), the form
+     * the approval's HMAC covers, so a value's JSON type counts (`5` is not `"5"`). Null on rules
+     * made before it (they match only what their glob text says unambiguously).
+     */
+    exactInput: text(),
   },
   (t) => [
     primaryKey({ columns: [t.teamId, t.id] }),

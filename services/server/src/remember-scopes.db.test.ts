@@ -701,6 +701,39 @@ describe("what the Approvals pages show (review S5, S6)", () => {
       thread_title: "Secret merger",
     });
   });
+
+  it("an exact rule of a tool without a primary argument applies under exact-only, as the engine says (KOBE-783, P2-21)", async () => {
+    const w = await world();
+    const input = { scope: "project", path: "notes.md", content: "x" };
+    const made = await approve(w, w, "remember", input, {
+      decision: "allow",
+      remember: { tool_glob: "remember", scope: "forever", exact: true },
+    });
+    expect(made.res.status, JSON.stringify(made.res.json)).toBe(200);
+    // P2-23: the exact action is stored as canonical JSON too, the approval HMAC's form.
+    const { rows } = await fx.admin.query<{ exact_keys: boolean; exact_input: string | null }>(
+      `SELECT exact_keys, exact_input FROM tool_rules WHERE team_id = $1 AND scope = 'user'`,
+      [w.team],
+    );
+    expect(rows).toEqual([
+      { exact_keys: true, exact_input: '{"content":"x","path":"notes.md","scope":"project"}' },
+    ]);
+    const put = await w.owner.browser.put(
+      "/v1/team/policy/remember-limits",
+      limits({ exact_only: true }),
+    );
+    expect(put.status, JSON.stringify(put.json)).toBe(200);
+    // The engine still applies it...
+    expect(await outcome(w, w, "remember", input)).toBe("allow");
+    // ...so both Approvals pages say it applies (they used to say exact-only ended it).
+    for (const path of ["/v1/team/policy/my-rules", "/v1/team/policy/member-rules"]) {
+      const listed = (await w.owner.browser.get(path)).json.rules;
+      expect(listed.find((r: { tool_glob: string }) => r.tool_glob === "remember")).toMatchObject({
+        applies: true,
+        ended_reason: null,
+      });
+    }
+  });
 });
 
 describe("revocation and visibility", () => {

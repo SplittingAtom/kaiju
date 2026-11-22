@@ -132,3 +132,20 @@ export function exactArgPattern(tool: ToolDescriptor, input: JsonObject): ArgPat
   if (!parsed.success) return undefined;
   return matchArgPattern(parsed.data, prepared.view, "loosen") ? parsed.data : undefined;
 }
+
+/**
+ * The canonical JSON an "only this exact action" rule over every argument stores (KOBE-783,
+ * P2-23): the approved input as the engine sees it (`prepareInput`), in the approval HMAC's
+ * canonical form. Undefined for a built-in that pins only its primary argument (its content may
+ * differ), or when the input has no prepared or canonical form.
+ */
+export function exactCanonicalInput(tool: ToolDescriptor, input: JsonObject): string | undefined {
+  if (!exactPinsAllArguments(tool)) return undefined;
+  const prepared = prepareInput(tool, input);
+  if (!prepared.ok) return undefined;
+  try {
+    return canonicalJson(prepared.view);
+  } catch {
+    return undefined;
+  }
+}

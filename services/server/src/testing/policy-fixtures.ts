@@ -91,6 +91,7 @@ export function rule(
       | "run_id"
       | "created_at"
       | "exact_keys"
+      | "exact_input"
     >
   > = {},
 ): PolicyRule {

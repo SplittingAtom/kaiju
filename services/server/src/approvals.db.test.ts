@@ -8,6 +8,8 @@ import {
 } from "@kobe/protocol";
 import { createDb, type KobeDatabase } from "@kobe/db";
 import { APPROVALS_MAX_PER_RUN, approvalKeyring } from "./approvals/index.js";
+import { voidUndeliveredAllowInTx } from "./approvals/run-end.js";
+import { withAppendTx } from "./event-stream/append.js";
 import { createPolicyEngine } from "./policy/engine.js";
 import { createToolRegistry } from "./policy/registry.js";
 import { createDbRuleSource, createDbSettingsSource } from "./policy/rule-store.js";
@@ -406,6 +408,39 @@ describe("a policy rule makes the call wait for its user", () => {
     expect(result.decision === "deny" && result.message).toMatch(/already asked/);
     await decide(w.owner, pending.approval_id, { decision: "deny" });
     await first.result();
+  });
+});
+
+describe("voiding an undelivered allow (KOBE-783, P2-24)", () => {
+  it("keeps a consumed MCP approval, and voids a consumed one of a tool merely starting with mcp", async () => {
+    const w = await world();
+    const allowed = async (tool: string) => {
+      const { rows } = await fx.admin.query<{ id: string }>(
+        `INSERT INTO approvals (team_id, run_id, thread_id, user_id, connection_id, tool_call_id,
+                                tool, input_canonical, risk, reasons, status, decided_at,
+                                decided_by, consumed_at, expires_at, input_hmac, token_kid,
+                                token_expires_at)
+         VALUES ($1, $2, $3, $4, gen_random_uuid(), $5, $5, '{}', 'write', '[]', 'allowed', now(),
+                 $4, now(), now() + interval '1 hour', repeat('A', 43), 'k1',
+                 now() + interval '1 hour')
+         RETURNING id`,
+        [w.team, w.runId, w.threadId, w.owner.id, tool],
+      );
+      return must(rows[0], "approval").id;
+    };
+    // `mcp\_\_%` in a JS template literal reached SQL as `mcp__%`: "mcp" and any two characters.
+    const lookalike = await allowed("mcpXYlookalike");
+    const mcp = await allowed("mcp__jira__create_issue");
+    const voided = await withAppendTx(fx.db, w.team, async (tx) => [
+      ...(await voidUndeliveredAllowInTx(tx, w.team, lookalike)),
+      ...(await voidUndeliveredAllowInTx(tx, w.team, mcp)),
+    ]);
+    expect(voided.map((v) => v.approvalId)).toEqual([lookalike]);
+    expect(await approvalRow(lookalike)).toMatchObject({
+      status: "expired",
+      cause: "run_interrupted",
+    });
+    expect((await approvalRow(mcp)).status).toBe("allowed");
   });
 });
 
