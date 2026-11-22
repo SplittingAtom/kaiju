@@ -13,7 +13,7 @@ old names: Workspace = the team row, so the routes stay `/v1/team`, `/v1/me/team
 
 ## OpenAPI document
 
-`services/server/openapi.json` (generated from `services/server/src/openapi/document.ts`) lists
+The OpenAPI document (`services/server/src/openapi/document.ts`) lists
 every route of the member and admin API on the user-facing listener. Some areas are fully
 described by hand in `openapi/<area>.ts`; the rest are one line each in `openapi/catalog/`. A
 catalog area marked `detailed: true` gives every line a `CatalogDetail` in
@@ -32,8 +32,11 @@ beacon, a catch-all refusal, and the sandbox-facing and internal listeners.
 neither documented nor allowlisted, and on a stale entry in either list; `catalog/detail.test.ts`
 fails on an operation of a detailed area without its schemas, a dangling `$ref` or an undeclared
 path parameter. After adding a route, add its line to the catalog (with its detail in a detailed
-area) and regenerate:
-`UPDATE_OPENAPI=1 pnpm --filter @kobe/server exec vitest run src/openapi && pnpm format`.
+area) and update the route-inventory snapshot
+(`pnpm --filter @kobe/server exec vitest run src/route-inventory.test.ts -u`), which is how route
+changes show in review. The OpenAPI JSON is not committed (KOBE-815): `pnpm --filter @kobe/server
+build && pnpm --filter @kobe/server openapi` writes it to `services/server/openapi.json`
+(gitignored), and CI keeps every push's copy as the `openapi` artifact of the `unit` job.
 
 ## Dev loop
 

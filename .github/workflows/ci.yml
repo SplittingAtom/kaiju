@@ -87,6 +87,16 @@ jobs:
       # Every package's own build too, as before the split: some tests and the scripts below run
       # a package's dist/ (mostly replayed from the restored cache).
       - run: pnpm build
+      # KOBE-815: openapi.json is generated, not committed; keep each push's copy for review and
+      # API consumers (document.test.ts, coverage.test.ts and catalog/detail.test.ts check it).
+      - name: OpenAPI document (artifact)
+        run: pnpm --filter @kobe/server openapi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: openapi
+          path: services/server/openapi.json
+          if-no-files-found: error
+          retention-days: 14
       # Node sees the node's CPUs, not the runner's limit (6 CPUs, ci/runners); cap parallel
       # suites and each suite's vitest workers (2 × 3) so per-test timeouts and worker start-up
       # don't trip on self-hosted runners. Every package's test script is `vitest run`.
