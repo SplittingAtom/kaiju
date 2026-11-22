@@ -9,7 +9,6 @@ import {
   riskClassSchema,
   toolScopeSchema,
   type ApprovalMode,
-  type JsonObject,
   type ToolDescriptor,
 } from "@kobe/protocol";
 import {
@@ -19,8 +18,9 @@ import {
   type AgentFrontmatter,
 } from "@kobe/agent-file";
 import { strictestApprovalMode } from "../policy/approval-floor.js";
+import { hiddenBuiltins } from "../policy/agent-allow.js";
 import { checkAvailable } from "../policy/gates.js";
-import { matchAgentToolEntry, matchSubject, splitAgentToolEntry } from "../policy/patterns.js";
+import { matchSubject, splitAgentToolEntry } from "../policy/patterns.js";
 import { isRuleActive, type PolicyRule } from "../policy/rules.js";
 
 /**
@@ -30,19 +30,20 @@ import { isRuleActive, type PolicyRule } from "../policy/rules.js";
  * HARD CONTRACT (KOBE-45 decision 10): the manifest is a **ceiling, never a grant**. It is the
  * agent's own narrowing (`tools.allow` intersected with the server's tool registry, minus
  * `tools.deny`) intersected with the policy floor at publish time (whole-tool deny rules of the
- * site, plus the team's for team agents). At run time (KOBE-36/47) a call must be inside the
- * manifest (`manifestAllowsTool`) **and** pass the live policy engine with the version's
- * `tools_allow`/`tools_deny`, so:
+ * site, plus the team's for team agents). At run time the version's frozen `tools_allow` and
+ * `tools_deny` reach the policy engine on every call, at the sandbox and at the MCP proxy
+ * (`loadRunAgentTools`, KOBE-481/776: a call outside a non-empty allow list, or matching a deny
+ * entry, is refused as `agent_tool_deny`), and the frozen approval mode sets the run's mode
+ * (`effectiveApprovalMode` at run start), so:
  *   - a floor that tightens after publish applies at once (live rules, `effectiveApprovalMode`);
  *   - a floor that loosens after publish does not widen a published version: the builder
  *     republishes (or rolls back, which republishes) to pick it up;
- *   - tools added to the registry later (a Pi patch, a kobe-tool) never appear in old versions.
+ *   - a version with an allow list never gains a tool added to the registry later unless an
+ *     allow entry (a glob) matches it. A version without one is not narrowed by the frozen `tools`
+ *     list per call: `tools` and `excluded` record what the builder and inventory show.
  * MCP tools are resolved at run time from the connector's pinned snapshot (D27, KOBE-59), limited
- * to the version's `connectors`; their exposure, drift and rules are live checks.
- *
- * BLOCKING for KOBE-47: `versionAllowsCall` (or at least `manifestAllowsTool`) and
- * `effectiveApprovalMode` must sit on the run-start path, reading the pin (`resolvePinnedAgent`)
- * under the thread row lock inside the run-start transaction; otherwise the manifest is advisory.
+ * to the run's connectors (`run.start.mcp`, re-checked by the proxy); their exposure, drift and
+ * rules are live checks.
  */
 
 export const TOOL_MANIFEST_FORMAT = 1;
@@ -173,14 +174,10 @@ function exclusion(
     return arg === undefined && (glob === "" || matchSubject(glob, name, "restrict"));
   });
   if (wholeDeny) return { name, reason: "agent_tools_deny" };
-  const allow = frontmatter.tools?.allow ?? [];
-  const allowed =
-    allow.length === 0 ||
-    allow.some((entry) => {
-      const { tool: glob } = splitAgentToolEntry(entry);
-      return glob !== "" && matchSubject(glob, name, "loosen");
-    });
-  if (!allowed) return { name, reason: "agent_tools_allow" };
+  // KOBE-776: the allow list limits built-ins only when it names one.
+  if (hiddenBuiltins(frontmatter.tools?.allow).includes(name)) {
+    return { name, reason: "agent_tools_allow" };
+  }
   const site = wholeToolDeny(floor.site, name, now);
   if (site) return { name, reason: "site_deny_rule", rule_id: site.id };
   const team = floor.scope === "team" ? wholeToolDeny(floor.team, name, now) : undefined;
@@ -259,27 +256,6 @@ export function manifestAllowsTool(manifest: ToolManifest, toolName: string): bo
   if (!mcp) return false;
   if (manifest.connectors === ALL_CONNECTORS) return true;
   return manifest.connectors.some((c) => mcpServerSegment(c) === mcp.server_segment);
-}
-
-/**
- * Whether a version may make this call at all (KOBE-36/47 run-time gate): inside the manifest
- * (`manifestAllowsTool`) and through the version's own `tools.deny` (deny wins, argument
- * shorthands on the prepared input) and `tools.allow` (only narrows), with the policy engine's
- * matchers and fail-closed bias. Still not sufficient: every allowed call goes on to the engine.
- */
-export function versionAllowsCall(
-  manifest: ToolManifest,
-  tool: ToolDescriptor,
-  input: JsonObject,
-): boolean {
-  if (!manifestAllowsTool(manifest, tool.name)) return false;
-  if (manifest.tools_deny.some((e) => matchAgentToolEntry(e, tool, input, "restrict"))) {
-    return false;
-  }
-  return (
-    manifest.tools_allow.length === 0 ||
-    manifest.tools_allow.some((e) => matchAgentToolEntry(e, tool, input, "loosen"))
-  );
 }
 
 /**

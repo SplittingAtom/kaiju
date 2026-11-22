@@ -11,6 +11,7 @@ import { defaultNewThreadPin } from "./agents/default-agent.js";
 import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
 import { TestBrowser } from "./testing/browser.js";
 import { MemoryMailer } from "./testing/mailer.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 /**
  * The roster views KOBE-571 adds on the server (spec agents-roster AR8, AR14, AR15, §5, §6.4,
@@ -48,6 +49,7 @@ async function sql<T extends pg.QueryResultRow>(text: string, args: unknown[] = 
 beforeAll(async () => {
   database = await createTestDatabase(testServerUrl());
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "t".repeat(48),

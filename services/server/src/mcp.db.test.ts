@@ -524,6 +524,35 @@ describe("Gate 2: an MCP write runs only with a valid signed approval", () => {
     ]);
   });
 
+  it("canonical input: key order and number spelling don't matter; the approved call runs once", async () => {
+    const approvedInput = { q: "Résumé", labels: ["sec"], priority: 2 };
+    const token = await allowApproval(fx.admin, {
+      teamId: w.team,
+      runId: w.runId,
+      threadId: w.threadId,
+      userId: w.owner.id,
+      tool: tool(),
+      input: approvedInput,
+      key: KEYRING.current,
+    });
+    const send = () =>
+      app.request(`/internal/v1/mcp/connectors/${w.connector.id}/calls`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...auth(w.token) },
+        body: `{"tool":"create_issue","thread_id":"${w.threadId}","arguments":{"priority":2.0,"labels":["sec"],"q":"R\\u00e9sum\\u00e9"}}`,
+      });
+    expect(await (await send()).json()).toMatchObject({
+      decision: "allow",
+      reason: "approval_granted",
+      approval_id: token.approvalId,
+      input_sha256: digest(approvedInput),
+    });
+    expect(await (await send()).json()).toMatchObject({
+      decision: "deny",
+      approval_failure: "no_approval",
+    });
+  });
+
   it("refuses a forged signature", async () => {
     await allowApproval(fx.admin, {
       teamId: w.team,

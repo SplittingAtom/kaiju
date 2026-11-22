@@ -75,6 +75,8 @@ export class WorkspaceSync {
   #ready: Promise<void> | undefined;
   #timer: NodeJS.Timeout | undefined;
   #lastProofRehashed = 0;
+  /** The last flush's push succeeded (the proof may follow). */
+  #flushed = false;
   #soon: NodeJS.Timeout | undefined;
 
   constructor(options: WorkspaceSyncOptions) {
@@ -203,6 +205,7 @@ export class WorkspaceSync {
    * timeout or doubt sends nothing, so the volume is kept.
    */
   async flush(deadlineMs: number, proof?: ReclaimProof): Promise<PushStats | undefined> {
+    this.#flushed = false;
     this.#s.stopped = true;
     clearInterval(this.#timer);
     clearTimeout(this.#soon);
@@ -224,16 +227,29 @@ export class WorkspaceSync {
         return undefined;
       }
       this.#s.o.logger.info({ ...stats }, "workspace flushed");
-      if (proof !== undefined) {
-        const proven = await Promise.race([this.#prove(proof), timeout]);
-        this.#s.o.logger.info({ proven: proven === true }, "workspace reclaim proof");
-      }
-      await this.#saveStamps();
+      this.#flushed = true;
+      if (proof !== undefined) await Promise.race([this.prove(proof, deadlineMs), timeout]);
+      else await this.#saveStamps();
       return stats;
     } catch (error) {
       warn(this.#s, "workspace flush failed", error);
       return undefined;
     }
+  }
+
+  /**
+   * KOBE-733: the reclaim proof after a successful {@link flush} (never otherwise), bounded by
+   * `deadlineMs`; the agent calls it once its wire is closed. Saves the verified stamps either way.
+   */
+  async prove(proof: ReclaimProof, deadlineMs: number): Promise<boolean> {
+    if (!this.#flushed) return false;
+    const timeout = new Promise<undefined>((r) =>
+      setTimeout(() => r(undefined), deadlineMs).unref(),
+    );
+    const proven = await Promise.race([this.#prove(proof), timeout]);
+    this.#s.o.logger.info({ proven: proven === true }, "workspace reclaim proof");
+    await this.#saveStamps();
+    return proven === true;
   }
 
   /**

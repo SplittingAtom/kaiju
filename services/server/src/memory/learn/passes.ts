@@ -42,6 +42,18 @@ export async function insertRunningPass(tx: KobeTx, p: NewPass): Promise<string 
   return res.rows[0]?.id ?? null;
 }
 
+/**
+ * Serialises one person's pass starts in one Workspace until the transaction ends (KOBE-787): the
+ * thread lock alone let starts on two threads (two replicas) both count the same total and go past
+ * {@link LEARN_PASSES_PER_DAY}. Taken after the thread's lock, before {@link passesToday}, and held
+ * through the claim, so a second start counts the first one's row once it commits.
+ */
+export async function lockPassStarts(tx: KobeTx, teamId: string, userId: string): Promise<void> {
+  await tx.execute(
+    sql`SELECT pg_advisory_xact_lock(hashtextextended(${`kobe.memory-learn-starts:${teamId}:${userId}`}, 0))`,
+  );
+}
+
 /** Passes the person started in this Workspace in the last 24 hours (any outcome). */
 export async function passesToday(tx: KobeTx, teamId: string, userId: string): Promise<number> {
   const res = await tx.execute<{ n: string | number }>(sql`

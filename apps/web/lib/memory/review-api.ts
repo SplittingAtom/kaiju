@@ -33,6 +33,11 @@ export interface Candidate {
   readonly operation: "add" | "update" | "supersede" | "conflict";
   /** The memory an update, supersede or conflict acts on (null when gone or for add). */
   readonly target: RelatedItem | null;
+  /**
+   * The memory was changed since Kobe suggested this (KOBE-779): the comparison shows it as it is
+   * now, and Save sends the version shown (`targetVersion`).
+   */
+  readonly targetChanged?: boolean;
   readonly confidence: number;
   readonly rationale: string;
   readonly evidence: readonly { readonly entryId: string; readonly quote: string }[];
@@ -55,6 +60,8 @@ export interface CandidateEdit {
   readonly statement?: string;
   readonly kind?: ItemKind;
   readonly scope?: ReviewScope;
+  /** The changed memory's version the person reviewed on the card (KOBE-779). */
+  readonly targetVersion?: number;
 }
 
 export interface SavedCandidate {
@@ -82,6 +89,7 @@ export function saveBody(edit: CandidateEdit, overrides?: Overrides): Record<str
     ...(edit.kind === undefined ? {} : { kind: edit.kind }),
     ...(edit.scope === undefined ? {} : { scope: edit.scope }),
     ...(edit.scope === "portable" ? { confirm_portable: true } : {}),
+    ...(edit.targetVersion === undefined ? {} : { target_version: edit.targetVersion }),
     ...(overrides?.lint || overrides?.policyConflict
       ? {
           overrides: {

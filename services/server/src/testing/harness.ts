@@ -6,6 +6,7 @@ import { BackgroundTasks } from "../background.js";
 import { createServerDeps, type ServerDeps, type ServerDepsOptions } from "../deps.js";
 import { waitForAppSessionsToClose } from "./app-sessions.js";
 import { TestBrowser } from "./browser.js";
+import { fakeIsolation } from "./isolation.js";
 import { MemoryMailer } from "./mailer.js";
 
 export const PUBLIC_URL = "http://kobe.test";
@@ -31,24 +32,25 @@ export interface Harness {
 }
 
 export async function openHarness(
-  options: Pick<
-    ServerDepsOptions,
-    | "agents"
-    | "models"
-    | "blobs"
-    | "egressHeaderSecrets"
-    | "connectors"
-    | "connectorProbe"
-    | "appCaller"
-    | "envelope"
-    | "sso"
-    | "modelTokenDefaults"
-    | "auditForwardingDestinations"
-    | "auditForwardingSecrets"
-    | "brandingDefaults"
-    | "serverCalls"
-    | "approvalKeys"
-  > = {},
+  options: Partial<Pick<ServerDepsOptions, "isolation">> &
+    Pick<
+      ServerDepsOptions,
+      | "agents"
+      | "models"
+      | "blobs"
+      | "egressHeaderSecrets"
+      | "connectors"
+      | "connectorProbe"
+      | "appCaller"
+      | "envelope"
+      | "sso"
+      | "modelTokenDefaults"
+      | "auditForwardingDestinations"
+      | "auditForwardingSecrets"
+      | "brandingDefaults"
+      | "serverCalls"
+      | "approvalKeys"
+    > = {},
   /** App options that need the deps (e.g. the Orbit eval runner, KOBE-93). */
   appOptions?: (deps: ServerDeps) => AppOptions,
 ): Promise<Harness> {
@@ -66,6 +68,7 @@ export async function openHarness(
     setupToken: "setup-token-for-harness-tests-01",
     trustedProxies: ["127.0.0.1/32"],
     mailer,
+    isolation: fakeIsolation().probe,
     ...options,
   });
   const app = createApp(deps, appOptions?.(deps));

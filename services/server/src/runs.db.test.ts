@@ -464,19 +464,22 @@ describe("authorization and thread state", () => {
     await f.fx.admin.query(`UPDATE users SET deactivated_at = NULL WHERE id = $1`, [w.owner.id]);
   });
 
-  it("refuses new runs while the isolation runtime is missing (D4)", async () => {
-    const w = await f.world();
-    const threadId = await f.thread(w.owner);
-    const runs = f.fx.replica(0).deps.runs;
-    runs.useIsolation(() => "missing");
-    try {
-      const res = await f.send(w.owner, threadId, "x");
-      expect(res.status).toBe(503);
-      expect(res.json.code).toBe("isolation_unavailable");
-    } finally {
-      runs.useIsolation(() => "available");
-    }
-  });
+  it.each(["missing", "checking"] as const)(
+    "refuses new runs while the isolation runtime is %s (D4, KOBE-708)",
+    async (state) => {
+      const w = await f.world();
+      const threadId = await f.thread(w.owner);
+      const isolation = f.fx.replica(0).isolation;
+      isolation.set(state);
+      try {
+        const res = await f.send(w.owner, threadId, "x");
+        expect(res.status).toBe(503);
+        expect(res.json.code).toBe("isolation_unavailable");
+      } finally {
+        isolation.set("available");
+      }
+    },
+  );
 
   it("fixes the approval mode at creation, never looser than the site floor", async () => {
     const w = await f.world();

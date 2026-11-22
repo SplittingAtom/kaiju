@@ -66,10 +66,10 @@ async function snapshot(): Promise<Map<string, string[]>> {
 }
 
 /**
- * What a server replica runs at start (`startup/jobs.ts`, the same list `index.ts` starts), one
+ * What a server replica runs at start (`startup/jobs.ts`, the same list `startServer` starts), one
  * pass each, with every optional job configured: SIEM forwarding to both destinations (nothing
  * listens there, so the forwarder records a failure), the Bifrost sync (a fake admin), and the
- * egress header re-seal. Plus the isolation auditor, which `index.ts` wires into the isolation
+ * egress header re-seal. Plus the isolation auditor, which `startServer` wires into the isolation
  * gate, and the requests a load balancer and a first visitor make.
  */
 async function start(): Promise<void> {

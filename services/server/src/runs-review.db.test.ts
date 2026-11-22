@@ -6,6 +6,7 @@ import { DbRunOrchestrator } from "./runs/orchestrator.js";
 import { RunError } from "./runs/errors.js";
 import { must } from "./testing/event-stream-fixture.js";
 import { RunFixture, piDelta } from "./testing/run-fixture.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 /**
  * Run orchestrator (KOBE-30), coordinator review round: Retry edge cases, the interrupted run after
@@ -289,6 +290,9 @@ describe("lost starts and idempotent messages (L3, L6, L2)", () => {
     const failing = new DbRunOrchestrator({
       db: deps.database.db,
       router: deps.sandboxWire.router,
+      isolation: fakeIsolation().probe,
+      notebooks: deps.notebookFiles,
+      workspace: deps.runWorkspace,
       sweep: false,
       agents: { resolve: () => Promise.reject(new Error("resolver down")) },
     });

@@ -26,6 +26,8 @@ export async function sweepBreakGlass(deps: ServerDeps): Promise<number> {
 export class BreakGlassSweeper {
   private timer: ReturnType<typeof setInterval> | undefined;
   private running = false;
+  /** The pass in flight (never rejects): `stop()` waits for it (KOBE-709). */
+  private current: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly deps: ServerDeps) {}
 
@@ -33,7 +35,7 @@ export class BreakGlassSweeper {
     const run = () => {
       if (this.running) return;
       this.running = true;
-      sweepBreakGlass(this.deps)
+      this.current = sweepBreakGlass(this.deps)
         .catch((err: unknown) => logger.error({ err }, "break-glass expiry sweep failed"))
         .finally(() => {
           this.running = false;
@@ -44,8 +46,9 @@ export class BreakGlassSweeper {
     this.timer.unref();
   }
 
-  stop(): void {
+  stop(): Promise<unknown> {
     if (this.timer) clearInterval(this.timer);
     this.timer = undefined;
+    return this.current;
   }
 }

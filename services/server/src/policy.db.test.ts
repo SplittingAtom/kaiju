@@ -29,6 +29,7 @@ import {
   policyInput,
   type InputOptions,
 } from "./testing/policy-fixtures.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 const PUBLIC_URL = "http://kobe.test";
 const PASSWORD = "a long enough password";
@@ -103,6 +104,7 @@ function decide(
 beforeAll(async () => {
   database = await createTestDatabase(testServerUrl());
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "p".repeat(48),

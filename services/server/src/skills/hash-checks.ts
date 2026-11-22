@@ -267,12 +267,14 @@ export function startSkillHashRecompute(deps: {
   readonly blobs: BlobStore;
   readonly log: Pick<Logger, "info" | "warn" | "error">;
   readonly everyMs?: number;
-}): () => void {
+}): () => Promise<unknown> {
   let running = false;
+  // The pass in flight (never rejects): the stop function waits for it (KOBE-709).
+  let current: Promise<unknown> = Promise.resolve();
   const tick = () => {
     if (running) return;
     running = true;
-    recomputeOnce(deps)
+    current = recomputeOnce(deps)
       .catch((err: unknown) => deps.log.error({ err }, "skills: stored hash recompute failed"))
       .finally(() => {
         running = false;
@@ -281,5 +283,8 @@ export function startSkillHashRecompute(deps: {
   tick();
   const timer = setInterval(tick, deps.everyMs ?? RECOMPUTE_EVERY_MS);
   timer.unref();
-  return () => clearInterval(timer);
+  return () => {
+    clearInterval(timer);
+    return current;
+  };
 }

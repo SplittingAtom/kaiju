@@ -3,7 +3,11 @@ export { RUN_ERROR_STATUS, RunError, isRunError, type OrchestratorErrorCode } fr
 export {
   DbRunOrchestrator,
   RUN_DEFAULTS,
+  createRunWorkspace,
   type RunOrchestratorOptions,
+  type RunWorkspace,
+  type RunWorkspaceSeams,
+  type RunWorkspaceSlot,
   type RunTuning,
   type ServerRunOrchestrator,
 } from "./orchestrator.js";

@@ -16,6 +16,7 @@ import {
   threadSearchPageSchema,
   threadSummarySchema,
 } from "./threads/schemas.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 // KOBE-34 Thread API against a real Postgres: own throwaway database (it needs an Owner).
 const PUBLIC_URL = "http://kobe.test";
@@ -109,6 +110,7 @@ beforeAll(async () => {
   admin = new pg.Client({ connectionString: database.adminUrl });
   await admin.connect();
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "t".repeat(48),

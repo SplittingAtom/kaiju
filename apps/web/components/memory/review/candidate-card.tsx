@@ -61,6 +61,7 @@ export function CandidateCard({
   canCurateWorkspace,
   onSaved,
   onDismissed,
+  onStale,
   seams,
 }: {
   readonly candidate: Candidate;
@@ -69,6 +70,8 @@ export function CandidateCard({
   readonly canCurateWorkspace: boolean;
   readonly onSaved: (saved: SavedCandidate) => void;
   readonly onDismissed: (candidate: Candidate) => void;
+  /** The memory it changes moved on (409): the cards are read again (KOBE-779). */
+  readonly onStale?: () => void;
   readonly seams?: CardSeams | undefined;
 }) {
   const headingId = useId();
@@ -121,6 +124,10 @@ export function CandidateCard({
       ...(draft.kind === candidate.kind ? {} : { kind: draft.kind }),
       // Portable always names its scope: the server needs the confirmation with it.
       ...(scope === candidate.scope && scope !== "portable" ? {} : { scope }),
+      // The card said the memory changed since Kobe suggested this: save over what it shows.
+      ...(candidate.targetChanged && candidate.target
+        ? { targetVersion: candidate.target.version }
+        : {}),
     };
     let saved: SavedCandidate | null = null;
     await save(
@@ -225,7 +232,15 @@ export function CandidateCard({
         </p>
       )}
       {problem && (
-        <CheckProblem problem={problem} known={NO_ITEMS} busy={busy} onReload={() => clear()} />
+        <CheckProblem
+          problem={problem}
+          known={NO_ITEMS}
+          busy={busy}
+          onReload={() => {
+            clear();
+            onStale?.();
+          }}
+        />
       )}
       {dismissError && (
         <p role="alert" className="m-0 text-sm text-status-failed">

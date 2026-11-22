@@ -611,7 +611,7 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
 
 /**
  * A waker that delegates to one set later: the wire is built before the sandbox provider exists
- * (index.ts). Until then (or without sandboxes configured) wakes fail as unavailable.
+ * (startup/server.ts). Until then (or without sandboxes configured) wakes fail as unavailable.
  */
 export function createDeferredWaker(): SandboxWaker & { set(waker: SandboxWaker): void } {
   let target: SandboxWaker | undefined;

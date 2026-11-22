@@ -12,6 +12,7 @@ import type { SandboxTarget } from "../types.js";
 export interface PolicyCheckPort {
   readonly ctx: WireContext;
   readonly target: SandboxTarget;
+  readonly sandboxId: string;
   readonly connectionId: string;
   /** Decisions in flight, by `run_id:request_id`. */
   readonly pending: Map<string, AbortController>;
@@ -57,6 +58,7 @@ export function onPolicyCheck(c: PolicyCheckPort, frame: PolicyCheckFrame): void
     c.ctx.policy,
     {
       ...c.target,
+      sandboxId: c.sandboxId,
       connectionId: c.connectionId,
       fileEdits: c.hasCapability(CAPABILITY_FILE_EDITS),
     },

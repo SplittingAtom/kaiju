@@ -60,6 +60,13 @@ Owner decision: reclaim ships **off** (`sandbox.hibernation.reclaim.enabled: fal
   and the fake server turned the schema error into a silent 500. Fix: commits are built field by
   field from the contract (`toWire`), the fake answers 400 and records it, and a test writes a file,
   waits past the window, flushes, and checks the commit and a later full restore.
+- **gate5-a U19 regression (merge queue, fixed):** the pod killed mid-run kept its wire open while
+  it attempted the proof after its push (a strict scan, `POST flushed` answered `not_hibernated`,
+  a 2 s retry; log 015.257 → 017.266 after Pi exited at 015.223). The member's Retry (016.169) was
+  routed to that dying connection and failed `session_unavailable`; its failed answer shifted the
+  spec's answer index. The proof now runs only after the agent has closed its wire
+  (`Agent.#finishStop`: flush, traces, wire.stop, then `workspace.prove` within the rest of the
+  flush budget), so the connection closes exactly as early as before KOBE-733.
 - **What does not block, by decision:** `.kobe/` (Pi sessions and agent state; D15: sessions are
   rebuilt from Postgres, so a reclaimed volume resumes conversations), interrupted-download temp
   files, the rebuildable `node_modules`/`__pycache__`/`.venv`, and **empty folders, which are not

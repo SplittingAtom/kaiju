@@ -185,6 +185,7 @@ export function ReviewSection({
               api={api}
               threadId={threadId}
               canCurateWorkspace={list.canCurateWorkspace}
+              onStale={() => setGeneration((g) => g + 1)}
               seams={{
                 ...cardSeams,
                 propose: {

@@ -74,6 +74,15 @@ export const piThreadConfigSchema = z.object({
     .max(64)
     .optional(),
   approval_mode: approvalModeSchema.optional(),
+  /**
+   * Built-in tools Pi is not offered this run (KOBE-776): the agent's allow list names built-ins
+   * and leaves these out, so the server would refuse them. Absent = none hidden. Only narrows what
+   * Pi lists; the server still decides every call. Older agents ignore it (unknown keys stripped).
+   */
+  hidden_tools: z
+    .array(z.string().regex(/^[a-z][a-z0-9_]{0,63}$/))
+    .max(128)
+    .optional(),
 });
 export type PiThreadConfig = z.infer<typeof piThreadConfigSchema>;
 

@@ -461,6 +461,8 @@ export async function sweepMemoryReminders(db: KobeDb): Promise<number> {
 export class MemoryReminderJob {
   private timer: ReturnType<typeof setInterval> | undefined;
   private running = false;
+  /** The pass in flight (never rejects): `stop()` waits for it (KOBE-709). */
+  private current: Promise<unknown> = Promise.resolve();
 
   constructor(
     private readonly o: {
@@ -483,7 +485,7 @@ export class MemoryReminderJob {
     const run = () => {
       if (this.running) return;
       this.running = true;
-      this.runOnce()
+      this.current = this.runOnce()
         .catch((err: unknown) => this.o.logger.error({ err }, "memory reminder pass failed"))
         .finally(() => {
           this.running = false;
@@ -494,8 +496,9 @@ export class MemoryReminderJob {
     this.timer.unref();
   }
 
-  stop(): void {
+  stop(): Promise<unknown> {
     if (this.timer) clearInterval(this.timer);
     this.timer = undefined;
+    return this.current;
   }
 }

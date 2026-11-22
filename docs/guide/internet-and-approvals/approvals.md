@@ -25,6 +25,10 @@ Whether a call asks depends on the agent's approval mode and your team's rules:
 Scheduled runs never ask either: a call that would need approval is skipped and reported on the
 run.
 
+Connector tools look at all your conversations running at the same time: your conversations share
+one sandbox, so a connector call asks whenever any of them would ask for it (a stricter agent or
+mode in another conversation, for example), even if this conversation alone would run it.
+
 ## The approval card
 
 The card reads "Approval needed to run _tool_" with a badge: **Reads data**, **Changes data** or
@@ -70,7 +74,10 @@ A remembered approval:
 - for "this conversation" ends for good when the thread is archived, deleted or moved to another
   project.
 
-A tool card allowed by one says "Allowed by your rule (_scope_)".
+A tool card allowed by one says "Allowed by your rule (_scope_)". For a connector tool, one
+remembered for **this conversation** or **this run only** applies only while no other conversation
+of yours is running: meanwhile Kobe asks again (it can't tell which conversation the connector call
+came from). A longer one, such as **until revoked**, keeps applying.
 
 ## Revoke a remembered approval
 

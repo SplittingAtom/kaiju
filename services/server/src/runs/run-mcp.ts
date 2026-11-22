@@ -13,6 +13,7 @@ import { matchGlob } from "@kobe/protocol";
 import { type RunMcpContext } from "@kobe/protocol/sandbox-wire";
 import { usableSiteKeyIds } from "../connectors/site-key.js";
 import { exposedTools, type TeamConnector } from "../mcp/catalog.js";
+import { allowListOffers } from "../policy/agent-allow.js";
 
 /**
  * Which connectors a run really has (KOBE-111, 62a of KOBE-62). A connector is effective when it is team-exposed (KOBE-104/106), the run's
@@ -124,9 +125,10 @@ export function connectedConnectorNames(
     .map((c) => c.name);
 }
 
+/** KOBE-776: an empty allow list narrows nothing, as in the engine (`allowListOffers`). */
 function allowedByAgent(piName: string, globs: AgentToolGlobs | undefined): boolean {
   if (globs?.deny?.some((g) => matchGlob(g, piName))) return false;
-  return globs?.allow === undefined || globs.allow.some((g) => matchGlob(g, piName));
+  return allowListOffers(globs?.allow, (g) => matchGlob(g, piName));
 }
 
 /**

@@ -40,21 +40,26 @@ async function proofAtShutdown(
 ): Promise<{ offered: boolean; quiet?: boolean }> {
   let seen: ReclaimProof | undefined;
   let offered = false;
+  let wireClosedFirst = false;
   h = await startHarness({
     ...(identities ? { identities: identities as unknown as PiIdentities } : {}),
     procRoot,
     workspace: () => ({
       beforeRun: () => Promise.resolve(),
       runEnded: () => undefined,
-      flush: (_ms, proof) => {
-        offered = proof !== undefined;
+      flush: () => Promise.resolve(),
+      prove: (proof) => {
+        offered = true;
         seen = proof;
+        // KOBE-733: the wire is closed before the proof: a dying pod never keeps it open for it.
+        wireClosedFirst = (h?.server.closes ?? 0) > 0;
         return Promise.resolve();
       },
     }),
   });
   await h.server.waitFor((f) => f.type === "hello");
   await h.agent.stop(200);
+  if (offered) expect(wireClosedFirst).toBe(true);
   return seen ? { offered, quiet: await seen.quiet() } : { offered };
 }
 
