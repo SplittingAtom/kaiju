@@ -84,6 +84,7 @@ import { meConnectorNoticesRoutes } from "./routes/me-connector-notices.js";
 import { myInvitesRoutes } from "./routes/my-invites.js";
 import { myTeamsRoutes } from "./routes/my-teams.js";
 import { workspaceFileRoutes, type WorkspaceFilesOptions } from "./routes/workspace-files.js";
+import { teamWorkspaceRebuildRoutes, workspaceRebuildRoutes } from "./routes/workspace-rebuild.js";
 import { runEventsRoutes } from "./routes/run-events.js";
 import { runRoutes, threadRunRoutes } from "./routes/runs.js";
 import { setupRoutes } from "./routes/setup.js";
@@ -269,6 +270,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   api.route("/team/skills", teamSkillBlockRoutes(deps));
   api.route("/team/skills", teamSkillUsageRoutes(deps));
   api.route("/team/offboarded", teamOffboardedRoutes(deps));
+  api.route("/team/workspaces", teamWorkspaceRebuildRoutes(deps));
   api.route("/team/agent-roster", teamAgentRosterRoutes(deps));
   api.route("/team/memory/stewards", teamMemoryStewardRoutes(deps));
   api.route("/team", teamRoutes(deps));
@@ -321,6 +323,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   api.route("/connector-grants", connectorGrantRoutes(deps));
   // Before the file routes, whose guard answers 503 without workspace storage (KOBE-492).
   api.route("/workspace", workspaceFileThreadRoutes(deps));
+  api.route("/workspace/rebuild", workspaceRebuildRoutes(deps));
   api.route("/workspace", workspaceSyncConflictRoutes(deps));
   api.route("/workspace", workspaceFileRoutes(deps, options.workspaceFiles));
   api.route("/agents", agentRoutes(deps, options.evals ? { runner: options.evals } : {}));

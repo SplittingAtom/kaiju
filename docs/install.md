@@ -214,15 +214,73 @@ StorageClass (`<release>-<hash>-workspace-strict-local`: Longhorn, `numberOfRepl
 class. Trade-off: each workspace has exactly one copy, on one node.
 
 **When a node is lost**, strict-local volumes on it are gone (Longhorn reports them faulted).
-The durable copy of a workspace is the S3 workspace sync (KOBE-27: the agent pushes changes to
-S3 through the server every 60 s, after each run and on hibernate; a sandbox that starts on an
-empty volume restores from S3 before any prompt reaches Pi), so changes from the last minute
-before the failure can be lost, and so is anything outside `/workspace` (which hibernation wipes
-anyway). Recovery is manual for now: delete the affected sandbox's workspace PVC
-(`kubectl -n kobe-team-<slug> delete pvc workspace-u-<user-id>`); the next message wakes the
-sandbox on a fresh volume, which restores from S3. S3 sync needs `s3.bucket` and KOBE-27; without
-it a lost node loses those workspaces for good. Conversations are never at risk: Postgres is the
-record of threads and runs.
+That is the trade-off of strict-local: each workspace has one copy, on one node, so a lost node
+loses the volumes it held. The durable copy of a workspace is the S3 workspace sync (KOBE-27: the
+agent pushes changes to S3 through the server every 60 s, after each run and on hibernate; a
+sandbox that starts on an empty volume restores from S3 before any prompt reaches Pi), so changes
+from the last minute before the failure can be lost, and so is anything outside `/workspace`
+(which hibernation wipes anyway) and what the sync never copies by design (`node_modules`,
+`.venv`, `__pycache__`, empty folders, file mode bits other than the executable bit). Conversations
+are never at risk: Postgres is the record of threads and runs.
+
+**Rebuilding a lost workspace (KOBE-739).** The affected member's next wake fails with its own
+code instead of hanging or failing generically: `workspace_volume_unreachable` while the node that
+holds the volume is down but may come back, `workspace_volume_lost` once the volume counts as lost
+("… you can rebuild it from the last sync: changes made after the last sync are not recovered,
+even if that server comes back later"). The conversation and the Files panel then offer
+**Rebuild sandbox…**; the dialog shows the time of the last sync, what will be lost, and that a
+server that comes back later does not bring the unsynced changes back. The member confirms; a team
+admin can do the same for a member under **Workspace settings → Storage and history → Rebuild a
+lost sandbox**. The rebuild is never automatic (owner decision, 2026-11-20).
+
+On confirm the server re-checks the verdict live under the sandbox row's lock, marks the row
+`rebuild_started_at` and audits `sandbox.volume_rebuilt` (actor, `reason`, `node`, `firstSeenAt`,
+`lastSyncedAt`, `byAdmin`, `legalHold`) in that transaction, and commits before touching the
+cluster. Then it deletes the claim without keeping the volume, force-deletes the old pod if it sits
+on a node that is missing or not Ready (it could never finish terminating), deletes the PVC, and
+resets the row, all under the sandbox row's lock with the cluster deletes bounded to 30 s (a
+claim or volume created after the rebuild was confirmed is never deleted). Every delete carries
+a Kubernetes UID precondition for the object read under the lock, and a timeout aborts the
+remaining deletes, so a cleanup still running after it gave up can never remove a newer claim or
+volume of the same name; if one is found, nothing more is deleted, the member is told to reload
+and `sandbox.volume_rebuild_refused` is audited. The next message wakes a new sandbox on a fresh volume, which restores from S3.
+If the cluster deletes fail, the member is told the rebuild is confirmed and pending (code
+`rebuild_pending`); wakes answer `workspace_rebuilding` meanwhile, and the next confirm or the
+hibernation sweep (rebuilds unfinished after a minute) finishes it. **The old volume is deleted:**
+if its node comes back later, the files on it that never synced are gone (with reclaim policy
+Delete, local-path removes the directory and Longhorn the replica when the node returns). Keeping
+the old volume for a while was considered and left out: it needs a generation in the claim name,
+which the provider, the identity check and the KOBE-733 wait assume is fixed per member.
+
+A legal hold does not block the rebuild: nothing in object storage is deleted, and the lost volume
+is unreachable anyway; the audit event records that a hold covered the member. Without S3 sync the
+rebuild is not offered (`rebuild_unavailable`) and a lost node loses those workspaces for good;
+delete the PVC by hand (`kubectl -n kobe-team-<slug> delete pvc workspace-u-<user-id>`) so the
+member gets an empty one.
+
+**What counts as lost.** Only hard evidence from the Kubernetes API, read with
+`sandbox.volumeLoss.detection` on (default): the claim is `Lost`, or its PersistentVolume is
+missing or `Failed` (lost at once); or the volume is pinned to one node (a `kubernetes.io/hostname`
+node affinity, as `local-path` writes it, or a Longhorn volume with `numberOfReplicas: 1` and
+`dataLocality: strict-local`) and that node is missing or not Ready. A node can return with its
+disk intact (re-join, a long upgrade, kubelet down), so this counts only after the server has seen
+it down continuously for `sandbox.volumeLoss.graceMinutes` (default **30**): the first observation
+is stored per sandbox (`sandboxes.volume_lost_since`, the server's own clock, never a controller
+timestamp) and any observation that the node is back clears it. Observations happen on wakes,
+status reads, confirms and every hibernation sweep for sandboxes already marked; a gap of more
+than 10 minutes between two "still down" observations restarts the clock, so a flapping node or a
+leftover from an old outage never counts as lost at once. For Longhorn, the node is the claim's
+`volume.kubernetes.io/selected-node` annotation (set by WaitForFirstConsumer scheduling, where a
+strict-local replica is placed); Longhorn's own Volume and Replica records are not read, so a
+strict-local volume without that annotation is never reported lost. Replicated volumes, volumes on
+a Ready node, and anything when the API cannot be read are never offered for a rebuild.
+
+The server reads PersistentVolumes (`get`) and Nodes (`get`, `list`), cluster-wide and read-only,
+for this (the chart's orchestrator ClusterRole). Set `sandbox.volumeLoss.detection=false` to drop
+those rules: the server then never reports a volume lost (a lost node shows as
+`workspace_unavailable`, and recovery is the manual PVC delete above). This feature has unit and
+database tests only; it has not been exercised on a k3d or real cluster yet (in particular the
+Longhorn PV attributes and the `selected-node` annotation are unverified).
 
 **Growing workspaces.** `sandbox.workspace.size` (default `10Gi`) applies to volumes created
 after the change; Kobe does not resize existing workspace volumes. To grow them, check that their
@@ -278,7 +336,9 @@ see node or volume names.
 
 Site admins find the reason in the site audit log: filter on action `sandbox.wake_stalled`
 (`GET /v1/site/audit?action=sandbox.wake_stalled`). `cause` is one of `volume_unschedulable`,
-`volume_attach`, `scheduling`, `image_pull`, `pod_failed`, `unknown`; `detail` is the cluster's own event text
+`volume_attach`, `scheduling`, `image_pull`, `pod_failed`, `volume_quota`, `volume_lost` (the
+workspace volume is lost: see rebuilding above), `volume_node_down` (its node is down, not yet for
+the grace period), `unknown`; `detail` is the cluster's own event text
 followed by a suggested remedy. The server log has the same line (level error, "sandbox not ready:
 failing the wake"). The server never deletes a pod or volume for this: if a workspace that has
 never run is stuck on a volume that cannot attach, delete its PVC by hand

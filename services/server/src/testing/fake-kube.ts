@@ -19,6 +19,10 @@ export interface Call {
   readonly kind: string;
   readonly namespace?: string;
   readonly name?: string;
+  /** A delete's grace period, when one was given. */
+  readonly gracePeriodSeconds?: number;
+  /** A delete's UID precondition, when one was given. */
+  readonly uid?: string;
 }
 
 const key = (r: { apiVersion: string; kind: string; name: string; namespace?: string }) =>
@@ -211,11 +215,26 @@ export function createFakeKube(): FakeKube {
       fake.afterWrite?.(result, fake);
       return result;
     },
-    async delete(r) {
-      fake.calls.push({ verb: "delete", ...r });
+    async delete(r, options) {
+      fake.calls.push({
+        verb: "delete",
+        ...r,
+        ...(options?.gracePeriodSeconds === undefined
+          ? {}
+          : { gracePeriodSeconds: options.gracePeriodSeconds }),
+        ...(options?.preconditions?.uid === undefined ? {} : { uid: options.preconditions.uid }),
+      });
       maybeFail("delete", r.kind);
       const obj = store.get(key(r));
       if (!obj) return;
+      // Like the API server: a precondition on another object under this name is a 409.
+      const pre = options?.preconditions;
+      if (
+        (pre?.uid !== undefined && pre.uid !== obj.metadata.uid) ||
+        (pre?.resourceVersion !== undefined && pre.resourceVersion !== obj.metadata.resourceVersion)
+      ) {
+        throw new KubeApiError(409, `Precondition failed: UID in precondition: ${pre.uid}`);
+      }
       store.delete(key(r));
       if (obj.metadata.uid) cascade(obj.metadata.uid);
       fake.afterDelete?.(obj, fake);

@@ -231,6 +231,18 @@ export const teamAreas: readonly CatalogArea[] = [
       ],
       [
         "get",
+        "/v1/team/workspaces/{userId}/rebuild",
+        "Whether a member's workspace volume is lost, and when it last synced",
+        "Team admins (`team.members.manage`). KOBE-739; same answer as `GET /v1/workspace/rebuild`.",
+      ],
+      [
+        "post",
+        "/v1/team/workspaces/{userId}/rebuild",
+        "Rebuild a member's lost workspace from the last sync",
+        "Team admins (`team.members.manage`). Body `{confirm: true}`; as `POST /v1/workspace/rebuild`, audited with the admin as actor (`byAdmin`).",
+      ],
+      [
+        "get",
         "/v1/team/policy/member-rules",
         "List every member's remembered approval rules",
         "Team admins (`team.policy.manage`).",

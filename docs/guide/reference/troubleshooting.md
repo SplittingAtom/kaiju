@@ -31,6 +31,13 @@ the reason in the audit log).
 full, so yours could not be created. Nothing of yours was deleted. Ask your team or site admin
 to free or raise the quota, then send your message again.
 
+**"The server that holds its storage is not answering".** It may come back with your files: try
+again later. If it stays down, Kobe offers to rebuild from the last sync (next entry).
+
+**"The storage that held it is lost".** Choose **Rebuild sandbox…** under the message (or in the
+Files panel), check the last sync time it shows, and confirm; then send your message again.
+Changes made after the last sync are not recovered, even if that server comes back later. See [Storage limits](../files/storage-limits.md#when-your-sandboxs-storage-is-lost).
+
 **The agent seems stuck.** Look for an approval card waiting for you higher up in the answer. If
 there is none, press **Stop** and send your message again, or **Retry** an interrupted answer.
 

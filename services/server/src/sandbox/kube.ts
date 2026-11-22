@@ -27,6 +27,15 @@ export interface TokenReviewResult {
   readonly extra: Readonly<Record<string, readonly string[]>>;
 }
 
+export interface DeleteOptions {
+  readonly gracePeriodSeconds?: number;
+  /**
+   * KOBE-739: delete only that object: the API server answers 409 Conflict when the object under
+   * this name now has another UID (or resourceVersion), i.e. it was replaced.
+   */
+  readonly preconditions?: { readonly uid?: string; readonly resourceVersion?: string };
+}
+
 export interface KubeClient {
   /** Server-side apply (field manager `kobe-server`, force): create or converge. */
   apply(object: KubeObject): Promise<KubeObject>;
@@ -50,8 +59,11 @@ export interface KubeClient {
     patch: Readonly<Record<string, unknown>>,
     options?: { readonly resourceVersion?: string },
   ): Promise<KubeObject>;
-  /** Deletes with background propagation; a missing object is not an error. */
-  delete(ref: ObjectRef): Promise<void>;
+  /**
+   * Deletes with background propagation; a missing object is not an error. `gracePeriodSeconds: 0`
+   * removes a pod at once (KOBE-739: one on a lost node can never finish terminating).
+   */
+  delete(ref: ObjectRef, options?: DeleteOptions): Promise<void>;
   reviewToken(token: string, audiences: readonly string[]): Promise<TokenReviewResult>;
   /**
    * The (first `limitBytes` of the) log of a pod's container, stdout and stderr together; undefined
@@ -221,10 +233,18 @@ export function createKubeClient(timeoutMs = KUBE_API_TIMEOUT_MS): KubeClient {
           );
         }),
       ),
-    async delete(ref) {
+    async delete(ref, options) {
       try {
         await call(`delete ${describe(ref)}`, () =>
-          objects.delete(header(ref), undefined, undefined, undefined, undefined, "Background"),
+          objects.delete(
+            header(ref),
+            undefined,
+            undefined,
+            options?.gracePeriodSeconds,
+            undefined,
+            "Background",
+            options?.preconditions ? { preconditions: { ...options.preconditions } } : undefined,
+          ),
         );
       } catch (err) {
         if (!isKubeStatus(err, 404)) throw err;

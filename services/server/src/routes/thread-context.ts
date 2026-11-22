@@ -52,6 +52,9 @@ export function contextErrorFor(code: string): ThreadContextErrorCode {
     case "workspace_unavailable":
     case "sandbox_failed":
     case "workspace_quota_exhausted":
+    case "workspace_volume_lost":
+    case "workspace_volume_unreachable":
+    case "workspace_rebuilding":
     case "isolation_runtime_missing":
       return "sandbox_unavailable";
     default:

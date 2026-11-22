@@ -1,7 +1,7 @@
 "use client";
 
 import { useAui } from "@assistant-ui/react";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import type { BudgetStatus } from "../../lib/admin/api/budgets";
 import type { RunUsage } from "../../lib/admin/api/usage";
 import { formatTokens, formatUsd } from "../../lib/admin/usage-format";
@@ -11,6 +11,9 @@ import type { ThreadController } from "../../lib/chat/thread-controller";
 import { ErrorNotice } from "../admin/error-notice";
 import type { KobeThreadExtras } from "./kobe-runtime";
 import { ClosableNotice } from "./closable-notice";
+import { ChatSessionContext } from "./kobe-runtime";
+import { VolumeLostNotice } from "../files/volume-lost-notice";
+import { VOLUME_LOST_CODE } from "../../lib/workspace/rebuild";
 import { NoticeSlot } from "./slots";
 import styles from "./chat.module.css";
 
@@ -52,11 +55,16 @@ function RunStatus({
 /** How the last run ended, when it says more than "done" (closable, KOBE-468). */
 function TerminalNotice({ terminal }: { readonly terminal: TerminalEvent }) {
   const id = `${terminal.run_id}:${terminal.seq}`;
+  const session = useContext(ChatSessionContext);
   switch (terminal.type) {
     case "run.failed":
       return (
         <ClosableNotice id={id} label="Close notice about the failed run" role="alert">
           <p className={styles.denied}>The run failed: {terminal.payload.error.message}</p>
+          {/* KOBE-739: the workspace's storage was lost with its server; offer the rebuild. */}
+          {terminal.payload.error.code === VOLUME_LOST_CODE && session && (
+            <VolumeLostNotice api={session.files.rebuild} mode="known" />
+          )}
         </ClosableNotice>
       );
     case "run.budget_stopped":

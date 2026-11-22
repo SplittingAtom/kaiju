@@ -33,6 +33,16 @@ export const FAILURE_MESSAGES: Readonly<Record<string, string>> = {
   // workspace_unavailable it names the cause: a team or site admin can act on it.
   workspace_quota_exhausted:
     "Your workspace could not be started because your team has used all of its workspace storage. Ask your team admin or site admin to free or raise the team's workspace quota, then try again.",
+  // KOBE-739: the workspace volume's only copy was on a node that is gone; the web offers to
+  // rebuild it from the last sync (member-confirmed).
+  workspace_volume_lost:
+    "Your workspace could not be started because the storage that held it is lost (the server it lived on has been gone too long). You can rebuild it from the last sync: changes made after the last sync are not recovered, even if that server comes back later.",
+  // KOBE-739: that server is down, but not for the grace period yet (it may come back).
+  workspace_volume_unreachable:
+    "Your workspace could not be started because the server that holds its storage is not answering. It may come back with your files; if it stays down, Kobe offers to rebuild the workspace from the last sync. Try again later.",
+  // KOBE-739: a confirmed rebuild is still removing the old storage.
+  workspace_rebuilding:
+    "Your workspace is being rebuilt from the last sync. Send your message again in a few minutes.",
   // KOBE-636: the sandbox pod ended (evicted, killed) and the wake's one replacement failed too.
   sandbox_failed:
     "Your sandbox stopped (it may have run out of temporary space or memory) and could not be restarted. Your files in /workspace are kept. Send your message again; if this keeps happening, ask your site admin.",

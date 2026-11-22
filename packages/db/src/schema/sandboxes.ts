@@ -52,6 +52,23 @@ export const sandboxes = pgTable(
      * every wake; null: not proven, so the dormant-volume reaper never reclaims the volume.
      */
     volumeSyncedAt: timestamp({ withTimezone: true }),
+    /**
+     * KOBE-739: when this server first observed the node holding the workspace volume's only copy
+     * missing or not Ready (server clock, its own observations; cleared by any observation that
+     * the node is back). The rebuild is offered only once this is older than the grace period.
+     */
+    volumeLostSince: timestamp({ withTimezone: true }),
+    /**
+     * KOBE-739: the latest observation that the node is still down. A gap of more than 10 minutes
+     * since it restarts `volumeLostSince` (the period must be continuously observed; the
+     * hibernation sweep re-observes these rows every pass).
+     */
+    volumeLostSeenAt: timestamp({ withTimezone: true }),
+    /**
+     * KOBE-739: a confirmed rebuild whose cluster cleanup has not finished yet (set and audited
+     * before any Kubernetes delete; cleared when the row is reset). Wakes wait while it is set.
+     */
+    rebuildStartedAt: timestamp({ withTimezone: true }),
   },
   (t) => [
     primaryKey({ columns: [t.teamId, t.userId] }),

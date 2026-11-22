@@ -1,4 +1,5 @@
 {{- $fullname := include "kobe.fullname" . -}}
+{{- $s := include "kobe.sandboxValues" . | fromJson -}}
 {{- $manager := include "kobe.sandboxManagerRole" . -}}
 {{- $orchestrator := include "kobe.clusterName" (dict "root" . "suffix" "sandbox-orchestrator") -}}
 {{- $serverSA := include "kobe.serverServiceAccount" . -}}
@@ -91,6 +92,18 @@ rules:
     resources: ["clusterroles"]
     verbs: ["bind"]
     resourceNames: [{{ $manager | quote }}]
+  {{- if $s.volumeLoss.detection }}
+  # KOBE-739 (sandbox.volumeLoss.detection, default on): a workspace volume is lost when the
+  # PersistentVolume is gone or Failed, or when the one node holding its only copy (local-path node
+  # affinity, Longhorn strict-local) is missing or not Ready for sandbox.volumeLoss.graceMinutes.
+  # Read-only (list: a hostname label names the node). Off: never reported lost.
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+  {{- end }}
   # Sandbox bootstrap tokens (projected, audience kobe.sandbox-bootstrap) are verified by TokenReview.
   - apiGroups: ["authentication.k8s.io"]
     resources: ["tokenreviews"]

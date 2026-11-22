@@ -322,3 +322,56 @@ describe("classifyStall: a full team volume quota (KOBE-733)", () => {
     expect(bound.cause).not.toBe("volume_quota");
   });
 });
+
+describe("classifyStall: a lost volume (KOBE-739)", () => {
+  const lost = {
+    state: "lost",
+    reason: "volume_failed",
+    detail: "volume pvc-abc is Failed on compute4",
+  } as const;
+
+  it("is definite and wins over the attach or scheduling noise it causes", () => {
+    const d = classifyStall({
+      pod: pod(),
+      pvc: pvc("Bound"),
+      events: [podEv("FailedAttachVolume", "AttachVolume.Attach failed for volume pvc-abc")],
+      since: SINCE,
+      now: NOW,
+      volume: lost,
+    });
+    expect(d).toMatchObject({ cause: "volume_lost", definite: true, volumePhase: "Bound" });
+    expect(d.detail).toContain("compute4");
+  });
+
+  it("a node that is down is its own definite cause, carrying what was found", () => {
+    const down = {
+      state: "node_down",
+      reason: "node_gone",
+      node: "compute4",
+      detail: "volume pvc-abc lives only on node compute4, which does not exist",
+    } as const;
+    const d = classifyStall({
+      pod: pod(),
+      pvc: pvc("Bound"),
+      events: [],
+      since: SINCE,
+      now: NOW,
+      volume: down,
+    });
+    expect(d).toMatchObject({ cause: "volume_node_down", definite: true, volume: down });
+  });
+
+  it("a present or missing volume changes nothing", () => {
+    for (const volume of [{ state: "present" }, { state: "missing" }] as const) {
+      const d = classifyStall({
+        pod: pod(),
+        pvc: pvc("Bound"),
+        events: [],
+        since: SINCE,
+        now: NOW,
+        volume,
+      });
+      expect(d.cause).toBe("unknown");
+    }
+  });
+});

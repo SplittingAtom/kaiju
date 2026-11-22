@@ -221,6 +221,9 @@ function failureCode(outcome: Extract<CommandOutcome, { ok: false }>): string {
   return code === "timeout" ||
     code === "workspace_unavailable" ||
     code === "workspace_quota_exhausted" ||
+    code === "workspace_volume_lost" ||
+    code === "workspace_volume_unreachable" ||
+    code === "workspace_rebuilding" ||
     code === "sandbox_failed"
     ? code
     : "start_failed";
