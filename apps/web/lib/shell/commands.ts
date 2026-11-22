@@ -14,6 +14,7 @@ import {
   BrainCircuitIcon,
   CalendarClockIcon,
   ChevronDownIcon,
+  ChevronUpIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsUpDownIcon,
@@ -44,6 +45,7 @@ import {
   KeyboardIcon,
   MessagesSquareIcon,
   MicIcon,
+  MoveHorizontalIcon,
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
   PanelRightIcon,
@@ -55,8 +57,11 @@ import {
   PinOffIcon,
   PlayIcon,
   PlusIcon,
+  RatioIcon,
   RefreshCcwDotIcon,
   RefreshCwIcon,
+  ScanIcon,
+  SearchIcon,
   ServerCogIcon,
   Share2Icon,
   ShrinkIcon,
@@ -72,6 +77,8 @@ import {
   UsersIcon,
   WandSparklesIcon,
   XIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
   type LucideIcon,
 } from "lucide-react";
 import { consoleHref } from "../admin/nav/paths";
@@ -651,6 +658,18 @@ const LIST = [
   { id: "artifact-close", name: "Close artifact", icon: XIcon, scope: "artifact" },
   // Add to project (KOBE-585): the owner copies an artifact or a file into a project.
   { id: "add-to-project", name: "Add to project…", icon: FolderPlusIcon, scope: "artifact" },
+  // The PDF and image viewers in a file tab (KOBE-801, KOBE-807).
+  { id: "viewer-previous-page", name: "Previous page", icon: ChevronUpIcon, scope: "artifact" },
+  { id: "viewer-next-page", name: "Next page", icon: ChevronDownIcon, scope: "artifact" },
+  { id: "viewer-zoom-out", name: "Zoom out", icon: ZoomOutIcon, scope: "artifact" },
+  { id: "viewer-zoom-in", name: "Zoom in", icon: ZoomInIcon, scope: "artifact" },
+  { id: "viewer-fit-width", name: "Fit to width", icon: MoveHorizontalIcon, scope: "artifact" },
+  { id: "viewer-fit-page", name: "Fit page", icon: ScanIcon, scope: "artifact" },
+  { id: "viewer-actual-size", name: "Actual size", icon: RatioIcon, scope: "artifact" },
+  { id: "viewer-find", name: "Find in document", icon: SearchIcon, scope: "artifact" },
+  { id: "viewer-find-previous", name: "Previous match", icon: ArrowUpIcon, scope: "artifact" },
+  { id: "viewer-find-next", name: "Next match", icon: ArrowDownIcon, scope: "artifact" },
+  { id: "viewer-find-close", name: "Close find", icon: XIcon, scope: "artifact" },
   // A My area page beside the thread (CE4, KOBE-424) closes; the conversation stays.
   { id: "area-close", name: "Close the panel", icon: XIcon, scope: "artifact" },
   // The artifact sheet (under 820 px) goes back to the conversation; its tabs stay open.

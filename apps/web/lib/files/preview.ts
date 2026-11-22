@@ -12,6 +12,8 @@ const PATH_MAX = 1024;
 export const TEXT_PREVIEW_MAX_BYTES = 1024 * 1024;
 /** Images larger than this are not fetched at all: Download instead. */
 export const IMAGE_PREVIEW_MAX_BYTES = 10 * 1024 * 1024;
+/** PDFs larger than this are not fetched (KOBE-801): the viewer holds the whole file in memory. */
+export const PDF_PREVIEW_MAX_BYTES = 25 * 1024 * 1024;
 /** The server's frame cap (`WORKSPACE_FRAME_MAX_BYTES`): larger HTML files are not framed. */
 export const HTML_FRAME_MAX_BYTES = 1024 * 1024;
 
@@ -42,7 +44,7 @@ export function fileName(path: string): string {
 }
 
 export type FilePreview =
-  | { readonly kind: "markdown" | "csv" | "tsv" | "json" | "text" | "html" | "none" }
+  | { readonly kind: "markdown" | "csv" | "tsv" | "json" | "text" | "html" | "pdf" | "none" }
   | { readonly kind: "code"; readonly language: string }
   | { readonly kind: "image" | "svg"; readonly mime: string };
 
@@ -98,9 +100,10 @@ const SIMPLE: Readonly<Record<string, FilePreview["kind"]>> = {
   json: "json",
   html: "html",
   htm: "html",
+  pdf: "pdf",
 };
 
-/** How a file is shown, by its extension. PDFs and anything unknown are `none` (Download). */
+/** How a file is shown, by its extension. Anything unknown is `none` (Download). */
 export function previewOf(path: string): FilePreview {
   const name = fileName(path).toLowerCase();
   const named = CODE_NAMES[name];

@@ -50,7 +50,8 @@ describe("previewOf", () => {
     ["logo.svg", "svg"],
     ["index.html", "html"],
     ["old.htm", "html"],
-    ["doc.pdf", "none"],
+    ["doc.pdf", "pdf"],
+    ["SCAN.PDF", "pdf"],
     ["archive.zip", "none"],
     ["noext", "none"],
   ])("%s is %s", (path, kind) => {

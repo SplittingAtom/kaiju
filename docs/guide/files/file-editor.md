@@ -21,6 +21,44 @@ for you to review. This page covers the editor, saving, and reviewing proposals.
 Text files up to 1 MB open in the editor; larger ones open read-only. Other types open in their
 viewers.
 
+## What opens how
+
+| File                                                | Opens in                                                    |
+| --------------------------------------------------- | ----------------------------------------------------------- |
+| Text, Markdown, CSV, JSON, code (up to 1 MB)        | The editor (larger files: the first 1 MB, read-only)        |
+| Notebooks (`.ipynb`)                                | The notebook view. See [Notebooks and Python](notebooks.md) |
+| PDF (up to 25 MB)                                   | The PDF viewer (below)                                      |
+| Images (PNG, JPEG, GIF, WebP) and SVG (up to 10 MB) | The image viewer                                            |
+| HTML (up to 1 MB)                                   | A locked-down frame with no network access                  |
+| Anything else, or a file over its limit             | A note saying why, with **Download**                        |
+
+This holds wherever the file lives: My files, a project, or a file you attached to a message
+(`uploads/`).
+
+## The PDF viewer
+
+PDFs open in a viewer inside Kobe; nothing is sent anywhere else and the file's own scripts never
+run. The toolbar above the pages has:
+
+- **Previous page** and **Next page**, a **Page number** box (type a number and press Enter) and
+  the page count.
+- **Zoom out**, the zoom level and **Zoom in**.
+- **Fit to width** (the default) and **Fit page**. Both follow the column when you resize it.
+- **Find in document** opens a search row: type a word to see "_n_ of _m_" matches highlighted on
+  the pages; **Next match** (Enter), **Previous match** (Shift+Enter) and **Close find**
+  (Escape).
+
+You can select and copy the text of a page. Web and email links in the PDF open in a new browser
+tab, the same way links in the chat do; links to another place in the document jump to its page;
+any other kind of link does nothing. Long documents load page by page as you scroll.
+
+With the pages focused (click them, or Tab to them) the keys are: **Mod+F** find, **Mod+=** and
+**Mod+-** zoom, **Mod+0** fit to width, and Page Up, Page Down, the arrow keys, Home and End to
+scroll.
+
+A PDF that is password-protected, damaged, or larger than 25 MB is not shown: the tab says why and
+offers **Download**. Use **Download** in the tab's header any time for the file itself.
+
 ## The editor toolbar
 
 The editor fills the artifact column, and one toolbar at the top holds its controls:

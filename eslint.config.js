@@ -30,6 +30,8 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/coverage/**",
       "**/next-env.d.ts",
+      // Copied from pdfjs-dist before each web build (KOBE-801).
+      "apps/web/public/pdfjs/**",
     ],
   },
   js.configs.recommended,

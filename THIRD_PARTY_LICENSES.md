@@ -27,7 +27,7 @@ Chris (`pnpm license:gate` fails while it is not empty):
 
 Every package in pnpm-lock.yaml (production and development, all platforms). "linked, bundled" packages are in the production dependencies of a deployable and ship in its image (the services via `pnpm deploy --prod`, web via the Next.js standalone output, kobe-sandbox-agent in the sandbox image); "dev-only" packages build, lint and test Kobe and are never shipped. Checked by `pnpm license:check` (CI `checks`).
 
-932 packages, 634 of them shipped in an image.
+933 packages, 635 of them shipped in an image.
 
 | Component | Version | License (SPDX) | How used | Where | License text |
 | --- | --- | --- | --- | --- | --- |
@@ -801,6 +801,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | path-data-parser | 0.1.0 | MIT | linked, bundled | web | [license](https://unpkg.com/path-data-parser@0.1.0/LICENSE) |
 | path-exists | 4.0.0 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/path-exists@4.0.0/license) |
 | path-key | 3.1.1 | MIT | dev-only | build, lint and test tooling | [license](https://unpkg.com/path-key@3.1.1/license) |
+| pdfjs-dist | 6.5.438 | Apache-2.0 | linked, bundled | web | [license](https://unpkg.com/pdfjs-dist@6.5.438/LICENSE) |
 | pg-cloudflare | 1.4.1 | MIT | linked, bundled | egress-proxy, model-gateway, server | [license](https://unpkg.com/pg-cloudflare@1.4.1/LICENSE) |
 | pg-connection-string | 2.14.1 | MIT | linked, bundled | egress-proxy, model-gateway, server | [license](https://unpkg.com/pg-connection-string@2.14.1/LICENSE) |
 | pg-int8 | 1.0.1 | ISC | linked, bundled | egress-proxy, model-gateway, server | [license](https://unpkg.com/pg-int8@1.0.1/LICENSE) |
