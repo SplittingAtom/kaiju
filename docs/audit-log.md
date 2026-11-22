@@ -433,7 +433,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `schedule.deleted` | team | `scheduleId` | Schedule deleted |
 | `schedule.updated` | team | `scheduleId`, `agentId` | Prompt, recurrence, timezone, agent or email setting changed |
 | `site.branding.updated` | site | `setting` (app_name, show_name, theme, logo, logo_dark, favicon, logo_theme_color), `value` (the name; `true`/`false`; the theme label `theme:<preset>` or `theme:custom #rrggbb`; the file's sha256, or `removed` for a removal or reset; never the bytes) | Site branding changed, one event per changed setting (KOBE-497, theming TH12); a reset records the default label per cleared setting. The chart-seeded defaults are recorded with the system as actor (KOBE-503) |
-| `site.settings.updated` | site | `setting` (require_two_factor, audit_pii_retention_hours, kobe_mcp_mode), `value` | Site setting changed |
+| `site.settings.updated` | site | `setting` (require_two_factor, audit_pii_retention_hours, kobe_mcp_mode, kobe_reads_per_minute, kobe_writes_per_hour), `value` | Site setting changed |
 | `skill.access.changed` | team | `skillId`, `slug`, `access`, `previous` | A team skill's access mode changed: Available, On by default, Required (Team admins only) or Hidden (KOBE-316) |
 | `skill.blocklist.added` | site | `bundleHash` | Bundle hash put on the site skill blocklist (KOBE-81); the reason is stored with the entry, not here |
 | `skill.blocklist.removed` | site | `bundleHash` | Bundle hash taken off the blocklist (KOBE-81) |
