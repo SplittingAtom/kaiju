@@ -30,7 +30,8 @@ of the artifact column. **Edit as file** copies a text artifact into My files. H
 artifacts run in a locked-down frame with no network access, shown only inside Kobe; download one
 to keep a copy.
 
-**Artifact column.** The right-hand column with tabs for files, artifacts and apps.
+**Artifact column.** The centre column, between the rail and the conversation, with tabs for
+files, artifacts and apps. It shows when something is open in it.
 
 **Branch.** One line of a conversation after an edit or regenerate. See
 [Sharing, forks and the conversation tree](chat/sharing-and-branches.md).

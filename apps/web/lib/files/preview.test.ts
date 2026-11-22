@@ -3,8 +3,11 @@ import {
   decodePreviewText,
   fileTabId,
   filePathOfTab,
+  cutTextMessage,
   imageDataUrl,
+  previewLimit,
   previewOf,
+  tooLargeMessage,
   tabDomId,
   workspaceFrameUrl,
 } from "./preview";
@@ -90,5 +93,31 @@ describe("urls", () => {
 
   it("makes data urls for images (the page CSP allows data:, not blob:)", () => {
     expect(imageDataUrl(new Uint8Array([1, 2, 3]), "image/png")).toBe("data:image/png;base64,AQID");
+  });
+});
+
+describe("large-file messages (KOBE-807)", () => {
+  it("each kind has its limit, named in the message", () => {
+    expect(previewLimit(previewOf("a.png"))).toEqual({ bytes: 10 * 1024 * 1024, what: "Images" });
+    expect(previewLimit(previewOf("a.svg"))?.what).toBe("Images");
+    expect(previewLimit(previewOf("a.html"))).toEqual({ bytes: 1024 * 1024, what: "HTML files" });
+    expect(previewLimit(previewOf("a.pdf"))).toEqual({ bytes: 25 * 1024 * 1024, what: "PDFs" });
+    expect(previewLimit(previewOf("a.md"))?.what).toBe("Text files");
+    expect(previewLimit(previewOf("a.bin"))).toBeNull();
+  });
+
+  it("says the size and the limit the same way for every kind", () => {
+    expect(tooLargeMessage(previewOf("p.png"), 12 * 1024 * 1024)).toBe(
+      "This file is too large to preview (12 MB). Images over 10 MB are not previewed.",
+    );
+    expect(tooLargeMessage(previewOf("x.html"), null)).toBe(
+      "This file is too large to preview. HTML files over 1 MB are not previewed.",
+    );
+    expect(cutTextMessage(1536 * 1024)).toBe(
+      "Showing the first 1 MB of 1.5 MB. Text files over 1 MB open cut and read-only.",
+    );
+    expect(cutTextMessage(null)).toBe(
+      "Showing the first 1 MB. Text files over 1 MB open cut and read-only.",
+    );
   });
 });

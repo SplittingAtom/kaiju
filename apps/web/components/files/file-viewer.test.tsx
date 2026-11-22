@@ -498,10 +498,14 @@ describe("renderers (ac-2)", () => {
     await waitFor(() => expect(text.querySelector("pre")?.textContent).toContain("line 1"));
   });
 
-  it("images and SVG as <img> data URLs, never inline SVG markup", async () => {
+  it("images and SVG as <img> data URLs in the image viewer, never inline SVG markup", async () => {
     const png = await shown("p.png", new Uint8Array([137, 80, 78, 71]));
     const img = await within(png).findByRole("img", { name: "p.png" });
     expect(img.getAttribute("src")).toBe("data:image/png;base64,iVBORw==");
+    // KOBE-807: zoom and fit controls, and the file size (the dimensions once it loads).
+    expect(within(png).getByRole("toolbar", { name: "Image controls" })).toBeTruthy();
+    expect(within(png).getByRole("button", { name: "Actual size" })).toBeTruthy();
+    expect(within(png).getByText("4 B")).toBeTruthy();
     cleanup();
     const svg = await shown("logo.svg", '<svg xmlns="http://www.w3.org/2000/svg" onload="x()"/>');
     const pic = await within(svg).findByRole("img", { name: "logo.svg" });
@@ -561,7 +565,7 @@ describe("renderers (ac-2)", () => {
     expect(await screen.findByRole("region", { name: "scan.pdf, page 1 of 2" })).toBeTruthy();
   });
 
-  it("unknown and binary files: Cannot preview, with Download", async () => {
+  it("unknown and binary files: Cannot preview, with Download in the header and the note", async () => {
     for (const [name, content] of [
       ["blob.bin", "x"],
       ["bad.txt", new Uint8Array([104, 0, 105])],
@@ -569,6 +573,7 @@ describe("renderers (ac-2)", () => {
       const panel = await shown(name, content);
       expect(await within(panel).findByText(/Cannot preview this file/)).toBeTruthy();
       expect(within(panel).getByRole("button", { name: `Download ${name}` })).toBeTruthy();
+      expect(within(panel).getByRole("button", { name: "Download" })).toBeTruthy();
       cleanup();
     }
     // Each was checked (it exists); only the text file's content was read, to find it binary.
@@ -648,15 +653,32 @@ describe("memory, deleted files and caps (ac-3)", () => {
   it("text previews stop at 1 MB with a notice; large images are not fetched", async () => {
     files.set("big.txt", enc("x".repeat(1024 * 1024 + 10)));
     files.set("huge.png", new Uint8Array(10 * 1024 * 1024 + 1));
+    files.set("big.html", new Uint8Array(1024 * 1024 + 1));
     mount(thread("Work"));
     const user = userEvent.setup();
     const section = await openFiles();
     const big = await view(user, section, "big.txt");
-    expect(await within(big).findByText(/Showing the first 1 MB of 1\.0 MB/)).toBeTruthy();
+    expect(
+      await within(big).findByText(
+        /Showing the first 1 MB of 1\.0 MB\. Text files over 1 MB open cut and read-only\./,
+      ),
+    ).toBeTruthy();
+    expect(within(big).getByRole("button", { name: "Download" })).toBeTruthy();
     const shownText = must(big.querySelector("pre")).textContent;
     expect(shownText.length).toBeLessThanOrEqual(1024 * 1024 + 1);
     const huge = await view(user, section, "huge.png");
-    expect(await within(huge).findByText(/too large to preview \(10 MB\)/)).toBeTruthy();
+    expect(
+      await within(huge).findByText(
+        /too large to preview \(10 MB\)\. Images over 10 MB are not previewed\. Use Download/,
+      ),
+    ).toBeTruthy();
+    expect(within(huge).getByRole("button", { name: "Download" })).toBeTruthy();
+    // KOBE-807: HTML over the frame cap says its limit the same way.
+    const html = await view(user, section, "big.html");
+    expect(
+      await within(html).findByText(/\(1\.0 MB\)\. HTML files over 1 MB are not previewed\./),
+    ).toBeTruthy();
+    expect(html.querySelector("iframe")).toBeNull();
     // The text stopped at the cap; the image's Content-Length was enough to read none of it.
     expect(must(pulled.get("big.txt"))).toBeLessThanOrEqual(1024 * 1024 + CHUNK);
     expect(pulled.get("huge.png") ?? 0).toBeLessThanOrEqual(CHUNK);
@@ -669,7 +691,7 @@ describe("memory, deleted files and caps (ac-3)", () => {
     const panel = await view(user, await openFiles(), "big.pdf");
     expect(
       await within(panel).findByText(
-        /too large to preview \(25 MB; PDFs over 25 MB are not previewed\)/,
+        /too large to preview \(25 MB\)\. PDFs over 25 MB are not previewed\./,
       ),
     ).toBeTruthy();
     expect(within(panel).getByRole("button", { name: "Download" })).toBeTruthy();

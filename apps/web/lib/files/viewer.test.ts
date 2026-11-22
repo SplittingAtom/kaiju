@@ -7,6 +7,7 @@ import {
   parsePageInput,
   pdfErrorKind,
   safeLinkUrl,
+  viewerKey,
   zoomIn,
   zoomOut,
   ZOOM_MAX,
@@ -99,5 +100,22 @@ describe("canvasOutputScale", () => {
     expect(canvasOutputScale(100, 100, 0)).toBe(1);
     const s = canvasOutputScale(5000, 5000, 2);
     expect(5000 * s * 5000 * s).toBeLessThanOrEqual(16_777_216);
+  });
+});
+
+describe("viewerKey", () => {
+  const key = (k: string, mods: Partial<{ ctrlKey: boolean; metaKey: boolean; altKey: boolean }>) =>
+    viewerKey({ key: k, ctrlKey: false, metaKey: false, altKey: false, ...mods });
+  it("reads Mod+F, Mod+=, Mod++, Mod+- and Mod+0 with Ctrl or Cmd", () => {
+    expect(key("f", { ctrlKey: true })).toBe("find");
+    expect(key("=", { metaKey: true })).toBe("zoom-in");
+    expect(key("+", { ctrlKey: true })).toBe("zoom-in");
+    expect(key("-", { ctrlKey: true })).toBe("zoom-out");
+    expect(key("0", { metaKey: true })).toBe("fit");
+  });
+  it("ignores plain keys, Alt chords and other keys", () => {
+    expect(key("f", {})).toBeNull();
+    expect(key("f", { ctrlKey: true, altKey: true })).toBeNull();
+    expect(key("k", { ctrlKey: true })).toBeNull();
   });
 });

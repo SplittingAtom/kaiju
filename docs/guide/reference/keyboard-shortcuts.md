@@ -54,6 +54,8 @@ sheet.
 - In the PDF viewer, with the pages focused: Mod+F finds in the document (Enter and Shift+Enter
   step through the matches, Escape closes the search), Mod+= and Mod+- zoom, Mod+0 fits the width.
   See [Editing files](../files/file-editor.md#the-pdf-viewer).
+- In the image viewer: Mod+= and Mod+- zoom, Mod+0 fits the width, and the arrow keys pan a zoomed
+  image. See [Editing files](../files/file-editor.md#the-image-viewer).
 
 ## Slash commands
 

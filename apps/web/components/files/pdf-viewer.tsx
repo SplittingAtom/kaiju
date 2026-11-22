@@ -16,6 +16,7 @@ import {
   clampPage,
   fitScale,
   pdfErrorKind,
+  viewerKey,
   zoomIn,
   zoomOut,
   type PdfErrorKind,
@@ -24,6 +25,7 @@ import {
 import { CannotPreview } from "./cannot-preview";
 import { PDF_TO_CSS, PdfPage } from "./pdf-page";
 import { PdfFindBar, PdfToolbar, type ZoomMode } from "./pdf-toolbar";
+import { useBoxSize } from "./use-box-size";
 import { usePdfFind } from "./use-pdf-find";
 import styles from "./viewer.module.css";
 
@@ -61,22 +63,6 @@ function usePdfDocument(bytes: Uint8Array): Load {
     };
   }, [bytes]);
   return load;
-}
-
-/** The scroll box's size, following the column (ResizeObserver where the browser has it). */
-function useBoxSize(ref: React.RefObject<HTMLElement | null>): Size {
-  const [size, setSize] = useState<Size>({ width: 0, height: 0 });
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const measure = () => setSize({ width: el.clientWidth, height: el.clientHeight });
-    measure();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [ref]);
-  return size;
 }
 
 /** Each page's top edge at `scale`, plus the total height. */
@@ -190,14 +176,13 @@ function Viewer({ doc, name }: { readonly doc: PdfDocument; readonly name: strin
     scroller.current?.focus();
   };
   const onKeyDown = (e: React.KeyboardEvent) => {
-    const mod = e.metaKey || e.ctrlKey;
-    if (!mod || e.altKey) return;
-    if (e.key === "f" || e.key === "F") openFind();
-    else if (e.key === "=" || e.key === "+") zoom(zoomIn(scale));
-    else if (e.key === "-") zoom(zoomOut(scale));
-    else if (e.key === "0") setMode("fit-width");
-    else return;
+    const key = viewerKey(e);
+    if (key === null) return;
     e.preventDefault();
+    if (key === "find") openFind();
+    else if (key === "zoom-in") zoom(zoomIn(scale));
+    else if (key === "zoom-out") zoom(zoomOut(scale));
+    else setMode("fit-width");
   };
 
   const view = box.height > 0 ? box.height : 0;

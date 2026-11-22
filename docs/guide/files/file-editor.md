@@ -59,6 +59,22 @@ scroll.
 A PDF that is password-protected, damaged, or larger than 25 MB is not shown: the tab says why and
 offers **Download**. Use **Download** in the tab's header any time for the file itself.
 
+## The image viewer
+
+PNG, JPEG, GIF, WebP and SVG files open in the image viewer, over a checkerboard so you can see
+transparent areas. SVG files are shown as pictures: anything scripted inside them never runs. The
+toolbar has **Zoom out**, the zoom level, **Zoom in**, **Fit to width** (the default; a small image
+stays at its actual size) and **Actual size**, followed by the image's size in pixels and the
+file's size. When the image is larger than the column, drag it to pan, or click it and use the
+arrow keys. The keys **Mod+=**, **Mod+-** and **Mod+0** (fit to width) work too.
+
+## Files over the preview limits
+
+Each kind of file has a limit: text 1 MB (a larger text file opens with its first 1 MB, read-only),
+images and SVG 10 MB, HTML 1 MB, PDF 25 MB. Over its limit the tab names the file's size and the
+limit, for example "This file is too large to preview (12 MB). Images over 10 MB are not
+previewed.", with a **Download** button.
+
 ## The editor toolbar
 
 The editor fills the artifact column, and one toolbar at the top holds its controls:

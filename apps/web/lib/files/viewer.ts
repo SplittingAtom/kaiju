@@ -24,6 +24,32 @@ export function zoomOut(scale: number): number {
   return [...ZOOM_STEPS].reverse().find((s) => s < scale - EPSILON) ?? ZOOM_MIN;
 }
 
+export type ViewerKey = "find" | "zoom-in" | "zoom-out" | "fit";
+
+/** The viewers' keys (KOBE-801, KOBE-807): Mod+F, Mod+= (or +), Mod+-, Mod+0. */
+export function viewerKey(e: {
+  readonly key: string;
+  readonly ctrlKey: boolean;
+  readonly metaKey: boolean;
+  readonly altKey: boolean;
+}): ViewerKey | null {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey) return null;
+  switch (e.key) {
+    case "f":
+    case "F":
+      return "find";
+    case "=":
+    case "+":
+      return "zoom-in";
+    case "-":
+      return "zoom-out";
+    case "0":
+      return "fit";
+    default:
+      return null;
+  }
+}
+
 export type FitMode = "fit-width" | "fit-page";
 
 export interface Size {

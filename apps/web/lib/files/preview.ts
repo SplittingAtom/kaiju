@@ -3,6 +3,8 @@
  * extension), the size caps and the frame URL. Pure; the viewer is `components/files/file-tab.tsx`.
  */
 
+import { formatBytes } from "./format";
+
 /** File tabs share the column's open set with artifact tabs (uuids), so they carry a prefix. */
 const FILE_TAB_PREFIX = "file:";
 /** The protocol's `WORKSPACE_PATH_MAX_BYTES`, counted in characters here (the server checks). */
@@ -118,6 +120,41 @@ export function previewOf(path: string): FilePreview {
   const language = CODE[ext];
   if (language) return { kind: "code", language };
   return { kind: TEXT.has(ext) ? "text" : "none" };
+}
+
+/** The preview cap of a kind of file, for the "too large" messages; null when it has no preview. */
+export function previewLimit(
+  preview: FilePreview,
+): { readonly bytes: number; readonly what: string } | null {
+  switch (preview.kind) {
+    case "none":
+      return null;
+    case "image":
+    case "svg":
+      return { bytes: IMAGE_PREVIEW_MAX_BYTES, what: "Images" };
+    case "html":
+      return { bytes: HTML_FRAME_MAX_BYTES, what: "HTML files" };
+    case "pdf":
+      return { bytes: PDF_PREVIEW_MAX_BYTES, what: "PDFs" };
+    default:
+      return { bytes: TEXT_PREVIEW_MAX_BYTES, what: "Text files" };
+  }
+}
+
+/**
+ * A file over its kind's cap (KOBE-807): its size when known and the limit, worded the same for
+ * every kind. The tab adds "Use Download to get it." and a Download button.
+ */
+export function tooLargeMessage(preview: FilePreview, size: number | null): string {
+  const limit = previewLimit(preview);
+  const head = `This file is too large to preview${size === null ? "" : ` (${formatBytes(size)})`}.`;
+  return limit ? `${head} ${limit.what} over ${formatBytes(limit.bytes)} are not previewed.` : head;
+}
+
+/** A text file cut at the text cap (it opens read-only). */
+export function cutTextMessage(size: number | null): string {
+  const cap = formatBytes(TEXT_PREVIEW_MAX_BYTES);
+  return `Showing the first ${cap}${size === null ? "" : ` of ${formatBytes(size)}`}. Text files over ${cap} open cut and read-only.`;
 }
 
 /**

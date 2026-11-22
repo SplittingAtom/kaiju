@@ -7,10 +7,12 @@
  * the file is there but its saved copy is not, so the tab stays and says so, KOBE-475) and its size
  * (Content-Length); files that aren't shown inline (HTML, PDF, unknown) are read headers only. Renderers reuse the artifact views:
  * Markdown, CSV/TSV tables, code and text as fenced blocks, JSON pretty-printed, images and SVG
- * as `<img>` from a `data:` URL (never inline SVG markup), HTML in the sandboxed frame served by
+ * as `<img>` from a `data:` URL (never inline SVG markup) in the image viewer (KOBE-807: zoom,
+ * fit, pan, dimensions), HTML in the sandboxed frame served by
  * `/v1/workspace/frame` (same sandbox and CSP as artifact frames), PDFs in the pdf.js viewer
  * (KOBE-801, `pdf-viewer.tsx`, loaded on first use; up to 25 MB). Anything else: Cannot preview,
- * with Download. Text is read up to 1 MB; large images and PDFs are not fetched. Text files
+ * with Download; a file over its kind's cap says the limit, with Download (KOBE-807). Text is
+ * read up to 1 MB; large images and PDFs are not fetched. Text files
  * open in the file editor (KOBE-463, `file-editor.tsx`): Rendered and Raw modes, Save, and the
  * review of the agent's proposals; the version a save names is the SHA-256 of the bytes read. The
  * editor fills the tab and follows the column's size (KOBE-615); Save As opens the copy here.
@@ -23,8 +25,9 @@ import type { ApiError } from "../../lib/api/client";
 import type { FilesApi } from "../../lib/files/api";
 import { isTextPreview, sha256Hex } from "../../lib/files/editor";
 import type { EditDraftStore, FileReviewStore } from "../../lib/files/editor-state";
-import { contentMissingMessage, describeFileError, formatBytes } from "../../lib/files/format";
+import { contentMissingMessage, describeFileError } from "../../lib/files/format";
 import {
+  cutTextMessage,
   decodePreviewText,
   fileName,
   HTML_FRAME_MAX_BYTES,
@@ -33,6 +36,7 @@ import {
   PDF_PREVIEW_MAX_BYTES,
   previewOf,
   TEXT_PREVIEW_MAX_BYTES,
+  tooLargeMessage,
   workspaceFrameUrl,
   type FilePreview,
 } from "../../lib/files/preview";
@@ -50,6 +54,8 @@ import type { WorkspaceChangeFeed } from "../../lib/files/remote-changes";
 import { IconAction } from "../shell/icon-action";
 import { AddToProject } from "../projects/add-to-project";
 import { CannotPreview } from "./cannot-preview";
+import { ImageViewer } from "./image-viewer";
+import { Button } from "../ui/button";
 import { ProjectFileBar } from "../projects/project-file-bar";
 import styles from "../chat/chat.module.css";
 
@@ -68,13 +74,9 @@ type Loaded =
   | { readonly status: "none" | "frame" }
   /** The file exists; its saved copy is missing until the sandbox resends it (KOBE-475). */
   | { readonly status: "missing" }
-  | {
-      readonly status: "too_large";
-      readonly size: number | null;
-      /** The cap it went over, said in the message (PDFs). */
-      readonly limit?: string | undefined;
-    }
-  | { readonly status: "image"; readonly src: string }
+  /** Over its kind's cap: the message names the size and the limit (KOBE-807). */
+  | { readonly status: "too_large"; readonly reason: string }
+  | { readonly status: "image"; readonly src: string; readonly size: number }
   | { readonly status: "pdf"; readonly bytes: Uint8Array }
   | {
       readonly status: "text";
@@ -124,16 +126,16 @@ async function load(api: FilesApi, path: string, preview: FilePreview): Promise<
       return { status: "none" };
     case "html":
       return size !== null && size > HTML_FRAME_MAX_BYTES
-        ? { status: "too_large", size }
+        ? { status: "too_large", reason: tooLargeMessage(preview, size) }
         : { status: "frame" };
     case "image":
     case "svg":
       return truncated
-        ? { status: "too_large", size }
-        : { status: "image", src: imageDataUrl(bytes, preview.mime) };
+        ? { status: "too_large", reason: tooLargeMessage(preview, size) }
+        : { status: "image", src: imageDataUrl(bytes, preview.mime), size: bytes.length };
     case "pdf":
       return truncated
-        ? { status: "too_large", size, limit: `PDFs over ${formatBytes(PDF_PREVIEW_MAX_BYTES)}` }
+        ? { status: "too_large", reason: tooLargeMessage(preview, size) }
         : { status: "pdf", bytes };
     default: {
       const text = decodePreviewText(bytes, truncated);
@@ -196,9 +198,14 @@ interface EditorWiring {
   readonly onOpenPath?: ((path: string) => void) | undefined;
 }
 
+/** The PDF and image viewers fill the tab edge to edge, with their own toolbar and scrolling. */
+function fillsBare(loaded: Loaded): boolean {
+  return loaded.status === "pdf" || loaded.status === "image";
+}
+
 /** Whether the tab shows the file editor, a notebook or a viewer, which fill the tab themselves. */
 function fillsTab(loaded: Loaded, path: string, editor: EditorWiring | undefined): boolean {
-  if (loaded.status === "pdf") return true;
+  if (fillsBare(loaded)) return true;
   return (
     editor !== undefined &&
     loaded.status === "text" &&
@@ -264,19 +271,9 @@ function FileBody({
     case "missing":
       return <p role="status">{contentMissingMessage(name)}</p>;
     case "none":
-      return <CannotPreview reason="Cannot preview this file." />;
-    case "too_large": {
-      const detail = [
-        loaded.size === null ? null : formatBytes(loaded.size),
-        loaded.limit ? `${loaded.limit} are not previewed` : null,
-      ].filter(Boolean);
-      return (
-        <CannotPreview
-          reason={`This file is too large to preview${detail.length > 0 ? ` (${detail.join("; ")})` : ""}.`}
-          onDownload={loaded.limit ? onDownload : undefined}
-        />
-      );
-    }
+      return <CannotPreview reason="Cannot preview this file." onDownload={onDownload} />;
+    case "too_large":
+      return <CannotPreview reason={loaded.reason} onDownload={onDownload} />;
     case "pdf":
       return (
         <Suspense fallback={<p role="status">Opening the PDF…</p>}>
@@ -294,15 +291,22 @@ function FileBody({
         />
       );
     case "image":
-      return <img src={loaded.src} alt={name} className="max-w-full" />;
+      return <ImageViewer src={loaded.src} name={name} size={loaded.size} />;
     case "text":
       return (
         <>
           {loaded.truncated && (
             <p role="status" className="text-muted-foreground mb-2 shrink-0 text-xs">
-              {`Showing the first ${formatBytes(TEXT_PREVIEW_MAX_BYTES)}${
-                loaded.size === null ? "" : ` of ${formatBytes(loaded.size)}`
-              }. Download the file for all of it.`}
+              {`${cutTextMessage(loaded.size)} Use Download to get all of it. `}
+              <Button
+                type="button"
+                variant="link"
+                size="xs"
+                className="h-auto p-0"
+                onClick={onDownload}
+              >
+                Download
+              </Button>
             </p>
           )}
           {editor && isNotebook(path) ? (
@@ -428,7 +432,7 @@ export function FileTabContent({
       <ProjectFileBar path={path} version={loaded.status === "text" ? loaded.sha256 : undefined} />
       <div
         className={
-          loaded.status === "pdf"
+          fillsBare(loaded)
             ? "flex min-h-0 min-w-0 flex-1 flex-col"
             : fillsTab(loaded, path, editor)
               ? "flex min-h-0 min-w-0 flex-1 flex-col px-3 pt-2 pb-3"
