@@ -19,6 +19,8 @@ export const identity = defineDomain({
     "two_factors",
     "jwks",
     "rate_limits",
+    // Kobe's own rate limits and reset-email claims, apart from Better Auth's prune (KOBE-809)
+    "kobe_rate_limits",
     "invitations",
     // Identity and governance
     "teams",
@@ -63,6 +65,8 @@ export const identity = defineDomain({
     // Signing keys are only ever inserted (no rotation configured).
     jwks: ["SELECT", "INSERT"],
     rate_limits: ALL_PRIVILEGES,
+    // Throwaway counters: upserted per hit, deleted once expired (KOBE-809).
+    kobe_rate_limits: ALL_PRIVILEGES,
     site_roles: ALL_PRIVILEGES,
     // DELETE: a branding reset removes its keys so the defaults apply again (TH12, KOBE-499); the
     // app role could already set any key, so removing one grants nothing new.

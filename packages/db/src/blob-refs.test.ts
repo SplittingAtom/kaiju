@@ -74,6 +74,7 @@ const NOT_OBJECT_KEYS: Record<string, string> = {
   "memory_project_suggestions.candidate_ref": "a memory candidate's id (KOBE-652)",
   "jwks.private_key": "a signing key (encrypted)",
   "passkeys.public_key": "a WebAuthn credential key",
+  "kobe_rate_limits.key": "a rate-limit bucket name",
   "rate_limits.key": "a rate-limit bucket name",
   "retention_blob_deletions.key": "a key queued for deletion: its object is meant to go",
   "runs.client_key": "an idempotency key",

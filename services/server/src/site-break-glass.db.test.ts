@@ -180,7 +180,7 @@ afterEach(async () => {
        ended_at = now() WHERE status IN ('pending', 'approved')`,
   );
   await admin.query(`SET session_replication_role = origin`);
-  await admin.query(`DELETE FROM rate_limits WHERE key LIKE 'kobe:site-break-glass-%'`);
+  await admin.query(`DELETE FROM kobe_rate_limits WHERE key LIKE 'kobe:site-break-glass-%'`);
 });
 
 afterAll(async () => {

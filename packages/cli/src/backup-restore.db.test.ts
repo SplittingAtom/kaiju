@@ -140,6 +140,7 @@ describe("kobe backup → kobe restore (real Postgres, pg_dump, pg_restore, psql
       });
       expect(manifest.excludedTables.map((t) => t.name).sort()).toEqual([
         "jwks",
+        "kobe_rate_limits",
         "rate_limits",
         "session_active_teams",
         "session_sso_contexts",
@@ -183,6 +184,7 @@ describe("kobe backup → kobe restore (real Postgres, pg_dump, pg_restore, psql
         "verifications",
         "jwks",
         "rate_limits",
+        "kobe_rate_limits",
       ]) {
         expect(script).not.toContain(`COPY public.${table} `);
       }
