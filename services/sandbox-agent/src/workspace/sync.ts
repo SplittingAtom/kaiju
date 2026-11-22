@@ -104,6 +104,7 @@ export class WorkspaceSync {
       emptyAtStart: undefined,
       restoredFiles: 0,
       restoredBytes: 0,
+      rehashed: 0,
       restoreStarted: 0,
       checkouts: NO_CHECKOUTS,
     };
@@ -302,6 +303,11 @@ export class WorkspaceSync {
       if (!clean(plan) || plan.unverified > 0) return false;
     }
     return true;
+  }
+
+  /** Files re-hashed only to verify them since this agent started (tests, diagnostics). */
+  get rehashedTotal(): number {
+    return this.#s.rehashed;
   }
 
   /** Files the last proof's check re-hashed to verify them (tests, diagnostics; KOBE-733). */

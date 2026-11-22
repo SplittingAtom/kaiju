@@ -77,7 +77,9 @@ sandbox:
     # prove it. The member's next message starts a new sandbox that restores the workspace (empty
     # folders, node_modules, __pycache__, .venv and .kobe are not restored, and of file modes only
     # the executable bit is). Needs workspaceSync and s3.*. Audited as sandbox.volume_reclaimed.
-    # There is no k3d end-to-end test of wake-after-reclaim yet.
+    # There is no k3d end-to-end test of wake-after-reclaim yet. Files downloaded or changed since
+    # the last check are re-hashed inside the 15 s shutdown flush; beyond a few GB of such files the
+    # proof times out and the volume is simply kept.
     reclaim:
       enabled: false
       dormantDays: 30

@@ -2025,7 +2025,9 @@ true` lets the hibernation sweep delete a sandbox hibernated for `dormantDays` (
   accepted or refused). The reaper also refuses content marked lost in storage, waiting commands and
   legal holds; a wake that comes while the old PVC is still terminating waits for it (≤ 60 s). Of
   file modes only the executable bit is restored. There is no k3d end-to-end test of
-  wake-after-reclaim yet. Needs
+  wake-after-reclaim yet. Files downloaded or changed since the last check are re-hashed inside the
+  15 s shutdown flush; beyond a few GB of such files the proof times out and the volume is simply
+  kept. Needs
   `sandbox.workspaceSync.enabled` and `s3.*` (otherwise the server logs a warning and reclaims
   nothing). Each reclaim is audited as `sandbox.volume_reclaimed`. The server needs `get` on
   `resourcequotas` in team namespaces (chart RBAC) to report a full quota.

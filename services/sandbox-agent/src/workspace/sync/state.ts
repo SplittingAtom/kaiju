@@ -151,6 +151,8 @@ export interface SyncState {
   /** Files and bytes downloaded by restore attempts so far. */
   restoredFiles: number;
   restoredBytes: number;
+  /** Files re-hashed only to verify them, over this agent's life (KOBE-733; diagnostics). */
+  rehashed: number;
   restoreStarted: number;
   /** Slugs of the member's project checkouts, as the latest pull listed them (CM4). */
   checkouts: Checkouts;

@@ -41,11 +41,11 @@ Owner decision: reclaim ships **off** (`sandbox.hibernation.reclaim.enabled: fal
 - **Review g63-3 (racily clean, HIGH):** stamps are nanosecond (`bigint` stats: size, mtime,
   ctime, inode) and compared with strict equality, so a rewrite after a clock step back is caught
   too. A stamp is recorded only when the file's ctime and mtime are ≥ 2 s older than the volume's
-  clock when the plan began (mtime of `.kobe/workspace-clock`, rewritten first): younger files stay
+  clock when the plan began (mtime of `.kobe/agent/workspace-clock`, rewritten first; ignored when more than 60 s from the agent's clock): younger files stay
   unverified (`sync/stamps.ts`). The proof's strict pass re-hashes every unverified file after the
   quiet check; if any is still inside the window it waits it out once (≤ flush deadline) and
   re-hashes, else no proof. Liveness: verified stamps are saved on the volume
-  (`.kobe/workspace-verified.json`, agent-only) at every flush and loaded at restore, so a wake on
+  (`.kobe/agent/workspace-verified.json`; `.kobe/agent` must be the agent's own 0700 directory and the file its own 0600 file, else the stamps count as absent, since members can swap entries in the shared `.kobe/`) at every flush and loaded at restore, so a wake on
   the same volume proves without re-hashing unchanged files. Freshly downloaded files are not
   recorded at write time: they are inside the window by definition, so the racy rule leaves them
   unverified; periodic pushes verify them (200 per push) and the next flush remembers them.

@@ -428,7 +428,67 @@ describe("workspace sync (agent)", () => {
     await second.flush(10_000, PROOF);
     expect(server.flushed).toEqual([CONN]);
     expect(second.lastProofRehashed).toBe(0);
+    expect(second.rehashedTotal).toBe(0);
   });
+
+  /** A volume whose last agent proved and saved its stamps; returns the stamp file's path. */
+  async function provenVolume(): Promise<{ root: string; file: string }> {
+    const root = await volume();
+    const first = await started(root);
+    await put(root, "a.txt", "aaaa");
+    await first.flush(10_000, PROOF);
+    server.flushed.length = 0;
+    return { root, file: path.join(root, ".kobe", "agent", "workspace-verified.json") };
+  }
+
+  it("re-hashes when the saved stamps are corrupt or do not match (KOBE-733)", async () => {
+    const corrupt = await provenVolume();
+    await writeFile(corrupt.file, "{not json", { mode: 0o600 });
+    const a = await started(corrupt.root);
+    await a.flush(10_000, PROOF);
+    expect(a.rehashedTotal).toBeGreaterThanOrEqual(1);
+    expect(server.flushed).toEqual([CONN]);
+
+    const mismatched = await provenVolume();
+    const saved = JSON.parse(await readFile(mismatched.file, "utf8")) as { files: string[][] };
+    for (const row of saved.files) row[4] = "1"; // another ctime
+    await writeFile(mismatched.file, JSON.stringify(saved), { mode: 0o600 });
+    const b = await started(mismatched.root);
+    await b.flush(10_000, PROOF);
+    expect(b.rehashedTotal).toBeGreaterThanOrEqual(1);
+  }, 20_000);
+
+  it("ignores saved stamps in a directory that is not the agent's own (KOBE-733)", async () => {
+    const swapped = await provenVolume();
+    // Opened up (as a member's swapped-in folder would be): never trusted.
+    await chmod(path.dirname(swapped.file), 0o755);
+    const a = await started(swapped.root);
+    await a.flush(10_000, PROOF);
+    expect(a.rehashedTotal).toBeGreaterThanOrEqual(1);
+
+    // A link in its place, to a copy of a valid stamp file: never followed.
+    const linked = await provenVolume();
+    const elsewhere = await volume();
+    await rm(path.dirname(linked.file), { recursive: true });
+    await mkdir(path.join(elsewhere, "agent"), { mode: 0o700 });
+    await symlink(path.join(elsewhere, "agent"), path.dirname(linked.file));
+    const b = await started(linked.root);
+    await b.flush(10_000, PROOF);
+    expect(b.rehashedTotal).toBeGreaterThanOrEqual(1);
+  }, 20_000);
+
+  it("gives up after its second pass when a file stays too young to verify (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "future.txt", "ffff");
+    await sync.push();
+    // An mtime an hour ahead stays inside the racy window however long the proof waits.
+    const later = new Date(Date.now() + 3_600_000);
+    await utimes(path.join(root, "future.txt"), later, later);
+    await sync.push();
+    await sync.flush(10_000, PROOF);
+    expect(server.flushed).toEqual([]);
+  }, 20_000);
 
   it("sends no proof when other processes are alive or a cleanup failed (KOBE-733)", async () => {
     const root = await volume();

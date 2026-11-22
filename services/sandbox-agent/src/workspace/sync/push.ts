@@ -211,6 +211,7 @@ export async function planPush(
       if (!recorded) verifyBudget -= 1;
       // Same size and mtime, but the content may have been rewritten: hash it.
       rehashed += 1;
+      s.rehashed += 1;
       const again = await hashFile(s.o.root, path);
       if (!again || again.size !== file.size) {
         leftOut += 1;

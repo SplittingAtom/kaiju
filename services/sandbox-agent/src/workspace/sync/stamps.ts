@@ -1,4 +1,4 @@
-import { lstat, mkdir, readFile, rename, rm } from "node:fs/promises";
+import { chmod, lstat, mkdir, readFile, rename, rm } from "node:fs/promises";
 import path from "node:path";
 import { lstatIfExists, parentsAreDirs } from "../fs.js";
 import { openAgentTemp, tempPathFor } from "../../atomic-file.js";
@@ -54,23 +54,49 @@ export function racy(stamp: FileStamp, startNs: bigint | undefined): boolean {
   return stamp.ctimeNs >= edge || stamp.mtimeNs >= edge;
 }
 
-const STATE_DIR = ".kobe";
+const KOBE_DIR = ".kobe";
+/** The agent's own directory: `.kobe/` is shared with the Pi identities (sessions, 2770). */
+const STATE_DIR = `${KOBE_DIR}/agent`;
 const CLOCK_FILE = "workspace-clock";
 const STAMPS_FILE = "workspace-verified.json";
+/** A marker mtime further than this from the agent's clock is no trustworthy volume clock. */
+export const CLOCK_SANITY_MS = 60_000;
 
-/** `.kobe/` on the volume (created agent-only), or undefined when something else is in the way. */
-async function stateDir(root: string): Promise<string | undefined> {
+const agentUid = (): number | undefined => process.getuid?.();
+
+/** Owned by the agent and private to it (`mode` bits), never a link. */
+function agentOwned(stat: { uid: number; mode: number }, mode: number): boolean {
+  const uid = agentUid();
+  return (uid === undefined || stat.uid === uid) && (stat.mode & 0o777) === mode;
+}
+
+/**
+ * `.kobe/agent/` on the volume, created agent-only (0700). Undefined when it is anything else: a
+ * link, a file, or a directory not owned by the agent or not 0700. The workspace and `.kobe/` are
+ * writable by the member's identities, who can swap entries in them but cannot make a directory
+ * owned by the agent's uid, so a swapped one is never trusted (its stamps count as absent).
+ */
+async function stateDir(root: string, create: boolean): Promise<string | undefined> {
+  const parent = path.join(root, KOBE_DIR);
+  const kobe = await lstatIfExists(parent);
+  if (!kobe) {
+    if (!create) return undefined;
+    await mkdir(parent, { mode: 0o700 });
+  } else if (!kobe.isDirectory()) return undefined;
   const dir = path.join(root, STATE_DIR);
-  const found = await lstatIfExists(dir);
-  if (!found) await mkdir(dir, { mode: 0o700 });
-  else if (!found.isDirectory()) return undefined;
-  return dir;
+  let found = await lstatIfExists(dir);
+  if (!found && create) {
+    await mkdir(dir, { mode: 0o700 });
+    await chmod(dir, 0o700);
+    found = await lstatIfExists(dir);
+  }
+  return found?.isDirectory() && agentOwned(found, 0o700) ? dir : undefined;
 }
 
 /** Writes `text` to `.kobe/<name>` atomically, on the volume only (never through a link). */
 async function writeState(root: string, name: string, text: string): Promise<void> {
-  const dir = await stateDir(root);
-  if (dir === undefined) throw new Error(".kobe is not a directory");
+  const dir = await stateDir(root, true);
+  if (dir === undefined) throw new Error(".kobe/agent is not the agent's own directory");
   const final = path.join(dir, name);
   const temp = tempPathFor(final);
   const handle = await openAgentTemp(temp, 0o600);
@@ -93,7 +119,11 @@ async function writeState(root: string, name: string, text: string): Promise<voi
 export async function volumeNow(root: string): Promise<bigint | undefined> {
   try {
     await writeState(root, CLOCK_FILE, String(Date.now()));
-    return (await lstat(path.join(root, STATE_DIR, CLOCK_FILE), { bigint: true })).mtimeNs;
+    const mtimeNs = (await lstat(path.join(root, STATE_DIR, CLOCK_FILE), { bigint: true })).mtimeNs;
+    // A marker far from the agent's own clock (a volume clock gone wrong): not trustworthy, so
+    // nothing is recorded as verified and no proof can follow.
+    const skewMs = Math.abs(Number(mtimeNs / 1_000_000n) - Date.now());
+    return skewMs > CLOCK_SANITY_MS ? undefined : mtimeNs;
   } catch {
     return undefined;
   }
@@ -127,9 +157,13 @@ export async function saveStamps(
 export async function loadStamps(root: string): Promise<Map<string, SavedStamp>> {
   const out = new Map<string, SavedStamp>();
   try {
-    if (!(await parentsAreDirs(root, `${STATE_DIR}/${STAMPS_FILE}`))) return out;
-    const file = path.join(root, STATE_DIR, STAMPS_FILE);
-    if (!(await lstat(file)).isFile()) return out;
+    const dir = await stateDir(root, false);
+    if (dir === undefined || !(await parentsAreDirs(root, `${STATE_DIR}/${STAMPS_FILE}`))) {
+      return out;
+    }
+    const file = path.join(dir, STAMPS_FILE);
+    const stat = await lstat(file);
+    if (!stat.isFile() || !agentOwned(stat, 0o600)) return out;
     const parsed = JSON.parse(await readFile(file, "utf8")) as { v?: unknown; files?: unknown };
     if (parsed.v !== 1 || !Array.isArray(parsed.files)) return out;
     for (const row of parsed.files as unknown[]) {
