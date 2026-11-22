@@ -12948,7 +12948,17 @@
         },
         "responses": {
           "200": {
-            "description": "200 when an existing key was replaced; 201 when the key is new.",
+            "description": "An existing key was replaced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectorGrantEnvelope"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The key is new.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13986,7 +13996,17 @@
         ],
         "responses": {
           "200": {
-            "description": "200 once the kernel is up; 202 `waking` (ask again after `retry_after_ms`).",
+            "description": "The kernel is up (`idle` or `busy`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotebookStartResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "`waking`: the sandbox is waking; ask again after `retry_after_ms`.",
             "content": {
               "application/json": {
                 "schema": {

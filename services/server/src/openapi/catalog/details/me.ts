@@ -203,6 +203,8 @@ const grantSummary = obj({
   updated_at: dateTime,
 });
 
+const ConnectorGrantEnvelope = untyped("ConnectorGrantEnvelope", obj({ grant: grantSummary }));
+
 export const connectorGrantsDetails: Readonly<Record<string, CatalogDetail>> = {
   "get /v1/connector-grants": {
     response: untyped("ConnectorGrantList", obj({ grants: arr(grantSummary) })),
@@ -210,8 +212,9 @@ export const connectorGrantsDetails: Readonly<Record<string, CatalogDetail>> = {
   "delete /v1/connector-grants/{connectorId}": { status: 204, errors: ["404"] },
   "put /v1/connector-grants/{connectorId}": {
     body: named("PutConnectorGrantBody", putGrantSchema),
-    response: untyped("ConnectorGrantEnvelope", obj({ grant: grantSummary })),
-    responseDescription: "200 when an existing key was replaced; 201 when the key is new.",
+    response: ConnectorGrantEnvelope,
+    responseDescription: "An existing key was replaced.",
+    otherSuccess: { "201": { response: ConnectorGrantEnvelope, description: "The key is new." } },
     errors: ["404", "409", "422", "503"],
   },
   "post /v1/connector-grants/{connectorId}/oauth/start": {

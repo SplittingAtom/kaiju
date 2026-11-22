@@ -148,8 +148,13 @@ export const threadsDetails: Readonly<Record<string, CatalogDetail>> = {
   "post /v1/threads/{id}/notebook/start": {
     body: null,
     response: named("NotebookStartResponse", notebookStartResponseSchema),
-    responseDescription:
-      "200 once the kernel is up; 202 `waking` (ask again after `retry_after_ms`).",
+    responseDescription: "The kernel is up (`idle` or `busy`).",
+    otherSuccess: {
+      "202": {
+        response: named("NotebookStartResponse", notebookStartResponseSchema),
+        description: "`waking`: the sandbox is waking; ask again after `retry_after_ms`.",
+      },
+    },
     errors: ["404", "409", "503"],
   },
   "post /v1/threads/{id}/purge": { body: null, status: 204, errors: ["404", "409"] },
