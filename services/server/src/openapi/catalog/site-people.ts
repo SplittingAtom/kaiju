@@ -63,6 +63,12 @@ export const sitePeopleAreas: readonly CatalogArea[] = [
         "Site admins (`site.teams.manage`).",
       ],
       ["get", "/v1/site/users", "List every user on the site", MANAGE],
+      [
+        "get",
+        "/v1/site/users/sign-in-protection",
+        "Accounts whose sign-in is slowed down, and unknown client IP sightings",
+        MANAGE,
+      ],
       ["post", "/v1/site/users/{userId}/deactivate", "Deactivate a user account", MANAGE],
       [
         "post",

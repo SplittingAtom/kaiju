@@ -261,6 +261,23 @@ export const sitePeopleDetails: Readonly<Record<string, CatalogDetail>> = {
       }),
     ),
   },
+  "get /v1/site/users/sign-in-protection": {
+    response: untyped(
+      "SiteSignInProtection",
+      obj({
+        throttled: {
+          ...arr(obj({ userId: uuid, until: dateTime })),
+          description:
+            "Accounts past 10 failed sign-in attempts in 15 minutes: one attempt a minute until `until`.",
+        },
+        unknownClientIp: {
+          ...nullable(obj({ since: dateTime })),
+          description:
+            "Since when (in the last day) requests arrived without a client IP Kobe can trust; null when none did.",
+        },
+      }),
+    ),
+  },
   "post /v1/site/users/{userId}/deactivate": {
     body: named("SiteUserExpectedStateBody", expectedStateSchema),
     bodyOptional: true,

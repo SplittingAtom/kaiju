@@ -29564,6 +29564,35 @@
         }
       }
     },
+    "/v1/site/users/sign-in-protection": {
+      "get": {
+        "operationId": "getSiteUsersSignInProtection",
+        "summary": "Accounts whose sign-in is slowed down, and unknown client IP sightings",
+        "description": "Site admins (`site.users.manage`).",
+        "tags": ["Site: people"],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteSignInProtection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
     "/v1/site/users/{userId}/deactivate": {
       "post": {
         "operationId": "postSiteUsersByUserIdDeactivate",
@@ -74405,6 +74434,49 @@
           }
         },
         "required": ["users"],
+        "x-kobe-untyped": true
+      },
+      "SiteSignInProtection": {
+        "type": "object",
+        "properties": {
+          "throttled": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "until": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": ["userId", "until"]
+            },
+            "description": "Accounts past 10 failed sign-in attempts in 15 minutes: one attempt a minute until `until`."
+          },
+          "unknownClientIp": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "since": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": ["since"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Since when (in the last day) requests arrived without a client IP Kobe can trust; null when none did."
+          }
+        },
+        "required": ["throttled", "unknownClientIp"],
         "x-kobe-untyped": true
       },
       "SiteUserExpectedStateBody": {

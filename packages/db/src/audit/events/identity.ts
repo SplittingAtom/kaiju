@@ -59,6 +59,12 @@ export const IDENTITY_EVENTS = {
     from: z.iso.datetime(),
     to: z.iso.datetime(),
   }),
+  /**
+   * KOBE-812: an account crossed the failed sign-in threshold (password and second-factor failures
+   * across every client address) and gets one attempt a minute until `until`. Once per window, not
+   * per attempt; actor id null (whoever was guessing), the request is the attempt that crossed it.
+   */
+  "auth.sign_in.throttled": event("site", { userId: id, until: z.iso.datetime() }),
   "auth.sign_out": event("site", {}),
   "auth.session.revoked": event("site", { which: z.enum(["one", "others", "all"]) }),
   "auth.password.changed": event("site", {}),

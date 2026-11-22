@@ -29,7 +29,10 @@ import {
   revokeResetLinks,
 } from "./reset-links.js";
 import { authGuards } from "./guards.js";
+import type { ClientIpWatch } from "./client-ip-watch.js";
 import { sessionRotation } from "./rotation.js";
+import { signInAccountKey, type SignInThrottle } from "./sign-in-throttle.js";
+import { signInThrottlePlugin } from "./sign-in-throttle-plugin.js";
 import { ssoLinkPlugin } from "./sso-link-plugin.js";
 import { ssoPlugin, SSO_RATE_LIMITS, type SsoRuntime } from "./sso-plugin.js";
 
@@ -52,6 +55,10 @@ export interface AuthOptions {
   readonly background: BackgroundTasks;
   /** OIDC single sign-on (KOBE-628); unset: no SSO routes at all. */
   readonly sso?: SsoRuntime;
+  /** Per-account throttle of failed password and second-factor attempts (KOBE-812). */
+  readonly signInThrottle: SignInThrottle;
+  /** Reports requests without a resolvable client IP (KOBE-812). */
+  readonly clientIps?: ClientIpWatch;
 }
 
 /** Password-reset links work once, for 30 minutes. */
@@ -78,6 +85,8 @@ export function createAuth({
   attempts,
   background,
   sso,
+  signInThrottle,
+  clientIps,
 }: AuthOptions) {
   const origin = new URL(publicUrl);
   const rotation = sessionRotation(db);
@@ -150,6 +159,8 @@ export function createAuth({
       // The used link is consumed; any other mailed link dies with it.
       onPasswordReset: async ({ user }) => {
         await revokeResetLinks(db, user.id);
+        // A reset proves the mailbox: the account's sign-in throttle ends (KOBE-812).
+        await signInThrottle.clear(signInAccountKey(secret, user.email), user.id);
         await recordAuditAfter(db, {
           action: "auth.password.reset",
           actor: { kind: "user", id: user.id },
@@ -203,7 +214,10 @@ export function createAuth({
     plugins: [
       invitationPlugin({ db, publicOrigin: origin.origin }),
       ssoPlugin({ db, publicOrigin: origin.origin, secret, attempts, sso }),
-      twoFactor({ issuer: "Kobe" }),
+      // Better Auth's own account lockout (10 failed codes, then 15 minutes refused even with the
+      // right code) is off: the owner decided on a growing delay, never a lockout (KOBE-812), and
+      // the sign-in throttle below counts second-factor failures with the password's.
+      twoFactor({ issuer: "Kobe", accountLockout: { enabled: false } }),
       passkey({
         rpID: origin.hostname,
         rpName: "Kobe",
@@ -212,6 +226,8 @@ export function createAuth({
       }),
       // After the two-factor and passkey plugins: it must see whether a sign-in completed.
       ssoLinkPlugin({ db, publicOrigin: origin.origin, secret, settings: sso?.settings }),
+      // After two-factor and SSO-link (whether a sign-in completed), before audit (KOBE-812).
+      signInThrottlePlugin({ db, secret, throttle: signInThrottle, background, clientIps }),
       // Last: its after hook must see the session state the other plugins leave (KOBE-15).
       auditPlugin({ db, attempts }),
     ],

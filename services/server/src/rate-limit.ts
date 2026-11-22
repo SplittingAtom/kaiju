@@ -1,4 +1,4 @@
-import { sql, type KobeDb } from "@kobe/db";
+import { inArray, kobeRateLimits, sql, type KobeDb } from "@kobe/db";
 import { logger } from "./logger.js";
 
 export interface RateLimitRule {
@@ -8,6 +8,12 @@ export interface RateLimitRule {
 
 /** Expired rows one prune deletes at most (KOBE-809); the next new window goes on. */
 export const RATE_LIMIT_PRUNE_BATCH = 100;
+
+/** One counter as a hit left it: hits in the window so far and when the window began (epoch ms). */
+export interface RateLimitHit {
+  readonly count: number;
+  readonly windowStart: number;
+}
 
 /**
  * Counts one hit against `key` in a fixed window and says whether it is within the limit. Counters
@@ -23,19 +29,58 @@ export async function hitRateLimit(
   rule: RateLimitRule,
   now = Date.now(),
 ): Promise<boolean> {
+  return (await countRateLimitHit(db, key, rule, now)).count <= rule.max;
+}
+
+/**
+ * {@link hitRateLimit}, answering the counter itself: callers that need more than "within the
+ * limit" (the sign-in throttle's threshold and retry hint, KOBE-812). `rule.max` is not used.
+ */
+export async function countRateLimitHit(
+  db: KobeDb,
+  key: string,
+  rule: Pick<RateLimitRule, "windowMs">,
+  now = Date.now(),
+): Promise<RateLimitHit> {
   const stale = now - rule.windowMs;
   const expires = now + rule.windowMs;
-  const result = await db.execute<{ count: number }>(sql`
+  const result = await db.execute<{ count: number; window_start: string | number }>(sql`
     INSERT INTO kobe_rate_limits AS r (key, count, window_start, expires_at)
     VALUES (${`kobe:${key}`}, 1, ${now}, ${expires})
     ON CONFLICT (key) DO UPDATE SET
       count = CASE WHEN r.window_start < ${stale} THEN 1 ELSE r.count + 1 END,
       window_start = CASE WHEN r.window_start < ${stale} THEN ${now} ELSE r.window_start END,
       expires_at = CASE WHEN r.window_start < ${stale} THEN ${expires} ELSE r.expires_at END
-    RETURNING count`);
-  const count = result.rows[0]?.count ?? Number.POSITIVE_INFINITY;
+    RETURNING count, window_start`);
+  const row = result.rows[0];
+  const count = row?.count ?? Number.POSITIVE_INFINITY;
   if (count === 1) await pruneExpiredRateLimits(db, now);
-  return count <= rule.max;
+  return { count, windowStart: row ? Number(row.window_start) : now };
+}
+
+/**
+ * Takes back one hit counted by {@link countRateLimitHit} in the window that began at
+ * `windowStart` (a hit that turned out not to count, KOBE-812). Nothing when that window is over.
+ */
+export async function refundRateLimitHit(
+  db: KobeDb,
+  key: string,
+  windowStart: number,
+): Promise<void> {
+  await db.execute(sql`
+    UPDATE kobe_rate_limits SET count = count - 1
+    WHERE key = ${`kobe:${key}`} AND window_start = ${windowStart} AND count > 0`);
+}
+
+/** Deletes the counters named (e.g. a sign-in throttle cleared by a successful sign-in). */
+export async function clearRateLimits(db: KobeDb, keys: readonly string[]): Promise<void> {
+  if (keys.length === 0) return;
+  await db.delete(kobeRateLimits).where(
+    inArray(
+      kobeRateLimits.key,
+      keys.map((k) => `kobe:${k}`),
+    ),
+  );
 }
 
 /**
