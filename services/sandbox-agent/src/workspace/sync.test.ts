@@ -52,6 +52,7 @@ afterEach(async () => {
   server.rows.clear();
   server.blobs.clear();
   server.reports.length = 0;
+  server.badRequests.length = 0;
   server.flushed.length = 0;
   server.flushAnswers.length = 0;
   server.failWith = undefined;
@@ -488,6 +489,23 @@ describe("workspace sync (agent)", () => {
     await sync.push();
     await sync.flush(10_000, PROOF);
     expect(server.flushed).toEqual([]);
+  }, 20_000);
+
+  it("commits a file older than the racy window on the hibernation flush (e2e KOBE-27 regression)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "reports/q3.md", "kobe-27");
+    // Older than the 2 s window when the flush scans: its change is then verifiable, and the
+    // commit must still carry only protocol fields (the server's schema is strict).
+    await new Promise((r) => setTimeout(r, 2_300));
+    await sync.flush(10_000, PROOF);
+    expect(server.content("reports/q3.md")).toBe("kobe-27");
+    expect(server.badRequests).toEqual([]);
+    // And a later restore onto a new, empty volume is a full one with the file.
+    const fresh = await volume();
+    await started(fresh);
+    expect(await text(fresh, "reports/q3.md")).toBe("kobe-27");
+    expect(server.reports.at(-1)).toMatchObject({ mode: "full", files: 1 });
   }, 20_000);
 
   it("sends no proof when other processes are alive or a cleanup failed (KOBE-733)", async () => {

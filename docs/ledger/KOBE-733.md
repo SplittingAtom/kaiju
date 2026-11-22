@@ -52,6 +52,14 @@ Owner decision: reclaim ships **off** (`sandbox.hibernation.reclaim.enabled: fal
   `pi.command` is refused while draining; the /proc check fails on any read error but
   ENOENT/ESRCH; a wake whose old volume is still terminating after 60 s fails with a retryable
   `SandboxProvisioningError` (logged) instead of creating the claim.
+- **e2e regression (PR #668, k3d `suite`, fixed):** the hibernation flush uploaded the file but
+  its commit was refused, so the manifest stayed empty and the volume-loss restore found nothing.
+  Cause: a planned change outside the racy window carried the agent's own `verifiable` flag, and
+  the commit sent every field but `local`; the server's commit schema is strict, so it answered 400
+  for the whole batch. Unit tests missed it because their files were always inside the 2 s window
+  and the fake server turned the schema error into a silent 500. Fix: commits are built field by
+  field from the contract (`toWire`), the fake answers 400 and records it, and a test writes a file,
+  waits past the window, flushes, and checks the commit and a later full restore.
 - **What does not block, by decision:** `.kobe/` (Pi sessions and agent state; D15: sessions are
   rebuilt from Postgres, so a reclaimed volume resumes conversations), interrupted-download temp
   files, the rebuildable `node_modules`/`__pycache__`/`.venv`, and **empty folders, which are not
