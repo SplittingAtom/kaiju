@@ -407,6 +407,20 @@ describe("project files (KOBE-164, ac-1)", () => {
     ).toBeTruthy();
   });
 
+  it("marks a file whose path is too long to reach members' files (KOBE-780)", async () => {
+    stubApi({
+      ...base(),
+      [`GET /v1/projects/${P}/files`]: [
+        200,
+        { files: [file(), file({ id: "f-2", path: "deep/long.md", path_too_long: true })] },
+      ],
+    });
+    renderTeam(<ProjectDetailPage projectId={P} />, { role: "contributor" });
+    const row = await screen.findByRole("rowheader", { name: /deep\/long\.md/ });
+    expect(row.textContent).toContain("Path too long to appear in members' files");
+    expect(screen.getAllByText(/Path too long to appear/)).toHaveLength(1);
+  });
+
   it("uploads a file into a folder as multipart with the folder first", async () => {
     const calls = stubApi({
       ...base(),

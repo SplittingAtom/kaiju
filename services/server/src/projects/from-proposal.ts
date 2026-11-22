@@ -15,6 +15,7 @@ import { verifyingStream } from "../workspace-sync/object-store.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import { loadAccess } from "./access.js";
 import { heldContents, type CommitDeps } from "./commits.js";
+import { clashesInTree, fitsMount, isConflictCopy } from "./paths.js";
 import { overLimit } from "./storage.js";
 import {
   headOf,
@@ -88,25 +89,11 @@ type Deps = Pick<CommitDeps, "db" | "blobs" | "limits" | "mounts" | "log">;
 
 const MAX_ROUNDS = 3;
 
-const isConflictName = (path: string): boolean =>
-  path.slice(path.lastIndexOf("/") + 1).includes(".conflict-");
-
 /** `projects/<slug>/<rest>` -> `<rest>` (the slug may have changed since; the project id decides). */
 function relativePath(path: string): string | undefined {
   const parts = path.split("/");
   if (parts[0] !== "projects" || parts.length < 3) return undefined;
   return parts.slice(2).join("/");
-}
-
-/** A path that would be a file inside a file, or a file where a folder is. */
-export function clashesInTree(tree: Tree, rel: string): boolean {
-  const parts = rel.split("/");
-  for (let i = 1; i < parts.length; i++) {
-    if (tree.has(parts.slice(0, i).join("/"))) return true;
-  }
-  const folder = `${rel}/`;
-  for (const path of tree.keys()) if (path.startsWith(folder)) return true;
-  return false;
 }
 
 async function findProposal(
@@ -203,7 +190,7 @@ async function inspect(
   }
   if (current === undefined) {
     if (tree.size >= PROJECT_FILES_MAX) return { status: "refused", error: "too_many_files" };
-    if (isConflictName(rel) || clashesInTree(tree, rel)) {
+    if (isConflictCopy(rel) || clashesInTree(tree, rel) || !fitsMount(access.project.slug, rel)) {
       return { status: "refused", error: "invalid_path" };
     }
   }

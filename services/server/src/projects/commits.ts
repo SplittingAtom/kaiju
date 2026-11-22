@@ -1,7 +1,7 @@
 import { fireAndLog } from "../async-util.js";
 import { Transform, type TransformCallback } from "node:stream";
 import { isLegalHoldViolation, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
-import { PROJECT_FILE_MAX_BYTES, PROJECT_FILES_MAX, workspacePathSchema } from "@kobe/protocol";
+import { PROJECT_FILE_MAX_BYTES, PROJECT_FILES_MAX } from "@kobe/protocol";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import type { BlobStore } from "../retention/blobs.js";
@@ -11,8 +11,15 @@ import { verifyingStream, type ObjectStore } from "../workspace-sync/object-stor
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import { lockWorkspace } from "../workspace-sync/store.js";
 import { loadAccess, viewableBy } from "./access.js";
-import { findCheckout, folderOf, workingCopy, type CheckoutRow } from "./checkouts.js";
+import {
+  findCheckout,
+  folderOf,
+  withUnmountable,
+  workingCopy,
+  type CheckoutRow,
+} from "./checkouts.js";
 import type { ProjectMounts } from "./mounts.js";
+import { fitsMount, isConflictCopy } from "./paths.js";
 import { overLimit, type TeamLimits } from "./storage.js";
 import {
   diffHash,
@@ -135,9 +142,6 @@ export async function heldContents(
   return new Map(res.rows.map((r) => [r.sha256, { blobRef: r.blob_ref, mime: r.mime_type }]));
 }
 
-const isConflictName = (path: string): boolean =>
-  path.slice(path.lastIndexOf("/") + 1).includes(".conflict-");
-
 /** Step 1 (and again in step 3): see the module header. */
 export async function planCommit(
   tx: KobeTx,
@@ -157,8 +161,11 @@ export async function planCommit(
   if ((head?.id ?? null) !== checkout.baseCommitId && head !== null) {
     return { status: "commit_conflict", headSeq: head.seq };
   }
-  const work = await workingCopy(tx, owner, access.project.slug);
-  const changes = diffVersions(await loadTree(tx, owner.teamId, checkout.baseCommitId), work);
+  const { slug } = access.project;
+  const rows = await workingCopy(tx, owner, slug);
+  const base = await loadTree(tx, owner.teamId, checkout.baseCommitId);
+  const work = withUnmountable(rows, base, slug);
+  const changes = diffVersions(base, work);
   const hash = diffHash(changes);
   if (req.expect && (req.expect.baseSeq !== checkout.baseSeq || req.expect.diffHash !== hash)) {
     return refused("changed");
@@ -166,14 +173,14 @@ export async function planCommit(
   if (changes.length === 0) return { status: "nothing_to_commit" };
   if (work.size > PROJECT_FILES_MAX) return refused("too_many_files");
   const maxBytes = Math.min(PROJECT_FILE_MAX_BYTES, deps.limits.maxFileBytes);
-  for (const [path, file] of work) {
-    if (!workspacePathSchema.safeParse(path).success) return refused("invalid_path", { path });
+  for (const [path, file] of rows) {
+    if (!fitsMount(slug, path)) return refused("invalid_path", { path });
     if (file.size > maxBytes) return refused("file_too_large", { path });
   }
   // A conflict copy is refused only where this commit adds or changes it (an older head file with
   // such a name stays committable around).
   for (const change of changes) {
-    if (change.change !== "deleted" && isConflictName(change.path)) {
+    if (change.change !== "deleted" && isConflictCopy(change.path)) {
       return refused("conflict_file", { path: change.path });
     }
   }
@@ -205,7 +212,7 @@ export async function planCommit(
   }
   return {
     checkout,
-    slug: access.project.slug,
+    slug,
     changes,
     hash,
     files,
@@ -468,9 +475,14 @@ export async function revertTo(
       if (id === undefined) return { status: "commit_not_found" };
       const tree = await loadTree(tx, owner.teamId, id);
       const head = await headOf(tx, owner.teamId, projectId);
-      if (diffVersions(await loadTree(tx, owner.teamId, head?.id ?? null), tree).length === 0) {
-        return { status: "nothing_to_commit" };
+      const current = await loadTree(tx, owner.teamId, head?.id ?? null);
+      // KOBE-780: never bring back a path too long to mount (a row from before the rule).
+      for (const path of tree.keys()) {
+        if (!current.has(path) && !fitsMount(access.project.slug, path)) {
+          return refused("invalid_path", { path });
+        }
       }
+      if (diffVersions(current, tree).length === 0) return { status: "nothing_to_commit" };
       try {
         const written = await tx.transaction((sp) =>
           writeCommit(sp, {

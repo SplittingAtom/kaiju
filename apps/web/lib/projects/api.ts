@@ -60,6 +60,11 @@ export interface ProjectFile {
   readonly source: "upload" | "proposal";
   readonly addedBy: string;
   readonly addedAt: string;
+  /**
+   * KOBE-780: the path is too long once mounted as `projects/<slug>/<path>` (a file added before
+   * that rule), so it reaches no member's workspace until it is deleted and added again.
+   */
+  readonly pathTooLong?: true;
 }
 
 /** Add to project (KOBE-585): what the server copies from its own stored bytes. */

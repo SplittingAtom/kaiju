@@ -128,6 +128,12 @@ export function ProjectFiles({
                             Proposed by an agent, approved
                           </div>
                         )}
+                        {f.pathTooLong && (
+                          <div className="text-sm font-normal text-console-danger">
+                            Path too long to appear in members' files: delete it and add it again
+                            with a shorter folder or name.
+                          </div>
+                        )}
                       </TableRowHeader>
                       <TableCell numeric>{size(f.sizeBytes)}</TableCell>
                       <TableCell>{roster.nameOf(f.addedBy)}</TableCell>

@@ -11,7 +11,6 @@ import {
   PROJECT_FILE_MAX_BYTES,
   PROJECT_FILES_MAX,
   promotedFolderMessage,
-  workspacePathSchema,
   type PromoteFolderRequest,
 } from "@kobe/protocol";
 import type { Logger } from "pino";
@@ -26,7 +25,9 @@ import { currentEntry, listLive, lockWorkspace } from "../workspace-sync/store.j
 import type { ProjectRow } from "./access.js";
 import { copyVerified, sourceCheck, type Copy } from "./commits.js";
 import type { ProjectMounts } from "./mounts.js";
+import { fitsMount, isConflictCopy } from "./paths.js";
 import { createProject } from "./repository.js";
+import { deriveSlug } from "./slug.js";
 import { overLimit, type TeamLimits } from "./storage.js";
 import { projectBlobKey, queueProjectBlobs, writeCommit, type TreeFile } from "./tree.js";
 
@@ -97,18 +98,26 @@ const refused = (
   extra: { path?: string; limit?: "bytes" | "objects" } = {},
 ): PromoteResult => ({ status: "refused", error, ...extra });
 
-const isConflictName = (path: string): boolean =>
-  path.slice(path.lastIndexOf("/") + 1).includes(".conflict-");
+/** A path too long under the slug the project got (KOBE-780); rolls the project back. */
+class PathTooLong extends Error {
+  constructor(readonly path: string) {
+    super("path too long once mounted");
+  }
+}
 
 const sumSizes = (copies: readonly Copy[]): number => copies.reduce((n, c) => n + c.size, 0);
 
-/** Step 1 (and again in step 3). */
+/**
+ * Step 1 (and again in step 3). `slug` is the one the name derives (KOBE-780: every path must fit
+ * once mounted under it); the write step checks again under the slug the project really gets.
+ */
 async function plan(
   tx: KobeTx,
   deps: Pick<PromoteDeps, "limits"> & { readonly prefix: string },
   owner: WorkspaceOwner,
   folder: string,
   projectId: string,
+  slug: string,
 ): Promise<Plan | PromoteResult> {
   if (isInternalPath(folder)) return refused("not_found");
   if (areaOf(folder) !== "workspace") return refused("outside_my_files");
@@ -121,11 +130,11 @@ async function plan(
   const maxBytes = Math.min(PROJECT_FILE_MAX_BYTES, deps.limits.maxFileBytes);
   for (const e of live) {
     const rel = e.path.slice(folder.length + 1);
-    if (!workspacePathSchema.safeParse(rel).success || isInternalPath(rel)) {
+    if (!fitsMount(slug, rel) || isInternalPath(rel)) {
       return refused("invalid_path", { path: rel });
     }
     if (e.size > maxBytes) return refused("file_too_large", { path: rel });
-    if (isConflictName(rel)) return refused("conflict_file", { path: rel });
+    if (isConflictCopy(rel)) return refused("conflict_file", { path: rel });
   }
   const allowed = await sourceCheck(
     tx,
@@ -174,7 +183,7 @@ export async function promoteFolder(
   const mimes = new Map<string, string>();
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const planned = await withTeam(deps.db, owner.teamId, (tx) =>
-      plan(tx, planDeps, owner, request.path, projectId),
+      plan(tx, planDeps, owner, request.path, projectId, deriveSlug(request.name)),
     );
     if ("status" in planned) return planned;
     const missing = planned.copies.filter((c) => !mimes.has(c.sha256));
@@ -229,7 +238,14 @@ async function writeStep(
     // The Delete's own locks (legal hold, then the workspace), then the plan again.
     await lockLegalHolds(tx);
     await lockWorkspace(tx, owner);
-    const again = await plan(tx, { limits: deps.limits, prefix }, owner, request.path, projectId);
+    const again = await plan(
+      tx,
+      { limits: deps.limits, prefix },
+      owner,
+      request.path,
+      projectId,
+      deriveSlug(request.name),
+    );
     if ("status" in again) return again;
     if (again.fingerprint !== planned.fingerprint) return "again";
     if (again.copies.some((c) => !mimes.has(c.sha256))) return "again";
@@ -250,6 +266,10 @@ async function writeStep(
       return await tx.transaction(async (sp): Promise<PromoteResult> => {
         const created = await createProject(sp, owner, { name: request.name }, { id: projectId });
         if (!created.ok) return refused("slug_taken");
+        // A taken slug gets a suffix (`-2` ...): every path must fit under the slug it got.
+        const slug = created.value.row.slug;
+        const tooLong = [...tree.keys()].find((path) => !fitsMount(slug, path));
+        if (tooLong !== undefined) throw new PathTooLong(tooLong);
         await writeCommit(sp, {
           teamId: owner.teamId,
           projectId,
@@ -263,6 +283,7 @@ async function writeStep(
       });
     } catch (err) {
       if (isLegalHoldViolation(err)) return refused("legal_hold");
+      if (err instanceof PathTooLong) return refused("invalid_path", { path: err.path });
       throw err;
     }
   });

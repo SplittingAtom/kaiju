@@ -240,6 +240,12 @@ export const projectFileSchema = z.strictObject({
   source: z.enum(["upload", "proposal"]),
   added_by: uuidSchema,
   added_at: timestampSchema,
+  /**
+   * KOBE-780: set (listing only) when `projects/<slug>/<path>` is over the 1024-byte workspace
+   * path limit, a file added before that rule: it reaches no member's workspace. Delete it and add
+   * it again with a shorter folder or name.
+   */
+  path_too_long: z.literal(true).optional(),
 });
 export type ProjectFile = z.infer<typeof projectFileSchema>;
 

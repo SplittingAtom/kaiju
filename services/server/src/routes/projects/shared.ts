@@ -49,7 +49,17 @@ export function failure(c: Context, error: ProjectFailure, detail?: string) {
 
 export const FILE_ERRORS = {
   invalid_path: [422, "invalid_input", "That is not a valid file name or folder."],
+  path_too_long: [
+    422,
+    "invalid_input",
+    "That path is too long once it is in the project folder (projects/<slug>/…): use a shorter folder or name.",
+  ],
   already_exists: [409, "already_exists", "The project already has a file with that name."],
+  path_clash: [
+    409,
+    "already_exists",
+    "A file and a folder of the project would have the same name: pick another folder or name.",
+  ],
   file_too_large: [413, "file_too_large", "That file is larger than a project file may be."],
   quota_exceeded: [507, "quota_exceeded", "Your team has no storage left for this file."],
   object_budget: [

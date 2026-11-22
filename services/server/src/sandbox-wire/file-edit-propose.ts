@@ -13,7 +13,7 @@ import { type FileEditProposeFrame, type ServerToSandboxFrame } from "@kobe/prot
 import type { Logger } from "pino";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { loadAccess } from "../projects/access.js";
-import { clashesInTree } from "../projects/from-proposal.js";
+import { clashesInTree, isConflictCopy } from "../projects/paths.js";
 import { headOf, loadTree } from "../projects/tree.js";
 import { pathIsTaken } from "../workspace-files/browse.js";
 import { ancestorsOf, areaOf, isInternalPath, isReadOnlyPath } from "../workspace-files/paths.js";
@@ -238,7 +238,7 @@ async function projectBase(
     }
     return { ...base, base_sha256: current.sha256 };
   }
-  if (rel.slice(rel.lastIndexOf("/") + 1).includes(".conflict-") || clashesInTree(tree, rel)) {
+  if (isConflictCopy(rel) || clashesInTree(tree, rel)) {
     return refused("invalid_path", "A project can't take a file with that name there.");
   }
   if (tree.size >= PROJECT_FILES_MAX) {

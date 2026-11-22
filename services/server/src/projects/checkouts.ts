@@ -11,6 +11,7 @@ import { currentEntry, listLive, lockWorkspace } from "../workspace-sync/store.j
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import type { ProjectMounts } from "./mounts.js";
 import type { ProjectRow } from "./access.js";
+import { fitsMount } from "./paths.js";
 import {
   diffVersions,
   headOf,
@@ -77,6 +78,31 @@ export async function workingCopy(
       executable: r.executable,
       blobKey: r.blobKey,
       origin: r.origin,
+    });
+  }
+  return out;
+}
+
+/**
+ * The working copy as a commit and its diff see it: the member's rows plus each base file that
+ * could not be written into the folder because its mounted path is too long (a row from before
+ * KOBE-780). Such a file stays in the project as it is until someone deletes it; a commit never
+ * drops it because the member could not hold it.
+ */
+export function withUnmountable(
+  work: ReadonlyMap<string, WorkingFile>,
+  base: Tree,
+  slug: string,
+): Map<string, WorkingFile> {
+  const out = new Map(work);
+  for (const [path, file] of base) {
+    if (out.has(path) || fitsMount(slug, path)) continue;
+    out.set(path, {
+      sha256: file.sha256,
+      size: file.size,
+      executable: file.executable,
+      blobKey: file.blobRef,
+      origin: "server",
     });
   }
   return out;
@@ -208,6 +234,8 @@ async function writeTreeInto(
   for (const [path, file] of tree) {
     const have = work.get(path);
     if (have?.blobKey === file.blobRef && have.executable === file.executable) continue;
+    // Too long to write (KOBE-780): left out, and kept in the project by `withUnmountable`.
+    if (!fitsMount(slug, path)) continue;
     await putHead(tx, writer, owner, `${dir}${path}`, file);
   }
   for (const path of work.keys()) {
@@ -264,7 +292,7 @@ export async function workingChanges(
   baseCommitId: string | null,
 ): Promise<Change[]> {
   const base = await loadTree(tx, owner.teamId, baseCommitId);
-  return diffVersions(base, await workingCopy(tx, owner, slug));
+  return diffVersions(base, withUnmountable(await workingCopy(tx, owner, slug), base, slug));
 }
 
 /** `GET /v1/projects/:id/checkout`: the caller's checkout and its diff, or undefined. */
@@ -365,6 +393,8 @@ export async function update(
   const dir = folderOf(project.slug);
   const conflicts: string[] = [];
   for (const change of diffVersions(base, theirs)) {
+    // A path too long to mount (KOBE-780) is never in the folder: nothing to bring in.
+    if (!fitsMount(project.slug, change.path)) continue;
     const mine = work.get(change.path);
     const target = theirs.get(change.path);
     if (sameVersion(mine, target)) continue;

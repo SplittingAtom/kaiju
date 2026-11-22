@@ -3,7 +3,6 @@ import { pipeline, type Readable } from "node:stream";
 import {
   and,
   asc,
-  count,
   eq,
   projectFiles,
   projects,
@@ -24,6 +23,7 @@ import type { BlobStore } from "../retention/blobs.js";
 import { resolveMime, SNIFF_BYTES } from "../uploads/mime.js";
 import { UploadMeter, UploadTooLargeError } from "../uploads/meter.js";
 import { lockTeamStorage } from "../uploads/quota.js";
+import { clashesInTree, fitsMount } from "./paths.js";
 import { DEFAULT_TEAM_MAX_OBJECTS, overLimit } from "./storage.js";
 import { commitFiles, queueProjectBlobs } from "./tree.js";
 
@@ -38,7 +38,9 @@ import { commitFiles, queueProjectBlobs } from "./tree.js";
  */
 export type ProjectFileFailure =
   | "invalid_path"
+  | "path_too_long"
   | "already_exists"
+  | "path_clash"
   | "file_too_large"
   | "quota_exceeded"
   | "object_budget"
@@ -86,17 +88,23 @@ export const toProjectFile = (row: Row): ProjectFile => ({
   added_at: row.addedAt.toISOString(),
 });
 
+/**
+ * The head files; a file whose path is too long once mounted (a row from before KOBE-780) is
+ * marked `path_too_long`: it reaches no workspace until someone deletes it and adds it again.
+ */
 export async function listProjectFiles(
   tx: KobeTx,
-  teamId: string,
-  projectId: string,
+  project: { readonly teamId: string; readonly id: string; readonly slug: string },
 ): Promise<ProjectFile[]> {
   const rows = await tx
     .select()
     .from(projectFiles)
-    .where(and(eq(projectFiles.teamId, teamId), eq(projectFiles.projectId, projectId)))
+    .where(and(eq(projectFiles.teamId, project.teamId), eq(projectFiles.projectId, project.id)))
     .orderBy(asc(projectFiles.path));
-  return rows.map(toProjectFile);
+  return rows.map((row) => {
+    const file = toProjectFile(row);
+    return fitsMount(project.slug, row.path) ? file : { ...file, path_too_long: true as const };
+  });
 }
 
 /** `folder/name` inside the project, or undefined when it is not a valid workspace path. */
@@ -167,7 +175,8 @@ class Refused extends Error {
 
 /**
  * Checks and inserts the row in `tx` (the caller's transaction, project row already locked):
- * archived, file count, name taken, team storage quota. Throws {@link Refused}.
+ * archived, the path once mounted (KOBE-780), file count, name taken, a file inside a file, team
+ * storage quota. Throws {@link Refused}.
  */
 export async function insertProjectFile(
   tx: KobeTx,
@@ -186,28 +195,25 @@ export async function insertProjectFile(
 ): Promise<ProjectFile> {
   const { teamId, projectId, userId } = target;
   const [project] = await tx
-    .select({ archivedAt: projects.archivedAt })
+    .select({ archivedAt: projects.archivedAt, slug: projects.slug })
     .from(projects)
     .where(and(eq(projects.teamId, teamId), eq(projects.id, projectId)))
     .for("update");
   if (!project) throw new Refused("storage_failed");
   if (project.archivedAt !== null) throw new Refused("archived");
-  const [held] = await tx
-    .select({ n: count() })
-    .from(projectFiles)
-    .where(and(eq(projectFiles.teamId, teamId), eq(projectFiles.projectId, projectId)));
-  if ((held?.n ?? 0) >= PROJECT_FILES_MAX) throw new Refused("project_full");
-  const [taken] = await tx
-    .select({ id: projectFiles.id })
-    .from(projectFiles)
-    .where(
-      and(
-        eq(projectFiles.teamId, teamId),
-        eq(projectFiles.projectId, projectId),
-        eq(projectFiles.path, file.path),
-      ),
-    );
-  if (taken) throw new Refused("already_exists");
+  if (!fitsMount(project.slug, file.path)) throw new Refused("path_too_long");
+  const held = new Set(
+    (
+      await tx
+        .select({ path: projectFiles.path })
+        .from(projectFiles)
+        .where(and(eq(projectFiles.teamId, teamId), eq(projectFiles.projectId, projectId)))
+    ).map((r) => r.path),
+  );
+  if (held.size >= PROJECT_FILES_MAX) throw new Refused("project_full");
+  if (held.has(file.path)) throw new Refused("already_exists");
+  // P2-9: the head tree never holds a file inside a file (mounts and checkouts could not write it).
+  if (clashesInTree(held, file.path)) throw new Refused("path_clash");
   await lockTeamStorage(tx, teamId);
   const over = await overLimit(
     tx,
@@ -296,6 +302,8 @@ async function headOf(blobs: BlobStore, key: string): Promise<Uint8Array> {
 export interface IncomingProjectFile {
   readonly folder: string | undefined;
   readonly name: string;
+  /** The project's slug, to refuse a path too long once mounted before any byte is stored. */
+  readonly slug?: string | undefined;
   readonly declaredMime: string;
   readonly body: Readable;
   /** Set by Add to project (KOBE-585); the file is still `source: "upload"`. */
@@ -311,7 +319,16 @@ export async function uploadProjectFile(
   const blobs = deps.blobs;
   if (!blobs) return { ok: false, error: "storage_failed" };
   const path = projectFilePath(incoming.folder, incoming.name);
-  if (path === undefined) return { ok: false, error: "invalid_path" };
+  const refusal =
+    path === undefined
+      ? "invalid_path"
+      : incoming.slug !== undefined && !fitsMount(incoming.slug, path)
+        ? "path_too_long"
+        : undefined;
+  if (path === undefined || refusal !== undefined) {
+    incoming.body.destroy();
+    return { ok: false, error: refusal ?? "invalid_path" };
+  }
   const limit = Math.min(PROJECT_FILE_MAX_BYTES, deps.maxFileBytes);
   const staging = stagingKey(blobs, target.teamId, target.projectId);
   const id = randomUUID();
