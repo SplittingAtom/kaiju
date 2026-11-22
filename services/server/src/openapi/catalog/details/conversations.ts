@@ -11,6 +11,8 @@ import {
   learnStateSchema,
   listSchedulesQuerySchema,
   listSchedulesResponseSchema,
+  notebookCompletionBodySchema,
+  notebookCompletionResultSchema,
   notebookKernelResponseSchema,
   notebookRunBodySchema,
   notebookRunResponseSchema,
@@ -127,6 +129,20 @@ export const threadsDetails: Readonly<Record<string, CatalogDetail>> = {
     response: named("LearnStartResponse", learnStartResponseSchema),
     responseDescription: "The pass started; a refusal answers with its code and status.",
     errors: ["402", "404", "409", "429"],
+  },
+  "post /v1/threads/{id}/notebook/complete": {
+    body: named("NotebookCompletionBody", notebookCompletionBodySchema),
+    response: named("NotebookCompletionResult", notebookCompletionResultSchema),
+    responseDescription:
+      "The code editor's kernel completion (KOBE-808). `op: complete`: the matches at `cursor` " +
+      "(code points into `code`) and the span they replace; `op: doc`: the signature and " +
+      "docstring of a dotted name. Neither runs the member's code (IPython's completer with " +
+      "jedi off and limited evaluation; names resolved without property getters or reprs). It " +
+      "never wakes the sandbox or starts a kernel, and never waits for running code: `asleep`, " +
+      "`no_kernel`, `busy`, `unsupported` (an older sandbox agent) and `unavailable` (no answer " +
+      "within about a second) are answers too. Nothing is stored. Matches and docs are " +
+      "untrusted: show them as plain text.",
+    errors: ["404", "409", "429", "503"],
   },
   "post /v1/threads/{id}/notebook/interrupt": {
     body: null,

@@ -14020,6 +14020,77 @@
         }
       }
     },
+    "/v1/threads/{id}/notebook/complete": {
+      "post": {
+        "operationId": "postThreadsByIdNotebookComplete",
+        "summary": "Complete code or read a name's documentation from the kernel",
+        "description": "Owner only. Never wakes the sandbox; 600 per minute per member.",
+        "tags": ["Threads"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": true,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotebookCompletionBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The code editor's kernel completion (KOBE-808). `op: complete`: the matches at `cursor` (code points into `code`) and the span they replace; `op: doc`: the signature and docstring of a dotted name. Neither runs the member's code (IPython's completer with jedi off and limited evaluation; names resolved without property getters or reprs). It never wakes the sandbox or starts a kernel, and never waits for running code: `asleep`, `no_kernel`, `busy`, `unsupported` (an older sandbox agent) and `unavailable` (no answer within about a second) are answers too. Nothing is stored. Matches and docs are untrusted: show them as plain text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotebookCompletionResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        }
+      }
+    },
     "/v1/threads/{id}/notebook/interrupt": {
       "post": {
         "operationId": "postThreadsByIdNotebookInterrupt",
@@ -52244,6 +52315,137 @@
         },
         "required": ["pass_id", "run_id", "model_alias", "mode", "input"],
         "additionalProperties": false
+      },
+      "NotebookCompletionBody": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "const": "complete"
+              },
+              "code": {
+                "type": "string"
+              },
+              "cursor": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["op", "code", "cursor"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "const": "doc"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*){0,15}$"
+              }
+            },
+            "required": ["op", "name"],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "NotebookCompletionResult": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "const": "ok"
+              },
+              "op": {
+                "type": "string",
+                "const": "complete"
+              },
+              "matches": {
+                "maxItems": 100,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "type": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 32
+                    }
+                  },
+                  "required": ["text"],
+                  "additionalProperties": false
+                }
+              },
+              "cursor_start": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "cursor_end": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["status", "op", "matches", "cursor_start", "cursor_end"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "const": "ok"
+              },
+              "op": {
+                "type": "string",
+                "const": "doc"
+              },
+              "found": {
+                "type": "boolean"
+              },
+              "signature": {
+                "type": "string",
+                "maxLength": 1000
+              },
+              "doc": {
+                "type": "string",
+                "maxLength": 8000
+              },
+              "type": {
+                "type": "string",
+                "maxLength": 256
+              }
+            },
+            "required": ["status", "op", "found"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["busy", "no_kernel", "unavailable", "asleep", "unsupported"]
+              }
+            },
+            "required": ["status"],
+            "additionalProperties": false
+          }
+        ]
       },
       "NotebookKernelResponse": {
         "type": "object",

@@ -273,6 +273,23 @@ export class CommandRouter implements SandboxRouter {
     );
   }
 
+  notebookComplete(
+    target: SandboxTarget,
+    request: Parameters<SandboxRouter["notebookComplete"]>[1],
+    options?: SendOptions,
+  ) {
+    const { threadId, timeoutMs, ...asked } = request;
+    // KOBE-808: never woken for it, like a variables snapshot.
+    return this.#send(
+      target,
+      "notebook.inspect",
+      threadId,
+      undefined,
+      { ...options, wake: false },
+      { thread_id: threadId, timeout_ms: timeoutMs, ...asked },
+    );
+  }
+
   wake(target: SandboxTarget): Promise<void> {
     return this.#waker.wake(target);
   }

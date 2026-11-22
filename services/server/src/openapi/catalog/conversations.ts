@@ -86,6 +86,12 @@ export const conversationsAreas: readonly CatalogArea[] = [
       ],
       [
         "post",
+        "/v1/threads/{id}/notebook/complete",
+        "Complete code or read a name's documentation from the kernel",
+        "Owner only. Never wakes the sandbox; 600 per minute per member.",
+      ],
+      [
+        "post",
         "/v1/threads/{id}/notebook/interrupt",
         "Interrupt the conversation's notebook kernel",
         "Owner only.",

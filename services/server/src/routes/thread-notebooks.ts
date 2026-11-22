@@ -1,5 +1,9 @@
 import { Hono, type Context } from "hono";
-import { notebookRunBodySchema, notebookVariablesBodySchema } from "@kobe/protocol";
+import {
+  notebookCompletionBodySchema,
+  notebookRunBodySchema,
+  notebookVariablesBodySchema,
+} from "@kobe/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { NOTEBOOK_ERROR_STATUS, NotebookRunError } from "../notebooks/user-run.js";
@@ -21,6 +25,9 @@ type Ctx = Context<{ Variables: TeamVariables }>;
  * - `POST /v1/threads/{id}/notebook/variables` {refresh?} (KOBE-803): 200 a snapshot of the
  *   kernel's variables (`stale` when kept from before code that ran since), or {status: "busy" |
  *   "no_kernel" | "unavailable"}; never wakes the sandbox, stores nothing.
+ * - `POST /v1/threads/{id}/notebook/complete` {op: "complete", code, cursor} | {op: "doc", name}
+ *   (KOBE-808): 200 the kernel's completions or a name's documentation, or {status: "busy" |
+ *   "no_kernel" | "asleep" | "unsupported" | "unavailable"}; never wakes the sandbox, stores nothing.
  * The thread's owner only (the kernel is in their sandbox); a shared reader is 403 `read_only`,
  * another member's or team's thread 404. Eval threads are refused like every other write.
  */
@@ -61,6 +68,21 @@ export function threadNotebookRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
     const refresh = body.data.refresh === true;
     return answer(c, async () =>
       c.json(await deps.runs.notebookVariables(actorOf(c), id.data, refresh)),
+    );
+  });
+
+  // KOBE-808: the code editor's kernel completion; never waking the sandbox, rate limited.
+  app.post("/:id/notebook/complete", async (c) => {
+    const id = param(c, "id", uuidSchema);
+    const body = await parseBody(c, notebookCompletionBodySchema);
+    if (!id.success || !body) {
+      return invalidRequest(
+        c,
+        'Send {"op": "complete", "code", "cursor"} or {"op": "doc", "name"} for a conversation.',
+      );
+    }
+    return answer(c, async () =>
+      c.json(await deps.runs.notebookComplete(actorOf(c), id.data, body)),
     );
   });
 

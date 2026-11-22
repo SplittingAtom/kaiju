@@ -113,6 +113,7 @@ export const COMMAND_FAILURES = {
   kernelStartUnsupported: "kernel_start_unsupported", // notebook.restart op start, no notebook_start
   inspectUnsupported: "inspect_unsupported", // notebook.inspect, no notebook_inspect (KOBE-803)
   notConnected: "sandbox_not_connected", // a command that never wakes the sandbox (KOBE-803)
+  completeUnsupported: "complete_unsupported", // notebook.inspect op, no notebook_complete (KOBE-808)
 } as const;
 
 export interface RunStartRequest {
@@ -321,6 +322,20 @@ export interface SandboxRouter {
   notebookInspect(
     target: SandboxTarget,
     request: { readonly threadId: string; readonly timeoutMs: number; readonly refresh?: boolean },
+    options?: SendOptions,
+  ): Promise<CommandOutcome>;
+  /**
+   * KOBE-808: kernel completion (`op: "complete"`, code and a cursor) or a name's documentation
+   * (`op: "doc"`) as a `notebook.inspect` (`data` untrusted: a `notebookCompletionResultSchema` to
+   * validate). Only to agents with `notebook_complete` (else `complete_unsupported`); never wakes
+   * the sandbox.
+   */
+  notebookComplete(
+    target: SandboxTarget,
+    request: { readonly threadId: string; readonly timeoutMs: number } & (
+      | { readonly op: "complete"; readonly code: string; readonly cursor: number }
+      | { readonly op: "doc"; readonly name: string }
+    ),
     options?: SendOptions,
   ): Promise<CommandOutcome>;
   /**
