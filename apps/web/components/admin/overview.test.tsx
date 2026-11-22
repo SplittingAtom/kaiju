@@ -17,6 +17,7 @@ afterEach(() => {
 
 describe("console overview", () => {
   it("lists the site sections with what each is for, none a placeholder (KOBE-606)", () => {
+    stubApi({});
     renderSite(<ConsoleOverview kind="site" />);
     expect(screen.getByRole("heading", { level: 1, name: "Site console" })).toBeTruthy();
     const people = screen.getByRole("region", { name: "People" });
@@ -41,6 +42,47 @@ describe("console overview", () => {
     expect(screen.getByRole("link", { name: "Team agents" }).getAttribute("href")).toBe(
       "/agents?tab=team",
     );
+  });
+});
+
+describe("site health notices (KOBE-811)", () => {
+  const HEALTH = "GET /v1/site/health";
+  const DOCS = "docs/install.md#rate-limit-at-the-ingress-optional";
+  const health = (check: Record<string, unknown>) =>
+    [200, { checks: [{ id: "ingress_rate_limit", ...check }] }] as const;
+
+  it("says when no rate limit is configured at the ingress, as information with a pointer", async () => {
+    stubApi({ [HEALTH]: health({ level: "info", state: "none", docs: DOCS }) });
+    renderSite(<ConsoleOverview kind="site" />);
+    const notice = await screen.findByRole("status", { name: /No rate limit at the ingress/ });
+    expect(notice.textContent).toMatch(/one address/);
+    expect(notice.textContent).toMatch(/Rate limit at the ingress/);
+    const link = within(notice).getByRole("link", { name: /Site admin overview/ });
+    expect(link.getAttribute("href")).toBe("/docs/admin/site-admin#ingress-rate-limit");
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("says when Kobe cannot tell, and how to declare an edge limit", async () => {
+    stubApi({ [HEALTH]: health({ level: "info", state: "unknown", docs: DOCS }) });
+    renderSite(<ConsoleOverview kind="site" />);
+    const notice = await screen.findByRole("status", { name: /Ingress rate limit unknown/ });
+    expect(notice.textContent).toMatch(/ingress\.rateLimit\.external/);
+  });
+
+  it("shows nothing when a limit is configured", async () => {
+    const calls = stubApi({
+      [HEALTH]: health({ level: "ok", state: "configured", source: "chart" }),
+    });
+    renderSite(<ConsoleOverview kind="site" />);
+    await waitFor(() => expect(calls.some((c) => c.url === "/v1/site/health")).toBe(true));
+    expect(screen.queryByRole("status", { name: /rate limit/i })).toBeNull();
+  });
+
+  it("is not asked for by a user who is not a site admin", async () => {
+    const calls = stubApi({});
+    renderSite(<ConsoleOverview kind="site" />, "user", ["memory_steward"]);
+    await screen.findByRole("heading", { level: 1, name: "Site console" });
+    expect(calls.some((c) => c.url === "/v1/site/health")).toBe(false);
   });
 });
 

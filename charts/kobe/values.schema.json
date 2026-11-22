@@ -1478,6 +1478,53 @@
               "type": "boolean"
             }
           }
+        },
+        "rateLimit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enabled", "average", "burst", "period", "streams", "ipStrategy"],
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "assumeTraefikV3": { "type": "boolean" },
+            "external": { "type": "boolean" },
+            "average": { "type": "integer", "minimum": 1 },
+            "burst": { "type": "integer", "minimum": 1 },
+            "period": { "type": "string", "pattern": "^[1-9][0-9]*(ms|s|m|h)$" },
+            "streams": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["enabled", "average", "burst", "period"],
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "average": { "type": "integer", "minimum": 1 },
+                "burst": { "type": "integer", "minimum": 1 },
+                "period": { "type": "string", "pattern": "^[1-9][0-9]*(ms|s|m|h)$" }
+              }
+            },
+            "ipStrategy": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "depth": { "type": "integer", "minimum": 0 },
+                "excludedIPs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "An IPv4 or IPv6 address or CIDR (a typo would make Traefik reject the middleware and take every route down)",
+                    "anyOf": [
+                      {
+                        "pattern": "^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(/(3[0-2]|[12]?[0-9]))?$"
+                      },
+                      {
+                        "pattern": "^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(([0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4})?::(([0-9a-fA-F]{1,4}:){0,6}[0-9a-fA-F]{1,4})?)(/(12[0-8]|1[01][0-9]|[1-9]?[0-9]))?$"
+                      }
+                    ]
+                  }
+                },
+                "excludeTrustedProxies": { "type": "boolean" }
+              }
+            }
+          }
         }
       },
       "if": {

@@ -31144,6 +31144,35 @@
         }
       }
     },
+    "/v1/site/health": {
+      "get": {
+        "operationId": "getSiteHealth",
+        "summary": "Show install checks for the Site console",
+        "description": "Site admins (`site.settings.manage`).",
+        "tags": ["Site: people"],
+        "responses": {
+          "200": {
+            "description": "Install checks. `info` is a notice, not an error: `ingress_rate_limit` is `none` when the chart's Ingress has no per-client rate limit, `unknown` when Kobe's Ingress is not managed by the chart and no edge limit was declared.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteHealth"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
     "/v1/site/audit": {
       "get": {
         "operationId": "getSiteAudit",
@@ -76523,6 +76552,63 @@
             "required": ["state", "agentsEnabled", "message", "checkedAt", "docs"]
           }
         ],
+        "x-kobe-untyped": true
+      },
+      "SiteHealth": {
+        "type": "object",
+        "properties": {
+          "checks": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "enum": ["ingress_rate_limit"]
+                    },
+                    "level": {
+                      "type": "string",
+                      "enum": ["ok"]
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": ["configured"]
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": ["chart", "external"]
+                    }
+                  },
+                  "required": ["id", "level", "state", "source"]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "enum": ["ingress_rate_limit"]
+                    },
+                    "level": {
+                      "type": "string",
+                      "enum": ["info"]
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": ["none", "unknown"]
+                    },
+                    "docs": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "level", "state", "docs"]
+                }
+              ]
+            }
+          }
+        },
+        "required": ["checks"],
         "x-kobe-untyped": true
       },
       "SiteAuditPage": {

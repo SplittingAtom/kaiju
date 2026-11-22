@@ -196,6 +196,7 @@ export const sitePeopleAreas: readonly CatalogArea[] = [
       ],
       ["get", "/v1/site/isolation", "Show the sandbox isolation status", SETTINGS],
       ["post", "/v1/site/isolation/check", "Re-run the sandbox isolation check", SETTINGS],
+      ["get", "/v1/site/health", "Show install checks for the Site console", SETTINGS],
     ],
   },
   {

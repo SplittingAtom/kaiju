@@ -399,6 +399,7 @@ export async function startServer(
   const app: AppOptions = {
     isolation: isolation.gate,
     hstsIncludeSubDomains: config.auth?.hstsIncludeSubDomains ?? false,
+    ingressRateLimit: config.auth?.ingressRateLimit ?? "unknown",
     ...(skills.evalRunner ? { evals: skills.evalRunner } : {}),
     ...(skills.externalScan ? { externalScan: skills.externalScan } : {}),
     ...(skills.skillMirror ? { skillMirror: skills.skillMirror } : {}),

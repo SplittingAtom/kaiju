@@ -195,6 +195,8 @@ max_connections. An estimate: rollout surge pods, the migrate Job and `kobe back
 - name: KOBE_PUBLIC_URL
   value: {{ include "kobe.publicUrl" . | quote }}
 {{ include "kobe.hstsEnv" . }}
+- name: KOBE_INGRESS_RATE_LIMIT
+  value: {{ include "kobe.ingress.rateLimitSource" . | quote }}
 - name: KOBE_AUTH_SECRET
   valueFrom:
     secretKeyRef:

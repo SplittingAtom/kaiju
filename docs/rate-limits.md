@@ -230,23 +230,40 @@ SSO discovery tests and Site invitations are under
 
 ## Chart and ingress
 
-The chart defines no Traefik `Middleware` (no `rateLimit` or `inFlightReq`) and no ingress
-rate-limit annotations (`charts/kobe/templates/ingress.yaml`, `ingress.annotations: {}`). There
-is no edge rate limit. The Helm values that tune limits are:
+The chart can add a per-client-address limit at the ingress, off by default:
+`ingress.rateLimit.enabled: true` renders a Traefik `Middleware` (`traefik.io/v1alpha1`) with
+`average` requests per `period` and `burst` (defaults 100 per 1s, burst 300) and attaches it to
+every route of the Kobe Ingress. Event streams (`/v1/runs/<id>/events`, `/v1/workspace/events`,
+`/v1/workspace/changes`, `/v1/skill-evals/<id>/events`) go through a second Ingress with a
+separate budget (`ingress.rateLimit.streams`, defaults 60 per 1m, burst 120; `enabled: false`
+leaves them unlimited), so stream reconnects do not spend the page budget; open streams are never
+cut. The sandbox WebSocket and the MCP proxy's routes never pass the ingress. Over the limit
+Traefik answers 429 before the request reaches Kobe; the application limits above still apply
+behind it. It needs Traefik v3 (k3s 1.32 or later; the chart refuses older clusters unless
+`assumeTraefikV3: true`). **Before enabling on k3s**, set the Traefik Service to
+`externalTrafficPolicy: Local`: with the default `Cluster`, ServiceLB hides client addresses and
+every user shares one budget per node. Leave `ingress.rateLimit.ipStrategy` empty unless an L7
+proxy in front of Traefik always adds a trusted `X-Forwarded-For`; with it set and no usable
+address, the whole Site shares one budget. While no limit is configured the Site console shows
+Site admins an information notice; `ingress.rateLimit.external: true` declares an edge limit of
+your own and hides it. See [Rate limit at the ingress](install.md#rate-limit-at-the-ingress-optional).
+The Helm values that tune limits are:
 
-| Helm value                                                        | Default                 | Sets                                                                        | Source                                   |
-| ----------------------------------------------------------------- | ----------------------- | --------------------------------------------------------------------------- | ---------------------------------------- |
-| `mcpProxy.limits.callsPerSandbox` / `concurrentCalls`             | 8 / 256                 | `KOBE_MCP_CALLS_PER_SANDBOX` / `KOBE_MCP_MAX_CONCURRENT_CALLS`              | `charts/kobe/values.yaml:419`            |
-| `mcpProxy.limits.requestBurst` / `requestsPerSecond`              | 60 / 10                 | `KOBE_MCP_REQUEST_BURST` / `KOBE_MCP_REQUESTS_PER_SECOND`                   | `charts/kobe/values.yaml:422`            |
-| `egressProxy.limits.connectionsPerSandbox` / `connections`        | 64 / 4096               | `KOBE_EGRESS_MAX_CONNECTIONS_PER_SANDBOX` / `KOBE_EGRESS_MAX_CONNECTIONS`   | `charts/kobe/values.yaml:504`            |
-| `egressProxy.limits.bandwidthBytesPerSecond`                      | 20971520                | `KOBE_EGRESS_BANDWIDTH_BYTES_PER_SECOND`                                    | `charts/kobe/values.yaml:507`            |
-| `egressProxy.limits.unauthenticatedPerSource` / `unauthenticated` | 16 / 1024               | `KOBE_EGRESS_PREAUTH_PER_SOURCE` / `KOBE_EGRESS_PREAUTH_TOTAL`              | `charts/kobe/values.yaml:513`            |
-| `modelGateway.limits.inflightBytes` / `inflightBytesPerSandbox`   | 134217728 / 33554432    | `KOBE_MODEL_GATEWAY_INFLIGHT_BYTES` / `..._PER_SANDBOX`                     | `charts/kobe/values.yaml:548`            |
-| `modelGateway.limits.callsPerSandbox` / `calls`                   | 16 / 1024               | `KOBE_MODEL_GATEWAY_MAX_CALLS_PER_SANDBOX` / `KOBE_MODEL_GATEWAY_MAX_CALLS` | `charts/kobe/values.yaml:551`            |
-| `modelGateway.limits.requestBurst` / `requestsPerSecond`          | 60 / 10                 | `KOBE_MODEL_GATEWAY_RATE_BURST` / `KOBE_MODEL_GATEWAY_RATE_PER_SECOND`      | `charts/kobe/values.yaml:554`            |
-| `sandbox.skillEval.maxConcurrentPerTeam`                          | 4                       | concurrent eval sandboxes per Workspace                                     | `charts/kobe/values.yaml:123`            |
-| `sandbox.teamQuota`                                               | 50 pods, 20 CPU, 40Gi … | Kubernetes ResourceQuota per Workspace                                      | `charts/kobe/values.yaml:50`             |
-| `auth.trustedProxies`                                             | k3s pod CIDR            | `KOBE_TRUSTED_PROXIES` (client IP for IP-keyed limits)                      | `charts/kobe/templates/_helpers.tpl:209` |
+| Helm value                                                        | Default                 | Sets                                                                              | Source                                   |
+| ----------------------------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------- | ---------------------------------------- |
+| `mcpProxy.limits.callsPerSandbox` / `concurrentCalls`             | 8 / 256                 | `KOBE_MCP_CALLS_PER_SANDBOX` / `KOBE_MCP_MAX_CONCURRENT_CALLS`                    | `charts/kobe/values.yaml:419`            |
+| `mcpProxy.limits.requestBurst` / `requestsPerSecond`              | 60 / 10                 | `KOBE_MCP_REQUEST_BURST` / `KOBE_MCP_REQUESTS_PER_SECOND`                         | `charts/kobe/values.yaml:422`            |
+| `egressProxy.limits.connectionsPerSandbox` / `connections`        | 64 / 4096               | `KOBE_EGRESS_MAX_CONNECTIONS_PER_SANDBOX` / `KOBE_EGRESS_MAX_CONNECTIONS`         | `charts/kobe/values.yaml:504`            |
+| `egressProxy.limits.bandwidthBytesPerSecond`                      | 20971520                | `KOBE_EGRESS_BANDWIDTH_BYTES_PER_SECOND`                                          | `charts/kobe/values.yaml:507`            |
+| `egressProxy.limits.unauthenticatedPerSource` / `unauthenticated` | 16 / 1024               | `KOBE_EGRESS_PREAUTH_PER_SOURCE` / `KOBE_EGRESS_PREAUTH_TOTAL`                    | `charts/kobe/values.yaml:513`            |
+| `modelGateway.limits.inflightBytes` / `inflightBytesPerSandbox`   | 134217728 / 33554432    | `KOBE_MODEL_GATEWAY_INFLIGHT_BYTES` / `..._PER_SANDBOX`                           | `charts/kobe/values.yaml:548`            |
+| `modelGateway.limits.callsPerSandbox` / `calls`                   | 16 / 1024               | `KOBE_MODEL_GATEWAY_MAX_CALLS_PER_SANDBOX` / `KOBE_MODEL_GATEWAY_MAX_CALLS`       | `charts/kobe/values.yaml:551`            |
+| `modelGateway.limits.requestBurst` / `requestsPerSecond`          | 60 / 10                 | `KOBE_MODEL_GATEWAY_RATE_BURST` / `KOBE_MODEL_GATEWAY_RATE_PER_SECOND`            | `charts/kobe/values.yaml:554`            |
+| `sandbox.skillEval.maxConcurrentPerTeam`                          | 4                       | concurrent eval sandboxes per Workspace                                           | `charts/kobe/values.yaml:123`            |
+| `sandbox.teamQuota`                                               | 50 pods, 20 CPU, 40Gi … | Kubernetes ResourceQuota per Workspace                                            | `charts/kobe/values.yaml:50`             |
+| `auth.trustedProxies`                                             | k3s pod CIDR            | `KOBE_TRUSTED_PROXIES` (client IP for IP-keyed limits)                            | `charts/kobe/templates/_helpers.tpl:209` |
+| `ingress.rateLimit.average` / `burst` / `period`                  | 100 / 300 / 1s (off)    | Traefik `rateLimit` Middleware on the main Ingress, per client address            | `charts/kobe/values.yaml:780`            |
+| `ingress.rateLimit.streams.average` / `burst` / `period`          | 60 / 120 / 1m           | separate Middleware on the event-stream Ingress (`streams.enabled: false` = none) | `charts/kobe/values.yaml:796`            |
 
 No server-side rate constant is exposed as an env var or Helm value.
 
@@ -280,26 +297,32 @@ No server-side rate constant is exposed as an env var or Helm value.
 
 ## Configuration summary
 
-| Name                                                                                  | Kind                                                                         | Default                                            | Tunes                                                      |
-| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------------- |
-| `KOBE_MODEL_GATEWAY_RATE_BURST` / `KOBE_MODEL_GATEWAY_RATE_PER_SECOND`                | env (Helm `modelGateway.limits.requestBurst` / `requestsPerSecond`)          | 60 / 10                                            | model requests per sandbox                                 |
-| `KOBE_MODEL_GATEWAY_MAX_CALLS_PER_SANDBOX` / `KOBE_MODEL_GATEWAY_MAX_CALLS`           | env (Helm `modelGateway.limits.callsPerSandbox` / `calls`)                   | 16 / 1024                                          | concurrent model calls                                     |
-| `KOBE_MODEL_GATEWAY_INFLIGHT_BYTES_PER_SANDBOX` / `KOBE_MODEL_GATEWAY_INFLIGHT_BYTES` | env (Helm `modelGateway.limits.inflightBytesPerSandbox` / `inflightBytes`)   | 32 MiB / 128 MiB                                   | request bytes in memory                                    |
-| `KOBE_MODEL_GATEWAY_BUDGET_CACHE_TTL_MS`                                              | env                                                                          | 1000                                               | how quickly a changed per-minute value reaches the gateway |
-| `user_requests_per_minute` (Site budget)                                              | Site setting (`PUT /v1/site/budget`)                                         | 60 (1–10,000)                                      | model requests per member per minute                       |
-| `user_requests_per_minute` (Workspace budget)                                         | Workspace setting (`PUT /v1/team/budgets/team`)                              | unset (inherits the Site value; may only lower it) | same, per Workspace                                        |
-| `KOBE_MCP_REQUEST_BURST` / `KOBE_MCP_REQUESTS_PER_SECOND`                             | env (Helm `mcpProxy.limits.requestBurst` / `requestsPerSecond`)              | 60 / 10                                            | MCP requests per sandbox                                   |
-| `KOBE_MCP_CALLS_PER_SANDBOX` / `KOBE_MCP_MAX_CONCURRENT_CALLS`                        | env (Helm `mcpProxy.limits.callsPerSandbox` / `concurrentCalls`)             | 8 / 256                                            | MCP calls in flight                                        |
-| `kobe_mcp.reads_per_minute` / `kobe_mcp.writes_per_hour`                              | Site setting (database row only)                                             | 60 / 30                                            | Kobe admin reads and changes per person                    |
-| `KOBE_EGRESS_MAX_CONNECTIONS_PER_SANDBOX` / `KOBE_EGRESS_MAX_CONNECTIONS`             | env (Helm `egressProxy.limits.connectionsPerSandbox` / `connections`)        | 64 / 4096                                          | internet tunnels                                           |
-| `KOBE_EGRESS_BANDWIDTH_BYTES_PER_SECOND`                                              | env (Helm `egressProxy.limits.bandwidthBytesPerSecond`)                      | 20971520                                           | bandwidth per sandbox                                      |
-| `KOBE_EGRESS_PREAUTH_PER_SOURCE` / `KOBE_EGRESS_PREAUTH_TOTAL`                        | env (Helm `egressProxy.limits.unauthenticatedPerSource` / `unauthenticated`) | 16 / 1024                                          | unauthenticated sockets                                    |
-| `sandbox.skillEval.maxConcurrentPerTeam`                                              | Helm                                                                         | 4 (1–16)                                           | eval sandboxes per Workspace                               |
-| `eval_limits.maxConcurrentSandboxes`                                                  | Site setting (skill settings)                                                | 4                                                  | eval sandboxes per Workspace (the lower value wins)        |
-| `sandbox.teamQuota`                                                                   | Helm                                                                         | 50 pods …                                          | sandbox pods per Workspace                                 |
-| `volumeLoss.graceMinutes`                                                             | sandbox config                                                               | 30                                                 | wait before a lost workspace can be rebuilt                |
-| `KOBE_SCHEDULER_TICK_SECONDS` / `KOBE_SCHEDULER_GRACE_MINUTES`                        | env                                                                          | 15 / 60                                            | schedule firing                                            |
-| `KOBE_TRUSTED_PROXIES`                                                                | env (Helm `auth.trustedProxies`)                                             | k3s pod CIDR                                       | client IP for every IP-keyed limit                         |
+| Name                                                                                  | Kind                                                                         | Default                                            | Tunes                                                         |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------- |
+| `KOBE_MODEL_GATEWAY_RATE_BURST` / `KOBE_MODEL_GATEWAY_RATE_PER_SECOND`                | env (Helm `modelGateway.limits.requestBurst` / `requestsPerSecond`)          | 60 / 10                                            | model requests per sandbox                                    |
+| `KOBE_MODEL_GATEWAY_MAX_CALLS_PER_SANDBOX` / `KOBE_MODEL_GATEWAY_MAX_CALLS`           | env (Helm `modelGateway.limits.callsPerSandbox` / `calls`)                   | 16 / 1024                                          | concurrent model calls                                        |
+| `KOBE_MODEL_GATEWAY_INFLIGHT_BYTES_PER_SANDBOX` / `KOBE_MODEL_GATEWAY_INFLIGHT_BYTES` | env (Helm `modelGateway.limits.inflightBytesPerSandbox` / `inflightBytes`)   | 32 MiB / 128 MiB                                   | request bytes in memory                                       |
+| `KOBE_MODEL_GATEWAY_BUDGET_CACHE_TTL_MS`                                              | env                                                                          | 1000                                               | how quickly a changed per-minute value reaches the gateway    |
+| `user_requests_per_minute` (Site budget)                                              | Site setting (`PUT /v1/site/budget`)                                         | 60 (1–10,000)                                      | model requests per member per minute                          |
+| `user_requests_per_minute` (Workspace budget)                                         | Workspace setting (`PUT /v1/team/budgets/team`)                              | unset (inherits the Site value; may only lower it) | same, per Workspace                                           |
+| `KOBE_MCP_REQUEST_BURST` / `KOBE_MCP_REQUESTS_PER_SECOND`                             | env (Helm `mcpProxy.limits.requestBurst` / `requestsPerSecond`)              | 60 / 10                                            | MCP requests per sandbox                                      |
+| `KOBE_MCP_CALLS_PER_SANDBOX` / `KOBE_MCP_MAX_CONCURRENT_CALLS`                        | env (Helm `mcpProxy.limits.callsPerSandbox` / `concurrentCalls`)             | 8 / 256                                            | MCP calls in flight                                           |
+| `kobe_mcp.reads_per_minute` / `kobe_mcp.writes_per_hour`                              | Site setting (database row only)                                             | 60 / 30                                            | Kobe admin reads and changes per person                       |
+| `KOBE_EGRESS_MAX_CONNECTIONS_PER_SANDBOX` / `KOBE_EGRESS_MAX_CONNECTIONS`             | env (Helm `egressProxy.limits.connectionsPerSandbox` / `connections`)        | 64 / 4096                                          | internet tunnels                                              |
+| `KOBE_EGRESS_BANDWIDTH_BYTES_PER_SECOND`                                              | env (Helm `egressProxy.limits.bandwidthBytesPerSecond`)                      | 20971520                                           | bandwidth per sandbox                                         |
+| `KOBE_EGRESS_PREAUTH_PER_SOURCE` / `KOBE_EGRESS_PREAUTH_TOTAL`                        | env (Helm `egressProxy.limits.unauthenticatedPerSource` / `unauthenticated`) | 16 / 1024                                          | unauthenticated sockets                                       |
+| `sandbox.skillEval.maxConcurrentPerTeam`                                              | Helm                                                                         | 4 (1–16)                                           | eval sandboxes per Workspace                                  |
+| `eval_limits.maxConcurrentSandboxes`                                                  | Site setting (skill settings)                                                | 4                                                  | eval sandboxes per Workspace (the lower value wins)           |
+| `sandbox.teamQuota`                                                                   | Helm                                                                         | 50 pods …                                          | sandbox pods per Workspace                                    |
+| `volumeLoss.graceMinutes`                                                             | sandbox config                                                               | 30                                                 | wait before a lost workspace can be rebuilt                   |
+| `KOBE_SCHEDULER_TICK_SECONDS` / `KOBE_SCHEDULER_GRACE_MINUTES`                        | env                                                                          | 15 / 60                                            | schedule firing                                               |
+| `KOBE_TRUSTED_PROXIES`                                                                | env (Helm `auth.trustedProxies`)                                             | k3s pod CIDR                                       | client IP for every IP-keyed limit                            |
+| `ingress.rateLimit.enabled`                                                           | Helm                                                                         | false                                              | Traefik limit at the ingress                                  |
+| `ingress.rateLimit.average` / `burst` / `period`                                      | Helm                                                                         | 100 / 300 / 1s                                     | requests per client address, main Ingress                     |
+| `ingress.rateLimit.streams.enabled` / `average` / `burst` / `period`                  | Helm                                                                         | true / 60 / 120 / 1m                               | requests per client address, event streams                    |
+| `ingress.rateLimit.ipStrategy.depth` / `excludedIPs` / `excludeTrustedProxies`        | Helm                                                                         | 0 / [] / false                                     | which address counts as the client (L7 proxy only)            |
+| `ingress.rateLimit.assumeTraefikV3`                                                   | Helm                                                                         | false                                              | skip the Kubernetes 1.32 check for a self-managed Traefik v3  |
+| `ingress.rateLimit.external`                                                          | Helm (sets `KOBE_INGRESS_RATE_LIMIT`)                                        | false                                              | hides the Site console notice when you limit at your own edge |
 
 Every other limit on this page is a constant in code.
 
@@ -311,8 +334,10 @@ Every other limit on this page is a constant in code.
    the sandbox in Bifrost's format.
 2. **The gateway's per-sandbox bucket map is cleared, not pruned.** Once more than 10,000 keys
    exist, `buckets.clear()` refills everyone's bucket (`services/model-gateway/src/limits.ts:88`).
-3. **No edge limit.** No Traefik middleware is shipped. Anything not covered here is unlimited
-   at the ingress.
+3. **The edge limit is off by default.** The chart can ship a Traefik limit (see
+   [Chart and ingress](#chart-and-ingress)) but does not enable it. Until it is on, or declared
+   with `ingress.rateLimit.external: true`, anything not covered here is unlimited at the
+   ingress, and the Site console shows Site admins an information notice.
 4. **Sign-in is limited only per IP.** Sign-in, change password and two-factor are 3 per 10 s
    per IP and path. There is no per-account lockout, so a distributed guess against one account
    is not slowed. Passkey endpoints fall under the general 100 per 10 s. When no client IP can be
