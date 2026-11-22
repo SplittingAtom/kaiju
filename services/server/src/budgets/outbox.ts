@@ -37,7 +37,6 @@ type Claimed = {
   limit_amount: string;
   spent_amount: string;
   superseded: boolean;
-  sent_today: number;
 };
 
 const money = (v: number) => `$${v.toFixed(2)}`;
@@ -85,7 +84,6 @@ export function budgetAlertMessage(input: {
   };
 }
 
-/** At most this many budget emails per recipient per UTC day (the rest are skipped, logged). */
 /**
  * Where a budget email links: site admins to site usage; a member about their own budget to the
  * chat, whose budget banner shows it (members can't open the team console); team admins to the
@@ -97,7 +95,48 @@ export function budgetAlertPath(scope: Claimed["scope"], own: boolean): string {
   return CONSOLE_PATHS.teamBudgets;
 }
 
+/**
+ * At most this many budget emails per person per UTC day, over the Site and every Workspace
+ * together (KOBE-786, owner decision 2026-11-22); the rest are skipped (`daily_limit`) and logged.
+ */
 export const BUDGET_EMAILS_PER_RECIPIENT_PER_DAY = 20;
+
+/** Days of per-person counts the retention pass keeps (today and yesterday). */
+const COUNT_DAYS_KEPT = 2;
+
+/**
+ * Takes one of today's (UTC) budget email slots of `recipientId`, in one statement: the row is
+ * created or raised only while under the cap, so concurrent replicas queue on it and never pass
+ * the cap. Returns the day taken (to give the slot back on a failed send), or null at the cap.
+ * The count table holds no team id and nothing from a Workspace (site-wide, KOBE-786).
+ */
+export async function reserveBudgetEmailSlot(
+  db: KobeDb | KobeTx,
+  recipientId: string,
+): Promise<string | null> {
+  const { rows } = await db.execute<{ day: string }>(sql`
+    INSERT INTO budget_email_daily_counts AS c (recipient_id, day, sent)
+    VALUES (${recipientId}::uuid, (now() AT TIME ZONE 'UTC')::date, 1)
+    ON CONFLICT (recipient_id, day) DO UPDATE SET sent = c.sent + 1
+     WHERE c.sent < ${BUDGET_EMAILS_PER_RECIPIENT_PER_DAY}
+    RETURNING c.day::text AS day`);
+  return rows[0]?.day ?? null;
+}
+
+/** Gives back a slot taken by {@link reserveBudgetEmailSlot} whose send failed. */
+async function releaseBudgetEmailSlot(tx: KobeTx, recipientId: string, day: string) {
+  await tx.execute(sql`
+    UPDATE budget_email_daily_counts SET sent = sent - 1
+     WHERE recipient_id = ${recipientId}::uuid AND day = ${day}::date AND sent > 0`);
+}
+
+/** Deletes per-person counts of days before yesterday (UTC); run by the retention pass. */
+export async function sweepBudgetEmailCounts(db: KobeDb): Promise<number> {
+  const { rowCount } = await db.execute(sql`
+    DELETE FROM budget_email_daily_counts
+     WHERE day < (now() AT TIME ZONE 'UTC')::date - ${COUNT_DAYS_KEPT - 1}::int`);
+  return rowCount ?? 0;
+}
 
 interface DeliverOptions {
   readonly db: KobeDb;
@@ -126,8 +165,11 @@ async function deliverIn(options: DeliverOptions, teamId: string | null): Promis
   const inContext = <T>(fn: (tx: KobeTx) => Promise<T>): Promise<T> =>
     teamId ? withTeam(db, teamId, fn) : db.transaction(fn);
   type Settle = Parameters<ReturnType<KobeTx["update"]>["set"]>[0];
-  const settle = (id: string, values: Settle) =>
-    inContext((tx) => tx.update(budgetAlertEmails).set(values).where(eq(budgetAlertEmails.id, id)));
+  const settle = (id: string, values: Settle, slot?: { recipient: string; day: string }) =>
+    inContext(async (tx) => {
+      if (slot) await releaseBudgetEmailSlot(tx, slot.recipient, slot.day);
+      await tx.update(budgetAlertEmails).set(values).where(eq(budgetAlertEmails.id, id));
+    });
   let sent = 0;
   try {
     const claimed = await inContext((tx) =>
@@ -136,11 +178,13 @@ async function deliverIn(options: DeliverOptions, teamId: string | null): Promis
                next_attempt_at = now() + ${LEASE}::interval
           FROM budget_alerts a
          WHERE a.id = e.alert_id
-           AND a.team_id IS NOT DISTINCT FROM ${teamId}::uuid
            AND e.id IN (
-               SELECT id FROM budget_alert_emails
-                WHERE status = 'pending' AND next_attempt_at <= now()
-                ORDER BY created_at LIMIT ${BATCH} FOR UPDATE SKIP LOCKED)
+               -- This context's emails only (KOBE-786): RLS also shows a team the Site's, which
+               -- would otherwise fill the batch and leave the team's waiting.
+               SELECT q.id FROM budget_alert_emails q JOIN budget_alerts qa ON qa.id = q.alert_id
+                WHERE q.status = 'pending' AND q.next_attempt_at <= now()
+                  AND qa.team_id IS NOT DISTINCT FROM ${teamId}::uuid
+                ORDER BY q.created_at LIMIT ${BATCH} FOR UPDATE OF q SKIP LOCKED)
         RETURNING e.id, e.attempts, e.recipient_id, a.team_id, a.scope, a.user_id, a.period,
                   a.threshold, a.unit, a.limit_amount, a.spent_amount,
                   (a.threshold < 100 AND EXISTS (
@@ -148,11 +192,7 @@ async function deliverIn(options: DeliverOptions, teamId: string | null): Promis
                       WHERE b.team_id IS NOT DISTINCT FROM a.team_id
                         AND b.user_id IS NOT DISTINCT FROM a.user_id
                         AND b.scope = a.scope AND b.unit = a.unit AND b.period = a.period
-                        AND b.period_start = a.period_start AND b.threshold = 100)) AS superseded,
-                  (SELECT count(*) FROM budget_alert_emails x
-                    WHERE x.recipient_id = e.recipient_id AND x.status = 'sent'
-                      AND x.sent_at >= date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
-                  )::int AS sent_today`),
+                        AND b.period_start = a.period_start AND b.threshold = 100)) AS superseded`),
     );
     for (const row of claimed.rows) {
       const [to] = await db
@@ -168,32 +208,18 @@ async function deliverIn(options: DeliverOptions, teamId: string | null): Promis
         await settle(row.id, { status: "skipped", lastError: "superseded" });
         continue;
       }
-      if (row.sent_today >= BUDGET_EMAILS_PER_RECIPIENT_PER_DAY) {
+      const [team] = row.team_id
+        ? await db.select({ name: teams.name }).from(teams).where(eq(teams.id, row.team_id))
+        : [];
+      // The cap counts the Site's and every Workspace's emails to this person (KOBE-786).
+      const day = await reserveBudgetEmailSlot(db, row.recipient_id);
+      if (day === null) {
         logger.warn({ recipient: row.recipient_id }, "budget emails per day reached: skipped");
         await settle(row.id, { status: "skipped", lastError: "daily_limit" });
         continue;
       }
-      const [team] = row.team_id
-        ? await db.select({ name: teams.name }).from(teams).where(eq(teams.id, row.team_id))
-        : [];
-      const path = budgetAlertPath(row.scope, row.user_id === row.recipient_id);
       try {
-        await mailer.send(
-          budgetAlertMessage({
-            to: to.email,
-            scope: row.scope,
-            own: row.user_id === row.recipient_id,
-            teamName: team?.name ?? null,
-            period: row.period,
-            threshold: row.threshold,
-            unit: row.unit,
-            limit: Number(row.limit_amount),
-            spent: Number(row.spent_amount),
-            link: `${options.publicUrl}${path}`,
-          }),
-        );
-        await settle(row.id, { status: "sent", sentAt: sql`now()`, lastError: null });
-        sent++;
+        await mailer.send(alertFor(row, to.email, team?.name ?? null, options.publicUrl));
       } catch (err) {
         const giveUp = row.attempts >= BUDGET_EMAIL_MAX_ATTEMPTS;
         logger.warn({ err, emailId: row.id, giveUp }, "budget alert email failed");
@@ -205,11 +231,31 @@ async function deliverIn(options: DeliverOptions, teamId: string | null): Promis
                 lastError: "smtp_error",
                 nextAttemptAt: sql`now() + make_interval(mins => ${backoffMinutes(row.attempts)})`,
               },
+          { recipient: row.recipient_id, day },
         );
+        continue;
       }
+      await settle(row.id, { status: "sent", sentAt: sql`now()`, lastError: null });
+      sent++;
     }
   } catch (err) {
     logger.error({ err, teamId }, "budget email delivery failed");
   }
   return sent;
+}
+
+function alertFor(row: Claimed, to: string, teamName: string | null, publicUrl: string) {
+  const own = row.user_id === row.recipient_id;
+  return budgetAlertMessage({
+    to,
+    scope: row.scope,
+    own,
+    teamName,
+    period: row.period,
+    threshold: row.threshold,
+    unit: row.unit,
+    limit: Number(row.limit_amount),
+    spent: Number(row.spent_amount),
+    link: `${publicUrl}${budgetAlertPath(row.scope, own)}`,
+  });
 }

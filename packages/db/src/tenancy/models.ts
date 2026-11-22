@@ -25,6 +25,7 @@ export const models = defineDomain({
     "budget_alerts",
     "budget_alert_emails",
     "site_budget_reservations",
+    "budget_email_daily_counts",
   ],
   grants: {
     // Providers and their sealed keys (KOBE-40): no team data; catalog entries RESTRICT deletes.
@@ -51,6 +52,10 @@ export const models = defineDomain({
     // KOBE-120: reservations against the site budget (spans teams, so not a team table):
     // created, shortened on settle, deleted on settle or by the expiry sweep. No team or user ids.
     site_budget_reservations: ALL_PRIVILEGES,
+    // KOBE-786: budget emails per person per UTC day, over the Site and every Workspace (the
+    // daily cap). A user id, a day and a count only: no team id, nothing from a Workspace.
+    // Slots taken and given back by the outbox, old days deleted by the retention pass.
+    budget_email_daily_counts: ["SELECT", "INSERT", "UPDATE", "DELETE"],
   },
   columnGrants: {
     budget_alert_emails: {
