@@ -151,7 +151,7 @@ export function FileEditor(props: FileEditorProps) {
   const { path, text, sha256, truncated, drafts, reviews } = props;
   const draft = useDraft(drafts, path);
   const review = useReview(reviews, path);
-const [mode, setMode] = useState<TextMode>(() =>
+  const [mode, setMode] = useState<TextMode>(() =>
     draft === undefined ? (drafts.chosenModes.get(path) ?? defaultModeOf(path)) : "raw",
   );
   // The cursor goes into the editor only when the file opened in Raw by itself (KOBE-802).

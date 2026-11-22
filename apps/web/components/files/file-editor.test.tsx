@@ -201,6 +201,18 @@ describe("a Python file opens in Raw (KOBE-802)", () => {
   });
 });
 
+describe("Copy path in the file tab header (KOBE-806 ac-3)", () => {
+  it("copies the sandbox path the agent sees and confirms", async () => {
+    const thread = threadWithFile("docs/notes.md", "# Plan\n");
+    openApp(fake, thread);
+    const user = userEvent.setup(); // installs the test clipboard
+    const writeText = vi.spyOn(navigator.clipboard, "writeText");
+    await user.click(await screen.findByRole("button", { name: "Copy the path of notes.md" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("/workspace/docs/notes.md"));
+    expect(await screen.findByText("Path copied")).toBeTruthy();
+  });
+});
+
 describe("the Viewing chip (ac-2)", () => {
   it("names the open file, goes with the message as `viewing`, and × stops it", async () => {
     const thread = threadWithFile("notes.md", "# Plan\n");

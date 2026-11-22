@@ -73,6 +73,12 @@ describe("wire", () => {
       autoOpenEdits: true,
     });
     expect(readPreferences({ preferences: { autoOpenEdits: "yes" } })).toEqual({});
+    // KOBE-806: the code editor's line-wrap toggle.
+    expect(readPreferences({ preferences: { editorLineWrap: false } })).toEqual({
+      editorLineWrap: false,
+    });
+    expect(readPreferences({ preferences: { editorLineWrap: 0 } })).toEqual({});
+    expect(toWire({ editorLineWrap: false })).toEqual({ editor_line_wrap: false });
   });
 
   it("writes only the keys that changed, in wire casing", () => {

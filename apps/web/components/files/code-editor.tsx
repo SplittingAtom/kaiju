@@ -12,6 +12,7 @@
  * cursor through `onReview`.
  */
 import { useEffect, useRef, useState } from "react";
+import { useLineWrap } from "./use-line-wrap";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import {
@@ -22,6 +23,7 @@ import {
   rejectChunk,
   unifiedMergeView,
 } from "@codemirror/merge";
+import { openSearchPanel, search, searchKeymap } from "@codemirror/search";
 import { Compartment, EditorState, Prec, type Extension } from "@codemirror/state";
 import {
   drawSelection,
@@ -88,6 +90,43 @@ const theme = EditorView.theme({
   ".cm-activeLine": { backgroundColor: "color-mix(in srgb, var(--muted) 50%, transparent)" },
   "&.cm-focused .cm-selectionBackground, .cm-selectionBackground": {
     backgroundColor: "color-mix(in srgb, var(--ring) 35%, transparent)",
+  },
+  // Find, replace and go to line (@codemirror/search): the app's tokens, light and dark.
+  ".cm-panels": {
+    backgroundColor: "var(--muted)",
+    color: "var(--foreground)",
+    borderColor: "var(--border)",
+  },
+  ".cm-panels-top": { borderBottom: "1px solid var(--border)" },
+  ".cm-panels-bottom": { borderTop: "1px solid var(--border)" },
+  ".cm-search, .cm-dialog": { fontSize: "0.75rem", padding: "0.375rem 2rem 0.375rem 0.5rem" },
+  ".cm-search label": { color: "var(--muted-foreground)" },
+  ".cm-textfield": {
+    backgroundColor: "var(--background)",
+    color: "var(--foreground)",
+    border: "1px solid var(--border)",
+    borderRadius: "0.375rem",
+    padding: "0.125rem 0.375rem",
+  },
+  ".cm-textfield:focus-visible": { outline: "2px solid var(--ring)", outlineOffset: "-1px" },
+  ".cm-button": {
+    backgroundColor: "var(--background)",
+    backgroundImage: "none",
+    color: "var(--foreground)",
+    border: "1px solid var(--border)",
+    borderRadius: "0.375rem",
+    padding: "0.125rem 0.5rem",
+    cursor: "pointer",
+  },
+  ".cm-button:hover": { backgroundColor: "var(--muted)" },
+  ".cm-button:focus-visible": { outline: "2px solid var(--ring)", outlineOffset: "1px" },
+  ".cm-panel.cm-search [name=close]": { color: "var(--muted-foreground)" },
+  ".cm-searchMatch": {
+    backgroundColor: "color-mix(in srgb, var(--ring) 25%, transparent)",
+    outline: "1px solid color-mix(in srgb, var(--ring) 60%, transparent)",
+  },
+  ".cm-searchMatch.cm-searchMatch-selected": {
+    backgroundColor: "color-mix(in srgb, var(--ring) 50%, transparent)",
   },
   // The diff (unified merge view): added on green, deleted on red and struck through.
   "&.cm-merge-b .cm-changedLine, .cm-inlineChangedLine": {
@@ -213,21 +252,33 @@ function reviewControls(view: EditorView): ReviewControls {
   };
 }
 
+/** Mod+Alt+F: the find panel with the cursor in its Replace field. */
+function openReplace(view: EditorView): boolean {
+  openSearchPanel(view);
+  view.dom.querySelector<HTMLInputElement>(".cm-search input[name=replace]")?.focus();
+  return true;
+}
+
 function baseExtensions(label: string): Extension[] {
   return [
     lineNumbers(),
     history(),
     drawSelection(),
     highlightActiveLine(),
+    search({ top: true }),
+    keymap.of([{ key: "Mod-Alt-f", run: openReplace }, ...searchKeymap]),
     keymap.of([...defaultKeymap, ...historyKeymap]),
     syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-    EditorView.lineWrapping,
     EditorView.contentAttributes.of({ "aria-label": label }),
     // CodeMirror (and @codemirror/merge) inject their styles as <style>; the nonce CSP drops
     // un-nonced ones, leaving the gutter above the text and the diff uncoloured (KOBE-469).
     EditorView.cspNonce.of(documentCspNonce()),
     theme,
   ];
+}
+
+function wrapExtension(on: boolean): Extension {
+  return on ? EditorView.lineWrapping : [];
 }
 
 function readOnlyExtensions(readOnly: boolean): Extension[] {
@@ -260,7 +311,15 @@ export default function CodeEditor({
   readOnlyRef.current = readOnly;
   /** The last value the document was set from. */
   const synced = useRef(value);
-  const compartments = useRef({ language: new Compartment(), readOnly: new Compartment() });
+  const compartments = useRef({
+    language: new Compartment(),
+    readOnly: new Compartment(),
+    wrap: new Compartment(),
+  });
+  const [lineWrap, setLineWrap] = useLineWrap();
+  const lineWrapRef = useRef(lineWrap);
+  lineWrapRef.current = lineWrap;
+  const [cursor, setCursor] = useState({ line: 1, column: 1 });
 
   // One view per file and per review; text, language and read-only change in place.
   useEffect(() => {
@@ -296,6 +355,7 @@ export default function CodeEditor({
             ]),
           ),
           compartments.current.language.of([]),
+          compartments.current.wrap.of(wrapExtension(lineWrapRef.current)),
           // Read-only from the start (a read-only view is never briefly editable, KOBE-485).
           compartments.current.readOnly.of(readOnlyExtensions(readOnlyRef.current)),
           original === undefined
@@ -309,6 +369,15 @@ export default function CodeEditor({
               }),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) callbacks.current.onChange?.(update.state.doc.toString());
+            if (update.docChanged || update.selectionSet) {
+              const head = update.state.selection.main.head;
+              const line = update.state.doc.lineAt(head);
+              setCursor((was) =>
+                was.line === line.number && was.column === head - line.from + 1
+                  ? was
+                  : { line: line.number, column: head - line.from + 1 },
+              );
+            }
             report(update.state);
           }),
         ],
@@ -316,6 +385,7 @@ export default function CodeEditor({
     });
     report(created.state);
     setView(created);
+    setCursor({ line: 1, column: 1 });
     if (autoFocusRef.current && !readOnlyRef.current) created.focus();
     if (original !== undefined) callbacks.current.onReview?.(reviewControls(created));
     return () => {
@@ -335,6 +405,10 @@ export default function CodeEditor({
       live = false;
     };
   }, [view, language]);
+
+  useEffect(() => {
+    view?.dispatch({ effects: compartments.current.wrap.reconfigure(wrapExtension(lineWrap)) });
+  }, [view, lineWrap]);
 
   useEffect(() => {
     view?.dispatch({
@@ -367,6 +441,26 @@ export default function CodeEditor({
             : "min-h-24 min-w-0 flex-1 overflow-hidden rounded-md border"
         }
       />
+      {!compact && (
+        <div
+          className="text-muted-foreground flex items-center justify-between gap-2 px-1 pt-1 text-xs"
+          data-kobe-editor-status
+        >
+          <button
+            type="button"
+            aria-pressed={lineWrap}
+            aria-label="Wrap long lines"
+            title={lineWrap ? "Long lines wrap: click to scroll sideways" : "Wrap long lines"}
+            className="hover:bg-muted aria-pressed:bg-muted rounded-md border px-2 py-0.5"
+            onClick={() => setLineWrap(!lineWrap)}
+          >
+            Wrap
+          </button>
+          <span aria-label="Cursor position" className="tabular-nums">
+            {`Ln ${cursor.line}, Col ${cursor.column}`}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

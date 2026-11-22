@@ -6,6 +6,7 @@ import { command, formatShortcut } from "../../lib/shell/commands";
 import {
   CE23_SHORTCUTS,
   COMPOSER_KEYS,
+  EDITOR_KEYS,
   isMacPlatform,
   MORE_SHORTCUTS,
   SHEET_NAMES,
@@ -100,6 +101,15 @@ export function ShortcutSheet() {
           <h3 className="m-0 text-sm font-semibold">In the message box</h3>
           <ul className="m-0 list-none p-0" aria-label="Message box keys">
             {COMPOSER_KEYS.map((k) => (
+              <li key={k.keys} className={ROW}>
+                <span>{k.name}</span>
+                <Keys keys={k.keys} mac={mac} />
+              </li>
+            ))}
+          </ul>
+          <h3 className="m-0 text-sm font-semibold">In the code editor</h3>
+          <ul className="m-0 list-none p-0" aria-label="Code editor keys">
+            {EDITOR_KEYS.map((k) => (
               <li key={k.keys} className={ROW}>
                 <span>{k.name}</span>
                 <Keys keys={k.keys} mac={mac} />

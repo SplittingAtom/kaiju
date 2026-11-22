@@ -16,8 +16,10 @@
  * An open text tab follows outside changes to its file (KOBE-491, `use-outside-change.ts`); the
  * page's change stream says who changed it (KOBE-496, `lib/files/remote-changes.ts`).
  */
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
-import { NOTEBOOK_FILE_MAX_BYTES } from "@kobe/protocol";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { CheckIcon, ClipboardCopyIcon } from "lucide-react";
+import { NOTEBOOK_FILE_MAX_BYTES, sandboxPathOf } from "@kobe/protocol";
+import { copyText } from "../../lib/clipboard";
 import type { ApiError } from "../../lib/api/client";
 import type { FilesApi } from "../../lib/files/api";
 import { isTextPreview, sha256Hex } from "../../lib/files/editor";
@@ -311,6 +313,38 @@ function FileBody({
   }
 }
 
+/** Copy path (KOBE-806): the sandbox path the agent sees, the one an @file mention rewrites to. */
+function CopyPath({ path }: { readonly path: string }) {
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const copy = () => {
+    const done = (next: "copied" | "failed") => {
+      setState(next);
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => setState("idle"), 2000);
+    };
+    copyText(sandboxPathOf(path)).then(
+      () => done("copied"),
+      () => done("failed"),
+    );
+  };
+  return (
+    <>
+      <IconAction
+        command="copy-file-path"
+        label={`Copy the path of ${fileName(path)}`}
+        onClick={copy}
+      >
+        {state === "copied" ? <CheckIcon aria-hidden /> : <ClipboardCopyIcon aria-hidden />}
+      </IconAction>
+      <span role="status" className="text-muted-foreground text-xs empty:hidden">
+        {state === "copied" ? "Path copied" : state === "failed" ? "Copy failed" : ""}
+      </span>
+    </>
+  );
+}
+
 /** One file tab's header (name, Download) and body. `titleId` labels the column. */
 export function FileTabContent({
   path,
@@ -398,6 +432,7 @@ export function FileTabContent({
         <h2 id={titleId} className="min-w-0 flex-1 truncate text-sm font-medium" title={path}>
           {name}
         </h2>
+        <CopyPath path={path} />
         <IconAction
           command="artifact-download"
           label={`Download ${name}`}
