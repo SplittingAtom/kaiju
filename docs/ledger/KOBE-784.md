@@ -26,7 +26,7 @@ P2-32: `countTeamsUsing` (registry), `teamsUsing` (drift recipients), `listTeams
   client. A site key already goes with the credential-source change an auth-kind change implies
   (`site` needs `api_key`).
 - **P2-31:** the dynamically registered client is kept in `connectors.oauth_client` (migration
-  `0239_connector_oauth_client`, generated; CHECK on the envelope format): sealed with the site
+  `0241_connector_grant_refresh_lease_connector_oauth_client`, generated; CHECK on the envelope format): sealed with the site
   envelope bound to connector + URL hash, holding issuer, redirect URI, client id and secret;
   reused while issuer and redirect URI match, replaced otherwise; cleared on URL and auth-kind
   changes; written only while the URL is unchanged. A column rather than a table: one per

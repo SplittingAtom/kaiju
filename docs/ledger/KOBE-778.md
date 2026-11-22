@@ -22,7 +22,7 @@ Second-pass review findings P2-4, P2-28, P2-29 (private review notes).
 
 ## Decisions
 
-- **Lease in the row** (migration `0238_connector_grant_refresh_lease`, generated):
+- **Lease in the row** (migration `0241_connector_grant_refresh_lease_connector_oauth_client` (with KOBE-784's column), generated):
   `connector_grants.refresh_lease_until`, `refresh_lease_owner` (random uuid per refresh). RLS
   unchanged (same team table, columns nullable). Code in `connectors/grant-refresh.ts` (moved out
   of `grants.ts`, shared reads in `connectors/grant-read.ts`):
