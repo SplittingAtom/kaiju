@@ -22,7 +22,7 @@ import {
   readSsoRequiredIn,
 } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
-import { OwnerWouldLoseSignInError, assertOwnerKeepsSignIn } from "./required.js";
+import { OwnerWouldLoseSignInError, assertOwnerKeepsSignIn } from "./owner-invariant.js";
 import type { VerifiedIdentity } from "./claims.js";
 import type { LinkIntent } from "./link-intent.js";
 

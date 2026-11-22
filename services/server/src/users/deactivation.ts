@@ -17,7 +17,7 @@ import {
 } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
 import { revokeAllInvitesSentBy } from "../invitations/team-invites.js";
-import { assertOwnerKeepsSignIn } from "../sso/required.js";
+import { assertOwnerKeepsSignIn } from "../sso/owner-invariant.js";
 
 /**
  * The target is the Owner (or, with `protectSiteRoles`, any site-role holder or the setup Owner):
