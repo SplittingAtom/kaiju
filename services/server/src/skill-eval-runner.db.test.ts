@@ -747,4 +747,73 @@ describe("skill eval runner (KOBE-325)", () => {
     });
     expect(await queued(legacy)).toBe(0);
   });
+
+  it("re-checks review and blocklist when an execution is claimed, failing the run (review g79)", async () => {
+    const w = await world();
+    const provider = newProvider();
+    const runner = runnerFor(provider);
+    const suite = [
+      "cases:",
+      "  - id: a",
+      "    prompt: P",
+      "    expect: {contains: Total}",
+      "",
+    ].join("\n");
+    const zip = zipSync({
+      "SKILL.md": strToU8(skillMd("recheck")),
+      "evals/cases.yaml": strToU8(suite),
+    });
+    const up = await f
+      .on(0, w.owner)
+      .post("/v1/skills?scope=team", new RawBody(zip, "application/zip"));
+    expect(up.status, JSON.stringify(up.json)).toBe(201);
+    const skillId = up.json.skill.id as string;
+    const decide = (decision: string) =>
+      f.on(0, w.owner).post(`/v1/team/skill-review/${skillId}/versions/1`, { decision });
+    expect((await decide("approved")).status).toBe(200);
+    const started = await f
+      .on(0, w.owner)
+      .post(`/v1/skills/team/${skillId}/versions/1/evals`, { mode: "with_only" });
+    expect(started.status, JSON.stringify(started.json)).toBe(202);
+    // Rejected while queued: the claim refuses it and the run fails.
+    expect((await decide("rejected")).status).toBe(200);
+    const runOf = async (id: string) =>
+      (
+        await f.fx.admin.query<{ status: string; failure: { code: string } | null }>(
+          `SELECT status, failure FROM skill_eval_runs WHERE id = $1`,
+          [id],
+        )
+      ).rows[0];
+    expect(await runner.sweep()).toBe(0);
+    expect(await runOf(started.json.evalRunId)).toMatchObject({
+      status: "failed",
+      failure: { code: "review_rejected" },
+    });
+    // Blocklisted while queued (a draft's eval).
+    const draft = await draftWith(w.owner, "recheck-draft", suite, {});
+    const second = await f
+      .on(0, w.owner)
+      .post(`/v1/skills/drafts/${draft}/evals`, { mode: "with_only" });
+    expect(second.status, JSON.stringify(second.json)).toBe(202);
+    const hash = (
+      await f.fx.admin.query<{ runtime_hash: string }>(
+        `SELECT runtime_hash FROM skill_eval_runs WHERE id = $1`,
+        [second.json.evalRunId],
+      )
+    ).rows[0]?.runtime_hash;
+    await f.fx.admin.query(
+      `INSERT INTO skill_blocklist (content_hash, reason, added_by) VALUES ($1, 'bad', $2)`,
+      [hash, w.owner.id],
+    );
+    try {
+      expect(await runner.sweep()).toBe(0);
+      expect(await runOf(second.json.evalRunId)).toMatchObject({
+        status: "failed",
+        failure: { code: "skill_blocklisted" },
+      });
+      expect(provider.created).toHaveLength(0);
+    } finally {
+      await f.fx.admin.query(`DELETE FROM skill_blocklist WHERE content_hash = $1`, [hash]);
+    }
+  });
 });

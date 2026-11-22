@@ -38,6 +38,19 @@ against the code first; all held as described.
   `retireVersion`, `skills/site-edit/site-publish.ts` `publishSiteDraft`;
   `skills/evals/events.ts` `skillEvalEventStream` belongs with KOBE-704.
 
+## Review fixes (coordinator review of group 79)
+
+- **Gates re-checked on claim.** The eval gates moved to `skills/evals/gates.ts`
+  (`evalSubjectGate`: blocklist, team version review, test-chat gates). `claimNextExecution`
+  runs them again for each execution it claims (with the starter's current role); a refusal fails
+  the run with that code and message (`review_rejected`, `review_pending`, `skill_blocklisted`,
+  ...) and settles its queued executions, so a version rejected, suspended or blocklisted after the
+  start never runs. Test: `skill-eval-runner.db.test.ts` "re-checks review and blocklist when an
+  execution is claimed".
+- Not changed (out of scope, advisory): `drafts/scan-preview.ts` and `drafts/test-bundle.ts` read
+  draft files without the row lock (cache keyed by hash or rev); candidates for the same
+  `visibleDraft(..., true)` change later.
+
 ## docs/guide evaluation
 
 - `docs/guide/agents/skills.md`: who may run the evals of a saved team version (approved: any

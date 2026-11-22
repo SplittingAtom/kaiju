@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KobeDb, type KobeTx, type TeamRole } from "@kobe/db";
 import {
   computeSkillEvalScorecard,
   skillEvalExecutionSchema,
@@ -13,6 +13,7 @@ import { createThread } from "../../threads/repository.js";
 import type { AgentPin } from "../../agents/versions.js";
 import { executionFromAttempts, retries, type EvalAttempt } from "./execution.js";
 import { recordAuthoritativeScorecard } from "../registry/authoritative.js";
+import { EVAL_GATE_REFUSALS, evalSubjectGate } from "./gates.js";
 
 // The skill eval queue in Postgres (KOBE-325): eval runs, their executions and every state change.
 // Postgres is the record; `NOTIFY kobe_skill_eval '<team>:<eval run>'` is only a hint (events).
@@ -178,10 +179,15 @@ export async function claimNextExecution(
       run_model: SkillEvalRunModel;
       judge_model: SkillEvalJudgeModel | null;
       wall_minutes: number | null;
+      role: TeamRole;
+      subject_kind: string;
+      subject_id: string;
+      subject_rev: number;
     }>(sql`
       SELECT x.eval_run_id, x.case_id, x.with_skill, x.attempt, x.first_attempt, r.started_by,
              r.suite, r.fixtures_key, r.runtime_hash, r.skill_name, r.run_model, r.judge_model,
-             (r.limits ->> 'caseWallClockMinutes')::int AS wall_minutes
+             (r.limits ->> 'caseWallClockMinutes')::int AS wall_minutes, m.role,
+             r.subject_kind, r.subject_id, r.subject_rev
         FROM skill_eval_results x
         JOIN skill_eval_runs r ON r.team_id = x.team_id AND r.id = x.eval_run_id
         -- Only a starter who is still an active member of the team (review L8).
@@ -198,15 +204,27 @@ export async function claimNextExecution(
        FOR UPDATE OF x SKIP LOCKED`);
     const row = next.rows[0];
     if (!row) return null;
+    // The subject may have been rejected, suspended or blocklisted since the start (review g79):
+    // the run fails instead of running it.
+    const refused = await evalSubjectGate(
+      tx,
+      { teamId, userId: row.started_by, role: row.role },
+      { kind: row.subject_kind, id: row.subject_id, rev: Number(row.subject_rev) },
+      row.runtime_hash,
+    );
+    if (refused) {
+      await failClaimedRun(tx, teamId, row.eval_run_id, {
+        code: refused,
+        message: EVAL_GATE_REFUSALS[refused][1],
+      });
+      return null;
+    }
     const pin = await opts.pinFor(tx, teamId, row.started_by);
     if (!pin) {
-      await tx.execute(sql`
-        UPDATE skill_eval_runs
-           SET status = 'failed', finished_at = now(), updated_at = now(),
-               failure = ${JSON.stringify({ code: "agent_unavailable", message: "The Kobe agent is not available." })}::jsonb
-         WHERE team_id = ${teamId} AND id = ${row.eval_run_id} AND status IN ${OPEN}`);
-      await settleClosedExecutions(tx, teamId, row.eval_run_id);
-      await notifyEval(tx, teamId, row.eval_run_id);
+      await failClaimedRun(tx, teamId, row.eval_run_id, {
+        code: "agent_unavailable",
+        message: "The Kobe agent is not available.",
+      });
       return null;
     }
     const thread = await createThread(tx, {
@@ -250,6 +268,22 @@ export async function claimNextExecution(
       judgeModel: row.judge_model,
     };
   });
+}
+
+/** Fails the run of an execution being claimed (in the claim's transaction), settling the rest. */
+async function failClaimedRun(
+  tx: KobeTx,
+  teamId: string,
+  evalRunId: string,
+  failure: { readonly code: string; readonly message: string },
+): Promise<void> {
+  await tx.execute(sql`
+    UPDATE skill_eval_runs
+       SET status = 'failed', finished_at = now(), updated_at = now(),
+           failure = ${JSON.stringify(failure)}::jsonb
+     WHERE team_id = ${teamId} AND id = ${evalRunId} AND status IN ${OPEN}`);
+  await settleClosedExecutions(tx, teamId, evalRunId);
+  await notifyEval(tx, teamId, evalRunId);
 }
 
 type ExecutionKey = Pick<
