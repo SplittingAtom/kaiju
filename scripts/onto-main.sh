@@ -34,11 +34,17 @@ build_db() {
   if ! "$PNPM" --filter @kobe/db build >"$log" 2>&1; then
     cat "$log" >&2
     rm -f "$log"
+    merging && old_table_hint
     die "the @kobe/db build failed (an audit event without its row in events/<area>.doc.ts?)"
   fi
   rm -f "$log"
 }
 unmerged() { git diff --name-only --diff-filter=U; }
+old_table_hint() {
+  say "If this branch added or changed rows of the old hand-written audit table (before KOBE-815):"
+  say "  git checkout --theirs -- $AUDIT_DOC, put each row in its area's"
+  say "  packages/db/src/audit/events/<area>.doc.ts (name order), git add both, git commit, run again"
+}
 
 [[ $# -le 1 ]] || die "usage: scripts/onto-main.sh [base-ref]"
 merging && die "a merge is in progress: resolve it and \`git commit\`, then run this again"
@@ -79,9 +85,8 @@ resolve_generated() {
       build_db
       "$PNPM" --silent --filter @kobe/db audit:doc
       if grep -qE '^(<<<<<<<|=======$|>>>>>>>)' "$AUDIT_DOC"; then
-        say "$AUDIT_DOC has conflicts outside the generated table. If this branch added rows to the"
-        say "  old hand-written table: git checkout --theirs -- $AUDIT_DOC, move each row to its"
-        say "  area's packages/db/src/audit/events/<area>.doc.ts, git add, git commit, run again"
+        say "$AUDIT_DOC has conflicts outside the generated table."
+        old_table_hint
         die "otherwise resolve the prose by hand, git add, git commit, run again"
       fi
     else
