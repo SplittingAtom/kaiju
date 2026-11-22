@@ -33,12 +33,20 @@ export async function hitRateLimit(
   return (await checkRateLimit(db, key, rule, now)).allowed;
 }
 
-/** {@link hitRateLimit}, also reporting how long until the window ends (KOBE-813). */
+/** Where a hit is counted: the pool, or an open transaction (`Pick` so a `KobeTx` fits too). */
+export type RateLimitDb = Pick<KobeDb, "execute">;
+
+/**
+ * {@link hitRateLimit}, also reporting how long until the window ends (KOBE-813). Inside a
+ * transaction pass `prune: false`: the hit then commits or rolls back with it (a refused
+ * operation that rolls back leaves no extra count), and no prune can fail inside it.
+ */
 export async function checkRateLimit(
-  db: KobeDb,
+  db: RateLimitDb,
   key: string,
   rule: RateLimitRule,
   now = Date.now(),
+  options: { readonly prune?: boolean } = {},
 ): Promise<RateLimitVerdict> {
   const stale = now - rule.windowMs;
   const expires = now + rule.windowMs;
@@ -52,7 +60,7 @@ export async function checkRateLimit(
     RETURNING count, window_start`);
   const row = result.rows[0];
   const count = row?.count ?? Number.POSITIVE_INFINITY;
-  if (count === 1) await pruneExpiredRateLimits(db, now);
+  if (count === 1 && options.prune !== false) await pruneExpiredRateLimits(db, now);
   const started = row === undefined ? now : Number(row.window_start);
   const left = Number.isFinite(started) ? started + rule.windowMs - now : rule.windowMs;
   return {
@@ -67,7 +75,7 @@ export async function checkRateLimit(
  * thrown: the hit it rides on has already been counted.
  */
 export async function pruneExpiredRateLimits(
-  db: KobeDb,
+  db: RateLimitDb,
   now = Date.now(),
   batch = RATE_LIMIT_PRUNE_BATCH,
 ): Promise<number> {
@@ -81,4 +89,9 @@ export async function pruneExpiredRateLimits(
     logger.warn({ err }, "expired rate-limit rows could not be pruned");
     return 0;
   }
+}
+
+/** Forgets `key`'s window (a marker that is no longer true, KOBE-813). */
+export async function clearRateLimit(db: RateLimitDb, key: string): Promise<void> {
+  await db.execute(sql`DELETE FROM kobe_rate_limits WHERE key = ${`kobe:${key}`}`);
 }

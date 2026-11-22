@@ -910,6 +910,20 @@ describe("GET /v1/workspace/files/search (KOBE-223)", () => {
   });
 });
 
+describe("POST /v1/workspace/files under the upload limit (KOBE-813)", () => {
+  it("shares the composer's upload bucket, one hit per file", async () => {
+    const w = await world();
+    const limit = OPERATION_LIMITS.upload;
+    await fillLimit(fx.admin, limit, w.alice.id);
+    expectRateLimited(await upload(w.a, undefined, "limited.txt", "hi"), limit);
+    const { rows } = await fx.admin.query(
+      `SELECT 1 FROM workspace_files WHERE team_id = $1 AND path = 'limited.txt'`,
+      [w.team],
+    );
+    expect(rows).toHaveLength(0);
+  });
+});
+
 describe("POST /v1/workspace/wake", () => {
   it("asks the lifecycle to wake the caller's own sandbox and answers at once", async () => {
     const w = await world();

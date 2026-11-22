@@ -4,8 +4,11 @@ import {
   OPERATION_LIMITS,
   admitOperation,
   admitSandboxWake,
+  admitWakeStart,
+  wakeStartOver,
   type OperationLimit,
 } from "./operation-limits.js";
+import { CONTEXT_WAKE_RETRY_MS } from "./routes/thread-context.js";
 import { SchedulerRunner } from "./scheduler/runner.js";
 import { clearLimit, expectRateLimited, fillLimit } from "./testing/operation-limits.js";
 import { RunFixture, type RunWorld } from "./testing/run-fixture.js";
@@ -49,6 +52,7 @@ describe("each limit at its boundary (limiter clock)", () => {
       upload: [120, 10],
       scheduleCreate: [20, 60],
       sandboxWake: [20, 10],
+      notebookRun: [120, 1],
       feedback: [60, 1],
       scimTokenCreate: [10, 60],
       setupAttempt: [10, 10],
@@ -68,6 +72,58 @@ describe("sandbox wakes the member asks for", () => {
     // A failed check counts as asleep: the limit still applies.
     const broken = { isConnected: () => Promise.reject(new Error("db down")) };
     expect((await admitSandboxWake(db(), broken, owner)).allowed).toBe(false);
+  });
+});
+
+describe("one start counts once (review H1)", () => {
+  /** The web viewer's schedule (`nextWakeDelay`): the hint, ×1.5 backoff, 2–10 s, stops at 180 s. */
+  function viewerPolls(): number[] {
+    const times = [0];
+    for (let n = 0, t = 0; t <= 180_000; n += 1) {
+      t += Math.min(Math.round(Math.max(CONTEXT_WAKE_RETRY_MS, 2_000) * 1.5 ** n), 10_000);
+      if (t <= 180_000) times.push(t);
+    }
+    return times;
+  }
+  const bucket = async (userId: string) =>
+    (
+      await f.fx.admin.query<{ count: number }>(
+        `SELECT count FROM kobe_rate_limits WHERE key = $1`,
+        [`kobe:${OPERATION_LIMITS.sandboxWake.bucket}:${userId}`],
+      )
+    ).rows[0]?.count ?? 0;
+
+  it("a 3-minute start with the viewer's polling, panel mounts and Refresh spends one", async () => {
+    const owner = { teamId: randomUUID(), userId: randomUUID() };
+    const start = Date.now();
+    const polls = viewerPolls();
+    expect(polls.length).toBeGreaterThan(15);
+    for (const t of polls) {
+      expect((await admitWakeStart(db(), owner, start + t)).allowed).toBe(true);
+    }
+    const asleep = { isConnected: () => Promise.resolve(false) };
+    expect((await admitSandboxWake(db(), asleep, owner, start + 60_000)).allowed).toBe(true);
+    expect(await bucket(owner.userId)).toBe(1);
+    // Connected: the start is over; the next sleep and wake is a new start.
+    const connected = { isConnected: () => Promise.resolve(true) };
+    expect((await admitSandboxWake(db(), connected, owner, start + 181_000)).allowed).toBe(true);
+    expect((await admitWakeStart(db(), owner, start + 400_000)).allowed).toBe(true);
+    expect(await bucket(owner.userId)).toBe(2);
+  });
+
+  it("a refused start does not pass later asks as 'in progress'", async () => {
+    const owner = { teamId: randomUUID(), userId: randomUUID() };
+    await fillLimit(f.fx.admin, OPERATION_LIMITS.sandboxWake, owner.userId);
+    expect((await admitWakeStart(db(), owner)).allowed).toBe(false);
+    expect((await admitWakeStart(db(), owner)).allowed).toBe(false);
+    await wakeStartOver(db(), owner);
+  });
+
+  it("a start per Workspace: another Workspace's sandbox is its own start", async () => {
+    const userId = randomUUID();
+    expect((await admitWakeStart(db(), { teamId: randomUUID(), userId })).allowed).toBe(true);
+    expect((await admitWakeStart(db(), { teamId: randomUUID(), userId })).allowed).toBe(true);
+    expect(await bucket(userId)).toBe(2);
   });
 });
 

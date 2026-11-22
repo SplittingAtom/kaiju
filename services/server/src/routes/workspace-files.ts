@@ -50,7 +50,12 @@ import { CONTENT_MISSING, reportMissingContent } from "../workspace-sync/lost.js
 import { currentEntry, lockWorkspace } from "../workspace-sync/store.js";
 import { checkoutSlugs, checkoutsHold } from "../workspace-sync/checkouts.js";
 import { invalidRequest } from "../http/request.js";
-import { OPERATION_LIMITS, admitSandboxWake, rateLimited } from "../operation-limits.js";
+import {
+  OPERATION_LIMITS,
+  admitOperation,
+  admitSandboxWake,
+  rateLimited,
+} from "../operation-limits.js";
 
 type Ctx = Context<{ Variables: TeamVariables }>;
 type ErrStatus = 400 | 403 | 404 | 409 | 411 | 413 | 415 | 422 | 502 | 503 | 507;
@@ -210,6 +215,10 @@ export function workspaceFileRoutes(
     }
     const body = c.req.raw.body;
     if (!body) return invalidRequest(c, "Malformed upload.");
+    // KOBE-813: the composer's upload limit; one request carries one file, as `POST /v1/uploads`.
+    const limit = OPERATION_LIMITS.upload;
+    const verdict = await admitOperation(db, limit, c.get("user").id);
+    if (!verdict.allowed) return rateLimited(c, limit, verdict);
     // Streamed: the file reaches object storage without ever being held (KOBE-184).
     const opened = await openUpload(
       c.req.header("content-type"),

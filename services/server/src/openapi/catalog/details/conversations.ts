@@ -143,7 +143,7 @@ export const threadsDetails: Readonly<Record<string, CatalogDetail>> = {
     status: 202,
     response: named("NotebookRunResponse", notebookRunResponseSchema),
     responseDescription: "Accepted; follow `GET /v1/runs/{run_id}/events`.",
-    errors: ["404", "409", "503"],
+    errors: ["404", "409", "429", "503"],
   },
   "post /v1/threads/{id}/notebook/start": {
     body: null,

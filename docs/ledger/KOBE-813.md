@@ -6,13 +6,13 @@
 
 ## Plan
 
-Eight fixed limits on the durable Kobe limiter, one 429 shape with `Retry-After`, OpenAPI 429 on
+Ten fixed limits on the durable Kobe limiter, one 429 shape with `Retry-After`, OpenAPI 429 on
 each documented operation, a plain message wherever a member or admin meets one in the web app.
 
 ## Decisions
 
 - **Values (owner, 2026-11-22), fixed in code, not configurable:** `OPERATION_LIMITS` in
-  `services/server/src/operation-limits.ts` holds all eight (bucket, window, max, sentence).
+  `services/server/src/operation-limits.ts` holds all ten (bucket, window, max, sentence).
 - **Per member across Workspaces.** Keys are `<bucket>:<user id>` like every other per-member
   Kobe limit (`skill-upload:`, `thread-fork:`…); no existing limit is per member per Workspace.
   SCIM tokens per Site admin; setup per client IP.
@@ -27,9 +27,23 @@ each documented operation, a plain message wherever a member or admin meets one 
 - **Compaction and branch summary** get separate buckets (10 per 10 min each), not one shared
   bucket (shared buckets are listed as a smell in the inventory). Pi's automatic compaction is
   not a route and never counts.
-- **Uploads.** `POST /v1/uploads` only (composer; apps upload through the same composer
-  transport). Files-panel uploads (`POST /v1/workspace/files`) are outside the decided scope;
-  noted in docs/rate-limits.md.
+- **Uploads.** `POST /v1/uploads` (composer; apps use the same transport) and, after review M1,
+  `POST /v1/workspace/files` (Files panel, conversation rail drop) share the `upload` bucket.
+  Both take one file per request (multi-file drops send one request per file), so one hit per
+  file. Editor saves (`PUT /v1/workspace/file`) are writes, not uploads: not counted.
+- **One start counts once (review H1).** `admitWakeStart`: the first ask for an asleep sandbox
+  sets a marker `sandbox-wake-start:<workspace>:<member>` (5 min window, longer than the
+  viewer's 3 min of polling) and counts one wake; asks while it is set are free; the marker is
+  cleared when the sandbox is seen connected (`/wake`, the context viewer) and at once when the
+  start is refused (so a refused start is not passed as "in progress"). Per Workspace marker,
+  per member bucket.
+- **Notebook cell runs (review M2).** Own bucket, 120 per minute per member (coordinator's number,
+  flagged to the owner), apart from the 60/min message limit. Run all sends one request per cell,
+  serially, so the unit is a cell; counted inside the run's transaction (`prune: false`), so the
+  `thread_busy` answers Run all retries and refusals add nothing. Their implicit wake is a run's
+  wake: not counted. The kernel bar shows the server's sentence.
+- **Lows.** L1/L2/L5 noted in docs/rate-limits.md (L2 recovery also in docs/install.md); L3 fixed
+  (Files panel shows the server's 429 sentence); L4 counts corrected; L6 below.
 - **Sandbox wakes.** Counted only for wakes the member asks for: `POST /v1/workspace/wake` (Files
   panel), Refresh (`POST /v1/workspace/sync`) of an asleep sandbox, and the context viewer's wake.
   An already-connected sandbox is not counted (the panel calls wake on every mount). A run's own
@@ -54,10 +68,17 @@ each documented operation, a plain message wherever a member or admin meets one 
 ## Open questions (for Chris or the coordinator)
 
 - `POST /v1/workspace/wake` and `/sync` are not in the OpenAPI document (whole `/v1/workspace/*`
-  files area is undocumented there); their 429 is documented in docs/rate-limits.md only.
+  files area is undocumented there; review L6: the coverage test builds the app without
+  `workspaceFiles`, so it never sees them). Follow-up ticket suggested; their 429 is documented
+  in docs/rate-limits.md only.
+- Notebook cell runs 120/min is the coordinator's number, to confirm with the owner.
 
 ## Evidence (acceptance criteria → test or command output)
 
+- Review fixes: `operation-limits.db.test.ts` "one start counts once" (viewer's real schedule
+  over 3 min, plus panel and Refresh: one hit), `thread-context.db.test.ts` (6 polls, one hit),
+  `notebooks.db.test.ts` (limit, busy not counted), `workspace-files.db.test.ts` (shared upload
+  bucket); each failed before its fix.
 - ac-1: `operation-limits.db.test.ts` (each limit: max allowed, next refused with the window's
   `retryAfterSeconds`, allowed after the window via `now`; route 429s; scheduled run fires at the
   member's limit and is not counted), `setup-limit.db.test.ts`, and a case each in

@@ -204,10 +204,9 @@ export function FileBrowser({
           Showing the last synced files while your sandbox wakes.
         </p>
       )}
-      {limited && (
+      {limited !== null && (
         <p role="status" className="text-muted-foreground m-0 text-xs">
-          Your sandbox was started too often, so it stays asleep for a few minutes. Showing the last
-          synced files; sending a message still works.
+          {limited} Showing the last synced files; sending a message still works.
         </p>
       )}
       <VolumeLostNotice api={api.rebuild} mode="check" />

@@ -37,7 +37,8 @@ time: while the agent is answering in the conversation, your run waits its turn.
 ## Notebooks
 
 A notebook opens as cells. **Run cell N** runs one cell; **Run all** runs the code cells in order
-and stops at the first error. Cells can be edited (**Edit cell N**, then **Done**), moved, deleted,
+and stops at the first error. You can run up to 120 cells a minute (each cell of **Run all**
+counts); past that the kernel bar says "Too many cell runs" until the minute is over. Cells can be edited (**Edit cell N**, then **Done**), moved, deleted,
 and added (Add code cell, or a Markdown cell below). **Save** writes the notebook; outputs are saved
 into it.
 

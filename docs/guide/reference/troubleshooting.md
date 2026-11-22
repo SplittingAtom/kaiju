@@ -64,19 +64,21 @@ limits are generous, so you only meet them when something repeats far faster tha
 (a script, a stuck key, a page reloading in a loop). Wait the time the message says and try again;
 nothing was lost. The limits are the same on every site:
 
-| What                                   | Limit per person  | Message starts with                  |
-| -------------------------------------- | ----------------- | ------------------------------------ |
-| Sending messages and **Retry**         | 60 a minute       | "You are sending messages too fast"  |
-| **Compact now**                        | 10 in 10 minutes  | "Too many compactions"               |
-| Summarizing a branch you leave         | 10 in 10 minutes  | "Too many branch summaries"          |
-| Attaching files in the composer        | 120 in 10 minutes | "Too many uploads"                   |
-| Creating schedules                     | 20 an hour        | "Too many new schedules"             |
-| Starting your sleeping sandbox by hand | 20 in 10 minutes  | "Your sandbox was started too often" |
-| Rating answers (thumbs up or down)     | 60 a minute       | "Too many ratings"                   |
+| What                                                                  | Limit per person                | Message starts with                  |
+| --------------------------------------------------------------------- | ------------------------------- | ------------------------------------ |
+| Sending messages and **Retry**                                        | 60 a minute                     | "You are sending messages too fast"  |
+| **Compact now**                                                       | 10 in 10 minutes                | "Too many compactions"               |
+| Summarizing a branch you leave                                        | 10 in 10 minutes                | "Too many branch summaries"          |
+| Uploading files (composer, Files panel, dropping on the conversation) | 120 in 10 minutes, one per file | "Too many uploads"                   |
+| Running notebook cells (**Run all** counts each cell)                 | 120 a minute                    | "Too many cell runs"                 |
+| Creating schedules                                                    | 20 an hour                      | "Too many new schedules"             |
+| Starting your sleeping sandbox by hand                                | 20 in 10 minutes                | "Your sandbox was started too often" |
+| Rating answers (thumbs up or down)                                    | 60 a minute                     | "Too many ratings"                   |
 
 Scheduled runs never count and are never held back by these limits. Starting your sandbox counts
-only when it was asleep and you opened the Files panel, pressed Refresh or opened the context
-viewer; sending a message still wakes it as usual. Site admins can create or rotate at most 10
+once per start, only when it was asleep and you opened the Files panel, pressed Refresh or opened
+the context viewer; asking again while it is still starting is free, and sending a message or
+running a cell still wakes it as usual. Site admins can create or rotate at most 10
 SCIM tokens an hour, and first-run setup accepts 10 attempts per address in 10 minutes.
 
 ## Models and budgets

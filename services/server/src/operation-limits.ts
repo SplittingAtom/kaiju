@@ -1,6 +1,11 @@
 import type { Context } from "hono";
-import type { KobeDb } from "@kobe/db";
-import { checkRateLimit, type RateLimitRule, type RateLimitVerdict } from "./rate-limit.js";
+import {
+  checkRateLimit,
+  clearRateLimit,
+  type RateLimitDb,
+  type RateLimitRule,
+  type RateLimitVerdict,
+} from "./rate-limit.js";
 import type { SandboxRouter, SandboxTarget } from "./sandbox-wire/types.js";
 
 /** A fixed limit on one operation: its bucket, window and the sentence a refusal shows. */
@@ -54,14 +59,26 @@ export const OPERATION_LIMITS = {
     message: "Too many new schedules. Wait a while and try again.",
   },
   /**
-   * Starts of an asleep sandbox the member asks for (Files panel, Refresh, context viewer). A
-   * sandbox that is already connected is not counted; a run's own wake never is.
+   * Starts of an asleep sandbox the member asks for (Files panel, Refresh, context viewer): one
+   * hit per start, however often the panel and the viewer ask while it comes up (see
+   * {@link admitWakeStart}). A connected sandbox is not counted; a run's own wake never is.
    */
   sandboxWake: {
     bucket: "sandbox-wake",
     windowMs: 10 * MINUTE,
     max: 20,
     message: "Your sandbox was started too often. Wait a few minutes and try again.",
+  },
+  /**
+   * Notebook cell runs the member starts (`POST /v1/threads/{id}/notebook/run`; Run all sends one
+   * per cell, one after another), apart from the conversation run limit. Counted with the run
+   * row, so a `thread_busy` answer (Run all's retries) does not count.
+   */
+  notebookRun: {
+    bucket: "notebook-run",
+    windowMs: MINUTE,
+    max: 120,
+    message: "Too many cell runs. Wait a minute and try again.",
   },
   feedback: {
     bucket: "answer-feedback",
@@ -90,29 +107,69 @@ export const UNKNOWN_CLIENT = "unknown";
 
 /** Counts one hit of `limit` for `subject` (a user id, or a client IP). */
 export function admitOperation(
-  db: KobeDb,
+  db: RateLimitDb,
   limit: OperationLimit,
   subject: string,
   now = Date.now(),
+  options: { readonly prune?: boolean } = {},
 ): Promise<RateLimitVerdict> {
-  return checkRateLimit(db, `${limit.bucket}:${subject}`, limit, now);
+  return checkRateLimit(db, `${limit.bucket}:${subject}`, limit, now, options);
+}
+
+/**
+ * How long a counted start stays "in progress": longer than the context viewer keeps asking
+ * (3 min) and than a slow volume attach. Cleared as soon as the sandbox is seen connected.
+ */
+export const WAKE_START_WINDOW_MS = 5 * MINUTE;
+
+const FREE: RateLimitVerdict = { allowed: true, retryAfterSeconds: 1 };
+const wakeStartKey = (owner: SandboxTarget) => `sandbox-wake-start:${owner.teamId}:${owner.userId}`;
+
+/**
+ * A wake of a sandbox known not to be connected (KOBE-813 review H1): the first ask starts it
+ * and counts one hit of {@link OPERATION_LIMITS.sandboxWake}; asks while that start is in
+ * progress (the viewer's polls, panel mounts, Refresh) are free. A marker row per (Workspace,
+ * member) says a start is in progress; a refused start clears it, so the next ask is checked
+ * (and refused) again rather than passing as "in progress".
+ */
+export async function admitWakeStart(
+  db: RateLimitDb,
+  owner: SandboxTarget,
+  now = Date.now(),
+): Promise<RateLimitVerdict> {
+  const marker = await checkRateLimit(
+    db,
+    wakeStartKey(owner),
+    { windowMs: WAKE_START_WINDOW_MS, max: 1 },
+    now,
+  );
+  if (!marker.allowed) return FREE;
+  const verdict = await admitOperation(db, OPERATION_LIMITS.sandboxWake, owner.userId, now);
+  if (!verdict.allowed) await clearRateLimit(db, wakeStartKey(owner));
+  return verdict;
+}
+
+/** The sandbox is connected: its start is over, the next wake is a new start. */
+export function wakeStartOver(db: RateLimitDb, owner: SandboxTarget): Promise<void> {
+  return clearRateLimit(db, wakeStartKey(owner));
 }
 
 /**
  * A wake the member asks for (KOBE-813): free while their sandbox is connected (nothing starts),
- * else one hit of {@link OPERATION_LIMITS.sandboxWake}. A run's own wake never comes here, so a
+ * else {@link admitWakeStart}. A run's own wake never comes here, so a
  * message is never refused for it: the run limit already bounds those.
  */
 export async function admitSandboxWake(
-  db: KobeDb,
+  db: RateLimitDb,
   router: Pick<SandboxRouter, "isConnected">,
   owner: SandboxTarget,
   now = Date.now(),
 ): Promise<RateLimitVerdict> {
   if (await router.isConnected(owner).catch(() => false)) {
-    return { allowed: true, retryAfterSeconds: 1 };
+    await wakeStartOver(db, owner);
+    return FREE;
   }
-  return admitOperation(db, OPERATION_LIMITS.sandboxWake, owner.userId, now);
+  return admitWakeStart(db, owner, now);
 }
 
 /** The standard refusal: 429 `{code: "rate_limited", message}` with `Retry-After` in seconds. */

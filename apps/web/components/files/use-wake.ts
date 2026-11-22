@@ -9,17 +9,18 @@ import type { WorkspaceEventFeed, WorkspaceMoved } from "../../lib/files/workspa
  * refresh. Each later `key` (Refresh, Show files: the member asked for the files again) is a sync
  * now (KOBE-599): the running sandbox pushes first, then everything on screen lists again
  * (`relist`); `syncing` meanwhile. A sandbox that was asleep is woken by the server and listed
- * again once more after its first sync. `limited` (KOBE-813): the server refused to start the
- * sandbox because the member started it too often; the last synced files stay shown.
+ * again once more after its first sync. `limited` (KOBE-813): the server's sentence when it
+ * answered 429 (the sandbox started too often, or too many refreshes); the last synced files stay
+ * shown.
  */
 export function useWake(
   api: FilesApi,
   relist: () => void,
   refreshMs: number,
   key: number,
-): { readonly waking: boolean; readonly syncing: boolean; readonly limited: boolean } {
+): { readonly waking: boolean; readonly syncing: boolean; readonly limited: string | null } {
   const [doneKey, setDoneKey] = useState<number | null>(null);
-  const [limited, setLimited] = useState(false);
+  const [limited, setLimited] = useState<string | null>(null);
   const [syncedKey, setSyncedKey] = useState<number | null>(null);
   const mounted = useRef(false);
   const firstKey = useRef(key);
@@ -37,14 +38,14 @@ export function useWake(
       mounted.current = true;
       void api.wake().then((res) => {
         if (!current) return;
-        setLimited(!res.ok && res.error.status === 429);
+        setLimited(!res.ok && res.error.status === 429 ? res.error.message : null);
         if (!res.ok) return setDoneKey(key);
         later();
       });
     } else {
       void api.syncNow().then((res) => {
         if (!current) return;
-        setLimited(!res.ok && res.error.status === 429);
+        setLimited(!res.ok && res.error.status === 429 ? res.error.message : null);
         relist();
         setSyncedKey(key);
         if (res.ok && res.data.status === "asleep") later();
