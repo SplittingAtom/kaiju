@@ -90,7 +90,10 @@ export interface Offboarding {
   /** One pass: catch departures that were missed, then delete what is past its 30 days. */
   sweep(): Promise<SweepSummary>;
   /** Sweeps now and every `everyMs`, one replica at a time under `lock`; returns a stop function. */
-  start(options: { readonly lock: ReconcileLock; readonly everyMs: number }): () => void;
+  start(options: {
+    readonly lock: ReconcileLock;
+    readonly everyMs: number;
+  }): () => Promise<unknown>;
 }
 
 export interface OffboardingOptions {
@@ -228,10 +231,12 @@ export function createOffboarding(options: OffboardingOptions): Offboarding {
     sweep,
     start({ lock, everyMs }) {
       let running = false;
+      // The pass in flight (never rejects): the stop function waits for it (KOBE-709).
+      let current: Promise<unknown> = Promise.resolve();
       const run = () => {
         if (running) return;
         running = true;
-        lock
+        current = lock
           .runExclusive(sweep)
           .then((outcome) => {
             if (!outcome.ran) return log.debug("offboarding sweep: another replica runs it");
@@ -247,7 +252,10 @@ export function createOffboarding(options: OffboardingOptions): Offboarding {
       run();
       const timer = setInterval(run, everyMs);
       timer.unref();
-      return () => clearInterval(timer);
+      return () => {
+        clearInterval(timer);
+        return current;
+      };
     },
   };
 }

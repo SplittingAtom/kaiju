@@ -10,7 +10,7 @@ import { currentEntry } from "../workspace-sync/store.js";
 /**
  * The notebooks' view of the member's synced workspace (docs/specs/notebooks.md NB11): read a
  * notebook or `.py` file as text with its version, and save a notebook at the version it was
- * read through the file editor's save path (FE4). `index.ts` binds the workspace store later
+ * read through the file editor's save path (FE4). `startup/server.ts` binds the workspace store later
  * (`use`); without one every read is `unavailable`.
  */
 export type NotebookRead =

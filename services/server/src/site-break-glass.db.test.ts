@@ -6,6 +6,7 @@ import { sweepBreakGlass } from "./break-glass/sweeper.js";
 import { createServerDeps, type ServerDeps } from "./deps.js";
 import { TestBrowser } from "./testing/browser.js";
 import { MemoryMailer } from "./testing/mailer.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 // KOBE-648 (SM28; amends D10): Site-level break-glass on one person's portable memories, end to
 // end: request, two-person approval, notifications per the break-glass rule, reads refused without
@@ -130,6 +131,7 @@ beforeAll(async () => {
   await admin.connect();
   mailer = new MemoryMailer();
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "c".repeat(48),

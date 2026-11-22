@@ -43,7 +43,7 @@ export type SkillDraftToolResult =
     };
 
 export interface SkillDraftTool {
-  /** Binds the workspace store (index.ts, once it exists); without it every save is refused. */
+  /** Binds the workspace store (startup/server.ts, once it exists); without it every save is refused. */
   use(sync: WorkspaceSync): void;
   save(
     target: { readonly teamId: string; readonly userId: string },

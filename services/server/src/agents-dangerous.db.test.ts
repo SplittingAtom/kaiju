@@ -7,6 +7,7 @@ import { createServerDeps, type ServerDeps } from "./deps.js";
 import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
 import { RawBody, TestBrowser, type TestResponse } from "./testing/browser.js";
 import { MemoryMailer } from "./testing/mailer.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 /**
  * Dangerous mode over HTTP (AC1, KOBE-476): only site admins and team admins may create, import,
@@ -40,6 +41,7 @@ const plain = (name: string) => ({ frontmatter: { name }, prompt: `You are ${nam
 beforeAll(async () => {
   database = await createTestDatabase(testServerUrl());
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "t".repeat(48),

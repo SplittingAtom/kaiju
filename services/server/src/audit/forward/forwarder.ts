@@ -61,6 +61,8 @@ function describe(err: unknown, secrets: readonly string[]): string {
 export class AuditForwarder {
   private timer: ReturnType<typeof setInterval> | undefined;
   private running = false;
+  /** The pass in flight (never rejects): `stop()` waits for it (KOBE-709). */
+  private current: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly o: AuditForwarderOptions) {}
 
@@ -134,7 +136,7 @@ export class AuditForwarder {
     const run = () => {
       if (this.running) return;
       this.running = true;
-      this.runOnce()
+      this.current = this.runOnce()
         .catch((err: unknown) => this.o.log.error({ err }, "audit forwarding run failed"))
         .finally(() => {
           this.running = false;
@@ -145,8 +147,9 @@ export class AuditForwarder {
     this.timer.unref();
   }
 
-  stop(): void {
+  stop(): Promise<unknown> {
     if (this.timer) clearInterval(this.timer);
     this.timer = undefined;
+    return this.current;
   }
 }

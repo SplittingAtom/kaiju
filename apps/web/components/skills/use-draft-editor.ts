@@ -3,12 +3,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ApiError, ApiResult } from "../../lib/api/client";
 import { teamDraftClient, type DraftClient } from "../../lib/skills/draft-client";
-import type { Changed, DraftFileInfo, DraftSummary } from "../../lib/skills/drafts-api";
-import type { ManifestDraftChoice, ManifestWritten } from "../../lib/skills/manifest-choice";
+import type { DraftFileInfo, DraftSummary } from "../../lib/skills/drafts-api";
+import type { ManifestDraftChoice } from "../../lib/skills/manifest-choice";
 import { SKILL_MD } from "../../lib/skills/skill-md";
+import type { ManifestOutcome, SaveStatus } from "./draft-editor-model";
+import { useDraftFileOps } from "./use-draft-file-ops";
+import { useDraftWriter, useFlushOnLeave } from "./use-draft-writer";
 import { useScanPreview, type ScanState } from "./use-scan-preview";
 
 export type { ScanState } from "./use-scan-preview";
+export { MANIFEST, SAVE_IDLE_MS, SAVE_MAX_WAIT_MS } from "./draft-editor-model";
+export type { ManifestOutcome, SaveStatus } from "./draft-editor-model";
 
 /**
  * The Workbench editor's state (KOBE-321, SK11/SK12). Edits autosave: a file is written once its
@@ -20,17 +25,6 @@ export type { ScanState } from "./use-scan-preview";
  * in-app link, the bar, the palette) writes what is pending (review B2); closing the tab asks
  * first. A stale revision (someone else saved) stops autosave until the draft is reloaded.
  */
-export const SAVE_IDLE_MS = 400;
-export const SAVE_MAX_WAIT_MS = 1200;
-
-export type SaveStatus = "saved" | "pending" | "saving" | "error" | "conflict";
-
-export type ManifestOutcome =
-  ({ readonly ok: true } & ManifestWritten) | { readonly ok: false; readonly error: ApiError };
-
-/** The manifest's path (the package contract's reserved root name). */
-export const MANIFEST = "kobe.skill.yaml";
-
 export interface DraftEditor {
   readonly draft: DraftSummary;
   readonly files: readonly DraftFileInfo[];
@@ -67,15 +61,6 @@ interface Loaded {
   readonly files: readonly DraftFileInfo[];
   readonly texts: Readonly<Record<string, string>>;
 }
-
-const byteLength = (s: string) => new TextEncoder().encode(s).length;
-
-/** A change waits for the edits before it; when one of them failed, it doesn't go ahead. */
-const UNSAVED: ApiError = {
-  status: 0,
-  code: "unsaved_changes",
-  message: "An earlier change isn't saved yet. Fix that first.",
-};
 
 async function loadDraft(client: DraftClient, id: string): Promise<ApiResult<Loaded>> {
   const res = await client.get(id);
@@ -130,96 +115,13 @@ function useEditorState(
   const [error, setError] = useState<ApiError | null>(null);
 
   const rev = useRef(0);
-  const pending = useRef(new Map<string, string>());
-  const queue = useRef<Promise<unknown>>(Promise.resolve());
-  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const maxTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const stopped = useRef(false);
   const currentRev = useCallback(() => rev.current, []);
   const scanFn = useCallback(
     (draftId: string, signal: AbortSignal) => api.scan(draftId, signal),
     [api],
   );
   const { scan, rescan } = useScanPreview(teamId, id, currentRev, scanFn);
-
-  /** Runs `op` after every change queued before it. */
-  const enqueue = useCallback(<T>(op: () => Promise<T>): Promise<T> => {
-    const next = queue.current.then(op, op);
-    queue.current = next.catch(() => undefined);
-    return next;
-  }, []);
-
-  const changed = useCallback((res: Changed) => {
-    rev.current = res.rev;
-    setDraft(res.draft);
-  }, []);
-
-  const failed = useCallback((err: ApiError) => {
-    setError(err);
-    if (err.code === "stale_revision") stopped.current = true;
-    setStatus(err.code === "stale_revision" ? "conflict" : "error");
-  }, []);
-
-  /** Writes the pending edits (inside the queue); the revision after them, or null. */
-  const writePending = useCallback(async (): Promise<number | null> => {
-    let wrote = false;
-    while (pending.current.size > 0 && !stopped.current) {
-      const [path, text] = pending.current.entries().next().value as [string, string];
-      pending.current.delete(path);
-      setStatus("saving");
-      const res = await api.put(id, path, rev.current, text);
-      if (!res.ok) {
-        if (!pending.current.has(path)) pending.current.set(path, text);
-        failed(res.error);
-        return null;
-      }
-      changed(res.data);
-      wrote = true;
-      setFiles((fs) => fs.map((f) => (f.path === path ? { ...f, size: byteLength(text) } : f)));
-    }
-    if (stopped.current) return null;
-    setError(null);
-    setStatus(pending.current.size > 0 ? "pending" : "saved");
-    // Only a write makes a new revision to scan (a flush before Save version may write nothing).
-    if (wrote) rescan();
-    return rev.current;
-  }, [api, id, changed, failed, rescan]);
-
-  const flush = useCallback((): Promise<number | null> => {
-    for (const t of [idleTimer, maxTimer]) {
-      if (t.current) clearTimeout(t.current);
-      t.current = null;
-    }
-    return enqueue(writePending);
-  }, [enqueue, writePending]);
-
-  /** A change of the draft, in the queue: the pending edits are written first. */
-  const change = useCallback(
-    <T>(write: (rev: number) => Promise<ApiResult<T>>, apply: (data: T) => void) => {
-      for (const t of [idleTimer, maxTimer]) {
-        if (t.current) clearTimeout(t.current);
-        t.current = null;
-      }
-      return enqueue(async (): Promise<ApiError | null> => {
-        if ((await writePending()) === null) return UNSAVED;
-        const res = await write(rev.current);
-        if (!res.ok) {
-          if (res.error.code === "stale_revision") failed(res.error);
-          return res.error;
-        }
-        apply(res.data);
-        rescan();
-        return null;
-      });
-    },
-    [enqueue, writePending, failed, rescan],
-  );
-
-  const schedule = useCallback(() => {
-    if (idleTimer.current) clearTimeout(idleTimer.current);
-    idleTimer.current = setTimeout(() => void flush(), SAVE_IDLE_MS);
-    maxTimer.current ??= setTimeout(() => void flush(), SAVE_MAX_WAIT_MS);
-  }, [flush]);
+  const writer = useDraftWriter({ api, id, rev, rescan, setDraft, setFiles, setStatus, setError });
 
   // Adopt a loaded draft once; start its first scan.
   useEffect(() => {
@@ -231,123 +133,23 @@ function useEditorState(
     rescan();
   }, [loaded, rescan]);
 
-  // Closing the tab with unsaved edits asks first; leaving the editor in the app writes them.
-  const flushRef = useRef(flush);
-  useEffect(() => {
-    flushRef.current = flush;
-  }, [flush]);
-  useEffect(() => {
-    const warn = (e: BeforeUnloadEvent) => {
-      if (pending.current.size > 0) e.preventDefault();
-    };
-    window.addEventListener("beforeunload", warn);
-    return () => {
-      window.removeEventListener("beforeunload", warn);
-      // The queue outlives the page: pending edits are written after it has gone.
-      if (pending.current.size > 0) void flushRef.current();
-      for (const t of [idleTimer, maxTimer]) if (t.current) clearTimeout(t.current);
-    };
-  }, []);
-
-  const edit = useCallback(
-    (path: string, text: string) => {
-      setTexts((t) => ({ ...t, [path]: text }));
-      if (stopped.current) return;
-      pending.current.set(path, text);
-      setStatus("pending");
-      schedule();
-    },
-    [schedule],
-  );
-
-  const open = useCallback(
-    async (path: string) => {
-      if (texts[path] !== undefined) return null;
-      const res = await api.readText(id, path);
-      if (!res.ok) return res.error;
-      setTexts((t) => (t[path] === undefined ? { ...t, [path]: res.data } : t));
-      return null;
-    },
-    [api, id, texts],
-  );
-
-  const addFile = useCallback(
-    (path: string, text = "") =>
-      change(
-        (r) => api.put(id, path, r, text),
-        (data) => {
-          changed(data);
-          const info: DraftFileInfo = {
-            path,
-            size: byteLength(text),
-            kind: "text",
-            updatedAt: data.draft.updatedAt,
-          };
-          setFiles((fs) => [...fs, info].sort((a, b) => a.path.localeCompare(b.path)));
-          setTexts((t) => ({ ...t, [path]: text }));
-        },
-      ),
-    [api, id, change, changed],
-  );
-
-  const manifestApi = api.manifest?.bind(api);
-  const createManifest = useMemo(
-    () =>
-      manifestApi === undefined
-        ? undefined
-        : async (choice: ManifestDraftChoice): Promise<ManifestOutcome> => {
-            let made: ManifestWritten | undefined;
-            const err = await change(
-              (r) => manifestApi(id, r, choice),
-              (data) => {
-                changed(data);
-                made = data;
-                const info: DraftFileInfo = {
-                  path: MANIFEST,
-                  size: 0,
-                  kind: "text",
-                  updatedAt: data.draft.updatedAt,
-                };
-                setFiles((fs) =>
-                  [...fs.filter((f) => f.path !== MANIFEST), info].sort((a, b) =>
-                    a.path.localeCompare(b.path),
-                  ),
-                );
-              },
-            );
-            if (err) return { ok: false, error: err };
-            if (!made) return { ok: false, error: UNSAVED };
-            return { ok: true, ...made };
-          },
-    [manifestApi, id, change, changed],
-  );
-
-  const removeFile = useCallback(
-    (path: string) => {
-      pending.current.delete(path);
-      return change(
-        (r) => api.remove(id, path, r),
-        (data) => {
-          changed(data);
-          setFiles((fs) => fs.filter((f) => f.path !== path));
-          setTexts((t) => Object.fromEntries(Object.entries(t).filter(([p]) => p !== path)));
-        },
-      );
-    },
-    [api, id, change, changed],
-  );
-
-  const share = useCallback(
-    (shared: boolean) =>
-      change(
-        (r) => api.share(id, r, shared),
-        (next) => {
-          rev.current = next.rev;
-          setDraft(next);
-        },
-      ),
-    [api, id, change],
-  );
+  useFlushOnLeave(writer.pending, writer.flush, writer.idleTimer, writer.maxTimer);
+  const { edit, open, addFile, createManifest, removeFile, share } = useDraftFileOps({
+    api,
+    id,
+    texts,
+    rev,
+    pending: writer.pending,
+    stopped: writer.stopped,
+    setDraft,
+    setFiles,
+    setTexts,
+    setStatus,
+    schedule: writer.schedule,
+    changed: writer.changed,
+    change: writer.change,
+  });
+  const { flush } = writer;
 
   if (!draft) return null;
   return {

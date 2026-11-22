@@ -6,6 +6,7 @@ import { createApp } from "./app.js";
 import { createServerDeps, type ServerDeps } from "./deps.js";
 import { MemoryMailer } from "./testing/mailer.js";
 import { TestBrowser } from "./testing/browser.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 // Own throwaway database: this file needs an Owner, which the first-run tests must not see.
 const PUBLIC_URL = "http://kobe.test";
@@ -44,6 +45,7 @@ beforeAll(async () => {
   admin = new pg.Client({ connectionString: database.adminUrl });
   await admin.connect();
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "t".repeat(48),

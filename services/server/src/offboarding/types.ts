@@ -15,7 +15,7 @@ export type OffboardProvider = Pick<
 
 export interface OffboardingContext {
   readonly db: KobeDb;
-  /** The sandbox provider, once it exists (index.ts builds it after the server deps). */
+  /** The sandbox provider, once it exists (startup/server.ts builds it after the server deps). */
   readonly provider: () => OffboardProvider | undefined;
   /** Object storage of the workspace copy; undefined when `s3.*` is not configured. */
   readonly blobs: BlobStore | undefined;

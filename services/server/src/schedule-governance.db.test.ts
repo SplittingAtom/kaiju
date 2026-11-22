@@ -9,6 +9,7 @@ import { SchedulerRunner } from "./scheduler/runner.js";
 import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
 import { TestBrowser } from "./testing/browser.js";
 import { MemoryMailer } from "./testing/mailer.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 /**
  * Schedule lifecycle and governance (KOBE-180, D7/D19/D32): deactivation and team removal stop a
@@ -85,6 +86,7 @@ async function published(who: Person, scope: "team" | "personal", name: string):
 beforeAll(async () => {
   database = await createTestDatabase(testServerUrl());
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "t".repeat(48),

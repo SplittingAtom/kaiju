@@ -146,7 +146,13 @@ export class SkillEvalRunner {
    */
   async shutdown(timeoutMs: number): Promise<void> {
     this.#closed = true;
-    await Promise.race([this.idle(), delay(timeoutMs)]);
+    // The deadline's timer is cleared once the executions are idle (KOBE-709: stop leaves none).
+    let timer: NodeJS.Timeout | undefined;
+    const deadline = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, timeoutMs);
+      timer.unref();
+    });
+    await Promise.race([this.idle(), deadline]).finally(() => clearTimeout(timer));
   }
 
   async #sweep(): Promise<number> {
