@@ -1532,6 +1532,19 @@ list in `ingress.annotations` under that key keep working after it. A client ove
   address (header missing or not trusted, or every address excluded), Traefik counts the request
   against one empty source, so **the whole Site shares one budget**.
 
+**Site console notice.** While no limit is configured, the Site console's overview shows Site
+admins an information notice ("No rate limit at the ingress"; "Ingress rate limit unknown" when
+`ingress.enabled` is false and the chart cannot tell). The chart passes the state to the server as
+`KOBE_INGRESS_RATE_LIMIT` (`chart`, `external`, `none` or `unknown`). If your own edge (load
+balancer, WAF, CDN, or your own ingress) already limits requests per client, declare it so the
+notice goes away:
+
+```yaml
+ingress:
+  rateLimit:
+    external: true # an edge limit you run yourself; the chart adds no middleware
+```
+
 ### Audit forwarding (SIEM)
 
 `auditForwarding.syslog` and `auditForwarding.otlp` send every audit event to your SIEM (off by

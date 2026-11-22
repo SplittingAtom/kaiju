@@ -207,6 +207,23 @@ read a person's portable preferences either; reading them needs its own break-gl
   Workspace events are forwarded with the same Site-safe details as the Audit log; site events
   as recorded.
 
+### Ingress rate limit
+
+The Site console's overview page shows an information notice when nothing limits how many requests
+one address may send through Kobe's ingress. Kobe still limits sign-in, uploads and other costly
+requests itself; the notice is not an error and nothing stops working.
+
+- **No rate limit at the ingress**: Kobe's Helm chart manages the ingress and its optional rate
+  limit is off (the default).
+- **Ingress rate limit unknown**: the ingress is not managed by the chart (your organization runs
+  its own), so Kobe can't tell.
+
+Either way it is a deployment setting, not a Site console one: ask whoever installed Kobe. They can
+turn on the chart's limit (`ingress.rateLimit.enabled`), or, when a load balancer, firewall or
+their own ingress already limits requests per address, declare it with
+`ingress.rateLimit.external: true`; the notice then goes away. The install guide's section "Rate
+limit at the ingress" has the details.
+
 ## From a conversation
 
 The built-in **Kobe** connector gives every agent the guide's docs tools. Its admin tools are off

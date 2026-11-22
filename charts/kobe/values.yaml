@@ -783,6 +783,10 @@ ingress:
     burst: 300
     period: 1s
     assumeTraefikV3: false
+    # You limit requests per client at your own edge (load balancer, WAF, CDN, or your own
+    # ingress when ingress.enabled is false): true tells the Site console, which otherwise shows
+    # an informational notice that no ingress rate limit is configured (or that Kobe cannot tell).
+    external: false
     # Event streams (SSE: run events, workspace events and changes, skill-eval events) get their
     # own Ingress and their own, separate budget (by default stricter per second than the main
     # one), so stream reconnects never spend the page budget; open streams are never cut (a limit

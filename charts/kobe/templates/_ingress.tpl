@@ -92,3 +92,17 @@ auth.trustedProxies. */}}
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/* Who limits requests per client at the ingress, for the Site console's health view
+(KOBE_INGRESS_RATE_LIMIT): "chart" (this chart's middleware), "external" (the operator declared
+their own edge limit), "none" (the chart's Ingress without a limit), "unknown" (no chart-managed
+Ingress and nothing declared). */}}
+{{- define "kobe.ingress.rateLimitSource" -}}
+{{- $ing := .Values.ingress | default dict -}}
+{{- $rl := $ing.rateLimit | default dict -}}
+{{- if and $ing.enabled $rl.enabled -}}chart
+{{- else if $rl.external -}}external
+{{- else if $ing.enabled -}}none
+{{- else -}}unknown
+{{- end -}}
+{{- end }}

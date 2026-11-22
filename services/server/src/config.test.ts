@@ -245,6 +245,18 @@ describe("loadConfig", () => {
     );
   });
 
+  it("reads who limits requests at the ingress, unknown by default (KOBE-811)", () => {
+    expect(loadConfig(REQUIRED).auth?.ingressRateLimit).toBe("unknown");
+    for (const v of ["chart", "external", "none", "unknown"] as const) {
+      expect(loadConfig({ ...REQUIRED, KOBE_INGRESS_RATE_LIMIT: v }).auth?.ingressRateLimit).toBe(
+        v,
+      );
+    }
+    expect(() => loadConfig({ ...REQUIRED, KOBE_INGRESS_RATE_LIMIT: "on" })).toThrow(
+      /KOBE_INGRESS_RATE_LIMIT must be chart, external, none or unknown/,
+    );
+  });
+
   it("reads an optional approval key of at least 32 characters (KOBE-37), never for the scheduler", () => {
     expect(loadConfig(REQUIRED).auth?.approvalKey).toBeUndefined();
     expect(loadConfig({ ...REQUIRED, KOBE_APPROVAL_KEY: "" }).auth?.approvalKey).toBeUndefined();

@@ -11,6 +11,7 @@ import {
 import type { ConsoleKind } from "../../lib/admin/nav/types";
 import { PageHeader, Section } from "../ui/console";
 import { ConsoleAccessContext } from "./console-context";
+import { SiteHealthNotices } from "./site/site-health-notices";
 
 /** The console landing page: every section the caller can open, with what it is for. */
 export function ConsoleOverview({ kind }: { readonly kind: ConsoleKind }) {
@@ -19,6 +20,8 @@ export function ConsoleOverview({ kind }: { readonly kind: ConsoleKind }) {
   return (
     <>
       <PageHeader title={CONSOLE_TITLES[kind]} />
+      {access.console === "site" &&
+        (access.siteRole === "owner" || access.siteRole === "admin") && <SiteHealthNotices />}
       {groupSections(visibleSections(access)).map(({ group, sections }) => (
         <Section key={group} title={group}>
           <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3 p-0">

@@ -61,9 +61,21 @@ streams move to their own Ingress with their own middleware. Off: rendered outpu
   page load fetches many `/_next` assets through the same limit.
 - **Inventory:** no row needed; Traefik is already in `tools/license-check/inventory.yaml` (k3s
   bundled) and the chart adds no image.
-- **User-facing guide:** no `docs/guide/` change; this is an operator-only chart value with no
-  member, admin or agent visible surface (beyond 429s when an operator enables it). Documented in
-  `docs/install.md` ("Rate limit at the ingress (optional)").
+- **Site console notice (Chris, 2026-11-22):** the limit stays off by default; the Site console
+  overview shows Site admins an informational notice when no ingress limit is configured. The
+  chart sets `KOBE_INGRESS_RATE_LIMIT` on the API server (`chart` when `ingress.enabled` and
+  `rateLimit.enabled`; else `external` when `ingress.rateLimit.external: true`, the operator's
+  declaration of their own edge limit; else `none` with the chart's Ingress; else `unknown`),
+  validated by zod in `config.ts` (default `unknown`). There was no Site health surface yet, so
+  this adds `GET /v1/site/health` (`site.settings.manage`, `{checks: [...]}`, one check
+  `ingress_rate_limit`: `level` `ok` with `source`, or `info` with `state` `none`/`unknown` and
+  `docs`) and `SiteHealthNotices` on the Site console overview (owner/admin only; `Notice` tone
+  info, `role="status"`, link to the guide section). OpenAPI catalog detail added, openapi.json
+  regenerated, route inventory snapshot updated.
+- **User-facing guide:** `docs/guide/admin/site-admin.md` gains "Ingress rate limit" (what the two
+  notices mean, who can act, `ingress.rateLimit.external`); the chart values themselves are
+  operator-only and documented in `docs/install.md` ("Rate limit at the ingress (optional)", now
+  with the notice and `external`).
 
 ## Open questions (for Chris or the coordinator)
 
@@ -88,14 +100,16 @@ streams move to their own Ingress with their own middleware. Off: rendered outpu
 > `externalTrafficPolicy: Local`: with the default `Cluster`, ServiceLB hides client addresses and
 > every user shares one budget per node. Leave `ingress.rateLimit.ipStrategy` empty unless an L7
 > proxy in front of Traefik always adds a trusted `X-Forwarded-For`; with it set and no usable
-> address, the whole Site shares one budget. See
-> [Rate limit at the ingress](install.md#rate-limit-at-the-ingress-optional).
+> address, the whole Site shares one budget. While no limit is configured the Site console shows
+> Site admins an information notice; `ingress.rateLimit.external: true` declares an edge limit of
+> your own and hides it. See [Rate limit at the ingress](install.md#rate-limit-at-the-ingress-optional).
 
 ## Evidence (acceptance criteria → test or command output)
 
-| AC   | Evidence                                                                                                                                                                                                                                                              |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ac-1 | `charts/kobe/tests/ingress-rate-limit.test.ts` "adds a traefik.io/v1alpha1 rateLimit Middleware…", "takes average, burst and period from values", ipStrategy cases                                                                                                    |
-| ac-2 | same file: "routes every SSE endpoint…to the streams Ingress", "knows every server route module that streams", "never exposes the sandbox WebSocket or internal (MCP proxy) ports"                                                                                    |
-| ac-3 | "ingress.rateLimit off (default)" cases; off render of the main Ingress identical to main (diffed with/without TLS, issuer, annotations); install.md section; rate-limits text above                                                                                  |
-| ac-4 | Traefik v3 version gate (refuses 1.30/1.31, renders 1.32, override, off unchecked); schema cases ("refuses …" x13) and on/off describes; `pnpm --filter @kobe/chart test` 27 files / 382 tests passed (34 in the new file); `helm lint --strict` on and off: 0 failed |
+| AC     | Evidence                                                                                                                                                                                                                                                                                                                                                         |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ac-1   | `charts/kobe/tests/ingress-rate-limit.test.ts` "adds a traefik.io/v1alpha1 rateLimit Middleware…", "takes average, burst and period from values", ipStrategy cases                                                                                                                                                                                               |
+| ac-2   | same file: "routes every SSE endpoint…to the streams Ingress", "knows every server route module that streams", "never exposes the sandbox WebSocket or internal (MCP proxy) ports"                                                                                                                                                                               |
+| ac-3   | "ingress.rateLimit off (default)" cases; off render of the main Ingress identical to main (diffed with/without TLS, issuer, annotations); install.md section; rate-limits text above                                                                                                                                                                             |
+| ac-4   | Traefik v3 version gate (refuses 1.30/1.31, renders 1.32, override, off unchecked); schema cases ("refuses …" x13) and on/off describes; `pnpm --filter @kobe/chart test` 27 files / 382 tests passed (34 in the new file); `helm lint --strict` on and off: 0 failed                                                                                            |
+| notice | `services/server/src/routes/site-health.test.ts` (admin only; chart/external ok; none, unknown info), `config.test.ts` (env values, default unknown, refusal), `apps/web/components/admin/overview.test.tsx` "site health notices" (none, unknown, configured, non-admin not asked), chart "KOBE_INGRESS_RATE_LIMIT…" (none/chart/external/unknown, server only) |

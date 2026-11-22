@@ -174,6 +174,29 @@ const isolation = {
 };
 const Isolation = untyped("SiteIsolationStatus", isolation);
 
+// KOBE-811: install checks for the Site console overview (one check today).
+const SiteHealth = untyped(
+  "SiteHealth",
+  obj({
+    checks: arr({
+      oneOf: [
+        obj({
+          id: oneOfStrings("ingress_rate_limit"),
+          level: oneOfStrings("ok"),
+          state: oneOfStrings("configured"),
+          source: oneOfStrings("chart", "external"),
+        }),
+        obj({
+          id: oneOfStrings("ingress_rate_limit"),
+          level: oneOfStrings("info"),
+          state: oneOfStrings("none", "unknown"),
+          docs: str,
+        }),
+      ],
+    }),
+  }),
+);
+
 const SSO_OFF = "Every SSO route answers 404 while single sign-on is switched off.";
 
 export const sitePeopleDetails: Readonly<Record<string, CatalogDetail>> = {
@@ -550,6 +573,13 @@ export const sitePeopleDetails: Readonly<Record<string, CatalogDetail>> = {
     responseDescription: "The site branding back at the install defaults.",
   },
   "get /v1/site/isolation": { response: Isolation },
+  "get /v1/site/health": {
+    response: SiteHealth,
+    responseDescription:
+      "Install checks. `info` is a notice, not an error: `ingress_rate_limit` is `none` when the " +
+      "chart's Ingress has no per-client rate limit, `unknown` when Kobe's Ingress is not managed " +
+      "by the chart and no edge limit was declared.",
+  },
   "post /v1/site/isolation/check": {
     body: null,
     response: Isolation,

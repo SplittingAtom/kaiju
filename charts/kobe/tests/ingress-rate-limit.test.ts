@@ -300,3 +300,38 @@ describe("ingress.rateLimit schema", () => {
     expect(() => helm({ ...ON, [key]: value })).toThrow();
   });
 });
+
+describe("KOBE_INGRESS_RATE_LIMIT for the Site console's health view", () => {
+  const source = (values: Record<string, string>) => {
+    const dep = must(render(values), "Deployment", "kobe-server");
+    const env = dep.spec.template.spec.containers[0].env as { name: string; value?: string }[];
+    return env.find((e) => e.name === "KOBE_INGRESS_RATE_LIMIT")?.value;
+  };
+
+  it("is none while the chart's Ingress has no limit (default)", () => {
+    expect(source({})).toBe("none");
+  });
+
+  it("is chart when the chart's limit is on", () => {
+    expect(source(ON)).toBe("chart");
+  });
+
+  it("is external when the operator declares their own edge limit", () => {
+    expect(source({ "ingress.rateLimit.external": "true" })).toBe("external");
+    expect(source({ "ingress.enabled": "false", "ingress.rateLimit.external": "true" })).toBe(
+      "external",
+    );
+  });
+
+  it("is unknown when the chart does not manage the Ingress and nothing is declared", () => {
+    expect(source({ "ingress.enabled": "false", publicUrl: "https://kobe.example.com" })).toBe(
+      "unknown",
+    );
+  });
+
+  it("is set on the API server only", () => {
+    const web = must(render({}), "Deployment", "kobe-web");
+    const env = web.spec.template.spec.containers[0].env as { name: string }[];
+    expect(env.some((e) => e.name === "KOBE_INGRESS_RATE_LIMIT")).toBe(false);
+  });
+});
