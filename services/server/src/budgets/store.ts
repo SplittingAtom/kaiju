@@ -375,6 +375,27 @@ async function currentRow(tx: KobeTx, teamId: string, userId: string | null) {
   return row;
 }
 
+/** The team budget after `input` (fields left out keep their value in `before`). */
+function nextTeamBudget(input: TeamBudgetInput, before: BudgetRow) {
+  return {
+    monthlyUsd: pick(input.monthly_usd, before?.monthlyUsd ?? null),
+    dailyUsd: pick(input.daily_usd, before?.dailyUsd ?? null),
+    monthlyTokens: pick(input.monthly_tokens, before?.monthlyTokens ?? null),
+    dailyTokens: pick(input.daily_tokens, before?.dailyTokens ?? null),
+    memberMonthlyUsd: pick(input.member_default?.monthly_usd, before?.memberMonthlyUsd ?? null),
+    memberDailyUsd: pick(input.member_default?.daily_usd, before?.memberDailyUsd ?? null),
+    memberMonthlyTokens: pick(
+      input.member_default?.monthly_tokens,
+      before?.memberMonthlyTokens ?? null,
+    ),
+    memberDailyTokens: pick(input.member_default?.daily_tokens, before?.memberDailyTokens ?? null),
+    userRequestsPerMinute: pick(
+      input.user_requests_per_minute,
+      before?.userRequestsPerMinute ?? null,
+    ),
+  };
+}
+
 /** Sets the team's own budget and request rate (team admins). */
 export async function setTeamBudget(
   db: KobeDb,
@@ -389,35 +410,33 @@ export async function setTeamBudget(
     if (expected !== undefined && !budgetMatches(before, expected, true)) {
       return "changed_since_approval";
     }
-    const next = {
-      monthlyUsd: pick(input.monthly_usd, before?.monthlyUsd ?? null),
-      dailyUsd: pick(input.daily_usd, before?.dailyUsd ?? null),
-      monthlyTokens: pick(input.monthly_tokens, before?.monthlyTokens ?? null),
-      dailyTokens: pick(input.daily_tokens, before?.dailyTokens ?? null),
-      memberMonthlyUsd: pick(input.member_default?.monthly_usd, before?.memberMonthlyUsd ?? null),
-      memberDailyUsd: pick(input.member_default?.daily_usd, before?.memberDailyUsd ?? null),
-      memberMonthlyTokens: pick(
-        input.member_default?.monthly_tokens,
-        before?.memberMonthlyTokens ?? null,
-      ),
-      memberDailyTokens: pick(
-        input.member_default?.daily_tokens,
-        before?.memberDailyTokens ?? null,
-      ),
-      userRequestsPerMinute: pick(
-        input.user_requests_per_minute,
-        before?.userRequestsPerMinute ?? null,
-      ),
-    };
-    if (before) {
-      await tx
+    const update = (row: NonNullable<BudgetRow>, values: ReturnType<typeof nextTeamBudget>) =>
+      tx
         .update(teamBudgets)
-        .set({ ...next, updatedBy: actorId, updatedAt: new Date() })
-        .where(and(eq(teamBudgets.teamId, teamId), eq(teamBudgets.id, before.id)));
+        .set({ ...values, updatedBy: actorId, updatedAt: new Date() })
+        .where(and(eq(teamBudgets.teamId, teamId), eq(teamBudgets.id, row.id)));
+    let prior = before;
+    let next = nextTeamBudget(input, prior);
+    if (prior) {
+      await update(prior, next);
     } else {
-      await tx.insert(teamBudgets).values({ teamId, ...next, updatedBy: actorId });
+      // KOBE-786: insert only if still absent. A first budget saved meanwhile (another admin, an
+      // approved Kobe MCP write) is a changed before-state, never a unique-violation 500.
+      const inserted = await tx
+        .insert(teamBudgets)
+        .values({ teamId, ...next, updatedBy: actorId })
+        .onConflictDoNothing()
+        .returning({ id: teamBudgets.id });
+      if (inserted.length === 0) {
+        if (expected !== undefined) return "changed_since_approval";
+        // A plain save applies its fields on top of the budget saved meanwhile (now visible).
+        prior = await currentRow(tx, teamId, null);
+        if (!prior) throw new Error("team budget insert conflicted but no budget is visible");
+        next = nextTeamBudget(input, prior);
+        await update(prior, next);
+      }
     }
-    if (next.userRequestsPerMinute !== (before?.userRequestsPerMinute ?? null)) {
+    if (next.userRequestsPerMinute !== (prior?.userRequestsPerMinute ?? null)) {
       await bumpModelsConfig(tx);
     }
     await notifyModels(tx, `${MODELS_BUDGETS_PREFIX}${teamId}`);
