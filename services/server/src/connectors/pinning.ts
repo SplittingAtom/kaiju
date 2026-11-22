@@ -2,6 +2,7 @@ import { and, connectors, eq, isNull, sql, type KobeDb, type UiResourceFailure }
 import { recordAudit } from "../audit/record.js";
 import { buildSnapshot, type PinFailure } from "./pin.js";
 import type { ConnectorProbe, ProbeFailure } from "./probe.js";
+import type { ProbeSecret } from "./probe-credential.js";
 import { replacePinnedTemplates } from "./template-store.js";
 import { liveTemplates, pinTemplates } from "./templates.js";
 
@@ -36,7 +37,7 @@ export async function pinConnector(
     readonly credential?: (connector: {
       readonly id: string;
       readonly name: string;
-    }) => Promise<string | undefined>;
+    }) => Promise<ProbeSecret | undefined>;
     /** The site admin pinning: their own key probes the periodic refresh (KOBE-431). */
     readonly pinnedBy?: string | undefined;
   } = {},
@@ -48,8 +49,8 @@ export async function pinConnector(
   if (!row) return undefined;
   if (row.hash !== null) return { ok: false, failure: "already_pinned" };
 
-  const apiKey = await options.credential?.({ id: connectorId, name: row.name });
-  const probed = await prober.probe(row.url, apiKey, connectorId);
+  const secret = await options.credential?.({ id: connectorId, name: row.name });
+  const probed = await prober.probe(row.url, secret?.value, connectorId, secret?.kind);
   if (!probed.ok) return probed;
   const snapshot = buildSnapshot(row.name, probed.tools);
   if (!snapshot.ok) return snapshot;

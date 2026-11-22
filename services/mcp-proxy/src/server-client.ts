@@ -1,6 +1,6 @@
 import { injectTraceHeaders } from "@kobe/telemetry";
 import { z } from "zod";
-import type { GrantAnswer } from "./credentials.js";
+import type { GrantAnswer, GrantFetchOptions } from "./credentials.js";
 
 /**
  * The proxy's client for the server's internal listener (`services/server/src/routes/internal.ts`):
@@ -119,8 +119,11 @@ export interface PolicyServer {
     query: Omit<CallQuery, "connectorId">,
   ): Promise<ServerAnswer<KobeCallAnswer>>;
   decide(token: string, query: CallQuery): Promise<ServerAnswer<CallDecision>>;
-  /** The sandbox's own user's API key or OAuth access token for a connector; never cached. */
-  fetchGrant(token: string, connectorId: string): Promise<GrantAnswer>;
+  /**
+   * The sandbox's own user's API key or OAuth access token for a connector; never cached.
+   * `refresh: "force"` (KOBE-778): the upstream refused the OAuth token; the server refreshes it.
+   */
+  fetchGrant(token: string, connectorId: string, options?: GrantFetchOptions): Promise<GrantAnswer>;
   /**
    * MCP Apps (KOBE-438): the upstream's full result of an allowed UI tool call, with the ticket
    * the allow carried. True when the server stored it; never throws (a failure only means the
@@ -139,6 +142,8 @@ export interface PolicyServerOptions {
   readonly baseUrl: string;
   readonly internalKey: string;
   readonly timeoutMs: number;
+  /** The grant call's deadline (it may include an OAuth refresh); default `timeoutMs`. */
+  readonly grantTimeoutMs?: number;
   readonly fetch?: typeof fetch;
   readonly onError?: (error: unknown) => void;
 }
@@ -189,7 +194,12 @@ export function createPolicyServer(options: PolicyServerOptions): PolicyServer {
     }
   }
 
-  async function fetchGrant(token: string, connectorId: string): Promise<GrantAnswer> {
+  async function fetchGrant(
+    token: string,
+    connectorId: string,
+    fetchOptions: GrantFetchOptions = {},
+  ): Promise<GrantAnswer> {
+    const force = fetchOptions.refresh === "force";
     try {
       const res = await doFetch(
         `${options.baseUrl}/internal/v1/mcp/connectors/${encodeURIComponent(connectorId)}/grant`,
@@ -198,8 +208,14 @@ export function createPolicyServer(options: PolicyServerOptions): PolicyServer {
           headers: injectTraceHeaders({
             authorization: `Bearer ${options.internalKey}`,
             "kobe-sandbox-token": token,
+            ...(force ? { "content-type": "application/json" } : {}),
           }),
-          signal: AbortSignal.timeout(options.timeoutMs),
+          ...(force ? { body: JSON.stringify({ refresh: "force" }) } : {}),
+          // Its own deadline (longer than the server's 5 s refresh), and never past the call's.
+          signal: AbortSignal.any([
+            AbortSignal.timeout(options.grantTimeoutMs ?? options.timeoutMs),
+            ...(fetchOptions.signal === undefined ? [] : [fetchOptions.signal]),
+          ]),
           redirect: "error",
         },
       );

@@ -11,6 +11,7 @@ import {
   type ProbeCredential,
 } from "./probe-credential.js";
 import { refreshConnector, type RefreshOutcome } from "./refresh.js";
+import type { RefreshSupport } from "./grants.js";
 
 /**
  * Re-probe now (KOBE-430): a site admin runs the periodic refresh's probe and drift (D27,
@@ -54,6 +55,8 @@ export interface ReprobeDeps {
   readonly db: KobeDb;
   readonly prober: ConnectorProbe;
   readonly envelope: Envelope | undefined;
+  /** Refreshes an admin's expired OAuth token for the probe (KOBE-784). */
+  readonly oauthRefresh?: RefreshSupport | undefined;
   readonly lockFor: (connectorId: string) => ReconcileLock;
   readonly rate?: RateLimitRule;
 }
@@ -70,9 +73,15 @@ async function reprobeCredential(
   connectorId: string,
   adminId: string,
 ): Promise<ProbeCredential> {
-  const own = await chooseProbeCredential(deps.db, deps.envelope, connectorId, adminId);
+  const own = await chooseProbeCredential(
+    deps.db,
+    deps.envelope,
+    connectorId,
+    adminId,
+    deps.oauthRefresh,
+  );
   if (own.source !== "none") return own;
-  return chooseProbeCredential(deps.db, deps.envelope, connectorId, "pinned_by");
+  return chooseProbeCredential(deps.db, deps.envelope, connectorId, "pinned_by", deps.oauthRefresh);
 }
 
 const fromRefresh = (outcome: RefreshOutcome): ReprobeOutcome => {
@@ -88,8 +97,8 @@ async function pinNow(
   adminId: string,
 ): Promise<Probed | undefined> {
   const pin = await pinConnector(deps.db, deps.prober, connectorId, {
-    credential: adminPinCredential(deps.db, deps.envelope, adminId),
-    pinnedBy: await nextPinnedBy(deps.db, deps.envelope, connectorId, adminId),
+    credential: adminPinCredential(deps.db, deps.envelope, adminId, deps.oauthRefresh),
+    pinnedBy: await nextPinnedBy(deps.db, deps.envelope, connectorId, adminId, deps.oauthRefresh),
   });
   if (pin === undefined) return { outcome: { status: "failed", reason: "not_found" } };
   if (pin.ok) return { outcome: { status: "pinned", tools: pin.tools, templates: pin.templates } };

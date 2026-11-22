@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { ProbeResult } from "./probe.js";
 import { refreshConnector } from "./refresh.js";
-import { notifyDrift } from "./drift-notify.js";
+import { notifyDrift, skippedMessage } from "./drift-notify.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 import type { TestBrowser } from "../testing/browser.js";
 
@@ -168,5 +168,19 @@ describe("in-app notice", () => {
     );
     expect(notice.tools.sort()).toEqual(["a", "fresh"]);
     expect(JSON.stringify(notice)).not.toMatch(/v1|v2/);
+  });
+});
+
+describe("skip email remedy for an OAuth connector (KOBE-784)", () => {
+  it("tells a site admin to connect their own account and re-pin, not to add a key", () => {
+    const mail = skippedMessage(
+      "https://kobe.example",
+      { name: "linear", source: "member", authKind: "oauth" },
+      "a@x.test",
+    );
+    expect(mail.text).toMatch(/connects their own account/);
+    expect(mail.text).toMatch(/pin/);
+    expect(mail.text).not.toMatch(/site-wide key/);
+    expect(mail.text).not.toMatch(/Add your own key/);
   });
 });

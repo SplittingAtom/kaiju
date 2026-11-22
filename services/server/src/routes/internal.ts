@@ -27,8 +27,9 @@ import { invalidRequest, notFound, readJson } from "../http/request.js";
  *        input_sha256, reason, approval_id?}` (`model_visible`: KOBE-435, see install.md)
  *      | 200 `{decision: "deny", code, message, approval_failure?}`
  * 401 `unauthorized` (internal key), 401 `sandbox_unauthorized` (token, liveness, membership),
- * POST /internal/v1/mcp/connectors/{id}/grant → 200 `{kind: "api_key", api_key}` for the sandbox's own
- *      user only (KOBE-108); 404 `not_connected` | `connector_not_available`, 503 `unavailable`
+ * POST /internal/v1/mcp/connectors/{id}/grant `{refresh?: "force"}` → 200 `{kind: "api_key", api_key}` for
+ *      the sandbox's own user only (KOBE-108); `refresh: "force"` (KOBE-778) refreshes an OAuth
+ *      token the upstream refused; 404 `not_connected` | `connector_not_available`, 503 `unavailable`
  * POST /internal/v1/mcp/connectors/{id}/results `{ticket, input, result}` (KOBE-438) → 201
  *      `{storage}`; 403 `ticket_invalid`, 409 `run_not_active`, 429 `too_many_unclaimed` (the allow's `app_capture.ticket`, MCP Apps)
  * POST /internal/v1/mcp/kobe/list → 200 `{connector, tools}` (KOBE-619: the built-in Kobe connector's
@@ -70,6 +71,9 @@ const callBodySchema = z.strictObject({
   thread_id: uuidSchema.optional(),
   tool_call_id: idSchema.optional(),
 });
+
+/** The grant endpoint's optional body (KOBE-778): ask for a refresh the upstream made necessary. */
+const grantBodySchema = z.object({ refresh: z.literal("force").optional() });
 
 const digest = (value: string) => createHash("sha256").update(value).digest();
 
@@ -149,7 +153,11 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
     if (auth.principal.evalThreadId !== undefined) {
       return notFound(c, "not_connected", "No personal keys in skill evals.");
     }
-    const revealed = await deps.mcp.revealCredential(auth.principal, id.data);
+    // `{"refresh": "force"}` (KOBE-778): the upstream refused the token it was given; refresh it
+    // (rate limited per grant). No body, or anything else, is a plain reveal.
+    const body = grantBodySchema.safeParse(await readJson(c, {}));
+    const force = body.success && body.data.refresh === "force";
+    const revealed = await deps.mcp.revealCredential(auth.principal, id.data, { force });
     if (revealed.ok) {
       const credential = revealed.credential;
       return c.json(

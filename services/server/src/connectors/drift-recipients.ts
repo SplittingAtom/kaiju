@@ -9,12 +9,12 @@ import {
   parseToolsSnapshot,
   teamConnectors,
   teamMembers,
-  teams,
   users,
   withTeam,
   type KobeDb,
 } from "@kobe/db";
 import { driftedTemplates } from "./template-store.js";
+import { teamIdsUsing } from "./team-usage.js";
 
 /**
  * Who hears about connector tool drift (KOBE-103, D27). Today: every active site owner and
@@ -28,22 +28,6 @@ export interface DriftRecipient {
   readonly email: string;
 }
 
-/** Teams (all of them; each read under its own RLS) that enabled the connector. */
-async function teamsUsing(db: KobeDb, connectorId: string): Promise<string[]> {
-  const all = await db.select({ id: teams.id }).from(teams).orderBy(asc(teams.id));
-  const using: string[] = [];
-  for (const { id } of all) {
-    const rows = await withTeam(db, id, (tx) =>
-      tx
-        .select({ id: teamConnectors.connectorId })
-        .from(teamConnectors)
-        .where(and(eq(teamConnectors.teamId, id), eq(teamConnectors.connectorId, connectorId))),
-    );
-    if (rows.length > 0) using.push(id);
-  }
-  return using;
-}
-
 /** Active site owners and admins. */
 export function siteAdminIds(db: KobeDb): Promise<DriftRecipient[]> {
   return db
@@ -55,7 +39,7 @@ export function siteAdminIds(db: KobeDb): Promise<DriftRecipient[]> {
 
 export async function driftRecipients(db: KobeDb, connectorId: string): Promise<DriftRecipient[]> {
   const siteAdmins = await siteAdminIds(db);
-  const using = await teamsUsing(db, connectorId);
+  const using = await teamIdsUsing(db, connectorId);
   const teamAdmins: DriftRecipient[] = [];
   for (const teamId of using) {
     teamAdmins.push(

@@ -3,7 +3,7 @@ import { createNotebookFiles, type NotebookFiles } from "./notebooks/files.js";
 import type { ForwardDestination } from "./audit/forward/types.js";
 import { configureTagFingerprintKey } from "./memory/items/tag-fingerprint.js";
 import { configureUsageKey } from "./skills/usage-snapshot.js";
-import { DEFAULT_TIMEOUT_MS } from "./connectors/oauth/http.js";
+import { REFRESH_TIMEOUT_MS } from "./connectors/grant-refresh.js";
 import { createHash, timingSafeEqual } from "node:crypto";
 import {
   PROVIDER_KEY_PURPOSE,
@@ -513,7 +513,9 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     ...options.connectors,
   };
   const mcp = createMcpService({
-    oauthIo: { policy: connectorUrlPolicy, timeoutMs: DEFAULT_TIMEOUT_MS },
+    // Refreshes only: a shorter deadline than the connect flow's, so the proxy's grant call
+    // outlasts a refresh (KOBE-778, P2-29).
+    oauthIo: { policy: connectorUrlPolicy, timeoutMs: REFRESH_TIMEOUT_MS },
     db: database.db,
     policy: policySources,
     runContext,

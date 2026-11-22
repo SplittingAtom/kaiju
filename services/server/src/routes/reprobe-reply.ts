@@ -16,6 +16,8 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 const REPROBE_AUTH =
   "The server asked for credentials. Kobe re-probes with the connector's site-wide key, else your own key for it, else the key of the admin who last pinned or approved it (add one at My connector keys); never a member's. Its tools stay as they were.";
+const REPROBE_OAUTH =
+  "The server asked for credentials. Kobe re-probes an OAuth connector with your own connected account, else that of the admin who last pinned or approved it: connect your own account for it first (My connectors, in a team that enabled it); never a member's. Its tools stay as they were.";
 const REPROBE_SITE_AUTH =
   "The server asked for credentials: set (or re-enter) this connector's site-wide key. Its tools stay as they were.";
 const REPROBE_FAILURES: Readonly<Record<string, string>> = {
@@ -25,8 +27,13 @@ const REPROBE_FAILURES: Readonly<Record<string, string>> = {
   not_found: "The connector was removed while it was being probed.",
 };
 
-function failureMessage(reason: string, credentialSource: string | undefined): string {
+function failureMessage(
+  reason: string,
+  credentialSource: string | undefined,
+  authKind: string | undefined,
+): string {
   if (reason === "auth_required") {
+    if (authKind === "oauth") return REPROBE_OAUTH;
     return credentialSource === "site" ? REPROBE_SITE_AUTH : REPROBE_AUTH;
   }
   const own = REPROBE_FAILURES[reason];
@@ -72,13 +79,14 @@ const REFUSALS: Readonly<Record<"disabled" | "rate_limited" | "busy", ReprobeRep
 export function reprobeReply(
   result: Exclude<ReprobeResult, { kind: "not_found" }>,
   credentialSource: string | undefined,
+  authKind?: string,
 ): ReprobeReply {
   if (result.kind !== "done") return REFUSALS[result.kind];
   const { outcome } = result;
   if (outcome.status !== "failed") {
     return { status: 200, body: { refresh: { ...outcome, message: successMessage(outcome) } } };
   }
-  const message = failureMessage(outcome.reason, credentialSource);
+  const message = failureMessage(outcome.reason, credentialSource, authKind);
   if (outcome.reason === "changed") return { status: 409, body: { code: "changed", message } };
   return { status: 502, body: { code: "reprobe_failed", failure: outcome.reason, message } };
 }

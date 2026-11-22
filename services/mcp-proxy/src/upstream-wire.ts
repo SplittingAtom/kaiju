@@ -2,7 +2,11 @@ import type { UpstreamFailure } from "./upstream-types.js";
 
 /** A failure inside an upstream session, mapped to its result by `sessionResult`. */
 export class UpstreamError extends Error {
-  constructor(readonly failure: UpstreamFailure) {
+  constructor(
+    readonly failure: UpstreamFailure,
+    /** For `auth_required`: the HTTP status the upstream refused with. */
+    readonly authStatus?: 401 | 403,
+  ) {
     super(failure);
   }
 }

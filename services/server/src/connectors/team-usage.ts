@@ -26,12 +26,48 @@ export interface ConnectorTeamUse {
   readonly enabled_tools: number;
 }
 
+/** One team's enablement row for the connector. */
+interface Enablement {
+  readonly team: { readonly id: string; readonly name: string; readonly slug: string };
+  readonly row: {
+    readonly exposure: ConnectorExposureKind;
+    readonly enabledTools: string[];
+  };
+}
+
+/**
+ * The one walk over "which teams enabled connector X" (KOBE-784, P2-32; it had three copies).
+ * `team_connectors` is a team table and RLS never lets one query see every team, so this reads
+ * each team in its own `withTeam`, a few at a time (`TEAM_READ_CONCURRENCY`), ordered by team name.
+ */
+async function enablementsOf(db: KobeDb, connectorId: string): Promise<Enablement[]> {
+  const all = await db
+    .select({ id: teams.id, name: teams.name, slug: teams.slug })
+    .from(teams)
+    .orderBy(asc(teams.name), asc(teams.slug));
+  const rows = await mapLimited(all, TEAM_READ_CONCURRENCY, async (team) => {
+    const [row] = await withTeam(db, team.id, (tx) =>
+      tx
+        .select({ exposure: teamConnectors.exposure, enabledTools: teamConnectors.enabledTools })
+        .from(teamConnectors)
+        .where(
+          and(eq(teamConnectors.teamId, team.id), eq(teamConnectors.connectorId, connectorId)),
+        ),
+    );
+    return row ? { team, row } : null;
+  });
+  return rows.flatMap((r) => (r === null ? [] : [r]));
+}
+
+/** Ids of the teams that have the connector enabled (removal counts, drift recipients). */
+export async function teamIdsUsing(db: KobeDb, connectorId: string): Promise<string[]> {
+  return (await enablementsOf(db, connectorId)).map((e) => e.team.id);
+}
+
 /**
  * The teams that have the connector enabled, with their exposure, ordered by team name; undefined
  * when the connector is unknown, removed or the built-in Kobe connector (which has team levels, not
- * enablements). `team_connectors` is a team table and RLS never lets one query see every team, so
- * this reads each team in its own `withTeam`, a few at a time (`TEAM_READ_CONCURRENCY`). A custom
- * count only counts ticks that still name a pinned tool.
+ * enablements). A custom count only counts ticks that still name a pinned tool.
  */
 export async function listTeamsUsing(
   db: KobeDb,
@@ -49,33 +85,10 @@ export async function listTeamsUsing(
       .filter((t) => t.status === "pinned")
       .map((t) => t.pi_name),
   );
-  const all = await db
-    .select({ id: teams.id, name: teams.name, slug: teams.slug })
-    .from(teams)
-    .orderBy(asc(teams.name), asc(teams.slug));
-  const rows = await mapLimited(all, TEAM_READ_CONCURRENCY, async (team) => {
-    const [row] = await withTeam(db, team.id, (tx) =>
-      tx
-        .select({ exposure: teamConnectors.exposure, enabledTools: teamConnectors.enabledTools })
-        .from(teamConnectors)
-        .where(
-          and(eq(teamConnectors.teamId, team.id), eq(teamConnectors.connectorId, connectorId)),
-        ),
-    );
-    return row ? { team, row } : null;
-  });
-  return rows.flatMap((r) =>
-    r === null
-      ? []
-      : [
-          {
-            ...r.team,
-            exposure: r.row.exposure,
-            enabled_tools:
-              r.row.exposure === "custom"
-                ? r.row.enabledTools.filter((t) => pinned.has(t)).length
-                : 0,
-          },
-        ],
-  );
+  return (await enablementsOf(db, connectorId)).map(({ team, row }) => ({
+    ...team,
+    exposure: row.exposure,
+    enabled_tools:
+      row.exposure === "custom" ? row.enabledTools.filter((t) => pinned.has(t)).length : 0,
+  }));
 }
