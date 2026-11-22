@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { loadEnvelope, type Envelope } from "@kobe/db";
-import { seedHelmProviders } from "./sso/providers.js";
+import { runWithAuditContext } from "./audit/context.js";
+import { deleteProvider, seedHelmProviders } from "./sso/providers.js";
 import { ssoRequired } from "./sso/required.js";
 import { loadSsoSettings, type SsoSettings } from "./sso/settings.js";
 import { FakeIdp, resolver } from "./sso/testing.js";
@@ -57,8 +58,12 @@ async function sessionIdsOf(userId: string): Promise<string[]> {
   return rows.map((r) => r.id);
 }
 
-/** Signs in with the password, then marks that session as signed in through `providerId`. */
+/**
+ * Signs in with the password, then marks that session as signed in through `providerId`, with
+ * the identity link such a sign-in has (a session whose link is gone ends, KOBE-775).
+ */
 async function ssoBrowser(email: string, userId: string, providerId = corpId) {
+  await linkIdentity(userId, providerId);
   const before = new Set(await sessionIdsOf(userId));
   const browser = await h.signIn(email);
   const id = (await sessionIdsOf(userId)).find((s) => !before.has(s));
@@ -150,8 +155,9 @@ describe("turning it on (ac-1)", () => {
   it("is refused while the session's provider is disabled", async () => {
     const admin = await ssoBrowser(adminEmail, adminId);
     await h.admin.query(`UPDATE sso_providers SET enabled = false WHERE slug = 'corp'`);
+    // The session itself ends with its provider turned off (KOBE-775).
     const res = await admin.put(SETTINGS, { requireSso: true });
-    expect(res.status).toBe(409);
+    expect(res.status).toBe(401);
     expect(await storedRequired()).toBe("false");
   });
 
@@ -165,7 +171,8 @@ describe("turning it on (ac-1)", () => {
     const admin = await ssoBrowser(adminEmail, adminId);
     const view = await admin.get(SETTINGS);
     // Counts only: never who.
-    expect(view.json.unlinked).toEqual({ owners: 1, siteRoles: 2, users: 3 });
+    // The admin is linked (signed in with single sign-on); the Owner and the member are not.
+    expect(view.json.unlinked).toEqual({ owners: 1, siteRoles: 1, users: 2 });
     expect(JSON.stringify(view.json)).not.toContain(ownerEmail);
     const res = await admin.put(SETTINGS, { requireSso: true });
     expect(res.status).toBe(409);
@@ -184,7 +191,7 @@ describe("turning it on (ac-1)", () => {
     expect((await admin.put(SETTINGS, { requireSso: true })).status).toBe(409);
     // Linked at an enabled provider: it turns on.
     await linkIdentity(ownerId);
-    expect((await admin.get(SETTINGS)).json.unlinked).toMatchObject({ owners: 0, siteRoles: 1 });
+    expect((await admin.get(SETTINGS)).json.unlinked).toMatchObject({ owners: 0, siteRoles: 0 });
     expect((await admin.put(SETTINGS, { requireSso: true })).status).toBe(200);
   });
 
@@ -364,8 +371,18 @@ describe("the last enabled provider going (ac-5)", () => {
     await h.admin.query(`UPDATE sso_providers SET enabled = false WHERE slug = 'corp'`);
     const sso = await ssoBrowser(adminEmail, adminId, id);
     await setRequired(true);
-    const res = await sso.delete(`${PROVIDERS}/${id}`);
-    expect(res.status).toBe(204);
+    // The admin signed in with it, so it has a linked identity and only turning it off works
+    // from the console; the delete path still releases the setting once nobody is linked.
+    const refused = await sso.delete(`${PROVIDERS}/${id}`);
+    expect(refused.status).toBe(409);
+    expect(await storedRequired()).toBe("true");
+    await h.admin.query(`DELETE FROM sso_identities WHERE provider_id = $1`, [id]);
+    const store = { db: h.deps.database.db, publicUrl: PUBLIC_URL, settings, envelope: undefined };
+    const actor = { kind: "user" as const, id: adminId };
+    const deleted = await runWithAuditContext({ actor, ip: null, userAgent: null }, () =>
+      deleteProvider(store, id),
+    );
+    expect(deleted).toEqual({ ok: true, ssoRequiredTurnedOff: true });
     expect(await storedRequired()).toBe("false");
     expect((await requiredAudit()).at(-1)).toMatchObject({
       action: "identity.sso.required.disabled",

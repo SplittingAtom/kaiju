@@ -25,6 +25,11 @@ export const IDENTITY_EVENTS = {
       .string()
       .regex(/^(amr|acr|acrs):[\x21-\x7e]{1,64}$/)
       .optional(),
+    /**
+     * KOBE-775: an SSO sign-in of a site-role holder whose token carried a groups overage and no
+     * SCIM groups: let in on the site role, access mappings not applied.
+     */
+    groupsOverage: z.literal(true).optional(),
   }),
   /** Actor id null (unauthenticated); `userId` only when the attempt named an existing account. */
   "auth.sign_in.failed": event("site", {

@@ -676,8 +676,8 @@ describe("review fixes (KOBE-619)", () => {
     expect((await call(s, "team_members_list", {})).isError).toBeUndefined();
     // The person's sessions are SSO sign-ins of a provider capping them at 1 hour.
     const { rows } = await fx.admin.query<{ id: string }>(
-      `INSERT INTO sso_providers (slug, display_name, kind, issuer, client_id, subject_claim, access_claim, max_session_hours, managed_by)
-       VALUES ($1, 'P', 'oidc', 'https://idp.example.com', 'c', 'sub', 'groups', 1, 'helm') RETURNING id`,
+      `INSERT INTO sso_providers (slug, display_name, kind, issuer, client_id, subject_claim, access_claim, max_session_hours, managed_by, enabled)
+       VALUES ($1, 'P', 'oidc', 'https://idp.example.com', 'c', 'sub', 'groups', 1, 'helm', true) RETURNING id`,
       [`p-${randomUUID().slice(0, 8)}`],
     );
     const providerId = rows[0]?.id;
@@ -686,6 +686,13 @@ describe("review fixes (KOBE-619)", () => {
        SELECT id, $2, false FROM sessions WHERE user_id = $1`,
       [w.admin.id, providerId],
     );
+    const link = () =>
+      fx.admin.query(
+        `INSERT INTO sso_identities (provider_id, subject, user_id, linked_via)
+         VALUES ($1, 'subject-a', $2, 'jit')`,
+        [providerId, w.admin.id],
+      );
+    await link();
     const db = fx.replica(0).deps.database.db;
     const d = {
       userId: w.admin.id,
@@ -700,6 +707,15 @@ describe("review fixes (KOBE-619)", () => {
     expect(await delegationBacked(db, d, { ssoEnabled: false })).toBe(false);
     // With SSO on, the backing session counts while within its provider's hours.
     expect(await delegationBacked(db, d, { ssoEnabled: true })).toBe(true);
+    // KOBE-775: not while its provider is off, nor once the person is unlinked from it.
+    await fx.admin.query(`UPDATE sso_providers SET enabled = false WHERE id = $1`, [providerId]);
+    expect(await delegationBacked(db, d, { ssoEnabled: true })).toBe(false);
+    await fx.admin.query(`UPDATE sso_providers SET enabled = true WHERE id = $1`, [providerId]);
+    expect(await delegationBacked(db, d, { ssoEnabled: true })).toBe(true);
+    await fx.admin.query(`DELETE FROM sso_identities WHERE provider_id = $1`, [providerId]);
+    expect(await delegationBacked(db, d, { ssoEnabled: true })).toBe(false);
+    await link();
+    expect(await delegationBacked(db, d, { ssoEnabled: true })).toBe(true);
     await fx.admin.query(
       `UPDATE sessions SET created_at = created_at - interval '2 hours' WHERE user_id = $1`,
       [w.admin.id],
@@ -711,14 +727,19 @@ describe("review fixes (KOBE-619)", () => {
     const w = await world();
     const s = await sandboxFor(w.team, w.admin);
     const { rows } = await fx.admin.query<{ id: string }>(
-      `INSERT INTO sso_providers (slug, display_name, kind, issuer, client_id, subject_claim, access_claim, managed_by)
-       VALUES ($1, 'P', 'oidc', 'https://idp.example.com', 'c', 'sub', 'groups', 'helm') RETURNING id`,
+      `INSERT INTO sso_providers (slug, display_name, kind, issuer, client_id, subject_claim, access_claim, managed_by, enabled)
+       VALUES ($1, 'P', 'oidc', 'https://idp.example.com', 'c', 'sub', 'groups', 'helm', true) RETURNING id`,
       [`p-${randomUUID().slice(0, 8)}`],
     );
     await fx.admin.query(
       `INSERT INTO session_sso_contexts (session_id, provider_id, mfa_satisfied)
        SELECT id, $2, false FROM sessions WHERE user_id = $1`,
       [w.admin.id, rows[0]?.id],
+    );
+    await fx.admin.query(
+      `INSERT INTO sso_identities (provider_id, subject, user_id, linked_via)
+       VALUES ($1, 'subject-b', $2, 'jit')`,
+      [rows[0]?.id, w.admin.id],
     );
     const db = fx.replica(0).deps.database.db;
     const d = {

@@ -34,6 +34,8 @@ interface Grant {
   readonly redirectUri: string;
   readonly challenge: string;
   readonly nonce: string | undefined;
+  /** The request's `max_age`: an IdP that honours it returns `auth_time` (OIDC Core §3.1.2.1). */
+  readonly maxAge: boolean;
   readonly claims: Readonly<Record<string, unknown>>;
 }
 
@@ -118,6 +120,7 @@ export class MockOidcProvider {
       redirectUri,
       challenge: p.get("code_challenge") ?? "",
       nonce: p.get("nonce") ?? undefined,
+      maxAge: p.get("max_age") !== null,
       claims: user,
     });
     const back = new URL(redirectUri);
@@ -163,6 +166,7 @@ export class MockOidcProvider {
       nbf: now,
       exp: now + 3600,
       ...(grant.nonce === undefined ? {} : { nonce: grant.nonce }),
+      ...(grant.maxAge ? { auth_time: now } : {}),
       ...(this.options.tenantId === undefined ? {} : { tid: this.options.tenantId, ver: "2.0" }),
       ...grant.claims,
       ...this.overrides,
