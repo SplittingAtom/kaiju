@@ -11,34 +11,43 @@ import type { TestBrowser } from "./testing/browser.js";
 import { openHarness, type Harness } from "./testing/harness.js";
 
 /**
- * Rebuilding a workspace lost with its node (KOBE-739) against a real Postgres, through the member
- * and team admin routes: member-confirmed (status first: volume state and last sync), re-checked
- * as lost at confirm time (a reachable volume is never destroyed), idempotent, audited with the
- * actor, allowed but recorded under a legal hold, and the next wake starts a new sandbox.
+ * Rebuilding a workspace whose volume is lost (KOBE-739) against a real Postgres, through the
+ * member and team admin routes: member-confirmed (status first: volume state and last sync); a
+ * node that is down counts only after this server saw it down for the grace period; re-checked
+ * at confirm time (a reachable volume is never destroyed); marked and audited before any cluster
+ * delete, with a failed cleanup finished by a retry or the sweep; idempotent; recorded under a
+ * legal hold; and the next wake starts a new sandbox.
  */
 
 const LOST: VolumeHealth = {
   state: "lost",
+  reason: "volume_failed",
+  detail: "volume pvc-1 is Failed",
+};
+const NODE_DOWN: VolumeHealth = {
+  state: "node_down",
   reason: "node_gone",
   node: "compute4",
-  detail: "volume pvc-1 lives only on node compute4, which no longer exists",
+  detail: "volume pvc-1 lives only on node compute4, which does not exist",
 };
 
 class Provider implements RebuildProvider, LifecycleProvider {
   health: VolumeHealth = LOST;
   failHealth = false;
   failDiscard = false;
+  healthReads = 0;
   readonly calls: string[] = [];
   volumeGone = false;
 
   volumeHealth = async (): Promise<VolumeHealth> => {
+    this.healthReads += 1;
     if (this.failHealth) throw new Error("Kubernetes API unavailable");
     return this.volumeGone ? { state: "missing" } : this.health;
   };
 
-  discardLostVolume = async (_team: unknown, userId: string, node: string | undefined) => {
+  discardLostVolume = async (_team: unknown, userId: string) => {
     if (this.failDiscard) throw new Error("Kubernetes API unavailable");
-    this.calls.push(`discard:${userId}:${node ?? "-"}`);
+    this.calls.push(`discard:${userId}`);
     this.volumeGone = true;
     return { sandboxId: SANDBOX, pvc: `workspace-u-${userId}` };
   };
@@ -86,6 +95,28 @@ const row = async () =>
       [team, member],
     )
   ).rows[0] as { state: string; sandbox_id: string | null; pvc: string | null };
+
+/** A fresh status read (the service caches answers 30 s; a new provider clears that). */
+const freshStatus = async () => {
+  h.deps.workspaceRebuild.setProvider(provider, true);
+  return asMember.get("/v1/workspace/rebuild");
+};
+
+const lostSince = async (): Promise<Date | null> =>
+  (
+    await h.admin.query(
+      `SELECT volume_lost_since FROM sandboxes WHERE team_id = $1 AND user_id = $2`,
+      [team, member],
+    )
+  ).rows[0]?.volume_lost_since ?? null;
+
+const lifecycle = () =>
+  createSandboxLifecycle({
+    db: h.deps.database.db,
+    provider,
+    idleMinutes: 15,
+    log: pino({ level: "silent" }),
+  });
 
 const audits = async () =>
   (
@@ -166,15 +197,9 @@ describe("the member sees what happened before confirming (ac-3)", () => {
 
   it("never offers it for a reachable volume or when the cluster cannot be read", async () => {
     provider.health = { state: "present" };
-    expect((await asMember.get("/v1/workspace/rebuild")).json).toMatchObject({
-      volume: "present",
-      rebuildable: false,
-    });
+    expect((await freshStatus()).json).toMatchObject({ volume: "present", rebuildable: false });
     provider.failHealth = true;
-    expect((await asMember.get("/v1/workspace/rebuild")).json).toMatchObject({
-      volume: "unknown",
-      rebuildable: false,
-    });
+    expect((await freshStatus()).json).toMatchObject({ volume: "unknown", rebuildable: false });
   });
 
   it("answers 503 without workspace storage to restore from", async () => {
@@ -184,6 +209,52 @@ describe("the member sees what happened before confirming (ac-3)", () => {
     expect(res).toMatchObject({ status: 503, json: { code: "rebuild_unavailable" } });
     expect(provider.calls).toEqual([]);
   });
+
+  it("reuses a status answer for 30 s (the cluster is read once)", async () => {
+    await asMember.get("/v1/workspace/rebuild");
+    await asMember.get("/v1/workspace/rebuild");
+    expect(provider.healthReads).toBe(1);
+  });
+});
+
+describe("a node that is down is lost only after the grace period (review g72 HIGH)", () => {
+  it("records when this server first saw it down and offers nothing before 30 minutes", async () => {
+    provider.health = NODE_DOWN;
+    const res = await freshStatus();
+    expect(res.json).toMatchObject({ volume: "unreachable", rebuildable: false });
+    const first = await lostSince();
+    expect(first).not.toBeNull();
+    expect(Date.parse(res.json.offer_at) - Date.parse(res.json.down_since)).toBe(30 * 60_000);
+    // A later observation keeps the first time.
+    await freshStatus();
+    expect((await lostSince())?.getTime()).toBe(first?.getTime());
+    const confirm = await asMember.post("/v1/workspace/rebuild", { confirm: true });
+    expect(confirm).toMatchObject({ status: 409, json: { code: "volume_not_yet_lost" } });
+    expect(provider.calls).toEqual([]);
+  });
+
+  it("offers and rebuilds once the node stayed down for the grace period, with the evidence", async () => {
+    provider.health = NODE_DOWN;
+    await freshStatus();
+    await h.admin.query(`UPDATE sandboxes SET volume_lost_since = now() - interval '31 minutes'`);
+    expect((await freshStatus()).json).toMatchObject({ volume: "lost", rebuildable: true });
+    const res = await asMember.post("/v1/workspace/rebuild", { confirm: true });
+    expect(res.json.status).toBe("rebuilt");
+    const [event] = await audits();
+    expect(event?.target).toMatchObject({ reason: "node_gone", node: "compute4" });
+    expect(event?.target["firstSeenAt"]).toEqual(expect.any(String));
+  });
+
+  it("starts over when the node is seen back", async () => {
+    provider.health = NODE_DOWN;
+    await freshStatus();
+    await h.admin.query(`UPDATE sandboxes SET volume_lost_since = now() - interval '31 minutes'`);
+    provider.health = { state: "present" };
+    await freshStatus();
+    expect(await lostSince()).toBeNull();
+    provider.health = NODE_DOWN;
+    expect((await freshStatus()).json).toMatchObject({ volume: "unreachable" });
+  });
 });
 
 describe("confirming the rebuild (ac-2)", () => {
@@ -192,7 +263,7 @@ describe("confirming the rebuild (ac-2)", () => {
     const res = await asMember.post("/v1/workspace/rebuild", { confirm: true });
     expect(res.status).toBe(200);
     expect(res.json).toEqual({ status: "rebuilt", last_synced_at: "2026-11-21T10:15:00.000Z" });
-    expect(provider.calls).toEqual([`discard:${member}:compute4`]);
+    expect(provider.calls).toEqual([`discard:${member}`]);
     expect(await row()).toEqual({ state: "hibernated", sandbox_id: null, pvc: null });
     const conn = await h.admin.query(
       `SELECT closed_at FROM sandbox_connections WHERE connection_id = $1`,
@@ -206,7 +277,8 @@ describe("confirming the rebuild (ac-2)", () => {
       target: {
         sandboxId: SANDBOX,
         userId: member,
-        reason: "node_gone",
+        reason: "volume_failed",
+        firstSeenAt: null,
         lastSyncedAt: "2026-11-21T10:15:00.000Z",
         legalHold: false,
         byAdmin: false,
@@ -225,12 +297,32 @@ describe("confirming the rebuild (ac-2)", () => {
     expect(await audits()).toEqual([]);
   });
 
-  it("changes nothing when the Kubernetes delete fails (retryable 503)", async () => {
+  it("audits before the cluster work; a failed cleanup is pending, wakes wait, a retry finishes it", async () => {
     provider.failDiscard = true;
     const res = await asMember.post("/v1/workspace/rebuild", { confirm: true });
-    expect(res).toMatchObject({ status: 503, json: { code: "rebuild_failed" } });
-    expect((await row()).sandbox_id).toBe(SANDBOX);
-    expect(await audits()).toEqual([]);
+    expect(res).toMatchObject({ status: 503, json: { code: "rebuild_pending" } });
+    expect(await audits()).toHaveLength(1);
+    const wake = await lifecycle()
+      .waker.wake({ teamId: team, userId: member })
+      .catch((e: unknown) => e);
+    expect(wake).toMatchObject({ code: "workspace_rebuilding" });
+    expect((await freshStatus()).json).toMatchObject({ volume: "rebuilding", rebuildable: true });
+
+    provider.failDiscard = false;
+    const retry = await asMember.post("/v1/workspace/rebuild", { confirm: true });
+    expect(retry.json.status).toBe("rebuilt");
+    expect(await audits()).toHaveLength(1);
+    expect(await row()).toEqual({ state: "hibernated", sandbox_id: null, pvc: null });
+  });
+
+  it("the hibernation sweep finishes a rebuild left unfinished", async () => {
+    provider.failDiscard = true;
+    await asMember.post("/v1/workspace/rebuild", { confirm: true });
+    await h.admin.query(`UPDATE sandboxes SET rebuild_started_at = now() - interval '2 minutes'`);
+    provider.failDiscard = false;
+    await lifecycle().sweep();
+    expect(provider.calls).toEqual([`discard:${member}`]);
+    expect(await row()).toEqual({ state: "hibernated", sandbox_id: null, pvc: null });
   });
 
   it("is idempotent: a double click rebuilds once and audits once", async () => {
@@ -240,7 +332,6 @@ describe("confirming the rebuild (ac-2)", () => {
     ]);
     expect([a.status, b.status]).toEqual([200, 200]);
     expect([a.json.status, b.json.status].sort()).toEqual(["already", "rebuilt"]);
-    expect(provider.calls).toEqual([`discard:${member}:compute4`]);
     expect(await audits()).toHaveLength(1);
   });
 
@@ -258,7 +349,6 @@ describe("confirming the rebuild (ac-2)", () => {
     expect(res.status).toBe(200);
     const [event] = await audits();
     expect(event?.target).toMatchObject({ legalHold: true });
-    // The workspace copy in object storage is untouched.
     const sync = await h.admin.query(`SELECT count(*)::int AS n FROM workspace_sync`);
     expect(sync.rows[0].n).toBe(1);
   });
@@ -276,14 +366,8 @@ describe("confirming the rebuild (ac-2)", () => {
 
   it("then the next wake starts a new sandbox on a fresh volume", async () => {
     await asMember.post("/v1/workspace/rebuild", { confirm: true });
-    const lifecycle = createSandboxLifecycle({
-      db: h.deps.database.db,
-      provider,
-      idleMinutes: 15,
-      log: pino({ level: "silent" }),
-    });
-    await lifecycle.waker.wake({ teamId: team, userId: member });
-    expect(provider.calls).toEqual([`discard:${member}:compute4`, `wake:${member}`]);
+    await lifecycle().waker.wake({ teamId: team, userId: member });
+    expect(provider.calls).toEqual([`discard:${member}`, `wake:${member}`]);
     const after = await row();
     expect(after.state).toBe("running");
     expect(after.sandbox_id).not.toBe(SANDBOX);
@@ -306,5 +390,13 @@ describe("a team admin for a member", () => {
     expect(res.status).toBe(403);
     expect((await asOwner.get(`/v1/team/workspaces/not-a-uuid/rebuild`)).status).toBe(400);
     expect(provider.calls).toEqual([]);
+  });
+});
+
+describe("status reads are rate limited per caller", () => {
+  it("answers 429 after a burst", async () => {
+    const answers = [];
+    for (let i = 0; i < 30; i++) answers.push((await asOther.get("/v1/workspace/rebuild")).status);
+    expect(answers).toContain(429);
   });
 });

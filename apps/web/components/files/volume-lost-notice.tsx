@@ -48,7 +48,7 @@ export function VolumeLostNotice({
         <p className="m-0">
           {/* In the conversation the run's own message has already said what happened. */}
           {mode === "check" &&
-            "The storage that held your sandbox was lost with its server. You can rebuild it from the last sync of My files; changes after it can't be recovered. "}
+            "The storage that held your sandbox is lost: its server has been gone too long. You can rebuild it from the last sync of My files; later changes are not recovered, even if that server comes back. "}
           <button type="button" className="underline" onClick={() => setOpen(true)}>
             Rebuild sandbox…
           </button>

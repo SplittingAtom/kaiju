@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createFakeKube } from "../testing/fake-kube.js";
 import type { KubeObject } from "./manifests.js";
-import { NODE_LOST_AFTER_MS, inspectVolume, judgeVolume, volumeHome } from "./volume-loss.js";
+import { inspectVolume, judgeVolume, volumeHome } from "./volume-loss.js";
 
 /** Lost-volume detection (KOBE-739): only hard evidence counts; anything unsure is "present". */
 const NS = "kobe-team-finance";
@@ -67,7 +67,7 @@ const node = (name: string, ready: "True" | "False" | "Unknown", sinceMs: number
   }) as KubeObject;
 
 const judge = (p: KubeObject | undefined, v: KubeObject | undefined, nodes?: KubeObject[]) =>
-  judgeVolume({ pvc: p, pv: v, pvLookedUp: true, nodes, now: NOW });
+  judgeVolume({ pvc: p, pv: v, pvLookedUp: true, nodes });
 
 describe("volumeHome", () => {
   it("is the hostname of a local volume's node affinity", () => {
@@ -112,9 +112,9 @@ describe("judgeVolume", () => {
     });
   });
 
-  it("is lost when the only node holding it is gone", () => {
+  it("is node_down (not yet lost) when the only node holding it is missing", () => {
     expect(judge(pvc(), localPv(), [])).toMatchObject({
-      state: "lost",
+      state: "node_down",
       reason: "node_gone",
       node: "node-a",
     });
@@ -123,15 +123,19 @@ describe("judgeVolume", () => {
     });
   });
 
-  it("is lost when that node has not been Ready for the whole grace period", () => {
-    const down = node("node-a", "Unknown", NODE_LOST_AFTER_MS);
-    expect(judge(pvc(), localPv(), [down])).toMatchObject({ reason: "node_not_ready" });
+  it("is node_down when that node is not Ready, whatever its transition time says", () => {
+    // No controller timestamp is trusted: the grace period is the caller's, on its own clock.
+    const down = node("node-a", "Unknown", 0);
+    expect(judge(pvc(), localPv(), [down])).toMatchObject({
+      state: "node_down",
+      reason: "node_not_ready",
+    });
   });
 
-  it("is present while the node is Ready, or not Ready only briefly (a reboot)", () => {
+  it("is present while the node is Ready, or reports no Ready condition at all", () => {
     expect(judge(pvc(), localPv(), [node("node-a", "True", 0)])).toEqual({ state: "present" });
-    const brief = node("node-a", "False", NODE_LOST_AFTER_MS - 1000);
-    expect(judge(pvc(), localPv(), [brief])).toEqual({ state: "present" });
+    const unknown = { ...node("node-a", "True", 0), status: {} } as KubeObject;
+    expect(judge(pvc(), localPv(), [unknown])).toEqual({ state: "present" });
   });
 
   it("is present for a pending claim and for volumes not pinned to a node", () => {
@@ -154,11 +158,11 @@ describe("inspectVolume", () => {
     seedPvc(kube, pvc());
     kube.seed(localPv("node-a"));
     kube.seed(node("node-b", "True", 0));
-    await expect(inspectVolume(kube, NS, "workspace-u-1", NOW)).resolves.toMatchObject({
+    await expect(inspectVolume(kube, NS, "workspace-u-1")).resolves.toMatchObject({
       reason: "node_gone",
     });
     kube.seed(node("node-a", "True", 0));
-    await expect(inspectVolume(kube, NS, "workspace-u-1", NOW)).resolves.toEqual({
+    await expect(inspectVolume(kube, NS, "workspace-u-1")).resolves.toEqual({
       state: "present",
     });
   });
@@ -167,8 +171,8 @@ describe("inspectVolume", () => {
     const kube = createFakeKube();
     seedPvc(kube, pvc({ annotations: SELECTED }));
     kube.seed(longhornPv(STRICT));
-    kube.seed(node("node-a", "Unknown", NODE_LOST_AFTER_MS + 1));
-    await expect(inspectVolume(kube, NS, "workspace-u-1", NOW)).resolves.toMatchObject({
+    kube.seed(node("node-a", "Unknown", 0));
+    await expect(inspectVolume(kube, NS, "workspace-u-1")).resolves.toMatchObject({
       reason: "node_not_ready",
       node: "node-a",
     });
@@ -176,12 +180,12 @@ describe("inspectVolume", () => {
 
   it("is missing without a claim and propagates read errors (never lost on doubt)", async () => {
     const kube = createFakeKube();
-    await expect(inspectVolume(kube, NS, "workspace-u-1", NOW)).resolves.toEqual({
+    await expect(inspectVolume(kube, NS, "workspace-u-1")).resolves.toEqual({
       state: "missing",
     });
     seedPvc(kube, pvc());
     kube.seed(localPv());
     kube.failNext("list", "Node", 403);
-    await expect(inspectVolume(kube, NS, "workspace-u-1", NOW)).rejects.toThrow();
+    await expect(inspectVolume(kube, NS, "workspace-u-1")).rejects.toThrow();
   });
 });

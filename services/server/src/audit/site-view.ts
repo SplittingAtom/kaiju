@@ -20,6 +20,9 @@ export const SITE_VIEW_TARGET_KEYS: ReadonlySet<string> = new Set([
   // KOBE-739 sandbox.volume_rebuilt: when the workspace last synced; whether an admin confirmed.
   "lastSyncedAt",
   "byAdmin",
+  // KOBE-739 sandbox.volume_rebuilt evidence: the node that held the volume, when first seen down.
+  "node",
+  "firstSeenAt",
   // KOBE-741 retention.table_swept: which table (a fixed name, never content).
   "table",
   "acknowledged",

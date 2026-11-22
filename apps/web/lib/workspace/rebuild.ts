@@ -6,13 +6,20 @@
  */
 import { apiRequest, type ApiResult } from "../api/client";
 
-export type VolumeState = "lost" | "present" | "missing" | "unknown";
+/**
+ * `unreachable`: the server holding the volume is down, not long enough to rebuild yet;
+ * `rebuilding`: a confirmed rebuild whose cleanup has not finished (confirming again finishes it).
+ */
+export type VolumeState = "lost" | "unreachable" | "rebuilding" | "present" | "missing" | "unknown";
 
 export interface RebuildStatus {
   readonly volume: VolumeState;
   /** ISO time of the last sync; null: the workspace never synced. */
   readonly lastSyncedAt: string | null;
   readonly rebuildable: boolean;
+  /** `unreachable`: since when the server is down, and when the rebuild will be offered. */
+  readonly downSince?: string;
+  readonly offerAt?: string;
 }
 
 export interface RebuildResult {
@@ -54,6 +61,10 @@ export function createRebuildApi(
       apiRequest<RebuildResult>(path, { ...opts, method: "POST", json: { confirm: true } }),
   };
 }
+
+/** What a rebuild means if the old server ever comes back (review g72: say it plainly). */
+export const NODE_MAY_RETURN =
+  "If that server comes back later, the changes it held since the last sync are not recovered: the old storage is deleted by the rebuild.";
 
 /** "21 Nov 2026, 10:15" in the viewer's locale; "never" without a sync. */
 export function syncTimeText(iso: string | null): string {

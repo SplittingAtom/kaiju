@@ -11,17 +11,18 @@ import type { KubeObject } from "./manifests.js";
  *
  * - the claim is `Lost` (its PersistentVolume no longer exists), or it is bound to a
  *   PersistentVolume that does not exist or whose phase is `Failed`;
- * - the volume is pinned to one node (a `kubernetes.io/hostname` node affinity on the
- *   PersistentVolume, as `local-path` writes it; or a Longhorn volume with one replica and
- *   `dataLocality: strict-local`, which lives on the node the claim was first scheduled to) and
- *   that node no longer exists, or has not been Ready for {@link NODE_LOST_AFTER_MS}.
+ * - `node_down`, not yet lost: the volume is pinned to one node (a `kubernetes.io/hostname` node
+ *   affinity on the PersistentVolume, as `local-path` writes it; or a Longhorn volume with one
+ *   replica and `dataLocality: strict-local`, which lives on the node the claim was first
+ *   scheduled to, taken from the claim's `volume.kubernetes.io/selected-node`: Longhorn's own
+ *   replica records are not read) and that node is missing or not Ready right now. A node can come
+ *   back with its disk intact (re-join, long upgrade, kubelet down), so the caller counts this as
+ *   lost only after it has held, by the server's own observations, for the grace period
+ *   (`sandbox-lifecycle/volume-verdict.ts`). No controller timestamp is compared with our clock.
  *
- * Anything else (replicated volumes, a node that is Ready, a node that went NotReady a moment ago,
- * a pending claim, any read error) is `present`: the rebuild is never offered.
+ * Anything else (replicated volumes, a node that is Ready, a pending claim, any read error) is
+ * `present`: the rebuild is never offered.
  */
-
-/** A node NotReady (or Unknown) for this long counts as lost; a reboot is much shorter. */
-export const NODE_LOST_AFTER_MS = 10 * 60_000;
 
 const HOSTNAME = "kubernetes.io/hostname";
 const SELECTED_NODE = "volume.kubernetes.io/selected-node";
@@ -34,10 +35,14 @@ export type VolumeLossReason =
   | "volume_missing"
   /** The PersistentVolume's phase is `Failed`. */
   | "volume_failed"
-  /** The node holding the volume's only copy no longer exists. */
+  /** The node holding the volume's only copy does not exist (now). */
   | "node_gone"
-  /** The node holding the volume's only copy has not been Ready for {@link NODE_LOST_AFTER_MS}. */
+  /** The node holding the volume's only copy is not Ready (now). */
   | "node_not_ready";
+
+/** Reasons that count at once; the node reasons count only after the grace period. */
+export type ImmediateLossReason = Exclude<VolumeLossReason, NodeDownReason>;
+export type NodeDownReason = "node_gone" | "node_not_ready";
 
 export type VolumeHealth =
   /** No workspace volume (never created, or being deleted: a rebuild or reclaim already ran). */
@@ -46,10 +51,15 @@ export type VolumeHealth =
   | { readonly state: "present" }
   | {
       readonly state: "lost";
-      readonly reason: VolumeLossReason;
-      /** The node that held it, when the reason is a node. */
-      readonly node?: string;
+      readonly reason: ImmediateLossReason;
       /** One line for admins and logs (names cluster objects); never shown to members. */
+      readonly detail: string;
+    }
+  /** The one node holding it is missing or not Ready now: lost only once that has lasted. */
+  | {
+      readonly state: "node_down";
+      readonly reason: NodeDownReason;
+      readonly node: string;
       readonly detail: string;
     };
 
@@ -92,16 +102,13 @@ export function volumeHome(pvc: KubeObject, pv: KubeObject): VolumeHome | undefi
   return strictLocal && selected !== "" ? { by: "name", value: selected } : undefined;
 }
 
-/** Whether `node` has been not-Ready for at least {@link NODE_LOST_AFTER_MS} at `now`. */
-function longNotReady(node: KubeObject, now: number): boolean {
+/** Whether `node` reports a Ready condition that is not True (no condition: cannot tell). */
+export function notReady(node: KubeObject): boolean {
   const conditions = rec(node["status"])["conditions"];
   const ready = (Array.isArray(conditions) ? conditions : [])
     .map(rec)
     .find((c) => c["type"] === "Ready");
-  if (!ready) return false; // no condition at all: cannot tell
-  if (ready["status"] === "True") return false;
-  const since = Date.parse(text(ready["lastTransitionTime"]));
-  return Number.isFinite(since) && now - since >= NODE_LOST_AFTER_MS;
+  return ready !== undefined && ready["status"] !== "True";
 }
 
 /**
@@ -114,9 +121,8 @@ export function judgeVolume(input: {
   /** Whether the PersistentVolume was looked up (the claim names one). */
   readonly pvLookedUp: boolean;
   readonly nodes: readonly KubeObject[] | undefined;
-  readonly now: number;
 }): VolumeHealth {
-  const { pvc, pv, nodes, now } = input;
+  const { pvc, pv, nodes } = input;
   if (!pvc || pvc.metadata.deletionTimestamp) return { state: "missing" };
   const phase = text(rec(pvc["status"])["phase"]);
   const pvName = text(rec(pvc["spec"])["volumeName"]);
@@ -139,19 +145,19 @@ export function judgeVolume(input: {
   if (!home || nodes === undefined) return { state: "present" };
   if (nodes.length === 0) {
     return {
-      state: "lost",
+      state: "node_down",
       reason: "node_gone",
       node: home.value,
-      detail: `volume ${pvName} lives only on node ${home.value}, which no longer exists`,
+      detail: `volume ${pvName} lives only on node ${home.value}, which does not exist`,
     };
   }
-  // Every node that could be its home must be long gone from Ready (a hostname normally names one).
-  if (nodes.every((n) => longNotReady(n, now))) {
+  // Every node that could be its home must be not Ready (a hostname normally names one).
+  if (nodes.every(notReady)) {
     return {
-      state: "lost",
+      state: "node_down",
       reason: "node_not_ready",
       node: home.value,
-      detail: `volume ${pvName} lives only on node ${home.value}, not Ready for over ${NODE_LOST_AFTER_MS / 60_000} min`,
+      detail: `volume ${pvName} lives only on node ${home.value}, which is not Ready`,
     };
   }
   return { state: "present" };
@@ -165,7 +171,6 @@ export async function inspectVolume(
   kube: KubeClient,
   namespace: string,
   pvcName: string,
-  now: number,
 ): Promise<VolumeHealth> {
   const pvc = await kube.get({
     apiVersion: "v1",
@@ -187,5 +192,5 @@ export async function inspectVolume(
   } else if (home?.by === "hostname") {
     nodes = await kube.list("v1", "Node", undefined, `${HOSTNAME}=${home.value}`);
   }
-  return judgeVolume({ pvc, pv, pvLookedUp: bound, nodes, now });
+  return judgeVolume({ pvc, pv, pvLookedUp: bound, nodes });
 }

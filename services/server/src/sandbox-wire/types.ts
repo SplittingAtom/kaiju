@@ -84,6 +84,8 @@ export class SandboxWakeError extends Error {
       | "workspace_unavailable"
       | "workspace_quota_exhausted"
       | "workspace_volume_lost"
+      | "workspace_volume_unreachable"
+      | "workspace_rebuilding"
       | "sandbox_failed",
     message: string,
   ) {

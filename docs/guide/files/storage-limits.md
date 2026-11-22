@@ -77,17 +77,18 @@ starts a new sandbox and restores My files from the backup. Not restored, by des
 
 ## When your sandbox's storage is lost
 
-Your site may keep each sandbox's My files volume on the disk of one server only (fast, but a single copy). If
-that server is lost, your next message fails with "the storage that held it was lost", and the
-conversation and the Files panel offer **Rebuild sandbox…**. The dialog shows the time of the
-**last sync** and what cannot come back: every change made after it, and what the backup never
-copies (`.venv`, `node_modules` and `__pycache__` folders, empty folders, and file permissions
-other than the executable bit). Confirm with **Rebuild sandbox**; your next message then starts a
-new sandbox that restores My files from the backup (the first start takes a little longer).
-Kobe offers the rebuild only when it can see that the storage is really gone (its server was
-removed or has been down for more than 10 minutes), never automatically, and conversations are
-never affected. A team admin can rebuild a member's sandbox for them (**Workspace settings →
-Storage and history**).
+Your site may keep each sandbox's My files volume on the disk of one server only (fast, but a
+single copy). If that server stops answering, your next message says so ("the server that holds
+its storage is not answering"): it may come back with your files, so wait and try again later. If
+it stays down for a while (30 minutes by default), Kobe counts the storage as lost: the message
+says so, and the conversation and the Files panel offer **Rebuild sandbox…**. The dialog shows
+the time of the **last sync** and what cannot come back: every change made after it, and what the
+backup never copies (`.venv`, `node_modules` and `__pycache__` folders, empty folders, and file
+permissions other than the executable bit). **If that server comes back later, those changes are
+not recovered:** the rebuild deletes the old storage. Confirm with **Rebuild sandbox**; your next
+message then starts a new sandbox that restores My files from the backup (the first start takes a
+little longer). The rebuild is never automatic, and conversations are never affected. A team admin
+can rebuild a member's sandbox for them (**Workspace settings → Storage and history**).
 
 ## Sandbox temporary space
 

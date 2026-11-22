@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Dialog } from "radix-ui";
 import {
   NEVER_SYNCED,
+  NODE_MAY_RETURN,
   syncTimeText,
   type RebuildApi,
   type RebuildStatus,
@@ -91,7 +92,9 @@ export function RebuildWorkspaceDialog({
             {phase.kind === "failed" && phase.message}
             {status && !status.rebuildable && notLostText(status)}
             {status?.rebuildable &&
-              `The server that held ${whose} sandbox is gone, and its storage with it. Kobe can rebuild the sandbox from the last sync of My files.`}
+              (status.volume === "rebuilding"
+                ? `The rebuild of ${whose} sandbox was confirmed but has not finished. Kobe keeps trying on its own; you can also finish it now.`
+                : `The storage that held ${whose} sandbox is lost: the server it lived on has been gone too long. Kobe can rebuild the sandbox from the last sync of My files.`)}
           </Dialog.Description>
           {status?.rebuildable && (
             <div className="grid gap-2 text-sm">
@@ -102,6 +105,7 @@ export function RebuildWorkspaceDialog({
                 Lost for good: every change made after the last sync, and what the sync never copies
                 ({NEVER_SYNCED}). Conversations are not affected.
               </p>
+              <p className="m-0">{NODE_MAY_RETURN}</p>
             </div>
           )}
           {phase.kind === "done" && (
@@ -134,6 +138,11 @@ export function RebuildWorkspaceDialog({
 }
 
 function notLostText(status: RebuildStatus): string {
+  if (status.volume === "unreachable") {
+    const since = syncTimeText(status.downSince ?? null);
+    const offer = syncTimeText(status.offerAt ?? null);
+    return `The server that holds the sandbox's storage isn't answering (since ${since}). It may come back with the files, so the rebuild is offered only if it stays down until ${offer}.`;
+  }
   if (status.volume === "unknown") {
     return "Kobe couldn't check the sandbox's storage right now, so it can't be rebuilt. Try again in a moment.";
   }

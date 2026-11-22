@@ -165,10 +165,13 @@ export const PLATFORM_EVENTS = {
   /**
    * A member's workspace volume was lost with its node (or reported gone or failed by Kubernetes)
    * and the member, or a team admin for them (`byAdmin`), confirmed rebuilding it from the last
-   * sync (KOBE-739; actor: who confirmed). The claim was deleted without keeping the volume; the
-   * next wake starts a new sandbox that restores from object storage, where nothing was deleted.
-   * `lastSyncedAt`: the last push the member was shown (changes after it are lost). `legalHold`: a
-   * hold covered the member; the lost volume, unreachable, could not be preserved as evidence.
+   * sync (KOBE-739; actor: who confirmed). Recorded when confirmed, before the old claim and volume
+   * are deleted (the cleanup is retried until done); the next wake starts a new sandbox that
+   * restores from object storage, where nothing was deleted. Evidence: `reason`, `node` (the node
+   * that held it), `firstSeenAt` (when this server first saw that node down; null for a claim Lost
+   * or a PV missing/Failed). `lastSyncedAt`: the last push the member was shown (later changes are
+   * lost, even if the node returns). `legalHold`: a hold covered the member; the lost volume could
+   * not be preserved as evidence.
    */
   "sandbox.volume_rebuilt": event("team", {
     sandboxId: id.optional(),
@@ -180,6 +183,8 @@ export const PLATFORM_EVENTS = {
       "node_gone",
       "node_not_ready",
     ]),
+    node: z.string().min(1).max(253).optional(),
+    firstSeenAt: z.iso.datetime({ offset: true }).nullable(),
     lastSyncedAt: z.iso.datetime({ offset: true }).nullable(),
     legalHold: z.boolean(),
     byAdmin: z.boolean(),
@@ -217,6 +222,7 @@ export const PLATFORM_EVENTS = {
       "pod_failed",
       "volume_quota",
       "volume_lost",
+      "volume_node_down",
       "unknown",
     ]),
     detail: z

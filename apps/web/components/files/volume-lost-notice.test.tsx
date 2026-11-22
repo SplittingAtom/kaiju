@@ -43,7 +43,7 @@ describe("VolumeLostNotice", () => {
     unmount();
 
     render(<VolumeLostNotice api={fakeApi(LOST)} mode="check" />);
-    expect(await screen.findByText(/was lost with its server/)).toBeTruthy();
+    expect(await screen.findByText(/storage that held your sandbox is lost/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Rebuild sandbox…" })).toBeTruthy();
   });
 
@@ -57,6 +57,7 @@ describe("VolumeLostNotice", () => {
     expect(dialog.textContent).toMatch(/every change made after the last sync/);
     expect(dialog.textContent).toMatch(/node_modules/);
     expect(dialog.textContent).toMatch(/empty folders/);
+    expect(dialog.textContent).toMatch(/If that server comes back later/);
     expect(api.confirm).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole("button", { name: "Rebuild sandbox" }));
@@ -89,6 +90,21 @@ describe("VolumeLostNotice", () => {
     await userEvent.click(screen.getByRole("button", { name: "Rebuild sandbox…" }));
     await userEvent.click(await screen.findByRole("button", { name: "Rebuild sandbox" }));
     expect(await screen.findByText("This workspace's storage isn't lost.")).toBeTruthy();
+  });
+
+  it("explains a server that is down but not for long enough, and offers no rebuild yet", async () => {
+    const api = fakeApi({
+      volume: "unreachable",
+      lastSyncedAt: null,
+      rebuildable: false,
+      downSince: "2026-11-21T10:00:00Z",
+      offerAt: "2026-11-21T10:30:00Z",
+    });
+    render(<VolumeLostNotice api={api} mode="known" />);
+    await userEvent.click(screen.getByRole("button", { name: "Rebuild sandbox…" }));
+    expect(await screen.findByText(/isn't answering/)).toBeTruthy();
+    expect(screen.getByText(/may come back with the files/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Rebuild sandbox" })).toBeNull();
   });
 
   it("says when the workspace never synced", async () => {

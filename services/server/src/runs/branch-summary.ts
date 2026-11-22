@@ -69,6 +69,8 @@ const HTTP_CODE: Readonly<Record<string, RunEndCode>> = {
   sandbox_failed: "sandbox_unavailable",
   workspace_quota_exhausted: "sandbox_unavailable",
   workspace_volume_lost: "sandbox_unavailable",
+  workspace_volume_unreachable: "sandbox_unavailable",
+  workspace_rebuilding: "sandbox_unavailable",
   pi_unavailable: "sandbox_unavailable",
   connection_lost: "sandbox_unavailable",
   unavailable: "sandbox_unavailable",

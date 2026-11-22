@@ -19,7 +19,7 @@ let the next wake restore from object storage exactly like a wake after a reclai
   (PV node affinity `kubernetes.io/hostname In [one]`, as local-path writes it; or a Longhorn CSI
   PV with `numberOfReplicas: "1"` and `dataLocality: strict-local`, whose node is the claim's
   `volume.kubernetes.io/selected-node`) and that node does not exist (hostname label list empty /
-  GET 404) or its Ready condition has not been True for `NODE_LOST_AFTER_MS` = 10 min. Anything
+  GET 404) or not Ready, held for the grace period (see review g72 fixes below). Anything
   else, replicated volumes, a pending claim, and any read error are "present" (never offered).
   Risk (false positive = unsynced work destroyed): a node down > 10 min that comes back. Mitigated
   by member confirmation with the last sync shown, and by the confirm-time re-check.
@@ -59,6 +59,33 @@ let the next wake restore from object storage exactly like a wake after a reclai
   `admin/team-admin.md`, `for-agents/working-in-a-sandbox.md` (agents cannot observe the state:
   the sandbox is not running; they can see missing unsynced files after a rebuild),
   `docs/audit-log.md`.
+
+## Review g72 fixes (commit on top)
+
+- **HIGH, grace period:** a missing or not-Ready node is now `node_down`, not lost. The server
+  stores its first observation per sandbox (`sandboxes.volume_lost_since`, migration 0241, server
+  clock only; any observation of the node back clears it) and counts it lost only after
+  `sandbox.volumeLoss.graceMinutes` (chart, default 30). Before that the wake fails
+  `workspace_volume_unreachable` and the status says `unreachable` with `offer_at`; a confirm
+  answers 409 `volume_not_yet_lost`. Claim `Lost`, PV missing/`Failed` stay immediate. No
+  `lastTransitionTime` is compared any more.
+- **HIGH, 1b:** shipped the FALLBACK. Keeping the old claim needs a generation in the claim name
+  (`claimName(userId)` is assumed in claims, readiness, volumes, isolation and the identity check
+  that maps a pod to its claim, plus the KOBE-733 terminating-volume wait; and the real PVC name
+  depends on the warm-pool Sandbox name, unverified): more than half a day and security-sensitive.
+  Instead the dialog, the failure message, the notice and the guide say plainly that a server that
+  comes back does not bring the unsynced changes back.
+- **MEDIUM, state machine:** `sandboxes.rebuild_started_at`; the confirm marks it and writes the
+  audit in the locked transaction and commits before any cluster delete; `completeRebuild`
+  deletes (idempotent) and resets; a failure answers 503 `rebuild_pending`, wakes answer
+  `workspace_rebuilding`, and the next confirm or the hibernation sweep (rebuilds unfinished > 1
+  min, 10 per team) finishes it. 503 `rebuild_failed` text no longer claims nothing changed.
+- **MEDIUM, RBAC switch:** `sandbox.volumeLoss.detection` (default on) gates the PV/Node rules and
+  the server reads; off = never lost. install.md says there was no k3d/cluster test.
+- **LOW:** status GET rate limited (burst 20, 1 per 5 s per caller) and cached 30 s per member
+  (confirm always live); audit carries `node` and `firstSeenAt`; Longhorn `selected-node`
+  reliance documented (no VolumeAttachment/CRD reads); a pod on a missing or not-Ready node is
+  force-deleted for every loss reason.
 
 ## Open questions (for Chris or the coordinator)
 

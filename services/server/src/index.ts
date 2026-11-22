@@ -631,7 +631,9 @@ if (isServer && sandbox && deps && !config.mcpProxyInternalKey) {
 if (providerRuntime && deps) deps.offboarding.setProvider(providerRuntime.provider);
 // A workspace lost with its node is rebuilt from the last sync (KOBE-739): needs workspace sync.
 if (providerRuntime && deps) {
-  deps.workspaceRebuild.setProvider(providerRuntime.provider, workspaceSync !== undefined);
+  deps.workspaceRebuild.setProvider(providerRuntime.provider, workspaceSync !== undefined, {
+    graceMinutes: providerRuntime.settings.volumeLoss.graceMinutes,
+  });
 }
 // The server replica's own background jobs (startup/jobs.ts, KOBE-422): audit anchor, PII erasure,
 // SIEM forwarding, break-glass, retention, approvals, budgets, email sweeps, egress relay,
@@ -680,6 +682,7 @@ const lifecycle =
         idleMinutes: providerRuntime.settings.hibernation.idleMinutes,
         // A returning member's offboarded sandbox is replaced by a new one (KOBE-28, D12).
         reinstate: (target) => deps.offboarding.reinstate(target),
+        volumeLossGraceMinutes: providerRuntime.settings.volumeLoss.graceMinutes,
         ...reclaimSettings(),
       })
     : undefined;

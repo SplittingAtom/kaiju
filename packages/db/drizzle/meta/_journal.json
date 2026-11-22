@@ -1688,6 +1688,13 @@
       "when": 1795288009021,
       "tag": "0240_sandbox_volume_synced",
       "breakpoints": true
+    },
+    {
+      "idx": 241,
+      "version": "7",
+      "when": 1795314188686,
+      "tag": "0241_sandbox_volume_lost",
+      "breakpoints": true
     }
   ]
 }

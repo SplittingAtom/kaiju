@@ -185,13 +185,13 @@ export const conversationsAreas: readonly CatalogArea[] = [
         "get",
         "/v1/workspace/rebuild",
         "Whether the member's workspace volume is lost, and when the workspace last synced",
-        "Team members (`team.chat`). KOBE-739: `{volume: lost|present|missing|unknown, last_synced_at, rebuildable}`; reads the cluster. 503 `rebuild_unavailable` without workspace storage.",
+        "Team members (`team.chat`). KOBE-739: `{volume: lost|unreachable|rebuilding|present|missing|unknown, last_synced_at, rebuildable, down_since?, offer_at?}`; reads the cluster, cached 30 s, rate limited (429). 503 `rebuild_unavailable` without workspace storage.",
       ],
       [
         "post",
         "/v1/workspace/rebuild",
         "Rebuild the member's lost workspace from the last sync",
-        "Team members (`team.chat`). Body `{confirm: true}`. Deletes the lost volume (re-checked as lost first; 409 `volume_reachable` otherwise); the next wake restores from object storage. Idempotent (`already`); audited `sandbox.volume_rebuilt`.",
+        "Team members (`team.chat`). Body `{confirm: true}`. Re-checks the loss live (409 `volume_reachable`, or `volume_not_yet_lost` with `offer_at` while the node's grace period runs), audits `sandbox.volume_rebuilt`, then deletes the old claim and volume; the next wake restores from object storage. 503 `rebuild_pending` when the cleanup is retried; idempotent (`already`).",
       ],
       [
         "get",

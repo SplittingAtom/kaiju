@@ -3,7 +3,6 @@ import { createFakeKube, simulateAgentSandbox, type FakeKube } from "../testing/
 import { SETTINGS, TEAM, USER, seedCluster } from "../testing/sandbox-fixtures.js";
 import { gateFor } from "../testing/sandbox-fixtures.js";
 import { createSandboxProvider, workspacePvcName } from "./provider.js";
-import { NODE_LOST_AFTER_MS } from "./volume-loss.js";
 
 /**
  * A workspace volume lost with its node (KOBE-739): detection and the rebuild's Kubernetes half.
@@ -81,14 +80,14 @@ function placePod(kube: FakeKube, podName: string, node: string) {
 }
 
 describe("volumeHealth (KOBE-739)", () => {
-  it("reports a volume whose only node is gone as lost, and a healthy one as present", async () => {
+  it("reports a volume whose only node is missing as node_down, and a healthy one as present", async () => {
     const { kube, provider } = setup();
     const handle = await provider.ensureSandbox(TEAM, USER);
     seedLocalVolume(kube, handle.sandboxName, "compute4");
     seedNode(kube, "compute1", "True");
 
     await expect(provider.volumeHealth(TEAM, USER)).resolves.toMatchObject({
-      state: "lost",
+      state: "node_down",
       reason: "node_gone",
       node: "compute4",
     });
@@ -100,7 +99,22 @@ describe("volumeHealth (KOBE-739)", () => {
     const { kube, provider } = setup();
     await expect(provider.volumeHealth(TEAM, USER)).resolves.toEqual({ state: "missing" });
     seedLocalVolume(kube, `u-${USER}`, "compute4");
-    await expect(provider.volumeHealth(TEAM, USER)).resolves.toMatchObject({ state: "lost" });
+    await expect(provider.volumeHealth(TEAM, USER)).resolves.toMatchObject({
+      state: "node_down",
+    });
+  });
+
+  it("never reports anything lost, and reads no Node or PV, with detection off", async () => {
+    const { kube } = setup();
+    const provider = createSandboxProvider({
+      kube,
+      isolation: gateFor(kube),
+      settings: { ...SETTINGS, volumeLoss: { detection: false, graceMinutes: 30 } },
+      sleep: async () => undefined,
+    });
+    seedLocalVolume(kube, `u-${USER}`, "compute4");
+    await expect(provider.volumeHealth(TEAM, USER)).resolves.toEqual({ state: "present" });
+    expect(kube.calls.some((c) => c.kind === "Node" || c.kind === "PersistentVolume")).toBe(false);
   });
 });
 
@@ -110,7 +124,7 @@ describe("discardLostVolume (KOBE-739)", () => {
     const handle = await provider.ensureSandbox(TEAM, USER);
     const pvc = seedLocalVolume(kube, handle.sandboxName, "compute4");
 
-    const result = await provider.discardLostVolume(TEAM, USER, "compute4");
+    const result = await provider.discardLostVolume(TEAM, USER);
 
     expect(result).toEqual({ sandboxId: handle.sandboxId, pvc });
     expect(kube.all("SandboxClaim")).toHaveLength(0);
@@ -121,13 +135,13 @@ describe("discardLostVolume (KOBE-739)", () => {
     );
   });
 
-  it("force-deletes a pod stuck on the lost node (it can never finish terminating)", async () => {
+  it("force-deletes a pod stuck on a missing node (it can never finish terminating)", async () => {
     const { kube, provider } = setup();
     const handle = await provider.ensureSandbox(TEAM, USER);
     seedLocalVolume(kube, handle.sandboxName, "compute4");
     placePod(kube, handle.podName as string, "compute4");
 
-    await provider.discardLostVolume(TEAM, USER, "compute4");
+    await provider.discardLostVolume(TEAM, USER);
 
     const forced = kube.calls.filter(
       (c) => c.verb === "delete" && c.kind === "Pod" && c.gracePeriodSeconds === 0,
@@ -135,30 +149,41 @@ describe("discardLostVolume (KOBE-739)", () => {
     expect(forced).toHaveLength(1);
   });
 
-  it("deletes a pod on a healthy node normally", async () => {
+  it("deletes a pod on a healthy node normally, and force-deletes one on a not-Ready node", async () => {
     const { kube, provider } = setup();
     const handle = await provider.ensureSandbox(TEAM, USER);
     seedLocalVolume(kube, handle.sandboxName, "compute4");
+    seedNode(kube, "compute1", "True");
     placePod(kube, handle.podName as string, "compute1");
 
-    await provider.discardLostVolume(TEAM, USER, "compute4");
+    await provider.discardLostVolume(TEAM, USER);
 
     expect(kube.calls.some((c) => c.verb === "delete" && c.gracePeriodSeconds === 0)).toBe(false);
+
+    const again = setup();
+    const h2 = await again.provider.ensureSandbox(TEAM, USER);
+    seedLocalVolume(again.kube, h2.sandboxName, "compute4");
+    seedNode(again.kube, "compute2", "Unknown");
+    placePod(again.kube, h2.podName as string, "compute2");
+    await again.provider.discardLostVolume(TEAM, USER);
+    expect(again.kube.calls.some((c) => c.verb === "delete" && c.gracePeriodSeconds === 0)).toBe(
+      true,
+    );
   });
 
   it("is idempotent once everything is gone", async () => {
     const { kube, provider } = setup();
     const handle = await provider.ensureSandbox(TEAM, USER);
     const pvc = seedLocalVolume(kube, handle.sandboxName, "compute4");
-    await provider.discardLostVolume(TEAM, USER, undefined);
-    await expect(provider.discardLostVolume(TEAM, USER, undefined)).resolves.toEqual({ pvc });
+    await provider.discardLostVolume(TEAM, USER);
+    await expect(provider.discardLostVolume(TEAM, USER)).resolves.toEqual({ pvc });
   });
 
-  it("node not Ready for the whole grace period counts as lost", async () => {
+  it("a node that is not Ready is node_down (the grace period is the lifecycle's)", async () => {
     const { kube, provider } = setup();
     const handle = await provider.ensureSandbox(TEAM, USER);
     seedLocalVolume(kube, handle.sandboxName, "compute4");
-    seedNode(kube, "compute4", "Unknown", NODE_LOST_AFTER_MS);
+    seedNode(kube, "compute4", "Unknown");
     await expect(provider.volumeHealth(TEAM, USER)).resolves.toMatchObject({
       reason: "node_not_ready",
     });

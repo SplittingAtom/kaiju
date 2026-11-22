@@ -83,6 +83,15 @@ sandbox:
     reclaim:
       enabled: false
       dormantDays: 30
+  # Lost workspace volumes (KOBE-739). With detection on, the server reads PersistentVolumes and
+  # Nodes cluster-wide (read-only RBAC in the orchestrator ClusterRole) to tell when a volume's
+  # only copy was on a node that is gone; the member (or a team admin) may then rebuild the
+  # workspace from the last sync. A missing or not-Ready node must stay so, by the server's own
+  # observations, for graceMinutes before the rebuild is offered (a claim Lost or a Failed or
+  # missing PV counts at once). Off: no Node/PV reads, and a volume is never reported lost.
+  volumeLoss:
+    detection: true
+    graceMinutes: 30
   # Durable copy of every sandbox's /workspace in object storage (s3.*), so losing or rebuilding a
   # volume loses no files (KOBE-27). The server brokers every transfer on its sandbox port:
   # sandboxes hold no storage credentials and gain no network access. Off without s3.bucket.

@@ -4,9 +4,10 @@ import {
   assertTeamRef,
   assertUserId,
   teamNamespaceName,
+  type KubeObject,
   type TeamRef,
 } from "../manifests.js";
-import { inspectVolume, type VolumeHealth } from "../volume-loss.js";
+import { inspectVolume, notReady, type VolumeHealth } from "../volume-loss.js";
 import { SandboxProvisioningError } from "./errors.js";
 import { CLAIM, POD, PVC, WORKSPACE_PVC, str, workspacePvcName } from "./kube-objects.js";
 import type { ProviderContext } from "./context.js";
@@ -31,7 +32,7 @@ export type VolumeOps = Pick<
 };
 
 export function createVolumeOps(ctx: ProviderContext): VolumeOps {
-  const { kube, sleep, now, deleteWithRetry } = ctx;
+  const { kube, settings, sleep, now, deleteWithRetry } = ctx;
 
   const destroySandbox = async (
     team: TeamRef,
@@ -84,20 +85,29 @@ export function createVolumeOps(ctx: ProviderContext): VolumeOps {
   const volumeHealth = async (team: TeamRef, userId: string): Promise<VolumeHealth> => {
     assertTeamRef(team);
     assertUserId(userId);
+    // KOBE-739: detection off (no Node/PV RBAC): a volume is never reported lost.
+    if (!settings.volumeLoss.detection) return { state: "present" };
     const { namespace, pvcName } = await workspaceVolumeOf(team, userId);
-    return inspectVolume(kube, namespace, pvcName, now());
+    return inspectVolume(kube, namespace, pvcName);
+  };
+
+  /** Whether a pod sits on a node that is missing or not Ready: its delete could never finish. */
+  const onDeadNode = async (pod: KubeObject | undefined): Promise<boolean> => {
+    const nodeName = str(pod, "spec", "nodeName");
+    if (!nodeName || !settings.volumeLoss.detection) return false;
+    const node = await kube.get({ apiVersion: "v1", kind: "Node", name: nodeName });
+    return !node || notReady(node);
   };
 
   const discardLostVolume = async (
     team: TeamRef,
     userId: string,
-    lostNode: string | undefined,
   ): Promise<DestroyResult & { readonly pvc: string }> => {
     assertTeamRef(team);
     assertUserId(userId);
     const { namespace, sandboxName, pvcName } = await workspaceVolumeOf(team, userId);
     const pod = await kube.get(POD(namespace, sandboxName));
-    const stuck = lostNode !== undefined && str(pod, "spec", "nodeName") === lostNode;
+    const stuck = await onDeadNode(pod);
     const destroyed = await destroySandbox(team, userId, { retainVolume: false });
     if (stuck) await kube.delete(POD(namespace, sandboxName), { gracePeriodSeconds: 0 });
     await deleteVolume(team, pvcName);

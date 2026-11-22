@@ -186,21 +186,20 @@ export interface SandboxProvider {
   /** Deletes a retained workspace volume (`workspace-u-<user>`) of the team; missing is fine. */
   deleteVolume(team: TeamRef, pvcName: string): Promise<void>;
   /**
-   * KOBE-739: whether the (team, user) workspace volume is lost (`volume-loss.ts`), found by its
-   * claim's Sandbox name, or by the claim's name when the claim is gone. Read-only; read errors
-   * throw (the caller never treats them as lost).
+   * KOBE-739: whether the (team, user) workspace volume is lost or its node down (`volume-loss.ts`),
+   * found by its claim's Sandbox name, or by the claim's name when the claim is gone. Read-only;
+   * read errors throw (the caller never treats them as lost). `present` when detection is off.
    */
   volumeHealth(team: TeamRef, userId: string): Promise<VolumeHealth>;
   /**
    * KOBE-739: the Kubernetes half of rebuilding a lost workspace: deletes the claim without
-   * keeping the volume, force-deletes its pod when that pod sits on `lostNode` (it could never
-   * finish terminating, and its volume would stay protected), then deletes the volume. Idempotent.
-   * The caller has re-checked {@link volumeHealth} and decides; nothing in object storage is touched.
+   * keeping the volume, force-deletes its pod when that pod sits on a node that is missing or not
+   * Ready (it could never finish terminating, and its volume would stay protected), then deletes
+   * the volume. Idempotent. The caller has decided the volume is lost; object storage is untouched.
    */
   discardLostVolume(
     team: TeamRef,
     userId: string,
-    lostNode: string | undefined,
   ): Promise<DestroyResult & { readonly pvc: string }>;
   /** Verifies a sandbox pod's bootstrap token (TokenReview) and resolves who it is. */
   identifyBootstrapToken(token: string): Promise<BootstrapIdentity>;

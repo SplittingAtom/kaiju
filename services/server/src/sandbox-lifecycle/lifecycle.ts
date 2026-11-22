@@ -22,8 +22,10 @@ import { workspacePvcName, type SandboxProvider } from "../sandbox/provider.js";
 import { notifyHintInTx } from "../sandbox-wire/bus.js";
 import { SandboxWakeError, type SandboxTarget, type SandboxWaker } from "../sandbox-wire/types.js";
 import { resolveIdleMinutes, TEAM_IDLE_MINUTES } from "./idle.js";
-import { ensureReady, REMEDY, type ReadyProvider } from "./ready.js";
+import { ensureReady, REMEDY, WORKSPACE_REBUILDING_MESSAGE, type ReadyProvider } from "./ready.js";
 import { wakeSpans, type TimingSpan } from "./timing.js";
+import { completeRebuild, unfinishedRebuilds } from "./rebuild.js";
+import { observeVolume } from "./volume-verdict.js";
 import {
   forgetReclaimedSandbox,
   lockReclaimable,
@@ -70,7 +72,7 @@ function recordWakeSpans(spans: readonly TimingSpan[], runId: string | undefined
 
 export type LifecycleProvider = Pick<SandboxProvider, "wakeSandbox" | "hibernateSandbox"> &
   Partial<ReadyProvider> &
-  Partial<Pick<SandboxProvider, "destroySandbox" | "deleteVolume">>;
+  Partial<Pick<SandboxProvider, "destroySandbox" | "deleteVolume" | "discardLostVolume">>;
 
 export interface LifecycleOptions {
   readonly db: KobeDb;
@@ -90,6 +92,11 @@ export interface LifecycleOptions {
    * kept for ever and no sync proof is asked for.
    */
   readonly reclaim?: ReclaimSettings;
+  /**
+   * KOBE-739 `sandbox.volumeLoss.graceMinutes`: how long this server must have seen a volume's
+   * node down before a wake reports the volume lost (default 30).
+   */
+  readonly volumeLossGraceMinutes?: number;
   readonly log?: Logger;
 }
 
@@ -229,6 +236,15 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
       userId: target.userId,
       since,
       log,
+      // KOBE-739: a node down counts as lost only after this server saw it down for the grace.
+      nodeDownIsLost: async (stall) => {
+        if (!stall.volume) return false;
+        const health = stall.volume;
+        const verdict = await withTeam(db, target.teamId, (tx) =>
+          observeVolume(tx, target, health, options.volumeLossGraceMinutes ?? 30),
+        );
+        return verdict.state === "lost";
+      },
       onStalled: ({ sandboxId, stall }) => {
         metrics.stalledWakes += 1;
         return recordAuditAfter(db, {
@@ -284,6 +300,9 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
     }
     if (previous === "destroyed") {
       throw new SandboxWakeError("sandbox_unavailable", "this sandbox was offboarded");
+    }
+    if (previous === "rebuilding") {
+      throw new SandboxWakeError("workspace_rebuilding", WORKSPACE_REBUILDING_MESSAGE);
     }
     // No row: never started through Kobe; hibernated: a resume. A `running` row whose sandbox is
     // merely disconnected (pod restarting) is not announced. (`rebuild`, a lost volume, is the
@@ -435,6 +454,17 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
     return done;
   };
 
+  /** KOBE-739: confirmed rebuilds whose cleanup failed are finished here (idempotent). */
+  const finishRebuilds = async (team: TeamRef): Promise<void> => {
+    const { discardLostVolume } = provider;
+    if (!discardLostVolume) return;
+    const users = await withTeam(db, team.id, (tx) => unfinishedRebuilds(tx, team.id));
+    for (const userId of users) {
+      const done = await completeRebuild(db, { discardLostVolume }, team, userId, log);
+      log.info({ team_id: team.id, outcome: done }, "unfinished workspace rebuild retried");
+    }
+  };
+
   const hibernateOne = async (
     team: TeamRef,
     target: SandboxTarget,
@@ -500,6 +530,7 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
           if (await hibernateOne(team, target, idle, false)) hibernated.push(target);
         }
         reclaimed.push(...(await reclaimTeam(team)));
+        await finishRebuilds(team);
       } catch (err) {
         failedTeams += 1;
         log.error({ err, team_id: team.id }, "hibernation sweep failed for a team");

@@ -69,6 +69,7 @@ export function createReadinessOps(ctx: ProviderContext): Pick<SandboxProvider, 
           since,
           now(),
           quantityBytes(settings.workspace.size),
+          settings.volumeLoss.detection,
         );
         // Only a definite signal ends the wait early; otherwise the sandbox gets the whole budget.
         if (last || stall.definite) return { ready: false, sandboxId: found.sandboxId, stall };

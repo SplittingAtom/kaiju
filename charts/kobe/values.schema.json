@@ -310,6 +310,14 @@
         "modelGatewayAccess": {
           "type": "boolean"
         },
+        "volumeLoss": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "detection": { "type": "boolean" },
+            "graceMinutes": { "type": "integer", "minimum": 1, "maximum": 10080 }
+          }
+        },
         "hibernation": {
           "type": "object",
           "additionalProperties": false,
