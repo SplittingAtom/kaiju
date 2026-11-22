@@ -355,7 +355,7 @@ export function commitImport(
       const outcome = outcomes[i] as MemoryCheckOutcome;
       const id = await insertImported(op, c.row);
       ids.set(c.row.index, id);
-      await insertVersion(op.tx, op.loc, {
+      await insertVersion(op, {
         itemId: id,
         version: 1,
         statement: c.row.statement,

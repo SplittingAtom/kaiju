@@ -75,7 +75,7 @@ export async function createItemIn(
   );
 
   const id = await insertItem(op, body, policy);
-  await insertVersion(op.tx, op.loc, {
+  await insertVersion(op, {
     itemId: id,
     version: 1,
     statement: body.statement,

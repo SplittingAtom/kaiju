@@ -7,6 +7,7 @@ import { WORKSPACE_SWITCHES_ON, effectiveMemory, type EffectiveMemory } from "..
 import { checkMemoryWrite, type MemoryCheckOutcome } from "../checks.js";
 import { MemoryItemError, notFound } from "./errors.js";
 import { deliverSiteNotices, type PendingSiteNotices } from "./limits.js";
+import { embedSaved } from "../embeddings/save-hook.js";
 import {
   snapshotPortableHolds,
   type PortableHoldSnapshot,
@@ -29,6 +30,11 @@ export interface Op {
   /** Site curators to tell after commit (limits.ts). */
   pending: PendingSiteNotices;
   /**
+   * Items this op wrote a new current statement for (every new version, a restore): embedded
+   * after commit by {@link afterCommit} (KOBE-779). Shared by copies of the op (`{ ...op }`).
+   */
+  readonly saved: string[];
+  /**
    * A Site curator accepting a Site proposal (KOBE-403): the version written is the proposal's
    * (`actor_kind = 'proposal'`, `proposal_id`), its only provenance (the wall, SM20).
    */
@@ -48,7 +54,7 @@ export async function inStore<T>(
   /** The call may prune versions: portable holds are read first (reads skip it, review N2). */
   options: { readonly prunes?: boolean } = {},
 ): Promise<T> {
-  let pending: PendingSiteNotices = [];
+  const opened: Op[] = [];
   const teamId = who.teamId;
   // Read before the transaction opens: never a second pooled connection inside it (review M1).
   const portableHolds =
@@ -56,20 +62,33 @@ export async function inStore<T>(
   const body = async (tx: KobeTx) => {
     const op = await openOp(tx, who, scope, portableHolds);
     const value = await fn(op);
-    pending = op.pending;
+    opened.push(op);
     return value;
   };
   // Workspace rows need the team's transaction (RLS); portable and Site rows are site-wide.
   const out = teamId === null ? await db.transaction(body) : await withTeam(db, teamId, body);
-  if (pending.length > 0) await deliverSiteNotices(db, pending);
+  await afterCommit(db, opened);
   return out;
+}
+
+/**
+ * After the commit of a transaction that ran store ops: their saved items are queued for
+ * embedding (background, failing soft: Build vectors embeds anything missed, KOBE-779) and the
+ * Site curators' near-full notices go out. Every caller of {@link openOp} that writes ends here.
+ */
+export async function afterCommit(db: KobeDb, ops: readonly Op[]): Promise<void> {
+  for (const op of ops) {
+    embedSaved(db, { userId: op.who.userId, teamId: op.who.teamId }, op.loc.scope, op.saved);
+  }
+  const pending = ops.flatMap((o) => o.pending);
+  if (pending.length > 0) await deliverSiteNotices(db, pending);
 }
 
 /**
  * One store call's {@link Op} on a transaction the caller holds: {@link inStore} uses it, and so
  * does a caller that writes several items and its own rows in one transaction (To review, KOBE-396).
  * Such a caller runs in `withTeam(who.teamId)`, reads `portableHolds` before it opens the
- * transaction when a call may prune, and delivers each op's `pending` notices after commit.
+ * transaction when a call may prune, and passes its ops to {@link afterCommit} after commit.
  */
 export async function openOp(
   tx: KobeTx,
@@ -93,6 +112,7 @@ export async function openOp(
         : (await readSwitches(tx, teamId)).memory,
     settings: await readMemorySiteSettings(tx),
     pending: [],
+    saved: [],
   };
 }
 

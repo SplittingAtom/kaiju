@@ -96,12 +96,8 @@ export function memoryTransferRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
     if (refused) return refused;
     const body = await importBody(c, semanticMemoryImportCommitRequestSchema);
     if (body instanceof Response) return body;
-    return answer(c, body.scope, async (who) => {
-      const out = await commitImport(db, who, body);
-      // Embed on save (KOBE-409): in the background, never blocking or failing the import.
-      deps.memoryEmbeddings.afterSave(who, body.scope, out.item_ids);
-      return out;
-    });
+    // Embed on save (KOBE-409): the item store queues it after commit (KOBE-779).
+    return answer(c, body.scope, (who) => commitImport(db, who, body));
   });
 
   // A POST (review-385 L-4): an export writes an audit row, so it goes through the API's Origin
