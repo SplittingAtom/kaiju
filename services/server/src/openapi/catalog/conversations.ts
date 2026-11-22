@@ -6,6 +6,7 @@ import {
   threadsDetails,
   workspaceDetails,
 } from "./details/conversations.js";
+import { workspaceRebuildDetails } from "./details/workspace-rebuild.js";
 
 /** OpenAPI catalog: conversations (threads, runs, artifacts, workspace, schedules) (KOBE-727). */
 export const conversationsAreas: readonly CatalogArea[] = [
@@ -197,7 +198,7 @@ export const conversationsAreas: readonly CatalogArea[] = [
     tag: "Workspace",
     detailed: true,
     teamScoped: true,
-    details: workspaceDetails,
+    details: { ...workspaceDetails, ...workspaceRebuildDetails },
     description: "The member's synced workspace files. Team-scoped: send X-Kobe-Team.",
     entries: [
       [
