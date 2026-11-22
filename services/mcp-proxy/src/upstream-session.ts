@@ -52,7 +52,7 @@ async function post(
   });
   if (res.status === 401 || res.status === 403) {
     await res.body?.cancel();
-    throw new UpstreamError("auth_required");
+    throw new UpstreamError("auth_required", res.status);
   }
   if (!("id" in message)) {
     await res.body?.cancel();
@@ -175,9 +175,14 @@ async function sessionResult(
     await post(t, url, call, session, { jsonrpc: "2.0", method: "notifications/initialized" });
     return await run(url, session);
   } catch (err) {
-    if (err instanceof UpstreamError) return { ok: false, failure: err.failure };
     const cause = (err as { cause?: unknown }).cause;
-    if (cause instanceof UpstreamError) return { ok: false, failure: cause.failure };
+    const known =
+      err instanceof UpstreamError ? err : cause instanceof UpstreamError ? cause : undefined;
+    if (known) {
+      return known.authStatus === undefined
+        ? { ok: false, failure: known.failure }
+        : { ok: false, failure: known.failure, authStatus: known.authStatus };
+    }
     if (call.signal.aborted) return { ok: false, failure: "timeout" };
     return { ok: false, failure: "unreachable" };
   } finally {

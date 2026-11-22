@@ -41,6 +41,8 @@ export interface FakeOauthOptions {
    * that was already spent revokes every token of its family, including the newest (KOBE-778).
    */
   readonly reuseRevokesFamily?: boolean;
+  /** Rotate the refresh token, then wait this long before answering (a response lost to a timeout). */
+  readonly refreshDelayAfterRotateMs?: number;
   /** Leave `expires_in` out of token responses (it is only RECOMMENDED, RFC 6749 5.1). */
   readonly omitExpiresIn?: boolean;
 }
@@ -133,6 +135,10 @@ export class FakeOauthServer {
     this.issued.push(tokens);
     this.liveRefresh.add(tokens.refreshToken);
     this.family.set(tokens.refreshToken, family ?? n);
+    if (o.refreshDelayAfterRotateMs) {
+      await new Promise((r) => setTimeout(r, o.refreshDelayAfterRotateMs));
+    }
+    if (res.destroyed) return;
     return this.json(res, {
       access_token: tokens.accessToken,
       token_type: "Bearer",

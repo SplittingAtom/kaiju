@@ -397,6 +397,47 @@ describe("refresh lease across replicas (KOBE-778)", () => {
   });
 });
 
+describe("an unknown refresh outcome keeps the lease (KOBE-778 review F2)", () => {
+  it("after a timeout once the server may have rotated, no replica replays the old token within the lease", async () => {
+    await connect();
+    await expire();
+    fake.options = { ...fake.options, reuseRevokesFamily: true, refreshDelayAfterRotateMs: 800 };
+    const before = fake.refreshRequests.length;
+    // Replica A: its token request times out after the server rotated the refresh token.
+    const a = await revealCredential(db(), envelope(), subject(), new Date(), {
+      io: { policy: h.deps.connectorUrlPolicy, timeoutMs: 300 },
+      gate: new RefreshGate(),
+      leaseMs: 3_000,
+    });
+    expect(a.ok).toBe(false);
+    // Replica B right after: the lease still stands, so it does not send the spent token.
+    const b = await revealCredential(db(), envelope(), subject(), new Date(), {
+      ...replica(),
+      leaseWaitMs: 300,
+    });
+    expect(b.ok).toBe(false);
+    expect(fake.refreshRequests.length).toBe(before + 1);
+    expect(fake.revokedFamilies.size).toBe(0);
+    await new Promise((r) => setTimeout(r, 600));
+    fake.options = { ...fake.options, reuseRevokesFamily: false, refreshDelayAfterRotateMs: 0 };
+    await disconnect();
+  });
+
+  it("a definite error answer (5xx) gives the lease back at once", async () => {
+    await connect();
+    await expire();
+    fake.options = { ...fake.options, refreshUnavailable: true };
+    const a = await revealCredential(db(), envelope(), subject(), new Date(), replica());
+    expect(a.ok).toBe(false);
+    const { rows } = await h.admin.query<{ owner: string | null }>(
+      `SELECT refresh_lease_owner AS owner FROM connector_grants`,
+    );
+    expect(rows[0]?.owner).toBeNull();
+    fake.options = { ...fake.options, refreshUnavailable: false };
+    await disconnect();
+  });
+});
+
 describe("reactive refresh (KOBE-778, P2-28)", () => {
   const forceGrant = async () => {
     const res = await internal.request(`/internal/v1/mcp/connectors/${connectorId}/grant`, {

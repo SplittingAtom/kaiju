@@ -88,7 +88,8 @@ const configSchema = z.object({
   KOBE_MCP_SERVER_TIMEOUT_MS: int("KOBE_MCP_SERVER_TIMEOUT_MS", 100, 60_000, 10_000),
   /**
    * The grant call (KOBE-778, P2-29): it may include an OAuth refresh, which can wait for another
-   * server replica's refresh lease (up to 10 s) and then refresh itself (5 s deadline).
+   * server replica's refresh lease (up to 10 s) and then refresh itself (5 s deadline). A call's
+   * own deadline (`KOBE_MCP_UPSTREAM_TIMEOUT_MS`, which covers the whole call) still bounds it.
    */
   KOBE_MCP_GRANT_TIMEOUT_MS: int("KOBE_MCP_GRANT_TIMEOUT_MS", 1_000, 120_000, 25_000),
   /** Concurrent calls per sandbox and per replica. */

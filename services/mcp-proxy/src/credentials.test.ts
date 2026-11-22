@@ -124,6 +124,23 @@ describe("forced refresh after an upstream refusal (KOBE-778)", () => {
     });
     expect(asked).toEqual([{ refresh: "force" }]);
   });
+
+  it("passes the call's deadline to the grant fetch (review F1)", async () => {
+    const seen: unknown[] = [];
+    const grants: GrantSource = {
+      fetchGrant: (_t, _c, options) => {
+        seen.push(options?.signal);
+        return Promise.resolve({
+          ok: true,
+          value: { kind: "oauth", accessToken: "at", source: "member" },
+        });
+      },
+    };
+    const signal = AbortSignal.timeout(1_000);
+    await createServerCredentials(grants).headersFor(request("oauth"), { signal });
+    await createServerCredentials(grants).headersFor(request("oauth"), { refresh: true, signal });
+    expect(seen).toEqual([signal, signal]);
+  });
 });
 
 describe("policy server grant client", () => {
@@ -199,6 +216,23 @@ describe("policy server grant client", () => {
       ok: true,
       value: { kind: "oauth", accessToken: "at-3", source: "member" },
     });
+  });
+
+  it("stops the grant call when the call's own deadline passes first (review F1)", async () => {
+    const hanging = ((_url: string, init: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+      })) as unknown as typeof fetch;
+    const started = Date.now();
+    const out = await createPolicyServer({
+      baseUrl: "http://server:8082",
+      internalKey: "i".repeat(40),
+      timeoutMs: 5_000,
+      grantTimeoutMs: 5_000,
+      fetch: hanging,
+    }).fetchGrant("tok", "c1", { signal: AbortSignal.timeout(100) });
+    expect(out).toEqual({ ok: false, failure: "unavailable" });
+    expect(Date.now() - started).toBeLessThan(2_000);
   });
 
   it("parses an OAuth access token", async () => {

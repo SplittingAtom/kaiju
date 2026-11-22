@@ -16,6 +16,8 @@ export interface FakeUpstreamOptions {
   status?: number;
   /** Answer 401 to every POST whose Authorization is not `Bearer <this>` (a refused token). */
   acceptBearer?: string;
+  /** The status `acceptBearer` refuses with (default 401; 403 for insufficient scope). */
+  refuseStatus?: number;
   /** Delay before answering tools/call. */
   delayMs?: number;
   /** Bytes of padding in the tools/call result. */
@@ -109,7 +111,7 @@ export class FakeUpstream {
       return;
     }
     if (o.acceptBearer !== undefined && req.headers.authorization !== `Bearer ${o.acceptBearer}`) {
-      res.writeHead(401).end();
+      res.writeHead(o.refuseStatus ?? 401).end();
       return;
     }
     if (o.session && method !== "initialize" && req.headers["mcp-session-id"] !== "sess-1") {

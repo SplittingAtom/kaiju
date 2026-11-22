@@ -52,7 +52,8 @@ import {
  *    server rejects for good drops the grant, also only under its own lease.
  *
  * The lease outlives the token request's deadline, so it cannot expire while its holder still
- * waits for an answer.
+ * waits for an answer. After a failure with an unknown outcome (timeout, reset) it is kept until
+ * it expires; only a definite error answer releases it early.
  */
 export interface RefreshSupport {
   readonly io: OauthIo;
@@ -72,6 +73,11 @@ export const REFRESH_TIMEOUT_MS = 5_000;
 
 /** A forced refresh (the upstream refused the token) is skipped for a grant written this recently. */
 export const FORCED_REFRESH_MIN_AGE_MS = 30_000;
+/** Refresh failures after which the refresh token was certainly not spent. */
+const DEFINITE_FAILURES: ReadonlySet<string> = new Set([
+  "token_endpoint_error",
+  "oauth_unsupported",
+]);
 /** How often a waiting replica re-reads a leased grant. */
 const LEASE_POLL_MS = 100;
 const WRITE_ATTEMPTS = 3;
@@ -200,7 +206,13 @@ async function refreshHolding(
       // Nobody else spent this refresh token through Kobe: we hold the lease.
       return dropIfUnchanged(db, envelope, subject, now, stale, "rejected", owner);
     }
-    await releaseLease(db, subject, owner);
+    // Release the lease only after a definite answer (an error status, or a URL refused before
+    // anything was sent). After a timeout or a reset the server may already have rotated the
+    // refresh token: the lease then stays until it expires, so no other replica replays the old
+    // one at once (with reuse detection that revokes the whole family; review F2).
+    if (error instanceof OauthError && DEFINITE_FAILURES.has(error.code)) {
+      await releaseLease(db, subject, owner);
+    }
     support.gate.markFailed(key);
     logger.warn(
       {

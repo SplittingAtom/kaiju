@@ -211,7 +211,11 @@ export function createPolicyServer(options: PolicyServerOptions): PolicyServer {
             ...(force ? { "content-type": "application/json" } : {}),
           }),
           ...(force ? { body: JSON.stringify({ refresh: "force" }) } : {}),
-          signal: AbortSignal.timeout(options.grantTimeoutMs ?? options.timeoutMs),
+          // Its own deadline (longer than the server's 5 s refresh), and never past the call's.
+          signal: AbortSignal.any([
+            AbortSignal.timeout(options.grantTimeoutMs ?? options.timeoutMs),
+            ...(fetchOptions.signal === undefined ? [] : [fetchOptions.signal]),
+          ]),
           redirect: "error",
         },
       );

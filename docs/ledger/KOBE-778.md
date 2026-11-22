@@ -52,6 +52,19 @@ Second-pass review findings P2-4, P2-28, P2-29 (private review notes).
   Kobe, also after a refusal; sign in again only when the provider ended it. The new env var is an
   internal default (no chart value; the chart does not set the server timeout either).
 
+## Review fixes (review-g76, 2026-11-22)
+
+- **F1:** one deadline per MCP call (`KOBE_MCP_UPSTREAM_TIMEOUT_MS`, 55 s, under Pi's 60 s),
+  started before the decision; it is passed to the grant fetch and to the forced refresh
+  (`AbortSignal.any` with the 25 s grant deadline), and the upstream call and retry use it too.
+- **F2:** the refresh lease is released only after a definite answer (an error status, now
+  `token_endpoint_error`, or a URL refused before sending). After a timeout, a reset, or a 2xx
+  that does not parse, it stays until it expires, so no replica replays a possibly rotated token.
+- **F3:** a forced refresh only after an upstream 401 (`authStatus` on `auth_required`); a 403
+  tells the member their account lacks the permission, without refreshing or "Reconnect".
+- Tests: `connector-refresh.db.test.ts` "an unknown refresh outcome keeps the lease" (red before);
+  `mcp.test.ts` (403, one deadline), `credentials.test.ts` (signal passed, grant call stops).
+
 ## Evidence
 
 - ac-1: `services/server/src/connector-refresh.db.test.ts` "refresh lease across replicas":

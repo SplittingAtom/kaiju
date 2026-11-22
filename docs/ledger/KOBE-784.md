@@ -56,10 +56,10 @@ P2-32: `countTeamsUsing` (registry), `teamsUsing` (drift recipients), `listTeams
   account; URL/auth changes delete keys and sign-ins), `connectors-and-apps.md` (keys and
   sign-ins go when the address or sign-in method changes; a late sign-in is refused).
 
-## Left out
+## Review follow-up
 
-- The drift email for an `auth_required` skip still gives the API-key remedy text for an OAuth
-  connector (`drift-notify.ts skippedMessage`); the console notice and pin messages are right.
+- The `auth_required` skip email for an OAuth connector says a site admin connects their own
+  account and pins or approves again (`skippedMessage`, test in `drift-notify.db.test.ts`).
 
 ## Evidence
 
