@@ -5,7 +5,14 @@
 import { render } from "@testing-library/react";
 import { useState } from "react";
 import { vi } from "vitest";
-import type { KobeEvent, KobeEventPayload, KobeEventType, NotebookRunBody } from "@kobe/protocol";
+import type {
+  KobeEvent,
+  KobeEventPayload,
+  KobeEventType,
+  NotebookHistoryEntry,
+  NotebookOutput,
+  NotebookRunBody,
+} from "@kobe/protocol";
 import type { ApiResult } from "../../lib/api/client";
 import type { EventSourceLike } from "../../lib/chat/stream";
 import type { FilesApi } from "../../lib/files/api";
@@ -98,6 +105,11 @@ export class Kernel {
   /** `variables` calls (`refresh` each) and their answers in order (then `no_kernel`). */
   variableCalls: boolean[] = [];
   variableAnswers: (ApiResult<VariablesResult> | Promise<ApiResult<VariablesResult>>)[] = [];
+  /** `history` calls (path each) and what it answers; `outputs` per execution id. */
+  historyCalls: string[] = [];
+  history: NotebookHistoryEntry[] = [];
+  outputCalls: string[] = [];
+  pastOutputs = new Map<string, NotebookOutput[]>();
   readonly store = new NotebookExecStore();
   readonly api: NotebookApi = {
     run: async (_thread, body) => {
@@ -122,6 +134,14 @@ export class Kernel {
         status: 200,
         data: { status: op === "restart" ? "restarted" : "interrupted" },
       };
+    },
+    history: async (_thread, path) => {
+      this.historyCalls.push(path);
+      return { ok: true, status: 200, data: this.history };
+    },
+    outputs: async (_thread, exec) => {
+      this.outputCalls.push(exec);
+      return { ok: true, status: 200, data: this.pastOutputs.get(exec) ?? [] };
     },
     variables: async (_thread, refresh) => {
       this.variableCalls.push(refresh);
@@ -224,14 +244,15 @@ export async function renderPython({
   drafts = new EditDraftStore(),
   threadId = THREAD,
   readOnly = false,
+  kernel = new Kernel(),
 }: {
+  readonly kernel?: Kernel;
   readonly path?: string;
   readonly text?: string;
   readonly drafts?: EditDraftStore;
   readonly threadId?: string | null;
   readonly readOnly?: boolean;
 } = {}) {
-  const kernel = new Kernel();
   const workspace = new Workspace(path, text);
   const sha = await sha256Hex(enc(text));
   render(

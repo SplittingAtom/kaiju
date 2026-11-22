@@ -141,7 +141,7 @@ export async function startNotebookRun(
     await tx.execute(sql`
       UPDATE threads SET status = 'running', last_activity_at = now()
        WHERE team_id = ${actor.team_id} AND id = ${thread.id}`);
-    const execution = executionOf(owner, id, execId, source);
+    const execution = executionOf(owner, id, execId, source, body.lines);
     await appendRunEventsInTx(tx, actor.team_id, id, [
       {
         type: "run.started",
@@ -151,7 +151,7 @@ export async function startNotebookRun(
     ]);
     return id;
   });
-  const execution = executionOf(owner, runId, execId, source);
+  const execution = executionOf(owner, runId, execId, source, body.lines);
   const timeoutMs = (body.timeout_s ?? NOTEBOOK_TIMEOUT_DEFAULT_S) * 1000;
   host.track(runInBackground(host, files, execution, threadId, timeoutMs));
   return { run_id: runId, exec_id: execId };
@@ -175,8 +175,16 @@ function executionOf(
   runId: string,
   execId: string,
   source: Execution["source"],
+  lines: LineRange | undefined,
 ): Execution {
-  return { owner, runId, execId, origin: "user", source };
+  return {
+    owner,
+    runId,
+    execId,
+    origin: "user",
+    source,
+    ...(lines === undefined ? {} : { lines }),
+  };
 }
 
 async function runInBackground(

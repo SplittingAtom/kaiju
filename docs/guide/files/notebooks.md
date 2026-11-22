@@ -74,6 +74,8 @@ there, such as new output or a failed run. This browser remembers the tab you ch
 - **Log** lists this file's runs in this conversation, newest first: the time, who ran it (you or
   the agent), how it ended, how long it took and its execution count. Choose a run to see its
   output in Run Output. A run that failed names the error and its line, with **Go to line**.
+  The Log shows the last 50 runs and lasts across reloads; a run's record is kept for 7 days
+  after it ends (like the conversation's other run details), so older runs drop off.
 - **Variables** shows what your code defined in the kernel, with each value's type and a short
   value: a DataFrame says its rows and columns, an array its shape and type, a list its length.
   Sort and filter by name, and open a row for the longer value and a DataFrame's columns. The

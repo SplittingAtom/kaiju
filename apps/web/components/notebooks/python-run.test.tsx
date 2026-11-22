@@ -271,6 +271,71 @@ describe("Run what you see (KOBE-805)", () => {
   });
 });
 
+describe("one trigger, one run (KOBE-805 review M1)", () => {
+  /** The next `run` call waits until the returned function is called. */
+  function holdRun(kernel: Kernel) {
+    let release: () => void = () => {};
+    const original = kernel.api.run;
+    kernel.api.run = async (thread, body) => {
+      await new Promise<void>((r) => (release = r));
+      return original(thread, body);
+    };
+    return () => release();
+  }
+
+  it("a double click runs the file once, even when the script ends at once", async () => {
+    const { kernel } = await renderPython();
+    const release = holdRun(kernel);
+    const user = userEvent.setup();
+    await user.dblClick(button("Run"));
+    await user.click(button("Run"));
+    await act(async () => release());
+    await waitFor(() => expect(kernel.runs).toHaveLength(1));
+    // A script shorter than the busy retries: it ends before a second request could be refused.
+    finish(kernel);
+    await act(async () => new Promise((r) => setTimeout(r, 50)));
+    expect(kernel.runs).toHaveLength(1);
+  });
+
+  it("a held Shift+Enter (key repeat) runs once", async () => {
+    const { kernel } = await renderPython();
+    const view = await editorView();
+    const key = (repeat: boolean) =>
+      act(() => {
+        view.contentDOM.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Enter",
+            shiftKey: true,
+            repeat,
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
+      });
+    key(false);
+    key(true);
+    key(true);
+    await waitFor(() => expect(kernel.runs).toHaveLength(1));
+    finish(kernel);
+    key(true);
+    await act(async () => new Promise((r) => setTimeout(r, 20)));
+    expect(kernel.runs).toHaveLength(1);
+    expect(view.state.doc.toString()).toBe("print(1)\n");
+  });
+
+  it("unsaved edits: two triggers save once and run once, with no failed-save note", async () => {
+    const drafts = new EditDraftStore();
+    const base = await sha256Hex(new TextEncoder().encode("print(1)\n"));
+    drafts.set(PATH, { text: "print(2)\n", baseSha256: base });
+    const { kernel, workspace } = await renderPython({ drafts });
+    const user = userEvent.setup();
+    await user.dblClick(button("Run"));
+    await waitFor(() => expect(kernel.runs).toHaveLength(1));
+    expect(workspace.saves).toHaveLength(1);
+    expect(screen.queryByText(SAVE_FAILED_NOTE)).toBeNull();
+  });
+});
+
 describe("Python opens in Raw (KOBE-802)", () => {
   const editor = () => document.querySelector("[data-kobe-code-editor]");
 

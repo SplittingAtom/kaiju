@@ -398,6 +398,14 @@ export default function CodeEditor({
           Prec.highest(
             keymap.of([
               {
+                // A held run key repeats: run once, and let the repeats do nothing (review M1).
+                any: (_v, e) =>
+                  e.repeat &&
+                  e.key === "Enter" &&
+                  (e.shiftKey || e.ctrlKey || e.metaKey) &&
+                  callbacks.current.onRun !== undefined,
+              },
+              {
                 key: "Shift-Enter",
                 run: (v) => {
                   const run = callbacks.current.onRun;

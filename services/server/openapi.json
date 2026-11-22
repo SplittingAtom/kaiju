@@ -14020,6 +14020,127 @@
         }
       }
     },
+    "/v1/threads/{id}/notebook/executions": {
+      "get": {
+        "operationId": "getThreadsByIdNotebookExecutions",
+        "summary": "List a Python file's past runs in the conversation",
+        "description": "Owner only. The last 50, newest first, from stored run events (7 days).",
+        "tags": ["Threads"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The `.py` file, relative to `/workspace`."
+            }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file's last 50 executions, newest first, without outputs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotebookHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/v1/threads/{id}/notebook/executions/{execId}/outputs": {
+      "get": {
+        "operationId": "getThreadsByIdNotebookExecutionsByExecIdOutputs",
+        "summary": "Read one past run's outputs",
+        "description": "Owner only.",
+        "tags": ["Threads"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "execId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Kobe-Team",
+            "in": "header",
+            "required": false,
+            "description": "The team the client believes is active. Required on changes; must match.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotebookExecOutputsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/v1/threads/{id}/notebook/interrupt": {
       "post": {
         "operationId": "postThreadsByIdNotebookInterrupt",
@@ -52245,6 +52366,356 @@
         "required": ["pass_id", "run_id", "model_alias", "mode", "input"],
         "additionalProperties": false
       },
+      "NotebookHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "executions": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "run_id": {
+                  "type": "string",
+                  "allOf": [
+                    {
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    {
+                      "pattern": "^[0-9a-f-]+$"
+                    }
+                  ]
+                },
+                "run_ended": {
+                  "type": "boolean"
+                },
+                "started_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                },
+                "started": {
+                  "type": "object",
+                  "properties": {
+                    "exec_id": {
+                      "type": "string",
+                      "allOf": [
+                        {
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        {
+                          "pattern": "^[0-9a-f-]+$"
+                        }
+                      ]
+                    },
+                    "origin": {
+                      "type": "string",
+                      "enum": ["user", "agent"]
+                    },
+                    "tool_call_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "cell_id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                    },
+                    "lines": {
+                      "type": "object",
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": ["start", "end"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["exec_id", "origin"],
+                  "additionalProperties": false
+                },
+                "finished": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "exec_id": {
+                          "type": "string",
+                          "allOf": [
+                            {
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "pattern": "^[0-9a-f-]+$"
+                            }
+                          ]
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["ok", "error", "interrupted", "timeout", "restarted", "failed"]
+                        },
+                        "execution_count": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "outputs": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 200
+                        },
+                        "truncated": {
+                          "type": "boolean"
+                        },
+                        "saved": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "path": {
+                                  "type": "string"
+                                },
+                                "sha256": {
+                                  "type": "string",
+                                  "pattern": "^[0-9a-f]{64}$"
+                                }
+                              },
+                              "required": ["path", "sha256"],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "save_error": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+                        },
+                        "timing": {
+                          "type": "object",
+                          "properties": {
+                            "started_at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                            },
+                            "finished_at": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                            },
+                            "duration_ms": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": ["started_at", "finished_at", "duration_ms"],
+                          "additionalProperties": false
+                        },
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "maxLength": 256
+                            },
+                            "line": {
+                              "type": "integer",
+                              "exclusiveMinimum": 0,
+                              "maximum": 9007199254740991
+                            }
+                          },
+                          "required": ["name"],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "exec_id",
+                        "status",
+                        "execution_count",
+                        "outputs",
+                        "truncated",
+                        "saved"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": ["run_id", "run_ended", "started_at", "started", "finished"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["executions"],
+        "additionalProperties": false
+      },
+      "NotebookExecOutputsResponse": {
+        "type": "object",
+        "properties": {
+          "outputs": {
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "output_type": {
+                      "type": "string",
+                      "const": "stream"
+                    },
+                    "name": {
+                      "type": "string",
+                      "enum": ["stdout", "stderr"]
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["output_type", "name", "text"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "output_type": {
+                      "type": "string",
+                      "const": "display_data"
+                    },
+                    "data": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string",
+                        "enum": [
+                          "text/plain",
+                          "text/markdown",
+                          "text/latex",
+                          "text/html",
+                          "image/png",
+                          "image/jpeg",
+                          "image/svg+xml",
+                          "application/json"
+                        ]
+                      },
+                      "additionalProperties": {}
+                    },
+                    "metadata": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string",
+                        "maxLength": 256
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": ["output_type", "data", "metadata"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "output_type": {
+                      "type": "string",
+                      "const": "execute_result"
+                    },
+                    "execution_count": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "data": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string",
+                        "enum": [
+                          "text/plain",
+                          "text/markdown",
+                          "text/latex",
+                          "text/html",
+                          "image/png",
+                          "image/jpeg",
+                          "image/svg+xml",
+                          "application/json"
+                        ]
+                      },
+                      "additionalProperties": {}
+                    },
+                    "metadata": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string",
+                        "maxLength": 256
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": ["output_type", "execution_count", "data", "metadata"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "output_type": {
+                      "type": "string",
+                      "const": "error"
+                    },
+                    "ename": {
+                      "type": "string",
+                      "maxLength": 256
+                    },
+                    "evalue": {
+                      "type": "string"
+                    },
+                    "traceback": {
+                      "maxItems": 1000,
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["output_type", "ename", "evalue", "traceback"],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          }
+        },
+        "required": ["outputs"],
+        "additionalProperties": false
+      },
       "NotebookKernelResponse": {
         "type": "object",
         "properties": {
@@ -52277,12 +52748,12 @@
               "start": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": 9007199254740991
+                "maximum": 1000000
               },
               "end": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": 9007199254740991
+                "maximum": 1000000
               }
             },
             "required": ["start", "end"],

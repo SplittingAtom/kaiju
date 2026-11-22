@@ -157,9 +157,12 @@ const BLANK: FileMemory = {
   variables: VARIABLES_VIEW,
 };
 
+// A run read from the stored history (`outputsPending` set) is not news: no dot for it.
+const seeded = (e: Execution | undefined) => e?.outputsPending !== undefined;
 const outputMark = (e: Execution | undefined) =>
-  e === undefined ? "" : `${e.execId}:${e.outputs.length}:${e.finished?.status ?? ""}`;
-const failMark = (e: Execution | undefined) => (e !== undefined && failed(e) ? e.execId : "");
+  e === undefined || seeded(e) ? "" : `${e.execId}:${e.outputs.length}:${e.finished?.status ?? ""}`;
+const failMark = (e: Execution | undefined) =>
+  e !== undefined && !seeded(e) && failed(e) ? e.execId : "";
 
 export function useRunPane({
   path,
@@ -209,6 +212,28 @@ export function useRunPane({
     variables: null,
   };
 
+  // The Log after a reload (review M2): the file's stored runs, once per file and thread, when
+  // the pane opens; a shown run read that way gets its outputs when it is shown.
+  const loaded = useRef(new Set<string>());
+  const owner = wiring !== undefined && threadId !== null && wiring.readOnly !== true;
+  useEffect(() => {
+    if (!open || !owner || wiring === undefined || threadId === null) return;
+    const key = `${threadId}\u0000${path}`;
+    if (loaded.current.has(key)) return;
+    loaded.current.add(key);
+    void wiring.api.history(threadId, path).then((res) => {
+      if (res.ok) wiring.runs.seed(threadId, res.data);
+      else loaded.current.delete(key);
+    });
+  }, [open, owner, wiring, threadId, path]);
+  const pendingId = shown?.outputsPending === true ? shown.execId : undefined;
+  useEffect(() => {
+    if (pendingId === undefined || wiring === undefined || threadId === null) return;
+    void wiring.api.outputs(threadId, pendingId).then((res) => {
+      if (res.ok) wiring.runs.fillOutputs(pendingId, res.data);
+    });
+  }, [pendingId, wiring, threadId]);
+
   const running = last !== undefined && last.finished === undefined;
   const now = useNow(running);
   const variables = useVariables({
@@ -232,6 +257,14 @@ export function useRunPane({
     className: "min-w-0 focus-visible:outline-none",
   });
 
+  // Choosing a run in the Log shows Run Output: focus moves to its panel (the pressed entry is
+  // now hidden), review M3.
+  const [focusOutput, setFocusOutput] = useState(0);
+  const outputPanelId = ids.output.panel;
+  useEffect(() => {
+    if (focusOutput > 0) document.getElementById(outputPanelId)?.focus();
+  }, [focusOutput, outputPanelId]);
+
   const tabs = <RunTabList tab={tab} onTab={setTab} ids={ids} badges={badges} />;
   const panels = (
     <div className="flex min-w-0 flex-col p-1">
@@ -254,6 +287,7 @@ export function useRunPane({
           onShow={(id) => {
             remember({ pick: { id, against: last?.execId }, cleared: null });
             setTab("output");
+            setFocusOutput((n) => n + 1);
           }}
           onGoTo={onGoTo}
         />

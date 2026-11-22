@@ -7,11 +7,11 @@ import type { VariablesResult } from "../../lib/notebooks/variables";
 import { LOG_EMPTY } from "./run-log-panel";
 import { CLEARED_NOTE, OUTPUT_EMPTY } from "./run-output-panel";
 import { RUN_TAB_KEY } from "./run-pane";
-import type { Kernel } from "./testing";
-import { ev, execId, renderPython, runId, THREAD } from "./testing";
+import { ev, execId, Kernel, renderPython, runId, THREAD } from "./testing";
 import {
   NOT_RUNNING,
   PAUSED_NOTE,
+  RATE_LIMITED_NOTE,
   READER_NOTE,
   STALE_NOTE,
   TOO_OLD,
@@ -171,6 +171,8 @@ describe("Run Output and Log (ac-2)", () => {
     expect(within(entries[1] as HTMLElement).getByText("ValueError on line 1")).toBeTruthy();
     await user.click(within(entries[1] as HTMLElement).getByTitle("Show this run's output"));
     expect(tab(/^Run Output/u).getAttribute("aria-selected")).toBe("true");
+    // Focus follows to the Run Output panel instead of falling to the page (review M3).
+    await waitFor(() => expect(document.activeElement).toBe(panel("output")));
     expect(within(panel("output")).getByText("first")).toBeTruthy();
     expect(within(panel("output")).getByText(/^Earlier run:/u)).toBeTruthy();
     await user.click(within(panel("output")).getByRole("button", { name: "Show the latest run" }));
@@ -208,6 +210,49 @@ describe("Run Output and Log (ac-2)", () => {
     expect(tab(/^Log/u).querySelector("[data-kobe-badge]")).toBeTruthy();
     await user.click(tab(/^Log/u));
     expect(tab(/^Log/u).querySelector("[data-kobe-badge]")).toBeNull();
+  });
+});
+
+describe("the Log after a reload (review M2, L1)", () => {
+  it("loads the file's stored runs when the pane opens; an older run's outputs load when shown", async () => {
+    const kernel = new Kernel();
+    kernel.history = [
+      {
+        run_id: runId(8),
+        run_ended: true,
+        started_at: "2026-11-22T09:00:00Z",
+        started: { exec_id: execId(8), origin: "user", path: PATH, lines: { start: 5, end: 6 } },
+        finished: {
+          exec_id: execId(8),
+          status: "error",
+          execution_count: 4,
+          outputs: 1,
+          truncated: false,
+          saved: null,
+          error: { name: "NameError", line: 2 },
+        },
+      },
+    ];
+    kernel.pastOutputs.set(execId(8), [
+      { output_type: "stream", name: "stdout", text: "from before\n" },
+    ]);
+    await renderPython({ kernel });
+    expect(kernel.historyCalls).toEqual([]);
+    const user = await openPane();
+    await waitFor(() => expect(kernel.historyCalls).toEqual([PATH]));
+    expect(await within(panel("output")).findByText("from before")).toBeTruthy();
+    expect(kernel.outputCalls).toEqual([execId(8)]);
+    await user.click(tab(/^Log/u));
+    // The selection's error line maps back to the file even though this page did not run it.
+    expect(within(panel("log")).getByText("NameError on line 6")).toBeTruthy();
+    expect(within(panel("log")).getByText(/lines 5–6/u)).toBeTruthy();
+  });
+
+  it("a shared reader does not ask for the stored runs", async () => {
+    const kernel = new Kernel();
+    await renderPython({ kernel, readOnly: true });
+    started(kernel, 1, "agent");
+    expect(kernel.historyCalls).toEqual([]);
   });
 });
 
@@ -277,7 +322,9 @@ describe("Variables (ac-3, ac-4)", () => {
     expect(refresh.hasAttribute("disabled")).toBe(true);
     expect(kernel.variableCalls).toEqual([false]);
     finished(kernel, 1, "ok", "done");
-    await waitFor(() => expect(kernel.variableCalls).toEqual([false, false]));
+    // One ask after the run, a moment later (a burst of runs costs one, review L7).
+    expect(kernel.variableCalls).toEqual([false]);
+    await waitFor(() => expect(kernel.variableCalls).toEqual([false, false]), { timeout: 3000 });
     expect(
       await within(panel("variables")).findByText(
         "No variables yet: your code has not defined any.",
@@ -312,6 +359,18 @@ describe("Variables (ac-3, ac-4)", () => {
       await within(panel("variables")).findByText(new RegExp(PAUSED_NOTE.slice(0, 30), "u")),
     ).toBeTruthy();
     expect(within(panel("variables")).getByText(/Some variables are left out/u)).toBeTruthy();
+  });
+
+  it("shows a refused ask (429) as a quiet line, not an error", async () => {
+    const { kernel } = await renderPython();
+    kernel.variableAnswers.push({
+      ok: false,
+      error: { status: 429, code: "rate_limited", message: "slow down" },
+    });
+    const user = await openPane();
+    await user.click(tab(/^Variables/u));
+    expect(await within(panel("variables")).findByText(RATE_LIMITED_NOTE)).toBeTruthy();
+    expect(within(panel("variables")).queryByText("slow down")).toBeNull();
   });
 
   it("explains itself before the first answer, and a shared reader never asks", async () => {

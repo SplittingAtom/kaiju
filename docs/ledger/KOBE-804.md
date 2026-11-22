@@ -38,10 +38,21 @@
 - **Remembered.** The chosen tab per member in this browser (`kobe.pythonRun.tab`, like the
   split's `kobe.fileEditor.split`); the shown run, Clear, the Variables filter/sort/open rows and
   shown secrets per file (state keyed by path) while the editor is open.
-- **Log.** This file's runs in this conversation, newest first (`fileRuns`), from what this page
-  has seen (run events are replayed on load as before); choosing one shows it in Run Output until a
-  newer run comes. Error name and line from 803; a Run selection's line is mapped back to the file
-  (KOBE-805). "Go to line" moves the cursor (new `CodeEditor` `reveal`, focus after a frame).
+- **Log.** This file's runs in this conversation, newest first (`fileRuns`). Review M2
+  (coordinator: durable if already recorded): the runs are already in `run_events`
+  (`notebook.started`/`notebook.finished`, member and agent runs, kept until D18 compacts a run 7
+  days after it ended), so no new storage: new owner-only read routes
+  `GET /v1/threads/{id}/notebook/executions?path=` (last 50, newest first, without outputs, with
+  `run_ended`) and `GET .../executions/{exec_id}/outputs` (`services/server/src/notebooks/history.ts`,
+  inside `withTeam()`, `team_id` stated, owner check via `findThread`; readers 404 like the other
+  notebook routes for non-shared threads, 403 `read_only` for shared readers). OpenAPI catalog
+  entries + regenerated `openapi.json`, route-inventory snapshot updated. The pane loads it once per
+  file and thread when it opens (`NotebookExecStore.seed`), outputs of a shown older run on demand
+  (`fillOutputs`); responses keep wire casing (read as text, checked with the protocol schemas). An
+  unfinished entry whose run is still active is left to its live stream; one whose run ended shows
+  `failed`. Seeded runs raise no tab dot. Choosing a run moves focus to the Run Output panel (M3).
+  Error name and line from 803; a Run selection's `lines` are now on `notebook.started`, so the
+  line maps back after a reload too (L1). "Go to line" moves the cursor (`CodeEditor` `reveal`).
 - **The split always renders for a `.py` file** (bottom null = code alone), so opening the output
   no longer remounts the editor: the cursor and undo history survive a run (was a KOBE-615 side
   effect; needed for Shift+Enter and Go to line).
@@ -54,17 +65,22 @@
   "For agents" unchanged: `run_python` results are the same and the agent never sees variables.
 - Guide tests (`@kobe/guide`, server `kobe-mcp/docs` docs_full cap) pass.
 
-## Open questions
+## Review fixes (2026-11-22)
 
-- The Log shows what this page has seen of the thread's runs (the store keeps the last 200
-  executions per session); an older run, or one from another tab before load, appears only if its
-  events are replayed. Enough for v1?
+- M2, M3 as above; L2 the live clock counts from the server's start time (never in this
+  browser's future) so a reload keeps counting; L6 wider credential-name guard (`access_key`,
+  `key`, `pwd`, `dsn`, `conn_str`; no longer `author`); L7 an ask after a run waits 1 s (bursts
+  cost one ask) and a 429 is a quiet line.
+- Skipped: L8 (tab remembered per browser, not per user id: same as the split's existing key;
+  keying it needs the user id plumbed into the editor; only matters on a shared browser).
 
 ## Evidence
 
 - ac-1: `components/notebooks/run-pane.test.tsx` "three tabs with roving focus...", "remembers
   the chosen tab".
-- ac-2: `run-pane.test.tsx` "lists runs newest first...", "Clear...", "marks a tab..." ;
+- ac-2: `run-pane.test.tsx` "lists runs newest first..." (focus, M3), "Clear...", "marks a tab...",
+  "loads the file's stored runs when the pane opens..." (M2, L1); server `notebooks.db.test.ts`
+  "lists a .py file's past runs from stored events..."; `api.test.ts`, `executions.test.ts` (seed);
   `lib/notebooks/executions.test.ts`, `lib/notebooks/run-log.test.ts`.
 - ac-3: `run-pane.test.tsx` "shows name, type and value...", "is stale while code runs...";
   `lib/notebooks/variables.test.ts`, `lib/notebooks/api.test.ts`.

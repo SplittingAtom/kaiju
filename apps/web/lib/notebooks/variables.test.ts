@@ -47,6 +47,12 @@ describe("variables (KOBE-804)", () => {
     }
     expect(isSensitive({ name: "env", type: "_Environ" })).toBe(true);
     expect(isSensitive({ name: "df", type: "DataFrame" })).toBe(false);
+    for (const name of ["access_key", "key", "aws_key", "pwd", "dsn", "conn_str", "auth_header"]) {
+      expect(isSensitive({ name, type: "str" }), name).toBe(true);
+    }
+    for (const name of ["author", "keyboard", "monkey"]) {
+      expect(isSensitive({ name, type: "str" }), name).toBe(false);
+    }
   });
 
   it("filters by name (any case) and sorts both ways", () => {

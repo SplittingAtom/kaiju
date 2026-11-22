@@ -80,6 +80,11 @@ export function RunOutputPanel({
         </button>
       </div>
       <ExecutionNote exec={exec} notebook={false} />
+      {exec.outputsPending === true && (
+        <p role="status" className="text-muted-foreground text-xs">
+          Loading the output…
+        </p>
+      )}
       <NotebookOutputs outputs={exec.outputs} teamId={teamId} />
     </div>
   );

@@ -9,6 +9,8 @@ import type {
   KobeEvent,
   KobeEventPayload,
   NotebookExecStatus,
+  NotebookFinishedPayload,
+  NotebookHistoryEntry,
   NotebookOutput,
 } from "@kobe/protocol";
 
@@ -49,8 +51,10 @@ export interface Execution {
   readonly startedAt?: string | undefined;
   /** When this tab first saw it (this browser's clock): a running execution's live clock. */
   readonly seenAt?: number | undefined;
-  /** Only these lines of the file ran (this tab's Run selection, KOBE-805). */
+  /** Only these lines of the file ran (a Run selection, KOBE-805; from `notebook.started`). */
   readonly lines?: LineRange | undefined;
+  /** Read from the stored history (KOBE-804) without its outputs yet: fetch them to show it. */
+  readonly outputsPending?: boolean | undefined;
   /** By index; a gap (an output not arrived yet) is undefined. */
   readonly outputs: readonly (NotebookOutput | undefined)[];
   readonly finished?: ExecutionEnd | undefined;
@@ -104,9 +108,49 @@ export class NotebookExecStore {
     for (const l of this.#listeners) l();
   }
 
-  /** This tab ran only `lines` of the file in execution `execId` (KOBE-805). */
-  noteLines(execId: string, lines: LineRange): void {
-    const execs = update(this.#execs, execId, (e) => ({ ...e, lines }));
+  /**
+   * The file's past executions from the server (KOBE-804, `GET .../notebook/executions`, newest
+   * first): the ones this tab has not seen go before the ones it has, without their outputs.
+   */
+  seed(threadId: string, entries: readonly NotebookHistoryEntry[]): void {
+    const known = new Set(this.#execs.map((e) => e.execId));
+    const added = entries
+      // One still running reaches this tab through its run's stream instead.
+      .filter((h) => !known.has(h.started.exec_id) && (h.finished !== null || h.run_ended))
+      .reverse()
+      .map((h): Execution => {
+        const p = h.started;
+        return {
+          threadId,
+          runId: h.run_id,
+          execId: p.exec_id,
+          origin: p.origin,
+          toolCallId: p.tool_call_id,
+          path: p.path,
+          cellId: p.cell_id,
+          lines: p.lines,
+          startedAt: h.started_at,
+          seenAt: pastInstant(h.started_at),
+          outputs: [],
+          outputsPending: h.finished !== null && h.finished.outputs > 0,
+          // Its run ended before it did: it ended `failed`, as `endRun` says live.
+          finished:
+            h.finished === null
+              ? { status: "failed", executionCount: null, truncated: false, saved: null }
+              : endOf(h.finished),
+        };
+      });
+    if (added.length === 0) return;
+    const execs = [...added, ...this.#execs];
+    this.#execs = execs.length > this.#max ? execs.slice(execs.length - this.#max) : execs;
+    for (const l of this.#listeners) l();
+  }
+
+  /** A seeded execution's outputs arrived (KOBE-804). */
+  fillOutputs(execId: string, outputs: readonly NotebookOutput[]): void {
+    const execs = update(this.#execs, execId, (e) =>
+      e.outputsPending === true ? { ...e, outputs, outputsPending: false } : e,
+    );
     if (execs === this.#execs) return;
     this.#execs = execs;
     for (const l of this.#listeners) l();
@@ -125,6 +169,35 @@ export class NotebookExecStore {
     this.#egress = egress;
     for (const l of this.#listeners) l();
   }
+}
+
+/**
+ * When it started by this browser's clock (the live clock, review L2): the server's time, but
+ * never in this browser's future (clock skew), so a reload keeps counting from the real start.
+ */
+function pastInstant(iso: string): number {
+  const t = Date.parse(iso);
+  const now = Date.now();
+  return Number.isNaN(t) ? now : Math.min(t, now);
+}
+
+function endOf(p: NotebookFinishedPayload): ExecutionEnd {
+  return {
+    status: p.status,
+    executionCount: p.execution_count,
+    truncated: p.truncated,
+    saved: p.saved,
+    saveError: p.save_error,
+    timing:
+      p.timing === undefined
+        ? undefined
+        : {
+            startedAt: p.timing.started_at,
+            finishedAt: p.timing.finished_at,
+            durationMs: p.timing.duration_ms,
+          },
+    error: p.error,
+  };
 }
 
 function withBlocked(egress: readonly BlockedDomain[], event: KobeEvent): readonly BlockedDomain[] {
@@ -180,8 +253,9 @@ function applyOne(
           toolCallId: p.tool_call_id,
           path: p.path,
           cellId: p.cell_id,
+          lines: p.lines,
           startedAt: event.ts,
-          seenAt: Date.now(),
+          seenAt: pastInstant(event.ts),
           outputs: [],
         },
       ];
@@ -198,27 +272,7 @@ function applyOne(
     case "notebook.finished": {
       const p = event.payload;
       return update(execs, p.exec_id, (e) =>
-        e.finished !== undefined
-          ? e
-          : {
-              ...e,
-              finished: {
-                status: p.status,
-                executionCount: p.execution_count,
-                truncated: p.truncated,
-                saved: p.saved,
-                saveError: p.save_error,
-                timing:
-                  p.timing === undefined
-                    ? undefined
-                    : {
-                        startedAt: p.timing.started_at,
-                        finishedAt: p.timing.finished_at,
-                        durationMs: p.timing.duration_ms,
-                      },
-                error: p.error,
-              },
-            },
+        e.finished !== undefined ? e : { ...e, finished: endOf(p) },
       );
     }
     default: {

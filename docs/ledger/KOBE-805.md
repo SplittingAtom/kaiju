@@ -36,6 +36,19 @@
 - **(6) caps and timeouts:** `TRUNCATED_NOTE` names the caps from the protocol constants (200
   outputs, 2 MB) and what to do; `TIMEOUT_NOTE` suggests making it faster or Run selection.
 
+## Review fixes (2026-11-22)
+
+- **M1 one trigger, one run:** `PythonFile` holds an in-flight ref from the click or key until
+  the run request settles, and checks the store's busy state directly (not the last render);
+  `saveFirst` refuses while a save is in flight; the editor swallows repeated Shift/Mod+Enter
+  (a keymap `any` binding on `event.repeat`).
+- **L1** `lines` recorded on `notebook.started` (protocol, server), used by the web store instead
+  of the tab-local note. **L4** `lines` capped at 1,000,000 (`NOTEBOOK_LINE_MAX`). **L9** Stop is
+  disabled (busy) while its interrupt is on the way.
+- Skipped: **L3** (tie the save to the run with a `sha256`/409): rare window, needs a new error
+  code and the saved version plumbed from the editor; **L5** (dedent touches multi-line strings):
+  expected Run-selection behaviour, as in most IDEs.
+
 ## Docs
 
 - `docs/guide/files/notebooks.md` (Run, Run selection, keys, Stop and clock, kernel states,
@@ -45,6 +58,8 @@
 ## Evidence
 
 - ac-1: `python-run.test.tsx` "Run saves unsaved changes first...", "a save that fails runs nothing".
+- M1: `python-run.test.tsx` "one trigger, one run": double click (and a script that ends at once),
+  held Shift+Enter, unsaved edits double trigger.
 - ac-2: `python-run.test.tsx` "Shift+Enter and Mod+Enter run from the editor; Mod+S saves";
   `code-editor.test.tsx` "run and save keys"; `shortcut-keys.test.tsx`.
 - ac-3: `python-run.test.tsx` "Stop and a live clock...".

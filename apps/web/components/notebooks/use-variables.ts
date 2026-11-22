@@ -22,6 +22,9 @@ export interface VariablesState {
   readonly error: ApiError | null;
 }
 
+/** How long an ask after a run waits for more runs to finish first. */
+export const FOLLOW_DELAY_MS = 1_000;
+
 const EMPTY: VariablesState = {
   loading: false,
   snapshot: null,
@@ -94,8 +97,15 @@ export function useVariables({
   useEffect(() => {
     if (!active || !allowed || busy) return;
     if (asked.current.thread === threadId && asked.current.key === followKey) return;
-    asked.current = { thread: threadId, key: followKey };
-    void ask(false);
+    const go = () => {
+      asked.current = { thread: threadId, key: followKey };
+      void ask(false);
+    };
+    // The first ask goes at once; one after a run waits a moment, so a burst of short runs (an
+    // agent's loop) costs one ask, not one each (review L7: the route allows 60 a minute).
+    if (asked.current.thread !== threadId) return go();
+    const timer = setTimeout(go, FOLLOW_DELAY_MS);
+    return () => clearTimeout(timer);
   }, [active, allowed, busy, threadId, followKey, ask]);
 
   const refresh = useCallback(() => {

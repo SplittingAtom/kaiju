@@ -64,7 +64,9 @@ export function clip(text: string, max: number): string {
   return chars.length <= max ? text : `${chars.slice(0, max - 1).join("")}…`;
 }
 
-const SECRET_NAME = /pass(word|wd)?|secret|token|api_?key|credential|private_?key|auth|cookie/iu;
+// Credential-like names (review L6): a display guard against shoulder-surfing, not a boundary.
+const SECRET_NAME =
+  /pass(word|wd)?|pwd|secret|token|(api|access|private|secret)_?key|^key$|_key$|credential|auth(?!or)|cookie|dsn|conn(ection)?_?str/iu;
 const ENVIRON_TYPES = new Set(["_Environ", "environ"]);
 
 /** Hidden until shown: a credential-like name, or an environment mapping (`os.environ`). */

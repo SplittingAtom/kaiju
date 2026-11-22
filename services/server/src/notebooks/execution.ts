@@ -105,6 +105,8 @@ export interface Execution {
   readonly origin: "user" | "agent";
   readonly toolCallId?: string;
   readonly source: ResolvedSource;
+  /** KOBE-805: a Run selection's lines of the `.py` file (recorded on `notebook.started`). */
+  readonly lines?: { readonly start: number; readonly end: number };
 }
 
 export interface ExecutionDeps {
@@ -134,6 +136,7 @@ export function startedPayload(e: Execution): NotebookStartedPayload {
     ...(e.toolCallId === undefined ? {} : { tool_call_id: e.toolCallId }),
     ...(e.source.path === undefined ? {} : { path: e.source.path }),
     ...(e.source.cellId === undefined ? {} : { cell_id: e.source.cellId }),
+    ...(e.lines === undefined ? {} : { lines: e.lines }),
   };
 }
 

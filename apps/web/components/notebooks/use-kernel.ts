@@ -140,10 +140,10 @@ export function useKernel(wiring: KernelWiring | undefined) {
             origin: "user",
             path: body.path,
             ...(body.cell_id === undefined ? {} : { cell_id: body.cell_id }),
+            ...(body.lines === undefined ? {} : { lines: body.lines }),
           },
         },
       ]);
-      if (body.lines !== undefined) wiring.runs.noteLines(execId, body.lines);
       const stream = openRunStream(
         runId,
         0,

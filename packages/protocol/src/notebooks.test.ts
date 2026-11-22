@@ -5,7 +5,9 @@ import {
   notebookExecuteResultSchema,
   notebookFinishedPayloadSchema,
   notebookOutputSchema,
+  notebookHistoryResponseSchema,
   notebookRunBodySchema,
+  notebookStartedPayloadSchema,
   notebookRunOkFields,
   notebookStartResponseSchema,
   notebookStartResultSchema,
@@ -99,6 +101,24 @@ describe("member run body (NB6)", () => {
     expect(ok({ path: "job.py", lines: { start: 1.5, end: 2 } })).toBe(false);
     expect(ok({ path: "job.py", lines: { start: 1 } })).toBe(false);
     expect(ok({ path: "a.ipynb", cell_id: "c1", lines: { start: 1, end: 1 } })).toBe(false);
+    expect(ok({ path: "job.py", lines: { start: 1, end: 1_000_001 } })).toBe(false);
+  });
+
+  it("records a selection's lines on notebook.started, and lists past executions (KOBE-804)", () => {
+    const exec = "00000000-0000-4000-8000-000000000001";
+    const started = { exec_id: exec, origin: "user", path: "a.py", lines: { start: 2, end: 3 } };
+    expect(notebookStartedPayloadSchema.safeParse(started).success).toBe(true);
+    const entry = {
+      run_id: exec,
+      run_ended: true,
+      started_at: "2026-11-22T10:00:00Z",
+      started,
+      finished: null,
+    };
+    expect(notebookHistoryResponseSchema.safeParse({ executions: [entry] }).success).toBe(true);
+    expect(
+      notebookHistoryResponseSchema.safeParse({ executions: Array(51).fill(entry) }).success,
+    ).toBe(false);
   });
 });
 

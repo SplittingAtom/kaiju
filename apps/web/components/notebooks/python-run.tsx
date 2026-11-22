@@ -11,7 +11,8 @@
  * editor. Loaded lazily by the file tab with the kernel.
  */
 import { PanelBottomOpenIcon, PlayIcon, SquareIcon, TextSelectIcon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { kernelBusy } from "../../lib/notebooks/executions";
 import { useDraft } from "../files/editor-save";
 import type { ToolbarAction } from "../files/editor-toolbar";
 import { FileEditor, type EditorRunContext, type FileEditorProps } from "../files/file-editor";
@@ -42,16 +43,27 @@ export default function PythonFile({ kernel, ...editor }: PythonFileProps) {
   const blocker = kernelBlocker(kernel);
 
   /** Saves first (KOBE-805 ac-1), then runs all of the file or the selected lines. */
+  // One trigger, one run (review M1): from the click or key until the run request settles, and
+  // then while the store says the kernel is busy, another trigger does nothing.
+  const inFlight = useRef(false);
   const start = async (ctx: EditorRunContext, scope: "all" | "selection") => {
-    if (blocker !== undefined || k.busy) return;
-    setSaveFailed(false);
+    if (blocker !== undefined || inFlight.current) return;
+    if (kernel !== undefined && kernel.threadId !== null) {
+      if (kernelBusy(kernel.runs.snapshot(), kernel.threadId)) return;
+    }
     const lines = scope === "selection" ? ctx.selection : null;
     if (scope === "selection" && lines === null) return;
-    if (!(await ctx.saveFirst())) {
-      setSaveFailed(true);
-      return;
+    inFlight.current = true;
+    try {
+      setSaveFailed(false);
+      if (!(await ctx.saveFirst())) {
+        setSaveFailed(true);
+        return;
+      }
+      await k.run(lines === null ? { path } : { path, lines });
+    } finally {
+      inFlight.current = false;
     }
-    void k.run(lines === null ? { path } : { path, lines });
   };
 
   const actions = (ctx: EditorRunContext): ToolbarAction[] => {
@@ -78,8 +90,10 @@ export default function PythonFile({ kernel, ...editor }: PythonFileProps) {
       id: "stop",
       label: "Stop",
       icon: SquareIcon,
-      disabled: blocker !== undefined,
-      reason: blocker,
+      // Not twice while the interrupt is on its way (review L9).
+      disabled: blocker !== undefined || k.note.kind === "working",
+      busy: k.note.kind === "working",
+      reason: blocker ?? "Stopping…",
       onSelect: () => void k.kernel("interrupt"),
     };
     const kernelControls = kernelActions({

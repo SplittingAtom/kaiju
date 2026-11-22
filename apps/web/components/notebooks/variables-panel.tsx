@@ -36,6 +36,8 @@ export const TOO_OLD =
 export const READER_NOTE = "Only the conversation's owner can see the kernel's variables.";
 export const STALE_NOTE =
   "Code is running: these values are from before it. They refresh when it ends.";
+export const RATE_LIMITED_NOTE =
+  "Refresh is paused for a moment: the variables were asked for many times. Try Refresh shortly.";
 export const PAUSED_NOTE =
   "Automatic refresh is paused: a snapshot took too long. Use Refresh to ask again.";
 
@@ -303,7 +305,13 @@ export function VariablesPanel({
         </button>
       </div>
       <Status state={state} busy={busy} />
-      {state.error !== null && !tooOld && <ErrorNotice error={state.error} />}
+      {state.error?.code === "rate_limited" ? (
+        <p role="status" className="text-muted-foreground m-0 text-xs">
+          {RATE_LIMITED_NOTE}
+        </p>
+      ) : (
+        state.error !== null && !tooOld && <ErrorNotice error={state.error} />
+      )}
       {body}
       {snapshot !== null && rows.length === 0 && snapshot.variables.length > 0 && (
         <p className="text-muted-foreground text-xs">No variable names match the filter.</p>

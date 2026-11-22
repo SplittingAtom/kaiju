@@ -236,7 +236,8 @@ export function FileEditor(props: FileEditorProps) {
   const runContext: EditorRunContext = {
     saveFirst: async () => {
       if (draft === undefined) return true;
-      if (!canSave) return false;
+      // Never a second save of the same version while one is in flight (review M1).
+      if (!canSave || state.status === "saving") return false;
       return (await save(base, current)) === "saved";
     },
     selection: mode === "raw" ? selection : null,
