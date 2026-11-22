@@ -60,6 +60,8 @@ export interface LayoutPreferences {
   readonly railPicker?: string | null;
   /** The proposed-edit card's "Open edits automatically" switch (KOBE-489); absent is off. */
   readonly autoOpenEdits?: boolean;
+  /** The code editor's line-wrap toggle (KOBE-806); absent is on. */
+  readonly editorLineWrap?: boolean;
   /** The Threads panel's workspace rail's dragged width (KOBE-614); null: the default. */
   readonly threadsFileRailWidth?: number | null;
 }
@@ -79,6 +81,7 @@ const fromWire = (p: UiPreferences): LayoutPreferences => ({
     : {}),
   ...(p.rail_picker !== undefined ? { railPicker: p.rail_picker } : {}),
   ...(p.auto_open_edits !== undefined ? { autoOpenEdits: p.auto_open_edits } : {}),
+  ...(p.editor_line_wrap !== undefined ? { editorLineWrap: p.editor_line_wrap } : {}),
   ...(p.threads_file_rail_width !== undefined
     ? { threadsFileRailWidth: p.threads_file_rail_width }
     : {}),
@@ -98,6 +101,7 @@ export function toWire(change: LayoutPreferences): UiPreferences {
       : {}),
     ...(change.railPicker !== undefined ? { rail_picker: change.railPicker } : {}),
     ...(change.autoOpenEdits !== undefined ? { auto_open_edits: change.autoOpenEdits } : {}),
+    ...(change.editorLineWrap !== undefined ? { editor_line_wrap: change.editorLineWrap } : {}),
     ...(change.threadsFileRailWidth !== undefined
       ? { threads_file_rail_width: change.threadsFileRailWidth }
       : {}),
@@ -121,6 +125,7 @@ export function readPreferences(data: unknown): LayoutPreferences {
       workbench_editor_width: raw.workbenchEditorWidth,
       rail_picker: raw.railPicker,
       auto_open_edits: raw.autoOpenEdits,
+      editor_line_wrap: raw.editorLineWrap,
       threads_file_rail_width: raw.threadsFileRailWidth,
     }),
   );

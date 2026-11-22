@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { isTextPreview } from "./editor";
 import {
   decodePreviewText,
+  defaultModeOf,
   fileTabId,
   filePathOfTab,
   cutTextMessage,
@@ -119,5 +121,21 @@ describe("large-file messages (KOBE-807)", () => {
     expect(cutTextMessage(null)).toBe(
       "Showing the first 1 MB. Text files over 1 MB open cut and read-only.",
     );
+  });
+});
+
+describe("the mode a file opens in (KOBE-802)", () => {
+  it("Python opens Raw, every other kind Rendered", () => {
+    expect(defaultModeOf("src/job.py")).toBe("raw");
+    for (const p of ["a.md", "a.csv", "a.json", "a.ts", "a.sh", "a.txt", "a.html", "a.png"]) {
+      expect(defaultModeOf(p)).toBe("rendered");
+    }
+  });
+
+  it("PDFs and images have no text modes: the editor (and its Raw switch) never opens them", () => {
+    for (const p of ["a.pdf", "a.png", "a.svg"]) {
+      expect(defaultModeOf(p)).toBe("rendered");
+      expect(isTextPreview(previewOf(p))).toBe(false);
+    }
   });
 });

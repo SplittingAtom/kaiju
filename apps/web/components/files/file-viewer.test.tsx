@@ -491,8 +491,8 @@ describe("renderers (ac-2)", () => {
     const json = await shown("x.json", '{"a":[1,2]}');
     await waitFor(() => expect(json.querySelector("pre")?.textContent).toContain('"a": [\n'));
     cleanup();
-    const code = await shown("main.py", "print('hi')");
-    await waitFor(() => expect(code.querySelector("code")?.className).toContain("python"));
+    const code = await shown("main.sh", "echo hi");
+    await waitFor(() => expect(code.querySelector("code")?.className).toContain("bash"));
     cleanup();
     const text = await shown("run.log", "line 1");
     await waitFor(() => expect(text.querySelector("pre")?.textContent).toContain("line 1"));
@@ -544,6 +544,10 @@ describe("renderers (ac-2)", () => {
     expect(await within(panel).findByRole("toolbar", { name: "PDF controls" })).toBeTruthy();
     expect(within(panel).getByRole("region", { name: "doc.pdf, page 1 of 2" })).toBeTruthy();
     expect(within(panel).getByRole("button", { name: "Download doc.pdf" })).toBeTruthy();
+    // The header (Copy path, Download) and the viewer's own toolbar sit in separate rows.
+    const header = must(within(panel).getByRole("heading", { name: "doc.pdf" }).closest("header"));
+    expect(within(header).getByRole("button", { name: "Copy the path of doc.pdf" })).toBeTruthy();
+    expect(within(header).queryByRole("toolbar")).toBeNull();
     // The whole file was read, through the workspace file route.
     expect(reads).toEqual(["doc.pdf"]);
     expect(opened).toEqual([14]);

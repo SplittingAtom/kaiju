@@ -43,6 +43,20 @@ sheet.
 | @                                  | Mention one of your files in the message                             |
 | /                                  | Slash commands, at the start of the message box                      |
 
+## In the code editor
+
+When the cursor is in a file's raw text, these work like in most code editors (they also appear in
+the `?` sheet):
+
+| Keys        | Action                                        |
+| ----------- | --------------------------------------------- |
+| Mod+F       | Find (the panel has next, previous, Replace)  |
+| Mod+G       | Find next                                     |
+| Shift+Mod+G | Find previous                                 |
+| Mod+Alt+F   | Replace: opens the panel in the Replace field |
+| Mod+Alt+G   | Go to line (also `+5`, `-5`, `50%`, `12:4`)   |
+| Escape      | Close the find panel                          |
+
 ## In panels and lists
 
 - **Escape** closes menus, dialogs, the Threads panel's file lists and the conversation tree.

@@ -27,7 +27,7 @@ Chris (`pnpm license:gate` fails while it is not empty):
 
 Every package in pnpm-lock.yaml (production and development, all platforms). "linked, bundled" packages are in the production dependencies of a deployable and ship in its image (the services via `pnpm deploy --prod`, web via the Next.js standalone output, kobe-sandbox-agent in the sandbox image); "dev-only" packages build, lint and test Kobe and are never shipped. Checked by `pnpm license:check` (CI `checks`).
 
-933 packages, 635 of them shipped in an image.
+934 packages, 636 of them shipped in an image.
 
 | Component | Version | License (SPDX) | How used | Where | License text |
 | --- | --- | --- | --- | --- | --- |
@@ -86,6 +86,7 @@ Every package in pnpm-lock.yaml (production and development, all platforms). "li
 | @codemirror/language | 6.13.1 | MIT | linked, bundled | web | [license](https://unpkg.com/@codemirror/language@6.13.1/LICENSE) |
 | @codemirror/lint | 6.9.7 | MIT | linked, bundled | web | [license](https://unpkg.com/@codemirror/lint@6.9.7/LICENSE) |
 | @codemirror/merge | 6.12.3 | MIT | linked, bundled | web | [license](https://unpkg.com/@codemirror/merge@6.12.3/LICENSE) |
+| @codemirror/search | 6.7.2 | MIT | linked, bundled | web | [license](https://unpkg.com/@codemirror/search@6.7.2/LICENSE) |
 | @codemirror/state | 6.7.6 | MIT | linked, bundled | web | [license](https://unpkg.com/@codemirror/state@6.7.6/LICENSE) |
 | @codemirror/streamparser | 6.0.0 | MIT | linked, bundled | web | [license](https://unpkg.com/@codemirror/streamparser@6.0.0/LICENSE) |
 | @codemirror/view | 6.43.15 | MIT | linked, bundled | web | [license](https://unpkg.com/@codemirror/view@6.43.15/LICENSE) |
