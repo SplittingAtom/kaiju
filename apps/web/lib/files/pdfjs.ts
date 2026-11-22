@@ -29,6 +29,11 @@ export interface PdfLoad {
  */
 type PdfJs = typeof PdfJsModule;
 
+/** Images larger than this (pixels) are skipped by pdf.js instead of decoded. */
+export const PDF_IMAGE_MAX_PIXELS = 4096 * 4096;
+/** The most pdf.js may spend on one intermediate canvas (bytes). */
+export const PDF_CANVAS_MAX_BYTES = 64 * 1024 * 1024;
+
 /** Where the copied assets are served for this pdf.js version (versioned, so caches never mix). */
 export function pdfAssetsBase(version: string): string {
   return `/pdfjs/${version}/`;
@@ -46,7 +51,12 @@ export function documentOptions(bytes: Uint8Array, base: string): DocumentInitPa
     useSystemFonts: true,
     enableXfa: false,
     disableWorkerRendering: true,
+    // A damaged file shows what pdf.js can read of it rather than failing whole.
     stopAtErrors: false,
+    // Decompression bombs: images over 16 megapixels are dropped (the page draws without them),
+    // and pdf.js's intermediate canvases stay under 64 MiB.
+    maxImageSize: PDF_IMAGE_MAX_PIXELS,
+    canvasMaxAreaInBytes: PDF_CANVAS_MAX_BYTES,
     // Errors only: a damaged-but-readable file should not flood the console.
     verbosity: 0,
   };

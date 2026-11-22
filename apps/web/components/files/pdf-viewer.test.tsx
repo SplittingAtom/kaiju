@@ -18,6 +18,7 @@ interface FakeAnnotation {
 
 let renders: number[];
 let destroyed: number;
+let cleanups: number[];
 
 function fakeDoc(pages: readonly (readonly string[])[], annotations: FakeAnnotation[] = []) {
   return {
@@ -38,6 +39,10 @@ function fakeDoc(pages: readonly (readonly string[])[], annotations: FakeAnnotat
         styles: {},
       }),
       getAnnotations: async () => (n === 1 ? annotations : []),
+      cleanup: () => {
+        cleanups.push(n);
+        return true;
+      },
     }),
     getDestination: async () => [{ num: 7, gen: 0 }],
     getPageIndex: async () => 2,
@@ -56,6 +61,7 @@ function opens(result: Promise<PdfDocument>) {
 beforeEach(() => {
   renders = [];
   destroyed = 0;
+  cleanups = [];
   vi.mocked(createTextLayer).mockImplementation(async ({ textContentSource, container }) => {
     const spans: HTMLElement[] = [];
     return {
@@ -113,12 +119,33 @@ describe("PDF viewer (ac-2)", () => {
     expect(openPdf).toHaveBeenCalledWith(bytes);
   });
 
-  it("renders only the pages near the view (a long file stays light)", async () => {
+  it("mounts and renders only the pages near the view; pages left behind are cleaned up", async () => {
     opens(Promise.resolve(fakeDoc(Array.from({ length: 60 }, (_, i) => [`p${i + 1}`]))));
     show();
-    await screen.findByRole("group", { name: "Page 60 of 60" });
+    const user = userEvent.setup();
+    await screen.findByRole("group", { name: "Page 1 of 60" });
     await waitFor(() => expect(renders.length).toBeGreaterThan(0));
     expect(Math.max(...renders)).toBeLessThanOrEqual(3);
+    expect(screen.getAllByRole("group").length).toBeLessThanOrEqual(5);
+    expect(screen.queryByRole("group", { name: "Page 60 of 60" })).toBeNull();
+    await user.clear(pageField());
+    await user.type(pageField(), "40{Enter}");
+    const far = await screen.findByRole("group", { name: "Page 40 of 60" });
+    await waitFor(() => expect(far.getAttribute("data-rendered")).toBe("true"));
+    expect(screen.queryByRole("group", { name: "Page 1 of 60" })).toBeNull();
+    expect(screen.getAllByRole("group").length).toBeLessThanOrEqual(7);
+    expect(cleanups).toContain(1);
+  });
+
+  it("shows at most 2,000 pages, with a note and Download for the rest", async () => {
+    opens(Promise.resolve(fakeDoc(Array.from({ length: 5000 }, () => ["x"]))));
+    const { onDownload } = show();
+    await screen.findByRole("group", { name: "Page 1 of 2000" });
+    expect(screen.getByText(/Showing the first 2,000 of 5,000 pages\./)).toBeTruthy();
+    expect(screen.getByText("of 2000")).toBeTruthy();
+    expect(screen.getAllByRole("group").length).toBeLessThanOrEqual(5);
+    await userEvent.setup().click(screen.getByRole("button", { name: "Download" }));
+    expect(onDownload).toHaveBeenCalledTimes(1);
   });
 
   it("next, previous and the page field move between pages", async () => {

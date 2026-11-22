@@ -6,7 +6,7 @@
     "build": {
       "dependsOn": ["^build"],
       "env": ["KOBE_BUILD_ID"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "public/pdfjs/**"]
     },
     "test": {
       "dependsOn": ["^build"],

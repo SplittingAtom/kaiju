@@ -33,6 +33,13 @@ import styles from "./viewer.module.css";
 const PAD = 12;
 /** Pages within this many screen heights above and below the view are rendered. */
 const RENDER_MARGIN = 1;
+/** Pages beyond the rendered window that stay mounted (as empty boxes) on each side. */
+const MOUNT_EXTRA = 1;
+/**
+ * The most pages the viewer lays out (KOBE-801 review): a hostile file can declare hundreds of
+ * thousands of tiny pages. Past it, the first pages show with a note and Download.
+ */
+export const PDF_PAGE_MAX = 2000;
 /** A US Letter page until the first page is read. */
 const LETTER: Size = { width: 612 * PDF_TO_CSS, height: 792 * PDF_TO_CSS };
 
@@ -88,8 +95,16 @@ function pageAt(tops: readonly number[], y: number): number {
   return lo + 1;
 }
 
-function Viewer({ doc, name }: { readonly doc: PdfDocument; readonly name: string }) {
-  const count = doc.numPages;
+function Viewer({
+  doc,
+  name,
+  onDownload,
+}: {
+  readonly doc: PdfDocument;
+  readonly name: string;
+  onDownload?: (() => void) | undefined;
+}) {
+  const count = Math.min(doc.numPages, PDF_PAGE_MAX);
   const scroller = useRef<HTMLDivElement>(null);
   const box = useBoxSize(scroller);
   const [sizes, setSizes] = useState<ReadonlyMap<number, Size>>(new Map());
@@ -98,7 +113,7 @@ function Viewer({ doc, name }: { readonly doc: PdfDocument; readonly name: strin
   const [page, setPage] = useState(1);
   const [scrollTop, setScrollTop] = useState(0);
   const [findOpen, setFindOpen] = useState(false);
-  const find = usePdfFind(doc);
+  const find = usePdfFind(doc, count);
 
   const base = sizes.get(1) ?? LETTER;
   const scale = mode === "custom" ? custom : fitScale(mode, sizes.get(page) ?? base, box, PAD * 2);
@@ -120,8 +135,10 @@ function Viewer({ doc, name }: { readonly doc: PdfDocument; readonly name: strin
     (n: number) => {
       const target = clampPage(n, count);
       setPage(target);
+      const top = (tops[target - 1] ?? PAD) - PAD;
+      setScrollTop(top);
       const el = scroller.current;
-      if (el) el.scrollTop = (tops[target - 1] ?? PAD) - PAD;
+      if (el) el.scrollTop = top;
     },
     [count, tops],
   );
@@ -135,12 +152,25 @@ function Viewer({ doc, name }: { readonly doc: PdfDocument; readonly name: strin
     if (el) el.scrollTop = (tops[page - 1] ?? PAD) - PAD;
   }, [scale, page, tops]);
 
-  const onScroll = () => {
+  // Scroll state at most once a frame: the window of mounted pages follows it.
+  const frame = useRef<number | null>(null);
+  const tick = useRef(() => {});
+  tick.current = () => {
+    frame.current = null;
     const el = scroller.current;
     if (!el) return;
     setScrollTop(el.scrollTop);
     setPage(pageAt(tops, el.scrollTop + el.clientHeight / 3));
   };
+  const onScroll = () => {
+    frame.current ??= requestAnimationFrame(() => tick.current());
+  };
+  useEffect(
+    () => () => {
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+    },
+    [],
+  );
 
   // The current find match's page comes into view (its span scrolls itself to the centre).
   const hit = find.hit;
@@ -189,6 +219,16 @@ function Viewer({ doc, name }: { readonly doc: PdfDocument; readonly name: strin
   const first = pageAt(tops, scrollTop - view * RENDER_MARGIN);
   const last = pageAt(tops, scrollTop + view * (1 + RENDER_MARGIN));
   const isActive = (n: number) => (n >= first - 1 && n <= last + 1) || Math.abs(n - page) <= 1;
+  // Only pages in (or next to) the window exist in the DOM; the tops keep the scroll height.
+  const mounted: number[] = [];
+  for (
+    let n = Math.max(1, first - 1 - MOUNT_EXTRA);
+    n <= Math.min(count, last + 1 + MOUNT_EXTRA);
+    n++
+  )
+    mounted.push(n);
+  for (const n of [page - 1, page, page + 1])
+    if (n >= 1 && n <= count && !mounted.includes(n)) mounted.push(n);
   const widest = Math.max(base.width, ...[...sizes.values()].map((s) => s.width));
 
   return (
@@ -206,6 +246,14 @@ function Viewer({ doc, name }: { readonly doc: PdfDocument; readonly name: strin
         onToggleFind={() => (findOpen ? closeFind() : openFind())}
       />
       {findOpen && <PdfFindBar find={find} onClose={closeFind} />}
+      {doc.numPages > count && (
+        <div className="bg-background shrink-0 border-b px-3 py-2">
+          <CannotPreview
+            reason={`Showing the first ${count.toLocaleString("en-US")} of ${doc.numPages.toLocaleString("en-US")} pages.`}
+            onDownload={onDownload}
+          />
+        </div>
+      )}
       <div
         ref={scroller}
         role="region"
@@ -219,8 +267,8 @@ function Viewer({ doc, name }: { readonly doc: PdfDocument; readonly name: strin
           className="relative min-w-full"
           style={{ height, width: Math.floor(widest * scale) + PAD * 2 }}
         >
-          {tops.map((top, i) => {
-            const n = i + 1;
+          {mounted.map((n) => {
+            const top = tops[n - 1] ?? PAD;
             return (
               <div key={n} className="absolute inset-x-0" style={{ top }}>
                 <PdfPage
@@ -258,5 +306,5 @@ export default function PdfViewer({
   if (load.status === "error") {
     return <CannotPreview reason={ERRORS[load.kind]} onDownload={onDownload} />;
   }
-  return <Viewer doc={load.doc} name={name} />;
+  return <Viewer doc={load.doc} name={name} onDownload={onDownload} />;
 }

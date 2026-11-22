@@ -48,6 +48,21 @@ nofollow`); internal destinations jump to their page; anything else is inert.
 - **Attachments and projects** are workspace paths (`uploads/<thread>/`, `projects/<slug>/`) and
   open through the same `FileTabContent`; covered in `file-viewer.test.tsx`.
 
+## Review fixes (coordinator review of group 83)
+
+- Only pages in the rendered window (one screen above and below) plus one on each side are
+  mounted; `PdfPage` is memoised; scroll state updates at most once a frame (rAF). The viewer lays
+  out at most 2,000 pages (`PDF_PAGE_MAX`); a longer file shows them with a note and Download
+  (stated in the guide); find searches those pages.
+- `maxImageSize: 4096 * 4096` and `canvasMaxAreaInBytes: 64 MiB`: pdf.js drops an over-size image
+  and draws the rest of the page (`pdfjs.test.ts` with a declared 60000×60000 image).
+- `stopAtErrors: false` on purpose: a damaged file shows what pdf.js can read of it instead of
+  failing whole (the brief's suggestion of stopping was weighed against partial display).
+- Pages call `page.cleanup()` when they leave the window or unmount.
+- `public/pdfjs/**` is a turbo `build` output, so a cached build restores the worker.
+- `tools/license-check/inventory.yaml` row `pdfjs-bundled-data` for the CMaps (BSD-3), OpenJPEG
+  (BSD-2) and PDFium JBIG2 (BSD-3) code shipped in `public/pdfjs/`.
+
 ## Docs
 
 `docs/guide/files/file-editor.md` (What opens how, The PDF viewer), keyboard shortcuts page (viewer

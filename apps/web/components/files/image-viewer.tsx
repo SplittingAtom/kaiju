@@ -10,7 +10,7 @@
  */
 import { useRef, useState, type PointerEvent } from "react";
 import { formatBytes } from "../../lib/files/format";
-import { fitScale, viewerKey, zoomIn, zoomOut, type Size } from "../../lib/files/viewer";
+import { viewerKey, zoomIn, zoomOut, type Size } from "../../lib/files/viewer";
 import { IconAction } from "../shell/icon-action";
 import { useBoxSize } from "./use-box-size";
 import styles from "./viewer.module.css";
@@ -73,7 +73,8 @@ export function ImageViewer({
   const { panning, handlers } = useDragPan();
 
   const image = natural ?? NO_SIZE;
-  const fit = box.width > 0 ? Math.min(1, fitScale("fit-width", image, box, PAD * 2)) : 1;
+  // Fit is not held to the zoom floor: an image 10× wider than the column still fits.
+  const fit = box.width > PAD * 2 ? Math.min(1, (box.width - PAD * 2) / image.width) : 1;
   const scale = mode === "fit" ? fit : mode === "actual" ? 1 : custom;
   const width = Math.max(1, Math.round(image.width * scale));
   const height = Math.max(1, Math.round(image.height * scale));

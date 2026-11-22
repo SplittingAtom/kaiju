@@ -47,6 +47,21 @@ describe("openPdf", () => {
     await broken.destroy();
   });
 
+  it("drops an image over the size cap (no allocation) and still draws the page", async () => {
+    const ops = async (width: number, height: number) => {
+      const load = openPdf(pdfFixture(["With image"], { image: { width, height } }));
+      const page = await (await load.promise).getPage(1);
+      const list = await page.getOperatorList();
+      await load.destroy();
+      return list.fnArray;
+    };
+    const { OPS } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    expect(await ops(64, 64)).toContain(OPS.paintImageXObject);
+    const bomb = await ops(60_000, 60_000);
+    expect(bomb).not.toContain(OPS.paintImageXObject);
+    expect(bomb).toContain(OPS.showText);
+  });
+
   it("leaves the caller's bytes intact (pdf.js transfers a copy to its worker)", async () => {
     const bytes = pdfFixture(["Keep"]);
     const load = openPdf(bytes);
@@ -66,6 +81,8 @@ describe("documentOptions", () => {
       wasmUrl: "/pdfjs/6.5.438/wasm/",
       useWasm: false,
       enableXfa: false,
+      maxImageSize: 4096 * 4096,
+      canvasMaxAreaInBytes: 64 * 1024 * 1024,
     });
     expect(options.url).toBeUndefined();
     expect(options.standardFontDataUrl).toBeUndefined();

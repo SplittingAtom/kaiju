@@ -535,6 +535,7 @@ describe("renderers (ac-2)", () => {
           height: 792 * scale,
         }),
         render: () => ({ promise: new Promise(() => {}), cancel: () => {} }),
+        cleanup: () => true,
       };
       const doc = { numPages: 2, getPage: async () => page } as unknown as PdfDocument;
       return { promise: Promise.resolve(doc), destroy: async () => {} };

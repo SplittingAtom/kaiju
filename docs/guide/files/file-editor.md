@@ -50,7 +50,9 @@ run. The toolbar above the pages has:
 
 You can select and copy the text of a page. Web and email links in the PDF open in a new browser
 tab, the same way links in the chat do; links to another place in the document jump to its page;
-any other kind of link does nothing. Long documents load page by page as you scroll.
+any other kind of link does nothing. Long documents load page by page as you scroll. The viewer
+shows at most the first 2,000 pages of a document; a longer one says so, with **Download** for
+the whole file. Very large pictures inside a PDF (over 16 megapixels) are left blank.
 
 With the pages focused (click them, or Tab to them) the keys are: **Mod+F** find, **Mod+=** and
 **Mod+-** zoom, **Mod+0** fit to width, and Page Up, Page Down, the arrow keys, Home and End to

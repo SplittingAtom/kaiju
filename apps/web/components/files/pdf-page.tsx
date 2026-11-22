@@ -7,7 +7,7 @@
  * `noopener noreferrer nofollow`), links inside the document jump to their page, anything else
  * (`javascript:`, `file:`, launch actions) is not drawn. Leaving the screen frees the canvas.
  */
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { memo, useEffect, useRef, useState, type CSSProperties } from "react";
 import { createTextLayer, type PdfDocument } from "../../lib/files/pdfjs";
 import { canvasOutputScale, safeLinkUrl, type Size, type TextMatch } from "../../lib/files/viewer";
 import styles from "./viewer.module.css";
@@ -111,7 +111,7 @@ function useHighlights(
   }, [divs, matches, selected]);
 }
 
-export function PdfPage({
+function PdfPageView({
   doc,
   number,
   count,
@@ -129,6 +129,8 @@ export function PdfPage({
   const [divs, setDivs] = useState<readonly HTMLElement[]>([]);
   const [failed, setFailed] = useState(false);
   const [drawn, setDrawn] = useState(false);
+  /** The pdf.js page once read, so leaving the window can free its operator lists and fonts. */
+  const pageRef = useRef<{ cleanup(): unknown } | null>(null);
 
   useEffect(() => {
     if (!active) return;
@@ -137,6 +139,7 @@ export function PdfPage({
     let textLayer: { cancel(): void } | null = null;
     const run = async () => {
       const page = await doc.getPage(number);
+      pageRef.current = page;
       if (cancelled) return;
       const base = page.getViewport({ scale: PDF_TO_CSS });
       onSize(number, { width: base.width, height: base.height });
@@ -193,6 +196,7 @@ export function PdfPage({
       canvas.height = 0;
     }
     textRef.current?.replaceChildren();
+    pageRef.current?.cleanup();
     setDivs([]);
     setLinks([]);
     setDrawn(false);
@@ -204,6 +208,7 @@ export function PdfPage({
         canvas.width = 0;
         canvas.height = 0;
       }
+      pageRef.current?.cleanup();
     },
     [],
   );
@@ -261,3 +266,6 @@ export function PdfPage({
     </div>
   );
 }
+
+/** Memoised: a scroll re-renders the viewer, not the pages whose props did not change. */
+export const PdfPage = memo(PdfPageView);

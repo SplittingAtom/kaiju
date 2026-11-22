@@ -40,7 +40,8 @@ async function pageItems(doc: PdfDocument, page: number): Promise<string[]> {
   return content.items.flatMap((i) => ("str" in i ? [i.str] : []));
 }
 
-export function usePdfFind(doc: PdfDocument | null): PdfFind {
+/** Searches pages 1..`count` (the viewer's page cap). */
+export function usePdfFind(doc: PdfDocument | null, count: number): PdfFind {
   const [query, setQuery] = useState("");
   const [byPage, setByPage] = useState<ReadonlyMap<number, readonly TextMatch[]>>(new Map());
   const [searching, setSearching] = useState(false);
@@ -63,7 +64,7 @@ export function usePdfFind(doc: PdfDocument | null): PdfFind {
     const timer = setTimeout(() => {
       void (async () => {
         const found = new Map<number, readonly TextMatch[]>();
-        for (let page = 1; page <= doc.numPages && !cancelled; page++) {
+        for (let page = 1; page <= count && !cancelled; page++) {
           let items = texts.current.get(page);
           if (!items) {
             items = pageItems(doc, page).catch(() => []);
@@ -82,7 +83,7 @@ export function usePdfFind(doc: PdfDocument | null): PdfFind {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [doc, query]);
+  }, [doc, query, count]);
 
   /** Every match in reading order. */
   const hits = useMemo(() => {

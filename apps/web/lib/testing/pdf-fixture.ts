@@ -8,6 +8,8 @@ export interface PdfFixtureOptions {
   readonly link?: string | undefined;
   /** Add an encryption dictionary with a non-empty user password. */
   readonly encrypted?: boolean | undefined;
+  /** A grey image XObject of this declared size on the first page (its data: one row at most). */
+  readonly image?: { readonly width: number; readonly height: number } | undefined;
 }
 
 const escape = (s: string) => s.replace(/[\\()]/g, (c) => `\\${c}`);
@@ -22,8 +24,15 @@ export function pdfFixture(pages: readonly string[], options: PdfFixtureOptions 
   const pagesId = add("");
   const font = add("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
   const kids: number[] = [];
+  const img = options.image;
+  const image = img
+    ? add(
+        `<< /Type /XObject /Subtype /Image /Width ${img.width} /Height ${img.height} /ColorSpace /DeviceGray /BitsPerComponent 8 /Length ${Math.min(img.width * img.height, 4096)} >>\nstream\n${"\u007f".repeat(Math.min(img.width * img.height, 4096))}\nendstream`,
+      )
+    : null;
   pages.forEach((text, i) => {
-    const stream = `BT /F1 24 Tf 72 700 Td (${escape(text)}) Tj ET`;
+    const draw = i === 0 && image !== null ? " q 200 0 0 200 72 400 cm /Im1 Do Q" : "";
+    const stream = `BT /F1 24 Tf 72 700 Td (${escape(text)}) Tj ET${draw}`;
     const content = add(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
     const annots =
       i === 0 && options.link
@@ -33,7 +42,7 @@ export function pdfFixture(pages: readonly string[], options: PdfFixtureOptions 
         : "";
     kids.push(
       add(
-        `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 612 792] /Contents ${content} 0 R /Resources << /Font << /F1 ${font} 0 R >> >>${annots} >>`,
+        `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 612 792] /Contents ${content} 0 R /Resources << /Font << /F1 ${font} 0 R >>${image === null ? "" : ` /XObject << /Im1 ${image} 0 R >>`} >>${annots} >>`,
       ),
     );
   });
