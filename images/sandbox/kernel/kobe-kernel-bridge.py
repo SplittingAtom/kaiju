@@ -5,12 +5,15 @@ docs/specs/notebooks.md NB10. The agent starts this program (root-owned, read-on
 under the kernel's own uid and talks to it over stdio only, one JSON object per line:
 
   agent -> bridge   {"op": "execute", "id": "<id>", "code": "<source>"}
+                    {"op": "inspect", "id": "<id>", "limits": {<caps, below>}}   (KOBE-803)
                     {"op": "interrupt"}
                     {"op": "shutdown"}          (also: stdin closed)
   bridge -> agent   {"ev": "ready"}
                     {"ev": "output", "id": "<id>", "output": {<nbformat 4 output>}}
                     {"ev": "done", "id": "<id>", "status": "ok"|"error"|"interrupted",
                      "execution_count": <int|null>}
+                    {"ev": "inspected", "id": "<id>", "snapshot": {variables, other, truncated,
+                     execution_count}} | {"ev": "inspected", "id": "<id>", "error": "<name>"}
                     {"ev": "died"}               (the kernel process is gone)
                     {"ev": "fatal", "message": "<text>"}
 
@@ -27,8 +30,17 @@ Internet (NB17): like the shell tool, through egress-proxy. The agent passes the
 bridge runs a silent snippet in the kernel that reads the current token and sets HTTPS_PROXY and
 friends (as the shell tool's BASH_ENV script does per command), so a rotated token is picked up.
 One execution runs at a time; `interrupt` sends SIGINT to the kernel.
+
+Variables (KOBE-803): `inspect` snapshots the user namespace without running a cell: an empty,
+silent execute request (no execution count, no history, no outputs, nothing in `Out` or `_`) whose
+user expression defines INSPECT_SOURCE in a fresh namespace (nothing is added to the user's) and
+returns the snapshot as JSON text. Only names, type names, short reprs and summaries leave the
+kernel. Each variable's description runs under a SIGALRM timer (`per_var_ms`) with every
+exception caught, so a `__repr__` that raises or loops costs that variable its repr, not the
+snapshot; the whole snapshot has a budget (`budget_ms`) and count and byte caps (`truncated`).
 """
 
+import ast
 import json
 import os
 import queue
@@ -77,6 +89,235 @@ _io.IOPubThread.__init__ = _no_pipe
 from ipykernel import kernelapp
 kernelapp.launch_new_instance()
 """
+
+INSPECT_SOURCE = r'''
+import json as _json
+import reprlib as _reprlib
+import signal as _signal
+import sys as _sys
+import time as _time
+import types as _types
+
+IPYTHON_NAMES = frozenset(("In", "Out", "exit", "quit", "get_ipython"))
+FUNCTION_TYPES = (
+    _types.FunctionType,
+    _types.BuiltinFunctionType,
+    _types.MethodType,
+    _types.BuiltinMethodType,
+    _types.MethodWrapperType,
+    _types.WrapperDescriptorType,
+)
+EXACT_SIZED = (str, bytes, bytearray, list, tuple, dict, set, frozenset, range)
+_qualname = type.__dict__["__qualname__"].__get__
+_module = type.__dict__["__module__"].__get__
+
+
+class _Timeout(BaseException):
+    pass
+
+
+def clean(text, limit):
+    text = str(text) if type(text) is str else ""
+    text = text.replace("\x00", "�").encode("utf-8", "replace").decode("utf-8")
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def kind_of(t):
+    if issubclass(t, _types.ModuleType):
+        return "module"
+    if issubclass(t, type):
+        return "class"
+    if issubclass(t, FUNCTION_TYPES):
+        return "function"
+    return None
+
+
+def type_names(t):
+    try:
+        name = _qualname(t)
+    except Exception:
+        name = "?"
+    try:
+        module = _module(t)
+    except Exception:
+        module = None
+    module = module.split(".")[0] if type(module) is str else None
+    return clean(name, 256) or "?", (None if module in (None, "builtins") else clean(module, 128))
+
+
+def library_type(module_name, attr):
+    mod = _sys.modules.get(module_name)
+    found = getattr(mod, attr, None) if mod is not None else None
+    return found if isinstance(found, type) else None
+
+
+class Snapshot:
+    def __init__(self, limits):
+        self.max_vars = int(limits.get("max_vars", 200))
+        self.max_bytes = int(limits.get("max_bytes", 65536))
+        self.repr_chars = int(limits.get("repr_chars", 200))
+        self.columns_max = int(limits.get("columns_max", 50))
+        self.per_s = float(limits.get("per_var_ms", 200)) / 1000
+        self.deadline = _time.monotonic() + float(limits.get("budget_ms", 2000)) / 1000
+        self.armed = False
+        self.alarm = False
+        self.ndarray = library_type("numpy", "ndarray")
+        self.frame = library_type("pandas", "DataFrame")
+        self.series = library_type("pandas", "Series")
+        self.short = _reprlib.Repr()
+        self.short.maxlevel = 2
+        self.short.maxstring = self.repr_chars
+        self.short.maxother = self.repr_chars
+        for name in ("maxlist", "maxtuple", "maxdict", "maxset", "maxfrozenset", "maxdeque", "maxarray"):
+            setattr(self.short, name, 8)
+
+    def _on_alarm(self, signum, frame):
+        if self.armed:
+            raise _Timeout()
+
+    def bounded(self, fn):
+        """("ok", value) | ("timeout", None) | ("raised", None); KeyboardInterrupt passes."""
+        try:
+            if self.alarm:
+                self.armed = True
+                _signal.setitimer(_signal.ITIMER_REAL, self.per_s)
+            try:
+                value = fn()
+            finally:
+                self.armed = False
+                if self.alarm:
+                    _signal.setitimer(_signal.ITIMER_REAL, 0)
+            return "ok", value
+        except _Timeout:
+            return "timeout", None
+        except KeyboardInterrupt:
+            raise
+        except BaseException:
+            return "raised", None
+
+    def describe(self, value, t):
+        """Summary fields and the repr; touches only built-in, numpy and pandas internals."""
+        out = {}
+        if self.frame is not None and issubclass(t, self.frame):
+            rows, cols = len(value.index), len(value.columns)
+            out["shape"] = [rows, cols]
+            out["columns_total"] = cols
+            out["columns"] = [
+                {"name": clean(str(c), 128), "dtype": clean(str(d), 128)}
+                for c, d in list(value.dtypes.items())[: self.columns_max]
+            ]
+            out["repr"] = "DataFrame: %d rows × %d columns" % (rows, cols)
+            return out
+        if self.series is not None and issubclass(t, self.series):
+            n = len(value)
+            out["len"] = n
+            out["shape"] = [n]
+            out["dtype"] = clean(str(value.dtype), 128)
+            out["repr"] = "Series: %d values (%s)" % (n, out["dtype"])
+            return out
+        if self.ndarray is not None and issubclass(t, self.ndarray):
+            out["shape"] = [int(d) for d in value.shape][:64]
+            out["dtype"] = clean(str(value.dtype), 128)
+            np = _sys.modules["numpy"]
+            out["repr"] = np.array2string(
+                value, threshold=8, edgeitems=2, max_line_width=self.repr_chars
+            ).replace("\n", " ")
+            return out
+        if t in EXACT_SIZED:
+            out["len"] = len(value)
+        out["repr"] = self.short.repr(value) if t in EXACT_SIZED else repr(value)
+        return out
+
+    def variable(self, name, value, t):
+        type_name, module = type_names(t)
+        item = {"name": clean(name, 256), "type": type_name}
+        if module is not None:
+            item["module"] = module
+        verdict, described = self.bounded(lambda: self.describe(value, t))
+        if verdict != "ok":
+            item["repr"] = ""
+            item["repr_error"] = verdict
+            return item
+        for key in ("len", "shape", "dtype", "columns", "columns_total"):
+            if key in described:
+                item[key] = described[key]
+        item["repr"] = clean(described.get("repr", ""), self.repr_chars)
+        return item
+
+    def take(self, ns, hidden):
+        names = []
+        for name in list(ns.keys()):
+            if type(name) is not str or name.startswith("_") or name in IPYTHON_NAMES:
+                continue
+            if name in hidden and hidden.get(name) is ns.get(name):
+                continue
+            names.append(name)
+        names.sort()
+        variables, other, used, truncated = [], [], 0, False
+        for name in names:
+            if _time.monotonic() > self.deadline:
+                truncated = True
+                break
+            value = ns.get(name)
+            t = type(value)
+            kind = kind_of(t)
+            if kind is not None:
+                if len(other) >= self.max_vars:
+                    truncated = True
+                    continue
+                entry = {"name": clean(name, 256), "kind": kind}
+                size = len(_json.dumps(entry)) + 1
+                if used + size > self.max_bytes:
+                    truncated = True
+                    break
+                other.append(entry)
+                used += size
+                continue
+            if len(variables) >= self.max_vars:
+                truncated = True
+                continue
+            item = self.variable(name, value, t)
+            size = len(_json.dumps(item, ensure_ascii=False).encode("utf-8")) + 1
+            if used + size > self.max_bytes:
+                truncated = True
+                break
+            variables.append(item)
+            used += size
+        return {"variables": variables, "other": other, "truncated": truncated}
+
+    def run(self, ns, hidden):
+        previous = None
+        try:
+            # Per-variable alarms only when the kernel's main thread runs this and no timer of
+            # the user's is pending; otherwise the whole-snapshot budget still bounds it.
+            if hasattr(_signal, "setitimer") and _signal.getitimer(_signal.ITIMER_REAL)[0] == 0:
+                previous = _signal.signal(_signal.SIGALRM, self._on_alarm)
+                self.alarm = True
+        except (ValueError, OSError):
+            self.alarm = False
+        try:
+            return self.take(ns, hidden)
+        finally:
+            if self.alarm:
+                self.armed = False
+                _signal.setitimer(_signal.ITIMER_REAL, 0)
+                _signal.signal(_signal.SIGALRM, previous if previous is not None else _signal.SIG_DFL)
+
+
+def snapshot(limits, ns=None, hidden=None):
+    """JSON text of the snapshot. Inside the kernel, the IPython user namespace."""
+    if ns is None:
+        from IPython import get_ipython
+
+        shell = get_ipython()
+        ns = shell.user_ns
+        hidden = shell.user_ns_hidden
+    return _json.dumps(Snapshot(limits).run(ns, hidden or {}), ensure_ascii=True)
+'''
+
+# Evaluated as the silent request's user expression: INSPECT_SOURCE in a namespace of its own.
+INSPECT_EXPRESSION = "(lambda g: (exec(%s, g), g['snapshot'])[1])({'__name__': 'kobe_inspect'})(%s)"
+INSPECT_LIMIT_KEYS = ("max_vars", "max_bytes", "repr_chars", "columns_max", "per_var_ms", "budget_ms")
 
 _write_lock = threading.Lock()
 
@@ -243,6 +484,45 @@ class Bridge:
         emit({"ev": "done", "id": exec_id, "status": status, "execution_count": count})
         return True
 
+    def inspect(self, inspect_id, limits):
+        safe = {k: int(v) for k, v in limits.items() if k in INSPECT_LIMIT_KEYS and type(v) is int and 0 < v < 10**7}
+        expression = INSPECT_EXPRESSION % (repr(INSPECT_SOURCE), repr(safe))
+        msg_id = self.kc.execute(
+            "",
+            silent=True,
+            store_history=False,
+            user_expressions={"kobe": expression},
+            allow_stdin=False,
+            stop_on_error=False,
+        )
+        while True:
+            try:
+                reply = self.kc.get_shell_msg(timeout=0.5)
+            except queue.Empty:
+                if not self.km.is_alive():
+                    emit({"ev": "died"})
+                    return False
+                continue
+            if reply.get("parent_header", {}).get("msg_id") == msg_id:
+                break
+        content = reply.get("content", {})
+        result = (content.get("user_expressions") or {}).get("kobe") or {}
+        if content.get("status") != "ok" or result.get("status") != "ok":
+            name = result.get("ename") or content.get("ename") or "error"
+            emit({"ev": "inspected", "id": inspect_id, "error": str(name)[:200]})
+            return True
+        try:
+            snap = json.loads(ast.literal_eval(result["data"]["text/plain"]))
+            if not isinstance(snap, dict):
+                raise ValueError("not an object")
+        except Exception:  # noqa: BLE001 - reported as unreadable
+            emit({"ev": "inspected", "id": inspect_id, "error": "unreadable"})
+            return True
+        count = content.get("execution_count")
+        snap["execution_count"] = count if type(count) is int else None
+        emit({"ev": "inspected", "id": inspect_id, "snapshot": snap})
+        return True
+
     def serve(self):
         threading.Thread(target=self.read_commands, daemon=True).start()
         emit({"ev": "ready"})
@@ -250,6 +530,11 @@ class Bridge:
             command = self.commands.get()
             if command.get("op") == "shutdown":
                 return
+            if command.get("op") == "inspect":
+                limits = command.get("limits")
+                if not self.inspect(str(command.get("id", "")), limits if isinstance(limits, dict) else {}):
+                    return
+                continue
             if command.get("op") != "execute":
                 continue
             exec_id = str(command.get("id", ""))

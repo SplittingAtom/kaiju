@@ -1,13 +1,23 @@
+import { randomUUID } from "node:crypto";
+import { performance } from "node:perf_hooks";
 import type {
   NotebookExecuteResult,
   NotebookKernelResponse,
   NotebookOutput,
   NotebookStartResult,
+  NotebookTiming,
+  NotebookVariablesResult,
 } from "@kobe/protocol";
 import type { NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
 import { fail, ok, type CommandOutcome } from "../threads/outcome.js";
 import { OUTPUT_LIMITS, OutputLimiter, type OutputLimits } from "./outputs.js";
 import { KernelSession, type BridgeLauncher } from "./session.js";
+import {
+  AFTER_RUN_INSPECT_TIMEOUT_MS,
+  INSPECT_LIMITS,
+  UNAVAILABLE,
+  snapshotResult,
+} from "./variables.js";
 
 /**
  * The thread kernels of one sandbox (KOBE-464; docs/specs/notebooks.md NB2, NB7, NB8, NB10). A
@@ -19,6 +29,12 @@ import { KernelSession, type BridgeLauncher } from "./session.js";
  * counted from its arrival (waiting included): at `timeout_ms` the kernel is interrupted, `graceMs`
  * later it is stopped (state lost). An execution still waiting is never run once its deadline
  * passed, its run ended, or the thread was interrupted: the server has given up on it (NB8).
+ *
+ * KOBE-803: an execution reports when it ran (`with_timing`) and a variables snapshot taken right
+ * after it (`with_variables`); `inspect` takes one on request. A snapshot holds the kernel like an
+ * execution (the next one waits until the bridge answered it) but never waits itself: with an
+ * execution running or queued it answers `busy`, without a live kernel `no_kernel` (none is started),
+ * and past its timeout `unavailable` (the kernel is interrupted to end it).
  */
 export interface KernelManagerOptions {
   readonly launch: BridgeLauncher;
@@ -54,6 +70,8 @@ interface Kernel {
   stopping: ExecStatus | undefined;
   current: { readonly runId: string; readonly execId: string } | undefined;
   readonly waiting: Set<Waiting>;
+  /** Settles once the bridge answered the last snapshot (or the kernel went). */
+  inspection: Promise<void>;
 }
 
 export type OutputSink = (index: number, output: NotebookOutput) => void;
@@ -111,6 +129,29 @@ export class KernelManager {
     return ok(this.#status(busy ? "busy" : "idle"));
   }
 
+  /** `notebook.inspect` (KOBE-803): the thread kernel's variables, never starting a kernel. */
+  async inspect(threadId: string, timeoutMs: number): Promise<CommandOutcome> {
+    const kernel = this.#kernels.get(threadId);
+    if (this.#closed || kernel === undefined || !kernel.session.alive) {
+      return ok({ status: "no_kernel" } satisfies NotebookVariablesResult);
+    }
+    if (kernel.queued > 0 || kernel.session.busy || kernel.session.inspecting) {
+      return ok({ status: "busy" } satisfies NotebookVariablesResult);
+    }
+    kernel.queued += 1;
+    const snap = kernel.tail.then(() => this.#inspectNow(kernel, timeoutMs));
+    kernel.tail = snap.catch(() => undefined);
+    try {
+      return ok(await snap);
+    } catch (error) {
+      this.#o.log(`variables snapshot failed: ${(error as Error).message}`, threadId);
+      return ok(UNAVAILABLE);
+    } finally {
+      kernel.queued -= 1;
+      this.#touch(kernel);
+    }
+  }
+
   /**
    * `notebook.interrupt` (also the member's Stop): SIGINT to the running cell (state kept), and
    * every execution still waiting is dropped.
@@ -120,6 +161,8 @@ export class KernelManager {
     if (kernel === undefined) return ok(this.#status("no_kernel"));
     for (const w of kernel.waiting) w.cancelled = true;
     const dropped = kernel.waiting.size > 0;
+    // A snapshot stuck in a repr (KOBE-803) is ended like a cell; it ran no code of the member's.
+    if (kernel.session.inspecting) kernel.session.interrupt();
     if (!kernel.session.busy) return ok(this.#status(dropped ? "interrupted" : "idle"));
     kernel.session.interrupt();
     return ok(this.#status("interrupted"));
@@ -170,6 +213,8 @@ export class KernelManager {
     sink: OutputSink,
     waiting: Waiting,
   ): Promise<NotebookExecuteResult> {
+    // A snapshot the bridge has not answered yet holds the kernel (KOBE-803).
+    await kernel.inspection;
     const limiter = new OutputLimiter(sink, this.#o.limits ?? OUTPUT_LIMITS);
     kernel.waiting.delete(waiting);
     if (waiting.cancelled) {
@@ -194,6 +239,10 @@ export class KernelManager {
       kernel.session.interrupt();
       kill = setTimeout(() => void this.#stop(kernel, "timeout", "the cell timed out"), grace);
     }, remaining);
+    const startedAt = new Date();
+    const started = performance.now();
+    let ran: NotebookExecuteResult;
+    let snapshot = false;
     try {
       const result = await kernel.session.execute(frame.exec_id, frame.code, (o) =>
         limiter.push(o),
@@ -201,18 +250,56 @@ export class KernelManager {
       if (result.kind === "done") {
         const status: ExecStatus = timedOut ? "timeout" : result.status;
         if (timedOut) limiter.note(`[Kobe: the cell ran past its ${frame.timeout_ms / 1000} s]\n`);
-        return { status, execution_count: result.executionCount, ...limiter.finish() };
+        ran = { status, execution_count: result.executionCount, ...limiter.finish() };
+        snapshot = !timedOut;
+      } else {
+        // The bridge or the kernel went away.
+        const status: ExecStatus = kernel.stopping ?? (timedOut ? "timeout" : "error");
+        limiter.note(stopNote(status));
+        void this.#stop(kernel, status, result.message);
+        ran = { status, execution_count: null, ...limiter.finish() };
       }
-      // The bridge or the kernel went away.
-      const status: ExecStatus = kernel.stopping ?? (timedOut ? "timeout" : "error");
-      limiter.note(stopNote(status));
-      void this.#stop(kernel, status, result.message);
-      return { status, execution_count: null, ...limiter.finish() };
     } finally {
       clearTimeout(deadline);
       if (kill !== undefined) clearTimeout(kill);
       kernel.current = undefined;
     }
+    const timing: NotebookTiming = {
+      started_at: startedAt.toISOString(),
+      finished_at: new Date().toISOString(),
+      duration_ms: Math.max(0, Math.round(performance.now() - started)),
+    };
+    return {
+      ...ran,
+      ...(frame.with_timing === true ? { timing } : {}),
+      ...(frame.with_variables === true && snapshot && kernel.session.alive
+        ? { variables: await this.#inspectNow(kernel, AFTER_RUN_INSPECT_TIMEOUT_MS) }
+        : {}),
+    };
+  }
+
+  /**
+   * Takes a snapshot now (the caller holds the kernel's tail). Answers within `timeoutMs`; past it
+   * the kernel is interrupted and `kernel.inspection` keeps the next execution waiting until the
+   * bridge has answered, so that interrupt can never reach a later cell.
+   */
+  async #inspectNow(kernel: Kernel, timeoutMs: number): Promise<NotebookVariablesResult> {
+    if (!kernel.session.alive) return { status: "no_kernel" };
+    const takenAt = new Date();
+    const pending = kernel.session.inspect(randomUUID(), INSPECT_LIMITS);
+    kernel.inspection = pending.then(() => undefined);
+    let timer: NodeJS.Timeout | undefined;
+    const late = new Promise<undefined>((resolve) => {
+      timer = setTimeout(() => resolve(undefined), timeoutMs);
+    });
+    const got = await Promise.race([pending, late]).finally(() => clearTimeout(timer));
+    const log = (m: string) => this.#o.log(m, kernel.threadId);
+    if (got === undefined) {
+      log("variables snapshot timed out; interrupting it");
+      if (kernel.session.inspecting) kernel.session.interrupt();
+      return UNAVAILABLE;
+    }
+    return snapshotResult(got, takenAt, log);
   }
 
   async #kernelFor(threadId: string): Promise<Kernel> {
@@ -250,6 +337,7 @@ export class KernelManager {
       stopping: undefined,
       current: undefined,
       waiting: new Set(),
+      inspection: Promise.resolve(),
     };
     this.#kernels.set(threadId, kernel);
     this.#o.log("kernel started", threadId);
@@ -260,7 +348,7 @@ export class KernelManager {
   async #makeRoom(): Promise<void> {
     if (this.#kernels.size + this.#starting.size < this.#o.maxKernels) return;
     const idle = [...this.#kernels.values()]
-      .filter((k) => k.queued === 0 && !k.session.busy)
+      .filter((k) => k.queued === 0 && !k.session.busy && !k.session.inspecting)
       .sort((a, b) => a.lastUsed - b.lastUsed)[0];
     if (idle === undefined) {
       throw new Error(`all ${this.#o.maxKernels} kernels of this sandbox are busy; try again`);
@@ -274,7 +362,7 @@ export class KernelManager {
     kernel.idle = undefined;
     if (kernel.queued > 0 || this.#kernels.get(kernel.threadId) !== kernel) return;
     kernel.idle = setTimeout(() => {
-      if (kernel.queued === 0 && !kernel.session.busy) {
+      if (kernel.queued === 0 && !kernel.session.busy && !kernel.session.inspecting) {
         void this.#stop(kernel, "restarted", "idle");
       }
     }, this.#o.idleMs);
