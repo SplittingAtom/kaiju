@@ -123,6 +123,18 @@ describe("OpenAPI completeness (KOBE-727)", () => {
     }
   });
 
+  it("names user-facing routes one by one, never by a prefix wildcard (KOBE-771)", () => {
+    const listeners = new Set(["sandbox-listener", "internal-listener"]);
+    const wildcards = UNDOCUMENTED_ROUTES.filter(
+      (e) => !listeners.has(e.category) && e.route.endsWith("/*"),
+    );
+    expect(wildcards.map((e) => e.route)).toEqual([]);
+    // And each still names a mounted route.
+    for (const entry of UNDOCUMENTED_ROUTES.filter((e) => !listeners.has(e.category))) {
+      expect(userFacing.filter((op) => matches(entry, op)).length, entry.route).toBeGreaterThan(0);
+    }
+  });
+
   it("gives every operation a unique operationId and the catalog a summary per line", () => {
     const ids = Object.values(doc.paths as Record<string, Record<string, { operationId?: string }>>)
       .flatMap((item) => Object.values(item))
