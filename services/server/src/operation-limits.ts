@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import type { KobeDb } from "@kobe/db";
 import {
   checkRateLimit,
   clearRateLimit,
@@ -77,7 +78,7 @@ export const OPERATION_LIMITS = {
   notebookRun: {
     bucket: "notebook-run",
     windowMs: MINUTE,
-    max: 120,
+    max: 300,
     message: "Too many cell runs. Wait a minute and try again.",
   },
   feedback: {
@@ -125,28 +126,45 @@ export const WAKE_START_WINDOW_MS = 5 * MINUTE;
 const FREE: RateLimitVerdict = { allowed: true, retryAfterSeconds: 1 };
 const wakeStartKey = (owner: SandboxTarget) => `sandbox-wake-start:${owner.teamId}:${owner.userId}`;
 
+/** A refused start, thrown to roll its transaction back (marker and hit). */
+class WakeRefused extends Error {
+  constructor(readonly verdict: RateLimitVerdict) {
+    super("sandbox wake refused");
+  }
+}
+
 /**
  * A wake of a sandbox known not to be connected (KOBE-813 review H1): the first ask starts it
  * and counts one hit of {@link OPERATION_LIMITS.sandboxWake}; asks while that start is in
  * progress (the viewer's polls, panel mounts, Refresh) are free. A marker row per (Workspace,
- * member) says a start is in progress; a refused start clears it, so the next ask is checked
- * (and refused) again rather than passing as "in progress".
+ * member) says a start is in progress. Marker and hit are one transaction (round 2): a refused
+ * start rolls both back, and a concurrent ask waits on the marker's row lock meanwhile, then
+ * finds no marker and is checked (and refused) itself; it is never let through as "in progress".
  */
 export async function admitWakeStart(
-  db: RateLimitDb,
+  db: KobeDb,
   owner: SandboxTarget,
   now = Date.now(),
 ): Promise<RateLimitVerdict> {
-  const marker = await checkRateLimit(
-    db,
-    wakeStartKey(owner),
-    { windowMs: WAKE_START_WINDOW_MS, max: 1 },
-    now,
-  );
-  if (!marker.allowed) return FREE;
-  const verdict = await admitOperation(db, OPERATION_LIMITS.sandboxWake, owner.userId, now);
-  if (!verdict.allowed) await clearRateLimit(db, wakeStartKey(owner));
-  return verdict;
+  try {
+    return await db.transaction(async (tx) => {
+      const marker = await checkRateLimit(
+        tx,
+        wakeStartKey(owner),
+        { windowMs: WAKE_START_WINDOW_MS, max: 1 },
+        now,
+        { prune: false },
+      );
+      if (!marker.allowed) return FREE;
+      const limit = OPERATION_LIMITS.sandboxWake;
+      const verdict = await admitOperation(tx, limit, owner.userId, now, { prune: false });
+      if (!verdict.allowed) throw new WakeRefused(verdict);
+      return verdict;
+    });
+  } catch (err) {
+    if (err instanceof WakeRefused) return err.verdict;
+    throw err;
+  }
 }
 
 /** The sandbox is connected: its start is over, the next wake is a new start. */
@@ -160,7 +178,7 @@ export function wakeStartOver(db: RateLimitDb, owner: SandboxTarget): Promise<vo
  * message is never refused for it: the run limit already bounds those.
  */
 export async function admitSandboxWake(
-  db: RateLimitDb,
+  db: KobeDb,
   router: Pick<SandboxRouter, "isConnected">,
   owner: SandboxTarget,
   now = Date.now(),

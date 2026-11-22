@@ -37,11 +37,22 @@ each documented operation, a plain message wherever a member or admin meets one 
   cleared when the sandbox is seen connected (`/wake`, the context viewer) and at once when the
   start is refused (so a refused start is not passed as "in progress"). Per Workspace marker,
   per member bucket.
-- **Notebook cell runs (review M2).** Own bucket, 120 per minute per member (coordinator's number,
-  flagged to the owner), apart from the 60/min message limit. Run all sends one request per cell,
+- **Notebook cell runs (review M2).** Own bucket, 300 per minute per member (owner decision
+  2026-11-22; first proposed at 120), apart from the 60/min message limit. Run all sends one request per cell,
   serially, so the unit is a cell; counted inside the run's transaction (`prune: false`), so the
   `thread_busy` answers Run all retries and refusals add nothing. Their implicit wake is a run's
   wake: not counted. The kernel bar shows the server's sentence.
+- **Wake start is atomic (round 2, M-R2-1).** Marker upsert and bucket hit run in one
+  transaction (`prune: false`); a refusal rolls both back. A concurrent ask waits on the
+  marker's row lock, then finds no marker and is checked itself, so a member at the limit can't
+  get a free wake with parallel requests (test: 8 concurrent asks at the limit, none allowed;
+  8 under it, exactly one hit).
+- **File-write routes (round 2, L-R2-1).** In the `upload` bucket: `POST /v1/uploads`,
+  `POST /v1/workspace/files`, `POST /v1/projects/{id}/files` (after the edit check). Deliberately
+  not: `PUT /v1/workspace/file` (editor save, a write of a file already there),
+  `PUT /v1/site/branding/assets/{kind}` (Site admin, logo assets overwritten in place), skill
+  uploads and imports (their own `skill-upload` bucket), budget and team skill install routes
+  that read a small text body (settings, not stored files), `POST .../notebook/restart` (kernel, not the sandbox; unlimited, noted).
 - **Lows.** L1/L2/L5 noted in docs/rate-limits.md (L2 recovery also in docs/install.md); L3 fixed
   (Files panel shows the server's 429 sentence); L4 counts corrected; L6 below.
 - **Sandbox wakes.** Counted only for wakes the member asks for: `POST /v1/workspace/wake` (Files
@@ -71,7 +82,6 @@ each documented operation, a plain message wherever a member or admin meets one 
   files area is undocumented there; review L6: the coverage test builds the app without
   `workspaceFiles`, so it never sees them). Follow-up ticket suggested; their 429 is documented
   in docs/rate-limits.md only.
-- Notebook cell runs 120/min is the coordinator's number, to confirm with the owner.
 
 ## Evidence (acceptance criteria → test or command output)
 

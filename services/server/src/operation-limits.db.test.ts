@@ -52,7 +52,7 @@ describe("each limit at its boundary (limiter clock)", () => {
       upload: [120, 10],
       scheduleCreate: [20, 60],
       sandboxWake: [20, 10],
-      notebookRun: [120, 1],
+      notebookRun: [300, 1],
       feedback: [60, 1],
       scimTokenCreate: [10, 60],
       setupAttempt: [10, 10],
@@ -117,6 +117,28 @@ describe("one start counts once (review H1)", () => {
     expect((await admitWakeStart(db(), owner)).allowed).toBe(false);
     expect((await admitWakeStart(db(), owner)).allowed).toBe(false);
     await wakeStartOver(db(), owner);
+  });
+
+  it("concurrent asks from a member at the limit: none goes through (round 2)", async () => {
+    const owner = { teamId: randomUUID(), userId: randomUUID() };
+    await fillLimit(f.fx.admin, OPERATION_LIMITS.sandboxWake, owner.userId);
+    const asks = await Promise.all(Array.from({ length: 8 }, () => admitWakeStart(db(), owner)));
+    expect(asks.map((a) => a.allowed)).toEqual(Array.from({ length: 8 }, () => false));
+    // Nothing was left behind: no marker, and the refusals added no hits.
+    const { rows } = await f.fx.admin.query<{ key: string; count: number }>(
+      `SELECT key, count FROM kobe_rate_limits WHERE key LIKE $1 OR key LIKE $2`,
+      [`kobe:sandbox-wake-start:${owner.teamId}:%`, `kobe:sandbox-wake:${owner.userId}`],
+    );
+    expect(rows).toEqual([
+      { key: `kobe:sandbox-wake:${owner.userId}`, count: OPERATION_LIMITS.sandboxWake.max },
+    ]);
+  });
+
+  it("concurrent asks under the limit: exactly one start is counted", async () => {
+    const owner = { teamId: randomUUID(), userId: randomUUID() };
+    const asks = await Promise.all(Array.from({ length: 8 }, () => admitWakeStart(db(), owner)));
+    expect(asks.every((a) => a.allowed)).toBe(true);
+    expect(await bucket(owner.userId)).toBe(1);
   });
 
   it("a start per Workspace: another Workspace's sandbox is its own start", async () => {

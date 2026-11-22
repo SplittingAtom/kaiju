@@ -100,7 +100,7 @@ export const conversationsAreas: readonly CatalogArea[] = [
         "post",
         "/v1/threads/{id}/notebook/run",
         "Run a notebook cell or Python file in the kernel",
-        "Owner only. Answers 202. 429 `rate_limited` past 120 cell runs per member a minute " +
+        "Owner only. Answers 202. 429 `rate_limited` past 300 cell runs per member a minute " +
           "(`Retry-After`, KOBE-813); a `thread_busy` answer does not count.",
       ],
       [
