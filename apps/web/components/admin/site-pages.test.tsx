@@ -540,6 +540,52 @@ describe("Settings: the Kobe connector switch (KOBE-623)", () => {
     ).toBe(true);
   });
 
+  it("shows the Kobe admin limits with their defaults and saves a change (KOBE-814)", async () => {
+    const calls = stubApi({
+      "GET /v1/site/settings": [
+        [
+          200,
+          {
+            requireTwoFactor: false,
+            kobeMcpMode: "admin",
+            kobeReadsPerMinute: 60,
+            kobeWritesPerHour: 30,
+          },
+        ],
+        [
+          200,
+          {
+            requireTwoFactor: false,
+            kobeMcpMode: "admin",
+            kobeReadsPerMinute: 90,
+            kobeWritesPerHour: 30,
+          },
+        ],
+      ],
+      "PUT /v1/site/settings": [
+        200,
+        {
+          requireTwoFactor: false,
+          kobeMcpMode: "admin",
+          kobeReadsPerMinute: 90,
+          kobeWritesPerHour: 30,
+        },
+      ],
+    });
+    renderSite(<SettingsPage />, "admin");
+    const form = within(await screen.findByRole("form", { name: "Kobe admin limits" }));
+    const reads = form.getByLabelText(/admin reads per person per minute/i) as HTMLInputElement;
+    expect(reads.value).toBe("60");
+    expect(form.getByText(/default is 60/)).toBeTruthy();
+    expect(form.getByText(/default is 30/)).toBeTruthy();
+    await userEvent.clear(reads);
+    await userEvent.type(reads, "90");
+    await userEvent.click(form.getByRole("button", { name: "Save Kobe limits" }));
+    await screen.findByText(/Kobe admin limits now 90 reads per minute and 30 writes per hour/);
+    const put = must(calls.find((c) => c.method === "PUT"));
+    expect(JSON.parse(String(put.body))).toEqual({ kobeReadsPerMinute: 90, kobeWritesPerHour: 30 });
+  });
+
   it("is absent on a server that predates the switch", async () => {
     stubApi({ "GET /v1/site/settings": [200, { requireTwoFactor: false }] });
     renderSite(<SettingsPage />, "admin");

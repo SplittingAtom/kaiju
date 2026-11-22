@@ -11,7 +11,19 @@ export interface SiteSettings {
    * on). Absent from servers that predate it.
    */
   readonly kobeMcpMode?: KobeMcpMode;
+  /** Per-person Kobe admin reads per minute (KOBE-814): 1-10000, default 60. Absent on older servers. */
+  readonly kobeReadsPerMinute?: number;
+  /** Per-person Kobe admin writes per hour (KOBE-814): 1-10000, default 30. Absent on older servers. */
+  readonly kobeWritesPerHour?: number;
 }
+
+/** Bounds and defaults of the Kobe admin limits (the server validates them again). */
+export const KOBE_LIMITS = {
+  min: 1,
+  max: 10_000,
+  readsDefault: 60,
+  writesDefault: 30,
+} as const;
 
 export type KobeMcpMode = "off" | "docs" | "admin";
 
