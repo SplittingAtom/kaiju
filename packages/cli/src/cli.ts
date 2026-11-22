@@ -4,8 +4,9 @@ import pg from "pg";
 import { runBackup } from "./backup.js";
 import { keyFileWarning, parseCommand, tlsWarning, type Command } from "./config.js";
 import { formatRestrictedProjects, listRestrictedProjects } from "./restricted-projects.js";
-import { runRestore } from "./restore.js";
+import { defaultOperator, runRestore } from "./restore.js";
 import { s3Lister } from "./s3.js";
+import { allowLocalSignIn } from "./sso-break-glass.js";
 
 const log = (message: string): void => {
   process.stderr.write(`kobe: ${message}\n`);
@@ -27,6 +28,15 @@ async function listRestricted(databaseUrl: string, json: boolean): Promise<void>
 async function run(cmd: Command): Promise<void> {
   if (cmd.command === "projects-restricted") {
     await listRestricted(cmd.databaseUrl, cmd.json);
+    return;
+  }
+  if (cmd.command === "sso-allow-local-sign-in") {
+    const { changed } = await allowLocalSignIn(cmd.databaseUrl, cmd.operator ?? defaultOperator());
+    log(
+      changed
+        ? "single sign-on is no longer required: password and passkey sign-in work again (audited as identity.sso.required.disabled). Fix the identity provider, then turn Require single sign-on back on in the Site console."
+        : "single sign-on was not required: nothing changed",
+    );
     return;
   }
   const objects = cmd.s3 ? s3Lister(cmd.s3) : null;

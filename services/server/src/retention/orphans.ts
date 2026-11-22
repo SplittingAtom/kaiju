@@ -7,6 +7,12 @@ import {
   type KobeDb,
   type KobeTx,
 } from "@kobe/db";
+import {
+  NO_PORTABLE_HOLDS,
+  portableHoldsUnchanged,
+  snapshotPortableHolds,
+  type PortableHoldSnapshot,
+} from "../legal-hold/portable-hold.js";
 import type { ListedObject } from "../workspace-sync/object-store.js";
 import type { BlobStore } from "./blobs.js";
 import { deleteBounded } from "./bounded-delete.js";
@@ -35,10 +41,13 @@ import { deleteBounded } from "./bounded-delete.js";
  * references (`BLOB_REF_COLUMNS`; for skill bundles the site-wide columns too: personal and
  * catalog versions) or the release queue still holds; never under a legal hold (staging, uploads
  * and personal bundles: the key's user, or a team-wide hold; fork bodies, team bundles and eval
- * objects have no owner, so any hold in the team). A personal bundle never committed belongs to no
- * record; a hold on its owner in another team is not visible to this team's pass. The delete runs
- * in a transaction holding the legal-hold lock shared, after those checks
- * were repeated. Listing is paged, and one sweep deletes at most {@link MAX_DELETIONS} per team.
+ * objects have no owner, so any hold in the team). A personal bundle has no team, so (KOBE-773,
+ * Chris 2026-11-21) it is also kept while an active hold names its owner in **any** team, or a
+ * team-wide hold covers a team the owner is a member of (as portable memories: the members of
+ * held teams are read before the transaction, `snapshotPortableHolds`, and the snapshot is
+ * re-checked under the lock; if the team-wide holds changed meanwhile, nothing personal goes this
+ * pass). `legal_holds` is site-wide (§5.4†): no team context needed for the hold read itself. The delete runs in a transaction holding the legal-hold lock shared, after those
+ * checks were repeated, so a hold approved mid-pass waits for the batch or is seen by it. Listing is paged, and one sweep deletes at most {@link MAX_DELETIONS} per team.
  * Logs counts only.
  */
 export const ORPHAN_GRACE_MS = 24 * 60 * 60_000;
@@ -72,8 +81,10 @@ export interface OrphanOptions {
 
 interface Candidate {
   readonly key: string;
-  /** Present for staging objects (the workspace owner). */
+  /** Whose hold protects the object (the key's user); null: ownerless, any hold in the team. */
   readonly userId: string | null;
+  /** A hold naming {@link userId} in any team protects it too (personal skill bundles, KOBE-773). */
+  readonly anyTeam?: boolean;
 }
 
 /** All objects under `prefix` (one level when `delimiter`), paged, at most {@link MAX_PAGES}. */
@@ -129,6 +140,8 @@ interface Listing {
   readonly tail: string;
   /** Whose legal hold protects the objects; null: any hold in the team. */
   readonly holdUser: string | null;
+  /** A hold naming `holdUser` in any team protects them too (KOBE-773). */
+  readonly anyTeam?: boolean;
 }
 
 /** Old objects of exactly the listings' shapes, at most `max`. */
@@ -140,11 +153,13 @@ async function candidatesIn(
   stop: () => boolean,
 ): Promise<Candidate[]> {
   const found: Candidate[] = [];
-  for (const { prefix, tail, holdUser } of listings) {
+  for (const { prefix, tail, holdUser, anyTeam } of listings) {
     const shape = new RegExp(`^${escape(prefix)}${tail}$`);
     for await (const page of pages(store, prefix)) {
       for (const o of page.objects) {
-        if (shape.test(o.key) && old(o, cutoff)) found.push({ key: o.key, userId: holdUser });
+        if (shape.test(o.key) && old(o, cutoff)) {
+          found.push({ key: o.key, userId: holdUser, ...(anyTeam ? { anyTeam } : {}) });
+        }
       }
       if (found.length >= max || stop()) return found.slice(0, max);
     }
@@ -207,6 +222,7 @@ async function skillCandidates(
       prefix: `${store.prefix}skills/users/${userId}/`,
       tail: SKILL_ATTEMPT,
       holdUser: userId,
+      anyTeam: true,
     })),
   ];
   return candidatesIn(store, listings, cutoff, max, stop);
@@ -282,6 +298,29 @@ async function protectedKeys(
   return keep;
 }
 
+/**
+ * Users among `userIds` an active hold names in any team, or who are members of a team under a
+ * team-wide hold (`snapshot`, taken before the transaction) (KOBE-773). `legal_holds` is a
+ * site-wide table (no team RLS), so it is read in the caller's transaction, after
+ * `lockLegalHolds`. When the team-wide holds changed since the snapshot, every user counts as held.
+ */
+async function heldAnywhere(
+  tx: KobeTx,
+  userIds: readonly string[],
+  snapshot: PortableHoldSnapshot,
+): Promise<Set<string>> {
+  if (userIds.length === 0) return new Set();
+  if (!(await portableHoldsUnchanged(tx, snapshot))) return new Set(userIds);
+  const frozen = new Set(snapshot.members);
+  const res = await tx.execute<{ user_id: string }>(sql`
+    SELECT DISTINCT user_id::text AS user_id FROM legal_holds
+     WHERE status = 'active' AND user_id = ANY(ARRAY[${sql.join(
+       userIds.map((u) => sql`${u}`),
+       sql`, `,
+     )}]::uuid[])`);
+  return new Set([...res.rows.map((r) => r.user_id), ...userIds.filter((u) => frozen.has(u))]);
+}
+
 /** Deletes one batch under the shared legal-hold lock; returns how many objects went. */
 async function deleteBatch(
   db: KobeDb,
@@ -289,6 +328,10 @@ async function deleteBatch(
   store: BlobStore,
   batch: Candidate[],
 ): Promise<number> {
+  // Team-wide holds' members, read outside the transaction (team_members stays behind its RLS).
+  const snapshot = batch.some((c) => c.anyTeam)
+    ? await snapshotPortableHolds(db)
+    : NO_PORTABLE_HOLDS;
   return withTeam(db, teamId, async (tx) => {
     await tx.execute(sql.raw(`SET LOCAL lock_timeout = '5s'`));
     await lockLegalHolds(tx);
@@ -299,9 +342,12 @@ async function deleteBatch(
       batch.map((c) => c.key),
       batch.some((c) => c.key.startsWith(skillRoot)),
     );
+    const anyTeamUsers = batch.flatMap((c) => (c.anyTeam && c.userId ? [c.userId] : []));
+    const held = await heldAnywhere(tx, [...new Set(anyTeamUsers)], snapshot);
     const doomed: string[] = [];
     for (const c of batch) {
       if (keep.has(c.key)) continue;
+      if (c.anyTeam && c.userId && held.has(c.userId)) continue;
       // The key's user's (or a team-wide) hold; ownerless shapes (fork bodies, team skill
       // bundles): any hold in the team.
       if (await isUnderLegalHold(tx, teamId, c.userId)) continue;

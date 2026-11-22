@@ -3,26 +3,32 @@
 import { useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
 import { buttonVariants } from "../ui/console";
-import { providersOf, ssoStartHref, type SsoProviderButton } from "./sso-sign-in-data";
+import {
+  NO_SIGN_IN_OPTIONS,
+  providersOf,
+  signInOptionsOf,
+  ssoStartHref,
+  type SignInOptions,
+  type SsoProviderButton,
+} from "./sso-sign-in-data";
 
-export { providersOf, ssoStartHref, type SsoProviderButton };
+export { providersOf, ssoStartHref, type SignInOptions, type SsoProviderButton };
 
 /**
- * The enabled providers, in the server's order: `known` when the server render already had them
- * (KOBE-755: then nothing arrives late and nothing moves), else read in the browser from the
- * public `/api/auth/sso/providers` (404 while single sign-on is off: none).
+ * The enabled providers, in the server's order, and whether the Site requires single sign-on
+ * (KOBE-774): `known` when the server render already had them (KOBE-755: then nothing arrives late
+ * and nothing moves), else read in the browser from the public `/api/auth/sso/providers` (404
+ * while single sign-on is off: none, not required).
  */
-export function useSsoProviders(
-  known: readonly SsoProviderButton[] | null = null,
-): readonly SsoProviderButton[] {
-  const [fetched, setFetched] = useState<readonly SsoProviderButton[]>([]);
+export function useSignInOptions(known: SignInOptions | null = null): SignInOptions {
+  const [fetched, setFetched] = useState<SignInOptions>(NO_SIGN_IN_OPTIONS);
   useEffect(() => {
     if (known !== null) return undefined;
     let live = true;
     fetch("/api/auth/sso/providers", { credentials: "same-origin" })
       .then(async (res) => (res.ok ? ((await res.json()) as unknown) : null))
       .then((body) => {
-        if (live && body !== null) setFetched(providersOf(body));
+        if (live && body !== null) setFetched(signInOptionsOf(body));
       })
       .catch(() => undefined);
     return () => {
@@ -30,6 +36,11 @@ export function useSsoProviders(
     };
   }, [known]);
   return known ?? fetched;
+}
+
+/** The enabled providers only (pages that offer nothing else). */
+export function useSsoProviders(): readonly SsoProviderButton[] {
+  return useSignInOptions().providers;
 }
 
 /**

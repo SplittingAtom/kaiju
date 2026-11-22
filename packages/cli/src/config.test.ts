@@ -204,3 +204,28 @@ describe("parseCommand: projects restricted (KOBE-587)", () => {
     ).toThrow(/force/);
   });
 });
+
+describe("parseCommand: sso allow-local-sign-in (KOBE-774)", () => {
+  it("reads the owner role's URL and an optional operator", () => {
+    expect(
+      parseCommand(["sso", "allow-local-sign-in"], { KOBE_DB_MIGRATE_URL: OWNER_URL }),
+    ).toEqual({ command: "sso-allow-local-sign-in", databaseUrl: OWNER_URL, operator: undefined });
+    expect(
+      parseCommand(["sso", "allow-local-sign-in", "--operator", "ops@corp"], {
+        KOBE_DB_MIGRATE_URL: OWNER_URL,
+      }),
+    ).toMatchObject({ operator: "ops@corp" });
+  });
+
+  it("refuses a missing URL, another subcommand and a bad operator", () => {
+    expect(() => parseCommand(["sso", "allow-local-sign-in"], {})).toThrow(/KOBE_DB_MIGRATE_URL/);
+    expect(() => parseCommand(["sso", "off"], { KOBE_DB_MIGRATE_URL: OWNER_URL })).toThrow(
+      /sso allow-local-sign-in/,
+    );
+    expect(() =>
+      parseCommand(["sso", "allow-local-sign-in", "--operator", "a b"], {
+        KOBE_DB_MIGRATE_URL: OWNER_URL,
+      }),
+    ).toThrow(/--operator/);
+  });
+});

@@ -11940,6 +11940,132 @@
         }
       }
     },
+    "/v1/site/sso/settings": {
+      "get": {
+        "operationId": "getSiteSsoSettings",
+        "summary": "Whether the Site requires single sign-on",
+        "description": "Needs `site.users.manage`.",
+        "responses": {
+          "200": {
+            "description": "The setting and whether it can be turned on.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteSsoSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`: no session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: not an Owner or Admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: single sign-on is off (`auth.sso.enabled: false`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putSiteSsoSettings",
+        "summary": "Require single sign-on, or stop requiring it",
+        "description": "Needs `site.users.manage`; turning it off needs the Owner. Turning it on works only from a session signed in through an enabled identity provider, and ends every session that was not (`identity.sso.required.enabled`). While in force the server refuses password sign-in, password reset, invitation acceptance and passkey sign-in (`403 SSO_REQUIRED` on `/api/auth/*`). It turns itself off when the last enabled provider is disabled or deleted, and `kobe sso allow-local-sign-in` turns it off with cluster access (`identity.sso.required.disabled`). While it is stored on, the Owner keeps an identity at an enabled provider: disabling or deleting the Owner's only one answers 409 `owner_would_lose_sign_in`, transferring ownership to an unlinked user 409 `owner_not_linked`, unlinking an account's only usable identity 409 `last_sign_in_method`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutSiteSsoSettingsBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The setting and whether it can be turned on.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteSsoSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`invalid_request`: `requireSso` missing or not a boolean.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`: no session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: not an Owner or Admin, or an Admin turning it off (Owner only).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: single sign-on is off (`auth.sso.enabled: false`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`sso_session_required`: turning it on from a session not signed in through an enabled identity provider; `owners_not_linked`: an active Owner has no identity at an enabled provider (the message gives how many).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me": {
       "get": {
         "operationId": "getMe",
@@ -41698,6 +41824,58 @@
           }
         },
         "required": ["level", "stewards"],
+        "additionalProperties": false
+      },
+      "SiteSsoSettings": {
+        "type": "object",
+        "properties": {
+          "requireSso": {
+            "type": "boolean",
+            "description": "Stored: password and passkey sign-in are off."
+          },
+          "inForce": {
+            "type": "boolean",
+            "description": "Stored on, the chart's `auth.sso.enabled` is on, and at least one provider can finish a sign-in."
+          },
+          "canTurnOn": {
+            "type": "boolean",
+            "description": "This session was signed in through an enabled identity provider."
+          },
+          "unlinked": {
+            "type": "object",
+            "properties": {
+              "owners": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "siteRoles": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "users": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["owners", "siteRoles", "users"],
+            "additionalProperties": false,
+            "description": "Active accounts (and of them site-role holders and Owners) with no identity at an enabled provider: they could not sign in while it is on. Counts only."
+          }
+        },
+        "required": ["requireSso", "inForce", "canTurnOn", "unlinked"],
+        "additionalProperties": false
+      },
+      "PutSiteSsoSettingsBody": {
+        "type": "object",
+        "properties": {
+          "requireSso": {
+            "type": "boolean"
+          }
+        },
+        "required": ["requireSso"],
         "additionalProperties": false
       }
     },

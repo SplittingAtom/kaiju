@@ -250,3 +250,34 @@ function must<T>(value: T | null | undefined): T {
   if (value === null || value === undefined) throw new Error("missing");
   return value;
 }
+
+describe("when the Site requires single sign-on (KOBE-774)", () => {
+  const corp = { slug: "corp", displayName: "Contoso" };
+
+  it("offers only the provider buttons: no password, reset link or passkey", () => {
+    withPasskeys();
+    renderForm(<SignInForm providers={[corp]} ssoRequired />);
+    expect(within(panel()).queryByLabelText("Email")).toBeNull();
+    expect(within(panel()).queryByLabelText("Password")).toBeNull();
+    expect(within(panel()).queryByRole("link", { name: "Forgot your password?" })).toBeNull();
+    expect(within(panel()).queryByRole("button", { name: /passkey/i })).toBeNull();
+    expect(divider()).toBeNull();
+    expect(within(panel()).getByRole("link", { name: "Sign in with Contoso" })).toBeTruthy();
+    expect(within(panel()).getByText(/requires single sign-on/i)).toBeTruthy();
+  });
+
+  it("asks the browser when the server render could not, and follows its answer", async () => {
+    const fetchMock = vi.fn(
+      async () => new Response(JSON.stringify({ providers: [corp], ssoRequired: true })),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderForm(<SignInForm providers={null} />);
+    await waitFor(() => expect(within(panel()).queryByLabelText("Password")).toBeNull());
+    expect(within(panel()).getByRole("link", { name: "Sign in with Contoso" })).toBeTruthy();
+  });
+
+  it("keeps the password form when the setting is off", () => {
+    renderForm(<SignInForm providers={[corp]} ssoRequired={false} />);
+    expect(field("Password")).toBeTruthy();
+  });
+});

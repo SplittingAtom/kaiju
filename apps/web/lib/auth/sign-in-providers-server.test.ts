@@ -20,10 +20,13 @@ describe("createProvidersLoader", () => {
       }),
     );
     const load = createProvidersLoader({ serverUrl: "http://server", fetch });
-    expect(await load()).toEqual([
-      { slug: "kc", displayName: "Keycloak" },
-      { slug: "corp", displayName: "Contoso" },
-    ]);
+    expect(await load()).toEqual({
+      providers: [
+        { slug: "kc", displayName: "Keycloak" },
+        { slug: "corp", displayName: "Contoso" },
+      ],
+      ssoRequired: false,
+    });
     expect(fetch).toHaveBeenCalledWith("http://server/api/auth/sso/providers", expect.anything());
   });
 
@@ -32,7 +35,21 @@ describe("createProvidersLoader", () => {
       serverUrl: "http://server",
       fetch: vi.fn(async () => json({}, 404)),
     });
-    expect(await load()).toEqual([]);
+    expect(await load()).toEqual({ providers: [], ssoRequired: false });
+  });
+
+  it("says when the Site requires single sign-on (KOBE-774), only with a provider to offer", async () => {
+    const corp = { slug: "corp", displayName: "Contoso" };
+    const required = createProvidersLoader({
+      serverUrl: "http://server",
+      fetch: vi.fn(async () => json({ providers: [corp], ssoRequired: true })),
+    });
+    expect(await required()).toEqual({ providers: [corp], ssoRequired: true });
+    const nothingToOffer = createProvidersLoader({
+      serverUrl: "http://server",
+      fetch: vi.fn(async () => json({ providers: [], ssoRequired: true })),
+    });
+    expect(await nothingToOffer()).toEqual({ providers: [], ssoRequired: false });
   });
 
   it("null (the browser asks) on any other failure or without a server URL", async () => {

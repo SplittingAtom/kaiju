@@ -156,6 +156,8 @@ describe("audit event taxonomy", () => {
       "identity.sso.provider.disabled",
       "identity.sso.provider.enabled",
       "identity.sso.provider.updated",
+      "identity.sso.required.disabled",
+      "identity.sso.required.enabled",
     ]);
     for (const a of sso) expect(AUDIT_EVENTS[a].scope, a).toBe("site");
 
@@ -198,6 +200,16 @@ describe("audit event taxonomy", () => {
       true,
     );
     expect(ok("identity.sso.link.created", { providerId, userId, method: "email" })).toBe(false);
+    // Require single sign-on (KOBE-774): a reason code, an operator name, never more.
+    expect(ok("identity.sso.required.enabled", { sessionsEnded: 3 })).toBe(true);
+    expect(
+      ok("identity.sso.required.disabled", { reason: "break_glass", operator: "ops@corp" }),
+    ).toBe(true);
+    expect(
+      ok("identity.sso.required.disabled", { reason: "last_provider", providerId, slug: "c" }),
+    ).toBe(true);
+    expect(ok("identity.sso.required.disabled", { reason: "because" })).toBe(false);
+    expect(ok("identity.sso.required.disabled", { reason: "admin", operator: "a b" })).toBe(false);
     // Never a claim value, subject or email in the log.
     expect(
       ok("identity.sso.link.created", { providerId, userId, method: "jit", subject: "x" }),

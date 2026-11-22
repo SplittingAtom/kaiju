@@ -188,6 +188,12 @@ the provider (for Entra `login.microsoftonline.com` on 443).
 **"That sign-in option is not available right now"** (`provider_unavailable`). The provider was
 turned off or single sign-on is switched off for the site.
 
+**"This site requires single sign-on"** (`SSO_REQUIRED`). The site turned password and passkey
+sign-in off: use **Sign in with _your organization_**. Password resets and password invitations
+are refused too. If nobody can sign in because the identity provider is down, the Site owner can
+turn the requirement off with cluster access (see
+[Requiring single sign-on](../admin/single-sign-on.md#requiring-single-sign-on)).
+
 **I can't set a password or add a passkey** (`SSO_ONLY_ACCOUNT`). Your account was created by
 your organization's sign-in; it signs in only through your organization.
 
@@ -201,6 +207,13 @@ in. Ask a site admin.
   (`no_pkce_s256`), a private or disallowed address (`address_not_allowed`: add the range to
   `auth.sso.allowedInternalCidrs` for an on-premises provider), a redirect (`redirect_refused`), or
   the document could not be fetched (`unreachable`).
+- **Require single sign-on can't be turned on** (`sso_session_required`): sign out and sign in
+  through a provider that is on, then try again. (`owners_not_linked`): an Owner has no sign-in
+  linked at a provider that is on; each Owner links their own account first.
+- **"…the Owner could no longer sign in"** (`owner_would_lose_sign_in`, `owner_not_linked`): while
+  single sign-on is required, the Owner must keep a sign-in at a provider that is on. Link the
+  Owner (or the new Owner) to a provider first, or turn **Require single sign-on** off. **Only the Owner can stop requiring single
+  sign-on** (`forbidden`).
 - **"This provider is set in the chart's values"** (`managed_by_helm`): change it in the values.
   **"People have signed in with this provider…"** (`identities_linked`, `identity_settings_locked`):
   turn it off instead of deleting it; add a new provider for a new tenant or issuer.

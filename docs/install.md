@@ -857,6 +857,16 @@ endpoint is refused, every session signed in through SSO ends, and local sign-in
 The site Owner created in first-run setup always keeps local sign-in (the break-glass account):
 no SSO flow links it away, removes its password or passkey, or deactivates it through SCIM.
 
+**Require single sign-on** (Site console, KOBE-774) turns password and passkey sign-in off for
+everyone, the setup Owner included. It turns on only from an SSO session of an enabled provider,
+turns itself off when the last enabled provider is disabled or deleted, and is not in force while
+`auth.sso.enabled` is `false` or no provider can finish a sign-in. When the provider is down and
+nobody can sign in, the break-glass is the operator CLI with the owner role (the chart's migrate
+URL, as for `kobe restore`): `KOBE_DB_MIGRATE_URL=<migrate URL> kobe sso allow-local-sign-in
+--operator <name>`. It turns the setting off and records `identity.sso.required.disabled`
+(`reason: break_glass`) in the audit log. Setting `auth.sso.enabled: false` also brings local
+sign-in back, but switches single sign-on off for everyone.
+
 ### Register Kobe in Microsoft Entra ID
 
 You need: Kobe's public URL (`https://<kobe>`), a **slug** for the provider (lowercase letters,

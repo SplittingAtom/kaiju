@@ -12,6 +12,12 @@ next to **Sign in with a passkey**. It takes you
 to your organization's sign-in page and back to Kobe, signed in. Your organization decides who may
 use Kobe and in which team, through the roles or groups it gives you.
 
+If your site **requires single sign-on**, the sign-in page shows only those buttons ("This site
+requires single sign-on"): there is no password, passkey or **Forgot your password?**, and an
+invitation link asks you to sign in with your organization instead of choosing a password. If you
+were signed in with a password when your administrator turned it on, Kobe signs you out; sign in
+again with your organization's button.
+
 ## Your first sign-in
 
 If your organization gave you access and you have no Kobe account yet, the first sign-in creates
@@ -37,6 +43,8 @@ matches. To link them:
 
 From then on both work: your organization's button and your password or passkey. An administrator
 can also prepare the link for you; then your next sign-in with your organization links on its own.
+While the site requires single sign-on, step 2 is not possible (password and passkey sign-in are
+off): ask your administrator to prepare the link.
 
 ## Sign-in methods
 
