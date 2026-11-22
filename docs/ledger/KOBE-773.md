@@ -17,10 +17,11 @@ the delete batch skips them while an active hold names their owner in any team.
   `packages/db/src/tenancy/identity.ts`), readable without a team. The read runs inside the existing
   delete transaction, after `lockLegalHolds(tx)` (shared), so a hold approved mid-pass either waits
   for the batch or is seen by it — the same lock order as every team sweep. No team setting involved.
-- Scope follows the ticket ("a hold that names the user"): a team-wide hold in another team the user
-  is a member of does not reach their personal bundles (the swept team's own team-wide hold still
-  does, as before). The portable-memory lane extends to Workspace-wide holds of the owner's
-  Workspaces; if Chris wants the same here, it is a small follow-up using `snapshotPortableHolds`.
+- Review g70 (L6): a team-wide hold on any team the user is a member of keeps them too, as for
+  portable memories: `snapshotPortableHolds` reads the held teams' members (one `withTeam` per
+  held team) before the delete transaction; under the lock `portableHoldsUnchanged` re-checks the
+  set, and if it changed nothing personal goes that pass. A membership added between snapshot and
+  delete is not seen (same accepted gap as portable memory).
 - Pending holds do not protect (only `active`, as everywhere).
 
 ## Docs
@@ -35,5 +36,5 @@ in any workspace keeps your unfinished personal skill uploads.
   another user's (red before the change, green after).
 - ac-2: same test: released hold (approved release) → next sweep removes it.
 - Also: a hold on another user, a team-wide hold in a team they are not in, and a pending hold do
-  not keep it.
+  not keep it; a team-wide hold in another team they are a member of does (review L6).
 - ac-4: guide page updated.

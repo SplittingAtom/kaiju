@@ -16,9 +16,10 @@ audience: member
 - **Unfinished uploads** (a file or a skill upload that never finished, for example after a
   crash) are removed by the nightly clean-up once they are a day old.
 
-A legal hold keeps everything it covers until it is released. A hold on you in any workspace also
-keeps your unfinished personal skill uploads, since a personal skill belongs to no workspace; they
-are removed by a later clean-up once no hold names you.
+A legal hold keeps everything it covers until it is released. A hold on you in any workspace, or a
+hold on a whole workspace you are a member of, also keeps your unfinished personal skill uploads,
+since a personal skill belongs to no workspace; they are removed by a later clean-up once no such
+hold is left.
 
 ## When the bytes are gone
 

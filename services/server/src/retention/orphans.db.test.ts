@@ -194,6 +194,27 @@ describe("personal skill bundles under a hold in another team (KOBE-773)", () =>
     expect((await sweep()).skills).toBe(1);
   });
 
+  it("a team-wide hold in another team the user is a member of keeps them (review L6)", async () => {
+    const mine = put(personal(member), 3 * DAY);
+    await h.admin.query(
+      `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'member')
+       ON CONFLICT DO NOTHING`,
+      [otherTeam, member],
+    );
+    try {
+      const hold = await placeHold(null, otherTeam);
+      expect((await sweep()).skills).toBe(0);
+      expect(objects.keys()).toEqual([mine]);
+      await release(hold);
+      expect((await sweep()).skills).toBe(1);
+    } finally {
+      await h.admin.query(`DELETE FROM team_members WHERE team_id = $1 AND user_id = $2`, [
+        otherTeam,
+        member,
+      ]);
+    }
+  });
+
   it("a pending hold does not keep them", async () => {
     put(personal(member), 3 * DAY);
     await h.admin.query(
