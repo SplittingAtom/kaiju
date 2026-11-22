@@ -8,6 +8,7 @@ import { previewDraftScan } from "../../skills/drafts/scan-preview.js";
 import { suggestDraftBump } from "../../skills/drafts/suggest.js";
 import { saveDraftVersion } from "../../skills/drafts/save.js";
 import { skillJson, versionJson } from "../skill-json.js";
+import { scanIncomplete } from "../../skills/scan-pool.js";
 import {
   destinationSchema,
   error,
@@ -126,7 +127,10 @@ export function draftSaveRoutes(kit: DraftKit): Hono<{ Variables: TeamVariables 
     }
     const review =
       body.data.destination === "team"
-        ? { status: "pending", flagged: result.scan.findings.length > 0 }
+        ? {
+            status: "pending",
+            flagged: !scanIncomplete(result.scan) && result.scan.findings.length > 0,
+          }
         : null;
     return c.json(
       { skill: skillJson(result.skill), version: versionJson(result.version, review) },

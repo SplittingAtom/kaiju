@@ -10,6 +10,7 @@ import type { ScanResult } from "@kobe/skill-scanner";
 import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
 import { validateZipBundle, type ValidBundle } from "../bundle.js";
 import { scanCanonicalZip } from "../review.js";
+import { scanIncomplete } from "../scan-pool.js";
 import { compareSemver } from "../semver.js";
 import type { SkillStore } from "../skill-store.js";
 import type { SkillLocation } from "../store.js";
@@ -222,7 +223,13 @@ async function refusalsOf(
       code: "license",
       message: "kobe.skill.yaml needs a license (Proprietary is fine).",
     });
-  if (rules.refuseBlockVerdict && plan.scan.verdict === "block")
+  // A scan that didn't finish is never submitted as a verdict (P2-11): try again.
+  if (scanIncomplete(plan.scan))
+    out.push({
+      code: "scan_incomplete",
+      message: "The package's scan couldn't finish. Try again.",
+    });
+  else if (rules.refuseBlockVerdict && plan.scan.verdict === "block")
     out.push({ code: "scan_block", message: "The scanner blocks this package." });
   if (!plan.scorecard)
     out.push({

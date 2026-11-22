@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KobeDb, type KobeTx, type TeamRole } from "@kobe/db";
 import {
   computeSkillEvalScorecard,
   skillEvalExecutionSchema,
@@ -13,6 +13,7 @@ import { createThread } from "../../threads/repository.js";
 import type { AgentPin } from "../../agents/versions.js";
 import { executionFromAttempts, retries, type EvalAttempt } from "./execution.js";
 import { recordAuthoritativeScorecard } from "../registry/authoritative.js";
+import { EVAL_GATE_REFUSALS, evalSubjectGate } from "./gates.js";
 
 // The skill eval queue in Postgres (KOBE-325): eval runs, their executions and every state change.
 // Postgres is the record; `NOTIFY kobe_skill_eval '<team>:<eval run>'` is only a hint (events).
@@ -100,13 +101,43 @@ export interface ClaimedExecution {
   readonly judgeModel: SkillEvalJudgeModel | null;
 }
 
-/** Whether the team has any queued execution (a cheap look before taking the team's lock). */
+/**
+ * Whether the team has a queued execution of an open eval run (a cheap look before taking the
+ * team's lock): executions of closed runs never count (P2-37), so a team with nothing to start is
+ * skipped without the lock.
+ */
 export async function hasQueuedExecution(db: KobeDb, teamId: string): Promise<boolean> {
   return withTeam(db, teamId, async (tx) => {
     const res = await tx.execute(sql`
-      SELECT 1 FROM skill_eval_results WHERE team_id = ${teamId} AND state = 'queued' LIMIT 1`);
+      SELECT 1 FROM skill_eval_results x
+        JOIN skill_eval_runs r ON r.team_id = x.team_id AND r.id = x.eval_run_id
+       WHERE x.team_id = ${teamId} AND x.state = 'queued' AND r.status IN ${OPEN}
+         AND r.cancel_requested_at IS NULL
+       LIMIT 1`);
     return res.rows.length > 0;
   });
+}
+
+/**
+ * Settles the queued executions of closed eval runs (P2-37): a cancelled, failed or budget-stopped
+ * run starts nothing more, so its queued (never started) executions are deleted; done ones stay as
+ * partial results, and running ones are deleted when their replica puts them back. Rows under a
+ * legal hold stay (the hold's trigger keeps them; the claim and the sweep skip closed runs). One
+ * run, or (`evalRunId` null) every closed run of the team: the reaper's pass, which also settles
+ * what an older release left.
+ */
+export async function settleClosedExecutions(
+  tx: KobeTx,
+  teamId: string,
+  evalRunId: string | null,
+): Promise<number> {
+  const res = await tx.execute(sql`
+    DELETE FROM skill_eval_results x USING skill_eval_runs r
+     WHERE x.team_id = ${teamId} AND x.state = 'queued'
+       ${evalRunId === null ? sql`` : sql`AND x.eval_run_id = ${evalRunId}`}
+       AND r.team_id = x.team_id AND r.id = x.eval_run_id
+       AND (r.status NOT IN ${OPEN} OR r.cancel_requested_at IS NOT NULL)`);
+  return res.rowCount ?? 0;
 }
 
 /**
@@ -148,10 +179,15 @@ export async function claimNextExecution(
       run_model: SkillEvalRunModel;
       judge_model: SkillEvalJudgeModel | null;
       wall_minutes: number | null;
+      role: TeamRole;
+      subject_kind: string;
+      subject_id: string;
+      subject_rev: number;
     }>(sql`
       SELECT x.eval_run_id, x.case_id, x.with_skill, x.attempt, x.first_attempt, r.started_by,
              r.suite, r.fixtures_key, r.runtime_hash, r.skill_name, r.run_model, r.judge_model,
-             (r.limits ->> 'caseWallClockMinutes')::int AS wall_minutes
+             (r.limits ->> 'caseWallClockMinutes')::int AS wall_minutes, m.role,
+             r.subject_kind, r.subject_id, r.subject_rev
         FROM skill_eval_results x
         JOIN skill_eval_runs r ON r.team_id = x.team_id AND r.id = x.eval_run_id
         -- Only a starter who is still an active member of the team (review L8).
@@ -168,14 +204,27 @@ export async function claimNextExecution(
        FOR UPDATE OF x SKIP LOCKED`);
     const row = next.rows[0];
     if (!row) return null;
+    // The subject may have been rejected, suspended or blocklisted since the start (review g79):
+    // the run fails instead of running it.
+    const refused = await evalSubjectGate(
+      tx,
+      { teamId, userId: row.started_by, role: row.role },
+      { kind: row.subject_kind, id: row.subject_id, rev: Number(row.subject_rev) },
+      row.runtime_hash,
+    );
+    if (refused) {
+      await failClaimedRun(tx, teamId, row.eval_run_id, {
+        code: refused,
+        message: EVAL_GATE_REFUSALS[refused][1],
+      });
+      return null;
+    }
     const pin = await opts.pinFor(tx, teamId, row.started_by);
     if (!pin) {
-      await tx.execute(sql`
-        UPDATE skill_eval_runs
-           SET status = 'failed', finished_at = now(), updated_at = now(),
-               failure = ${JSON.stringify({ code: "agent_unavailable", message: "The Kobe agent is not available." })}::jsonb
-         WHERE team_id = ${teamId} AND id = ${row.eval_run_id} AND status IN ${OPEN}`);
-      await notifyEval(tx, teamId, row.eval_run_id);
+      await failClaimedRun(tx, teamId, row.eval_run_id, {
+        code: "agent_unavailable",
+        message: "The Kobe agent is not available.",
+      });
       return null;
     }
     const thread = await createThread(tx, {
@@ -219,6 +268,22 @@ export async function claimNextExecution(
       judgeModel: row.judge_model,
     };
   });
+}
+
+/** Fails the run of an execution being claimed (in the claim's transaction), settling the rest. */
+async function failClaimedRun(
+  tx: KobeTx,
+  teamId: string,
+  evalRunId: string,
+  failure: { readonly code: string; readonly message: string },
+): Promise<void> {
+  await tx.execute(sql`
+    UPDATE skill_eval_runs
+       SET status = 'failed', finished_at = now(), updated_at = now(),
+           failure = ${JSON.stringify(failure)}::jsonb
+     WHERE team_id = ${teamId} AND id = ${evalRunId} AND status IN ${OPEN}`);
+  await settleClosedExecutions(tx, teamId, evalRunId);
+  await notifyEval(tx, teamId, evalRunId);
 }
 
 type ExecutionKey = Pick<
@@ -294,8 +359,11 @@ export async function requeueExecution(db: KobeDb, e: ExecutionKey): Promise<boo
       UPDATE skill_eval_results
          SET state = 'queued', thread_id = NULL, run_id = NULL, deadline_at = NULL, updated_at = now()
        WHERE ${keyOf(e)} AND state IN ${ACTIVE}`);
-    if (res.rowCount === 1) await notifyEval(tx, e.teamId, e.evalRunId);
-    return res.rowCount === 1;
+    if (res.rowCount !== 1) return false;
+    // Back to queued only while its run is open; a closed run's is settled (P2-37).
+    await settleClosedExecutions(tx, e.teamId, e.evalRunId);
+    await notifyEval(tx, e.teamId, e.evalRunId);
+    return true;
   });
 }
 
@@ -357,6 +425,7 @@ export async function recordAttempt(
         UPDATE skill_eval_results
            SET state = 'queued', thread_id = NULL, run_id = NULL, deadline_at = NULL, updated_at = now()
          WHERE ${key} AND state IN ${ACTIVE}`);
+      await settleClosedExecutions(tx, e.teamId, e.evalRunId);
       return "stale";
     }
     if (retries(attempt, e.attempt)) {
@@ -457,8 +526,10 @@ export async function cancelEvalRun(
     UPDATE skill_eval_runs
        SET status = 'cancelled', cancel_requested_at = now(), finished_at = now(), updated_at = now()
      WHERE team_id = ${teamId} AND id = ${evalRunId} AND status IN ${OPEN}`);
-  if (res.rowCount === 1) await notifyEval(tx, teamId, evalRunId);
-  return res.rowCount === 1;
+  if (res.rowCount !== 1) return false;
+  await settleClosedExecutions(tx, teamId, evalRunId);
+  await notifyEval(tx, teamId, evalRunId);
+  return true;
 }
 
 /**
@@ -479,6 +550,8 @@ export async function cancelDepartedStartersEvals(db: KobeDb, teamId: string): P
               AND u.deactivated_at IS NULL)
       RETURNING r.id`);
     for (const row of res.rows) await notifyEval(tx, teamId, row.id);
+    // The reaper's pass: these runs' queued executions, and any an older release left (P2-37).
+    await settleClosedExecutions(tx, teamId, null);
     return res.rows.length;
   });
 }
@@ -496,7 +569,9 @@ export async function failEvalRun(
          SET status = 'failed', failure = ${JSON.stringify(failure)}::jsonb, finished_at = now(),
              updated_at = now()
        WHERE team_id = ${teamId} AND id = ${evalRunId} AND status IN ${OPEN}`);
-    if (res.rowCount === 1) await notifyEval(tx, teamId, evalRunId);
+    if (res.rowCount !== 1) return;
+    await settleClosedExecutions(tx, teamId, evalRunId);
+    await notifyEval(tx, teamId, evalRunId);
   });
 }
 
@@ -518,7 +593,9 @@ export async function budgetStopEvalRun(
          SET status = 'budget_stopped', failure = ${JSON.stringify(failure)}::jsonb,
              finished_at = now(), updated_at = now()
        WHERE team_id = ${teamId} AND id = ${evalRunId} AND status IN ${OPEN}`);
-    if (res.rowCount === 1) await notifyEval(tx, teamId, evalRunId);
-    return res.rowCount === 1;
+    if (res.rowCount !== 1) return false;
+    await settleClosedExecutions(tx, teamId, evalRunId);
+    await notifyEval(tx, teamId, evalRunId);
+    return true;
   });
 }

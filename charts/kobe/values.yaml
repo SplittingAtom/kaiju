@@ -280,6 +280,10 @@ server:
   # Seconds between reconciles of every team namespace's NetworkPolicies, quota and other managed
   # objects (KOBE-115); also run at server start. 0 = only at start; otherwise 30..86400.
   teamReconcileSeconds: 300
+  # Hours a skill version's rescan under a new scanner rule set may keep not finishing (timing out)
+  # before the version is suspended like a Block, until a rescan finishes and passes or a reviewer
+  # decides it (KOBE-781 review). 0 = never; otherwise up to 8760.
+  skillRescanIncompleteSuspendHours: 24
   # Seconds between re-probes of every pinned MCP connector for tool drift (KOBE-102); changed or
   # new tools stay disabled until a site admin re-approves them. 0 = never; otherwise 60..86400.
   connectorRefreshSeconds: 3600

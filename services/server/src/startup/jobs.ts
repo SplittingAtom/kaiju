@@ -80,6 +80,8 @@ export interface ServerJobsOptions {
     readonly sweeps?: TableSweepSettings;
   };
   readonly connectorRefreshSeconds: number;
+  /** Hours of unfinished rescans before a skill version is suspended; 0 = never (review g79). */
+  readonly skillRescanIncompleteSuspendHours?: number;
   /** Bifrost config sync (KOBE-40): only with the chart's models settings. */
   readonly models?: { readonly config: ModelsConfig; readonly admin: BifrostAdmin } | undefined;
 }
@@ -493,7 +495,15 @@ function skillJobs(o: ServerJobsOptions): ServerJob[] {
   // one replica at a time; only hashes not recorded yet, so a quick no-op once caught up.
   const hashes = { database: deps.database, blobs, log };
   // Rescans on a scanner rule-set change (KOBE-313, SK32): once per rule set, one replica at a time.
-  const rescan = { database: deps.database, blobs, log, ...notify };
+  const rescan = {
+    database: deps.database,
+    blobs,
+    log,
+    ...notify,
+    ...(o.skillRescanIncompleteSuspendHours === undefined
+      ? {}
+      : { incompleteSuspendAfterMs: o.skillRescanIncompleteSuspendHours * 3600_000 }),
+  };
   jobs.push(
     job(
       "skill-hash-recompute",

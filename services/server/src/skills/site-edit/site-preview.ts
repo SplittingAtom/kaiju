@@ -4,7 +4,7 @@ import type { ScanResult } from "@kobe/skill-scanner";
 import type { BlobStore } from "../../retention/blobs.js";
 import { adviseBump, bumpSemver, type BumpKind } from "../drafts/bump.js";
 import { SKILL_MD_PATH } from "../drafts/files.js";
-import { ScanBusyError, ScanCancelledError, scanPool } from "../scan-pool.js";
+import { ScanBusyError, ScanCancelledError, scanIncomplete, scanPool } from "../scan-pool.js";
 import {
   newestSemver,
   packageFiles,
@@ -28,7 +28,6 @@ export type SitePreview =
 
 const CACHE_MAX = 32;
 const cache = new Map<string, ScanResult>();
-const INCOMPLETE = new Set(["scan-incomplete", "scan-resources-exceeded"]);
 
 export async function previewSiteDraft(
   db: KobeDb,
@@ -61,8 +60,7 @@ export async function previewSiteDraft(
       preview: true,
       ...(signal ? { signal } : {}),
     });
-    if (scan.findings.some((f) => INCOMPLETE.has(f.rule)))
-      return { ok: false, error: "unavailable" };
+    if (scanIncomplete(scan)) return { ok: false, error: "unavailable" };
     cache.set(key, scan);
     if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value as string);
     return { ok: true, rev: draft.rev, scan };

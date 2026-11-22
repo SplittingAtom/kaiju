@@ -350,6 +350,64 @@ describe("the catalog's git mirror (KOBE-343)", () => {
     expect(await mirrorDoc(qr)).toMatchObject({ status: "pushed", url: fresh });
   });
 
+  it("drops a revoked, withdrawn or suspended version from catalog.json with nothing to push (P2-10)", async () => {
+    const repo = git.repo("retired");
+    await setMirror(repo);
+    expect(await mirror.sweep()).toMatchObject({ ran: true, failed: 0 });
+    const listed = () =>
+      JSON.parse(git.git("retired", ["show", "main:catalog.json"], { bare: true }))
+        .skills as Record<string, { versions: Record<string, unknown> }>;
+    expect(Object.keys(listed()["weekly-digest"]?.versions ?? {})).toEqual([
+      "0.1.0",
+      "0.2.0",
+      "0.3.0",
+    ]);
+    // A Site admin revokes 1.1.0 (it is blocklisted and leaves the published states).
+    const qrId = versionIds["quarterly-report@1.1.0"] as string;
+    const skillId = (
+      await h.admin.query<{ skill_id: string }>(
+        `SELECT skill_id FROM registry_versions WHERE id = $1`,
+        [qrId],
+      )
+    ).rows[0]?.skill_id;
+    const kicked = kicks;
+    const revoked = await admin.post(`/v1/site/skills/catalog/${skillId}/versions/1.1.0/revoke`, {
+      note: "malware",
+    });
+    expect(revoked.status, JSON.stringify(revoked.json)).toBe(200);
+    // The act kicks the mirror.
+    expect(kicks).toBe(kicked + 1);
+    await h.admin.query(`UPDATE registry_versions SET state = 'withdrawn' WHERE id = $1`, [
+      versionIds["weekly-digest@0.1.0"],
+    ]);
+    await h.admin.query(`UPDATE registry_versions SET suspended_at = now() WHERE id = $1`, [
+      versionIds["weekly-digest@0.2.0"],
+    ]);
+    const before = git.git("retired", ["rev-parse", "main"], { bare: true });
+    expect(await mirror.sweep()).toEqual({ ran: true, pushed: 0, failed: 0 });
+    expect(Object.keys(listed()["weekly-digest"]?.versions ?? {})).toEqual(["0.3.0"]);
+    expect(Object.keys(listed()["quarterly-report"]?.versions ?? {})).toEqual(["1.0.0"]);
+    const after = git.git("retired", ["rev-parse", "main"], { bare: true });
+    expect(after).not.toBe(before);
+    for (const key of ["quarterly-report@1.1.0", "weekly-digest@0.1.0", "weekly-digest@0.2.0"])
+      expect(await mirrorDoc(versionIds[key] as string)).toMatchObject({
+        url: repo,
+        status: "withdrawn",
+      });
+    // Recorded: the next sweep writes no second commit.
+    expect(await mirror.sweep()).toEqual({ ran: true, pushed: 0, failed: 0 });
+    expect(git.git("retired", ["rev-parse", "main"], { bare: true })).toBe(after);
+    // Lifting the suspension makes it pending again (its tag is already on the remote).
+    await h.admin.query(`UPDATE registry_versions SET suspended_at = NULL WHERE id = $1`, [
+      versionIds["weekly-digest@0.2.0"],
+    ]);
+    expect(await mirror.sweep()).toMatchObject({ ran: true, pushed: 1, failed: 0 });
+    expect(await mirrorDoc(versionIds["weekly-digest@0.2.0"] as string)).toMatchObject({
+      status: "pushed",
+    });
+    expect(Object.keys(listed()["weekly-digest"]?.versions ?? {})).toEqual(["0.2.0", "0.3.0"]);
+  });
+
   it("refuses a version whose paths git reserves, naming the problem, and goes on (review)", async () => {
     const bad = zipSync({
       "SKILL.md": strToU8("---\nname: gitty\ndescription: d\n---\n"),

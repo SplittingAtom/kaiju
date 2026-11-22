@@ -141,6 +141,19 @@ describe("loadConfig", () => {
     );
   });
 
+  it("suspends unfinished skill rescans after 24 h by default, 0 for never (KOBE-781 review)", () => {
+    const hours = (v?: string) =>
+      loadConfig({
+        ...REQUIRED,
+        ...(v === undefined ? {} : { KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS: v }),
+      }).skillRescanIncompleteSuspendHours;
+    expect(hours()).toBe(24);
+    expect(hours("0")).toBe(0);
+    expect(hours("72")).toBe(72);
+    for (const bad of ["-1", "8761", "1.5"])
+      expect(() => hours(bad)).toThrow(/KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS/);
+  });
+
   it("reads the internal listener settings for the MCP proxy (KOBE-58)", () => {
     expect(loadConfig(REQUIRED)).toMatchObject({
       internalPort: 8082,
