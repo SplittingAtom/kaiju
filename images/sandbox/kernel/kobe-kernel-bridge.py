@@ -6,6 +6,9 @@ under the kernel's own uid and talks to it over stdio only, one JSON object per 
 
   agent -> bridge   {"op": "execute", "id": "<id>", "code": "<source>"}
                     {"op": "inspect", "id": "<id>", "limits": {<caps, below>}}   (KOBE-803)
+                    {"op": "complete", "id": "<id>", "code": "<source>", "cursor": <int>,
+                     "timeout_ms": <int>}                                              (KOBE-808)
+                    {"op": "doc", "id": "<id>", "name": "<dotted.name>", "timeout_ms": <int>}
                     {"op": "interrupt"}
                     {"op": "shutdown"}          (also: stdin closed)
   bridge -> agent   {"ev": "ready"}
@@ -14,6 +17,8 @@ under the kernel's own uid and talks to it over stdio only, one JSON object per 
                      "execution_count": <int|null>}
                     {"ev": "inspected", "id": "<id>", "snapshot": {variables, other, truncated,
                      execution_count}} | {"ev": "inspected", "id": "<id>", "error": "<name>"}
+                    {"ev": "completed", "id": "<id>", "result": {<the wire's completion answer>}}
+                     | {"ev": "completed", "id": "<id>", "error": "<name>"}
                     {"ev": "died"}               (the kernel process is gone)
                     {"ev": "fatal", "message": "<text>"}
 
@@ -38,17 +43,29 @@ returns the snapshot as JSON text. Only names, type names, short reprs and summa
 kernel. Each variable's description runs under a SIGALRM timer (`per_var_ms`) with every
 exception caught, so a `__repr__` that raises or loops costs that variable its repr, not the
 snapshot; the whole snapshot has a budget (`budget_ms`) and count and byte caps (`truncated`).
+
+Completion (KOBE-808): `complete` is Jupyter's `complete_request` on the shell channel (no
+execution count, no history). The kernel starts with IPython's completer set to jedi off and
+`evaluation = "limited"` (KERNEL_ARGS): jedi's interpreter mode runs property getters on live
+objects, the limited policy evaluates no calls, no property getters, no imports and only
+allow-listed item and attribute access. `doc` never sends the member's code at all: the agent
+sends a dotted name the server checked, and DOC_SOURCE (a silent request's user expression, like
+`inspect`) resolves it with `inspect.getattr_static` (no descriptors, no `__getattr__`) and reads
+the signature and docstring, never a repr, under a SIGALRM timer. Both answer within `timeout_ms`
+or `error: "timeout"`; a late reply is skipped by its message id.
 """
 
 import ast
 import json
 import os
 import queue
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import threading
+import time
 
 READY_TIMEOUT_S = 60
 # A line the agent would refuse anyway: replaced by a note before it is written.
@@ -336,7 +353,200 @@ def snapshot(limits, ns=None, hidden=None):
 INSPECT_EXPRESSION = "(lambda g: (exec(%s, g), g['snapshot'])[1])({'__name__': 'kobe_inspect'})(%s)"
 INSPECT_LIMIT_KEYS = ("max_vars", "max_bytes", "repr_chars", "columns_max", "per_var_ms", "budget_ms")
 
+# KOBE-808: IPython's completer without jedi (whose interpreter mode runs property getters) and
+# with its default limited evaluation stated, so a profile can't loosen it.
+KERNEL_ARGS = ["--IPCompleter.use_jedi=False", "--IPCompleter.evaluation=limited"]
+COMPLETE_MATCHES_MAX = 100
+COMPLETE_MATCH_MAX_CHARS = 200
+COMPLETE_TYPE_MAX_CHARS = 32
+COMPLETE_TIMEOUT_MAX_S = 2.0
+DOC_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*){0,15}")
+
+# The documentation of a dotted name, read without running the member's code: the name resolves
+# through the user namespace (then builtins) with inspect.getattr_static, so no property getter,
+# descriptor or __getattr__ runs; only signatures and docstrings are read, never a repr.
+DOC_SOURCE = r'''
+import builtins as _builtins
+import inspect as _inspect
+import json as _json
+import signal as _signal
+import types as _types
+
+SIGNATURE_MAX = 1000
+DOC_MAX = 8000
+_qualname = type.__dict__["__qualname__"].__get__
+
+
+class _Timeout(BaseException):
+    pass
+
+
+def _clip(text, limit):
+    if type(text) is not str:
+        return None
+    text = text.replace("\x00", "\ufffd").strip()
+    if not text:
+        return None
+    return text if len(text) <= limit else text[: limit - 1] + "\u2026"
+
+
+def _resolve(name, ns):
+    missing = object()
+    parts = name.split(".")
+    obj = ns.get(parts[0], missing) if type(ns) is dict else missing
+    if obj is missing:
+        obj = _builtins.__dict__.get(parts[0], missing)
+    bound = False
+    for part in parts[1:]:
+        if obj is missing:
+            break
+        parent = obj
+        obj = _inspect.getattr_static(parent, part, missing)
+        # A plain function found through an instance is a method: its first parameter is bound.
+        bound = isinstance(obj, _types.FunctionType) and not isinstance(parent, (type, _types.ModuleType))
+    return None if obj is missing else (obj, bound)
+
+
+def _class_doc(cls):
+    """The first docstring in the class's MRO dicts (no metaclass attribute lookup), not object's."""
+    for klass in type.__dict__["__mro__"].__get__(cls):
+        if klass is object:
+            break
+        d = type.__dict__["__dict__"].__get__(klass)
+        if type(d.get("__doc__")) is str:
+            return d["__doc__"]
+    return None
+
+
+def _describe(name, obj, bound=False):
+    out = {"found": True}
+    try:
+        out["type"] = _clip(_qualname(type(obj)), 256) or "?"
+    except Exception:
+        out["type"] = "?"
+    if isinstance(obj, (staticmethod, classmethod)):
+        obj = obj.__func__
+    if isinstance(obj, property):
+        # The getter's docstring; the getter itself never runs.
+        doc = obj.fget.__doc__ if _inspect.isroutine(obj.fget) else None
+    elif isinstance(obj, type):
+        doc = _class_doc(obj)
+    elif _inspect.isroutine(obj):
+        doc = obj.__doc__
+    elif _inspect.ismodule(obj):
+        doc = object.__getattribute__(obj, "__dict__").get("__doc__")
+    else:
+        # Any other object: its type's docstring (the object's own attributes are never read).
+        doc = _class_doc(type(obj))
+    # Signatures of functions and classes only: for other callables inspect would read the
+    # instance's attributes (`__wrapped__`, `__signature__`), which can run its `__getattr__`.
+    if isinstance(obj, type) or _inspect.isroutine(obj):
+        try:
+            sig = _inspect.signature(obj)
+            if bound and sig.parameters:
+                sig = sig.replace(parameters=list(sig.parameters.values())[1:])
+            out["signature"] = _clip(name.rsplit(".", 1)[-1] + str(sig), SIGNATURE_MAX)
+        except (TypeError, ValueError):
+            pass
+    out["doc"] = _clip(_inspect.cleandoc(doc) if type(doc) is str else None, DOC_MAX)
+    return {k: v for k, v in out.items() if v is not None}
+
+
+def doc(name, per_ms=300, ns=None):
+    """JSON text of the name's documentation. Inside the kernel, the IPython user namespace."""
+    if ns is None:
+        from IPython import get_ipython
+
+        ns = get_ipython().user_ns
+    alarm = False
+    previous = None
+    armed = [False]
+
+    def on_alarm(signum, frame):
+        if armed[0]:
+            raise _Timeout()
+
+    try:
+        if hasattr(_signal, "setitimer") and _signal.getitimer(_signal.ITIMER_REAL)[0] == 0:
+            previous = _signal.signal(_signal.SIGALRM, on_alarm)
+            alarm = True
+    except (ValueError, OSError):
+        alarm = False
+    try:
+        if alarm:
+            armed[0] = True
+            _signal.setitimer(_signal.ITIMER_REAL, per_ms / 1000)
+        found = _resolve(name, ns)
+        result = {"found": False} if found is None else _describe(name, found[0], found[1])
+    except _Timeout:
+        result = {"error": "timeout"}
+    except KeyboardInterrupt:
+        raise
+    except BaseException:
+        result = {"error": "raised"}
+    finally:
+        armed[0] = False
+        if alarm:
+            _signal.setitimer(_signal.ITIMER_REAL, 0)
+            _signal.signal(_signal.SIGALRM, previous if previous is not None else _signal.SIG_DFL)
+    return _json.dumps(result, ensure_ascii=True)
+'''
+
+# Evaluated as the silent request's user expression: DOC_SOURCE in a namespace of its own.
+DOC_EXPRESSION = "(lambda g: (exec(%s, g), g['doc'])[1])({'__name__': 'kobe_doc'})(%s)"
+ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
+
+
+def short_text(value, limit):
+    if type(value) is not str:
+        return None
+    value = ANSI.sub("", value).replace("\x00", "")
+    return value[:limit] if value else None
+
+
+def completion_result(content, code, cursor):
+    """The wire's `complete` answer from a `complete_reply`: capped, plain text, deduplicated."""
+    if content.get("status") != "ok":
+        return None
+    start, end = content.get("cursor_start"), content.get("cursor_end")
+    if type(start) is not int or type(end) is not int or not 0 <= start <= end <= len(code):
+        start = end = cursor
+    raw = content.get("matches")
+    raw = raw if isinstance(raw, list) else []
+    types = {}
+    meta = content.get("metadata")
+    experimental = meta.get("_jupyter_types_experimental") if isinstance(meta, dict) else None
+    for item in experimental if isinstance(experimental, list) else []:
+        if isinstance(item, dict) and type(item.get("text")) is str and type(item.get("type")) is str:
+            kind = item["type"].strip("<>")
+            if kind and kind != "unknown":
+                types.setdefault(item["text"], kind[:COMPLETE_TYPE_MAX_CHARS])
+    texts = [m for m in raw if type(m) is str and m and "\x00" not in m and len(m) <= COMPLETE_MATCH_MAX_CHARS]
+    # IPython's attribute matches carry the dot (".alpha" from the dot on): from after it instead.
+    if texts and start < end and code[start] == "." and all(m.startswith(".") for m in texts):
+        texts = [m[1:] for m in texts if len(m) > 1]
+        types = {k[1:]: v for k, v in types.items() if k.startswith(".")}
+        start += 1
+    seen = set()
+    matches = []
+    for text in texts:
+        if text in seen:
+            continue
+        seen.add(text)
+        match = {"text": text}
+        if text in types:
+            match["type"] = types[text]
+        matches.append(match)
+        if len(matches) >= COMPLETE_MATCHES_MAX:
+            break
+    return {"status": "ok", "op": "complete", "matches": matches, "cursor_start": start, "cursor_end": end}
+
 _write_lock = threading.Lock()
+
+
+def timeout_of(command):
+    ms = command.get("timeout_ms")
+    return min(COMPLETE_TIMEOUT_MAX_S, ms / 1000) if type(ms) is int and ms > 0 else 1.0
 
 
 def emit(message):
@@ -381,7 +591,7 @@ def write_kernel_spec(private, data_dir):
     spec_dir = os.path.join(data_dir, "kernels", KERNEL_NAME)
     os.makedirs(spec_dir, mode=0o700, exist_ok=True)
     spec = {
-        "argv": [sys.executable, launcher, "-f", "{connection_file}"],
+        "argv": [sys.executable, launcher, *KERNEL_ARGS, "-f", "{connection_file}"],
         "display_name": "Python 3 (Kobe)",
         "language": "python",
     }
@@ -540,6 +750,82 @@ class Bridge:
         emit({"ev": "inspected", "id": inspect_id, "snapshot": snap})
         return True
 
+    def shell_reply(self, msg_id, timeout_s):
+        """The shell reply to `msg_id`, None past `timeout_s`, False when the kernel died."""
+        deadline = time.monotonic() + timeout_s
+        while True:
+            left = deadline - time.monotonic()
+            if left <= 0:
+                return None
+            try:
+                reply = self.kc.get_shell_msg(timeout=min(0.2, left))
+            except queue.Empty:
+                if not self.km.is_alive():
+                    return False
+                continue
+            if reply.get("parent_header", {}).get("msg_id") == msg_id:
+                return reply
+
+    def complete(self, command):
+        """KOBE-808: completions at the cursor (Jupyter complete_request); never runs code."""
+        cid = str(command.get("id", ""))
+        code, cursor = command.get("code"), command.get("cursor")
+        if type(code) is not str or type(cursor) is not int or not 0 <= cursor <= len(code):
+            emit({"ev": "completed", "id": cid, "error": "invalid"})
+            return True
+        reply = self.shell_reply(self.kc.complete(code, cursor), timeout_of(command))
+        if reply is False:
+            emit({"ev": "died"})
+            return False
+        result = None if reply is None else completion_result(reply.get("content", {}), code, cursor)
+        if result is None:
+            emit({"ev": "completed", "id": cid, "error": "timeout" if reply is None else "failed"})
+        else:
+            emit({"ev": "completed", "id": cid, "result": result})
+        return True
+
+    def doc(self, command):
+        """KOBE-808: a dotted name's signature and docstring (DOC_SOURCE), silently."""
+        cid = str(command.get("id", ""))
+        name = command.get("name")
+        if type(name) is not str or len(name) > 256 or not DOC_NAME.fullmatch(name):
+            emit({"ev": "completed", "id": cid, "error": "invalid"})
+            return True
+        expression = DOC_EXPRESSION % (repr(DOC_SOURCE), repr(name))
+        msg_id = self.kc.execute(
+            "",
+            silent=True,
+            store_history=False,
+            user_expressions={"kobe": expression},
+            allow_stdin=False,
+            stop_on_error=False,
+        )
+        reply = self.shell_reply(msg_id, timeout_of(command))
+        if reply is False:
+            emit({"ev": "died"})
+            return False
+        if reply is None:
+            emit({"ev": "completed", "id": cid, "error": "timeout"})
+            return True
+        content = reply.get("content", {})
+        found = (content.get("user_expressions") or {}).get("kobe") or {}
+        try:
+            if content.get("status") != "ok" or found.get("status") != "ok":
+                raise ValueError("failed")
+            data = json.loads(ast.literal_eval(found["data"]["text/plain"]))
+            if not isinstance(data, dict) or "error" in data:
+                raise ValueError("failed")
+        except Exception:  # noqa: BLE001 - reported as failed
+            emit({"ev": "completed", "id": cid, "error": "failed"})
+            return True
+        result = {"status": "ok", "op": "doc", "found": data.get("found") is True}
+        for key, limit in (("signature", 1000), ("doc", 8000), ("type", 256)):
+            text = short_text(data.get(key), limit)
+            if text is not None:
+                result[key] = text
+        emit({"ev": "completed", "id": cid, "result": result})
+        return True
+
     def serve(self):
         threading.Thread(target=self.read_commands, daemon=True).start()
         emit({"ev": "ready"})
@@ -550,6 +836,11 @@ class Bridge:
             if command.get("op") == "inspect":
                 limits = command.get("limits")
                 if not self.inspect(str(command.get("id", "")), limits if isinstance(limits, dict) else {}):
+                    return
+                continue
+            if command.get("op") in ("complete", "doc"):
+                served = self.complete(command) if command.get("op") == "complete" else self.doc(command)
+                if not served:
                     return
                 continue
             if command.get("op") != "execute":

@@ -9,7 +9,8 @@ import type {
   NotebookVariablesResult,
   NotebookVariablesSnapshot,
 } from "@kobe/protocol";
-import type { NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
+import type { NotebookCompletionFrame, NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
+import { askKernel } from "./completion.js";
 import { fail, ok, type CommandOutcome } from "../threads/outcome.js";
 import { OUTPUT_LIMITS, OutputLimiter, type OutputLimits } from "./outputs.js";
 import { KernelSession, type BridgeLauncher } from "./session.js";
@@ -178,6 +179,23 @@ export class KernelManager {
       kernel.queued -= 1;
       this.#touch(kernel);
     }
+  }
+
+  /**
+   * `notebook.inspect` with `op: "complete"` / `"doc"` (KOBE-808): the editor's kernel completion.
+   * Never starts a kernel (`no_kernel`) and never waits: while code runs or waits, a snapshot is
+   * taken or another request is in the kernel, the answer is `busy`; past the frame's timeout it
+   * is `unavailable`. A request keeps the kernel from idling out, like any other use.
+   */
+  async complete(frame: NotebookCompletionFrame): Promise<CommandOutcome> {
+    const kernel = this.#kernels.get(frame.thread_id);
+    if (this.#closed || kernel === undefined || !kernel.session.alive) {
+      return ok({ status: "no_kernel" });
+    }
+    const s = kernel.session;
+    if (kernel.queued > 0 || s.busy || s.inspecting || s.completing) return ok({ status: "busy" });
+    this.#touch(kernel);
+    return ok(await askKernel(s, frame, (m) => this.#o.log(m, frame.thread_id)));
   }
 
   /**

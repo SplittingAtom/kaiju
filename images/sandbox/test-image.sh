@@ -309,6 +309,51 @@ PY
 check "a variables snapshot is silent and survives hostile reprs (KOBE-803)" \
   '^ok 1 True \(5,1\) raised timeout \[3, 4\] float64 \[2, 2\] a:int64,b:(object|str) 5 Bad:class,Slow:class,np:module,pd:module$' \
   run_ws python3 -c "$KERNEL_INSPECT_PROBE" /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
+# KOBE-808: completion and documentation run none of the member's code (no property getter,
+# `__getattr__` or repr; jedi off, limited evaluation) and leave no trace (no execution count, no Out).
+KERNEL_COMPLETE_PROBE=$(cat <<'PY'
+import json, subprocess, sys
+p = subprocess.Popen(sys.argv[1:], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, cwd="/workspace")
+read = lambda: json.loads(p.stdout.readline() or '{"ev": "eof"}')
+assert read()["ev"] == "ready"
+def send(m):
+    p.stdin.write(json.dumps(m) + "\n")
+    p.stdin.flush()
+def run(code, i):
+    send({"op": "execute", "id": i, "code": code})
+    outs = []
+    while True:
+        m = read()
+        if m["ev"] == "output":
+            outs.append(m["output"])
+        elif m["ev"] in ("done", "died", "fatal", "eof"):
+            return m, outs
+setup = ("import pandas as pd\nhits = []\n"
+         "class C:\n    @property\n    def p(self): hits.append('p'); return self\n"
+         "    def m(self, x, y=2):\n        '''Doc of m.'''\n"
+         "    def __getattr__(self, n): hits.append('g'); raise AttributeError(n)\n"
+         "    def __repr__(self): hits.append('r'); return 'C'\n"
+         "c = C()\ndf = pd.DataFrame({'alpha': [1], 'beta': [2]})\nmy_value = 3")
+d1, _ = run(setup, "a")
+def complete(code):
+    send({"op": "complete", "id": code, "code": code, "cursor": len(code), "timeout_ms": 2000})
+    r = read()["result"]
+    return ",".join(m["text"] for m in r["matches"])
+got = [complete("my_v"), complete("df['"), complete("df.alp"), complete("c.p."), complete("c.p.m")]
+send({"op": "doc", "id": "d", "name": "c.m", "timeout_ms": 2000})
+doc = read()["result"]
+send({"op": "doc", "id": "e", "name": "c.p", "timeout_ms": 2000})
+read()
+d2, o2 = run("(len(hits), len(Out))", "b")
+send({"op": "shutdown"})
+p.wait(timeout=30)
+print("ok", "|".join(got), doc["signature"], doc["doc"], d2["execution_count"] - d1["execution_count"],
+      o2[-1]["data"]["text/plain"].replace(" ", ""))
+PY
+)
+check "kernel completion and docs run no member code and leave no trace (KOBE-808)" \
+  '^ok my_value\|alpha,beta\|alpha\|\| m\(x, y=2\) Doc of m\. 1 \(0,0\)$' \
+  run_ws python3 -c "$KERNEL_COMPLETE_PROBE" /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
 run_ws_line() { run_ws "$@" | tr '\n' ' ' | sed 's/ $//'; }
 # NB17: a kernel reaches the internet like the shell tool: before each cell the bridge turns the
 # token file (never the token) into proxy variables, so a rotated token is used by the next cell.
