@@ -127,6 +127,24 @@ describe("workloads", () => {
     expect(renderError({ "server.teamReconcileSeconds": "-1" })).toMatch(/teamReconcileSeconds/);
   });
 
+  it("passes the incomplete-rescan suspension period to the server only (KOBE-781 review)", () => {
+    const value = (ms2: Manifest[], name: string) =>
+      (
+        (find(ms2, "Deployment", name)?.spec.template.spec.containers[0].env ?? []) as {
+          name: string;
+          value?: string;
+        }[]
+      ).find((e) => e.name === "KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS")?.value;
+    expect(value(ms, "kobe-server")).toBe("24");
+    expect(value(ms, "kobe-scheduler")).toBeUndefined();
+    expect(value(render({ "server.skillRescanIncompleteSuspendHours": "0" }), "kobe-server")).toBe(
+      "0",
+    );
+    expect(renderError({ "server.skillRescanIncompleteSuspendHours": "-1" })).toMatch(
+      /skillRescanIncompleteSuspendHours/,
+    );
+  });
+
   it("configures audit forwarding on the server only, and only when enabled (KOBE-19)", () => {
     const envOf = (
       ms2: Manifest[],

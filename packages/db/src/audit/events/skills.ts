@@ -88,7 +88,8 @@ export const SKILLS_EVENTS = {
   /**
    * A rescan on a scanner rule-set change (KOBE-313, SK32) turned a version Block and suspended
    * it pending review: in a team (its review row) or site-wide (a personal version's own scan).
-   * Ids, slug and rule set only.
+   * `reason: rescan_incomplete`: the rescan kept not finishing past the configured period
+   * (KOBE-781 review). Ids, slug and rule set only.
    */
   "skill.rescan.suspended": event("any", {
     skillId: id,
@@ -96,6 +97,7 @@ export const SKILLS_EVENTS = {
     version,
     scope: z.enum(["team", "personal"]),
     ruleSetVersion: z.string().min(1).max(64),
+    reason: z.enum(["rescan_incomplete"]).optional(),
   }),
   /** A team admin switched the team's personal skills off or on (KOBE-80, D22). */
   "skill.personal_switch.changed": event("team", { disabled: z.boolean() }),

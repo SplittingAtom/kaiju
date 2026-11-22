@@ -440,6 +440,11 @@
           "type": "integer",
           "minimum": 0
         },
+        "skillRescanIncompleteSuspendHours": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8760
+        },
         "connectorRefreshSeconds": {
           "type": "integer",
           "minimum": 0

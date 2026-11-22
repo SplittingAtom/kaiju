@@ -387,6 +387,48 @@ describe("a scan that doesn't finish (P2-11)", () => {
     expect((await decide("alice", t.skillId, 1, { decision: "approved" })).status).toBe(200);
   });
 
+  it("keeps a team's rejection of a not-yet-scanned personal version after a late Pass (review g79)", async () => {
+    const gina = await h.createUser("gina@review.test");
+    for (const t of [finance, marketing])
+      await h.admin.query(
+        `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'member')`,
+        [t, gina],
+      );
+    const ginaB = await h.signIn("gina@review.test");
+    expect((await ginaB.put("/v1/me/teams/active", { teamId: finance })).status).toBe(200);
+    ginaB.team = finance;
+    const previous = timingOut();
+    try {
+      expect((await ginaB.post("/v1/skills?scope=personal", zipOf("rejected-early"))).status).toBe(
+        201,
+      );
+    } finally {
+      setScanPool(previous);
+    }
+    const usableIn = (teamId: string) =>
+      withTeam(h.deps.database.db, teamId, async (tx) =>
+        (await usablePersonalSkills(tx, { teamId, userId: gina, ensureRows: true }))
+          .map((s) => s.name)
+          .includes("rejected-early"),
+      );
+    expect(await usableIn(finance)).toBe(false);
+    const row = (await queue("alice")).find((r) => r.slug === "rejected-early") as unknown as {
+      skillId: string;
+      version: number;
+    };
+    expect((await decide("alice", row.skillId, row.version, { decision: "rejected" })).status).toBe(
+      200,
+    );
+    lateScanner = new LateScanner({
+      db: h.deps.database.db,
+      blobs,
+      log: pino({ level: "silent" }),
+    });
+    await lateScan();
+    expect(await usableIn(finance)).toBe(false);
+    expect(await usableIn(marketing)).toBe(true);
+  });
+
   it("keeps a personal version unusable in every team until a complete scan passes it", async () => {
     const previous = timingOut();
     let skillId: string;

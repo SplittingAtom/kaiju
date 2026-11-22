@@ -418,7 +418,9 @@ export function decideReview(
     if (decision.expectedStatus !== undefined && current.status !== decision.expectedStatus) {
       return { ok: false, error: "changed_since_approval" };
     }
-    if (current.status === decision.status) return { ok: false, error: "unchanged" };
+    // An approved version a rescan suspended because it could not finish may be approved again.
+    if (current.status === decision.status && current.suspendedAt === null)
+      return { ok: false, error: "unchanged" };
     // A blocklisted bundle can still be rejected, never approved (KOBE-81).
     const blocked = await isBlocked(tx, current.contentHash);
     if (decision.status === "approved" && blocked) return { ok: false, error: "blocklisted" };
@@ -621,12 +623,16 @@ export async function personalSkillUsage(
     );
   // Needs this team's approval: never scanned, or a scan that is not Pass (stored before KOBE-312
   // too: a skipped binary with no finding reads as Caution, review S5).
+  // A rescan's suspension too, even while the stored scan is still Pass (a rescan that could not
+  // finish, KOBE-781 review).
   const needs = (r: (typeof rows)[number]) =>
-    r.scan === null || r.scan.flagged || storedVerdict(r.scan) !== "pass";
+    r.scan === null ||
+    r.scan.flagged ||
+    storedVerdict(r.scan) !== "pass" ||
+    r.scan.suspendedAt !== null;
   const needsApproval = rows.filter(needs);
-  if (needsApproval.length === 0) {
-    return { usable: rows.map(usableRef), blocked: [], suspended: [] };
-  }
+  if (rows.length === 0) return { usable: [], blocked: [], suspended: [] };
+  // Every row's decision in this team: a rejection wins even over a later Pass scan (review g79).
   const decided = await tx
     .select({
       skillId: teamSkillReviews.skillId,
@@ -640,7 +646,7 @@ export async function personalSkillUsage(
         eq(teamSkillReviews.teamId, args.teamId),
         inArray(
           teamSkillReviews.skillId,
-          needsApproval.map((r) => r.skillId),
+          rows.map((r) => r.skillId),
         ),
       ),
     );
@@ -672,8 +678,12 @@ export async function personalSkillUsage(
         .onConflictDoNothing();
     }
   }
-  const isUsable = (r: (typeof rows)[number]) =>
-    !needs(r) || status.get(`${r.skillId}:${r.version}`) === "approved";
+  // A team's rejection always holds: also once a late scan gives the version a Pass (an admin may
+  // reject a version that was not scanned yet).
+  const isUsable = (r: (typeof rows)[number]) => {
+    const decision = status.get(`${r.skillId}:${r.version}`);
+    return decision !== "rejected" && (!needs(r) || decision === "approved");
+  };
   const isSuspended = (r: (typeof rows)[number]) => {
     const key = `${r.skillId}:${r.version}`;
     // Suspended in its own scan: until this team decides it (an approval makes it usable).

@@ -105,7 +105,10 @@ version; the decision shows an **Admin change** card first (see
 comment on and decide Site Registry reviews the same way.
 
 **2. It was suspended or blocked.** A later rescan can turn an approved version into Block. Kobe
-then suspends it until a team admin decides again. A site admin can also put a skill's exact
+then suspends it until a team admin decides again. When the scanner's rules change and the rescan
+of a version keeps failing to finish, the version stays usable for a while (24 hours unless your
+site changed it) and is then suspended too, with the same notice. It comes back by itself once a
+rescan finishes and passes, or when a team admin approves it again. A site admin can also put a skill's exact
 content on the site's **Skill blocklist**, and it then never loads anywhere.
 
 **3. It is switched off.** On the **Mine** tab, **Skills in your runs in _workspace_** lists your

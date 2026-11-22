@@ -6,6 +6,7 @@ import { withTeam } from "@kobe/db";
 import { logger } from "./logger.js";
 import { loadSkillFacts } from "./runs/resolver-input.js";
 import { rescanOnce } from "./skills/rescan.js";
+import { incompleteScan, setScanPool } from "./skills/scan-pool.js";
 import { RawBody, type TestBrowser } from "./testing/browser.js";
 import { openHarness, type Harness } from "./testing/harness.js";
 import { MemoryObjects } from "./testing/memory-objects.js";
@@ -314,5 +315,90 @@ describe("rescans keep up and only move forward (KOBE-313 review B-S1, B-S4, B-S
     expect((await reviewRow(skillId)).rows[0].notified).toBe(true);
     await rescan(1000);
     expect(h.mailer.sent.slice(before).filter((m) => m.text.includes("unsent"))).toHaveLength(2);
+  });
+});
+
+describe("a rescan that can't finish (review g79)", () => {
+  const rescanWith = (ruleSet: number, incompleteSuspendAfterMs: number) =>
+    rescanOnce({
+      database: h.deps.database,
+      blobs: h.deps.blobs as NonNullable<typeof h.deps.blobs>,
+      log: logger,
+      mailer: h.mailer,
+      publicUrl: "https://kobe.test",
+      ruleSet,
+      ruleSetVersion: `test-${ruleSet}`,
+      incompleteSuspendAfterMs,
+    });
+  const backdate = (ruleSet: number) =>
+    h.admin.query(
+      `UPDATE skill_rescan_runs SET started_at = now() - interval '25 hours' WHERE rule_set = $1`,
+      [ruleSet],
+    );
+  const DAY = 24 * 3600_000;
+
+  it("suspends a passed version after the configured period, and lifts it once a rescan passes", async () => {
+    const up = await as.builder.post("/v1/skills?scope=team", zipOf("slow-team"));
+    expect(up.status, JSON.stringify(up.json)).toBe(201);
+    const skillId = up.json.skill.id as string;
+    expect(
+      (await as.admin.post(`/v1/team/skill-review/${skillId}/versions/1`, { decision: "approved" }))
+        .status,
+    ).toBe(200);
+    const mine = await as.member.post("/v1/skills?scope=personal", zipOf("slow-mine"));
+    expect(mine.status, JSON.stringify(mine.json)).toBe(201);
+    const mineId = mine.json.skill.id as string;
+    const teamRow = async () =>
+      (
+        await h.admin.query(
+          `SELECT status, suspended_at IS NOT NULL AS suspended FROM team_skill_reviews
+            WHERE skill_id = $1`,
+          [skillId],
+        )
+      ).rows[0];
+    const personalRow = async () =>
+      (
+        await h.admin.query(
+          `SELECT suspended_at IS NOT NULL AS suspended FROM personal_skill_scans WHERE skill_id = $1`,
+          [mineId],
+        )
+      ).rows[0];
+    const previous = setScanPool({ scan: () => Promise.resolve(incompleteScan()) });
+    try {
+      // 0: never suspended, however long it keeps failing.
+      await rescanWith(2000, 0);
+      await backdate(2000);
+      await rescanWith(2000, 0);
+      expect(await teamRow()).toEqual({ status: "approved", suspended: false });
+      // Within the period: still usable, retried.
+      await rescanWith(2001, DAY);
+      expect(await teamRow()).toEqual({ status: "approved", suspended: false });
+      expect((await facts(ids.member, ["slow-team"])).agent.map((s) => s.name)).toContain(
+        "slow-team",
+      );
+      // Past it: suspended like a Block, audited with its reason, and its people told.
+      await backdate(2001);
+      await rescanWith(2001, DAY);
+    } finally {
+      setScanPool(previous);
+    }
+    expect(await teamRow()).toEqual({ status: "approved", suspended: true });
+    expect(await personalRow()).toEqual({ suspended: true });
+    const after = await facts(ids.member, ["slow-team"]);
+    expect(after.agentSuspended).toEqual(["slow-team"]);
+    expect(after.userSuspended).toContain("slow-mine");
+    const audit = await h.admin.query(
+      `SELECT target FROM audit_log WHERE action = 'skill.rescan.suspended'
+        AND target->>'slug' IN ('slow-team', 'slow-mine')`,
+    );
+    expect(audit.rows.map((r) => r.target.reason)).toEqual([
+      "rescan_incomplete",
+      "rescan_incomplete",
+    ]);
+    // A complete rescan that passes lifts it again.
+    await rescanWith(2001, DAY);
+    expect(await teamRow()).toEqual({ status: "approved", suspended: false });
+    expect(await personalRow()).toEqual({ suspended: false });
+    expect((await facts(ids.member, ["slow-team"])).agentSuspended).toEqual([]);
   });
 });

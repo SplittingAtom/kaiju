@@ -13,7 +13,7 @@ import {
 } from "@kobe/db";
 import type { Logger } from "pino";
 import type { BlobStore } from "../retention/blobs.js";
-import { ScanCache, scanStored } from "./rescan-cache.js";
+import { SCAN_DID_NOT_FINISH, ScanCache, scanStored } from "./rescan-cache.js";
 import { versionOf } from "./rescan-rows.js";
 import { storedScan } from "./review.js";
 
@@ -184,7 +184,7 @@ export class LateScanner {
     }
     // Null: bytes missing, or the scan failed or didn't finish (logged there).
     const scan = await scanStored(this.#deps, version, cache, context);
-    if (!scan) return false;
+    if (!scan || scan === SCAN_DID_NOT_FINISH) return false;
     await withTeam(db, t.teamId, (tx) =>
       tx
         .update(teamSkillReviews)
@@ -223,7 +223,7 @@ export class LateScanner {
       );
     if (!version) return false;
     const scan = await scanStored(this.#deps, version, cache, context);
-    if (!scan) return false;
+    if (!scan || scan === SCAN_DID_NOT_FINISH) return false;
     await db
       .insert(personalSkillScans)
       .values({ skillId: t.skillId, version: t.version, ...storedScan(scan) })

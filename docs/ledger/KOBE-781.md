@@ -42,7 +42,35 @@ against the code first; all four held as described.
   the four `INCOMPLETE` copies. The other duplicates listed there (`DRAFT_BUNDLE_LIMITS`,
   `inLocation`, the busy-error mapper) were not in this ticket's scope: left as they are.
 
+## Review fixes (coordinator review of group 79)
+
+- **A rejection always holds.** `personalSkillUsage` reads this team's decision for every
+  personal version: a rejected one stays unusable there even once a late scan gives it a Pass (an
+  unscanned version can be rejected). Other "usable" readers checked: the run resolver uses
+  `personalSkillUsage`; draft tests and personal-version evals refuse a declined hash
+  (`testGate`); bundle fetches go through the run's resolved list; installs, the mirror and team
+  versions only take approved rows.
+- **Bounded unfinished rescans.** A rescan under a new rule set that keeps not finishing
+  (`SCAN_DID_NOT_FINISH` from `scanStored`) suspends the version once the rule set's run is older
+  than `server.skillRescanIncompleteSuspendHours` (chart, default 24, 0 = never; env
+  `KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS`, zod 0..8760). No migration: the period counts from
+  `skill_rescan_runs.started_at`. Team rows keep `approved` with `suspended_at` (omitted from runs
+  as for a Block, but the approval survives), so a later finished rescan that doesn't block lifts
+  it, or a Team admin approves it again (allowed for an approved, suspended row); personal scans
+  get `suspended_at` (now honoured even while the stored scan is Pass) and are lifted the same way.
+  Audited `skill.rescan.suspended` with `reason: rescan_incomplete`; the suspension email covers
+  both causes.
+- **Owner question (not changed):** the mirror keeps a revoked or blocklisted version's commit
+  and tag `name/vX` on the remote (append-only by design), so a client with an old catalog, or one
+  listing tags, can still fetch a revoked bundle. Deleting such tags would not rewrite branch
+  history (the content stays reachable through it). Chris to decide whether Kobe should delete
+  tags of revoked or blocklisted versions.
+
 ## docs/guide evaluation
+
+- `docs/guide/agents/skills.md` "It was suspended or blocked": a rescan that keeps failing to
+  finish suspends the version after 24 hours (configurable) and lifts itself once one passes.
+- `docs/audit-log.md`: the new optional `reason`.
 
 - `docs/guide/agents/skills.md`: new paragraph under "Why isn't my skill showing up?" on a scan
   that can't finish (saved as not scanned yet, scanned again in the background, can't be approved

@@ -54,7 +54,14 @@ export interface RescanDeps {
   /** The rule set to rescan to (tests); defaults to the scanner's. */
   readonly ruleSet?: number;
   readonly ruleSetVersion?: string;
+  /**
+   * How long a version's rescan under a new rule set may keep not finishing before it is suspended
+   * (review g79, chart `server.skillRescanIncompleteSuspendHours`); 0: never. Default 24 h.
+   */
+  readonly incompleteSuspendAfterMs?: number;
 }
+
+export const RESCAN_INCOMPLETE_SUSPEND_DEFAULT_MS = 24 * 3600_000;
 
 export interface RescanReport {
   readonly ruleSet: number;
@@ -136,6 +143,8 @@ async function runPass(
     ruleSet,
     ruleSetVersion,
     cache: new ScanCache(),
+    incompleteSuspendAfterMs: deps.incompleteSuspendAfterMs ?? RESCAN_INCOMPLETE_SUSPEND_DEFAULT_MS,
+    runStartedAt: new Date(run.startedAt),
   };
   const notify =
     deps.mailer && deps.publicUrl ? { db, mailer: deps.mailer, publicUrl: deps.publicUrl } : null;
