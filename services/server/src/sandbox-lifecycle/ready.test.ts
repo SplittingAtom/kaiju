@@ -4,6 +4,7 @@ import { SandboxWakeError } from "../sandbox-wire/types.js";
 import {
   ensureReady,
   SANDBOX_FAILED_MESSAGE,
+  WORKSPACE_QUOTA_MESSAGE,
   WORKSPACE_UNAVAILABLE_MESSAGE,
   type ReadyProvider,
 } from "./ready.js";
@@ -62,5 +63,23 @@ describe("ensureReady", () => {
     // The run's card shows the server's own text for the code: the same words.
     expect(FAILURE_MESSAGES["sandbox_failed"]).toBe(SANDBOX_FAILED_MESSAGE);
     expect(r.onStalled).toHaveBeenCalledWith({ sandboxId: "sb-1", stall: ended });
+  });
+
+  it("a full team volume quota (KOBE-733) fails with its own code and words", async () => {
+    const full = {
+      cause: "volume_quota",
+      detail: "quota kobe-team-member-quota: persistentvolumeclaims used 50 of 50",
+      definite: true,
+    } as const;
+    const r = run(async () => ({ ready: false, sandboxId: "sb-1", stall: full }));
+    const err = await r.result.catch((e: unknown) => e);
+    expect(err).toMatchObject({
+      code: "workspace_quota_exhausted",
+      message: WORKSPACE_QUOTA_MESSAGE,
+    });
+    expect(WORKSPACE_QUOTA_MESSAGE).toMatch(/team admin/);
+    expect(WORKSPACE_QUOTA_MESSAGE).not.toMatch(/kobe-team|50 of 50/);
+    expect(FAILURE_MESSAGES["workspace_quota_exhausted"]).toBe(WORKSPACE_QUOTA_MESSAGE);
+    expect(r.onStalled).toHaveBeenCalledWith({ sandboxId: "sb-1", stall: full });
   });
 });

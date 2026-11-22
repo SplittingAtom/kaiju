@@ -1,4 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
+import type { BigIntStats } from "node:fs";
+import { stampOf, type FileStamp } from "./sync/stamps.js";
 import { constants as FS, existsSync, type Stats } from "node:fs";
 import {
   lstat,
@@ -39,6 +41,8 @@ export interface LocalFile {
   /** Whole milliseconds. */
   readonly mtimeMs: number;
   readonly executable: boolean;
+  /** KOBE-733: the scan's nanosecond stamp (ctime, mtime, inode, size): `sync/stamps.ts`. */
+  readonly stamp?: FileStamp;
 }
 
 export interface ScanResult {
@@ -46,6 +50,15 @@ export interface ScanResult {
   /** Directories that could not be read, or the scan stopped early: never infer deletions there. */
   readonly incomplete: readonly string[];
   readonly truncated: boolean;
+  /**
+   * Entries the sync cannot carry and that are not rebuildable (KOBE-733): symlinks, special files
+   * (sockets, FIFOs, devices) and names the contract refuses (`workspacePathIssue`: backslashes,
+   * control characters, too long). A folder with such a name counts once for its whole subtree.
+   * Not counted, by design: `.kobe/` (agent state; Pi sessions are rebuilt from the server, D15),
+   * interrupted-download temp files, the rebuildable `skipDirs` (node_modules, __pycache__, .venv),
+   * and empty folders (not preserved by the sync).
+   */
+  readonly skipped: number;
 }
 
 /** Temp files of an interrupted download: never synced. */
@@ -99,6 +112,18 @@ export function toLocal(stat: { size: number; mtimeMs: number; mode: number }): 
   };
 }
 
+/** {@link toLocal} of a `bigint: true` stat, with its stamp (KOBE-733). */
+export function toLocalStamped(stat: BigIntStats): LocalFile {
+  return {
+    ...toLocal({
+      size: Number(stat.size),
+      mtimeMs: Number(stat.mtimeNs) / 1e6,
+      mode: Number(stat.mode),
+    }),
+    stamp: stampOf(stat),
+  };
+}
+
 /**
  * Regular files under `root` (or only under its folder `from`), skipping excluded areas
  * (`.kobe/`), directories named in `skipDirs` (anywhere), symlinks, special files and temp files.
@@ -115,6 +140,7 @@ export async function scanWorkspace(
   const files = new Map<string, LocalFile>();
   const incomplete: string[] = [];
   let truncated = false;
+  let skipped = 0;
   const walk = async (rel: string): Promise<void> => {
     let dir;
     try {
@@ -127,15 +153,23 @@ export async function scanWorkspace(
       if (truncated) return;
       const child = rel === "" ? entry.name : `${rel}/${entry.name}`;
       if (isExcludedPath(child) || entry.name.startsWith(TEMP_PREFIX)) continue;
-      if (workspacePathIssue(child) !== undefined) continue;
+      if (entry.isDirectory() && options.skipDirs.has(entry.name)) continue;
+      if (workspacePathIssue(child) !== undefined) {
+        skipped += 1;
+        continue;
+      }
       if (entry.isDirectory()) {
-        if (options.skipDirs.has(entry.name)) continue;
         await walk(child);
-      } else if (entry.isFile()) {
+      } else if (!entry.isFile()) {
+        skipped += 1; // a symlink or a special file
+      } else {
         try {
-          const stat = await lstat(path.join(root, child));
-          if (!stat.isFile()) continue;
-          files.set(child, toLocal(stat));
+          const stat = await lstat(path.join(root, child), { bigint: true });
+          if (!stat.isFile()) {
+            skipped += 1;
+            continue;
+          }
+          files.set(child, toLocalStamped(stat));
         } catch {
           continue; // vanished meanwhile
         }
@@ -149,7 +183,7 @@ export async function scanWorkspace(
   if (options.from === undefined || (await parentsAreDirs(root, `${options.from}/x`))) {
     await walk(options.from ?? "");
   } else incomplete.push(options.from);
-  return { files, incomplete, truncated };
+  return { files, incomplete, truncated, skipped };
 }
 
 /**

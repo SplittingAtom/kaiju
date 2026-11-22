@@ -9,6 +9,7 @@ import {
   workspaceMoveRecordSchema,
   workspaceMovesPageSchema,
   workspacePathIssue,
+  workspaceFlushedRequestSchema,
 } from "./workspace-sync.js";
 import { CAPABILITY_WORKSPACE_MOVES } from "./frames.js";
 import { decodeServerFrame, encodeFrame } from "./codec.js";
@@ -153,5 +154,18 @@ describe("workspace moves (KOBE-304)", () => {
     expect(decodeServerFrame(encodeFrame(frame))).toEqual({ ok: true, frame });
     expect(decodeServerFrame(JSON.stringify({ ...frame, path: "a" }))).toMatchObject({ ok: false });
     expect(CAPABILITY_WORKSPACE_MOVES).toBe("workspace_moves");
+  });
+});
+
+describe("POST flushed (KOBE-733)", () => {
+  const id = "6f1d2c3b-4a59-4e6d-8c7b-9a0b1c2d3e4f";
+  it("is accepted only from an agent that runs Pi identities", () => {
+    expect(
+      workspaceFlushedRequestSchema.safeParse({ connection_id: id, pi_identities: true }).success,
+    ).toBe(true);
+    expect(workspaceFlushedRequestSchema.safeParse({ connection_id: id }).success).toBe(false);
+    expect(
+      workspaceFlushedRequestSchema.safeParse({ connection_id: id, pi_identities: false }).success,
+    ).toBe(false);
   });
 });

@@ -15,6 +15,14 @@ audience: member
 
 - **Unfinished uploads** (a file or a skill upload that never finished, for example after a
   crash) are removed by the nightly clean-up once they are a day old.
+- **Housekeeping records** go after periods your site admin sets (chart `retention.sweeps`):
+  processed background events after 30 days (never pending work or a schedule's latest run), read
+  notifications after 180 days (unread ones stay), per-call model usage after 13 months (so the
+  Usage pages show at most that far back; the daily spend totals budgets count stay), and finished
+  agent evals after 12 months (each agent's latest and those that published a version stay). The
+  audit log is never swept.
+- **A sandbox's volume** may be freed after it has slept a long time, if your site turns this on
+  (see [Storage limits](../files/storage-limits.md#when-your-volume-is-reclaimed)).
 
 A legal hold keeps everything it covers until it is released. A hold on you in any workspace, or a
 hold on a whole workspace you are a member of, also keeps your unfinished personal skill uploads,

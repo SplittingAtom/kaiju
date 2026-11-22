@@ -235,6 +235,8 @@ export const notifications = pgTable(
       .where(sql`${t.runId} IS NOT NULL`),
     // A user's list, newest first, and the unread count behind the badge.
     index("notifications_user_idx").on(t.teamId, t.userId, t.createdAt.desc()),
+    // The retention sweep's (KOBE-741) `notifications_read_idx` on (team_id, read_at) WHERE read_at IS
+    // NOT NULL: SQL-only (no-transaction migration `*_retention_sweep_indexes.sql`).
     index("notifications_unread_idx")
       .on(t.teamId, t.userId)
       .where(sql`${t.readAt} IS NULL`),

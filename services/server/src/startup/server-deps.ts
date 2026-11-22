@@ -154,6 +154,7 @@ function apiServerDeps(
     listen: { applicationName: "kobe-server-listen" },
     eventStream: { poolMax: config.dbPools.streamMax },
     retentionPaused: config.retentionPaused,
+    usageRetentionMonths: config.retentionSweeps.runUsageMonths,
     brandingDefaults: config.branding ?? {},
     ...authSettings,
     ...(approvalKey ? { approvalKeys: approvalKeyring(approvalKey) } : {}),
