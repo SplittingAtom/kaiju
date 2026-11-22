@@ -8,6 +8,7 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { editorLanguage } from "../../lib/files/editor";
 import type { FilePreview } from "../../lib/files/preview";
+import type { CodeEditorProps } from "./code-editor";
 import { TextView } from "./text-view";
 
 export const CodeEditor = lazy(() => import("./code-editor"));
@@ -60,6 +61,7 @@ export function TextModeBody({
   readOnly,
   onChange,
   autoFocus = false,
+  keys,
 }: {
   readonly mode: TextMode;
   readonly text: string;
@@ -70,6 +72,8 @@ export function TextModeBody({
   readonly onChange?: ((text: string) => void) | undefined;
   /** Raw: put the cursor in the editor when it opens (the file editor; not when read-only). */
   readonly autoFocus?: boolean;
+  /** Raw: run and save keys, the selection's lines, go to a line (the file editor, KOBE-805). */
+  readonly keys?: Pick<CodeEditorProps, "onRun" | "onSave" | "onSelectionLines" | "reveal">;
 }) {
   if (mode === "rendered") return <TextView text={text} preview={preview} />;
   return (
@@ -80,6 +84,7 @@ export function TextModeBody({
         label={label}
         readOnly={readOnly || onChange === undefined}
         autoFocus={autoFocus}
+        {...keys}
         {...(onChange ? { onChange } : {})}
       />
     </Suspense>

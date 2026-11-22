@@ -6,6 +6,7 @@
  */
 import type { NotebookKernelResponse, NotebookRunBody } from "@kobe/protocol";
 import { apiRequest, type ApiResult } from "../api/client";
+import type { VariablesResult } from "./variables";
 
 export interface NotebookRunStarted {
   readonly runId: string;
@@ -21,6 +22,11 @@ export interface NotebookApi {
   run(threadId: string, body: NotebookRunBody): Promise<ApiResult<NotebookRunStarted>>;
   start(threadId: string): Promise<ApiResult<KernelStart>>;
   kernel(threadId: string, op: "interrupt" | "restart"): Promise<ApiResult<NotebookKernelResponse>>;
+  /**
+   * `POST .../notebook/variables` (KOBE-803): the kernel's variables, live from the sandbox and
+   * never stored; `refresh` asks for a fresh snapshot instead of the one kept after the last run.
+   */
+  variables(threadId: string, refresh: boolean): Promise<ApiResult<VariablesResult>>;
 }
 
 const enc = encodeURIComponent;
@@ -34,6 +40,11 @@ export function createNotebookApi(teamId: string, fetchFn?: typeof fetch): Noteb
       apiRequest(`/v1/threads/${enc(threadId)}/notebook/start`, { ...opts, json: {} }),
     kernel: (threadId, op) =>
       apiRequest(`/v1/threads/${enc(threadId)}/notebook/${op}`, { ...opts, json: {} }),
+    variables: (threadId, refresh) =>
+      apiRequest(`/v1/threads/${enc(threadId)}/notebook/variables`, {
+        ...opts,
+        json: refresh ? { refresh: true } : {},
+      }),
   };
 }
 

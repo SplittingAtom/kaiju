@@ -4,7 +4,9 @@ import {
   NotebookExecStore,
   agentCodeRuns,
   egressNotices,
+  fileRuns,
   kernelBusy,
+  lastFinished,
   latestRun,
 } from "./executions";
 
@@ -123,5 +125,51 @@ describe("NotebookExecStore", () => {
       E2,
       "00000000-0000-4000-8000-000000000303",
     ]);
+  });
+
+  it("keeps when a run started, its timing and error, and a selection's lines (KOBE-804/805)", () => {
+    const store = new NotebookExecStore();
+    store.apply(TH, [ev("notebook.started", { exec_id: E1, origin: "user", path: "a.py" })]);
+    store.noteLines(E1, { start: 3, end: 5 });
+    store.noteLines("unknown", { start: 1, end: 1 });
+    store.apply(TH, [
+      ev("notebook.finished", {
+        exec_id: E1,
+        status: "error",
+        execution_count: 2,
+        outputs: 0,
+        truncated: false,
+        saved: null,
+        timing: {
+          started_at: "2026-10-21T10:00:00Z",
+          finished_at: "2026-10-21T10:00:01.5Z",
+          duration_ms: 1500,
+        },
+        error: { name: "KeyError", line: 2 },
+      }),
+    ]);
+    const [exec] = store.snapshot();
+    expect(exec).toMatchObject({
+      startedAt: "2026-10-21T10:00:00Z",
+      lines: { start: 3, end: 5 },
+      finished: { timing: { durationMs: 1500 }, error: { name: "KeyError", line: 2 } },
+    });
+    expect(lastFinished(store.snapshot(), TH)?.execId).toBe(E1);
+    expect(lastFinished(store.snapshot(), "other")).toBeUndefined();
+  });
+
+  it("lists a file's runs newest first (the Log tab)", () => {
+    const store = new NotebookExecStore();
+    store.apply(TH, [
+      ev("notebook.started", { exec_id: E1, origin: "user", path: "a.py" }),
+      ev("notebook.started", { exec_id: E2, origin: "agent", path: "a.py", tool_call_id: "t" }),
+      ev("notebook.started", {
+        exec_id: "00000000-0000-4000-8000-000000000303",
+        origin: "user",
+        path: "b.py",
+      }),
+    ]);
+    expect(fileRuns(store.snapshot(), TH, "a.py").map((e) => e.execId)).toEqual([E2, E1]);
+    expect(fileRuns(store.snapshot(), "other", "a.py")).toEqual([]);
   });
 });

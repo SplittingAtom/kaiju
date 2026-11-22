@@ -57,6 +57,35 @@ describe("notebook api (KOBE-465)", () => {
     expect(res).toMatchObject({ ok: false, error: { code: "thread_busy", status: 409 } });
   });
 
+  it("asks for the kernel's variables, kept or refreshed, camelized (KOBE-804)", async () => {
+    const { calls, fetchFn } = stub(200, {
+      status: "ok",
+      taken_at: "2026-11-22T10:00:00Z",
+      execution_count: 3,
+      truncated: false,
+      variables: [
+        { name: "df", type: "DataFrame", repr: "", columns_total: 2, repr_error: "raised" },
+      ],
+      other: [],
+    });
+    const api = createNotebookApi("t1", fetchFn);
+    const res = await api.variables("th", false);
+    expect(res).toMatchObject({
+      ok: true,
+      data: {
+        status: "ok",
+        takenAt: "2026-11-22T10:00:00Z",
+        executionCount: 3,
+        variables: [{ name: "df", columnsTotal: 2, reprError: "raised" }],
+      },
+    });
+    await api.variables("th", true);
+    expect(calls.map((c) => [c.url, c.init.method, String(c.init.body)])).toEqual([
+      ["/v1/threads/th/notebook/variables", "POST", "{}"],
+      ["/v1/threads/th/notebook/variables", "POST", '{"refresh":true}'],
+    ]);
+  });
+
   it("names the output frame route with the team", () => {
     expect(outputFrameUrl("t 1")).toBe("/v1/workspace/output-frame?team=t+1");
   });

@@ -19,6 +19,22 @@ export interface ExecutionEnd {
   /** The `.ipynb` version holding the outputs; null when nothing was saved. */
   readonly saved: { readonly path: string; readonly sha256: string } | null;
   readonly saveError?: string | undefined;
+  /** KOBE-803: when it ran and how long (absent from older sandboxes, or when it never ran). */
+  readonly timing?: ExecutionTiming | undefined;
+  /** KOBE-803: an `error` execution's exception and its line in the code that ran. */
+  readonly error?: { readonly name: string; readonly line?: number | undefined } | undefined;
+}
+
+export interface ExecutionTiming {
+  readonly startedAt: string;
+  readonly finishedAt: string;
+  readonly durationMs: number;
+}
+
+/** Run selection (KOBE-805): the file's lines that ran (1-based, inclusive). */
+export interface LineRange {
+  readonly start: number;
+  readonly end: number;
 }
 
 export interface Execution {
@@ -29,6 +45,12 @@ export interface Execution {
   readonly toolCallId?: string | undefined;
   readonly path?: string | undefined;
   readonly cellId?: string | undefined;
+  /** The `notebook.started` event's time (the server's; this tab's clock for its own Run). */
+  readonly startedAt?: string | undefined;
+  /** When this tab first saw it (this browser's clock): a running execution's live clock. */
+  readonly seenAt?: number | undefined;
+  /** Only these lines of the file ran (this tab's Run selection, KOBE-805). */
+  readonly lines?: LineRange | undefined;
   /** By index; a gap (an output not arrived yet) is undefined. */
   readonly outputs: readonly (NotebookOutput | undefined)[];
   readonly finished?: ExecutionEnd | undefined;
@@ -79,6 +101,14 @@ export class NotebookExecStore {
     const execs = this.#execs;
     if (!execs.some((e) => e.runId === runId && e.finished === undefined)) return;
     this.#execs = endExecutions(execs, runId, "failed");
+    for (const l of this.#listeners) l();
+  }
+
+  /** This tab ran only `lines` of the file in execution `execId` (KOBE-805). */
+  noteLines(execId: string, lines: LineRange): void {
+    const execs = update(this.#execs, execId, (e) => ({ ...e, lines }));
+    if (execs === this.#execs) return;
+    this.#execs = execs;
     for (const l of this.#listeners) l();
   }
 
@@ -150,6 +180,8 @@ function applyOne(
           toolCallId: p.tool_call_id,
           path: p.path,
           cellId: p.cell_id,
+          startedAt: event.ts,
+          seenAt: Date.now(),
           outputs: [],
         },
       ];
@@ -176,6 +208,15 @@ function applyOne(
                 truncated: p.truncated,
                 saved: p.saved,
                 saveError: p.save_error,
+                timing:
+                  p.timing === undefined
+                    ? undefined
+                    : {
+                        startedAt: p.timing.started_at,
+                        finishedAt: p.timing.finished_at,
+                        durationMs: p.timing.duration_ms,
+                      },
+                error: p.error,
               },
             },
       );
@@ -199,6 +240,26 @@ export function latestRun(
   for (let i = execs.length - 1; i >= 0; i--) {
     const e = execs[i] as Execution;
     if (e.threadId === threadId && e.path === path && e.cellId === cellId) return e;
+  }
+  return undefined;
+}
+
+/** This file's executions in the thread (a `.py` file: no cell), newest first: the Log tab. */
+export function fileRuns(
+  execs: readonly Execution[],
+  threadId: string,
+  path: string,
+): readonly Execution[] {
+  return execs
+    .filter((e) => e.threadId === threadId && e.path === path && e.cellId === undefined)
+    .reverse();
+}
+
+/** The thread's newest finished execution, of any file or code (the kernel's state changed). */
+export function lastFinished(execs: readonly Execution[], threadId: string): Execution | undefined {
+  for (let i = execs.length - 1; i >= 0; i--) {
+    const e = execs[i] as Execution;
+    if (e.threadId === threadId && e.finished !== undefined) return e;
   }
   return undefined;
 }
