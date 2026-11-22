@@ -305,6 +305,145 @@ describe("refresh does not hold the database (compare-and-set)", () => {
   });
 });
 
+describe("refresh lease across replicas (KOBE-778)", () => {
+  const leaseRow = async () =>
+    must(
+      (
+        await h.admin.query<{ sealed: string; until: Date | null; owner: string | null }>(
+          `SELECT sealed, refresh_lease_until AS until, refresh_lease_owner AS owner FROM connector_grants`,
+        )
+      ).rows[0],
+    );
+
+  it("two replicas never spend the same refresh token (strict rotation, reuse revokes the family)", async () => {
+    await connect();
+    await expire();
+    fake.options = { ...fake.options, reuseRevokesFamily: true, refreshDelayMs: 150 };
+    const before = fake.refreshRequests.length;
+    const [a, b] = await Promise.all([
+      revealCredential(db(), envelope(), subject(), new Date(), replica()),
+      revealCredential(db(), envelope(), subject(), new Date(), replica()),
+    ]);
+    fake.options = { ...fake.options, refreshDelayMs: 0 };
+    // One refresh request between them: the loser waited for the winner's lease.
+    expect(fake.refreshRequests.length).toBe(before + 1);
+    expect(fake.revokedFamilies.size).toBe(0);
+    const winner = must(fake.issued.at(-1)).accessToken;
+    for (const r of [a, b]) {
+      expect(r).toEqual({
+        ok: true,
+        credential: { kind: "oauth", accessToken: winner },
+        source: "member",
+      });
+    }
+    // The lease is released with the write, and the rotated refresh token still works.
+    expect(await leaseRow()).toMatchObject({ until: null, owner: null });
+    await expire();
+    expect(await as(revealCredential(db(), envelope(), subject(), new Date(), replica()))).toBe(
+      true,
+    );
+    expect(fake.revokedFamilies.size).toBe(0);
+    fake.options = { ...fake.options, reuseRevokesFamily: false };
+  });
+
+  it("a replica that finds another's live lease re-reads the fresh token instead of refreshing", async () => {
+    await expire();
+    await h.admin.query(
+      `UPDATE connector_grants SET refresh_lease_until = now() + interval '5 seconds', refresh_lease_owner = $1`,
+      [randomUUID()],
+    );
+    const before = fake.refreshRequests.length;
+    const flight = revealCredential(db(), envelope(), subject(), new Date(), replica());
+    await new Promise((r) => setTimeout(r, 300));
+    // The lease holder stores its rotated bundle and releases the lease.
+    const ctx = grantContext(team, aliceId, connectorId);
+    const bundle = parseOauthBundle(envelope().openString((await leaseRow()).sealed, ctx));
+    const rotated = envelope().seal(
+      serializeOauthBundle({ ...bundle, access_token: "rotated-by-lease-holder" }),
+      ctx,
+    );
+    await h.admin.query(
+      `UPDATE connector_grants SET sealed = $1, expires_at = now() + interval '1 hour',
+              refresh_lease_until = NULL, refresh_lease_owner = NULL`,
+      [rotated],
+    );
+    expect(await flight).toEqual({
+      ok: true,
+      credential: { kind: "oauth", accessToken: "rotated-by-lease-holder" },
+      source: "member",
+    });
+    expect(fake.refreshRequests.length).toBe(before);
+    await disconnect();
+  });
+
+  it("a grant without a refresh token is not dropped while another replica holds the lease", async () => {
+    await connect();
+    const ctx = grantContext(team, aliceId, connectorId);
+    const { refresh_token: _rt, ...rest } = parseOauthBundle(
+      envelope().openString((await leaseRow()).sealed, ctx),
+    );
+    await h.admin.query(
+      `UPDATE connector_grants SET sealed = $1, expires_at = now() - interval '1 minute',
+              refresh_lease_until = now() + interval '1 hour', refresh_lease_owner = $2`,
+      [envelope().seal(serializeOauthBundle(rest), ctx), randomUUID()],
+    );
+    const result = await revealCredential(db(), envelope(), subject(), new Date(), {
+      ...replica(),
+      leaseWaitMs: 300,
+    });
+    expect(result.ok).toBe(false);
+    expect((await h.admin.query(`SELECT 1 FROM connector_grants`)).rows).toHaveLength(1);
+    await disconnect();
+  });
+});
+
+describe("reactive refresh (KOBE-778, P2-28)", () => {
+  const forceGrant = async () => {
+    const res = await internal.request(`/internal/v1/mcp/connectors/${connectorId}/grant`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${INTERNAL_KEY}`,
+        "content-type": "application/json",
+        "kobe-sandbox-token": mcpToken({
+          sandboxId: await activeSandbox(h.admin, team, aliceId),
+          teamId: team,
+          userId: aliceId,
+        }),
+      },
+      body: JSON.stringify({ refresh: "force" }),
+    });
+    return { status: res.status, body: (await res.json()) as Record<string, string> };
+  };
+
+  it("a token response without expires_in still gets an expiry, so it is refreshed", async () => {
+    fake.options = { ...fake.options, omitExpiresIn: true };
+    await connect();
+    fake.options = { ...fake.options, omitExpiresIn: false };
+    const { rows } = await h.admin.query<{ expires_at: Date | null }>(
+      `SELECT expires_at FROM connector_grants`,
+    );
+    const expiresAt = must(rows[0]).expires_at;
+    expect(expiresAt).not.toBeNull();
+    expect(must(expiresAt ?? undefined).getTime()).toBeGreaterThan(Date.now());
+    expect(must(expiresAt ?? undefined).getTime()).toBeLessThanOrEqual(Date.now() + 3600_000);
+  });
+
+  it("a forced refresh (the upstream refused the token) refreshes a token that has not expired", async () => {
+    await h.admin.query(`UPDATE connector_grants SET updated_at = now() - interval '5 minutes'`);
+    const before = fake.refreshRequests.length;
+    const served = await forceGrant();
+    expect(served.status).toBe(200);
+    expect(fake.refreshRequests.length).toBe(before + 1);
+    expect(served.body.access_token).toBe(must(fake.issued.at(-1)).accessToken);
+    // Rate limited per grant: a grant refreshed a moment ago is served as it is.
+    const again = await forceGrant();
+    expect(again.status).toBe(200);
+    expect(fake.refreshRequests.length).toBe(before + 1);
+    expect(again.body.access_token).toBe(served.body.access_token);
+    await disconnect();
+  });
+});
+
 describe("revocation and suspension", () => {
   it("a revoke stops the next reveal immediately (ac-1)", async () => {
     await connect();

@@ -1,5 +1,6 @@
 import { withTeam, type Envelope, type KobeDb } from "@kobe/db";
 import { enabledConnector, storeGrant, type Subject } from "../grants.js";
+import { defaultExpiry } from "../grant-refresh.js";
 import { authorizationUrl, exchangeCode, obtainClient, type KobeOrigin } from "./client.js";
 import { serializeOauthBundle } from "./bundle.js";
 import { discoverAuthServer } from "./discovery.js";
@@ -124,10 +125,14 @@ export async function finishFlow(
       verifier: payload.verifier,
       now: deps.now(),
     });
+    // No `expires_in` (only RECOMMENDED): with a refresh token, assume a default lifetime so the
+    // token is still refreshed (KOBE-778, P2-28).
+    const expiresAt =
+      tokens.expiresAt ?? (tokens.refreshToken ? defaultExpiry(deps.now()) : undefined);
     const stored = await storeGrant(deps.db, deps.envelope, subject, {
       kind: "oauth",
       hint: "••••",
-      ...(tokens.expiresAt ? { expiresAt: tokens.expiresAt } : {}),
+      ...(expiresAt ? { expiresAt } : {}),
       plaintext: serializeOauthBundle({
         access_token: tokens.accessToken,
         ...(tokens.refreshToken ? { refresh_token: tokens.refreshToken } : {}),

@@ -46,6 +46,11 @@ connector keys**, `/me/connectors`):
 Until you add a key, your runs cannot use that connector ("Your runs can't use it until you add
 one."). An app that is missing only your key shows **Add your key**, linking to this page.
 
+A connector that uses OAuth asks you to sign in with your account instead of a key. Kobe renews
+that sign-in by itself when it runs out, and also when the connector's server turns it down
+before then (the call is then tried once more). You only need to sign in again when the
+provider has ended the sign-in.
+
 Your keys (and sign-ins for connectors that use OAuth) belong to one workspace. When you are
 removed from a workspace, your account is deactivated, or your identity provider removes your
 access, Kobe deletes them for that workspace (each deletion is in the workspace's **Audit** as

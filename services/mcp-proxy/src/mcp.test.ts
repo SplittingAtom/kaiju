@@ -135,7 +135,7 @@ class FakePolicyServer implements PolicyServer {
     return Promise.resolve(this.kobeAnswer);
   }
 
-  fetchGrant() {
+  fetchGrant(_token: string, _connectorId: string, _options?: { refresh?: "force" }) {
     return Promise.resolve<GrantAnswer>({ ok: false, failure: "not_connected" });
   }
 
@@ -833,6 +833,76 @@ describe("tools/call", () => {
     const res = await rpc("tools/call", { name: "get_issue", arguments: { id: 1 } });
     expect(fake.received.at(-1)?.headers.authorization).toBe(`Bearer ${accessToken}`);
     expect(JSON.stringify(res.json)).not.toContain(accessToken);
+  });
+
+  describe("reactive OAuth refresh (KOBE-778)", () => {
+    const allowOauth = (authKind: "oauth" | "api_key" = "oauth") => {
+      server.next = (q) => ({
+        ok: true,
+        value: {
+          decision: "allow",
+          connector: { id: q.connectorId, name: "jira", url: fake.url, auth_kind: authKind },
+          tool: { name: q.tool, pi_name: "mcp__jira__get_issue", model_visible: true },
+          input_sha256: sha(q.arguments),
+          reason: "risk_read",
+        },
+      });
+    };
+    const grantsAsked: unknown[] = [];
+    const serve = (first: string, refreshed: string, kind: "oauth" | "api_key" = "oauth") => {
+      grantsAsked.length = 0;
+      server.fetchGrant = (_t: string, _c: string, options?: { refresh?: "force" }) => {
+        grantsAsked.push(options ?? null);
+        const value = options?.refresh === "force" ? refreshed : first;
+        return Promise.resolve<GrantAnswer>({
+          ok: true,
+          value:
+            kind === "oauth"
+              ? { kind, accessToken: value, source: "member" }
+              : { kind, apiKey: value, source: "member" },
+        });
+      };
+      credentials = createServerCredentials(server);
+    };
+
+    it("asks the server once to refresh a refused token, and retries the call once", async () => {
+      allowOauth();
+      serve("at-revoked-early", "at-fresh");
+      fake.options = { acceptBearer: "at-fresh" };
+      const res = await rpc("tools/call", { name: "get_issue", arguments: { id: 7 } });
+      expect(res.json?.result.isError).not.toBe(true);
+      expect(grantsAsked).toEqual([null, { refresh: "force" }]);
+      expect(fake.calls()).toHaveLength(1);
+      expect(fake.calls()[0]?.headers.authorization).toBe("Bearer at-fresh");
+      expect(JSON.stringify(res.json)).not.toContain("at-fresh");
+    });
+
+    it("gives up after one retry when the refreshed token is refused too", async () => {
+      allowOauth();
+      serve("at-1", "at-2");
+      fake.options = { acceptBearer: "nobody" };
+      const res = await rpc("tools/call", { name: "get_issue", arguments: {} });
+      expect(res.json?.result.content[0].text).toMatch(/Reconnect it/);
+      expect(grantsAsked).toEqual([null, { refresh: "force" }]);
+    });
+
+    it("does not retry when the refresh gave back the same token", async () => {
+      allowOauth();
+      serve("at-same", "at-same");
+      fake.options = { acceptBearer: "nobody" };
+      await rpc("tools/call", { name: "get_issue", arguments: {} });
+      expect(grantsAsked).toEqual([null, { refresh: "force" }]);
+      expect(fake.received.filter((r) => r.method === "initialize")).toHaveLength(1);
+    });
+
+    it("never refreshes an API key", async () => {
+      allowOauth("api_key");
+      serve("sk-old-0123456789", "sk-new-0123456789", "api_key");
+      fake.options = { acceptBearer: "sk-new-0123456789" };
+      const res = await rpc("tools/call", { name: "get_issue", arguments: {} });
+      expect(res.json?.result.content[0].text).toMatch(/Reconnect it/);
+      expect(grantsAsked).toEqual([null]);
+    });
   });
 
   it("says not connected when the user has no API key, and runs nothing upstream", async () => {

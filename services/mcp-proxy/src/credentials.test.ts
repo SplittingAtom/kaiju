@@ -102,11 +102,39 @@ describe("createServerCredentials", () => {
   );
 });
 
+describe("forced refresh after an upstream refusal (KOBE-778)", () => {
+  it("passes the refresh request to the grant source for an OAuth connector", async () => {
+    const asked: unknown[] = [];
+    const grants: GrantSource = {
+      fetchGrant: (_t, _c, options) => {
+        asked.push(options);
+        return Promise.resolve({
+          ok: true,
+          value: { kind: "oauth", accessToken: "at-new", source: "member" },
+        });
+      },
+    };
+    const out = await createServerCredentials(grants).headersFor(request("oauth"), {
+      refresh: true,
+    });
+    expect(out).toEqual({
+      ok: true,
+      headers: { authorization: "Bearer at-new" },
+      credential: "member",
+    });
+    expect(asked).toEqual([{ refresh: "force" }]);
+  });
+});
+
 describe("policy server grant client", () => {
-  const seen: { path: string; headers: Headers }[] = [];
+  const seen: { path: string; headers: Headers; body: unknown }[] = [];
   const respond = (status: number, body: unknown): typeof fetch =>
     ((url: string, init: RequestInit) => {
-      seen.push({ path: new URL(url).pathname, headers: new Headers(init.headers) });
+      seen.push({
+        path: new URL(url).pathname,
+        headers: new Headers(init.headers),
+        body: init.body,
+      });
       return Promise.resolve(new Response(JSON.stringify(body), { status }));
     }) as unknown as typeof fetch;
   const client = (f: typeof fetch, errors: unknown[] = []) =>
@@ -132,6 +160,45 @@ describe("policy server grant client", () => {
     expect(seen.at(-1)?.path).toBe("/internal/v1/mcp/connectors/c1/grant");
     expect(seen.at(-1)?.headers.get("kobe-sandbox-token")).toBe("tok");
     expect(seen.at(-1)?.headers.get("authorization")).toBe(`Bearer ${"i".repeat(40)}`);
+  });
+
+  it("asks for a forced refresh only when told, and sends no body otherwise (KOBE-778)", async () => {
+    const f = respond(200, { kind: "oauth", access_token: "at-2", source: "member" });
+    await client(f).fetchGrant("tok", "c1");
+    expect(seen.at(-1)?.body ?? null).toBeNull();
+    await client(f).fetchGrant("tok", "c1", { refresh: "force" });
+    expect(seen.at(-1)?.body).toBe(JSON.stringify({ refresh: "force" }));
+    expect(seen.at(-1)?.headers.get("content-type")).toBe("application/json");
+  });
+
+  it("gives the grant call its own, longer deadline: a refresh outlasts other server calls (KOBE-778)", async () => {
+    const slow = ((_url: string, init: RequestInit) =>
+      new Promise<Response>((resolve, reject) => {
+        const timer = setTimeout(
+          () =>
+            resolve(
+              new Response(JSON.stringify({ kind: "oauth", access_token: "at-3" }), {
+                status: 200,
+              }),
+            ),
+          150,
+        );
+        init.signal?.addEventListener("abort", () => {
+          clearTimeout(timer);
+          reject(new Error("aborted"));
+        });
+      })) as unknown as typeof fetch;
+    const out = await createPolicyServer({
+      baseUrl: "http://server:8082",
+      internalKey: "i".repeat(40),
+      timeoutMs: 50,
+      grantTimeoutMs: 2_000,
+      fetch: slow,
+    }).fetchGrant("tok", "c1");
+    expect(out).toEqual({
+      ok: true,
+      value: { kind: "oauth", accessToken: "at-3", source: "member" },
+    });
   });
 
   it("parses an OAuth access token", async () => {

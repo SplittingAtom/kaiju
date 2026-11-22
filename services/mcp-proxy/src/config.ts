@@ -86,6 +86,11 @@ const configSchema = z.object({
   /** Whole upstream call (connect, initialize, call); under Pi's 60 s MCP request timeout. */
   KOBE_MCP_UPSTREAM_TIMEOUT_MS: int("KOBE_MCP_UPSTREAM_TIMEOUT_MS", 1_000, 600_000, 55_000),
   KOBE_MCP_SERVER_TIMEOUT_MS: int("KOBE_MCP_SERVER_TIMEOUT_MS", 100, 60_000, 10_000),
+  /**
+   * The grant call (KOBE-778, P2-29): it may include an OAuth refresh, which can wait for another
+   * server replica's refresh lease (up to 10 s) and then refresh itself (5 s deadline).
+   */
+  KOBE_MCP_GRANT_TIMEOUT_MS: int("KOBE_MCP_GRANT_TIMEOUT_MS", 1_000, 120_000, 25_000),
   /** Concurrent calls per sandbox and per replica. */
   KOBE_MCP_CALLS_PER_SANDBOX: int("KOBE_MCP_CALLS_PER_SANDBOX", 1, 1_000, 8),
   KOBE_MCP_MAX_CONCURRENT_CALLS: int("KOBE_MCP_MAX_CONCURRENT_CALLS", 1, 100_000, 256),
@@ -99,6 +104,8 @@ export interface Limits {
   readonly maxResponseBytes: number;
   readonly upstreamTimeoutMs: number;
   readonly serverTimeoutMs: number;
+  /** The grant call, which may refresh an OAuth token: longer than `serverTimeoutMs`. */
+  readonly grantTimeoutMs: number;
   readonly callsPerSandbox: number;
   readonly maxConcurrentCalls: number;
   readonly requestBurst: number;
@@ -137,6 +144,7 @@ export const DEFAULT_LIMITS: Limits = {
   maxResponseBytes: 4 * 1024 * 1024,
   upstreamTimeoutMs: 55_000,
   serverTimeoutMs: 10_000,
+  grantTimeoutMs: 25_000,
   callsPerSandbox: 8,
   maxConcurrentCalls: 256,
   requestBurst: 60,
@@ -182,6 +190,11 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     throw new Error(`Invalid configuration: ${issues}`);
   }
   const d = parsed.data;
+  if (d.KOBE_MCP_GRANT_TIMEOUT_MS < d.KOBE_MCP_SERVER_TIMEOUT_MS) {
+    throw new Error(
+      "Invalid configuration: KOBE_MCP_GRANT_TIMEOUT_MS must be at least KOBE_MCP_SERVER_TIMEOUT_MS (a grant call may refresh an OAuth token)",
+    );
+  }
   if (d.KOBE_MCP_INTERNAL_PORT === d.PORT) {
     throw new Error("Invalid configuration: KOBE_MCP_INTERNAL_PORT must differ from PORT");
   }
@@ -207,6 +220,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
       maxResponseBytes: d.KOBE_MCP_MAX_RESPONSE_BYTES,
       upstreamTimeoutMs: d.KOBE_MCP_UPSTREAM_TIMEOUT_MS,
       serverTimeoutMs: d.KOBE_MCP_SERVER_TIMEOUT_MS,
+      grantTimeoutMs: d.KOBE_MCP_GRANT_TIMEOUT_MS,
       callsPerSandbox: d.KOBE_MCP_CALLS_PER_SANDBOX,
       maxConcurrentCalls: d.KOBE_MCP_MAX_CONCURRENT_CALLS,
       requestBurst: d.KOBE_MCP_REQUEST_BURST,

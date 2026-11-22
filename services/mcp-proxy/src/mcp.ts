@@ -428,16 +428,42 @@ async function decideAndForward(
         ),
       ];
     }
-    const result = await deps.upstream.callTool({
-      url: decision.connector.url,
-      headers: credentials.headers,
-      tool: decision.tool.name,
-      arguments: args,
-      // An allow from a server older than KOBE-435 did not check MCP Apps visibility: the proxy
-      // checks the upstream's own tools/list in the same session (review M3).
-      ...(decision.tool.model_visible === true ? {} : { checkModelVisible: true }),
-      signal: AbortSignal.timeout(deps.limits.upstreamTimeoutMs),
-    });
+    // One deadline for the call and its retry after a refresh (KOBE-778).
+    const signal = AbortSignal.timeout(deps.limits.upstreamTimeoutMs);
+    const callWith = (headers: Readonly<Record<string, string>>) =>
+      deps.upstream.callTool({
+        url: decision.connector.url,
+        headers,
+        tool: decision.tool.name,
+        arguments: args,
+        // An allow from a server older than KOBE-435 did not check MCP Apps visibility: the proxy
+        // checks the upstream's own tools/list in the same session (review M3).
+        ...(decision.tool.model_visible === true ? {} : { checkModelVisible: true }),
+        signal,
+      });
+    let result = await callWith(credentials.headers);
+    // Reactive refresh (KOBE-778, P2-28): the upstream refused a member's OAuth token (revoked
+    // early, or issued without a real expiry). A 401/403 means the call did not run, so ask the
+    // server once for a refreshed token and, if it is a different one, retry once.
+    if (
+      !result.ok &&
+      result.failure === "auth_required" &&
+      decision.connector.auth_kind === "oauth" &&
+      credentials.credential === "member"
+    ) {
+      const refreshed = await deps.credentials.headersFor(
+        {
+          token: ctx.token,
+          teamId: ctx.teamId,
+          userId: ctx.userId,
+          connector: decision.connector,
+        },
+        { refresh: true },
+      );
+      if (refreshed.ok && refreshed.headers.authorization !== credentials.headers.authorization) {
+        result = await callWith(refreshed.headers);
+      }
+    }
     if (result.ok) {
       annotate({}, contentAttributes({ "kobe.tool.output": JSON.stringify(result.result) }));
       // MCP Apps (KOBE-438, spec T11): the full result comes from here, never the sandbox, and is
