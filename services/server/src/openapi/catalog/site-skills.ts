@@ -1,4 +1,5 @@
 import type { CatalogArea } from "./build.js";
+import { siteSkillsDetails } from "./details/site-skills.js";
 
 /** OpenAPI catalog: Site skill administration (KOBE-727; routes in `routes/site-skill-*.ts`). */
 export const siteSkillsAreas: readonly CatalogArea[] = [
@@ -6,6 +7,8 @@ export const siteSkillsAreas: readonly CatalogArea[] = [
     tag: "Site: skills",
     description:
       "Site-wide skill administration: the blocklist and rescans, the catalog and its tags, the Site Registry review queue and the git mirror. Site Owner/Admins unless noted.",
+    detailed: true,
+    details: siteSkillsDetails,
     entries: [
       [
         "get",

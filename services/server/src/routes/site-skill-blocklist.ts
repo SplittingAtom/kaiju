@@ -13,7 +13,7 @@ import {
 } from "../skills/blocklist.js";
 import { invalidRequest, notFound, param, parseBody } from "../http/request.js";
 
-const addSchema = z.strictObject({ contentHash: hashSchema, reason: reasonSchema });
+export const addSchema = z.strictObject({ contentHash: hashSchema, reason: reasonSchema });
 const limitSchema = z.coerce.number().int().min(1).max(200);
 
 const entryJson = (e: { contentHash: string; reason: string; addedBy: string; addedAt: Date }) => ({
