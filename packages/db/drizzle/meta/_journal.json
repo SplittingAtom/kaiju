@@ -1716,6 +1716,27 @@
       "when": 1795377703163,
       "tag": "0244_kobe_rate_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 245,
+      "version": "7",
+      "when": 1795381785499,
+      "tag": "0245_budget_email_daily_counts",
+      "breakpoints": true
+    },
+    {
+      "idx": 246,
+      "version": "7",
+      "when": 1795381790741,
+      "tag": "0246_skill_rescan_incomplete",
+      "breakpoints": true
+    },
+    {
+      "idx": 247,
+      "version": "7",
+      "when": 1795381796076,
+      "tag": "0247_notebook_inspect_command",
+      "breakpoints": true
     }
   ]
 }
