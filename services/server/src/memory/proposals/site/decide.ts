@@ -9,11 +9,10 @@ import {
 import { createSemanticMemoryItemSchema, type SemanticMemoryItemDetail } from "@kobe/protocol";
 import { siteMemoryWriteAllows } from "../../../authz/permissions.js";
 import { recordAudit } from "../../../audit/record.js";
-import { openOp, type Op } from "../../items/context.js";
+import { afterCommit, openOp, type Op } from "../../items/context.js";
 import { createItemIn } from "../../items/create.js";
 import { patchItemIn } from "../../items/edit.js";
 import { inactive, invalid, notAllowed, notFound } from "../../items/errors.js";
-import { deliverSiteNotices } from "../../items/limits.js";
 import type { MemoryWho } from "../../items/who.js";
 import { readSwitches } from "../../switches.js";
 import { assertSiteDecider, decidesForSite } from "./access.js";
@@ -40,7 +39,8 @@ const SITE = { side: "site" } as const;
 
 interface Decided<T> {
   readonly value: T;
-  readonly pending: Op["pending"];
+  /** The store op that wrote, if any: its saved items and notices follow the commit. */
+  readonly op?: Op;
 }
 
 /** Runs a decision on an awaiting_site proposal; Site curators only, others get 404. */
@@ -61,7 +61,7 @@ async function decide<T>(
     assertSiteDecider(who, p);
     return fn(tx, p);
   });
-  if (done.pending.length > 0) await deliverSiteNotices(db, done.pending);
+  await afterCommit(db, done.op ? [done.op] : []);
   return done.value;
 }
 
@@ -157,7 +157,7 @@ async function accepted(
   await workspaceAudit(tx, p, outcome, p.rounds, item);
   await noticeDecided(tx, subject(p), "accepted", who.userId);
   const proposal = siteView(who, await readSiteProposal(tx, SITE, p.id));
-  return { value: { proposal, item }, pending: op.pending };
+  return { value: { proposal, item }, op };
 }
 
 export function approveSiteProposal(
@@ -245,7 +245,6 @@ export function rejectSiteProposal(
     await noticeDecided(tx, subject(p), "dismissed", who.userId);
     return {
       value: { proposal: siteView(who, await readSiteProposal(tx, SITE, p.id)) },
-      pending: [],
     };
   });
 }
@@ -286,7 +285,6 @@ export function requestSiteChanges(
     await noticeAwaitingTeam(tx, subject(p), who.userId, true);
     return {
       value: { proposal: siteView(who, await readSiteProposal(tx, SITE, p.id)) },
-      pending: [],
     };
   });
 }

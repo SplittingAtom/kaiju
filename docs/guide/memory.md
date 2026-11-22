@@ -273,7 +273,12 @@ Each suggestion is a card with:
   [propose it to the Site](#propose-a-memory-to-the-site) with **Propose…**. For a
   preference you can tick **Use in all my workspaces**; Kobe asks first and shows the text;
 - for a change to a memory you already have (an update, a replacement or a contradiction), the
-  **changes** word by word, removed words struck through and new ones underlined;
+  **changes** word by word, removed words struck through and new ones underlined. Such a change
+  stays in that memory's place (yours, all your workspaces or the Workspace), whatever Kobe
+  guessed. If someone changed the memory after Kobe suggested this, the card says so and the
+  comparison shows the memory as it is now: check it before you save. A save made just as it
+  changes is refused with **Reload**, which shows the card again with the latest memory, so a
+  newer edit is never overwritten without you seeing it;
 - a **Site Policy** it may contradict, with **Not a conflict? Save anyway** (recorded), and a
   similar memory you already have;
 - for something about the conversation's project, one line on how project notes differ: adding to
@@ -620,7 +625,9 @@ answer), search uses word matching alone and nothing else changes.
   publishes its list of models the name must be on it; a provider without a list (an Ollama server
   without a key, the in-cluster model) takes the name as you type it, so check the spelling.
 - **Vectors.** Each memory is turned into a vector when it is saved (in every place: yours,
-  portable, workspace and site). Saving a new model builds vectors for every memory in the
+  portable, workspace and site), however it was saved: in My memory, from To review (and its
+  **Undo**), by a curator approving a proposal, or by an import. If the model can't be reached
+  then, the memory is saved all the same and word matching finds it until **Build vectors** runs. Saving a new model builds vectors for every memory in the
   background; until a memory has a vector from the current model, word matching finds it. The
   **Search by meaning** section shows how many memories have one (for example "812 of 840") and
   has a **Build vectors** (or **Re-embed**) button to fill the gaps, for example after Kobe was

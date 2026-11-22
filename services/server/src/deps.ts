@@ -101,6 +101,7 @@ import type { SsoNet } from "./sso/net.js";
 import type { ProviderStore } from "./sso/providers.js";
 import { SSO_OFF, ssoNet, type SsoSettings } from "./sso/settings.js";
 import { createListenClient, type ListenClient } from "./pg-listen.js";
+import { registerSaveEmbedder } from "./memory/embeddings/save-hook.js";
 import type { ServerDepsOptions } from "./deps-options.js";
 
 export type { ServerDepsOptions } from "./deps-options.js";
@@ -421,6 +422,10 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
       ? {}
       : { queryDeadlineMs: options.embeddings.queryDeadlineMs }),
   });
+  // KOBE-779: every item-store write path embeds through this, after its commit.
+  registerSaveEmbedder(database.db, (who, scope, ids) =>
+    memoryEmbeddings.afterSave(who, scope, ids),
+  );
   const memoryVectors = new VectorBackfill({
     db: database.db,
     embeddings: memoryEmbeddings,

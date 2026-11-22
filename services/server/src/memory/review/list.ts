@@ -76,6 +76,9 @@ async function card(tx: KobeTx, who: MemoryWho, row: CandidateRow) {
     source: c.source,
     operation: c.operation,
     target,
+    // KOBE-779: the memory moved on since the pass saw it (Save then needs the card's version).
+    target_changed:
+      target !== null && c.target_version !== undefined && target.version !== c.target_version,
     confidence: c.confidence,
     rationale: c.rationale,
     evidence: c.evidence,
