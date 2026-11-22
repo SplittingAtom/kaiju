@@ -52,12 +52,15 @@ const registrationSchema = z.object({
  * fetchable by the server); otherwise Dynamic Client Registration (RFC 7591), asking for a
  * confidential client when the server offers a secret-based method.
  */
+export const usesCimd = (info: AuthServerInfo, kobe: KobeOrigin): boolean =>
+  info.cimd && kobe.origin.startsWith("https://");
+
 export async function obtainClient(
   io: OauthIo,
   info: AuthServerInfo,
   kobe: KobeOrigin,
 ): Promise<ClientRegistration> {
-  if (info.cimd && kobe.origin.startsWith("https://")) {
+  if (usesCimd(info, kobe)) {
     return { clientId: kobe.clientMetadataUrl, clientSecret: undefined };
   }
   if (!info.registrationEndpoint) throw new OauthError("oauth_unsupported");

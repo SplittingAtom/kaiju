@@ -1,0 +1,2 @@
+ALTER TABLE "connectors" ADD COLUMN "oauth_client" text;--> statement-breakpoint
+ALTER TABLE "connectors" ADD CONSTRAINT "connectors_oauth_client" CHECK ("connectors"."oauth_client" IS NULL OR ("connectors"."oauth_client" ~ '^e1\.[A-Za-z0-9_.-]+$' AND char_length("connectors"."oauth_client") <= 16384));

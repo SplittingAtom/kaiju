@@ -117,14 +117,15 @@ export const CONNECTORS_EVENTS = {
   }),
   /**
    * Which credential probes a connector's `tools/list` (KOBE-431): the connector's site-wide key
-   * (KOBE-303), the own key of the site admin `adminId`, or none. Never a member's key, never the
+   * (KOBE-303), the own key of the site admin `adminId`, that admin's own OAuth access token for
+   * an `oauth` connector (`admin_oauth`, KOBE-784), or none. Never a member's key, never the
    * value. Recorded on every pin by an admin, and by the periodic refresh when its choice changes.
    */
   "mcp.connector.probe_credential": event("site", {
     connectorId: id,
     name: z.string().max(64),
     purpose: z.enum(["pin", "refresh"]),
-    credential: z.enum(["site_key", "admin_key", "none"]),
+    credential: z.enum(["site_key", "admin_key", "admin_oauth", "none"]),
     adminId: id.optional(),
   }),
   /**
@@ -153,7 +154,7 @@ export const CONNECTORS_EVENTS = {
     changed: z.number().int().nonnegative(),
     added: z.number().int().nonnegative(),
     removed: z.number().int().nonnegative(),
-    credential: z.enum(["site_key", "admin_key", "none"]).optional(),
+    credential: z.enum(["site_key", "admin_key", "admin_oauth", "none"]).optional(),
     adminId: id.optional(),
   }),
   /**

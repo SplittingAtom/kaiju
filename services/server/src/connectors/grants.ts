@@ -32,6 +32,7 @@ import {
   type RefreshSupport,
 } from "./grant-refresh.js";
 import { maskHint } from "./mask.js";
+import { sameUrl } from "./oauth/discovery.js";
 import { revealSiteKey } from "./site-key.js";
 
 export {
@@ -113,6 +114,12 @@ export interface GrantMaterial {
   readonly plaintext: string;
   readonly hint: string;
   readonly expiresAt?: Date;
+  /**
+   * OAuth: the resource (connector URL) the tokens were issued for. Stored only while the
+   * connector still has that URL, so a callback that arrives after a site admin changed it is
+   * refused instead of storing a grant every reveal would refuse (KOBE-784, P2-27).
+   */
+  readonly resource?: string;
 }
 
 /**
@@ -144,6 +151,9 @@ export async function storeGrant(
     if (!connector) return { ok: false, failure: "not_available" };
     if (connector.authKind !== material.kind) return { ok: false, failure: "not_api_key" };
     if (connector.credentialSource === "site") return { ok: false, failure: "provided_by_site" };
+    if (material.resource !== undefined && !sameUrl(material.resource, connector.url)) {
+      return { ok: false, failure: "not_available" };
+    }
     const [existing] = await tx
       .select({ connectorId: connectorGrants.connectorId })
       .from(connectorGrants)
@@ -285,24 +295,33 @@ async function revealSiteCredential(
 }
 
 /**
- * The site admin's OWN key for a connector, for a pinning probe (pins are site-wide trust,
- * so only an admin's action may probe with a grant, and only with that admin's grant). Looks
- * through the admin's teams; never another user's key. Undefined when they have none.
+ * The site admin's OWN credential for a connector, for a probe (pins are site-wide trust, so only
+ * an admin's action may probe with a grant, and only with that admin's grant): their API key, or
+ * their OAuth access token (KOBE-784, refreshed through the leased refresh when `refresh` is
+ * given). Looks through the admin's teams; never another user's. Undefined when they have none.
+ * The value is for `initialize` / `tools/list`-type probes only, never for a tool call.
  */
-export async function adminProbeKey(
+export async function adminProbeGrant(
   db: KobeDb,
   envelope: Envelope | undefined,
   adminUserId: string,
   connectorId: string,
+  kind: "api_key" | "oauth",
+  refresh?: RefreshSupport,
 ): Promise<string | undefined> {
   if (!envelope) return undefined;
   for (const team of await listMemberships(db, adminUserId)) {
-    const found = await revealCredential(db, envelope, {
-      teamId: team.teamId,
-      userId: adminUserId,
-      connectorId,
-    });
-    if (found.ok && found.credential.kind === "api_key") return found.credential.apiKey;
+    const found = await revealCredential(
+      db,
+      envelope,
+      { teamId: team.teamId, userId: adminUserId, connectorId },
+      new Date(),
+      refresh,
+    );
+    if (!found.ok || found.source !== "member") continue;
+    const credential = found.credential;
+    if (kind === "api_key" && credential.kind === "api_key") return credential.apiKey;
+    if (kind === "oauth" && credential.kind === "oauth") return credential.accessToken;
   }
   return undefined;
 }

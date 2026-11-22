@@ -54,7 +54,10 @@ provider has ended the sign-in.
 Your keys (and sign-ins for connectors that use OAuth) belong to one workspace. When you are
 removed from a workspace, your account is deactivated, or your identity provider removes your
 access, Kobe deletes them for that workspace (each deletion is in the workspace's **Audit** as
-`mcp.grant.removed`). If you are added back, add your keys and sign in again.
+`mcp.grant.removed`). If you are added back, add your keys and sign in again. The same happens
+when a site admin changes a connector's server address or how it signs in: add your key or sign
+in again. A sign-in you finish after the connector's address changed is refused (**Connect**
+again).
 
 ## Turn connectors on or off for a conversation
 

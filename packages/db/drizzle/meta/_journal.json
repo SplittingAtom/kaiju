@@ -1674,6 +1674,13 @@
       "when": 1795324281387,
       "tag": "0238_connector_grant_refresh_lease",
       "breakpoints": true
+    },
+    {
+      "idx": 239,
+      "version": "7",
+      "when": 1795325220886,
+      "tag": "0239_connector_oauth_client",
+      "breakpoints": true
     }
   ]
 }
