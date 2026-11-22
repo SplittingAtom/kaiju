@@ -55,14 +55,16 @@ git rev-parse -q --verify "${BASE}^{commit}" >/dev/null || die "unknown base ref
 
 # Conflicts in generated files only: regenerate them and commit the merge. Anything else: stop.
 resolve_generated() {
-  local file others=()
-  while IFS= read -r file; do
+  local file files others=()
+  # Read the list first: git commands in the loop take the index lock.
+  mapfile -t files < <(unmerged)
+  for file in "${files[@]}"; do
     case "$file" in
       "$OPENAPI") git rm -q --cached --ignore-unmatch -- "$file" ;;
       "$AUDIT_DOC" | "$INVENTORY_DIR"route-inventory.*.txt) ;;
       *) others+=("$file") ;;
     esac
-  done < <(unmerged)
+  done
   if [[ ${#others[@]} -gt 0 ]]; then
     say "conflicts that need a human:"
     printf '  %s\n' "${others[@]}"
@@ -71,7 +73,8 @@ resolve_generated() {
     say "  scripts/onto-main.sh $BASE"
     exit 1
   fi
-  while IFS= read -r file; do
+  mapfile -t files < <(unmerged)
+  for file in "${files[@]}"; do
     if [[ "$file" == "$AUDIT_DOC" ]]; then
       build_db
       "$PNPM" --silent --filter @kobe/db audit:doc
@@ -86,7 +89,7 @@ resolve_generated() {
       regenerated_inventory=1
     fi
     git add -- "$file"
-  done < <(unmerged)
+  done
   if [[ $regenerated_inventory -eq 1 ]]; then
     regenerate_inventory
   fi
