@@ -19,17 +19,22 @@ completed; the two-factor plugin nulls `newSession` while a code is outstanding)
 `auditPlugin`. Global `hooks.before` (`authGuards`, e.g. SSO required) runs first, so a refused
 request never reserves an attempt.
 
-- **before** (`/sign-in/email`, `/two-factor/verify-totp|verify-backup-code|verify-otp` without a
-  session, and signed-in password checks `/change-password`, `/two-factor/enable|disable|get-totp-uri|generate-backup-codes`):
+- **before** (`/sign-in/email`, `/two-factor/verify-totp|verify-backup-code|verify-otp` with or
+  without a session, and signed-in password checks `/change-password`, `/two-factor/enable|disable|get-totp-uri|generate-backup-codes`):
   reserve one attempt for the account **atomically, before the secret is checked**
   (`countRateLimitHit`, one upsert). Up to 10 pass. Over 10, one attempt per minute passes (an
-  atomic `sign-in-slot:` counter, seeded when the 10th failure lands so the 11th guess waits too);
-  the rest are answered 429 before Better Auth looks at the password.
+  atomic claim of a `sign-in-slot:` row, taken when the 10th failure lands so the 11th guess waits
+  too; a refused attempt leaves the slot alone); the rest are answered 429 before Better Auth looks
+  at the password.
 - **after**: a wrong secret (`INVALID_EMAIL_OR_PASSWORD`, `INVALID_CODE`, `INVALID_BACKUP_CODE`,
   `OTP_HAS_EXPIRED`, `INVALID_PASSWORD`) keeps the reservation; any other outcome (correct password
-  with 2FA pending, deactivated account with the right password, validation errors) refunds it; a
-  completed sign-in (`newSession` on a sign-in path, incl. passkey, invitation, SSO callback), a
-  password change and a password reset (`onPasswordReset` in `auth.ts`) clear the account.
+  with 2FA pending, deactivated account with the right password, validation errors) refunds it,
+  **including the minute's slot** (review M2: otherwise the code step after a correct password was
+  refused until the next minute); a completed sign-in without a prior session (`newSession` on
+  password, second-factor, invitation or SSO callback paths; the SSO callback's redirect is an
+  `APIError` with status 302 and is treated as success, review L1), a password change and a
+  password reset (`onPasswordReset` in `auth.ts`) clear the account. Code checks made from a session
+  are counted but their success only refunds.
 - Reserve-then-settle instead of check-then-count: with check-then-count a parallel burst would all
   pass the check before any failure was recorded (scrypt takes ~100 ms). Test: 40 parallel
   `begin()` calls let exactly 11 through.
@@ -37,8 +42,11 @@ request never reserves an attempt.
   (verification row → user), the same key as the password, so password and code failures add up.
 
 **Passkeys:** not counted (a WebAuthn assertion can't be guessed; failures are not evidence of
-guessing) and never refused by the throttle: a throttled member can still sign in with a passkey,
-which clears it. Still covered by Better Auth's 100 per 10 s per IP.
+guessing) and never refused by the throttle: a throttled member can still sign in with a passkey.
+A passkey sign-in does **not** clear the counter (review L2: a session holder can register a passkey
+and sign in with it; the suggested "only passkeys registered before the window" rule only defers
+that by one window, since a passkey registered now predates every later window). Still covered by
+Better Auth's 100 per 10 s per IP.
 **SSO:** not counted (the secret is at the identity provider, which limits it); a completed SSO
 sign-in clears. **Password change:** counted (`INVALID_PASSWORD` from a signed-in session: a stolen
 cookie guessing the password); success clears.
@@ -46,6 +54,27 @@ cookie guessing the password); success clears.
 **Better Auth's own two-factor account lockout** (default on: 10 failed codes, then 15 minutes
 refused even with the right code) is turned off (`accountLockout: { enabled: false }`): it is the
 hard lockout the owner ruled out, and our counter covers codes. Its per-challenge try limit stays.
+
+## Every endpoint that checks a password or second factor (Better Auth 1.7.14 + enabled plugins)
+
+| Endpoint                                                        | Checks                           | Status                                                                                                                                                      |
+| --------------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/sign-in/email`                                                | password                         | counted (`INVALID_EMAIL_OR_PASSWORD`)                                                                                                                       |
+| `/two-factor/verify-totp`                                       | TOTP                             | counted (`INVALID_CODE`), with or without a session                                                                                                         |
+| `/two-factor/verify-backup-code`                                | backup code                      | counted (`INVALID_BACKUP_CODE`), test                                                                                                                       |
+| `/two-factor/verify-otp`                                        | email OTP                        | counted; OTP is not configured (no `sendOTP`), answers `OTP_NOT_CONFIGURED`                                                                                 |
+| `/change-password`                                              | password                         | counted (`INVALID_PASSWORD`)                                                                                                                                |
+| `/two-factor/enable`, `/two-factor/disable`                     | password (`validatePassword`)    | counted (`INVALID_PASSWORD`)                                                                                                                                |
+| `/two-factor/get-totp-uri`, `/two-factor/generate-backup-codes` | password (`checkPassword`)       | counted (`INVALID_PASSWORD`)                                                                                                                                |
+| `/verify-password`                                              | password                         | **disabled** (`disabledPaths`, 404; only labelled server-scoped, answered over HTTP; nothing in apps/web, the CLI or server code calls it; review M1), test |
+| `/delete-user`                                                  | password                         | **disabled** (`disabledPaths`; also off since `user.deleteUser` is not enabled), test                                                                       |
+| `/reset-password`                                               | reset token (single use, 30 min) | not a password guess; Better Auth 5 per 60 s per IP                                                                                                         |
+| `/passkey/verify-authentication`                                | WebAuthn signature               | not guessable; not counted                                                                                                                                  |
+| `/sso/callback/:slug`                                           | IdP ID token                     | not counted; clears                                                                                                                                         |
+| `view-backup-codes`, `generateTOTP`                             | —                                | server-only (`SERVER_ONLY`), not routed                                                                                                                     |
+
+Not present: username, phone-number, magic-link and email-OTP sign-in; `/change-email` checks no
+password. Kobe's own plugins (invitation, SSO, SSO link) verify no password.
 
 ## No enumeration
 
@@ -103,13 +132,19 @@ hooks, leaving one reservation unrefunded for that window.
 
 ## Residual risks
 
-- **Victim kept throttled.** An attacker who knows an address can make 10 failures every 15
-  minutes from any IPs (Better Auth's per-IP limit is 3 per 10 s) and keep the account throttled,
-  and can race the victim for the one attempt per minute. That is what the decision implies (a
-  per-account delay with no per-IP exemption); the victim keeps passkeys, SSO and password reset
-  (which clears it, though the attacker can start again), and Site admins see it in the audit log
-  and on Users. A per-device exemption (e.g. a signed "known browser" cookie) would close it and
-  needs a decision.
+For the owner, plainly (security review 2026-11-22):
+
+1. **Holding a victim at 1 attempt per minute is effectively a lockout of password sign-in while
+   the attack lasts.** About 11 requests every 15 minutes, from anywhere, keep a known address out
+   of password sign-in: the attacker takes each minute's slot as it opens and the victim's tries
+   almost always meet a used slot. Passkeys and SSO still work; a reset clears it but the attacker
+   refills it in seconds. A per-device exemption (a signed "known browser" cookie) would close it
+   and needs a decision.
+2. **With the library's 2FA lockout off, an attacker who knows the password gets roughly 2.4×
+   more code guesses per day** (about 2,300 instead of about 960; about 0.7 % a day against a
+   6-digit TOTP with ±1 step, against about 0.3 % before), and the fixed window allows about 20
+   quick guesses across a window boundary.
+
 - Changing an account's email moves it to a new counter (needs a signed-in session).
 - Throttled (429) attempts are not audited individually (as with Better Auth's own 429s); the
   `auth.sign_in.throttled` event marks the window. The audit flood test now stays under the
@@ -125,7 +160,9 @@ renumbered), `docs/audit-log.md` (`auth.sign_in.throttled`), `docs/guide/referen
 ## Checks
 
 install, build; db/server/web typecheck; `src/sign-in-throttle.db.test.ts` (14, red without the
-plugin: 6 fail), `scim.db.test.ts` (new no-IP test), `auth`, `audit`, `account-lifecycle`,
+plugin: 6 fail; review round: +6 tests, 5 red before the fixes: `/verify-password`, slot refund
+unit and full throttled password-then-code flow, passkey not clearing, SSO clearing in
+`sso-sign-in.db.test.ts`; backup codes and the deactivated-account refund are coverage), `scim.db.test.ts` (new no-IP test), `auth`, `audit`, `account-lifecycle`,
 `rate-limit`, `sso-sign-in`, `sso-required`, `sso-linking`, `audit-pii`, `invites`, `site-sso`,
 `break-glass`, `offboarding`, `startup/server` db tests; server unit (`app`, `config`, `src/auth`);
 `src/openapi` (regenerated), `route-inventory` (snapshot updated), `kobe-mcp/session-contract`;

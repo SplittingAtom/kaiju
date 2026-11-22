@@ -206,6 +206,10 @@ export function createAuth({
       useSecureCookies: origin.protocol === "https:",
       ipAddress: { ipAddressHeaders: ["x-forwarded-for"], trustedProxies: [...trustedProxies] },
     },
+    // Endpoints Kobe doesn't use that check a password outside the sign-in throttle (KOBE-812
+    // review M1): `/verify-password` is only labelled server-scoped and answers over HTTP;
+    // `/delete-user` is off anyway (user.deleteUser not enabled).
+    disabledPaths: ["/verify-password", "/delete-user"],
     telemetry: { enabled: false },
     hooks: {
       before: authGuards({ db, ssoSettings: sso?.settings, rotation }),

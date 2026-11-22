@@ -6,9 +6,10 @@ import {
   signInAccountKey,
   THROTTLED_MESSAGE,
 } from "./auth/sign-in-throttle.js";
-import { openHarness, PASSWORD, type Harness } from "./testing/harness.js";
+import { openHarness, PASSWORD, PUBLIC_URL, type Harness } from "./testing/harness.js";
 import type { TestBrowser, TestResponse } from "./testing/browser.js";
 import { totpFromUri } from "./testing/totp.js";
+import { SoftwareAuthenticator } from "./testing/webauthn.js";
 
 /**
  * KOBE-812: failed password and second-factor attempts are counted per account across every
@@ -36,6 +37,16 @@ async function nextMinute(): Promise<void> {
        expires_at = expires_at - $1::bigint WHERE key LIKE 'kobe:sign-in-slot:%'`,
     [intervalMs + 1000],
   );
+}
+
+/** Turns on TOTP for the account (signed in with the password) and returns its otpauth URI. */
+async function enrollTotp(email: string): Promise<string> {
+  const b = await h.signIn(email);
+  const enable = await b.post("/api/auth/two-factor/enable", { password: PASSWORD });
+  const uri: string = enable.json.totpURI;
+  const verify = await b.post("/api/auth/two-factor/verify-totp", { code: totpFromUri(uri) });
+  expect(verify.status).toBe(200);
+  return uri;
 }
 
 async function throttledAudits(userId: string): Promise<number> {
@@ -97,6 +108,26 @@ describe("the counter (ac-1)", () => {
     }
   });
 
+  it("gives the minute's slot back with a refunded attempt (review M2)", async () => {
+    let t = 5_000_000;
+    const throttle = createSignInThrottle({ db: h.deps.database.db, now: () => t });
+    const account = "unit-slot-refund";
+    for (let i = 0; i < failures; i++) {
+      const a = await throttle.begin(account);
+      if (a.allowed) await throttle.failed(account, a);
+    }
+    t += intervalMs + 1;
+    const correct = await throttle.begin(account);
+    expect(correct.allowed).toBe(true);
+    // Refused tries in between don't keep the slot taken once it is given back.
+    expect((await throttle.begin(account)).allowed).toBe(false);
+    if (correct.allowed) await throttle.refund(account, correct);
+    t += 1000;
+    const code = await throttle.begin(account);
+    expect(code.allowed).toBe(true);
+    expect((await throttle.begin(account)).allowed).toBe(false);
+  });
+
   it("lets only 10 of a parallel burst through, plus one interval attempt", async () => {
     const throttle = createSignInThrottle({ db: h.deps.database.db });
     const verdicts = await Promise.all(
@@ -150,11 +181,30 @@ describe("password sign-in (ac-1, ac-2)", () => {
     await expect.poll(() => throttledAudits(id)).toBe(2);
   });
 
-  it("does not count a correct password (a 2FA step or a deactivated account)", async () => {
-    await h.createUser("max@throttle.test");
-    for (let i = 0; i < failures + 2; i++) {
-      expect((await signIn("max@throttle.test", PASSWORD)).status).toBe(200);
+  it("gives back a correct password's attempt (deactivated account), so it never adds up", async () => {
+    const id = await h.createUser("max@throttle.test");
+    for (let i = 0; i < failures - 1; i++) {
+      expect((await signIn("max@throttle.test", WRONG)).status).toBe(401);
     }
+    expect((await siteAdmin.post(`/v1/site/users/${id}/deactivate`)).status).toBe(200);
+    // Right password, refused for the deactivation: refunded every time, never throttled.
+    for (let i = 0; i < 5; i++) {
+      expect((await signIn("max@throttle.test", PASSWORD)).status).toBe(403);
+    }
+    // Still one failure to go before the delay.
+    expect((await signIn("max@throttle.test", WRONG)).status).toBe(401);
+    expect((await signIn("max@throttle.test", WRONG)).status).toBe(429);
+  });
+
+  it("is not a password oracle elsewhere: /verify-password is switched off (review M1)", async () => {
+    await h.createUser("val@throttle.test");
+    const b = await h.signIn("val@throttle.test");
+    for (const password of [WRONG, PASSWORD]) {
+      const res = await b.request("POST", "/api/auth/verify-password", { password }, freshIp());
+      expect(res.status).toBe(404);
+    }
+    const del = await b.request("POST", "/api/auth/delete-user", { password: WRONG }, freshIp());
+    expect(del.status).toBe(404);
   });
 
   it("is cleared by a password reset", async () => {
@@ -250,6 +300,79 @@ describe("second factor and signed-in password checks (ac-1)", () => {
     expect(refused.status).toBe(429);
     // Same account: the password step waits too.
     expect((await signIn("tom@throttle.test", PASSWORD)).status).toBe(429);
+  });
+
+  it("throttled: the owner's right password then right code signs in within one slot (review M2)", async () => {
+    await h.createUser("zoe@throttle.test");
+    const uri = await enrollTotp("zoe@throttle.test");
+    for (let i = 0; i < failures; i++) {
+      expect((await signIn("zoe@throttle.test", WRONG)).status).toBe(401);
+    }
+    expect((await signIn("zoe@throttle.test", WRONG)).status).toBe(429);
+    await nextMinute(); // the attacker leaves the slot alone this minute
+    const owner = h.browser();
+    const first = await signIn("zoe@throttle.test", PASSWORD, owner);
+    expect(first.json).toMatchObject({ twoFactorRedirect: true });
+    const code = await owner.request(
+      "POST",
+      "/api/auth/two-factor/verify-totp",
+      { code: totpFromUri(uri) },
+      freshIp(),
+    );
+    expect(code.status, JSON.stringify(code.json)).toBe(200);
+    // Signed in: the counter is gone.
+    expect((await signIn("zoe@throttle.test", WRONG)).status).toBe(401);
+  });
+
+  it("counts wrong backup codes like authenticator codes", async () => {
+    await h.createUser("bea@throttle.test");
+    await enrollTotp("bea@throttle.test");
+    const browser = h.browser();
+    const challenge = async () => {
+      const first = await signIn("bea@throttle.test", PASSWORD, browser);
+      expect(first.json).toMatchObject({ twoFactorRedirect: true });
+    };
+    await challenge();
+    let counted = 0;
+    while (counted < failures) {
+      const res = await browser.request(
+        "POST",
+        "/api/auth/two-factor/verify-backup-code",
+        { code: "ABCDE-FGHIJ" },
+        freshIp(),
+      );
+      if (res.status === 401) counted++;
+      else await challenge();
+    }
+    const refused = await browser.request(
+      "POST",
+      "/api/auth/two-factor/verify-backup-code",
+      { code: "ABCDE-FGHIJ" },
+      freshIp(),
+    );
+    expect(refused.status).toBe(429);
+  });
+
+  it("lets a passkey sign in while throttled, without clearing the counter (review L2)", async () => {
+    await h.createUser("pat@throttle.test");
+    const b = await h.signIn("pat@throttle.test");
+    const key = new SoftwareAuthenticator("kobe.test", PUBLIC_URL);
+    const options = await b.get("/api/auth/passkey/generate-register-options");
+    const registered = await b.post("/api/auth/passkey/verify-registration", {
+      response: key.register(options.json),
+      name: "key",
+    });
+    expect(registered.status, JSON.stringify(registered.json)).toBe(200);
+    for (let i = 0; i < failures; i++) await signIn("pat@throttle.test", WRONG);
+    expect((await signIn("pat@throttle.test", WRONG)).status).toBe(429);
+    const p = h.browser();
+    const auth = await p.get("/api/auth/passkey/generate-authenticate-options");
+    const signedIn = await p.post("/api/auth/passkey/verify-authentication", {
+      response: key.authenticate(auth.json),
+    });
+    expect(signedIn.status, JSON.stringify(signedIn.json)).toBe(200);
+    // A session holder could register a passkey: its sign-in must not reset the guesses.
+    expect((await signIn("pat@throttle.test", WRONG)).status).toBe(429);
   });
 
   it("counts a wrong current password on change-password", async () => {

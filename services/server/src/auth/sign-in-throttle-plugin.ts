@@ -42,20 +42,32 @@ const COUNTED: Readonly<Record<Kind, ReadonlySet<string>>> = {
   second_factor: new Set(["INVALID_CODE", "INVALID_BACKUP_CODE", "OTP_HAS_EXPIRED"]),
   session_password: new Set(["INVALID_PASSWORD"]),
 };
-/** Endpoints whose success is a sign-in: it clears the account's throttle. */
+/**
+ * Endpoints whose success is a sign-in that proves something a guesser lacks: it clears the
+ * account's throttle. Not passkey sign-in: whoever holds a session can register a passkey and sign
+ * in with it, which would hand a stolen session fresh password guesses (KOBE-812 review L2); a
+ * passkey sign-in is never refused by the throttle anyway.
+ */
 const SIGN_IN_ENDS = new Set([
   PASSWORD_SIGN_IN,
   ...SECOND_FACTOR,
-  "/passkey/verify-authentication",
   "/invitation/accept",
   "/sso/callback/:slug",
 ]);
+
+/** The SSO callback ends with a redirect, which Better Auth carries as an APIError (FOUND). */
+function isRedirect(returned: unknown): boolean {
+  const status = (returned as { statusCode?: unknown }).statusCode;
+  return typeof status === "number" && status >= 300 && status < 400;
+}
 
 interface Target {
   readonly kind: Kind;
   readonly account: string;
   /** Known for second-factor and signed-in attempts; looked up by email only when needed. */
   readonly userId?: string;
+  /** Made from a signed-in session (its success proves nothing new: refunded, never clears). */
+  readonly session?: true;
   readonly email?: string;
 }
 
@@ -74,9 +86,11 @@ function codeOf(returned: unknown): string {
  * normalized email, the same for addresses with and without an account); a throttled account is
  * answered 429 with a retry hint before its secret is looked at, so a correct password is refused
  * too until the next allowed attempt. After the endpoint, a wrong secret keeps the reservation,
- * any other outcome gives it back, and a completed sign-in clears the account. The first failure
- * that throttles an account in a window is audited (`auth.sign_in.throttled`) and listed in the
- * Site console. Passkeys and single sign-on are not counted (nothing to guess); they still clear.
+ * any other outcome gives it back, and a completed password or SSO sign-in clears the account. The
+ * first failure that throttles an account in a window is audited (`auth.sign_in.throttled`) and
+ * listed in the Site console. Passkeys and single sign-on are not counted (nothing to guess); a
+ * passkey sign-in does not clear (see SIGN_IN_ENDS). `/verify-password` and `/delete-user` are
+ * disabled in auth.ts (`disabledPaths`), so every password or code check passes through here.
  *
  * Register after the two-factor and SSO-link plugins (their after hooks decide whether a sign-in
  * completed) and before the audit plugin. `onRequest` also reports requests whose client address
@@ -101,8 +115,12 @@ export function signInThrottlePlugin(o: {
       return { kind: "password", account: keyOf(email), email };
     }
     if (SECOND_FACTOR.has(ctx.path)) {
-      // With a session this is enrolment or a re-check, not a sign-in.
-      if (await getSessionFromCtx(ctx).catch(() => null)) return null;
+      // With a session this is enrolment or a re-check, not a sign-in: still a code guess, counted.
+      const session = await getSessionFromCtx(ctx).catch(() => null);
+      if (session) {
+        const { id, email } = session.user;
+        return { kind: "second_factor", account: keyOf(email), userId: id, session: true };
+      }
       const user = await twoFactorUser(ctx);
       return user ? { kind: "second_factor", account: keyOf(user.email), userId: user.id } : null;
     }
@@ -110,7 +128,7 @@ export function signInThrottlePlugin(o: {
       const session = await getSessionFromCtx(ctx).catch(() => null);
       if (!session) return null;
       const { id, email } = session.user;
-      return { kind: "session_password", account: keyOf(email), userId: id };
+      return { kind: "session_password", account: keyOf(email), userId: id, session: true };
     }
     return null;
   }
@@ -131,7 +149,7 @@ export function signInThrottlePlugin(o: {
   async function settle(ctx: AuthCtx): Promise<void> {
     const p = ctx.request ? pending.get(ctx.request) : undefined;
     const returned = ctx.context.returned;
-    if (isAPIError(returned)) {
+    if (isAPIError(returned) && !isRedirect(returned)) {
       if (!p) return;
       if (!COUNTED[p.kind].has(codeOf(returned))) return throttle.refund(p.account, p.attempt);
       const until = await throttle.failed(p.account, p.attempt);
@@ -141,7 +159,9 @@ export function signInThrottlePlugin(o: {
       return;
     }
     const user = ctx.context.newSession?.user;
-    if (SIGN_IN_ENDS.has(ctx.path) && user) return throttle.clear(keyOf(user.email), user.id);
+    if (SIGN_IN_ENDS.has(ctx.path) && user && !p?.session) {
+      return throttle.clear(keyOf(user.email), user.id);
+    }
     // A changed password proves the account holder as much as a reset does.
     if (ctx.path === "/change-password" && p) return throttle.clear(p.account, p.userId);
     if (p) await throttle.refund(p.account, p.attempt);

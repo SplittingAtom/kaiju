@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { and, gt, kobeRateLimits, sql, type KobeDb } from "@kobe/db";
+import { and, eq, gt, kobeRateLimits, sql, type KobeDb } from "@kobe/db";
 import { clearRateLimits, countRateLimitHit, refundRateLimitHit } from "../rate-limit.js";
 
 /**
@@ -47,6 +47,8 @@ export interface SignInAttempt {
   /** Attempts counted in this window, this one included. */
   readonly count: number;
   readonly windowStart: number;
+  /** When the attempt took the interval slot (over the threshold): the slot's start, else null. */
+  readonly slotStart: number | null;
 }
 
 export type SignInVerdict =
@@ -71,7 +73,11 @@ export interface SignInThrottle {
    * account is now throttled, else null.
    */
   failed(account: string, attempt: SignInAttempt): Promise<number | null>;
-  /** The attempt was not a failure after all (a correct password, a malformed request): refund. */
+  /**
+   * The attempt was not a failure after all (a correct password with the code still to come, a
+   * malformed request): the count and, over the threshold, the minute's slot are given back, so
+   * the code step that follows a correct password is not refused until the next minute.
+   */
   refund(account: string, attempt: SignInAttempt): Promise<void>;
   /** A successful sign-in or a password reset: the account's counters and Site notice go. */
   clear(account: string, userId?: string): Promise<void>;
@@ -92,29 +98,59 @@ export function createSignInThrottle(o: {
   const now = o.now ?? Date.now;
   const { failures, windowMs, intervalMs } = SIGN_IN_THROTTLE;
 
+  /**
+   * Takes the account's interval slot if it is free (never taken, its interval over, or given
+   * back): one atomic upsert answering the new slot's start, or null when it is in use. A refused
+   * attempt leaves the slot untouched, so a refund really frees it.
+   */
+  async function claimSlot(account: string, t: number): Promise<number | null> {
+    const result = await db.execute<{ window_start: string | number }>(sql`
+      INSERT INTO kobe_rate_limits AS r (key, count, window_start, expires_at)
+      VALUES (${`kobe:${slotKey(account)}`}, 1, ${t}, ${t + intervalMs})
+      ON CONFLICT (key) DO UPDATE SET count = 1, window_start = ${t}, expires_at = ${t + intervalMs}
+      WHERE r.count = 0 OR r.window_start <= ${t - intervalMs}
+      RETURNING window_start`);
+    const row = result.rows[0];
+    return row ? Number(row.window_start) : null;
+  }
+
+  async function slotStartOf(account: string, t: number): Promise<number> {
+    const [row] = await db
+      .select({ start: kobeRateLimits.windowStart })
+      .from(kobeRateLimits)
+      .where(eq(kobeRateLimits.key, `kobe:${slotKey(account)}`));
+    return row ? Number(row.start) : t;
+  }
+
   return {
     async begin(account) {
       const t = now();
       const hit = await countRateLimitHit(db, failuresKey(account), { windowMs }, t);
-      if (hit.count <= failures) return { allowed: true, ...hit };
+      if (hit.count <= failures) return { allowed: true, ...hit, slotStart: null };
       // Throttled: one attempt per interval, the first taken when the threshold was crossed
       // (`failed` seeds it), so the eleventh guess waits too.
-      const slot = await countRateLimitHit(db, slotKey(account), { windowMs: intervalMs }, t);
-      if (slot.count <= 1) return { allowed: true, ...hit };
-      const next = Math.min(hit.windowStart + windowMs, slot.windowStart + intervalMs);
+      const slotStart = await claimSlot(account, t);
+      if (slotStart !== null) return { allowed: true, ...hit, slotStart };
+      const next = Math.min(
+        hit.windowStart + windowMs,
+        (await slotStartOf(account, t)) + intervalMs,
+      );
       return { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil((next - t) / 1000)) };
     },
 
     async failed(account, attempt) {
       if (attempt.count < failures) return null;
-      if (attempt.count === failures) {
-        await countRateLimitHit(db, slotKey(account), { windowMs: intervalMs }, now());
-      }
+      if (attempt.count === failures) await claimSlot(account, now());
       return attempt.windowStart + windowMs;
     },
 
     async refund(account, attempt) {
       await refundRateLimitHit(db, failuresKey(account), attempt.windowStart);
+      if (attempt.slotStart !== null) {
+        await db.execute(sql`
+          UPDATE kobe_rate_limits SET count = 0
+          WHERE key = ${`kobe:${slotKey(account)}`} AND window_start = ${attempt.slotStart}`);
+      }
     },
 
     async clear(account, userId) {

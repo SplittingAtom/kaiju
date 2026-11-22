@@ -253,8 +253,9 @@ with _your organization_**.
 10 wrong passwords or authenticator codes for one account in 15 minutes, from anywhere, that
 account gets one try a minute until the 15 minutes have passed. During that time even the right
 password is refused until the next try is due, so wait a minute before trying again. Signing in
-with a passkey or your organization's account is not affected, and a successful sign-in or a
-password reset (**Forgot your password?**) ends the wait at once. The same message appears when
+with a passkey or your organization's account is not affected. Signing in with your
+organization's account, or with your password and code once a try is due, or a password reset
+(**Forgot your password?**) ends the wait at once. The same message appears when
 one network sends many sign-ins within a few seconds. Kobe never locks an account. If it keeps
 happening although you are not mistyping, someone else may be trying your address: tell your site
 admin, who sees it in the audit log and on **Users**.

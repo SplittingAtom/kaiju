@@ -31,7 +31,7 @@ export function SignInProtectionNotices({
         <Notice tone="warn">
           {`Sign-in is slowed down for ${names.join(", ")} after 10 failed attempts in 15 minutes. ` +
             "They can try once a minute until it clears, or sign in with a passkey or single sign-on. " +
-            "A password reset or a successful sign-in clears it."}
+            "A password reset, or a sign-in with the password or single sign-on, clears it."}
         </Notice>
       )}
     </>

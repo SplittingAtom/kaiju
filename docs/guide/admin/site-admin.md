@@ -38,8 +38,9 @@ read a person's portable preferences either; reading them needs its own break-gl
   **Sign-in protection** notices at the top: an account that had 10 failed password or
   authenticator-code attempts in 15 minutes (from any address, counted together) gets one attempt
   a minute until the 15 minutes are over, and shows **Sign-in slowed**. Kobe never locks an
-  account; passkeys and single sign-on still work, and a successful sign-in or a password reset
-  clears it. Each time an account starts being slowed down the audit log records
+  account; passkeys and single sign-on still work. A password reset, or signing in with the
+  password (and code) or through single sign-on, clears it; a passkey sign-in does not, since
+  anyone holding a session could add a passkey. Each time an account starts being slowed down the audit log records
   `auth.sign_in.throttled` (once per 15 minutes, not per attempt; no email is sent). Addresses
   with no account are slowed down the same way, so the answer never tells whether an account
   exists. A second notice appears when, in the last day, sign-in or SCIM requests arrived without
