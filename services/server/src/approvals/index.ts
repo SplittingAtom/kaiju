@@ -5,10 +5,8 @@ export { approvalKeyFromSecret, approvalKeyring, type ApprovalKeyring } from "./
 export { ApprovalService, type ApprovalServiceOptions } from "./service.js";
 export {
   createApprovalVerifier,
-  enforceMcpCall,
   type ApprovalCheck,
   type ApprovalVerifier,
   type ApprovedCall,
-  type McpEnforcement,
 } from "./verify.js";
 export { approvalViewSchema, type ApprovalView } from "./view.js";

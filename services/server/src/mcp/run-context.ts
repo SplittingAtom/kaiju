@@ -1,8 +1,9 @@
 import { APPROVAL_MODES, type ApprovalMode } from "@kobe/protocol";
 import { sql, withTeam, type KobeDb } from "@kobe/db";
-import { clampApprovalMode, dangerousToolsFor } from "../sandbox-wire/policy-check.js";
+import { strictestApprovalMode } from "../policy/approval-floor.js";
+import { dangerousToolsFor } from "../policy/dangerous-mode.js";
 import type { RunPolicyContextSource } from "../sandbox-wire/types.js";
-import type { McpPrincipal } from "./decide.js";
+import type { McpPrincipal } from "./decide-types.js";
 
 /**
  * The runs an MCP call might belong to (KOBE-58 review M1). Pi's MCP client cannot say which tool
@@ -110,7 +111,7 @@ export async function loadActiveRuns(
         ...(row.skill_eval ? { skillEval: true } : {}),
         agentId: row.agent_id,
         agentVersion: row.agent_version,
-        mode: clampApprovalMode(
+        mode: strictestApprovalMode(
           APPROVAL_MODES.includes(requested) ? requested : "ask-on-write",
           context.floor,
         ),

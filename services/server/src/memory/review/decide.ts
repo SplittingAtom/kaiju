@@ -9,11 +9,10 @@ import {
 import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
 import { recordAudit } from "../../audit/record.js";
 import { snapshotPortableHolds } from "../../legal-hold/portable-hold.js";
-import { openOp, type Op } from "../items/context.js";
+import { afterCommit, openOp, type Op } from "../items/context.js";
 import { createItemIn } from "../items/create.js";
 import { archiveItemIn, patchItemIn, revertItemIn } from "../items/edit.js";
-import { deliverSiteNotices, type PendingSiteNotices } from "../items/limits.js";
-import { invalid, notAllowed } from "../items/errors.js";
+import { MemoryItemError, invalid, notAllowed } from "../items/errors.js";
 import { readItem } from "../items/rows.js";
 import type { MemoryWho } from "../items/who.js";
 import { statementHash } from "../learn/validate.js";
@@ -56,6 +55,11 @@ export const saveCandidateSchema = z.strictObject({
   /** Required for a portable save (it follows the person into every Workspace). */
   confirm_portable: z.literal(true).optional(),
   overrides: semanticMemoryOverridesSchema.optional(),
+  /**
+   * The version of the memory the candidate changes that the person reviewed on the card
+   * (KOBE-779): sent once the card said the memory changed since Kobe suggested this.
+   */
+  target_version: z.number().int().positive().optional(),
 });
 export type SaveCandidate = z.infer<typeof saveCandidateSchema>;
 
@@ -69,7 +73,10 @@ export interface SavedCandidate {
   readonly item: SemanticMemoryItemDetail;
 }
 
-/** The caller's transaction for decisions: notices to Site curators go out after commit. */
+/**
+ * The caller's transaction for decisions: after commit, saved items are embedded and notices to
+ * Site curators go out (`afterCommit`).
+ */
 async function inReview<T>(
   db: KobeDb,
   who: MemoryWho,
@@ -86,8 +93,7 @@ async function inReview<T>(
       return op;
     }),
   );
-  const pending: PendingSiteNotices = opened.flatMap((o) => o.pending);
-  if (pending.length > 0) await deliverSiteNotices(db, pending);
+  await afterCommit(db, opened);
   return out;
 }
 
@@ -129,22 +135,38 @@ async function saveLocked(
   const shape = saveShape(c);
   let item: SemanticMemoryItemDetail;
   if (shape.op === "update") {
-    const target = await readItem(tx, op.loc, shape.targetId);
-    if (!target) throw invalid("The memory this candidate changes is gone.");
+    const current = await targetVersion(
+      tx,
+      op,
+      shape.targetId,
+      body.target_version ?? c.target_version,
+    );
     item = await patchItemIn(op, shape.targetId, {
-      expected_version: target.current_version,
+      expected_version: current,
       statement,
       ...(body.kind ? { kind } : {}),
       ...(body.overrides ? { overrides: body.overrides } : {}),
     });
   } else {
+    const replaced =
+      shape.op === "supersede"
+        ? {
+            supersedes_id: shape.targetId,
+            supersedes_expected_version: await targetVersion(
+              tx,
+              op,
+              shape.targetId,
+              body.target_version ?? c.target_version,
+            ),
+          }
+        : {};
     const parsed = createSemanticMemoryItemSchema.safeParse({
       scope,
       kind,
       statement,
       ...links,
       ...(scope === "portable" ? { confirm_portable: true } : {}),
-      ...(shape.op === "supersede" ? { supersedes_id: shape.targetId } : {}),
+      ...replaced,
       ...(body.overrides ? { overrides: body.overrides } : {}),
     });
     if (!parsed.success) throw invalid(parsed.error.issues[0]?.message ?? "Invalid memory.");
@@ -174,6 +196,30 @@ async function saveLocked(
   });
   return { candidate_id: row.id, item };
 }
+
+/**
+ * The current version of the memory a candidate changes, refused (409 `memory_version_conflict`,
+ * KOBE-779 review pass 2 P2-46) when it moved past `base`: the version the pass saw, or the one
+ * the person reviewed on the card. Nothing is written, so the candidate stays open for another
+ * look. A candidate stored without a base (before KOBE-779) acts on the current version.
+ */
+async function targetVersion(
+  tx: KobeTx,
+  op: Op,
+  targetId: string,
+  base: number | undefined,
+): Promise<number> {
+  const target = await readItem(tx, op.loc, targetId);
+  if (!target) throw invalid("The memory this candidate changes is gone.");
+  if (base !== undefined && base !== target.current_version)
+    throw new MemoryItemError("memory_version_conflict", TARGET_MOVED_MESSAGE, {
+      current_version: target.current_version,
+    });
+  return target.current_version;
+}
+
+export const TARGET_MOVED_MESSAGE =
+  "The memory this candidate changes was changed since Kobe suggested this. Look at the changes again, then save or dismiss.";
 
 export function saveCandidate(
   db: KobeDb,

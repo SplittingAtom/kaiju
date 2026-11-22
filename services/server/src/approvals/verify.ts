@@ -1,4 +1,3 @@
-import type { PolicyDecision, PolicyEngine, PolicyInput, PolicyReason } from "@kobe/protocol";
 import { authorizeApprovedCall, type VerifyFailure } from "@kobe/protocol/node";
 import { SYSTEM_ACTOR, withTeam, type KobeDb } from "@kobe/db";
 import type { Logger } from "pino";
@@ -145,71 +144,5 @@ export function createApprovalVerifier(options: {
         return { ok: false, reason: "malformed" };
       }
     },
-  };
-}
-
-export type McpEnforcement =
-  | { readonly decision: "allow"; readonly reasons: readonly PolicyReason[] }
-  | {
-      readonly decision: "deny";
-      readonly reasons: readonly PolicyReason[];
-      readonly message: string;
-    };
-
-/**
- * The MCP proxy's second enforcement (D27, D29), composed: the policy engine decides again at
- * `enforcement_point: "mcp_proxy"`; `allow` and `deny` stand; `require_approval` runs only with a
- * valid signed approval for exactly this call (verified and consumed above), else it is denied.
- * KOBE-58 builds `input` from its own state (verified session token, registry, parsed arguments).
- */
-export async function enforceMcpCall(
-  engine: PolicyEngine,
-  verifier: ApprovalVerifier,
-  input: PolicyInput,
-): Promise<McpEnforcement> {
-  let decision: PolicyDecision;
-  try {
-    decision = await engine.decide(input);
-  } catch {
-    decision = {
-      effect: "deny",
-      risk: input.tool.risk,
-      reasons: [{ code: "policy_error", stage: "site_deny", message: "Policy failed." }],
-    };
-  }
-  if (decision.effect === "allow") return { decision: "allow", reasons: decision.reasons };
-  if (decision.effect === "deny") {
-    return {
-      decision: "deny",
-      reasons: decision.reasons,
-      message: decision.reasons[0]?.message ?? "Denied by policy.",
-    };
-  }
-  if (input.actor.kind === "schedule") {
-    // D32: nobody answers a scheduled run, so no approval can stand in for one.
-    return {
-      decision: "deny",
-      reasons: decision.reasons,
-      message: "Scheduled runs only run allow-listed and read-only tools; this call was skipped.",
-    };
-  }
-  const check = await verifier.authorize({
-    teamId: input.team_id,
-    userId: input.actor.user_id,
-    runId: input.run.run_id,
-    toolCallId: input.tool_call_id,
-    tool: input.tool.name,
-    input: input.input,
-  });
-  if (check.ok) {
-    return {
-      decision: "allow",
-      reasons: [{ code: "approval_granted", stage: "prompt", message: "Approved by the user." }],
-    };
-  }
-  return {
-    decision: "deny",
-    reasons: decision.reasons,
-    message: `This call needs a signed approval for exactly this input (${check.reason}).`,
   };
 }

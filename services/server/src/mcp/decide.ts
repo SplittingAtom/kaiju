@@ -18,7 +18,7 @@ import {
   loadTeamConnector,
   type EnabledConnector,
 } from "./catalog.js";
-import { combineDecisions, policyInputFor, type Combined } from "./decide-policy.js";
+import { decideAcrossRuns, policyInputFor, type Combined } from "./decide-policy.js";
 import {
   audit,
   captureFor,
@@ -34,7 +34,7 @@ import type {
   McpDecideDeps,
   McpPrincipal,
 } from "./decide-types.js";
-import { DECISION_CONCURRENCY, distinctSiblings, engineForCall, mapLimited } from "./fan-out.js";
+import { engineForCall } from "./fan-out.js";
 import { loadActiveRuns, runHasConnector, type ActiveRunContext } from "./run-context.js";
 import { appliedUserRule, recordRuleApplied } from "../policy/rule-applied.js";
 import { appliedDangerousMode, recordDangerousApplied } from "../policy/dangerous-mode.js";
@@ -348,29 +348,21 @@ async function decideUnderRuns(
   const { named } = k;
   const engine = engineForCall(deps.policy);
   const decide = async (run: ActiveRunContext) => {
-    const policyInput = policyInputFor(
-      principal,
-      run,
-      k.descriptor,
-      k.toolCallId,
-      k.input,
-      k.connector,
-    );
+    const policyInput = policyInputFor(principal, run, k.descriptor, k.toolCallId, k.input, {
+      enforcementPoint: "mcp_proxy",
+      exposure: k.connector.exposure,
+    });
     const decision = await engine.decide(policyInput);
     return deps.guard === undefined ? decision : deps.guard(decision, policyInput, run);
   };
   // The sandbox's claim picks the named run, but cannot pick its policy: the call is decided
   // under every distinct policy context of its active runs (review M1), bounded (fan-out.ts).
   const namedDecision = await decide(named);
-  // A remembered approval can be bound to a thread or a run (KOBE-289): then the answer depends
-  // on the run itself, not only on its policy context, so every other active run is decided on
-  // its own (review S1). A rule of thread A never allows a call while thread B also runs.
-  const others =
-    appliedUserRule(namedDecision) === undefined
-      ? distinctSiblings(named, k.runs)
-      : k.runs.filter((r) => r.runId !== named.runId);
-  const siblings = await mapLimited(others, DECISION_CONCURRENCY, decide);
-  const combined = combineDecisions(namedDecision, siblings);
+  const { combined } = await decideAcrossRuns(
+    { runId: named.runId, decision: namedDecision },
+    k.runs,
+    decide,
+  );
   if (combined.effect === "deny") {
     return await skip(c, k, combined.reason.code, combined.reason.message);
   }

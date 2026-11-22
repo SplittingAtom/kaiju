@@ -5,17 +5,25 @@ import type {
   PolicyReason,
   ToolDescriptor,
 } from "@kobe/protocol";
-import type { TeamConnector } from "./catalog.js";
-import type { McpPrincipal } from "./decide-types.js";
+import { appliedUserRule } from "../policy/rule-applied.js";
+import type { ConnectorExposure } from "../policy/gates.js";
+import { DECISION_CONCURRENCY, distinctSiblings, mapLimited } from "./fan-out.js";
 import type { ActiveRunContext } from "./run-context.js";
 
+/** Where the call is decided, and the exposure the caller claims (the engine's state also applies). */
+export interface CallSite {
+  readonly enforcementPoint: "sandbox" | "mcp_proxy";
+  readonly exposure: ConnectorExposure;
+}
+
+/** The engine input for an MCP call under one active run, at either enforcement point. */
 export function policyInputFor(
-  principal: McpPrincipal,
+  principal: { readonly teamId: string; readonly userId: string },
   run: ActiveRunContext,
   tool: ToolDescriptor,
   toolCallId: string,
   input: JsonObject,
-  connector: TeamConnector,
+  site: CallSite,
 ): PolicyInput {
   return {
     actor: { user_id: principal.userId, kind: run.trigger },
@@ -32,8 +40,8 @@ export function policyInputFor(
     tool_call_id: toolCallId,
     input,
     context: {
-      enforcement_point: "mcp_proxy",
-      connector_exposure: connector.exposure,
+      enforcement_point: site.enforcementPoint,
+      connector_exposure: site.exposure,
       ...(run.projectId === undefined ? {} : { project_id: run.projectId }),
     },
   };
@@ -71,4 +79,34 @@ export function combineDecisions(
     effect: "require_approval",
     reason: named.effect === "require_approval" ? first(named) : first(strict ?? named),
   };
+}
+
+export interface AcrossRuns {
+  readonly combined: Combined;
+  /** The sibling runs' decisions, in the order decided. */
+  readonly siblings: readonly PolicyDecision[];
+}
+
+/**
+ * The one rule both enforcement points use for an MCP call (review M1, KOBE-777): the named run's
+ * decision combined with the decisions under the sandbox's other active runs. Runs with the same
+ * policy context as the named run, or as each other, are decided once (`distinctSiblings`), except
+ * when a member's remembered approval decided the named run: such a rule can be bound to a thread
+ * or run, so every other run is decided on its own (review S1). `named` is the named run's own
+ * context when it is among `runs` (the sandbox's `policy.check` may not find it; then every other
+ * run is decided). The sandbox's `policy.check` and the MCP proxy both call this with the same runs
+ * (`loadActiveRuns`) and the same per-run input (`policyInputFor`), so they reach the same answer.
+ */
+export async function decideAcrossRuns(
+  named: { readonly runId: string; readonly decision: PolicyDecision },
+  runs: readonly ActiveRunContext[],
+  decide: (run: ActiveRunContext) => Promise<PolicyDecision>,
+): Promise<AcrossRuns> {
+  const context = runs.find((r) => r.runId === named.runId);
+  const others =
+    appliedUserRule(named.decision) === undefined && context !== undefined
+      ? distinctSiblings(context, runs)
+      : runs.filter((r) => r.runId !== named.runId);
+  const siblings = await mapLimited(others, DECISION_CONCURRENCY, decide);
+  return { combined: combineDecisions(named.decision, siblings), siblings };
 }

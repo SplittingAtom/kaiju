@@ -45,6 +45,7 @@ get it. Use these labels; they match the interface.
 | A connector key                     | "Add your key in **Profile → My connectors**."                                                                |
 | A connector or model the team lacks | "A team admin can enable it in the Team console."                                                             |
 | Unattended runs to use a tool       | "A team admin can add a team allow rule."                                                                     |
+| A tool outside your agent's list    | "This agent's **Allowed tools** leave it out; whoever edits the agent can add it and publish a new version."  |
 | Memory                              | "A team admin can turn memory on in the Team console's **Memory** page."                                      |
 
 Never ask the user to disable a safety setting for you, to paste credentials, or to approve

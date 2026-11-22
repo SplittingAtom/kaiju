@@ -29,7 +29,20 @@ export interface NewVersion {
   readonly proposalId?: string | undefined;
 }
 
-export async function insertVersion(tx: KobeTx, loc: Location, v: NewVersion): Promise<void> {
+/**
+ * Where a version is written: the op's transaction and location, and its `saved` list. Every new
+ * version is listed there, so the store embeds it after commit (KOBE-779: no write path can skip
+ * embedding).
+ */
+export interface VersionTarget {
+  readonly tx: KobeTx;
+  readonly loc: Location;
+  readonly saved: string[];
+}
+
+export async function insertVersion(op: VersionTarget, v: NewVersion): Promise<void> {
+  const { tx, loc } = op;
+  op.saved.push(v.itemId);
   const common = sql`${v.version}, ${v.statement}, ${loc.userId}, ${v.actorKind}, ${v.lintOverride}, ${v.policyOverride}`;
   if (loc.workspace) {
     const entries = v.sourceEntryIds

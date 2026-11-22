@@ -9,7 +9,11 @@ import { findSecret } from "../checks/secrets.js";
 import { quoteFoundIn } from "../quote-normalise.js";
 import { mentionsCapabilityChange, quoteAsksCapabilityChange } from "./capability.js";
 import { listedExistingItems } from "./prompt/build.js";
-import type { ExtractorPromptInput, ExtractorSpeaker } from "./prompt/input.js";
+import type {
+  ExtractorExistingItem,
+  ExtractorPromptInput,
+  ExtractorSpeaker,
+} from "./prompt/input.js";
 
 /**
  * The pure part of a pass's candidate validation (KOBE-394; SMB5/KOBE-393 runs it on every parsed
@@ -45,8 +49,8 @@ import type { ExtractorPromptInput, ExtractorSpeaker } from "./prompt/input.js";
  *
  * Skill hints holding a credential or reading as an instruction are left out.
  *
- * A survivor gets its destination: `user`, `portable`, `team`, or `project_notes` for a
- * project-specific Workspace candidate (project facts go to the project's Notes, not Workspace
+ * A survivor gets its destination: its target's scope when it acts on an existing item (KOBE-779),
+ * else `user`, `portable`, `team`, or `project_notes` for a project-specific Workspace candidate (project facts go to the project's Notes, not Workspace
  * memories). Never `site`: the schema has no such scope.
  */
 
@@ -69,6 +73,11 @@ export type CandidateDestination = "user" | "portable" | "team" | "project_notes
 export interface ScreenedCandidate {
   readonly candidate: MemoryExtractorCandidate;
   readonly destination: CandidateDestination;
+  /**
+   * The version of the target the prompt listed (KOBE-779, P2-46): To review refuses the update
+   * once the target moved past it. Absent for `add` or when the listing had no version.
+   */
+  readonly targetVersion?: number;
 }
 
 export interface ScreenResult {
@@ -79,12 +88,22 @@ export interface ScreenResult {
 }
 
 type Verdict =
-  | { readonly ok: true; readonly destination: CandidateDestination }
+  | {
+      readonly ok: true;
+      readonly destination: CandidateDestination;
+      readonly targetVersion?: number;
+    }
   | { readonly ok: false; readonly reason: ScreenDropReason };
+
+interface ListedItem {
+  readonly policy: boolean;
+  readonly scope: ExtractorExistingItem["scope"];
+  readonly version?: number | undefined;
+}
 
 interface Context {
   readonly entries: ReadonlyMap<string, { speaker: ExtractorSpeaker; text: string }>;
-  readonly items: ReadonlyMap<string, { policy: boolean }>;
+  readonly items: ReadonlyMap<string, ListedItem>;
   readonly hasProject: boolean;
 }
 
@@ -118,7 +137,11 @@ function normaliseEvidenceIds(
 
 const SHARED_SPEAKERS: ReadonlySet<ExtractorSpeaker> = new Set(["person", "assistant"]);
 
-function evidenceReason(c: MemoryExtractorCandidate, ctx: Context): ScreenDropReason | null {
+function evidenceReason(
+  c: MemoryExtractorCandidate,
+  ctx: Context,
+  shared: boolean,
+): ScreenDropReason | null {
   const speakers: ExtractorSpeaker[] = [];
   for (const e of c.evidence) {
     const entry = ctx.entries.get(e.entry_id);
@@ -126,8 +149,7 @@ function evidenceReason(c: MemoryExtractorCandidate, ctx: Context): ScreenDropRe
     speakers.push(entry.speaker);
   }
   if (!speakers.includes("person")) return "person_evidence_missing";
-  if (c.suggested_scope === "team" && speakers.some((s) => !SHARED_SPEAKERS.has(s)))
-    return "shared_evidence_not_person";
+  if (shared && speakers.some((s) => !SHARED_SPEAKERS.has(s))) return "shared_evidence_not_person";
   return null;
 }
 
@@ -159,16 +181,37 @@ function contentReason(c: MemoryExtractorCandidate, ctx: Context): ScreenDropRea
   return null;
 }
 
+/**
+ * Where a candidate acting on an existing item goes (KOBE-779, review pass 2 P2-6): the target's
+ * own scope, whatever the model suggested (an update, supersede or conflict never moves an item).
+ * An inferred candidate aimed at a Workspace item lands in the Workspace here, so the selection
+ * drops it (`inferred_shared`).
+ */
+function targetDestination(target: ListedItem): CandidateDestination | null {
+  if (target.scope === "user" || target.scope === "portable" || target.scope === "team")
+    return target.scope;
+  return null;
+}
+
 function verdictFor(c: MemoryExtractorCandidate, ctx: Context): Verdict {
-  const evidence = evidenceReason(c, ctx);
+  const target = c.target_id === null ? undefined : ctx.items.get(c.target_id);
+  const fromTarget = target ? targetDestination(target) : null;
+  const shared = fromTarget === null ? c.suggested_scope === "team" : fromTarget === "team";
+  const evidence = evidenceReason(c, ctx, shared);
   if (evidence) return { ok: false, reason: evidence };
   if (c.target_id !== null) {
-    const target = ctx.items.get(c.target_id);
     if (!target) return { ok: false, reason: "unknown_target" };
     if (target.policy) return { ok: false, reason: "policy_target" };
+    if (fromTarget === null) return { ok: false, reason: "unknown_target" };
   }
   const content = contentReason(c, ctx);
   if (content) return { ok: false, reason: content };
+  if (fromTarget !== null)
+    return {
+      ok: true,
+      destination: fromTarget,
+      ...(target?.version === undefined ? {} : { targetVersion: target.version }),
+    };
   if (c.suggested_scope === "user")
     return { ok: true, destination: c.portable ? "portable" : "user" };
   if (!c.project_specific) return { ok: true, destination: "team" };
@@ -197,7 +240,12 @@ export function screenExtractorOutput(
   output.candidates.forEach((reply, index) => {
     const candidate = normaliseEvidenceIds(reply, nonce);
     const v = verdictFor(candidate, ctx);
-    if (v.ok) kept.push({ candidate, destination: v.destination });
+    if (v.ok)
+      kept.push({
+        candidate,
+        destination: v.destination,
+        ...(v.targetVersion === undefined ? {} : { targetVersion: v.targetVersion }),
+      });
     else dropped.push({ index, reason: v.reason });
   });
   // A skill hint is shown to the author too: one carrying a credential or an order is left out.

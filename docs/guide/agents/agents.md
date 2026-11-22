@@ -48,6 +48,20 @@ The builder has two tabs, **Identity** and **Behaviour**:
   **Ask on write**, **Ask for every tool** or **Auto (allow-listed tools only)**. The mode is never
   looser than the team's floor.
 
+**Allowed tools** limits the agent; Kobe's server refuses every call the list rules out, whatever
+the approval mode:
+
+- **Connector tools** (named `mcp__<connector>__<tool>`, globs like `mcp__github__*` allowed):
+  only the ones the list names, as soon as the list names anything.
+- **Built-in tools** (read, bash, write, edit, memory, projects and the like): limited only when
+  the list names at least one of them; then only the named ones. A list of connector tools alone
+  leaves every built-in available.
+
+For example, `mcp__github__get_issue` alone lets the agent use that one GitHub tool plus every
+built-in; `read`, `grep` and `mcp__github__get_issue` let it use exactly those three. An empty list
+limits nothing. **Denied tools** always wins. Neither list ever skips an approval: an allowed tool
+still asks when the mode or a rule says so. Each conversation uses the lists of the version it runs.
+
 **Save draft** keeps your changes; **Test chat** tries the draft without publishing. **Publish…**
 creates a new version, after a safety check. Each published version is kept in **Version history**.
 

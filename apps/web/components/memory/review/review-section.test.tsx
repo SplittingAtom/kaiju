@@ -202,6 +202,48 @@ describe("To review", () => {
     expect(api.save).toHaveBeenCalledWith("c1", {}, { policyConflict: true });
   });
 
+  it("says when the memory changed since the pass and saves against what the card shows (KOBE-779)", async () => {
+    const api = fakeApi([
+      cand({
+        operation: "update",
+        scopeLocked: true,
+        allowedScopes: ["user"],
+        saveAllMine: false,
+        target: { id: ITEM, version: 3, statement: "We ship on Mondays" },
+        targetChanged: true,
+      }),
+    ]);
+    show(api);
+    expect(await screen.findByText(/changed since Kobe suggested this/)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(api.save).toHaveBeenCalledWith("c1", { targetVersion: 3 }, {});
+  });
+
+  it("reloads the cards after a save refused because the memory moved on (KOBE-779)", async () => {
+    const api = fakeApi([
+      cand({
+        operation: "update",
+        scopeLocked: true,
+        allowedScopes: ["user"],
+        saveAllMine: false,
+        target: { id: ITEM, version: 1, statement: "We ship on Mondays" },
+      }),
+    ]);
+    api.save.mockImplementationOnce(
+      () =>
+        Promise.resolve({
+          ok: false as const,
+          error: { status: 409, code: "memory_version_conflict", message: "moved" },
+        }) as never,
+    );
+    show(api);
+    expect(screen.queryByText(/changed since Kobe suggested this/)).toBeNull();
+    await userEvent.click(await screen.findByRole("button", { name: "Save" }));
+    expect(api.save).toHaveBeenCalledWith("c1", {}, {});
+    await userEvent.click(await screen.findByRole("button", { name: "Reload" }));
+    await waitFor(() => expect(api.list).toHaveBeenCalledTimes(2));
+  });
+
   it("scrolls the conversation to an evidence quote", async () => {
     const heard: RevealRequest[] = [];
     const on = (e: Event) => heard.push((e as CustomEvent<RevealRequest>).detail);
