@@ -41,6 +41,7 @@ import {
   type SkillScope,
 } from "../skills/store.js";
 import { param } from "../http/request.js";
+import { scanIncomplete } from "../skills/scan-pool.js";
 
 type Ctx = Context<{ Variables: TeamVariables }>;
 
@@ -159,7 +160,10 @@ export function skillRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }
       }
       const review =
         scope.data === "team"
-          ? { status: "pending", flagged: result.scan.findings.length > 0 }
+          ? {
+              status: "pending",
+              flagged: !scanIncomplete(result.scan) && result.scan.findings.length > 0,
+            }
           : null;
       return c.json(
         { skill: skillJson(result.skill), version: versionJson(result.version, review) },

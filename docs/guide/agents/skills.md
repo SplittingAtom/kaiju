@@ -83,6 +83,11 @@ A **personal skill** with a Pass verdict runs in every team without review. A Ca
 verdict, or a version not scanned yet, needs the approval of each team's admin. Kobe adds the
 version to that team's queue the first time one of your runs meets it.
 
+When a version's scan can't finish (for example while the server is busy), Kobe saves the version
+as **not scanned yet**, never as Block, and scans it again in the background, usually within a
+minute. Until a scan finishes, a team admin can reject the version but not approve it, and a
+personal version needs each team's approval. You don't need to save it again.
+
 Team admins approve or reject in the Team console under **Agents and skills → Skill review**. A
 Caution version needs its findings acknowledged (**Approve anyway**). Versions never change once
 saved, so each new version you save is reviewed again. Where the team turned on Kobe's admin tools,

@@ -18,9 +18,11 @@ import { mirrorHttpClient } from "./http-client.js";
 import {
   pendingMirrorVersions,
   recordMirrorFailure,
+  markWithdrawn,
+  planWithdrawals,
   recordMirrorSuccess,
-  withdrawBlocked,
   type PendingVersion,
+  type WithdrawalPlan,
 } from "./mirror-store.js";
 
 /**
@@ -148,13 +150,13 @@ export class SkillMirror {
   }
 
   private async run(url: string, branch: string): Promise<SweepResult> {
-    // Blocklisted versions are withdrawn first: never pushed, dropped from catalog.json.
-    const withdrawn = await withdrawBlocked(this.deps.db, url, this.now());
+    // Withdrawn versions first: never pushed, and dropped from catalog.json even with nothing
+    // else to push (P2-10).
+    const plan = await planWithdrawals(this.deps.db, url, this.now());
     const pending = await pendingMirrorVersions(this.deps.db, url, this.now(), SKILL_MIRROR_BATCH);
-    if (pending.length === 0) return { ran: true, pushed: 0, failed: 0 };
+    if (pending.length === 0 && plan.toCommit.length === 0)
+      return { ran: true, pushed: 0, failed: 0 };
     const dir = await mkdtemp(path.join(tmpdir(), "kobe-skill-mirror-"));
-    let pushed = 0;
-    let failed = 0;
     try {
       let session: MirrorSession;
       try {
@@ -165,36 +167,71 @@ export class SkillMirror {
             http: this.http(url),
             author: this.deps.author,
             now: () => this.now(),
-            withdrawn,
+            withdrawn: plan.withdrawn,
           },
           dir,
         );
       } catch (err) {
         // The remote is unreachable or refuses us: shown on the oldest pending version.
-        await this.fail(pending[0] as PendingVersion, url, err);
-        return { ran: true, pushed, failed: 1 };
+        if (pending[0]) await this.fail(pending[0], url, err);
+        else this.warnWithdraw(err);
+        return { ran: true, pushed: 0, failed: 1 };
       }
-      for (const v of pending) {
-        try {
-          const files = await this.packageFiles(v);
-          const result = await session.mirror({
-            registryVersionId: v.id,
-            name: v.name,
-            semver: v.semver,
-            runtimeHash: v.runtimeHash,
-            packageHash: v.packageHash,
-            files,
-          });
-          await recordMirrorSuccess(this.deps.db, v, url, result, this.now());
-          pushed += 1;
-        } catch (err) {
-          await this.fail(v, url, err);
-          failed += 1;
-          if (!(err instanceof MirrorVersionError)) break;
-        }
-      }
+      if (!(await this.withdraw(session, url, plan))) return { ran: true, pushed: 0, failed: 1 };
+      return await this.pushAll(session, url, pending);
     } finally {
       await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  /** The catalog-only commit for newly withdrawn versions, then their records; false: failed. */
+  private async withdraw(
+    session: MirrorSession,
+    url: string,
+    plan: WithdrawalPlan,
+  ): Promise<boolean> {
+    if (plan.toCommit.length === 0) return true;
+    try {
+      await session.withdrawFromCatalog();
+    } catch (err) {
+      // Not recorded: the next sweep tries the commit again.
+      this.warnWithdraw(err);
+      return false;
+    }
+    await markWithdrawn(this.deps.db, url, plan.toCommit, this.now());
+    return true;
+  }
+
+  private warnWithdraw(err: unknown): void {
+    const error = this.redact(err instanceof Error ? err.message : String(err));
+    logger.warn({ error }, "skill mirror catalog withdrawal failed");
+  }
+
+  private async pushAll(
+    session: MirrorSession,
+    url: string,
+    pending: readonly PendingVersion[],
+  ): Promise<SweepResult> {
+    let pushed = 0;
+    let failed = 0;
+    for (const v of pending) {
+      try {
+        const files = await this.packageFiles(v);
+        const result = await session.mirror({
+          registryVersionId: v.id,
+          name: v.name,
+          semver: v.semver,
+          runtimeHash: v.runtimeHash,
+          packageHash: v.packageHash,
+          files,
+        });
+        await recordMirrorSuccess(this.deps.db, v, url, result, this.now());
+        pushed += 1;
+      } catch (err) {
+        await this.fail(v, url, err);
+        failed += 1;
+        if (!(err instanceof MirrorVersionError)) break;
+      }
     }
     return { ran: true, pushed, failed };
   }

@@ -10,7 +10,6 @@ import {
   findingsDigest,
   reviewVerdict,
   listReviews,
-  scanUnscanned,
   type ReviewRecord,
 } from "../skills/review.js";
 import {
@@ -107,7 +106,7 @@ export function teamSkillReviewRoutes(deps: ServerDeps): Hono<{ Variables: TeamV
     const cursor = cursorText === undefined ? undefined : decodeCursor(cursorText);
     if (!limit.success || (cursorText !== undefined && !cursor))
       return invalidRequest(c, "limit must be 1 to 200 and cursor one this API returned.");
-    if (deps.blobs) await scanUnscanned(db, deps.blobs, c.get("team").id);
+    // Read only: versions without a finished scan are scanned by the late scan job (P2-35).
     const page = await listReviews(db, c.get("team").id, STATUS_FILTERS[filter.data], {
       limit: limit.data,
       ...(cursor ? { cursor } : {}),

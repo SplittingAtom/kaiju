@@ -3,6 +3,7 @@ import type { Logger } from "pino";
 import type { BlobStore } from "../retention/blobs.js";
 import { IntegrityError, readVerified } from "./blob-read.js";
 import { scanCanonicalZip } from "./review.js";
+import { scanIncomplete } from "./scan-pool.js";
 
 /**
  * Reading and scanning stored bundles for a rescan (KOBE-313), with a cache bounded by bytes:
@@ -92,8 +93,9 @@ export function integrityScan(): ScanResult {
 
 /**
  * Scans a stored version's whole package (or its runtime zip), verified. Null when the object is
- * missing or the scan fails (logged with its context: retried by the next pass); an integrity
- * failure is logged as an error and scans as Block `bundle-integrity`.
+ * missing, or the scan fails or doesn't finish (P2-11: never stored as a verdict; logged with its
+ * context and retried by the next pass); an integrity failure is logged as an error and scans as
+ * Block `bundle-integrity`.
  */
 export async function scanStored(
   deps: { readonly blobs: BlobStore; readonly log: Pick<Logger, "warn" | "error"> },
@@ -114,6 +116,13 @@ export async function scanStored(
       return null;
     }
     const scan = await scanCanonicalZip(bytes);
+    if (scanIncomplete(scan)) {
+      deps.log.warn(
+        { ...context, key },
+        "skills: scan of a stored bundle didn't finish; retried later",
+      );
+      return null;
+    }
     cache.set(key, scan);
     return scan;
   } catch (err) {

@@ -165,7 +165,7 @@ interface ReviewKey {
 }
 
 /** The bundle and author of one review row's version (team table inside `withTeam`). */
-async function versionOf(db: KobeDb, teamId: string, row: ReviewKey) {
+export async function versionOf(db: KobeDb, teamId: string, row: ReviewKey) {
   if (row.scope === "team") {
     const [v] = await withTeam(db, teamId, (tx) =>
       tx

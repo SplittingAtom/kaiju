@@ -216,6 +216,7 @@ describe("startServer (KOBE-709)", () => {
         "kobe-skills-seed",
         "workspace-collector",
         "external-scan-sweep",
+        "skill-late-scan",
         "skill-mirror-sweep",
         "skill-eval-hub",
         "skill-eval-sweep",

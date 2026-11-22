@@ -95,7 +95,7 @@ export const teamSkillReviews = pgTable(
     slug: text().notNull(),
     contentHash: text().notNull(),
     status: skillReviewStatus().notNull().default("pending"),
-    /** Existing versions are backfilled unscanned; the queue scans them when first listed. */
+    /** Backfilled versions, and uploads whose scan didn't finish: the late scan job scans them. */
     unscanned: boolean().notNull().default(false),
     /** The scanner reported at least one finding: such a version always needs a review. */
     flagged: boolean().notNull(),

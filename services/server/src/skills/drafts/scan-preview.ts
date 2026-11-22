@@ -1,7 +1,7 @@
 import { canonicalZip, checkPackagePaths } from "@kobe/protocol";
 import { withTeam } from "@kobe/db";
 import type { ScanResult } from "@kobe/skill-scanner";
-import { ScanBusyError, ScanCancelledError, scanPool } from "../scan-pool.js";
+import { ScanBusyError, ScanCancelledError, scanIncomplete, scanPool } from "../scan-pool.js";
 import { readAllFiles, visibleDraft } from "./records.js";
 import type { DraftContext } from "./service.js";
 
@@ -58,10 +58,6 @@ function remember(key: string, scan: ScanResult): void {
 export function clearPreviewCache(): void {
   cache.clear();
 }
-
-/** Rules whose Block says the scan didn't finish, not what the files hold. */
-const INCOMPLETE = new Set(["scan-incomplete", "scan-resources-exceeded"]);
-const incomplete = (scan: ScanResult) => scan.findings.some((f) => INCOMPLETE.has(f.rule));
 
 export interface PreviewOptions {
   /** Counts the request against the caller's rate; false: refused. Called on a cache miss only. */
@@ -164,7 +160,7 @@ async function runPreview(
       preview: true,
       signal,
     });
-    if (incomplete(result)) return { ok: false, error: "unavailable" };
+    if (scanIncomplete(result)) return { ok: false, error: "unavailable" };
     // Cached under the revision actually read (a write may have landed since the first read).
     remember(`${ctx.teamId}/${id}/${loaded.rev}`, result);
     return { ok: true, rev: loaded.rev, scan: result };

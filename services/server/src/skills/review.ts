@@ -24,10 +24,8 @@ import {
   makeCursorCodec,
 } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
-import { logger } from "../logger.js";
-import type { BlobStore } from "../retention/blobs.js";
 import { blockedAmong, isBlocked } from "./blocklist.js";
-import { scanPool, type ScanOptions } from "./scan-pool.js";
+import { scanIncomplete, scanPool, type ScanOptions } from "./scan-pool.js";
 import { legacySemver } from "./semver.js";
 
 /**
@@ -43,7 +41,8 @@ import { legacySemver } from "./semver.js";
 
 /**
  * Scans the files of a canonical zip (the exact bytes that are stored and hashed), in a worker
- * thread off the event loop (KOBE-313 review A-S2); a scan that runs out of time is Block.
+ * thread off the event loop (KOBE-313 review A-S2); a scan that runs out of time is Block with
+ * a rule `scanIncomplete` recognises (callers retry, and storage keeps it as unscanned).
  */
 export function scanCanonicalZip(zip: Uint8Array, options: ScanOptions = {}): Promise<ScanResult> {
   return scanPool().scan(zip, options);
@@ -59,21 +58,41 @@ export const storedScan = (scan: ScanResult) => ({
   ruleSet: RULE_SET,
 });
 
-/** Creates the pending review row of a just-inserted team version (inside its transaction). */
+/** The columns of a review row whose version has no finished scan yet (`scan_pending`). */
+const unscannedReview = () => ({
+  unscanned: true,
+  flagged: false,
+  findings: [] as StoredFinding[],
+  scripts: [] as string[],
+  skipped: [] as string[],
+  ruleSet: null,
+});
+
+/**
+ * Creates the pending review row of a just-inserted team version (inside its transaction). A scan
+ * that didn't finish is stored as no scan (P2-11): the row can't be approved until the late scan
+ * job (`late-scan.ts`) scans it, never a Block verdict for content nobody judged.
+ */
 export async function recordPendingReview(
   tx: KobeTx,
   at: { teamId: string; skillId: string; version: number; slug: string; contentHash: string },
   scan: ScanResult,
 ): Promise<void> {
-  await tx.insert(teamSkillReviews).values({ ...at, scope: "team", ...storedScan(scan) });
+  const columns = scanIncomplete(scan) ? unscannedReview() : storedScan(scan);
+  await tx.insert(teamSkillReviews).values({ ...at, scope: "team", ...columns });
 }
 
-/** Stores the scan of a just-inserted personal version (inside its transaction). */
+/**
+ * Stores the scan of a just-inserted personal version (inside its transaction). One that didn't
+ * finish stores nothing (P2-11): the version needs each team's approval until the late scan job
+ * gives it a scan.
+ */
 export async function recordPersonalScan(
   tx: KobeTx,
   at: { skillId: string; version: number },
   scan: ScanResult,
 ): Promise<void> {
+  if (scanIncomplete(scan)) return;
   await tx.insert(personalSkillScans).values({ ...at, ...storedScan(scan) });
 }
 
@@ -126,7 +145,6 @@ export const findingsDigest = (r: {
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
 
 const QUEUE_LIMIT = 200;
-const SCAN_BATCH = 20;
 
 export interface ReviewPage {
   readonly reviews: ReviewRecord[];
@@ -652,86 +670,4 @@ export async function personalSkillUsage(
     blocked: unusable.filter((r) => !isSuspended(r)).map((r) => r.name),
     suspended: unusable.filter(isSuspended).map((r) => r.name),
   };
-}
-
-async function readBytes(blobs: BlobStore, key: string): Promise<Uint8Array | null> {
-  const object = await blobs.objects.get(key);
-  if (!object) return null;
-  const chunks: Buffer[] = [];
-  for await (const chunk of object.body) chunks.push(Buffer.from(chunk as Uint8Array));
-  return Buffer.concat(chunks);
-}
-
-/**
- * Scans review rows still marked unscanned (backfilled versions, or personal versions that
- * predate scanning), a batch per call, filling in their findings. It scans the whole package
- * (evals and manifest too) where one is stored, as the upload does. A row whose bundle can't be
- * read or scanned stays unscanned and is retried on the next listing.
- */
-export async function scanUnscanned(db: KobeDb, blobs: BlobStore, teamId: string): Promise<void> {
-  const todo = await withTeam(db, teamId, async (tx) => {
-    const rows = await tx
-      .select({
-        skillId: teamSkillReviews.skillId,
-        version: teamSkillReviews.version,
-        scope: teamSkillReviews.scope,
-      })
-      .from(teamSkillReviews)
-      .where(and(eq(teamSkillReviews.teamId, teamId), eq(teamSkillReviews.unscanned, true)))
-      .limit(SCAN_BATCH);
-    return Promise.all(
-      rows.map(async (r) => {
-        const [v] =
-          r.scope === "team"
-            ? await tx
-                .select({
-                  key: sql<string>`coalesce(${teamSkillVersions.packageStorageKey}, ${teamSkillVersions.storageKey})`,
-                })
-                .from(teamSkillVersions)
-                .where(
-                  and(
-                    eq(teamSkillVersions.teamId, teamId),
-                    eq(teamSkillVersions.skillId, r.skillId),
-                    eq(teamSkillVersions.version, r.version),
-                  ),
-                )
-            : await tx
-                .select({
-                  key: sql<string>`coalesce(${personalSkillVersions.packageStorageKey}, ${personalSkillVersions.storageKey})`,
-                })
-                .from(personalSkillVersions)
-                .where(
-                  and(
-                    eq(personalSkillVersions.skillId, r.skillId),
-                    eq(personalSkillVersions.version, r.version),
-                  ),
-                );
-        return { ...r, key: v?.key };
-      }),
-    );
-  });
-  for (const row of todo) {
-    if (!row.key) continue;
-    try {
-      const bytes = await readBytes(blobs, row.key);
-      if (!bytes) continue;
-      // Late scans are turned away like uploads when the queue is full (retried on the next list).
-      const scan = storedScan(await scanCanonicalZip(bytes, { owner: `team:${teamId}` }));
-      await withTeam(db, teamId, (tx) =>
-        tx
-          .update(teamSkillReviews)
-          .set({ ...scan, unscanned: false, scannedAt: new Date() })
-          .where(
-            and(
-              eq(teamSkillReviews.teamId, teamId),
-              eq(teamSkillReviews.skillId, row.skillId),
-              eq(teamSkillReviews.version, row.version),
-              eq(teamSkillReviews.unscanned, true),
-            ),
-          ),
-      );
-    } catch (err) {
-      logger.error({ err, skillId: row.skillId, version: row.version }, "skills: late scan failed");
-    }
-  }
 }

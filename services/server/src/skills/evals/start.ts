@@ -40,7 +40,7 @@ import { readEvalJudgeAlias } from "../settings.js";
 import { readPackage } from "../registry/review-diff.js";
 import { versionRow as registryVersionRow } from "../registry/review-queue.js";
 import { scanCanonicalZip } from "../review.js";
-import { ScanBusyError } from "../scan-pool.js";
+import { ScanBusyError, scanIncomplete } from "../scan-pool.js";
 import { siteEvalLimits } from "./runner.js";
 import {
   evalBundleKey,
@@ -185,8 +185,6 @@ async function versionRow(
     : { key: v.storageKey, hash: v.contentHash, size: v.sizeBytes };
 }
 
-const INCOMPLETE = new Set(["scan-incomplete", "scan-resources-exceeded"]);
-
 async function scanPackage(
   zip: Uint8Array,
   owner: string,
@@ -198,7 +196,7 @@ async function scanPackage(
     if (!(err instanceof ScanBusyError)) throw err;
     return refuse(503, "scan_busy", "Skill scans are busy right now. Try again in a few seconds.");
   }
-  if (scan.findings.some((f) => INCOMPLETE.has(f.rule)))
+  if (scanIncomplete(scan))
     return refuse(503, "scan_incomplete", "The skill's scan couldn't finish. Try again.");
   if (scan.verdict === "block")
     return refuse(409, "scan_blocked", "The scan blocks this skill, so it can't be evaluated.");

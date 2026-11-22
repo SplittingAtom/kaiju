@@ -6,8 +6,10 @@ import { RawBody, type TestBrowser } from "./testing/browser.js";
 import { openHarness, type Harness } from "./testing/harness.js";
 import { MemoryObjects } from "./testing/memory-objects.js";
 import { withTeam } from "@kobe/db";
+import pino from "pino";
+import { LateScanner } from "./skills/late-scan.js";
 import { usablePersonalSkills } from "./skills/review.js";
-import { ScanBusyError, setScanPool } from "./skills/scan-pool.js";
+import { ScanBusyError, incompleteScan, setScanPool } from "./skills/scan-pool.js";
 
 /**
  * Skill scan and team-admin review (KOBE-80, D22): every new team version is scanned at upload and
@@ -22,6 +24,11 @@ const as = {} as Record<Person, TestBrowser>;
 const finance = randomUUID();
 const marketing = randomUUID();
 let h: Harness;
+const objects = new MemoryObjects();
+const blobs = { objects, prefix: "kobe/" };
+let lateScanner: LateScanner;
+/** One pass of the late scan job (P2-35); the queue GET never scans. */
+const lateScan = () => lateScanner.pass();
 
 const skillMd = (name: string) =>
   `---\nname: ${name}\ndescription: Skill ${name}\n---\n# ${name}\nBody.\n`;
@@ -57,7 +64,12 @@ const digestOf = async (who: Person, slug: string) =>
   (await queue(who, "all")).find((r) => r.slug === slug)?.findingsDigest;
 
 beforeAll(async () => {
-  h = await openHarness({ blobs: { objects: new MemoryObjects(), prefix: "kobe/" } });
+  h = await openHarness({ blobs });
+  lateScanner = new LateScanner({
+    db: h.deps.database.db,
+    blobs,
+    log: pino({ level: "silent" }),
+  });
   for (const who of PEOPLE) ids[who] = await h.createUser(`${who}@review.test`);
   await h.admin.query(
     `INSERT INTO teams (id, slug, name) VALUES ($1, 'finance', 'Finance'), ($2, 'marketing', 'Marketing')`,
@@ -270,7 +282,7 @@ describe("flagged personal skills (KOBE-80)", () => {
 });
 
 describe("backfill and late scanning", () => {
-  it("backfills pending unscanned rows idempotently and scans them when listed", async () => {
+  it("backfills pending unscanned rows idempotently; the late scan job scans them, never the GET", async () => {
     const t = await team("bob", "legacy", FLAGGED);
     await h.admin.query(`DELETE FROM team_skill_reviews WHERE skill_id = $1`, [t.skillId]);
     const sql = readFileSync(
@@ -286,9 +298,130 @@ describe("backfill and late scanning", () => {
     expect(rows).toEqual([
       { status: "pending", unscanned: true, flagged: false, slug: "legacy", scope: "team" },
     ]);
+    // The queue only reads (P2-35).
+    expect((await queue("alice")).find((r) => r.slug === "legacy")).toMatchObject({
+      unscanned: true,
+    });
+    expect(await lateScan()).toMatchObject({ scanned: 1, failed: 0 });
     const listed = (await queue("alice")).find((r) => r.slug === "legacy");
     expect(listed).toMatchObject({ flagged: true, unscanned: false });
     expect(listed?.findings.map((f) => f.category)).toContain("pipe-to-shell");
+  });
+
+  it("skips a row it can't read without holding up the rest, and checks the bytes' hash (P2-35)", async () => {
+    const lost = await team("bob", "late-lost");
+    const tampered = await team("bob", "late-tampered");
+    const fine = await team("bob", "late-fine", FLAGGED);
+    const keyOf = async (skillId: string) =>
+      (
+        await h.admin.query<{ k: string }>(
+          `SELECT coalesce(package_storage_key, storage_key) AS k FROM team_skill_versions
+            WHERE skill_id = $1`,
+          [skillId],
+        )
+      ).rows[0]?.k as string;
+    objects.lost.add(await keyOf(lost.skillId));
+    objects.objects.set(await keyOf(tampered.skillId), Buffer.from("not the bytes"));
+    await h.admin.query(
+      `UPDATE team_skill_reviews SET unscanned = true, flagged = false, findings = '[]', rule_set = NULL
+        WHERE skill_id = ANY($1::uuid[])`,
+      [[lost.skillId, tampered.skillId, fine.skillId]],
+    );
+    expect(await lateScan()).toMatchObject({ scanned: 2, failed: 1 });
+    const rows = (
+      await h.admin.query<{ slug: string; unscanned: boolean; findings: { rule: string }[] }>(
+        `SELECT slug, unscanned, findings FROM team_skill_reviews
+          WHERE skill_id = ANY($1::uuid[]) ORDER BY slug`,
+        [[lost.skillId, tampered.skillId, fine.skillId]],
+      )
+    ).rows;
+    expect(rows.map((r) => [r.slug, r.unscanned])).toEqual([
+      ["late-fine", false],
+      ["late-lost", true],
+      ["late-tampered", false],
+    ]);
+    // Bytes that don't match the version's hash are Block, never scanned as the version's.
+    expect(rows[2]?.findings.map((f) => f.rule)).toEqual(["bundle-integrity"]);
+    // The unreadable row waits out its backoff: the next pass doesn't retry it at once.
+    objects.lost.clear();
+    expect(await lateScan()).toMatchObject({ scanned: 0, failed: 0 });
+  });
+});
+
+describe("a scan that doesn't finish (P2-11)", () => {
+  const timingOut = () => setScanPool({ scan: () => Promise.resolve(incompleteScan()) });
+
+  it("stores a team version unscanned, not Block: unapprovable until the late scan passes it", async () => {
+    const previous = timingOut();
+    let t: Awaited<ReturnType<typeof team>>;
+    try {
+      t = await team("bob", "slow-scan");
+      expect(t.version.review).toEqual({ status: "pending", flagged: false });
+      // A late scan that doesn't finish either leaves it unscanned.
+      expect(await lateScan()).toMatchObject({ scanned: 0 });
+    } finally {
+      setScanPool(previous);
+    }
+    const { rows } = await h.admin.query(
+      `SELECT unscanned, flagged, findings, rule_set FROM team_skill_reviews WHERE skill_id = $1`,
+      [t.skillId],
+    );
+    expect(rows[0]).toMatchObject({
+      unscanned: true,
+      flagged: false,
+      findings: [],
+      rule_set: null,
+    });
+    const refused = await decide("alice", t.skillId, 1, { decision: "approved" });
+    expect(refused).toMatchObject({ status: 409, json: { code: "scan_pending" } });
+    lateScanner = new LateScanner({
+      db: h.deps.database.db,
+      blobs,
+      log: pino({ level: "silent" }),
+    });
+    expect(await lateScan()).toMatchObject({ failed: 0 });
+    expect((await queue("alice")).find((r) => r.slug === "slow-scan")).toMatchObject({
+      unscanned: false,
+      verdict: "pass",
+    });
+    expect((await decide("alice", t.skillId, 1, { decision: "approved" })).status).toBe(200);
+  });
+
+  it("keeps a personal version unusable in every team until a complete scan passes it", async () => {
+    const previous = timingOut();
+    let skillId: string;
+    try {
+      const res = await as.carol.post("/v1/skills?scope=personal", zipOf("slow-personal"));
+      expect(res.status, JSON.stringify(res.json)).toBe(201);
+      skillId = res.json.skill.id as string;
+    } finally {
+      setScanPool(previous);
+    }
+    const scans = () =>
+      h.admin.query(`SELECT findings FROM personal_skill_scans WHERE skill_id = $1`, [skillId]);
+    expect((await scans()).rows).toEqual([]);
+    // Carol's own id (`ids.carol` is reused for another member above).
+    const owner = (
+      await h.admin.query<{ id: string }>(
+        `SELECT owner_user_id AS id FROM personal_skills WHERE id = $1`,
+        [skillId],
+      )
+    ).rows[0]?.id as string;
+    const usable = () =>
+      withTeam(h.deps.database.db, finance, async (tx) =>
+        (await usablePersonalSkills(tx, { teamId: finance, userId: owner, ensureRows: false }))
+          .map((s) => s.name)
+          .includes("slow-personal"),
+      );
+    expect(await usable()).toBe(false);
+    lateScanner = new LateScanner({
+      db: h.deps.database.db,
+      blobs,
+      log: pino({ level: "silent" }),
+    });
+    await lateScan();
+    expect((await scans()).rows).toEqual([{ findings: [] }]);
+    expect(await usable()).toBe(true);
   });
 });
 
