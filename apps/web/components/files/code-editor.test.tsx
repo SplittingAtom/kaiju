@@ -189,3 +189,30 @@ describe("CodeEditor line wrap and position (KOBE-806 ac-2, ac-3)", () => {
     expect(screen.getByLabelText("Cursor position").textContent).toBe("Ln 2, Col 3");
   });
 });
+
+describe("CodeEditor autoFocus (KOBE-802)", () => {
+  it("takes the cursor when asked", () => {
+    const { container } = render(
+      <CodeEditor value="a\n" language={null} label="Edit a" autoFocus />,
+    );
+    expect(viewIn(container).hasFocus).toBe(true);
+  });
+
+  it("never takes it from the composer or another text field being typed in", () => {
+    const composer = document.createElement("textarea");
+    document.body.append(composer);
+    composer.focus();
+    const { container } = render(
+      <CodeEditor value="a\n" language={null} label="Edit a" autoFocus />,
+    );
+    expect(viewIn(container).hasFocus).toBe(false);
+    expect(document.activeElement).toBe(composer);
+    composer.remove();
+  });
+
+  it("the cursor position is a labelled status that does not announce", () => {
+    render(<CodeEditor value="a\n" language={null} label="Edit a" />);
+    const status = screen.getByRole("status", { name: "Cursor position" });
+    expect(status.getAttribute("aria-live")).toBe("off");
+  });
+});

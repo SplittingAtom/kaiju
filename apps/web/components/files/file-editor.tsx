@@ -137,6 +137,8 @@ export interface FileEditorProps {
   readonly liveOff?: boolean | undefined;
   /** Save As saved a copy: open that path in this tab (KOBE-615). */
   readonly onOpenPath?: ((path: string) => void) | undefined;
+  /** The member opened this file: Raw may take the cursor when it opens (KOBE-802). */
+  readonly takeFocus?: boolean | undefined;
   /** More toolbar actions after Save and Save As (a `.py` file's Run and kernel controls). */
   readonly actions?: readonly ToolbarAction[] | undefined;
   /** At the toolbar's end (the kernel's state). */
@@ -155,7 +157,7 @@ export function FileEditor(props: FileEditorProps) {
     draft === undefined ? (drafts.chosenModes.get(path) ?? defaultModeOf(path)) : "raw",
   );
   // The cursor goes into the editor only when the file opened in Raw by itself (KOBE-802).
-  const [openedRaw] = useState(mode === "raw");
+  const [openedRaw] = useState(props.takeFocus === true && mode === "raw");
   const [savingAs, setSavingAs] = useState(false);
   const [savedAs, setSavedAs] = useState<string | null>(null);
   const { state, save, reset } = useSave(props.api, path, (saved, version) => {

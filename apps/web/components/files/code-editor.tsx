@@ -277,6 +277,13 @@ function baseExtensions(label: string): Extension[] {
   ];
 }
 
+/** The member is typing in some other field (the composer, a dialog): never take that focus. */
+function typingElsewhere(editor: HTMLElement): boolean {
+  const el = document.activeElement;
+  if (!(el instanceof HTMLElement) || el === document.body || editor.contains(el)) return false;
+  return el.matches("input, textarea, select") || el.isContentEditable;
+}
+
 function wrapExtension(on: boolean): Extension {
   return on ? EditorView.lineWrapping : [];
 }
@@ -386,7 +393,7 @@ export default function CodeEditor({
     report(created.state);
     setView(created);
     setCursor({ line: 1, column: 1 });
-    if (autoFocusRef.current && !readOnlyRef.current) created.focus();
+    if (autoFocusRef.current && !readOnlyRef.current && !typingElsewhere(parent)) created.focus();
     if (original !== undefined) callbacks.current.onReview?.(reviewControls(created));
     return () => {
       if (original !== undefined) callbacks.current.onReview?.(null);
@@ -456,7 +463,7 @@ export default function CodeEditor({
           >
             Wrap
           </button>
-          <span aria-label="Cursor position" className="tabular-nums">
+          <span role="status" aria-live="off" aria-label="Cursor position" className="tabular-nums">
             {`Ln ${cursor.line}, Col ${cursor.column}`}
           </span>
         </div>

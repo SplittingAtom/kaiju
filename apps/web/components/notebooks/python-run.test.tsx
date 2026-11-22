@@ -197,6 +197,12 @@ describe("Python opens in Raw (KOBE-802)", () => {
     expect(editor()).toBeNull();
   });
 
+  it("does not take the cursor unless the member opened the tab (an agent's open leaves focus)", async () => {
+    await setup();
+    await waitFor(() => expect(editor()).toBeTruthy());
+    expect(editor()?.contains(document.activeElement)).toBe(false);
+  });
+
   it("a read-only file opens in Raw, read-only, with the reason", async () => {
     await setup(new EditDraftStore(), THREAD, true);
     await waitFor(() => expect(editor()).toBeTruthy());

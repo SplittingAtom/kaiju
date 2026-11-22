@@ -187,6 +187,7 @@ interface EditorWiring {
   readonly liveOff: boolean;
   /** Save As saved a copy: this tab opens it (KOBE-615). */
   readonly onOpenPath?: ((path: string) => void) | undefined;
+  readonly takeFocus?: boolean | undefined;
 }
 
 /** Whether the tab shows the file editor or a notebook, which fill the tab themselves. */
@@ -223,6 +224,7 @@ function TextFileEditor({
     onOutsideReload: editor.reloadOutside,
     liveOff: editor.liveOff,
     onOpenPath: editor.onOpenPath,
+    takeFocus: editor.takeFocus,
   };
   if (isPython(path) && editor.kernel) {
     return (
@@ -359,6 +361,7 @@ export function FileTabContent({
   changeHint,
   changes,
   owner = false,
+  focusOnOpen = false,
   onOpenPath,
 }: {
   readonly path: string;
@@ -379,6 +382,8 @@ export function FileTabContent({
   readonly changes?: WorkspaceChangeFeed | undefined;
   /** The viewer is the conversation's owner: Add to project is offered (KOBE-585). */
   readonly owner?: boolean | undefined;
+  /** The member opened this tab: its editor may take the cursor (KOBE-802); not an agent's open. */
+  readonly focusOnOpen?: boolean | undefined;
   /** Save As saved a copy at `path`: open it in this tab (KOBE-615). */
   readonly onOpenPath?: ((path: string) => void) | undefined;
 }) {
@@ -416,6 +421,7 @@ export function FileTabContent({
           reloadOutside,
           liveOff,
           onOpenPath,
+          takeFocus: focusOnOpen,
         }
       : undefined;
   const [downloadError, setDownloadError] = useState<ApiError | null>(null);

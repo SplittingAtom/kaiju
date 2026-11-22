@@ -181,6 +181,22 @@ describe("save", () => {
   });
 });
 
+describe("a refused editor_line_wrap write (an older server, KOBE-806)", () => {
+  it("is logged once, not thrown, and the next write still goes out", async () => {
+    vi.useFakeTimers();
+    const log = vi.fn();
+    const fetchFn = vi.fn(async () => Response.json({ code: "invalid" }, { status: 400 }));
+    const saver = createPreferencesSaver({ fetchFn, delayMs: 10, log });
+    saver.save({ editorLineWrap: false });
+    await vi.advanceTimersByTimeAsync(20);
+    await vi.waitFor(() => expect(log).toHaveBeenCalledOnce());
+    saver.save({ editorLineWrap: true });
+    await vi.advanceTimersByTimeAsync(20);
+    await vi.waitFor(() => expect(fetchFn).toHaveBeenCalledTimes(2));
+    vi.useRealTimers();
+  });
+});
+
 describe("spaceRightOfRail", () => {
   const grid = (artifact: number, conversation: number) => {
     const el = document.createElement("div");
