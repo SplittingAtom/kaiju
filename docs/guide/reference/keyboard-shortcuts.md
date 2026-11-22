@@ -65,6 +65,11 @@ the `?` sheet):
 - Splitters (the Threads panel's workspace rail, a Python file's output) move with the arrow keys
   and Page Up/Down; Home and End go to the ends and Enter goes back to the default.
 - Menus and tabs follow the usual arrow-key navigation.
+- In the PDF viewer, with the pages focused: Mod+F finds in the document (Enter and Shift+Enter
+  step through the matches, Escape closes the search), Mod+= and Mod+- zoom, Mod+0 fits the width.
+  See [Editing files](../files/file-editor.md#the-pdf-viewer).
+- In the image viewer: Mod+= and Mod+- zoom, Mod+0 fits the width, and the arrow keys pan a zoomed
+  image. See [Editing files](../files/file-editor.md#the-image-viewer).
 
 ## Slash commands
 

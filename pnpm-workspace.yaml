@@ -17,6 +17,8 @@ minimumReleaseAgeExclude:
 # sharp ships LGPL libvips binaries (license policy, spec D3). Kobe serves images unoptimized.
 ignoredOptionalDependencies:
   - sharp
+  # pdfjs-dist (KOBE-801) runs only in the browser; its optional native canvas is for Node rendering.
+  - "@napi-rs/canvas"
 
 # Dependency lifecycle scripts are denied unless listed here (supply-chain policy). esbuild (via
 # drizzle-kit and vite) works without its postinstall: it resolves its @esbuild/<platform> binary.

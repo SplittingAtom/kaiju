@@ -213,6 +213,22 @@
      dark scheme breathes two faint radial gradients of its accent. */
   --kobe-page-ambient: none;
 
+  /* The file viewers (KOBE-801, KOBE-807, components/files/viewer.module.css): one dark surround
+     in both themes so white PDF pages and transparent images stand out, the page and its shadow,
+     find highlights, PDF link hover, and the checkerboard behind transparent images. */
+  --kobe-viewer-surround: oklch(0.32 0.005 260);
+  --kobe-viewer-surround-fg: oklch(0.95 0 0);
+  --kobe-viewer-page: #ffffff;
+  --kobe-viewer-page-fg: oklch(0.45 0 0);
+  --kobe-viewer-page-shadow: 0 1px 4px rgb(0 0 0 / 45%);
+  --kobe-viewer-selection: rgb(0 0 255 / 25%);
+  --kobe-viewer-match: rgb(180 0 170 / 25%);
+  --kobe-viewer-match-current: rgb(0 100 0 / 35%);
+  --kobe-viewer-link: rgb(0 90 255 / 15%);
+  --kobe-viewer-link-outline: rgb(0 90 255 / 60%);
+  --kobe-viewer-check-light: #ffffff;
+  --kobe-viewer-check-dark: #d4d4d4;
+
   /* `display` for content shown in one theme only (the toggle's icon). */
   --kobe-when-light: block;
   --kobe-when-dark: none;

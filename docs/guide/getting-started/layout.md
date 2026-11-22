@@ -6,8 +6,9 @@ order: 2
 audience: member
 ---
 
-Kobe's screen has four parts: a bar along the top, the rail on the left, the conversation in the
-middle and the artifact column on the right. Each column is a floating card you can show or hide.
+Kobe's screen has four parts: a bar along the top, the rail on the left, the artifact column in
+the centre (while something is open in it) and the conversation on the right. Each column is a
+floating card you can show or hide.
 This page tells you what lives where.
 
 ## The top bar
@@ -47,7 +48,8 @@ picker app you choose from its list. See [Connectors and apps](../connectors-and
 
 ## The conversation column
 
-The middle column is the conversation on screen. At the top are its title (for a conversation in
+The conversation column, on the right, is the conversation on screen; it takes all the room
+beside the rail while the artifact column is closed. At the top are its title (for a conversation in
 a project, "Project / name"; click the name to rename it) and the **Conversation tree** button.
 The thread's other actions are in its row menu in the Threads panel, in the command palette and as
 slash commands. If the
@@ -58,9 +60,11 @@ what the model was sent. See [Writing messages](../chat/composer.md).
 
 ## The artifact column
 
-The right column holds tabs for things you open: files from the Files panel, artifacts the agent
+The centre column, between the rail and the conversation, holds tabs for things you open: files from the Files panel, artifacts the agent
 made, app cards and notebooks. It keeps up to 20 tabs. Show or hide it with **Show or hide the
-artifact column** or Ctrl+Shift+A (Cmd+Shift+A). Files open in the editor there; see
+artifact column** or Ctrl+Shift+A (Cmd+Shift+A), and drag its right edge to make it wider or
+narrower. Below 820 pixels wide it opens as a full-screen sheet over the conversation, with **Back
+to the conversation**. Files open in the editor or a viewer there; see
 [Editing files](../files/file-editor.md).
 
 ## On a phone

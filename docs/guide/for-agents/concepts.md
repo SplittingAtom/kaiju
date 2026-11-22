@@ -81,7 +81,7 @@ file, `MEMORY.md`, shown to you at the start of a run. **Saved memories** are sh
 with `show_memory_item`, but never write them.
 
 **Artifact.** Content you create for the user to keep with `create_artifact` (kinds: html, svg,
-markdown, mermaid, code, csv), shown in the **artifact column**, the right-hand column of tabs.
+markdown, mermaid, code, csv), shown in the **artifact column**, the column of tabs between the user's rail and the conversation.
 Update it with `update_artifact`. HTML and SVG artifacts, like HTML files the user opens from the
 workspace, run in a locked-down frame: inline scripts and styles only, no network (no fetch, no
 remote images or fonts, no WebRTC), no nested frames or workers. Put data and images inline. The
