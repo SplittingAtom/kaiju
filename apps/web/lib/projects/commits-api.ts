@@ -34,6 +34,8 @@ export interface CheckoutState extends ProjectCheckout {
 
 export interface WorkingCopy extends ProjectCheckout {
   readonly userId: string;
+  /** Files the working copy changes against its base: uncommitted work (KOBE-780). */
+  readonly changedFiles: number;
 }
 
 export interface ProjectCommit {

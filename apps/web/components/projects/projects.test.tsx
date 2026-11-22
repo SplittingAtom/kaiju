@@ -240,6 +240,57 @@ describe("project detail (KOBE-164, ac-1)", () => {
     expect(calls.some((c) => c.method === "DELETE")).toBe(false);
   });
 
+  it("names uncommitted working copies before a delete (KOBE-780)", async () => {
+    const copy = (user: string, changed: number) => ({
+      project_id: P,
+      slug: "launch",
+      base_commit_id: null,
+      base_commit_seq: null,
+      created_at: "2026-10-03T10:00:00Z",
+      updated_at: "2026-10-03T10:00:00Z",
+      user_id: user,
+      changed_files: changed,
+    });
+    stubApi({
+      ...base(),
+      [`GET /v1/projects/${P}/checkouts`]: [
+        200,
+        { checkouts: [copy("u-bob", 2), copy("u-carol", 1), copy("u-dan", 0)] },
+      ],
+    });
+    renderTeam(<ProjectDetailPage projectId={P} />, { role: "contributor" });
+    await userEvent.setup().click(await screen.findByRole("button", { name: "Delete project" }));
+    expect(await answerConfirm("Delete Launch for good?", "Cancel")).toMatch(
+      /2 members have uncommitted changes in their working copies; deleting the project discards them/,
+    );
+  });
+
+  it("sends the confirmed count and asks again when more work appeared (KOBE-780)", async () => {
+    const calls = stubApi({
+      ...base(),
+      [`GET /v1/projects/${P}/checkouts`]: [200, { checkouts: [] }],
+      [`DELETE /v1/projects/${P}?confirmed_uncommitted=0`]: [
+        409,
+        { code: "uncommitted_work", message: "Confirm again.", uncommitted_working_copies: 1 },
+      ],
+      [`DELETE /v1/projects/${P}?confirmed_uncommitted=1`]: [204],
+    });
+    renderTeam(<ProjectDetailPage projectId={P} />, { role: "contributor" });
+    await userEvent.setup().click(await screen.findByRole("button", { name: "Delete project" }));
+    expect(await answerConfirm("Delete Launch for good?", "Delete project")).not.toMatch(
+      /uncommitted/,
+    );
+    expect(await answerConfirm("Delete Launch for good?", "Delete project")).toMatch(
+      /1 member has uncommitted changes in a working copy/,
+    );
+    await waitFor(() =>
+      expect(calls.filter((c) => c.method === "DELETE").map((c) => c.url)).toEqual([
+        `/v1/projects/${P}?confirmed_uncommitted=0`,
+        `/v1/projects/${P}?confirmed_uncommitted=1`,
+      ]),
+    );
+  });
+
   it("makes an archived project read-only for everyone", async () => {
     stubApi(base({ archived_at: "2026-10-03T10:00:00Z" }));
     renderTeam(<ProjectDetailPage projectId={P} />, { role: "team_admin" });
@@ -405,6 +456,20 @@ describe("project files (KOBE-164, ac-1)", () => {
     expect(
       screen.getByText(/Files an agent proposed and a person approved are marked below/),
     ).toBeTruthy();
+  });
+
+  it("marks a file whose path is too long to reach members' files (KOBE-780)", async () => {
+    stubApi({
+      ...base(),
+      [`GET /v1/projects/${P}/files`]: [
+        200,
+        { files: [file(), file({ id: "f-2", path: "deep/long.md", path_too_long: true })] },
+      ],
+    });
+    renderTeam(<ProjectDetailPage projectId={P} />, { role: "contributor" });
+    const row = await screen.findByRole("rowheader", { name: /deep\/long\.md/ });
+    expect(row.textContent).toContain("Path too long to appear in members' files");
+    expect(screen.getAllByText(/Path too long to appear/)).toHaveLength(1);
   });
 
   it("uploads a file into a folder as multipart with the folder first", async () => {

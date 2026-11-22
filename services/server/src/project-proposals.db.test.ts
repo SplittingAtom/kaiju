@@ -230,7 +230,9 @@ describe("propose_file_edit for the conversation's project (KOBE-591, ac-1, ac-2
     expect(await propose(w, c, projectPath(w, "a.md/b.md"), "x")).toMatchObject({
       code: "invalid_path",
     });
-    expect(await propose(w, c, projectPath(w, "a.conflict-20261109.md"), "x")).toMatchObject({
+    expect(
+      await propose(w, c, projectPath(w, "a.conflict-20261109T120000Z.md"), "x"),
+    ).toMatchObject({
       code: "invalid_path",
     });
     // A conversation outside any project: its project paths are read-only.
