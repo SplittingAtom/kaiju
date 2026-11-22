@@ -9,6 +9,8 @@ import { documentText, queryText } from "./prefixes.js";
 import { pendingVersions, writeVectors, type VectorTable } from "./vector-store.js";
 import { readVectorSupport, type VectorSupport } from "./vector-support.js";
 import { PendingQueries, runWantsVectors } from "./query-prefetch.js";
+import type { ListenClient } from "../../pg-listen.js";
+import { MEMORY_SETTINGS_CHANNEL } from "../site-settings.js";
 
 /**
  * Memory embeddings (KOBE-409): embed on save, the selector's query embedding and what the
@@ -83,6 +85,11 @@ export interface MemoryEmbeddingsOptions {
   readonly log: Pick<Logger, "info" | "warn">;
   /** The chart's in-cluster model as the gateway names it (KOBE-659), when it runs one. */
   readonly localModel?: string | undefined;
+  /**
+   * The process's shared LISTEN connection (KOBE-787): a Site embedding model change on any
+   * replica drops this replica's cached model at once, instead of after {@link STATE_TTL_MS}.
+   */
+  readonly listen?: ListenClient | undefined;
   readonly queryDeadlineMs?: number;
   readonly recallDeadlineMs?: number;
   readonly now?: () => number;
@@ -116,10 +123,24 @@ export class MemoryEmbeddings implements QueryEmbedder {
   readonly #pending = new PendingQueries();
   /** Bumped by `invalidate`: a read begun before it stores nothing. */
   #gen = 0;
+  #listening = false;
 
   constructor(options: MemoryEmbeddingsOptions) {
     this.#o = options;
     this.localModel = options.localModel;
+  }
+
+  /**
+   * Subscribes to the setting-change hint the first time the model is read (nothing is cached
+   * before that). A hint only says "read it again"; on (re)connect anything missed is re-read.
+   */
+  #listenOnce(): void {
+    if (this.#listening || !this.#o.listen) return;
+    this.#listening = true;
+    this.#o.listen.subscribe(MEMORY_SETTINGS_CHANNEL, {
+      notification: () => this.invalidate(),
+      listening: () => this.invalidate(),
+    });
   }
 
   get client(): EmbeddingClient | undefined {
@@ -130,7 +151,10 @@ export class MemoryEmbeddings implements QueryEmbedder {
     return this.#o.now?.() ?? Date.now();
   }
 
-  /** Forget the cached model and pgvector state (the Site setting changed). */
+  /**
+   * Forget the cached model and pgvector state (the Site setting changed: on this replica, or on
+   * another one through the {@link MEMORY_SETTINGS_CHANNEL} hint).
+   */
   invalidate(): void {
     this.#gen += 1;
     this.#model = undefined;
@@ -145,6 +169,7 @@ export class MemoryEmbeddings implements QueryEmbedder {
    * window once warm); only the first read, or one after `invalidate`, waits.
    */
   async model(): Promise<EmbeddingModel> {
+    this.#listenOnce();
     const cached = this.#model;
     if (cached && this.#now() - cached.at < STATE_TTL_MS) return cached.value;
     const load = (this.#modelLoad ??= this.#loadModel());

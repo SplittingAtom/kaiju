@@ -62,6 +62,11 @@ export const storedCandidateSchema = z.object({
   source: z.enum(MEMORY_CANDIDATE_SOURCES),
   operation: z.enum(MEMORY_CANDIDATE_OPERATIONS),
   target_id: uuidSchema.nullable(),
+  /**
+   * The target's version the pass saw (KOBE-779, P2-46): an update is refused once the target
+   * moved past it. Absent on candidates stored before it (the current version is used).
+   */
+  target_version: z.number().int().positive().optional(),
   confidence: z.number().min(0).max(1),
   rationale: z.string(),
   evidence: z.array(z.object({ entry_id: z.string().min(1), quote: z.string().min(1) })).min(1),

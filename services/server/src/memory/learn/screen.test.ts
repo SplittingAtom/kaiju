@@ -384,3 +384,69 @@ describe("screenExtractorOutput (KOBE-394)", () => {
     });
   });
 });
+
+describe("a candidate acting on an existing item (KOBE-779, review pass 2 P2-6, P2-46)", () => {
+  const T = "8d9e0f1a-2b3c-4d4e-9f60-718293a4b5c6";
+  const withTarget = (scope: "user" | "portable" | "team", version?: number) => ({
+    ...input,
+    existing: [
+      {
+        id: T,
+        scope,
+        kind: "preference" as const,
+        policy: false,
+        statement: "Old wording.",
+        ...(version === undefined ? {} : { version }),
+      },
+    ],
+  });
+
+  it("takes the target's scope, not the model's suggested scope", () => {
+    const stated = (over: Partial<MemoryExtractorCandidate>) =>
+      candidate({ operation: "update", target_id: T, ...over });
+    // A stated update of a portable item the model marked user, not portable.
+    expect(
+      screen(stated({ suggested_scope: "user" }), withTarget("portable")).kept[0]?.destination,
+    ).toBe("portable");
+    // An update of the person's own item that the model marked team.
+    expect(
+      screen(stated({ suggested_scope: "team" }), withTarget("user")).kept[0]?.destination,
+    ).toBe("user");
+    // A project-specific update of a Workspace item stays a Workspace update.
+    expect(
+      screen(stated({ suggested_scope: "team", project_specific: true }), withTarget("team"))
+        .kept[0]?.destination,
+    ).toBe("team");
+    // An inferred refinement of a Workspace item lands in the Workspace (selection drops it).
+    expect(
+      screen(stated({ suggested_scope: "user", source: "inferred" }), withTarget("team")).kept[0]
+        ?.destination,
+    ).toBe("team");
+  });
+
+  it("checks Workspace evidence rules against the target's scope", () => {
+    const c = candidate({
+      operation: "update",
+      target_id: T,
+      suggested_scope: "user",
+      evidence: [
+        { entry_id: E1, quote: "We call churned accounts ‘lapsed’ here." },
+        { entry_id: "00000000-0000-4000-8000-0000000000e3", quote: "tool says" },
+      ],
+    });
+    const inp: ExtractorPromptInput = {
+      ...withTarget("team"),
+      transcript: [
+        ...input.transcript,
+        { entry_id: "00000000-0000-4000-8000-0000000000e3", speaker: "tool", text: "tool says" },
+      ],
+    };
+    expect(screen(c, inp).dropped).toEqual([{ index: 0, reason: "shared_evidence_not_person" }]);
+  });
+
+  it("records the version of the target the model saw", () => {
+    const c = candidate({ operation: "update", target_id: T, suggested_scope: "user" });
+    expect(screen(c, withTarget("user", 3)).kept[0]?.targetVersion).toBe(3);
+    expect(screen(candidate()).kept[0]?.targetVersion).toBeUndefined();
+  });
+});

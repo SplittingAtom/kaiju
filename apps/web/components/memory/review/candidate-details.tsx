@@ -91,6 +91,12 @@ export function CandidateContext({
               ? "Saving replaces the memory it contradicts:"
               : "Changes to your saved memory:"}
           </p>
+          {candidate.targetChanged && (
+            <p className="m-0 mb-1 text-sm text-console-muted">
+              This memory was changed since Kobe suggested this: the comparison shows it as it is
+              now. Check it before you save.
+            </p>
+          )}
           <StatementDiff before={target.statement} after={statement} />
         </div>
       )}

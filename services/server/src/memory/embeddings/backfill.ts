@@ -14,8 +14,9 @@ import { pendingVersions } from "./vector-store.js";
  * Site console's action), never by an upgrade. The model is a Site setting, so the job covers
  * every Workspace whether or not the admin has an active one (KOBE-669); who pays is in
  * {@link buildTargets}. A payer's Workspace at 100 % of a budget line is skipped and the rest
- * still build (the job then ends `stopped`/`budget`); any other refusal (a gateway error) or a
- * Site model change stops it, and it can be started again. Keyword search covers every item without a current vector
+ * still build (the job then ends `stopped`/`budget`); any other refusal (a gateway error) stops
+ * it, and it can be started again. A Site model change while it runs makes it carry on with the
+ * new model (KOBE-787). Keyword search covers every item without a current vector
  * meanwhile. One job at a time across replicas (review L6): the job holds a session advisory lock
  * ({@link MEMORY_VECTOR_BUILD_LOCK}) while it runs, and a start that cannot take it says the build
  * is already running. The console's coverage comes from the database; the job state shown is
@@ -181,28 +182,29 @@ export class VectorBackfill {
     if (this.#job) this.#job = { ...this.#job, ...change };
   }
 
-  async #run(admin: BuildAdmin, model: string) {
+  /**
+   * The job: one pass over every target with `model`. When the Site model changes meanwhile
+   * (KOBE-787, review pass 2 P2-47) it carries on with the new one instead of stopping: a start
+   * for the new model was refused while this job ran (here, or on another replica through the
+   * lock), so otherwise nothing would build it. A model removed (or unusable) stops it.
+   */
+  async #run(admin: BuildAdmin, first: string) {
+    let model = first;
     let stopReason: string | null = null;
     try {
       await waitForGatewaySync(this.#o.db, this.#o.gatewaySyncWaitMs ?? 60_000);
-      const teams = await scanTeams(this.#o.db, "memory vector build", async (_tx, t) => t.id);
-      const targets = await buildTargets(this.#o.db, admin, teams);
-      // Payers' Workspaces that refused for budget: their other targets are skipped.
-      const exhausted = new Set<string>();
-      for (const target of targets) {
-        if (target.payer === undefined) {
-          this.#o.log.warn({ team_id: target.teamId }, "memory vector build: no member to pay");
-          continue;
-        }
-        if (exhausted.has(target.payer.teamId)) continue;
-        const reason = await this.#target(target.payer, model, target);
-        if (reason === "budget") exhausted.add(target.payer.teamId);
-        else if (reason !== null) {
-          stopReason = reason;
-          break;
-        }
+      for (;;) {
+        stopReason = await this.#pass(admin, model);
+        const next =
+          stopReason === null || stopReason === "model_changed"
+            ? await this.#o.embeddings.usableModel()
+            : undefined;
+        if (next === undefined || next === model) break;
+        this.#o.log.info({ from: model, to: next }, "memory vector build: model changed, going on");
+        model = next;
+        this.#update({ model, embedded: 0 });
+        await waitForGatewaySync(this.#o.db, this.#o.gatewaySyncWaitMs ?? 60_000);
       }
-      if (stopReason === null && exhausted.size > 0) stopReason = "budget";
     } catch (err) {
       stopReason = "error";
       throw err;
@@ -217,6 +219,25 @@ export class VectorBackfill {
         "memory vector build finished",
       );
     }
+  }
+
+  /** Every target with `model`; returns the stop reason, or null when all were built. */
+  async #pass(admin: BuildAdmin, model: string): Promise<string | null> {
+    const teams = await scanTeams(this.#o.db, "memory vector build", async (_tx, t) => t.id);
+    const targets = await buildTargets(this.#o.db, admin, teams);
+    // Payers' Workspaces that refused for budget: their other targets are skipped.
+    const exhausted = new Set<string>();
+    for (const target of targets) {
+      if (target.payer === undefined) {
+        this.#o.log.warn({ team_id: target.teamId }, "memory vector build: no member to pay");
+        continue;
+      }
+      if (exhausted.has(target.payer.teamId)) continue;
+      const reason = await this.#target(target.payer, model, target);
+      if (reason === "budget") exhausted.add(target.payer.teamId);
+      else if (reason !== null) return reason;
+    }
+    return exhausted.size > 0 ? "budget" : null;
   }
 
   /** Embeds one target until nothing is pending; a stop reason ends the whole job. */

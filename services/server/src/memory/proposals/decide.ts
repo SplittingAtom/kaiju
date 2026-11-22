@@ -8,10 +8,9 @@ import {
 } from "@kobe/protocol";
 import { MEMORY_PROPOSAL_TEXT_MAX, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
 import { recordAudit } from "../../audit/record.js";
-import { openOp } from "../items/context.js";
+import { afterCommit, openOp } from "../items/context.js";
 import { createItemIn } from "../items/create.js";
 import { invalid, notAllowed } from "../items/errors.js";
-import { deliverSiteNotices } from "../items/limits.js";
 import { curates, type MemoryWho } from "../items/who.js";
 import { noticeOpenAgain, workspaceOf } from "../review/ids.js";
 import { returnCandidate } from "../review/stored.js";
@@ -102,9 +101,9 @@ export async function approveProposal(
       },
     });
     await noticeDecided(tx, teamId, p, "accepted", who.userId);
-    return { item, pending: op.pending };
+    return { item, op };
   });
-  if (done.pending.length > 0) await deliverSiteNotices(db, done.pending);
+  await afterCommit(db, [done.op]);
   return { proposal_id: proposalId, item: done.item };
 }
 
