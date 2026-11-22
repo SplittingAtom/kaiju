@@ -82,7 +82,7 @@ streams move to their own Ingress with their own middleware. Off: rendered outpu
 - Default stays **off** (ticket's default); Chris may prefer on.
 - Not deployed to gate1 in this ticket (gate1: k3s 1.34, Traefik 3.6, Traefik Service already
   `externalTrafficPolicy: Local`, per the review).
-- ac-3 stays open until the coordinator adds the text below to `docs/rate-limits.md` after PR #682.
+- ac-3 done: the text below was added to `docs/rate-limits.md` (2026-11-22).
 
 ## Text for docs/rate-limits.md, section "Chart and ingress" (add after PR #682 merges)
 
