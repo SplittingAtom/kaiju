@@ -34,6 +34,7 @@ import { logger } from "./logger.js";
 import { PrincipalCache } from "./principals.js";
 import { SERVER_CALL_LIMIT_DEFAULTS as SC, ServerCallReplay } from "./server-call.js";
 import { BudgetGate } from "./budget-gate.js";
+import { DbMemberRate } from "./member-rate.js";
 import { DbReservations } from "./reservations-db.js";
 import { DbUsageSink } from "./usage/sink.js";
 
@@ -79,7 +80,11 @@ const budgets = new BudgetGate(
     // Settled reservations end at once: the reservation reads the spend itself (KOBE-286). A
     // running call extends its hold, so the TTL need not exceed the longest call.
     heartbeatMs: Math.floor(config.reservationTtlMs / 2),
-    onError: (err) => logger.warn({ err }, "budget reservation call failed"),
+    // The member per-minute rate, counted in Postgres across replicas (KOBE-810).
+    rate: new DbMemberRate(db, {
+      onError: (err) => logger.warn({ err }, "member rate give-back or prune failed"),
+    }),
+    onError: (err) => logger.warn({ err }, "budget reservation or rate call failed"),
   },
 );
 const listener = new ModelsListener({

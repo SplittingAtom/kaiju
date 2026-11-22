@@ -58,6 +58,16 @@ export {
   pgCodeOf,
   pgErrorOf,
 } from "./pg-errors.js";
+export {
+  RATE_LIMIT_PRUNE_BATCH,
+  hitRateLimit as hitRateLimitWindow,
+  pruneExpiredRateLimits,
+  returnRateLimitHit,
+  takeRateLimit,
+  type RateLimitHit,
+  type RateLimitOptions,
+  type RateLimitRule,
+} from "./rate-limit.js";
 export { CURSOR_MAX_LENGTH, makeCursorCodec, type CursorCodec } from "./cursor-codec.js";
 export {
   APP_IDLE_IN_TRANSACTION_TIMEOUT_MS,

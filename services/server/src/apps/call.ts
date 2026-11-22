@@ -8,6 +8,7 @@ import { findThread } from "../threads/repository.js";
 import { logger } from "../logger.js";
 import type { McpService } from "../mcp/service.js";
 import type { PolicyRuleSource } from "../policy/engine.js";
+import type { SharedRateLimit } from "../rate-limit.js";
 import type { RateLimiter } from "../sandbox/rate-limit.js";
 import type { AppCaller } from "./app-caller.js";
 import type { SchemaValidator } from "./validate-pool.js";
@@ -41,7 +42,8 @@ export interface AppCallDeps {
   readonly caller: AppCaller;
   /** Runs pinned schemas off the event loop with a deadline (review HIGH-1). */
   readonly validator: SchemaValidator;
-  readonly limiter: RateLimiter;
+  /** The member's app-call rate, shared by every server replica (KOBE-810). */
+  readonly limiter: SharedRateLimit;
   /** Throttles the audit of rate-limited refusals (one per member per window). */
   readonly limitedAudits: RateLimiter;
   /** Throttles denial audits per member and reason (burst 20, then one per 3 s). */
@@ -210,15 +212,15 @@ async function decide(
 
 /**
  * Step 0 (review MEDIUM-1, LOW-5): the per-member rate limit, taken before the request body is
- * read. Keyed by the user (not team and user), per server pod: with N pods a member gets at most
- * N times the burst. A refusal is audited at most once a minute per member.
+ * read. Keyed by the user (not team and user) and counted in Postgres, so it holds across server
+ * replicas (KOBE-810); Postgres unreachable fails the request. A refusal is audited at most once a minute per member.
  */
 export async function takeRateToken(
   deps: AppCallDeps,
   p: BrowserPrincipal,
   appId: string,
 ): Promise<AppCallOutcome | undefined> {
-  if (deps.limiter.take(p.userId) === 0) return undefined;
+  if (await deps.limiter.allow(p.userId)) return undefined;
   if (deps.limitedAudits.take(p.userId) === 0) {
     const connectorId = await appConnectorOf(deps.db, appId);
     if (connectorId) await audit(deps.db, p, { connectorId, tool: "rate_limited" }, "rate_limited");
