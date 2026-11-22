@@ -1695,6 +1695,13 @@
       "when": 1795333286187,
       "tag": "0241_connector_grant_refresh_lease_connector_oauth_client",
       "breakpoints": true
+    },
+    {
+      "idx": 242,
+      "version": "7",
+      "when": 1795342433551,
+      "tag": "0242_notebook_inspect_command",
+      "breakpoints": true
     }
   ]
 }
