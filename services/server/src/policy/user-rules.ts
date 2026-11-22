@@ -63,6 +63,7 @@ type Row = {
   created_at: Date | string;
   expires_at: Date | string | null;
   last_used_at: Date | string | null;
+  exact_keys: boolean;
 };
 
 const iso = (v: Date | string): string => (v instanceof Date ? v : new Date(v)).toISOString();
@@ -96,6 +97,8 @@ async function view(
             effect: "allow",
             tool_glob: row.tool_glob,
             ...(row.arg_pattern === null ? {} : { arg_pattern: row.arg_pattern }),
+            // As the engine reads it (rule-store), or exact-only would judge it inexact (P2-21).
+            ...(row.exact_keys ? { exact_keys: true } : {}),
             remember_scope: scope.data,
             created_at: iso(row.created_at),
           },
@@ -142,7 +145,7 @@ async function listLive(
              tool_rules.arg_pattern, tool_rules.remember_scope, tool_rules.thread_id,
              t.title AS thread_title, (t.shared_to_team OR t.shared_to_project) AS thread_shared,
              tool_rules.run_id, tool_rules.created_at, tool_rules.expires_at,
-             tool_rules.last_used_at
+             tool_rules.last_used_at, tool_rules.exact_keys
         FROM tool_rules
         JOIN users u ON u.id = tool_rules.user_id
         LEFT JOIN threads t ON t.team_id = tool_rules.team_id AND t.id = tool_rules.thread_id

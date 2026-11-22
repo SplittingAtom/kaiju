@@ -14,8 +14,8 @@ import { invalidRequest, param, parseBody } from "../http/request.js";
 type Ctx = Context<{ Variables: TeamVariables }>;
 
 const idSchema = z.uuid();
-const offerSchema = z.strictObject({ offerToAll: z.boolean() });
-const accessSchema = z.strictObject({ access: z.enum(SKILL_ACCESS_MODES) });
+export const offerSchema = z.strictObject({ offerToAll: z.boolean() });
+export const accessSchema = z.strictObject({ access: z.enum(SKILL_ACCESS_MODES) });
 
 const OFFER_LIMIT = `A team can have at most ${MAX_OFFERED_SKILLS} skills On by default or Required. Change another skill first.`;
 

@@ -4,7 +4,9 @@
  * entry that matches no mounted route (stale) and on an entry that matches a documented route.
  *
  * `route` is `METHOD /path` in OpenAPI form (`{param}`); `*` as the method matches any method,
- * and a path ending in `/*` matches that prefix and everything under it.
+ * and a path ending in `/*` matches that prefix and everything under it. Prefix wildcards are for
+ * the sandbox-facing and internal listeners only: on the user-facing listener every entry names
+ * one route (KOBE-771).
  */
 
 export type AllowlistCategory =
@@ -23,6 +25,24 @@ export interface AllowlistEntry {
   readonly reason: string;
 }
 
+/**
+ * SCIM provisioning (`routes/scim.ts`), one by one (KOBE-771) so a new route under the prefix
+ * cannot hide behind a wildcard.
+ */
+const SCIM_ROUTES = [
+  "GET /v1/scim/v2/{slug}/ServiceProviderConfig",
+  "GET /v1/scim/v2/{slug}/ResourceTypes",
+  "GET /v1/scim/v2/{slug}/ResourceTypes/{id}",
+  "GET /v1/scim/v2/{slug}/Schemas",
+  "GET /v1/scim/v2/{slug}/Schemas/{id}",
+  "GET /v1/scim/v2/{slug}/Users",
+  "POST /v1/scim/v2/{slug}/Users",
+  "GET /v1/scim/v2/{slug}/Users/{id}",
+  "PUT /v1/scim/v2/{slug}/Users/{id}",
+  "PATCH /v1/scim/v2/{slug}/Users/{id}",
+  "DELETE /v1/scim/v2/{slug}/Users/{id}",
+] as const;
+
 export const UNDOCUMENTED_ROUTES: readonly AllowlistEntry[] = [
   {
     route: "GET /healthz",
@@ -34,20 +54,20 @@ export const UNDOCUMENTED_ROUTES: readonly AllowlistEntry[] = [
     category: "probe",
     reason: "Kubernetes readiness probe; not part of the API.",
   },
-  {
-    route: "* /api/auth/*",
+  ...["GET", "POST"].map((method): AllowlistEntry => ({
+    route: `${method} /api/auth/{path}`,
     category: "auth-provider",
     reason:
-      "Better Auth's own handler (sign-in, sessions, passkeys, SSO callbacks): its API is the " +
-      "library's, documented by Better Auth, not by Kobe.",
-  },
-  {
-    route: "* /v1/scim/v2/*",
+      "Better Auth's own handler (sign-in, sessions, passkeys, SSO callbacks), mounted as one " +
+      "catch-all: its API is the library's, documented by Better Auth, not by Kobe.",
+  })),
+  ...SCIM_ROUTES.map((route): AllowlistEntry => ({
+    route,
     category: "scim",
     reason:
       "SCIM 2.0 provisioning for identity providers (RFC 7643/7644, bearer token per provider): " +
       "the protocol is the specification; setup is in docs/guide/admin/single-sign-on.md.",
-  },
+  })),
   {
     route: "GET /v1/oauth/client-metadata.json",
     category: "oauth",
@@ -66,6 +86,13 @@ export const UNDOCUMENTED_ROUTES: readonly AllowlistEntry[] = [
     route: "POST /v1/telemetry/web-vitals",
     category: "telemetry",
     reason: "Web Vitals beacon from Kobe's own web app; not an API for other clients.",
+  },
+  {
+    route: "POST /v1/site/gallery/agents/{id}/unarchive",
+    category: "fallback",
+    reason:
+      "Always refuses with 405 `gallery_read_only` (gallery agents are never archived or " +
+      "unarchived); registered only so the version routes cannot take the path (KOBE-771).",
   },
   {
     route: "* /v1/site/gallery/agents/{path}",

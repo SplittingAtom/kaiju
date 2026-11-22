@@ -1,9 +1,13 @@
 import type { CatalogArea } from "./build.js";
+import { teamSkillsDetails } from "./details/team-skills.js";
 
 /** OpenAPI catalog: the team's skill administration (KOBE-727; routes in `routes/team-skill-*.ts`, `skill-promotions.ts`, `skill-usage.ts`). */
 export const teamSkillsAreas: readonly CatalogArea[] = [
   {
     tag: "Team: skills",
+    detailed: true,
+    teamScoped: true,
+    details: teamSkillsDetails,
     description:
       "A team's skill review queue and settings, catalog installs and blocks, and Promote to Site requests. Team-scoped: send X-Kobe-Team on changes.",
     entries: [

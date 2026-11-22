@@ -5,7 +5,7 @@ import type { ServerDeps } from "../deps.js";
 import { readFollowupsEnabled, setFollowupsEnabled } from "../threads/followups.js";
 import { invalidRequest, parseBody } from "../http/request.js";
 
-const bodySchema = z.strictObject({ followups_enabled: z.boolean() });
+export const bodySchema = z.strictObject({ followups_enabled: z.boolean() });
 
 /**
  * The team's chat settings (`/v1/team/settings`, KOBE-222): today the follow-up suggestions switch

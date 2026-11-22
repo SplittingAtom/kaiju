@@ -5,7 +5,7 @@ import type { KobeDb } from "@kobe/db";
 import { EXPORT_CONTENT_TYPE, type ExportFormat, type ExportScope } from "./format.js";
 import { exportStream, type ExportPage } from "./stream.js";
 
-const exportQuerySchema = z.strictObject({
+export const exportQuerySchema = z.strictObject({
   format: z.enum(["csv", "jsonl"]),
   since: z.iso.datetime({ offset: true }).optional(),
   until: z.iso.datetime({ offset: true }).optional(),

@@ -159,7 +159,8 @@ const KINDS: readonly Kind[] = [
     capabilities: [CAPABILITY_PROJECTS],
     fields: { tool: "commit_project", input: { message: "m" } },
     capped: false,
-    allowance: "check",
+    // KOBE-783 (P2-22): one allowed commit_project commits at most once.
+    allowance: "consume",
     tool: "commit_project",
   },
   {
@@ -503,7 +504,7 @@ describe("tool frame specs (KOBE-706 review)", () => {
       "memory.put": { allowance: "check", tool: "remember" },
       "memory.read": { allowance: "check", tool: "recall" },
       "memory.show": { allowance: "check", tool: "show_memory_item" },
-      "project.commit": { allowance: "check", tool: "(frame.tool)" },
+      "project.commit": { allowance: "consume", tool: "(frame.tool)" },
       "file.edit_propose": { allowance: "consume", tool: "(frame.tool)" },
       "file.open": { allowance: "consume", tool: "(frame.tool)" },
       "notebook.run": { allowance: "consume", tool: "(frame.tool)" },

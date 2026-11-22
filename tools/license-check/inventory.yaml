@@ -610,6 +610,19 @@ sections:
         link: https://github.com/lucide-icons/lucide/blob/main/LICENSE
         images: []
         reason: Lucide is ISC; icons derived from Feather are MIT, as its LICENSE states.
+      - id: pdfjs-bundled-data
+        component: Third-party code and data inside pdfjs-dist (Adobe CMaps, OpenJPEG and PDFium JBIG2 decoders)
+        version: as shipped in pdfjs-dist 6.5.438
+        license: BSD-3-Clause AND BSD-2-Clause
+        use: bundled (web image, served to browsers)
+        where: web image (apps/web/public/pdfjs/<version>/, copied by apps/web/scripts/copy-pdfjs-assets.mjs)
+        link: https://github.com/mozilla/pdf.js/tree/master/external
+        images: []
+        reason: >-
+          KOBE-801: the PDF viewer serves pdfjs-dist's predefined CMaps (Adobe, BSD-3-Clause,
+          cmaps/LICENSE) and its JavaScript JPEG 2000 and JBIG2 decoders (OpenJPEG, BSD-2-Clause;
+          PDFium, BSD-3-Clause; pdf.js glue Apache-2.0), unmodified, with their license files
+          copied beside them. The pdfjs-dist package itself is Apache-2.0 (npm table).
       - id: matplotlib-fonts
         approval: { by: Chris, on: 2026-10-17, ref: KOBE-375 }
         component: Fonts and font metrics in matplotlib (DejaVu, STIX, Computer Modern, PDF core-font metrics)

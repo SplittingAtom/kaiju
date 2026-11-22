@@ -114,7 +114,9 @@ other connector (no internet access, no key). Its tools are named `mcp__kobe__<t
   file only with `propose_file_edit`, sending the complete new content and a one-line summary.
   `write` and `edit` on it are denied (or, where you cannot propose, held for the user). Proposals are limited to 128 KiB of text.
 - **Other files** in My files: write them directly, then call `open_file` if the user should see
-  the result.
+  the result. The user's viewer shows text, Markdown, CSV, JSON and code (editable up to 1 MB),
+  notebooks, PDFs up to 25 MB, images and SVG up to 10 MB, and HTML up to 1 MB; to hand over a
+  report as a PDF, write the `.pdf` file and open it.
 - **Projects** are under `/workspace/projects/<slug>/` and read-only unless the user checked the
   project out. In a project conversation where the user is an editor or owner,
   `propose_file_edit` also works for that project's files (accepting commits it). Other projects

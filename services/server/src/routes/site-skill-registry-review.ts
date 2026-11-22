@@ -43,9 +43,9 @@ const checklistSchema = z.strictObject(
     z.ZodOptional<z.ZodBoolean>
   >,
 );
-const commentSchema = z.strictObject({ note: noteSchema });
-const acknowledgeSchema = z.strictObject({ finding: z.string().min(1).max(700) });
-const decisionSchema = z
+export const commentSchema = z.strictObject({ note: noteSchema });
+export const acknowledgeSchema = z.strictObject({ finding: z.string().min(1).max(700) });
+export const decisionSchema = z
   .strictObject({
     action: z.enum(["approve", "request_changes", "reject", "reject_and_block"]),
     note: noteSchema.optional(),

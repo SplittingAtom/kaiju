@@ -18,7 +18,7 @@ import { uuidSchema } from "../threads/schemas.js";
 import { issueText, memoryRouteKit, refuseAgentWrites } from "./memory-items.js";
 import { invalidRequest } from "../http/request.js";
 
-const listQuery = z.object({ project_id: uuidSchema.optional() });
+export const listQuery = z.object({ project_id: uuidSchema.optional() });
 
 /**
  * Readers' suggestions to project Notes (`/v1/memory/suggestions`, KOBE-652). A reader makes one

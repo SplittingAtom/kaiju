@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
+import { isTextPreview } from "./editor";
 import {
   decodePreviewText,
   defaultModeOf,
   fileTabId,
   filePathOfTab,
+  cutTextMessage,
   imageDataUrl,
+  previewLimit,
   previewOf,
+  tooLargeMessage,
   tabDomId,
   workspaceFrameUrl,
 } from "./preview";
@@ -51,7 +55,8 @@ describe("previewOf", () => {
     ["logo.svg", "svg"],
     ["index.html", "html"],
     ["old.htm", "html"],
-    ["doc.pdf", "none"],
+    ["doc.pdf", "pdf"],
+    ["SCAN.PDF", "pdf"],
     ["archive.zip", "none"],
     ["noext", "none"],
   ])("%s is %s", (path, kind) => {
@@ -93,11 +98,44 @@ describe("urls", () => {
   });
 });
 
+describe("large-file messages (KOBE-807)", () => {
+  it("each kind has its limit, named in the message", () => {
+    expect(previewLimit(previewOf("a.png"))).toEqual({ bytes: 10 * 1024 * 1024, what: "Images" });
+    expect(previewLimit(previewOf("a.svg"))?.what).toBe("Images");
+    expect(previewLimit(previewOf("a.html"))).toEqual({ bytes: 1024 * 1024, what: "HTML files" });
+    expect(previewLimit(previewOf("a.pdf"))).toEqual({ bytes: 25 * 1024 * 1024, what: "PDFs" });
+    expect(previewLimit(previewOf("a.md"))?.what).toBe("Text files");
+    expect(previewLimit(previewOf("a.bin"))).toBeNull();
+  });
+
+  it("says the size and the limit the same way for every kind", () => {
+    expect(tooLargeMessage(previewOf("p.png"), 12 * 1024 * 1024)).toBe(
+      "This file is too large to preview (12 MB). Images over 10 MB are not previewed.",
+    );
+    expect(tooLargeMessage(previewOf("x.html"), null)).toBe(
+      "This file is too large to preview. HTML files over 1 MB are not previewed.",
+    );
+    expect(cutTextMessage(1536 * 1024)).toBe(
+      "Showing the first 1 MB of 1.5 MB. Text files over 1 MB open cut and read-only.",
+    );
+    expect(cutTextMessage(null)).toBe(
+      "Showing the first 1 MB. Text files over 1 MB open cut and read-only.",
+    );
+  });
+});
+
 describe("the mode a file opens in (KOBE-802)", () => {
   it("Python opens Raw, every other kind Rendered", () => {
     expect(defaultModeOf("src/job.py")).toBe("raw");
     for (const p of ["a.md", "a.csv", "a.json", "a.ts", "a.sh", "a.txt", "a.html", "a.png"]) {
       expect(defaultModeOf(p)).toBe("rendered");
+    }
+  });
+
+  it("PDFs and images have no text modes: the editor (and its Raw switch) never opens them", () => {
+    for (const p of ["a.pdf", "a.png", "a.svg"]) {
+      expect(defaultModeOf(p)).toBe("rendered");
+      expect(isTextPreview(previewOf(p))).toBe(false);
     }
   });
 });

@@ -104,7 +104,9 @@ export async function voidUndeliveredAllowInTx(
        SET status = 'expired', cause = 'run_interrupted', decided_at = now(), decided_by = NULL,
            token_kid = NULL, token_expires_at = NULL, input_hmac = NULL, consumed_at = NULL
      WHERE team_id = ${teamId} AND id = ${approvalId} AND status = 'allowed'
-       AND (consumed_at IS NULL OR tool NOT LIKE 'mcp\_\_%')
+       -- An MCP tool's name starts with mcp__. Not LIKE: an escaped underscore in this JS template
+       -- cooks to a bare one, a wildcard (KOBE-783).
+       AND (consumed_at IS NULL OR left(tool, 5) <> 'mcp__')
      RETURNING run_id, tool_call_id, tool`);
   const row = res.rows[0];
   if (!row) return [];

@@ -14,3 +14,5 @@ packages/protocol/src/skill-evals/fixtures/cases/yaml-syntax.yaml
 packages/guide/src/generated/
 # Byte-equal fixtures of the guide outputs (KOBE-620): never reformatted.
 packages/guide/test/fixtures/
+# Copied from pdfjs-dist before each web build (KOBE-801); gitignored.
+apps/web/public/pdfjs/

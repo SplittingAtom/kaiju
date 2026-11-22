@@ -7,7 +7,7 @@ import { listSkillChoices, setEnablement } from "../skills/enablements.js";
 import { addForMe, listMyAdds, removeMyAdd, type AddRefusal } from "../skills/member-adds.js";
 import { invalidRequest, notFound, param, parseBody } from "../http/request.js";
 
-const enablementSchema = z.strictObject({
+export const enablementSchema = z.strictObject({
   kind: z.enum(["personal", "team", "catalog"]),
   skillId: z.uuid(),
   enabled: z.boolean(),

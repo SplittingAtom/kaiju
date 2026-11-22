@@ -13,9 +13,9 @@ import {
 } from "../users/deactivation.js";
 import { invalidRequest, notFound, param, readJson } from "../http/request.js";
 
-const purgeBodySchema = z.strictObject({ confirmEmail: z.string().min(3).max(320) });
+export const purgeBodySchema = z.strictObject({ confirmEmail: z.string().min(3).max(320) });
 
-const expectedStateSchema = z.strictObject({
+export const expectedStateSchema = z.strictObject({
   expectedState: z.enum(["active", "deactivated"]).optional(),
 });
 

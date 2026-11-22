@@ -8,11 +8,11 @@ import { siteQueueHealth, workspaceQueueHealth } from "../memory/quality/queues.
 import { issueText, memoryRouteKit, refuseAgentWrites } from "./memory-items.js";
 import { invalidRequest } from "../http/request.js";
 
-const workspaceItemsQuery = z.strictObject({
+export const workspaceItemsQuery = z.strictObject({
   scope: z.enum(["user", "team"]).default("team"),
   filter: z.enum(QUALITY_FILTERS).default("all"),
 });
-const siteItemsQuery = z.strictObject({ filter: z.enum(QUALITY_FILTERS).default("all") });
+export const siteItemsQuery = z.strictObject({ filter: z.enum(QUALITY_FILTERS).default("all") });
 
 /**
  * Memory quality, Workspace side (`/v1/memory/quality`, KOBE-411): computed on read, never acted

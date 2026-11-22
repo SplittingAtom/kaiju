@@ -1,0 +1,148 @@
+/*
+ * The file viewers (KOBE-801 PDF, KOBE-807 images). The text layer rules are pdf.js's own
+ * (pdfjs-dist web/pdf_viewer.css, 6.5): transparent spans over the canvas that select and copy.
+ */
+
+/* The surround: a dark backdrop in either theme, so white pages and transparent images stand out. */
+.surround {
+  background: var(--kobe-viewer-surround);
+  color: var(--kobe-viewer-surround-fg);
+}
+
+.page {
+  --user-unit: 1;
+  --total-scale-factor: calc(var(--scale-factor) * var(--user-unit));
+  --scale-round-x: 1px;
+  --scale-round-y: 1px;
+  position: relative;
+  direction: ltr;
+  margin: 0 auto;
+  background: var(--kobe-viewer-page);
+  box-shadow: var(--kobe-viewer-page-shadow);
+}
+
+.page canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.page :global(.textLayer) {
+  color-scheme: only light;
+  position: absolute;
+  text-align: initial;
+  inset: 0;
+  overflow: clip;
+  opacity: 1;
+  line-height: 1;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  caret-color: CanvasText;
+  z-index: 0;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+
+.page :global(.textLayer) :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  user-select: text;
+}
+
+.page :global(.textLayer) > :not(:global(.markedContent)),
+.page :global(.textLayer) :global(.markedContent) span:not(:global(.markedContent)) {
+  z-index: 1;
+  --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+
+.page :global(.textLayer) :global(.markedContent) {
+  display: contents;
+}
+
+.page :global(.textLayer) ::selection {
+  background: var(--kobe-viewer-selection);
+  background: color-mix(in srgb, AccentColor, transparent 50%);
+  color: transparent;
+}
+
+.page :global(.textLayer) br::selection {
+  background: transparent;
+}
+
+.page :global(.textLayer) :global(.endOfContent) {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: default;
+  user-select: none;
+}
+
+/* Find in document: every match, and the current one. */
+.page :global(.textLayer) .match {
+  margin: -1px;
+  padding: 1px;
+  border-radius: var(--kobe-radius-sm);
+  background-color: var(--kobe-viewer-match);
+}
+
+.page :global(.textLayer) .matchSelected {
+  background-color: var(--kobe-viewer-match-current);
+}
+
+/* Links drawn by Kobe (never pdf.js's annotation layer). */
+.links {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.links > * {
+  position: absolute;
+  pointer-events: auto;
+  cursor: pointer;
+  border-radius: var(--kobe-radius-sm);
+}
+
+.links > *:hover,
+.links > *:focus-visible {
+  background: var(--kobe-viewer-link);
+  outline: 2px solid var(--kobe-viewer-link-outline);
+}
+
+/* Images: a checkerboard shows through transparent pixels. */
+.checkerboard {
+  background-color: var(--kobe-viewer-check-light);
+  background-image: conic-gradient(
+    var(--kobe-viewer-check-dark) 25%,
+    var(--kobe-viewer-check-light) 0 50%,
+    var(--kobe-viewer-check-dark) 0 75%,
+    var(--kobe-viewer-check-light) 0
+  );
+  background-size: 16px 16px;
+}
+
+.panning {
+  cursor: grabbing;
+}
+
+.pannable {
+  cursor: grab;
+}
+
+/* A page that could not be drawn says so on the page itself. */
+.pageNote {
+  color: var(--kobe-viewer-page-fg);
+}

@@ -24,8 +24,8 @@ const notInCeiling = (c: Context) =>
     409,
   );
 
-const headersBodySchema = z.strictObject({ headers: injectedHeadersSchema });
-const decisionBodySchema = z.strictObject({ decision: z.enum(["approve", "deny"]) });
+export const headersBodySchema = z.strictObject({ headers: injectedHeadersSchema });
+export const decisionBodySchema = z.strictObject({ decision: z.enum(["approve", "deny"]) });
 const statusQuerySchema = z.enum(["pending", "approved", "denied", "all"]).default("pending");
 
 /**

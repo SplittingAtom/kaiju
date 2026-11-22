@@ -295,9 +295,10 @@ describe("project.commit (ac-3)", () => {
       message,
       diff_sha256: expectedHash("A2"),
     });
-    // A repeat while it is pending asks nothing new.
+    // A repeat while it is pending asks nothing new: another call, or this call's frame again.
     await check(sb, w, "k2");
     expect(await commit(sb, w, "k2")).toMatchObject({ outcome: { status: "pending_approval" } });
+    expect(await commit(sb, w, "k1")).toMatchObject({ outcome: { status: "pending_approval" } });
     expect(await approvals(w.team)).toHaveLength(1);
 
     await decide(w.owner, w.team, must(approval, "approval").id, "allow");
@@ -363,6 +364,24 @@ describe("project.commit (ac-3)", () => {
     // Nothing left: the next call answers nothing_to_commit.
     await check(sb, w, "r2");
     expect(await commit(sb, w, "r2")).toMatchObject({ outcome: { status: "nothing_to_commit" } });
+  });
+
+  it("a rule-allowed call commits once: a repeat of its frame commits nothing (KOBE-783, P2-22)", async () => {
+    mode = "rule";
+    const w = await world("editor");
+    const sb = await started(w);
+    expect((await check(sb, w, "once")).decision).toBe("allow");
+    expect(await commit(sb, w, "once")).toMatchObject({
+      ok: true,
+      outcome: { status: "committed", seq: 2 },
+    });
+    // The working copy changes; the same allowed call is sent again.
+    await edit(w.as, w.slug, sha("A2"), "A3");
+    expect(await commit(sb, w, "once")).toMatchObject({
+      ok: false,
+      error: { code: "not_allowed" },
+    });
+    expect((await commits(w.projectId)).map((c) => c.seq)).toEqual([1, 2]);
   });
 
   it("is refused without the policy check, and without a checkout", async () => {

@@ -7,7 +7,7 @@ import { allowedPeriods, retentionPeriodSchema, type RetentionView } from "../re
 import { cancelTeamPending, readRetention, setTeamPeriod } from "../retention/settings.js";
 import { invalidRequest, parseBody } from "../http/request.js";
 
-const bodySchema = z.strictObject({ period: retentionPeriodSchema });
+export const bodySchema = z.strictObject({ period: retentionPeriodSchema });
 
 const view = (v: RetentionView) => ({ ...v, allowed: allowedPeriods(v.maximum) });
 

@@ -3,6 +3,8 @@
  * extension), the size caps and the frame URL. Pure; the viewer is `components/files/file-tab.tsx`.
  */
 
+import { formatBytes } from "./format";
+
 /** File tabs share the column's open set with artifact tabs (uuids), so they carry a prefix. */
 const FILE_TAB_PREFIX = "file:";
 /** The protocol's `WORKSPACE_PATH_MAX_BYTES`, counted in characters here (the server checks). */
@@ -12,6 +14,8 @@ const PATH_MAX = 1024;
 export const TEXT_PREVIEW_MAX_BYTES = 1024 * 1024;
 /** Images larger than this are not fetched at all: Download instead. */
 export const IMAGE_PREVIEW_MAX_BYTES = 10 * 1024 * 1024;
+/** PDFs larger than this are not fetched (KOBE-801): the viewer holds the whole file in memory. */
+export const PDF_PREVIEW_MAX_BYTES = 25 * 1024 * 1024;
 /** The server's frame cap (`WORKSPACE_FRAME_MAX_BYTES`): larger HTML files are not framed. */
 export const HTML_FRAME_MAX_BYTES = 1024 * 1024;
 
@@ -42,7 +46,7 @@ export function fileName(path: string): string {
 }
 
 export type FilePreview =
-  | { readonly kind: "markdown" | "csv" | "tsv" | "json" | "text" | "html" | "none" }
+  | { readonly kind: "markdown" | "csv" | "tsv" | "json" | "text" | "html" | "pdf" | "none" }
   | { readonly kind: "code"; readonly language: string }
   | { readonly kind: "image" | "svg"; readonly mime: string };
 
@@ -98,9 +102,10 @@ const SIMPLE: Readonly<Record<string, FilePreview["kind"]>> = {
   json: "json",
   html: "html",
   htm: "html",
+  pdf: "pdf",
 };
 
-/** How a file is shown, by its extension. PDFs and anything unknown are `none` (Download). */
+/** How a file is shown, by its extension. Anything unknown is `none` (Download). */
 export function previewOf(path: string): FilePreview {
   const name = fileName(path).toLowerCase();
   const named = CODE_NAMES[name];
@@ -117,13 +122,49 @@ export function previewOf(path: string): FilePreview {
   return { kind: TEXT.has(ext) ? "text" : "none" };
 }
 
+/** The preview cap of a kind of file, for the "too large" messages; null when it has no preview. */
+export function previewLimit(
+  preview: FilePreview,
+): { readonly bytes: number; readonly what: string } | null {
+  switch (preview.kind) {
+    case "none":
+      return null;
+    case "image":
+    case "svg":
+      return { bytes: IMAGE_PREVIEW_MAX_BYTES, what: "Images" };
+    case "html":
+      return { bytes: HTML_FRAME_MAX_BYTES, what: "HTML files" };
+    case "pdf":
+      return { bytes: PDF_PREVIEW_MAX_BYTES, what: "PDFs" };
+    default:
+      return { bytes: TEXT_PREVIEW_MAX_BYTES, what: "Text files" };
+  }
+}
+
+/**
+ * A file over its kind's cap (KOBE-807): its size when known and the limit, worded the same for
+ * every kind. The tab adds "Use Download to get it." and a Download button.
+ */
+export function tooLargeMessage(preview: FilePreview, size: number | null): string {
+  const limit = previewLimit(preview);
+  const head = `This file is too large to preview${size === null ? "" : ` (${formatBytes(size)})`}.`;
+  return limit ? `${head} ${limit.what} over ${formatBytes(limit.bytes)} are not previewed.` : head;
+}
+
+/** A text file cut at the text cap (it opens read-only). */
+export function cutTextMessage(size: number | null): string {
+  const cap = formatBytes(TEXT_PREVIEW_MAX_BYTES);
+  return `Showing the first ${cap}${size === null ? "" : ` of ${formatBytes(size)}`}. Text files over ${cap} open cut and read-only.`;
+}
+
 /** The two ways a text file shows (`components/files/text-modes.tsx`). */
 export type TextViewMode = "rendered" | "raw";
 
 /**
  * The mode a file opens in (KOBE-802), decided here for every kind: Python opens Raw, in the code
  * editor, ready to edit; everything else opens Rendered. Read-only cases (a project reader, a
- * file over the size cap) open the same way and show their reason in the editor.
+ * file over the size cap) open the same way and show their reason in the editor. PDFs and images
+ * are never text previews (`isTextPreview`), so they open in their viewers with no mode at all.
  */
 export function defaultModeOf(path: string): TextViewMode {
   const preview = previewOf(path);

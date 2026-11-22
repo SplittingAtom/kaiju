@@ -5,11 +5,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { tabsKey } from "../../lib/chat/artifact-tabs";
 import { ARTIFACT_FRAME_SANDBOX } from "../../lib/chat/artifacts";
 import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { openPdf, type PdfDocument } from "../../lib/files/pdfjs";
 import { workspaceFrameUrl } from "../../lib/files/preview";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { ChatApp } from "../chat/chat-app";
 import { browserSpaced, composer, crushedIconButtons, openRowMenu } from "../chat/testing";
+
+/** KOBE-801: pdf.js is replaced at its module boundary (its own tests: pdf-viewer, pdfjs). */
+vi.mock("../../lib/files/pdfjs", () => ({ openPdf: vi.fn(), createTextLayer: vi.fn() }));
 
 /** KOBE-268: workspace files open as tabs of the artifact column. */
 let fake: FakeKobe;
@@ -494,10 +498,14 @@ describe("renderers (ac-2)", () => {
     await waitFor(() => expect(text.querySelector("pre")?.textContent).toContain("line 1"));
   });
 
-  it("images and SVG as <img> data URLs, never inline SVG markup", async () => {
+  it("images and SVG as <img> data URLs in the image viewer, never inline SVG markup", async () => {
     const png = await shown("p.png", new Uint8Array([137, 80, 78, 71]));
     const img = await within(png).findByRole("img", { name: "p.png" });
     expect(img.getAttribute("src")).toBe("data:image/png;base64,iVBORw==");
+    // KOBE-807: zoom and fit controls, and the file size (the dimensions once it loads).
+    expect(within(png).getByRole("toolbar", { name: "Image controls" })).toBeTruthy();
+    expect(within(png).getByRole("button", { name: "Actual size" })).toBeTruthy();
+    expect(within(png).getByText("4 B")).toBeTruthy();
     cleanup();
     const svg = await shown("logo.svg", '<svg xmlns="http://www.w3.org/2000/svg" onload="x()"/>');
     const pic = await within(svg).findByRole("img", { name: "logo.svg" });
@@ -517,19 +525,64 @@ describe("renderers (ac-2)", () => {
     expect(panel.querySelector("script")).toBeNull();
   });
 
-  it("PDFs, unknown and binary files: Cannot preview, with Download", async () => {
+  it("PDFs open in the PDF viewer from Files, a project and a thread upload (KOBE-801)", async () => {
+    const opened: number[] = [];
+    vi.mocked(openPdf).mockImplementation((bytes) => {
+      opened.push(bytes.length);
+      const page = {
+        getViewport: ({ scale }: { scale: number }) => ({
+          width: 612 * scale,
+          height: 792 * scale,
+        }),
+        render: () => ({ promise: new Promise(() => {}), cancel: () => {} }),
+        cleanup: () => true,
+      };
+      const doc = { numPages: 2, getPage: async () => page } as unknown as PdfDocument;
+      return { promise: Promise.resolve(doc), destroy: async () => {} };
+    });
+    const panel = await shown("doc.pdf", "%PDF-1.7 whole");
+    expect(await within(panel).findByRole("toolbar", { name: "PDF controls" })).toBeTruthy();
+    expect(within(panel).getByRole("region", { name: "doc.pdf, page 1 of 2" })).toBeTruthy();
+    expect(within(panel).getByRole("button", { name: "Download doc.pdf" })).toBeTruthy();
+    // The header (Copy path, Download) and the viewer's own toolbar sit in separate rows.
+    const header = must(within(panel).getByRole("heading", { name: "doc.pdf" }).closest("header"));
+    expect(within(header).getByRole("button", { name: "Copy the path of doc.pdf" })).toBeTruthy();
+    expect(within(header).queryByRole("toolbar")).toBeNull();
+    // The whole file was read, through the workspace file route.
+    expect(reads).toEqual(["doc.pdf"]);
+    expect(opened).toEqual([14]);
+    cleanup();
+
+    files.set("projects/plan/spec.pdf", enc("%PDF-1.7 a"));
+    files.set("uploads/t1/scan.pdf", enc("%PDF-1.7 b"));
+    const t = thread("Work");
+    localStorage.setItem(
+      tabsKey(fake.teamId, t),
+      JSON.stringify({
+        open: ["file:projects/plan/spec.pdf", "file:uploads/t1/scan.pdf"],
+        active: "file:projects/plan/spec.pdf",
+      }),
+    );
+    mount(t);
+    const user = userEvent.setup();
+    expect(await screen.findByRole("region", { name: "spec.pdf, page 1 of 2" })).toBeTruthy();
+    await user.click(screen.getByRole("tab", { name: "scan.pdf" }));
+    expect(await screen.findByRole("region", { name: "scan.pdf, page 1 of 2" })).toBeTruthy();
+  });
+
+  it("unknown and binary files: Cannot preview, with Download in the header and the note", async () => {
     for (const [name, content] of [
-      ["doc.pdf", "%PDF-1.7"],
       ["blob.bin", "x"],
       ["bad.txt", new Uint8Array([104, 0, 105])],
     ] as const) {
       const panel = await shown(name, content);
       expect(await within(panel).findByText(/Cannot preview this file/)).toBeTruthy();
       expect(within(panel).getByRole("button", { name: `Download ${name}` })).toBeTruthy();
+      expect(within(panel).getByRole("button", { name: "Download" })).toBeTruthy();
       cleanup();
     }
     // Each was checked (it exists); only the text file's content was read, to find it binary.
-    expect(reads).toEqual(["doc.pdf", "blob.bin", "bad.txt"]);
+    expect(reads).toEqual(["blob.bin", "bad.txt"]);
   });
 });
 
@@ -605,17 +658,49 @@ describe("memory, deleted files and caps (ac-3)", () => {
   it("text previews stop at 1 MB with a notice; large images are not fetched", async () => {
     files.set("big.txt", enc("x".repeat(1024 * 1024 + 10)));
     files.set("huge.png", new Uint8Array(10 * 1024 * 1024 + 1));
+    files.set("big.html", new Uint8Array(1024 * 1024 + 1));
     mount(thread("Work"));
     const user = userEvent.setup();
     const section = await openFiles();
     const big = await view(user, section, "big.txt");
-    expect(await within(big).findByText(/Showing the first 1 MB of 1\.0 MB/)).toBeTruthy();
+    expect(
+      await within(big).findByText(
+        /Showing the first 1 MB of 1\.0 MB\. Text files over 1 MB open cut and read-only\./,
+      ),
+    ).toBeTruthy();
+    expect(within(big).getByRole("button", { name: "Download" })).toBeTruthy();
     const shownText = must(big.querySelector("pre")).textContent;
     expect(shownText.length).toBeLessThanOrEqual(1024 * 1024 + 1);
     const huge = await view(user, section, "huge.png");
-    expect(await within(huge).findByText(/too large to preview \(10 MB\)/)).toBeTruthy();
+    expect(
+      await within(huge).findByText(
+        /too large to preview \(10 MB\)\. Images over 10 MB are not previewed\. Use Download/,
+      ),
+    ).toBeTruthy();
+    expect(within(huge).getByRole("button", { name: "Download" })).toBeTruthy();
+    // KOBE-807: HTML over the frame cap says its limit the same way.
+    const html = await view(user, section, "big.html");
+    expect(
+      await within(html).findByText(/\(1\.0 MB\)\. HTML files over 1 MB are not previewed\./),
+    ).toBeTruthy();
+    expect(html.querySelector("iframe")).toBeNull();
     // The text stopped at the cap; the image's Content-Length was enough to read none of it.
     expect(must(pulled.get("big.txt"))).toBeLessThanOrEqual(1024 * 1024 + CHUNK);
     expect(pulled.get("huge.png") ?? 0).toBeLessThanOrEqual(CHUNK);
+  });
+
+  it("PDFs over 25 MB are not fetched: the limit and Download (KOBE-801)", async () => {
+    files.set("big.pdf", new Uint8Array(25 * 1024 * 1024 + 1));
+    mount(thread("Work"));
+    const user = userEvent.setup();
+    const panel = await view(user, await openFiles(), "big.pdf");
+    expect(
+      await within(panel).findByText(
+        /too large to preview \(25 MB\)\. PDFs over 25 MB are not previewed\./,
+      ),
+    ).toBeTruthy();
+    expect(within(panel).getByRole("button", { name: "Download" })).toBeTruthy();
+    expect(pulled.get("big.pdf") ?? 0).toBeLessThanOrEqual(CHUNK);
+    expect(openPdf).not.toHaveBeenCalled();
   });
 });

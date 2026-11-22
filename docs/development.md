@@ -15,14 +15,24 @@ old names: Workspace = the team row, so the routes stay `/v1/team`, `/v1/me/team
 
 `services/server/openapi.json` (generated from `services/server/src/openapi/document.ts`) lists
 every route of the member and admin API on the user-facing listener. Some areas are fully
-described (bodies and errors, in `openapi/<area>.ts`); the rest are one line each in
-`openapi/catalog/` and marked `x-kobe-detail: summary`: summary, tag and path parameters, no
-bodies yet. Left out on purpose, each with a reason in `openapi/undocumented-allowlist.ts`: health
-probes, Better Auth's `/api/auth/*`, SCIM (`/v1/scim/v2`), the OAuth redirect and client-metadata
-endpoints, the web app's telemetry beacon, a catch-all refusal, and the sandbox-facing and
-internal listeners. `openapi/coverage.test.ts` reads the routes of the real mounted apps and fails
-on a route that is neither documented nor allowlisted, and on a stale entry in either list. After
-adding a route, add its line to the catalog (or a full description) and regenerate:
+described by hand in `openapi/<area>.ts`; the rest are one line each in `openapi/catalog/`. A
+catalog area marked `detailed: true` gives every line a `CatalogDetail` in
+`openapi/catalog/details/<area>.ts` (KOBE-771): the request body, query, success status and body,
+and extra error statuses. Bodies and answers are referenced from the zod schemas the route
+validates with or the `@kobe/protocol` contract (`named("Name", schema)`; export the route's
+schema if it is a local const); only an answer the route builds without any schema is written
+out as the fields the handler sends (`untyped(...)`, marked `x-kobe-untyped`). Errors use the
+shared `components.responses` (400, 401 and 403 by default; add 404, 409, 413, 429 and so on as
+the route answers them). Lines of areas not detailed yet are marked `x-kobe-detail: summary`
+(summary, tag and path parameters, no bodies). Left out on purpose, each with a reason in
+`openapi/undocumented-allowlist.ts`: health probes, Better Auth's handler and the SCIM routes
+(listed one by one), the OAuth redirect and client-metadata endpoints, the web app's telemetry
+beacon, a catch-all refusal, and the sandbox-facing and internal listeners.
+`openapi/coverage.test.ts` reads the routes of the real mounted apps and fails on a route that is
+neither documented nor allowlisted, and on a stale entry in either list; `catalog/detail.test.ts`
+fails on an operation of a detailed area without its schemas, a dangling `$ref` or an undeclared
+path parameter. After adding a route, add its line to the catalog (with its detail in a detailed
+area) and regenerate:
 `UPDATE_OPENAPI=1 pnpm --filter @kobe/server exec vitest run src/openapi && pnpm format`.
 
 ## Dev loop

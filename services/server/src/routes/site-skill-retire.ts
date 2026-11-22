@@ -18,8 +18,8 @@ import { invalidRequest, notFound, param, parseBody } from "../http/request.js";
 
 const idSchema = z.uuid();
 const actSchema = z.enum(["deprecate", "undeprecate", "withdraw", "revoke", "unrevoke"]);
-const noteSchema = z.strictObject({ note: z.string().trim().min(1).max(2000).optional() });
-const skillSchema = z.strictObject({ replacementId: z.uuid().optional() });
+export const noteSchema = z.strictObject({ note: z.string().trim().min(1).max(2000).optional() });
+export const skillSchema = z.strictObject({ replacementId: z.uuid().optional() });
 
 type Ctx = Context<{ Variables: AuthVariables }>;
 

@@ -22,8 +22,13 @@ import { threadsOpenApiPaths, threadsOpenApiSchemas } from "./threads.js";
 import { threadFoldersOpenApiPaths, threadFoldersOpenApiSchemas } from "./thread-folders.js";
 import { threadFileLinksOpenApiPaths, threadFileLinksOpenApiSchemas } from "./thread-file-links.js";
 import { usageOpenApiPaths, usageOpenApiSchemas } from "./usage.js";
-import { catalogOpenApiPaths, catalogOpenApiTags } from "./catalog/index.js";
-import { mergePaths } from "./catalog/build.js";
+import {
+  catalogOpenApiPaths,
+  catalogOpenApiResponses,
+  catalogOpenApiSchemas,
+  catalogOpenApiTags,
+} from "./catalog/index.js";
+import { mergePaths, mergeSchemas } from "./catalog/build.js";
 import {
   teamDefaultAgentOpenApiPaths,
   teamDefaultAgentOpenApiSchemas,
@@ -48,9 +53,10 @@ export function openApiDocument(): Record<string, unknown> {
         "Coverage: every route of the member and admin API is listed. Operations marked " +
         "`x-kobe-detail: summary` (tagged by area) document their summary and path parameters " +
         "only; their request and response bodies are not described yet. The rest are fully " +
-        "described. Not listed on purpose: health probes, Better Auth's own `/api/auth/*` " +
-        "handler, SCIM provisioning (`/v1/scim/v2`, see the SCIM specification), OAuth " +
-        "redirect and client-metadata endpoints, the web app's telemetry beacon, and the " +
+        "described; a response schema marked `x-kobe-untyped` lists the fields the route sends " +
+        "without a schema in code. Not listed on purpose: health probes, Better Auth's own " +
+        "`/api/auth/*` handler, SCIM provisioning (`/v1/scim/v2`, see the SCIM specification), " +
+        "OAuth redirect and client-metadata endpoints, the web app's telemetry beacon, and the " +
         "sandbox-facing and internal listeners, which are not reachable from outside the cluster.",
     },
     tags: catalogOpenApiTags(),
@@ -82,29 +88,33 @@ export function openApiDocument(): Record<string, unknown> {
       catalogOpenApiPaths(),
     ),
     components: {
-      schemas: {
-        ...threadsOpenApiSchemas(),
-        ...threadFoldersOpenApiSchemas(),
-        ...runsOpenApiSchemas(),
-        ...pendingOpenApiSchemas(),
-        ...markersOpenApiSchemas(),
-        ...compactOpenApiSchemas(),
-        ...branchSummaryOpenApiSchemas(),
-        ...contextOpenApiSchemas(),
-        ...approvalsOpenApiSchemas(),
-        ...usageOpenApiSchemas(),
-        ...modelsOpenApiSchemas(),
-        ...feedbackOpenApiSchemas(),
-        ...evalCasesOpenApiSchemas(),
-        ...brandingOpenApiSchemas(),
-        ...agentRosterOpenApiSchemas(),
-        ...projectCommitsOpenApiSchemas(),
-        ...teamDefaultAgentOpenApiSchemas(),
-        ...egressAccessOpenApiSchemas(),
-        ...threadFileLinksOpenApiSchemas(),
-        ...semanticMemoryOpenApiSchemas(),
-        ...siteSsoSettingsOpenApiSchemas(),
-      },
+      schemas: mergeSchemas(
+        {
+          ...threadsOpenApiSchemas(),
+          ...threadFoldersOpenApiSchemas(),
+          ...runsOpenApiSchemas(),
+          ...pendingOpenApiSchemas(),
+          ...markersOpenApiSchemas(),
+          ...compactOpenApiSchemas(),
+          ...branchSummaryOpenApiSchemas(),
+          ...contextOpenApiSchemas(),
+          ...approvalsOpenApiSchemas(),
+          ...usageOpenApiSchemas(),
+          ...modelsOpenApiSchemas(),
+          ...feedbackOpenApiSchemas(),
+          ...evalCasesOpenApiSchemas(),
+          ...brandingOpenApiSchemas(),
+          ...agentRosterOpenApiSchemas(),
+          ...projectCommitsOpenApiSchemas(),
+          ...teamDefaultAgentOpenApiSchemas(),
+          ...egressAccessOpenApiSchemas(),
+          ...threadFileLinksOpenApiSchemas(),
+          ...semanticMemoryOpenApiSchemas(),
+          ...siteSsoSettingsOpenApiSchemas(),
+        },
+        catalogOpenApiSchemas(),
+      ),
+      responses: catalogOpenApiResponses(),
       securitySchemes: {
         session: { type: "apiKey", in: "cookie", name: "better-auth.session_token" },
       },

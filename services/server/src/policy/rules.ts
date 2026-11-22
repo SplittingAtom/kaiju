@@ -1,13 +1,16 @@
-import type {
-  ArgPattern,
-  JsonObject,
-  RememberLimits,
-  RememberScope,
-  ToolDescriptor,
+import {
+  canonicalJson,
+  resolveJsonPointer,
+  type ArgPattern,
+  type JsonObject,
+  type RememberLimits,
+  type RememberScope,
+  type ToolDescriptor,
 } from "@kobe/protocol";
 import {
   allowGlobScoped,
   isLiteralGlob,
+  literalPrefix,
   matchArgPattern,
   matchSubject,
   type MatchBias,
@@ -40,6 +43,12 @@ export interface PolicyRule {
    * top-level keys must be exactly the pattern's, so an extra or a missing argument never matches.
    */
   readonly exact_keys?: boolean;
+  /**
+   * With `exact_keys`: the canonical JSON of the one input the rule allows (KOBE-783, P2-23), the
+   * form the approval's HMAC covers. The call's prepared input must have exactly this canonical
+   * form, so key order and number spelling don't matter and a value's JSON type does.
+   */
+  readonly exact_input?: string;
 }
 
 /** The run a call belongs to: thread- and run-bound rules match only their own. */
@@ -109,6 +118,49 @@ export function exactKeysMatch(pattern: ArgPattern | undefined, input: JsonObjec
   return keys.length === pinned.size && keys.every((k) => pinned.has(k));
 }
 
+/** The canonical JSON of `value`, or undefined when it has none. */
+function canonicalOrUndefined(value: unknown): string | undefined {
+  try {
+    return canonicalJson(value);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Whether a glob's text could be a non-string value's subject: the canonical JSON of a number,
+ * boolean, null, object or list (`5`, `true`, `{"a":1}`). Such text can't tell `5` from `"5"`.
+ */
+function looksLikeNonString(text: string): boolean {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return false;
+  }
+  return typeof parsed !== "string" && canonicalOrUndefined(parsed) === text;
+}
+
+/**
+ * "Only this exact action" over every argument matches on canonical JSON (KOBE-783, P2-23): a
+ * glob sees a string as itself and anything else as its JSON text, so the glob alone would let
+ * `{"limit": "5"}` through a rule made from `{"limit": 5}`. A rule with `exact_input` compares the
+ * call's canonical form with it. A rule made before it has only its glob texts: it matches string
+ * values whose text can't be a non-string's (`5`, `{"a":1}` never match: the member is asked
+ * again and the new rule stores the canonical form).
+ */
+export function exactInputMatch(rule: PolicyRule, input: JsonObject): boolean {
+  if (rule.exact_input !== undefined) return canonicalOrUndefined(input) === rule.exact_input;
+  if (rule.exact_keys !== true) return true;
+  return Object.entries(rule.arg_pattern ?? {}).every(([pointer, glob]) => {
+    if (!isLiteralGlob(glob)) return false;
+    return (
+      typeof resolveJsonPointer(input, pointer) === "string" &&
+      !looksLikeNonString(literalPrefix(glob))
+    );
+  });
+}
+
 /** Whether `rule` applies to this call: active, tool glob matches the name, arg pattern matches. */
 export function ruleMatches(
   rule: PolicyRule,
@@ -128,6 +180,7 @@ export function ruleMatches(
   const bias = biasOf(rule.effect);
   if (!matchSubject(rule.tool_glob, tool.name, bias)) return false;
   if (rule.exact_keys === true && !exactKeysMatch(rule.arg_pattern, input)) return false;
+  if (!exactInputMatch(rule, input)) return false;
   return rule.arg_pattern === undefined || matchArgPattern(rule.arg_pattern, input, bias);
 }
 

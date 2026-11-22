@@ -13,8 +13,10 @@ import {
 import { invalidRequest, notFound, param, parseBody } from "../http/request.js";
 
 const idSchema = z.uuid();
-const addSchema = z.strictObject({ userId: z.uuid() });
-const reassignSchema = z.strictObject({ userIds: z.array(z.uuid()).min(1).max(MAINTAINERS_MAX) });
+export const addSchema = z.strictObject({ userId: z.uuid() });
+export const reassignSchema = z.strictObject({
+  userIds: z.array(z.uuid()).min(1).max(MAINTAINERS_MAX),
+});
 
 type Ctx = Context<{ Variables: AuthVariables }>;
 
