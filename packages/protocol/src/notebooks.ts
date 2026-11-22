@@ -212,9 +212,24 @@ export const notebookRunBodySchema = z
     cell_id: notebookCellIdSchema.optional(),
     /** Default {@link NOTEBOOK_TIMEOUT_DEFAULT_S}. */
     timeout_s: timeoutSchema.optional(),
+    /**
+     * KOBE-805, Run selection: only these lines (1-based, inclusive) of the saved `.py` file, with
+     * their common indentation removed. A line past the file's end is not an error (the range
+     * stops there); a range that starts past it is.
+     */
+    lines: z
+      .strictObject({
+        start: z.number().int().min(1),
+        end: z.number().int().min(1),
+      })
+      .refine((l) => l.end >= l.start, "end before start")
+      .optional(),
   })
   .superRefine((body, ctx) => {
     const notebook = body.path.endsWith(".ipynb");
+    if (notebook && body.lines !== undefined) {
+      ctx.addIssue({ code: "custom", path: ["lines"], message: "lines go with a .py file" });
+    }
     if (notebook && body.cell_id === undefined) {
       ctx.addIssue({ code: "custom", path: ["cell_id"], message: "a notebook cell id is needed" });
     }

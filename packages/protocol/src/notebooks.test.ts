@@ -89,6 +89,17 @@ describe("member run body (NB6)", () => {
       false,
     );
   });
+
+  it("runs a range of a .py file's lines (KOBE-805), never of a notebook", () => {
+    const ok = (body: unknown) => notebookRunBodySchema.safeParse(body).success;
+    expect(ok({ path: "job.py", lines: { start: 2, end: 4 } })).toBe(true);
+    expect(ok({ path: "job.py", lines: { start: 3, end: 3 } })).toBe(true);
+    expect(ok({ path: "job.py", lines: { start: 4, end: 2 } })).toBe(false);
+    expect(ok({ path: "job.py", lines: { start: 0, end: 2 } })).toBe(false);
+    expect(ok({ path: "job.py", lines: { start: 1.5, end: 2 } })).toBe(false);
+    expect(ok({ path: "job.py", lines: { start: 1 } })).toBe(false);
+    expect(ok({ path: "a.ipynb", cell_id: "c1", lines: { start: 1, end: 1 } })).toBe(false);
+  });
 });
 
 describe("run_python input (NB13)", () => {

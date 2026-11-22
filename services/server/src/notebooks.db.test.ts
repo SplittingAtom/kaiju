@@ -264,6 +264,27 @@ describe("the member runs a notebook cell (NB6, NB11)", () => {
     expect((await liveFile(w, "job.py").catch(() => ({ sha: base }))).sha).toBe(base);
   });
 
+  it("runs only the named lines of a .py file, dedented (KOBE-805 Run selection)", async () => {
+    const w = await world();
+    const seen: string[] = [];
+    await connected(w, (f) => {
+      seen.push(f.code);
+      return [stdout("ok\n")];
+    });
+    await seed(w, "sel.py", "import os\ndef f():\n    a = 1\n    print(a)\n");
+    await ranToEnd(w, { path: "sel.py", lines: { start: 3, end: 9 } });
+    expect(seen).toEqual(["a = 1\nprint(a)\n"]);
+    const blank = await run(w, { path: "sel.py", lines: { start: 7, end: 8 } });
+    expect(blank.status).toBe(400);
+    expect(blank.json).toMatchObject({ code: "invalid_request" });
+    const notebookLines = await run(w, {
+      path: "a.ipynb",
+      cell_id: "c1",
+      lines: { start: 1, end: 1 },
+    });
+    expect(notebookLines.status).toBe(400);
+  });
+
   it("merges into the current version when the notebook changed meanwhile, if the cell is still there", async () => {
     const w = await world();
     await seed(w, "b.ipynb", notebook([code("c1", "1"), code("c2", "2")]));

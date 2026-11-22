@@ -52270,6 +52270,23 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 3600
+          },
+          "lines": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["start", "end"],
+            "additionalProperties": false
           }
         },
         "required": ["path"],
