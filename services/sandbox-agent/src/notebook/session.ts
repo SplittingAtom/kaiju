@@ -159,6 +159,7 @@ export class KernelSession {
   #running: Running | undefined;
   #inspecting: Inspecting | undefined;
   #completing: Completing | undefined;
+  #completingDone: Promise<void> = Promise.resolve();
   #goneReason: string | undefined;
   #stopping: Promise<void> | undefined;
   #onReady: { resolve: () => void; reject: (error: Error) => void } | undefined;
@@ -206,6 +207,18 @@ export class KernelSession {
   /** A completion or documentation request is in the bridge (KOBE-808). */
   get completing(): boolean {
     return this.#completing !== undefined;
+  }
+
+  /** Resolves when the request in the bridge (if any) has ended, or after `waitMs`. */
+  completed(waitMs: number): Promise<void> {
+    if (this.#completing === undefined) return Promise.resolve();
+    let timer: NodeJS.Timeout | undefined;
+    return Promise.race([
+      this.#completingDone,
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, waitMs);
+      }),
+    ]).finally(() => clearTimeout(timer));
   }
 
   /** Resolves once the kernel answered; rejects if the bridge fails first or `timeoutMs` passes. */
@@ -258,7 +271,7 @@ export class KernelSession {
       return Promise.resolve({ kind: "gone", message: this.#goneReason });
     }
     if (this.#completing !== undefined) throw new Error("a completion is already in the kernel");
-    return new Promise<CompleteResult>((resolve) => {
+    const answer = new Promise<CompleteResult>((resolve) => {
       const timer = setTimeout(() => {
         if (this.#completing?.id === id) this.#completing = undefined;
         resolve({ kind: "timeout" });
@@ -273,6 +286,8 @@ export class KernelSession {
       };
       this.#write({ ...request, id });
     });
+    this.#completingDone = answer.then(() => undefined);
+    return answer;
   }
 
   interrupt(): void {

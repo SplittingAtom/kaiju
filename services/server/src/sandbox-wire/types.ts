@@ -209,6 +209,11 @@ export interface SendOptions {
    * `sandbox_not_connected` at once. Default: woken as usual.
    */
   readonly wake?: boolean;
+  /**
+   * False: the command does not count as the sandbox's activity (KOBE-808: kernel completion),
+   * so it never postpones hibernation. Default: it does.
+   */
+  readonly activity?: boolean;
 }
 
 /**

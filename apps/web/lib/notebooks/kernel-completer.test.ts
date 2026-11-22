@@ -201,4 +201,33 @@ describe("KernelCompleter (KOBE-808)", () => {
     expect(await c.complete("é".repeat(20_000), 1)).toBeNull();
     expect(calls).toHaveLength(0);
   });
+
+  it("one request in flight: a newer one cancels the older, which changes nothing", async () => {
+    const pending: ((a: ApiResult<KernelCompletionAnswer>) => void)[] = [];
+    const signals: (AbortSignal | undefined)[] = [];
+    const c = new KernelCompleter(
+      {
+        complete: (_t, _b, signal) => {
+          signals.push(signal);
+          return new Promise((resolve) => pending.push(resolve));
+        },
+      },
+      THREAD,
+    );
+    const older = c.complete("x", 1);
+    const newer = c.doc("x");
+    expect(signals[0]?.aborted).toBe(true);
+    expect(signals[1]?.aborted).toBe(false);
+    pending[0]?.({ ok: false, error: { status: 0, code: "network_error", message: "aborted" } });
+    expect(await older).toBeNull();
+    expect(c.state).toBe("idle");
+    pending[1]?.(ok({ status: "ok", op: "doc", found: true, signature: "x()" }));
+    expect(await newer).toEqual({ signature: "x()", doc: undefined, type: undefined });
+  });
+
+  it("never sends a lone surrogate (the server would refuse it)", async () => {
+    const { api, calls } = fake();
+    expect(await new KernelCompleter(api, THREAD).complete("a\uD800", 1)).toBeNull();
+    expect(calls).toHaveLength(0);
+  });
 });

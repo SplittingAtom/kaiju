@@ -8,7 +8,7 @@
  * requests) no request is sent for a while and {@link KernelCompleter.state} says why, for the
  * editor's small indicator. The server never wakes a sandbox or starts a kernel for it.
  */
-import { NOTEBOOK_COMPLETE_CODE_MAX_BYTES } from "@kobe/protocol";
+import { NOTEBOOK_COMPLETE_CODE_MAX_BYTES, isWellFormedText } from "@kobe/protocol";
 import type { KernelCompletionAnswer, NotebookApi } from "./api";
 
 /** Why kernel completion is (not) adding to the editor's own completion right now. */
@@ -104,6 +104,7 @@ export class KernelCompleter {
   #state: KernelCompletionState;
   #pausedUntil = 0;
   #running = false;
+  #inflight: AbortController | null = null;
   readonly #listeners = new Set<() => void>();
 
   constructor(
@@ -162,6 +163,7 @@ export class KernelCompleter {
     signal?: AbortSignal,
   ): Promise<KernelMatches | null> {
     if (utf8.encode(code).length > NOTEBOOK_COMPLETE_CODE_MAX_BYTES) return null;
+    if (!isWellFormedText(code)) return null;
     const at = codePoints(code.slice(0, cursor));
     const answer = await this.#ask({ op: "complete", code, cursor: at }, signal);
     if (answer?.status !== "ok" || answer.op !== "complete") return null;
@@ -188,14 +190,18 @@ export class KernelCompleter {
     signal: AbortSignal | undefined,
   ): Promise<KernelCompletionAnswer | null> {
     if (!this.available() || this.#threadId === null || signal?.aborted) return null;
+    // One request in flight per editor: the newest wins, the older one is cancelled (so the
+    // kernel never sees two at once from here; review L4).
+    this.#inflight?.abort();
     const ctrl = new AbortController();
+    this.#inflight = ctrl;
     const abort = () => ctrl.abort();
     signal?.addEventListener("abort", abort, { once: true });
     const timer = setTimeout(abort, KERNEL_COMPLETION_TIMEOUT_MS);
     try {
       const res = await this.#api.complete(this.#threadId, body, ctrl.signal);
-      // Cancelled by the next keystroke: says nothing about the kernel.
-      if (signal?.aborted) return null;
+      // Cancelled by the next keystroke or a newer request: says nothing about the kernel.
+      if (signal?.aborted || this.#inflight !== ctrl) return null;
       if (!res.ok) {
         // Too many requests, or anything else (gone thread, no isolation, a network error, a
         // request that timed out here): the editor keeps its own completion for a while.
@@ -209,6 +215,7 @@ export class KernelCompleter {
     } finally {
       clearTimeout(timer);
       signal?.removeEventListener("abort", abort);
+      if (this.#inflight === ctrl) this.#inflight = null;
     }
   }
 

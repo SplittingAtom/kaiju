@@ -57,9 +57,16 @@ on the next run, including when the agent runs the file.
 
 In a `.py` file's editor, completion also asks the conversation's kernel, so it can suggest
 variables, attributes, DataFrame columns and module members that exist right now (see [Code
-completion](file-editor.md#code-completion)). Asking runs none of your code: Kobe uses the
-kernel's own completer with its safe settings, which never calls functions or property getters,
-and docs come from signatures and docstrings only. Nothing about it is saved.
+completion](file-editor.md#code-completion)). Kobe uses the kernel's own completer with its
+safe settings: it never calls your functions, property getters, `__getattr__`, `__dir__` or
+`_ipython_key_completions_`, and lists attributes from the class and instance dictionaries. What
+can still run: plain lookups and item access on built-in containers and pandas objects, pandas'
+own column listing for a DataFrame or Series, and a completer you registered yourself with
+IPython's `complete_object`. A completion that takes longer than half a second in the kernel
+gives no suggestions. Docs come from signatures and docstrings only, read without touching the
+object (a lazy proxy stays lazy); a default value that is not a plain number or string shows as
+`…`. Nothing about it is saved, and it does not count as using your sandbox: typing in the editor
+never keeps it awake.
 
 Kernel completion only works while the kernel runs and is idle. A note under the editor, next to
 the line and column, says when it is off and why: the kernel is not started (press **Start** or run

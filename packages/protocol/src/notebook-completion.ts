@@ -38,12 +38,16 @@ export const NOTEBOOK_COMPLETE_TIMEOUT_MS = 1_000;
 export const NOTEBOOK_COMPLETE_TIMEOUT_MAX_MS = 2_000;
 
 const noNul = (s: string) => !s.includes("\u0000");
+/** A lone UTF-16 surrogate (Postgres jsonb refuses it, like U+0000). */
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+export const isWellFormedText = (s: string) => !LONE_SURROGATE.test(s);
 const short = (max: number) => z.string().max(max).refine(noNul, "U+0000");
 
 const codeSchema = z
   .string()
   .refine((s) => utf8ByteLength(s) <= NOTEBOOK_COMPLETE_CODE_MAX_BYTES, "code too large")
-  .refine(noNul, "U+0000");
+  .refine(noNul, "U+0000")
+  .refine(isWellFormedText, "a lone surrogate");
 const cursorSchema = z.number().int().nonnegative();
 const nameSchema = z
   .string()

@@ -294,12 +294,22 @@ function signatureHelp(completer: KernelCompleter): Extension {
 
 /** Docstrings on hover over a name (after CodeMirror's hover delay). */
 function hoverDocs(completer: KernelCompleter): Extension {
-  return hoverTooltip(
+  // The lookup of the last hover; a newer hover, or the pointer leaving the text, cancels it.
+  let pending: AbortController | null = null;
+  const cancel = () => {
+    pending?.abort();
+    pending = null;
+  };
+  const tooltip = hoverTooltip(
     async (view, pos) => {
+      cancel();
       const target = nameAt(view.state, pos);
       if (target === null || !completer.available()) return null;
-      const doc = await completer.doc(target.name);
-      if (doc === null) return null;
+      const ctrl = new AbortController();
+      pending = ctrl;
+      const doc = await completer.doc(target.name, ctrl.signal);
+      if (pending === ctrl) pending = null;
+      if (doc === null || ctrl.signal.aborted) return null;
       return {
         pos: target.from,
         end: target.to,
@@ -309,6 +319,7 @@ function hoverDocs(completer: KernelCompleter): Extension {
     },
     { hoverTime: 500 },
   );
+  return [tooltip, EditorView.domEventHandlers({ mouseleave: () => void cancel() })];
 }
 
 /** Kernel completion, signature help and docs for an editable `.py` view. */

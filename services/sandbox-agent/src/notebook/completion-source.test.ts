@@ -57,6 +57,36 @@ describe.skipIf(!hasPython)("kernel documentation lookup (KOBE-808)", () => {
     expect(harness("doc:p")).not.toHaveProperty("doc");
   });
 
+  // Review M1: lazy proxies and hooked objects run nothing either (isinstance's __class__
+  // fallback, __getattribute__, metaclass __getattr__, __wrapped__/__signature__, default reprs).
+  it.each([
+    [
+      "lz",
+      {
+        found: true,
+        type: "ClassProperty",
+        doc: "A lazy proxy's trick: __class__ is a property (Django's SimpleLazyObject).",
+      },
+    ],
+    ["lz.method", { found: true, signature: "method(a)", doc: "Doc of a proxy method." }],
+    ["ga", { found: true, type: "GetAttribute", doc: "Every attribute read runs code." }],
+    ["ga.method", { found: true, signature: "method(a)", doc: "Doc of a watched method." }],
+    ["WM", { found: true, type: "Meta", doc: "A class with a hooked metaclass." }],
+    ["WM.__init__", { found: true, signature: "__init__(self, a, b=2)" }],
+    ["proxy", { found: true, type: "LazyProxy" }],
+    ["proxy.anything", { found: false }],
+    ["with_defaults", { signature: "with_defaults(a, b=…, *rest, c=1, d=…, **more)" }],
+    ["wrapped", { signature: "wrapped(a)", doc: "Wrapped." }],
+    ["WD", { signature: "WD(x)" }],
+  ])("%s: described statically, nothing of the member's runs", (name, expected) => {
+    const d = harness(`doc:${name}`);
+    expect(d).toMatchObject({ ...expected, ran: [] });
+  });
+
+  it("a class with a custom metaclass gets no signature (reading it could run the metaclass)", () => {
+    expect(harness("doc:WM")).not.toHaveProperty("signature");
+  });
+
   it("functions, classes, static methods, modules and builtins", () => {
     expect(harness("doc:add")).toMatchObject({ signature: "add(a, b=1)", doc: "Adds." });
     expect(harness("doc:Hostile")).toMatchObject({ signature: "Hostile()", type: "type" });

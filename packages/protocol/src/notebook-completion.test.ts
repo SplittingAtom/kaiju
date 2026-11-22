@@ -34,6 +34,16 @@ describe("notebook completion contract (KOBE-808)", () => {
       notebookCompletionBodySchema.safeParse({ op: "complete", code: "a\u0000", cursor: 1 })
         .success,
     ).toBe(false);
+    // A lone surrogate (an editor can hold one) is refused here, never a database error later.
+    for (const code of ["a\uD800", "\uDC00b", "x\uD800\uD800y"]) {
+      expect(
+        notebookCompletionBodySchema.safeParse({ op: "complete", code, cursor: 1 }).success,
+      ).toBe(false);
+    }
+    expect(
+      notebookCompletionBodySchema.safeParse({ op: "complete", code: "\uD83D\uDE00", cursor: 1 })
+        .success,
+    ).toBe(true);
     const big = "x".repeat(NOTEBOOK_COMPLETE_CODE_MAX_BYTES + 1);
     expect(
       notebookCompletionBodySchema.safeParse({ op: "complete", code: big, cursor: 1 }).success,

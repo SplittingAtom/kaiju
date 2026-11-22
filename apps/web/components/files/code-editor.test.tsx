@@ -319,5 +319,23 @@ describe("CodeEditor completion (KOBE-808)", () => {
       expect(indicator.textContent).toBe("Kernel completion off: your sandbox is asleep"),
     );
     expect(indicator.getAttribute("data-kobe-kernel-completion")).toBe("asleep");
+    // The visible line never announces; screen readers hear the off reason once.
+    expect(indicator.getAttribute("aria-live")).toBe("off");
+    const announce = must(container.querySelector("[data-kobe-kernel-announce]"));
+    expect(announce.getAttribute("aria-live")).toBe("polite");
+    expect(announce.textContent).toBe("Kernel completion off: your sandbox is asleep");
+  });
+
+  it("announces nothing for on, idle or code running", async () => {
+    const kernel = new KernelCompleter(
+      { complete: () => Promise.resolve({ ok: true, status: 200, data: { status: "busy" } }) },
+      "00000000-0000-4000-8000-0000000000bb",
+    );
+    const { container } = render(
+      <CodeEditor value={"x"} language="python" label="Edit a.py" kernel={kernel} />,
+    );
+    act(() => kernel.setRunning(true));
+    act(() => kernel.setRunning(false));
+    expect(must(container.querySelector("[data-kobe-kernel-announce]")).textContent).toBe("");
   });
 });

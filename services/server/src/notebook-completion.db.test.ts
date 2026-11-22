@@ -175,6 +175,8 @@ describe("POST /v1/threads/{id}/notebook/complete (KOBE-808)", () => {
       { op: "doc", name: "os.system('x')" },
       { op: "doc", name: "x", code: "x" },
       { op: "complete", code: "x".repeat(40_000), cursor: 1 },
+      // A lone surrogate: jsonb would refuse it (a 500); the body check answers 400.
+      { op: "complete", code: "a\uD800", cursor: 1 },
     ]) {
       const res = await complete(w, body);
       expect([res.status, code(res)], JSON.stringify(body).slice(0, 60)).toEqual([
@@ -198,6 +200,24 @@ describe("POST /v1/threads/{id}/notebook/complete (KOBE-808)", () => {
     expect((await complete(w)).json).toEqual({ status: "unavailable" });
     answer = DOC;
     expect((await complete(w)).json).toEqual({ status: "unavailable" });
+  });
+
+  it("is not sandbox activity: typing in the editor keeps no sandbox awake", async () => {
+    const w = await world();
+    await connected(w);
+    const set = await fx.admin.query(
+      `UPDATE sandboxes SET last_active_at = now() - interval '1 hour'
+        WHERE team_id = $1 AND user_id = $2 RETURNING last_active_at`,
+      [w.team, w.owner.id],
+    );
+    expect(set.rowCount).toBe(1);
+    const before = (set.rows[0] as { last_active_at: Date }).last_active_at.getTime();
+    expect((await complete(w)).json).toEqual(MATCHES);
+    const after = await fx.admin.query<{ last_active_at: Date }>(
+      `SELECT last_active_at FROM sandboxes WHERE team_id = $1 AND user_id = $2`,
+      [w.team, w.owner.id],
+    );
+    expect(after.rows[0]?.last_active_at.getTime()).toBe(before);
   });
 
   it("gives up after about a second when the kernel does not answer: unavailable", async () => {

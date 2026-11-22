@@ -17,26 +17,45 @@
   `notebook_complete`, never an eval sandbox) → agent `KernelManager.complete`
   (`services/sandbox-agent/src/notebook/completion.ts`) → bridge ops `complete` / `doc`
   (`images/sandbox/kernel/kobe-kernel-bridge.py`). Contract: `packages/protocol/src/notebook-completion.ts`.
-- **Evaluation safety (the choice).** `complete` is Jupyter `complete_request` with the kernel
-  started as `--IPCompleter.use_jedi=False --IPCompleter.evaluation=limited` (`KERNEL_ARGS`).
-  Checked against ipykernel 7.4.0 / IPython 9.17.1 / jedi 0.20.1 (the image's pins): with jedi on
-  (IPython's default) completing `c.p.` ran a property getter twice; with these flags it ran
-  none, and live variables, attributes, `df['` column keys and module members still complete.
-  `limited` evaluates no calls, property getters or imports (auto-import stays off). Remaining
-  risk: `dir()` on an object can call a custom `__dir__`. **`doc` sends no code at all**: the editor
-  sends a dotted name (`^[A-Za-z_]\w*(\.[A-Za-z_]\w*){0,15}$`, checked by the server and the
-  bridge); a silent user expression (`DOC_SOURCE`, like 803's snapshot: no execution count, no
-  `Out`) resolves it with `inspect.getattr_static` (no descriptors, no `__getattr__`) and reads
-  signatures (functions and classes only) and docstrings (an instance's type's), never a repr,
-  under a 300 ms SIGALRM. IPython's own `inspect_request` was not used: it calls `str()` on
-  non-callables. Verified by `completion-source.test.ts` (hostile object: nothing ran) and the new
-  `test-image.sh` check against the real kernel (run by hand with the pinned versions in a venv).
+- **Evaluation safety (the choice; security review M1/L1 fixed).** `complete` is Jupyter
+  `complete_request` with the kernel started as `--IPCompleter.use_jedi=False
+--IPCompleter.evaluation=limited` (`KERNEL_ARGS`): with jedi on (IPython's default) completing
+  `c.p.` ran a property getter twice. The review then showed IPython still calls an object's own
+  hooks; the kernel launcher now installs `COMPLETER_GUARD` before the kernel starts: attribute
+  names from a static dir (type and instance dicts via C-level descriptors only; a pandas DataFrame
+  or Series keeps its real `dir()` for its columns), dictionary keys only from exact `dict`, pandas
+  DataFrame (`.columns`) and numpy arrays (`dtype.names`), generics dispatched on `type(obj)`, and a
+  0.5 s in-kernel SIGALRM limit per completion (main thread, only when no timer of the member's is
+  pending; past it: no matches). If the guard can't apply, the kernel completes nothing. **What can
+  still run in `complete`:** the limited policy's own evaluation (name lookups, literals, item access
+  on allow-listed built-in containers and pandas objects), pandas' `dir()`/`columns` for exact
+  DataFrame/Series, numpy `dtype.names`, and a `complete_object` handler the member registered
+  themselves. No `__dir__`, `_ipython_key_completions_`, `__getattr__` canary, `__class__` property
+  or property getter runs (probe in `test-image.sh`: zero hits; the previous bridge showed `__dir__`,
+  the canary, the key hook and ~34 `__class__` reads). **`doc` runs nothing of the member's:** the
+  editor sends a checked dotted name only; `DOC_SOURCE` resolves it with `inspect.getattr_static`,
+  classifies by `type(obj)` (never `isinstance`, whose `__class__` fallback runs code), reads
+  docstrings and code objects through descriptors taken from the built-in types, builds signatures
+  itself from `__code__`/`__defaults__` (never `inspect.signature`, which reads `__signature__`,
+  `__wrapped__` and formats defaults with `repr`; defaults other than plain numbers/strings show
+  `…`; no annotations), gives classes a signature only for the plain metaclass `type`, under a
+  300 ms SIGALRM. Hostile objects (a `__class__` property, `__getattribute__`, a metaclass
+  `__getattr__`, a lazy proxy, `__wrapped__`/`__signature__` attributes and descriptors, defaults
+  with a hooked repr) record zero calls in `completion-source.test.ts` and the image check.
+- **Accepted (review L7):** the user expressions (`DOC_EXPRESSION`, like 803's snapshot) call
+  `exec` resolved in the member's namespace; a member who rebinds `exec` runs their own code on
+  hover. Self-inflicted in their own kernel; shared with KOBE-803.
+- **Not activity (review L2).** Completion commands are routed with `activity: false`: they do
+  not touch `sandboxes.last_active_at`, and the agent does not reset the kernel's idle timer, so
+  typing never keeps a sandbox or kernel awake.
 - **Never wakes, never starts, never waits.** Server: no live connection → `asleep` (and the
   router sends with `wake: false`). Agent: no kernel → `no_kernel`; a run executing or queued, a
   snapshot in progress or another completion in the kernel → `busy`; past `timeout_ms` (1 s) →
   `unavailable` (the bridge gives up on its own deadline and skips the late reply by message id; an
-  execution sent meanwhile simply waits behind it in the bridge). A request keeps an idle kernel
-  from idling out (it is use). The editor gives up after 2 s and cancels on every keystroke.
+  execution sent meanwhile simply waits behind it in the bridge). A second request while one is in
+  the kernel waits for it instead of answering `busy` (review L4); the editor keeps one request in
+  flight (newest wins), cancels on every keystroke, cancels a hover lookup when the pointer moves
+  on (L5), and gives up after 2 s.
 - **States are 200 answers** (`busy`, `no_kernel`, `asleep`, `unsupported`, `unavailable`) so the
   editor falls back quietly; errors stay errors (404/403 `read_only`/409 `skill_eval_thread`/429
   `rate_limited`/503). An older agent, an agent without kernels, or an older replica in a rolling
@@ -53,7 +72,7 @@
   checks). The code sits in the `sandbox_commands` row only while the command is in flight: the
   route's read deletes it (`takeResult`, also on timeout via `expireCommand`); unread ones are swept
   within a minute (803's rule for `notebook.inspect`). Logs carry the op and failure code only.
-- **Caps.** Code ≤ 32 KiB (the editor sends whole lines up to 6 000 characters before the cursor
+- **Caps.** Code ≤ 32 KiB, no U+0000 and no lone surrogate (jsonb refuses both; 400, review L3) (the editor sends whole lines up to 6 000 characters before the cursor
   and its line to the end, ≤ 1 000 after); ≤ 100 matches of ≤ 200 characters; signature ≤ 1 000,
   docstring ≤ 8 000 characters; ANSI stripped; rendered with `textContent` only.
 - **Editor.** `@codemirror/autocomplete` added to `apps/web` (MIT, already in the lockfile
@@ -63,7 +82,8 @@
   Enter accepts, Escape closes; Ctrl+Shift+Space shows signature and docs; hover shows docs;
   typing `(` or `,` in a call shows the signature. Kernel matches carry detail "kernel", boost 50,
   and drop names the built-in sources already offer. The status bar shows why kernel completion
-  is off (`KERNEL_STATE_TEXT`).
+  is off (`KERNEL_STATE_TEXT`, `aria-live="off"`); a separate polite live region announces only
+  the off reasons, each once (review L6).
 - **Not done (scope):** kernel completion in `.ipynb` cells (built-in completion works there);
   completions while code runs (falls back, as the ticket says).
 - **Docs:** `docs/guide/files/file-editor.md` ("Code completion"), `files/notebooks.md` ("Code

@@ -107,17 +107,30 @@ describe("kernel completion on the manager (KOBE-808)", () => {
     await manager.stopAll();
   });
 
-  it("one request at a time: a second one while the first is in the kernel is busy", async () => {
+  it("one request at a time: a second one waits for the first, never a false busy", async () => {
     const { manager, control } = setup();
     await manager.execute(execute("print:a"), () => undefined);
     control.completeMode = "silent";
     const first = manager.complete(complete());
-    expect(data(await manager.complete(complete()))).toEqual({ status: "busy" });
-    // Past its timeout the first is unavailable, and the kernel takes requests again.
-    expect(data(await first)).toEqual({ status: "unavailable" });
     control.completeMode = "ok";
-    expect(data(await manager.complete(complete()))).toMatchObject({ status: "ok" });
+    const second = manager.complete(complete());
+    // Past its timeout the first is unavailable; the second then asks the kernel.
+    expect(data(await first)).toEqual({ status: "unavailable" });
+    expect(data(await second)).toMatchObject({ status: "ok", op: "complete" });
+    expect(control.completed).toHaveLength(2);
     await manager.stopAll();
+  });
+
+  it("is not use: requests never keep the kernel from idling out", async () => {
+    const { launch, control } = fakeLauncher();
+    const manager = new KernelManager({ launch, maxKernels: 2, idleMs: 150, log: () => undefined });
+    await manager.execute(execute("print:a"), () => undefined);
+    for (let i = 0; i < 4; i++) {
+      await new Promise((r) => setTimeout(r, 50));
+      await manager.complete(complete());
+    }
+    await until(() => control.killed.length === 1);
+    expect(data(await manager.complete(complete()))).toEqual({ status: "no_kernel" });
   });
 
   it("a failed or malformed answer is unavailable, logged without the code", async () => {

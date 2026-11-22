@@ -292,6 +292,15 @@ function completionExtensions(readOnly: boolean, kernel: KernelCompleter | undef
   return [builtInCompletion(), kernel === undefined ? [] : kernelCompletion(kernel)];
 }
 
+/** The states announced to screen readers: kernel completion stopped, and why. */
+const ANNOUNCED_STATES: ReadonlySet<KernelCompletionState> = new Set([
+  "no_kernel",
+  "asleep",
+  "unsupported",
+  "unavailable",
+  "rate_limited",
+]);
+
 const NO_STATE = () => () => undefined;
 const noState = (): KernelCompletionState | null => null;
 
@@ -354,6 +363,13 @@ export default function CodeEditor({
   const lineWrapRef = useRef(lineWrap);
   lineWrapRef.current = lineWrap;
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
+  // Screen readers hear only when kernel completion turns off, each reason once (review L6).
+  const [announced, setAnnounced] = useState("");
+  useEffect(() => {
+    if (kernelState === null || !ANNOUNCED_STATES.has(kernelState)) return;
+    const text = KERNEL_STATE_TEXT[kernelState];
+    setAnnounced((was) => (was === text ? was : text));
+  }, [kernelState]);
 
   // One view per file and per review; text, language and read-only change in place.
   useEffect(() => {
@@ -497,15 +513,20 @@ export default function CodeEditor({
             Wrap
           </button>
           {kernelState !== null && !readOnly && (
-            <span
-              role="status"
-              aria-live="polite"
-              data-kobe-kernel-completion={kernelState}
-              className="ml-auto truncate"
-              title="Completion from the conversation's Python kernel, added to the editor's own"
-            >
-              {KERNEL_STATE_TEXT[kernelState]}
-            </span>
+            <>
+              <span
+                role="status"
+                aria-live="off"
+                data-kobe-kernel-completion={kernelState}
+                className="ml-auto truncate"
+                title="Completion from the conversation's Python kernel, added to the editor's own"
+              >
+                {KERNEL_STATE_TEXT[kernelState]}
+              </span>
+              <span className="sr-only" aria-live="polite" data-kobe-kernel-announce>
+                {announced}
+              </span>
+            </>
           )}
           <span role="status" aria-live="off" aria-label="Cursor position" className="tabular-nums">
             {`Ln ${cursor.line}, Col ${cursor.column}`}

@@ -103,9 +103,139 @@ _init = _io.IOPubThread.__init__
 def _no_pipe(self, socket, pipe=False, session=False):
     _init(self, socket, pipe=False, session=session)
 _io.IOPubThread.__init__ = _no_pipe
+@COMPLETER_GUARD@
 from ipykernel import kernelapp
 kernelapp.launch_new_instance()
 """
+
+# KOBE-808 review L1: IPython's completer, even with limited evaluation, calls an object's own
+# completion hooks (`__dir__`, `_ipython_key_completions_`, a `__getattr__` canary) and reads
+# `__class__` (dir2, singledispatch). In the kernel, before it starts: attribute names come from a
+# static dir (the type's and the instance's dicts, read with C-level descriptors only), dictionary
+# keys only from real dicts, pandas DataFrames and numpy arrays (library code), generics dispatch
+# on `type(obj)`; a pandas DataFrame or Series keeps its real dir (its columns). Each completion
+# has an in-kernel time limit (SIGALRM, main thread, when no timer of the member's is pending):
+# past it the answer is empty. If any of this fails to apply, the kernel completes nothing.
+COMPLETER_GUARD = r"""
+def _kobe_guard_completer():
+    import signal, sys, threading, types
+    from ipykernel import ipkernel
+    plain_complete = ipkernel.IPythonKernel.do_complete
+
+    def empty(code, cursor_pos):
+        pos = len(code) if cursor_pos is None else cursor_pos
+        return {"status": "ok", "matches": [], "cursor_start": pos, "cursor_end": pos, "metadata": {}}
+
+    try:
+        import IPython.core.completer as completer
+        import IPython.utils.generics as generics
+
+        mro_of = type.__dict__["__mro__"].__get__
+        dict_of = type.__dict__["__dict__"].__get__
+        module_dict = types.ModuleType.__dict__["__dict__"].__get__
+        c_level = (types.GetSetDescriptorType, types.MemberDescriptorType)
+
+        def library_type(module, name):
+            m = sys.modules.get(module)
+            if type(m) is not types.ModuleType:
+                return None
+            t = module_dict(m).get(name)
+            return t if type(t) is type else None
+
+        def static_dir(obj):
+            t = type(obj)
+            if any(t is library_type("pandas", n) for n in ("DataFrame", "Series")):
+                return sorted(w for w in dir(obj) if type(w) is str)
+            classes = list(mro_of(t))
+            if issubclass(t, type):
+                classes = list(mro_of(obj)) + classes
+            words = set()
+            for klass in classes:
+                words.update(k for k in dict_of(klass) if type(k) is str)
+            for klass in mro_of(t):
+                d = dict_of(klass).get("__dict__")
+                if d is None:
+                    continue
+                if type(d) in c_level:
+                    try:
+                        own = d.__get__(obj, t)
+                    except Exception:
+                        own = None
+                    if type(own) is dict:
+                        words.update(k for k in own if type(k) is str)
+                break
+            return sorted(words)
+
+        def safe_keys(obj):
+            t = type(obj)
+            if t is dict:
+                return [k for k in obj if type(k) in (str, bytes)]
+            if t is library_type("pandas", "DataFrame"):
+                return list(obj.columns)
+            if t is library_type("numpy", "ndarray"):
+                return list(obj.dtype.names or [])
+            return []
+
+        dispatching = generics.complete_object
+
+        def complete_object(obj, prev_completions):
+            return dispatching.dispatch(type(obj))(obj, prev_completions)
+
+        # Still a singledispatch function to the member (register, dispatch, registry).
+        for attr in ("register", "dispatch", "registry", "__doc__", "__wrapped__"):
+            if hasattr(dispatching, attr):
+                setattr(complete_object, attr, getattr(dispatching, attr))
+
+        completer.dir2 = static_dir
+        completer.IPCompleter._get_keys = staticmethod(safe_keys)
+        generics.complete_object = complete_object
+    except Exception:
+        ipkernel.IPythonKernel.do_complete = lambda self, code, cursor_pos: empty(code, cursor_pos)
+        return
+
+    class Late(BaseException):
+        pass
+
+    def do_complete(self, code, cursor_pos):
+        active = [False]
+
+        def late(signum, frame):
+            if active[0]:
+                raise Late()
+
+        armed = False
+        previous = None
+        try:
+            if threading.current_thread() is threading.main_thread() and signal.getitimer(signal.ITIMER_REAL)[0] == 0:
+                previous = signal.signal(signal.SIGALRM, late)
+                armed = True
+        except (ValueError, OSError):
+            armed = False
+        try:
+            if armed:
+                active[0] = True
+                signal.setitimer(signal.ITIMER_REAL, @LIMIT_S@)
+            try:
+                return plain_complete(self, code, cursor_pos)
+            finally:
+                active[0] = False
+        except Late:
+            return empty(code, cursor_pos)
+        finally:
+            if armed:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                signal.signal(signal.SIGALRM, previous if previous is not None else signal.SIG_DFL)
+
+    ipkernel.IPythonKernel.do_complete = do_complete
+
+
+_kobe_guard_completer()
+del _kobe_guard_completer
+"""
+COMPLETE_KERNEL_LIMIT_S = 0.5
+LAUNCHER = LAUNCHER.replace(
+    "@COMPLETER_GUARD@", COMPLETER_GUARD.replace("@LIMIT_S@", repr(COMPLETE_KERNEL_LIMIT_S))
+)
 
 INSPECT_SOURCE = r'''
 import json as _json
@@ -374,7 +504,32 @@ import types as _types
 
 SIGNATURE_MAX = 1000
 DOC_MAX = 8000
+DEFAULT_MAX = 40
+# Only C-level descriptors, taken from the built-in types themselves: none of them can reach the
+# member's code (no isinstance, whose __class__ fallback can; no getattr on member objects).
 _qualname = type.__dict__["__qualname__"].__get__
+_mro = type.__dict__["__mro__"].__get__
+_dict_of = type.__dict__["__dict__"].__get__
+_type_text_signature = type.__dict__["__text_signature__"].__get__
+_module_dict = _types.ModuleType.__dict__["__dict__"].__get__
+_func_doc = _types.FunctionType.__dict__["__doc__"].__get__
+_func_code = _types.FunctionType.__dict__["__code__"].__get__
+_func_defaults = _types.FunctionType.__dict__["__defaults__"].__get__
+_func_kwdefaults = _types.FunctionType.__dict__["__kwdefaults__"].__get__
+_method_func = _types.MethodType.__dict__["__func__"].__get__
+_static_func = staticmethod.__dict__["__func__"].__get__
+_class_func = classmethod.__dict__["__func__"].__get__
+_prop_fget = property.__dict__["fget"].__get__
+_C_ROUTINES = (
+    _types.BuiltinFunctionType,
+    _types.MethodDescriptorType,
+    _types.WrapperDescriptorType,
+    _types.MethodWrapperType,
+    _types.ClassMethodDescriptorType,
+)
+_C_DESCRIPTORS = (_types.GetSetDescriptorType, _types.MemberDescriptorType)
+# Defaults shown by value only for these exact built-in types (their repr is C code).
+_PLAIN = (int, float, complex, bool, str, bytes, type(None))
 
 
 class _Timeout(BaseException):
@@ -384,10 +539,10 @@ class _Timeout(BaseException):
 def _clip(text, limit):
     if type(text) is not str:
         return None
-    text = text.replace("\x00", "\ufffd").strip()
+    text = text.replace("\x00", "�").strip()
     if not text:
         return None
-    return text if len(text) <= limit else text[: limit - 1] + "\u2026"
+    return text if len(text) <= limit else text[: limit - 1] + "…"
 
 
 def _resolve(name, ns):
@@ -403,57 +558,145 @@ def _resolve(name, ns):
         parent = obj
         obj = _inspect.getattr_static(parent, part, missing)
         # A plain function found through an instance is a method: its first parameter is bound.
-        bound = isinstance(obj, _types.FunctionType) and not isinstance(parent, (type, _types.ModuleType))
+        bound = type(obj) is _types.FunctionType and not issubclass(
+            type(parent), (type, _types.ModuleType)
+        )
     return None if obj is missing else (obj, bound)
 
 
 def _class_doc(cls):
-    """The first docstring in the class's MRO dicts (no metaclass attribute lookup), not object's."""
-    for klass in type.__dict__["__mro__"].__get__(cls):
+    # The first docstring in the class's MRO dicts (no attribute lookup on it), not object's.
+    for klass in _mro(cls):
         if klass is object:
             break
-        d = type.__dict__["__dict__"].__get__(klass)
-        if type(d.get("__doc__")) is str:
-            return d["__doc__"]
+        doc = _dict_of(klass).get("__doc__")
+        if type(doc) is str:
+            return doc
     return None
 
 
+def _c_attr(obj, name):
+    # A C attribute of a built-in callable (its type is one of _C_ROUTINES).
+    for klass in _mro(type(obj)):
+        desc = _dict_of(klass).get(name)
+        if desc is None:
+            continue
+        if type(desc) in _C_DESCRIPTORS:
+            return desc.__get__(obj, type(obj))
+        return desc if type(desc) is str else None
+    return None
+
+
+def _default(value):
+    if type(value) not in _PLAIN:
+        return "…"
+    text = repr(value)
+    return text if len(text) <= DEFAULT_MAX else text[: DEFAULT_MAX - 1] + "…"
+
+
+def _drop_first(params):
+    if params and params[0] not in ("/", "*") and not params[0].startswith("*"):
+        params = params[1:]
+        if params and params[0] == "/":
+            params = params[1:]
+    return params
+
+
+def _function_signature(f, bound):
+    # Read from the code object, never inspect.signature: that reads __signature__ and
+    # __wrapped__ through getattr and formats defaults and annotations with their repr.
+    code = _func_code(f)
+    names = code.co_varnames
+    count, posonly, kwonly = code.co_argcount, code.co_posonlyargcount, code.co_kwonlyargcount
+    defaults = _func_defaults(f)
+    defaults = defaults if type(defaults) is tuple else ()
+    kwdefaults = _func_kwdefaults(f)
+    kwdefaults = kwdefaults if type(kwdefaults) is dict else {}
+    params = []
+    first_default = count - len(defaults)
+    for i in range(count):
+        param = names[i]
+        if i >= first_default:
+            param += "=" + _default(defaults[i - first_default])
+        params.append(param)
+        if posonly and i == posonly - 1:
+            params.append("/")
+    varargs = bool(code.co_flags & 0x04)
+    if varargs:
+        params.append("*" + names[count + kwonly])
+    elif kwonly:
+        params.append("*")
+    for name in names[count : count + kwonly]:
+        given = [v for k, v in kwdefaults.items() if type(k) is str and k == name]
+        params.append(name + ("=" + _default(given[0]) if given else ""))
+    if code.co_flags & 0x08:
+        params.append("**" + names[count + kwonly + (1 if varargs else 0)])
+    return "(" + ", ".join(_drop_first(params) if bound else params) + ")"
+
+
+def _text_signature(text):
+    # A C signature ("($self, /, x)"): the bound "$" parameter and a "/" left alone dropped.
+    if type(text) is not str or not text.startswith("(") or not text.endswith(")"):
+        return None
+    params = [p.strip() for p in text[1:-1].split(",") if p.strip()]
+    if params and params[0].startswith("$"):
+        params = params[1:]
+        if params and params[0] == "/":
+            params = params[1:]
+    return "(" + ", ".join(params) + ")"
+
+
+def _class_signature(cls):
+    # Only for classes of the plain metaclass; from a plain __init__ or __new__, else C's own.
+    if type(cls) is not type:
+        return None
+    for klass in _mro(cls):
+        if klass is object:
+            break
+        d = _dict_of(klass)
+        init, new = d.get("__init__"), d.get("__new__")
+        if type(init) is _types.FunctionType:
+            return _function_signature(init, True)
+        if type(new) is staticmethod and type(_static_func(new)) is _types.FunctionType:
+            return _function_signature(_static_func(new), True)
+        if init is not None or new is not None:
+            break
+    return _text_signature(_type_text_signature(cls))
+
+
 def _describe(name, obj, bound=False):
-    out = {"found": True}
-    try:
-        out["type"] = _clip(_qualname(type(obj)), 256) or "?"
-    except Exception:
-        out["type"] = "?"
-    if isinstance(obj, (staticmethod, classmethod)):
-        obj = obj.__func__
-    if isinstance(obj, property):
-        # The getter's docstring; the getter itself never runs.
-        doc = obj.fget.__doc__ if _inspect.isroutine(obj.fget) else None
-    elif isinstance(obj, type):
-        doc = _class_doc(obj)
-    elif _inspect.isroutine(obj):
-        doc = obj.__doc__
-    elif _inspect.ismodule(obj):
-        doc = object.__getattribute__(obj, "__dict__").get("__doc__")
+    out = {"found": True, "type": _clip(_qualname(type(obj)), 256) or "?"}
+    t = type(obj)
+    if t is staticmethod:
+        obj, t = _static_func(obj), None
+    elif t is classmethod:
+        obj, t, bound = _class_func(obj), None, True
+    elif t is _types.MethodType:
+        obj, t, bound = _method_func(obj), None, True
+    t = type(obj)
+    doc = signature = None
+    if t is property:
+        getter = _prop_fget(obj)
+        doc = _func_doc(getter) if type(getter) is _types.FunctionType else None
+    elif t is _types.FunctionType:
+        doc, signature = _func_doc(obj), _function_signature(obj, bound)
+    elif t in _C_ROUTINES:
+        doc, signature = _c_attr(obj, "__doc__"), _text_signature(_c_attr(obj, "__text_signature__"))
+    elif issubclass(t, type):
+        doc, signature = _class_doc(obj), _class_signature(obj)
+    elif issubclass(t, _types.ModuleType):
+        doc = _module_dict(obj).get("__doc__")
     else:
-        # Any other object: its type's docstring (the object's own attributes are never read).
-        doc = _class_doc(type(obj))
-    # Signatures of functions and classes only: for other callables inspect would read the
-    # instance's attributes (`__wrapped__`, `__signature__`), which can run its `__getattr__`.
-    if isinstance(obj, type) or _inspect.isroutine(obj):
-        try:
-            sig = _inspect.signature(obj)
-            if bound and sig.parameters:
-                sig = sig.replace(parameters=list(sig.parameters.values())[1:])
-            out["signature"] = _clip(name.rsplit(".", 1)[-1] + str(sig), SIGNATURE_MAX)
-        except (TypeError, ValueError):
-            pass
+        # Any other object: its type's docstring; nothing of the object itself is read.
+        doc = _class_doc(t)
+    if signature is not None:
+        out["signature"] = _clip(name.rsplit(".", 1)[-1] + signature, SIGNATURE_MAX)
     out["doc"] = _clip(_inspect.cleandoc(doc) if type(doc) is str else None, DOC_MAX)
     return {k: v for k, v in out.items() if v is not None}
 
 
 def doc(name, per_ms=300, ns=None):
-    """JSON text of the name's documentation. Inside the kernel, the IPython user namespace."""
+    # JSON text of the name's documentation. Inside the kernel, the IPython user namespace.
     if ns is None:
         from IPython import get_ipython
 
