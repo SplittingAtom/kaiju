@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import {
   AUDIT_PII_RETENTION_HOURS,
+  KOBE_LIMITS,
   KOBE_MCP_MODE_LABELS,
   getSiteSettings,
   putSiteSettings,
@@ -42,6 +43,14 @@ export function SettingsPage() {
             {settings.kobeMcpMode !== undefined && (
               <KobeMcpForm mode={settings.kobeMcpMode} onSaved={reload} />
             )}
+            {settings.kobeReadsPerMinute !== undefined &&
+              settings.kobeWritesPerHour !== undefined && (
+                <KobeLimitsForm
+                  reads={settings.kobeReadsPerMinute}
+                  writes={settings.kobeWritesPerHour}
+                  onSaved={reload}
+                />
+              )}
             <MemorySwitchesSection />
           </>
         )}
@@ -205,6 +214,82 @@ function KobeMcpForm({
       </ChoiceGroup>
       <Button type="submit" variant="primary" disabled={mutation.pending || choice === mode}>
         Save Kobe connector
+      </Button>
+      <MutationStatus error={mutation.error} notice={mutation.notice} />
+    </form>
+  );
+}
+
+/**
+ * The per-person Kobe admin limits (KOBE-814): admin reads per minute and writes per hour. Each
+ * applies to every person on their next call; no restart. Audited by the server.
+ */
+function KobeLimitsForm({
+  reads,
+  writes,
+  onSaved,
+}: {
+  readonly reads: number;
+  readonly writes: number;
+  readonly onSaved: () => void;
+}) {
+  const mutation = useMutation();
+  const [readsText, setReadsText] = useState(String(reads));
+  const [writesText, setWritesText] = useState(String(writes));
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const done = await mutation.run(
+      () =>
+        putSiteSettings({
+          kobeReadsPerMinute: Number(readsText),
+          kobeWritesPerHour: Number(writesText),
+        }),
+      (saved) =>
+        `Kobe admin limits now ${saved.kobeReadsPerMinute ?? readsText} reads per minute and ${saved.kobeWritesPerHour ?? writesText} writes per hour.`,
+    );
+    if (done) onSaved();
+  }
+
+  const bounds = { min: KOBE_LIMITS.min, max: KOBE_LIMITS.max, step: 1 } as const;
+  return (
+    <form onSubmit={onSubmit} aria-label="Kobe admin limits">
+      <ChoiceGroup legend="Kobe admin limits (per person)" stacked className="my-4">
+        <Field
+          label="Admin reads per person per minute"
+          hint={`How many Kobe admin reads one person's agents may make a minute. ${KOBE_LIMITS.min} to ${KOBE_LIMITS.max}; the default is ${KOBE_LIMITS.readsDefault}.`}
+        >
+          <TextInput
+            type="number"
+            required
+            className="w-28"
+            {...bounds}
+            value={readsText}
+            onChange={(e) => setReadsText(e.target.value)}
+          />
+        </Field>
+        <Field
+          label="Admin writes per person per hour"
+          hint={`How many Kobe admin changes one person's agents may make an hour. ${KOBE_LIMITS.min} to ${KOBE_LIMITS.max}; the default is ${KOBE_LIMITS.writesDefault}.`}
+        >
+          <TextInput
+            type="number"
+            required
+            className="w-28"
+            {...bounds}
+            value={writesText}
+            onChange={(e) => setWritesText(e.target.value)}
+          />
+        </Field>
+      </ChoiceGroup>
+      <Button
+        type="submit"
+        variant="primary"
+        disabled={
+          mutation.pending || (Number(readsText) === reads && Number(writesText) === writes)
+        }
+      >
+        Save Kobe limits
       </Button>
       <MutationStatus error={mutation.error} notice={mutation.notice} />
     </form>

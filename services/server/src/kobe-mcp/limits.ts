@@ -1,4 +1,5 @@
-import { KOBE_BUILTIN_CONNECTOR_ID, sql, type KobeDb } from "@kobe/db";
+import { KOBE_BUILTIN_CONNECTOR_ID, siteSettings, sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { recordAudit } from "../audit/record.js";
 
 /**
  * Per-person Kobe admin limits (KOBE-619, spec §6): admin reads per minute and admin writes per
@@ -11,12 +12,57 @@ export const KOBE_READS_PER_MINUTE_KEY = "kobe_mcp.reads_per_minute";
 export const KOBE_WRITES_PER_HOUR_KEY = "kobe_mcp.writes_per_hour";
 export const KOBE_READS_PER_MINUTE_DEFAULT = 60;
 export const KOBE_WRITES_PER_HOUR_DEFAULT = 30;
-const LIMIT_MAX = 10_000;
+/** Bounds of both limits (the Site settings API validates against them). */
+export const KOBE_LIMIT_MIN = 1;
+export const KOBE_LIMIT_MAX = 10_000;
+const LIMIT_MAX = KOBE_LIMIT_MAX;
 
 const limitOf = (value: string | null | undefined, fallback: number): number => {
   if (value === null || value === undefined || !/^[0-9]{1,5}$/.test(value)) return fallback;
   return Math.min(Math.max(Number(value), 1), LIMIT_MAX);
 };
+
+export interface KobeLimits {
+  readonly readsPerMinute: number;
+  readonly writesPerHour: number;
+}
+
+/** The limits in force (stored value, else the default); read on every call, so never stale. */
+export async function readKobeLimits(db: Pick<KobeTx, "execute">): Promise<KobeLimits> {
+  const res = await db.execute<{ key: string; value: string }>(sql`
+    SELECT key, value FROM public.site_settings
+     WHERE key IN (${KOBE_READS_PER_MINUTE_KEY}, ${KOBE_WRITES_PER_HOUR_KEY})`);
+  const byKey = new Map(res.rows.map((r) => [r.key, r.value]));
+  return {
+    readsPerMinute: limitOf(byKey.get(KOBE_READS_PER_MINUTE_KEY), KOBE_READS_PER_MINUTE_DEFAULT),
+    writesPerHour: limitOf(byKey.get(KOBE_WRITES_PER_HOUR_KEY), KOBE_WRITES_PER_HOUR_DEFAULT),
+  };
+}
+
+/** Stores one limit in `tx`, audited as `site.settings.updated` when the effective value changed. */
+export async function storeKobeLimit(
+  tx: KobeTx,
+  kind: "read" | "write",
+  value: number,
+): Promise<void> {
+  const current = await readKobeLimits(tx);
+  if ((kind === "read" ? current.readsPerMinute : current.writesPerHour) === value) return;
+  const key = kind === "read" ? KOBE_READS_PER_MINUTE_KEY : KOBE_WRITES_PER_HOUR_KEY;
+  await tx
+    .insert(siteSettings)
+    .values({ key, value: String(value) })
+    .onConflictDoUpdate({
+      target: siteSettings.key,
+      set: { value: String(value), updatedAt: new Date() },
+    });
+  await recordAudit(tx, {
+    action: "site.settings.updated",
+    target: {
+      setting: kind === "read" ? "kobe_reads_per_minute" : "kobe_writes_per_hour",
+      value,
+    },
+  });
+}
 
 /** Whether the person may make one more admin read (or write) now. Fails closed on errors. */
 export async function withinKobeLimit(

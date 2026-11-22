@@ -40,7 +40,7 @@ admin switches the whole connector off.
    Read and write.
 
 The agent must also use Kobe: the gallery agent Kobe does (it uses every connector), and in the
-agent creator you can add **kobe** to an agent's connectors. Neither switch can be changed from a
+agent creator you can add **kobe** to an agent's connectors. Neither switch, nor the limits, can be changed from a
 conversation: the agent cannot raise its own access.
 
 In the composer, **+** → **Connectors** shows the Kobe row with no checkbox ("Docs always on")
@@ -124,6 +124,8 @@ a before → after table, and the exact input. Press **Allow** or **Deny**.
   changes nothing and the agent is told `changed_since_approval`; it should read again and ask
   for a new approval.
 - Each person may make up to 60 admin reads a minute and 30 admin changes an hour (site defaults).
+  A site admin changes both under **Settings → Kobe admin limits** (1 to 10,000); the new limits
+  apply to the next call, with no restart.
 
 Read the summary and the before → after rows before you allow. Content the agent reads (a file, a
 web page, a connector result, a teammate's message) can try to steer it into asking for a change
