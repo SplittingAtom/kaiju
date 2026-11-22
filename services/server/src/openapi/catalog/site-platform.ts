@@ -1,4 +1,5 @@
 import type { CatalogArea } from "./build.js";
+import { sitePlatformDetails } from "./details/site-platform.js";
 
 const CONNECTORS = "Site admins (`site.connectors.manage`).";
 const EGRESS = "Site admins (`site.egress.manage`).";
@@ -9,6 +10,8 @@ const POLICY = "Site admins (`site.policy.manage`).";
 export const sitePlatformAreas: readonly CatalogArea[] = [
   {
     tag: "Site: platform",
+    detailed: true,
+    details: sitePlatformDetails,
     description:
       "Site-wide platform configuration for site admins: MCP connectors, model providers and " +
       "catalog, policy rules, the egress ceiling, budgets and usage.",

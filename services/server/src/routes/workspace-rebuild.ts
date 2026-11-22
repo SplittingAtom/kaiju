@@ -16,7 +16,7 @@ import { createRateLimiter, type RateLimiter } from "../sandbox/rate-limit.js";
  * `/v1/team/workspaces/{userId}/rebuild`. Both are audited (`sandbox.volume_rebuilt`).
  */
 
-const confirmSchema = z.strictObject({ confirm: z.literal(true) });
+export const confirmSchema = z.strictObject({ confirm: z.literal(true) });
 
 /** Status reads per caller: a burst of 20, then one every 5 s (each may read the cluster). */
 export const STATUS_RATE = { capacity: 20, refillPerSecond: 0.2 } as const;

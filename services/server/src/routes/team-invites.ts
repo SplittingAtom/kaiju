@@ -8,7 +8,7 @@ import { hitRateLimit } from "../rate-limit.js";
 import { idSchema, teamRoleSchema } from "../teams/schemas.js";
 import { invalidRequest, notFound, param, parseBody } from "../http/request.js";
 
-const inviteSchema = z
+export const inviteSchema = z
   .object({
     email: z.email().max(254),
     role: teamRoleSchema,

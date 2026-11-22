@@ -8,7 +8,7 @@ import { NIL_THREAD, effectiveSkillNames } from "../runs/effective-skills.js";
 import { uuidSchema } from "../threads/schemas.js";
 import { invalidRequest, param } from "../http/request.js";
 
-const draftQuerySchema = z.strictObject({ agent_id: uuidSchema.optional() });
+export const draftQuerySchema = z.strictObject({ agent_id: uuidSchema.optional() });
 
 const notFound = { code: "thread_not_found", message: "No thread with that id." } as const;
 

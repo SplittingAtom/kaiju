@@ -1,9 +1,13 @@
 import type { CatalogArea } from "./build.js";
+import { memoryDetails, siteMemoryDetails } from "./details/memory.js";
 
 /** OpenAPI catalog: memory, Workspace and Site side (KOBE-727; routes in `routes/memory*.ts`). */
 export const memoryAreas: readonly CatalogArea[] = [
   {
     tag: "Memory",
+    detailed: true,
+    teamScoped: true,
+    details: memoryDetails,
     description:
       "Memory docs, settings, learning review, proposals and quality signals in the active Workspace. Team-scoped: send X-Kobe-Team.",
     entries: [
@@ -169,6 +173,8 @@ export const memoryAreas: readonly CatalogArea[] = [
   },
   {
     tag: "Site: memory",
+    detailed: true,
+    details: siteMemoryDetails,
     description:
       "Site memory: proposals from Workspaces and quality signals, for site admins and memory stewards. Not team-scoped.",
     entries: [

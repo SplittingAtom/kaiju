@@ -1,9 +1,20 @@
 import type { CatalogArea } from "./build.js";
+import {
+  artifactsDetails,
+  runsDetails,
+  schedulesDetails,
+  threadsDetails,
+  workspaceDetails,
+} from "./details/conversations.js";
+import { workspaceRebuildDetails } from "./details/workspace-rebuild.js";
 
 /** OpenAPI catalog: conversations (threads, runs, artifacts, workspace, schedules) (KOBE-727). */
 export const conversationsAreas: readonly CatalogArea[] = [
   {
     tag: "Threads",
+    detailed: true,
+    teamScoped: true,
+    details: threadsDetails,
     description:
       "Conversations beyond the core thread API: app cards and results, connectors, export, learning, notebooks, skills and sync conflicts. Team-scoped: send X-Kobe-Team.",
     entries: [
@@ -134,6 +145,9 @@ export const conversationsAreas: readonly CatalogArea[] = [
   },
   {
     tag: "Runs",
+    detailed: true,
+    teamScoped: true,
+    details: runsDetails,
     description: "Agent runs: the event stream and usage. Team-scoped: send X-Kobe-Team.",
     entries: [
       [
@@ -152,6 +166,9 @@ export const conversationsAreas: readonly CatalogArea[] = [
   },
   {
     tag: "Artifacts",
+    detailed: true,
+    teamScoped: true,
+    details: artifactsDetails,
     description:
       "Artifacts an agent produced in a conversation, by version. Team-scoped: send X-Kobe-Team.",
     entries: [
@@ -179,6 +196,9 @@ export const conversationsAreas: readonly CatalogArea[] = [
   },
   {
     tag: "Workspace",
+    detailed: true,
+    teamScoped: true,
+    details: { ...workspaceDetails, ...workspaceRebuildDetails },
     description: "The member's synced workspace files. Team-scoped: send X-Kobe-Team.",
     entries: [
       [
@@ -209,6 +229,9 @@ export const conversationsAreas: readonly CatalogArea[] = [
   },
   {
     tag: "Schedules",
+    detailed: true,
+    teamScoped: true,
+    details: schedulesDetails,
     description:
       "Scheduled runs: a member's own, plus the team's inventory for admins. Team-scoped: send X-Kobe-Team.",
     entries: [

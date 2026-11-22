@@ -13,7 +13,7 @@ import { invalidRequest, param, parseBody } from "../http/request.js";
 
 const exposureSchema = z.enum(["read_only", "all", "custom"]);
 
-const bodySchema = z
+export const bodySchema = z
   .strictObject({
     exposure: exposureSchema,
     /** Pi tool names; custom exposure only. */
@@ -28,7 +28,7 @@ const bodySchema = z
     message: "enabled_tools is required for custom exposure and not allowed otherwise",
   });
 
-const kobeLevelSchema = z.strictObject({
+export const kobeLevelSchema = z.strictObject({
   level: z.enum(KOBE_MCP_TEAM_LEVELS),
   /** The level as the caller saw it; another one is a 409 `changed_since_approval`. */
   expected_level: z.enum(KOBE_MCP_TEAM_LEVELS).optional(),

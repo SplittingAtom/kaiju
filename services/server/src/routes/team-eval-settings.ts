@@ -5,7 +5,7 @@ import type { ServerDeps } from "../deps.js";
 import { readEvalSettings, setEvalSettings } from "../agents/eval/store.js";
 import { invalidRequest, parseBody } from "../http/request.js";
 
-const bodySchema = z
+export const bodySchema = z
   .strictObject({
     enabled: z.boolean().optional(),
     maxAttackSuccessRate: z.number().min(0).max(1).optional(),

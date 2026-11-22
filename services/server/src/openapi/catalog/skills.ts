@@ -1,4 +1,5 @@
 import type { CatalogArea } from "./build.js";
+import { skillsDetails } from "./details/skills.js";
 
 /** OpenAPI catalog: member skills, drafts, evals, catalog and promotions (KOBE-727; routes in `routes/skills.ts`, `skill-*.ts`, `me*.ts`). */
 export const skillsAreas: readonly CatalogArea[] = [
@@ -6,6 +7,9 @@ export const skillsAreas: readonly CatalogArea[] = [
     tag: "Skills",
     description:
       "Team and personal skills, Workbench drafts, skill evals, the Site catalog as members see it, and Promote to Site. Team-scoped: send X-Kobe-Team on changes.",
+    detailed: true,
+    teamScoped: true,
+    details: skillsDetails,
     entries: [
       ["get", "/v1/me/skill-submissions", "List my Site Registry submissions and their decisions"],
       ["post", "/v1/me/skill-submissions/{id}/retract", "Take a submission back before a decision"],

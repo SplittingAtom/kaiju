@@ -19,7 +19,7 @@ import type { ServerDeps } from "../deps.js";
 import { readKobeMode, storeKobeMode } from "../kobe-mcp/switches.js";
 import { readJson } from "../http/request.js";
 
-const settingsSchema = z
+export const settingsSchema = z
   .strictObject({
     requireTwoFactor: z.boolean().optional(),
     /** Hours audit rows keep their client IP and user agent (KOBE-17): 1-8760, default 12. */

@@ -120,4 +120,4 @@ export function meRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables }> {
   return app;
 }
 
-const timeZoneBodySchema = z.strictObject({ time_zone: scheduleTimezoneSchema.nullable() });
+export const timeZoneBodySchema = z.strictObject({ time_zone: scheduleTimezoneSchema.nullable() });

@@ -13,7 +13,7 @@ import type { ServerDeps } from "../deps.js";
 import { uuidSchema } from "../threads/schemas.js";
 import { invalidRequest, param, parseBody } from "../http/request.js";
 
-const toggleBodySchema = z.strictObject({ enabled: z.boolean() });
+export const toggleBodySchema = z.strictObject({ enabled: z.boolean() });
 
 const ERRORS = {
   thread_not_found: [404, "No thread with that id."],
