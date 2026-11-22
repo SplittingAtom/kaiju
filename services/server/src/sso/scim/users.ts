@@ -15,7 +15,12 @@ import {
   type KobeTx,
 } from "@kobe/db";
 import { recordAudit } from "../../audit/record.js";
-import { deactivateUser, deactivatedVia, reactivateUserIfVia } from "../../users/deactivation.js";
+import {
+  DeactivationProtectedError,
+  deactivateUser,
+  deactivatedVia,
+  reactivateUserIfVia,
+} from "../../users/deactivation.js";
 import type { UserLifecycle } from "../../users/lifecycle.js";
 import type { UserFilter } from "./filter.js";
 import type { ScimType } from "./schemas.js";
@@ -374,12 +379,20 @@ async function applyActive(
     if (outcome === "reactivated") await ctx.lifecycle.emit("reactivated", userId);
     return undefined;
   }
-  const did = await deactivateUser(ctx.db, userId, {
-    via: scimVia(ctx.provider),
-    inTx: async (tx, changed) => {
-      if (changed) await recordAudit(tx, { action: "identity.scim.user.deactivated", target });
-    },
-  });
+  let did: boolean;
+  try {
+    did = await deactivateUser(ctx.db, userId, {
+      via: scimVia(ctx.provider),
+      protectSiteRoles: true,
+      inTx: async (tx, changed) => {
+        if (changed) await recordAudit(tx, { action: "identity.scim.user.deactivated", target });
+      },
+    });
+  } catch (err) {
+    // Re-checked under the lock: the user became protected (e.g. the Owner) meanwhile.
+    if (err instanceof DeactivationProtectedError) return refuseDeactivation(ctx, userId);
+    throw err;
+  }
   if (did) await ctx.lifecycle.emit("deactivated", userId);
   return undefined;
 }
@@ -494,26 +507,33 @@ export async function deleteScimUser(ctx: ScimContext, userId: string): Promise<
   if (!current) return NOT_FOUND;
   if (await isProtected(ctx.db, userId)) return refuseDeactivation(ctx, userId);
   const target = { providerId: ctx.provider.id, userId };
-  const did = await deactivateUser(ctx.db, userId, {
-    via: scimVia(ctx.provider),
-    inTx: async (tx, changed) => {
-      await tx
-        .delete(ssoIdentities)
-        .where(
-          and(eq(ssoIdentities.providerId, ctx.provider.id), eq(ssoIdentities.userId, userId)),
-        );
-      if (changed) {
+  let did: boolean;
+  try {
+    did = await deactivateUser(ctx.db, userId, {
+      via: scimVia(ctx.provider),
+      protectSiteRoles: true,
+      inTx: async (tx, changed) => {
+        await tx
+          .delete(ssoIdentities)
+          .where(
+            and(eq(ssoIdentities.providerId, ctx.provider.id), eq(ssoIdentities.userId, userId)),
+          );
+        if (changed) {
+          await recordAudit(tx, {
+            action: "identity.scim.user.deactivated",
+            target: { ...target, credentialId: ctx.credentialId },
+          });
+        }
         await recordAudit(tx, {
-          action: "identity.scim.user.deactivated",
-          target: { ...target, credentialId: ctx.credentialId },
+          action: "identity.sso.link.removed",
+          target: { ...target, by: "scim" },
         });
-      }
-      await recordAudit(tx, {
-        action: "identity.sso.link.removed",
-        target: { ...target, by: "scim" },
-      });
-    },
-  });
+      },
+    });
+  } catch (err) {
+    if (err instanceof DeactivationProtectedError) return refuseDeactivation(ctx, userId);
+    throw err;
+  }
   if (did) await ctx.lifecycle.emit("deactivated", userId);
   return { ok: true, value: null };
 }

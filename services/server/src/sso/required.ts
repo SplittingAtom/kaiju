@@ -108,7 +108,7 @@ export async function unlinkedCounts(db: KobeDb | KobeTx): Promise<UnlinkedCount
           WHERE i.user_id = u.id AND p.enabled)`);
   const row = res.rows[0];
   return {
-    owners: Number(row?.owners ?? 0),
+    owners: await unlinkedOwners(db),
     siteRoles: Number(row?.site_roles ?? 0),
     users: Number(row?.users ?? 0),
   };
@@ -128,14 +128,17 @@ export class OwnerWouldLoseSignInError extends Error {
   }
 }
 
-/** Active Owners without an identity at an enabled provider. */
-async function unlinkedOwners(tx: KobeTx): Promise<number> {
+/**
+ * Owners who could not sign in through single sign-on: deactivated, or without an identity at an
+ * enabled provider (third review: a deactivated Owner fails the invariant too).
+ */
+async function unlinkedOwners(tx: KobeDb | KobeTx): Promise<number> {
   const res = await tx.execute<{ n: number }>(sql`
     SELECT count(*)::int AS n FROM site_roles r JOIN users u ON u.id = r.user_id
-     WHERE r.role = 'owner' AND u.deactivated_at IS NULL
-       AND NOT EXISTS (
+     WHERE r.role = 'owner'
+       AND (u.deactivated_at IS NOT NULL OR NOT EXISTS (
          SELECT 1 FROM sso_identities i JOIN sso_providers p ON p.id = i.provider_id
-          WHERE i.user_id = u.id AND p.enabled)`);
+          WHERE i.user_id = u.id AND p.enabled))`);
   return Number(res.rows[0]?.n ?? 0);
 }
 
@@ -180,7 +183,7 @@ export function turnOnSsoRequired(db: KobeDb, sessionId: string): Promise<TurnOn
     if (!(await signedInThroughEnabledProvider(tx, sessionId))) {
       return { ok: false, failure: "sso_session_required" };
     }
-    const { owners } = await unlinkedCounts(tx);
+    const owners = await unlinkedOwners(tx);
     if (owners > 0) return { ok: false, failure: "owners_not_linked", owners };
     if (await readSsoRequiredIn(tx)) return { ok: true, sessionsEnded: 0 };
     await storeSsoRequired(tx, true);

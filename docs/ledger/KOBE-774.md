@@ -79,6 +79,19 @@ with an ownership transfer); provider issuer/tenant/subject can't change while i
 linked (`identity_settings_locked`), so no reconfiguration deletes links; reactivation touches no
 identities. The Owner can't be deactivated (`owner_cannot_be_deactivated`, site-users.ts).
 
+## Third review: always an active Owner
+
+- The invariant also fails for a deactivated Owner (`unlinkedOwners`).
+- `deactivateUser` and reactivation take `lockSsoRequired` first (the lock ownership transfer takes),
+  re-check under it that the target is not the Owner (SCIM: no site-role holder or setup Owner
+  either; `DeactivationProtectedError` → admin 409 `owner_cannot_be_deactivated`, SCIM 403), and
+  assert the invariant after. Unconditional: holds whether or not the setting is on.
+- Ownership transfer refuses a deactivated target (409 `user_deactivated`), always.
+- Reactivating the Owner is allowed (a site admin can undo a deactivated Owner).
+- Race tests: SCIM DELETE vs transfer, admin deactivate vs transfer (the transfer commits while the
+  deactivation waits on the lock; the deactivation then refuses).
+- The `owner_unlinked` email and start-up log name their real reason.
+
 ## Docs
 
 Guide: `admin/single-sign-on.md` (new "Requiring single sign-on" section, break-glass command,

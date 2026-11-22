@@ -15,13 +15,31 @@ export interface RequiredNotifyDeps {
   readonly publicUrl: string;
 }
 
-export function ssoRequiredOffMessage(publicUrl: string, slug: string, to: string): MailMessage {
+/** Why it turned off: the last enabled provider went, or the chart's providers left the Owner unlinked. */
+export type SsoRequiredOffReason = "last_provider" | "owner_unlinked";
+
+export function ssoRequiredOffMessage(
+  publicUrl: string,
+  slug: string,
+  to: string,
+  reason: SsoRequiredOffReason = "last_provider",
+): MailMessage {
+  const why =
+    reason === "last_provider"
+      ? [
+          `The identity provider ${oneLine(slug)} was turned off or deleted, and it was the last`,
+          "enabled one,",
+        ]
+      : [
+          `The chart's values turned off the identity provider ${oneLine(slug)}, which left the`,
+          "Owner without a sign-in at an enabled provider,",
+        ];
   return {
     to,
     subject: "Kobe: single sign-on is no longer required",
     text: [
-      `The identity provider ${oneLine(slug)} was turned off or deleted, and it was the last`,
-      "enabled one, so Require single sign-on turned itself off: people can sign in with their",
+      ...why,
+      "so Require single sign-on turned itself off: people can sign in with their",
       "password or passkey again.",
       "",
       "To require single sign-on again, turn a provider on, sign in with it and turn the setting",
@@ -34,6 +52,7 @@ export function ssoRequiredOffMessage(publicUrl: string, slug: string, to: strin
 export async function notifySsoRequiredOff(
   deps: RequiredNotifyDeps,
   slug: string,
+  reason: SsoRequiredOffReason = "last_provider",
 ): Promise<number> {
   try {
     const admins = await deps.db
@@ -44,7 +63,7 @@ export async function notifySsoRequiredOff(
     let sent = 0;
     for (const { email } of admins) {
       try {
-        await deps.mailer.send(ssoRequiredOffMessage(deps.publicUrl, slug, email));
+        await deps.mailer.send(ssoRequiredOffMessage(deps.publicUrl, slug, email, reason));
         sent++;
       } catch (err) {
         logger.warn({ err }, "require single sign-on notice could not be sent");

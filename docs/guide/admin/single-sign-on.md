@@ -154,6 +154,9 @@ message saying what to do instead:
   **Require single sign-on** off;
 - transferring ownership to someone without a linked sign-in at a provider that is on
   (`owner_not_linked`): they link their account first;
+- (always, whatever this setting) transferring ownership to a deactivated account
+  (`user_deactivated`), or deactivating the Owner, also through SCIM: the site keeps an active
+  Owner. A deactivated Owner can be reactivated in **Users**;
 - unlinking an organization sign-in that is the account's only one at a provider that is on
   (`last_sign_in_method`), for anyone: while single sign-on is required a password or passkey is
   not another way in.

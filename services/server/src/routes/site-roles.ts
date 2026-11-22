@@ -129,11 +129,18 @@ export function siteRolesRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
     const me = c.get("user").id;
     if (body.userId === me) return invalidRequest(c, "You are already the Owner.");
     if (!(await findUserId(db, { id: body.userId }))) return c.json(userNotFound, 404);
-    let transferred: boolean;
+    let transferred: boolean | "deactivated";
     try {
       transferred = await db.transaction(async (tx) => {
         // KOBE-774: the setting's lock before the change; the new Owner must keep a sign-in.
         await lockSsoRequired(tx);
+        // Never to a deactivated user, whatever the SSO setting (the Site keeps an active
+        // Owner); deactivation checks "is the Owner?" under the same lock.
+        const [to] = await tx
+          .select({ at: users.deactivatedAt })
+          .from(users)
+          .where(eq(users.id, body.userId));
+        if (to?.at) return "deactivated" as const;
         // Conditional on still being Owner: a concurrent transfer by the same Owner finds no row.
         const demoted = await tx
           .update(siteRoles)
@@ -159,6 +166,15 @@ export function siteRolesRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
           code: "owner_not_linked",
           message:
             "Single sign-on is required and this person has no sign-in linked at an enabled identity provider, so they could not sign in as Owner. Have them link their account first, or turn Require single sign-on off.",
+        },
+        409,
+      );
+    }
+    if (transferred === "deactivated") {
+      return c.json(
+        {
+          code: "user_deactivated",
+          message: "This account is deactivated. Reactivate it before handing it ownership.",
         },
         409,
       );

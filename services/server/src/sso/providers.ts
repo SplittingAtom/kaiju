@@ -468,6 +468,7 @@ export interface HelmSeedResult {
    */
   readonly ssoRequiredTurnedOff: boolean;
   readonly ssoRequiredReleasedBy?: string;
+  readonly ssoRequiredReason?: "last_provider" | "owner_unlinked";
 }
 
 /**
@@ -590,10 +591,10 @@ export async function seedHelmProviders(
       disabled.push({ providerId: row.id, slug: row.slug });
     }
     const last = disabled.at(-1);
-    const off = last
-      ? (await releaseIfNoProvider(tx, last, { system: true })) ||
-        (await releaseIfOwnerUnlinked(tx, last))
-      : false;
+    let reason: "last_provider" | "owner_unlinked" | undefined;
+    if (last && (await releaseIfNoProvider(tx, last, { system: true }))) reason = "last_provider";
+    else if (last && (await releaseIfOwnerUnlinked(tx, last))) reason = "owner_unlinked";
+    const off = reason !== undefined;
     return {
       created,
       updated,
@@ -601,7 +602,9 @@ export async function seedHelmProviders(
       retired,
       locked,
       ssoRequiredTurnedOff: off,
-      ...(off && last ? { ssoRequiredReleasedBy: last.slug } : {}),
+      ...(reason !== undefined && last
+        ? { ssoRequiredReleasedBy: last.slug, ssoRequiredReason: reason }
+        : {}),
     };
   });
 }

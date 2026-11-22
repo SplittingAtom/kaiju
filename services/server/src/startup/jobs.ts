@@ -128,13 +128,17 @@ export async function seedAtStart(deps: ServerDeps, logger: Logger): Promise<Sta
         );
       }
       if (seeded.ssoRequiredTurnedOff && seeded.ssoRequiredReleasedBy !== undefined) {
+        const reason = seeded.ssoRequiredReason ?? "last_provider";
         logger.warn(
-          { slug: seeded.ssoRequiredReleasedBy },
-          "the chart left no enabled single sign-on provider: Require single sign-on turned itself off",
+          { slug: seeded.ssoRequiredReleasedBy, reason },
+          reason === "last_provider"
+            ? "the chart left no enabled single sign-on provider: Require single sign-on turned itself off"
+            : "the chart left the Owner without a sign-in at an enabled provider: Require single sign-on turned itself off",
         );
         void notifySsoRequiredOff(
           { db: deps.database.db, mailer: deps.mailer, publicUrl: deps.publicUrl },
           seeded.ssoRequiredReleasedBy,
+          reason,
         );
       }
       for (const slug of seeded.conflicts) {

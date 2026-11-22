@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import pg from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { loadEnvelope, type Envelope } from "@kobe/db";
 import { seedHelmProviders } from "./sso/providers.js";
@@ -6,7 +7,7 @@ import { ssoRequired } from "./sso/required.js";
 import { loadSsoSettings, type SsoSettings } from "./sso/settings.js";
 import { FakeIdp, resolver } from "./sso/testing.js";
 import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, PASSWORD, type Harness } from "./testing/harness.js";
+import { openHarness, PASSWORD, PUBLIC_URL, type Harness } from "./testing/harness.js";
 
 /**
  * KOBE-774: the Site setting "Require single sign-on". It turns on only from a session signed in
@@ -521,7 +522,7 @@ describe("the Owner keeps a sign-in while it is required (second review)", () =>
       client_secret_sealed = 'e1.x', client_secret_key_id = 'k' WHERE id = $1`,
       [corpId],
     );
-    const locker = new (await import("pg")).default.Client({ connectionString: h.adminUrl });
+    const locker = new pg.Client({ connectionString: h.adminUrl });
     await locker.connect();
     try {
       await locker.query("BEGIN");
@@ -547,6 +548,142 @@ describe("the Owner keeps a sign-in while it is required (second review)", () =>
         [corpId],
       );
       await h.admin.query(`UPDATE sso_providers SET enabled = false WHERE id = $1`, [b]);
+    }
+  });
+});
+
+describe("the Site always has an active Owner (third review)", () => {
+  const SCIM = "/v1/scim/v2";
+
+  async function scimUser(owner: TestBrowser): Promise<{ id: string; token: string }> {
+    const t = await owner.post(`${PROVIDERS}/${corpId}/scim/tokens`);
+    expect(t.status, JSON.stringify(t.json)).toBe(201);
+    const token = t.json.token as string;
+    const suffix = randomUUID().slice(0, 8);
+    const res = await h.app.request(`${PUBLIC_URL}${SCIM}/corp/Users`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/scim+json",
+        "x-forwarded-for": "203.0.113.9",
+      },
+      body: JSON.stringify({
+        schemas: ["urn:ietf:params:scim:schemas:core:2.0:User"],
+        externalId: randomUUID(),
+        userName: `scim_${suffix}@required.test`,
+        active: true,
+        emails: [{ primary: true, type: "work", value: `scim_${suffix}@required.test` }],
+      }),
+    });
+    const body = (await res.json()) as { id: string };
+    expect(res.status, JSON.stringify(body)).toBe(201);
+    return { id: body.id, token };
+  }
+
+  const scimDelete = (token: string, id: string) =>
+    h.app.request(`${PUBLIC_URL}${SCIM}/corp/Users/${id}`, {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${token}`, "x-forwarded-for": "203.0.113.9" },
+    });
+
+  async function active(userId: string): Promise<boolean> {
+    const { rows } = await h.admin.query<{ active: boolean }>(
+      `SELECT deactivated_at IS NULL AS active FROM users WHERE id = $1`,
+      [userId],
+    );
+    return rows[0]?.active === true;
+  }
+
+  /** Holds the setting's lock; `during` runs in the locking transaction, which then commits. */
+  async function whileLocked(pending: () => unknown, during: (q: pg.Client) => Promise<void>) {
+    const locker = new pg.Client({ connectionString: h.adminUrl });
+    await locker.connect();
+    try {
+      await locker.query("BEGIN");
+      await locker.query(`SELECT pg_advisory_xact_lock(hashtext('kobe.sso.required'))`);
+      const result = Promise.resolve(pending());
+      await new Promise((r) => setTimeout(r, 300));
+      await during(locker);
+      await locker.query("COMMIT");
+      return await result;
+    } finally {
+      await locker.end();
+    }
+  }
+
+  async function transferInSql(q: pg.Client, to: string) {
+    await q.query(`UPDATE site_roles SET role = 'admin' WHERE user_id = $1`, [ownerId]);
+    await q.query(
+      `INSERT INTO site_roles (user_id, role) VALUES ($1, 'owner')
+       ON CONFLICT (user_id) DO UPDATE SET role = 'owner'`,
+      [to],
+    );
+  }
+
+  async function restoreOwner(other: string) {
+    await h.admin.query(`DELETE FROM site_roles WHERE user_id = $1`, [other]);
+    await h.admin.query(`UPDATE site_roles SET role = 'owner' WHERE user_id = $1`, [ownerId]);
+  }
+
+  it("a SCIM delete racing an ownership transfer refuses once the target is the Owner", async () => {
+    const owner = await h.signIn(ownerEmail);
+    const b = await scimUser(owner);
+    try {
+      const res = (await whileLocked(
+        () => scimDelete(b.token, b.id),
+        async (q) => {
+          expect(await active(b.id)).toBe(true); // waiting on the lock, nothing written
+          await transferInSql(q, b.id);
+        },
+      )) as Response;
+      expect(res.status).toBe(403);
+      expect(await active(b.id)).toBe(true);
+      const { rows } = await h.admin.query(`SELECT 1 FROM sso_identities WHERE user_id = $1`, [
+        b.id,
+      ]);
+      expect(rows).toHaveLength(1);
+    } finally {
+      await restoreOwner(b.id);
+    }
+  });
+
+  it("an admin deactivation racing an ownership transfer refuses too", async () => {
+    const c = await h.createUser(`c-${randomUUID().slice(0, 6)}@required.test`);
+    const admin = await h.signIn(adminEmail);
+    try {
+      const res = (await whileLocked(
+        () => admin.post(`/v1/site/users/${c}/deactivate`),
+        (q) => transferInSql(q, c),
+      )) as { status: number; json: { code?: string } };
+      expect(res.status).toBe(409);
+      expect(res.json.code).toBe("owner_cannot_be_deactivated");
+      expect(await active(c)).toBe(true);
+    } finally {
+      await restoreOwner(c);
+    }
+  });
+
+  it("refuses to transfer ownership to a deactivated user, whatever the setting", async () => {
+    const d = await h.createUser(`d-${randomUUID().slice(0, 6)}@required.test`);
+    await h.admin.query(`UPDATE users SET deactivated_at = now() WHERE id = $1`, [d]);
+    const owner = await h.signIn(ownerEmail);
+    const res = await owner.post("/v1/site/roles/transfer-ownership", { userId: d });
+    expect(res.status).toBe(409);
+    expect(res.json.code).toBe("user_deactivated");
+  });
+
+  it("a deactivated Owner counts as unable to sign in, and can be reactivated", async () => {
+    await linkIdentity(ownerId);
+    const admin = await ssoBrowser(adminEmail, adminId);
+    await h.admin.query(`UPDATE users SET deactivated_at = now() WHERE id = $1`, [ownerId]);
+    try {
+      expect((await admin.get(SETTINGS)).json.unlinked.owners).toBe(1);
+      expect((await admin.put(SETTINGS, { requireSso: true })).json.code).toBe("owners_not_linked");
+      const res = await admin.post(`/v1/site/users/${ownerId}/reactivate`);
+      expect(res.status, JSON.stringify(res.json)).toBe(200);
+      expect(await active(ownerId)).toBe(true);
+    } finally {
+      await h.admin.query(`UPDATE users SET deactivated_at = NULL WHERE id = $1`, [ownerId]);
     }
   });
 });
