@@ -16,7 +16,7 @@ export const EGRESS_EVENT_DOCS = {
   },
   "egress.ceiling.internal_changed": {
     fields: "`domain`, `internal`",
-    when: "A site admin marked a ceiling pattern internal (same cluster: its hosts may reach the install's internal targets) or cleared it (KOBE-602, EA4)",
+    when: "A site admin marked a ceiling pattern internal (same cluster: its hosts may reach the site's internal targets) or cleared it (KOBE-602, EA4)",
   },
   "egress.ceiling.removed": {
     fields: "`domain`",

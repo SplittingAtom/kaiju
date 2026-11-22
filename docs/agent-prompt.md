@@ -14,10 +14,14 @@ cp CLAUDE.local.md ../Kobe-wt<N>/
 scripts/hadron.sh brief <N> > ../Kobe-wt<N>/BRIEF.md   # untracked; the agent reads only this
 ```
 
-Before starting a ticket, check the other open tickets: don't run two tickets at once that both add
-migrations or touch the same area (`tenancy/<area>.ts`, a route module, `packages/protocol`),
-unless one is meant to wait for the other. Rebase and conflict rounds cost a full re-run of the
-tests and review.
+Before starting a ticket, check the other open tickets: don't run two tickets at once that touch
+the same area (`tenancy/<area>.ts`, a route module, `packages/protocol`), unless one is meant to
+wait for the other. Rebase and conflict rounds cost a full re-run of the tests and review. Two
+migration tickets can run at once when the second is stacked on the first: start its worktree
+from the first branch (`git worktree add ../Kobe-wt<N> -b <branch> origin/<first-branch>`) and
+name the base in the prompt; `scripts/onto-main.sh <base>` keeps it current (see
+[parallel-work.md](parallel-work.md#bringing-a-branch-onto-main-or-onto-another-branch)). Audit
+events and the OpenAPI document are no longer conflict hotspots (KOBE-815).
 
 ## Model per job
 
@@ -49,8 +53,11 @@ with a reason and carry on, never stop to ask);
 user-facing docs: decide how the change belongs in docs/guide/ (served at /docs and /llms.txt) and
 update the pages in the same change, or note in the ledger why none is needed;
 notes in docs/ledger/KOBE-<N>.md (template; stay under ~150 lines, link
-evidence instead of pasting logs). Before pushing run `pnpm verify` (it formats, so commit after
-it). Open a PR, then wait for CI with exactly one background `gh pr checks <n> --watch`; never
+evidence instead of pasting logs). An audit event's docs/audit-log.md row goes in its area's
+packages/db/src/audit/events/<area>.doc.ts, then `pnpm --filter @kobe/db audit:doc`; never edit
+the table or commit services/server/openapi.json. To bring the branch onto main (or onto
+<base>), run `scripts/onto-main.sh [<base>]` and act on what it prints. Before pushing run
+`pnpm verify` (it formats, so commit after it). Open a PR, then wait for CI with exactly one background `gh pr checks <n> --watch`; never
 write until/while loops around pgrep or sleep (they outlive you and never exit). Fix failures.
 Skip packages/db/drizzle/meta/*_snapshot.json when reading diffs: generated. Don't merge, don't
 touch Hadron.

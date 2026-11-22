@@ -43,12 +43,41 @@ most 150 words that states their token use.
 | `packages/protocol`                                | Contracts are agreed before dependants start; change a published contract only in its own PR, never inside a feature PR.                                                              |
 | Queries on `threads` / `thread_entries`            | Always state `team_id` explicitly, even inside `withTeam()` (break-glass policy; see `packages/db/README.md`). Enforced by `services/server` tests `team-filter` and `threads-plans`. |
 | `charts/kobe/values.yaml`                          | Add values under your component's key; don't reorder or reformat other sections.                                                                                                      |
+| `docs/audit-log.md` event table                    | Generated (KOBE-815): add an event's row to `audit/events/<area>.doc.ts` in name order, run `pnpm --filter @kobe/db audit:doc`; never edit the table.                                 |
+| `services/server/openapi.json`                     | Not committed (KOBE-815): `pnpm --filter @kobe/server openapi` writes it; routes show in review in the route-inventory snapshot.                                                      |
 
 `schema/index.ts` and `probe-fixtures/index.ts` use git's `union` merge driver
 (`.gitattributes`), so two branches that each append a line merge cleanly when merged locally
 (GitHub's own conflict check may ignore it: merge `origin/main` locally before merging a PR). Union
 never reports a conflict, so keep those files to one entry per line and run `pnpm typecheck` after
 every merge: a stale or duplicate line only shows up there.
+
+## Bringing a branch onto main (or onto another branch)
+
+```bash
+scripts/onto-main.sh                    # onto origin/main
+scripts/onto-main.sh origin/group-88-x  # stacked: onto an unmerged branch
+```
+
+One step for every branch (KOBE-815): it fetches the base, runs `db:rebase` against it when the
+branch has migrations (otherwise merges it), runs `pnpm install` if the lockfile moved, resolves
+conflicts in generated files by regenerating them (the `docs/audit-log.md` event table; the
+route-inventory snapshots, only when they conflict; a branch's old `services/server/openapi.json`
+is dropped), regenerates the audit table and commits it, then prints what still needs a human. On
+a conflict it cannot resolve it stops with the list: resolve, `git commit`, and run it again with
+the same base (it resumes an interrupted `db:rebase`). It needs a clean working tree.
+
+**Stacking.** A branch that needs another unmerged branch (a feature half on its migration half,
+or a migration on another migration) starts from that branch or brings itself onto it with
+`scripts/onto-main.sh origin/<that-branch>`. When the branch underneath moves, run it again with
+the same base; after it merged, run it with no base. Migrations are regenerated each time, after
+the base's, so the stack never holds two migrations with one number. A stacked PR merges after
+the one underneath; run `scripts/onto-main.sh` (onto main) before it enters the merge queue.
+
+**Two branches adding audit events** no longer collide: each area's rows are in name order and
+the generated table is sorted and unpadded, so additions land on different lines. Only two events
+that sort next to each other can still touch the same lines; `scripts/onto-main.sh` regenerates
+the table then.
 
 ## Migrations
 
@@ -57,14 +86,19 @@ always conflict (two `0004_*`, the journal, the snapshot chain). Never resolve t
 hand. Land a ticket's migration in its own small PR first (schema, migration, RLS policy, probe
 fixtures), then the feature PR without a snapshot in its diff. `drizzle/meta/*_snapshot.json` is
 marked generated in `.gitattributes`: collapsed on GitHub, skipped in review. When `main` has moved
-on and your branch has migrations:
+on and your branch has migrations, `scripts/onto-main.sh` runs this for you; by hand:
 
 ```bash
-git fetch origin
-pnpm --filter @kobe/db db:rebase            # stash yours, merge origin/main, regenerate
+pnpm --filter @kobe/db db:rebase                          # stash yours, merge origin/main, regenerate
+pnpm --filter @kobe/db db:rebase --base origin/group-88-x # the same onto another branch (stacked)
 # on other conflicts: resolve, commit the merge, then
 pnpm --filter @kobe/db db:rebase --apply
 ```
+
+The base also comes from a positional ref or `KOBE_DB_REBASE_BASE`; default `origin/main`. The
+branch's own migrations are the journal entries neither the base nor the fork point has, so a
+branch stacked on one that was regenerated since leaves the old copies of that branch's
+migrations to it.
 
 The script regenerates all your schema changes as one migration and re-creates each custom
 migration (RLS policies, data fixes) after it with its original SQL. It merges rather than rebases,
@@ -144,5 +178,5 @@ hand-written migration too; how to write one is in
 ## Merging
 
 The coordinator merges one PR at a time. Before each merge: bring the branch up to date with
-`main` (`db:rebase` if it has migrations, otherwise `git merge origin/main`), wait for CI green
+`main` (`scripts/onto-main.sh`), wait for CI green
 (`checks`, `db`, `images`, and `e2e` on PRs), and act on the review.

@@ -169,7 +169,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `auth.two_factor.enabled` | site | — | TOTP enrollment verified |
 | `egress.ceiling.added` | site | `domain` | Custom domain added to the egress ceiling (KOBE-38) |
 | `egress.ceiling.changed` | site | `domain`, `inCeiling` | A preset or custom domain put into or taken out of the ceiling |
-| `egress.ceiling.internal_changed` | site | `domain`, `internal` | A site admin marked a ceiling pattern internal (same cluster: its hosts may reach the install's internal targets) or cleared it (KOBE-602, EA4) |
+| `egress.ceiling.internal_changed` | site | `domain`, `internal` | A site admin marked a ceiling pattern internal (same cluster: its hosts may reach the site's internal targets) or cleared it (KOBE-602, EA4) |
 | `egress.ceiling.removed` | site | `domain` | Custom domain deleted; every team's enablement of it went with it |
 | `egress.connection` | team | `userId`, `sandboxId`, `domain?`, `port?`, `outcome`, `reason?`, `aggregated?`, `upgraded?`, `connections`, `bytesUp`, `bytesDown`, `from`, `to` | Sandbox connections through the egress proxy, aggregated per key and window (system; see below) |
 | `egress.domain.disabled` | team | `domain`, `headersRemoved?` | Team admin disabled it |
