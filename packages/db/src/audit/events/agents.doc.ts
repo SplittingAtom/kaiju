@@ -99,7 +99,7 @@ export const AGENTS_EVENT_DOCS = {
   },
   "agent.roster.resumed": {
     fields: "`agentId`, `scope`, `slug`, `roster` (team, site)",
-    when: "A suspension above lifted",
+    when: "A roster suspension (`agent.roster.suspended`) was lifted",
   },
   "agent.roster.suspended": {
     fields: "`agentId`, `scope`, `slug`, `roster` (team, site)",

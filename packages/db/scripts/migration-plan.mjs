@@ -136,3 +136,21 @@ export function branchOnlyEntries(headEntries, baseEntries, forkEntries) {
   const known = new Set([...baseEntries, ...forkEntries].map((e) => e.tag));
   return headEntries.filter((e) => !known.has(e.tag));
 }
+
+function migrationName(tag) {
+  return tag.slice(tag.indexOf("_") + 1);
+}
+
+/**
+ * The branch's own migrations that the base already has under another number, with the same name
+ * and SQL: the branch underneath landed squashed or was recreated, so its fork point no longer
+ * holds that branch's migrations and they look like ours. `own` and `base` are `{ tag, sql }`.
+ */
+export function alreadyOnBase(own, base) {
+  return own.flatMap((m) => {
+    const found = base.find(
+      (b) => b.tag !== m.tag && migrationName(b.tag) === migrationName(m.tag) && b.sql === m.sql,
+    );
+    return found ? [{ tag: m.tag, baseTag: found.tag }] : [];
+  });
+}

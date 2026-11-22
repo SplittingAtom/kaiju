@@ -29,6 +29,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  alreadyOnBase,
   branchOnlyEntries,
   handWrittenBaseProblem,
   isHandWritten,
@@ -88,6 +89,22 @@ function stash(base) {
   if (own.length === 0) {
     console.log(`db:rebase: no branch-only migrations; a plain \`git merge ${base}\` is enough`);
     return null;
+  }
+  const ownNames = new Set(own.map((e) => nameOf(e.tag)));
+  const sameNamed = readJson(JOURNAL, base)
+    .entries.filter((e) => ownNames.has(nameOf(e.tag)))
+    .map((e) => ({ tag: e.tag, sql: git("show", `${base}:./${DRIZZLE}/${e.tag}.sql`) }));
+  const ownSql = own.map((e) => ({
+    tag: e.tag,
+    sql: readFileSync(join(DRIZZLE, `${e.tag}.sql`), "utf8").trim(),
+  }));
+  const duplicates = alreadyOnBase(ownSql, sameNamed);
+  if (duplicates.length > 0) {
+    fail(
+      `${duplicates.map((d) => `${d.tag} is already on ${base} as ${d.baseTag}`).join("; ")}. ` +
+        "The branch this one was stacked on landed squashed or was recreated: re-create this " +
+        "branch from the new tip (or drop those migrations from it) instead of regenerating",
+    );
   }
   const migrations = own.map((e) => {
     const sql = readFileSync(join(DRIZZLE, `${e.tag}.sql`), "utf8");

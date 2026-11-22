@@ -37,6 +37,8 @@ area) and update the route-inventory snapshot
 changes show in review. The OpenAPI JSON is not committed (KOBE-815): `pnpm --filter @kobe/server
 build && pnpm --filter @kobe/server openapi` writes it to `services/server/openapi.json`
 (gitignored), and CI keeps every push's copy as the `openapi` artifact of the `unit` job.
+`pnpm --filter @kobe/server openapi:diff [base-ref]` prints how the document changes against a
+base (default `origin/main`), building both sides.
 
 ## Dev loop
 

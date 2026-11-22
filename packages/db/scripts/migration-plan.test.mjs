@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_BASE,
   MAX_GENERATED_NAME,
+  alreadyOnBase,
   branchOnlyEntries,
   handWrittenBaseProblem,
   parseRebaseArgs,
@@ -144,5 +145,23 @@ describe("db:rebase picks the branch's own migrations (KOBE-815)", () => {
   it("nothing of our own: an empty list", () => {
     const base = e("0000_a", "0001_b");
     expect(branchOnlyEntries(e("0000_a"), base, e("0000_a"))).toEqual([]);
+  });
+});
+
+describe("db:rebase refuses migrations the base already has (KOBE-815, stacking after a squash)", () => {
+  it("names an own migration whose name and SQL the base has under another number", () => {
+    const own = [
+      { tag: "0003_b_rls", sql: "CREATE POLICY b ..." },
+      { tag: "0004_c", sql: "CREATE TABLE c ..." },
+    ];
+    const base = [
+      { tag: "0002_main", sql: "CREATE TABLE m ..." },
+      { tag: "0005_b_rls", sql: "CREATE POLICY b ..." },
+    ];
+    expect(alreadyOnBase(own, base)).toEqual([{ tag: "0003_b_rls", baseTag: "0005_b_rls" }]);
+  });
+
+  it("a same-named migration with other SQL is not a duplicate", () => {
+    expect(alreadyOnBase([{ tag: "0003_x", sql: "A" }], [{ tag: "0004_x", sql: "B" }])).toEqual([]);
   });
 });

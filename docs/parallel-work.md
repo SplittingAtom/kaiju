@@ -73,6 +73,31 @@ or a migration on another migration) starts from that branch or brings itself on
 the same base; after it merged, run it with no base. Migrations are regenerated each time, after
 the base's, so the stack never holds two migrations with one number. A stacked PR merges after
 the one underneath; run `scripts/onto-main.sh` (onto main) before it enters the merge queue.
+Stacking relies on the branch underneath landing as it is, with its own commits: our PRs land as
+merge commits through the merge queue. Never squash, `reset --soft` or recreate a branch others
+are stacked on (and don't fold it into a combined PR) without recreating the stacked branches
+from the new tip: their fork point would no longer hold its migrations, so they would look like
+the stacked branch's own and be re-created. `db:rebase` refuses when one of the branch's own
+migrations is already on the base under another number with the same name and SQL.
+
+**A branch from before KOBE-815** has no `scripts/onto-main.sh` and still adds audit rows to the
+old hand-written table. Run the script from a checkout of main (it works on the branch you call
+it from) or merge main first:
+
+```bash
+cd ../Kobe-wt<N>                          # the old branch, clean working tree
+../Kobe/scripts/onto-main.sh              # ../Kobe: a checkout of main at or after KOBE-815
+# it drops the branch's services/server/openapi.json and stops on docs/audit-log.md:
+git checkout --theirs -- docs/audit-log.md
+#   move each row the branch added or changed, e.g.
+#   | `auth.sign_in.throttled` | site | `userId`, `until` | <when> |
+#   into packages/db/src/audit/events/<area>.doc.ts, in name order:
+#   "auth.sign_in.throttled": { fields: "`userId`, `until`", when: "<when>" },
+#   (a "—" fields cell becomes fields: "")
+git add docs/audit-log.md packages/db/src/audit/events/<area>.doc.ts
+git commit --no-edit
+scripts/onto-main.sh                      # now on the branch: regenerates and commits the table
+```
 
 **Two branches adding audit events** no longer collide: each area's rows are in name order and
 the generated table is sorted and unpadded, so additions land on different lines. Only two events

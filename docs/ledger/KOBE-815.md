@@ -58,7 +58,9 @@
 
 ## Open branches: carrying an audit row or route over after this lands
 
-Run `scripts/onto-main.sh` on the branch. Then:
+Run the script from a checkout of main on the branch (`../Kobe/scripts/onto-main.sh`: an old
+branch has no copy; exact commands in `docs/parallel-work.md`, "A branch from before KOBE-815").
+Then:
 
 - **Audit row** (branch added or changed a row in the old table): the merge conflicts in
   `docs/audit-log.md` and the script stops with these steps:
@@ -73,6 +75,26 @@ Run `scripts/onto-main.sh` on the branch. Then:
   `document.test.ts` near the removed "matches the committed openapi.json" test, keep main's
   version of that test. Update the route-inventory snapshot as before
   (`pnpm --filter @kobe/server exec vitest run src/route-inventory.test.ts -u`).
+
+## Review fixes (review-g89, 2026-11-22)
+
+- **M1** A route-inventory snapshot that conflicts next to files a human resolves is recorded
+  (`$(git rev-parse --git-path onto-main-inventory-pending)`); the re-run regenerates the
+  snapshots and commits them. Trial: snapshot + `docs/rate-limits.md` conflicting on two throwaway
+  branches; after the human took `--theirs` and committed, the re-run regenerated the snapshot
+  (demo lines gone, no diff against the base, route-inventory test 2/2). Also (L4) a merge that
+  fails without a conflict now stops instead of reporting done.
+- **M2** Documented in `parallel-work.md` (merge commits only; never squash or recreate a branch
+  others are stacked on). `db:rebase` refuses when an own migration is already on the base under
+  another number with the same name and SQL (`alreadyOnBase`, 2 tests). Trial: C stacked on S;
+  "main" gained another migration and S regenerated as one commit; `db:rebase --base` on C:
+  "0245_demo_s is already on demo-815-main as 0246_demo_s … re-create this branch from the new
+  tip", nothing changed.
+- **M3** `pnpm --filter @kobe/server openapi:diff [base-ref]` builds the working tree and the
+  base (temporary worktree, shared Turbo cache) and prints the JSON diff (~1m45s; trial against
+  `HEAD` with a changed title showed the one-line diff). Reviewers run it per `agent-prompt.md`.
+- **Lows** `agent.roster.resumed` wording; the OpenAPI artifact steps run after the tests with
+  `continue-on-error`; pre-KOBE-815 branches documented (above).
 
 ## Evidence
 

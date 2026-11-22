@@ -79,6 +79,12 @@ agents can then work on a migration ticket's feature half while the next migrati
 | Other service or web code                                                   | `/code-review medium` on the PR          |
 | Docs, CI config, chart values only                                          | Coordinator reads the diff               |
 
+`services/server/openapi.json` is not committed (KOBE-815), so a change to a request or response
+schema (zod in a route module or `@kobe/protocol`) shows only as a source change. When a diff
+touches routes, `services/server/src/openapi/` or `packages/protocol`, the reviewer runs
+`pnpm --filter @kobe/server openapi:diff [base-ref]` (default `origin/main`; builds both sides,
+about two minutes) and reads the API diff.
+
 One review pass per PR with a combined checklist (it includes: is docs/guide/ updated, or is the
 ledger's reason for no doc change sound?); send findings back to the same agent
 (`SendMessage`) rather than starting a new one, so it keeps its context. Reviewers read the `.sql`

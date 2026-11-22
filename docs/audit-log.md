@@ -135,7 +135,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `agent.roster.pinned` | any | `agentId`, `scope`, `slug`, `roster` (team, site), `versionRule` (latest, pinned), `pinnedVersion` | An admin pinned a roster entry to a published version |
 | `agent.roster.proposed` | any | `agentId`, `scope`, `slug`, `roster` (team, site) | A member proposed their agent to the team or site roster |
 | `agent.roster.removed` | any | `agentId`, `scope`, `slug`, `roster` (team, site) | An admin removed an entry from the roster, or adopted it (followed by `agent.adopted`); the row stays as `removed` |
-| `agent.roster.resumed` | any | `agentId`, `scope`, `slug`, `roster` (team, site) | A suspension above lifted |
+| `agent.roster.resumed` | any | `agentId`, `scope`, `slug`, `roster` (team, site) | A roster suspension (`agent.roster.suspended`) was lifted |
 | `agent.roster.suspended` | any | `agentId`, `scope`, `slug`, `roster` (team, site) | Team roster: a team admin suspended a team entry, site entry or gallery agent for the team (its `team_agent_suspensions` row; the entry stays active); site roster: suspended site-wide. Team-owned agents and the Inventory API log `agent.status_changed` |
 | `agent.roster.updated` | any | `agentId`, `scope`, `slug`, `roster` (team, site), `versionRule` (latest, pinned), `pinnedVersion` | An admin moved a pinned entry to another version or back to latest |
 | `agent.roster.withdrawn` | any | `agentId`, `scope`, `slug`, `roster` (team, site) | The owner withdrew their agent or proposal from a roster |

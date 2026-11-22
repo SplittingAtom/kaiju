@@ -53,6 +53,9 @@ merging && die "a merge is in progress: resolve it and \`git commit\`, then run 
 START="$(git rev-parse HEAD)"
 LOCK_BEFORE="$(git hash-object pnpm-lock.yaml)"
 regenerated_inventory=0
+# Set when a route-inventory snapshot conflicted alongside files a human resolves: the re-run
+# regenerates the snapshots (no merge is in progress by then).
+INVENTORY_PENDING="$(git rev-parse --git-path onto-main-inventory-pending)"
 
 if [[ "$BASE" == origin/* ]]; then
   git fetch -q origin "${BASE#origin/}"
@@ -72,10 +75,13 @@ resolve_generated() {
     esac
   done
   if [[ ${#others[@]} -gt 0 ]]; then
+    for file in "${files[@]}"; do
+      if [[ "$file" == "$INVENTORY_DIR"route-inventory.*.txt ]]; then touch "$INVENTORY_PENDING"; fi
+    done
     say "conflicts that need a human:"
     printf '  %s\n' "${others[@]}"
-    say "resolve them (for $AUDIT_DOC or a route-inventory snapshot, take either side:"
-    say "  git checkout --theirs -- <file>; it is regenerated), \`git commit\`, then run:"
+    say "resolve them; for $AUDIT_DOC or a route-inventory snapshot take either side"
+    say "  (git checkout --theirs -- <file>): the re-run regenerates both. Then \`git commit\` and run:"
     say "  scripts/onto-main.sh $BASE"
     exit 1
   fi
@@ -123,6 +129,7 @@ if [[ ! -f "$STASH" ]]; then
   "$PNPM" --filter @kobe/db db:rebase "$BASE"
   if ! merging && ! git merge-base --is-ancestor "$BASE" HEAD; then
     git merge -q --no-edit "$BASE" || true
+    merging || git merge-base --is-ancestor "$BASE" HEAD || die "merging $BASE failed (see above)"
   fi
   if merging; then
     install_if_lock_changed
@@ -138,6 +145,15 @@ fi
 install_if_lock_changed
 
 # Regenerate generated files from the merged code, then commit whatever changed.
+if [[ -f "$INVENTORY_PENDING" ]]; then
+  regenerate_inventory
+  if ! git diff --cached --quiet; then
+    git commit -q -m "chore: regenerate the route inventory on $BASE"
+  fi
+  rm -f "$INVENTORY_PENDING"
+  regenerated_inventory=1
+  say "regenerated the route-inventory snapshots (they conflicted)"
+fi
 build_db
 "$PNPM" --silent --filter @kobe/db audit:doc
 if [[ -n "$(git status --porcelain -- "$AUDIT_DOC")" ]]; then
