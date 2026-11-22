@@ -31,7 +31,15 @@ export type CredentialResult =
   | { readonly ok: false; readonly code: "not_connected" | "unavailable" };
 
 export interface CredentialResolver {
-  headersFor(request: CredentialRequest): Promise<CredentialResult>;
+  /**
+   * `refresh` (KOBE-778): the upstream refused the OAuth token just used; ask the server for a
+   * refreshed one. Ignored for other kinds.
+   */
+  headersFor(
+    request: CredentialRequest,
+    /** `signal`: the call's one deadline (review F1); the grant fetch stops with it. */
+    options?: { readonly refresh?: boolean; readonly signal?: AbortSignal },
+  ): Promise<CredentialResult>;
 }
 
 export const NO_GRANTS: CredentialResolver = {
@@ -65,8 +73,15 @@ export type GrantAnswer =
     }
   | { readonly ok: false; readonly failure: "not_connected" | "unavailable" };
 
+/** `refresh: "force"`: the server refreshes the OAuth token first (rate limited per grant). */
+export interface GrantFetchOptions {
+  readonly refresh?: "force";
+  /** The MCP call's own deadline: the grant fetch never outlives it (review F1). */
+  readonly signal?: AbortSignal;
+}
+
 export interface GrantSource {
-  fetchGrant(token: string, connectorId: string): Promise<GrantAnswer>;
+  fetchGrant(token: string, connectorId: string, options?: GrantFetchOptions): Promise<GrantAnswer>;
 }
 
 /**
@@ -78,9 +93,13 @@ export interface GrantSource {
  */
 export function createServerCredentials(source: GrantSource): CredentialResolver {
   return {
-    async headersFor({ token, connector }) {
+    async headersFor({ token, connector }, options = {}) {
       if (connector.auth_kind === "none") return { ok: true, headers: {}, credential: "none" };
-      const grant = await source.fetchGrant(token, connector.id);
+      const signal = options.signal === undefined ? {} : { signal: options.signal };
+      const grant =
+        options.refresh === true && connector.auth_kind === "oauth"
+          ? await source.fetchGrant(token, connector.id, { refresh: "force", ...signal })
+          : await source.fetchGrant(token, connector.id, signal);
       if (!grant.ok) return { ok: false, code: grant.failure };
       const value = grant.value;
       if (value.kind !== connector.auth_kind) return { ok: false, code: "not_connected" };

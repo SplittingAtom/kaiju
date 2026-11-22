@@ -543,8 +543,22 @@ missing Secret leaves the mirror unable to push rather than the server down), an
 
 {{/* Pauses the nightly retention pass (KOBE-243): set after restoring the database from an older backup. */}}
 {{- define "kobe.retentionEnv" -}}
+{{- $sw := .Values.retention.sweeps | default dict -}}
+{{- $ev := $sw.events | default dict -}}
+{{- $rn := $sw.readNotifications | default dict -}}
+{{- $ru := $sw.runUsage | default dict -}}
+{{- $eh := $sw.evalHistory | default dict -}}
 - name: KOBE_RETENTION_PAUSED
   value: {{ .Values.retention.paused | default false | toString | quote }}
+{{- /* Table sweeps (KOBE-741): the period, or 0 when the sweep is turned off. */}}
+- name: KOBE_RETENTION_EVENTS_DAYS
+  value: {{ ternary ($ev.days | default 30 | int) 0 (ne $ev.enabled false) | toString | quote }}
+- name: KOBE_RETENTION_READ_NOTIFICATIONS_DAYS
+  value: {{ ternary ($rn.days | default 180 | int) 0 (ne $rn.enabled false) | toString | quote }}
+- name: KOBE_RETENTION_RUN_USAGE_MONTHS
+  value: {{ ternary ($ru.months | default 13 | int) 0 (ne $ru.enabled false) | toString | quote }}
+- name: KOBE_RETENTION_EVAL_HISTORY_MONTHS
+  value: {{ ternary ($eh.months | default 12 | int) 0 (ne $eh.enabled false) | toString | quote }}
 {{- end -}}
 
 {{/* Branding defaults (KOBE-503): seeded by the API server only while each setting is unset. Only set values render. */}}

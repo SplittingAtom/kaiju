@@ -236,8 +236,23 @@ describe("a Dangerous agent's calls (AC1)", () => {
       approval_mode: "dangerous",
       tools: { allow: ["mcp__catalyst__search"] },
     });
+    // KOBE-776 (owner decision): a list naming no built-in limits connector tools only.
     await check(w, "bash", { command: "ls" }).pending();
     await check(w, "write", { path: "a.txt", content: "x" }).pending();
+    expect(await appliedRows(w)).toEqual([]);
+  });
+
+  it("leaves tools it doesn't name one by one as they were: globbed built-ins still ask", async () => {
+    const w = await world();
+    await pin(w, "team", {
+      approval_mode: "dangerous",
+      tools: { allow: ["mcp__catalyst__search", "bas?", "writ?"] },
+    });
+    await check(w, "bash", { command: "ls" }).pending();
+    await check(w, "write", { path: "a.txt", content: "x" }).pending();
+    // KOBE-776: a built-in outside the allow list is refused, Dangerous or not.
+    const outside = await check(w, "edit", { path: "a.txt", edits: [] }).result();
+    expect(outside.reasons[0]?.code).toBe("agent_tool_deny");
     expect(await appliedRows(w)).toEqual([]);
   });
 

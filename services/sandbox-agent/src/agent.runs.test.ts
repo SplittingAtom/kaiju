@@ -283,6 +283,7 @@ describe("workspace sync hooks (KOBE-27)", () => {
         },
         runEnded: () => void calls.push("runEnded"),
         flush: (ms) => Promise.resolve(void calls.push(`flush:${ms}`)),
+        prove: () => Promise.resolve(void calls.push("prove")),
       }),
     });
     const file = path.join(h.workspace, "uploads", "sales.csv");
@@ -298,6 +299,7 @@ describe("workspace sync hooks (KOBE-27)", () => {
     await until(() => calls.includes("runEnded"));
     expect(calls[0]).toBe(`beforeRun:${RUN}`);
     await h.agent.stop(500);
+    // Without Pi identities (this harness) no reclaim proof is offered (KOBE-733).
     expect(calls.at(-1)).toBe("flush:15000");
   });
 

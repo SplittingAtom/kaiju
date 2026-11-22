@@ -95,6 +95,21 @@ read a person's portable preferences either; reading them needs its own break-gl
   it is pinned or awaiting approval, and an **MCP-UI** badge when it opens an app. The details are
   read-only; **Review**, **Re-probe**, **Enable**/**Disable** and **Site key** stay in the row.
   Escape or **Close** returns to the list.
+- **How Kobe checks a connector's tools.** Pinning, **Re-probe** and the periodic check for
+  changed tools ask the server for its tool list with a credential when the server wants one:
+  the site-wide key if the connector has one, else your own key (when you pin or re-probe) or the
+  key of the site admin who last pinned or approved its tools (the periodic check); never a
+  member's. A connector that uses **OAuth** is checked the same way with a site admin's own
+  connected account: before you can pin one whose server asks for sign-in, connect your own
+  account for it at **Profile → My connectors** in a team that enabled it, then pin it again
+  (the pin otherwise fails with "connect your own account for this connector first"). Kobe uses
+  that sign-in only to list the server's tools and app templates, never to run a tool or in a
+  sandbox, and renews it when it runs out. The **Audit** shows which was used
+  (`mcp.connector.probe_credential`: `site_key`, `admin_key`, `admin_oauth` or `none`).
+- **Changing a connector's server URL or authentication** (none, API key, OAuth) deletes every
+  member's stored key or sign-in for it, in every team (audited as `mcp.grant.removed`), and the
+  OAuth client Kobe registered with its server; switching back does not bring them back. Members
+  add their key or sign in again.
 
 ## Safety
 
@@ -113,7 +128,8 @@ read a person's portable preferences either; reading them needs its own break-gl
   audit forwarding. A short note above the events says so.
 - **Usage and spend**: spend by team, user, agent and model, and the site budget every team's
   spend counts against.
-- **Retention maximum**: the longest retention any team may choose.
+- **Retention maximum**: the longest retention any team may choose. What else Kobe deletes on its
+  own is in [Retention and deletion](../reference/retention-and-deletion.md).
 - **Legal hold**: suspend purges for a team or user, or hold the Site's own memory with a
   **Site-wide hold** (each needs two people). See
   [Memory](../memory.md#legal-hold-on-site-memory).

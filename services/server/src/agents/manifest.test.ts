@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BUILTIN_TOOLS, builtinToolDescriptor, type ToolDescriptor } from "@kobe/protocol";
 import type { AgentFrontmatter } from "@kobe/agent-file";
+import { checkAgentTools } from "../policy/gates.js";
 import type { PolicyRule } from "../policy/rules.js";
 import {
   manifestIsDangerous,
@@ -8,7 +9,6 @@ import {
   effectiveApprovalMode,
   manifestAllowsTool,
   toolManifestSchema,
-  versionAllowsCall,
   withSiteNames,
   type PublishFloor,
 } from "./manifest.js";
@@ -176,7 +176,8 @@ describe("computeToolManifest (D19 frozen tool manifest)", () => {
     );
     expect(m.connectors).toEqual(["github", "jira"]);
     expect(m.tools_allow).toEqual(["mcp__github__*"]);
-    expect(names(m)).toEqual([]);
+    // KOBE-776: a list naming no built-in leaves the built-ins in.
+    expect(names(m)).toEqual(AVAILABLE);
   });
 
   it("freezes `connectors: all` as the literal, never as a list of names (KOBE-254)", () => {
@@ -254,7 +255,7 @@ describe("run-time helpers for KOBE-47", () => {
     expect(manifestAllowsTool(none, "mcp__slack__post")).toBe(false);
   });
 
-  it("versionAllowsCall: the manifest, then the agent's own deny (wins) and allow (narrows)", () => {
+  it("the engine's per-call gate on a version's frozen lists: deny wins, allow narrows (KOBE-776)", () => {
     const m = computeToolManifest(
       fm({
         connectors: ["github"],
@@ -276,15 +277,23 @@ describe("run-time helpers for KOBE-47", () => {
       if (!d) throw new Error(name);
       return d;
     };
-    expect(versionAllowsCall(m, builtin("read"), { path: "/workspace/a" })).toBe(true);
-    expect(versionAllowsCall(m, builtin("bash"), { command: "ls -la" })).toBe(true);
-    expect(versionAllowsCall(m, builtin("bash"), { command: "rm -rf /" })).toBe(false);
-    expect(versionAllowsCall(m, builtin("write"), { path: "/workspace/a", content: "" })).toBe(
-      false,
-    );
-    expect(versionAllowsCall(m, mcp("mcp__github__create_issue"), {})).toBe(true);
-    expect(versionAllowsCall(m, mcp("mcp__github__delete_repo"), {})).toBe(false);
-    expect(versionAllowsCall(m, mcp("mcp__slack__post"), {})).toBe(false);
+    // What `loadRunAgentTools` hands the engine for this version.
+    const agent = {
+      agent_id: null,
+      version: 1,
+      tools_allow: m.tools_allow,
+      tools_deny: m.tools_deny,
+      dangerous_tools: [],
+    };
+    const allows = (tool: ToolDescriptor, input: Record<string, string>) =>
+      checkAgentTools(agent, tool, input).length === 0;
+    expect(allows(builtin("read"), { path: "/workspace/a" })).toBe(true);
+    expect(allows(builtin("bash"), { command: "ls -la" })).toBe(true);
+    expect(allows(builtin("bash"), { command: "rm -rf /" })).toBe(false);
+    expect(allows(builtin("write"), { path: "/workspace/a", content: "" })).toBe(false);
+    expect(allows(mcp("mcp__github__create_issue"), {})).toBe(true);
+    expect(allows(mcp("mcp__github__delete_repo"), {})).toBe(false);
+    expect(allows(mcp("mcp__slack__post"), {})).toBe(false);
   });
 
   it("effectiveApprovalMode: a floor raised after publish applies; a lowered one doesn't loosen", () => {

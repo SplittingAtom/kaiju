@@ -6,6 +6,10 @@ import { finishFlow, startFlow, type OauthFlowDeps } from "../connectors/oauth/f
 import { DEFAULT_TIMEOUT_MS } from "../connectors/oauth/http.js";
 import type { ServerDeps } from "../deps.js";
 import { notFound, param } from "../http/request.js";
+import { hitRateLimit, type RateLimitRule } from "../rate-limit.js";
+
+/** Connect attempts per member (KOBE-784, P2-31): each one calls the authorization server. */
+export const OAUTH_START_RATE: RateLimitRule = { windowMs: 10 * 60_000, max: 30 };
 
 const idSchema = z.uuid();
 const MESSAGES = {
@@ -29,8 +33,8 @@ function flowDeps(deps: ServerDeps): OauthFlowDeps | undefined {
  * Per-user OAuth connect flow (KOBE-109).
  *
  * POST /{connector_id}/oauth/start → 200 `{authorization_url}`: send the browser there. 404 not
- *   enabled; 422 `not_oauth` / `oauth_unsupported` / `registration_failed`; 502
- *   `oauth_unreachable`; 503 when the site has no envelope key.
+ *   enabled; 422 `not_oauth` / `oauth_unsupported` / `registration_failed`; 429 `rate_limited`
+ *   (`OAUTH_START_RATE` per member); 502 `oauth_unreachable`; 503 when the site has no envelope key.
  * GET /oauth/callback?code&state&iss → 303 to `/?connector_oauth=connected|failed&connector=<id>`
  *   (`reason` on failure). A state that does not open for this user and team is a 400
  *   `invalid_state` and reveals nothing else.
@@ -47,6 +51,17 @@ export function connectorOauthRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
   app.post("/:connectorId/oauth/start", async (c) => {
     const id = param(c, "connectorId", idSchema);
     if (!id.success) return notFound(c, "connector_not_available", "Not found.");
+    if (
+      !(await hitRateLimit(deps.database.db, `oauth-start:${c.get("user").id}`, OAUTH_START_RATE))
+    ) {
+      return c.json(
+        {
+          code: "rate_limited",
+          message: "Too many connection attempts. Try again in a few minutes.",
+        },
+        429,
+      );
+    }
     const flow = flowDeps(deps);
     if (!flow) {
       return c.json(

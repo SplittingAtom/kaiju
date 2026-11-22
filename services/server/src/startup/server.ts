@@ -25,6 +25,8 @@ import { createViewingReader } from "../workspace-files/viewing.js";
 import { createWorkspaceSync, type WorkspaceSync } from "../workspace-sync/index.js";
 import { checkConnectionBudget } from "./db-budget.js";
 import { seedAtStart, startServerJobs } from "./jobs.js";
+import type { ReclaimSettings } from "../sandbox-lifecycle/reclaim.js";
+import type { SandboxSettings } from "../sandbox/config.js";
 import { DRAIN_TIMEOUT_MS, processJobs, type ProcessJobsContext } from "./process-jobs.js";
 import { startListeners } from "./listeners.js";
 import {
@@ -227,6 +229,25 @@ function skillServices(
 }
 
 /** The server replica's own jobs' settings (startup/jobs.ts, KOBE-422). */
+/**
+ * Dormant-volume reclaim (KOBE-733): only with the chart switch on and workspace sync running (the
+ * object-store copy is what the next wake restores from). The proof is the agent's shutdown
+ * `POST flushed` (sandbox-lifecycle/reclaim.ts); the reaper runs in the hibernation sweep job.
+ */
+function reclaimSettings(
+  settings: SandboxSettings,
+  syncOn: boolean,
+  log: { warn(msg: string): void },
+): { reclaim?: ReclaimSettings } {
+  const reclaim = settings.hibernation.reclaim;
+  if (!reclaim.enabled) return {};
+  if (!syncOn) {
+    log.warn("sandbox.hibernation.reclaim is on but workspace sync is off: nothing is reclaimed");
+    return {};
+  }
+  return { reclaim: { dormantDays: reclaim.dormantDays } };
+}
+
 function serverJobsOptions(
   config: Config,
   settings: ProcessSettings,
@@ -237,6 +258,7 @@ function serverJobsOptions(
       hourUtc: config.retentionHourUtc,
       paused: config.retentionPaused,
       uploadOrphanHours: settings.uploads.orphanHours,
+      sweeps: config.retentionSweeps,
     },
     connectorRefreshSeconds: config.connectorRefreshSeconds,
     models:
@@ -336,6 +358,7 @@ export async function startServer(
           idleMinutes: providerRuntime.settings.hibernation.idleMinutes,
           // A returning member's offboarded sandbox is replaced by a new one (KOBE-28, D12).
           reinstate: (target) => deps.offboarding.reinstate(target),
+          ...reclaimSettings(providerRuntime.settings, workspaceSync !== undefined, log),
         })
       : undefined;
   if (lifecycle) waker.set(lifecycle.waker);

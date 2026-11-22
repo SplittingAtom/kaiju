@@ -5,9 +5,17 @@ import {
 } from "@kobe/protocol";
 import { type WorkspaceEntry } from "@kobe/protocol/sandbox-wire";
 import { SyncHttpError } from "../client.js";
-import { hashFile, lockServerOwned, removeFile, scanWorkspace, type Checkouts } from "../fs.js";
+import {
+  hashFile,
+  lockServerOwned,
+  removeFile,
+  scanWorkspace,
+  type Checkouts,
+  type LocalFile,
+} from "../fs.js";
 import { applyPulledCheckouts, conflictCopy, downloadSafely, evict } from "./local.js";
 import { replayMoves } from "./move-replay.js";
+import { loadStamps, sameStamp } from "./stamps.js";
 import {
   UNAVAILABLE_RETRY_MS,
   known,
@@ -16,6 +24,7 @@ import {
   sameAs,
   serial,
   warn,
+  type Known,
   type SyncState,
 } from "./state.js";
 import type { RestoreStats } from "./types.js";
@@ -109,6 +118,14 @@ export async function restore(s: SyncState): Promise<RestoreStats> {
     skipDirs: s.o.skipDirs,
     maxFiles: s.o.maxFiles,
   });
+  // What the last agent on this volume verified (KOBE-733): kept files whose stamp is unchanged.
+  const verifiedBefore = await loadStamps(s.o.root);
+  const verifiedKnown = (e: WorkspaceEntry, file: LocalFile): Known => {
+    const v = verifiedBefore.get(e.path);
+    return v && v.sha256 === e.sha256 && sameStamp(v.stamp, file.stamp)
+      ? { ...known(e), stamp: v.stamp }
+      : known(e);
+  };
   // The newest row per path (a full listing has one per path; be safe anyway).
   const latest = new Map<string, WorkspaceEntry>();
   for (const e of entries) {
@@ -131,7 +148,7 @@ export async function restore(s: SyncState): Promise<RestoreStats> {
       continue;
     }
     if (file && sameAs(file, { size: e.size, mtimeMs: e.mtime_ms })) {
-      s.known.set(e.path, known(e));
+      s.known.set(e.path, verifiedKnown(e, file));
       continue;
     }
     if (!file || locked(s, e.path)) {

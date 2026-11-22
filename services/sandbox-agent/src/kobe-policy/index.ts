@@ -5,6 +5,7 @@ import {
   type ExtensionApiLike,
   type PolicyConnection,
 } from "./extension.js";
+import { hiddenToolsFrom, applyHiddenTools } from "./hidden-tools.js";
 
 /**
  * kobe-policy: the Pi 1.0.x extension that asks the Kobe server about every tool call (spec D13,
@@ -29,4 +30,6 @@ export default async function kobePolicy(pi: ExtensionApiLike): Promise<void> {
     warn: (message) => process.stderr.write(`${message}\n`),
   });
   await registerKobePolicy(pi, connection);
+  // KOBE-776: built-ins the run's agent may not use are not offered (the server refuses them).
+  applyHiddenTools(pi, hiddenToolsFrom(process.env));
 }

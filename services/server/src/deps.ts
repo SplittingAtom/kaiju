@@ -3,7 +3,7 @@ import { createNotebookFiles, type NotebookFiles } from "./notebooks/files.js";
 import type { ForwardDestination } from "./audit/forward/types.js";
 import { configureTagFingerprintKey } from "./memory/items/tag-fingerprint.js";
 import { configureUsageKey } from "./skills/usage-snapshot.js";
-import { DEFAULT_TIMEOUT_MS } from "./connectors/oauth/http.js";
+import { REFRESH_TIMEOUT_MS } from "./connectors/grant-refresh.js";
 import { createHash, timingSafeEqual } from "node:crypto";
 import {
   PROVIDER_KEY_PURPOSE,
@@ -131,6 +131,8 @@ export interface ServerDeps {
   readonly publicUrl: string;
   /** The nightly retention pass, offboarding purges and workspace GC are paused (KOBE-243). */
   readonly retentionPaused: boolean;
+  /** Months per-call usage is kept (KOBE-741); null: for ever. */
+  readonly usageRetentionMonths: number | null;
   /** Chart-seeded branding defaults (KOBE-503); empty when none is configured. */
   readonly brandingDefaults: BrandingDefaults;
   /**
@@ -511,7 +513,9 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     ...options.connectors,
   };
   const mcp = createMcpService({
-    oauthIo: { policy: connectorUrlPolicy, timeoutMs: DEFAULT_TIMEOUT_MS },
+    // Refreshes only: a shorter deadline than the connect flow's, so the proxy's grant call
+    // outlasts a refresh (KOBE-778, P2-29).
+    oauthIo: { policy: connectorUrlPolicy, timeoutMs: REFRESH_TIMEOUT_MS },
     db: database.db,
     policy: policySources,
     runContext,
@@ -629,6 +633,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     auth,
     publicUrl: new URL(options.publicUrl).origin,
     retentionPaused: options.retentionPaused ?? false,
+    usageRetentionMonths: options.usageRetentionMonths ?? null,
     brandingDefaults: options.brandingDefaults ?? {},
     listen,
     eventStream: { hub, reader, timings: { ...STREAM_DEFAULTS, ...options.eventStream?.timings } },

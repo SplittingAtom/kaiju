@@ -26,6 +26,11 @@ rules:
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["list"]
+  # KOBE-733: a wake whose workspace volume is missing reads the team's ResourceQuota to tell a full
+  # quota apart from a slow volume (its own failure code). Read-only; numbers only.
+  - apiGroups: [""]
+    resources: ["resourcequotas"]
+    verbs: ["get"]
   # Server-side apply of the namespace's fixed objects. Image pull Secrets for the kubelet are
   # copied in write-only (no get/list: the server never reads Secrets here).
   - apiGroups: [""]

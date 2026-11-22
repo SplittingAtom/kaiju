@@ -1,8 +1,17 @@
 import { withTeam, type Envelope, type KobeDb } from "@kobe/db";
 import { enabledConnector, storeGrant, type Subject } from "../grants.js";
-import { authorizationUrl, exchangeCode, obtainClient, type KobeOrigin } from "./client.js";
+import { defaultExpiry } from "../grant-refresh.js";
+import {
+  authorizationUrl,
+  exchangeCode,
+  obtainClient,
+  usesCimd,
+  type ClientRegistration,
+  type KobeOrigin,
+} from "./client.js";
 import { serializeOauthBundle } from "./bundle.js";
-import { discoverAuthServer } from "./discovery.js";
+import { saveClient, storedClient } from "./client-store.js";
+import { discoverAuthServer, type AuthServerInfo } from "./discovery.js";
 import { OauthError, type OauthIo } from "./http.js";
 import { newVerifier } from "./pkce.js";
 import { openState, sealState } from "./state.js";
@@ -30,13 +39,57 @@ async function connectorFor(db: KobeDb, subject: Subject) {
   return withTeam(db, subject.teamId, (tx) => enabledConnector(tx, subject));
 }
 
+/** Discovery plus client registration may take this long in all (each request has its own cap). */
+export const START_DEADLINE_MS = 30_000;
+
+function withDeadline<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const late = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new OauthError("oauth_unreachable")), ms);
+  });
+  return Promise.race([work, late]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * CIMD needs no registration; otherwise the connector's kept registration for this issuer and
+ * redirect URI, else one new registration, kept for the next flows (KOBE-784, P2-31).
+ */
+async function clientFor(
+  deps: OauthFlowDeps,
+  connector: { readonly id: string; readonly url: string },
+  info: AuthServerInfo,
+): Promise<ClientRegistration> {
+  if (usesCimd(info, deps.kobe)) return obtainClient(deps.io, info, deps.kobe);
+  const key = {
+    connectorId: connector.id,
+    url: connector.url,
+    issuer: info.issuer,
+    redirectUri: deps.kobe.redirectUri,
+  };
+  const kept = await storedClient(deps.db, deps.envelope, key);
+  if (kept) return kept;
+  const registered = await obtainClient(deps.io, info, deps.kobe);
+  await saveClient(deps.db, deps.envelope, key, registered);
+  return registered;
+}
+
 export async function startFlow(deps: OauthFlowDeps, subject: Subject): Promise<StartOutcome> {
   const connector = await connectorFor(deps.db, subject);
   if (!connector) return { ok: false, failure: "not_available" };
   if (connector.authKind !== "oauth") return { ok: false, failure: "not_oauth" };
   try {
-    const info = await discoverAuthServer(deps.io, connector.url);
-    const client = await obtainClient(deps.io, info, deps.kobe);
+    const { info, client } = await withDeadline(
+      (async () => {
+        const found = await discoverAuthServer(deps.io, connector.url);
+        const chosen = await clientFor(
+          deps,
+          { id: subject.connectorId, url: connector.url },
+          found,
+        );
+        return { info: found, client: chosen };
+      })(),
+      START_DEADLINE_MS,
+    );
     const verifier = newVerifier();
     const state = sealState(
       deps.envelope,
@@ -124,10 +177,16 @@ export async function finishFlow(
       verifier: payload.verifier,
       now: deps.now(),
     });
+    // No `expires_in` (only RECOMMENDED): with a refresh token, assume a default lifetime so the
+    // token is still refreshed (KOBE-778, P2-28).
+    const expiresAt =
+      tokens.expiresAt ?? (tokens.refreshToken ? defaultExpiry(deps.now()) : undefined);
     const stored = await storeGrant(deps.db, deps.envelope, subject, {
+      // The URL the flow started for: refused if the connector points elsewhere now (P2-27).
+      resource: payload.resource,
       kind: "oauth",
       hint: "••••",
-      ...(tokens.expiresAt ? { expiresAt: tokens.expiresAt } : {}),
+      ...(expiresAt ? { expiresAt } : {}),
       plaintext: serializeOauthBundle({
         access_token: tokens.accessToken,
         ...(tokens.refreshToken ? { refresh_token: tokens.refreshToken } : {}),

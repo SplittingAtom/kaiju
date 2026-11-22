@@ -158,6 +158,14 @@ export const connectors = pgTable(
      * the periodic refresh and drift: its tools come from Kobe's own catalog.
      */
     builtin: text().$type<BuiltinConnector>(),
+    /**
+     * The OAuth client Kobe registered at the connector's authorization server (dynamic client
+     * registration, KOBE-784): issuer, redirect URI, client id and secret as KOBE-107 envelope
+     * text bound to the connector and its URL. One per connector (for Kobe's one redirect URI),
+     * reused by every member's connect flow; cleared when the URL or auth kind changes. Never
+     * returned by any API.
+     */
+    oauthClient: text(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
@@ -203,6 +211,10 @@ export const connectors = pgTable(
     check(
       "connectors_builtin_url",
       sql`(${t.builtin} IS NOT NULL) = (${t.url} = '${sql.raw(KOBE_BUILTIN_CONNECTOR_URL)}')`,
+    ),
+    check(
+      "connectors_oauth_client",
+      sql`${t.oauthClient} IS NULL OR (${t.oauthClient} ~ '^e1\\.[A-Za-z0-9_.-]+$' AND char_length(${t.oauthClient}) <= 16384)`,
     ),
     check(
       "connectors_refresh_skipped",

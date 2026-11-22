@@ -41,6 +41,7 @@ import { recomputeOnce, startSkillHashRecompute } from "../skills/hash-checks.js
 import { startKobeSeed } from "../skills/kobe-seed.js";
 import { rescanOnce, startSkillRescan } from "../skills/rescan.js";
 import { ensureUsageSnapshot, startUsageSnapshots } from "../skills/usage-snapshot.js";
+import type { TableSweepSettings } from "../retention/table-sweeps.js";
 
 const OFFBOARDING_SWEEP_MS = 10 * 60_000;
 const LEARN_SWEEP_MS = 60_000;
@@ -74,6 +75,8 @@ export interface ServerJobsOptions {
     readonly hourUtc: number;
     readonly paused: boolean;
     readonly uploadOrphanHours: number;
+    /** Table sweep periods (KOBE-741). */
+    readonly sweeps?: TableSweepSettings;
   };
   readonly connectorRefreshSeconds: number;
   /** Bifrost config sync (KOBE-40): only with the chart's models settings. */
@@ -246,6 +249,7 @@ function sweepJobs(o: ServerJobsOptions): ServerJob[] {
       : { projectHistoryMaxCommits: deps.uploads.projectHistoryMaxCommits }),
     hourUtc: o.retention.hourUtc,
     paused: o.retention.paused,
+    tableSweeps: o.retention.sweeps,
     logger: o.logger,
   });
   // Request-access (KOBE-39) and scheduled-run (KOBE-179) emails: retries and leftovers.
@@ -379,6 +383,8 @@ function siteJobs(o: ServerJobsOptions): ServerJob[] {
           intervalMs: o.connectorRefreshSeconds * 1000,
           logger: o.logger,
           envelope: deps.envelope,
+          // pinned_by's OAuth token is refreshed through this process's gate (KOBE-784).
+          oauthRefresh: deps.mcp.oauthRefresh,
           connectorLock: connectorRefreshLocks(deps.database.pool),
           afterPass,
         }),

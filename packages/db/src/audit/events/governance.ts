@@ -66,6 +66,15 @@ export const GOVERNANCE_EVENTS = {
    */
   "retention.feedback_history_purged": event("team", { rows: count }),
   /**
+   * Rows of a table that otherwise grows for ever deleted past its configured period (system;
+   * KOBE-741): processed events, read notifications, model usage rows, finished agent evals.
+   * One row per batch, count only.
+   */
+  "retention.table_swept": event("team", {
+    table: z.enum(["events", "notifications", "run_usage", "orbit_evals"]),
+    rows: count,
+  }),
+  /**
    * Moved workspace files' old paths kept for a legal hold, purged once the hold was released
    * (system; KOBE-304; count only).
    */

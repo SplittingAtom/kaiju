@@ -11,9 +11,6 @@ import {
   eq,
   isNull,
   sql,
-  teams,
-  withTeam,
-  teamConnectors,
   type KobeDb,
   type KobeTx,
 } from "@kobe/db";
@@ -21,6 +18,7 @@ import { recordAudit } from "../audit/record.js";
 import { dropConnectorGrants } from "./grants.js";
 import { dropSiteKey } from "./site-key.js";
 import { dropTemplates } from "./template-store.js";
+import { teamIdsUsing } from "./team-usage.js";
 
 /**
  * The site connector registry (KOBE-100, spec D6, D27): MCP servers a site admin registers.
@@ -257,6 +255,8 @@ export async function updateConnector(
       set.toolsHash = null;
       set.refreshSkipped = null;
       set.templatesSkipped = null;
+      // The OAuth client was registered for the old server's authorization server (KOBE-784).
+      set.oauthClient = null;
       changed.push("url");
       // Its MCP Apps templates too (KOBE-433): nothing of the old server is ever rendered.
       await dropTemplates(tx, id);
@@ -271,7 +271,13 @@ export async function updateConnector(
     }
     if (input.authKind !== undefined && input.authKind !== current.authKind) {
       set.authKind = input.authKind;
+      set.oauthClient = null;
       changed.push("authKind");
+      // Members' credentials of the old kind are deleted (audited), so switching back never
+      // revives keys or tokens people thought were gone (KOBE-784, P2-30). Before any audit row
+      // of this transaction; a URL change above already dropped them. A site key goes below
+      // (a connector that stops being api_key stops using it).
+      if (!changed.includes("url")) await dropConnectorGrants(db, id, current.name);
     }
     const source = nextSource(current, input);
     if (source !== current.credentialSource) {
@@ -280,7 +286,8 @@ export async function updateConnector(
       // Never both (KOBE-303): a connector uses members' own keys or the site key.
       // A URL change above already dropped the grants (and wrote an audit row since).
       if (source === "site") {
-        if (!changed.includes("url")) await dropConnectorGrants(db, id, current.name);
+        const dropped = changed.includes("url") || changed.includes("authKind");
+        if (!dropped) await dropConnectorGrants(db, id, current.name);
       } else await dropSiteKey(tx, { id, name: current.name }, "mode_changed");
     }
     if (input.status !== undefined && input.status !== current.status) {
@@ -316,24 +323,9 @@ async function view(tx: KobeTx, id: string): Promise<ConnectorView> {
   return row;
 }
 
-/**
- * How many teams have the connector enabled. `team_connectors` is a team table, so the count walks
- * the teams (an install has few) one `withTeam` at a time; RLS never lets one query see them all.
- */
+/** How many teams have the connector enabled (one walk shared with the team list, KOBE-784). */
 export async function countTeamsUsing(db: KobeDb, connectorId: string): Promise<number> {
-  const all = await db.select({ id: teams.id }).from(teams);
-  let used = 0;
-  for (const team of all) {
-    const rows = await withTeam(db, team.id, (tx) =>
-      tx
-        .select({ one: sql<number>`1` })
-        .from(teamConnectors)
-        .where(eq(teamConnectors.connectorId, connectorId))
-        .limit(1),
-    );
-    if (rows.length > 0) used += 1;
-  }
-  return used;
+  return (await teamIdsUsing(db, connectorId)).length;
 }
 
 export interface RemovalResult {
