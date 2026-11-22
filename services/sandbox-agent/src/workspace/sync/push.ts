@@ -73,8 +73,7 @@ export async function pushOne(s: SyncState, rel: string): Promise<PushedFile> {
   }
   const outcome = await serial(s, async () => {
     if ((s.known.get(rel)?.rev ?? null) !== change.base_rev) return "stale";
-    const { local: _local, ...wire } = change;
-    const out = await s.o.client.commit([wire]);
+    const out = await s.o.client.commit([toWire(change)]);
     const result = out.results[0];
     if (result === undefined) return "no result";
     let refused = false;
@@ -162,6 +161,24 @@ export async function push(s: SyncState): Promise<PushStats> {
     conflicts: committed.conflicts,
     rejected: stats.rejected + committed.rejected,
   };
+}
+
+/**
+ * The change as the contract has it: only its fields (the server's schema is strict, so any of the
+ * agent's own planning fields, `local` or `verifiable`, would make it refuse the whole commit).
+ */
+export function toWire(change: PlannedChange): WorkspaceChange {
+  return change.op === "put"
+    ? {
+        op: "put",
+        path: change.path,
+        base_rev: change.base_rev,
+        sha256: change.sha256,
+        size: change.size,
+        mtime_ms: change.mtime_ms,
+        executable: change.executable,
+      }
+    : { op: "delete", path: change.path, base_rev: change.base_rev };
 }
 
 /** `k` verified against `file`'s stamp (KOBE-733), or `k` unverified when it has none. */
@@ -366,7 +383,7 @@ export async function commit(
   const ready = planned.filter((c) => (s.known.get(c.path)?.rev ?? null) === c.base_rev);
   for (let i = 0; i < ready.length; i += COMMIT_BATCH) {
     const batch = ready.slice(i, i + COMMIT_BATCH);
-    const out = await s.o.client.commit(batch.map(({ local: _l, ...change }) => change));
+    const out = await s.o.client.commit(batch.map(toWire));
     for (const [j, result] of out.results.entries()) {
       const change = batch[j];
       if (!change) continue;

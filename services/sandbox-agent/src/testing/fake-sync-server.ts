@@ -25,6 +25,8 @@ export class FakeSyncServer {
   readonly blobs = new Map<string, Buffer>();
   readonly rows = new Map<string, WorkspaceEntry>();
   readonly reports: WorkspaceRestoreReport[] = [];
+  /** Requests the real server's strict schemas would refuse (400), by route. */
+  readonly badRequests: string[] = [];
   /** Reclaim proofs received (`POST flushed`, KOBE-733): the connection ids. */
   readonly flushed: string[] = [];
   /** Answers to the next proofs, oldest first (default: proven). */
@@ -216,7 +218,12 @@ export class FakeSyncServer {
       return json(201, { sha256: hash, size: body.length });
     }
     if (req.method === "POST" && route === "/commit") {
-      const { changes } = workspaceCommitRequestSchema.parse(JSON.parse(body.toString()));
+      const parsed = workspaceCommitRequestSchema.safeParse(JSON.parse(body.toString()));
+      if (!parsed.success) {
+        this.badRequests.push(route);
+        return json(400, { code: "invalid_request", message: "Expected {changes: [...]}." });
+      }
+      const { changes } = parsed.data;
       const results: WorkspaceChangeResult[] = changes.map((c) => {
         const checkedOut = this.checkouts.some((k) => c.path.startsWith(`projects/${k.slug}/`));
         if ((isServerOwnedPath(c.path) && !checkedOut) || isExcludedPath(c.path)) {
