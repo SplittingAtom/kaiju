@@ -2,10 +2,9 @@ import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware, getSessionFromCtx, isAPIError } from "better-auth/api";
-import { jwt, twoFactor } from "better-auth/plugins";
+import { twoFactor } from "better-auth/plugins";
 import {
   accounts,
-  jwks,
   passkeys,
   rateLimits,
   and,
@@ -45,7 +44,7 @@ export interface AuthOptions {
   /** Public origin of the install, e.g. https://kobe.example.com (WebAuthn RP origin). */
   readonly publicUrl: string;
   /**
-   * Signs cookies and encrypts TOTP secrets, backup codes and JWT signing keys (>= 32 chars).
+   * Signs cookies and encrypts TOTP secrets and backup codes (>= 32 chars).
    * Rotating it without Better Auth's `secrets` versioning makes enrolled 2FA unusable.
    */
   readonly secret: string;
@@ -210,9 +209,10 @@ const PASSKEY_VERIFY_PATHS = new Set([
 
 /**
  * Better Auth embedded in the server (spec D7): invite-only email + password (no sign-up),
- * WebAuthn passkeys with required user verification, TOTP 2FA, and short-lived JWTs. Sessions live
- * in Postgres and are looked up on every request (no cookie cache), so revocation is immediate.
- * Rate limits are stored in Postgres so every replica shares them.
+ * WebAuthn passkeys with required user verification and TOTP 2FA (no JWTs: the jwt plugin had no
+ * consumer, KOBE-785; the `jwks` table stays until a migration drops it). Sessions live in
+ * Postgres and are looked up on every request (no cookie cache), so revocation is immediate. Rate
+ * limits are stored in Postgres so every replica shares them.
  */
 export function createAuth({
   db,
@@ -285,7 +285,6 @@ export function createAuth({
         verification: verifications,
         twoFactor: twoFactors,
         passkey: passkeys,
-        jwks,
         rateLimit: rateLimits,
       },
     }),
@@ -461,19 +460,6 @@ export function createAuth({
       }),
       // After the two-factor and passkey plugins: it must see whether a sign-in completed.
       ssoLinkPlugin({ db, publicOrigin: origin.origin, secret, settings: sso?.settings }),
-      jwt({
-        jwt: {
-          expirationTime: "5m",
-          issuer: origin.origin,
-          audience: origin.origin,
-          // Minimal claims; `sid` lets a verifier check the session still exists (revocation).
-          definePayload: ({ user, session }) => ({
-            sid: session.id,
-            twoFactor: (user as { twoFactorEnabled?: boolean }).twoFactorEnabled === true,
-          }),
-          getSubject: ({ user }) => user.id,
-        },
-      }),
       // Last: its after hook must see the session state the other plugins leave (KOBE-15).
       auditPlugin({ db, attempts }),
     ],

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { acrsClaimsParameter, mfaEvidence, mfaProven } from "./mfa.js";
+import { acrsClaimsParameter, mfaEvidence } from "./mfa.js";
 import { ENTRA_MFA_RULE, GENERIC_MFA_RULE } from "./schemas.js";
+
+/** Whether the sign-in proved MFA: some claim value counts as evidence. */
+const mfaProven = (...a: Parameters<typeof mfaEvidence>) => mfaEvidence(...a) !== null;
 
 /** KOBE-629 (spec sso-oidc-scim §8, SSO3): which sign-ins prove multi-factor authentication. */
 const proof = (over: Partial<{ amr: string[]; acr: string | null; acrs: string[] }> = {}) => ({

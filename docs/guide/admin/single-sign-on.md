@@ -93,7 +93,12 @@ their team, read-only, under **Show access mappings** in the Team console.
 - **First sign-in.** A person with a mapped app role or group and no Kobe account gets one at
   their first sign-in. Accounts made this way have no Kobe password or passkey and can't add one:
   they sign in only through the provider, so disabling them at the provider can't be outlived by a
-  local password. A password-reset request for them sends nothing.
+  local password. A password-reset request for them sends nothing. The account takes the email
+  address the provider sends, whether or not the provider marks it verified, and other people see
+  that address in member lists and the audit log. A provider that lets people set their own
+  address could let someone take a colleague's address before the colleague joins (their later
+  invitation would then fail), so prefer providers that control their users' email addresses
+  (Entra does: Kobe uses the sign-in name, not a self-set email).
 - **Someone who already has an account** with the same address is never linked by address alone.
   They are told to sign in with their Kobe password or passkey within 10 minutes and then confirm
   the link (see [Signing in with your organization](../getting-started/single-sign-on.md)).

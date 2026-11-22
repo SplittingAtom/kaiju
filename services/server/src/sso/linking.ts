@@ -4,12 +4,8 @@ import {
   asc,
   eq,
   gt,
-  inArray,
   ne,
   passkeys,
-  sessions,
-  sessionSsoContexts,
-  siteRoles,
   sql,
   ssoIdentities,
   ssoLinkExpectations,
@@ -22,6 +18,7 @@ import {
   readSsoRequiredIn,
 } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
+import { endSsoSessions, isProtectedUser } from "./sso-sessions.js";
 import { OwnerWouldLoseSignInError, assertOwnerKeepsSignIn } from "./required.js";
 import type { VerifiedIdentity } from "./claims.js";
 import type { LinkIntent } from "./link-intent.js";
@@ -59,14 +56,7 @@ export function domainAllowed(allowedEmailDomains: readonly string[], email: str
  * account (helpdesk roles can reset it), and IdP data never grants site roles; these people link
  * by their own local proof.
  */
-async function isProtectedTarget(db: KobeDb | KobeTx, userId: string): Promise<boolean> {
-  const [row] = await db
-    .select({ role: siteRoles.role, setupOwner: users.setupOwner })
-    .from(users)
-    .leftJoin(siteRoles, eq(siteRoles.userId, users.id))
-    .where(eq(users.id, userId));
-  return row !== undefined && (row.setupOwner || row.role !== null);
-}
+const isProtectedTarget = isProtectedUser;
 
 // ---------------------------------------------------------------------------------------------
 // Admin-expected links
@@ -466,17 +456,10 @@ function unlinkInTx(
       .where(
         and(eq(ssoIdentities.userId, input.userId), eq(ssoIdentities.providerId, input.providerId)),
       );
-    const ids = tx
-      .select({ id: sessionSsoContexts.sessionId })
-      .from(sessionSsoContexts)
-      .innerJoin(sessions, eq(sessions.id, sessionSsoContexts.sessionId))
-      .where(
-        and(eq(sessionSsoContexts.providerId, input.providerId), eq(sessions.userId, input.userId)),
-      );
-    const gone = await tx
-      .delete(sessions)
-      .where(inArray(sessions.id, ids))
-      .returning({ id: sessions.id });
+    const sessionsEnded = await endSsoSessions(tx, {
+      providerId: input.providerId,
+      userId: input.userId,
+    });
     await assertOwnerKeepsSignIn(tx);
     await recordAudit(tx, {
       action: "identity.sso.link.removed",
@@ -484,9 +467,9 @@ function unlinkInTx(
         providerId: input.providerId,
         userId: input.userId,
         by: input.by,
-        sessionsEnded: gone.length,
+        sessionsEnded,
       },
     });
-    return { ok: true, sessionsEnded: gone.length };
+    return { ok: true, sessionsEnded };
   });
 }

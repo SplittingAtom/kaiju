@@ -277,8 +277,6 @@ describe("deactivation (ac-4)", () => {
     expect(live.status).toBe(200);
     const passkeyBrowser = (await signInUmaWithPasskey()).browser;
     expect((await passkeyBrowser.get("/v1/me")).status).toBe(200);
-    const jwt = (await passkeyBrowser.get("/api/auth/token")).json.token;
-    expect(jwt).toBeTruthy();
 
     const calls: string[] = [];
     h.deps.lifecycle.on("deactivated", {
@@ -292,7 +290,6 @@ describe("deactivation (ac-4)", () => {
 
     expect((await passkeyBrowser.get("/v1/me")).status).toBe(401);
     expect((await passkeyBrowser.get("/v1/team")).status).toBe(401);
-    expect((await passkeyBrowser.get("/api/auth/token")).status).toBe(401);
     const { rows } = await h.admin.query(
       `SELECT count(*)::int AS n FROM sessions WHERE user_id = $1`,
       [ids.uma],

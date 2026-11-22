@@ -336,25 +336,12 @@ describe("required 2FA (ac-2)", () => {
   });
 });
 
-describe("JWTs (short-lived, for API calls)", () => {
-  it("carry only subject, session id and 2FA state, and are not accepted by /v1", async () => {
+describe("no JWTs (KOBE-785: the unused Better Auth jwt plugin is gone)", () => {
+  it("serves neither a token nor a key set; /v1 takes sessions only", async () => {
     const b = await signInOwner();
-    const token = (await b.get("/api/auth/token")).json.token as string;
-    const payload = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString());
-    expect(Object.keys(payload).sort()).toEqual([
-      "aud",
-      "exp",
-      "iat",
-      "iss",
-      "sid",
-      "sub",
-      "twoFactor",
-    ]);
-    expect(payload.twoFactor).toBe(true);
-    const bare = new Browser();
-    expect(
-      (await bare.request("GET", "/v1/me", undefined, { authorization: `Bearer ${token}` })).status,
-    ).toBe(401);
+    expect((await b.get("/v1/me")).status).toBe(200);
+    expect((await b.get("/api/auth/token")).status).toBe(404);
+    expect((await b.get("/api/auth/jwks")).status).toBe(404);
   });
 });
 
