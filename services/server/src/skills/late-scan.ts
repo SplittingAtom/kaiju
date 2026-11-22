@@ -188,7 +188,13 @@ export class LateScanner {
     await withTeam(db, t.teamId, (tx) =>
       tx
         .update(teamSkillReviews)
-        .set({ ...storedScan(scan), unscanned: false, scannedAt: new Date() })
+        .set({
+          ...storedScan(scan),
+          unscanned: false,
+          scannedAt: new Date(),
+          rescanIncompleteSince: null,
+          rescanIncompleteRuleSet: null,
+        })
         .where(
           and(
             eq(teamSkillReviews.teamId, t.teamId),

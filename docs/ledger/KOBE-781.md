@@ -65,6 +65,11 @@ against the code first; all four held as described.
   `rescan_block`; older and other suspensions have no reason and are never lifted by themselves).
   A Team admin may also approve an approved, suspended row again. Personal scans' `suspended_at`
   is honoured even while the stored scan is Pass.
+- **Final review round:** a Team admin's re-approval also resets the unfinished-rescan clock
+  (M1: otherwise the next pass re-suspended it, audited and emailed again); the late scan job
+  clears the clock too (L2); a rescan that doesn't finish counts as `unfinished`, not `failed`, so
+  a run within the period stays `running` (L3); guide and email say "finishes without blocking"
+  (L1: a Caution result also lifts). Migration 0238 is renumbered by `db:rebase` at landing (M2).
 - **Owner question (not changed):** the mirror keeps a revoked or blocklisted version's commit
   and tag `name/vX` on the remote (append-only by design), so a client with an old catalog, or one
   listing tags, can still fetch a revoked bundle. Deleting such tags would not rewrite branch

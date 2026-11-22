@@ -108,7 +108,7 @@ export function suspensionMessage(
     text: [
       "A scanner rule update rescanned these skill versions and now blocks them, or could not",
       "finish rescanning them. They are suspended: runs leave them out until a reviewer decides",
-      "them again, or a rescan that could not finish completes and passes.",
+      "them again, or a rescan that could not finish completes without blocking them.",
       ...lines,
       ...(more > 0 ? [`  ... and ${more} more`] : []),
       "",

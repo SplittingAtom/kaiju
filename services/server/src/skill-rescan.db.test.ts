@@ -445,4 +445,48 @@ describe("a rescan that can't finish (review g79)", () => {
     await rescanWith(2002, DAY);
     expect(await teamRow(held)).toEqual({ status: "approved", suspended: true, reason: null });
   });
+
+  it("keeps a Team admin's re-approval: the unfinished-rescan clock starts again (review g79 M1)", async () => {
+    const skillId = await approved("reapproved-team");
+    const audits = async () =>
+      (
+        await h.admin.query(
+          `SELECT count(*)::int AS n FROM audit_log WHERE action = 'skill.rescan.suspended'
+            AND target->>'slug' = 'reapproved-team'`,
+        )
+      ).rows[0]?.n;
+    const previous = timingOut();
+    try {
+      await rescanWith(2003, DAY);
+      await backdateRows(skillId);
+      await rescanWith(2003, DAY);
+      expect(await teamRow(skillId)).toMatchObject({
+        suspended: true,
+        reason: "rescan_incomplete",
+      });
+      const res = await as.admin.post(`/v1/team/skill-review/${skillId}/versions/1`, {
+        decision: "approved",
+      });
+      expect(res.status, JSON.stringify(res.json)).toBe(200);
+      expect(await teamRow(skillId)).toEqual({
+        status: "approved",
+        suspended: false,
+        reason: null,
+      });
+      const audited = await audits();
+      const sent = h.mailer.sent.length;
+      // Still timing out: the period starts again, so the next pass leaves the approval alone.
+      // An unfinished rescan is no failure: the run stays running (review g79 L3).
+      expect(await rescanWith(2003, DAY)).toMatchObject({ failed: 0, status: "running" });
+      expect(await teamRow(skillId)).toEqual({
+        status: "approved",
+        suspended: false,
+        reason: null,
+      });
+      expect(await audits()).toBe(audited);
+      expect(h.mailer.sent.length).toBe(sent);
+    } finally {
+      setScanPool(previous);
+    }
+  });
 });

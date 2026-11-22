@@ -460,6 +460,9 @@ export function decideReview(
         // A decision answers a suspension (KOBE-313).
         suspendedAt: null,
         suspendedReason: null,
+        // An unfinished rescan's period starts again from the next one (review g79 M1).
+        rescanIncompleteSince: null,
+        rescanIncompleteRuleSet: null,
       })
       .where(key);
     await recordAudit(tx, {

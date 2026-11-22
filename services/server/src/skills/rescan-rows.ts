@@ -51,10 +51,21 @@ export interface Tally {
   scanned: number;
   changed: number;
   failed: number;
+  /**
+   * Rescans that didn't finish (review g79 L3): retried, and suspended after the period
+   * (`rescan-incomplete.ts`), not failures; they keep the run `running`.
+   */
+  unfinished: number;
   readonly suspended: SuspendedVersion[];
 }
 
-export const emptyTally = (): Tally => ({ scanned: 0, changed: 0, failed: 0, suspended: [] });
+export const emptyTally = (): Tally => ({
+  scanned: 0,
+  changed: 0,
+  failed: 0,
+  unfinished: 0,
+  suspended: [],
+});
 
 type RuleSetColumn = typeof teamSkillReviews.ruleSet | typeof personalSkillScans.ruleSet;
 /** Under an older rule set than `n`, or none. */
@@ -122,7 +133,7 @@ export async function personalBatch(
       scope: "personal",
     });
     if (scan === SCAN_DID_NOT_FINISH) {
-      tally.failed += 1;
+      tally.unfinished += 1;
       await noteIncompletePersonal(ctx, row, tally);
       continue;
     }
@@ -314,7 +325,7 @@ export async function teamBatch(
     if (!version) ctx.log.warn(context, "skills: rescan found no version row; retried later");
     const scan = version ? await scanStored(ctx, version, ctx.cache, context) : null;
     if (version && scan === SCAN_DID_NOT_FINISH) {
-      tally.failed += 1;
+      tally.unfinished += 1;
       await noteIncompleteReview(ctx, teamId, row, version.authorId, tally);
       continue;
     }
