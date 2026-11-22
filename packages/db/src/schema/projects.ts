@@ -14,6 +14,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { PROJECT_KIND_VALUES, type ProjectKind } from "../git/types.js";
 import { users } from "./auth.js";
 import { teams } from "./teams.js";
 
@@ -83,6 +84,12 @@ export const projects = pgTable(
     instructions: text().notNull().default(""),
     defaultAgentId: uuid(),
     /**
+     * `project`, or `repo` (Workspace git G15, KOBE-757): a project whose record is a repository on
+     * a connected git host (`git_repositories.project_id`); Kobe keeps a mirror of its default
+     * branch (G17). Set once by the conversion (G16); never back.
+     */
+    kind: text().$type<ProjectKind>().notNull().default("project"),
+    /**
      * The current commit (CM1): `project_files` is its tree. Null until the first commit. The
      * SQL-only key (team_id, id, head_commit_id) -> project_commits (team_id, project_id, id) refuses deleting the head (GV3
      * pruning never may).
@@ -116,6 +123,10 @@ export const projects = pgTable(
     ),
     check("projects_name", sql`char_length(btrim(${t.name})) BETWEEN 1 AND 100`),
     check("projects_description", sql`char_length(${t.description}) <= 500`),
+    check(
+      "projects_kind",
+      sql`${t.kind} IN (${sql.raw(PROJECT_KIND_VALUES.map((k) => `'${k}'`).join(", "))})`,
+    ),
     check(
       "projects_instructions",
       sql`octet_length(${t.instructions}) <= ${sql.raw(String(PROJECT_INSTRUCTIONS_MAX_BYTES))}`,

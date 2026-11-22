@@ -1737,6 +1737,20 @@
       "when": 1795381796076,
       "tag": "0247_notebook_inspect_command",
       "breakpoints": true
+    },
+    {
+      "idx": 248,
+      "version": "7",
+      "when": 1795391445182,
+      "tag": "0248_git_connections",
+      "breakpoints": true
+    },
+    {
+      "idx": 249,
+      "version": "7",
+      "when": 1795391451635,
+      "tag": "0249_git_rls",
+      "breakpoints": true
     }
   ]
 }

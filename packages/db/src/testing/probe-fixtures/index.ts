@@ -2,6 +2,7 @@ import type { TeamTable } from "../../tenancy.js";
 import { agentsFixtures } from "./agents.js";
 import { connectorsFixtures } from "./connectors.js";
 import { conversationsFixtures } from "./conversations.js";
+import { gitFixtures } from "./git.js";
 import { identityFixtures } from "./identity.js";
 import { memoryFixtures } from "./memory.js";
 import { modelsFixtures } from "./models.js";
@@ -27,4 +28,5 @@ export const PROBE_FIXTURES: Readonly<Record<TeamTable, ProbeFixture>> = {
   ...workspaceFixtures,
   ...schedulesFixtures,
   ...memoryFixtures,
+  ...gitFixtures,
 };
