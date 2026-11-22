@@ -431,3 +431,18 @@ describe("every project, the conversation's one active (KOBE-590, FP1-FP6)", () 
     expect(screen.queryByRole("searchbox", { name: "Filter projects" })).toBeNull();
   });
 });
+
+describe("the wake limit (KOBE-813)", () => {
+  it("says the sandbox stays asleep and keeps the last synced files", async () => {
+    routes["POST /v1/workspace/wake"] = [
+      429,
+      { code: "rate_limited", message: "Your sandbox was started too often." },
+    ];
+    mount();
+    expect(
+      await screen.findByText(/Your sandbox was started too often, so it stays asleep/),
+    ).toBeTruthy();
+    expect(screen.queryByText(/while your sandbox wakes/)).toBeNull();
+    expect(await project("Budget plan")).toBeTruthy();
+  });
+});

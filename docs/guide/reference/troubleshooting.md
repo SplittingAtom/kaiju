@@ -57,6 +57,28 @@ thread**) to continue in your own copy.
 **I deleted a thread by mistake.** Open **Deleted** in the Threads panel and **Restore** it. Threads
 in Trash are deleted for good after 30 days.
 
+## "Too many …, wait and try again"
+
+Kobe limits how often each person can do a few things, counted across all your workspaces. The
+limits are generous, so you only meet them when something repeats far faster than people work
+(a script, a stuck key, a page reloading in a loop). Wait the time the message says and try again;
+nothing was lost. The limits are the same on every site:
+
+| What                                   | Limit per person  | Message starts with                  |
+| -------------------------------------- | ----------------- | ------------------------------------ |
+| Sending messages and **Retry**         | 60 a minute       | "You are sending messages too fast"  |
+| **Compact now**                        | 10 in 10 minutes  | "Too many compactions"               |
+| Summarizing a branch you leave         | 10 in 10 minutes  | "Too many branch summaries"          |
+| Attaching files in the composer        | 120 in 10 minutes | "Too many uploads"                   |
+| Creating schedules                     | 20 an hour        | "Too many new schedules"             |
+| Starting your sleeping sandbox by hand | 20 in 10 minutes  | "Your sandbox was started too often" |
+| Rating answers (thumbs up or down)     | 60 a minute       | "Too many ratings"                   |
+
+Scheduled runs never count and are never held back by these limits. Starting your sandbox counts
+only when it was asleep and you opened the Files panel, pressed Refresh or opened the context
+viewer; sending a message still wakes it as usual. Site admins can create or rotate at most 10
+SCIM tokens an hour, and first-run setup accepts 10 attempts per address in 10 minutes.
+
 ## Models and budgets
 
 **"No models are enabled for your team yet."** A team admin needs to enable models in the team

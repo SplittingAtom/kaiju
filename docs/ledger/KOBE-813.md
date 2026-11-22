@@ -1,0 +1,71 @@
+# KOBE-813: Add rate limits where none exist
+
+- **Status:** in review (group 91 branch `group-91-rl-missing-limits`, on `group-85-rate-limit-store`)
+- **Branch / worktree:** `group-91-rl-missing-limits` in `../Kobe-g91`
+- **Depends on:** KOBE-809 (durable limiter, `kobe_rate_limits`)
+
+## Plan
+
+Eight fixed limits on the durable Kobe limiter, one 429 shape with `Retry-After`, OpenAPI 429 on
+each documented operation, a plain message wherever a member or admin meets one in the web app.
+
+## Decisions
+
+- **Values (owner, 2026-11-22), fixed in code, not configurable:** `OPERATION_LIMITS` in
+  `services/server/src/operation-limits.ts` holds all eight (bucket, window, max, sentence).
+- **Per member across Workspaces.** Keys are `<bucket>:<user id>` like every other per-member
+  Kobe limit (`skill-upload:`, `thread-fork:`…); no existing limit is per member per Workspace.
+  SCIM tokens per Site admin; setup per client IP.
+- **Retry hint.** New `checkRateLimit` returns `{allowed, retryAfterSeconds}` (window end from the
+  row's `window_start`); `hitRateLimit` keeps its boolean API. `rateLimited()` sends
+  `{code: "rate_limited", message}` + `Retry-After`.
+- **Runs.** Counted at the member's HTTP entry points only: `POST /v1/threads/{id}/messages`
+  (composer, regenerate/edit, app "send message", Workbench test chat) and
+  `POST /v1/runs/{id}/retry`, one shared `run-submit` bucket. Schedules firing
+  (`SchedulerRunner` → orchestrator directly) and skill evals never pass there, so they neither
+  count nor are refused (test). The Kobe admin MCP and apps start no runs server-side.
+- **Compaction and branch summary** get separate buckets (10 per 10 min each), not one shared
+  bucket (shared buckets are listed as a smell in the inventory). Pi's automatic compaction is
+  not a route and never counts.
+- **Uploads.** `POST /v1/uploads` only (composer; apps upload through the same composer
+  transport). Files-panel uploads (`POST /v1/workspace/files`) are outside the decided scope;
+  noted in docs/rate-limits.md.
+- **Sandbox wakes.** Counted only for wakes the member asks for: `POST /v1/workspace/wake` (Files
+  panel), Refresh (`POST /v1/workspace/sync`) of an asleep sandbox, and the context viewer's wake.
+  An already-connected sandbox is not counted (the panel calls wake on every mount). A run's own
+  wake is never counted or refused, so a message never fails for it; runs are bounded by the run
+  limit. Notebook kernel starts keep their own limit. Over the limit: 429, the Files panel says
+  the sandbox stays asleep and shows the last synced files; the context viewer answers its
+  contract's `rate_limited`.
+- **Feedback.** Rating (`PUT`) and clearing (`DELETE`) both count.
+- **SCIM tokens.** Create and rotate share one bucket per admin; counted before the 2-live check.
+- **Setup.** Every `POST /v1/setup` attempt before an Owner exists counts per client IP (resolved
+  as audit does, through the trusted proxies). No resolvable IP → one shared `unknown` bucket
+  (fail closed). Once over, even the right token is refused. The token comparison was already
+  constant-time (`timingSafeEqual` of SHA-256 digests, `deps.ts` `isSetupToken`).
+- **Web.** Most surfaces already show the server's 4xx message (send, Retry, compact, branch
+  summary, schedules, SCIM tokens). Changed: composer uploads (429 was "upload failed (HTTP
+  429)"), answer ratings (generic "wasn't saved"), setup page (generic), Files panel wake notice.
+- **Docs.** docs/rate-limits.md rows per area, gap 5 replaced; guide: Troubleshooting table
+  ("Too many …"), SSO page (SCIM token limit). No For agents change: an in-sandbox agent cannot
+  call any of these routes (no member session; the Kobe admin MCP has its own limits and no
+  tool for these operations).
+
+## Open questions (for Chris or the coordinator)
+
+- `POST /v1/workspace/wake` and `/sync` are not in the OpenAPI document (whole `/v1/workspace/*`
+  files area is undocumented there); their 429 is documented in docs/rate-limits.md only.
+
+## Evidence (acceptance criteria → test or command output)
+
+- ac-1: `operation-limits.db.test.ts` (each limit: max allowed, next refused with the window's
+  `retryAfterSeconds`, allowed after the window via `now`; route 429s; scheduled run fires at the
+  member's limit and is not counted), `setup-limit.db.test.ts`, and a case each in
+  `uploads.db.test.ts`, `workspace-files.db.test.ts`, `workspace-events.db.test.ts`,
+  `scim.db.test.ts`.
+- ac-2: `expectRateLimited` checks body and `Retry-After` everywhere; web tests in
+  `uploads.test.ts`, `answer-feedback.test.tsx`, `auth-pages.test.tsx`, `workspace-tree.test.tsx`.
+- ac-3: docs/rate-limits.md, docs/guide/reference/troubleshooting.md,
+  docs/guide/admin/single-sign-on.md.
+- ac-4: openapi catalog + hand-written areas; `UPDATE_OPENAPI=1 … src/openapi` regenerated.
+- ac-5: `setup-limit.db.test.ts`.

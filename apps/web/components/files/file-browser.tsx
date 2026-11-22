@@ -130,7 +130,7 @@ export function FileBrowser({
   const relistRef = useRef(relist);
   relistRef.current = relist;
   const stableRelist = useCallback(() => relistRef.current(), []);
-  const { waking, syncing } = useWake(api, stableRelist, refreshAfterWakeMs, wakeKey);
+  const { waking, syncing, limited } = useWake(api, stableRelist, refreshAfterWakeMs, wakeKey);
   useWorkspaceEvents(events, (moved) => relistRef.current(moved.projects));
   const { focus, focusRequest, focusFrom, enterTree, focusRow } = useTreeFocus();
   const shownSeq = useRef(showFolder?.seq ?? 0);
@@ -202,6 +202,12 @@ export function FileBrowser({
       {waking && (
         <p role="status" className="text-muted-foreground m-0 text-xs">
           Showing the last synced files while your sandbox wakes.
+        </p>
+      )}
+      {limited && (
+        <p role="status" className="text-muted-foreground m-0 text-xs">
+          Your sandbox was started too often, so it stays asleep for a few minutes. Showing the last
+          synced files; sending a message still works.
         </p>
       )}
       <VolumeLostNotice api={api.rebuild} mode="check" />

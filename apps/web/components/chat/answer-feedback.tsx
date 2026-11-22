@@ -50,13 +50,20 @@ interface Answer {
 interface FeedbackContextValue {
   /** The rateable answers by their prompt entry id; null while unread. */
   readonly answers: ReadonlyMap<string, Answer> | null;
-  readonly save: (runId: string, change: FeedbackChange) => Promise<boolean>;
-  readonly clear: (runId: string) => Promise<boolean>;
+  /** Null once saved, else the sentence to show (KOBE-813: the rating limit names itself). */
+  readonly save: (runId: string, change: FeedbackChange) => Promise<string | null>;
+  readonly clear: (runId: string) => Promise<string | null>;
   /** The answer was shared as an eval case (its id), or withdrawn (null) (KOBE-276). */
   readonly setCase: (runId: string, caseId: string | null) => void;
 }
 
 const FeedbackContext = createContext<FeedbackContextValue | null>(null);
+
+const NOT_SAVED = "Your rating wasn't saved. Try again.";
+
+/** The refusal to show: the rating limit's own sentence (429), else the generic one. */
+const notSaved = (error: { readonly status: number; readonly message: string }) =>
+  error.status === 429 ? error.message : NOT_SAVED;
 
 function byPrompt(data: ThreadFeedback): Map<string, Answer> {
   return new Map(
@@ -110,29 +117,29 @@ export function AnswerFeedbackProvider({ children }: { readonly children: ReactN
   const answers = read !== null && read.threadId === threadId ? read.answers : null;
   const save = useCallback(
     async (runId: string, change: FeedbackChange) => {
-      if (!controller || threadId === null) return false;
+      if (!controller || threadId === null) return NOT_SAVED;
       const res = await controller.rateAnswer(runId, change);
-      if (!res.ok) return false;
+      if (!res.ok) return notSaved(res.error);
       setRead((r) =>
         r && r.threadId === threadId
           ? { threadId, answers: withAnswer(r.answers, runId, { feedback: res.data }) }
           : r,
       );
-      return true;
+      return null;
     },
     [controller, threadId],
   );
   const clear = useCallback(
     async (runId: string) => {
-      if (!controller || threadId === null) return false;
+      if (!controller || threadId === null) return NOT_SAVED;
       const res = await controller.clearRating(runId);
-      if (!res.ok) return false;
+      if (!res.ok) return notSaved(res.error);
       setRead((r) =>
         r && r.threadId === threadId
           ? { threadId, answers: withAnswer(r.answers, runId, { feedback: null }) }
           : r,
       );
-      return true;
+      return null;
     },
     [controller, threadId],
   );
@@ -169,8 +176,6 @@ export function AnswerFeedbackScope({ children }: { readonly children: ReactNode
   return <ScopeContext.Provider value={value}>{children}</ScopeContext.Provider>;
 }
 
-const NOT_SAVED = "Your rating wasn't saved. Try again.";
-
 /** This message's answer, its rating and the actions; null when it can't be rated. */
 function useAnswerFeedback() {
   const meta = useAuiState((s) => s.message.metadata.custom as KobeMessageMeta | undefined);
@@ -190,12 +195,11 @@ export function AnswerFeedbackButtons() {
   if (!found) return null;
   const { answer, entryId, context, scope } = found;
   const rating = answer.feedback?.rating ?? null;
-  const act = async (run: () => Promise<boolean>) => {
+  const act = async (run: () => Promise<string | null>) => {
     if (busy.current) return;
     busy.current = true;
     try {
-      const ok = await run();
-      scope.setError(ok ? null : NOT_SAVED);
+      scope.setError(await run());
     } finally {
       busy.current = false;
     }
@@ -213,9 +217,9 @@ export function AnswerFeedbackButtons() {
         scope.setDetailsOpen(false);
         return context.clear(answer.runId);
       }
-      const ok = await context.save(answer.runId, { rating: "down", entryId });
-      if (ok) scope.setDetailsOpen(true);
-      return ok;
+      const failed = await context.save(answer.runId, { rating: "down", entryId });
+      if (failed === null) scope.setDetailsOpen(true);
+      return failed;
     });
   return (
     <>
@@ -363,10 +367,10 @@ function DetailsForm({
     setReasons((rs) => (rs.includes(r) ? rs.filter((x) => x !== r) : [...rs, r]));
   const submit = async () => {
     setSaving(true);
-    const ok = await save(runId, { rating: "down", reasons, comment, entryId });
+    const failed = await save(runId, { rating: "down", reasons, comment, entryId });
     setSaving(false);
-    onError(ok ? null : NOT_SAVED);
-    if (ok) onDone();
+    onError(failed);
+    if (failed === null) onDone();
   };
   return (
     <form
