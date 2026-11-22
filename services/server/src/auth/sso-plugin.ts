@@ -265,6 +265,7 @@ export function ssoPlugin(options: SsoPluginOptions) {
               userId: outcome.userId,
               identity,
               mfa,
+              groupsOverage: outcome.groupsOverage === true,
             });
             return `${o.publicOrigin}${flow.returnTo}`;
           });

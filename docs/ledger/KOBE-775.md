@@ -55,6 +55,22 @@
 - `docs/install.md` Entra step 7: access unchanged on overage.
 - UI: note on **SSO access mappings** for Groups providers (`sso-mappings-page.tsx`).
 
+## Review g75 fixes
+
+- **M1:** on an overage without SCIM groups a linked person holding a site role (any `site_roles`
+  row, the rule `applyAccess` uses) is signed in without applying mappings (memberships
+  unchanged), audited `auth.sign_in.succeeded` with `groupsOverage: true` and logged; everyone
+  else is still refused. Without it an Owner in > 200 groups was locked out under Require SSO.
+- **L1:** generic (`oidc`) providers must send `auth_time` (Kobe always sends `max_age`), checked
+  against 600 s + 60 s skew. Entra: Microsoft does not document `auth_time` in v2 ID tokens
+  reliably, so it is checked when present and its absence logged (info), not refused.
+- **Nit:** `max_age=540` (a minute under the accepted 600 s) for the time spent at the provider.
+  The mock IdP returns `auth_time` when `max_age` is requested.
+- **Future risk for KOBE-632 (SCIM Groups):** "SCIM groups provisioned" means any one
+  `scim_groups` row for the provider. A partial push (first Entra cycle, groups before members)
+  would give a member `[]` and remove their idp teams (and offboard sandboxes). KOBE-632 must gate
+  the fallback on a completed-sync marker (or refuse an empty SCIM list on overage).
+
 ## Open questions (for Chris or the coordinator)
 
 - None. SCIM Groups (SSO-8, KOBE-632) remains parked; when it lands, its first group row turns the

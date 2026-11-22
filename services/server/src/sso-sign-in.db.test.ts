@@ -205,8 +205,9 @@ describe("sign-in page data", () => {
     expect(p.get("redirect_uri")).toBe("http://kobe.test/api/auth/sso/callback/corp");
     expect(p.get("scope")).toBe("openid profile email");
     expect(p.get("prompt")).toBe("select_account");
-    // KOBE-775: a sign-in older than 10 minutes is refused, so the IdP is asked for a fresh one.
-    expect(p.get("max_age")).toBe("600");
+    // KOBE-775: a sign-in older than 10 minutes is refused, so the IdP is asked for a fresh one
+    // (with a minute of margin for the time spent at the provider).
+    expect(p.get("max_age")).toBe("540");
     // The Entra preset asks for the MFA authentication context c1 (§8, KOBE-629).
     expect(JSON.parse(p.get("claims") ?? "null")).toEqual({
       id_token: { acrs: { essential: true, value: "c1" } },
@@ -219,7 +220,7 @@ describe("sign-in page data", () => {
   it("KOBE-775: asks a generic provider for an authentication at most 10 minutes old", async () => {
     const flow = await startAt(kc, "kc", { sub: "kc-max-age" });
     const p = new URL(flow.startLocation).searchParams;
-    expect(p.get("max_age")).toBe("600");
+    expect(p.get("max_age")).toBe("540");
     expect(p.get("prompt")).toBeNull();
   });
 });
@@ -599,6 +600,17 @@ describe("state, nonce and ID token checks (ac-1)", () => {
     },
   );
 
+  it("KOBE-775: refuses a generic provider's ID token without auth_time", async () => {
+    const flow = await startAt(kc, "kc", {
+      sub: "kc-no-auth-time",
+      email: "kc-nat@example.com",
+      groups: ["g-research"],
+      auth_time: undefined,
+    });
+    const { location } = await finish(flow);
+    expect(errorOf(location)).toBe("token_invalid");
+  });
+
   it("refuses a wrong RFC 9207 iss parameter", async () => {
     entra.issParameter = "https://evil.example.com";
     try {
@@ -687,6 +699,35 @@ describe("groups overage (generic provider, access claim groups)", () => {
     } finally {
       await h.admin.query(`DELETE FROM scim_tokens WHERE id = $1`, [token[0]?.id]);
     }
+  });
+
+  it("KOBE-775 review M1: a site-role holder signs in on an overage, memberships unchanged", async () => {
+    const user = { sub: "kc-admin-775", email: "kc-admin775@example.com", groups: ["g-research"] };
+    const first = await signInVia(kc, "kc", user);
+    expect(errorOf(first.location)).toBeNull();
+    const userId = (await first.browser.get("/v1/me")).json.user.id as string;
+    await h.admin.query(`INSERT INTO site_roles (user_id, role) VALUES ($1, 'admin')`, [userId]);
+    const rows = async () =>
+      (
+        await h.admin.query(
+          `SELECT team_id, role, added_via FROM team_members WHERE user_id = $1 ORDER BY team_id`,
+          [userId],
+        )
+      ).rows;
+    const before = await rows();
+    expect(before).toHaveLength(1);
+    const overage = { ...user, groups: undefined, hasgroups: true };
+    const res = await signInVia(kc, "kc", overage);
+    expect(errorOf(res.location)).toBeNull();
+    expect((await res.browser.get("/v1/me")).json.user.id).toBe(userId);
+    // No mapping was applied: nothing added or removed.
+    expect(await rows()).toEqual(before);
+    const { rows: audit } = await h.admin.query<{ target: Record<string, unknown> }>(
+      `SELECT target FROM audit_log WHERE action = 'auth.sign_in.succeeded' AND actor_id = $1
+        ORDER BY seq DESC LIMIT 1`,
+      [userId],
+    );
+    expect(audit[0]?.target).toMatchObject({ method: "sso", groupsOverage: true });
   });
 
   it("refuses an overage for a linked user without SCIM, uses SCIM memberships with it", async () => {

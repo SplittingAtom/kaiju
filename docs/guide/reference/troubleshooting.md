@@ -150,7 +150,8 @@ on, and refuses adding a passkey, password or authenticator app from such a sess
 (`SSO_MFA_REQUIRED`).
 
 **"…carried too many groups"** (`groups_overage`). The token named more than 200 groups, so Entra
-left the list out. Kobe refuses the sign-in and leaves the person's team access as it was.
+left the list out. Kobe refuses the sign-in and leaves the person's team access as it was (an
+Owner or Admin is signed in on their site role instead, still without mappings applied).
 Administrators: map app roles instead, or have Entra send only "Groups assigned to the
 application" (the groups claim filter). SCIM user provisioning does not help here: Kobe does not
 take groups from SCIM yet.
@@ -168,8 +169,9 @@ organization.
 **"…could not be verified"** (`token_invalid`). The token's signature, audience, nonce or times
 failed Kobe's checks (often a clock more than a minute off, or a sign-in older than 10 minutes).
 Start again; administrators check the server's and the provider's clocks. Kobe asks the provider
-for a sign-in at most 10 minutes old (`max_age`); a provider that ignores that and sends an older
-`auth_time` is refused here, so sign out at the provider and sign in again.
+for a sign-in at most 9 minutes old (`max_age`); a provider that ignores that and sends an older
+`auth_time` is refused here, so sign out at the provider and sign in again. A provider other than
+Entra that sends no `auth_time` at all is refused too (`check: auth_time` in the audit log).
 
 **"Sign-in was cancelled or refused…"** (`idp_error`). You cancelled, or the provider refused (for
 example you are not assigned to the Kobe application).

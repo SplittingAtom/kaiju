@@ -8,6 +8,7 @@ import {
   type SsoFailure,
   type VerifiedIdentity,
 } from "./claims.js";
+import { logger } from "../logger.js";
 import { discoverProvider } from "./discovery.js";
 import { acrsClaimsParameter } from "./mfa.js";
 import { SsoNetError, guardedFetch, type SsoNet } from "./net.js";
@@ -206,6 +207,9 @@ export interface StartParams {
   readonly codeChallenge: string;
 }
 
+/** The `max_age` Kobe asks for: a minute under the age it accepts (`AUTH_TIME_MAX_AGE_S`). */
+export const MAX_AGE_REQUESTED_S = AUTH_TIME_MAX_AGE_S - 60;
+
 export function authorizationUrl(config: oidc.Configuration, p: SsoProvider, s: StartParams): URL {
   const claims = acrsClaimsParameter(p.kind, p.mfaRule);
   return oidc.buildAuthorizationUrl(config, {
@@ -217,8 +221,9 @@ export function authorizationUrl(config: oidc.Configuration, p: SsoProvider, s: 
     code_challenge: s.codeChallenge,
     code_challenge_method: "S256",
     // ID tokens with an `auth_time` older than 10 minutes are refused (§5.4), so ask the IdP to
-    // re-authenticate a person whose IdP session is older (OIDC Core §3.1.2.1, KOBE-775).
-    max_age: String(AUTH_TIME_MAX_AGE_S),
+    // re-authenticate a person whose IdP session is older (OIDC Core §3.1.2.1, KOBE-775), with a
+    // margin for the time spent at the provider (account picker, MFA prompt).
+    max_age: String(MAX_AGE_REQUESTED_S),
     ...(p.kind === "entra" ? { prompt: "select_account" } : {}),
     // Entra: ask for the MFA authentication context as an essential `acrs` claim (§8, KOBE-629).
     ...(claims === undefined ? {} : { claims }),
@@ -274,5 +279,9 @@ export async function exchangeCode(
     expectedNonce: input.nonce,
   });
   if (!checked.ok) throw new SsoFlowError(checked.failure);
+  if (p.kind === "entra" && checked.identity.authTime === null) {
+    // Entra may ignore max_age and leave auth_time out (KOBE-775): accepted, but on record.
+    logger.info({ providerId: p.id }, "single sign-on: Entra ID token without auth_time");
+  }
   return checked.identity;
 }

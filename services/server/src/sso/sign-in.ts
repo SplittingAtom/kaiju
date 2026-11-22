@@ -31,12 +31,20 @@ import type { SsoProvider } from "./oidc-flow.js";
  *
  * The mapping engine then applies the token's values at every sign-in; a person left with no team
  * and no site role is refused (`no_access`). A groups overage uses the person's SCIM group
- * memberships when SCIM groups are provisioned for the provider; otherwise it is refused
- * (`groups_overage`) and the person's memberships stay as they are (KOBE-775).
+ * memberships when SCIM groups are provisioned for the provider. Otherwise the person's
+ * memberships stay as they are and the sign-in is refused (`groups_overage`), unless they hold a
+ * site role: they are let in on it without applying any mapping (KOBE-775 review M1), so an Owner
+ * in many groups is never locked out while single sign-on is required.
  */
 
 export type SsoUserOutcome =
-  | { readonly ok: true; readonly userId: string; readonly created: boolean }
+  | {
+      readonly ok: true;
+      readonly userId: string;
+      readonly created: boolean;
+      /** Signed in on a site role despite a groups overage; no mapping was applied (KOBE-775). */
+      readonly groupsOverage?: true;
+    }
   | {
       readonly ok: false;
       readonly failure: SsoFailure;
@@ -101,6 +109,13 @@ async function scimGroupValues(db: KobeDb, providerId: string, userId: string): 
     .innerJoin(scimGroups, eq(scimGroups.id, scimGroupMembers.groupId))
     .where(and(eq(scimGroups.providerId, providerId), eq(scimGroupMembers.userId, userId)));
   return rows.map((r) => r.value);
+}
+
+async function touchIdentity(db: KobeDb, providerId: string, subject: string): Promise<void> {
+  await db
+    .update(ssoIdentities)
+    .set({ lastSignInAt: new Date() })
+    .where(and(eq(ssoIdentities.providerId, providerId), eq(ssoIdentities.subject, subject)));
 }
 
 async function hasSiteRole(db: KobeDb, userId: string): Promise<boolean> {
@@ -236,7 +251,16 @@ export async function resolveSsoUser(
   let values = identity.values;
   if (values === null) {
     if (!(await scimGroupsProvisioned(db, p.id))) {
-      // No group data to apply: change nothing and refuse (the callback audits the refusal).
+      // No group data to apply: change nothing. A site-role holder needs no team to get in
+      // (as in applyAccess); everyone else is refused (the callback audits the refusal).
+      if (await hasSiteRole(db, linked.userId)) {
+        logger.warn(
+          { providerId: p.id, userId: linked.userId },
+          "single sign-on groups overage without SCIM groups: site-role holder signed in, mappings not applied",
+        );
+        await touchIdentity(db, p.id, identity.subject);
+        return { ok: true, userId: linked.userId, created: false, groupsOverage: true };
+      }
       logger.warn(
         { providerId: p.id, userId: linked.userId },
         "single sign-on groups overage without SCIM groups: refused, memberships unchanged",
@@ -247,9 +271,6 @@ export async function resolveSsoUser(
   }
   const refused = await applyAccess(deps, p, linked.userId, values);
   if (refused) return refused;
-  await db
-    .update(ssoIdentities)
-    .set({ lastSignInAt: new Date() })
-    .where(and(eq(ssoIdentities.providerId, p.id), eq(ssoIdentities.subject, identity.subject)));
+  await touchIdentity(db, p.id, identity.subject);
   return { ok: true, userId: linked.userId, created: false };
 }

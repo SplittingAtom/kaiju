@@ -62,7 +62,10 @@ role** (Member, Contributor or Team admin).
   roles of that person. With **Groups**, use the group's object ID and have Entra send only the
   groups assigned to the application: a person in more than 200 groups gets a token without the
   list (a "groups overage"). Kobe then refuses that sign-in and leaves the person's team access as
-  it is: nothing is added or removed until a sign-in carries the list again. The refusal is in the
+  it is: nothing is added or removed until a sign-in carries the list again. Someone with a site
+  role (Owner or Admin) is signed in instead, still without any mapping applied, so an Owner in
+  many groups is not locked out while single sign-on is required (audit log:
+  `auth.sign_in.succeeded` with `groupsOverage`). The refusal is in the
   audit log (`auth.sign_in.failed`, reason `groups_overage`), and the provider's section on **SSO
   access mappings** says how to avoid it: send only the groups assigned to the application (the
   groups claim filter), or map app roles. SCIM user provisioning does not change this: Kobe does
@@ -87,9 +90,10 @@ their team, read-only, under **Show access mappings** in the Team console.
 
 ## Signing in, linking and the break-glass account
 
-- **A fresh sign-in at the provider.** Kobe asks the provider for a sign-in at most 10 minutes
-  old (OpenID Connect `max_age`) and refuses an older one, so someone whose session at the
-  provider is older signs in there again before coming back to Kobe.
+- **A fresh sign-in at the provider.** Kobe asks the provider for a sign-in at most 9 minutes old
+  (OpenID Connect `max_age`) and refuses one older than 10 minutes, so someone whose session at
+  the provider is older signs in there again before coming back to Kobe. A provider other than
+  Entra must say when the person signed in (`auth_time`), or the sign-in is refused.
 - **First sign-in.** A person with a mapped app role or group and no Kobe account gets one at
   their first sign-in. Accounts made this way have no Kobe password or passkey and can't add one:
   they sign in only through the provider, so disabling them at the provider can't be outlived by a

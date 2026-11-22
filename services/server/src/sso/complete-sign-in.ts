@@ -32,6 +32,8 @@ export async function completeSsoSignIn(
     readonly identity: VerifiedIdentity;
     /** What proved MFA (`mfaEvidence`), or null. */
     readonly mfa: string | null;
+    /** Let in on a site role despite a groups overage (KOBE-775): audited as such. */
+    readonly groupsOverage?: boolean;
   },
 ): Promise<void> {
   const adapter = ctx.context.internalAdapter;
@@ -62,6 +64,10 @@ export async function completeSsoSignIn(
     action: "auth.sign_in.succeeded",
     actor: { kind: "user", id: s.userId },
     // What proved MFA (review L3; the session row has no acrs column).
-    target: { method: "sso", ...(s.mfa === null ? {} : { mfa: s.mfa }) },
+    target: {
+      method: "sso",
+      ...(s.mfa === null ? {} : { mfa: s.mfa }),
+      ...(s.groupsOverage === true ? { groupsOverage: true as const } : {}),
+    },
   });
 }
