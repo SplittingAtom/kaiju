@@ -50,6 +50,7 @@ import { CONTENT_MISSING, reportMissingContent } from "../workspace-sync/lost.js
 import { currentEntry, lockWorkspace } from "../workspace-sync/store.js";
 import { checkoutSlugs, checkoutsHold } from "../workspace-sync/checkouts.js";
 import { invalidRequest } from "../http/request.js";
+import { OPERATION_LIMITS, admitSandboxWake, rateLimited } from "../operation-limits.js";
 
 type Ctx = Context<{ Variables: TeamVariables }>;
 type ErrStatus = 400 | 403 | 404 | 409 | 411 | 413 | 415 | 422 | 502 | 503 | 507;
@@ -307,8 +308,11 @@ export function workspaceFileRoutes(
   });
 
   /** The panel opened: start the caller's sandbox so live files and the next sync are ready. */
-  app.post("/wake", (c) => {
+  app.post("/wake", async (c) => {
     const owner = ownerOf(c);
+    // KOBE-813: starting an asleep sandbox counts; the panel keeps the last synced files.
+    const verdict = await admitSandboxWake(db, deps.sandboxWire.router, owner);
+    if (!verdict.allowed) return rateLimited(c, OPERATION_LIMITS.sandboxWake, verdict);
     void waker.wake(owner).catch((err: unknown) => {
       logger.warn({ err, teamId: owner.teamId }, "workspace panel wake failed");
     });

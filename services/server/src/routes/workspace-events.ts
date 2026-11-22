@@ -6,6 +6,7 @@ import type { TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
 import { hitRateLimit } from "../rate-limit.js";
+import { OPERATION_LIMITS, admitOperation, rateLimited } from "../operation-limits.js";
 import type { SandboxWaker } from "../sandbox-wire/types.js";
 import { createWorkspaceEventStream } from "../workspace-files/event-stream.js";
 import { readWorkspaceVersions } from "../workspace-files/events.js";
@@ -50,6 +51,10 @@ export function registerWorkspaceEvents(
     }
     const status = await deps.sandboxWire.syncWorkspace(owner, waitMs);
     if (status === "asleep") {
+      // KOBE-813: the sandbox is asleep, so this starts it: one hit of the member's wake limit.
+      const limit = OPERATION_LIMITS.sandboxWake;
+      const verdict = await admitOperation(db, limit, owner.userId);
+      if (!verdict.allowed) return rateLimited(c, limit, verdict);
       void options.waker.wake(owner).catch((err: unknown) => {
         logger.warn({ err, teamId: owner.teamId }, "workspace refresh wake failed");
       });

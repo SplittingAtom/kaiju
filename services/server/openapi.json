@@ -3490,7 +3490,7 @@
             }
           },
           "429": {
-            "description": "`budget_exhausted`: no new runs at 100 % of a budget (D30).",
+            "description": "`budget_exhausted`: no new runs at 100 % of a budget (D30); or `rate_limited`: more than 60 messages and Retries per member per minute, across conversations (`Retry-After` in seconds; scheduled runs never count).",
             "content": {
               "application/json": {
                 "schema": {
@@ -4334,7 +4334,7 @@
             }
           },
           "429": {
-            "description": "`budget_exhausted`.",
+            "description": "`budget_exhausted`; or `rate_limited`: Retry shares the member's limit of 60 runs a minute with messages (`Retry-After` in seconds).",
             "content": {
               "application/json": {
                 "schema": {
@@ -4634,7 +4634,7 @@
             }
           },
           "429": {
-            "description": "`budget_exhausted`: the member's or team's budget is used up.",
+            "description": "`budget_exhausted`: the member's or team's budget is used up; or `rate_limited`: more than 10 compactions per member in 10 minutes (`Retry-After` in seconds).",
             "content": {
               "application/json": {
                 "schema": {
@@ -4764,7 +4764,7 @@
             }
           },
           "429": {
-            "description": "`budget_exhausted`: the member's or team's budget is used up.",
+            "description": "`budget_exhausted`: the member's or team's budget is used up; or `rate_limited`: more than 10 branch summaries per member in 10 minutes (`Retry-After` in seconds).",
             "content": {
               "application/json": {
                 "schema": {
@@ -4884,7 +4884,7 @@
             }
           },
           "429": {
-            "description": "`rate_limited`",
+            "description": "`rate_limited`: more than 30 reads a minute, or waking the sleeping workspace would pass the member's 20 sandbox starts in 10 minutes (`Retry-After`).",
             "content": {
               "application/json": {
                 "schema": {
@@ -5780,6 +5780,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "`rate_limited`: more than 60 ratings or clears per member a minute (`Retry-After` in seconds).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       },
@@ -5844,6 +5854,16 @@
           },
           "409": {
             "description": "`no_active_team` or `team_mismatch`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: more than 60 ratings or clears per member a minute (`Retry-After` in seconds).",
             "content": {
               "application/json": {
                 "schema": {
@@ -12879,7 +12899,7 @@
       "post": {
         "operationId": "postUploads",
         "summary": "Upload a file (multipart form data) to private storage",
-        "description": "Answers 201 with the file; refusals are 403, 413, 422 or 503. Private to the uploader.",
+        "description": "Answers 201 with the file; refusals are 403, 413, 422 or 503. Private to the uploader. 429 `rate_limited` past 120 uploads per member in 10 minutes (`Retry-After`, KOBE-813).",
         "tags": ["Files"],
         "parameters": [
           {
@@ -12943,6 +12963,9 @@
           },
           "422": {
             "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           },
           "503": {
             "$ref": "#/components/responses/Unavailable"
@@ -13202,7 +13225,7 @@
       "post": {
         "operationId": "postSetup",
         "summary": "Create the site's Owner account during first-run setup",
-        "description": "Needs the site's setup token. Answers 201; 409 once set up, 403 on a wrong token.",
+        "description": "Needs the site's setup token. Answers 201; 409 once set up, 403 on a wrong token. 429 `rate_limited` past 10 attempts per client IP in 10 minutes (one shared bucket when the IP can't be resolved; `Retry-After`, KOBE-813).",
         "tags": ["Setup"],
         "requestBody": {
           "required": true,
@@ -13233,6 +13256,9 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -15263,6 +15289,7 @@
       "post": {
         "operationId": "postSchedules",
         "summary": "Create a schedule",
+        "description": "429 `rate_limited` past 20 new schedules per member an hour (`Retry-After`, KOBE-813).",
         "tags": ["Schedules"],
         "parameters": [
           {
@@ -15311,6 +15338,9 @@
           },
           "422": {
             "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -30460,7 +30490,7 @@
       "post": {
         "operationId": "postSiteSsoProvidersByIdScimTokens",
         "summary": "Create a SCIM token for a provider",
-        "description": "Site admins (`site.users.manage`).",
+        "description": "Site admins (`site.users.manage`). 429 `rate_limited` past 10 creations and rotations per Site admin an hour (`Retry-After`).",
         "tags": ["Site: people"],
         "parameters": [
           {
@@ -30497,6 +30527,9 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -30558,7 +30591,7 @@
       "post": {
         "operationId": "postSiteSsoProvidersByIdScimTokensByTokenIdRotate",
         "summary": "Rotate a SCIM token",
-        "description": "Site admins (`site.users.manage`).",
+        "description": "Site admins (`site.users.manage`). 429 `rate_limited` past 10 creations and rotations per Site admin an hour (`Retry-After`).",
         "tags": ["Site: people"],
         "parameters": [
           {
@@ -30603,6 +30636,9 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
           }
         }
       }
@@ -86977,7 +87013,7 @@
         }
       },
       "RateLimited": {
-        "description": "`rate_limited`: too many requests; retry later.",
+        "description": "`rate_limited`: too many requests; retry after `Retry-After` seconds where the answer sends it.",
         "content": {
           "application/json": {
             "schema": {

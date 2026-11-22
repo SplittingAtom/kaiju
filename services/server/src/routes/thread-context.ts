@@ -19,6 +19,7 @@ import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
 import { readThreadMemories } from "../memory/items/run-records.js";
 import { hitRateLimit } from "../rate-limit.js";
+import { OPERATION_LIMITS, admitOperation } from "../operation-limits.js";
 import { SandboxWakeError } from "../sandbox-wire/types.js";
 import { viewerProjectIds } from "../threads/references.js";
 import { findThread } from "../threads/repository.js";
@@ -158,6 +159,12 @@ export function threadContextRoutes(deps: ServerDeps): Hono<{ Variables: TeamVar
       refusals.delete(key);
       if (refusedAt !== undefined && Date.now() - refusedAt < CONTEXT_WAKE_REFUSAL_MEMORY_MS) {
         return fail(c, "sandbox_refused");
+      }
+      // KOBE-813: starting the asleep sandbox counts against the member's wake limit.
+      const wake = await admitOperation(db, OPERATION_LIMITS.sandboxWake, userId);
+      if (!wake.allowed) {
+        c.header("Retry-After", String(wake.retryAfterSeconds));
+        return fail(c, "rate_limited");
       }
       // Like sending (D14): the sandbox wakes; the viewer shows progress and asks again.
       const waking = router.wake(target).then(

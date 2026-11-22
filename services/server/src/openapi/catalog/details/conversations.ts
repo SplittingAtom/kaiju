@@ -262,7 +262,7 @@ export const schedulesDetails: Readonly<Record<string, CatalogDetail>> = {
     body: named("CreateScheduleBody", createScheduleBodySchema),
     status: 201,
     response: Schedule,
-    errors: [...SCHEDULE_ERRORS],
+    errors: [...SCHEDULE_ERRORS, "429"],
   },
   "delete /v1/schedules/{id}": { status: 204, errors: ["404"] },
   "get /v1/schedules/{id}": { response: Schedule, errors: ["404"] },

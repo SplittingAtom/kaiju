@@ -20,6 +20,8 @@ import {
 import { MemoryObjects } from "./testing/memory-objects.js";
 import { RawBody, TestBrowser } from "./testing/browser.js";
 import { commitChanges } from "./workspace-sync/store.js";
+import { OPERATION_LIMITS } from "./operation-limits.js";
+import { expectRateLimited, fillLimit } from "./testing/operation-limits.js";
 import {
   createWorkspaceSync,
   limitsQuota,
@@ -916,6 +918,16 @@ describe("POST /v1/workspace/wake", () => {
     expect(woken.at(-1)).toEqual({ teamId: w.team, userId: w.alice.id });
     await w.b.post("/v1/workspace/wake");
     expect(woken.at(-1)).toEqual({ teamId: w.team, userId: w.bob.id });
+  });
+
+  it("refuses past the member's wake limit without waking (KOBE-813)", async () => {
+    const w = await world();
+    const limit = OPERATION_LIMITS.sandboxWake;
+    await fillLimit(fx.admin, limit, w.alice.id);
+    const before = woken.length;
+    expectRateLimited(await w.a.post("/v1/workspace/wake"), limit);
+    expect(woken).toHaveLength(before);
+    expect((await w.b.post("/v1/workspace/wake")).status).toBe(202);
   });
 });
 

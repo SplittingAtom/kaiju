@@ -9,6 +9,13 @@ export interface RateLimitRule {
 /** Expired rows one prune deletes at most (KOBE-809); the next new window goes on. */
 export const RATE_LIMIT_PRUNE_BATCH = 100;
 
+/** A hit's outcome, with when the window ends (the `Retry-After` of a refusal, KOBE-813). */
+export interface RateLimitVerdict {
+  readonly allowed: boolean;
+  /** Whole seconds until the current window ends, at least 1. */
+  readonly retryAfterSeconds: number;
+}
+
 /**
  * Counts one hit against `key` in a fixed window and says whether it is within the limit. Counters
  * live in Postgres' `kobe_rate_limits` (keys start with "kobe:"), so every replica sees the same
@@ -23,19 +30,35 @@ export async function hitRateLimit(
   rule: RateLimitRule,
   now = Date.now(),
 ): Promise<boolean> {
+  return (await checkRateLimit(db, key, rule, now)).allowed;
+}
+
+/** {@link hitRateLimit}, also reporting how long until the window ends (KOBE-813). */
+export async function checkRateLimit(
+  db: KobeDb,
+  key: string,
+  rule: RateLimitRule,
+  now = Date.now(),
+): Promise<RateLimitVerdict> {
   const stale = now - rule.windowMs;
   const expires = now + rule.windowMs;
-  const result = await db.execute<{ count: number }>(sql`
+  const result = await db.execute<{ count: number; window_start: string | number }>(sql`
     INSERT INTO kobe_rate_limits AS r (key, count, window_start, expires_at)
     VALUES (${`kobe:${key}`}, 1, ${now}, ${expires})
     ON CONFLICT (key) DO UPDATE SET
       count = CASE WHEN r.window_start < ${stale} THEN 1 ELSE r.count + 1 END,
       window_start = CASE WHEN r.window_start < ${stale} THEN ${now} ELSE r.window_start END,
       expires_at = CASE WHEN r.window_start < ${stale} THEN ${expires} ELSE r.expires_at END
-    RETURNING count`);
-  const count = result.rows[0]?.count ?? Number.POSITIVE_INFINITY;
+    RETURNING count, window_start`);
+  const row = result.rows[0];
+  const count = row?.count ?? Number.POSITIVE_INFINITY;
   if (count === 1) await pruneExpiredRateLimits(db, now);
-  return count <= rule.max;
+  const started = row === undefined ? now : Number(row.window_start);
+  const left = Number.isFinite(started) ? started + rule.windowMs - now : rule.windowMs;
+  return {
+    allowed: count <= rule.max,
+    retryAfterSeconds: Math.max(1, Math.ceil(left / 1000)),
+  };
 }
 
 /**

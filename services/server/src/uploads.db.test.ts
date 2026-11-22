@@ -14,6 +14,8 @@ import { expireOrphanUploads } from "./uploads/expire.js";
 import { storeUpload } from "./uploads/store.js";
 import type { UploadSettings } from "./uploads/settings.js";
 import type { ObjectStore } from "./workspace-sync/object-store.js";
+import { OPERATION_LIMITS } from "./operation-limits.js";
+import { clearLimit, expectRateLimited, fillLimit } from "./testing/operation-limits.js";
 
 /**
  * KOBE-143: POST /v1/uploads end to end: S3 first then the files row, limits, the per-team quota
@@ -86,6 +88,16 @@ const auditOf = async (team: string, action: string) =>
   ).rows.map((r) => r.target);
 
 describe("POST /v1/uploads", () => {
+  it("is limited per member (KOBE-813): nothing is stored past the limit", async () => {
+    const { owner, team } = await world();
+    const limit = OPERATION_LIMITS.upload;
+    await fillLimit(fx.admin, limit, owner.id);
+    expectRateLimited(await upload(owner, filled(5)), limit);
+    expect(await rowsOf(team)).toHaveLength(0);
+    await clearLimit(fx.admin, limit, owner.id);
+    expect((await upload(owner, filled(5))).status).toBe(201);
+  });
+
   it("stores a threaded file in the thread's tree, then the row, with sha256 and sniffed type", async () => {
     const { owner, team } = await world();
     const threadId = await newThread(team, owner);
