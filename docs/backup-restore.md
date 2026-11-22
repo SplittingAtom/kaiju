@@ -35,7 +35,7 @@ with the operator's backup key. There is no plaintext mode.
   | ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
   | `sessions`             | bearer session tokens; after a restore everyone signs in again                                                         |
   | `verifications`        | one-time email-verification and password-reset tokens                                                                  |
-  | `jwks`                 | JWT signing keys; the server generates a new one on first use                                                          |
+  | `jwks`                 | JWT signing keys of a removed plugin (KOBE-785); unused, kept until a migration drops the table                        |
   | `rate_limits`          | throwaway counters                                                                                                     |
   | `session_active_teams` | per-session pointer to the active team; it references `sessions`, so its rows could not be restored                    |
   | `session_sso_contexts` | how a session signed in through SSO (provider, MFA proof); it references `sessions`, so its rows could not be restored |

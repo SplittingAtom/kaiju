@@ -18,6 +18,7 @@ import {
   pgCodeOf,
 } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
+import { endSsoSessions } from "./sso-sessions.js";
 import {
   OwnerWouldLoseSignInError,
   assertOwnerKeepsSignIn,
@@ -211,18 +212,9 @@ export async function createProvider(
   }
 }
 
-/** Deletes every session signed in through the provider (§9: disabled, deleted or unlinked). */
-async function endProviderSessions(tx: KobeTx, providerId: string): Promise<number> {
-  const ids = tx
-    .select({ id: sessionSsoContexts.sessionId })
-    .from(sessionSsoContexts)
-    .where(eq(sessionSsoContexts.providerId, providerId));
-  const gone = await tx
-    .delete(sessions)
-    .where(inArray(sessions.id, ids))
-    .returning({ id: sessions.id });
-  return gone.length;
-}
+/** Deletes every session signed in through the provider (§9: disabled, deleted, rule moved). */
+const endProviderSessions = (tx: KobeTx, providerId: string): Promise<number> =>
+  endSsoSessions(tx, { providerId });
 
 /**
  * With the kill switch off (`auth.sso.enabled: false`), deletes every session signed in through

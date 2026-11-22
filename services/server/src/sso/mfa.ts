@@ -23,11 +23,6 @@ export function mfaEvidence(kind: "entra" | "oidc", rule: MfaRule, proof: MfaPro
   return acrs === undefined ? null : `acrs:${acrs}`;
 }
 
-/** Whether the sign-in proved multi-factor authentication under the rule (`mfaEvidence`). */
-export function mfaProven(kind: "entra" | "oidc", rule: MfaRule, proof: MfaProof): boolean {
-  return mfaEvidence(kind, rule, proof) !== null;
-}
-
 /**
  * The OIDC `claims` request parameter that asks Entra for the rule's authentication contexts as an
  * essential `acrs` claim (§8), e.g. `{"id_token":{"acrs":{"essential":true,"value":"c1"}}}`, so
