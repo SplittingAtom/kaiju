@@ -30,7 +30,7 @@ const STATUS_FILTERS = {
   all: ["pending", "approved", "rejected"],
 } as const;
 const filterSchema = z.enum(["pending", "approved", "rejected", "all"]);
-const decisionSchema = z.strictObject({
+export const decisionSchema = z.strictObject({
   decision: z.enum(["approved", "rejected"]),
   note: z.string().trim().max(2000).optional(),
   /**
@@ -47,7 +47,7 @@ const decisionSchema = z.strictObject({
    */
   expectedStatus: z.enum(["pending", "approved", "rejected"]).optional(),
 });
-const settingsSchema = z
+export const settingsSchema = z
   .strictObject({
     personalSkillsDisabled: z.boolean().optional(),
     membersMayAddCatalog: z.boolean().optional(),
