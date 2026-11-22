@@ -18,6 +18,7 @@ import {
   type AgentFrontmatter,
 } from "@kobe/agent-file";
 import { strictestApprovalMode } from "../policy/approval-floor.js";
+import { hiddenBuiltins } from "../policy/agent-allow.js";
 import { checkAvailable } from "../policy/gates.js";
 import { matchSubject, splitAgentToolEntry } from "../policy/patterns.js";
 import { isRuleActive, type PolicyRule } from "../policy/rules.js";
@@ -173,14 +174,10 @@ function exclusion(
     return arg === undefined && (glob === "" || matchSubject(glob, name, "restrict"));
   });
   if (wholeDeny) return { name, reason: "agent_tools_deny" };
-  const allow = frontmatter.tools?.allow ?? [];
-  const allowed =
-    allow.length === 0 ||
-    allow.some((entry) => {
-      const { tool: glob } = splitAgentToolEntry(entry);
-      return glob !== "" && matchSubject(glob, name, "loosen");
-    });
-  if (!allowed) return { name, reason: "agent_tools_allow" };
+  // KOBE-776: the allow list limits built-ins only when it names one.
+  if (hiddenBuiltins(frontmatter.tools?.allow).includes(name)) {
+    return { name, reason: "agent_tools_allow" };
+  }
   const site = wholeToolDeny(floor.site, name, now);
   if (site) return { name, reason: "site_deny_rule", rule_id: site.id };
   const team = floor.scope === "team" ? wholeToolDeny(floor.team, name, now) : undefined;

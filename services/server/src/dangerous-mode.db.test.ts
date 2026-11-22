@@ -230,6 +230,18 @@ describe("a Dangerous agent's calls (AC1)", () => {
     expect(result.reasons[0]?.code).toBe("scheduled_run_no_prompt");
   });
 
+  it("leaves tools it doesn't name as they were: a connector-only agent's built-ins still ask", async () => {
+    const w = await world();
+    await pin(w, "team", {
+      approval_mode: "dangerous",
+      tools: { allow: ["mcp__catalyst__search"] },
+    });
+    // KOBE-776 (owner decision): a list naming no built-in limits connector tools only.
+    await check(w, "bash", { command: "ls" }).pending();
+    await check(w, "write", { path: "a.txt", content: "x" }).pending();
+    expect(await appliedRows(w)).toEqual([]);
+  });
+
   it("leaves tools it doesn't name one by one as they were: globbed built-ins still ask", async () => {
     const w = await world();
     await pin(w, "team", {

@@ -176,7 +176,8 @@ describe("computeToolManifest (D19 frozen tool manifest)", () => {
     );
     expect(m.connectors).toEqual(["github", "jira"]);
     expect(m.tools_allow).toEqual(["mcp__github__*"]);
-    expect(names(m)).toEqual([]);
+    // KOBE-776: a list naming no built-in leaves the built-ins in.
+    expect(names(m)).toEqual(AVAILABLE);
   });
 
   it("freezes `connectors: all` as the literal, never as a list of names (KOBE-254)", () => {

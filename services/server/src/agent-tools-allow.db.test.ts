@@ -73,7 +73,7 @@ async function pin(
   scope: "team" | "personal",
   frontmatter: Record<string, unknown>,
   options: { readonly draft?: boolean } = {},
-): Promise<void> {
+): Promise<string> {
   const created = await w.owner.browser.post("/v1/agents", {
     scope,
     frontmatter: { name: `Agent ${randomBytes(2).toString("hex")}`, ...frontmatter },
@@ -96,6 +96,7 @@ async function pin(
     w.runId,
     options.draft ? null : 1,
   ]);
+  return id;
 }
 
 describe("the sandbox's policy.check", () => {
@@ -170,6 +171,33 @@ describe("the sandbox's policy.check", () => {
     expect((await check(draft, "read", { path: "a.txt" })).decision).toBe("allow");
   });
 
+  it("a list naming no built-in leaves built-ins alone (owner decision)", async () => {
+    const w = await wired();
+    await pin(w, "team", { tools: { allow: ["mcp__jira__search"] } });
+    expect((await check(w, "ls", {})).decision).toBe("allow");
+    expect((await check(w, "read", { path: "a.txt" })).decision).toBe("allow");
+  });
+
+  it("a test chat: an empty draft list narrows nothing; a malformed one refuses every call", async () => {
+    const empty = await wired();
+    const agentId = await pin(empty, "team", { tools: { deny: ["write"] } }, { draft: true });
+    await fx.admin.query(
+      `UPDATE team_agents SET frontmatter = jsonb_set(frontmatter, '{tools,allow}', '[]') WHERE id = $1`,
+      [agentId],
+    );
+    expect((await check(empty, "ls", {})).decision).toBe("allow");
+
+    const bad = await wired();
+    const badId = await pin(bad, "team", { tools: { deny: ["write"] } }, { draft: true });
+    await fx.admin.query(
+      `UPDATE team_agents SET frontmatter = jsonb_set(frontmatter, '{tools,allow}', '[1, 2]') WHERE id = $1`,
+      [badId],
+    );
+    const refused = await check(bad, "ls", {});
+    expect(refused.decision).toBe("deny");
+    expect(refused.reasons[0]?.code).toBe("policy_error");
+  });
+
   it("does not narrow an agent without an allow list", async () => {
     const w = await wired();
     await pin(w, "team", { tools: { deny: ["write"] } });
@@ -219,6 +247,11 @@ describe("the MCP proxy's re-check", () => {
         reason: "agent_tool_deny",
       }),
     ]);
+  });
+
+  it("a list naming only connector tools still limits connector tools", async () => {
+    const w = await proxied(["mcp__*__create_issue"]);
+    expect(await w.call("get_issue")).toMatchObject({ decision: "deny", code: "agent_tool_deny" });
   });
 
   it("allows a listed MCP tool, by name or glob, and leaves an agent without a list alone", async () => {

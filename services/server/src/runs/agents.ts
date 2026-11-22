@@ -28,6 +28,7 @@ import type { AgentResolution, AgentResolutionInput, RunAgentResolver } from "./
 import { connectorsOffIn } from "../connectors/thread-connectors.js";
 import { kobeRunServer } from "../kobe-mcp/run.js";
 import { kobeBuiltinName } from "../kobe-mcp/access.js";
+import { hiddenBuiltins } from "../policy/agent-allow.js";
 
 /** The skill facts of a test chat's run: its draft as the agent's only skill, nothing else. */
 const onlySkillFacts = (ref: SkillRef): SkillFacts => ({
@@ -278,7 +279,11 @@ export const PINNED_AGENTS: RunAgentResolver = {
       ),
       ...unavailableOmissions(unavailable),
     ];
+    // KOBE-776: Pi is not offered the built-ins the agent's allow list leaves out (when it names
+    // a built-in at all): the server would refuse them (policy/agent-allow.ts).
+    const hidden = hiddenBuiltins(frontmatter.tools?.allow);
     const config = {
+      ...(hidden.length > 0 ? { hidden_tools: hidden } : {}),
       ...(pinned.version.definition.prompt.trim() === ""
         ? {}
         : { system_prompt: pinned.version.definition.prompt }),

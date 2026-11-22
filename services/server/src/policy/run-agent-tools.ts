@@ -13,10 +13,10 @@ import { mayUseDangerousMode } from "./dangerous-mode.js";
  * - `toolsDeny`: the agent's own `tools.deny`, from the run's published version (its frozen
  *   manifest) or, for a draft's test chat, the draft. The engine denies a matching call in every
  *   mode, built-in or MCP.
- * - `toolsAllow` (KOBE-776): the agent's own `tools.allow`, from the same place. When non-empty
- *   the engine refuses every call it doesn't match (`agent_tool_deny`), built-in or MCP (MCP
- *   tools by their `mcp__<server>__<tool>` name, as the run start filters `run.start.mcp`); empty
- *   or absent narrows nothing. It only ever narrows: it never removes a prompt.
+ * - `toolsAllow` (KOBE-776): the agent's own `tools.allow`, from the same place. The engine
+ *   refuses a call it limits and doesn't match (`agent_tool_deny`; `policy/agent-allow.ts`:
+ *   connector tools whenever it is not empty, by their `mcp__<server>__<tool>` name; built-ins
+ *   only when it names one). Empty or absent narrows nothing. It never removes a prompt.
  * - `dangerousTools`: when the published version is in Dangerous mode (AC1), the tools its
  *   `tools.allow` names one by one (never a glob). Empty unless the run is interactive (not
  *   scheduled, not a skill eval) and **whoever published that version** is still active and still
@@ -98,7 +98,8 @@ async function agentTools(
 
 /**
  * A draft's `tools.allow` and `tools.deny` (a test chat runs the draft; its frontmatter was
- * validated on save); entries that aren't strings are dropped.
+ * validated on save). A missing draft or a malformed allow list throws (every call is denied);
+ * deny entries that aren't strings are dropped.
  */
 async function draftTools(
   tx: KobeTx,
@@ -115,9 +116,20 @@ async function draftTools(
           SELECT frontmatter->'tools'->'allow' AS allow, frontmatter->'tools'->'deny' AS deny
             FROM site_agents WHERE id = ${agentId}`);
   const row = res.rows[0];
+  // As the published path: an unreadable agent throws, and the call is denied.
+  if (!row) throw new Error("the run's agent draft can't be read");
+  const allow = row.allow;
+  // A malformed allow list never means "no limit": it refuses every call (fail closed).
+  if (
+    allow !== null &&
+    allow !== undefined &&
+    (!Array.isArray(allow) || !allow.every((d) => typeof d === "string"))
+  ) {
+    throw new Error("the run's agent draft has an unreadable tools.allow");
+  }
   const strings = (v: unknown) =>
     Array.isArray(v) ? v.filter((d): d is string => typeof d === "string") : [];
-  return { toolsAllow: strings(row?.allow), toolsDeny: strings(row?.deny) };
+  return { toolsAllow: strings(allow), toolsDeny: strings(row.deny) };
 }
 
 /** The publisher is active and a site admin or an admin of this team, now (AC1). */

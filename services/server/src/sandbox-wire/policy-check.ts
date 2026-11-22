@@ -610,13 +610,13 @@ async function allowOutcome(
       EVAL_NO_PROMPT,
       ...decision.reasons.filter((r) => r.code !== "user_allow_rule"),
     ];
-    return refuse(d, decision.risk, reasons, EVAL_NO_PROMPT.message);
+    return await refuse(d, decision.risk, reasons, EVAL_NO_PROMPT.message);
   }
   // An admin's Dangerous agent allowed it (AC1): audited before the call runs; a skill eval
   // never runs on it (defence in depth: the context source never sets it there), and a failed
   // audit write denies the call.
   if (appliedDangerousMode(decision) !== undefined) {
-    if (evalRun) return refuse(d, decision.risk, [EVAL_NO_PROMPT], EVAL_NO_PROMPT.message);
+    if (evalRun) return await refuse(d, decision.risk, [EVAL_NO_PROMPT], EVAL_NO_PROMPT.message);
     try {
       await recordDangerousApplied(deps.db, {
         teamId: target.teamId,
@@ -675,12 +675,17 @@ async function askOutcome(
   // so no approval row is created for it and the sandbox is not left waiting.
   const never = neverPromptReason(input);
   if (never !== undefined) {
-    return refuse(d, decision.risk, [never, ...decision.reasons], never.message);
+    return await refuse(d, decision.risk, [never, ...decision.reasons], never.message);
   }
   // A skill eval's run (KOBE-325) never asks either, whatever mode the floor clamped it to: the
   // call is denied and recorded (its `no_denied_tools` check reads the denial).
   if (d.evalRun) {
-    return refuse(d, decision.risk, [EVAL_NO_PROMPT, ...decision.reasons], EVAL_NO_PROMPT.message);
+    return await refuse(
+      d,
+      decision.risk,
+      [EVAL_NO_PROMPT, ...decision.reasons],
+      EVAL_NO_PROMPT.message,
+    );
   }
   if (SERVER_APPROVED_TOOLS.has(frame.tool) && asking.onDeferred !== undefined) {
     // CM6: the approval binds the server's canonical input; the frame handler asks for it.
@@ -728,7 +733,7 @@ export async function decidePolicyCheck(
     if ("reason" in evaluated) {
       const input = evaluated.reason;
       if (input.code === "unknown_tool") {
-        return refuse(
+        return await refuse(
           { deps, target, frame, mayRecordDenied },
           "destructive",
           [input],
@@ -744,7 +749,7 @@ export async function decidePolicyCheck(
     const d: Deciding = { deps, target, frame, mayRecordDenied, evalRun };
     const decision = await guardedDecision(d, evaluated);
     if (evalRun && evalIsolatedCall(frame.tool, frame.input)) {
-      return refuse(d, decision.risk, [EVAL_ISOLATED], EVAL_ISOLATED.message);
+      return await refuse(d, decision.risk, [EVAL_ISOLATED], EVAL_ISOLATED.message);
     }
     if (decision.effect === "allow") return await allowOutcome(d, evaluated.input, decision);
     if (decision.effect === "deny") {
