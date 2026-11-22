@@ -1,0 +1,58 @@
+{{- /* KOBE-811: rate-limit middlewares and the event-stream Ingress (see _ingress.tpl). */ -}}
+{{- $rl := .Values.ingress.rateLimit -}}
+{{- if and .Values.ingress.enabled $rl.enabled -}}
+{{- $fullname := include "kobe.fullname" . -}}
+{{- $tls := .Values.ingress.tls -}}
+{{- if and (gt (int (default 0 $rl.ipStrategy.depth)) 0) (or $rl.ipStrategy.excludedIPs $rl.ipStrategy.excludeTrustedProxies) }}
+{{- fail "ingress.rateLimit.ipStrategy: set depth or excludedIPs/excludeTrustedProxies, not both (Traefik ignores excludedIPs when depth is set)" }}
+{{- end }}
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $fullname }}-ratelimit
+  labels:
+    {{- include "kobe.labels" . | nindent 4 }}
+spec:
+  {{- include "kobe.ingress.rateLimitSpec" (dict "root" . "limit" $rl) | nindent 2 }}
+{{- if $rl.streams.enabled }}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ $fullname }}-ratelimit-streams
+  labels:
+    {{- include "kobe.labels" . | nindent 4 }}
+spec:
+  {{- include "kobe.ingress.rateLimitSpec" (dict "root" . "limit" $rl.streams) | nindent 2 }}
+{{- end }}
+---
+# Event streams (SSE) under /v1: their own Ingress, so they get the streams limit (or none) instead
+# of the main one. The longer PathRegexp rule outranks the main Ingress's PathPrefix(/v1).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullname }}-streams
+  labels:
+    {{- include "kobe.labels" . | nindent 4 }}
+  annotations:
+    {{- with include "kobe.ingress.annotations" (dict "root" . "middleware" (ternary (printf "%s-ratelimit-streams" $fullname) "" (eq $rl.streams.enabled true)) "extra" (dict "traefik.ingress.kubernetes.io/router.pathmatcher" "PathRegexp") "secondary" true) | trim }}
+    {{- . | nindent 4 }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if $tls.enabled }}
+  tls:
+    - hosts: [{{ .Values.ingress.host | quote }}]
+      secretName: {{ default (printf "%s-tls" $fullname) $tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: {{ include "kobe.ingress.streamPathRegexp" . | quote }}
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ $fullname }}-server
+                port: { name: http }
+{{- end }}

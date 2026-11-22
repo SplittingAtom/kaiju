@@ -1452,6 +1452,53 @@ off per workload with `<component>.podDisruptionBudget.enabled` or
 `<component>.topologySpread.enabled`, or spread over zones with
 `<component>.topologySpread.topologyKey: topology.kubernetes.io/zone`.
 
+### Rate limit at the ingress (optional)
+
+Kobe's server limits sign-in, uploads and other costly routes itself. To also cap how many
+requests one client address may send through the ingress, turn on the Traefik rate limit (off by
+default, so upgrades change nothing):
+
+```yaml
+ingress:
+  rateLimit:
+    enabled: true
+    average: 100 # requests per period, per client address
+    burst: 300 # short bursts above the average
+    period: 1s
+    streams: # event streams (SSE) get their own, looser limit
+      enabled: true
+      average: 60
+      burst: 120
+      period: 1m
+```
+
+The chart adds a `traefik.io/v1alpha1` `Middleware` (Traefik's Kubernetes CRD provider, on by
+default in k3s) and attaches it to the Ingress with `router.middlewares`; middlewares you already
+list in `ingress.annotations` under that key keep working after it. A client over the limit gets
+`429 Too Many Requests`. A page load fetches many assets, so keep the main limit generous.
+
+- **Event streams.** Run events, Workspace file events and changes, and skill-eval events
+  (`/v1/runs/<id>/events`, `/v1/workspace/events`, `/v1/workspace/changes`,
+  `/v1/skill-evals/<id>/events`) are served by a second Ingress, `<release>-streams`, with the
+  `streams` limit (`streams.enabled: false` leaves them unlimited at the ingress). A limit only
+  applies when a request starts, so an open stream is never cut; the separate budget keeps stream
+  reconnects from using up the page budget. This Ingress uses Traefik's `PathRegexp` path matcher,
+  which needs Traefik v3 (k3s 1.32 or later).
+- **Sandboxes and MCP.** The sandbox agents' WebSocket (port 8081) and the MCP proxy's internal
+  routes are reached inside the cluster, not through the ingress, so the limit never applies to
+  them.
+- **Which address counts.** By default Traefik counts each request against the address the
+  connection comes from. **If a load balancer in front of Traefik hides client addresses** (SNAT,
+  or the Traefik Service with `externalTrafficPolicy: Cluster` on some load balancers), every
+  client shares one budget. Then have the load balancer send `X-Forwarded-For`, trust it in
+  Traefik's entry point (`forwardedHeaders.trustedIPs`), and set one of
+  `ingress.rateLimit.ipStrategy.depth` (the Nth address from the right) or
+  `ipStrategy.excludedIPs` (the rightmost address outside these CIDRs).
+  `ipStrategy.excludeTrustedProxies: true` adds `auth.trustedProxies` to the excluded addresses,
+  so Traefik skips the same proxies the server trusts for its own limits. With either set, a
+  request without `X-Forwarded-For` counts against one shared budget, so set them only when the
+  load balancer always adds the header.
+
 ### Audit forwarding (SIEM)
 
 `auditForwarding.syslog` and `auditForwarding.otlp` send every audit event to your SIEM (off by
