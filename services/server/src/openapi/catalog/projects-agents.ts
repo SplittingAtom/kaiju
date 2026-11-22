@@ -1,9 +1,13 @@
 import type { CatalogArea } from "./build.js";
+import { agentsDetails, projectsDetails, siteGalleryDetails } from "./details/projects-agents.js";
 
 /** OpenAPI catalog: projects, agents and the site gallery (KOBE-727). */
 export const projectsAgentsAreas: readonly CatalogArea[] = [
   {
     tag: "Projects",
+    detailed: true,
+    teamScoped: true,
+    details: projectsDetails,
     description:
       "Projects: shared instructions, files and members. Team-scoped: send X-Kobe-Team on changes.",
     entries: [
@@ -51,6 +55,9 @@ export const projectsAgentsAreas: readonly CatalogArea[] = [
   },
   {
     tag: "Agents",
+    detailed: true,
+    teamScoped: true,
+    details: agentsDetails,
     description:
       "Agents of the active team: personal, team and gallery. Team-scoped: send X-Kobe-Team on changes.",
     entries: [
@@ -123,6 +130,8 @@ export const projectsAgentsAreas: readonly CatalogArea[] = [
   },
   {
     tag: "Site: gallery",
+    detailed: true,
+    details: siteGalleryDetails,
     description:
       "Gallery agents, edited and published by site admins (`site.gallery.manage`). Not team-scoped.",
     entries: [
@@ -156,7 +165,7 @@ export const projectsAgentsAreas: readonly CatalogArea[] = [
         "post",
         "/v1/site/gallery/agents/{id}/reset",
         "Reset a gallery agent to the repository definition",
-        "404 `not_customized` when it already follows it.",
+        "409 `not_customized` when it already follows it.",
       ],
       [
         "post",
@@ -167,12 +176,6 @@ export const projectsAgentsAreas: readonly CatalogArea[] = [
         "get",
         "/v1/site/gallery/agents/{id}/skill-updates",
         "List newer skill versions for a gallery agent",
-      ],
-      [
-        "post",
-        "/v1/site/gallery/agents/{id}/unarchive",
-        "Unarchive a gallery agent (not allowed)",
-        "Always answers 405 `gallery_read_only`.",
       ],
       ["get", "/v1/site/gallery/agents/{id}/versions", "List a gallery agent's versions"],
       ["get", "/v1/site/gallery/agents/{id}/versions/{version}", "Read one gallery agent version"],

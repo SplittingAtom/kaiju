@@ -88,6 +88,13 @@ export const UNDOCUMENTED_ROUTES: readonly AllowlistEntry[] = [
     reason: "Web Vitals beacon from Kobe's own web app; not an API for other clients.",
   },
   {
+    route: "POST /v1/site/gallery/agents/{id}/unarchive",
+    category: "fallback",
+    reason:
+      "Always refuses with 405 `gallery_read_only` (gallery agents are never archived or " +
+      "unarchived); registered only so the version routes cannot take the path (KOBE-771).",
+  },
+  {
     route: "* /v1/site/gallery/agents/{path}",
     category: "fallback",
     reason:

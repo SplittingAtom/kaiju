@@ -48,7 +48,7 @@ import { DANGEROUS_FORBIDDEN, mayUseDangerousMode } from "../policy/dangerous-mo
 import { invalidRequest, param, readJson } from "../http/request.js";
 
 const GALLERY: AgentLocation = { scope: "gallery" };
-const bodySchema = z.object({ teamId: z.uuid() }).strict();
+export const bodySchema = z.object({ teamId: z.uuid() }).strict();
 
 /** Site admins edit and publish gallery agents (KOBE-494); suspension stays per team. */
 const GALLERY_EDITOR_ACCESS = {
