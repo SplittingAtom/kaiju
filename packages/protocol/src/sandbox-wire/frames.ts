@@ -37,6 +37,7 @@ import {
 import { fileOpenFrameSchema, fileOpenResultFrameSchema } from "./file-open-frames.js";
 import {
   notebookExecuteFrameSchema,
+  notebookInspectFrameSchema,
   notebookInterruptFrameSchema,
   notebookOutputFrameSchema,
   notebookRestartFrameSchema,
@@ -149,6 +150,7 @@ export const serverToSandboxFrameSchema = z.union([
   notebookExecuteFrameSchema,
   notebookInterruptFrameSchema,
   notebookRestartFrameSchema,
+  notebookInspectFrameSchema,
   legacyWebSearchResultFrameSchema, // retired (KOBE-606)
   sessionRestoreFrameSchema,
   ackFrameSchema,

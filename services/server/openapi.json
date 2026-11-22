@@ -4986,6 +4986,116 @@
         }
       }
     },
+    "/v1/threads/{id}/notebook/variables": {
+      "post": {
+        "operationId": "postThreadNotebookVariables",
+        "summary": "Snapshot the variables of the conversation's Python kernel",
+        "description": "The owner reads a snapshot of their kernel's user variables (the Python editor's Variables tab, called after each run and on Refresh). The workspace keeps the snapshot it took after the owner's last run: it answers with it while code runs (`stale`: true) or when nothing ran since, and takes a fresh one when the kernel is idle and code ran since or `refresh` is true. After a snapshot taken after a run timed out, automatic snapshots pause for the conversation until the workspace restarts (`auto_paused`: `snapshot_timeout`): only `refresh` takes one then. Per variable its name, type, a short repr (capped; empty with `repr_error` when it raised or took too long) and summaries for common types (`len`; `shape` and `dtype` for numpy arrays; `shape`, `columns` and `columns_total` for pandas DataFrames, never their data). Modules, functions and classes are listed by name in `other`; names starting with `_` and IPython's own are left out; `truncated` when a cap left variables out. It runs silently in the kernel (no execution count, not a run, nothing stored) and never wakes a sleeping workspace or starts a kernel: `no_kernel`, `busy` (code is running) and `unavailable` (no answer in time) are answers too. Nothing is stored: snapshots are never in run events and go to the owner only, since a repr can hold a secret. Reprs are untrusted: show them as plain text.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotebookVariablesBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The snapshot, or why there is none.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotebookVariables"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`invalid_request`: bad id or body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`: no session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`read_only` (a reader the thread is shared with), `forbidden`, `not_a_team_member`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`thread_not_found`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotebookError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`variables_unsupported`, `notebooks_unsupported`; also (as `Error`) `thread_busy` while another request holds the conversation and `skill_eval_thread` for a skill eval's conversation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotebookError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotebookError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`isolation_unavailable`, `sandbox_unavailable`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotebookError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/approvals": {
       "get": {
         "operationId": "listApprovals",
@@ -41757,6 +41867,204 @@
           }
         },
         "required": ["thread_id", "run_id", "latest", "items"],
+        "additionalProperties": false
+      },
+      "NotebookVariables": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "const": "ok"
+              },
+              "taken_at": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              "execution_count": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "variables": {
+                "maxItems": 200,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "type": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "module": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "repr": {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    "repr_error": {
+                      "type": "string",
+                      "enum": ["raised", "timeout"]
+                    },
+                    "len": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "shape": {
+                      "maxItems": 64,
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "dtype": {
+                      "type": "string",
+                      "maxLength": 128
+                    },
+                    "columns": {
+                      "maxItems": 50,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "maxLength": 128
+                          },
+                          "dtype": {
+                            "type": "string",
+                            "maxLength": 128
+                          }
+                        },
+                        "required": ["name", "dtype"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "columns_total": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": ["name", "type", "repr"],
+                  "additionalProperties": false
+                }
+              },
+              "other": {
+                "maxItems": 200,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": ["module", "function", "class"]
+                    }
+                  },
+                  "required": ["name", "kind"],
+                  "additionalProperties": false
+                }
+              },
+              "truncated": {
+                "type": "boolean"
+              },
+              "stale": {
+                "type": "boolean"
+              },
+              "auto_paused": {
+                "type": "string",
+                "enum": ["snapshot_timeout"]
+              }
+            },
+            "required": [
+              "status",
+              "taken_at",
+              "execution_count",
+              "variables",
+              "other",
+              "truncated"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["busy", "no_kernel", "unavailable"]
+              },
+              "auto_paused": {
+                "type": "string",
+                "enum": ["snapshot_timeout"]
+              }
+            },
+            "required": ["status"],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "NotebookVariablesBody": {
+        "type": "object",
+        "properties": {
+          "refresh": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "NotebookError": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_request",
+              "thread_not_found",
+              "not_found",
+              "not_a_notebook",
+              "cell_not_found",
+              "not_code_cell",
+              "too_large",
+              "thread_busy",
+              "sandbox_unavailable",
+              "notebooks_unsupported",
+              "isolation_unavailable",
+              "sandbox_refused",
+              "rate_limited",
+              "variables_unsupported"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["code", "message"],
         "additionalProperties": false
       },
       "Approval": {

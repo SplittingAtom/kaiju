@@ -1,6 +1,11 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { CAPABILITY_NOTEBOOKS, notebookRunResponseSchema, type PolicyEngine } from "@kobe/protocol";
+import {
+  CAPABILITY_NOTEBOOK_INSPECT,
+  CAPABILITY_NOTEBOOKS,
+  notebookRunResponseSchema,
+  type PolicyEngine,
+} from "@kobe/protocol";
 import { type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
 import { withTeam } from "@kobe/db";
 import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
@@ -599,6 +604,22 @@ describe("run_python (NB3, NB13)", () => {
     ]);
     const started = (await events(w.team, runId))[0];
     expect(started?.payload).toMatchObject({ origin: "agent", tool_call_id: "call-1" });
+    // KOBE-803: the agent's run never asks for a variables snapshot (snapshots go only to the
+    // owner, never to the model); this agent lacks notebook_inspect, so no asks at all.
+    expect(sb.frames("notebook.execute")[0]).not.toHaveProperty("with_variables");
+    expect(sb.frames("notebook.execute")[0]).not.toHaveProperty("with_timing");
+  });
+
+  it("asks a notebook_inspect agent for timing only on run_python (KOBE-803)", async () => {
+    const w = await world();
+    const sb = await connected(w, () => [stdout("x\n")], [
+      CAPABILITY_NOTEBOOKS,
+      CAPABILITY_NOTEBOOK_INSPECT,
+    ]);
+    const runId = await agentRun(w);
+    await call(sb, w, runId, "call-t", { code: "1" });
+    expect(sb.frames("notebook.execute")[0]).toMatchObject({ with_timing: true });
+    expect(sb.frames("notebook.execute")[0]).not.toHaveProperty("with_variables");
   });
 
   it("runs a notebook cell from the synced copy and saves its outputs", async () => {
