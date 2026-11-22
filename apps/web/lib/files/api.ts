@@ -4,6 +4,7 @@
  * caller's own, so no call names an owner. Entries are camelized by the client.
  */
 import type { SyncConflictView } from "./sync-conflicts";
+import { createRebuildApi, type RebuildApi } from "../workspace/rebuild";
 import type { WorkspaceArea, WorkspaceSyncStatus } from "@kobe/protocol";
 import {
   apiDownload,
@@ -91,6 +92,8 @@ export interface FilesApi {
    * is current (and the sandbox starts waking). List afterwards whatever the answer.
    */
   syncNow(): Promise<ApiResult<{ readonly status: WorkspaceSyncStatus }>>;
+  /** The member's workspace volume lost with its server, and its rebuild (KOBE-739). */
+  readonly rebuild: RebuildApi;
 }
 
 function query(params: Readonly<Record<string, string | undefined>>): string {
@@ -134,6 +137,7 @@ export function createFilesApi(teamId: string, fetchFn?: typeof fetch): FilesApi
       }),
     wake: () => apiRequest(`/v1/workspace/wake`, { ...opts, method: "POST" }),
     syncNow: () => apiRequest(`/v1/workspace/sync`, { ...opts, method: "POST", json: {} }),
+    rebuild: createRebuildApi(teamId, fetchFn),
     syncConflicts: () => apiRequest(`/v1/workspace/sync-conflicts`, opts),
     settleSyncConflict: (id, action) =>
       apiRequest(`/v1/workspace/sync-conflicts/${encodeURIComponent(id)}`, {

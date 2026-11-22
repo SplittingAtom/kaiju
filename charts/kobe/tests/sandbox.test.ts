@@ -667,6 +667,30 @@ describe("sandbox RBAC (least privilege; D11)", () => {
     });
   });
 
+  it("lets the server read PersistentVolumes and Nodes to tell a lost volume, read-only (KOBE-739)", () => {
+    const all = rules("ClusterRole", orchestrator);
+    expect(all).toContainEqual({
+      apiGroups: [""],
+      resources: ["persistentvolumes"],
+      verbs: ["get"],
+    });
+    expect(all).toContainEqual({ apiGroups: [""], resources: ["nodes"], verbs: ["get", "list"] });
+    expect(sandboxConfig(ms).volumeLoss).toEqual({ detection: true, graceMinutes: 30 });
+  });
+
+  it("drops the Node and PV reads when volume-loss detection is off (KOBE-739)", () => {
+    const off = render({ "sandbox.volumeLoss.detection": "false" });
+    const name = byKind(off, "ClusterRole").find((r) =>
+      r.metadata.name.endsWith("-sandbox-orchestrator"),
+    )?.metadata.name as string;
+    const resources = (find(off, "ClusterRole", name)?.rules ?? []).flatMap(
+      (r: { resources: string[] }) => r.resources,
+    );
+    expect(resources).not.toContain("nodes");
+    expect(resources).not.toContain("persistentvolumes");
+    expect(sandboxConfig(off).volumeLoss).toEqual({ detection: false, graceMinutes: 30 });
+  });
+
   it("renders dormant-volume reclaim off by default, and its settings when on (KOBE-733)", () => {
     const off = sandboxConfig(render());
     expect(off.hibernation.reclaim).toEqual({

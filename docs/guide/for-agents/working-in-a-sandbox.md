@@ -29,7 +29,8 @@ tool list is more specific, that wins: it reflects this site's and this team's a
   project folder under `/workspace` (its `node_modules`). A plain `pip install` goes to `~/.local`
   and npm caches in `~/.npm`, both in `$HOME`. Write large outputs to `/workspace`, and delete
   large temporary files when done. `.venv`, `node_modules` and `__pycache__` are not backed up, and
-  may be missing after a long sleep: recreate them if needed.
+  may be missing after a long sleep or after the member rebuilt a lost workspace from its last
+  sync (empty folders and recent unsynced changes are missing then too): recreate them if needed.
 
 ## Every tool call is decided by the server
 

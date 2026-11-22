@@ -15,6 +15,7 @@ predates the `sandbox` key still renders. Keep in sync with values.yaml.
   "hibernation" (dict "enabled" true "idleMinutes" 15 "sweepSeconds" 60 "reclaim" (dict "enabled" false "dormantDays" 30))
   "workspaceSync" (dict "enabled" true "pushIntervalSeconds" 60 "maxFileSize" "1Gi" "maxWorkspaceSize" "" "maxFiles" 100000 "collectSeconds" 3600)
   "toolExecutor" (dict "enabled" false)
+  "volumeLoss" (dict "detection" true "graceMinutes" 30)
   "skillEval" (dict "maxConcurrentPerTeam" 4 "workspaceSize" "2Gi")
   "orbitEval" (dict "deadlineSeconds" 900 "resources" (dict "requests" (dict "cpu" "250m" "memory" "512Mi") "limits" (dict "cpu" "1" "memory" "2Gi")))
   "skillScan" (dict "enabled" false "deadlineSeconds" 300 "resources" (dict "requests" (dict "cpu" "250m" "memory" "512Mi") "limits" (dict "cpu" "1" "memory" "2Gi")))
@@ -137,6 +138,7 @@ pod labels and port for the team NetworkPolicy).
       "dormantDays" (int $s.hibernation.reclaim.dormantDays)))
   "workspaceSync" (include "kobe.workspaceSyncConfig" $s | fromJson)
   "toolExecutor" (dict "enabled" $s.toolExecutor.enabled)
+  "volumeLoss" (dict "detection" $s.volumeLoss.detection "graceMinutes" (int $s.volumeLoss.graceMinutes))
   "skillEval" (dict "maxConcurrentPerTeam" (int $s.skillEval.maxConcurrentPerTeam) "workspaceSize" (toString $s.skillEval.workspaceSize))
   "orbitEval" (dict
     "image" (include "kobe.image" (dict "root" . "name" "orbit-eval"))

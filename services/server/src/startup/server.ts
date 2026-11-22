@@ -350,6 +350,12 @@ export async function startServer(
   const kickSkillEvals = () => fireAndLog(log, "skill eval sweep", skills.skillEvalRunner?.sweep());
   // Offboarding's first pass deletes volumes, so it gets the provider before the jobs start.
   if (providerRuntime && deps) deps.offboarding.setProvider(providerRuntime.provider);
+  // A workspace lost with its node is rebuilt from the last sync (KOBE-739): needs workspace sync.
+  if (providerRuntime && deps) {
+    deps.workspaceRebuild.setProvider(providerRuntime.provider, workspaceSync !== undefined, {
+      graceMinutes: providerRuntime.settings.volumeLoss.graceMinutes,
+    });
+  }
   const lifecycle =
     providerRuntime && deps
       ? createSandboxLifecycle({
@@ -358,6 +364,8 @@ export async function startServer(
           idleMinutes: providerRuntime.settings.hibernation.idleMinutes,
           // A returning member's offboarded sandbox is replaced by a new one (KOBE-28, D12).
           reinstate: (target) => deps.offboarding.reinstate(target),
+          // KOBE-739: how long a volume's node must stay down before a wake reports it lost.
+          volumeLossGraceMinutes: providerRuntime.settings.volumeLoss.graceMinutes,
           ...reclaimSettings(providerRuntime.settings, workspaceSync !== undefined, log),
         })
       : undefined;
