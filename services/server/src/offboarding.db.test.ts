@@ -13,6 +13,7 @@ import { TestBrowser } from "./testing/browser.js";
 import { MemoryObjects } from "./testing/memory-objects.js";
 import { MemoryMailer } from "./testing/mailer.js";
 import { workspaceBlobKey } from "./workspace-sync/keys.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 /**
  * Offboarding (KOBE-28, D12) against a real Postgres: a removed or deactivated member's sandbox is
@@ -158,6 +159,7 @@ beforeAll(async () => {
   admin = new pg.Client({ connectionString: database.adminUrl });
   await admin.connect();
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "t".repeat(48),

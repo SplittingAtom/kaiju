@@ -18,7 +18,7 @@ import {
 // event, never the skill's result); and (2) deletes every eval sandbox claim (by label, in every
 // team namespace) whose execution no longer runs: done, gone, cancelled or without a heartbeat.
 // The claim's own shutdownTime is the cluster-side backstop. It needs the sandbox provider, so it
-// stays in index.ts beside the Orbit sweep (main's `startup/jobs.ts` keeps such jobs there).
+// is a job in `startup/process-jobs.ts` beside the Orbit sweep.
 
 export const SKILL_EVAL_REAPER_LOCK = "kobe.skill-eval.reaper";
 export const SKILL_EVAL_REAPER_MS = 30_000;

@@ -8,6 +8,7 @@ import { seedGalleryAgents } from "./gallery/seed.js";
 import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
 import { TestBrowser } from "./testing/browser.js";
 import { MemoryMailer } from "./testing/mailer.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 /**
  * Fork lands in Personal with binding, transfer, adopt (KOBE-568, spec agents-roster AR8, AR10,
@@ -43,6 +44,7 @@ async function sql<T extends pg.QueryResultRow>(text: string, args: unknown[] = 
 beforeAll(async () => {
   database = await createTestDatabase(testServerUrl());
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "t".repeat(48),

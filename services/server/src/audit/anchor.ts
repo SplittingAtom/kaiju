@@ -50,6 +50,8 @@ export class AuditAnchorLogger {
   private readonly key: Buffer;
   private last: AuditAnchor | null = null;
   private timer: ReturnType<typeof setInterval> | undefined;
+  /** The latest tick (never rejects). */
+  private current: Promise<unknown> = Promise.resolve();
 
   constructor(
     private readonly db: KobeDb,
@@ -99,18 +101,21 @@ export class AuditAnchorLogger {
   }
 
   start(): void {
-    const run = () =>
-      void this.tick().catch((err: unknown) =>
+    const run = () => {
+      this.current = this.tick().catch((err: unknown) =>
         this.log.error({ err }, "audit chain head could not be read"),
       );
+    };
     run();
     this.timer ??= setInterval(run, AUDIT_ANCHOR_INTERVAL_MS);
     this.timer.unref();
   }
 
-  stop(): void {
+  /** Stops the timer; resolves once a tick in flight has ended (KOBE-709). */
+  stop(): Promise<unknown> {
     if (this.timer) clearInterval(this.timer);
     this.timer = undefined;
+    return this.current;
   }
 
   private fail(seq: number, problem: string): AnchorStatus {

@@ -28,9 +28,11 @@ beforeAll(async () => {
   await f.setup();
   sync = createWorkspaceSync({ db: f.fx.db, objects, prefix: "", limits: LIMITS, log: silent });
   const reader = createViewingReader(f.fx.db, sync);
-  f.fx.replica(0).deps.runs.useViewing((owner, path) => {
-    reads += 1;
-    return reader(owner, path);
+  f.fx.replica(0).deps.runWorkspace.use({
+    viewing: (owner, path) => {
+      reads += 1;
+      return reader(owner, path);
+    },
   });
 });
 afterAll(() => f.teardown());

@@ -9,6 +9,7 @@ import { waitForAppSessionsToClose } from "../testing/app-sessions.js";
 import { TestBrowser } from "../testing/browser.js";
 import { MemoryMailer } from "../testing/mailer.js";
 import { SchedulerRunner } from "./runner.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 /**
  * Scheduler runner (KOBE-174): three runner instances (three server deps, three pools) on one
@@ -35,6 +36,7 @@ let suspendedAgent: string;
 const mailer = () => new MemoryMailer();
 const makeDeps = (extra: Partial<Parameters<typeof createServerDeps>[0]> = {}) =>
   createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "t".repeat(48),

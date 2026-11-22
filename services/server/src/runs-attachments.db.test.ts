@@ -40,9 +40,9 @@ beforeAll(async () => {
       limits: { maxFileBytes: 1000, maxWorkspaceBytes: 100_000, maxFiles: 100 },
       log: logger,
     });
-    f.fx
-      .replica(i)
-      .deps.runs.useAttachments(createAttachmentStager({ db: f.fx.db, sync, settings }));
+    f.fx.replica(i).deps.runWorkspace.use({
+      attachments: createAttachmentStager({ db: f.fx.db, sync, settings }),
+    });
   }
 });
 afterAll(() => f.teardown());

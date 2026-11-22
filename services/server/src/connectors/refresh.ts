@@ -384,13 +384,15 @@ export interface ConnectorRefreshOptions {
 }
 
 /** Starts the interval; returns the stop function. `intervalMs <= 0` starts nothing. */
-export function startConnectorRefresh(options: ConnectorRefreshOptions): () => void {
-  if (options.intervalMs <= 0) return () => undefined;
+export function startConnectorRefresh(options: ConnectorRefreshOptions): () => Promise<unknown> {
+  if (options.intervalMs <= 0) return () => Promise.resolve();
   let running = false;
+  // The pass in flight (never rejects): the stop function waits for it (KOBE-709).
+  let current: Promise<unknown> = Promise.resolve();
   const run = () => {
     if (running) return;
     running = true;
-    options.lock
+    current = options.lock
       .runExclusive(async () => {
         const summary = await refreshAllConnectors(options.db, options.prober, options.logger, {
           envelope: options.envelope,
@@ -409,5 +411,8 @@ export function startConnectorRefresh(options: ConnectorRefreshOptions): () => v
   };
   const timer = setInterval(run, options.intervalMs);
   timer.unref();
-  return () => clearInterval(timer);
+  return () => {
+    clearInterval(timer);
+    return current;
+  };
 }

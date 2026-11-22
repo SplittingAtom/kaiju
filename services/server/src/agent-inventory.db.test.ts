@@ -7,6 +7,7 @@ import { createServerDeps, type ServerDeps } from "./deps.js";
 import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
 import { TestBrowser } from "./testing/browser.js";
 import { MemoryMailer } from "./testing/mailer.js";
+import { fakeIsolation } from "./testing/isolation.js";
 
 /**
  * Agent inventory and team-level suspension (KOBE-86). Own throwaway database.
@@ -42,6 +43,7 @@ async function activate(who: Person, teamId: string): Promise<void> {
 beforeAll(async () => {
   database = await createTestDatabase(testServerUrl());
   deps = createServerDeps({
+    isolation: fakeIsolation().probe,
     databaseUrl: database.appUrl,
     publicUrl: PUBLIC_URL,
     authSecret: "t".repeat(48),
