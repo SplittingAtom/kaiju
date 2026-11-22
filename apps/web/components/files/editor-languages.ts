@@ -1,6 +1,9 @@
 /**
  * The Raw view's language modes (KOBE-463), each loaded only when a file of that kind opens.
  * Imported only by `code-editor.tsx`, itself loaded lazily, so none of it is in the chat bundle.
+ * KOBE-808: Python and JavaScript/TypeScript come with their packages' completion sources
+ * (keywords, snippets, builtins, the file's own names); JSX/TSX without the packages' tag
+ * auto-closing, which would change what typing inserts. The other modes have no source.
  */
 import { StreamLanguage, type StreamParser } from "@codemirror/language";
 import type { Extension } from "@codemirror/state";
@@ -43,15 +46,24 @@ export async function languageExtension(language: EditorLanguage | null): Promis
     case "tsv":
       return StreamLanguage.define(delimited("\t"));
     case "python":
-      return (await import("@codemirror/lang-python")).pythonLanguage;
+      return (await import("@codemirror/lang-python")).python();
     case "javascript":
-      return (await import("@codemirror/lang-javascript")).javascriptLanguage;
     case "jsx":
-      return (await import("@codemirror/lang-javascript")).jsxLanguage;
     case "typescript":
-      return (await import("@codemirror/lang-javascript")).typescriptLanguage;
-    case "tsx":
-      return (await import("@codemirror/lang-javascript")).tsxLanguage;
+    case "tsx": {
+      const js = await import("@codemirror/lang-javascript");
+      const typescript = language === "typescript" || language === "tsx";
+      // The completion sources sit on the shared JavaScript language data, so they apply to every
+      // dialect; `jsx` stays off to leave out tag auto-closing.
+      const support = js.javascript({ typescript }).support;
+      const dialect = {
+        javascript: js.javascriptLanguage,
+        jsx: js.jsxLanguage,
+        typescript: js.typescriptLanguage,
+        tsx: js.tsxLanguage,
+      }[language];
+      return [dialect, support];
+    }
     case "yaml":
       return (await import("@codemirror/lang-yaml")).yamlLanguage;
     case null:

@@ -11,7 +11,7 @@
  * above the editor (`proposal-review.tsx`) moves between the changes and decides the change at the
  * cursor through `onReview`.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useLineWrap } from "./use-line-wrap";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
@@ -36,6 +36,12 @@ import type { EditorLanguage } from "../../lib/files/editor";
 import { minimalChange } from "../../lib/files/outside-change";
 import { documentCspNonce } from "../../lib/security/csp-nonce";
 import { languageExtension } from "./editor-languages";
+import { builtInCompletion, completionTheme, kernelCompletion } from "./editor-completion";
+import {
+  KERNEL_STATE_TEXT,
+  type KernelCompleter,
+  type KernelCompletionState,
+} from "../../lib/notebooks/kernel-completer";
 
 export interface CodeEditorProps {
   readonly value: string;
@@ -60,6 +66,8 @@ export interface CodeEditorProps {
   readonly onRun?: (() => void) | undefined;
   /** Put the cursor in the editor when it opens (never when read-only). */
   readonly autoFocus?: boolean | undefined;
+  /** A `.py` file's kernel completion (KOBE-808); built-in completion needs nothing. */
+  readonly kernel?: KernelCompleter | undefined;
 }
 
 /** What the review row does to the change at the cursor (KOBE-615). */
@@ -274,8 +282,18 @@ function baseExtensions(label: string): Extension[] {
     // un-nonced ones, leaving the gutter above the text and the diff uncoloured (KOBE-469).
     EditorView.cspNonce.of(documentCspNonce()),
     theme,
+    completionTheme,
   ];
 }
+
+/** KOBE-808: completion only where the member can type, plus the kernel's for a `.py` file. */
+function completionExtensions(readOnly: boolean, kernel: KernelCompleter | undefined): Extension[] {
+  if (readOnly) return [];
+  return [builtInCompletion(), kernel === undefined ? [] : kernelCompletion(kernel)];
+}
+
+const NO_STATE = () => () => undefined;
+const noState = (): KernelCompletionState | null => null;
 
 /** The member is typing in some other field (the composer, a dialog): never take that focus. */
 function typingElsewhere(editor: HTMLElement): boolean {
@@ -305,6 +323,7 @@ export default function CodeEditor({
   compact = false,
   onRun,
   autoFocus = false,
+  kernel,
 }: CodeEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<EditorView | null>(null);
@@ -322,7 +341,15 @@ export default function CodeEditor({
     language: new Compartment(),
     readOnly: new Compartment(),
     wrap: new Compartment(),
+    completion: new Compartment(),
   });
+  const kernelRef = useRef(kernel);
+  kernelRef.current = kernel;
+  const kernelState = useSyncExternalStore(
+    kernel?.subscribe ?? NO_STATE,
+    kernel?.getState ?? noState,
+    kernel?.getState ?? noState,
+  );
   const [lineWrap, setLineWrap] = useLineWrap();
   const lineWrapRef = useRef(lineWrap);
   lineWrapRef.current = lineWrap;
@@ -365,6 +392,9 @@ export default function CodeEditor({
           compartments.current.wrap.of(wrapExtension(lineWrapRef.current)),
           // Read-only from the start (a read-only view is never briefly editable, KOBE-485).
           compartments.current.readOnly.of(readOnlyExtensions(readOnlyRef.current)),
+          compartments.current.completion.of(
+            completionExtensions(readOnlyRef.current, kernelRef.current),
+          ),
           original === undefined
             ? []
             : unifiedMergeView({
@@ -419,9 +449,12 @@ export default function CodeEditor({
 
   useEffect(() => {
     view?.dispatch({
-      effects: compartments.current.readOnly.reconfigure(readOnlyExtensions(readOnly)),
+      effects: [
+        compartments.current.readOnly.reconfigure(readOnlyExtensions(readOnly)),
+        compartments.current.completion.reconfigure(completionExtensions(readOnly, kernel)),
+      ],
     });
-  }, [view, readOnly]);
+  }, [view, readOnly, kernel]);
 
   // A new value from outside (a reload, a discarded draft) replaces the document; the value the
   // member's own typing produced comes back equal and changes nothing.
@@ -463,6 +496,17 @@ export default function CodeEditor({
           >
             Wrap
           </button>
+          {kernelState !== null && !readOnly && (
+            <span
+              role="status"
+              aria-live="polite"
+              data-kobe-kernel-completion={kernelState}
+              className="ml-auto truncate"
+              title="Completion from the conversation's Python kernel, added to the editor's own"
+            >
+              {KERNEL_STATE_TEXT[kernelState]}
+            </span>
+          )}
           <span role="status" aria-live="off" aria-label="Cursor position" className="tabular-nums">
             {`Ln ${cursor.line}, Col ${cursor.column}`}
           </span>

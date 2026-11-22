@@ -6,10 +6,11 @@
  * editor, code on top and the outputs (the notebook's renderer) live below; the split stays after
  * the run and closes back to the full height. The agent's `run_python {path}` runs of the same file
  * show there too. Unsaved changes are not run: the server reads the saved file. Loaded lazily by
- * the file tab with the kernel.
+ * the file tab with the kernel. KOBE-808: the Raw editor also completes from the running kernel.
  */
 import { PlayIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { KernelCompleter } from "../../lib/notebooks/kernel-completer";
 import { latestRun } from "../../lib/notebooks/executions";
 import { useDraft } from "../files/editor-save";
 import type { ToolbarAction } from "../files/editor-toolbar";
@@ -33,6 +34,16 @@ export default function PythonFile({ kernel, ...editor }: PythonFileProps) {
   const last = threadId === null ? undefined : latestRun(k.execs, threadId, path);
   // The output closed by the member stays closed until the next run.
   const [closed, setClosed] = useState<string | null>(null);
+  // KOBE-808: completion from the conversation's kernel, for the owner (who can run code) only.
+  const api = kernel?.readOnly === true ? undefined : kernel?.api;
+  const completer = useMemo(
+    () => (api === undefined ? undefined : new KernelCompleter(api, threadId)),
+    [api, threadId],
+  );
+  useEffect(() => completer?.setRunning(k.busy), [completer, k.busy]);
+  useEffect(() => {
+    if (k.phase === "running" || k.phase === "stopped") completer?.kernelChanged();
+  }, [completer, k.phase]);
   const blocker = kernelBlocker(kernel);
   const run: ToolbarAction = {
     id: "run",
@@ -86,6 +97,7 @@ export default function PythonFile({ kernel, ...editor }: PythonFileProps) {
         </>
       }
       output={output}
+      kernelCompletion={completer}
     />
   );
 }

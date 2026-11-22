@@ -1,8 +1,18 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { EditorView, runScopeHandlers } from "@codemirror/view";
 import { searchPanelOpen } from "@codemirror/search";
+import {
+  closeCompletion,
+  completionStatus,
+  currentCompletions,
+  startCompletion,
+} from "@codemirror/autocomplete";
+import { language } from "@codemirror/language";
+import type { ApiResult } from "../../lib/api/client";
+import type { KernelCompletionAnswer } from "../../lib/notebooks/api";
+import { KernelCompleter } from "../../lib/notebooks/kernel-completer";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { documentCspNonce } from "../../lib/security/csp-nonce";
@@ -214,5 +224,100 @@ describe("CodeEditor autoFocus (KOBE-802)", () => {
     render(<CodeEditor value="a\n" language={null} label="Edit a" />);
     const status = screen.getByRole("status", { name: "Cursor position" });
     expect(status.getAttribute("aria-live")).toBe("off");
+  });
+});
+
+describe("CodeEditor completion (KOBE-808)", () => {
+  const ready = async (view: EditorView) =>
+    waitFor(() => expect(view.state.facet(language)).not.toBeNull());
+
+  it("built-in Python completion opens on Ctrl+Space and Tab accepts", async () => {
+    const { container } = render(
+      <CodeEditor value={"total_count = 1\ntot"} language="python" label="Edit a.py" />,
+    );
+    const view = viewIn(container);
+    await ready(view);
+    act(() => view.dispatch({ selection: { anchor: view.state.doc.length } }));
+    act(() => void startCompletion(view));
+    await waitFor(() =>
+      expect(currentCompletions(view.state).map((c) => c.label)).toContain("total_count"),
+    );
+    // CodeMirror ignores an accept within its interaction delay of the list opening.
+    await new Promise((r) => setTimeout(r, 100));
+    act(() => void runScopeHandlers(view, new KeyboardEvent("keydown", { key: "Tab" }), "editor"));
+    await waitFor(() => expect(view.state.doc.toString()).toBe("total_count = 1\ntotal_count"));
+    expect(completionStatus(view.state)).toBeNull();
+  });
+
+  it("JavaScript and TypeScript complete their keywords and snippets", async () => {
+    const { container } = render(
+      <CodeEditor value={"fun"} language="typescript" label="Edit a.ts" />,
+    );
+    const view = viewIn(container);
+    await ready(view);
+    act(() => view.dispatch({ selection: { anchor: 3 } }));
+    act(() => void startCompletion(view));
+    await waitFor(() =>
+      expect(currentCompletions(view.state).map((c) => c.label)).toContain("function"),
+    );
+  });
+
+  it("never completes in a read-only view", async () => {
+    const { container } = render(
+      <CodeEditor value={"total_count = 1\ntot"} language="python" label="Read a.py" readOnly />,
+    );
+    const view = viewIn(container);
+    await ready(view);
+    act(() => void startCompletion(view));
+    await new Promise((r) => setTimeout(r, 150));
+    expect(completionStatus(view.state)).toBeNull();
+    expect(currentCompletions(view.state)).toEqual([]);
+  });
+
+  it("a .py file's kernel adds its matches and shows why it is off", async () => {
+    const answers: ApiResult<KernelCompletionAnswer>[] = [
+      {
+        ok: true,
+        status: 200,
+        data: {
+          status: "ok",
+          op: "complete",
+          matches: [{ text: "from_kernel", type: "variable" }],
+          cursorStart: 0,
+          cursorEnd: 3,
+        },
+      },
+      { ok: true, status: 200, data: { status: "asleep" } },
+    ];
+    const kernel = new KernelCompleter(
+      { complete: () => Promise.resolve(must(answers.shift())) },
+      "00000000-0000-4000-8000-0000000000bb",
+    );
+    const { container } = render(
+      <CodeEditor value={"fro"} language="python" label="Edit a.py" kernel={kernel} />,
+    );
+    const view = viewIn(container);
+    await ready(view);
+    const indicator = must(container.querySelector("[data-kobe-kernel-completion]"));
+    expect(indicator.textContent).toBe("Kernel completion: on while the kernel runs");
+    act(() => view.dispatch({ selection: { anchor: 3 } }));
+    act(() => void startCompletion(view));
+    // Merged with the built-in ones ("from"), ranked above them.
+    await waitFor(() => {
+      const labels = currentCompletions(view.state).map((c) => c.label);
+      expect(labels[0]).toBe("from_kernel");
+      expect(labels).toContain("from");
+    });
+    expect(currentCompletions(view.state)[0]?.detail).toBe("kernel");
+    expect(indicator.textContent).toBe("Kernel completion on");
+    act(() => {
+      closeCompletion(view);
+      view.dispatch({ changes: { from: 3, insert: " x" }, selection: { anchor: 5 } });
+    });
+    act(() => void startCompletion(view));
+    await waitFor(() =>
+      expect(indicator.textContent).toBe("Kernel completion off: your sandbox is asleep"),
+    );
+    expect(indicator.getAttribute("data-kobe-kernel-completion")).toBe("asleep");
   });
 });

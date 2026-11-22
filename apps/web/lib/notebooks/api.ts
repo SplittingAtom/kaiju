@@ -4,7 +4,11 @@
  * restart. The
  * thread's owner only; the server decides everything.
  */
-import type { NotebookKernelResponse, NotebookRunBody } from "@kobe/protocol";
+import type {
+  NotebookCompletionBody,
+  NotebookKernelResponse,
+  NotebookRunBody,
+} from "@kobe/protocol";
 import { apiRequest, type ApiResult } from "../api/client";
 
 export interface NotebookRunStarted {
@@ -17,10 +21,38 @@ export type KernelStart =
   | { readonly status: "waking"; readonly retryAfterMs: number }
   | { readonly status: "idle" | "busy" };
 
+/**
+ * `POST .../notebook/complete` (KOBE-808), camelized: the kernel's completions (`op: "complete"`;
+ * the span is in code points of the code sent) or a name's documentation (`op: "doc"`), or why
+ * there is none. Matches and docs are untrusted text.
+ */
+export type KernelCompletionAnswer =
+  | {
+      readonly status: "ok";
+      readonly op: "complete";
+      readonly matches: readonly { readonly text: string; readonly type?: string }[];
+      readonly cursorStart: number;
+      readonly cursorEnd: number;
+    }
+  | {
+      readonly status: "ok";
+      readonly op: "doc";
+      readonly found: boolean;
+      readonly signature?: string;
+      readonly doc?: string;
+      readonly type?: string;
+    }
+  | { readonly status: "busy" | "no_kernel" | "unavailable" | "asleep" | "unsupported" };
+
 export interface NotebookApi {
   run(threadId: string, body: NotebookRunBody): Promise<ApiResult<NotebookRunStarted>>;
   start(threadId: string): Promise<ApiResult<KernelStart>>;
   kernel(threadId: string, op: "interrupt" | "restart"): Promise<ApiResult<NotebookKernelResponse>>;
+  complete(
+    threadId: string,
+    body: NotebookCompletionBody,
+    signal?: AbortSignal,
+  ): Promise<ApiResult<KernelCompletionAnswer>>;
 }
 
 const enc = encodeURIComponent;
@@ -34,6 +66,8 @@ export function createNotebookApi(teamId: string, fetchFn?: typeof fetch): Noteb
       apiRequest(`/v1/threads/${enc(threadId)}/notebook/start`, { ...opts, json: {} }),
     kernel: (threadId, op) =>
       apiRequest(`/v1/threads/${enc(threadId)}/notebook/${op}`, { ...opts, json: {} }),
+    complete: (threadId, body, signal) =>
+      apiRequest(`/v1/threads/${enc(threadId)}/notebook/complete`, { ...opts, json: body, signal }),
   };
 }
 
