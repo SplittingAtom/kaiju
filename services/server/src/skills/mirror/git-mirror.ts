@@ -4,6 +4,7 @@ import { mirrorTagName, type PackageFiles } from "@kobe/protocol";
 import {
   CATALOG_JSON_PATH,
   readCatalogJson,
+  type CatalogEntry,
   withoutVersions,
   writeCatalogJson,
 } from "./catalog-json.js";
@@ -61,7 +62,7 @@ export interface MirrorRemote {
   readonly http: HttpClient;
   readonly author: MirrorAuthor;
   readonly now?: () => Date;
-  /** `name@semver` versions to leave out of `catalog.json` (withdrawn: blocklisted). */
+  /** `name@semver` versions to leave out of `catalog.json` (withdrawn, see mirror-store.ts). */
   readonly withdrawn?: ReadonlySet<string>;
 }
 
@@ -135,15 +136,78 @@ export class MirrorSession {
     const existingTag = this.tags.get(tagRef);
     if (existingTag) {
       const commit = existingTag.peeled ?? existingTag.oid;
-      if ((await this.skillTreeAt(commit, v.name)) === tree)
-        return { commit, tag: tagName, tree, existing: true };
-      throw new MirrorVersionError(
-        `the remote already has tag ${tagName} with other content; Kobe never moves a tag`,
-      );
+      if ((await this.skillTreeAt(commit, v.name)) !== tree)
+        throw new MirrorVersionError(
+          `the remote already has tag ${tagName} with other content; Kobe never moves a tag`,
+        );
+      // Listed again when it was left out (withdrawn, then published again: P2-10).
+      await this.commitCatalog(this.catalogEntry(v, tagName), `${v.name} v${v.semver} listed`);
+      return { commit, tag: tagName, tree, existing: true };
     }
     const commit = (await this.findCommitted(v, tree)) ?? (await this.commit(v, tree, tagName));
     await this.pushTag(v, tagName, commit);
     return { commit, tag: tagName, tree, existing: false };
+  }
+
+  /**
+   * Rewrites `catalog.json` without the withdrawn versions (P2-10) as its own commit, when that
+   * changes it; returns the commit, or null when nothing changed (or the branch doesn't exist).
+   */
+  async withdrawFromCatalog(): Promise<string | null> {
+    return this.commitCatalog(null, "Withdraw versions from catalog.json");
+  }
+
+  private catalogEntry(v: MirrorVersionInput, tagName: string): CatalogEntry {
+    return {
+      name: v.name,
+      semver: v.semver,
+      tag: tagName,
+      runtimeHash: v.runtimeHash,
+      packageHash: v.packageHash,
+    };
+  }
+
+  /** The head's catalog without the withdrawn versions, plus `entry`. */
+  private async nextCatalog(baseTree: string | null, entry: CatalogEntry | null) {
+    const before = await this.readCatalog(baseTree);
+    const kept = withoutVersions(readCatalogJson(before), this.remote.withdrawn ?? new Set());
+    return { before, after: writeCatalogJson(kept, entry) };
+  }
+
+  /** A commit changing only `catalog.json` on the remote head, when that changes it. */
+  private async commitCatalog(entry: CatalogEntry | null, title: string): Promise<string | null> {
+    if (!this.head) return null;
+    const baseTree = (await git.readCommit({ fs, dir: this.dir, oid: this.head })).commit.tree;
+    const { before, after } = await this.nextCatalog(baseTree, entry);
+    if (before ? Buffer.from(before).equals(Buffer.from(after)) : !entry) return null;
+    const root = await this.setPath(baseTree, [CATALOG_JSON_PATH], {
+      mode: BLOB,
+      path: CATALOG_JSON_PATH,
+      type: "blob",
+      oid: await git.writeBlob({ fs, dir: this.dir, blob: after }),
+    });
+    return this.commitTree(root, [title, "", "Kobe's catalog index, regenerated.", ""]);
+  }
+
+  /** Commits `root` on the head and pushes the branch (never forced). */
+  private async commitTree(root: string, message: readonly string[]): Promise<string> {
+    const sig = this.signature();
+    const commit = await git.writeCommit({
+      fs,
+      dir: this.dir,
+      commit: {
+        message: message.join("\n"),
+        tree: root,
+        parent: this.head ? [this.head] : [],
+        author: sig,
+        committer: sig,
+      },
+    });
+    const ref = `refs/heads/${this.remote.branch}`;
+    await this.setRef(ref, commit);
+    await this.push(ref);
+    this.head = commit;
+    return commit;
   }
 
   private async setRef(ref: string, value: string): Promise<void> {
@@ -272,49 +336,23 @@ export class MirrorSession {
       type: "blob",
       oid: await git.writeBlob({ fs, dir: this.dir, blob: GITATTRIBUTES }),
     });
-    const previous = withoutVersions(
-      readCatalogJson(await this.readCatalog(baseTree)),
-      this.remote.withdrawn ?? new Set(),
-    );
-    const catalog = writeCatalogJson(previous, {
-      name: v.name,
-      semver: v.semver,
-      tag: tagName,
-      runtimeHash: v.runtimeHash,
-      packageHash: v.packageHash,
-    });
+    const { after: catalog } = await this.nextCatalog(baseTree, this.catalogEntry(v, tagName));
     const root = await this.setPath(withAttributes, [CATALOG_JSON_PATH], {
       mode: BLOB,
       path: CATALOG_JSON_PATH,
       type: "blob",
       oid: await git.writeBlob({ fs, dir: this.dir, blob: catalog }),
     });
-    const sig = this.signature();
-    const commit = await git.writeCommit({
-      fs,
-      dir: this.dir,
-      commit: {
-        message: [
-          `${v.name} v${v.semver}`,
-          "",
-          "An approved Kobe catalog version, mirrored one way: Kobe never reads this repository back.",
-          "",
-          `Kobe-Registry-Version: ${v.registryVersionId}`,
-          `Kobe-Runtime-Hash: ${v.runtimeHash}`,
-          `Kobe-Package-Hash: ${v.packageHash}`,
-          "",
-        ].join("\n"),
-        tree: root,
-        parent: this.head ? [this.head] : [],
-        author: sig,
-        committer: sig,
-      },
-    });
-    const ref = `refs/heads/${this.remote.branch}`;
-    await this.setRef(ref, commit);
-    await this.push(ref);
-    this.head = commit;
-    return commit;
+    return this.commitTree(root, [
+      `${v.name} v${v.semver}`,
+      "",
+      "An approved Kobe catalog version, mirrored one way: Kobe never reads this repository back.",
+      "",
+      `Kobe-Registry-Version: ${v.registryVersionId}`,
+      `Kobe-Runtime-Hash: ${v.runtimeHash}`,
+      `Kobe-Package-Hash: ${v.packageHash}`,
+      "",
+    ]);
   }
 
   private async pushTag(v: MirrorVersionInput, tagName: string, commit: string): Promise<void> {

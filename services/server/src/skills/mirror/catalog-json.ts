@@ -58,7 +58,7 @@ export function readCatalogJson(bytes: Uint8Array | null): Index {
   return out;
 }
 
-/** The index without the `name@semver` versions in `drop` (withdrawn: blocklisted). */
+/** The index without the `name@semver` versions in `drop` (withdrawn, see mirror-store.ts). */
 export function withoutVersions(index: Index, drop: ReadonlySet<string>): Index {
   if (drop.size === 0) return index;
   return Object.fromEntries(
@@ -71,19 +71,24 @@ export function withoutVersions(index: Index, drop: ReadonlySet<string>): Index 
   );
 }
 
-/** The index with `entry` added (or replaced), as stable, pretty-printed UTF-8 JSON. */
-export function writeCatalogJson(previous: Index, entry: CatalogEntry): Uint8Array {
-  const next: Index = {
-    ...previous,
-    [entry.name]: {
-      ...previous[entry.name],
-      [entry.semver]: {
-        tag: entry.tag,
-        runtimeHash: entry.runtimeHash,
-        packageHash: entry.packageHash,
-      },
-    },
-  };
+/**
+ * The index with `entry` added (or replaced; none: as it is), as stable, pretty-printed UTF-8
+ * JSON.
+ */
+export function writeCatalogJson(previous: Index, entry: CatalogEntry | null): Uint8Array {
+  const next: Index = entry
+    ? {
+        ...previous,
+        [entry.name]: {
+          ...previous[entry.name],
+          [entry.semver]: {
+            tag: entry.tag,
+            runtimeHash: entry.runtimeHash,
+            packageHash: entry.packageHash,
+          },
+        },
+      }
+    : previous;
   const skills = Object.fromEntries(
     Object.keys(next)
       .sort()

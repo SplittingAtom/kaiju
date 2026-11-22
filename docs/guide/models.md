@@ -50,7 +50,10 @@ The model's reasoning appears as steps in the answer; **Show details** opens the
 - **Budgets.** Team admins can set daily or monthly spending budgets for the team, a default for
   each member and budgets for particular members; site admins can cap the whole site. When a
   budget runs out, the current step finishes and new model calls are refused until the next period
-  or until an admin raises it. Admins are warned before that happens.
+  or until an admin raises it. Admins are warned before that happens: at 80% and again at 100%,
+  team admins get an email (and a member too, for their own budget), and site admins for the site
+  budget. **Each person gets at most 20 budget alert emails a day** (UTC day), counted together
+  over the Site and every workspace they belong to; alerts past that are not emailed that day.
 
 ## Where models come from
 

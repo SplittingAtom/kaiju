@@ -174,6 +174,14 @@ const configSchema = z.object({
       "KOBE_TEAM_RECONCILE_SECONDS must be 0 or between 30 and 86400",
     )
     .default(300),
+  // Hours a skill version's rescan under a new scanner rule set may keep not finishing before the
+  // version is suspended (review g79); 0 = never.
+  KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS: z.coerce
+    .number({ error: "KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS must be a number" })
+    .int("KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS must be an integer")
+    .min(0, "KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS must be 0 or more")
+    .max(8760, "KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS must be at most 8760")
+    .default(24),
   // Seconds between re-probes of every pinned connector for tool drift (KOBE-102); 0 = never.
   KOBE_CONNECTOR_REFRESH_SECONDS: z.coerce
     .number({ error: "KOBE_CONNECTOR_REFRESH_SECONDS must be a number" })
@@ -330,6 +338,8 @@ export interface Config {
   readonly teamReconcileSeconds: number;
   /** Seconds between connector drift refreshes; 0 = off (KOBE-102). */
   readonly connectorRefreshSeconds: number;
+  /** Hours of unfinished rescans before a skill version is suspended; 0 = never (review g79). */
+  readonly skillRescanIncompleteSuspendHours: number;
   /** Sandbox session token lifetime in seconds (900 unless an e2e install shortens it). */
   readonly sessionTokenTtlSeconds: number;
   /** Output limit and context window of models without their own (KOBE-259, chart values). */
@@ -393,6 +403,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     },
     teamReconcileSeconds: base.data.KOBE_TEAM_RECONCILE_SECONDS,
     connectorRefreshSeconds: base.data.KOBE_CONNECTOR_REFRESH_SECONDS,
+    skillRescanIncompleteSuspendHours: base.data.KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS,
     sessionTokenTtlSeconds: base.data.KOBE_SESSION_TOKEN_TTL_SECONDS,
     modelTokenDefaults: tokenDefaults.data,
     scheduler: {

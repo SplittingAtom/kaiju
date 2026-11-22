@@ -10,6 +10,7 @@ import {
   CAPABILITY_FILE_EDITS,
   CAPABILITY_NOTEBOOKS,
   CAPABILITY_NOTEBOOK_START,
+  CAPABILITY_NOTEBOOK_INSPECT,
   CAPABILITY_RUN_TOKEN,
   CAPABILITY_THREAD_BRANCH_SUMMARY,
   CAPABILITY_THREAD_COMPACT,
@@ -113,7 +114,10 @@ export function helloCapabilities(deps: AgentDeps): string[] {
     ...(caps.skillDrafts ? [CAPABILITY_SKILL_DRAFTS] : []),
     ...(caps.fileEdits ? [CAPABILITY_FILE_EDITS] : []),
     // Thread kernels (KOBE-464): the kernel commands, and `run_python` with the tools channel.
-    ...(deps.kernels === undefined ? [] : [CAPABILITY_NOTEBOOKS, CAPABILITY_NOTEBOOK_START]),
+    // KOBE-803: run timing and variables snapshots (`notebook.inspect`, `with_timing`/`with_variables`).
+    ...(deps.kernels === undefined
+      ? []
+      : [CAPABILITY_NOTEBOOKS, CAPABILITY_NOTEBOOK_START, CAPABILITY_NOTEBOOK_INSPECT]),
     ...(caps.memory ? [CAPABILITY_MEMORY] : []),
     // What Kobe knows (KOBE-383): rendered from run.start.memory.semantic, so only with memory.
     ...(caps.memory ? [CAPABILITY_SEMANTIC_MEMORY] : []),

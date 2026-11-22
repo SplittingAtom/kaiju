@@ -1,4 +1,5 @@
 import { Readable } from "node:stream";
+import type { KobeDb, SkillReviewStatus } from "@kobe/db";
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
@@ -41,6 +42,7 @@ import {
   type SkillScope,
 } from "../skills/store.js";
 import { param } from "../http/request.js";
+import { scanIncomplete } from "../skills/scan-pool.js";
 
 type Ctx = Context<{ Variables: TeamVariables }>;
 
@@ -104,6 +106,7 @@ export function skillRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }
     found.skill.scope === "team"
       ? reviewsOfSkill(db, c.get("team").id, found.skill.id)
       : Promise.resolve(null);
+  const routes: SkillRouteContext = { db, skillStore, locationFor, visible, reviewsFor };
 
   app.get("/", async (c) => {
     const scope = c.req.query("scope");
@@ -121,51 +124,7 @@ export function skillRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }
       onError: (c) =>
         c.json({ code: "bundle_too_large", message: "That skill is too large." }, 413),
     }),
-    async (c) => {
-      const scope = scopeSchema.safeParse(c.req.query("scope"));
-      if (!scope.success)
-        return error(c, 400, "invalid_request", "Give scope=team or scope=personal.");
-      const allowed = teamRoleAllows(
-        c.get("team").role,
-        scope.data === "team" ? "team.skills.publish" : "team.personal.create",
-      );
-      if (!allowed) return error(c, 403, "forbidden", "Your team role doesn't allow that upload.");
-      const store = skillStore();
-      if (!store) return error(c, 503, "skills_unavailable", "Skill storage is not configured.");
-      if (!(await hitRateLimit(db, `skill-upload:${c.get("user").id}`, SKILL_UPLOAD_RATE)))
-        return c.json(
-          { code: "rate_limited", message: "Too many uploads. Wait a few minutes and try again." },
-          429,
-        );
-      const read = await readUploadBody(c.req.raw, new URL(c.req.url).searchParams);
-      if (!read.ok) return error(c, read.status, read.code, read.message);
-      const numbering = read.body;
-      const prepared =
-        numbering.kind === "zip" ? prepareZip(numbering.bytes) : prepareMarkdown(numbering.bytes);
-      if (!prepared.ok) return bundleError(c, prepared.error);
-      const { bundle, source } = prepared;
-      const requested = numberingFrom(numbering, bundle);
-      if (!requested.ok) return error(c, 400, "invalid_request", requested.message);
-      // The whole tree is scanned (SK32), evals/ fixtures included.
-      const result = await publishBundle(store, locationFor(c, scope.data), {
-        bundle,
-        source,
-        uploadedBy: c.get("user").id,
-        ...requested.value,
-      });
-      if (!result.ok) {
-        if (result.retryAfter !== undefined) c.header("Retry-After", String(result.retryAfter));
-        return error(c, result.status, result.code, result.message);
-      }
-      const review =
-        scope.data === "team"
-          ? { status: "pending", flagged: result.scan.findings.length > 0 }
-          : null;
-      return c.json(
-        { skill: skillJson(result.skill), version: versionJson(result.version, review) },
-        201,
-      );
-    },
+    uploadHandler(routes),
   );
 
   app.get("/:id", async (c) => {
@@ -200,8 +159,82 @@ export function skillRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }
     });
   });
 
-  /** The stored canonical zip of one version, for the browser editor (KOBE-83). Reads are not audited. */
-  app.get("/:id/versions/:version/bundle", async (c) => {
+  app.get("/:id/versions/:version/bundle", bundleHandler(routes));
+
+  app.get("/:id/versions/:version/export", exportHandler(routes));
+
+  return app;
+}
+
+/** What the bigger handlers share with `skillRoutes`. */
+interface SkillRouteContext {
+  readonly db: KobeDb;
+  readonly skillStore: () => SkillStore | null;
+  readonly locationFor: (c: Ctx, scope: SkillScope) => SkillLocation;
+  readonly visible: (c: Ctx) => Promise<{ skill: SkillRecord; location: SkillLocation } | null>;
+  readonly reviewsFor: (
+    c: Ctx,
+    found: { skill: SkillRecord },
+  ) => Promise<Map<number, { status: SkillReviewStatus; flagged: boolean }> | null>;
+}
+
+/** `POST /?scope=team|personal`: a zip or SKILL.md becomes the skill's next version. */
+function uploadHandler(r: SkillRouteContext) {
+  const { db, skillStore, locationFor } = r;
+  return async (c: Ctx) => {
+    const scope = scopeSchema.safeParse(c.req.query("scope"));
+    if (!scope.success)
+      return error(c, 400, "invalid_request", "Give scope=team or scope=personal.");
+    const allowed = teamRoleAllows(
+      c.get("team").role,
+      scope.data === "team" ? "team.skills.publish" : "team.personal.create",
+    );
+    if (!allowed) return error(c, 403, "forbidden", "Your team role doesn't allow that upload.");
+    const store = skillStore();
+    if (!store) return error(c, 503, "skills_unavailable", "Skill storage is not configured.");
+    if (!(await hitRateLimit(db, `skill-upload:${c.get("user").id}`, SKILL_UPLOAD_RATE)))
+      return c.json(
+        { code: "rate_limited", message: "Too many uploads. Wait a few minutes and try again." },
+        429,
+      );
+    const read = await readUploadBody(c.req.raw, new URL(c.req.url).searchParams);
+    if (!read.ok) return error(c, read.status, read.code, read.message);
+    const numbering = read.body;
+    const prepared =
+      numbering.kind === "zip" ? prepareZip(numbering.bytes) : prepareMarkdown(numbering.bytes);
+    if (!prepared.ok) return bundleError(c, prepared.error);
+    const { bundle, source } = prepared;
+    const requested = numberingFrom(numbering, bundle);
+    if (!requested.ok) return error(c, 400, "invalid_request", requested.message);
+    // The whole tree is scanned (SK32), evals/ fixtures included.
+    const result = await publishBundle(store, locationFor(c, scope.data), {
+      bundle,
+      source,
+      uploadedBy: c.get("user").id,
+      ...requested.value,
+    });
+    if (!result.ok) {
+      if (result.retryAfter !== undefined) c.header("Retry-After", String(result.retryAfter));
+      return error(c, result.status, result.code, result.message);
+    }
+    const review =
+      scope.data === "team"
+        ? {
+            status: "pending",
+            flagged: !scanIncomplete(result.scan) && result.scan.findings.length > 0,
+          }
+        : null;
+    return c.json(
+      { skill: skillJson(result.skill), version: versionJson(result.version, review) },
+      201,
+    );
+  };
+}
+
+/** The stored canonical zip of one version, for the browser editor (KOBE-83). Reads are not audited. */
+function bundleHandler(r: SkillRouteContext) {
+  const { db, skillStore, visible } = r;
+  return async (c: Ctx) => {
     const found = await visible(c);
     const ref = versionRef(c.req.param("version"));
     if (!found || ref === null) return error(c, 404, "not_found", "No such skill version.");
@@ -230,15 +263,18 @@ export function skillRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }
         "cache-control": "private, no-store",
       },
     });
-  });
+  };
+}
 
-  /**
-   * A portable export (KOBE-345, SK30): `?format=portable` (the payload, SKILL.md and its files)
-   * or `portable_evals` (with `evals/`), under one `<name>/` folder, deterministic bytes. Who sees
-   * the skill may export it; a team version only once its team review approved it, and never a
-   * blocklisted one. The full package (kobe.skill.yaml, provenance.json) is the catalog's.
-   */
-  app.get("/:id/versions/:version/export", async (c) => {
+/**
+ * A portable export (KOBE-345, SK30): `?format=portable` (the payload, SKILL.md and its files)
+ * or `portable_evals` (with `evals/`), under one `<name>/` folder, deterministic bytes. Who sees
+ * the skill may export it; a team version only once its team review approved it, and never a
+ * blocklisted one. The full package (kobe.skill.yaml, provenance.json) is the catalog's.
+ */
+function exportHandler(r: SkillRouteContext) {
+  const { db, skillStore, visible, reviewsFor } = r;
+  return async (c: Ctx) => {
     const format = z.enum(["portable", "portable_evals"]).safeParse(c.req.query("format"));
     if (!format.success)
       return error(c, 400, "invalid_request", "Give format=portable or format=portable_evals.");
@@ -296,9 +332,7 @@ export function skillRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }
       },
     });
     return exportResponse(exported);
-  });
-
-  return app;
+  };
 }
 
 type Prepared =

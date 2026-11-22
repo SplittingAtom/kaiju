@@ -13,6 +13,7 @@ import { onScheduledRunEnded } from "../scheduler/run-hook.js";
 import { SchedulerRunner } from "../scheduler/runner.js";
 import type { SkillEvalHub } from "../skills/evals/events.js";
 import { reapSkillEvals, SKILL_EVAL_REAPER_MS } from "../skills/evals/reaper.js";
+import { LateScanner, SKILL_LATE_SCAN_LOCK, SKILL_LATE_SCAN_MS } from "../skills/late-scan.js";
 import type { SkillEvalRunner } from "../skills/evals/runner.js";
 import { SKILL_MIRROR_SWEEP_MS, type SkillMirror } from "../skills/mirror/runner.js";
 import type { ExternalScanRunner } from "../skills/registry/external-scan.js";
@@ -115,9 +116,30 @@ function startupJobs(c: ProcessJobsContext, isolationSettled: IsolationSettled):
   return jobs;
 }
 
+/**
+ * Late scans of stored versions without a finished scan (P2-35, P2-11): server replicas with an
+ * object store, one at a time (advisory lock); never inside a request.
+ */
+function lateScanJobs(c: ProcessJobsContext): ProcessJob[] {
+  const deps = c.deps;
+  const blobs = deps?.blobs;
+  if (!deps || !blobs || !c.serverJobs) return [];
+  const scanner = new LateScanner({ db: deps.database.db, blobs, log: c.log });
+  const lock = createPgReconcileLock(
+    deps.database.pool,
+    (err) => c.log.warn({ err }, "skill late scan lock connection problem"),
+    SKILL_LATE_SCAN_LOCK,
+  );
+  return [
+    every("skill-late-scan", SKILL_LATE_SCAN_MS, c.log, "skill late scan", () =>
+      lock.runExclusive(() => scanner.pass()),
+    ),
+  ];
+}
+
 /** Skills: external scans (KOBE-341), the catalog mirror (KOBE-343), skill evals (KOBE-325). */
 function skillJobs(c: ProcessJobsContext): ProcessJob[] {
-  const jobs: ProcessJob[] = [];
+  const jobs: ProcessJob[] = [...lateScanJobs(c)];
   const { externalScan, skillMirror, skillEvalHub, skillEvalRunner } = c;
   if (externalScan) {
     jobs.push(
