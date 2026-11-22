@@ -1,4 +1,5 @@
 import type { CatalogArea } from "./build.js";
+import { connectorGrantsDetails, filesDetails, meDetails, setupDetails } from "./details/me.js";
 
 /**
  * OpenAPI catalog: the signed-in member's own account, files, connector keys and first-run setup
@@ -11,6 +12,8 @@ export const meAreas: readonly CatalogArea[] = [
     description:
       "The signed-in member's own account: profile, teams and invitations, preferences, time zone, " +
       "linked sign-ins and notifications. Not team-scoped except notifications (send X-Kobe-Team).",
+    detailed: true,
+    details: meDetails,
     entries: [
       ["get", "/v1/me", "Get the signed-in user, site role and site grants"],
       [
@@ -96,6 +99,9 @@ export const meAreas: readonly CatalogArea[] = [
     tag: "Files",
     description:
       "Uploading files and reading shared files. Team-scoped: send X-Kobe-Team; needs `team.chat`.",
+    detailed: true,
+    teamScoped: true,
+    details: filesDetails,
     entries: [
       [
         "get",
@@ -122,6 +128,9 @@ export const meAreas: readonly CatalogArea[] = [
     description:
       "A member's own API keys for connectors that use one, and the OAuth start for connectors that " +
       "use it. Team-scoped: send X-Kobe-Team; needs `team.chat`. Keys are write-only.",
+    detailed: true,
+    teamScoped: true,
+    details: connectorGrantsDetails,
     entries: [
       ["get", "/v1/connector-grants", "List the caller's connector keys (never the key values)"],
       [
@@ -147,6 +156,10 @@ export const meAreas: readonly CatalogArea[] = [
   {
     tag: "Setup",
     description: "First-run site setup. Unauthenticated; it disables itself once an Owner exists.",
+    detailed: true,
+    // Unauthenticated: no 401; a wrong token is 403 and a bad body 400 (listed per operation).
+    defaultErrors: [],
+    details: setupDetails,
     entries: [
       ["get", "/v1/setup", "Report whether first-run setup is still required"],
       [

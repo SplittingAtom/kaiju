@@ -7,7 +7,7 @@ import { readJson } from "../http/request.js";
 /** Serializes first-run setup across server replicas. */
 const SETUP_LOCK = 0x6b6f6201;
 
-const setupSchema = z.object({
+export const setupSchema = z.object({
   setupToken: z.string().max(256).optional(),
   email: z.email().max(254),
   name: z.string().trim().min(1).max(100),
