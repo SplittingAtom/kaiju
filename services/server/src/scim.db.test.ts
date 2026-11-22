@@ -229,6 +229,42 @@ describe("SCIM tokens in the Site console", () => {
     expect((await auditRows("identity.scim.token.revoked")).length).toBeGreaterThanOrEqual(2);
   });
 
+  it("KOBE-785: records a token's use at most once a minute", async () => {
+    const { token, id } = await newToken("fabrikam");
+    const lastUsed = async () =>
+      (
+        await h.admin.query<{ at: Date | null }>(
+          `SELECT last_used_at AS at FROM scim_tokens WHERE id = $1`,
+          [id],
+        )
+      ).rows[0]?.at ?? null;
+    expect((await scim("GET", "/fabrikam/Users", token)).status).toBe(200);
+    const first = await lastUsed();
+    expect(first).not.toBeNull();
+    // A second request within the minute authenticates without writing the row again.
+    const xmin = async () =>
+      (
+        await h.admin.query<{ x: string }>(
+          `SELECT xmin::text AS x FROM scim_tokens WHERE id = $1`,
+          [id],
+        )
+      ).rows[0]?.x;
+    const before = await xmin();
+    expect((await scim("GET", "/fabrikam/Users", token)).status).toBe(200);
+    expect(await xmin()).toBe(before);
+    expect(await lastUsed()).toEqual(first);
+    // Older than a minute: the next request records it again.
+    await h.admin.query(
+      `UPDATE scim_tokens SET last_used_at = now() - interval '2 minutes' WHERE id = $1`,
+      [id],
+    );
+    const stale = await lastUsed();
+    expect((await scim("GET", "/fabrikam/Users", token)).status).toBe(200);
+    expect((await lastUsed())?.getTime()).toBeGreaterThan(stale?.getTime() ?? 0);
+    await owner.post(`/v1/site/sso/providers/${providers.fabrikam}/scim/tokens/${id}/revoke`);
+    expect((await scim("GET", "/fabrikam/Users", token)).status).toBe(401);
+  });
+
   it("is for site.users.manage only", async () => {
     const path = `/v1/site/sso/providers/${providers.contoso}/scim`;
     expect((await member.get(path)).status).toBe(403);
@@ -627,6 +663,25 @@ describe("SCIM errors and request limits", () => {
     expect(badOp.json).toMatchObject({ status: "400", scimType: "invalidSyntax" });
     expect((await scim("GET", `/contoso/Users/${randomUUID()}`, t)).status).toBe(404);
     expect((await scim("GET", "/contoso/Users/not-a-uuid", t)).status).toBe(404);
+  });
+
+  it("KOBE-775: answers 404 in SCIM form for 36-character ids that are not UUIDs", async () => {
+    const t = tokens.contoso;
+    for (const id of ["-".repeat(36), "a".repeat(36)]) {
+      for (const method of ["GET", "DELETE"]) {
+        const res = await scim(method, `/contoso/Users/${id}`, t);
+        expect(res.status, `${method} ${id}`).toBe(404);
+        expect(res.headers.get("content-type")).toContain(SCIM_TYPE);
+        expect(res.json).toMatchObject({ schemas: [ERROR], status: "404" });
+      }
+      const filtered = await scim(
+        "GET",
+        `/contoso/Users?filter=${encodeURIComponent(`id eq "${id}"`)}`,
+        t,
+      );
+      expect(filtered.status).toBe(200);
+      expect(filtered.json.totalResults).toBe(0);
+    }
   });
 
   it("requires a JSON body type and bounds the body size", async () => {

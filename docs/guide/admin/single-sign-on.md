@@ -61,7 +61,15 @@ role** (Member, Contributor or Team admin).
   `Kobe.Member.Research`) and assign people or groups to them. A token then carries only the
   roles of that person. With **Groups**, use the group's object ID and have Entra send only the
   groups assigned to the application: a person in more than 200 groups gets a token without the
-  list, and Kobe refuses that sign-in.
+  list (a "groups overage"). Kobe then refuses that sign-in and leaves the person's team access as
+  it is: nothing is added or removed until a sign-in carries the list again. Someone with a site
+  role (Owner or Admin) is signed in instead, still without any mapping applied, so an Owner in
+  many groups is not locked out while single sign-on is required (audit log:
+  `auth.sign_in.succeeded` with `groupsOverage`). The refusal is in the
+  audit log (`auth.sign_in.failed`, reason `groups_overage`), and the provider's section on **SSO
+  access mappings** says how to avoid it: send only the groups assigned to the application (the
+  groups claim filter), or map app roles. SCIM user provisioning does not change this: Kobe does
+  not take groups from SCIM yet (see [SCIM provisioning](#scim-provisioning)).
 - **The highest role wins** when several mappings match the same team.
 - **Team roles only.** A mapping never makes anyone a site admin or Owner; site roles stay in
   **Site roles**.
@@ -82,10 +90,19 @@ their team, read-only, under **Show access mappings** in the Team console.
 
 ## Signing in, linking and the break-glass account
 
+- **A fresh sign-in at the provider.** Kobe asks the provider for a sign-in at most 9 minutes old
+  (OpenID Connect `max_age`) and refuses one older than 10 minutes, so someone whose session at
+  the provider is older signs in there again before coming back to Kobe. A provider other than
+  Entra must say when the person signed in (`auth_time`), or the sign-in is refused.
 - **First sign-in.** A person with a mapped app role or group and no Kobe account gets one at
   their first sign-in. Accounts made this way have no Kobe password or passkey and can't add one:
   they sign in only through the provider, so disabling them at the provider can't be outlived by a
-  local password. A password-reset request for them sends nothing.
+  local password. A password-reset request for them sends nothing. The account takes the email
+  address the provider sends, whether or not the provider marks it verified, and other people see
+  that address in member lists and the audit log. A provider that lets people set their own
+  address could let someone take a colleague's address before the colleague joins (their later
+  invitation would then fail), so prefer providers that control their users' email addresses
+  (Entra does: Kobe uses the sign-in name, not a self-set email).
 - **Someone who already has an account** with the same address is never linked by address alone.
   They are told to sign in with their Kobe password or passkey within 10 minutes and then confirm
   the link (see [Signing in with your organization](../getting-started/single-sign-on.md)).
@@ -94,7 +111,8 @@ their team, read-only, under **Show access mappings** in the Team console.
   and it lies in one of the provider's verified domains (once, within 14 days). The Owner and the
   setup Owner are never linked this way.
 - **Unlink** (Users → **Single sign-on**, or the person in **Profile → Sign-in methods**) ends the
-  sessions signed in with that provider. An account's only way to sign in can't be unlinked.
+  sessions signed in with that provider (also one whose sign-in was finishing at that moment: it
+  ends at its first request, as for a provider turned off). An account's only way to sign in can't be unlinked.
 - **Break-glass.** The Owner created when Kobe was set up always keeps local sign-in: no single
   sign-on step links it away, removes its password or passkey, or deactivates it. Local sign-in
   never contacts the provider, so it works while the provider is down. Keep that account's
@@ -224,7 +242,8 @@ Provisioning works only while the provider is turned on. What SCIM does:
   person.
 
 Group provisioning is not available yet; team access comes from the app roles or groups in the
-sign-in token. After restoring an older backup, rotate every SCIM token (a token revoked since the
+sign-in token. A groups overage is therefore refused even with SCIM on, and the person's team
+access stays as it is (see [Access mappings](#access-mappings)). After restoring an older backup, rotate every SCIM token (a token revoked since the
 backup would work again).
 
 ## Switching it off

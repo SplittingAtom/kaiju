@@ -154,12 +154,19 @@ function audienceOk(claims: Claims, clientId: string): boolean {
   return true;
 }
 
-function timesOk(claims: Claims, nowS: number): string | null {
+/**
+ * `authTimeRequired`: Kobe sends `max_age`, so OIDC Core §3.1.2.1 makes `auth_time` required in
+ * the answer; generic providers must send it (KOBE-775). Entra v2 may leave it out, so for Entra
+ * it is checked when present (the flow logs its absence).
+ */
+function timesOk(claims: Claims, nowS: number, authTimeRequired: boolean): string | null {
   const t = CLOCK_TOLERANCE_S;
   if (!isNum(claims.exp) || claims.exp + t <= nowS) return "exp";
   if (!isNum(claims.iat) || claims.iat - t > nowS) return "iat";
   if (claims.nbf !== undefined && (!isNum(claims.nbf) || claims.nbf - t > nowS)) return "nbf";
-  if (claims.auth_time !== undefined) {
+  if (claims.auth_time === undefined) {
+    if (authTimeRequired) return "auth_time";
+  } else {
     const at = claims.auth_time;
     if (!isNum(at) || at - t > nowS || nowS - at > AUTH_TIME_MAX_AGE_S + t) return "auth_time";
   }
@@ -187,7 +194,7 @@ export function checkIdTokenClaims(input: {
   }
   if (!audienceOk(claims, p.clientId)) return refuse("token_invalid", "aud");
   if (claims.nonce !== input.expectedNonce) return refuse("token_invalid", "nonce");
-  const badTime = timesOk(claims, nowS);
+  const badTime = timesOk(claims, nowS, p.kind === "oidc");
   if (badTime) return refuse("token_invalid", badTime);
   const subject = str(claims[p.subjectClaim], SUBJECT_MAX);
   if (subject === null) return refuse("token_invalid", "subject");

@@ -102,6 +102,13 @@ export function SsoMappingsPage() {
                     title={p.displayName}
                     description={`Matches the ${p.accessClaim === "roles" ? "app roles" : "groups"} claim${p.enabled ? "" : " (provider turned off)"}.`}
                   >
+                    {p.accessClaim === "groups" && (
+                      <p className="text-sm">
+                        A person in more than 200 groups gets a token without the list, and their
+                        sign-in is refused (their team access stays as it is). Have the provider
+                        send only the groups assigned to the application, or map app roles instead.
+                      </p>
+                    )}
                     {mappings.length === 0 ? (
                       <p className="text-sm">No mappings: nobody gets access through it.</p>
                     ) : (

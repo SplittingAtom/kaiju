@@ -904,7 +904,8 @@ an Entra role that can register applications and grant admin consent.
 7. **Only if you map groups instead of app roles:** **Token configuration → Add groups claim →
    Groups assigned to the application**, emitted as Group ID in the ID token. A token with more
    than 200 groups carries an "overage" instead of the list; Kobe never calls Graph for it and
-   refuses that sign-in (`groups_overage`). App roles avoid this.
+   refuses that sign-in (`groups_overage`), leaving the person's team access unchanged. App roles
+   avoid this.
 8. **Multi-factor authentication (needs Entra ID P1 for Conditional Access).** Kobe trusts the
    provider's MFA: with the Site console's **Require two-factor** on, an SSO sign-in counts only
    when the token proves MFA, and Entra proves it with an **authentication context**. Under

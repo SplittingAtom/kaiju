@@ -164,6 +164,9 @@ describe("audit event taxonomy", () => {
     const ok = (action: keyof typeof AUDIT_EVENTS, target: unknown) =>
       AUDIT_EVENTS[action].target.safeParse(target).success;
     expect(ok("auth.sign_in.succeeded", { method: "sso" })).toBe(true);
+    // KOBE-775: a site-role holder let in despite a groups overage.
+    expect(ok("auth.sign_in.succeeded", { method: "sso", groupsOverage: true })).toBe(true);
+    expect(ok("auth.sign_in.succeeded", { method: "sso", groupsOverage: false })).toBe(false);
     expect(ok("auth.sign_in.failed", { method: "sso", reason: "groups_overage" })).toBe(true);
     expect(
       ok("identity.sso.provider.created", { providerId, slug: "contoso", kind: "entra" }),

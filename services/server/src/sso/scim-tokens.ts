@@ -1,5 +1,16 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { and, desc, eq, isNull, scimTokens, sql, ssoProviders, type KobeDb } from "@kobe/db";
+import {
+  and,
+  desc,
+  eq,
+  isNull,
+  lt,
+  or,
+  scimTokens,
+  sql,
+  ssoProviders,
+  type KobeDb,
+} from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -163,6 +174,34 @@ export function bearerOf(header: string | undefined): string | undefined {
   return m?.[1];
 }
 
+/** How often a token's `last_used_at` is written at most (KOBE-785): a full sync is 600/min. */
+const LAST_USED_RESOLUTION = sql`interval '1 minute'`;
+
+/**
+ * Records the token's use and tells whether it is still live. Conditional: a revocation committed
+ * since the read wins (no use is recorded for it). The row is written at most once a minute; when
+ * nothing was written, the revocation is re-checked with a read instead.
+ */
+async function markUsed(db: KobeDb, id: string): Promise<boolean> {
+  const live = and(eq(scimTokens.id, id), isNull(scimTokens.revokedAt));
+  const used = await db
+    .update(scimTokens)
+    .set({ lastUsedAt: sql`now()` })
+    .where(
+      and(
+        live,
+        or(
+          isNull(scimTokens.lastUsedAt),
+          lt(scimTokens.lastUsedAt, sql`now() - ${LAST_USED_RESOLUTION}`),
+        ),
+      ),
+    )
+    .returning({ id: scimTokens.id });
+  if (used.length > 0) return true;
+  const [row] = await db.select({ id: scimTokens.id }).from(scimTokens).where(live);
+  return row !== undefined;
+}
+
 /**
  * Authenticates a SCIM request for the provider `slug`: only that provider's live tokens are
  * compared (constant-time, on the SHA-256 hashes), so a token of another provider, a revoked token
@@ -192,13 +231,7 @@ export async function authenticateScim(
     if (timingSafeEqual(Buffer.from(c.tokenHash, "utf8"), presented)) match = c;
   }
   if (!match || token === undefined || !TOKEN_SHAPE.test(token)) return undefined;
-  // Conditional: a revocation committed since the read wins (no use is recorded for it).
-  const used = await db
-    .update(scimTokens)
-    .set({ lastUsedAt: new Date() })
-    .where(and(eq(scimTokens.id, match.id), isNull(scimTokens.revokedAt)))
-    .returning({ id: scimTokens.id });
-  if (used.length === 0) return undefined;
+  if (!(await markUsed(db, match.id))) return undefined;
   return {
     credentialId: match.id,
     provider: {

@@ -59,6 +59,7 @@ export function TextModeBody({
   label,
   readOnly,
   onChange,
+  autoFocus = false,
 }: {
   readonly mode: TextMode;
   readonly text: string;
@@ -67,6 +68,8 @@ export function TextModeBody({
   readonly label: string;
   readonly readOnly: boolean;
   readonly onChange?: ((text: string) => void) | undefined;
+  /** Raw: put the cursor in the editor when it opens (the file editor; not when read-only). */
+  readonly autoFocus?: boolean;
 }) {
   if (mode === "rendered") return <TextView text={text} preview={preview} />;
   return (
@@ -76,6 +79,7 @@ export function TextModeBody({
         language={editorLanguage(preview)}
         label={label}
         readOnly={readOnly || onChange === undefined}
+        autoFocus={autoFocus}
         {...(onChange ? { onChange } : {})}
       />
     </Suspense>

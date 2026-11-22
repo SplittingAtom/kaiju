@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   decodePreviewText,
+  defaultModeOf,
   fileTabId,
   filePathOfTab,
   imageDataUrl,
@@ -89,5 +90,14 @@ describe("urls", () => {
 
   it("makes data urls for images (the page CSP allows data:, not blob:)", () => {
     expect(imageDataUrl(new Uint8Array([1, 2, 3]), "image/png")).toBe("data:image/png;base64,AQID");
+  });
+});
+
+describe("the mode a file opens in (KOBE-802)", () => {
+  it("Python opens Raw, every other kind Rendered", () => {
+    expect(defaultModeOf("src/job.py")).toBe("raw");
+    for (const p of ["a.md", "a.csv", "a.json", "a.ts", "a.sh", "a.txt", "a.html", "a.png"]) {
+      expect(defaultModeOf(p)).toBe("rendered");
+    }
   });
 });
