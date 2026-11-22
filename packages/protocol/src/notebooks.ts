@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { idSchema, utf8ByteLength, uuidSchema } from "./common.js";
+import {
+  notebookExecErrorSchema,
+  notebookTimingSchema,
+  notebookVariablesResultSchema,
+} from "./notebook-variables.js";
 import { sha256HexSchema, workspacePathSchema } from "./workspace-paths.js";
 
 /**
@@ -184,6 +189,15 @@ export const notebookFinishedPayloadSchema = z.strictObject({
     .string()
     .regex(/^[a-z][a-z0-9_]{0,63}$/)
     .optional(),
+  /**
+   * KOBE-803, the run log: when it ran and how long (absent from agents without
+   * `notebook_inspect`, and when it never ran: dropped, timed out waiting, failed).
+   */
+  timing: notebookTimingSchema.optional(),
+  /** KOBE-803: the exception of an `error` execution (name, and its line when known). */
+  error: notebookExecErrorSchema.optional(),
+  /** KOBE-803: the kernel's variables right after it (absent from older agents). */
+  variables: notebookVariablesResultSchema.optional(),
 });
 export type NotebookFinishedPayload = z.infer<typeof notebookFinishedPayloadSchema>;
 
@@ -253,7 +267,8 @@ export const NOTEBOOK_ERROR_CODES = [
   "notebooks_unsupported", // the sandbox's agent has no kernel
   "isolation_unavailable",
   "sandbox_refused", // the sandbox could not be woken (KOBE-477): no runtime, not ready in time
-  "rate_limited", // too many kernel starts (KOBE-477)
+  "rate_limited", // too many kernel starts (KOBE-477), variable snapshots (KOBE-803)
+  "variables_unsupported", // the sandbox's agent takes no variable snapshots yet (KOBE-803)
 ] as const;
 export const notebookErrorSchema = z.strictObject({
   code: z.enum(NOTEBOOK_ERROR_CODES),
@@ -359,8 +374,15 @@ export const notebookExecuteResultSchema = z.strictObject({
   /** How many `notebook.output` frames the agent sent for it. */
   outputs: z.number().int().min(0).max(NOTEBOOK_EXEC_OUTPUTS_MAX),
   truncated: z.boolean(),
+  /** KOBE-803: only when the frame asked (`with_timing`) and the code ran. */
+  timing: notebookTimingSchema.optional(),
+  /** KOBE-803: only when the frame asked (`with_variables`) and the kernel lives on. */
+  variables: notebookVariablesResultSchema.optional(),
 });
 export type NotebookExecuteResult = z.infer<typeof notebookExecuteResultSchema>;
+
+/** `command.result.data` of `notebook.inspect` (KOBE-803). */
+export const notebookInspectResultSchema = notebookVariablesResultSchema;
 
 /** `command.result.data` of `notebook.interrupt` / `notebook.restart`. */
 export const notebookKernelResultSchema = notebookKernelResponseSchema;

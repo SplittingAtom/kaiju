@@ -9,6 +9,7 @@ import {
   notebookRunFailFields,
   notebookRunOkFields,
 } from "../notebooks.js";
+import { NOTEBOOK_INSPECT_TIMEOUT_MAX_MS } from "../notebook-variables.js";
 import { SANDBOX_WIRE_VERSION } from "./connection.js";
 
 /**
@@ -24,6 +25,8 @@ function frame<T extends string, S extends z.ZodRawShape>(type: T, shape: S) {
  * Server -> sandbox: run `code` in the thread's kernel (started if it has none). Outputs come back
  * as `notebook.output` frames naming this `command_id`; `command.result.data` is a
  * `notebookExecuteResultSchema`. At `timeout_ms` the agent interrupts, then kills the kernel.
+ * KOBE-803 (capability `notebook_inspect`, never sent to agents without it): `with_timing` asks for
+ * the result's `timing`, `with_variables` for a variables snapshot taken right after (`variables`).
  */
 export const notebookExecuteFrameSchema = frame("notebook.execute", {
   command_id: idSchema,
@@ -39,6 +42,8 @@ export const notebookExecuteFrameSchema = frame("notebook.execute", {
     .int()
     .min(1000)
     .max(NOTEBOOK_TIMEOUT_MAX_S * 1000),
+  with_timing: z.literal(true).optional(),
+  with_variables: z.literal(true).optional(),
 });
 
 /** Server -> sandbox: SIGINT the thread's kernel. `command.result.data`: `notebookKernelResultSchema`. */
@@ -56,6 +61,18 @@ export const notebookRestartFrameSchema = frame("notebook.restart", {
   command_id: idSchema,
   thread_id: uuidSchema,
   op: z.literal("start").optional(),
+});
+
+/**
+ * Server -> sandbox (KOBE-803, capability `notebook_inspect`): snapshot the thread's kernel's user
+ * variables, silently (no execution count, no history, not a run). Never starts a kernel and never
+ * runs while an execution runs or waits. `command.result.data`: `notebookInspectResultSchema`
+ * (`no_kernel`, `busy`, or `unavailable` past `timeout_ms`).
+ */
+export const notebookInspectFrameSchema = frame("notebook.inspect", {
+  command_id: idSchema,
+  thread_id: uuidSchema,
+  timeout_ms: z.number().int().min(500).max(NOTEBOOK_INSPECT_TIMEOUT_MAX_MS).optional(),
 });
 
 /** Sandbox -> server: the `index`-th output of the `notebook.execute` this `command_id` names. */
@@ -91,6 +108,7 @@ export const notebookRunResultFrameSchema = z.union([
 export type NotebookExecuteFrame = z.infer<typeof notebookExecuteFrameSchema>;
 export type NotebookInterruptFrame = z.infer<typeof notebookInterruptFrameSchema>;
 export type NotebookRestartFrame = z.infer<typeof notebookRestartFrameSchema>;
+export type NotebookInspectFrame = z.infer<typeof notebookInspectFrameSchema>;
 export type NotebookOutputFrame = z.infer<typeof notebookOutputFrameSchema>;
 export type NotebookRunFrame = z.infer<typeof notebookRunFrameSchema>;
 export type NotebookRunResultFrame = z.infer<typeof notebookRunResultFrameSchema>;
