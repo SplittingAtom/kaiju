@@ -117,6 +117,19 @@ export function previewOf(path: string): FilePreview {
   return { kind: TEXT.has(ext) ? "text" : "none" };
 }
 
+/** The two ways a text file shows (`components/files/text-modes.tsx`). */
+export type TextViewMode = "rendered" | "raw";
+
+/**
+ * The mode a file opens in (KOBE-802), decided here for every kind: Python opens Raw, in the code
+ * editor, ready to edit; everything else opens Rendered. Read-only cases (a project reader, a
+ * file over the size cap) open the same way and show their reason in the editor.
+ */
+export function defaultModeOf(path: string): TextViewMode {
+  const preview = previewOf(path);
+  return preview.kind === "code" && preview.language === "python" ? "raw" : "rendered";
+}
+
 /**
  * Bytes as UTF-8 text, or null when they are not text (invalid UTF-8 or a NUL byte). A preview
  * cut at the cap may end inside a character: that tail is dropped, not an error.

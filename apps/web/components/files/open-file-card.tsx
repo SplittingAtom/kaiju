@@ -56,7 +56,7 @@ export function OpenFileCard({
     const key = `${request.runId}:${toolCallId}`;
     if (handled.has(key)) return;
     handled.add(key);
-    panel.openFile(request.path);
+    panel.openFile(request.path, "agent");
   }, [request, toolCallId, readOnly, panel]);
   if (failed || (live === undefined && !done)) return null;
   const path = openedPath(live, args);
