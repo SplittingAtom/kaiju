@@ -200,7 +200,7 @@ export type PinnedAgent =
  * another version. Suspended agents are refused (`agent_suspended`); archived agents still serve
  * the threads already pinned to them; a version whose manifest doesn't parse is
  * `version_unreadable`. The caller then intersects the version with the team
- * (`versionAllowsCall`, `effectiveApprovalMode`, the team's models and connectors).
+ * (`effectiveApprovalMode`, the team's models and connectors; per call `loadRunAgentTools`).
  */
 export async function resolvePinnedAgent(
   tx: KobeTx,

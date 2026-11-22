@@ -1,3 +1,5 @@
+import { quantityBytes } from "./config.js";
+import { MEMBER_RESOURCE_QUOTA } from "./constants.js";
 import { podTermination } from "./pod-termination.js";
 import { judgeScheduling } from "./scheduling-message.js";
 import type { KubeClient } from "./kube.js";
@@ -17,6 +19,11 @@ export type StallCause =
   | "image_pull"
   /** The pod ended (evicted, killed: phase Failed or Succeeded); it will never become Ready. */
   | "pod_failed"
+  /**
+   * The team's ResourceQuota has no room for the workspace volume (PVC count or storage, KOBE-733):
+   * the volume cannot be created until volumes are freed or the quota raised.
+   */
+  | "volume_quota"
   | "unknown";
 
 export interface StallDiagnosis {
@@ -90,6 +97,45 @@ const clean = (s: string): string =>
     .trim()
     .slice(0, MAX_DETAIL);
 
+const QUOTA_EVENT = /exceeded quota/i;
+const QUOTA_VOLUME = /persistentvolumeclaims|requests\.storage/i;
+
+const bytesOf = (q: unknown): number | undefined => {
+  if (typeof q !== "string" && typeof q !== "number") return undefined;
+  try {
+    return quantityBytes(String(q));
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Why the team's member quota (`kobe-team-member-quota`) cannot take one more workspace volume of
+ * `volumeBytes`: no PVC left, or not enough storage left. Undefined when it can (or is unknown).
+ */
+export function quotaShortfall(
+  quota: KubeObject | undefined,
+  volumeBytes: number | undefined,
+): string | undefined {
+  const status = (quota?.["status"] ?? {}) as Record<string, Record<string, unknown> | undefined>;
+  const hard = status["hard"] ?? {};
+  const used = status["used"] ?? {};
+  const count = (k: string) => bytesOf(hard[k]) !== undefined && bytesOf(used[k]) !== undefined;
+  if (count("persistentvolumeclaims")) {
+    const h = bytesOf(hard["persistentvolumeclaims"]) as number;
+    const u = bytesOf(used["persistentvolumeclaims"]) as number;
+    if (u >= h) return `quota ${MEMBER_RESOURCE_QUOTA}: persistentvolumeclaims used ${u} of ${h}`;
+  }
+  if (count("requests.storage")) {
+    const h = bytesOf(hard["requests.storage"]) as number;
+    const u = bytesOf(used["requests.storage"]) as number;
+    if (u + (volumeBytes ?? 1) > h) {
+      return `quota ${MEMBER_RESOURCE_QUOTA}: requests.storage used ${String(used["requests.storage"])} of ${String(hard["requests.storage"])}`;
+    }
+  }
+  return undefined;
+}
+
 /**
  * Pure classification of what was read (tested with fake API responses). Only events of this
  * wake (`since`, epoch ms) about this very pod or volume (matched by uid, not just name) count:
@@ -101,6 +147,10 @@ export function classifyStall(input: {
   readonly events: readonly KubeObject[];
   readonly since: number;
   readonly now: number;
+  /** The team's member ResourceQuota (KOBE-733), when it could be read. */
+  readonly quota?: KubeObject | undefined;
+  /** The workspace volume's requested size in bytes. */
+  readonly volumeBytes?: number | undefined;
 }): StallDiagnosis {
   const { pod, pvc, since, now } = input;
   const uids = new Set(
@@ -127,6 +177,21 @@ export function classifyStall(input: {
   if (ended) {
     const why = [ended.reason, ended.message].filter((p) => p !== "").join(": ");
     return make("pod_failed", `pod ${ended.phase}${why ? `: ${why}` : ""}`, true);
+  }
+  // No workspace volume, and the team's quota has no room for one (KOBE-733): waiting will not
+  // help. The quota's own numbers, or a controller's "exceeded quota" event of this wake (it names
+  // the volume, which has no uid yet, so any object's event counts).
+  if (!pvc) {
+    const refused = input.events
+      .map(toEvent)
+      .filter((e) => e.type !== "Normal" && e.at >= since)
+      .sort((a, b) => b.at - a.at)
+      .find((e) => QUOTA_EVENT.test(e.message) && QUOTA_VOLUME.test(e.message));
+    if (refused) return make("volume_quota", line(refused), true);
+    // The quota's own numbers lag its controller (just after volumes were freed): the cause, but
+    // not definite on its own, so the wake keeps waiting for its budget.
+    const shortfall = quotaShortfall(input.quota, input.volumeBytes);
+    if (shortfall) return make("volume_quota", shortfall, false);
   }
   // Longhorn's replica scheduling (FailedAttachVolume etc.); the scheduler's own words below.
   const replica = events.find(
@@ -175,13 +240,20 @@ export async function diagnoseStall(
   pvcName: string,
   since: number,
   now: number,
+  volumeBytes?: number,
 ): Promise<StallDiagnosis> {
   const [pod, pvc, events] = await Promise.all([
     kube.get({ apiVersion: "v1", kind: "Pod", name: podName, namespace }),
     kube.get({ apiVersion: "v1", kind: "PersistentVolumeClaim", name: pvcName, namespace }),
     kube.list("v1", "Event", namespace),
   ]);
-  return classifyStall({ pod, pvc, events, since, now });
+  // KOBE-733: only when the volume is missing; a read failure (older RBAC) is no diagnosis.
+  const quota = pvc
+    ? undefined
+    : await kube
+        .get({ apiVersion: "v1", kind: "ResourceQuota", name: MEMBER_RESOURCE_QUOTA, namespace })
+        .catch(() => undefined);
+  return classifyStall({ pod, pvc, events, since, now, quota, volumeBytes });
 }
 
 /** Whether the pod Ready condition is True. */

@@ -10,7 +10,9 @@ const DEAD_GRANT_ERRORS = new Set(["invalid_grant", "invalid_client", "unauthori
  * resource). Goes through the same pinned-address, no-redirect, size- and time-capped client as
  * every other OAuth request. The token endpoint is the one sealed with the grant, not
  * re-discovered. Throws {@link OauthError}: `refresh_rejected` when the server says the grant is
- * dead (the user must reconnect), anything else (unreachable, 5xx, garbage) is transient.
+ * dead (the user must reconnect), `token_endpoint_error` for any other error status (transient,
+ * and the refresh token was not spent), anything else (unreachable, timed out, a 2xx that does not
+ * parse) is transient with an unknown outcome: the server may have rotated the token.
  * A rotated refresh token comes back in `refreshToken`; `undefined` means keep the old one.
  */
 export async function refreshAccessToken(
@@ -38,6 +40,8 @@ export async function refreshAccessToken(
   if (res.status >= 400 && res.status < 500 && typeof error === "string") {
     if (DEAD_GRANT_ERRORS.has(error)) throw new OauthError("refresh_rejected");
   }
+  // An error status is a definite answer: the refresh token was not spent (KOBE-778 review F2).
+  if (res.status >= 400) throw new OauthError("token_endpoint_error");
   const parsed = tokenSchema.safeParse(res.json);
   if (res.status !== 200 || !parsed.success) throw new OauthError("token_exchange_failed");
   const t = parsed.data;

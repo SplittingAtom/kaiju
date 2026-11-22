@@ -1,5 +1,6 @@
 import {
   APPROVAL_MODES,
+  APPROVAL_TTL_MS,
   MEMORY_TOOLS,
   PROJECT_TOOLS,
   approvalModeSchema,
@@ -17,12 +18,18 @@ import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { readApprovalFloor, strictestApprovalMode } from "../policy/approval-floor.js";
 import { neverPromptReason } from "../policy/evaluate.js";
 import { appliedUserRule, recordRuleApplied } from "../policy/rule-applied.js";
-import { appliedDangerousMode, recordDangerousApplied } from "../policy/dangerous-mode.js";
+import {
+  appliedDangerousMode,
+  dangerousToolsFor,
+  recordDangerousApplied,
+} from "../policy/dangerous-mode.js";
 import { loadRunAgentTools } from "../policy/run-agent-tools.js";
 import { guardViewedFile, proposeAvailable } from "../policy/viewed-file-guard.js";
 import { guardKobeAdmin } from "../policy/kobe-admin-guard.js";
 import { guardKobeAdminCall } from "../kobe-mcp/person-guard.js";
 import { recordSkippedActionInTx } from "../policy/skipped-actions.js";
+import { decideAcrossRuns, policyInputFor } from "../mcp/decide-policy.js";
+import { loadActiveRuns } from "../mcp/run-context.js";
 import { toolCallLink } from "../thread-file-links/paths.js";
 import { recordWorkspaceLink } from "../thread-file-links/record.js";
 import type {
@@ -47,16 +54,7 @@ export function clampApprovalMode(mode: ApprovalMode, floor: ApprovalMode): Appr
   return strictestApprovalMode(mode, floor);
 }
 
-/**
- * The tools a call may run without asking under Dangerous mode (AC1): the run's agent's explicit
- * list when the site floor sets no minimum (`auto`); any stricter site floor turns it off.
- */
-export function dangerousToolsFor(context: {
-  readonly dangerousTools?: readonly string[];
-  readonly floor: ApprovalMode;
-}): string[] {
-  return context.floor === "auto" ? [...(context.dangerousTools ?? [])] : [];
-}
+export { dangerousToolsFor };
 
 /**
  * Tools whose approval the server asks itself, over an input it builds (KOBE-579, CM6): the
@@ -110,7 +108,7 @@ export const DENY_APPROVALS: ApprovalBroker = {
 /**
  * Run policy context from Postgres: the site floor (`readApprovalFloor`, spec D6: site-wide
  * only, no team floor) and the run's own mode, fixed at creation by the orchestrator
- * (`runs.approval_mode`, KOBE-30). Agent tool lists arrive with KOBE-47. An unreadable floor is the
+ * (`runs.approval_mode`, KOBE-30), and the run's agent's tool lists (KOBE-481, KOBE-776). An unreadable floor is the
  * strictest mode (`ask-all`); a failed read throws, and the call is denied.
  */
 export function createDbRunContextSource(): RunPolicyContextSource {
@@ -123,11 +121,13 @@ export function createDbRunContextSource(): RunPolicyContextSource {
       const mode = approvalModeSchema.safeParse(res.rows[0]?.approval_mode);
       // KOBE-493: the run's viewed file (also set by Retry and regenerate), for the guard.
       const viewedPath = res.rows[0]?.viewed_path ?? undefined;
-      // KOBE-481: the agent's own tools.deny in every mode; AC1: its Dangerous tools.
+      // KOBE-481/776: the agent's own tools.deny and tools.allow in every mode; AC1: its
+      // Dangerous tools.
       const agent = await loadRunAgentTools(tx, run);
       return {
         floor,
         ...(mode.success ? { approvalMode: mode.data } : {}),
+        toolsAllow: agent.toolsAllow,
         toolsDeny: agent.toolsDeny,
         ...(agent.dangerousTools.length > 0 ? { dangerousTools: agent.dangerousTools } : {}),
         ...(viewedPath === undefined ? {} : { viewedPath }),
@@ -452,16 +452,276 @@ async function recordFileLink(
 }
 
 /**
+ * An MCP call as the MCP proxy will decide it (KOBE-777, review P2-3): one user's runs share one
+ * sandbox, and the proxy cannot tell which of them a `tools/call` comes from, so it decides under
+ * every active run of the sandbox and needs a signed approval unless all of them allow. Here the
+ * same runs and the same rule (`decideAcrossRuns`) apply, so where the proxy will need an approval
+ * the member is asked now (the broker signs it), instead of an allow here and a deny there. The
+ * named run's own decision stands when every run allows it, or when it asks or denies itself.
+ */
+async function acrossSandboxRuns(
+  deps: PolicyCheckDeps,
+  target: SandboxTarget & { readonly sandboxId: string },
+  frame: PolicyCheckFrame,
+  input: PolicyInput,
+  named: PolicyDecision,
+): Promise<PolicyDecision> {
+  if (input.tool.source !== "mcp" || named.effect === "deny") return named;
+  const loaded = await loadActiveRuns(deps.db, deps.runContext, target);
+  if (!loaded.ok) {
+    const message = "Too many active runs in this sandbox; try again.";
+    return { effect: "deny", risk: named.risk, reasons: [denyReason("run_not_active", message)] };
+  }
+  const { combined, siblings } = await decideAcrossRuns(
+    { runId: frame.run_id, decision: named },
+    loaded.runs,
+    async (run) => {
+      const siblingInput = policyInputFor(
+        target,
+        run,
+        input.tool,
+        frame.tool_call_id,
+        input.input,
+        // As the wire's own input: the engine applies the team's real exposure (its state).
+        { enforcementPoint: "sandbox", exposure: "all" },
+      );
+      // The proxy's Kobe connector guard, per run (kobe-mcp/service.ts).
+      return guardKobeAdmin(await deps.engine.decide(siblingInput), {
+        tool: input.tool,
+        input: siblingInput,
+        evalRun: run.skillEval === true,
+        now: new Date(),
+      });
+    },
+  );
+  if (combined.effect !== "require_approval" || named.effect === "require_approval") return named;
+  const strict = siblings.find((d) => d.effect !== "allow");
+  const message =
+    "Another conversation of yours is running in this sandbox, and under its settings this call " +
+    `needs your approval: ${combined.reason.message}`;
+  return {
+    effect: "require_approval",
+    risk: named.risk,
+    reasons: [{ ...combined.reason, message: message.slice(0, 1000) }],
+    expires_at:
+      strict?.effect === "require_approval"
+        ? strict.expires_at
+        : new Date(Date.now() + APPROVAL_TTL_MS).toISOString(),
+  };
+}
+
+/** The connection a `policy.check` came from. */
+export type PolicyCheckTarget = SandboxTarget & {
+  /** The connection's sandbox: an MCP call is decided under all of its active runs. */
+  readonly sandboxId: string;
+  readonly connectionId: string;
+  /** The sandbox announced `file_edits` (KOBE-493: the viewed-file guard denies, else asks). */
+  readonly fileEdits?: boolean;
+};
+
+/** One call being decided: what every outcome below needs. */
+interface Deciding {
+  readonly deps: PolicyCheckDeps;
+  readonly target: PolicyCheckTarget;
+  readonly frame: PolicyCheckFrame;
+  readonly mayRecordDenied: () => boolean;
+  /** A skill eval's run (KOBE-325). */
+  readonly evalRun: boolean;
+}
+
+type Decided = Extract<Evaluated, { readonly decision: PolicyDecision }>;
+
+/** A refusal: `policy.denied` (budgeted), a skipped action (scheduled runs) and the deny frame. */
+async function refuse(
+  d: Pick<Deciding, "deps" | "target" | "frame" | "mayRecordDenied">,
+  risk: PolicyDecision["risk"],
+  reasons: readonly PolicyReason[],
+  message: string,
+): Promise<Deny> {
+  await recordDenied(d.deps, d.target.teamId, d.frame, reasons, d.mayRecordDenied);
+  await recordSkipped(d.deps, d.target.teamId, d.frame, risk, reasons);
+  return denyFrame(d.frame, reasons, message);
+}
+
+function allowFrame(
+  frame: PolicyCheckFrame,
+  reasons: readonly PolicyReason[],
+  approval?: Allow["approval"],
+): Allow {
+  return {
+    v: 1,
+    type: "policy.result",
+    request_id: frame.request_id,
+    run_id: frame.run_id,
+    tool_call_id: frame.tool_call_id,
+    decision: "allow",
+    reasons: [...reasons],
+    ...(approval === undefined ? {} : { approval }),
+  };
+}
+
+/** The engine's decision through the server's own guards, and for MCP under every active run. */
+async function guardedDecision(d: Deciding, evaluated: Decided): Promise<PolicyDecision> {
+  const { deps, target, frame } = d;
+  // KOBE-493: Pi write/edit never change the member's viewed file directly, in any mode.
+  const { viewedPath } = evaluated;
+  const viewedGuarded = guardViewedFile(evaluated.decision, {
+    tool: evaluated.input.tool,
+    input: frame.input,
+    viewedPath,
+    canPropose:
+      viewedPath !== undefined &&
+      proposeAvailable(evaluated.input.agent, target.fileEdits === true, viewedPath),
+    now: new Date(),
+  });
+  // KOBE-619: Kobe admin tools only for a person who may use them now; writes ask in every mode.
+  const guarded = await guardKobeAdminCall(
+    deps.db,
+    target,
+    guardKobeAdmin(viewedGuarded, {
+      tool: evaluated.input.tool,
+      input: evaluated.input,
+      evalRun: d.evalRun,
+      now: new Date(),
+    }),
+    evaluated.input.tool,
+    frame.input,
+  );
+  // KOBE-777: an MCP call under every active run of the sandbox, as the proxy decides it.
+  return acrossSandboxRuns(deps, target, frame, evaluated.input, guarded);
+}
+
+/**
+ * An allowed call: a remembered approval is recorded first (last used, audit, tool card; a rule
+ * revoked meanwhile, or a failed record, denies the call instead), a Dangerous allow is audited,
+ * and a file tool links its thread to the path.
+ */
+async function allowOutcome(
+  d: Deciding,
+  input: PolicyInput,
+  decision: Extract<PolicyDecision, { effect: "allow" }>,
+): Promise<PolicyResultFrame> {
+  const { deps, target, frame, evalRun } = d;
+  const rule = appliedUserRule(decision);
+  // A skill eval (KOBE-325) is measured on team and site rules only, the same for every
+  // starter: a remembered approval doesn't apply, and without it the call would ask.
+  if (rule !== undefined && evalRun) {
+    const reasons = [
+      EVAL_NO_PROMPT,
+      ...decision.reasons.filter((r) => r.code !== "user_allow_rule"),
+    ];
+    return await refuse(d, decision.risk, reasons, EVAL_NO_PROMPT.message);
+  }
+  // An admin's Dangerous agent allowed it (AC1): audited before the call runs; a skill eval
+  // never runs on it (defence in depth: the context source never sets it there), and a failed
+  // audit write denies the call.
+  if (appliedDangerousMode(decision) !== undefined) {
+    if (evalRun) return await refuse(d, decision.risk, [EVAL_NO_PROMPT], EVAL_NO_PROMPT.message);
+    try {
+      await recordDangerousApplied(deps.db, {
+        teamId: target.teamId,
+        userId: target.userId,
+        runId: frame.run_id,
+        agentId: input.agent.agent_id,
+        agentVersion: input.agent.version,
+        toolCallId: frame.tool_call_id,
+        tool: frame.tool,
+        enforcementPoint: "sandbox",
+      });
+    } catch (err) {
+      logger.error({ err, runId: frame.run_id }, "dangerous mode audit failed; call denied");
+      const message = "The call could not be audited, so it was denied.";
+      return denyFrame(frame, [denyReason("policy_error", message)], message);
+    }
+  }
+  if (rule?.rule_id !== undefined) {
+    const recorded = await recordRuleApplied(deps.db, {
+      teamId: target.teamId,
+      userId: target.userId,
+      runId: frame.run_id,
+      toolCallId: frame.tool_call_id,
+      tool: frame.tool,
+      ruleId: rule.rule_id,
+      enforcementPoint: "sandbox",
+      runMaxEvents: deps.runMaxEvents,
+      announce: true,
+    });
+    if (!recorded) {
+      const message = "The remembered approval for this call was revoked; it was denied.";
+      return denyFrame(frame, [denyReason("policy_error", message)], message);
+    }
+  }
+  if (!evalRun) await recordFileLink(deps, target, frame, input.tool.source);
+  return allowFrame(frame, decision.reasons);
+}
+
+/**
+ * A call that needs approval: denied where nobody can answer (scheduled or auto runs, skill
+ * evals), handed to the tool's own frame handler for a server-approved tool (CM6), else the
+ * member is asked through the broker while the sandbox waits.
+ */
+async function askOutcome(
+  d: Deciding,
+  input: PolicyInput,
+  decision: Extract<PolicyDecision, { effect: "require_approval" }>,
+  asking: {
+    readonly signal: AbortSignal;
+    readonly onPending: (pending: { approvalId: string; expiresAt: string }) => void;
+    readonly onDeferred: (() => void) | undefined;
+  },
+): Promise<PolicyResultFrame> {
+  const { deps, target, frame } = d;
+  // Defence in depth (the engine never asks here): nobody can answer a scheduled or auto run,
+  // so no approval row is created for it and the sandbox is not left waiting.
+  const never = neverPromptReason(input);
+  if (never !== undefined) {
+    return await refuse(d, decision.risk, [never, ...decision.reasons], never.message);
+  }
+  // A skill eval's run (KOBE-325) never asks either, whatever mode the floor clamped it to: the
+  // call is denied and recorded (its `no_denied_tools` check reads the denial).
+  if (d.evalRun) {
+    return await refuse(
+      d,
+      decision.risk,
+      [EVAL_NO_PROMPT, ...decision.reasons],
+      EVAL_NO_PROMPT.message,
+    );
+  }
+  if (SERVER_APPROVED_TOOLS.has(frame.tool) && asking.onDeferred !== undefined) {
+    // CM6: the approval binds the server's canonical input; the frame handler asks for it.
+    asking.onDeferred();
+    return allowFrame(frame, decision.reasons);
+  }
+  const outcome = await deps.approvals.request(
+    {
+      teamId: target.teamId,
+      userId: target.userId,
+      connectionId: target.connectionId,
+      runId: frame.run_id,
+      threadId: frame.thread_id,
+      toolCallId: frame.tool_call_id,
+      tool: frame.tool,
+      input: frame.input,
+      decision,
+      signal: asking.signal,
+    },
+    asking.onPending,
+  );
+  if (outcome.decision === "allow") {
+    await recordFileLink(deps, target, frame, input.tool.source);
+    return allowFrame(frame, outcome.reasons, outcome.approval);
+  }
+  await recordDenied(deps, target.teamId, frame, outcome.reasons, d.mayRecordDenied);
+  return denyFrame(frame, outcome.reasons, outcome.message);
+}
+
+/**
  * Decides one call. Never throws: any failure is a deny. `onPending` sends `policy.pending` when a
  * human is asked (the sandbox keeps waiting until `policy.result`).
  */
 export async function decidePolicyCheck(
   deps: PolicyCheckDeps,
-  target: SandboxTarget & {
-    readonly connectionId: string;
-    /** The sandbox announced `file_edits` (KOBE-493: the viewed-file guard denies, else asks). */
-    readonly fileEdits?: boolean;
-  },
+  target: PolicyCheckTarget,
   frame: PolicyCheckFrame,
   signal: AbortSignal,
   onPending: (pending: { approvalId: string; expiresAt: string }) => void,
@@ -473,185 +733,30 @@ export async function decidePolicyCheck(
     if ("reason" in evaluated) {
       const input = evaluated.reason;
       if (input.code === "unknown_tool") {
-        await recordDenied(deps, target.teamId, frame, [input], mayRecordDenied);
-        await recordSkipped(deps, target.teamId, frame, "destructive", [input]);
-        return denyFrame(frame, [input], input.message);
+        return await refuse(
+          { deps, target, frame, mayRecordDenied },
+          "destructive",
+          [input],
+          input.message,
+        );
       }
       const message = `${input.message} The tool call was denied.`;
       return denyFrame(frame, [{ ...input, message }], message);
     }
-    // KOBE-493: Pi write/edit never change the member's viewed file directly, in any mode.
-    const { viewedPath } = evaluated;
-    const viewedGuarded = guardViewedFile(evaluated.decision, {
-      tool: evaluated.input.tool,
-      input: frame.input,
-      viewedPath,
-      canPropose:
-        viewedPath !== undefined &&
-        proposeAvailable(evaluated.input.agent, target.fileEdits === true, viewedPath),
-      now: new Date(),
-    });
     // A skill eval's run (KOBE-325) never reads or writes the member's memory or projects: an eval
     // measures the skill alone and leaves nothing behind in the member's own state.
     const evalRun = await isEvalThread(deps.db, target.teamId, frame.thread_id);
-    // KOBE-619: Kobe admin tools only for a person who may use them now; writes ask in every mode.
-    const decision = await guardKobeAdminCall(
-      deps.db,
-      target,
-      guardKobeAdmin(viewedGuarded, {
-        tool: evaluated.input.tool,
-        input: evaluated.input,
-        evalRun,
-        now: new Date(),
-      }),
-      evaluated.input.tool,
-      frame.input,
-    );
+    const d: Deciding = { deps, target, frame, mayRecordDenied, evalRun };
+    const decision = await guardedDecision(d, evaluated);
     if (evalRun && evalIsolatedCall(frame.tool, frame.input)) {
-      const reasons = [EVAL_ISOLATED];
-      await recordDenied(deps, target.teamId, frame, reasons, mayRecordDenied);
-      await recordSkipped(deps, target.teamId, frame, decision.risk, reasons);
-      return denyFrame(frame, reasons, EVAL_ISOLATED.message);
+      return await refuse(d, decision.risk, [EVAL_ISOLATED], EVAL_ISOLATED.message);
     }
-    if (decision.effect === "allow") {
-      // A remembered approval allowed it (KOBE-289): recorded first (last used, audit, tool card).
-      // A rule revoked meanwhile, or a failed record, denies the call instead.
-      const rule = appliedUserRule(decision);
-      // A skill eval (KOBE-325) is measured on team and site rules only, the same for every
-      // starter: a remembered approval doesn't apply, and without it the call would ask.
-      if (rule !== undefined && evalRun) {
-        const reasons = [
-          EVAL_NO_PROMPT,
-          ...decision.reasons.filter((r) => r.code !== "user_allow_rule"),
-        ];
-        await recordDenied(deps, target.teamId, frame, reasons, mayRecordDenied);
-        await recordSkipped(deps, target.teamId, frame, decision.risk, reasons);
-        return denyFrame(frame, reasons, EVAL_NO_PROMPT.message);
-      }
-      // An admin's Dangerous agent allowed it (AC1): audited before the call runs; a skill eval
-      // never runs on it (defence in depth: the context source never sets it there), and a failed
-      // audit write denies the call.
-      if (appliedDangerousMode(decision) !== undefined) {
-        if (evalRun) {
-          const reasons = [EVAL_NO_PROMPT];
-          await recordDenied(deps, target.teamId, frame, reasons, mayRecordDenied);
-          await recordSkipped(deps, target.teamId, frame, decision.risk, reasons);
-          return denyFrame(frame, reasons, EVAL_NO_PROMPT.message);
-        }
-        try {
-          await recordDangerousApplied(deps.db, {
-            teamId: target.teamId,
-            userId: target.userId,
-            runId: frame.run_id,
-            agentId: evaluated.input.agent.agent_id,
-            agentVersion: evaluated.input.agent.version,
-            toolCallId: frame.tool_call_id,
-            tool: frame.tool,
-            enforcementPoint: "sandbox",
-          });
-        } catch (err) {
-          logger.error({ err, runId: frame.run_id }, "dangerous mode audit failed; call denied");
-          const message = "The call could not be audited, so it was denied.";
-          return denyFrame(frame, [denyReason("policy_error", message)], message);
-        }
-      }
-      if (rule?.rule_id !== undefined) {
-        const recorded = await recordRuleApplied(deps.db, {
-          teamId: target.teamId,
-          userId: target.userId,
-          runId: frame.run_id,
-          toolCallId: frame.tool_call_id,
-          tool: frame.tool,
-          ruleId: rule.rule_id,
-          enforcementPoint: "sandbox",
-          runMaxEvents: deps.runMaxEvents,
-          announce: true,
-        });
-        if (!recorded) {
-          const message = "The remembered approval for this call was revoked; it was denied.";
-          return denyFrame(frame, [denyReason("policy_error", message)], message);
-        }
-      }
-      if (!evalRun) await recordFileLink(deps, target, frame, evaluated.input.tool.source);
-      return {
-        v: 1,
-        type: "policy.result",
-        request_id: frame.request_id,
-        run_id: frame.run_id,
-        tool_call_id: frame.tool_call_id,
-        decision: "allow",
-        reasons: decision.reasons,
-      } satisfies Allow;
-    }
+    if (decision.effect === "allow") return await allowOutcome(d, evaluated.input, decision);
     if (decision.effect === "deny") {
-      await recordDenied(deps, target.teamId, frame, decision.reasons, mayRecordDenied);
-      await recordSkipped(deps, target.teamId, frame, decision.risk, decision.reasons);
-      return denyFrame(
-        frame,
-        decision.reasons,
-        decision.reasons[0]?.message ?? "Denied by policy.",
-      );
+      const message = decision.reasons[0]?.message ?? "Denied by policy.";
+      return await refuse(d, decision.risk, decision.reasons, message);
     }
-    // Defence in depth (the engine never asks here): nobody can answer a scheduled or auto run,
-    // so no approval row is created for it and the sandbox is not left waiting.
-    const never = neverPromptReason(evaluated.input);
-    if (never !== undefined) {
-      const reasons = [never, ...decision.reasons];
-      await recordDenied(deps, target.teamId, frame, reasons, mayRecordDenied);
-      await recordSkipped(deps, target.teamId, frame, decision.risk, reasons);
-      return denyFrame(frame, reasons, never.message);
-    }
-    // A skill eval's run (KOBE-325) never asks either, whatever mode the floor clamped it to: the
-    // call is denied and recorded (its `no_denied_tools` check reads the denial).
-    if (evalRun) {
-      const reasons = [EVAL_NO_PROMPT, ...decision.reasons];
-      await recordDenied(deps, target.teamId, frame, reasons, mayRecordDenied);
-      await recordSkipped(deps, target.teamId, frame, decision.risk, reasons);
-      return denyFrame(frame, reasons, EVAL_NO_PROMPT.message);
-    }
-    if (SERVER_APPROVED_TOOLS.has(frame.tool) && onDeferred !== undefined) {
-      // CM6: the approval binds the server's canonical input; the frame handler asks for it.
-      onDeferred();
-      return {
-        v: 1,
-        type: "policy.result",
-        request_id: frame.request_id,
-        run_id: frame.run_id,
-        tool_call_id: frame.tool_call_id,
-        decision: "allow",
-        reasons: decision.reasons,
-      } satisfies Allow;
-    }
-    const outcome = await deps.approvals.request(
-      {
-        teamId: target.teamId,
-        userId: target.userId,
-        connectionId: target.connectionId,
-        runId: frame.run_id,
-        threadId: frame.thread_id,
-        toolCallId: frame.tool_call_id,
-        tool: frame.tool,
-        input: frame.input,
-        decision,
-        signal,
-      },
-      onPending,
-    );
-    if (outcome.decision === "allow") {
-      await recordFileLink(deps, target, frame, evaluated.input.tool.source);
-      return {
-        v: 1,
-        type: "policy.result",
-        request_id: frame.request_id,
-        run_id: frame.run_id,
-        tool_call_id: frame.tool_call_id,
-        decision: "allow",
-        reasons: [...outcome.reasons],
-        ...(outcome.approval === undefined ? {} : { approval: outcome.approval }),
-      } satisfies Allow;
-    }
-    await recordDenied(deps, target.teamId, frame, outcome.reasons, mayRecordDenied);
-    return denyFrame(frame, outcome.reasons, outcome.message);
+    return await askOutcome(d, evaluated.input, decision, { signal, onPending, onDeferred });
   } catch (err) {
     logger.error({ err, runId: frame.run_id, tool: frame.tool }, "policy.check denied on error");
     return denyFrame(

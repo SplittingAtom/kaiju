@@ -11,6 +11,8 @@ export type OauthFailureCode =
   | "iss_mismatch"
   | "token_exchange_failed"
   | "refresh_rejected"
+  /** The token endpoint answered a refresh with an error status (a definite answer, KOBE-778). */
+  | "token_endpoint_error"
   | "registration_failed";
 
 export class OauthError extends Error {

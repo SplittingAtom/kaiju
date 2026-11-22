@@ -4,6 +4,7 @@ import { matchGlob } from "@kobe/protocol";
 import { type RunMcpServer } from "@kobe/protocol/sandbox-wire";
 import { allowedKobeTools, loadKobeAccess, loadKobeBuiltin } from "./access.js";
 import { KOBE_DOCS_TOOLS } from "./docs/index.js";
+import { allowListOffers } from "../policy/agent-allow.js";
 import { kobePinnedTool } from "./pinned.js";
 
 /**
@@ -37,7 +38,7 @@ export async function kobeRunServer(
   const globs = run.frontmatter?.tools;
   const allowedByAgent = (piName: string) =>
     !(globs?.deny?.some((g) => matchGlob(g, piName)) ?? false) &&
-    (globs?.allow === undefined || globs.allow.some((g) => matchGlob(g, piName)));
+    allowListOffers(globs?.allow, (g) => matchGlob(g, piName));
   const admin = await adminTools(tx, row.name, run);
   const tools = [...KOBE_DOCS_TOOLS, ...admin]
     .map((t) => kobePinnedTool(row.name, t))

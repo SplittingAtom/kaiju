@@ -105,6 +105,7 @@ export function connectorCoreRoutes(kit: ConnectorKit): Hono<{ Variables: AuthVa
     db,
     prober: deps.connectorProbe,
     envelope: deps.envelope,
+    oauthRefresh: deps.mcp.oauthRefresh,
     lockFor: connectorRefreshLocks(deps.database.pool),
   });
   app.post("/:id/refresh", async (c) => {
@@ -113,7 +114,7 @@ export function connectorCoreRoutes(kit: ConnectorKit): Hono<{ Variables: AuthVa
     const result = await reprobeConnector(reprobeDeps(), id.data, c.get("user").id);
     if (result.kind === "not_found") return notFound(c);
     const connector = await getConnector(db, id.data);
-    const reply = reprobeReply(result, connector?.credentialSource);
+    const reply = reprobeReply(result, connector?.credentialSource, connector?.authKind);
     return c.json({ ...reply.body, ...(reply.status === 200 ? { connector } : {}) }, reply.status);
   });
 

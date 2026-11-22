@@ -13,6 +13,10 @@ import { mayUseDangerousMode } from "./dangerous-mode.js";
  * - `toolsDeny`: the agent's own `tools.deny`, from the run's published version (its frozen
  *   manifest) or, for a draft's test chat, the draft. The engine denies a matching call in every
  *   mode, built-in or MCP.
+ * - `toolsAllow` (KOBE-776): the agent's own `tools.allow`, from the same place. The engine
+ *   refuses a call it limits and doesn't match (`agent_tool_deny`; `policy/agent-allow.ts`:
+ *   connector tools whenever it is not empty, by their `mcp__<server>__<tool>` name; built-ins
+ *   only when it names one). Empty or absent narrows nothing. It never removes a prompt.
  * - `dangerousTools`: when the published version is in Dangerous mode (AC1), the tools its
  *   `tools.allow` names one by one (never a glob). Empty unless the run is interactive (not
  *   scheduled, not a skill eval) and **whoever published that version** is still active and still
@@ -23,15 +27,15 @@ import { mayUseDangerousMode } from "./dangerous-mode.js";
  *   version's) also denies the memory tools (`remember`, `recall`), the server's own line behind
  *   the sandbox, which lists them only when `run.start.memory` came.
  *
- * `tools.allow` is not returned for enforcement: it only decides which tools Dangerous may allow.
  * An unreadable version throws (the call is then denied).
  */
 export interface RunAgentTools {
+  readonly toolsAllow: readonly string[];
   readonly toolsDeny: readonly string[];
   readonly dangerousTools: readonly string[];
 }
 
-const NONE: RunAgentTools = { toolsDeny: [], dangerousTools: [] };
+const NONE: RunAgentTools = { toolsAllow: [], toolsDeny: [], dangerousTools: [] };
 
 interface RunAgentRow extends Record<string, unknown> {
   readonly agent_scope: "team" | "personal" | "gallery" | null;
@@ -62,7 +66,7 @@ async function agentTools(
   if (!row || row.agent_scope === null || row.agent_id === null) return NONE;
   if (row.agent_version === null) {
     return {
-      toolsDeny: await draftDeny(tx, run.teamId, row.agent_scope, row.agent_id),
+      ...(await draftTools(tx, run.teamId, row.agent_scope, row.agent_id)),
       dangerousTools: [],
     };
   }
@@ -86,27 +90,46 @@ async function agentTools(
     found.published_by !== null &&
     (await stillAdmin(tx, run.teamId, found.published_by));
   return {
+    toolsAllow: manifest.tools_allow,
     toolsDeny: manifest.tools_deny,
     dangerousTools: dangerous ? explicitToolNames(manifest.tools_allow) : [],
   };
 }
 
-/** A draft's `tools.deny` (a test chat runs the draft); entries that aren't strings are dropped. */
-async function draftDeny(
+/**
+ * A draft's `tools.allow` and `tools.deny` (a test chat runs the draft; its frontmatter was
+ * validated on save). A missing draft or a malformed allow list throws (every call is denied);
+ * deny entries that aren't strings are dropped.
+ */
+async function draftTools(
   tx: KobeTx,
   teamId: string,
   scope: "team" | "personal" | "gallery",
   agentId: string,
-): Promise<string[]> {
+): Promise<Pick<RunAgentTools, "toolsAllow" | "toolsDeny">> {
   const res =
     scope === "team"
-      ? await tx.execute<{ deny: unknown }>(sql`
-          SELECT frontmatter->'tools'->'deny' AS deny FROM team_agents
-           WHERE team_id = ${teamId} AND id = ${agentId}`)
-      : await tx.execute<{ deny: unknown }>(sql`
-          SELECT frontmatter->'tools'->'deny' AS deny FROM site_agents WHERE id = ${agentId}`);
-  const deny = res.rows[0]?.deny;
-  return Array.isArray(deny) ? deny.filter((d): d is string => typeof d === "string") : [];
+      ? await tx.execute<{ allow: unknown; deny: unknown }>(sql`
+          SELECT frontmatter->'tools'->'allow' AS allow, frontmatter->'tools'->'deny' AS deny
+            FROM team_agents WHERE team_id = ${teamId} AND id = ${agentId}`)
+      : await tx.execute<{ allow: unknown; deny: unknown }>(sql`
+          SELECT frontmatter->'tools'->'allow' AS allow, frontmatter->'tools'->'deny' AS deny
+            FROM site_agents WHERE id = ${agentId}`);
+  const row = res.rows[0];
+  // As the published path: an unreadable agent throws, and the call is denied.
+  if (!row) throw new Error("the run's agent draft can't be read");
+  const allow = row.allow;
+  // A malformed allow list never means "no limit": it refuses every call (fail closed).
+  if (
+    allow !== null &&
+    allow !== undefined &&
+    (!Array.isArray(allow) || !allow.every((d) => typeof d === "string"))
+  ) {
+    throw new Error("the run's agent draft has an unreadable tools.allow");
+  }
+  const strings = (v: unknown) =>
+    Array.isArray(v) ? v.filter((d): d is string => typeof d === "string") : [];
+  return { toolsAllow: strings(allow), toolsDeny: strings(row.deny) };
 }
 
 /** The publisher is active and a site admin or an admin of this team, now (AC1). */

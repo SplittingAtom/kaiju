@@ -26,6 +26,7 @@ import {
   failStalePasses,
   insertRunningPass,
   leafPathRun,
+  lockPassStarts,
   passesToday,
 } from "./passes.js";
 import { CURRENT_EXTRACTOR_PROMPT } from "./prompt/index.js";
@@ -39,7 +40,8 @@ import { CURRENT_EXTRACTOR_PROMPT } from "./prompt/index.js";
  *    for the Workspace; never a fallback): `memory_disabled` / `memory_learning_model_unavailable`
  *    with the reason;
  * 2. the pass input (KOBE-392: author only, the visible branch, the watermark);
- * 3. {@link LEARN_PASSES_PER_DAY} passes per person per Workspace per rolling day;
+ * 3. {@link LEARN_PASSES_PER_DAY} passes per person per Workspace per rolling day, counted under
+ *    a per-person lock so starts on several threads or replicas can't pass it together;
  * 4. the person's budget lines: refused at 100 % (the gateway refuses the call there too);
  * 5. the run the token is bound to: the leaf path's last completed run, leased to the author
  *    (the gateway can only check that it is a completed run of theirs);
@@ -162,6 +164,7 @@ async function prepare(
       ...(assembled.leafEntryId === undefined ? {} : { leafEntryId: assembled.leafEntryId }),
     });
   const input = assembled.input;
+  await lockPassStarts(tx, teamId, userId);
   if ((await passesToday(tx, teamId, userId)) >= LEARN_PASSES_PER_DAY)
     return no({ code: "learn_rate_limited", message: RATE_LIMITED_MESSAGE });
   const budget = await loadMemberBudgetState(tx, teamId, userId);

@@ -1,4 +1,4 @@
-import type { PolicyDecision, PolicyReason } from "@kobe/protocol";
+import type { ApprovalMode, PolicyDecision, PolicyReason } from "@kobe/protocol";
 import { sql, withTeam, type KobeDb, type KobeTx, type TeamRole } from "@kobe/db";
 import { toolManifestSchema, withSiteNames, type ToolManifest } from "../agents/manifest.js";
 import { recordAudit } from "../audit/record.js";
@@ -15,6 +15,17 @@ import type { SiteRole } from "../authz/permissions.js";
  * The policy engine (`evaluate.ts`) turns the flag into an outcome after every deny stage and
  * every ask rule; nothing here decides a call.
  */
+
+/**
+ * The tools a call may run without asking under Dangerous mode (AC1): the run's agent's explicit
+ * list when the site floor sets no minimum (`auto`); any stricter site floor turns it off.
+ */
+export function dangerousToolsFor(context: {
+  readonly dangerousTools?: readonly string[];
+  readonly floor: ApprovalMode;
+}): string[] {
+  return context.floor === "auto" ? [...(context.dangerousTools ?? [])] : [];
+}
 
 /** Only site admins (and the Owner) and team admins may set, keep or publish Dangerous mode. */
 export function mayUseDangerousMode(teamRole: TeamRole | null, siteRole: SiteRole): boolean {

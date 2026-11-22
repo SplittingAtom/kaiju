@@ -24,6 +24,24 @@ describe("loadConfig", () => {
     expect(config.limits.upstreamTimeoutMs).toBeLessThan(60_000);
   });
 
+  it("waits longer for a grant than for other server calls, so an OAuth refresh fits (KOBE-778)", () => {
+    const config = loadConfig(ENV);
+    // The server's refresh: up to 10 s waiting for another replica's lease, then its own 5 s
+    // token request; the grant call must outlast both.
+    expect(config.limits.grantTimeoutMs).toBe(25_000);
+    expect(config.limits.grantTimeoutMs).toBeGreaterThan(config.limits.serverTimeoutMs);
+    expect(loadConfig({ ...ENV, KOBE_MCP_GRANT_TIMEOUT_MS: "30000" }).limits.grantTimeoutMs).toBe(
+      30_000,
+    );
+    expect(() =>
+      loadConfig({
+        ...ENV,
+        KOBE_MCP_SERVER_TIMEOUT_MS: "20000",
+        KOBE_MCP_GRANT_TIMEOUT_MS: "15000",
+      }),
+    ).toThrow(/KOBE_MCP_GRANT_TIMEOUT_MS/);
+  });
+
   it("serves the server's routes on their own port with their own key (KOBE-693)", () => {
     const config = loadConfig({ ...ENV, KOBE_MCP_ROUTES_KEY: "r".repeat(32) });
     expect(config.internalPort).toBe(8081);

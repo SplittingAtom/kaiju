@@ -429,7 +429,13 @@ describe("run token delivery (KOBE-118)", () => {
     const files = await readdir(path.dirname(launch.agentDir), { recursive: true });
     for (const f of files) {
       const p = path.join(path.dirname(launch.agentDir), f);
-      if ((await stat(p)).isFile()) expect(await readFile(p, "utf8")).not.toContain(GRANT.token);
+      // An atomic write's temp file can be renamed away between the listing and this read
+      // (ENOENT); directories answer EISDIR. Its final name is in the listing or is checked above.
+      const text = await readFile(p, "utf8").catch((err: NodeJS.ErrnoException) => {
+        if (err.code === "ENOENT" || err.code === "EISDIR") return null;
+        throw err;
+      });
+      if (text !== null) expect(text).not.toContain(GRANT.token);
     }
   });
 

@@ -102,6 +102,7 @@ interface Seed {
   source?: string;
   operation?: string;
   target_id?: string | null;
+  target_version?: number;
   evidence?: { entry_id: string; quote: string }[];
   near_duplicates?: { id: string; version: number }[];
 }
@@ -120,6 +121,7 @@ async function candidate(passId: string, seed: Seed = {}): Promise<string> {
     source: seed.source ?? "stated",
     operation: seed.operation ?? "add",
     target_id: seed.target_id ?? null,
+    ...(seed.target_version === undefined ? {} : { target_version: seed.target_version }),
     confidence: 0.9,
     rationale: "The person said so.",
     evidence: seed.evidence ?? [{ entry_id: "u1", quote: "We ship on Tuesdays." }],
@@ -354,6 +356,77 @@ describe("card actions (ac-2)", () => {
       409,
       "memory_item_inactive",
     ]);
+  });
+});
+
+describe("an update whose target changed since the pass (KOBE-779, P2-46)", () => {
+  it("is refused with a reason, stays open, and saves once the person reviewed the change", async () => {
+    const existing = await as.member.post(ITEMS, {
+      scope: "user",
+      kind: "fact",
+      statement: unique("Retro on Fridays"),
+    });
+    const target = (existing.json as { id: string }).id;
+    const t = await thread(ids.member);
+    const upd = await candidate(await pass(t, ids.member), {
+      operation: "update",
+      target_id: target,
+      target_version: 1,
+      statement: unique("Retro on Friday afternoons"),
+    });
+    const card = async () =>
+      (
+        (await list(as.member, t)).json as {
+          candidates: { id: string; target: { version: number } | null; target_changed: boolean }[];
+        }
+      ).candidates.find((x) => x.id === upd);
+    expect(await card()).toMatchObject({ target: { version: 1 }, target_changed: false });
+    // Someone edits the memory after the pass suggested the change.
+    const edited = await as.member.patch(`${ITEMS}/user/${target}`, {
+      expected_version: 1,
+      statement: unique("Retro on Thursdays"),
+    });
+    expect(edited.status).toBe(200);
+    const refused = await save(as.member, upd);
+    expect(codeOf(refused)).toEqual([409, "memory_version_conflict"]);
+    expect((refused.json as { message: string }).message).toMatch(/changed since Kobe suggested/);
+    expect((await stateOf(upd))?.state).toBe("open");
+    expect((await as.member.get(`${ITEMS}/user/${target}`)).json).toMatchObject({ version: 2 });
+    expect(await card()).toMatchObject({ target: { version: 2 }, target_changed: true });
+    // An older version than the current one is refused too.
+    expect(codeOf(await save(as.member, upd, { target_version: 1 }))).toEqual([
+      409,
+      "memory_version_conflict",
+    ]);
+    // Reviewed against the current version: saved on top of it.
+    const ok = await save(as.member, upd, { target_version: 2 });
+    expect(ok.status, JSON.stringify(ok.json)).toBe(200);
+    expect((ok.json as { item: object }).item).toMatchObject({ id: target, version: 3 });
+  });
+
+  it("a targeted Workspace candidate saves into the Workspace item (P2-6)", async () => {
+    const existing = await as.admin.post(ITEMS, {
+      scope: "team",
+      kind: "fact",
+      statement: unique("We ship on Tuesdays"),
+    });
+    expect(existing.status, JSON.stringify(existing.json)).toBe(201);
+    const target = (existing.json as { id: string }).id;
+    const t = await thread(ids.admin);
+    const upd = await candidate(await pass(t, ids.admin), {
+      operation: "update",
+      destination: "team",
+      target_id: target,
+      target_version: 1,
+      statement: unique("We ship on Tuesdays and Thursdays"),
+    });
+    const r = await save(as.admin, upd);
+    expect(r.status, JSON.stringify(r.json)).toBe(200);
+    expect((r.json as { item: object }).item).toMatchObject({
+      id: target,
+      version: 2,
+      scope: "team",
+    });
   });
 });
 

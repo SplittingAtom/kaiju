@@ -27,6 +27,10 @@ sleeps. To avoid it, ask the agent to install packages and write large files ins
 Your files are kept. Send your message again; if it keeps happening, ask your site admin (they see
 the reason in the audit log).
 
+**"Your team has used all of its workspace storage".** The team's quota of sandbox volumes is
+full, so yours could not be created. Nothing of yours was deleted. Ask your team or site admin
+to free or raise the quota, then send your message again.
+
 **The agent seems stuck.** Look for an approval card waiting for you higher up in the answer. If
 there is none, press **Stop** and send your message again, or **Retry** an interrupted answer.
 

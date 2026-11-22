@@ -6,6 +6,7 @@ import {
   modelCatalog,
   modelProviders,
   siteSettings,
+  sql,
   type KobeDb,
   type KobeTx,
 } from "@kobe/db";
@@ -212,6 +213,12 @@ export type SiteSettingsWrite =
  * Whether the provider lists the model is checked by the route, outside the transaction
  * (`embeddingModelListed`).
  */
+/**
+ * NOTIFY channel for Site memory setting changes the replicas cache (KOBE-787): the payload names
+ * the setting (`embedding_model`); `MemoryEmbeddings` re-reads its model on it.
+ */
+export const MEMORY_SETTINGS_CHANNEL = "kobe_memory_settings";
+
 export async function writeMemorySiteSettings(
   tx: KobeTx,
   change: { readonly [K in MemorySiteSettingName]?: MemorySiteSettings[K] | undefined },
@@ -259,5 +266,8 @@ export async function writeMemorySiteSettings(
       .values({ key: MEMORY_SITE_SETTINGS_KEY, value })
       .onConflictDoUpdate({ target: siteSettings.key, set: { value, updatedAt: new Date() } });
   }
+  // KOBE-787: every replica drops its cached embedding model at commit (a hint, no Redis).
+  if (changed.includes("embedding_model"))
+    await tx.execute(sql`SELECT pg_notify(${MEMORY_SETTINGS_CHANNEL}, 'embedding_model')`);
   return { ok: true, before, settings: next, changed };
 }

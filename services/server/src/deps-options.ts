@@ -37,6 +37,8 @@ export interface ServerDepsOptions {
   readonly publicUrl: string;
   /** KOBE_RETENTION_PAUSED (KOBE-243): shown to site admins; the deleting jobs honour it. */
   readonly retentionPaused?: boolean;
+  /** Months per-call usage is kept (KOBE-741 sweep); null: kept for ever. Shown on usage pages. */
+  readonly usageRetentionMonths?: number | null;
   /** Chart-seeded branding defaults (KOBE-503): seeded at start and after a reset while unset. */
   readonly brandingDefaults?: BrandingDefaults;
   readonly authSecret: string;

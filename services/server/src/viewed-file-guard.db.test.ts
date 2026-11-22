@@ -134,8 +134,12 @@ async function pendingReasons(w: World) {
   return rows.map((r) => r.reasons[0]);
 }
 
+/** KOBE-776: the allow list names propose_file_edit, else the guard can't offer it (it asks). */
 async function pinDangerous(w: World): Promise<void> {
-  await pinAgent(w, { approval_mode: "dangerous", tools: { allow: ["write", "edit"] } });
+  await pinAgent(w, {
+    approval_mode: "dangerous",
+    tools: { allow: ["write", "edit", "propose_file_edit"] },
+  });
 }
 
 /** Creates and publishes a team agent with `frontmatter`, pinned to the world's run. */
@@ -255,6 +259,15 @@ describe("the viewed-file guard (KOBE-493)", () => {
       expect.objectContaining({ code: "viewed_file", stage: "ask_rule" }),
     ]);
     expect(await deniedEvents(w)).toEqual([]);
+  });
+
+  it("asks too when the agent's tools.allow leaves propose_file_edit out (KOBE-776)", async () => {
+    const w = await world([CAPABILITY_FILE_EDITS]);
+    await pinAgent(w, { tools: { allow: ["write"] } });
+    await check(w, "write", { path: VIEWED, content: "x" }).pending();
+    expect(await pendingReasons(w)).toEqual([
+      expect.objectContaining({ code: "viewed_file", stage: "ask_rule" }),
+    ]);
   });
 
   it("its approval offers no remember, refuses one, and is not approved in bulk", async () => {

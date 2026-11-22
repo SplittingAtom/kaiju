@@ -44,6 +44,19 @@ describe("buildPiLaunch kobe-tools (KOBE-128)", () => {
     expect(launch.toolsChannel).toBe(true);
   });
 
+  it("passes the run's hidden built-ins to kobe-policy, and keys the process on them (KOBE-776)", () => {
+    const hidden = buildPiLaunch({
+      ...base,
+      parentEnv,
+      config: { hidden_tools: ["write", "edit"] },
+    });
+    expect(hidden.env.KOBE_HIDDEN_TOOLS).toBe("write,edit");
+    const plain = buildPiLaunch({ ...base, parentEnv });
+    expect(plain.env.KOBE_HIDDEN_TOOLS).toBeUndefined();
+    expect(hidden.key).not.toBe(plain.key);
+    expect(buildPiLaunch({ ...base, parentEnv, config: {} }).key).toBe(plain.key);
+  });
+
   it("without it there is no fd 4 and no variable", () => {
     const launch = buildPiLaunch({ ...base, parentEnv });
     expect(extensionsOf(launch.args)).toEqual([POLICY]);

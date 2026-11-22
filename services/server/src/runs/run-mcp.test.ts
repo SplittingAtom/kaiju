@@ -122,6 +122,13 @@ describe("buildRunMcp", () => {
     expect(names(buildRunMcp([jira], ["jira"], { allow: ["read"] }))).toEqual([]);
   });
 
+  it("an empty allow list narrows nothing, like an absent one (KOBE-776)", () => {
+    expect(names(buildRunMcp([jira], ["jira"], { allow: [] }))).toEqual([
+      "mcp__jira__get_issue",
+      "mcp__jira__create_issue",
+    ]);
+  });
+
   it("keeps a connector with no allowed tool out of the list", () => {
     expect(buildRunMcp([jira], ["jira"], { allow: ["read"] }).servers).toEqual([]);
   });

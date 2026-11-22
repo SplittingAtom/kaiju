@@ -82,7 +82,8 @@ export async function offboardSandbox(
               now() + make_interval(days => ${RETAIN_DAYS}), now())
       ON CONFLICT (team_id, user_id) DO UPDATE
         SET state = 'destroyed', sandbox_id = EXCLUDED.sandbox_id, pvc = EXCLUDED.pvc,
-            retain_until = EXCLUDED.retain_until, state_changed_at = now()
+            retain_until = EXCLUDED.retain_until, state_changed_at = now(),
+            volume_synced_at = NULL
       RETURNING retain_until`);
     await tx.execute(sql`
       UPDATE sandbox_connections SET closed_at = now()

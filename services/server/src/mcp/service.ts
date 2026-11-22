@@ -3,7 +3,7 @@ import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";
 import { RefreshGate } from "../connectors/oauth/refresh-gate.js";
 import type { OauthIo } from "../connectors/oauth/http.js";
-import { revealCredential, type RevealOutcome } from "../connectors/grants.js";
+import { revealCredential, type RefreshSupport, type RevealOutcome } from "../connectors/grants.js";
 import { createRateLimiter } from "../sandbox/rate-limit.js";
 import type { RunPolicyContextSource } from "../sandbox-wire/types.js";
 import { DENY_UNVERIFIED_APPROVALS, type McpApprovalVerifier } from "./approvals.js";
@@ -34,12 +34,22 @@ export interface McpService {
    * is the principal's, taken from the verified sandbox token: there is no way to ask for
    * another user's. Only the internal API (internal key) calls this; the key goes to the proxy.
    */
-  revealCredential(principal: McpPrincipal, connectorId: string): Promise<RevealOutcome>;
+  revealCredential(
+    principal: McpPrincipal,
+    connectorId: string,
+    /** `force`: the upstream refused the token; refresh it now (KOBE-778, rate limited per grant). */
+    options?: { readonly force?: boolean },
+  ): Promise<RevealOutcome>;
   /**
    * The same for a member's browser principal (KOBE-436: an MCP App's own call). The server
    * reveals it only after deciding the call; it goes to the proxy, never to the browser.
    */
   revealForMember(teamId: string, userId: string, connectorId: string): Promise<RevealOutcome>;
+  /**
+   * This process's OAuth refresh support (one gate shared with the reveals above), for the
+   * connector probes that use a site admin's own OAuth grant (KOBE-784); unset without `oauthIo`.
+   */
+  readonly oauthRefresh?: RefreshSupport;
 }
 
 export interface McpServiceOptions {
@@ -98,7 +108,12 @@ export function createMcpService(options: McpServiceOptions): McpService {
     ...(options.now ? { now: options.now } : {}),
     ...(options.captureKey ? { captureKey: options.captureKey } : {}),
   };
-  const reveal = (teamId: string, userId: string, connectorId: string): Promise<RevealOutcome> =>
+  const reveal = (
+    teamId: string,
+    userId: string,
+    connectorId: string,
+    force = false,
+  ): Promise<RevealOutcome> =>
     options.envelope
       ? revealCredential(
           options.db,
@@ -106,6 +121,7 @@ export function createMcpService(options: McpServiceOptions): McpService {
           { teamId, userId, connectorId },
           undefined,
           refresh,
+          { force },
         )
       : Promise.resolve({ ok: false, failure: "unavailable" });
   /**
@@ -140,7 +156,7 @@ export function createMcpService(options: McpServiceOptions): McpService {
       };
     },
     decide: (principal, request) => decideMcpCall(deps, principal, request),
-    async revealCredential(principal, connectorId) {
+    async revealCredential(principal, connectorId, revealOptions) {
       if (!options.envelope) return { ok: false, failure: "unavailable" };
       if (!(await inSomeRun(principal, connectorId))) {
         logger.info(
@@ -149,8 +165,9 @@ export function createMcpService(options: McpServiceOptions): McpService {
         );
         return { ok: false, failure: "not_available" };
       }
-      return reveal(principal.teamId, principal.userId, connectorId);
+      return reveal(principal.teamId, principal.userId, connectorId, revealOptions?.force === true);
     },
-    revealForMember: reveal,
+    revealForMember: (teamId, userId, connectorId) => reveal(teamId, userId, connectorId),
+    ...(refresh ? { oauthRefresh: refresh } : {}),
   };
 }

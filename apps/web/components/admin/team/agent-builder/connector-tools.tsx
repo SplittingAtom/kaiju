@@ -175,7 +175,7 @@ function ToolBoxes({
         title="Allowed tools"
         hint={
           restricted
-            ? "Only the tools listed here are allowed. In Dangerous mode, those named one by one run without asking."
+            ? "Connector tools: only those listed here. Built-in tools (read, bash, write…) stay available unless you list at least one of them; then only the listed ones. In Dangerous mode, tools named one by one run without asking."
             : "Choosing a connector lists its tools here. While this list is empty, nothing is narrowed."
         }
         tools={allowed}

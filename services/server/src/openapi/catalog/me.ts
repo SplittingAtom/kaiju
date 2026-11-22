@@ -140,7 +140,7 @@ export const meAreas: readonly CatalogArea[] = [
         "post",
         "/v1/connector-grants/{connectorId}/oauth/start",
         "Start an OAuth connection and get the authorization URL",
-        "404 when the connector is not enabled for the team; 422 when it does not use OAuth.",
+        "404 when the connector is not enabled for the team; 422 when it does not use OAuth; 429 after too many attempts by the caller (30 per 10 minutes).",
       ],
     ],
   },

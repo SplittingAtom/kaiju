@@ -32,13 +32,22 @@ export type ProbeResult =
     }
   | { readonly ok: false; readonly failure: ProbeFailure };
 
+/** How a probe's secret is labelled for the proxy; both reach the upstream as a bearer token. */
+export type ProbeCredentialKind = "api_key" | "access_token";
+
 export interface ConnectorProbe {
   /**
-   * `apiKey`: the user's grant, for a connector that needs one (sent to the proxy, never stored).
+   * `secret`: a site admin's key or OAuth access token (or the site key), for a connector that
+   * needs one (sent to the proxy, never stored); `kind` says which (default `api_key`).
    * `connectorId`: the registered connector `url` belongs to; the proxy checks the URL against
    * the registry before it connects (KOBE-693).
    */
-  probe(url: string, apiKey: string | undefined, connectorId: string): Promise<ProbeResult>;
+  probe(
+    url: string,
+    secret: string | undefined,
+    connectorId: string,
+    kind?: ProbeCredentialKind,
+  ): Promise<ProbeResult>;
 }
 
 const FAILURES = [
@@ -94,11 +103,15 @@ export function createProxyProbe(options: ProxyProbeOptions): ConnectorProbe {
       redirect: "error",
     });
   return {
-    async probe(url, apiKey, connectorId) {
+    async probe(url, secret, connectorId, kind = "api_key") {
       const base = {
         connector_id: connectorId,
         url,
-        ...(apiKey === undefined ? {} : { api_key: apiKey }),
+        ...(secret === undefined
+          ? {}
+          : kind === "access_token"
+            ? { access_token: secret }
+            : { api_key: secret }),
       };
       try {
         let res = await post({ ...base, ui_resources: true });

@@ -7,7 +7,7 @@ import {
   type ToolDescriptor,
 } from "@kobe/protocol";
 import { createDb, type KobeDatabase } from "@kobe/db";
-import { APPROVALS_MAX_PER_RUN, approvalKeyring, enforceMcpCall } from "./approvals/index.js";
+import { APPROVALS_MAX_PER_RUN, approvalKeyring } from "./approvals/index.js";
 import { createPolicyEngine } from "./policy/engine.js";
 import { createToolRegistry } from "./policy/registry.js";
 import { createDbRuleSource, createDbSettingsSource } from "./policy/rule-store.js";
@@ -701,11 +701,20 @@ describe("Gate 2: a tampered kobe-policy cannot run an MCP write without a signe
     expect(decision.effect).toBe("require_approval");
   });
 
+  // The proxy's whole decision (decideMcpCall) is covered in mcp.db.test.ts (KOBE-776: the
+  // older enforceMcpCall composition is gone); these cases pin the verifier it uses.
   it("refuses a call that never asked (the extension skipped policy.check)", async () => {
     const w = await world();
-    const out = await enforceMcpCall(engine(), verifier(), proxyInput(w, "skipped", INPUT));
-    expect(out.decision).toBe("deny");
-    expect(out.decision === "deny" && out.message).toMatch(/no_approval/);
+    expect(
+      await verifier().authorize({
+        teamId: w.team,
+        userId: w.owner.id,
+        runId: w.runId,
+        toolCallId: "skipped",
+        tool: TOOL,
+        input: INPUT,
+      }),
+    ).toEqual({ ok: false, reason: "no_approval" });
     expect((await audits(w.team, "approval.rejected"))[0]?.target).toMatchObject({
       reason: "no_approval",
       enforcementPoint: "mcp_proxy",
@@ -779,8 +788,10 @@ describe("Gate 2: a tampered kobe-policy cannot run an MCP write without a signe
       toolCallId: "tc-c",
       tool: TOOL,
     };
-    const out = await enforceMcpCall(engine(), verifier(), proxyInput(w, "tc-c", reordered));
-    expect(out).toMatchObject({ decision: "allow", reasons: [{ code: "approval_granted" }] });
+    expect(await verifier().authorize({ ...call, input: reordered })).toEqual({
+      ok: true,
+      approvalId: id,
+    });
     expect((await approvalRow(id)).consumed_at).not.toBeNull();
     // Replay of the same approved call: consumed.
     expect(await verifier().authorize({ ...call, input: INPUT })).toEqual({

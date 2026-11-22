@@ -75,7 +75,13 @@ export function connectorAccessRoutes(kit: ConnectorKit): Hono<{ Variables: Auth
     if (!input) {
       return invalidRequest(c, "Send tools: a list of { name, sha256 } of the reviewed tools.");
     }
-    const pinnedBy = await nextPinnedBy(db, deps.envelope, id.data, c.get("user").id);
+    const pinnedBy = await nextPinnedBy(
+      db,
+      deps.envelope,
+      id.data,
+      c.get("user").id,
+      deps.mcp.oauthRefresh,
+    );
     const result = await approveConnectorTools(db, id.data, input, pinnedBy);
     if (result.ok) return c.json({ approved: result.approved });
     if (result.error === "not_found") return notFound(c);
