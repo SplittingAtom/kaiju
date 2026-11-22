@@ -1702,13 +1702,6 @@
       "when": 1795339631464,
       "tag": "0242_sandbox_volume_lost",
       "breakpoints": true
-    },
-    {
-      "idx": 243,
-      "version": "7",
-      "when": 1795368040626,
-      "tag": "0243_kobe_rate_limits",
-      "breakpoints": true
     }
   ]
 }
