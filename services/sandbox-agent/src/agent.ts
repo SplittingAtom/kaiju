@@ -297,11 +297,18 @@ export class Agent {
     // Kernels never outlive the agent (NB2): they stop before the last workspace push.
     await this.#deps.kernels?.stopAll();
     // Pi, its tools (killed with their uid) and the kernels are gone, so nothing writes to the
-    // workspace any more: push what changed, then prove the copy complete (KOBE-733).
-    await this.#deps.workspace?.flush(WORKSPACE_FLUSH_MS, this.#reclaimProof());
+    // workspace any more: push what changed.
+    const started = Date.now();
+    await this.#deps.workspace?.flush(WORKSPACE_FLUSH_MS);
     this.#traces.flush();
     this.#traces.close();
     await this.#wire.stop(1000, "agent stopping");
+    // KOBE-733: the reclaim proof only after the wire is closed, so a pod on its way out never
+    // holds its connection open longer for it (the server then routes new runs to the next pod),
+    // within what is left of the flush budget.
+    const proof = this.#reclaimProof();
+    const left = WORKSPACE_FLUSH_MS - (Date.now() - started);
+    if (proof !== undefined && left > 0) await this.#deps.workspace?.prove?.(proof, left);
     this.#deps.onExit(code);
   }
 
