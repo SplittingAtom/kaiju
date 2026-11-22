@@ -581,7 +581,11 @@ export class Agent {
     if (frame.type === "notebook.interrupt") return kernels.interrupt(frame.thread_id);
     // KOBE-803: a silent variables snapshot; never starts a kernel.
     if (frame.type === "notebook.inspect") {
-      return kernels.inspect(frame.thread_id, frame.timeout_ms ?? NOTEBOOK_INSPECT_TIMEOUT_MS);
+      return kernels.inspect(
+        frame.thread_id,
+        frame.timeout_ms ?? NOTEBOOK_INSPECT_TIMEOUT_MS,
+        frame.refresh === true,
+      );
     }
     if (frame.type === "notebook.restart") {
       // KOBE-477: `op: "start"` starts the kernel (nothing runs); otherwise it is a restart.

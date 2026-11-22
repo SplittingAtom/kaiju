@@ -16,6 +16,7 @@ import {
   frameFor,
   traceContext,
   wireFrame,
+  withMemberRunAsks,
   withNotebookAsks,
   type DeliverableFrame,
 } from "./delivery/frames.js";
@@ -502,7 +503,7 @@ export class CommandDelivery {
     });
     this.#ctx.metrics.commandsDelivered += 1;
     // Not sent (closed meanwhile): the row stays delivered; the next hello reconciles it.
-    const wire = withNotebookAsks(wireFrame(row, frame, claimed, traced, starts), (c) =>
+    const wire = withMemberRunAsks(wireFrame(row, frame, claimed, traced, starts), (c) =>
       this.#host.hasCapability(c),
     );
     const out =

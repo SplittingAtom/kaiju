@@ -316,7 +316,7 @@ export interface SandboxRouter {
    */
   notebookInspect(
     target: SandboxTarget,
-    request: { readonly threadId: string; readonly timeoutMs: number },
+    request: { readonly threadId: string; readonly timeoutMs: number; readonly refresh?: boolean },
     options?: SendOptions,
   ): Promise<CommandOutcome>;
   /**

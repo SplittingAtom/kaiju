@@ -4,10 +4,14 @@ import { timestampSchema, utf8ByteLength } from "./common.js";
 /**
  * Python run details (KOBE-803): when an execution ran and how long it took, what its error was,
  * and a snapshot of the kernel's user variables (the editor's Log and Variables tabs). Behind
- * hello capability {@link CAPABILITY_NOTEBOOK_INSPECT}: the server asks for timing and a snapshot
- * on `notebook.execute` (`with_timing` / `with_variables`) and sends `notebook.inspect` only to
- * agents that announced it, so older agents never see a field they don't know and simply report
- * neither.
+ * hello capability {@link CAPABILITY_NOTEBOOK_INSPECT}: the server asks for timing on
+ * `notebook.execute` (`with_timing`), asks the agent to keep a snapshot after a member's run
+ * (`with_variables`), and sends `notebook.inspect` only to agents that announced it, so older
+ * agents never see a field they don't know and simply report neither.
+ *
+ * Variables are never stored: no run event, no audit of values. A repr can hold a secret the
+ * member typed into a variable and never printed, so a snapshot only ever goes to the thread's
+ * owner, through `POST /v1/threads/{id}/notebook/variables`, and never into the model's context.
  */
 
 /** `hello.capabilities`: the agent measures executions and snapshots the kernel's variables. */
@@ -81,7 +85,9 @@ export type NotebookOtherName = z.infer<typeof notebookOtherNameSchema>;
  * A snapshot of the kernel's user namespace, taken silently (no execution count, no `Out`/`_`,
  * not a run). Left out: names starting with `_` and IPython's own (`In`, `Out`, `exit`, `quit`,
  * `get_ipython`). Sorted by name. `truncated`: a cap (count, bytes or the kernel-side budget)
- * left variables out. `execution_count`: the kernel's count when it was taken.
+ * left variables out. `execution_count`: the kernel's count when it was taken. `stale`: the agent
+ * answered from the snapshot it keeps (taken after the last member run, or by the last refresh)
+ * while code has run since or is running now (`taken_at` says when it was taken).
  */
 export const notebookVariablesSnapshotSchema = z
   .strictObject({
@@ -91,6 +97,7 @@ export const notebookVariablesSnapshotSchema = z
     variables: z.array(notebookVariableSchema).max(NOTEBOOK_VARIABLES_MAX),
     other: z.array(notebookOtherNameSchema).max(NOTEBOOK_VARIABLES_MAX),
     truncated: z.boolean(),
+    stale: z.boolean().optional(),
   })
   .refine(
     (s) =>
@@ -110,7 +117,7 @@ export const notebookVariablesMissingSchema = z.strictObject({
 });
 
 /**
- * `command.result.data` of `notebook.inspect`, `notebook.execute`'s `variables`, and the body of
+ * `command.result.data` of `notebook.inspect`, and the answer of
  * `POST /v1/threads/{id}/notebook/variables`.
  */
 export const notebookVariablesResultSchema = z.union([
@@ -118,6 +125,16 @@ export const notebookVariablesResultSchema = z.union([
   notebookVariablesMissingSchema,
 ]);
 export type NotebookVariablesResult = z.infer<typeof notebookVariablesResultSchema>;
+
+/**
+ * `POST /v1/threads/{id}/notebook/variables` body (optional): `refresh: true` asks for a fresh
+ * snapshot when the kernel is idle; without it the agent may answer with the one it keeps when
+ * nothing ran since. While code runs the kept snapshot comes back `stale` (or `busy` without one).
+ */
+export const notebookVariablesBodySchema = z.strictObject({
+  refresh: z.boolean().optional(),
+});
+export type NotebookVariablesBody = z.infer<typeof notebookVariablesBodySchema>;
 
 /**
  * The run log's error (on `notebook.finished`): the exception's class name and, when the

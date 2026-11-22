@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   notebookErrorSchema,
+  notebookVariablesBodySchema,
   notebookVariablesResultSchema,
   type NotebookError,
 } from "@kobe/protocol";
@@ -34,8 +35,11 @@ export function notebookVariablesOpenApiPaths(): Record<string, Record<string, u
         operationId: "postThreadNotebookVariables",
         summary: "Snapshot the variables of the conversation's Python kernel",
         description:
-          "The owner takes a fresh snapshot of their kernel's user variables (the Python " +
-          "editor's Variables tab): per variable its name, type, a short repr (capped; empty " +
+          "The owner reads a snapshot of their kernel's user variables (the Python editor's " +
+          "Variables tab, called after each run and on Refresh). The workspace keeps the snapshot " +
+          "it took after the owner's last run: it answers with it while code runs (`stale`: true) " +
+          "or when nothing ran since, and takes a fresh one when the kernel is idle and code ran " +
+          "since or `refresh` is true. Per variable its name, type, a short repr (capped; empty " +
           "with `repr_error` when it raised or took too long) and summaries for common types " +
           "(`len`; `shape` and `dtype` for numpy arrays; `shape`, `columns` and " +
           "`columns_total` for pandas DataFrames, never their data). Modules, functions and " +
@@ -43,14 +47,21 @@ export function notebookVariablesOpenApiPaths(): Record<string, Record<string, u
           "are left out; `truncated` when a cap left variables out. It runs silently in the " +
           "kernel (no execution count, not a run, nothing stored) and never wakes a sleeping " +
           "workspace or starts a kernel: `no_kernel`, `busy` (code is running) and " +
-          "`unavailable` (no answer in time) are answers too. Reprs are untrusted: show them " +
-          "as plain text. The snapshot after each run is on its `notebook.finished` event.",
+          "`unavailable` (no answer in time) are answers too. Nothing is stored: snapshots " +
+          "are never in run events and go to the owner only, since a repr can hold a secret. " +
+          "Reprs are untrusted: show them as plain text.",
         parameters: [
           { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
         ],
+        requestBody: {
+          required: false,
+          content: {
+            "application/json": { schema: { $ref: "#/components/schemas/NotebookVariablesBody" } },
+          },
+        },
         responses: {
           "200": json("NotebookVariables", "The snapshot, or why there is none."),
-          "400": json("Error", "`invalid_request`: bad id."),
+          "400": json("Error", "`invalid_request`: bad id or body."),
           "401": json("Error", "`unauthenticated`: no session."),
           "403": json(
             "Error",
@@ -74,6 +85,7 @@ export function notebookVariablesOpenApiPaths(): Record<string, Record<string, u
 export function notebookVariablesOpenApiSchemas(): Record<string, JsonSchema> {
   return {
     NotebookVariables: schemaOf(notebookVariablesResultSchema),
+    NotebookVariablesBody: schemaOf(notebookVariablesBodySchema),
     NotebookError: schemaOf(notebookErrorSchema),
   };
 }

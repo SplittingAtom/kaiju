@@ -6,6 +6,7 @@ import {
   NOTEBOOK_VARIABLES_MAX,
   notebookExecErrorSchema,
   notebookTimingSchema,
+  notebookVariablesBodySchema,
   notebookVariableSchema,
   notebookVariablesResultSchema,
   notebookVariablesSnapshotSchema,
@@ -159,20 +160,29 @@ describe("wire and events stay additive (KOBE-803)", () => {
     expect(notebookInspectFrameSchema.safeParse({ ...f, timeout_ms: 100 }).success).toBe(false);
     expect(notebookInspectFrameSchema.safeParse({ ...f, timeout_ms: 60_000 }).success).toBe(false);
     expect(notebookInspectFrameSchema.safeParse({ ...f, code: "x" }).success).toBe(false);
+    expect(notebookInspectFrameSchema.safeParse({ ...f, refresh: true }).success).toBe(true);
+    expect(notebookInspectFrameSchema.safeParse({ ...f, refresh: false }).success).toBe(false);
   });
 
-  it("an old result (no timing, no variables) still parses; a new one carries both", () => {
+  it("a kept snapshot may say it is stale; the route body only asks for a refresh", () => {
+    expect(notebookVariablesSnapshotSchema.safeParse({ ...snapshot, stale: true }).success).toBe(
+      true,
+    );
+    expect(notebookVariablesBodySchema.safeParse({}).success).toBe(true);
+    expect(notebookVariablesBodySchema.safeParse({ refresh: true }).success).toBe(true);
+    expect(notebookVariablesBodySchema.safeParse({ refresh: true, x: 1 }).success).toBe(false);
+  });
+
+  it("an old result (no timing) still parses; a new one carries timing, never variables", () => {
     const old = { status: "ok", execution_count: 1, outputs: 0, truncated: false };
     expect(notebookExecuteResultSchema.safeParse(old).success).toBe(true);
-    expect(
-      notebookExecuteResultSchema.safeParse({ ...old, timing, variables: snapshot }).success,
-    ).toBe(true);
-    expect(
-      notebookExecuteResultSchema.safeParse({ ...old, variables: { status: "busy" } }).success,
-    ).toBe(true);
+    expect(notebookExecuteResultSchema.safeParse({ ...old, timing }).success).toBe(true);
+    expect(notebookExecuteResultSchema.safeParse({ ...old, variables: snapshot }).success).toBe(
+      false,
+    );
   });
 
-  it("notebook.finished carries the run log fields optionally", () => {
+  it("notebook.finished carries the run log fields optionally, and never variables", () => {
     const finished = {
       exec_id: EXEC,
       status: "error",
@@ -187,9 +197,11 @@ describe("wire and events stay additive (KOBE-803)", () => {
         ...finished,
         timing,
         error: { name: "ValueError", line: 2 },
-        variables: snapshot,
       }).success,
     ).toBe(true);
+    expect(
+      notebookFinishedPayloadSchema.safeParse({ ...finished, variables: snapshot }).success,
+    ).toBe(false);
   });
 
   it("the route has a code for an agent without snapshots", () => {

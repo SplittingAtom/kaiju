@@ -236,9 +236,8 @@ export class CommandRouter implements SandboxRouter {
       exec_id: request.execId,
       code: request.code,
       timeout_ms: request.timeoutMs,
-      // KOBE-803: timing and a variables snapshot; dropped at delivery for older agents.
-      with_timing: true,
-      with_variables: true,
+      // KOBE-803: the timing and snapshot asks are added by the delivering replica, never stored
+      // on the row (an older replica's strict decoder would refuse the row in a rolling deploy).
     });
   }
 
@@ -266,7 +265,11 @@ export class CommandRouter implements SandboxRouter {
       request.threadId,
       undefined,
       { ...options, wake: false },
-      { thread_id: request.threadId, timeout_ms: request.timeoutMs },
+      {
+        thread_id: request.threadId,
+        timeout_ms: request.timeoutMs,
+        ...(request.refresh === true ? { refresh: true } : {}),
+      },
     );
   }
 

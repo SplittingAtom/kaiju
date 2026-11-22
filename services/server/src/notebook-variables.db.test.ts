@@ -120,12 +120,13 @@ const NEW_AGENT = [CAPABILITY_NOTEBOOKS, CAPABILITY_NOTEBOOK_INSPECT];
 
 /**
  * A sandbox answering `notebook.inspect` with `inspect(frame)` and running each
- * `notebook.execute` as a ZeroDivisionError on line 2 (with timing and a snapshot when asked).
+ * `notebook.execute` as a ZeroDivisionError on line 2 (with timing when asked, plus `extra`).
  */
 async function connected(
   w: World,
   capabilities: readonly string[] = NEW_AGENT,
   inspect: (frame: InspectFrame) => unknown = () => SNAPSHOT,
+  extra: Record<string, unknown> = {},
 ) {
   const sb = await FakeSandbox.connect(listener.url, w.token);
   if (!isFake(sb)) throw new Error(`upgrade refused: ${sb.status}`);
@@ -169,7 +170,7 @@ async function connected(
         outputs: 1,
         truncated: false,
         ...(asked.with_timing === true ? { timing: TIMING } : {}),
-        ...(asked.with_variables === true ? { variables: SNAPSHOT } : {}),
+        ...extra,
       },
     } as SandboxToServerFrame;
   };
@@ -241,9 +242,23 @@ describe("POST /v1/threads/{id}/notebook/variables (KOBE-803)", () => {
     expect(sb.frames("notebook.inspect")).toMatchObject([
       { thread_id: w.threadId, timeout_ms: 5000 },
     ]);
+    expect(sb.frames("notebook.inspect")[0]).not.toHaveProperty("refresh");
     expect(sb.frames("notebook.execute")).toEqual([]);
     const runs = await fx.admin.query(`SELECT 1 FROM runs WHERE team_id = $1`, [w.team]);
     expect(runs.rowCount).toBe(0);
+    const events = await fx.admin.query(`SELECT 1 FROM run_events WHERE team_id = $1`, [w.team]);
+    expect(events.rowCount).toBe(0);
+    // Refresh asks the agent for a fresh one; anything else in the body is refused.
+    const refreshed = await w.owner.browser.post(`/v1/threads/${w.threadId}/notebook/variables`, {
+      refresh: true,
+    });
+    expect([refreshed.status, refreshed.json]).toEqual([200, SNAPSHOT]);
+    expect(sb.frames("notebook.inspect")[1]).toMatchObject({ refresh: true });
+    const odd = await w.owner.browser.post(`/v1/threads/${w.threadId}/notebook/variables`, {
+      code: "x",
+    });
+    expect(odd.status).toBe(400);
+    expect(sb.frames("notebook.inspect")).toHaveLength(2);
   });
 
   it("passes busy and unavailable through, and an unreadable answer is unavailable", async () => {
@@ -325,7 +340,7 @@ describe("POST /v1/threads/{id}/notebook/variables (KOBE-803)", () => {
 });
 
 describe("the run log on notebook.finished (KOBE-803)", () => {
-  it("a new agent is asked for timing and variables; the event keeps them and the error line", async () => {
+  it("a member's run asks a new agent for timing and a kept snapshot; the event logs timing and error, never variables", async () => {
     const w = await world();
     const sb = await connected(w);
     const { run_id } = await runPy(w);
@@ -338,8 +353,8 @@ describe("the run log on notebook.finished (KOBE-803)", () => {
       truncated: false,
       timing: TIMING,
       error: { name: "ZeroDivisionError", line: 2 },
-      variables: SNAPSHOT,
     });
+    expect(await finished(w, run_id)).not.toHaveProperty("variables");
     const { rows } = await fx.admin.query<{ payload: Record<string, unknown> }>(
       `SELECT payload FROM run_events WHERE team_id = $1 AND run_id = $2 AND type = 'notebook.started'`,
       [w.team, run_id],
@@ -364,5 +379,25 @@ describe("the run log on notebook.finished (KOBE-803)", () => {
     });
     expect(payload).not.toHaveProperty("timing");
     expect(payload).not.toHaveProperty("variables");
+  });
+
+  it("a newer agent's unknown field or a malformed timing is dropped; the execution stands", async () => {
+    const w = await world();
+    await connected(w, NEW_AGENT, () => SNAPSHOT, {
+      cpu_ms: 12,
+      variables: SNAPSHOT,
+      timing: { ...TIMING, duration_ms: -1 },
+    });
+    const { run_id } = await runPy(w);
+    const payload = await finished(w, run_id);
+    expect(payload).toMatchObject({
+      status: "error",
+      execution_count: 7,
+      outputs: 1,
+      error: { name: "ZeroDivisionError", line: 2 },
+    });
+    expect(payload).not.toHaveProperty("timing");
+    expect(payload).not.toHaveProperty("variables");
+    expect(payload).not.toHaveProperty("cpu_ms");
   });
 });

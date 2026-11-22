@@ -98,6 +98,20 @@ describe.skipIf(!hasPython)("kernel variables snapshot (KOBE-803)", () => {
       expect(notebookVariableSchema.safeParse(item).success).toBe(true);
   });
 
+  it("subclasses of built-in containers and strings get the bounded repr, never their own", () => {
+    const v = byName(snap("subclasses"));
+    expect(v.get("big")).toEqual({
+      name: "big",
+      type: "BigList",
+      module: "__main__",
+      len: 1_000_000,
+      repr: "[0, 1, 2, 3, 4, 5, 6, 7, ...]",
+    });
+    expect(v.get("text")).toMatchObject({ type: "Text", len: 10_000 });
+    expect((v.get("text")?.repr as string).length).toBe(NOTEBOOK_REPR_MAX_CHARS);
+    expect(v.get("text")).not.toHaveProperty("repr_error");
+  });
+
   it("caps the count, and the kernel-side budget, with truncated", () => {
     const many = snap("many");
     expect(many.variables).toHaveLength(NOTEBOOK_VARIABLES_MAX);

@@ -129,3 +129,17 @@ export function withNotebookAsks(
   const { with_timing: _timing, with_variables: _variables, ...rest } = frame;
   return rest;
 }
+
+/**
+ * KOBE-803: a stored `notebook.execute` is always a member's run: the delivering replica asks a
+ * capable agent for its timing and to keep a variables snapshot after it. Added here, never stored
+ * on the row, so an older replica (rolling deploy) can still deliver rows a newer one queued.
+ */
+export function withMemberRunAsks(
+  frame: ServerToSandboxFrame,
+  hasCapability: (name: string) => boolean,
+): ServerToSandboxFrame {
+  if (frame.type !== "notebook.execute") return frame;
+  if (!hasCapability(CAPABILITY_NOTEBOOK_INSPECT)) return withNotebookAsks(frame, hasCapability);
+  return { ...frame, with_timing: true, with_variables: true };
+}

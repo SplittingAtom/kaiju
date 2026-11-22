@@ -26,7 +26,9 @@ function frame<T extends string, S extends z.ZodRawShape>(type: T, shape: S) {
  * as `notebook.output` frames naming this `command_id`; `command.result.data` is a
  * `notebookExecuteResultSchema`. At `timeout_ms` the agent interrupts, then kills the kernel.
  * KOBE-803 (capability `notebook_inspect`, never sent to agents without it): `with_timing` asks for
- * the result's `timing`, `with_variables` for a variables snapshot taken right after (`variables`).
+ * the result's `timing`; `with_variables` asks the agent to take a variables snapshot right after
+ * and keep it for `notebook.inspect` (it is never sent back with the result). The delivering
+ * replica adds both to a member's run; the agent's `run_python` asks for timing only.
  */
 export const notebookExecuteFrameSchema = frame("notebook.execute", {
   command_id: idSchema,
@@ -67,11 +69,14 @@ export const notebookRestartFrameSchema = frame("notebook.restart", {
  * Server -> sandbox (KOBE-803, capability `notebook_inspect`): snapshot the thread's kernel's user
  * variables, silently (no execution count, no history, not a run). Never starts a kernel and never
  * runs while an execution runs or waits. `command.result.data`: `notebookInspectResultSchema`
- * (`no_kernel`, `busy`, or `unavailable` past `timeout_ms`).
+ * (`no_kernel`, `busy`, or `unavailable` past `timeout_ms`). The agent answers with the snapshot it
+ * keeps when code is running (`stale: true`) or nothing ran since it was taken (unless `refresh`),
+ * and takes a fresh one otherwise.
  */
 export const notebookInspectFrameSchema = frame("notebook.inspect", {
   command_id: idSchema,
   thread_id: uuidSchema,
+  refresh: z.literal(true).optional(),
   timeout_ms: z.number().int().min(500).max(NOTEBOOK_INSPECT_TIMEOUT_MAX_MS).optional(),
 });
 

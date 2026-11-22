@@ -16,8 +16,10 @@ import { NotebookRunError, type NotebookRunHost } from "./user-run.js";
  * `notebook.inspect` only to the member's own sandbox, never an eval sandbox, and only to an
  * agent with `notebooks` and `notebook_inspect`). It runs introspection code in the member's own
  * kernel, silently (no execution count, not a run, no event), so it never wakes a sandbox and
- * never starts a kernel: without a live connection the answer is `no_kernel`. The snapshot after
- * each execution rides on that execution's `notebook.finished` event instead.
+ * never starts a kernel: without a live connection the answer is `no_kernel`. Nothing is stored
+ * (no event, no audit of values) and the snapshot goes to the owner only: a repr can hold a secret.
+ * The agent keeps the snapshot it took after the member's last run and answers from it while code
+ * runs (`stale`) or when nothing ran since; `refresh` asks for a fresh one when the kernel is idle.
  */
 /** Snapshots per member per minute: each runs code in their kernel. */
 export const VARIABLES_RATE_LIMIT = { windowMs: 60_000, max: 60 };
@@ -33,6 +35,7 @@ export async function notebookVariables(
   host: Host,
   actor: ActorContext,
   threadId: string,
+  refresh = false,
 ): Promise<NotebookVariablesResult> {
   if (host.isolationMissing()) {
     throw new NotebookRunError("isolation_unavailable", "Sandboxes are unavailable right now.");
@@ -45,16 +48,20 @@ export async function notebookVariables(
     throw new NotebookRunError("rate_limited", "Too many variable refreshes; wait a minute.");
   }
   const target = { teamId: actor.team_id, userId: actor.user_id };
+  // That a snapshot was asked for is logged; its content never is, nor stored anywhere.
+  host.log.info({ thread_id: threadId, refresh }, "notebook variables requested");
   if (!(await host.router.isConnected(target, threadId))) return { status: "no_kernel" };
   const outcome = await host.router.notebookInspect(
     target,
-    { threadId, timeoutMs: NOTEBOOK_INSPECT_TIMEOUT_MS },
+    { threadId, timeoutMs: NOTEBOOK_INSPECT_TIMEOUT_MS, refresh },
     { timeoutMs: NOTEBOOK_INSPECT_TIMEOUT_MS + VARIABLES_COMMAND_MARGIN_MS },
   );
   if (!outcome.ok) {
     const code = outcome.error.code;
     if (code === COMMAND_FAILURES.notConnected) return { status: "no_kernel" };
-    if (code === COMMAND_FAILURES.inspectUnsupported) {
+    // `invalid_command`: an older replica holds the connection (rolling deploy) and can't read
+    // the command; as for an older agent, not available yet.
+    if (code === COMMAND_FAILURES.inspectUnsupported || code === "invalid_command") {
       throw new NotebookRunError(
         "variables_unsupported",
         "Variables are not available on this sandbox yet.",

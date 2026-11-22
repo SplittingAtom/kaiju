@@ -4,7 +4,7 @@ import type { ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import type { CommandRow } from "../commands.js";
 import type { DeliveryEnv } from "./env.js";
-import { frameFor, withNotebookAsks } from "./frames.js";
+import { frameFor, withMemberRunAsks, withNotebookAsks } from "./frames.js";
 import { deliveryRefusal } from "./preflight.js";
 
 /**
@@ -94,5 +94,30 @@ describe("notebook.execute asks (KOBE-803)", () => {
       thread_id: THREAD,
     };
     expect(withNotebookAsks(other, has([]))).toBe(other);
+  });
+
+  it("a stored member's run gets both asks at delivery, only from a capable agent", () => {
+    const has = (caps: string[]) => (name: string) => caps.includes(name);
+    const {
+      with_timing: _t,
+      with_variables: _v,
+      ...stored
+    } = execute as Extract<ServerToSandboxFrame, { type: "notebook.execute" }>;
+    expect(withMemberRunAsks(stored, has([CAPABILITY_NOTEBOOK_INSPECT]))).toEqual(execute);
+    const old = withMemberRunAsks(stored, has([CAPABILITY_NOTEBOOKS]));
+    expect(old).not.toHaveProperty("with_timing");
+    expect(old).not.toHaveProperty("with_variables");
+  });
+
+  it("a stored notebook.execute row carries no asks (an older replica must still read it)", () => {
+    const row: CommandRow = {
+      id: randomUUID(),
+      kind: "notebook.execute",
+      threadId: THREAD,
+      runId: RUN,
+      frame: { thread_id: THREAD, run_id: RUN, exec_id: randomUUID(), code: "1", timeout_ms: 1000 },
+      requesterReplica: "r1",
+    };
+    expect(frameFor(row, "c4")).not.toHaveProperty("with_variables");
   });
 });

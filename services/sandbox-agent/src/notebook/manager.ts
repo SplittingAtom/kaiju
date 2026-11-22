@@ -7,6 +7,7 @@ import type {
   NotebookStartResult,
   NotebookTiming,
   NotebookVariablesResult,
+  NotebookVariablesSnapshot,
 } from "@kobe/protocol";
 import type { NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
 import { fail, ok, type CommandOutcome } from "../threads/outcome.js";
@@ -30,11 +31,14 @@ import {
  * later it is stopped (state lost). An execution still waiting is never run once its deadline
  * passed, its run ended, or the thread was interrupted: the server has given up on it (NB8).
  *
- * KOBE-803: an execution reports when it ran (`with_timing`) and a variables snapshot taken right
- * after it (`with_variables`); `inspect` takes one on request. A snapshot holds the kernel like an
- * execution (the next one waits until the bridge answered it) but never waits itself: with an
- * execution running or queued it answers `busy`, without a live kernel `no_kernel` (none is started),
- * and past its timeout `unavailable` (the kernel is interrupted to end it).
+ * KOBE-803: an execution reports when it ran (`with_timing`); with `with_variables` (a member's
+ * run) a variables snapshot is taken right after it and kept in memory with the kernel (replaced by
+ * the next one, gone with the kernel), never sent with the result. `inspect` answers from the kept
+ * snapshot while code runs (`stale`) or when nothing ran since it was taken, and takes a fresh one
+ * otherwise (or when asked to refresh). A snapshot never waits for an execution (no kept one:
+ * `busy`), never starts a kernel (`no_kernel`), and past its timeout answers `unavailable` (the
+ * kernel is interrupted to end it). An execution never waits on a snapshot either: it interrupts a
+ * snapshot still running and, if that does not end it within the grace, restarts the kernel.
  */
 export interface KernelManagerOptions {
   readonly launch: BridgeLauncher;
@@ -56,6 +60,8 @@ interface Waiting {
   readonly runId: string;
   readonly deadlineAt: number;
   cancelled: boolean;
+  /** Wakes the execution if it is waiting for a snapshot to end. */
+  wake?: (() => void) | undefined;
 }
 
 interface Kernel {
@@ -72,6 +78,9 @@ interface Kernel {
   readonly waiting: Set<Waiting>;
   /** Settles once the bridge answered the last snapshot (or the kernel went). */
   inspection: Promise<void>;
+  /** The last snapshot taken (KOBE-803), and whether no code has run since. */
+  kept: NotebookVariablesSnapshot | undefined;
+  keptCurrent: boolean;
 }
 
 export type OutputSink = (index: number, output: NotebookOutput) => void;
@@ -130,13 +139,17 @@ export class KernelManager {
   }
 
   /** `notebook.inspect` (KOBE-803): the thread kernel's variables, never starting a kernel. */
-  async inspect(threadId: string, timeoutMs: number): Promise<CommandOutcome> {
+  async inspect(threadId: string, timeoutMs: number, refresh = false): Promise<CommandOutcome> {
     const kernel = this.#kernels.get(threadId);
     if (this.#closed || kernel === undefined || !kernel.session.alive) {
       return ok({ status: "no_kernel" } satisfies NotebookVariablesResult);
     }
+    const kept = kernel.kept;
     if (kernel.queued > 0 || kernel.session.busy || kernel.session.inspecting) {
-      return ok({ status: "busy" } satisfies NotebookVariablesResult);
+      return ok(kept === undefined ? { status: "busy" } : { ...kept, stale: true });
+    }
+    if (!refresh && kept !== undefined && kernel.keptCurrent) {
+      return ok({ ...kept, stale: false });
     }
     kernel.queued += 1;
     const snap = kernel.tail.then(() => this.#inspectNow(kernel, timeoutMs));
@@ -159,7 +172,10 @@ export class KernelManager {
   interrupt(threadId: string): CommandOutcome {
     const kernel = this.#kernels.get(threadId);
     if (kernel === undefined) return ok(this.#status("no_kernel"));
-    for (const w of kernel.waiting) w.cancelled = true;
+    for (const w of kernel.waiting) {
+      w.cancelled = true;
+      w.wake?.();
+    }
     const dropped = kernel.waiting.size > 0;
     // A snapshot stuck in a repr (KOBE-803) is ended like a cell; it ran no code of the member's.
     if (kernel.session.inspecting) kernel.session.interrupt();
@@ -179,7 +195,11 @@ export class KernelManager {
   /** A run ended (Stop, failure, Pi gone): its running cell is interrupted, its waiting ones dropped. */
   runEnded(runId: string): void {
     for (const kernel of this.#kernels.values()) {
-      for (const w of kernel.waiting) if (w.runId === runId) w.cancelled = true;
+      for (const w of kernel.waiting) {
+        if (w.runId !== runId) continue;
+        w.cancelled = true;
+        w.wake?.();
+      }
       if (kernel.current?.runId === runId && kernel.session.busy) kernel.session.interrupt();
     }
   }
@@ -213,9 +233,16 @@ export class KernelManager {
     sink: OutputSink,
     waiting: Waiting,
   ): Promise<NotebookExecuteResult> {
-    // A snapshot the bridge has not answered yet holds the kernel (KOBE-803).
-    await kernel.inspection;
     const limiter = new OutputLimiter(sink, this.#o.limits ?? OUTPUT_LIMITS);
+    // An execution never waits on a snapshot (KOBE-803): one still running is interrupted, and a
+    // kernel it holds past the grace is restarted.
+    if (kernel.session.inspecting && !(await this.#endInspection(kernel, waiting))) {
+      kernel.waiting.delete(waiting);
+      limiter.note(
+        "[Kobe: the kernel was stuck showing its variables and was restarted; run it again]\n",
+      );
+      return { status: "restarted", execution_count: null, ...limiter.finish() };
+    }
     kernel.waiting.delete(waiting);
     if (waiting.cancelled) {
       limiter.note("[Kobe: not run: interrupted, or its run ended, before it started]\n");
@@ -241,6 +268,7 @@ export class KernelManager {
     }, remaining);
     const startedAt = new Date();
     const started = performance.now();
+    kernel.keptCurrent = false;
     let ran: NotebookExecuteResult;
     let snapshot = false;
     try {
@@ -269,19 +297,47 @@ export class KernelManager {
       finished_at: new Date().toISOString(),
       duration_ms: Math.max(0, Math.round(performance.now() - started)),
     };
-    return {
-      ...ran,
-      ...(frame.with_timing === true ? { timing } : {}),
-      ...(frame.with_variables === true && snapshot && kernel.session.alive
-        ? { variables: await this.#inspectNow(kernel, AFTER_RUN_INSPECT_TIMEOUT_MS) }
-        : {}),
-    };
+    // A member's run: the snapshot after it is kept for `notebook.inspect`, never returned.
+    if (frame.with_variables === true && snapshot && kernel.session.alive) {
+      await this.#inspectNow(kernel, AFTER_RUN_INSPECT_TIMEOUT_MS);
+    }
+    return { ...ran, ...(frame.with_timing === true ? { timing } : {}) };
+  }
+
+  /**
+   * Interrupts a snapshot still running and waits for it to end, at most the grace (or until the
+   * execution's deadline, or until it is cancelled). False when it did not end: the kernel was
+   * stopped (its state is lost; a snapshot stuck in C code can't be ended any other way).
+   */
+  async #endInspection(kernel: Kernel, waiting: Waiting): Promise<boolean> {
+    kernel.session.interrupt();
+    const grace = Math.max(
+      0,
+      Math.min(this.#o.graceMs ?? KERNEL_GRACE_MS, waiting.deadlineAt - Date.now()),
+    );
+    let timer: NodeJS.Timeout | undefined;
+    const outcome = await Promise.race([
+      kernel.inspection.then(() => "ended" as const),
+      new Promise<"cancelled">((resolve) => {
+        waiting.wake = () => resolve("cancelled");
+      }),
+      new Promise<"stuck">((resolve) => {
+        timer = setTimeout(() => resolve("stuck"), grace);
+      }),
+    ]).finally(() => {
+      clearTimeout(timer);
+      waiting.wake = undefined;
+    });
+    if (outcome !== "stuck") return true;
+    await this.#stop(kernel, "restarted", "a variables snapshot did not end");
+    return false;
   }
 
   /**
    * Takes a snapshot now (the caller holds the kernel's tail). Answers within `timeoutMs`; past it
-   * the kernel is interrupted and `kernel.inspection` keeps the next execution waiting until the
-   * bridge has answered, so that interrupt can never reach a later cell.
+   * the kernel is interrupted; `kernel.inspection` settles once the bridge answered, and the next
+   * execution waits for that (at most the grace, `#endInspection`), so the interrupt never reaches
+   * a later cell. An `ok` snapshot becomes the kept one.
    */
   async #inspectNow(kernel: Kernel, timeoutMs: number): Promise<NotebookVariablesResult> {
     if (!kernel.session.alive) return { status: "no_kernel" };
@@ -299,7 +355,11 @@ export class KernelManager {
       if (kernel.session.inspecting) kernel.session.interrupt();
       return UNAVAILABLE;
     }
-    return snapshotResult(got, takenAt, log);
+    const result = snapshotResult(got, takenAt, log);
+    if (result.status !== "ok") return result;
+    kernel.kept = result;
+    kernel.keptCurrent = true;
+    return { ...result, stale: false };
   }
 
   async #kernelFor(threadId: string): Promise<Kernel> {
@@ -338,6 +398,8 @@ export class KernelManager {
       current: undefined,
       waiting: new Set(),
       inspection: Promise.resolve(),
+      kept: undefined,
+      keptCurrent: false,
     };
     this.#kernels.set(threadId, kernel);
     this.#o.log("kernel started", threadId);

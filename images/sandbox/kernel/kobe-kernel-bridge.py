@@ -107,7 +107,7 @@ FUNCTION_TYPES = (
     _types.MethodWrapperType,
     _types.WrapperDescriptorType,
 )
-EXACT_SIZED = (str, bytes, bytearray, list, tuple, dict, set, frozenset, range)
+SIZED_BASES = (str, bytes, bytearray, list, tuple, dict, set, frozenset, range)
 _qualname = type.__dict__["__qualname__"].__get__
 _module = type.__dict__["__module__"].__get__
 
@@ -223,10 +223,27 @@ class Snapshot:
                 value, threshold=8, edgeitems=2, max_line_width=self.repr_chars
             ).replace("\n", " ")
             return out
-        if t in EXACT_SIZED:
-            out["len"] = len(value)
-        out["repr"] = self.short.repr(value) if t in EXACT_SIZED else repr(value)
+        base = next((b for b in SIZED_BASES if issubclass(t, b)), None)
+        if base is None:
+            out["repr"] = repr(value)
+            return out
+        # Built-in containers, strings and bytes, subclasses included: the base type's own length
+        # and a bounded repr (reprlib's handlers, or a slice), never the object's full repr().
+        out["len"] = base.__len__(value)
+        out["repr"] = self.bounded_repr(value, base)
         return out
+
+    def bounded_repr(self, value, base):
+        if base in (str, bytes, bytearray):
+            return repr(base.__getitem__(value, slice(0, self.repr_chars)))
+        handler = {
+            list: self.short.repr_list,
+            tuple: self.short.repr_tuple,
+            dict: self.short.repr_dict,
+            set: self.short.repr_set,
+            frozenset: self.short.repr_frozenset,
+        }.get(base)
+        return handler(value, self.short.maxlevel) if handler is not None else repr(value)
 
     def variable(self, name, value, t):
         type_name, module = type_names(t)

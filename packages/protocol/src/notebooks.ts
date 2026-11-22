@@ -196,8 +196,6 @@ export const notebookFinishedPayloadSchema = z.strictObject({
   timing: notebookTimingSchema.optional(),
   /** KOBE-803: the exception of an `error` execution (name, and its line when known). */
   error: notebookExecErrorSchema.optional(),
-  /** KOBE-803: the kernel's variables right after it (absent from older agents). */
-  variables: notebookVariablesResultSchema.optional(),
 });
 export type NotebookFinishedPayload = z.infer<typeof notebookFinishedPayloadSchema>;
 
@@ -376,8 +374,6 @@ export const notebookExecuteResultSchema = z.strictObject({
   truncated: z.boolean(),
   /** KOBE-803: only when the frame asked (`with_timing`) and the code ran. */
   timing: notebookTimingSchema.optional(),
-  /** KOBE-803: only when the frame asked (`with_variables`) and the kernel lives on. */
-  variables: notebookVariablesResultSchema.optional(),
 });
 export type NotebookExecuteResult = z.infer<typeof notebookExecuteResultSchema>;
 

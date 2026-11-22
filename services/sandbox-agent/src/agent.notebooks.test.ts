@@ -70,20 +70,22 @@ describe("thread kernels on the wire (KOBE-464)", () => {
       ok: true,
       data: { status: "ok", timing: { duration_ms: expect.any(Number) as number } },
     });
-    expect(ran).toMatchObject({ data: { variables: { status: "ok", execution_count: 1 } } });
+    // The snapshot after the run is kept by the agent, never sent with the result.
+    expect((ran as { data?: object }).data).not.toHaveProperty("variables");
     h.server.send({
       v: 1,
       type: "notebook.inspect",
       command_id: "cmd-i2",
       thread_id: THREAD,
       timeout_ms: 2000,
+      refresh: true,
     });
     const snap = await h.server.waitFor(
       (f) => f.type === "command.result" && f.command_id === "cmd-i2",
     );
     expect(snap).toMatchObject({
       ok: true,
-      data: { status: "ok", variables: [{ name: "x", type: "int", repr: "1" }] },
+      data: { status: "ok", stale: false, variables: [{ name: "x", type: "int", repr: "1" }] },
     });
   });
 

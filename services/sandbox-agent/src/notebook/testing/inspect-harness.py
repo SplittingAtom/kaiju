@@ -118,6 +118,16 @@ class Exits:
         raise SystemExit(3)
 
 
+class BigList(list):
+    def __repr__(self):
+        raise AssertionError("a list subclass never gets its own full repr")
+
+
+class Text(str):
+    def __repr__(self):
+        raise AssertionError("a str subclass never gets its own full repr")
+
+
 class Huge:
     def __repr__(self):
         return "h" * 5_000_000
@@ -152,6 +162,8 @@ def scenario(name):
     if name == "data":
         df = pd.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"]})
         return {"arr": np.zeros((3, 4)), "df": df, "ser": pd.Series([1, 2]), "wide": pd.DataFrame({f"c{i}": [i] for i in range(80)})}, {}
+    if name == "subclasses":
+        return {"big": BigList(range(1_000_000)), "text": Text("t" * 10_000)}, {}
     if name == "many":
         return {f"v{i:04d}": "x" * 150 for i in range(1000)}, {}
     if name == "budget":

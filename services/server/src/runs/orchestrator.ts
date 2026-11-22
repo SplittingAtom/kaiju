@@ -382,8 +382,12 @@ export class DbRunOrchestrator implements ServerRunOrchestrator {
     return startKernel(this.#notebookHost(), this.#kernelWakeRefusals, actor, threadId);
   }
 
-  notebookVariables(actor: ActorContext, threadId: string): Promise<NotebookVariablesResult> {
-    return notebookVariables(this.#notebookHost(), actor, threadId);
+  notebookVariables(
+    actor: ActorContext,
+    threadId: string,
+    refresh = false,
+  ): Promise<NotebookVariablesResult> {
+    return notebookVariables(this.#notebookHost(), actor, threadId, refresh);
   }
 
   #notebookHost(): NotebookRunHost {

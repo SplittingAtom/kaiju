@@ -72,47 +72,77 @@ describe("run timing (KOBE-803)", () => {
   });
 });
 
-describe("the snapshot after a run (KOBE-803)", () => {
-  it("rides on the result when asked, and never bumps the execution count", async () => {
+describe("the snapshot after a member's run (KOBE-803)", () => {
+  it("is kept for notebook.inspect, never returned, and never bumps the execution count", async () => {
     const { manager, control } = setup();
     const first = data(await exec(manager, frame("print:a", { with_variables: true })));
-    expect(first.variables).toMatchObject({
-      status: "ok",
-      execution_count: 1,
-      variables: [{ name: "x", type: "int", repr: "1" }],
-      other: [{ name: "np", kind: "module" }],
-      truncated: false,
-    });
+    expect(first).toEqual({ status: "ok", execution_count: 1, outputs: 1, truncated: false });
     expect(notebookExecuteResultSchema.safeParse(first).success).toBe(true);
     expect(control.inspected).toEqual([`${T1}:${JSON.stringify(INSPECT_LIMITS)}`]);
-    const second = data(await exec(manager, frame("print:b")));
-    expect(second.execution_count).toBe(2);
-    expect(second.variables).toBeUndefined();
+    // Nothing ran since: the kept snapshot, current, without asking the kernel again.
+    const kept = data(await manager.inspect(T1, 1000));
+    expect(kept).toMatchObject({
+      status: "ok",
+      execution_count: 1,
+      stale: false,
+      variables: [{ name: "x", type: "int", repr: "1" }],
+      other: [{ name: "np", kind: "module" }],
+    });
+    expect(control.inspected).toHaveLength(1);
+    // A refresh asks the kernel.
+    expect(data(await manager.inspect(T1, 1000, true))).toMatchObject({ stale: false });
+    expect(control.inspected).toHaveLength(2);
+    expect(data(await exec(manager, frame("print:b"))).execution_count).toBe(2);
     await manager.stopAll();
   });
 
-  it("follows an error too, but not a timeout or a lost kernel", async () => {
+  it("is not taken without with_variables (the agent's run_python), nor after a timeout", async () => {
     const { manager, control } = setup();
-    const failed = data(await exec(manager, frame("fail", { with_variables: true })));
-    expect(failed.status).toBe("error");
-    expect(failed.variables).toMatchObject({ status: "ok" });
+    await exec(manager, frame("print:a"));
     const timedOut = data(
       await exec(manager, frame("sleep", { with_variables: true, timeout_ms: 1000 })),
     );
     expect(timedOut.status).toBe("timeout");
-    expect(timedOut.variables).toBeUndefined();
-    const died = data(await exec(manager, frame("die", { with_variables: true })));
-    expect(died.variables).toBeUndefined();
-    expect(control.inspected).toHaveLength(1);
+    expect(control.inspected).toEqual([]);
     await manager.stopAll();
   });
 
-  it("an unreadable snapshot is unavailable, the result still stands", async () => {
+  it("is answered stale while code runs, and replaced by a fresh one once code ran since", async () => {
+    const { manager, control } = setup();
+    await exec(manager, frame("print:a", { with_variables: true }));
+    const running = exec(manager, frame("sleep"));
+    await until(() => control.executed.length === 2);
+    expect(data(await manager.inspect(T1, 1000))).toMatchObject({
+      status: "ok",
+      execution_count: 1,
+      stale: true,
+    });
+    manager.interrupt(T1);
+    await running;
+    expect(control.inspected).toHaveLength(1);
+    // Code ran since (the agent's run took no snapshot): a fresh one is taken when idle.
+    await exec(manager, frame("print:b"));
+    const fresh = data(await manager.inspect(T1, 1000));
+    expect(fresh).toMatchObject({ stale: false, execution_count: 2 });
+    expect(control.inspected).toHaveLength(2);
+    await manager.stopAll();
+  });
+
+  it("an unreadable snapshot keeps nothing; the run's result still stands", async () => {
     const { manager, control, logs } = setup();
     control.inspectMode = "malformed";
     const r = data(await exec(manager, frame("print:a", { with_variables: true })));
-    expect(r).toMatchObject({ status: "ok", variables: { status: "unavailable" } });
+    expect(r).toEqual({ status: "ok", execution_count: 1, outputs: 1, truncated: false });
     expect(logs).toContain("variables snapshot malformed");
+    expect(data(await manager.inspect(T1, 1000))).toEqual({ status: "unavailable" });
+    await manager.stopAll();
+  });
+
+  it("goes with the kernel on restart", async () => {
+    const { manager } = setup();
+    await exec(manager, frame("print:a", { with_variables: true }));
+    await manager.restart(T1);
+    expect(data(await manager.inspect(T1, 1000))).toEqual({ status: "no_kernel" });
     await manager.stopAll();
   });
 });
@@ -164,21 +194,41 @@ describe("notebook.inspect on the manager (KOBE-803)", () => {
     await manager.stopAll();
   });
 
-  it("a snapshot stuck past interrupts holds the kernel until it is restarted", async () => {
+  it("a run never waits on a stuck snapshot: past the grace the kernel is restarted", async () => {
     const { manager, control } = setup();
     await exec(manager, frame("print:a"));
     control.inspectMode = "stuck";
     expect(await manager.inspect(T1, 50)).toEqual({ ok: true, data: { status: "unavailable" } });
     expect(await manager.inspect(T1, 50)).toEqual({ ok: true, data: { status: "busy" } });
-    let settled = false;
-    const next = exec(manager, frame("print:b")).finally(() => (settled = true));
-    await new Promise((r) => setTimeout(r, 30));
-    expect(settled).toBe(false);
+    const started = Date.now();
+    const next = data(await exec(manager, frame("print:b")));
+    expect(next.status).toBe("restarted");
+    expect(Date.now() - started).toBeLessThan(2_000);
+    expect(control.killed).toEqual([T1]);
     expect(control.executed).toEqual([`${T1}:print:a`]);
-    await manager.restart(T1);
-    expect(data(await next).status).toBe("restarted");
     control.inspectMode = "ok";
     expect(data(await exec(manager, frame("print:c")))).toMatchObject({ status: "ok" });
+    await manager.stopAll();
+  });
+
+  it("Stop releases a run waiting for a stuck snapshot at once", async () => {
+    const { launch, control } = fakeLauncher();
+    const manager = new KernelManager({
+      launch,
+      maxKernels: 2,
+      idleMs: 60_000,
+      graceMs: 60_000,
+      readyTimeoutMs: 200,
+      log: () => undefined,
+    });
+    await exec(manager, frame("print:a"));
+    control.inspectMode = "stuck";
+    await manager.inspect(T1, 50);
+    const waiting = exec(manager, frame("print:b"));
+    await new Promise((r) => setTimeout(r, 20));
+    manager.interrupt(T1);
+    expect(data(await waiting).status).toBe("interrupted");
+    expect(control.executed).toEqual([`${T1}:print:a`]);
     await manager.stopAll();
   });
 });
