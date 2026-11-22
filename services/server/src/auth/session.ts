@@ -150,6 +150,11 @@ async function cookieSession(deps: ServerDeps, headers: Headers): Promise<Sessio
       ssoProviderId: sessionSsoContexts.providerId,
       ssoMfaSatisfied: sessionSsoContexts.mfaSatisfied,
       maxSessionHours: ssoProviders.maxSessionHours,
+      // KOBE-775: the provider is still on and the person still linked to it. Turning a provider
+      // off or unlinking ends its sessions, but a sign-in finishing just after that would not.
+      ssoProviderEnabled: ssoProviders.enabled,
+      ssoLinked: sql<boolean>`EXISTS (SELECT 1 FROM sso_identities i
+        WHERE i.provider_id = ${sessionSsoContexts.providerId} AND i.user_id = ${users.id})`,
       // Site settings in the same round trip (review L1): no extra query per request.
       requireTwoFactor: sql<boolean>`coalesce((SELECT s.value = 'true' FROM site_settings s
         WHERE s.key = ${REQUIRE_TWO_FACTOR}), false)`,
@@ -170,6 +175,10 @@ async function cookieSession(deps: ServerDeps, headers: Headers): Promise<Sessio
     // auth.sso.enabled: false refuses every SSO session; local sessions are the break-glass
     // path (review finding 6). Start-up deletes them as well (`endSsoSessionsWhenOff`).
     if (!deps.sso.settings.enabled) return unauthenticated;
+    if (account.ssoProviderEnabled !== true || !account.ssoLinked) {
+      await deps.database.db.delete(sessions).where(eq(sessions.id, session.session.id));
+      return unauthenticated;
+    }
     // max_session_hours counts from the sign-in, whatever Better Auth's refresh did to the
     // expiry (review finding 9a).
     const hours = account.maxSessionHours;

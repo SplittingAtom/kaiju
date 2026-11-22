@@ -1,10 +1,8 @@
 import {
   and,
   eq,
-  isNull,
   scimGroupMembers,
   scimGroups,
-  scimTokens,
   siteRoles,
   ssoAccessMappings,
   ssoIdentities,
@@ -13,6 +11,7 @@ import {
   pgErrorOf,
 } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
+import { logger } from "../logger.js";
 import type { AfterChangeDeps } from "../teams/after-change.js";
 import { applyIdpAccessAndFollowUp } from "./access.js";
 import { desiredTeamRoles, normalizeIdpValues } from "./access-plan.js";
@@ -32,7 +31,8 @@ import type { SsoProvider } from "./oidc-flow.js";
  *
  * The mapping engine then applies the token's values at every sign-in; a person left with no team
  * and no site role is refused (`no_access`). A groups overage uses the person's SCIM group
- * memberships when the provider has a live SCIM token, else it is refused (`groups_overage`).
+ * memberships when SCIM groups are provisioned for the provider; otherwise it is refused
+ * (`groups_overage`) and the person's memberships stay as they are (KOBE-775).
  */
 
 export type SsoUserOutcome =
@@ -78,12 +78,17 @@ async function linkedUser(db: KobeDb, providerId: string, subject: string) {
   return row;
 }
 
-/** SCIM is on for the provider when it has a live (unrevoked) SCIM token (§7 overage). */
-async function scimEnabled(db: KobeDb, providerId: string): Promise<boolean> {
+/**
+ * SCIM supplies groups for the provider when its SCIM client has provisioned at least one group
+ * (§7 overage, §10). A SCIM token alone is not enough (KOBE-775): SCIM Users provisioning needs a
+ * token too but writes no groups, and reading an empty membership list from it would take away
+ * every team the provider's mappings gave.
+ */
+async function scimGroupsProvisioned(db: KobeDb, providerId: string): Promise<boolean> {
   const [row] = await db
-    .select({ id: scimTokens.id })
-    .from(scimTokens)
-    .where(and(eq(scimTokens.providerId, providerId), isNull(scimTokens.revokedAt)))
+    .select({ id: scimGroups.id })
+    .from(scimGroups)
+    .where(eq(scimGroups.providerId, providerId))
     .limit(1);
   return row !== undefined;
 }
@@ -125,10 +130,14 @@ async function applyAccess(
   return undefined;
 }
 
+/**
+ * `conflict`: a unique key was taken while inserting. Two first sign-ins of one new identity carry
+ * the same address, so the second one fails on the address (`emailTaken`), not on the identity
+ * key (KOBE-775): the caller re-reads the link before treating it as someone else's address.
+ */
 type NewUser =
   | { readonly kind: "created"; readonly userId: string }
-  | { readonly kind: "email_taken" }
-  | { readonly kind: "raced" };
+  | { readonly kind: "conflict"; readonly emailTaken: boolean };
 
 async function createJitUser(
   db: KobeDb,
@@ -165,7 +174,7 @@ async function createJitUser(
   } catch (err) {
     const pg = pgErrorOf(err);
     if (pg?.code !== "23505") throw err;
-    return pg.constraint?.startsWith("users_") ? { kind: "email_taken" } : { kind: "raced" };
+    return { kind: "conflict", emailTaken: pg.constraint?.startsWith("users_") === true };
   }
 }
 
@@ -210,20 +219,30 @@ export async function resolveSsoUser(
     }
     if (identity.email === null) return refuse("email_missing");
     const created = await createJitUser(db, p, { ...identity, email: identity.email });
-    if (created.kind === "email_taken") return refuseLinkable("link_required", identity);
     if (created.kind === "created") {
       const refused = await applyAccess(deps, p, created.userId, identity.values);
       return refused ?? { ok: true, userId: created.userId, created: true };
     }
-    // Another sign-in of the same identity created it first: continue as linked.
+    // Another sign-in of the same identity may have created it first: continue as linked.
     linked = await linkedUser(db, p.id, identity.subject);
-    if (!linked) return refuse("token_invalid");
+    if (!linked) {
+      return created.emailTaken
+        ? refuseLinkable("link_required", identity)
+        : refuse("token_invalid");
+    }
   }
 
   if (linked.deactivatedAt !== null) return refuse("deactivated", linked.userId);
   let values = identity.values;
   if (values === null) {
-    if (!(await scimEnabled(db, p.id))) return refuse("groups_overage", linked.userId);
+    if (!(await scimGroupsProvisioned(db, p.id))) {
+      // No group data to apply: change nothing and refuse (the callback audits the refusal).
+      logger.warn(
+        { providerId: p.id, userId: linked.userId },
+        "single sign-on groups overage without SCIM groups: refused, memberships unchanged",
+      );
+      return refuse("groups_overage", linked.userId);
+    }
     values = await scimGroupValues(db, p.id, linked.userId);
   }
   const refused = await applyAccess(deps, p, linked.userId, values);

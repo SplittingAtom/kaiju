@@ -629,6 +629,25 @@ describe("SCIM errors and request limits", () => {
     expect((await scim("GET", "/contoso/Users/not-a-uuid", t)).status).toBe(404);
   });
 
+  it("KOBE-775: answers 404 in SCIM form for 36-character ids that are not UUIDs", async () => {
+    const t = tokens.contoso;
+    for (const id of ["-".repeat(36), "a".repeat(36)]) {
+      for (const method of ["GET", "DELETE"]) {
+        const res = await scim(method, `/contoso/Users/${id}`, t);
+        expect(res.status, `${method} ${id}`).toBe(404);
+        expect(res.headers.get("content-type")).toContain(SCIM_TYPE);
+        expect(res.json).toMatchObject({ schemas: [ERROR], status: "404" });
+      }
+      const filtered = await scim(
+        "GET",
+        `/contoso/Users?filter=${encodeURIComponent(`id eq "${id}"`)}`,
+        t,
+      );
+      expect(filtered.status).toBe(200);
+      expect(filtered.json.totalResults).toBe(0);
+    }
+  });
+
   it("requires a JSON body type and bounds the body size", async () => {
     const t = tokens.contoso;
     const form = await scim("POST", "/contoso/Users", t, "userName=x", {

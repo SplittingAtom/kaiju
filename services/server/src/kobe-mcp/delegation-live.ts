@@ -38,12 +38,16 @@ export async function delegationBacking(
     s.user_id = ${d.userId} AND s.expires_at > now()
     AND s.created_at <= r.created_at
     -- An SSO sign-in backs a delegation only as it would back a request (SSO review):
-    -- not while the kill switch is off, not past its provider's max_session_hours.
+    -- not while the kill switch is off, not past its provider's max_session_hours, not while
+    -- its provider is off or the person is no longer linked to it (KOBE-775).
     AND NOT EXISTS (
       SELECT 1 FROM public.session_sso_contexts c
         JOIN public.sso_providers p ON p.id = c.provider_id
        WHERE c.session_id = s.id
          AND (NOT ${opts.ssoEnabled}::boolean
+              OR NOT p.enabled
+              OR NOT EXISTS (SELECT 1 FROM public.sso_identities i
+                              WHERE i.provider_id = p.id AND i.user_id = s.user_id)
               OR (p.max_session_hours IS NOT NULL
                   AND s.created_at + make_interval(hours => p.max_session_hours) <= now())))`;
   // require_2fa (KOBE-629 review L1): the session passed 2FA itself. A local one by the person's

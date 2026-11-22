@@ -2,6 +2,7 @@ import * as oidc from "openid-client";
 import { and, asc, eq, ssoProviders, type KobeDb } from "@kobe/db";
 import {
   ALLOWED_ID_TOKEN_ALGS,
+  AUTH_TIME_MAX_AGE_S,
   CLOCK_TOLERANCE_S,
   checkIdTokenClaims,
   type SsoFailure,
@@ -215,6 +216,9 @@ export function authorizationUrl(config: oidc.Configuration, p: SsoProvider, s: 
     nonce: s.nonce,
     code_challenge: s.codeChallenge,
     code_challenge_method: "S256",
+    // ID tokens with an `auth_time` older than 10 minutes are refused (§5.4), so ask the IdP to
+    // re-authenticate a person whose IdP session is older (OIDC Core §3.1.2.1, KOBE-775).
+    max_age: String(AUTH_TIME_MAX_AGE_S),
     ...(p.kind === "entra" ? { prompt: "select_account" } : {}),
     // Entra: ask for the MFA authentication context as an essential `acrs` claim (§8, KOBE-629).
     ...(claims === undefined ? {} : { claims }),

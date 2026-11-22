@@ -158,6 +158,24 @@ const SSO = {
 const TEAMS = { teams: [{ id: "t-fin", slug: "finance", name: "Finance" }] };
 
 describe("Site console: SSO access mappings", () => {
+  it("KOBE-775: tells the admin how to avoid the groups overage on a groups provider only", async () => {
+    const groups = {
+      ...SSO.providers[0],
+      id: "p-kc",
+      displayName: "Keycloak",
+      accessClaim: "groups",
+    };
+    stubApi({
+      "GET /v1/site/sso/mappings": [200, { ...SSO, providers: [SSO.providers[0], groups] }],
+      "GET /v1/site/teams": [200, TEAMS],
+    });
+    renderSite(<SsoMappingsPage />);
+    const hints = await screen.findAllByText(/more than 200 groups/);
+    expect(hints).toHaveLength(1);
+    expect(hints[0]?.textContent).toMatch(/team access stays as it is/);
+    expect(hints[0]?.textContent).toMatch(/groups assigned to the application/);
+  });
+
   it("lists a provider's mappings and offers team roles only (SSO6)", async () => {
     stubApi({ "GET /v1/site/sso/mappings": [200, SSO], "GET /v1/site/teams": [200, TEAMS] });
     renderSite(<SsoMappingsPage />);

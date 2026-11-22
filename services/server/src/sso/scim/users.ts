@@ -132,6 +132,9 @@ const COLUMNS = {
   userName: sql<string>`coalesce(${ssoIdentities.scimUserName}, ${users.email})`,
 };
 
+/** A Kobe user id; anything else names no user (and would not cast to `uuid`, KOBE-775). */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const userNameOf = sql`lower(coalesce(${ssoIdentities.scimUserName}, ${users.email}))`;
 
 function whereFilter(providerId: string, filter: UserFilter | null): ReturnType<typeof and> {
@@ -143,7 +146,7 @@ function whereFilter(providerId: string, filter: UserFilter | null): ReturnType<
     case "externalId":
       return and(own, eq(ssoIdentities.subject, filter.value));
     case "id":
-      return /^[0-9a-f-]{36}$/i.test(filter.value)
+      return UUID.test(filter.value)
         ? and(own, eq(users.id, filter.value.toLowerCase()))
         : sql`false`;
   }
@@ -183,7 +186,7 @@ async function readUser(
   userId: string,
   lock = false,
 ): Promise<ScimUserRow | undefined> {
-  if (!/^[0-9a-f-]{36}$/i.test(userId)) return undefined;
+  if (!UUID.test(userId)) return undefined;
   const q = db
     .select(COLUMNS)
     .from(ssoIdentities)

@@ -205,6 +205,8 @@ describe("sign-in page data", () => {
     expect(p.get("redirect_uri")).toBe("http://kobe.test/api/auth/sso/callback/corp");
     expect(p.get("scope")).toBe("openid profile email");
     expect(p.get("prompt")).toBe("select_account");
+    // KOBE-775: a sign-in older than 10 minutes is refused, so the IdP is asked for a fresh one.
+    expect(p.get("max_age")).toBe("600");
     // The Entra preset asks for the MFA authentication context c1 (§8, KOBE-629).
     expect(JSON.parse(p.get("claims") ?? "null")).toEqual({
       id_token: { acrs: { essential: true, value: "c1" } },
@@ -212,6 +214,13 @@ describe("sign-in page data", () => {
     // The cookie carries no readable verifier, nonce or state.
     expect(flow.flowCookie).not.toContain(p.get("state") ?? "-");
     expect(flow.flowCookie).not.toContain(p.get("nonce") ?? "-");
+  });
+
+  it("KOBE-775: asks a generic provider for an authentication at most 10 minutes old", async () => {
+    const flow = await startAt(kc, "kc", { sub: "kc-max-age" });
+    const p = new URL(flow.startLocation).searchParams;
+    expect(p.get("max_age")).toBe("600");
+    expect(p.get("prompt")).toBeNull();
   });
 });
 
@@ -276,6 +285,48 @@ describe("JIT and linked sign-in", () => {
     expect(again.location).toBe("http://kobe.test/");
     expect(await userCount()).toBe(before);
     expect((await again.browser.get("/v1/me")).json.user.email).toBe(user.preferred_username);
+  });
+
+  it("KOBE-775: a first sign-in racing another of the same identity continues as linked", async () => {
+    const user = entraUser();
+    const email = String(user.preferred_username);
+    // The other sign-in's JIT transaction: user and identity written, not yet committed.
+    await h.admin.query("BEGIN");
+    let committed = false;
+    try {
+      const { rows } = await h.admin.query<{ id: string }>(
+        `INSERT INTO users (email, name, email_verified) VALUES ($1, 'Ada', false) RETURNING id`,
+        [email],
+      );
+      const otherId = rows[0]?.id ?? "";
+      await h.admin.query(
+        `INSERT INTO sso_identities (provider_id, subject, user_id, linked_via, email_at_link)
+         VALUES ($1, $2, $3, 'jit', $4)`,
+        [corpId, user.oid, otherId, email],
+      );
+      const flow = await startAt(entra, "corp", user);
+      const pending = finish(flow);
+      // This sign-in's own user insert waits on the address's unique index.
+      for (let i = 0; i < 200; i++) {
+        // Inside a transaction the activity view is a snapshot: refresh it on every look.
+        await h.admin.query("SELECT pg_stat_clear_snapshot()");
+        const waiting = await h.admin.query(
+          `SELECT 1 FROM pg_stat_activity WHERE wait_event_type = 'Lock'
+             AND query ILIKE 'insert into "users"%'`,
+        );
+        if (waiting.rowCount) break;
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      await h.admin.query("COMMIT");
+      committed = true;
+      const { location } = await pending;
+      expect(errorOf(location)).toBeNull();
+      const me = await flow.browser.get("/v1/me");
+      expect(me.status).toBe(200);
+      expect(me.json.user.id).toBe(otherId);
+    } finally {
+      if (!committed) await h.admin.query("ROLLBACK");
+    }
   });
 
   it("gives an unmapped identity no user (no_access)", async () => {
@@ -601,6 +652,41 @@ describe("groups overage (generic provider, access claim groups)", () => {
       _claim_sources: { src1: { endpoint: "https://graph.example.com" } },
     });
     expect(errorOf(location)).toBe("groups_overage");
+  });
+
+  it("KOBE-775: SCIM user provisioning without SCIM groups keeps the memberships and refuses", async () => {
+    const user = { sub: "kc-user-775", email: "kc775@example.com", groups: ["g-research"] };
+    const first = await signInVia(kc, "kc", user);
+    expect(errorOf(first.location)).toBeNull();
+    const userId = (await first.browser.get("/v1/me")).json.user.id as string;
+    const managed = async () =>
+      (
+        await h.admin.query<{ role: string; added_via: string | null }>(
+          `SELECT role, added_via FROM team_members WHERE team_id = $1 AND user_id = $2`,
+          [teamId, userId],
+        )
+      ).rows;
+    const before = await managed();
+    expect(before).toEqual([{ role: "contributor", added_via: `idp:${kcId}` }]);
+    // A SCIM token, as SCIM Users provisioning has, but nothing ever wrote SCIM groups.
+    const { rows: token } = await h.admin.query<{ id: string }>(
+      `INSERT INTO scim_tokens (provider_id, token_hash, prefix)
+       VALUES ($1, $2, 'kobe_scim_y') RETURNING id`,
+      [kcId, "b".repeat(64)],
+    );
+    try {
+      const failedBefore = (await failures("groups_overage")).length;
+      const overage = { ...user, groups: undefined, hasgroups: true };
+      const res = await signInVia(kc, "kc", overage);
+      expect(errorOf(res.location)).toBe("groups_overage");
+      // Nothing was taken away; the refusal is in the audit log.
+      expect(await managed()).toEqual(before);
+      expect((await failures("groups_overage")).length).toBe(failedBefore + 1);
+      // The person's earlier session (and their access) is untouched.
+      expect((await first.browser.get("/v1/me")).status).toBe(200);
+    } finally {
+      await h.admin.query(`DELETE FROM scim_tokens WHERE id = $1`, [token[0]?.id]);
+    }
   });
 
   it("refuses an overage for a linked user without SCIM, uses SCIM memberships with it", async () => {
@@ -1040,6 +1126,47 @@ describe("max_session_hours against Better Auth's refresh (re-review A)", () => 
         corpId,
       ]);
     }
+  });
+});
+
+describe("a session made while its provider was turned off or unlinked (KOBE-775)", () => {
+  const sessionIdOf = async (userId: string) =>
+    (
+      await h.admin.query<{ id: string }>(
+        `SELECT s.id FROM sessions s JOIN session_sso_contexts c ON c.session_id = s.id
+          WHERE s.user_id = $1`,
+        [userId],
+      )
+    ).rows.map((r) => r.id);
+
+  it("ends an SSO session whose provider is off at the next request", async () => {
+    const { browser } = await signInVia(entra, "corp", entraUser());
+    const me = await browser.get("/v1/me");
+    expect(me.status).toBe(200);
+    const userId = me.json.user.id as string;
+    expect(await sessionIdOf(userId)).toHaveLength(1);
+    // As if the provider was turned off while this sign-in's callback was running: the flag is
+    // off, but the session ending already happened before the session existed.
+    await h.admin.query(`UPDATE sso_providers SET enabled = false WHERE id = $1`, [corpId]);
+    try {
+      expect((await browser.get("/v1/me")).status).toBe(401);
+      expect(await sessionIdOf(userId)).toEqual([]);
+    } finally {
+      await h.admin.query(`UPDATE sso_providers SET enabled = true WHERE id = $1`, [corpId]);
+    }
+  });
+
+  it("ends an SSO session whose identity link is gone at the next request", async () => {
+    const { browser } = await signInVia(entra, "corp", entraUser());
+    const me = await browser.get("/v1/me");
+    expect(me.status).toBe(200);
+    const userId = me.json.user.id as string;
+    await h.admin.query(`DELETE FROM sso_identities WHERE provider_id = $1 AND user_id = $2`, [
+      corpId,
+      userId,
+    ]);
+    expect((await browser.get("/v1/me")).status).toBe(401);
+    expect(await sessionIdOf(userId)).toEqual([]);
   });
 });
 
