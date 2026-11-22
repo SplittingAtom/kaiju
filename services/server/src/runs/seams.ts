@@ -98,8 +98,8 @@ export interface AgentPinInput {
 /**
  * Default until KOBE-46 lands on main: the thread's pin is passed through unchanged and the mode is
  * not tightened (no versions exist, so no thread can pin one yet: `resolveAgentPin` accepts only
- * null). KOBE-46/47 replace it with `resolvePinnedAgent` + `versionAllowsCall` +
- * `effectiveApprovalMode`.
+ * null). KOBE-46/47 replace it with `resolvePinnedAgent` +
+ * `effectiveApprovalMode` (per-call tool lists: `loadRunAgentTools`).
  */
 export const PASS_THROUGH_AGENTS: RunAgentResolver = {
   resolve(_tx, input) {

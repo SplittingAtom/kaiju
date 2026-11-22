@@ -347,8 +347,9 @@ export interface RunPolicyContext {
    */
   readonly floor: ApprovalMode;
   /**
-   * Agent frontmatter `tools.allow` / `tools.deny`. The DB source loads `tools.deny` from the
-   * run's version (KOBE-481, `loadRunAgentTools`); `tools.allow` is not enforced per call yet.
+   * Agent frontmatter `tools.allow` / `tools.deny`, from the run's version (or a test chat's
+   * draft): the DB source loads both (KOBE-481, KOBE-776, `loadRunAgentTools`) and the engine
+   * enforces both on every call, at the sandbox and at the MCP proxy.
    */
   readonly toolsAllow?: readonly string[];
   readonly toolsDeny?: readonly string[];
