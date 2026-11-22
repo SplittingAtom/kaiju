@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { gatewayModelSchema } from "./sandbox-wire/frames.js";
+import { gatewayModelSchema } from "./sandbox-wire/frames/model.js";
 
 /**
  * Embedding server calls (KOBE-409, v1.3 Semantic Memory SMD2). The server embeds memory item

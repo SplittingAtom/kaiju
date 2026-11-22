@@ -1,9 +1,5 @@
-import {
-  CAPABILITY_FILE_EDITS,
-  builtinToolDescriptor,
-  type PolicyCheckFrame,
-  type ServerToSandboxFrame,
-} from "@kobe/protocol";
+import { type PolicyCheckFrame, type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
+import { CAPABILITY_FILE_EDITS, builtinToolDescriptor } from "@kobe/protocol";
 import type { AllowedArtifactCalls } from "../../artifacts/allowed.js";
 import { POLICY_ANSWERED_MAX, remember } from "../connection-limits.js";
 import type { WireContext } from "../context.js";

@@ -1,4 +1,4 @@
-import type { PiSessionEntry } from "@kobe/protocol";
+import type { PiSessionEntry } from "@kobe/protocol/sandbox-wire";
 
 /**
  * Finding a run's prompt in Pi's entries after the run has ended (KOBE-290). The sandbox is

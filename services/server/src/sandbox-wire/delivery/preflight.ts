@@ -1,13 +1,15 @@
 import {
+  type RunStartFrame,
+  CAPABILITY_SKILL_BUNDLES,
+  CAPABILITY_SKILL_EVAL,
+  CAPABILITY_THREAD_CONTEXT,
+} from "@kobe/protocol/sandbox-wire";
+import {
   CAPABILITY_NOTEBOOK_START,
   CAPABILITY_NOTEBOOKS,
   CAPABILITY_RUN_TOKEN,
-  CAPABILITY_SKILL_BUNDLES,
-  CAPABILITY_SKILL_EVAL,
   CAPABILITY_THREAD_BRANCH_SUMMARY,
   CAPABILITY_THREAD_COMPACT,
-  CAPABILITY_THREAD_CONTEXT,
-  type RunStartFrame,
 } from "@kobe/protocol";
 import type { SandboxCommandKind } from "@kobe/db";
 import type { CommandRow } from "../commands.js";

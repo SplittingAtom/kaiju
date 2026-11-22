@@ -1,9 +1,5 @@
-import type {
-  KobeToolsRequest,
-  KobeToolsResponse,
-  SandboxToServerFrame,
-  ServerToSandboxFrame,
-} from "@kobe/protocol";
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { SandboxToServerFrame, ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
 import { ArtifactBroker } from "../tools/broker.js";
 import { toolsError } from "../tools/channel.js";
 import { FileEditBroker } from "../tools/file-edit-broker.js";

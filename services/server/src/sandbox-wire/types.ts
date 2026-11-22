@@ -3,21 +3,23 @@ import type {
   ApprovalMode,
   ApprovalToken,
   ErrorInfo,
+  PolicyDecision,
+  PolicyReason,
+  RunProjectContext,
+  RunStatus,
+  RunViewingContext,
+  SessionTokenClaims,
+} from "@kobe/protocol";
+import type {
   PiBridgeCommand,
   PiExtensionUiRequest,
   PiExtensionUiResponse,
   PiModelApi,
   PiThreadConfig,
-  PolicyDecision,
-  PolicyReason,
-  RunProjectContext,
   RunMcpContext,
-  RunStatus,
-  RunViewingContext,
   SandboxAttachment,
   SealedReplyKey,
-  SessionTokenClaims,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import type { KobeTx } from "@kobe/db";
 
 /**

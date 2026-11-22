@@ -1,9 +1,5 @@
-import type {
-  ArtifactPutFrame,
-  ArtifactResultFrame,
-  KobeToolsRequest,
-  KobeToolsResponse,
-} from "@kobe/protocol";
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { ArtifactPutFrame, ArtifactResultFrame } from "@kobe/protocol/sandbox-wire";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
 

@@ -1,17 +1,15 @@
 import { Readable } from "node:stream";
 import { recordFlushProof } from "../sandbox-lifecycle/reclaim.js";
 import { SYSTEM_ACTOR, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { WORKSPACE_MAX_BATCH, sha256HexSchema, workspacePathSchema } from "@kobe/protocol";
 import {
   WORKSPACE_ENTRY_HEADER,
-  WORKSPACE_MAX_BATCH,
   encodeWorkspaceEntryHeader,
-  sha256HexSchema,
   workspaceBlobsMissingRequestSchema,
   workspaceCommitRequestSchema,
-  workspacePathSchema,
   workspaceFlushedRequestSchema,
   workspaceRestoreReportSchema,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import { Hono, type Context } from "hono";
 import type { Logger } from "pino";
 import { recordAudit, type ServerAuditEvent } from "../audit/record.js";

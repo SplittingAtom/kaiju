@@ -3,7 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import type { RunAgentResolver } from "../runs/seams.js";
 import type { BlobStore } from "../retention/blobs.js";
 import { expect } from "vitest";
-import type { ServerToSandboxFrame } from "@kobe/protocol";
+import type { ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
 import { WIRE_DEFAULTS } from "../sandbox-wire/constants.js";
 import { TestBrowser, type TestResponse } from "./browser.js";
 import { approvalKeyring } from "../approvals/index.js";

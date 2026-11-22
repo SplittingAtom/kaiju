@@ -6,7 +6,7 @@ import {
   decodeWorkspaceEntryHeader,
   type WorkspaceChange,
   type WorkspaceEntry,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 import { sql, withTeam } from "@kobe/db";
 import { createSandboxApp } from "./routes/sandbox.js";
 import { moveFiles } from "./workspace-sync/move.js";

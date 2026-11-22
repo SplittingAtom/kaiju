@@ -1,7 +1,8 @@
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { FileOpenResultFrame, KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { FileOpenResultFrame } from "@kobe/protocol/sandbox-wire";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PushPathError, type PushedFile } from "../workspace/sync.js";
 import { FileOpenBroker, MAX_PENDING_OPENS_PER_THREAD } from "./file-open-broker.js";

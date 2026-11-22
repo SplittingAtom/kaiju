@@ -1,5 +1,5 @@
 import { access } from "node:fs/promises";
-import type { RunStartFrame } from "@kobe/protocol";
+import type { RunStartFrame } from "@kobe/protocol/sandbox-wire";
 import type { RunModel } from "../models/types.js";
 import { PiProcessError } from "../pi/pi-process.js";
 import { fail, type CommandOutcome } from "./outcome.js";

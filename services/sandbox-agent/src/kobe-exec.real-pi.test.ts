@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { SandboxToServerFrame } from "@kobe/protocol";
+import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import type { EgressWiring } from "./egress/egress-wiring.js";
 import { THREAD, startHarness, until, runStart, type Harness } from "./testing/harness.js";

@@ -1,9 +1,5 @@
-import type {
-  FileShareFrame,
-  FileShareResultFrame,
-  KobeToolsRequest,
-  KobeToolsResponse,
-} from "@kobe/protocol";
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { FileShareFrame, FileShareResultFrame } from "@kobe/protocol/sandbox-wire";
 import { PushPathError, type PushedFile } from "../workspace/sync.js";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";

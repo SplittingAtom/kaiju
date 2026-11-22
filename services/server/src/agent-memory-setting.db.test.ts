@@ -6,10 +6,10 @@ import {
   CAPABILITY_MEMORY,
   MEMORY_TOOLS,
   agentVersionMemoryFieldSchema,
-  memoryResultFrameSchema,
   runMemoryContextSchema,
   type AgentMemorySetting,
 } from "@kobe/protocol";
+import { memoryResultFrameSchema } from "@kobe/protocol/sandbox-wire";
 import { readRunMemoryPlan } from "./agents/run-memory.js";
 import { loadRunAgentTools } from "./policy/run-agent-tools.js";
 import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";

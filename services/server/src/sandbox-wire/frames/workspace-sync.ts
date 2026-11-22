@@ -1,4 +1,7 @@
-import { LEGACY_WEB_SEARCH_MESSAGE, type LegacyWebSearchQueryFrame } from "@kobe/protocol";
+import {
+  LEGACY_WEB_SEARCH_MESSAGE,
+  type LegacyWebSearchQueryFrame,
+} from "@kobe/protocol/sandbox-wire";
 import { MAX_SYNC_REQUESTS } from "../connection-limits.js";
 import type { ConnectionPort } from "./port.js";
 

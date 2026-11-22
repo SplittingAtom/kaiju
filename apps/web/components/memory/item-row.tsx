@@ -2,16 +2,13 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import type { ApiResult } from "../../lib/api/client";
-import {
-  SET_BY_SITE,
-  type MemoryItem,
-  type MemoryItemsApi,
-  type Overrides,
-} from "../../lib/memory/items-api";
+import type { MemoryItem, MemoryItemsApi, Overrides } from "../../lib/memory/items-api";
 import { visible } from "../../lib/security/visible";
-import { Badge, Button, Notice } from "../ui/console";
+import { Notice } from "../ui/console";
 import { CheckProblem, itemAnchor, useCheckedSave } from "./item-checks";
-import { DraftFields, KIND_LABELS, draftError, parseTags, type Draft } from "./item-fields";
+import { draftError, parseTags, type Draft } from "./item-fields";
+import { editButtonId, pinButtonId, policyButtonId } from "./item-row-ids";
+import { ItemActions, ItemEditForm, ItemSummary } from "./item-row-parts";
 
 /** A change that was made, as the Undo bar shows it. */
 export interface Done {
@@ -25,13 +22,40 @@ export const shortName = (statement: string) => {
   return text.length > 60 ? `${text.slice(0, 59)}…` : text;
 };
 
-/** Ids of a row's controls, so focus can return to them after the lists change. */
-export const editButtonId = (id: string) => `${itemAnchor(id)}-edit`;
-export const pinButtonId = (id: string) => `${itemAnchor(id)}-pin`;
-export const policyButtonId = (id: string) => `${itemAnchor(id)}-policy`;
+export { editButtonId, pinButtonId, policyButtonId } from "./item-row-ids";
 
 const sameTags = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((t, i) => t === b[i]);
+
+/**
+ * How an edit is undone: a statement-only edit by copying the version before it (revert);
+ * anything else by setting the fields back.
+ */
+function editUndo(
+  api: MemoryItemsApi,
+  before: MemoryItem,
+  after: MemoryItem,
+  changed: {
+    readonly statementChanged: boolean;
+    readonly kindChanged: boolean;
+    readonly tagsChanged: boolean;
+  },
+): NonNullable<Done["undo"]> {
+  const { statementChanged, kindChanged, tagsChanged } = changed;
+  return statementChanged && !kindChanged && !tagsChanged
+    ? (o) => api.revert(after, before.version, after.version, o)
+    : (o) =>
+        api.patch(
+          after,
+          {
+            expectedVersion: after.version,
+            ...(statementChanged ? { statement: before.statement } : {}),
+            ...(kindChanged ? { kind: before.kind } : {}),
+            ...(tagsChanged ? { tags: before.tags } : {}),
+          },
+          o,
+        );
+}
 
 /** Where focus goes once the lists show a change: an element id, or the row's group heading. */
 export type FocusAfter = string | "group" | "archive";
@@ -141,22 +165,7 @@ export function ItemRow({
           after,
           {
             message: "Memory saved.",
-            // A statement-only edit is undone by copying the version before it (revert); anything
-            // else by setting the fields back.
-            undo:
-              statementChanged && !kindChanged && !tagsChanged
-                ? (o) => api.revert(after, before.version, after.version, o)
-                : (o) =>
-                    api.patch(
-                      after,
-                      {
-                        expectedVersion: after.version,
-                        ...(statementChanged ? { statement: before.statement } : {}),
-                        ...(kindChanged ? { kind: before.kind } : {}),
-                        ...(tagsChanged ? { tags: before.tags } : {}),
-                      },
-                      o,
-                    ),
+            undo: editUndo(api, before, after, { statementChanged, kindChanged, tagsChanged }),
           },
           editButtonId(after.id),
         );
@@ -215,111 +224,34 @@ export function ItemRow({
     >
       {draft === null ? (
         <>
-          <p className="m-0 [overflow-wrap:anywhere] whitespace-pre-wrap">
-            {visible(item.statement)}
-          </p>
-          <p className="m-0 mt-2 flex flex-wrap items-center gap-1 text-sm text-console-muted">
-            <span>{KIND_LABELS[item.kind]}</span>
-            {setBySite && <Badge>{SET_BY_SITE}</Badge>}
-            {item.pinned && <Badge tone="accent">Pinned</Badge>}
-            {item.policy && <Badge tone="accent">Policy</Badge>}
-            {archived && <Badge>{item.status === "superseded" ? "Superseded" : "Archived"}</Badge>}
-            {item.tags.map((t) => (
-              <Badge key={t}>{visible(t)}</Badge>
-            ))}
-          </p>
+          <ItemSummary item={item} setBySite={setBySite} />
           {!locked && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {archived ? (
-                <Button size="sm" disabled={busy} aria-label={`Restore: ${name}`} onClick={restore}>
-                  Restore
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    id={editButtonId(item.id)}
-                    size="sm"
-                    disabled={busy}
-                    aria-label={`Edit: ${name}`}
-                    onClick={startEdit}
-                  >
-                    Edit
-                  </Button>
-                  {!item.policy && (
-                    <Button
-                      id={pinButtonId(item.id)}
-                      size="sm"
-                      disabled={busy}
-                      aria-label={`Pin: ${name}`}
-                      aria-pressed={item.pinned}
-                      onClick={togglePin}
-                    >
-                      Pin
-                    </Button>
-                  )}
-                  {item.scope === "site" && canSetPolicy && !item.pinned && (
-                    <Button
-                      id={policyButtonId(item.id)}
-                      size="sm"
-                      disabled={busy}
-                      aria-label={`Policy: ${name}`}
-                      aria-pressed={item.policy}
-                      onClick={togglePolicy}
-                    >
-                      Policy
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    disabled={busy}
-                    aria-label={`Archive: ${name}`}
-                    onClick={archive}
-                  >
-                    Archive
-                  </Button>
-                </>
-              )}
-            </div>
+            <ItemActions
+              item={item}
+              name={name}
+              busy={busy}
+              canSetPolicy={canSetPolicy}
+              startEdit={startEdit}
+              togglePin={togglePin}
+              togglePolicy={togglePolicy}
+              archive={archive}
+              restore={restore}
+            />
           )}
           {!locked && !archived && extra}
         </>
       ) : (
-        <form
-          aria-label={`Editing: ${name}`}
-          onSubmit={(e) => {
-            e.preventDefault();
-            submitEdit();
-          }}
-        >
-          {moved && (
-            <Notice tone="info" title={`Saved now (version ${item.version})`}>
-              <p data-testid="saved-now" className="[overflow-wrap:anywhere] whitespace-pre-wrap">
-                {visible(item.statement)}
-              </p>
-              <p>Your draft is kept below. Save replaces the saved text with it.</p>
-            </Notice>
-          )}
-          <DraftFields
-            draft={draft}
-            onChange={setDraft}
-            label="Memory text"
-            preferenceOnly={item.scope === "portable"}
-            autoFocus
-          />
-          {invalid && (
-            <p role="alert" className="m-0 mt-2 text-sm text-status-failed">
-              {invalid}
-            </p>
-          )}
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Button type="submit" variant="primary" size="sm" disabled={busy}>
-              Save
-            </Button>
-            <Button size="sm" disabled={busy} onClick={close}>
-              Cancel
-            </Button>
-          </div>
-        </form>
+        <ItemEditForm
+          item={item}
+          name={name}
+          draft={draft}
+          moved={moved}
+          invalid={invalid}
+          busy={busy}
+          setDraft={setDraft}
+          submitEdit={submitEdit}
+          close={close}
+        />
       )}
       {problem && (
         <CheckProblem problem={problem} known={known} busy={busy} onReload={() => void reload()} />

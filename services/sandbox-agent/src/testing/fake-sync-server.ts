@@ -1,19 +1,18 @@
 import { createHash } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
+import { isExcludedPath, isServerOwnedPath } from "@kobe/protocol";
 import {
   WORKSPACE_ENTRY_HEADER,
   WORKSPACE_SYNC_PATH,
   encodeWorkspaceEntryHeader,
-  isExcludedPath,
-  isServerOwnedPath,
   workspaceCommitRequestSchema,
   type WorkspaceChangeResult,
   type WorkspaceCheckoutRef,
   type WorkspaceEntry,
   type WorkspaceMoveRecord,
   type WorkspaceRestoreReport,
-} from "@kobe/protocol";
+} from "@kobe/protocol/sandbox-wire";
 
 /**
  * An in-memory stand-in for the server's workspace sync endpoints (contract:

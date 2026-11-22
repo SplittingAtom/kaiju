@@ -1,11 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import {
-  CAPABILITY_MEMORY,
-  memoryResultFrameSchema,
-  runMemoryContextSchema,
-  type PolicyEngine,
-} from "@kobe/protocol";
+import { CAPABILITY_MEMORY, runMemoryContextSchema, type PolicyEngine } from "@kobe/protocol";
+import { memoryResultFrameSchema } from "@kobe/protocol/sandbox-wire";
 import { approvalKeyring, createApprovalVerifier } from "./approvals/index.js";
 import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";

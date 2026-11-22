@@ -12,7 +12,7 @@ settle it in its contract PR.
 
 | Contract              | Module                                                                                                        | Key exports                                                                                                                                                                                                                                                       | Consumers                                   |
 | --------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| Sandbox ↔ server wire | `src/sandbox-wire/` (`connection.ts`, `frames.ts`, `pi-rpc.ts`, `pi-events.ts`, `codec.ts`)                   | frame schemas, `decodeSandboxFrame`, `decodeServerFrame`, `parseTranslatedPiEvent`, `piGetEntriesDataSchema`, `SANDBOX_CLOSE_CODES`                                                                                                                               | KOBE-23, KOBE-24, KOBE-36, KOBE-41, KOBE-62 |
+| Sandbox ↔ server wire | `src/sandbox-wire/` (`@kobe/protocol/sandbox-wire`: `connection.ts`, `frames.ts` + `frames/`, `codec.ts`)     | frame schemas, `decodeSandboxFrame`, `decodeServerFrame`, `parseTranslatedPiEvent`, `piGetEntriesDataSchema`, `SANDBOX_CLOSE_CODES`                                                                                                                               | KOBE-23, KOBE-24, KOBE-36, KOBE-41, KOBE-62 |
 | Session tokens        | `src/session-token.ts`                                                                                        | `SESSION_TOKEN_AUDIENCES`, `sessionTokenClaimsSchema`, `acceptsAudience`                                                                                                                                                                                          | KOBE-22, KOBE-24, KOBE-38, KOBE-40, KOBE-58 |
 | Run tokens            | `src/run-token.ts` (sign/verify: `@kobe/session-token`)                                                       | `CAPABILITY_RUN_TOKEN`, `RUN_TOKEN_HEADER`, `RUN_TOKEN_TYP`, `runTokenClaimsSchema`, `runTokenGrantSchema`                                                                                                                                                        | KOBE-117, KOBE-118, KOBE-521                |
 | Server model calls    | `src/server-call.ts` (sign/verify: `@kobe/session-token`)                                                     | `SERVER_CALL_TOKEN_HEADER`, `SERVER_CALL_TOKEN_TYP`, `serverCallClaimsSchema`, `serverCallRequestSchema`, `SERVER_CALL_LIMITS`                                                                                                                                    | KOBE-234, KOBE-219, KOBE-222, KOBE-521      |
@@ -25,9 +25,13 @@ settle it in its contract PR.
 | Skill evals           | `src/skill-evals/` ([docs/skill-evals.md](../../docs/skill-evals.md))                                         | `skillEvalSuiteSchema`, `expectedChecks`, `checkEvalOutputs`, `computeSkillEvalScorecard`, `verifySkillEvalScorecard`, `catalogSkillEvalScorecardSchema`, `skillEvalJudgeMessages`, `skillEvalRunSchema`; `parseSkillEvalSuite` from `@kobe/protocol/skill-evals` | KOBE-324..328                               |
 | Test fakes            | `src/testing/` (`@kobe/protocol/testing`)                                                                     | `createInMemoryEventLog`, `createFakeRunOrchestrator`, `createFakePolicyEngine`, `EVENT_PAYLOAD_EXAMPLES`, `EXAMPLE_IDS`                                                                                                                                          | tests of all of the above                   |
 
-Entry points: `@kobe/protocol` is browser-safe (the web app imports it); `@kobe/protocol/node`
+Entry points: `@kobe/protocol` is browser-safe (the web app imports it); `@kobe/protocol/sandbox-wire`
+holds the sandbox wire (frame schemas, codec, workspace sync, Pi RPC) for the server and
+kobe-sandbox-agent only, and web code may not import it (lint rule, KOBE-720; the workspace path
+rules it shares with the browser are in the root, `src/workspace-paths.ts`); `@kobe/protocol/node`
 uses `node:crypto` and must never be imported by sandbox code (the approval key never enters a
-sandbox); `@kobe/protocol/testing` is for tests only.
+sandbox); `@kobe/protocol/testing` is for tests only. The package is `sideEffects: false`, so a
+bundler drops modules nothing uses.
 
 ## Version skew on the sandbox wire
 

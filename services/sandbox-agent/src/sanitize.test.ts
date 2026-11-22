@@ -1,4 +1,4 @@
-import { decodeSandboxFrame, encodeFrame } from "@kobe/protocol";
+import { decodeSandboxFrame, encodeFrame } from "@kobe/protocol/sandbox-wire";
 import { EXAMPLE_IDS } from "@kobe/protocol/testing";
 import { describe, expect, it } from "vitest";
 import { TOO_DEEP_MARKER, parsePiRecord, sanitizeJson } from "./sanitize.js";

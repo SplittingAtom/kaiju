@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import type { NotebookExecuteFrame, NotebookOutput } from "@kobe/protocol";
+import type { NotebookOutput } from "@kobe/protocol";
+import type { NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { OUTPUT_LIMITS } from "./outputs.js";
 import { KernelManager, type KernelManagerOptions } from "./manager.js";

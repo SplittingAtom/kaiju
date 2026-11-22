@@ -81,6 +81,23 @@ const railVar = () =>
     document.querySelector<HTMLElement>('[data-shell-region="rail"]')?.parentElement,
   ).style.getPropertyValue(RAIL_WIDTH_VAR);
 
+const settled = () =>
+  waitFor(
+    () =>
+      expect(
+        screen.getByRole("complementary", { name: "Workspace" }).hasAttribute("data-settled"),
+      ).toBe(true),
+    { timeout: 4_000 },
+  );
+/** Lets React finish the work a sent message or a click started (no fixed wait). */
+const flush = () => act(async () => {});
+/** Waits until an app frame is up and Kobe's bridge listens to it: its opening is done. */
+const bridgeUp = (title: string) =>
+  waitFor(
+    () => expect(must(screen.queryByTitle(title)).hasAttribute(BRIDGE_ATTACHED_ATTR)).toBe(true),
+    { timeout: 4_000 },
+  );
+
 /** The picker's frame, with a stand-in window to talk as the app. */
 async function pickerWindow() {
   // Once Kobe's bridge listens: a message posted before is lost (KOBE-415).
@@ -175,7 +192,7 @@ describe("the Pickers section (KOBE-460 ac-1, ac-2)", () => {
     expect(await screen.findByTitle(PICKER_FRAME, undefined, { timeout: 4_000 })).toBeTruthy();
     const section = await screen.findByRole("tabpanel", { name: "Apps" });
     expect(pickerSelect(section).value).toBe(PICKER.appId);
-    await new Promise((r) => setTimeout(r, 50));
+    await bridgeUp(PICKER_FRAME);
     expect(openings()).toHaveLength(1);
     expect(fake.preferences["rail_picker"]).toBeUndefined();
   });
@@ -186,7 +203,7 @@ describe("the Pickers section (KOBE-460 ac-1, ac-2)", () => {
     openApp(fake, answered());
     const section = await screen.findByRole("tabpanel", { name: "Apps" });
     await within(section).findByRole("combobox", { name: "Picker" });
-    await new Promise((r) => setTimeout(r, 50));
+    await settled();
     expect(pickerSelect(section).value).toBe("");
     expect(screen.queryByTitle(PICKER_FRAME)).toBeNull();
     expect(appCalls()).toEqual([]);
@@ -198,7 +215,7 @@ describe("the Pickers section (KOBE-460 ac-1, ac-2)", () => {
     fake.preferences = { rail_picker: QUERY_PICKER.appId, rail_tab: "apps" };
     openApp(fake, answered());
     expect(await screen.findByTitle(OTHER_FRAME, undefined, { timeout: 4_000 })).toBeTruthy();
-    await new Promise((r) => setTimeout(r, 50));
+    await bridgeUp(OTHER_FRAME);
     const tools = appCalls().map((r) => (r.body as { tool: string }).tool);
     expect(tools).toEqual([QUERY_PICKER.tool]);
   });
@@ -236,8 +253,9 @@ describe("the live picker (KOBE-460 ac-4, ac-6)", () => {
     expect(document.querySelector("[data-kobe-app-insert-from]")?.textContent).toContain(
       "From Lakehouse Picker",
     );
-    await new Promise((r) => setTimeout(r, 50));
+    await flush();
     expect(messages()).toEqual([]);
+    expect(box.value).toBe("Use table `c.n.t`");
 
     await picker.send({
       jsonrpc: "2.0",
@@ -373,13 +391,13 @@ describe("the picker's opening tool result (KOBE-460 fix: Loading catalogs…)",
     const section = await appsTab();
     await userEvent.setup().selectOptions(pickerSelect(section), PICKER.appId);
     await pickerWindow();
-    await new Promise((r) => setTimeout(r, 50));
+    await flush();
     expect(openings()).toHaveLength(1);
     fireEvent.click(screen.getByRole("tab", { name: "Files" }));
     await waitFor(() => expect(screen.queryByTitle(PICKER_FRAME)).toBeNull());
     await appsTab();
     await pickerWindow();
-    await new Promise((r) => setTimeout(r, 50));
+    await flush();
     expect(openings()).toHaveLength(2);
   });
 
@@ -469,7 +487,7 @@ describe("the picker's opening, more cases (review LOW-2)", () => {
     await user.selectOptions(pickerSelect(section), QUERY_PICKER.appId);
     expect(await screen.findByTitle(OTHER_FRAME, undefined, { timeout: 4_000 })).toBeTruthy();
     expect(screen.queryByTitle(PICKER_FRAME)).toBeNull();
-    await new Promise((r) => setTimeout(r, 50));
+    await bridgeUp(OTHER_FRAME);
     const tools = appCalls().map((r) => (r.body as { tool: string }).tool);
     expect(tools.filter((t) => t === QUERY_PICKER.tool)).toHaveLength(1);
     expect(tools.filter((t) => t === PICKER.tool).length).toBeLessThanOrEqual(1);
@@ -498,7 +516,8 @@ describe("the rail's width with a picker (KOBE-460 ac-5)", () => {
     const section = await screen.findByRole("tabpanel", { name: "Apps" });
     await waitFor(() => expect(railVar()).toBe("480px"));
     await userEvent.setup().selectOptions(pickerSelect(section), PICKER.appId);
-    await new Promise((r) => setTimeout(r, 50));
+    // The picker shows: the member's wider width stays.
+    expect(await screen.findByTitle(PICKER_FRAME, undefined, { timeout: 4_000 })).toBeTruthy();
     expect(railVar()).toBe("480px");
     await userEvent.setup().selectOptions(pickerSelect(section), "");
     await waitFor(() => expect(railVar()).toBe("480px"));
@@ -520,7 +539,7 @@ describe("the rail's width with a picker (KOBE-460 ac-5)", () => {
     fake.preferences = { rail_picker: PICKER.appId, rail_tab: "files" };
     openApp(fake, answered());
     await screen.findByRole("tab", { name: "Apps" });
-    await new Promise((r) => setTimeout(r, 50));
+    await settled();
     expect(railVar()).toBe("");
     await appsTab();
     await waitFor(() => expect(railVar()).toBe(`${PICKER_RAIL_PX}px`));

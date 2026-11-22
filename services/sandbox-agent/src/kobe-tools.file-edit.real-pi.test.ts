@@ -1,4 +1,4 @@
-import type { SandboxToServerFrame } from "@kobe/protocol";
+import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import { RUN, startHarness, until, runStart, type Harness } from "./testing/harness.js";
 import {

@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
 import { InMemorySpanExporter, SpanStatusCode, initTelemetry } from "@kobe/telemetry";
-import { WORKSPACE_SYNC_PATH } from "@kobe/protocol";
+import { WORKSPACE_SYNC_PATH } from "@kobe/protocol/sandbox-wire";
 import { createApp } from "./app.js";
 import { createSandboxApp } from "./routes/sandbox.js";
 import { EventStreamFixture, PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";

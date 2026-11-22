@@ -1,5 +1,6 @@
-import type { KobeToolsRequest, KobeToolsResponse, ProjectCommitResultFrame } from "@kobe/protocol";
-import { projectCommitFrameSchema } from "@kobe/protocol";
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { ProjectCommitResultFrame } from "@kobe/protocol/sandbox-wire";
+import { projectCommitFrameSchema } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { PushPathError } from "../workspace/sync.js";
 import { ProjectCommitBroker } from "./project-commit-broker.js";

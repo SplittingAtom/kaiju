@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { BUILTIN_TOOLS, builtinToolDescriptor, kobeToolsRequestSchema } from "./index.js";
 import {
-  BUILTIN_TOOLS,
-  builtinToolDescriptor,
   decodeSandboxFrame,
   decodeServerFrame,
-  kobeToolsRequestSchema,
   LEGACY_WEB_SEARCH_MESSAGE,
-} from "./index.js";
+} from "./sandbox-wire/index.js";
 
 // KOBE-606: the built-in web search is gone; only old agents' frames are still understood.
 describe("retired web_search", () => {

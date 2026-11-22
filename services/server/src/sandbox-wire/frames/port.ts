@@ -1,4 +1,4 @@
-import type { ServerToSandboxFrame } from "@kobe/protocol";
+import { type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
 import type { Logger } from "pino";
 import type { WireContext } from "../context.js";
 import type { SandboxTarget } from "../types.js";

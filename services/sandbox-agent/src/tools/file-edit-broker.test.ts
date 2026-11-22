@@ -1,8 +1,5 @@
-import type {
-  FileEditProposeResultFrame,
-  KobeToolsRequest,
-  KobeToolsResponse,
-} from "@kobe/protocol";
+import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { FileEditProposeResultFrame } from "@kobe/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { FileEditBroker, MAX_PENDING_PROPOSALS_PER_THREAD } from "./file-edit-broker.js";
 

@@ -1,10 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import {
-  CAPABILITY_WORKSPACE_SYNC_NOW,
-  workspaceEventSchema,
-  type WorkspaceEvent,
-} from "@kobe/protocol";
+import { workspaceEventSchema, type WorkspaceEvent } from "@kobe/protocol";
+import { CAPABILITY_WORKSPACE_SYNC_NOW } from "@kobe/protocol/sandbox-wire";
 import { withTeam } from "@kobe/db";
 import { createApp } from "./app.js";
 import { notifyTeamWorkspaces } from "./event-stream/access.js";
