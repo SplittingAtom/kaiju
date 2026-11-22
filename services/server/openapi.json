@@ -8377,7 +8377,7 @@
       "get": {
         "operationId": "listProjectCheckouts",
         "summary": "Working copies (owners, team admins)",
-        "description": "Who has a checkout of the project, since when, and its base.",
+        "description": "Who has a checkout of the project, since when, its base, and how many files it changes (`changed_files`: uncommitted work a delete would discard).",
         "parameters": [
           {
             "name": "id",
@@ -11940,6 +11940,132 @@
         }
       }
     },
+    "/v1/site/sso/settings": {
+      "get": {
+        "operationId": "getSiteSsoSettings",
+        "summary": "Whether the Site requires single sign-on",
+        "description": "Needs `site.users.manage`.",
+        "responses": {
+          "200": {
+            "description": "The setting and whether it can be turned on.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteSsoSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`: no session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: not an Owner or Admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: single sign-on is off (`auth.sso.enabled: false`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putSiteSsoSettings",
+        "summary": "Require single sign-on, or stop requiring it",
+        "description": "Needs `site.users.manage`; turning it off needs the Owner. Turning it on works only from a session signed in through an enabled identity provider, and ends every session that was not (`identity.sso.required.enabled`). While in force the server refuses password sign-in, password reset, invitation acceptance and passkey sign-in (`403 SSO_REQUIRED` on `/api/auth/*`). It turns itself off when the last enabled provider is disabled or deleted, and `kobe sso allow-local-sign-in` turns it off with cluster access (`identity.sso.required.disabled`). While it is stored on, the Owner keeps an identity at an enabled provider: disabling or deleting the Owner's only one answers 409 `owner_would_lose_sign_in`, transferring ownership to an unlinked user 409 `owner_not_linked`, unlinking an account's only usable identity 409 `last_sign_in_method`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutSiteSsoSettingsBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The setting and whether it can be turned on.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteSsoSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`invalid_request`: `requireSso` missing or not a boolean.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`: no session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: not an Owner or Admin, or an Admin turning it off (Owner only).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: single sign-on is off (`auth.sso.enabled: false`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`sso_session_required`: turning it on from a session not signed in through an enabled identity provider; `owners_not_linked`: an active Owner has no identity at an enabled provider (the message gives how many).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/me": {
       "get": {
         "operationId": "getMe",
@@ -12674,7 +12800,7 @@
       "post": {
         "operationId": "postConnectorGrantsByConnectorIdOauthStart",
         "summary": "Start an OAuth connection and get the authorization URL",
-        "description": "404 when the connector is not enabled for the team; 422 when it does not use OAuth.",
+        "description": "404 when the connector is not enabled for the team; 422 when it does not use OAuth; 429 after too many attempts by the caller (30 per 10 minutes).",
         "tags": ["Connector grants"],
         "parameters": [
           {
@@ -13913,6 +14039,63 @@
         "x-kobe-detail": "summary"
       }
     },
+    "/v1/workspace/rebuild": {
+      "get": {
+        "operationId": "getWorkspaceRebuild",
+        "summary": "Whether the member's workspace volume is lost, and when the workspace last synced",
+        "description": "Team members (`team.chat`). KOBE-739: `{volume: lost|unreachable|rebuilding|present|missing|unknown, last_synced_at, rebuildable, down_since?, offer_at?}`; reads the cluster, cached 30 s, rate limited (429). 503 `rebuild_unavailable` without workspace storage.",
+        "tags": ["Workspace"],
+        "responses": {
+          "2XX": {
+            "description": "Success (body not described here yet)."
+          },
+          "default": {
+            "description": "Error: `{code, message}`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-kobe-detail": "summary"
+      },
+      "post": {
+        "operationId": "postWorkspaceRebuild",
+        "summary": "Rebuild the member's lost workspace from the last sync",
+        "description": "Team members (`team.chat`). Body `{confirm: true}`. Re-checks the loss live (409 `volume_reachable`, or `volume_not_yet_lost` with `offer_at` while the node's grace period runs), audits `sandbox.volume_rebuilt`, then deletes the old claim and volume; the next wake restores from object storage. 503 `rebuild_pending` when the cleanup is retried; 409 `rebuild_superseded` when the claim there is not the confirmed one; idempotent (`already`).",
+        "tags": ["Workspace"],
+        "requestBody": {
+          "required": false,
+          "description": "JSON body as the route validates it (not described here yet).",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "2XX": {
+            "description": "Success (body not described here yet)."
+          },
+          "default": {
+            "description": "Error: `{code, message}`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-kobe-detail": "summary"
+      }
+    },
     "/v1/workspace/sync-conflicts": {
       "get": {
         "operationId": "getWorkspaceSyncConflicts",
@@ -14295,7 +14478,7 @@
       "delete": {
         "operationId": "deleteProjectsById",
         "summary": "Delete a project",
-        "description": "Answers 204.",
+        "description": "Answers 204. Query `confirmed_uncommitted` (absent = 0): how many working copies with uncommitted changes the caller agreed to discard; when more hold such changes now, 409 `uncommitted_work` with `uncommitted_working_copies`, to confirm again.",
         "tags": ["Projects"],
         "parameters": [
           {
@@ -21096,6 +21279,83 @@
             }
           }
         ],
+        "responses": {
+          "2XX": {
+            "description": "Success (body not described here yet)."
+          },
+          "default": {
+            "description": "Error: `{code, message}`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-kobe-detail": "summary"
+      }
+    },
+    "/v1/team/workspaces/{userId}/rebuild": {
+      "get": {
+        "operationId": "getTeamWorkspacesByUserIdRebuild",
+        "summary": "Whether a member's workspace volume is lost, and when it last synced",
+        "description": "Team admins (`team.members.manage`). KOBE-739; same answer as `GET /v1/workspace/rebuild`.",
+        "tags": ["Team"],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Success (body not described here yet)."
+          },
+          "default": {
+            "description": "Error: `{code, message}`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-kobe-detail": "summary"
+      },
+      "post": {
+        "operationId": "postTeamWorkspacesByUserIdRebuild",
+        "summary": "Rebuild a member's lost workspace from the last sync",
+        "description": "Team admins (`team.members.manage`). Body `{confirm: true}`; as `POST /v1/workspace/rebuild`, audited with the admin as actor (`byAdmin`).",
+        "tags": ["Team"],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "description": "JSON body as the route validates it (not described here yet).",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
         "responses": {
           "2XX": {
             "description": "Success (body not described here yet)."
@@ -38178,6 +38438,11 @@
                       "pattern": "^[0-9a-f-]+$"
                     }
                   ]
+                },
+                "changed_files": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
                 }
               },
               "required": [
@@ -38187,7 +38452,8 @@
                 "base_commit_seq",
                 "created_at",
                 "updated_at",
-                "user_id"
+                "user_id",
+                "changed_files"
               ],
               "additionalProperties": false
             }
@@ -41564,6 +41830,58 @@
           }
         },
         "required": ["level", "stewards"],
+        "additionalProperties": false
+      },
+      "SiteSsoSettings": {
+        "type": "object",
+        "properties": {
+          "requireSso": {
+            "type": "boolean",
+            "description": "Stored: password and passkey sign-in are off."
+          },
+          "inForce": {
+            "type": "boolean",
+            "description": "Stored on, the chart's `auth.sso.enabled` is on, and at least one provider can finish a sign-in."
+          },
+          "canTurnOn": {
+            "type": "boolean",
+            "description": "This session was signed in through an enabled identity provider."
+          },
+          "unlinked": {
+            "type": "object",
+            "properties": {
+              "owners": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "siteRoles": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "users": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["owners", "siteRoles", "users"],
+            "additionalProperties": false,
+            "description": "Active accounts (and of them site-role holders and Owners) with no identity at an enabled provider: they could not sign in while it is on. Counts only."
+          }
+        },
+        "required": ["requireSso", "inForce", "canTurnOn", "unlinked"],
+        "additionalProperties": false
+      },
+      "PutSiteSsoSettingsBody": {
+        "type": "object",
+        "properties": {
+          "requireSso": {
+            "type": "boolean"
+          }
+        },
+        "required": ["requireSso"],
         "additionalProperties": false
       }
     },

@@ -173,6 +173,18 @@ export function UsageDashboard({
   );
 }
 
+/** KOBE-741: the range starts before the oldest usage the site still keeps. */
+export function reachesPastRetention(
+  report: Pick<UsageReport, "range" | "retentionMonths">,
+  now: Date = new Date(),
+): boolean {
+  const months = report.retentionMonths;
+  if (months === undefined || months === null) return false;
+  const kept = new Date(now);
+  kept.setUTCMonth(kept.getUTCMonth() - months);
+  return new Date(report.range.from).getTime() < kept.getTime();
+}
+
 function Report({
   load,
   metric,
@@ -192,6 +204,12 @@ function Report({
         return (
           <>
             <Tiles totals={totals} />
+            {reachesPastRetention(report) && (
+              <p className={HINT}>
+                Usage older than {report.retentionMonths} months is removed, so this range shows
+                only the part since then.
+              </p>
+            )}
             {totals.unpricedCalls > 0 && (
               <p className={HINT}>
                 * {totals.unpricedCalls} calls used models without a price in the catalog: their

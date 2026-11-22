@@ -430,6 +430,20 @@ describe("refresh skips (KOBE-431)", () => {
     expect(screen.getByText(/own key of the site admin who last pinned or approved/)).toBeTruthy();
   });
 
+  it("tells admins of an OAuth connector to connect their own account (KOBE-784)", async () => {
+    stubApi({
+      [`GET ${BASE}`]: [
+        200,
+        { connectors: [connector({ authKind: "oauth", refreshSkipped: "auth_required" })] },
+      ],
+    });
+    renderSite(<ConnectorsPage />);
+    expect(
+      await screen.findByText("Not checked for changes: needs a connected account"),
+    ).toBeTruthy();
+    expect(screen.getByText(/Connect your own account for it at My connectors/)).toBeTruthy();
+  });
+
   it("tells admins when the app templates were not checked (KOBE-433)", async () => {
     stubApi({
       [`GET ${BASE}`]: [200, { connectors: [connector({ templatesSkipped: "proxy_outdated" })] }],

@@ -8,12 +8,16 @@ export const USAGE = `Usage:
   kobe restore --from <backup directory> [--allow-object-mismatch] [--no-objects]
                [--operator <name>] [--expect-audit-head <seq>:<sha256>]
   kobe projects restricted [--json]
+  kobe sso allow-local-sign-in [--operator <name>]
 
   --operator           recorded as who ran the restore (default: the OS user)
   --expect-audit-head  an audit chain head recorded off the box (server log, SIEM); the restore
                        fails unless the restored chain contains it
   projects restricted  read-only dry-run before the upgrade that removes restricted project
                        visibility (KOBE-587): lists every restricted project and its members
+  sso allow-local-sign-in
+                       break-glass (KOBE-774): stops requiring single sign-on, so password and
+                       passkey sign-in work again; audited with --operator (default: OS user)
 
 Environment:
   both     KOBE_BACKUP_KEY_FILE      file with the backup key (openssl rand -base64 32), or
@@ -21,7 +25,8 @@ Environment:
                                      without it a backup cannot be restored
   backup, projects
            KOBE_BACKUP_DATABASE_URL  role with BYPASSRLS (or superuser) that can read every table
-  restore  KOBE_DB_MIGRATE_URL       the owner role (the chart's migrate-url), never the app role
+  restore, sso
+           KOBE_DB_MIGRATE_URL       the owner role (the chart's migrate-url), never the app role
   both     KOBE_S3_BUCKET, KOBE_S3_ENDPOINT, KOBE_S3_REGION, KOBE_S3_PREFIX,
            KOBE_S3_FORCE_PATH_STYLE, KOBE_S3_ACCESS_KEY_ID, KOBE_S3_SECRET_ACCESS_KEY
            KOBE_PG_BIN_DIR           directory with pg_dump, pg_restore and psql (default: PATH)
@@ -72,7 +77,17 @@ export interface ProjectsRestrictedCommand {
   readonly json: boolean;
 }
 
-export type Command = BackupCommand | RestoreCommand | ProjectsRestrictedCommand;
+/** `kobe sso allow-local-sign-in` (KOBE-774): the owner role; no backup key or object storage. */
+export interface SsoAllowLocalSignInCommand {
+  readonly command: "sso-allow-local-sign-in";
+  readonly databaseUrl: string;
+  readonly operator: string | undefined;
+}
+
+export type Command =
+  BackupCommand | RestoreCommand | ProjectsRestrictedCommand | SsoAllowLocalSignInCommand;
+
+const OPERATOR = /^[A-Za-z0-9._@-]{1,64}$/;
 
 type Env = Readonly<Record<string, string | undefined>>;
 
@@ -243,7 +258,7 @@ export function parseCommand(
       throw usageError("restore needs --from <dir>");
     }
     const operator = typeof flags.operator === "string" ? flags.operator : undefined;
-    if (operator !== undefined && !/^[A-Za-z0-9._@-]{1,64}$/.test(operator)) {
+    if (operator !== undefined && !OPERATOR.test(operator)) {
       throw usageError("--operator: use 1-64 letters, digits, . _ @ -");
     }
     const head =
@@ -273,6 +288,22 @@ export function parseCommand(
       command: "projects-restricted",
       databaseUrl: readUrl(env, "KOBE_BACKUP_DATABASE_URL"),
       json: flags.json === true,
+    };
+  }
+  if (command === "sso") {
+    const [sub, ...flagArgs] = rest;
+    if (sub !== "allow-local-sign-in") {
+      throw usageError("sso needs a subcommand: sso allow-local-sign-in");
+    }
+    const flags = parseFlags(flagArgs, { operator: { type: "string" } });
+    const operator = typeof flags.operator === "string" ? flags.operator : undefined;
+    if (operator !== undefined && !OPERATOR.test(operator)) {
+      throw usageError("--operator: use 1-64 letters, digits, . _ @ -");
+    }
+    return {
+      command: "sso-allow-local-sign-in",
+      databaseUrl: readUrl(env, "KOBE_DB_MIGRATE_URL"),
+      operator,
     };
   }
   throw usageError(command ? `Unknown command "${command}"` : "No command given");

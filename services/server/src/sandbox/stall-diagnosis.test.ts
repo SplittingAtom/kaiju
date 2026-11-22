@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyStall, isPodReady } from "./stall-diagnosis.js";
+import { classifyStall, isPodReady, quotaShortfall } from "./stall-diagnosis.js";
 import type { KubeObject } from "./manifests.js";
 
 const SINCE = Date.parse("2026-10-09T10:00:00Z");
@@ -246,5 +246,132 @@ describe("isPodReady", () => {
     expect(isPodReady(pod({ conditions: [{ type: "Ready", status: "False" }] }))).toBe(false);
     expect(isPodReady(pod())).toBe(false);
     expect(isPodReady(undefined)).toBe(false);
+  });
+});
+
+describe("classifyStall: a full team volume quota (KOBE-733)", () => {
+  const GI = 2 ** 30;
+  const quota = (hard: Record<string, string>, used: Record<string, string>): KubeObject => ({
+    apiVersion: "v1",
+    kind: "ResourceQuota",
+    metadata: { name: "kobe-team-member-quota", namespace: "kobe-team-a" },
+    status: { hard, used },
+  });
+  const noVolume = (extra: { quota?: KubeObject; events?: KubeObject[] } = {}) =>
+    classifyStall({
+      pod: undefined,
+      pvc: undefined,
+      events: extra.events ?? [],
+      since: SINCE,
+      now: NOW,
+      quota: extra.quota,
+      volumeBytes: 10 * GI,
+    });
+
+  it("names the quota when no PVC is left, but keeps waiting (its numbers lag)", () => {
+    const d = noVolume({
+      quota: quota({ persistentvolumeclaims: "50" }, { persistentvolumeclaims: "50" }),
+    });
+    expect(d).toMatchObject({ cause: "volume_quota", definite: false });
+    expect(d.detail).toMatch(/persistentvolumeclaims used 50 of 50/);
+  });
+
+  it("names the quota when the storage left is smaller than one workspace", () => {
+    const d = noVolume({
+      quota: quota(
+        { persistentvolumeclaims: "50", "requests.storage": "500Gi" },
+        { persistentvolumeclaims: "41", "requests.storage": "495Gi" },
+      ),
+    });
+    expect(d).toMatchObject({ cause: "volume_quota", definite: false });
+  });
+
+  it("is definite with a controller's exceeded-quota event of this wake", () => {
+    const refused: KubeObject = {
+      ...event(
+        "Sandbox",
+        "sandbox-uid",
+        "FailedCreate",
+        'persistentvolumeclaims "workspace-u-1" is forbidden: exceeded quota: kobe-team-member-quota, requested: persistentvolumeclaims=1, used: persistentvolumeclaims=50, limited: persistentvolumeclaims=50',
+      ),
+    };
+    expect(noVolume({ events: [refused] })).toMatchObject({
+      cause: "volume_quota",
+      definite: true,
+    });
+  });
+
+  it("is not the cause while there is room, or once the volume exists", () => {
+    const room = quota(
+      { persistentvolumeclaims: "50", "requests.storage": "500Gi" },
+      { persistentvolumeclaims: "10", "requests.storage": "100Gi" },
+    );
+    expect(noVolume({ quota: room }).cause).not.toBe("volume_quota");
+    expect(quotaShortfall(room, 10 * GI)).toBeUndefined();
+    expect(quotaShortfall(undefined, 10 * GI)).toBeUndefined();
+    const full = quota({ persistentvolumeclaims: "50" }, { persistentvolumeclaims: "50" });
+    const bound = classifyStall({
+      pod: pod(),
+      pvc: pvc("Bound"),
+      events: [],
+      since: SINCE,
+      now: NOW,
+      quota: full,
+      volumeBytes: 10 * GI,
+    });
+    expect(bound.cause).not.toBe("volume_quota");
+  });
+});
+
+describe("classifyStall: a lost volume (KOBE-739)", () => {
+  const lost = {
+    state: "lost",
+    reason: "volume_failed",
+    detail: "volume pvc-abc is Failed on compute4",
+  } as const;
+
+  it("is definite and wins over the attach or scheduling noise it causes", () => {
+    const d = classifyStall({
+      pod: pod(),
+      pvc: pvc("Bound"),
+      events: [podEv("FailedAttachVolume", "AttachVolume.Attach failed for volume pvc-abc")],
+      since: SINCE,
+      now: NOW,
+      volume: lost,
+    });
+    expect(d).toMatchObject({ cause: "volume_lost", definite: true, volumePhase: "Bound" });
+    expect(d.detail).toContain("compute4");
+  });
+
+  it("a node that is down is its own definite cause, carrying what was found", () => {
+    const down = {
+      state: "node_down",
+      reason: "node_gone",
+      node: "compute4",
+      detail: "volume pvc-abc lives only on node compute4, which does not exist",
+    } as const;
+    const d = classifyStall({
+      pod: pod(),
+      pvc: pvc("Bound"),
+      events: [],
+      since: SINCE,
+      now: NOW,
+      volume: down,
+    });
+    expect(d).toMatchObject({ cause: "volume_node_down", definite: true, volume: down });
+  });
+
+  it("a present or missing volume changes nothing", () => {
+    for (const volume of [{ state: "present" }, { state: "missing" }] as const) {
+      const d = classifyStall({
+        pod: pod(),
+        pvc: pvc("Bound"),
+        events: [],
+        since: SINCE,
+        now: NOW,
+        volume,
+      });
+      expect(d.cause).toBe("unknown");
+    }
   });
 });

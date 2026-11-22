@@ -285,6 +285,122 @@ describe("a connector pointed at another server", () => {
   });
 });
 
+describe("connector lifecycle edge cases (KOBE-784)", () => {
+  let site: TestBrowser;
+  const grants = async () =>
+    Number(
+      (await h.admin.query<{ n: string }>(`SELECT count(*) AS n FROM connector_grants`)).rows[0]?.n,
+    );
+  const oauthClient = async (id = oauthConnector) =>
+    (
+      await h.admin.query<{ oauth_client: string | null }>(
+        `SELECT oauth_client FROM connectors WHERE id = $1`,
+        [id],
+      )
+    ).rows[0]?.oauth_client;
+
+  beforeAll(async () => {
+    await h.createUser("site@oauth.test", "admin");
+    site = await h.signIn("site@oauth.test");
+  });
+
+  it("refuses a callback that arrives after the connector's URL changed (P2-27)", async () => {
+    const { back } = await authorizeFor(alice);
+    // A site admin points the connector elsewhere while alice is at the authorization server.
+    const moved = await site.patch(`/v1/site/connectors/${oauthConnector}`, {
+      url: `${fake.base}/moved`,
+    });
+    expect(moved.status, moved.text).toBe(200);
+    const done = await alice.get(callbackPath(back));
+    expect(done.status).toBe(303);
+    expect(done.headers.get("location")).toContain("connector_oauth=failed");
+    expect(done.headers.get("location")).toContain("reason=not_available");
+    expect((await alice.get(BASE)).json).toEqual({ grants: [] });
+    await h.admin.query(`UPDATE connectors SET url = $2 WHERE id = $1`, [
+      oauthConnector,
+      fake.mcpUrl,
+    ]);
+  });
+
+  it("registers one OAuth client per connector and redirect URI, again only after a URL change (P2-31)", async () => {
+    await h.admin.query(`UPDATE connectors SET oauth_client = NULL WHERE id = $1`, [
+      oauthConnector,
+    ]);
+    const before = fake.registrations.length;
+    const first = await authorizeFor(alice);
+    const second = await authorizeFor(bob);
+    expect(fake.registrations.length).toBe(before + 1);
+    const clientOf = (u: URL) => u.searchParams.get("client_id");
+    expect(clientOf(second.authorizationUrl)).toBe(clientOf(first.authorizationUrl));
+    // Stored sealed, never the secret in clear.
+    const stored = must((await oauthClient()) ?? undefined);
+    expect(stored.startsWith("e1.")).toBe(true);
+    expect(stored).not.toContain(must(clientOf(first.authorizationUrl) ?? undefined));
+    // The cached client still completes the flow (its secret is used at the token endpoint).
+    expect((await alice.get(callbackPath(first.back))).headers.get("location")).toContain(
+      "connected",
+    );
+    await alice.delete(`${BASE}/${oauthConnector}`);
+    // A new URL drops the registration with the grants.
+    await site.patch(`/v1/site/connectors/${oauthConnector}`, { url: `${fake.base}/moved` });
+    expect(await oauthClient()).toBeNull();
+    await h.admin.query(`UPDATE connectors SET url = $2 WHERE id = $1`, [
+      oauthConnector,
+      fake.mcpUrl,
+    ]);
+    await authorizeFor(alice);
+    expect(fake.registrations.length).toBe(before + 2);
+  });
+
+  it("rate limits starting the OAuth flow per member (P2-31)", async () => {
+    let last = 0;
+    for (let i = 0; i < 31; i += 1) last = (await start(carol, randomUUID())).status;
+    expect(last).toBe(429);
+    await h.admin.query(`DELETE FROM rate_limits WHERE key LIKE 'kobe:oauth-start:%'`);
+  });
+
+  it("changing the auth kind deletes the old grants, audited, and they do not come back (P2-30)", async () => {
+    expect((await bob.put(`${BASE}/${keyConnector}`, { api_key: "b".repeat(20) })).status).toBe(
+      201,
+    );
+    const { back } = await authorizeFor(alice);
+    await alice.get(callbackPath(back));
+    expect(await grants()).toBe(2);
+    const removedBefore = Number(
+      (
+        await h.admin.query<{ n: string }>(
+          `SELECT count(*) AS n FROM audit_log WHERE action = 'mcp.grant.removed'`,
+        )
+      ).rows[0]?.n,
+    );
+    for (const [id, kind] of [
+      [keyConnector, "none"],
+      [oauthConnector, "api_key"],
+    ] as const) {
+      const res = await site.patch(`/v1/site/connectors/${id}`, { authKind: kind });
+      expect(res.status, res.text).toBe(200);
+    }
+    expect(await grants()).toBe(0);
+    expect(await oauthClient()).toBeNull();
+    const removedAfter = Number(
+      (
+        await h.admin.query<{ n: string }>(
+          `SELECT count(*) AS n FROM audit_log WHERE action = 'mcp.grant.removed'`,
+        )
+      ).rows[0]?.n,
+    );
+    expect(removedAfter - removedBefore).toBe(2);
+    // Switching back revives nothing.
+    for (const [id, kind] of [
+      [keyConnector, "api_key"],
+      [oauthConnector, "oauth"],
+    ] as const) {
+      await site.patch(`/v1/site/connectors/${id}`, { authKind: kind });
+    }
+    expect(await grants()).toBe(0);
+  });
+});
+
 describe("client metadata", () => {
   it("publishes Kobe's Client ID Metadata Document without a session", async () => {
     const res = await h.app.request("http://kobe.test/v1/oauth/client-metadata.json");
@@ -396,6 +512,8 @@ describe("discovery checks", () => {
 
   it("fails without registration when the server offers none", async () => {
     fake.options = { dcr: false };
+    // No client registered yet (KOBE-784 keeps one per connector once registered).
+    await h.admin.query(`UPDATE connectors SET oauth_client = NULL`);
     try {
       expect((await start(alice)).status).toBe(422);
     } finally {

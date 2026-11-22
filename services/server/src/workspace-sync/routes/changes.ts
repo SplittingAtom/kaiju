@@ -2,6 +2,7 @@ import {
   WORKSPACE_ENTRY_HEADER,
   encodeWorkspaceEntryHeader,
   workspaceCommitRequestSchema,
+  workspaceFlushedRequestSchema,
   workspaceRestoreReportSchema,
 } from "@kobe/protocol/sandbox-wire";
 import { Readable } from "node:stream";
@@ -9,6 +10,7 @@ import { SYSTEM_ACTOR } from "@kobe/db";
 import { workspacePathSchema } from "@kobe/protocol";
 import { Hono } from "hono";
 import { recordAudit } from "../../audit/record.js";
+import { recordFlushProof } from "../../sandbox-lifecycle/reclaim.js";
 import { reportMissingContent } from "../lost.js";
 import { commitChanges, currentEntry, publicEntry, recordRestore } from "../store.js";
 import type { WorkspaceKit } from "./kit.js";
@@ -20,7 +22,7 @@ import {
   type Vars,
 } from "./shared.js";
 
-/** Commits, file downloads and restore reports. */
+/** Commits, file downloads, restore reports and the shutdown reclaim proof (KOBE-733). */
 export function workspaceChangeRoutes(kit: WorkspaceKit): Hono<Vars> {
   const app = new Hono<Vars>();
   const {
@@ -92,6 +94,35 @@ export function workspaceChangeRoutes(kit: WorkspaceKit): Hono<Vars> {
         [WORKSPACE_ENTRY_HEADER]: encodeWorkspaceEntryHeader(publicEntry(entry)),
       },
     });
+  });
+
+  // KOBE-733: the agent's shutdown proof that the copy covers the volume (reclaim.ts).
+  app.post("/flushed", async (c) => {
+    const caller = c.get("caller");
+    const limited = metaAllowed(caller, c);
+    if (limited) return limited;
+    const body = workspaceFlushedRequestSchema.safeParse(await readJson(c));
+    if (!body.success) return error(c, 400, "invalid_request", "Expected {connection_id}.");
+    const outcome = await tx(caller, "other", async (t) => {
+      const result = await recordFlushProof(t, caller, body.data.connection_id);
+      await recordAudit(t, {
+        action: "sandbox.volume_proof",
+        actor: SYSTEM_ACTOR,
+        teamId: caller.teamId,
+        target: {
+          sandboxId: caller.sandboxId,
+          userId: caller.userId,
+          accepted: result.proven,
+          ...(result.proven ? {} : { reason: result.reason }),
+        },
+      });
+      return result;
+    });
+    log.info(
+      { team_id: caller.teamId, sandbox_id: caller.sandboxId, ...outcome },
+      "workspace reclaim proof",
+    );
+    return c.json(outcome);
   });
 
   app.post("/restore-report", async (c) => {

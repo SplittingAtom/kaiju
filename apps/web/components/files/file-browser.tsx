@@ -28,6 +28,7 @@ import { treeActions } from "./file-tree-actions";
 import { useFileActions } from "./use-file-actions";
 import { useTreeFocus } from "./use-tree-focus";
 import { useWake, useWorkspaceEvents } from "./use-wake";
+import { VolumeLostNotice } from "./volume-lost-notice";
 
 /** The sandbox syncs shortly after it starts; read the listing again after this. */
 const DEFAULT_REFRESH_AFTER_WAKE_MS = 4000;
@@ -203,6 +204,7 @@ export function FileBrowser({
           Showing the last synced files while your sandbox wakes.
         </p>
       )}
+      <VolumeLostNotice api={api.rebuild} mode="check" />
       <FolderErrors tree={tree} />
       {act.actionError && <ErrorNotice error={act.actionError} />}
       <WorkspaceHeader name={workspaceName} onRefresh={onRefresh} syncing={syncing} />

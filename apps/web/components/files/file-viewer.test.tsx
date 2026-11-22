@@ -487,8 +487,8 @@ describe("renderers (ac-2)", () => {
     const json = await shown("x.json", '{"a":[1,2]}');
     await waitFor(() => expect(json.querySelector("pre")?.textContent).toContain('"a": [\n'));
     cleanup();
-    const code = await shown("main.py", "print('hi')");
-    await waitFor(() => expect(code.querySelector("code")?.className).toContain("python"));
+    const code = await shown("main.sh", "echo hi");
+    await waitFor(() => expect(code.querySelector("code")?.className).toContain("bash"));
     cleanup();
     const text = await shown("run.log", "line 1");
     await waitFor(() => expect(text.querySelector("pre")?.textContent).toContain("line 1"));

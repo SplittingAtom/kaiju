@@ -36,6 +36,15 @@ export interface FakeOauthOptions {
   readonly refreshDelayMs?: number;
   /** Holds every refresh until this settles (a token endpoint that hangs until the test says). */
   readonly refreshGate?: Promise<void>;
+  /**
+   * Strict rotation with reuse detection (OAuth 2.0 Security BCP): presenting a refresh token
+   * that was already spent revokes every token of its family, including the newest (KOBE-778).
+   */
+  readonly reuseRevokesFamily?: boolean;
+  /** Rotate the refresh token, then wait this long before answering (a response lost to a timeout). */
+  readonly refreshDelayAfterRotateMs?: number;
+  /** Leave `expires_in` out of token responses (it is only RECOMMENDED, RFC 6749 5.1). */
+  readonly omitExpiresIn?: boolean;
 }
 
 export interface IssuedTokens {
@@ -55,6 +64,10 @@ export class FakeOauthServer {
   readonly refreshRequests: URLSearchParams[] = [];
   /** Refresh tokens that may still be used once (rotation: each is single-use). */
   private readonly liveRefresh = new Set<string>();
+  /** Every refresh token issued, with its family (the grant it descends from). */
+  private readonly family = new Map<string, number>();
+  /** Families revoked by a reuse (`reuseRevokesFamily`). */
+  readonly revokedFamilies = new Set<number>();
   private readonly codes = new Map<
     string,
     { challenge: string; clientId: string; used: boolean }
@@ -101,6 +114,12 @@ export class FakeOauthServer {
     if (o.refreshGate) await o.refreshGate;
     if (o.refreshUnavailable) return this.json(res, { error: "temporarily_unavailable" }, 503);
     const presented = form.get("refresh_token") ?? "";
+    const family = this.family.get(presented);
+    if (o.reuseRevokesFamily && family !== undefined && !this.liveRefresh.has(presented)) {
+      this.revokedFamilies.add(family);
+      for (const [rt, f] of this.family) if (f === family) this.liveRefresh.delete(rt);
+      return this.json(res, { error: "invalid_grant" }, 400);
+    }
     if (
       o.refreshRejects ||
       !this.liveRefresh.delete(presented) ||
@@ -115,10 +134,15 @@ export class FakeOauthServer {
     };
     this.issued.push(tokens);
     this.liveRefresh.add(tokens.refreshToken);
+    this.family.set(tokens.refreshToken, family ?? n);
+    if (o.refreshDelayAfterRotateMs) {
+      await new Promise((r) => setTimeout(r, o.refreshDelayAfterRotateMs));
+    }
+    if (res.destroyed) return;
     return this.json(res, {
       access_token: tokens.accessToken,
       token_type: "Bearer",
-      expires_in: o.expiresIn ?? 3600,
+      ...(o.omitExpiresIn ? {} : { expires_in: o.expiresIn ?? 3600 }),
       refresh_token: tokens.refreshToken,
     });
   }
@@ -239,10 +263,11 @@ export class FakeOauthServer {
       };
       this.issued.push(tokens);
       this.liveRefresh.add(tokens.refreshToken);
+      this.family.set(tokens.refreshToken, n);
       return this.json(res, {
         access_token: tokens.accessToken,
         token_type: "Bearer",
-        expires_in: o.expiresIn ?? 3600,
+        ...(o.omitExpiresIn ? {} : { expires_in: o.expiresIn ?? 3600 }),
         refresh_token: tokens.refreshToken,
         scope: "tools",
       });

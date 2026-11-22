@@ -22,6 +22,7 @@ const policyServer = createPolicyServer({
   baseUrl: config.serverUrl,
   internalKey: config.internalKey,
   timeoutMs: config.limits.serverTimeoutMs,
+  grantTimeoutMs: config.limits.grantTimeoutMs,
   onError: (err) => logger.warn({ err }, "policy server unavailable (call refused)"),
 });
 const app = createApp({

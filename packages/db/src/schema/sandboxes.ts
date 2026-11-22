@@ -45,6 +45,30 @@ export const sandboxes = pgTable(
     stateChangedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     /** Offboarding (KOBE-28): the volume is deleted after this. */
     retainUntil: timestamp({ withTimezone: true }),
+    /**
+     * Proof that the workspace's object-store copy covers the volume (KOBE-733): when a sync-now
+     * asked right before this hibernation was answered complete (every local change committed)
+     * and nothing happened on the sandbox after it was asked. Set with the hibernation, cleared by
+     * every wake; null: not proven, so the dormant-volume reaper never reclaims the volume.
+     */
+    volumeSyncedAt: timestamp({ withTimezone: true }),
+    /**
+     * KOBE-739: when this server first observed the node holding the workspace volume's only copy
+     * missing or not Ready (server clock, its own observations; cleared by any observation that
+     * the node is back). The rebuild is offered only once this is older than the grace period.
+     */
+    volumeLostSince: timestamp({ withTimezone: true }),
+    /**
+     * KOBE-739: the latest observation that the node is still down. A gap of more than 10 minutes
+     * since it restarts `volumeLostSince` (the period must be continuously observed; the
+     * hibernation sweep re-observes these rows every pass).
+     */
+    volumeLostSeenAt: timestamp({ withTimezone: true }),
+    /**
+     * KOBE-739: a confirmed rebuild whose cluster cleanup has not finished yet (set and audited
+     * before any Kubernetes delete; cleared when the row is reset). Wakes wait while it is set.
+     */
+    rebuildStartedAt: timestamp({ withTimezone: true }),
   },
   (t) => [
     primaryKey({ columns: [t.teamId, t.userId] }),
@@ -54,5 +78,9 @@ export const sandboxes = pgTable(
       .where(sql`${t.state} = 'running'`),
     check("sandboxes_pvc", sql`${t.pvc} IS NULL OR char_length(${t.pvc}) BETWEEN 1 AND 253`),
     check("sandboxes_retain_until", sql`${t.retainUntil} IS NULL OR ${t.state} = 'destroyed'`),
+    check(
+      "sandboxes_volume_synced_at",
+      sql`${t.volumeSyncedAt} IS NULL OR ${t.state} = 'hibernated'`,
+    ),
   ],
 );

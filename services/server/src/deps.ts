@@ -3,7 +3,7 @@ import { createNotebookFiles, type NotebookFiles } from "./notebooks/files.js";
 import type { ForwardDestination } from "./audit/forward/types.js";
 import { configureTagFingerprintKey } from "./memory/items/tag-fingerprint.js";
 import { configureUsageKey } from "./skills/usage-snapshot.js";
-import { DEFAULT_TIMEOUT_MS } from "./connectors/oauth/http.js";
+import { REFRESH_TIMEOUT_MS } from "./connectors/grant-refresh.js";
 import { createHash, timingSafeEqual } from "node:crypto";
 import {
   PROVIDER_KEY_PURPOSE,
@@ -47,6 +47,7 @@ import {
 } from "./runs/index.js";
 import type { RunAgentResolver } from "./runs/seams.js";
 import { createOffboarding, type Offboarding } from "./offboarding/index.js";
+import { createWorkspaceRebuild, type WorkspaceRebuild } from "./sandbox-lifecycle/rebuild.js";
 import { stopUserSchedules } from "./schedules/offboard.js";
 import { endUserShares } from "./threads/share-scope.js";
 import { UserLifecycle } from "./users/lifecycle.js";
@@ -131,6 +132,8 @@ export interface ServerDeps {
   readonly publicUrl: string;
   /** The nightly retention pass, offboarding purges and workspace GC are paused (KOBE-243). */
   readonly retentionPaused: boolean;
+  /** Months per-call usage is kept (KOBE-741); null: for ever. */
+  readonly usageRetentionMonths: number | null;
   /** Chart-seeded branding defaults (KOBE-503); empty when none is configured. */
   readonly brandingDefaults: BrandingDefaults;
   /**
@@ -163,6 +166,11 @@ export interface ServerDeps {
    * exports it for team admins and deletes it afterwards. The sandbox provider is set later.
    */
   readonly offboarding: Offboarding;
+  /**
+   * Rebuilding a workspace whose volume was lost with its node (KOBE-739): member-confirmed, from
+   * the last sync. The sandbox provider is set later (index.ts), like offboarding's.
+   */
+  readonly workspaceRebuild: WorkspaceRebuild;
   /**
    * Sandbox connection registry and routing (KOBE-24): `router` sends commands to any (user, team)
    * sandbox from any replica; `attach` serves the WebSocket on the sandbox listener only.
@@ -511,7 +519,9 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     ...options.connectors,
   };
   const mcp = createMcpService({
-    oauthIo: { policy: connectorUrlPolicy, timeoutMs: DEFAULT_TIMEOUT_MS },
+    // Refreshes only: a shorter deadline than the connect flow's, so the proxy's grant call
+    // outlasts a refresh (KOBE-778, P2-29).
+    oauthIo: { policy: connectorUrlPolicy, timeoutMs: REFRESH_TIMEOUT_MS },
     db: database.db,
     policy: policySources,
     runContext,
@@ -603,6 +613,10 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     paused: options.retentionPaused ?? false,
     log: logger.child({ component: "offboarding" }),
   });
+  const workspaceRebuild = createWorkspaceRebuild({
+    db: database.db,
+    log: logger.child({ component: "workspace-rebuild" }),
+  });
   // Deactivation destroys the user's sandboxes in every team now; volumes stay 30 days (D12).
   lifecycle.on("deactivated", {
     name: "sandbox-offboarding",
@@ -629,6 +643,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     auth,
     publicUrl: new URL(options.publicUrl).origin,
     retentionPaused: options.retentionPaused ?? false,
+    usageRetentionMonths: options.usageRetentionMonths ?? null,
     brandingDefaults: options.brandingDefaults ?? {},
     listen,
     eventStream: { hub, reader, timings: { ...STREAM_DEFAULTS, ...options.eventStream?.timings } },
@@ -641,6 +656,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     auditForwardingSecrets: options.auditForwardingSecrets ?? [],
     lifecycle,
     offboarding,
+    workspaceRebuild,
     sandboxWire,
     runs,
     runAgents,

@@ -13,24 +13,27 @@ import { TEAM_IDLE_MINUTES } from "./idle.js";
 /**
  * Wake decision: the row becomes `running` with fresh activity, under its lock. Returns the state
  * it had (undefined: no row yet). A `destroyed` (offboarded) sandbox is left alone: the caller
- * refuses to wake it.
+ * refuses to wake it. So is one whose lost volume is being rebuilt (KOBE-739, `rebuilding`): its
+ * old claim is being deleted, and the wake waits until the rebuild has reset the row.
  */
 export async function beginWake(
   db: KobeDb,
   target: SandboxTarget,
-): Promise<SandboxState | undefined> {
+): Promise<SandboxState | "rebuilding" | undefined> {
   return withTeam(db, target.teamId, async (tx) => {
-    const prev = await tx.execute<{ state: SandboxState }>(sql`
-      SELECT state FROM sandboxes
+    const prev = await tx.execute<{ state: SandboxState; rebuilding: boolean }>(sql`
+      SELECT state, rebuild_started_at IS NOT NULL AS rebuilding FROM sandboxes
        WHERE team_id = ${target.teamId} AND user_id = ${target.userId} FOR UPDATE`);
     const state = prev.rows[0]?.state;
     if (state === "destroyed") return state;
+    if (prev.rows[0]?.rebuilding) return "rebuilding";
     await tx.execute(sql`
       INSERT INTO sandboxes (team_id, user_id, state, last_active_at, state_changed_at)
       VALUES (${target.teamId}, ${target.userId}, 'running', now(), now())
       ON CONFLICT (team_id, user_id) DO UPDATE
         SET last_active_at = now(),
             state = 'running',
+            volume_synced_at = NULL,
             state_changed_at = CASE WHEN sandboxes.state = 'running'
                                     THEN sandboxes.state_changed_at ELSE now() END`);
     return state;
@@ -48,7 +51,10 @@ export async function wakeStartedAt(db: KobeDb, target: SandboxTarget): Promise<
   });
 }
 
-/** After a wake: which claim (sandbox id) and volume the row describes. */
+/**
+ * After a wake: which claim (sandbox id) and volume the row describes. The sandbox is Ready, so
+ * its volume's node is up: any "node down since" observation ends (KOBE-739).
+ */
 export async function recordSandboxIdentity(
   tx: KobeTx,
   target: SandboxTarget,
@@ -56,7 +62,7 @@ export async function recordSandboxIdentity(
   pvc: string,
 ): Promise<void> {
   await tx.execute(sql`
-    UPDATE sandboxes SET sandbox_id = ${sandboxId}, pvc = ${pvc}
+    UPDATE sandboxes SET sandbox_id = ${sandboxId}, pvc = ${pvc}, volume_lost_since = NULL, volume_lost_seen_at = NULL
      WHERE team_id = ${target.teamId} AND user_id = ${target.userId}`);
 }
 
@@ -157,13 +163,15 @@ export async function forgetSandboxIdentity(
 /**
  * Records the hibernation (inside the transaction that holds the lock) and closes the sandbox's
  * connection row, so nothing is routed to a pod on its way out. Returns the connection to close.
+ * The volume's reclaim proof starts empty (KOBE-733): only the agent's shutdown proof
+ * (`recordFlushProof`), bound to the connection closed here, sets it.
  */
 export async function markHibernated(
   tx: KobeTx,
   target: SandboxTarget,
 ): Promise<string | undefined> {
   await tx.execute(sql`
-    UPDATE sandboxes SET state = 'hibernated', state_changed_at = now()
+    UPDATE sandboxes SET state = 'hibernated', state_changed_at = now(), volume_synced_at = NULL
      WHERE team_id = ${target.teamId} AND user_id = ${target.userId}`);
   const closed = await tx.execute<{ connection_id: string }>(sql`
     UPDATE sandbox_connections SET closed_at = now()

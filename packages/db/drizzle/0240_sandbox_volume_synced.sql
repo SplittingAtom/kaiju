@@ -1,0 +1,2 @@
+ALTER TABLE "sandboxes" ADD COLUMN "volume_synced_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "sandboxes" ADD CONSTRAINT "sandboxes_volume_synced_at" CHECK ("sandboxes"."volume_synced_at" IS NULL OR "sandboxes"."state" = 'hibernated');

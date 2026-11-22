@@ -198,3 +198,35 @@ test("file editor: raw edit and save, conflict notice, viewing chip, proposal co
     expect((await workspace(page, "delete", dir)).status).toBe(204);
   }
 });
+
+/**
+ * KOBE-802: a `.py` file opens in the code editor in Raw by default, the cursor ready to type;
+ * Rendered is one click away. (Written with the repo's conventions; needs the gate install.)
+ */
+test("file editor: a Python file opens in Raw with the cursor in the editor", async ({
+  chat,
+  page,
+}) => {
+  const dir = `kobe-802-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  await chat.open();
+  expect((await workspace(page, "upload", `${dir}/job.py`, "print(1)\n")).status).toBe(201);
+  try {
+    const files = filesSection(page);
+    await files.getByRole("button", { name: "Refresh files" }).click();
+    const tree = files.getByRole("tree", { name: "My files" });
+    await tree.getByRole("treeitem", { name: dir, exact: true }).click();
+    await tree.getByRole("treeitem", { name: "job.py", exact: true }).click();
+    const tab = page
+      .getByRole("tabpanel")
+      .filter({ has: page.getByRole("switch", { name: "Raw" }) });
+    await expect(tab.getByRole("switch", { name: "Raw" })).toHaveAttribute("aria-checked", "true");
+    const editor = page.getByLabel("Edit job.py");
+    await expect(editor).toBeVisible();
+    await expect(editor).toBeFocused();
+    await tab.getByRole("switch", { name: "Raw" }).click();
+    await expect(editor).toBeHidden();
+    await expect(tab.getByText("print(1)")).toBeVisible();
+  } finally {
+    await workspace(page, "delete", dir);
+  }
+});

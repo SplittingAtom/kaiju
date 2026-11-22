@@ -1,19 +1,23 @@
 import { fireAndLog } from "../async-util.js";
-import { Transform, type TransformCallback } from "node:stream";
 import { isLegalHoldViolation, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
-import { PROJECT_FILE_MAX_BYTES, PROJECT_FILES_MAX, workspacePathSchema } from "@kobe/protocol";
+import { PROJECT_FILE_MAX_BYTES, PROJECT_FILES_MAX } from "@kobe/protocol";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import type { BlobStore } from "../retention/blobs.js";
-import { resolveMime, SNIFF_BYTES } from "../uploads/mime.js";
-import { lockTeamStorage } from "../uploads/quota.js";
-import { verifyingStream, type ObjectStore } from "../workspace-sync/object-store.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import { lockWorkspace } from "../workspace-sync/store.js";
 import { loadAccess, viewableBy } from "./access.js";
-import { findCheckout, folderOf, workingCopy, type CheckoutRow } from "./checkouts.js";
+import { copyFrom, copyThenWrite, sumSizes, type Copy } from "./copy-loop.js";
+import {
+  findCheckout,
+  folderOf,
+  withUnmountable,
+  workingCopy,
+  type CheckoutRow,
+} from "./checkouts.js";
 import type { ProjectMounts } from "./mounts.js";
-import { overLimit, type TeamLimits } from "./storage.js";
+import { fitsMount, isConflictCopy } from "./paths.js";
+import { checkLimitsAfterWrite, OverLimit, type TeamLimits } from "./storage.js";
 import {
   diffHash,
   diffVersions,
@@ -21,7 +25,6 @@ import {
   isProjectKey,
   loadTree,
   projectBlobKey,
-  queueProjectBlobs,
   writeCommit,
   type Change,
   type CommitAuthor,
@@ -91,13 +94,6 @@ export interface CommitRequest {
   readonly expect?: { readonly baseSeq: number | null; readonly diffHash: string };
 }
 
-export interface Copy {
-  readonly sha256: string;
-  readonly size: number;
-  readonly source: string;
-  readonly key: string;
-}
-
 interface Plan {
   readonly checkout: CheckoutRow;
   readonly slug: string;
@@ -135,9 +131,6 @@ export async function heldContents(
   return new Map(res.rows.map((r) => [r.sha256, { blobRef: r.blob_ref, mime: r.mime_type }]));
 }
 
-const isConflictName = (path: string): boolean =>
-  path.slice(path.lastIndexOf("/") + 1).includes(".conflict-");
-
 /** Step 1 (and again in step 3): see the module header. */
 export async function planCommit(
   tx: KobeTx,
@@ -157,8 +150,11 @@ export async function planCommit(
   if ((head?.id ?? null) !== checkout.baseCommitId && head !== null) {
     return { status: "commit_conflict", headSeq: head.seq };
   }
-  const work = await workingCopy(tx, owner, access.project.slug);
-  const changes = diffVersions(await loadTree(tx, owner.teamId, checkout.baseCommitId), work);
+  const { slug } = access.project;
+  const rows = await workingCopy(tx, owner, slug);
+  const base = await loadTree(tx, owner.teamId, checkout.baseCommitId);
+  const work = withUnmountable(rows, base, slug);
+  const changes = diffVersions(base, work);
   const hash = diffHash(changes);
   if (req.expect && (req.expect.baseSeq !== checkout.baseSeq || req.expect.diffHash !== hash)) {
     return refused("changed");
@@ -166,14 +162,14 @@ export async function planCommit(
   if (changes.length === 0) return { status: "nothing_to_commit" };
   if (work.size > PROJECT_FILES_MAX) return refused("too_many_files");
   const maxBytes = Math.min(PROJECT_FILE_MAX_BYTES, deps.limits.maxFileBytes);
-  for (const [path, file] of work) {
-    if (!workspacePathSchema.safeParse(path).success) return refused("invalid_path", { path });
+  for (const [path, file] of rows) {
+    if (!fitsMount(slug, path)) return refused("invalid_path", { path });
     if (file.size > maxBytes) return refused("file_too_large", { path });
   }
   // A conflict copy is refused only where this commit adds or changes it (an older head file with
   // such a name stays committable around).
   for (const change of changes) {
-    if (change.change !== "deleted" && isConflictName(change.path)) {
+    if (change.change !== "deleted" && isConflictCopy(change.path)) {
       return refused("conflict_file", { path: change.path });
     }
   }
@@ -205,7 +201,7 @@ export async function planCommit(
   }
   return {
     checkout,
-    slug: access.project.slug,
+    slug,
     changes,
     hash,
     files,
@@ -213,8 +209,6 @@ export async function planCommit(
     copies: [...copies.values()],
   };
 }
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /**
  * Which source keys a commit may copy from: the member's own tree, the workspace's thread-upload
@@ -232,7 +226,8 @@ export async function sourceCheck(
   const projectOf = (key: string): string | undefined => {
     if (!key.startsWith(`${team}projects/`)) return undefined;
     const id = key.slice(`${team}projects/`.length).split("/")[0] ?? "";
-    return UUID.test(id) && isProjectKey(prefix, owner.teamId, id, key) ? id : undefined;
+    // isProjectKey also requires `id` to be a lowercase UUID.
+    return isProjectKey(prefix, owner.teamId, id, key) ? id : undefined;
   };
   const ids = [...new Set(keys.map(projectOf).filter((id): id is string => id !== undefined))];
   const viewable = new Set<string>();
@@ -263,93 +258,41 @@ const pick = (path: string, f: { sha256: string; size: number; executable: boole
   executable: f.executable,
 });
 
-/** Thrown when a source object is missing or fails its hash/size check. */
-export class CopyFailed extends Error {}
-
-/**
- * Copies `from` to `to` through a hash and size check (the store never completes an object whose
- * bytes do not match), and returns the first bytes for the mime type.
- */
-export async function copyVerified(objects: ObjectStore, copy: Copy): Promise<Uint8Array> {
-  const source = await objects.get(copy.source);
-  if (!source) throw new CopyFailed("source object missing");
-  const head: Buffer[] = [];
-  let seen = 0;
-  const tap = new Transform({
-    transform(chunk: Buffer, _enc, done: TransformCallback) {
-      if (seen < SNIFF_BYTES) head.push(chunk.subarray(0, SNIFF_BYTES - seen));
-      seen += chunk.length;
-      done(null, chunk);
-    },
-  });
-  const verified = verifyingStream(copy.sha256, copy.size);
-  source.body.once("error", (err) => verified.destroy(err));
-  tap.once("error", (err) => verified.destroy(err));
-  source.body.pipe(tap).pipe(verified);
-  try {
-    await objects.put(copy.key, verified, copy.size);
-  } catch (err) {
-    source.body.destroy();
-    throw new CopyFailed(err instanceof Error ? err.message : "copy failed");
-  }
-  return Buffer.concat(head);
-}
-
-const MAX_ROUNDS = 3;
-
 /** Steps 2 and 3 for a plan: see the module header. */
 export async function commitWorkingCopy(
   deps: CommitDeps,
   req: CommitRequest,
 ): Promise<CommitResult> {
   const { owner, projectId } = req;
-  const mimes = new Map<string, string>();
-  for (let round = 0; round < MAX_ROUNDS; round++) {
-    const plan = await withTeam(deps.db, owner.teamId, (tx) => planCommit(tx, deps, req));
-    if (!("files" in plan)) return plan;
-    const missing = plan.copies.filter((c) => !mimes.has(c.sha256));
-    if (missing.length > 0) {
-      const blobs = deps.blobs;
-      if (!blobs) return refused("storage_failed");
-      // Fail fast on the quota before moving bytes (the write step checks again under the lock).
-      const early = await withTeam(deps.db, owner.teamId, (tx) =>
-        overLimit(tx, owner.teamId, deps.limits, sumSizes(plan.copies), plan.copies.length),
-      );
-      if (early !== undefined) return refused("quota_exceeded", { limit: early });
-      await withTeam(deps.db, owner.teamId, (tx) =>
-        queueProjectBlobs(
-          tx,
-          owner.teamId,
-          projectId,
-          owner.userId,
-          missing.map((c) => c.key),
-          "reservation",
-        ),
-      );
-      for (const copy of missing) {
-        try {
-          mimes.set(copy.sha256, resolveMime(await copyVerified(blobs.objects, copy), undefined));
-        } catch (err) {
-          deps.log.warn({ err, team_id: owner.teamId }, "project commit: a copy failed");
-          return refused("storage_failed");
-        }
-      }
-    }
-    const written = await writeStep(deps, req, mimes);
-    if (written !== "again") {
-      if (written.status === "committed") {
-        // CM9: other mounted members see the new head; never inside the commit's transaction.
-        fireAndLog(
-          deps.log,
-          "project mount reconcile",
-          deps.mounts?.reconcileProject(owner.teamId, projectId),
-          { team_id: owner.teamId, project_id: projectId },
-        );
-      }
-      return written;
-    }
+  const written = await copyThenWrite<Plan, CommitResult>({
+    db: deps.db,
+    teamId: owner.teamId,
+    projectId,
+    userId: owner.userId,
+    limits: deps.limits,
+    log: deps.log,
+    failure: "project commit: a copy failed",
+    plan: () => withTeam(deps.db, owner.teamId, (tx) => planCommit(tx, deps, req)),
+    isPlan: (p): p is Plan => "files" in p,
+    copiesOf: (p) => p.copies,
+    store: deps.blobs ? copyFrom(deps.blobs.objects) : undefined,
+    write: (mimes) => writeStep(deps, req, mimes),
+    refuse: {
+      quota: (limit) => refused("quota_exceeded", { limit }),
+      storage: () => refused("storage_failed"),
+      changed: () => refused("changed"),
+    },
+  });
+  if (written.status === "committed") {
+    // CM9: other mounted members see the new head; never inside the commit's transaction.
+    fireAndLog(
+      deps.log,
+      "project mount reconcile",
+      deps.mounts?.reconcileProject(owner.teamId, projectId),
+      { team_id: owner.teamId, project_id: projectId },
+    );
   }
-  return refused("changed");
+  return written;
 }
 
 /**
@@ -383,8 +326,6 @@ async function repointRows(
   }
 }
 
-const sumSizes = (copies: readonly Copy[]): number => copies.reduce((n, c) => n + c.size, 0);
-
 async function writeStep(
   deps: CommitDeps,
   req: CommitRequest,
@@ -395,15 +336,6 @@ async function writeStep(
     const plan = await planCommit(tx, deps, req, { lock: true });
     if (!("files" in plan)) return plan;
     if (plan.copies.some((c) => !mimes.has(c.sha256))) return "again";
-    await lockTeamStorage(tx, owner.teamId);
-    const over = await overLimit(
-      tx,
-      owner.teamId,
-      deps.limits,
-      sumSizes(plan.copies),
-      plan.copies.length,
-    );
-    if (over !== undefined) return refused("quota_exceeded", { limit: over });
     const tree = new Map<string, TreeFile>();
     for (const [path, f] of plan.files) {
       tree.set(path, { ...f, mime: f.mime ?? mimes.get(f.sha256) ?? "application/octet-stream" });
@@ -417,6 +349,11 @@ async function writeStep(
           author: req.author,
           message: req.message,
         });
+        // The team quota under its lock, after the history aggregate (P2-44).
+        await checkLimitsAfterWrite(sp, owner.teamId, deps.limits, {
+          bytes: sumSizes(plan.copies),
+          objects: plan.copies.length,
+        });
         await sp.execute(sql`
           UPDATE project_checkouts SET base_commit_id = ${commit.commitId}, updated_at = now()
            WHERE team_id = ${owner.teamId} AND project_id = ${projectId}
@@ -427,6 +364,7 @@ async function writeStep(
       return { status: "committed", seq: written.seq, commitId: written.commitId };
     } catch (err) {
       if (isLegalHoldViolation(err)) return refused("legal_hold");
+      if (err instanceof OverLimit) return refused("quota_exceeded", { limit: err.limit });
       throw err;
     }
   });
@@ -468,9 +406,14 @@ export async function revertTo(
       if (id === undefined) return { status: "commit_not_found" };
       const tree = await loadTree(tx, owner.teamId, id);
       const head = await headOf(tx, owner.teamId, projectId);
-      if (diffVersions(await loadTree(tx, owner.teamId, head?.id ?? null), tree).length === 0) {
-        return { status: "nothing_to_commit" };
+      const current = await loadTree(tx, owner.teamId, head?.id ?? null);
+      // KOBE-780: never bring back a path too long to mount (a row from before the rule).
+      for (const path of tree.keys()) {
+        if (!current.has(path) && !fitsMount(access.project.slug, path)) {
+          return refused("invalid_path", { path });
+        }
       }
+      if (diffVersions(current, tree).length === 0) return { status: "nothing_to_commit" };
       try {
         const written = await tx.transaction((sp) =>
           writeCommit(sp, {

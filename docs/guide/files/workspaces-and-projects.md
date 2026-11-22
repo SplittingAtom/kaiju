@@ -79,6 +79,14 @@ commits it at once, with no checkout. The agent can commit a checkout itself wit
 `commit_project` tool, after your approval or a team rule allows it. See
 [Editing files](file-editor.md).
 
+Deleting a project is possible only once it has no files, conversations or project memory left.
+Members may still have working copies of it: the confirmation names how many hold uncommitted
+changes, and deleting the project discards them. If someone starts more uncommitted work before
+the delete goes through, Kobe asks again with the new count.
+
+An archived project's files are frozen: uploads, deletes, commits, reverts and accepted proposals
+are all refused until an owner unarchives it.
+
 **History** on the project page lists every commit, newest first. Open a commit to see its changes,
 download a file as of that commit or the whole project with **Download as zip**, and **Revert** to
 add a new commit equal to an earlier one. History is never rewritten; a workspace setting may prune

@@ -25,6 +25,11 @@ export function canTurnOffRequiredTwoFactor(role: SiteRole): boolean {
   return role === "owner";
 }
 
+/** Stopping to require single sign-on weakens every account too: Owner only (KOBE-774). */
+export function canTurnOffRequiredSso(role: SiteRole): boolean {
+  return role === "owner";
+}
+
 /** Suggests a team slug from its name, in the server's format (≤ 32, [a-z0-9-], no edge hyphens). */
 export function slugFromTeamName(name: string): string {
   return name

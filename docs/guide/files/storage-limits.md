@@ -40,9 +40,15 @@ Projects are shared and versioned, so their limits are tighter than My files:
 - **Files:** 500 in a project's file tree.
 - **History:** at most 1,000 commits are kept per project; a team admin can keep fewer (by count or
   by age) under **Workspace settings → Storage and history**.
+- **Paths:** a file's path, counted as it appears in sandboxes (`projects/<slug>/<folder>/<name>`),
+  is at most 1,024 bytes. A file and a folder cannot have the same name (no file inside a file).
+  Names like `notes.conflict-resolution.md` are fine; only real conflict copies
+  (`<name>.conflict-<time>`) cannot be committed.
 
-A My files folder with a file over 50 MiB, or more than 500 files, cannot be promoted to a project
-as it is. Older versions of a project's files count against the workspace's storage until the
+A My files folder with a file over 50 MiB, more than 500 files, or a path that would be too long in
+the project, cannot be promoted to a project as it is. A file added before the path rule whose path
+is too long is marked "Path too long" in the project's **Files**: it does not appear in members'
+files until an editor deletes it and adds it again with a shorter folder or name. Older versions of a project's files count against the workspace's storage until the
 history that holds them is dropped.
 
 ## Message attachments
@@ -63,6 +69,32 @@ Everything above adds up against two limits for the whole workspace (your team):
 Past either limit, new attachments, My files backups and project commits are refused with a
 message that the workspace's storage quota (or object budget) is full. Nothing already stored is
 removed. Free space by deleting files, dropping project history, or asking a team admin.
+
+## When your volume is reclaimed
+
+Your site may free the volume of a sandbox asleep for a long time (30 days by default; off unless
+turned on). It does so only when your sandbox, as it went to sleep, proved the backup complete:
+every process stopped, a last backup ran, and nothing was left on the volume only. A symlink, a
+socket or pipe, a file the backup refused (too large, unreadable) or a name it cannot store
+(backslash, control character, longer than 1024 bytes) means the volume is kept. Your next message
+starts a new sandbox and restores My files from the backup. Not restored, by design: `.venv`,
+`node_modules` and `__pycache__` folders (rebuild them), empty folders, and the agent's own
+`.kobe/` folder (conversations are rebuilt from Kobe's records).
+
+## When your sandbox's storage is lost
+
+Your site may keep each sandbox's My files volume on the disk of one server only (fast, but a
+single copy). If that server stops answering, your next message says so ("the server that holds
+its storage is not answering"): it may come back with your files, so wait and try again later. If
+it stays down for a while (30 minutes by default), Kobe counts the storage as lost: the message
+says so, and the conversation and the Files panel offer **Rebuild sandbox…**. The dialog shows
+the time of the **last sync** and what cannot come back: every change made after it, and what the
+backup never copies (`.venv`, `node_modules` and `__pycache__` folders, empty folders, and file
+permissions other than the executable bit). **If that server comes back later, those changes are
+not recovered:** the rebuild deletes the old storage. Confirm with **Rebuild sandbox**; your next
+message then starts a new sandbox that restores My files from the backup (the first start takes a
+little longer). The rebuild is never automatic, and conversations are never affected. A team admin
+can rebuild a member's sandbox for them (**Workspace settings → Storage and history**).
 
 ## Sandbox temporary space
 

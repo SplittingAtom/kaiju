@@ -31,6 +31,7 @@ import { useMutation, useResource } from "../use-resource";
 import { DiscoveryResult } from "./sso-discovery";
 import { ScimPanel } from "./sso-scim";
 import { SsoProviderForm } from "./sso-provider-form";
+import { SsoRequiredSection } from "./sso-required";
 
 const HEADING = "sso-providers";
 
@@ -108,7 +109,7 @@ export function SiteSsoPage() {
     <>
       <PageHeader
         title="Single sign-on"
-        description="People sign in with your organization's identity provider. Local sign-in keeps working beside it."
+        description="People sign in with your organization's identity provider. Local sign-in keeps working beside it unless you require single sign-on."
       />
       <MutationStatus error={mutation.error} notice={mutation.notice} />
       {editing ? (
@@ -173,6 +174,7 @@ export function SiteSsoPage() {
           }
         </ResourceView>
       </Section>
+      <SsoRequiredSection />
       {scimFor ? (
         <ScimPanel key={scimFor.id} provider={scimFor} onClose={() => setScimFor(null)} />
       ) : null}

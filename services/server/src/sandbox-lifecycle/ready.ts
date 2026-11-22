@@ -17,6 +17,31 @@ export const WORKSPACE_UNAVAILABLE_MESSAGE =
 export const SANDBOX_FAILED_MESSAGE =
   "Your sandbox stopped (it may have run out of temporary space or memory) and could not be restarted. Your files in /workspace are kept. Send your message again; if this keeps happening, ask your site admin.";
 
+/**
+ * What a member sees when the team's volume quota has no room for their workspace (KOBE-733). Same
+ * text as `FAILURE_MESSAGES.workspace_quota_exhausted`.
+ */
+export const WORKSPACE_QUOTA_MESSAGE =
+  "Your workspace could not be started because your team has used all of its workspace storage. Ask your team admin or site admin to free or raise the team's workspace quota, then try again.";
+
+/**
+ * What a member sees when their workspace volume is lost (KOBE-739): the node that held its only
+ * copy is gone. Same text as `FAILURE_MESSAGES.workspace_volume_lost`; the web offers the rebuild.
+ */
+export const WORKSPACE_VOLUME_LOST_MESSAGE =
+  "Your workspace could not be started because the storage that held it is lost (the server it lived on has been gone too long). You can rebuild it from the last sync: changes made after the last sync are not recovered, even if that server comes back later.";
+
+/**
+ * KOBE-739: the one server holding the member's workspace volume is down, but not for the whole
+ * grace period yet: it may come back with the files. Same text as `FAILURE_MESSAGES`.
+ */
+export const WORKSPACE_VOLUME_UNREACHABLE_MESSAGE =
+  "Your workspace could not be started because the server that holds its storage is not answering. It may come back with your files; if it stays down, Kobe offers to rebuild the workspace from the last sync. Try again later.";
+
+/** KOBE-739: a confirmed rebuild is still removing the old storage. Same text as `FAILURE_MESSAGES`. */
+export const WORKSPACE_REBUILDING_MESSAGE =
+  "Your workspace is being rebuilt from the last sync. Send your message again in a few minutes.";
+
 /** What a site admin can do, by cause; appended to the audit detail (docs/install.md). */
 export const REMEDY: Readonly<Record<StallDiagnosis["cause"], string>> = {
   volume_unschedulable:
@@ -27,6 +52,12 @@ export const REMEDY: Readonly<Record<StallDiagnosis["cause"], string>> = {
   image_pull: "Remedy: check the sandbox image tag, registry and pull secrets",
   pod_failed:
     "Remedy: an eviction for the home or tmp emptyDir means raise sandbox.homeSize or sandbox.tmpSize; the next message replaces the pod again",
+  volume_quota:
+    "Remedy: raise sandbox.teamQuota (persistentvolumeclaims, requests.storage: members x workspace size + warm pool) or turn on sandbox.hibernation.reclaim (docs/install.md, team quota sizing)",
+  volume_lost:
+    "Remedy: the member or a team admin can rebuild the workspace from the last sync (Files panel, or the team's Storage page); or delete the PVC by hand (docs/install.md, when a node is lost)",
+  volume_node_down:
+    "Remedy: bring the node back (the volume returns with it); if it stays down for sandbox.volumeLoss.graceMinutes, the member can rebuild from the last sync (docs/install.md)",
   unknown: "Remedy: kubectl describe the sandbox pod in the team namespace",
 };
 
@@ -45,6 +76,11 @@ export interface EnsureReadyOptions {
   readonly since: number;
   readonly log: Logger;
   readonly onStalled: (report: StallReport) => Promise<void>;
+  /**
+   * KOBE-739: whether a volume whose node is down has been down for the whole grace period (the
+   * lifecycle records and judges it in the database). Absent: never lost, only unreachable.
+   */
+  readonly nodeDownIsLost?: (stall: StallDiagnosis) => Promise<boolean>;
 }
 
 /**
@@ -73,6 +109,25 @@ export async function ensureReady(options: EnsureReadyOptions): Promise<void> {
   await options.onStalled(report).catch((err: unknown) => log.error({ err }, "audit failed"));
   if (report.stall.cause === "pod_failed") {
     throw new SandboxWakeError("sandbox_failed", SANDBOX_FAILED_MESSAGE);
+  }
+  if (report.stall.cause === "volume_quota") {
+    throw new SandboxWakeError("workspace_quota_exhausted", WORKSPACE_QUOTA_MESSAGE);
+  }
+  if (report.stall.cause === "volume_lost") {
+    throw new SandboxWakeError("workspace_volume_lost", WORKSPACE_VOLUME_LOST_MESSAGE);
+  }
+  if (report.stall.cause === "volume_node_down") {
+    const lost = await (options.nodeDownIsLost?.(report.stall) ?? Promise.resolve(false)).catch(
+      (err: unknown) => {
+        log.error({ err }, "volume verdict failed: not lost");
+        return false;
+      },
+    );
+    if (lost) throw new SandboxWakeError("workspace_volume_lost", WORKSPACE_VOLUME_LOST_MESSAGE);
+    throw new SandboxWakeError(
+      "workspace_volume_unreachable",
+      WORKSPACE_VOLUME_UNREACHABLE_MESSAGE,
+    );
   }
   throw new SandboxWakeError("workspace_unavailable", WORKSPACE_UNAVAILABLE_MESSAGE);
 }

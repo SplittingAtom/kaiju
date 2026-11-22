@@ -27,6 +27,17 @@ sleeps. To avoid it, ask the agent to install packages and write large files ins
 Your files are kept. Send your message again; if it keeps happening, ask your site admin (they see
 the reason in the audit log).
 
+**"Your team has used all of its workspace storage".** The team's quota of sandbox volumes is
+full, so yours could not be created. Nothing of yours was deleted. Ask your team or site admin
+to free or raise the quota, then send your message again.
+
+**"The server that holds its storage is not answering".** It may come back with your files: try
+again later. If it stays down, Kobe offers to rebuild from the last sync (next entry).
+
+**"The storage that held it is lost".** Choose **Rebuild sandbox…** under the message (or in the
+Files panel), check the last sync time it shows, and confirm; then send your message again.
+Changes made after the last sync are not recovered, even if that server comes back later. See [Storage limits](../files/storage-limits.md#when-your-sandboxs-storage-is-lost).
+
 **The agent seems stuck.** Look for an approval card waiting for you higher up in the answer. If
 there is none, press **Stop** and send your message again, or **Retry** an interrupted answer.
 
@@ -152,8 +163,11 @@ on, and refuses adding a passkey, password or authenticator app from such a sess
 (`SSO_MFA_REQUIRED`).
 
 **"…carried too many groups"** (`groups_overage`). The token named more than 200 groups, so Entra
-left the list out. Administrators: map app roles instead, or have Entra send only "Groups
-assigned to the application".
+left the list out. Kobe refuses the sign-in and leaves the person's team access as it was (an
+Owner or Admin is signed in on their site role instead, still without mappings applied).
+Administrators: map app roles instead, or have Entra send only "Groups assigned to the
+application" (the groups claim filter). SCIM user provisioning does not help here: Kobe does not
+take groups from SCIM yet.
 
 **"…came from a different organization"** (`tenant_mismatch`). The token's tenant (`tid`) or
 issuer is not the one the provider is pinned to. Sign in with your work account of that
@@ -167,7 +181,10 @@ organization.
 
 **"…could not be verified"** (`token_invalid`). The token's signature, audience, nonce or times
 failed Kobe's checks (often a clock more than a minute off, or a sign-in older than 10 minutes).
-Start again; administrators check the server's and the provider's clocks.
+Start again; administrators check the server's and the provider's clocks. Kobe asks the provider
+for a sign-in at most 9 minutes old (`max_age`); a provider that ignores that and sends an older
+`auth_time` is refused here, so sign out at the provider and sign in again. A provider other than
+Entra that sends no `auth_time` at all is refused too (`check: auth_time` in the audit log).
 
 **"Sign-in was cancelled or refused…"** (`idp_error`). You cancelled, or the provider refused (for
 example you are not assigned to the Kobe application).
@@ -178,6 +195,12 @@ the provider (for Entra `login.microsoftonline.com` on 443).
 
 **"That sign-in option is not available right now"** (`provider_unavailable`). The provider was
 turned off or single sign-on is switched off for the site.
+
+**"This site requires single sign-on"** (`SSO_REQUIRED`). The site turned password and passkey
+sign-in off: use **Sign in with _your organization_**. Password resets and password invitations
+are refused too. If nobody can sign in because the identity provider is down, the Site owner can
+turn the requirement off with cluster access (see
+[Requiring single sign-on](../admin/single-sign-on.md#requiring-single-sign-on)).
 
 **I can't set a password or add a passkey** (`SSO_ONLY_ACCOUNT`). Your account was created by
 your organization's sign-in; it signs in only through your organization.
@@ -192,6 +215,13 @@ in. Ask a site admin.
   (`no_pkce_s256`), a private or disallowed address (`address_not_allowed`: add the range to
   `auth.sso.allowedInternalCidrs` for an on-premises provider), a redirect (`redirect_refused`), or
   the document could not be fetched (`unreachable`).
+- **Require single sign-on can't be turned on** (`sso_session_required`): sign out and sign in
+  through a provider that is on, then try again. (`owners_not_linked`): an Owner has no sign-in
+  linked at a provider that is on; each Owner links their own account first.
+- **"…the Owner could no longer sign in"** (`owner_would_lose_sign_in`, `owner_not_linked`): while
+  single sign-on is required, the Owner must keep a sign-in at a provider that is on. Link the
+  Owner (or the new Owner) to a provider first, or turn **Require single sign-on** off. **Only the Owner can stop requiring single
+  sign-on** (`forbidden`).
 - **"This provider is set in the chart's values"** (`managed_by_helm`): change it in the values.
   **"People have signed in with this provider…"** (`identities_linked`, `identity_settings_locked`):
   turn it off instead of deleting it; add a new provider for a new tenant or issuer.

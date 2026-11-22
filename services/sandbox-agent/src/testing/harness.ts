@@ -82,6 +82,8 @@ export interface HarnessOptions {
   readonly skillEval?: (workspaceDir: string) => SkillEvalHooks;
   /** Thread kernels (KOBE-464); absent = no `notebooks` capability. */
   readonly kernels?: KernelManager;
+  /** `/proc` for the reclaim proof's quiet check (KOBE-733). */
+  readonly procRoot?: string;
 }
 
 /** The fake Pi ignores the file; it plays kobe-policy's handshake itself (see fake-pi.mjs). */
@@ -142,6 +144,7 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
     ...(options.exec === undefined ? {} : { exec: options.exec }),
     ...(options.skillEval === undefined ? {} : { skillEval: options.skillEval(workspace) }),
     ...(options.kernels === undefined ? {} : { kernels: options.kernels }),
+    ...(options.procRoot === undefined ? {} : { procRoot: options.procRoot }),
     ...(options.workspace === undefined ? {} : { workspace: options.workspace(workspace) }),
     ...(options.policyReadyTimeoutMs === undefined
       ? {}

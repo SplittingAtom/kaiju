@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   PREFIX,
   audits,
@@ -10,7 +10,6 @@ import {
   remove,
   rows,
   save,
-  settle,
   sha,
   treeOf,
   workspaceUpload,
@@ -175,9 +174,13 @@ describe("checkout, edit, commit, conflict, update, discard, revert (ac-1)", () 
     expect((history.json as { commits: { seq: number }[] }).commits.map((c) => c.seq)).toEqual([
       4, 3,
     ]);
-    // The mount follows the head in the background (alice's thread keeps it open).
-    await settle();
-    expect((await rows(w.team, w.people.alice.id, slug)).get("a.md")?.sha256).toBe(sha("A1"));
+    // The mount follows the head in the background (alice's thread keeps it open): wait for that
+    // condition, not a fixed sleep (KOBE-724 style; 150 ms flaked under a loaded full run).
+    await vi.waitFor(
+      async () =>
+        expect((await rows(w.team, w.people.alice.id, slug)).get("a.md")?.sha256).toBe(sha("A1")),
+      { timeout: 10_000, interval: 20 },
+    );
     // A file at a commit, and the head as a zip.
     const old = await w.as.carol.get(`/v1/projects/${id}/commits/2/files/c.md`);
     expect(old.status).toBe(200);

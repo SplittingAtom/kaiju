@@ -6,6 +6,7 @@ import { requireSitePermission } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { idSchema } from "../teams/schemas.js";
 import {
+  DeactivationProtectedError,
   deactivateUser,
   reactivateUser,
   teamsLeftWithoutActiveAdmin,
@@ -60,9 +61,10 @@ export function siteUsersRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
   async function guard(
     c: Context<{ Variables: AuthVariables }>,
     userId: string,
-    what: "activation" | "purge" = "activation",
+    what: "activation" | "reactivation" | "purge" = "activation",
   ) {
     const act = what === "purge" ? "purge the memories of" : "deactivate or reactivate";
+    // (Reactivating the Owner: no site role check below blocks it.)
     if (userId === c.get("user").id) {
       return c.json(
         {
@@ -79,7 +81,9 @@ export function siteUsersRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
       .leftJoin(siteRoles, eq(siteRoles.userId, users.id))
       .where(eq(users.id, userId));
     if (!target) return notFound(c, "user_not_found", "No Kobe user with that id.");
-    if (target.role === "owner") {
+    // Reactivating the Owner is allowed: a deactivated Owner would otherwise leave the Site with
+    // no active Owner for good (KOBE-774 third review).
+    if (target.role === "owner" && what !== "reactivation") {
       return c.json(
         { code: "owner_cannot_be_deactivated", message: "Transfer ownership first." },
         409,
@@ -121,7 +125,17 @@ export function siteUsersRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
     if (want.check && !want.matches) return changed(c);
     const refused = await guard(c, userId.data);
     if (refused) return refused;
-    const did = await deactivateUser(db, userId.data);
+    let did: boolean;
+    try {
+      did = await deactivateUser(db, userId.data);
+    } catch (err) {
+      // Re-checked under the lock ownership transfer takes: it became the Owner meanwhile.
+      if (!(err instanceof DeactivationProtectedError)) throw err;
+      return c.json(
+        { code: "owner_cannot_be_deactivated", message: "Transfer ownership first." },
+        409,
+      );
+    }
     if (want.check && !did) return changed(c);
     const incompleteSteps = await deps.lifecycle.emit("deactivated", userId.data);
     return c.json({
@@ -139,7 +153,7 @@ export function siteUsersRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
     const want = await expected(c, "deactivated");
     if (!want.ok) return want.response;
     if (want.check && !want.matches) return changed(c);
-    const refused = await guard(c, userId.data);
+    const refused = await guard(c, userId.data, "reactivation");
     if (refused) return refused;
     const did = await reactivateUser(db, userId.data);
     if (want.check && !did) return changed(c);

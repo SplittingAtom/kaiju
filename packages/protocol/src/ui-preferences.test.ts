@@ -42,6 +42,11 @@ describe("uiPreferencesSchema", () => {
     expect(uiPreferencesSchema.parse({ auto_open_edits: false })).toEqual({
       auto_open_edits: false,
     });
+    // KOBE-806: the code editor's line-wrap toggle.
+    expect(uiPreferencesSchema.parse({ editor_line_wrap: false })).toEqual({
+      editor_line_wrap: false,
+    });
+    expect(readUiPreferences({ editor_line_wrap: "no" })).toEqual({});
     // KOBE-614: the Threads panel's workspace rail's dragged width.
     expect(uiPreferencesSchema.parse({ threads_file_rail_width: 420 })).toEqual({
       threads_file_rail_width: 420,

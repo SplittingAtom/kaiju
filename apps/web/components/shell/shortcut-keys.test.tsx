@@ -325,6 +325,10 @@ describe("the ? sheet and tooltips list them (ac-2)", { timeout: 30_000 }, () =>
     const mac = isMacPlatform();
     expect(rows[0]?.querySelector("kbd")?.textContent).toBe(mac ? "⌘K" : "Ctrl+K");
     expect(within(sheet).getByRole("list", { name: "Message box keys" })).toBeTruthy();
+    // KOBE-806: the code editor's find, replace and go to line.
+    const editorKeys = within(sheet).getByRole("list", { name: "Code editor keys" });
+    expect(editorKeys.textContent).toContain("Find next");
+    expect(editorKeys.textContent).toContain("Go to line");
     // KOBE-395: Learn from this chat in its own Memory section.
     const memory = within(sheet).getByRole("list", { name: "Memory shortcuts" });
     expect(memory.textContent).toContain("Learn from this chat");

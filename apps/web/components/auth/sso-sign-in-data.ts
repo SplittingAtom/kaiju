@@ -23,3 +23,22 @@ export function providersOf(body: unknown): SsoProviderButton[] {
     )
     .map(({ slug, displayName }) => ({ slug, displayName }));
 }
+
+/**
+ * What the sign-in page offers (KOBE-774): the providers, and whether the Site requires single
+ * sign-on (then nothing else: no password form, reset link or passkey). Required only counts with
+ * a provider to offer, as on the server.
+ */
+export interface SignInOptions {
+  readonly providers: readonly SsoProviderButton[];
+  readonly ssoRequired: boolean;
+}
+
+export const NO_SIGN_IN_OPTIONS: SignInOptions = { providers: [], ssoRequired: false };
+
+/** The providers route's body as {@link SignInOptions}. */
+export function signInOptionsOf(body: unknown): SignInOptions {
+  const providers = providersOf(body);
+  const required = (body as { ssoRequired?: unknown } | null)?.ssoRequired === true;
+  return { providers, ssoRequired: required && providers.length > 0 };
+}

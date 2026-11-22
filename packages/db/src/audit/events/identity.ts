@@ -25,6 +25,11 @@ export const IDENTITY_EVENTS = {
       .string()
       .regex(/^(amr|acr|acrs):[\x21-\x7e]{1,64}$/)
       .optional(),
+    /**
+     * KOBE-775: an SSO sign-in of a site-role holder whose token carried a groups overage and no
+     * SCIM groups: let in on the site role, access mappings not applied.
+     */
+    groupsOverage: z.literal(true).optional(),
   }),
   /** Actor id null (unauthenticated); `userId` only when the attempt named an existing account. */
   "auth.sign_in.failed": event("site", {
@@ -162,6 +167,29 @@ export const IDENTITY_EVENTS = {
   "identity.sso.provider.deleted": event("site", { providerId: id, slug }),
   "identity.sso.provider.enabled": event("site", { providerId: id, slug }),
   "identity.sso.provider.disabled": event("site", { providerId: id, slug }),
+  /**
+   * The Site setting "Require single sign-on" was turned on (KOBE-774); `sessionsEnded`: the
+   * sessions not signed in through an identity provider that ended with it.
+   */
+  "identity.sso.required.enabled": event("site", { sessionsEnded: count }),
+  /**
+   * It was turned off: by the Owner (`admin`), by the last enabled provider being disabled or
+   * deleted (`last_provider`, naming it and, from the console, the acting admin `byUserId`), by the
+   * chart's providers leaving the Owner without an identity at an enabled provider
+   * (`owner_unlinked`, at start-up), or by the Site owner's `kobe sso allow-local-sign-in`
+   * break-glass command (`break_glass`, with the operator it recorded).
+   */
+  "identity.sso.required.disabled": event("site", {
+    reason: z.enum(["admin", "last_provider", "owner_unlinked", "break_glass"]),
+    providerId: id.optional(),
+    slug: slug.optional(),
+    /** `last_provider` from the console: the admin who disabled or deleted it. */
+    byUserId: id.optional(),
+    operator: z
+      .string()
+      .regex(/^[A-Za-z0-9._@-]{1,64}$/)
+      .optional(),
+  }),
   "identity.sso.mapping.created": event("site", {
     providerId: id,
     mappingId: id,

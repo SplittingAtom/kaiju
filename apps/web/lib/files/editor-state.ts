@@ -5,6 +5,7 @@
  * readers re-render only on a change.
  */
 import type { FileEditProposedPayload } from "@kobe/protocol";
+import type { TextViewMode } from "./preview";
 
 type Listener = () => void;
 
@@ -43,6 +44,12 @@ export interface EditDraft {
 }
 
 export class EditDraftStore extends Snapshots<EditDraft> {
+  /**
+   * The member's explicit Rendered/Raw switch per file path (KOBE-802): kept while the page
+   * lives, so a tab closed and reopened shows the file as they left it. Read at mount only.
+   */
+  readonly chosenModes = new Map<string, TextViewMode>();
+
   get(path: string): EditDraft | undefined {
     return this.map.get(path);
   }

@@ -48,6 +48,16 @@ export const COMPOSER_KEYS: readonly { readonly keys: string; readonly name: str
   { keys: "@", name: "Mention one of your files" },
 ];
 
+/** Keys of the code editor (KOBE-806, CodeMirror's search keymap) the `?` sheet also names. */
+export const EDITOR_KEYS: readonly { readonly keys: string; readonly name: string }[] = [
+  { keys: "Mod+F", name: "Find (with Replace in the same panel)" },
+  { keys: "Mod+G", name: "Find next" },
+  { keys: "Shift+Mod+G", name: "Find previous" },
+  { keys: "Mod+Alt+F", name: "Replace" },
+  { keys: "Mod+Alt+G", name: "Go to line" },
+  { keys: "Escape", name: "Close the find panel" },
+];
+
 /** macOS (and iPadOS, which reports itself as a Mac): `Mod` is Cmd there. */
 export function isMacPlatform(): boolean {
   if (typeof navigator === "undefined") return false;

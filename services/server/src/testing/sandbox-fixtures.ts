@@ -73,7 +73,12 @@ export const SETTINGS: SandboxSettings = {
     pods: "50",
   },
   warmPool: { replicasPerTeam: 1 },
-  hibernation: { enabled: true, idleMinutes: 15, sweepSeconds: 60 },
+  hibernation: {
+    enabled: true,
+    idleMinutes: 15,
+    sweepSeconds: 60,
+    reclaim: { enabled: false, dormantDays: 30 },
+  },
   workspaceSync: {
     enabled: true,
     pushIntervalSeconds: 60,
@@ -82,6 +87,7 @@ export const SETTINGS: SandboxSettings = {
     collectSeconds: 3600,
   },
   toolExecutor: { enabled: false },
+  volumeLoss: { detection: true, graceMinutes: 30 },
   skillEval: { maxConcurrentPerTeam: 4, workspaceSize: "2Gi" },
 };
 

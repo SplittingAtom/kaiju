@@ -47,6 +47,14 @@ describe("reprobeReply (KOBE-430)", () => {
     });
     expect(fail("auth_required", "site").body.message).toMatch(/site-wide key/);
     expect(fail("auth_required").body.message).toMatch(/never a member's/);
+    // KOBE-784: an OAuth connector needs the admin's own connected account.
+    const oauth = reprobeReply(
+      { kind: "done", outcome: { status: "failed", reason: "auth_required" } },
+      "member",
+      "oauth",
+    );
+    expect(oauth.body.message).toMatch(/connect your own account/i);
+    expect(oauth.body.message).toMatch(/never a member's/);
     expect(fail("brand_new_code").body.message).toBe(
       "The server could not be checked (brand new code). Its tools stay as they were.",
     );

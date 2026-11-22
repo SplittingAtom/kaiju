@@ -222,6 +222,7 @@ describe("server sandbox configuration", () => {
       enabled: true,
       idleMinutes: 15,
       sweepSeconds: 60,
+      reclaim: { enabled: false, dormantDays: 30 },
     });
     expect(
       sandboxConfig(render({ "sandbox.hibernation.idleMinutes": "30" })).hibernation,
@@ -658,6 +659,56 @@ describe("sandbox RBAC (least privilege; D11)", () => {
     expect(all).toContainEqual({ apiGroups: [""], resources: ["events"], verbs: ["list"] });
   });
 
+  it("lets the server read team ResourceQuotas to diagnose a full volume quota (KOBE-733)", () => {
+    expect(rules("ClusterRole", manager)).toContainEqual({
+      apiGroups: [""],
+      resources: ["resourcequotas"],
+      verbs: ["get"],
+    });
+  });
+
+  it("lets the server read PersistentVolumes and Nodes to tell a lost volume, read-only (KOBE-739)", () => {
+    const all = rules("ClusterRole", orchestrator);
+    expect(all).toContainEqual({
+      apiGroups: [""],
+      resources: ["persistentvolumes"],
+      verbs: ["get"],
+    });
+    expect(all).toContainEqual({ apiGroups: [""], resources: ["nodes"], verbs: ["get", "list"] });
+    expect(sandboxConfig(ms).volumeLoss).toEqual({ detection: true, graceMinutes: 30 });
+  });
+
+  it("drops the Node and PV reads when volume-loss detection is off (KOBE-739)", () => {
+    const off = render({ "sandbox.volumeLoss.detection": "false" });
+    const name = byKind(off, "ClusterRole").find((r) =>
+      r.metadata.name.endsWith("-sandbox-orchestrator"),
+    )?.metadata.name as string;
+    const resources = (find(off, "ClusterRole", name)?.rules ?? []).flatMap(
+      (r: { resources: string[] }) => r.resources,
+    );
+    expect(resources).not.toContain("nodes");
+    expect(resources).not.toContain("persistentvolumes");
+    expect(sandboxConfig(off).volumeLoss).toEqual({ detection: false, graceMinutes: 30 });
+  });
+
+  it("renders dormant-volume reclaim off by default, and its settings when on (KOBE-733)", () => {
+    const off = sandboxConfig(render());
+    expect(off.hibernation.reclaim).toEqual({
+      enabled: false,
+      dormantDays: 30,
+    });
+    const on = sandboxConfig(
+      render({
+        "sandbox.hibernation.reclaim.enabled": "true",
+        "sandbox.hibernation.reclaim.dormantDays": "45",
+      }),
+    );
+    expect(on.hibernation.reclaim).toEqual({
+      enabled: true,
+      dormantDays: 45,
+    });
+  });
+
   // KOBE-126: the team-namespace reconcile (server/src/sandbox/team-reconcile.ts) lists namespaces by
   // label (orchestrator role), reads both NetworkPolicies, and server-side applies (PATCH, plus
   // create when missing) every kind below. Exactly these verbs, per kind, in the manager role.
@@ -670,7 +721,8 @@ describe("sandbox RBAC (least privilege; D11)", () => {
     const applyOnly = ["create", "patch"];
     const expected: [string, string, string[]][] = [
       ["networking.k8s.io", "networkpolicies", ["create", "get", "patch"]],
-      ["", "resourcequotas", applyOnly],
+      // get: a wake with a missing volume reads the quota (KOBE-733).
+      ["", "resourcequotas", ["create", "get", "patch"]],
       ["", "limitranges", applyOnly],
       ["", "serviceaccounts", applyOnly],
       ["", "secrets", applyOnly],

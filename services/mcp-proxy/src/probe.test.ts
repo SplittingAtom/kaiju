@@ -72,6 +72,25 @@ describe("POST /internal/v1/probe", () => {
     expect(fake.received.at(-1)?.headers.authorization).toBeUndefined();
   });
 
+  it("lists with a site admin's OAuth access token as a bearer token (KOBE-784)", async () => {
+    fake.options = { tools: [] };
+    await post({ connector_id: CONNECTOR, url: fake.url, access_token: "at-admin-0123456789" });
+    expect(fake.received.at(-1)?.headers.authorization).toBe("Bearer at-admin-0123456789");
+    fake.received.length = 0;
+    // Never both.
+    expect(
+      (
+        await post({
+          connector_id: CONNECTOR,
+          url: fake.url,
+          api_key: "sk-live-0123456789",
+          access_token: "at-admin-0123456789",
+        })
+      ).status,
+    ).toBe(400);
+    expect(fake.received).toHaveLength(0);
+  });
+
   it("refuses an api_key that is not a plain header value", async () => {
     expect(
       (await post({ connector_id: CONNECTOR, url: fake.url, api_key: "has space" })).status,

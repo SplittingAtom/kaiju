@@ -25,7 +25,14 @@ export const nameConflict = (c: Context, error: NameConflict) =>
 export const SITE_AUTH_REQUIRED =
   "The server asked for credentials: set (or re-enter) this connector's site-wide key. Tools stay unpinned (none are offered).";
 
-export const pinBody = (pin: PinOutcome, connector?: { readonly credentialSource: string }) =>
+/** An OAuth connector is probed with the acting admin's own connected account (KOBE-784). */
+export const OAUTH_AUTH_REQUIRED =
+  "The server asked for credentials. Kobe probes an OAuth connector with your own connected account: connect your own account for this connector first (My connectors, in a team that enabled it), then pin it again; never a member's. Tools stay unpinned (none are offered).";
+
+export const pinBody = (
+  pin: PinOutcome,
+  connector?: { readonly credentialSource: string; readonly authKind?: string },
+) =>
   pin.ok
     ? {
         ok: true as const,
@@ -37,9 +44,11 @@ export const pinBody = (pin: PinOutcome, connector?: { readonly credentialSource
         ok: false as const,
         failure: pin.failure,
         message:
-          pin.failure === "auth_required" && connector?.credentialSource === "site"
-            ? SITE_AUTH_REQUIRED
-            : PIN_MESSAGES[pin.failure],
+          pin.failure === "auth_required" && connector?.authKind === "oauth"
+            ? OAUTH_AUTH_REQUIRED
+            : pin.failure === "auth_required" && connector?.credentialSource === "site"
+              ? SITE_AUTH_REQUIRED
+              : PIN_MESSAGES[pin.failure],
       };
 
 export const TEMPLATE_APPROVAL_MESSAGES = {
@@ -61,8 +70,8 @@ export function connectorKit(deps: ServerDeps) {
   const pinAs = async (c: Context, connectorId: string) => {
     const adminId = c.get("user").id;
     return pinConnector(db, deps.connectorProbe, connectorId, {
-      credential: adminPinCredential(db, deps.envelope, adminId),
-      pinnedBy: await nextPinnedBy(db, deps.envelope, connectorId, adminId),
+      credential: adminPinCredential(db, deps.envelope, adminId, deps.mcp.oauthRefresh),
+      pinnedBy: await nextPinnedBy(db, deps.envelope, connectorId, adminId, deps.mcp.oauthRefresh),
     });
   };
 

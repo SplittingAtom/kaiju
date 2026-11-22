@@ -1,10 +1,12 @@
 import { createMiddleware } from "hono/factory";
 import {
+  REQUIRE_SSO_KEY,
   eq,
   sessions,
   sessionSsoContexts,
   siteRoles,
   siteSettings,
+  sql,
   ssoProviders,
   users,
   type KobeDb,
@@ -13,6 +15,7 @@ import type { SiteRole } from "../authz/permissions.js";
 import type { ServerDeps } from "../deps.js";
 import { DELEGATED_SESSION_PREFIX, delegationOf, type Delegation } from "../kobe-mcp/delegation.js";
 import { delegationBacking } from "../kobe-mcp/delegation-live.js";
+import { storedSettingInForce } from "../sso/required.js";
 import { hasLocalPassword } from "./reset-links.js";
 
 export type { SiteRole } from "../authz/permissions.js";
@@ -147,6 +150,16 @@ async function cookieSession(deps: ServerDeps, headers: Headers): Promise<Sessio
       ssoProviderId: sessionSsoContexts.providerId,
       ssoMfaSatisfied: sessionSsoContexts.mfaSatisfied,
       maxSessionHours: ssoProviders.maxSessionHours,
+      // KOBE-775: the provider is still on and the person still linked to it. Turning a provider
+      // off or unlinking ends its sessions, but a sign-in finishing just after that would not.
+      ssoProviderEnabled: ssoProviders.enabled,
+      ssoLinked: sql<boolean>`EXISTS (SELECT 1 FROM sso_identities i
+        WHERE i.provider_id = ${sessionSsoContexts.providerId} AND i.user_id = ${users.id})`,
+      // Site settings in the same round trip (review L1): no extra query per request.
+      requireTwoFactor: sql<boolean>`coalesce((SELECT s.value = 'true' FROM site_settings s
+        WHERE s.key = ${REQUIRE_TWO_FACTOR}), false)`,
+      requireSso: sql<boolean>`coalesce((SELECT s.value = 'true' FROM site_settings s
+        WHERE s.key = ${REQUIRE_SSO_KEY}), false)`,
     })
     .from(users)
     .leftJoin(siteRoles, eq(siteRoles.userId, users.id))
@@ -162,6 +175,10 @@ async function cookieSession(deps: ServerDeps, headers: Headers): Promise<Sessio
     // auth.sso.enabled: false refuses every SSO session; local sessions are the break-glass
     // path (review finding 6). Start-up deletes them as well (`endSsoSessionsWhenOff`).
     if (!deps.sso.settings.enabled) return unauthenticated;
+    if (account.ssoProviderEnabled !== true || !account.ssoLinked) {
+      await deps.database.db.delete(sessions).where(eq(sessions.id, session.session.id));
+      return unauthenticated;
+    }
     // max_session_hours counts from the sign-in, whatever Better Auth's refresh did to the
     // expiry (review finding 9a).
     const hours = account.maxSessionHours;
@@ -170,6 +187,14 @@ async function cookieSession(deps: ServerDeps, headers: Headers): Promise<Sessio
       await deps.database.db.delete(sessions).where(eq(sessions.id, session.session.id));
       return unauthenticated;
     }
+  } else if (
+    account.requireSso &&
+    (await storedSettingInForce(deps.database.db, deps.sso.settings))
+  ) {
+    // KOBE-774: the Site requires single sign-on, so a session not signed in through a provider
+    // ends at its next check (turning the setting on already ended those that existed then).
+    await deps.database.db.delete(sessions).where(eq(sessions.id, session.session.id));
+    return unauthenticated;
   }
   const user: SessionUser = {
     id: session.user.id,
@@ -177,7 +202,7 @@ async function cookieSession(deps: ServerDeps, headers: Headers): Promise<Sessio
     name: session.user.name,
     twoFactorEnabled: session.user.twoFactorEnabled === true,
   };
-  if (await readRequireTwoFactor(deps)) {
+  if (account.requireTwoFactor) {
     // An SSO session counts only by its own sign-in's MFA proof (§8, SSO3): a Kobe TOTP factor
     // never stands in for it, and it is never sent to TOTP enrolment (SSO7). A local session
     // needs the enrolled factor, which its sign-in had to pass.

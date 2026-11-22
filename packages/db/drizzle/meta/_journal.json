@@ -1667,6 +1667,41 @@
       "when": 1795195174401,
       "tag": "0237_drop_artifact_versions_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 238,
+      "version": "7",
+      "when": 1795287467525,
+      "tag": "0238_retention_sweep_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 239,
+      "version": "7",
+      "when": 1795287472871,
+      "tag": "0239_run_usage_retention",
+      "breakpoints": true
+    },
+    {
+      "idx": 240,
+      "version": "7",
+      "when": 1795288009021,
+      "tag": "0240_sandbox_volume_synced",
+      "breakpoints": true
+    },
+    {
+      "idx": 241,
+      "version": "7",
+      "when": 1795333286187,
+      "tag": "0241_connector_grant_refresh_lease_connector_oauth_client",
+      "breakpoints": true
+    },
+    {
+      "idx": 242,
+      "version": "7",
+      "when": 1795339631464,
+      "tag": "0242_sandbox_volume_lost",
+      "breakpoints": true
     }
   ]
 }

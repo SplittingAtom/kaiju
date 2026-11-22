@@ -16,6 +16,8 @@ import { ThreadManager } from "./threads/manager.js";
 import { fail, ok, type CommandOutcome } from "./threads/outcome.js";
 import { compactFailure, type CompactReply } from "./threads/compact.js";
 import { branchSummaryFailure, type BranchSummaryReply } from "./threads/branch-summary.js";
+import { sandboxQuiet } from "./workspace/quiet.js";
+import type { ReclaimProof } from "./workspace/sync.js";
 import { WireClient, type FatalReason, type WireLogger } from "./wire/client.js";
 import { encodeOutbound } from "./wire/encode.js";
 import { Outbox } from "./wire/outbox.js";
@@ -85,6 +87,8 @@ export class Agent {
   #seenCommands = new Set<string>();
   #queuedExits: { runId: string; frame: PiExitedFrameT }[] = [];
   #stopping = false;
+  /** The last accepted wire connection (`hello.ack`): binds the shutdown's reclaim proof. */
+  #connectionId: string | undefined;
 
   constructor(deps: AgentDeps) {
     this.#deps = deps;
@@ -292,12 +296,36 @@ export class Agent {
   async #finishStop(code: number): Promise<void> {
     // Kernels never outlive the agent (NB2): they stop before the last workspace push.
     await this.#deps.kernels?.stopAll();
-    // Pi is gone, so the workspace is settled: push what changed since the last sync.
+    // Pi, its tools (killed with their uid) and the kernels are gone, so nothing writes to the
+    // workspace any more: push what changed.
+    const started = Date.now();
     await this.#deps.workspace?.flush(WORKSPACE_FLUSH_MS);
     this.#traces.flush();
     this.#traces.close();
     await this.#wire.stop(1000, "agent stopping");
+    // KOBE-733: the reclaim proof only after the wire is closed, so a pod on its way out never
+    // holds its connection open longer for it (the server then routes new runs to the next pod),
+    // within what is left of the flush budget.
+    const proof = this.#reclaimProof();
+    const left = WORKSPACE_FLUSH_MS - (Date.now() - started);
+    if (proof !== undefined && left > 0) await this.#deps.workspace?.prove?.(proof, left);
     this.#deps.onExit(code);
+  }
+
+  /**
+   * KOBE-733: what the final flush may prove with, or nothing: only under Pi identities (without
+   * them a re-parented tool can outlive its Pi), with a known connection, and never after a failed
+   * kill or reclaim. The quiet check (no other process in /proc) runs right before the proof.
+   */
+  #reclaimProof(): ReclaimProof | undefined {
+    const identities = this.#deps.identities;
+    const connectionId = this.#connectionId;
+    if (identities === undefined || connectionId === undefined) return undefined;
+    const procRoot = this.#deps.procRoot;
+    return {
+      connectionId,
+      quiet: async () => !identities.cleanupFailed && (await sandboxQuiet(procRoot)),
+    };
   }
 
   /** Per-run delivery cursors (diagnostics and tests). */
@@ -345,6 +373,7 @@ export class Agent {
   }
 
   #onReady(ack: HelloAckFrame): void {
+    this.#connectionId = ack.connection_id;
     this.#seenCommands = new Set();
     this.#outbox.resetConnectionState();
     const listed = new Map(ack.runs.map((run) => [run.run_id, run]));

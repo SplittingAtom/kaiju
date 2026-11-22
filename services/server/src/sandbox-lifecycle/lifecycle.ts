@@ -2,6 +2,7 @@ import {
   SYSTEM_ACTOR,
   eq,
   getMembership,
+  lockLegalHolds,
   sql,
   teams,
   users,
@@ -21,8 +22,16 @@ import { workspacePvcName, type SandboxProvider } from "../sandbox/provider.js";
 import { notifyHintInTx } from "../sandbox-wire/bus.js";
 import { SandboxWakeError, type SandboxTarget, type SandboxWaker } from "../sandbox-wire/types.js";
 import { resolveIdleMinutes, TEAM_IDLE_MINUTES } from "./idle.js";
-import { ensureReady, REMEDY, type ReadyProvider } from "./ready.js";
+import { ensureReady, REMEDY, WORKSPACE_REBUILDING_MESSAGE, type ReadyProvider } from "./ready.js";
 import { wakeSpans, type TimingSpan } from "./timing.js";
+import { completeRebuild, unfinishedRebuilds } from "./rebuild.js";
+import { observeVolume } from "./volume-verdict.js";
+import {
+  forgetReclaimedSandbox,
+  lockReclaimable,
+  reclaimCandidates,
+  type ReclaimSettings,
+} from "./reclaim.js";
 import {
   beginWake,
   forgetSandboxIdentity,
@@ -62,7 +71,10 @@ function recordWakeSpans(spans: readonly TimingSpan[], runId: string | undefined
  */
 
 export type LifecycleProvider = Pick<SandboxProvider, "wakeSandbox" | "hibernateSandbox"> &
-  Partial<ReadyProvider>;
+  Partial<ReadyProvider> &
+  Partial<
+    Pick<SandboxProvider, "destroySandbox" | "deleteVolume" | "discardLostVolume" | "volumeHealth">
+  >;
 
 export interface LifecycleOptions {
   readonly db: KobeDb;
@@ -77,6 +89,16 @@ export interface LifecycleOptions {
    * an offboarded sandbox is never woken.
    */
   readonly reinstate?: (target: SandboxTarget) => Promise<boolean>;
+  /**
+   * Dormant-volume reclaim (KOBE-733, `reclaim.ts`); absent (the default): hibernated volumes are
+   * kept for ever and no sync proof is asked for.
+   */
+  readonly reclaim?: ReclaimSettings;
+  /**
+   * KOBE-739 `sandbox.volumeLoss.graceMinutes`: how long this server must have seen a volume's
+   * node down before a wake reports the volume lost (default 30).
+   */
+  readonly volumeLossGraceMinutes?: number;
   readonly log?: Logger;
 }
 
@@ -88,12 +110,16 @@ export interface LifecycleMetrics {
   stalledWakes: number;
   /** Wakes that replaced an ended (evicted, killed) pod (KOBE-636). */
   restarted: number;
+  /** Dormant volumes reclaimed (KOBE-733). */
+  reclaimed: number;
   /** Latest wake durations (ms), newest last; bounded. */
   readonly wakeMs: number[];
 }
 
 export interface HibernateResult {
   readonly hibernated: { readonly teamId: string; readonly userId: string }[];
+  /** Dormant volumes reclaimed in this sweep (KOBE-733; empty while reclaim is off). */
+  readonly reclaimed: { readonly teamId: string; readonly userId: string }[];
   readonly failedTeams: number;
 }
 
@@ -140,6 +166,7 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
     wakeFailures: 0,
     stalledWakes: 0,
     restarted: 0,
+    reclaimed: 0,
     wakeMs: [],
   };
   /** One wake per sandbox per process; runs that joined it get its `sandbox.waking` too. */
@@ -211,6 +238,15 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
       userId: target.userId,
       since,
       log,
+      // KOBE-739: a node down counts as lost only after this server saw it down for the grace.
+      nodeDownIsLost: async (stall) => {
+        if (!stall.volume) return false;
+        const health = stall.volume;
+        const verdict = await withTeam(db, target.teamId, (tx) =>
+          observeVolume(tx, target, health, options.volumeLossGraceMinutes ?? 30),
+        );
+        return verdict.state === "lost";
+      },
       onStalled: ({ sandboxId, stall }) => {
         metrics.stalledWakes += 1;
         return recordAuditAfter(db, {
@@ -266,6 +302,9 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
     }
     if (previous === "destroyed") {
       throw new SandboxWakeError("sandbox_unavailable", "this sandbox was offboarded");
+    }
+    if (previous === "rebuilding") {
+      throw new SandboxWakeError("workspace_rebuilding", WORKSPACE_REBUILDING_MESSAGE);
     }
     // No row: never started through Kobe; hibernated: a resume. A `running` row whose sandbox is
     // merely disconnected (pod restarting) is not announced. (`rebuild`, a lost volume, is the
@@ -353,6 +392,112 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
     },
   };
 
+  /**
+   * Reclaims one dormant volume (KOBE-733) under the row lock and the legal-hold lock: Kubernetes
+   * first (claim, pod, then the volume), then the row forgets the sandbox. A failed delete rolls the
+   * row back; the next sweep tries again (deletes are idempotent).
+   */
+  const reclaimOne = async (
+    team: TeamRef,
+    target: SandboxTarget,
+    reclaim: ReclaimSettings,
+  ): Promise<boolean> => {
+    const { destroySandbox, deleteVolume } = provider;
+    if (!destroySandbox || !deleteVolume) return false;
+    return withTeam(db, target.teamId, async (tx) => {
+      await tx.execute(sql.raw(`SET LOCAL lock_timeout = '5s'`));
+      await lockLegalHolds(tx);
+      const locked = await lockReclaimable(tx, target, reclaim.dormantDays);
+      if (!locked) return false;
+      await destroySandbox(team, target.userId, { retainVolume: false });
+      // The volume normally goes with its Sandbox (owner reference); delete it by name as well.
+      if (locked.pvc) {
+        await deleteVolume(team, locked.pvc).catch((err: unknown) =>
+          log.warn({ err, team_id: target.teamId }, "reclaim: volume delete failed; left to GC"),
+        );
+      }
+      // The hold and row locks are not kept while the volume terminates: a wake that comes now
+      // waits for it in the provider before creating the new claim (KOBE-733).
+      await forgetReclaimedSandbox(tx, target);
+      await tx.execute(sql.raw(`SET LOCAL lock_timeout = '0'`));
+      await recordAudit(tx, {
+        action: "sandbox.volume_reclaimed",
+        actor: SYSTEM_ACTOR,
+        teamId: target.teamId,
+        target: {
+          sandboxId: locked.sandboxId,
+          userId: target.userId,
+          dormantDays: reclaim.dormantDays,
+        },
+      });
+      return true;
+    });
+  };
+
+  /** One team's dormant volumes past the period, oldest first (KOBE-733). */
+  const reclaimTeam = async (team: TeamRef): Promise<HibernateResult["reclaimed"]> => {
+    const { reclaim } = options;
+    if (!reclaim) return [];
+    const done: HibernateResult["reclaimed"][number][] = [];
+    const candidates = await withTeam(db, team.id, (tx) =>
+      reclaimCandidates(tx, team.id, reclaim.dormantDays, reclaim.batchPerTeam ?? 10),
+    );
+    for (const userId of candidates) {
+      const target = { teamId: team.id, userId };
+      if (await reclaimOne(team, target, reclaim)) {
+        metrics.reclaimed += 1;
+        done.push(target);
+        log.info(
+          { team_id: team.id, dormant_days: reclaim.dormantDays },
+          "dormant volume reclaimed",
+        );
+      }
+    }
+    return done;
+  };
+
+  /** KOBE-739: confirmed rebuilds whose cleanup failed are finished here (idempotent). */
+  const finishRebuilds = async (team: TeamRef): Promise<void> => {
+    const { discardLostVolume } = provider;
+    if (!discardLostVolume) return;
+    const users = await withTeam(db, team.id, (tx) => unfinishedRebuilds(tx, team.id));
+    for (const userId of users) {
+      const done = await completeRebuild(db, { discardLostVolume }, team, userId, log);
+      log.info({ team_id: team.id, outcome: done }, "unfinished workspace rebuild retried");
+    }
+  };
+
+  /**
+   * KOBE-739 (review g72-2): rows whose volume's node was seen down are observed again every
+   * sweep, so the "down since" clock is cleared when the node is back and kept continuous while
+   * it stays down (`volume-verdict.ts`). A read error observes nothing.
+   */
+  const reobserveDownNodes = async (team: TeamRef): Promise<void> => {
+    const { volumeHealth } = provider;
+    if (!volumeHealth) return;
+    const users = await withTeam(db, team.id, async (tx) => {
+      const res = await tx.execute<{ user_id: string }>(sql`
+        SELECT user_id FROM sandboxes
+         WHERE team_id = ${team.id} AND volume_lost_since IS NOT NULL
+           AND rebuild_started_at IS NULL
+         ORDER BY volume_lost_seen_at NULLS FIRST
+         LIMIT 20`);
+      return res.rows.map((r) => r.user_id);
+    });
+    for (const userId of users) {
+      const health = await volumeHealth(team, userId).catch(() => undefined);
+      if (!health) continue;
+      await withTeam(db, team.id, (tx) =>
+        observeVolume(
+          tx,
+          { teamId: team.id, userId },
+          health,
+          options.volumeLossGraceMinutes ?? 30,
+        ),
+      );
+    }
+  };
+
   const hibernateOne = async (
     team: TeamRef,
     target: SandboxTarget,
@@ -402,6 +547,7 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
 
   const sweep = async (): Promise<HibernateResult> => {
     const hibernated: HibernateResult["hibernated"] = [];
+    const reclaimed: HibernateResult["reclaimed"][number][] = [];
     let failedTeams = 0;
     const all = await db
       .select({ id: teams.id, slug: teams.slug, settings: teams.settings })
@@ -416,12 +562,15 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
           const target = { teamId: team.id, userId: c.userId };
           if (await hibernateOne(team, target, idle, false)) hibernated.push(target);
         }
+        reclaimed.push(...(await reclaimTeam(team)));
+        await finishRebuilds(team);
+        await reobserveDownNodes(team);
       } catch (err) {
         failedTeams += 1;
         log.error({ err, team_id: team.id }, "hibernation sweep failed for a team");
       }
     }
-    return { hibernated, failedTeams };
+    return { hibernated, reclaimed, failedTeams };
   };
 
   return {

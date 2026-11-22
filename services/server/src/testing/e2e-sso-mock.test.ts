@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import * as jose from "jose";
 import { beforeAll, describe, expect, it } from "vitest";
 import { checkIdTokenClaims, type ClaimsProvider } from "../sso/claims.js";
-import { acrsClaimsParameter, mfaProven } from "../sso/mfa.js";
+import { acrsClaimsParameter, mfaEvidence } from "../sso/mfa.js";
 import { kindDefaults } from "../sso/schemas.js";
 
 /**
@@ -248,12 +248,12 @@ describe("mock Entra: MFA (acrs) as Conditional Access answers", () => {
     const proving = await idTokenOf({ user: { ...MEMBER, mfa: true }, claims });
     const yes = await kobeVerdict(proving.token, proving.nonce);
     expect(yes.check.ok && yes.check.identity.acrs).toEqual(["c1"]);
-    expect(yes.check.ok && mfaProven("entra", rule, yes.check.identity)).toBe(true);
+    expect(yes.check.ok && mfaEvidence("entra", rule, yes.check.identity) !== null).toBe(true);
 
     const weak = await idTokenOf({ user: { ...MEMBER, mfa: false }, claims });
     const no = await kobeVerdict(weak.token, weak.nonce);
     expect(no.check.ok && no.check.identity.acrs).toEqual([]);
-    expect(no.check.ok && mfaProven("entra", rule, no.check.identity)).toBe(false);
+    expect(no.check.ok && mfaEvidence("entra", rule, no.check.identity) !== null).toBe(false);
 
     // No claims request: no acrs even for a person with MFA.
     const unasked = await idTokenOf({ user: { ...MEMBER, mfa: true } });
@@ -558,7 +558,7 @@ describe("mock as a generic OIDC provider on gate1 (KOBE-634 browser spec)", () 
     expect(check.identity.subject).toBe(person.oid);
     expect(check.identity.email).toBe(person.email);
     expect(check.identity.emailVerified).toBe(true);
-    expect(mfaProven("oidc", kindDefaults("oidc").mfaRule, check.identity)).toBe(true);
+    expect(mfaEvidence("oidc", kindDefaults("oidc").mfaRule, check.identity)).not.toBeNull();
   });
 
   it("serves only the authorize step on its plain-HTTP listener (the ingress path)", () => {
