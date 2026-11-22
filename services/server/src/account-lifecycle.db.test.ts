@@ -110,12 +110,12 @@ describe("password reset (ac-3)", () => {
   /** Pretends the last reset email to this user went out `minutes` ago. */
   const ageResetMail = (userId: string, minutes: number) =>
     h.admin.query(
-      `UPDATE rate_limits SET last_request = last_request - $2::bigint WHERE key LIKE $1`,
+      `UPDATE kobe_rate_limits SET window_start = window_start - $2::bigint WHERE key LIKE $1`,
       [`kobe:reset-sent:${userId}:%`, minutes * 60_000],
     );
 
   it("sends one email while a recently mailed link is still valid, whatever the client IPs", async () => {
-    await h.admin.query(`DELETE FROM rate_limits`);
+    await h.admin.query(`DELETE FROM rate_limits; DELETE FROM kobe_rate_limits`);
     const sentBefore = h.mailer.to("tess@life.test").length;
     for (let i = 0; i < 5; i++) expect((await requestReset("tess@life.test")).status).toBe(200);
     await h.mailer.settle();
@@ -311,7 +311,7 @@ describe("deactivation (ac-4)", () => {
   });
 
   it("sends no password-reset email to a deactivated account", async () => {
-    await h.admin.query(`DELETE FROM rate_limits`);
+    await h.admin.query(`DELETE FROM rate_limits; DELETE FROM kobe_rate_limits`);
     const before = h.mailer.to("uma@life.test").length;
     expect((await requestReset("uma@life.test")).status).toBe(200);
     await h.mailer.settle();

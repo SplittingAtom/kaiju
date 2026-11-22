@@ -15,8 +15,15 @@ import {
 export const PLATFORM_EVENTS = {
   // ── site: site-wide settings ──
   "site.settings.updated": event("site", {
-    /** `kobe_mcp_mode` (KOBE-623): the Kobe MCP site switch, value `off`, `docs` or `admin`. */
-    setting: z.enum(["require_two_factor", "audit_pii_retention_hours", "kobe_mcp_mode"]),
+    /** `kobe_mcp_mode` (KOBE-623): the Kobe MCP site switch, value `off`, `docs` or `admin`.
+     * `kobe_reads_per_minute` / `kobe_writes_per_hour` (KOBE-814): the per-person Kobe admin limits, value 1-10000. */
+    setting: z.enum([
+      "require_two_factor",
+      "audit_pii_retention_hours",
+      "kobe_mcp_mode",
+      "kobe_reads_per_minute",
+      "kobe_writes_per_hour",
+    ]),
     value: z.union([z.boolean(), z.number().int().nonnegative(), label]),
   }),
   /**

@@ -17,6 +17,7 @@ export const EXCLUDED_TABLES: Readonly<Record<string, string>> = {
   verifications: "one-time email-verification and password-reset tokens, short-lived and secret",
   jwks: "JWT signing keys; the server generates a new key on first use, so backups carry no signing keys",
   rate_limits: "throwaway rate-limit counters",
+  kobe_rate_limits: "throwaway rate-limit counters and password-reset email claims (KOBE-809)",
 };
 
 export function isExcluded(table: string): boolean {

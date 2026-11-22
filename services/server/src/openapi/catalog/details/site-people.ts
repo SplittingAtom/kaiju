@@ -146,6 +146,8 @@ const SiteSettings = untyped(
     requireTwoFactor: bool,
     auditPiiRetentionHours: int,
     kobeMcpMode: oneOfStrings(...KOBE_MCP_MODES),
+    kobeReadsPerMinute: int,
+    kobeWritesPerHour: int,
   }),
 );
 const Branding = named("SiteBranding", siteBrandingSchema);

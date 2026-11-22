@@ -168,6 +168,48 @@ describe("Site console › Settings: the Kobe MCP switch", () => {
   });
 });
 
+describe("Site console › Settings: the Kobe admin limits (KOBE-814)", () => {
+  it("shows the defaults, validates bounds, audits, and applies without a restart", async () => {
+    const w = await h.world();
+    await h.setSite("kobe_mcp.reads_per_minute", null);
+    await h.setSite("kobe_mcp.writes_per_hour", null);
+    await makeSiteAdmin(w.admin);
+    const before = await w.admin.browser.get("/v1/site/settings");
+    expect(before.json.kobeReadsPerMinute).toBe(60);
+    expect(before.json.kobeWritesPerHour).toBe(30);
+    const put = await w.admin.browser.put("/v1/site/settings", {
+      kobeReadsPerMinute: 120,
+      kobeWritesPerHour: 5,
+    });
+    expect(put.status, JSON.stringify(put.json)).toBe(200);
+    expect(put.json.kobeReadsPerMinute).toBe(120);
+    expect(put.json.kobeWritesPerHour).toBe(5);
+    expect((await w.admin.browser.get("/v1/site/settings")).json.kobeWritesPerHour).toBe(5);
+    for (const bad of [0, -1, 10001, 1.5, "7"]) {
+      const res = await w.admin.browser.put("/v1/site/settings", { kobeReadsPerMinute: bad });
+      expect(res.status, String(bad)).toBe(400);
+    }
+    expect((await w.member.browser.put("/v1/site/settings", { kobeWritesPerHour: 5 })).status).toBe(
+      403,
+    );
+    const { rows } = await h.fx.admin.query<{ target: Record<string, unknown> }>(
+      `SELECT target FROM audit_log WHERE action = 'site.settings.updated'
+        AND target ->> 'setting' IN ('kobe_reads_per_minute', 'kobe_writes_per_hour')
+        ORDER BY seq`,
+    );
+    expect(rows.map((r) => r.target)).toEqual([
+      { setting: "kobe_reads_per_minute", value: 120 },
+      { setting: "kobe_writes_per_hour", value: 5 },
+    ]);
+    // An unchanged value writes no second event.
+    await w.admin.browser.put("/v1/site/settings", { kobeReadsPerMinute: 120 });
+    const again = await h.fx.admin.query(
+      `SELECT 1 FROM audit_log WHERE target ->> 'setting' = 'kobe_reads_per_minute'`,
+    );
+    expect(again.rows.length).toBe(1);
+  });
+});
+
 describe("audit views: via agent", () => {
   it("names thread, run and tool call; links the thread only for those who may read it", async () => {
     const w = await h.world();

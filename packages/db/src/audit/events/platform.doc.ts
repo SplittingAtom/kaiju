@@ -91,7 +91,8 @@ export const PLATFORM_EVENT_DOCS = {
     when: "Site branding changed, one event per changed setting (KOBE-497, theming TH12); a reset records the default label per cleared setting. The chart-seeded defaults are recorded with the system as actor (KOBE-503)",
   },
   "site.settings.updated": {
-    fields: "`setting` (require_two_factor, audit_pii_retention_hours, kobe_mcp_mode), `value`",
+    fields:
+      "`setting` (require_two_factor, audit_pii_retention_hours, kobe_mcp_mode, kobe_reads_per_minute, kobe_writes_per_hour), `value`",
     when: "Site setting changed",
   },
 } satisfies Record<keyof typeof PLATFORM_EVENTS, AuditEventDoc>;

@@ -356,7 +356,7 @@ describe("connector lifecycle edge cases (KOBE-784)", () => {
     let last = 0;
     for (let i = 0; i < 31; i += 1) last = (await start(carol, randomUUID())).status;
     expect(last).toBe(429);
-    await h.admin.query(`DELETE FROM rate_limits WHERE key LIKE 'kobe:oauth-start:%'`);
+    await h.admin.query(`DELETE FROM kobe_rate_limits WHERE key LIKE 'kobe:oauth-start:%'`);
   });
 
   it("changing the auth kind deletes the old grants, audited, and they do not come back (P2-30)", async () => {

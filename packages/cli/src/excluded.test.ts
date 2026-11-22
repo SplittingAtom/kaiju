@@ -13,6 +13,7 @@ describe("tables excluded from backups", () => {
   it("hold bearer tokens, one-time tokens, signing keys, counters or per-session state only", () => {
     expect(Object.keys(EXCLUDED_TABLES).sort()).toEqual([
       "jwks",
+      "kobe_rate_limits",
       "rate_limits",
       "session_active_teams",
       "session_sso_contexts",

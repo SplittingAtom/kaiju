@@ -885,8 +885,8 @@ describe("GET /v1/workspace/files/search (KOBE-223)", () => {
   it("is rate-limited per member (429 rate_limited)", async () => {
     const w = await world();
     await fx.admin.query(
-      `INSERT INTO rate_limits (key, count, last_request) VALUES ($1, $2, $3)
-       ON CONFLICT (key) DO UPDATE SET count = EXCLUDED.count, last_request = EXCLUDED.last_request`,
+      `INSERT INTO kobe_rate_limits (key, count, window_start, expires_at) VALUES ($1, $2, $3, $3::bigint + 3600000)
+       ON CONFLICT (key) DO UPDATE SET count = EXCLUDED.count, window_start = EXCLUDED.window_start, expires_at = EXCLUDED.expires_at`,
       [`kobe:workspace-search:${w.alice.id}`, SEARCH_RATE_LIMIT.max, Date.now()],
     );
     const res = await w.a.get("/v1/workspace/files/search?q=a");
