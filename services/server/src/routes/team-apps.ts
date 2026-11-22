@@ -43,14 +43,14 @@ const principal = (c: Context<{ Variables: TeamVariables }>): BrowserPrincipal =
   teamId: c.get("team").id,
 });
 
-const callSchema = z.strictObject({
+export const callSchema = z.strictObject({
   tool: z.string().min(1).max(128),
   arguments: z.unknown().optional(),
   thread_id: uuidSchema.optional(),
 });
 
 /** Strict: the team the page believes is active, and the template bytes it was given. */
-const frameQuerySchema = z.strictObject({
+export const frameQuerySchema = z.strictObject({
   team: uuidSchema,
   sha256: z.string().regex(/^[0-9a-f]{64}$/),
 });

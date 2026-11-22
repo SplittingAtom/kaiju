@@ -31,7 +31,7 @@ const HOURLY_UP_TO_MS = 3 * 24 * 3600 * 1000;
 const DAY_MS = 24 * 3600 * 1000;
 const DEFAULT_DAYS = 30;
 
-const querySchema = z.strictObject({
+export const querySchema = z.strictObject({
   from: z.iso.datetime({ offset: true }).optional(),
   to: z.iso.datetime({ offset: true }).optional(),
   bucket: z.enum(["hour", "day"]).optional(),

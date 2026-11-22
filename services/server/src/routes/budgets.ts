@@ -54,7 +54,7 @@ const CHANGED = {
   message: "The budget changed meanwhile; nothing was changed.",
 } as const;
 
-const siteSchema = z
+export const siteSchema = z
   .strictObject({
     monthly_usd: amount.optional(),
     daily_usd: amount.optional(),
@@ -76,7 +76,7 @@ const siteSchema = z
       .optional(),
   })
   .refine((v) => Object.keys(v).filter((k) => k !== "expected").length > 0, "nothing to change");
-const teamSchema = z
+export const teamSchema = z
   .strictObject({
     monthly_usd: amount.optional(),
     daily_usd: amount.optional(),
@@ -94,7 +94,7 @@ const teamSchema = z
     expected: expectedTeamSchema.optional(),
   })
   .refine(({ expected: _, ...change }) => nonEmpty(change), "nothing to change");
-const memberSchema = z
+export const memberSchema = z
   .strictObject({
     monthly_usd: amount.default(null),
     daily_usd: amount.default(null),
@@ -107,7 +107,7 @@ const memberSchema = z
     "set at least one budget",
   );
 /** `DELETE /members/:userId` may carry the member's budget as the caller saw it (KOBE-621). */
-const memberDeleteSchema = z.strictObject({ expected: z.strictObject(expectedAmounts) });
+export const memberDeleteSchema = z.strictObject({ expected: z.strictObject(expectedAmounts) });
 
 const BUDGET_HINT =
   'Send "monthly_usd"/"daily_usd" (dollars, 0–1,000,000,000) and/or "monthly_tokens"/"daily_tokens" (whole tokens), each a number or null.';

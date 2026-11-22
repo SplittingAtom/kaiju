@@ -1,4 +1,6 @@
 import type { CatalogArea } from "./build.js";
+import { teamDetails } from "./details/team.js";
+import { teamAdminDetails } from "./details/team-admin.js";
 
 /**
  * OpenAPI catalog: the active team's administration and shared views (KOBE-727; routes in
@@ -7,6 +9,9 @@ import type { CatalogArea } from "./build.js";
 export const teamAreas: readonly CatalogArea[] = [
   {
     tag: "Team",
+    detailed: true,
+    teamScoped: true,
+    details: { ...teamDetails, ...teamAdminDetails },
     description:
       "The active team: members, invitations, policy, connectors, egress, budgets, retention, audit " +
       "and settings. Team-scoped: send X-Kobe-Team; changes need the named team permission.",
