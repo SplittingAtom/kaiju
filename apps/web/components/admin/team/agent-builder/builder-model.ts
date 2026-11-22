@@ -1,3 +1,5 @@
+"use client";
+
 import { agentSlugSchema } from "@kobe/agent-file";
 import { useMemo } from "react";
 import type { AgentDetail } from "../../../../lib/admin/api/team/agent-builder";
