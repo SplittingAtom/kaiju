@@ -956,8 +956,8 @@ describe("history reads never wake sandboxes (ac-2)", () => {
     // `agentLimits` is static configuration the agent routes read when mounted (KOBE-46);
     // `runAgents.pinnedModel` (KOBE-44) reads the agent's model pin in the read's transaction.
     // `kobeMcp` (KOBE-619): `createApp` binds its router to it once, at construction.
-    // `sso` (KOBE-774): the session check reads its static settings (the kill switch, Helm
-    // secrets) to see whether "Require single sign-on" is in force.
+    // `sso.settings` (KOBE-774): the session check reads the static settings (the kill switch,
+    // Helm secrets) to see whether "Require single sign-on" is in force.
     const allowed = new Set<PropertyKey>([
       "database",
       "auth",
@@ -967,9 +967,17 @@ describe("history reads never wake sandboxes (ac-2)", () => {
       "kobeMcp",
       "sso",
     ]);
+    // Of `sso`, only its static settings (not `net`, outbound IdP calls, or the provider store).
+    const ssoSettingsOnly = new Proxy(deps.sso, {
+      get(target, prop, receiver) {
+        if (prop !== "settings") throw new Error(`thread read touched deps.sso.${String(prop)}`);
+        return Reflect.get(target, prop, receiver);
+      },
+    });
     const readOnlyDeps = new Proxy(deps, {
       get(target, prop, receiver) {
         if (!allowed.has(prop)) throw new Error(`thread read touched deps.${String(prop)}`);
+        if (prop === "sso") return ssoSettingsOnly;
         return Reflect.get(target, prop, receiver);
       },
     });

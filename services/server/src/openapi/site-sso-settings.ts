@@ -33,6 +33,15 @@ const ssoSettingsView = z.strictObject({
   canTurnOn: z
     .boolean()
     .describe("This session was signed in through an enabled identity provider."),
+  unlinked: z
+    .strictObject({
+      owners: z.number().int().nonnegative(),
+      siteRoles: z.number().int().nonnegative(),
+      users: z.number().int().nonnegative(),
+    })
+    .describe(
+      "Active accounts (and of them site-role holders and Owners) with no identity at an enabled provider: they could not sign in while it is on. Counts only.",
+    ),
 });
 
 export function siteSsoSettingsOpenApiPaths(): Record<string, Record<string, unknown>> {
@@ -76,7 +85,7 @@ export function siteSsoSettingsOpenApiPaths(): Record<string, Record<string, unk
           ),
           "409": json(
             "Error",
-            "`sso_session_required`: turning it on from a session not signed in through an enabled identity provider.",
+            "`sso_session_required`: turning it on from a session not signed in through an enabled identity provider; `owners_not_linked`: an active Owner has no identity at an enabled provider (the message gives how many).",
           ),
         },
       },

@@ -11861,7 +11861,7 @@
             }
           },
           "409": {
-            "description": "`sso_session_required`: turning it on from a session not signed in through an enabled identity provider.",
+            "description": "`sso_session_required`: turning it on from a session not signed in through an enabled identity provider; `owners_not_linked`: an active Owner has no identity at an enabled provider (the message gives how many).",
             "content": {
               "application/json": {
                 "schema": {
@@ -24519,9 +24519,32 @@
           "canTurnOn": {
             "type": "boolean",
             "description": "This session was signed in through an enabled identity provider."
+          },
+          "unlinked": {
+            "type": "object",
+            "properties": {
+              "owners": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "siteRoles": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "users": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": ["owners", "siteRoles", "users"],
+            "additionalProperties": false,
+            "description": "Active accounts (and of them site-role holders and Owners) with no identity at an enabled provider: they could not sign in while it is on. Counts only."
           }
         },
-        "required": ["requireSso", "inForce", "canTurnOn"],
+        "required": ["requireSso", "inForce", "canTurnOn", "unlinked"],
         "additionalProperties": false
       },
       "PutSiteSsoSettingsBody": {

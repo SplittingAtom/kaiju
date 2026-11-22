@@ -197,7 +197,8 @@ in. Ask a site admin.
   `auth.sso.allowedInternalCidrs` for an on-premises provider), a redirect (`redirect_refused`), or
   the document could not be fetched (`unreachable`).
 - **Require single sign-on can't be turned on** (`sso_session_required`): sign out and sign in
-  through a provider that is on, then try again. **Only the Owner can stop requiring single
+  through a provider that is on, then try again. (`owners_not_linked`): an Owner has no sign-in
+  linked at a provider that is on; each Owner links their own account first. **Only the Owner can stop requiring single
   sign-on** (`forbidden`).
 - **"This provider is set in the chart's values"** (`managed_by_helm`): change it in the values.
   **"People have signed in with this provider…"** (`identities_linked`, `identity_settings_locked`):

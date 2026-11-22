@@ -169,13 +169,15 @@ export const IDENTITY_EVENTS = {
   "identity.sso.required.enabled": event("site", { sessionsEnded: count }),
   /**
    * It was turned off: by the Owner (`admin`), by the last enabled provider being disabled or
-   * deleted (`last_provider`, naming it), or by the Site owner's `kobe sso allow-local-sign-in`
+   * deleted (`last_provider`, naming it and, from the console, the acting admin `byUserId`), or by the Site owner's `kobe sso allow-local-sign-in`
    * break-glass command (`break_glass`, with the operator it recorded).
    */
   "identity.sso.required.disabled": event("site", {
     reason: z.enum(["admin", "last_provider", "break_glass"]),
     providerId: id.optional(),
     slug: slug.optional(),
+    /** `last_provider` from the console: the admin who disabled or deleted it. */
+    byUserId: id.optional(),
     operator: z
       .string()
       .regex(/^[A-Za-z0-9._@-]{1,64}$/)

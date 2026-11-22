@@ -168,6 +168,12 @@ export interface SsoSettings {
   readonly inForce: boolean;
   /** This session was signed in through an enabled identity provider. */
   readonly canTurnOn: boolean;
+  /** Active accounts with no identity at an enabled provider (counts only). */
+  readonly unlinked: {
+    readonly owners: number;
+    readonly siteRoles: number;
+    readonly users: number;
+  };
 }
 
 const SETTINGS = "/v1/site/sso/settings";

@@ -176,12 +176,16 @@ describe("site single sign-on page (KOBE-626)", () => {
 
 describe("Require single sign-on (KOBE-774)", () => {
   const SETTINGS = "/v1/site/sso/settings";
+  const UNLINKED = { owners: 0, site_roles: 1, users: 7 };
   const enabledProvider = provider({ enabled: true });
 
   it("can't be turned on from a session that did not sign in with a provider", async () => {
     stubApi({
       [`GET ${BASE}`]: [200, { providers: [enabledProvider] }],
-      [`GET ${SETTINGS}`]: [200, { require_sso: false, in_force: false, can_turn_on: false }],
+      [`GET ${SETTINGS}`]: [
+        200,
+        { require_sso: false, in_force: false, can_turn_on: false, unlinked: UNLINKED },
+      ],
     });
     renderSite(<SiteSsoPage />);
     const toggle = await screen.findByRole("switch", { name: "Require single sign-on" });
@@ -193,15 +197,21 @@ describe("Require single sign-on (KOBE-774)", () => {
     const calls = stubApi({
       [`GET ${BASE}`]: [200, { providers: [enabledProvider] }],
       [`GET ${SETTINGS}`]: [
-        [200, { require_sso: false, in_force: false, can_turn_on: true }],
-        [200, { require_sso: true, in_force: true, can_turn_on: true }],
+        [200, { require_sso: false, in_force: false, can_turn_on: true, unlinked: UNLINKED }],
+        [200, { require_sso: true, in_force: true, can_turn_on: true, unlinked: UNLINKED }],
       ],
-      [`PUT ${SETTINGS}`]: [200, { require_sso: true, in_force: true, can_turn_on: true }],
+      [`PUT ${SETTINGS}`]: [
+        200,
+        { require_sso: true, in_force: true, can_turn_on: true, unlinked: UNLINKED },
+      ],
     });
     renderSite(<SiteSsoPage />);
     await userEvent.click(await screen.findByRole("switch", { name: "Require single sign-on" }));
     const text = await answerConfirm(/Require single sign-on\?/, "Require single sign-on");
     expect(text).toContain("kobe sso allow-local-sign-in");
+    // Who would be stranded, in numbers (review H1).
+    expect(text).toMatch(/7 active accounts have no linked/);
+    expect(text).toMatch(/1 of them holds a site role/);
     expect(text).toMatch(/password/i);
     expect(body(calls, "PUT")).toEqual({ requireSso: true });
     expect(await screen.findByText(/Single sign-on is now required/)).toBeTruthy();
@@ -210,8 +220,14 @@ describe("Require single sign-on (KOBE-774)", () => {
   it("turns off after a confirmation", async () => {
     const calls = stubApi({
       [`GET ${BASE}`]: [200, { providers: [enabledProvider] }],
-      [`GET ${SETTINGS}`]: [200, { require_sso: true, in_force: true, can_turn_on: true }],
-      [`PUT ${SETTINGS}`]: [200, { require_sso: false, in_force: false, can_turn_on: true }],
+      [`GET ${SETTINGS}`]: [
+        200,
+        { require_sso: true, in_force: true, can_turn_on: true, unlinked: UNLINKED },
+      ],
+      [`PUT ${SETTINGS}`]: [
+        200,
+        { require_sso: false, in_force: false, can_turn_on: true, unlinked: UNLINKED },
+      ],
     });
     renderSite(<SiteSsoPage />, "owner");
     await userEvent.click(await screen.findByRole("switch", { name: "Require single sign-on" }));
@@ -222,7 +238,10 @@ describe("Require single sign-on (KOBE-774)", () => {
   it("only the Owner can turn it off", async () => {
     stubApi({
       [`GET ${BASE}`]: [200, { providers: [enabledProvider] }],
-      [`GET ${SETTINGS}`]: [200, { require_sso: true, in_force: true, can_turn_on: true }],
+      [`GET ${SETTINGS}`]: [
+        200,
+        { require_sso: true, in_force: true, can_turn_on: true, unlinked: UNLINKED },
+      ],
     });
     renderSite(<SiteSsoPage />, "admin");
     const toggle = await screen.findByRole("switch", { name: "Require single sign-on" });
@@ -233,7 +252,10 @@ describe("Require single sign-on (KOBE-774)", () => {
   it("says when it is stored on but not in force", async () => {
     stubApi({
       [`GET ${BASE}`]: [200, { providers: [] }],
-      [`GET ${SETTINGS}`]: [200, { require_sso: true, in_force: false, can_turn_on: false }],
+      [`GET ${SETTINGS}`]: [
+        200,
+        { require_sso: true, in_force: false, can_turn_on: false, unlinked: UNLINKED },
+      ],
     });
     renderSite(<SiteSsoPage />);
     expect(await screen.findByText(/not in force/i)).toBeTruthy();

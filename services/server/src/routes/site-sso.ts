@@ -12,6 +12,7 @@ import {
   ssoRequired,
   turnOffSsoRequired,
   turnOnSsoRequired,
+  unlinkedCounts,
 } from "../sso/required.js";
 import { notifySsoRequiredOff } from "../sso/required-notify.js";
 import {
@@ -179,12 +180,15 @@ export function siteSsoRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables
 
   /**
    * KOBE-774: `requireSso` (stored), `inForce` (stored, and a provider can finish a sign-in), and
-   * `canTurnOn` (this session was signed in through an enabled provider).
+   * `canTurnOn` (this session was signed in through an enabled provider), and `unlinked`: how many
+   * active accounts, site-role holders and Owners have no identity at an enabled provider (counts
+   * only, review H1).
    */
   const ssoSettingsOf = async (c: Context<{ Variables: AuthVariables }>) => ({
     requireSso: await readSsoRequired(deps.database.db),
     inForce: await ssoRequired(deps.database.db, deps.sso.settings),
     canTurnOn: await signedInThroughEnabledProvider(deps.database.db, c.get("sessionId")),
+    unlinked: await unlinkedCounts(deps.database.db),
   });
 
   app.get("/settings", async (c) => c.json(await ssoSettingsOf(c)));
@@ -194,6 +198,16 @@ export function siteSsoRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables
     if (!body) return invalidRequest(c, "Send requireSso (true or false).");
     if (body.requireSso) {
       const outcome = await turnOnSsoRequired(deps.database.db, c.get("sessionId"));
+      if (!outcome.ok && outcome.failure === "owners_not_linked") {
+        const n = outcome.owners;
+        return c.json(
+          {
+            code: "owners_not_linked",
+            message: `${n} Owner account${n === 1 ? " has" : "s have"} no sign-in linked at an enabled identity provider, so ${n === 1 ? "it" : "they"} could not sign in or turn this off again. Each Owner links their account first: sign in with the provider, then with their password, and confirm the link.`,
+          },
+          409,
+        );
+      }
       if (!outcome.ok) {
         return c.json(
           {

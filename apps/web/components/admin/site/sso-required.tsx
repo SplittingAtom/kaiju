@@ -1,6 +1,6 @@
 "use client";
 
-import { getSsoSettings, putSsoSettings } from "../../../lib/admin/api/site/sso";
+import { getSsoSettings, putSsoSettings, type SsoSettings } from "../../../lib/admin/api/site/sso";
 import { canTurnOffRequiredSso } from "../../../lib/admin/rules";
 import { Notice, Section, Switch, useConfirm } from "../../ui/console";
 import { useSiteAccess } from "../console-context";
@@ -10,6 +10,19 @@ import { useMutation, useResource } from "../use-resource";
 
 /** The break-glass command the confirmation names (packages/cli, KOBE-774). */
 export const BREAK_GLASS_COMMAND = "kobe sso allow-local-sign-in";
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** Who could not sign in once it is on, in numbers (review H1). */
+function strandedLine({ unlinked }: SsoSettings): string {
+  if (unlinked.users === 0) return "Every active account has a linked identity provider sign-in.";
+  const accounts = plural(unlinked.users, "active account has", "active accounts have");
+  const roles =
+    unlinked.siteRoles === 0
+      ? ""
+      : ` (${unlinked.siteRoles} of them ${unlinked.siteRoles === 1 ? "holds" : "hold"} a site role)`;
+  return `${accounts} no linked identity provider sign-in${roles} and will be unable to sign in until they are linked.`;
+}
 
 /**
  * "Require single sign-on" (KOBE-774, `/v1/site/sso/settings`): turns password and passkey
@@ -23,7 +36,7 @@ export function SsoRequiredSection() {
   const mutation = useMutation();
   const [confirm, confirmDialog] = useConfirm();
 
-  async function change(next: boolean, trigger: HTMLElement | null) {
+  async function change(settings: SsoSettings, next: boolean, trigger: HTMLElement | null) {
     const yes = await confirm(
       next
         ? {
@@ -31,10 +44,11 @@ export function SsoRequiredSection() {
             description: (
               <>
                 Password and passkey sign-in stop, password resets and password invitations are
-                refused, and everyone signed in without your identity provider is signed out now. If
-                the identity provider ever stops working, nobody can sign in through the web: the
-                Site owner can then turn this off with cluster access by running{" "}
-                <code>{BREAK_GLASS_COMMAND}</code> (see the guide&apos;s Single sign-on page).
+                refused, and everyone signed in without your identity provider is signed out now.{" "}
+                {strandedLine(settings)} If the identity provider ever stops working, nobody can
+                sign in through the web: the Site owner can then turn this off with cluster access
+                by running <code>{BREAK_GLASS_COMMAND}</code> (see the guide&apos;s Single sign-on
+                page).
               </>
             ),
             confirmLabel: "Require single sign-on",
@@ -72,14 +86,16 @@ export function SsoRequiredSection() {
                 checked={settings.requireSso}
                 disabled={mutation.pending || ownerOnly || cannotStart}
                 onCheckedChange={(checked) =>
-                  void change(checked, document.activeElement as HTMLElement | null)
+                  void change(settings, checked, document.activeElement as HTMLElement | null)
                 }
                 hint={
                   ownerOnly
                     ? "Only the Owner can turn this off."
                     : cannotStart
                       ? "Sign out and sign in with an enabled identity provider to turn this on: that proves the provider works and that you can still sign in."
-                      : "People sign in only with your identity provider: no password, passkey, password reset or password invitation. API keys and SCIM keep working. It turns itself off if the last enabled provider is turned off or deleted."
+                      : !settings.requireSso && settings.unlinked.owners > 0
+                        ? `${plural(settings.unlinked.owners, "Owner has", "Owners have")} no linked identity provider sign-in yet: each Owner links their account first, or this is refused.`
+                        : "People sign in only with your identity provider: no password, passkey, password reset or password invitation. API keys and SCIM keep working. It turns itself off if the last enabled provider is turned off or deleted."
                 }
               />
               {settings.requireSso && !settings.inForce ? (

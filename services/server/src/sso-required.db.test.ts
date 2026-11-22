@@ -68,6 +68,15 @@ async function ssoBrowser(email: string, userId: string, providerId = corpId) {
   return browser;
 }
 
+/** Links the user to a provider (as a past SSO sign-in would). */
+async function linkIdentity(userId: string, providerId = corpId) {
+  await h.admin.query(
+    `INSERT INTO sso_identities (provider_id, subject, user_id, linked_via)
+     VALUES ($1, $2, $3, 'local_proof') ON CONFLICT DO NOTHING`,
+    [providerId, `sub-${userId}`, userId],
+  );
+}
+
 async function setRequired(on: boolean) {
   await h.admin.query(
     `INSERT INTO site_settings (key, value) VALUES ('require_sso', $1)
@@ -120,6 +129,7 @@ beforeEach(async () => {
   await setRequired(false);
   await h.admin.query(`UPDATE sso_providers SET enabled = true WHERE slug = 'corp'`);
   await h.admin.query(`DELETE FROM sessions`);
+  await h.admin.query(`DELETE FROM sso_identities`);
   h.mailer.sent.length = 0;
 });
 
@@ -150,7 +160,35 @@ describe("turning it on (ac-1)", () => {
     expect((await member.put(SETTINGS, { requireSso: true })).status).toBe(403);
   });
 
+  it("is refused while an active Owner has no identity at an enabled provider (review H1)", async () => {
+    const admin = await ssoBrowser(adminEmail, adminId);
+    const view = await admin.get(SETTINGS);
+    // Counts only: never who.
+    expect(view.json.unlinked).toEqual({ owners: 1, siteRoles: 2, users: 3 });
+    expect(JSON.stringify(view.json)).not.toContain(ownerEmail);
+    const res = await admin.put(SETTINGS, { requireSso: true });
+    expect(res.status).toBe(409);
+    expect(res.json.code).toBe("owners_not_linked");
+    expect(res.json.message).toMatch(/1 Owner/);
+    expect(res.json.message).not.toContain(ownerEmail);
+    expect(await storedRequired()).toBe("false");
+    // A link at a disabled provider does not count.
+    const { rows } = await h.admin.query<{ id: string }>(
+      `INSERT INTO sso_providers (slug, display_name, kind, issuer, client_id, subject_claim,
+              access_claim, managed_by, enabled)
+       VALUES ('off-${randomUUID().slice(0, 6)}', 'Off', 'oidc', 'https://off.example.com', 'c',
+               'sub', 'roles', 'helm', false) RETURNING id`,
+    );
+    await linkIdentity(ownerId, rows[0]?.id);
+    expect((await admin.put(SETTINGS, { requireSso: true })).status).toBe(409);
+    // Linked at an enabled provider: it turns on.
+    await linkIdentity(ownerId);
+    expect((await admin.get(SETTINGS)).json.unlinked).toMatchObject({ owners: 0, siteRoles: 1 });
+    expect((await admin.put(SETTINGS, { requireSso: true })).status).toBe(200);
+  });
+
   it("from an SSO session: on, audited, and every local session ends", async () => {
+    await linkIdentity(ownerId);
     const member = await h.signIn(memberEmail);
     const localOwner = await h.signIn(ownerEmail);
     const admin = await ssoBrowser(adminEmail, adminId);
@@ -162,15 +200,12 @@ describe("turning it on (ac-1)", () => {
     expect((await member.get("/v1/me")).status).toBe(401);
     expect((await localOwner.get("/v1/me")).status).toBe(401);
     expect((await admin.get("/v1/me")).status).toBe(200);
-    const audit = await requiredAudit();
-    expect(audit).toEqual([
-      {
-        action: "identity.sso.required.enabled",
-        target: { sessionsEnded: 2 },
-        actor_kind: "user",
-        actor_id: adminId,
-      },
-    ]);
+    expect((await requiredAudit()).at(-1)).toEqual({
+      action: "identity.sso.required.enabled",
+      target: { sessionsEnded: 2 },
+      actor_kind: "user",
+      actor_id: adminId,
+    });
   });
 });
 
@@ -311,7 +346,9 @@ describe("the last enabled provider going (ac-5)", () => {
     expect(await storedRequired()).toBe("false");
     expect((await requiredAudit()).at(-1)).toMatchObject({
       action: "identity.sso.required.disabled",
-      target: { reason: "last_provider", providerId: id },
+      // The acting admin is named in the target too (review M2): an Admin can't otherwise stop
+      // requiring single sign-on.
+      target: { reason: "last_provider", providerId: id, byUserId: adminId },
       actor_id: adminId,
     });
     await h.deps.background.idle();

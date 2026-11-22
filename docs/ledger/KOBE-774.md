@@ -46,6 +46,22 @@
 - **OpenAPI:** `/v1/site/sso/settings` documented (`src/openapi/site-sso-settings.ts`) with a
   coverage test; the neighbouring provider routes are still undocumented (pre-existing).
 
+## Review g70 fixes
+
+- **H1 lockout:** turn-on also needs every active Owner to have an identity at an enabled provider
+  (checked again under the lock in the turning-on transaction); refused 409 `owners_not_linked`
+  with a count only. `GET /v1/site/sso/settings` returns `unlinked {owners, siteRoles, users}`;
+  the confirmation says how many active accounts / site-role holders would be unable to sign in.
+  Guide no longer points stranded admins to Expect SSO link (SSO10 forbids it for them).
+- **M2:** disabling or deleting the last provider stays the safety valve (the one way an Admin ends
+  the requirement); the `last_provider` event now names the acting admin (`byUserId`); guide says
+  so.
+- **L3:** `require_sso` and `require_2fa` are read as subqueries of the session check's account
+  query (no extra round trip); the thread-read guard lets only `deps.sso.settings` through.
+- **L4:** the invitation page (`components/auth/invite-form.tsx`) shows the provider buttons
+  instead of the password form while the setting is in force; component test.
+- **ac-6:** gate-sso stays a follow-up (below); the coordinator runs the browser spec on gate1.
+
 ## Docs
 
 Guide: `admin/single-sign-on.md` (new "Requiring single sign-on" section, break-glass command,

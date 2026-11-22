@@ -126,18 +126,23 @@ so people sign in only with your identity provider. While it is on:
 - the sign-in page shows only the **Sign in with _provider_** buttons: no email and password, no
   **Forgot your password?**, no passkey;
 - Kobe itself refuses password sign-in, password-reset requests and resets, password invitations
-  (an invited person signs in with the provider instead, so give them access through a mapping,
-  or **Expect SSO link** for an existing account) and passkey sign-in, whatever page or tool sends
-  them (`SSO_REQUIRED`);
+  (the invitation page shows the provider buttons instead, so give invited people access through
+  a mapping) and passkey sign-in, whatever page or tool sends them (`SSO_REQUIRED`);
 - every session that was not signed in through a provider ends at once when you turn it on, and
   any that still turns up ends at its next request. Sessions signed in through a provider are
   unaffected, and so are API keys and SCIM tokens;
-- linking an existing account by signing in with its password is not possible: use **Expect SSO
-  link** (Users → **Single sign-on**) for people who still need a link.
+- linking an existing account by signing in with its password is not possible. For members, use
+  **Expect SSO link** (Users → **Single sign-on**). The Owner, Admins and the setup Owner can't be
+  linked that way: they must link their own accounts **before** the setting goes on (sign in with
+  the provider, then with their password, and confirm the link), or they can't sign in while it
+  is on.
 
-You can turn it on only from a session signed in through a provider that is on: sign out, sign in
-with **Sign in with _provider_** and turn it on. That proves the provider works and that you can
-still get in. The confirmation names the break-glass command below. Only the Owner can turn it
+You can turn it on only from a session signed in through a provider that is on (sign out, sign in
+with **Sign in with _provider_** and turn it on: that proves the provider works and that you can
+still get in), and only while every active Owner has a sign-in linked at a provider that is on;
+otherwise it is refused with how many Owners still need to link (`owners_not_linked`). The
+confirmation says how many active accounts, and how many site-role holders, have no linked sign-in
+and will be unable to sign in, and names the break-glass command below. Only the Owner can turn it
 off again. Turning it on and off is in the audit log (`identity.sso.required.enabled`,
 `identity.sso.required.disabled`).
 
@@ -145,7 +150,9 @@ It never leaves the site without a way in:
 
 - **The last provider goes:** turning off or deleting the last provider that is on (in the console
   or in the chart's values) turns **Require single sign-on** off in the same step. The audit log
-  records why (`reason: last_provider`) and every site admin gets an email.
+  records why (`reason: last_provider`) and, from the console, which admin did it (`byUserId`),
+  and every site admin gets an email. This is a deliberate safety valve: it is the one way an
+  Admin, not only the Owner, ends the requirement, so the Owner sees it in the audit log and email.
 - **Not in force:** while no provider can finish a sign-in (for example a provider from the
   chart's values whose secret is missing) or single sign-on is switched off for the whole site
   (`auth.sso.enabled: false`), local sign-in works even though the setting is stored on; the page
