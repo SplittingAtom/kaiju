@@ -32,7 +32,7 @@ import { invalidRequest, param, parseBody } from "../http/request.js";
 /** Discovery tests (save or the Test button) one site admin may run per minute: outbound calls. */
 export const SSO_TESTS_PER_ADMIN_PER_MINUTE = 20;
 
-const target = z.discriminatedUnion("kind", [
+export const target = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("entra"), tenantId: z.string().max(100) }).strict(),
   z.object({ kind: z.literal("oidc"), issuer: z.string().max(2048) }).strict(),
 ]);
@@ -48,7 +48,7 @@ const common = {
   maxSessionHours: maxSessionHoursSchema.nullable().default(null),
 };
 
-const createSchema = z.discriminatedUnion("kind", [
+export const createSchema = z.discriminatedUnion("kind", [
   z
     .object({
       kind: z.literal("entra"),
@@ -70,7 +70,7 @@ const createSchema = z.discriminatedUnion("kind", [
 ]);
 
 /** Kind and slug never change (the slug is in the redirect URI pasted into the IdP). */
-const patchSchema = z
+export const patchSchema = z
   .object({
     displayName: displayNameSchema.optional(),
     tenantId: z.string().max(100).optional(),

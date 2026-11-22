@@ -8,7 +8,7 @@ import { retentionPeriodSchema } from "../retention/periods.js";
 import { cancelMaximumPending, readMaximum, setMaximum } from "../retention/settings.js";
 import { readJson } from "../http/request.js";
 
-const bodySchema = z.strictObject({ maximum: retentionPeriodSchema });
+export const bodySchema = z.strictObject({ maximum: retentionPeriodSchema });
 
 /**
  * The site's retention maximum (`/v1/site/retention`, spec D6, D8, D18): the longest period

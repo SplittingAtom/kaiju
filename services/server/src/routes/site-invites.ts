@@ -16,7 +16,7 @@ import { hitRateLimit } from "../rate-limit.js";
 import { idSchema } from "../teams/schemas.js";
 import { invalidRequest, param, parseBody } from "../http/request.js";
 
-const inviteSchema = z.object({ email: z.email().max(254) }).strict();
+export const inviteSchema = z.object({ email: z.email().max(254) }).strict();
 
 /** Invitations (new or re-sent) one site admin may send per hour. */
 export const INVITES_PER_ADMIN_PER_HOUR = 30;

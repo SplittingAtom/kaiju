@@ -1,4 +1,6 @@
 import type { CatalogArea } from "./build.js";
+import { siteComplianceDetails } from "./details/site-compliance.js";
+import { sitePeopleDetails } from "./details/site-people.js";
 
 const MANAGE = "Site admins (`site.users.manage`).";
 const SETTINGS = "Site admins (`site.settings.manage`).";
@@ -18,6 +20,8 @@ export const sitePeopleAreas: readonly CatalogArea[] = [
       "Site console administration of people and the install: teams and their members, users, " +
       "invitations, site roles and grants, SSO and SCIM, site settings, branding and isolation. " +
       "For site admins.",
+    detailed: true,
+    details: sitePeopleDetails,
     entries: [
       ["get", "/v1/site/teams", "List every team on the site", TEAMS],
       ["post", "/v1/site/teams", "Create a team", TEAMS],
@@ -199,6 +203,8 @@ export const sitePeopleAreas: readonly CatalogArea[] = [
     description:
       "Audit log, break-glass access, legal holds and retention for site admins. Break-glass " +
       "and holds need a second admin to approve.",
+    detailed: true,
+    details: siteComplianceDetails,
     entries: [
       ["get", "/v1/site/audit", "List audit events across the site", AUDIT],
       [
