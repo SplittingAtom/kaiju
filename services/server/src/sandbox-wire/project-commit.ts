@@ -205,13 +205,22 @@ function answerOnce(c: ProjectCommitConnection, frame: ProjectCommitFrame): (rep
   };
 }
 
-/** The gate's spec for `project.commit` (the allowance is checked; one commit per project runs). */
+/**
+ * The gate's spec for `project.commit`. The allowance is single use (KOBE-783, P2-22): one allowed
+ * call commits at most once, so a rule-allowed call can't commit again from a changed working copy
+ * (and a rule revoked after its one recorded use stops it). A repeat of the call's frame is
+ * answered `pending_approval` while the first is still going (as a repeat always was), else
+ * `not_allowed`. One commit per project runs at a time.
+ */
 export function projectCommitSpec(
   c: ProjectCommitConnection,
-): ToolFrameSpec<ProjectCommitFrame, "check"> {
+): ToolFrameSpec<ProjectCommitFrame, "consume"> {
+  /** This connection's commit calls still going, by run and tool call. */
+  const going = new Set<string>();
+  const callKey = (frame: ProjectCommitFrame) => JSON.stringify([frame.run_id, frame.tool_call_id]);
   return {
     capabilities: [CAPABILITY_PROJECTS],
-    allowance: "check",
+    allowance: "consume",
     refuse(frame, refusal) {
       const answer = answerOnce(c, frame);
       switch (refusal.stage) {
@@ -223,6 +232,10 @@ export function projectCommitSpec(
           return;
         case "verdict": {
           const { verdict } = refusal;
+          if (verdict === "replayed" && going.has(callKey(frame))) {
+            answer({ ok: true, outcome: { status: "pending_approval" } });
+            return;
+          }
           c.deps.log.warn(
             { run_id: frame.run_id, verdict, security: true },
             "project.commit refused",
@@ -232,7 +245,9 @@ export function projectCommitSpec(
               "not_allowed",
               verdict === "input_mismatch"
                 ? "The commit differs from the call that was allowed."
-                : "This tool call was not allowed for this tool.",
+                : verdict === "replayed"
+                  ? "This tool call was already used; make a new call to commit."
+                  : "This tool call was not allowed for this tool.",
             ),
           );
           return;
@@ -243,6 +258,8 @@ export function projectCommitSpec(
     },
     act(frame) {
       const answer = answerOnce(c, frame);
+      const key = callKey(frame);
+      going.add(key);
       let held: string | undefined;
       void run(c, frame, answer, (projectId) => {
         held = projectId;
@@ -252,6 +269,7 @@ export function projectCommitSpec(
           answer(failed("storage_failed", "The commit could not be stored. Try again."));
         })
         .finally(() => {
+          going.delete(key);
           if (held !== undefined) c.pending.delete(held);
         });
     },

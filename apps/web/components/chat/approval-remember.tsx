@@ -39,6 +39,21 @@ function lifetime(scope: RememberScope, expiresAt: string | null, timeZone: stri
   return until ? `Ends ${until}.` : "";
 }
 
+/** Reason codes only an unattended run (scheduled or auto) gives: it never asks, it refuses. */
+const UNATTENDED_CODES: ReadonlySet<string> = new Set([
+  "scheduled_run_no_prompt",
+  "mode_auto_not_allowlisted",
+]);
+
+/**
+ * Whether the card asks because another run of the member's, a scheduled or auto one, would refuse
+ * the call (KOBE-800): the conversation's own decision never asks with these codes. Such a run
+ * reads team rules only, so remembering here does not stop the next card while it runs.
+ */
+export function askedForUnattendedRun(reasons: readonly { readonly code: string }[]): boolean {
+  return reasons.some((r) => UNATTENDED_CODES.has(r.code));
+}
+
 /**
  * The approval card's "remember" controls (KOBE-289): only the choices the server says the team's
  * limits allow for this tool, each with the expiry the server would set, and "only this exact
@@ -50,12 +65,15 @@ export function RememberControls({
   value,
   onChange,
   disabled,
+  unattendedSibling = false,
 }: {
   readonly options: RememberOptions;
   readonly toolShown: string;
   readonly value: RememberChoice;
   readonly onChange: (next: RememberChoice) => void;
   readonly disabled: boolean;
+  /** The card asks because of a scheduled or automatic run ({@link askedForUnattendedRun}). */
+  readonly unattendedSibling?: boolean;
 }) {
   const ids = useId();
   if (!options.canRemember || options.choices.length === 0) {
@@ -89,6 +107,12 @@ export function RememberControls({
           </option>
         ))}
       </select>
+      {unattendedSibling && (
+        <p className={styles.hint} id={`${ids}-unattended`}>
+          A scheduled or automatic run of yours is going, and it doesn&apos;t use remembered
+          approvals: Kobe asks again for this tool until it ends.
+        </p>
+      )}
       {value.remember && picked && (
         <p className={styles.hint} id={`${ids}-life`}>
           {lifetime(picked.scope, picked.expiresAt, options.timeZone)}

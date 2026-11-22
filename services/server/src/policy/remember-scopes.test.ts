@@ -23,7 +23,13 @@ import { evaluatePolicy } from "./evaluate.js";
 import { matchArgPattern } from "./patterns.js";
 import { rememberRefusal } from "./remember.js";
 import { rememberedRuleAllowed, rememberedRuleRefusal } from "./remember-limits.js";
-import { endOfLocalDay, exactArgPattern, literalGlob, rememberExpiry } from "./remember-scope.js";
+import {
+  endOfLocalDay,
+  exactArgPattern,
+  exactCanonicalInput,
+  literalGlob,
+  rememberExpiry,
+} from "./remember-scope.js";
 import { exactKeysMatch, type PolicyRule } from "./rules.js";
 import { DEFAULT_POLICY_SETTINGS } from "./settings.js";
 
@@ -258,6 +264,73 @@ describe("only this exact action", () => {
   it("matches exactly the text after escaping", () => {
     expect(matchGlob(literalGlob("a*b?c\\d"), "a*b?c\\d")).toBe(true);
     expect(matchGlob(literalGlob("a*b"), "aXXb")).toBe(false);
+  });
+});
+
+describe("only this exact action matches on canonical JSON (KOBE-783, P2-23)", () => {
+  /** A user rule as `insertUserAllowRule` stores "only this exact action" of `input`. */
+  const exactRule = (input: JsonObject) => {
+    const pattern = exactArgPattern(jira, input);
+    const canonical = exactCanonicalInput(jira, input);
+    if (pattern === undefined || canonical === undefined) throw new Error("no exact pattern");
+    return rule("user", "allow", jira.name, {
+      remember_scope: "forever",
+      arg_pattern: pattern,
+      exact_keys: true,
+      exact_input: canonical,
+    });
+  };
+  const outcome = (r: PolicyRule, input: JsonObject) => decide(jira, [r], { input }).effect;
+
+  it("a number never matches its string, nor an object or a list its JSON text", () => {
+    const n = exactRule({ project: "KOBE", limit: 5 });
+    expect(outcome(n, { project: "KOBE", limit: 5 })).toBe("allow");
+    expect(outcome(n, { project: "KOBE", limit: "5" })).toBe("require_approval");
+    const s = exactRule({ project: "KOBE", limit: "5" });
+    expect(outcome(s, { project: "KOBE", limit: "5" })).toBe("allow");
+    expect(outcome(s, { project: "KOBE", limit: 5 })).toBe("require_approval");
+    const o = exactRule({ project: "KOBE", fields: { a: 1 }, labels: ["x"] });
+    expect(outcome(o, { project: "KOBE", fields: '{"a":1}', labels: ["x"] })).toBe(
+      "require_approval",
+    );
+    expect(outcome(o, { project: "KOBE", fields: { a: 1 }, labels: '["x"]' })).toBe(
+      "require_approval",
+    );
+    const b = exactRule({ project: "KOBE", draft: true });
+    expect(outcome(b, { project: "KOBE", draft: "true" })).toBe("require_approval");
+  });
+
+  it("key order and number spelling neither defeat nor widen it (the approval's canonical form)", () => {
+    const r = exactRule({ project: "KOBE", fields: { b: 2, a: 1 }, priority: 2 });
+    const same = JSON.parse(
+      '{"priority":2.0,"fields":{"a":1,"b":2},"project":"KOBE"}',
+    ) as JsonObject;
+    expect(outcome(r, same)).toBe("allow");
+    expect(outcome(r, { project: "KOBE", fields: { a: 1, b: 2 }, priority: 3 })).toBe(
+      "require_approval",
+    );
+    expect(outcome(r, { project: "KOBE", fields: { a: 1, b: 2, c: 3 }, priority: 2 })).toBe(
+      "require_approval",
+    );
+  });
+
+  it("a rule stored before the canonical form keeps only what its text says unambiguously", () => {
+    // Its glob text can't tell `5` from "5", nor an object from its JSON text: those never match
+    // (the member is asked again); plain text still matches a string, and nothing else.
+    const legacy = rule("user", "allow", jira.name, {
+      remember_scope: "forever",
+      arg_pattern: { "/project": "KOBE", "/limit": "5" },
+      exact_keys: true,
+    });
+    expect(outcome(legacy, { project: "KOBE", limit: 5 })).toBe("require_approval");
+    expect(outcome(legacy, { project: "KOBE", limit: "5" })).toBe("require_approval");
+    const text = rule("user", "allow", jira.name, {
+      remember_scope: "forever",
+      arg_pattern: { "/project": "KOBE", "/summary": "Fix it" },
+      exact_keys: true,
+    });
+    expect(outcome(text, { project: "KOBE", summary: "Fix it" })).toBe("allow");
+    expect(outcome(text, { project: ["KOBE"], summary: "Fix it" })).toBe("require_approval");
   });
 });
 

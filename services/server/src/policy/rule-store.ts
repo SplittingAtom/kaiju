@@ -68,7 +68,12 @@ type TeamRow = typeof toolRules.$inferSelect;
  */
 export function toPolicyRule(
   row: Pick<SiteRow, "id" | "effect" | "toolGlob" | "argPattern" | "expiresAt"> &
-    Partial<Pick<TeamRow, "rememberScope" | "threadId" | "runId" | "createdAt" | "exactKeys">>,
+    Partial<
+      Pick<
+        TeamRow,
+        "rememberScope" | "threadId" | "runId" | "createdAt" | "exactKeys" | "exactInput"
+      >
+    >,
   scope: RuleScope,
 ): PolicyRule | undefined {
   const glob = globSchema.safeParse(row.toolGlob);
@@ -91,6 +96,7 @@ export function toPolicyRule(
     ...(row.runId ? { run_id: row.runId } : {}),
     ...(row.createdAt ? { created_at: row.createdAt.toISOString() } : {}),
     ...(row.exactKeys ? { exact_keys: true } : {}),
+    ...(row.exactKeys && typeof row.exactInput === "string" ? { exact_input: row.exactInput } : {}),
   };
 }
 

@@ -1702,6 +1702,13 @@
       "when": 1795339631464,
       "tag": "0242_sandbox_volume_lost",
       "breakpoints": true
+    },
+    {
+      "idx": 243,
+      "version": "7",
+      "when": 1795366756940,
+      "tag": "0243_tool_rules_exact_input",
+      "breakpoints": true
     }
   ]
 }

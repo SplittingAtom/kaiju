@@ -6,7 +6,7 @@ import type { ApiError } from "../../lib/api/client";
 import type { ChatApi } from "../../lib/chat/api";
 import { visible } from "../../lib/security/visible";
 import { AdminChange, ApprovalTitle, InputPreview } from "./approval-card-parts";
-import { RememberControls, type RememberChoice } from "./approval-remember";
+import { RememberControls, askedForUnattendedRun, type RememberChoice } from "./approval-remember";
 import { useApprovalInput, useRememberOptions } from "./use-approval-card";
 import styles from "./chat.module.css";
 
@@ -202,6 +202,7 @@ export function ApprovalCard({
               value={{ ...choice, scope }}
               onChange={setChoice}
               disabled={busy}
+              unattendedSibling={askedForUnattendedRun(requested.reasons)}
             />
           )}
           <div className={styles.approvalActions}>

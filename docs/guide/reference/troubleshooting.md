@@ -123,7 +123,9 @@ runs, never override your team's ask or deny rules, and end when their time runs
 **Profile → My approvals**.
 
 **My schedule skipped a step.** Scheduled runs cannot ask, so calls that need approval are
-skipped. Ask a team admin for a team allow rule if the tool should run unattended.
+skipped. A step can also be skipped because you were chatting while the schedule ran: the most
+restrictive of your overlapping runs decides, so what your chat would ask about is skipped for the
+schedule. Ask a team admin for a team allow rule if the tool should run unattended.
 
 ## Memory
 
