@@ -3,8 +3,8 @@ import pino from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { runWithAuditContext } from "./audit/context.js";
 import { createSandboxLifecycle, type LifecycleProvider } from "./sandbox-lifecycle/index.js";
-import type { RebuildProvider } from "./sandbox-lifecycle/rebuild.js";
-import type { HibernateOutcome, WakeResult } from "./sandbox/provider.js";
+import { completeRebuild, type RebuildProvider } from "./sandbox-lifecycle/rebuild.js";
+import type { DiscardGuard, HibernateOutcome, WakeResult } from "./sandbox/provider.js";
 import type { VolumeHealth } from "./sandbox/volume-loss.js";
 import { createTeamWithAdmin } from "./teams/members.js";
 import type { TestBrowser } from "./testing/browser.js";
@@ -45,9 +45,15 @@ class Provider implements RebuildProvider, LifecycleProvider {
     return this.volumeGone ? { state: "missing" } : this.health;
   };
 
-  discardLostVolume = async (_team: unknown, userId: string) => {
+  readonly guards: (DiscardGuard | undefined)[] = [];
+  /** While set, a discard waits for it (a slow cluster). */
+  gate: Promise<void> | undefined;
+
+  discardLostVolume = async (_team: unknown, userId: string, guard?: DiscardGuard) => {
     if (this.failDiscard) throw new Error("Kubernetes API unavailable");
+    this.guards.push(guard);
     this.calls.push(`discard:${userId}`);
+    await this.gate;
     this.volumeGone = true;
     return { sandboxId: SANDBOX, pvc: `workspace-u-${userId}` };
   };
@@ -371,6 +377,92 @@ describe("confirming the rebuild (ac-2)", () => {
     const after = await row();
     expect(after.state).toBe("running");
     expect(after.sandbox_id).not.toBe(SANDBOX);
+  });
+});
+
+describe("a finished rebuild can never be discarded again (review g72-2 HIGH)", () => {
+  const teamRef = () => ({ id: team, slug: "rebuild" });
+  const quiet = pino({ level: "silent" });
+
+  it("passes the discard the recorded claim and the mark time", async () => {
+    await asMember.post("/v1/workspace/rebuild", { confirm: true });
+    expect(provider.guards[0]).toMatchObject({ claimUid: SANDBOX });
+    expect(provider.guards[0]?.notCreatedAfter).toBeInstanceOf(Date);
+  });
+
+  it("a late sweep or replica after the reset and a wake deletes nothing", async () => {
+    await asMember.post("/v1/workspace/rebuild", { confirm: true });
+    await lifecycle().waker.wake({ teamId: team, userId: member });
+    const fresh = (await row()).sandbox_id;
+    // A sweep that listed the row before the reset now runs: it re-checks under the lock.
+    const late = await completeRebuild(h.deps.database.db, provider, teamRef(), member, quiet);
+    expect(late).toBe("already");
+    expect(provider.calls).toEqual([`discard:${member}`, `wake:${member}`]);
+    expect((await row()).sandbox_id).toBe(fresh);
+  });
+
+  it("two replicas finishing at once: the second waits for the lock, then finds it done", async () => {
+    provider.failDiscard = true;
+    await asMember.post("/v1/workspace/rebuild", { confirm: true });
+    provider.failDiscard = false;
+    let open: () => void = () => undefined;
+    provider.gate = new Promise((r) => (open = r));
+    const a = completeRebuild(h.deps.database.db, provider, teamRef(), member, quiet);
+    await new Promise((r) => setTimeout(r, 100));
+    const b = completeRebuild(h.deps.database.db, provider, teamRef(), member, quiet);
+    await new Promise((r) => setTimeout(r, 100));
+    open();
+    expect([await a, await b]).toEqual(["rebuilt", "already"]);
+    expect(provider.calls).toEqual([`discard:${member}`]);
+  });
+
+  it("a slow cluster times out, releases the lock and leaves the rebuild to retry", async () => {
+    provider.failDiscard = true;
+    await asMember.post("/v1/workspace/rebuild", { confirm: true });
+    provider.failDiscard = false;
+    provider.gate = new Promise(() => undefined);
+    const out = await completeRebuild(h.deps.database.db, provider, teamRef(), member, quiet, 50);
+    expect(out).toBe("pending");
+    const marked = await h.admin.query(
+      `SELECT rebuild_started_at FROM sandboxes WHERE team_id = $1 AND user_id = $2`,
+      [team, member],
+    );
+    expect(marked.rows[0].rebuild_started_at).not.toBeNull();
+  });
+});
+
+describe("the down-since clock needs continuous observation (review g72-2 MEDIUM)", () => {
+  it("ignores a leftover from an old outage: the clock restarts", async () => {
+    await h.admin.query(
+      `UPDATE sandboxes SET volume_lost_since = now() - interval '2 hours',
+                            volume_lost_seen_at = now() - interval '1 hour'`,
+    );
+    provider.health = NODE_DOWN;
+    expect((await freshStatus()).json).toMatchObject({ volume: "unreachable", rebuildable: false });
+    const since = await lostSince();
+    expect(Date.now() - (since?.getTime() ?? 0)).toBeLessThan(60_000);
+  });
+
+  it("the sweep clears it when the node is back (a flap starts over)", async () => {
+    await h.admin.query(
+      `UPDATE sandboxes SET volume_lost_since = now() - interval '31 minutes',
+                            volume_lost_seen_at = now()`,
+    );
+    provider.health = { state: "present" };
+    await lifecycle().sweep();
+    expect(await lostSince()).toBeNull();
+    provider.health = NODE_DOWN;
+    expect((await freshStatus()).json).toMatchObject({ volume: "unreachable" });
+  });
+
+  it("the sweep keeps a node that stays down continuous, so it counts after the grace", async () => {
+    await h.admin.query(
+      `UPDATE sandboxes SET volume_lost_since = now() - interval '31 minutes',
+                            volume_lost_seen_at = now() - interval '9 minutes'`,
+    );
+    provider.health = NODE_DOWN;
+    await lifecycle().sweep();
+    expect((await freshStatus()).json).toMatchObject({ volume: "lost", rebuildable: true });
   });
 });
 

@@ -38,6 +38,7 @@ export { ADMISSION_PROBE_NAMESPACE, TEAM_RECONVERGE_MS } from "./provider/team.j
 export type {
   BootstrapIdentity,
   DestroyResult,
+  DiscardGuard,
   EvalSandboxInfo,
   HibernateOutcome,
   ReadyOutcome,

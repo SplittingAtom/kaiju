@@ -8,9 +8,15 @@ import type { ImmediateLossReason, NodeDownReason, VolumeHealth } from "../sandb
  * back with its disk intact (re-join, long upgrade, kubelet down), so it counts as lost only once
  * this server has seen it down continuously for the grace period: the first observation is stored
  * in `sandboxes.volume_lost_since` (server clock only, never a controller timestamp) and any
- * observation that the node is back clears it. Observations happen on wakes, status reads and
- * confirms; a recovery between two observations is not seen.
+ * observation that the node is back clears it. Observations happen on wakes, status reads,
+ * confirms, and every hibernation sweep for rows already marked (`observeMarkedVolumes`). The
+ * period counts only while observed continuously: each observation stores `volume_lost_seen_at`,
+ * and a gap of more than {@link OBSERVATION_GAP_MINUTES} restarts the clock (a flapping node or a
+ * leftover from an old outage never counts as lost at once).
  */
+
+/** Two "still down" observations further apart than this do not make a continuous period. */
+export const OBSERVATION_GAP_MINUTES = 10;
 
 export type VolumeVerdict =
   | {
@@ -46,9 +52,9 @@ export async function observeVolume(
   if (health.state === "missing") return health;
   if (health.state === "present") {
     await tx.execute(sql`
-      UPDATE sandboxes SET volume_lost_since = NULL
+      UPDATE sandboxes SET volume_lost_since = NULL, volume_lost_seen_at = NULL
        WHERE team_id = ${target.teamId} AND user_id = ${target.userId}
-         AND volume_lost_since IS NOT NULL`);
+         AND (volume_lost_since IS NOT NULL OR volume_lost_seen_at IS NOT NULL)`);
     return health;
   }
   if (health.state === "lost") {
@@ -56,7 +62,12 @@ export async function observeVolume(
   }
   const res = await tx.execute<{ since: Date | string; offer_at: Date | string; aged: boolean }>(
     sql`
-    UPDATE sandboxes SET volume_lost_since = COALESCE(volume_lost_since, now())
+    UPDATE sandboxes
+       SET volume_lost_since = CASE
+             WHEN volume_lost_since IS NULL OR volume_lost_seen_at IS NULL
+               OR volume_lost_seen_at < now() - make_interval(mins => ${OBSERVATION_GAP_MINUTES})
+             THEN now() ELSE volume_lost_since END,
+           volume_lost_seen_at = now()
      WHERE team_id = ${target.teamId} AND user_id = ${target.userId}
     RETURNING volume_lost_since AS since,
               volume_lost_since + make_interval(mins => ${graceMinutes}) AS offer_at,

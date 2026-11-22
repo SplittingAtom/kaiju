@@ -12,13 +12,16 @@ import { SandboxProvisioningError } from "./errors.js";
 import { CLAIM, POD, PVC, WORKSPACE_PVC, str, workspacePvcName } from "./kube-objects.js";
 import type { ProviderContext } from "./context.js";
 import type { SandboxProvider } from "./types.js";
-import type { DestroyResult } from "./types.js";
+import type { DestroyResult, DiscardGuard } from "./types.js";
 
 /**
  * Workspace volumes (KOBE-28, KOBE-733, KOBE-739): destroying a sandbox with or without its
  * volume, deleting a retained volume, waiting out a terminating one, and telling and discarding a
  * lost one (split out of provider.ts by KOBE-710).
  */
+
+/** KOBE-739: a claim with an unrecorded UID must predate a rebuild's mark by this much. */
+const CLOCK_SKEW_MARGIN_MS = 5 * 60_000;
 
 /** KOBE-733: how long a new claim waits for a reclaimed volume of the same name to go. */
 const VOLUME_TERMINATING_WAIT_MS = 60_000;
@@ -99,13 +102,42 @@ export function createVolumeOps(ctx: ProviderContext): VolumeOps {
     return !node || notReady(node);
   };
 
+  /** Why the guard refuses to delete what is there now (newer than the confirmed rebuild). */
+  const refusal = async (
+    namespace: string,
+    userId: string,
+    pvcName: string,
+    guard: DiscardGuard | undefined,
+  ): Promise<"newer_claim" | "newer_volume" | undefined> => {
+    if (!guard) return undefined;
+    const created = (o: KubeObject | undefined) => Date.parse(o?.metadata.creationTimestamp ?? "");
+    const mark = guard.notCreatedAfter.getTime();
+    const after = (o: KubeObject | undefined) => created(o) > mark;
+    const claim = await kube.get(CLAIM(namespace, claimName(userId)));
+    // Another claim than the one recorded is refused unless it clearly predates the mark (the row
+    // can lag the cluster); the margin covers clock skew between the API server and Postgres.
+    const otherUid =
+      claim !== undefined &&
+      guard.claimUid !== null &&
+      claim.metadata.uid !== guard.claimUid &&
+      !(created(claim) < mark - CLOCK_SKEW_MARGIN_MS);
+    if (claim && (otherUid || after(claim))) return "newer_claim";
+    if (after(await kube.get(PVC(namespace, pvcName)))) return "newer_volume";
+    return undefined;
+  };
+
   const discardLostVolume = async (
     team: TeamRef,
     userId: string,
-  ): Promise<DestroyResult & { readonly pvc: string }> => {
+    guard?: DiscardGuard,
+  ): Promise<
+    DestroyResult & { readonly pvc: string; readonly refused?: "newer_claim" | "newer_volume" }
+  > => {
     assertTeamRef(team);
     assertUserId(userId);
     const { namespace, sandboxName, pvcName } = await workspaceVolumeOf(team, userId);
+    const refused = await refusal(namespace, userId, pvcName, guard);
+    if (refused) return { pvc: pvcName, refused };
     const pod = await kube.get(POD(namespace, sandboxName));
     const stuck = await onDeadNode(pod);
     const destroyed = await destroySandbox(team, userId, { retainVolume: false });

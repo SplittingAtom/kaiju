@@ -11,7 +11,7 @@ import type { Logger } from "pino";
 import { currentAuditContext } from "../audit/context.js";
 import { recordAudit } from "../audit/record.js";
 import type { TeamRef } from "../sandbox/manifests.js";
-import type { SandboxProvider } from "../sandbox/provider.js";
+import type { DiscardGuard, SandboxProvider } from "../sandbox/provider.js";
 import type { SandboxTarget } from "../sandbox-wire/types.js";
 import { notifyHintInTx } from "../sandbox-wire/bus.js";
 import { observeVolume, type VolumeVerdict } from "./volume-verdict.js";
@@ -111,39 +111,84 @@ async function readRow(tx: KobeTx, target: SandboxTarget, lock: boolean): Promis
   return res.rows[0];
 }
 
+/** How long the cluster deletes may hold the row lock; on timeout the sweep retries later. */
+export const DISCARD_TIMEOUT_MS = 30_000;
+
+const withTimeout = <T>(work: Promise<T>, ms: number): Promise<T> => {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`cluster cleanup timed out after ${ms} ms`)), ms);
+    timer.unref();
+  });
+  return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
+};
+
 /**
- * The second half of a confirmed rebuild: deletes the old claim and volume (idempotent), then
- * resets the row so the next wake starts a new sandbox. Run after the confirm committed, and by
- * the hibernation sweep for a rebuild left unfinished. `pending` when the cluster work failed.
+ * The second half of a confirmed rebuild (review g72-2 HIGH): under the sandbox row's lock, held
+ * from the re-check through the cluster deletes and the reset, so no other replica or sweep can
+ * start a discard after this one reset the row and the member woke a fresh sandbox (`beginWake`
+ * waits on the same lock). Re-checks `rebuild_started_at` under the lock; the discard is told the
+ * claim UID and the time the rebuild was marked and refuses any claim or volume newer than that.
+ * The deletes are bounded ({@link DISCARD_TIMEOUT_MS}); on a failure or timeout the transaction
+ * rolls back, `rebuild_started_at` stays set (it was committed by the confirm) and the next
+ * confirm or sweep retries. `pending` then.
  */
 export async function completeRebuild(
   db: KobeDb,
   provider: Pick<RebuildProvider, "discardLostVolume">,
   team: TeamRef,
   userId: string,
-  log: Pick<Logger, "warn">,
+  log: Pick<Logger, "warn" | "error">,
+  timeoutMs: number = DISCARD_TIMEOUT_MS,
 ): Promise<"rebuilt" | "already" | "pending"> {
   try {
-    await provider.discardLostVolume(team, userId);
+    return await withTeam(db, team.id, async (tx) => {
+      await tx.execute(sql.raw(`SET LOCAL lock_timeout = '10s'`));
+      const locked = await tx.execute<{
+        sandbox_id: string | null;
+        rebuild_started_at: Date | string | null;
+      }>(sql`
+        SELECT sandbox_id, rebuild_started_at FROM sandboxes
+         WHERE team_id = ${team.id} AND user_id = ${userId} FOR UPDATE`);
+      const row = locked.rows[0];
+      if (!row || row.rebuild_started_at === null) return "already";
+      const guard: DiscardGuard = {
+        claimUid: row.sandbox_id,
+        notCreatedAfter: new Date(row.rebuild_started_at),
+      };
+      const discarded = await withTimeout(
+        provider.discardLostVolume(team, userId, guard),
+        timeoutMs,
+      );
+      if (discarded.refused) {
+        // A claim newer than the confirmed rebuild: never deleted. Nothing is left to rebuild.
+        log.error(
+          { team_id: team.id, reason: discarded.refused },
+          "rebuild: the current claim is newer than the confirmed rebuild; not deleted",
+        );
+        await tx.execute(sql`
+          UPDATE sandboxes SET rebuild_started_at = NULL
+           WHERE team_id = ${team.id} AND user_id = ${userId}`);
+        return "already";
+      }
+      await tx.execute(sql`
+        UPDATE sandboxes
+           SET state = 'hibernated', sandbox_id = NULL, pvc = NULL, volume_synced_at = NULL,
+               volume_lost_since = NULL, volume_lost_seen_at = NULL, rebuild_started_at = NULL,
+               state_changed_at = now()
+         WHERE team_id = ${team.id} AND user_id = ${userId}`);
+      // A connection of the lost pod (it can never answer) is closed; its holder drops it.
+      const closed = await tx.execute<{ connection_id: string }>(sql`
+        UPDATE sandbox_connections SET closed_at = now()
+         WHERE team_id = ${team.id} AND user_id = ${userId} AND closed_at IS NULL
+        RETURNING connection_id`);
+      for (const c of closed.rows) await notifyHintInTx(tx, { kind: "hib", id: c.connection_id });
+      return "rebuilt";
+    });
   } catch (err) {
     log.warn({ err, team_id: team.id }, "rebuild: old claim or volume not deleted yet; retried");
     return "pending";
   }
-  return withTeam(db, team.id, async (tx) => {
-    const reset = await tx.execute(sql`
-      UPDATE sandboxes
-         SET state = 'hibernated', sandbox_id = NULL, pvc = NULL, volume_synced_at = NULL,
-             volume_lost_since = NULL, rebuild_started_at = NULL, state_changed_at = now()
-       WHERE team_id = ${team.id} AND user_id = ${userId} AND rebuild_started_at IS NOT NULL`);
-    if ((reset.rowCount ?? 0) === 0) return "already";
-    // A connection of the lost pod (it can never answer) is closed; its holder drops it.
-    const closed = await tx.execute<{ connection_id: string }>(sql`
-      UPDATE sandbox_connections SET closed_at = now()
-       WHERE team_id = ${team.id} AND user_id = ${userId} AND closed_at IS NULL
-      RETURNING connection_id`);
-    for (const c of closed.rows) await notifyHintInTx(tx, { kind: "hib", id: c.connection_id });
-    return "rebuilt";
-  });
 }
 
 /** Rebuilds of a team confirmed over a minute ago and not finished (the sweep completes them). */

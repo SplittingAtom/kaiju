@@ -188,4 +188,35 @@ describe("discardLostVolume (KOBE-739)", () => {
       reason: "node_not_ready",
     });
   });
+
+  it("refuses, deleting nothing, a claim newer than the confirmed rebuild (review g72-2)", async () => {
+    const { kube, provider } = setup();
+    const handle = await provider.ensureSandbox(TEAM, USER);
+    const pvc = seedLocalVolume(kube, handle.sandboxName, "compute4");
+    const claim = kube.all("SandboxClaim")[0];
+    const created = Date.parse(claim?.metadata.creationTimestamp ?? "");
+
+    // Marked before the claim was created: a fresh sandbox, never deleted.
+    const early = { claimUid: handle.sandboxId, notCreatedAfter: new Date(created - 1000) };
+    await expect(provider.discardLostVolume(TEAM, USER, early)).resolves.toEqual({
+      pvc,
+      refused: "newer_claim",
+    });
+    // Another UID than recorded, created just before the mark (clock skew margin): refused.
+    const other = { claimUid: crypto.randomUUID(), notCreatedAfter: new Date(created + 60_000) };
+    await expect(provider.discardLostVolume(TEAM, USER, other)).resolves.toMatchObject({
+      refused: "newer_claim",
+    });
+    expect(kube.all("SandboxClaim")).toHaveLength(1);
+    expect(kube.peek(PVC(pvc))).toBeDefined();
+    expect(kube.calls.some((c) => c.verb === "delete")).toBe(false);
+
+    // The recorded claim, created before the mark: deleted.
+    const ok = { claimUid: handle.sandboxId, notCreatedAfter: new Date(created + 60_000) };
+    await expect(provider.discardLostVolume(TEAM, USER, ok)).resolves.toEqual({
+      sandboxId: handle.sandboxId,
+      pvc,
+    });
+    expect(kube.all("SandboxClaim")).toHaveLength(0);
+  });
 });

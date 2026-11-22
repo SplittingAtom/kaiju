@@ -62,7 +62,7 @@ export async function recordSandboxIdentity(
   pvc: string,
 ): Promise<void> {
   await tx.execute(sql`
-    UPDATE sandboxes SET sandbox_id = ${sandboxId}, pvc = ${pvc}, volume_lost_since = NULL
+    UPDATE sandboxes SET sandbox_id = ${sandboxId}, pvc = ${pvc}, volume_lost_since = NULL, volume_lost_seen_at = NULL
      WHERE team_id = ${target.teamId} AND user_id = ${target.userId}`);
 }
 

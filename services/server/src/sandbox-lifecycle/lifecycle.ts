@@ -72,7 +72,9 @@ function recordWakeSpans(spans: readonly TimingSpan[], runId: string | undefined
 
 export type LifecycleProvider = Pick<SandboxProvider, "wakeSandbox" | "hibernateSandbox"> &
   Partial<ReadyProvider> &
-  Partial<Pick<SandboxProvider, "destroySandbox" | "deleteVolume" | "discardLostVolume">>;
+  Partial<
+    Pick<SandboxProvider, "destroySandbox" | "deleteVolume" | "discardLostVolume" | "volumeHealth">
+  >;
 
 export interface LifecycleOptions {
   readonly db: KobeDb;
@@ -465,6 +467,37 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
     }
   };
 
+  /**
+   * KOBE-739 (review g72-2): rows whose volume's node was seen down are observed again every
+   * sweep, so the "down since" clock is cleared when the node is back and kept continuous while
+   * it stays down (`volume-verdict.ts`). A read error observes nothing.
+   */
+  const reobserveDownNodes = async (team: TeamRef): Promise<void> => {
+    const { volumeHealth } = provider;
+    if (!volumeHealth) return;
+    const users = await withTeam(db, team.id, async (tx) => {
+      const res = await tx.execute<{ user_id: string }>(sql`
+        SELECT user_id FROM sandboxes
+         WHERE team_id = ${team.id} AND volume_lost_since IS NOT NULL
+           AND rebuild_started_at IS NULL
+         ORDER BY volume_lost_seen_at NULLS FIRST
+         LIMIT 20`);
+      return res.rows.map((r) => r.user_id);
+    });
+    for (const userId of users) {
+      const health = await volumeHealth(team, userId).catch(() => undefined);
+      if (!health) continue;
+      await withTeam(db, team.id, (tx) =>
+        observeVolume(
+          tx,
+          { teamId: team.id, userId },
+          health,
+          options.volumeLossGraceMinutes ?? 30,
+        ),
+      );
+    }
+  };
+
   const hibernateOne = async (
     team: TeamRef,
     target: SandboxTarget,
@@ -531,6 +564,7 @@ export function createSandboxLifecycle(options: LifecycleOptions): SandboxLifecy
         }
         reclaimed.push(...(await reclaimTeam(team)));
         await finishRebuilds(team);
+        await reobserveDownNodes(team);
       } catch (err) {
         failedTeams += 1;
         log.error({ err, team_id: team.id }, "hibernation sweep failed for a team");

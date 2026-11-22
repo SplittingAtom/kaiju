@@ -59,6 +59,12 @@ export const sandboxes = pgTable(
      */
     volumeLostSince: timestamp({ withTimezone: true }),
     /**
+     * KOBE-739: the latest observation that the node is still down. A gap of more than 10 minutes
+     * since it restarts `volumeLostSince` (the period must be continuously observed; the
+     * hibernation sweep re-observes these rows every pass).
+     */
+    volumeLostSeenAt: timestamp({ withTimezone: true }),
+    /**
      * KOBE-739: a confirmed rebuild whose cluster cleanup has not finished yet (set and audited
      * before any Kubernetes delete; cleared when the row is reset). Wakes wait while it is set.
      */

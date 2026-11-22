@@ -238,7 +238,8 @@ On confirm the server re-checks the verdict live under the sandbox row's lock, m
 `lastSyncedAt`, `byAdmin`, `legalHold`) in that transaction, and commits before touching the
 cluster. Then it deletes the claim without keeping the volume, force-deletes the old pod if it sits
 on a node that is missing or not Ready (it could never finish terminating), deletes the PVC, and
-resets the row; the next message wakes a new sandbox on a fresh volume, which restores from S3.
+resets the row, all under the sandbox row's lock with the cluster deletes bounded to 30 s (a
+claim or volume created after the rebuild was confirmed is never deleted); the next message wakes a new sandbox on a fresh volume, which restores from S3.
 If the cluster deletes fail, the member is told the rebuild is confirmed and pending (code
 `rebuild_pending`); wakes answer `workspace_rebuilding` meanwhile, and the next confirm or the
 hibernation sweep (rebuilds unfinished after a minute) finishes it. **The old volume is deleted:**
@@ -262,7 +263,9 @@ disk intact (re-join, a long upgrade, kubelet down), so this counts only after t
 it down continuously for `sandbox.volumeLoss.graceMinutes` (default **30**): the first observation
 is stored per sandbox (`sandboxes.volume_lost_since`, the server's own clock, never a controller
 timestamp) and any observation that the node is back clears it. Observations happen on wakes,
-status reads and confirms. For Longhorn, the node is the claim's
+status reads, confirms and every hibernation sweep for sandboxes already marked; a gap of more
+than 10 minutes between two "still down" observations restarts the clock, so a flapping node or a
+leftover from an old outage never counts as lost at once. For Longhorn, the node is the claim's
 `volume.kubernetes.io/selected-node` annotation (set by WaitForFirstConsumer scheduling, where a
 strict-local replica is placed); Longhorn's own Volume and Replica records are not read, so a
 strict-local volume without that annotation is never reported lost. Replicated volumes, volumes on

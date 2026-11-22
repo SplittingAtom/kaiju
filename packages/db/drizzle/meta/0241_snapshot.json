@@ -1,5 +1,5 @@
 {
-  "id": "945211bb-02ef-41af-bb7f-77506f8627ec",
+  "id": "1c7b273b-60b8-4c35-b274-fec93216093b",
   "prevId": "1e1393c1-2d7c-46e8-af1f-9167fcbdb334",
   "version": "7",
   "dialect": "postgresql",
@@ -5536,6 +5536,12 @@
         },
         "volume_lost_since": {
           "name": "volume_lost_since",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "volume_lost_seen_at": {
+          "name": "volume_lost_seen_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false

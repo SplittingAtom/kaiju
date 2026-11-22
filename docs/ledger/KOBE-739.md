@@ -87,6 +87,17 @@ let the next wake restore from object storage exactly like a wake after a reclai
   reliance documented (no VolumeAttachment/CRD reads); a pod on a missing or not-Ready node is
   force-deleted for every loss reason.
 
+## Review g72-2 fixes
+
+- **HIGH:** `completeRebuild` holds the sandbox row `FOR UPDATE` from the re-check of
+  `rebuild_started_at` through the discard and the reset (beginWake waits on it), the deletes
+  bounded to 30 s (timeout: rollback, mark kept, sweep retries). The discard gets a guard (row's
+  claim UID, mark time) and refuses a claim or PVC created after the mark, or another UID created
+  less than 5 min (clock-skew margin) before it.
+- **MEDIUM:** `volume_lost_seen_at` (same migration 0241); a gap over 10 min between "still down"
+  observations restarts `volume_lost_since`; the hibernation sweep re-observes marked rows (20 per
+  team) and clears them when the node is back.
+
 ## Open questions (for Chris or the coordinator)
 
 - Unverified on a real cluster: that Longhorn CSI PVs carry `dataLocality`/`numberOfReplicas` in

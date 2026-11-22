@@ -111,6 +111,18 @@ export type SandboxAuditEvent =
       };
     };
 
+/**
+ * KOBE-739 (review g72-2): what a rebuild's discard may delete. Only the claim the rebuild was
+ * confirmed for: a claim with another UID, or a claim or volume created after the rebuild was
+ * marked, is refused (`refused` in the result) and nothing is deleted.
+ */
+export interface DiscardGuard {
+  /** The claim UID the row recorded when the rebuild was marked (null: none recorded). */
+  readonly claimUid: string | null;
+  /** When the rebuild was marked. */
+  readonly notCreatedAfter: Date;
+}
+
 /** What {@link SandboxProvider.destroySandbox} removed; empty when there was no sandbox. */
 export interface DestroyResult {
   /** The deleted claim's UID. */
@@ -200,7 +212,10 @@ export interface SandboxProvider {
   discardLostVolume(
     team: TeamRef,
     userId: string,
-  ): Promise<DestroyResult & { readonly pvc: string }>;
+    guard?: DiscardGuard,
+  ): Promise<
+    DestroyResult & { readonly pvc: string; readonly refused?: "newer_claim" | "newer_volume" }
+  >;
   /** Verifies a sandbox pod's bootstrap token (TokenReview) and resolves who it is. */
   identifyBootstrapToken(token: string): Promise<BootstrapIdentity>;
   /**
