@@ -6,6 +6,7 @@ import { requireSession, type AuthVariables } from "./auth/session.js";
 import { delegationOf } from "./kobe-mcp/delegation.js";
 import type { ServerDeps } from "./deps.js";
 import { logger } from "./logger.js";
+import type { IngressRateLimitSource } from "./config.js";
 import type { IsolationGate } from "./isolation/gate.js";
 import type { EvalRunner } from "./agents/eval/service.js";
 import { siteAgentRosterRoutes, teamAgentRosterRoutes } from "./routes/agent-roster.js";
@@ -47,6 +48,7 @@ import { siteSsoLinkRoutes } from "./routes/site-sso-links.js";
 import { meSsoLinkRoutes } from "./routes/me-sso-links.js";
 import { siteScimTokenRoutes } from "./routes/site-scim-tokens.js";
 import { scimRoutes } from "./routes/scim.js";
+import { siteHealthRoutes } from "./routes/site-health.js";
 import { siteIsolationRoutes } from "./routes/site-isolation.js";
 import { siteModelsRoutes } from "./routes/site-models.js";
 import { siteLegalHoldRoutes } from "./routes/site-legal-hold.js";
@@ -164,6 +166,8 @@ export interface AppOptions {
   readonly skillImport?: ImportDeps;
   /** HSTS `includeSubDomains` (KOBE-695); HSTS itself follows the public URL's scheme. */
   readonly hstsIncludeSubDomains?: boolean;
+  /** Who limits requests at the ingress (KOBE-811), for the Site health view; unset: unknown. */
+  readonly ingressRateLimit?: IngressRateLimitSource;
 }
 
 /** Health endpoints always; auth and the /v1 API when dependencies are provided. */
@@ -381,6 +385,10 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   api.route("/site/skills", siteSkillRetireRoutes(deps, options.skillMirror));
   api.route("/site/skills", siteSkillTagRoutes(deps));
   if (isolation) api.route("/site/isolation", siteIsolationRoutes(isolation));
+  api.route(
+    "/site/health",
+    siteHealthRoutes({ ingressRateLimit: options.ingressRateLimit ?? "unknown" }),
+  );
   app.route("/v1", api);
   // Kobe MCP admin tools (KOBE-619) run their console routes in process through this router.
   deps.kobeMcp.bindApi(app);

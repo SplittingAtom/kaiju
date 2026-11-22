@@ -216,6 +216,10 @@ const configSchema = z.object({
     .default(900),
 });
 
+/** Who limits requests per client at the ingress (KOBE-811). */
+export const INGRESS_RATE_LIMIT_SOURCES = ["chart", "external", "none", "unknown"] as const;
+export type IngressRateLimitSource = (typeof INGRESS_RATE_LIMIT_SOURCES)[number];
+
 /** Auth settings: required by the API server only (the scheduler never sees these secrets). */
 const authSchema = z.object({
   // Public origin of the install: cookie scope and the WebAuthn relying party.
@@ -253,6 +257,14 @@ const authSchema = z.object({
     .enum(["true", "false"], { error: "KOBE_HSTS_INCLUDE_SUBDOMAINS must be true or false" })
     .default("false")
     .transform((v) => v === "true"),
+  // Who limits requests per client at the ingress (KOBE-811, chart `ingress.rateLimit`): the
+  // chart's Traefik middleware, the operator's own edge, nobody, or unknown (no chart-managed
+  // Ingress). Only shown in the Site console's health view.
+  KOBE_INGRESS_RATE_LIMIT: z
+    .enum(INGRESS_RATE_LIMIT_SOURCES, {
+      error: "KOBE_INGRESS_RATE_LIMIT must be chart, external, none or unknown",
+    })
+    .default("unknown"),
 });
 
 export interface AuthConfig {
@@ -264,6 +276,8 @@ export interface AuthConfig {
   readonly approvalKey?: string;
   /** Add `includeSubDomains` to the HSTS header (KOBE-695). */
   readonly hstsIncludeSubDomains: boolean;
+  /** Who limits requests at the ingress (KOBE-811), for the Site console's health view. */
+  readonly ingressRateLimit: IngressRateLimitSource;
 }
 
 /** A connection pool size, 1..`max` (KOBE-736). */
@@ -413,6 +427,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
       setupToken: auth.data.KOBE_SETUP_TOKEN,
       trustedProxies: auth.data.KOBE_TRUSTED_PROXIES,
       hstsIncludeSubDomains: auth.data.KOBE_HSTS_INCLUDE_SUBDOMAINS,
+      ingressRateLimit: auth.data.KOBE_INGRESS_RATE_LIMIT,
       ...(auth.data.KOBE_APPROVAL_KEY ? { approvalKey: auth.data.KOBE_APPROVAL_KEY } : {}),
     },
     smtp: smtp.data,
