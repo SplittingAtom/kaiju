@@ -21,7 +21,7 @@ import { useWorkspaceProjects } from "../projects/workspace-projects";
 import { editBlockReason } from "../../lib/files/editor";
 import type { EditDraftStore, FileReviewStore } from "../../lib/files/editor-state";
 import { fileVersion } from "../../lib/files/outside-change";
-import { fileName, previewOf } from "../../lib/files/preview";
+import { defaultModeOf, fileName, previewOf } from "../../lib/files/preview";
 import { ErrorNotice } from "../admin/error-notice";
 import {
   ChangedBadge,
@@ -151,7 +151,11 @@ export function FileEditor(props: FileEditorProps) {
   const { path, text, sha256, truncated, drafts, reviews } = props;
   const draft = useDraft(drafts, path);
   const review = useReview(reviews, path);
-  const [mode, setMode] = useState<TextMode>(draft === undefined ? "rendered" : "raw");
+const [mode, setMode] = useState<TextMode>(() =>
+    draft === undefined ? (drafts.chosenModes.get(path) ?? defaultModeOf(path)) : "raw",
+  );
+  // The cursor goes into the editor only when the file opened in Raw by itself (KOBE-802).
+  const [openedRaw] = useState(mode === "raw");
   const [savingAs, setSavingAs] = useState(false);
   const [savedAs, setSavedAs] = useState<string | null>(null);
   const { state, save, reset } = useSave(props.api, path, (saved, version) => {
@@ -229,6 +233,7 @@ export function FileEditor(props: FileEditorProps) {
           preview={previewOf(path)}
           label={`Edit ${name}`}
           readOnly={blocked !== undefined}
+          autoFocus={openedRaw}
           onChange={edit}
         />
       </div>
@@ -237,7 +242,15 @@ export function FileEditor(props: FileEditorProps) {
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2" data-kobe-file-editor={path}>
       <EditorToolbar
         label={`${name} view`}
-        leading={<ModeSwitch mode={mode} onMode={setMode} />}
+        leading={
+          <ModeSwitch
+            mode={mode}
+            onMode={(next) => {
+              drafts.chosenModes.set(path, next);
+              setMode(next);
+            }}
+          />
+        }
         actions={actions}
         status={props.status}
       />

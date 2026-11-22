@@ -56,6 +56,8 @@ export interface CodeEditorProps {
   readonly compact?: boolean | undefined;
   /** Shift+Enter runs (a notebook cell, KOBE-465) instead of inserting a line. */
   readonly onRun?: (() => void) | undefined;
+  /** Put the cursor in the editor when it opens (never when read-only). */
+  readonly autoFocus?: boolean | undefined;
 }
 
 /** What the review row does to the change at the cursor (KOBE-615). */
@@ -244,6 +246,7 @@ export default function CodeEditor({
   onCurrent,
   compact = false,
   onRun,
+  autoFocus = false,
 }: CodeEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<EditorView | null>(null);
@@ -251,6 +254,8 @@ export default function CodeEditor({
   callbacks.current = { onChange, onChunks, onRun, onReview, onCurrent };
   const valueRef = useRef(value);
   valueRef.current = value;
+  const autoFocusRef = useRef(autoFocus);
+  autoFocusRef.current = autoFocus;
   const readOnlyRef = useRef(readOnly);
   readOnlyRef.current = readOnly;
   /** The last value the document was set from. */
@@ -311,6 +316,7 @@ export default function CodeEditor({
     });
     report(created.state);
     setView(created);
+    if (autoFocusRef.current && !readOnlyRef.current) created.focus();
     if (original !== undefined) callbacks.current.onReview?.(reviewControls(created));
     return () => {
       if (original !== undefined) callbacks.current.onReview?.(null);

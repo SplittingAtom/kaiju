@@ -178,3 +178,28 @@ describe("Run for .py files (ac-7, ac-8)", () => {
     expect(kernel.runs).toEqual([]);
   });
 });
+
+describe("Python opens in Raw (KOBE-802)", () => {
+  const editor = () => document.querySelector("[data-kobe-code-editor]");
+
+  it("opens in the code editor; an explicit switch to Rendered is kept when it reopens", async () => {
+    const drafts = new EditDraftStore();
+    await setup(drafts);
+    const user = userEvent.setup();
+    await waitFor(() => expect(editor()).toBeTruthy());
+    const mode = screen.getByRole("switch", { name: "Raw" });
+    expect(mode.getAttribute("aria-checked")).toBe("true");
+    await user.click(mode);
+    expect(editor()).toBeNull();
+    cleanup(); // the tab closes and reopens in the same session
+    await setup(drafts);
+    expect(screen.getByRole("switch", { name: "Raw" }).getAttribute("aria-checked")).toBe("false");
+    expect(editor()).toBeNull();
+  });
+
+  it("a read-only file opens in Raw, read-only, with the reason", async () => {
+    await setup(new EditDraftStore(), THREAD, true);
+    await waitFor(() => expect(editor()).toBeTruthy());
+    expect(screen.getByRole("switch", { name: "Raw" }).getAttribute("aria-checked")).toBe("true");
+  });
+});

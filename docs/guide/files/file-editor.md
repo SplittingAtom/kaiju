@@ -32,6 +32,10 @@ The editor fills the artifact column, and one toolbar at the top holds its contr
   it?" first. The tab then moves to the copy. Read-only files (a project file you cannot commit, a
   thread upload) offer Save As but not Save; the copy goes into My files.
 - The **Rendered/Raw** switch shows Markdown and similar files rendered, or as raw text to edit.
+  Most files open Rendered; a `.py` file opens Raw, in the code editor with the cursor ready, and
+  Rendered is one click away. Your choice for a file stays while this page is open. A read-only
+  Python file (a project file you cannot commit, one over 1 MB) also opens Raw, read-only, with the
+  reason shown above it.
 - For a `.py` file: **Run**, **Interrupt**, **Start** or **Restart** and the kernel's state. See
   [Notebooks and Python](notebooks.md).
 

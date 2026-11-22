@@ -169,6 +169,38 @@ describe("Rendered and Raw (ac-1)", () => {
   });
 });
 
+describe("a Python file opens in Raw (KOBE-802)", () => {
+  it("opens in the editor with the cursor in it; Rendered is one click away", async () => {
+    const thread = threadWithFile("tools/run.py", "print(1)\n");
+    openApp(fake, thread);
+    const user = userEvent.setup();
+    const view = await editorView("Edit run.py");
+    expect(view.state.doc.toString()).toBe("print(1)\n");
+    expect(view.state.readOnly).toBe(false);
+    expect(view.hasFocus).toBe(true);
+    const mode = screen.getByRole("switch", { name: "Raw" });
+    expect(mode.getAttribute("aria-checked")).toBe("true");
+
+    await user.click(mode);
+    expect(screen.getByRole("switch", { name: "Raw" }).getAttribute("aria-checked")).toBe("false");
+    expect(screen.queryByLabelText("Edit run.py")).toBeNull();
+  });
+
+  it("a project file opens in Raw, read-only, with the reason", async () => {
+    const thread = threadWithFile("projects/p1/lib.py", "x = 1\n");
+    openApp(fake, thread);
+    const view = await editorView("Edit lib.py");
+    expect(view.state.readOnly).toBe(true);
+    expect(screen.getByText("Project files are read-only here.")).toBeTruthy();
+  });
+
+  it("other kinds still open Rendered", async () => {
+    const thread = threadWithFile("notes.md", "# Plan\n");
+    openApp(fake, thread);
+    expect(await screen.findByRole("heading", { name: "Plan" })).toBeTruthy();
+  });
+});
+
 describe("the Viewing chip (ac-2)", () => {
   it("names the open file, goes with the message as `viewing`, and × stops it", async () => {
     const thread = threadWithFile("notes.md", "# Plan\n");
