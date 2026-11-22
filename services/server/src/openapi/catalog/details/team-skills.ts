@@ -94,7 +94,7 @@ const Settings = named(
 
 // --- Installs (`routes/team-skill-installs.ts`) ---
 
-const installResult = untyped(
+const skillInstallResult = untyped(
   "TeamSkillInstallResult",
   obj({
     semver: str,
@@ -104,7 +104,7 @@ const installResult = untyped(
     "warning?": oneOfStrings("many_required"),
   }),
 );
-const installList = named(
+const skillInstallList = named(
   "TeamSkillInstallList",
   z.object({
     installs: z.array(
@@ -126,7 +126,7 @@ const installList = named(
 );
 const versionRef = obj({ versionId: uuid, semver: str });
 const cardScore = obj({ passRate: nullable(num), lift: nullable(num), cases: nullable(num) });
-const installUpdates = untyped(
+const skillInstallUpdates = untyped(
   "TeamSkillInstallUpdates",
   obj({
     skillId: uuid,
@@ -150,7 +150,7 @@ const installUpdates = untyped(
   }),
 );
 const hunk = obj({ oldStart: int, oldLines: int, newStart: int, newLines: int, lines: arr(str) });
-const installDiff = untyped(
+const skillInstallDiff = untyped(
   "TeamSkillInstallDiff",
   obj({
     files: arr(
@@ -327,7 +327,7 @@ export const teamSkillsDetails: Readonly<Record<string, CatalogDetail>> = {
     ),
     errors: ["404"],
   },
-  "get /v1/team/skills/installs": { response: installList },
+  "get /v1/team/skills/installs": { response: skillInstallList },
   "delete /v1/team/skills/installs/{skillId}": {
     body: named("UninstallSkillBody", uninstallSkillSchema),
     bodyOptional: true,
@@ -337,27 +337,30 @@ export const teamSkillsDetails: Readonly<Record<string, CatalogDetail>> = {
     errors: ["404"],
   },
   "put /v1/team/skills/installs/{skillId}": {
-    body: named("PutTeamSkillInstall", putTeamSkillInstallSchema),
-    response: installResult,
+    body: named("TeamSkillInstallPutBody", putTeamSkillInstallSchema),
+    response: skillInstallResult,
     errors: ["404", "409"],
   },
   "get /v1/team/skills/installs/{skillId}/diff": {
     query: { to: { type: "string", description: "The version (semver) to diff to." } },
     requiredQuery: ["to"],
-    response: installDiff,
+    response: skillInstallDiff,
     errors: ["404", "503"],
   },
   "post /v1/team/skills/installs/{skillId}/move": {
-    body: named("MoveTeamSkillInstallBody", z.strictObject({ version: semverSchema })),
-    response: installResult,
+    body: named("TeamSkillInstallMoveBody", z.strictObject({ version: semverSchema })),
+    response: skillInstallResult,
     errors: ["404", "409"],
   },
   "post /v1/team/skills/installs/{skillId}/rollback": {
     body: null,
-    response: installResult,
+    response: skillInstallResult,
     errors: ["404", "409"],
   },
-  "get /v1/team/skills/installs/{skillId}/updates": { response: installUpdates, errors: ["404"] },
+  "get /v1/team/skills/installs/{skillId}/updates": {
+    response: skillInstallUpdates,
+    errors: ["404"],
+  },
   "get /v1/team/skills/member-adds": {
     response: untyped(
       "TeamSkillMemberAddList",

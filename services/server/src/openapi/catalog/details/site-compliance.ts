@@ -449,7 +449,7 @@ export const siteComplianceDetails: Readonly<Record<string, CatalogDetail>> = {
       "SiteRetentionState",
       obj({
         ...maximumView,
-        paused: { ...bool, description: "Retention sweeps are paused on this install." },
+        paused: { ...bool, description: "Retention sweeps are paused on this site." },
       }),
     ),
   },

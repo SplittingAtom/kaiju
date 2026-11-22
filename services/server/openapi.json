@@ -28462,7 +28462,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PutTeamSkillInstall"
+                "$ref": "#/components/schemas/TeamSkillInstallPutBody"
               }
             }
           }
@@ -28591,7 +28591,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MoveTeamSkillInstallBody"
+                "$ref": "#/components/schemas/TeamSkillInstallMoveBody"
               }
             }
           }
@@ -73161,7 +73161,7 @@
         "required": ["optedOut"],
         "x-kobe-untyped": true
       },
-      "PutTeamSkillInstall": {
+      "TeamSkillInstallPutBody": {
         "type": "object",
         "properties": {
           "version": {
@@ -73274,7 +73274,7 @@
         "required": ["files", "changedFiles", "truncated"],
         "x-kobe-untyped": true
       },
-      "MoveTeamSkillInstallBody": {
+      "TeamSkillInstallMoveBody": {
         "type": "object",
         "properties": {
           "version": {
@@ -79634,7 +79634,7 @@
           },
           "paused": {
             "type": "boolean",
-            "description": "Retention sweeps are paused on this install."
+            "description": "Retention sweeps are paused on this site."
           }
         },
         "required": ["maximum", "applied", "pending", "paused"],

@@ -189,7 +189,7 @@ const maintainer = obj({
   deactivated: bool,
   addedAt: dateTime,
 });
-const InstallRequested = untyped(
+const CatalogSkillInstallRequested = untyped(
   "CatalogSkillInstallRequested",
   obj({ requested: { type: "boolean", const: true }, alreadyRequested: bool }),
 );
@@ -547,11 +547,11 @@ const catalogDetails: Readonly<Record<string, CatalogDetail>> = {
   "post /v1/skills/catalog/{skillId}/request": {
     body: null,
     status: 202,
-    response: InstallRequested,
+    response: CatalogSkillInstallRequested,
     responseDescription: "Requested; the Team admins are emailed.",
     otherSuccess: {
       "200": {
-        response: InstallRequested,
+        response: CatalogSkillInstallRequested,
         description: "Already requested (`alreadyRequested: true`); nobody is emailed again.",
       },
     },
