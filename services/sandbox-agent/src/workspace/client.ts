@@ -6,6 +6,7 @@ import {
   workspaceBlobsLostResponseSchema,
   workspaceBlobsMissingResponseSchema,
   workspaceCommitResponseSchema,
+  workspaceFlushedResponseSchema,
   workspaceManifestPageSchema,
   workspaceMovesPageSchema,
   type WorkspaceChange,
@@ -144,6 +145,17 @@ export class SyncClient {
       throw new SyncHttpError(502, "bad_response", "file response without a valid entry");
     }
     return { entry, body: Readable.fromWeb(res.body as never) };
+  }
+
+  /**
+   * KOBE-733: the reclaim proof at the end of a shutdown (`POST flushed`; sent only by an agent
+   * running Pi identities). `proven` when the server recorded it; `reason` says why not.
+   */
+  async flushed(connectionId: string): Promise<{ proven: boolean; reason?: string | undefined }> {
+    return this.#json(workspaceFlushedResponseSchema, "POST", "/flushed", {
+      connection_id: connectionId,
+      pi_identities: true,
+    });
   }
 
   async restoreReport(report: WorkspaceRestoreReport): Promise<void> {

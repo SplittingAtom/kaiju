@@ -21,6 +21,7 @@ import {
   type LocalFile,
 } from "../fs.js";
 import { conflictCopy, downloadSafely, revertLocal } from "./local.js";
+import { racy, sameStamp, volumeNow } from "./stamps.js";
 import {
   COMMIT_BATCH,
   MISSING_BATCH,
@@ -30,6 +31,7 @@ import {
   sameAs,
   serial,
   warn,
+  type Known,
   type PlannedChange,
   type PushPlan,
   type SyncState,
@@ -71,8 +73,7 @@ export async function pushOne(s: SyncState, rel: string): Promise<PushedFile> {
   }
   const outcome = await serial(s, async () => {
     if ((s.known.get(rel)?.rev ?? null) !== change.base_rev) return "stale";
-    const { local: _local, ...wire } = change;
-    const out = await s.o.client.commit([wire]);
+    const out = await s.o.client.commit([toWire(change)]);
     const result = out.results[0];
     if (result === undefined) return "no result";
     let refused = false;
@@ -162,28 +163,116 @@ export async function push(s: SyncState): Promise<PushStats> {
   };
 }
 
-export async function planPush(s: SyncState): Promise<PushPlan> {
+/**
+ * The change as the contract has it: only its fields (the server's schema is strict, so any of the
+ * agent's own planning fields, `local` or `verifiable`, would make it refuse the whole commit).
+ */
+export function toWire(change: PlannedChange): WorkspaceChange {
+  return change.op === "put"
+    ? {
+        op: "put",
+        path: change.path,
+        base_rev: change.base_rev,
+        sha256: change.sha256,
+        size: change.size,
+        mtime_ms: change.mtime_ms,
+        executable: change.executable,
+      }
+    : { op: "delete", path: change.path, base_rev: change.base_rev };
+}
+
+/** `k` verified against `file`'s stamp (KOBE-733), or `k` unverified when it has none. */
+function withStamp(k: Known, file: LocalFile | undefined): Known {
+  const { stamp: _old, ...rest } = k;
+  return file?.stamp ? { ...rest, stamp: file.stamp } : rest;
+}
+
+/** Files without a recorded stamp re-hashed per ordinary push (the rest wait; KOBE-733). */
+export const VERIFY_PER_PUSH = 200;
+
+/**
+ * Unchanged size and mtime are not enough (KOBE-733): a file counts as unchanged only when its
+ * stamp (`sync/stamps.ts`) equals the recorded one. Otherwise it is re-hashed: always when a
+ * stamp was recorded and differs; when none was recorded, every such file in `strict` mode (the
+ * reclaim proof) and at most {@link VERIFY_PER_PUSH} per ordinary push. A file re-hashed equal is
+ * recorded only outside the racy window of `start`, the volume's clock when this plan began;
+ * younger ones are counted as `unverified`.
+ */
+export async function planPush(
+  s: SyncState,
+  options: { readonly strict?: boolean } = {},
+): Promise<PushPlan> {
+  // The volume's clock before the scan: every stamp read below is compared against it.
+  const start = await volumeNow(s.o.root);
   const scan = await scanWorkspace(s.o.root, {
     skipDirs: s.o.skipDirs,
     maxFiles: s.o.maxFiles,
   });
   const changes: PlannedChange[] = [];
   let reverted = false;
+  // Symlinks, special files and names the sync refuses stay local only (KOBE-733).
+  let leftOut = scan.skipped;
+  let verifyBudget = options.strict ? Infinity : VERIFY_PER_PUSH;
+  let unverified = 0;
+  let rehashed = 0;
+  const verifiable = (file: LocalFile) =>
+    file.stamp !== undefined && !racy(file.stamp, start) ? ({ verifiable: true } as const) : {};
   for (const [path, file] of scan.files) {
     const k = s.known.get(path);
     if (locked(s, path)) {
       if (await revertLocal(s, path, file)) reverted = true;
       continue;
     }
-    if (k && !k.deleted && sameAs(file, k) && file.executable === k.executable) continue;
+    if (k && !k.deleted && sameAs(file, k) && file.executable === k.executable) {
+      if (sameStamp(k.stamp, file.stamp)) continue;
+      const recorded = k.stamp !== undefined;
+      if (!recorded && verifyBudget <= 0) continue; // verified on a later push
+      if (!recorded) verifyBudget -= 1;
+      // Same size and mtime, but the content may have been rewritten: hash it.
+      rehashed += 1;
+      s.rehashed += 1;
+      const again = await hashFile(s.o.root, path);
+      if (!again || again.size !== file.size) {
+        leftOut += 1;
+        continue;
+      }
+      if (again.sha256 === k.sha256) {
+        if ("verifiable" in verifiable(file)) s.known.set(path, withStamp(k, file));
+        else {
+          // Too young to tell a same-tick rewrite apart: stays unverified (racily clean).
+          s.known.set(path, withStamp(k, undefined));
+          unverified += 1;
+        }
+        continue;
+      }
+      changes.push({
+        op: "put",
+        path,
+        base_rev: k.rev,
+        sha256: again.sha256,
+        size: again.size,
+        mtime_ms: file.mtimeMs,
+        executable: file.executable,
+        local: file,
+        ...verifiable(file),
+      });
+      continue;
+    }
     const refused = s.refused.get(path);
-    if (refused && sameAs(file, refused)) continue;
+    if (refused && sameAs(file, refused)) {
+      leftOut += 1;
+      continue;
+    }
     const hashed = await hashFile(s.o.root, path);
     if (!hashed) {
+      leftOut += 1;
       await noteUnreadable(s, path);
       continue; // changing right now, or unreadable: next time
     }
-    if (hashed.size !== file.size) continue; // changing right now: next time
+    if (hashed.size !== file.size) {
+      leftOut += 1;
+      continue; // changing right now: next time
+    }
     changes.push({
       op: "put",
       path,
@@ -193,6 +282,7 @@ export async function planPush(s: SyncState): Promise<PushPlan> {
       mtime_ms: file.mtimeMs,
       executable: file.executable,
       local: file,
+      ...verifiable(file),
     });
   }
   const unsure = (path: string) =>
@@ -224,7 +314,15 @@ export async function planPush(s: SyncState): Promise<PushPlan> {
     seen.add(c.sha256);
     return true;
   });
-  return { changes, uploads, resends: await resends(s, scan.files, changes) };
+  return {
+    changes,
+    uploads,
+    resends: await resends(s, scan.files, changes),
+    leftOut,
+    partialScan: scan.truncated || scan.incomplete.length > 0,
+    unverified,
+    rehashed,
+  };
 }
 
 /**
@@ -285,7 +383,7 @@ export async function commit(
   const ready = planned.filter((c) => (s.known.get(c.path)?.rev ?? null) === c.base_rev);
   for (let i = 0; i < ready.length; i += COMMIT_BATCH) {
     const batch = ready.slice(i, i + COMMIT_BATCH);
-    const out = await s.o.client.commit(batch.map(({ local: _l, ...change }) => change));
+    const out = await s.o.client.commit(batch.map(toWire));
     for (const [j, result] of out.results.entries()) {
       const change = batch[j];
       if (!change) continue;
@@ -315,7 +413,13 @@ export async function applyResult(
   reject: () => void,
 ): Promise<void> {
   if (result.status === "applied") {
-    s.known.set(result.path, known(result.entry));
+    const entry = known(result.entry);
+    // The scanned file this content was read from, outside the racy window (KOBE-733): verified.
+    const local =
+      change.op === "put" && change.verifiable && change.sha256 === entry.sha256
+        ? change.local
+        : undefined;
+    s.known.set(result.path, withStamp(entry, local));
     s.refused.delete(result.path);
   } else if (result.status === "noop") {
     s.known.delete(result.path);

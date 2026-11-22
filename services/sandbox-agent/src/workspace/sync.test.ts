@@ -21,6 +21,9 @@ import { createHash } from "node:crypto";
 import { isConflictCopyOf } from "@kobe/protocol";
 import { WorkspaceSync, type ConflictReport } from "./sync.js";
 
+const CONN = "6f1d2c3b-4a59-4e6d-8c7b-9a0b1c2d3e4f";
+/** The agent's proof: its last connection, and a quiet sandbox (KOBE-733). */
+const PROOF = { connectionId: CONN, quiet: () => Promise.resolve(true), retryDelayMs: 10 };
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 
 const quiet = {
@@ -49,6 +52,9 @@ afterEach(async () => {
   server.rows.clear();
   server.blobs.clear();
   server.reports.length = 0;
+  server.badRequests.length = 0;
+  server.flushed.length = 0;
+  server.flushAnswers.length = 0;
   server.failWith = undefined;
   server.failDownloads = 0;
   server.horizon = 0;
@@ -352,6 +358,247 @@ describe("workspace sync (agent)", () => {
     server.failWith = undefined;
     await sync.flush(5_000);
     await expect(sync.syncNow()).resolves.toBe(false);
+  });
+
+  it("sends the reclaim proof after a complete shutdown push, bound to the connection (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "late.txt", "written just before hibernation");
+    await sync.flush(5_000, PROOF);
+    expect(server.content("late.txt")).toBe("written just before hibernation");
+    expect(server.flushed).toEqual([CONN]);
+  });
+
+  it("pushes a rewrite that kept size and mtime (ctime moved) before proving (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "data.txt", "aaaa");
+    await sync.push();
+    const before = await stat(path.join(root, "data.txt"));
+    // `cp -p` / `touch -r`: same size, mtime set back, different content.
+    await new Promise((r) => setTimeout(r, 20));
+    await writeFile(path.join(root, "data.txt"), "bbbb");
+    await utimes(path.join(root, "data.txt"), before.atime, before.mtime);
+    await sync.flush(5_000, PROOF);
+    expect(server.content("data.txt")).toBe("bbbb");
+    expect(server.flushed).toEqual([CONN]);
+  });
+
+  it("re-hashes once what it has no ctime for (a restart on a kept volume) (KOBE-733)", async () => {
+    const root = await volume();
+    const first = await started(root);
+    await put(root, "kept.txt", "1111");
+    await first.push();
+    await first.flush(5_000);
+    // A new agent on the same volume: its state comes from the manifest, without ctimes.
+    const second = await started(root);
+    const before = await stat(path.join(root, "kept.txt"));
+    await writeFile(path.join(root, "kept.txt"), "2222");
+    await utimes(path.join(root, "kept.txt"), before.atime, before.mtime);
+    await second.flush(5_000, PROOF);
+    expect(server.content("kept.txt")).toBe("2222");
+    expect(server.flushed).toEqual([CONN]);
+  });
+
+  it("never records a file written just before hashing; a same-size rewrite is caught (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "page.db", "AAAA");
+    // Pushed at once: inside the racy window, so the push records no stamp for it.
+    await sync.push();
+    const before = await stat(path.join(root, "page.db"));
+    // A same-size rewrite that, in the same kernel tick, would leave ctime equal as well.
+    await writeFile(path.join(root, "page.db"), "BBBB");
+    await utimes(path.join(root, "page.db"), before.atime, before.mtime);
+    await sync.flush(10_000, PROOF);
+    expect(server.content("page.db")).toBe("BBBB");
+    expect(sync.lastProofRehashed).toBeGreaterThanOrEqual(1);
+    expect(server.flushed).toEqual([CONN]);
+  });
+
+  it("a wake on the same volume proves without re-hashing unchanged files (KOBE-733)", async () => {
+    const root = await volume();
+    const first = await started(root);
+    await put(root, "a.txt", "aaaa");
+    await put(root, "b/c.txt", "cccc");
+    await first.flush(10_000, PROOF);
+    expect(server.flushed).toEqual([CONN]);
+    server.flushed.length = 0;
+    // The next agent on this volume (a wake) remembers what the last one verified.
+    const second = await started(root);
+    await second.flush(10_000, PROOF);
+    expect(server.flushed).toEqual([CONN]);
+    expect(second.lastProofRehashed).toBe(0);
+    expect(second.rehashedTotal).toBe(0);
+  });
+
+  /** A volume whose last agent proved and saved its stamps; returns the stamp file's path. */
+  async function provenVolume(): Promise<{ root: string; file: string }> {
+    const root = await volume();
+    const first = await started(root);
+    await put(root, "a.txt", "aaaa");
+    await first.flush(10_000, PROOF);
+    server.flushed.length = 0;
+    return { root, file: path.join(root, ".kobe", "agent", "workspace-verified.json") };
+  }
+
+  it("re-hashes when the saved stamps are corrupt or do not match (KOBE-733)", async () => {
+    const corrupt = await provenVolume();
+    await writeFile(corrupt.file, "{not json", { mode: 0o600 });
+    const a = await started(corrupt.root);
+    await a.flush(10_000, PROOF);
+    expect(a.rehashedTotal).toBeGreaterThanOrEqual(1);
+    expect(server.flushed).toEqual([CONN]);
+
+    const mismatched = await provenVolume();
+    const saved = JSON.parse(await readFile(mismatched.file, "utf8")) as { files: string[][] };
+    for (const row of saved.files) row[4] = "1"; // another ctime
+    await writeFile(mismatched.file, JSON.stringify(saved), { mode: 0o600 });
+    const b = await started(mismatched.root);
+    await b.flush(10_000, PROOF);
+    expect(b.rehashedTotal).toBeGreaterThanOrEqual(1);
+  }, 20_000);
+
+  it("ignores saved stamps in a directory that is not the agent's own (KOBE-733)", async () => {
+    const swapped = await provenVolume();
+    // Opened up (as a member's swapped-in folder would be): never trusted.
+    await chmod(path.dirname(swapped.file), 0o755);
+    const a = await started(swapped.root);
+    await a.flush(10_000, PROOF);
+    expect(a.rehashedTotal).toBeGreaterThanOrEqual(1);
+
+    // A link in its place, to a copy of a valid stamp file: never followed.
+    const linked = await provenVolume();
+    const elsewhere = await volume();
+    await rm(path.dirname(linked.file), { recursive: true });
+    await mkdir(path.join(elsewhere, "agent"), { mode: 0o700 });
+    await symlink(path.join(elsewhere, "agent"), path.dirname(linked.file));
+    const b = await started(linked.root);
+    await b.flush(10_000, PROOF);
+    expect(b.rehashedTotal).toBeGreaterThanOrEqual(1);
+  }, 20_000);
+
+  it("gives up after its second pass when a file stays too young to verify (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "future.txt", "ffff");
+    await sync.push();
+    // An mtime an hour ahead stays inside the racy window however long the proof waits.
+    const later = new Date(Date.now() + 3_600_000);
+    await utimes(path.join(root, "future.txt"), later, later);
+    await sync.push();
+    await sync.flush(10_000, PROOF);
+    expect(server.flushed).toEqual([]);
+  }, 20_000);
+
+  it("commits a file older than the racy window on the hibernation flush (e2e KOBE-27 regression)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "reports/q3.md", "kobe-27");
+    // Older than the 2 s window when the flush scans: its change is then verifiable, and the
+    // commit must still carry only protocol fields (the server's schema is strict).
+    await new Promise((r) => setTimeout(r, 2_300));
+    await sync.flush(10_000, PROOF);
+    expect(server.content("reports/q3.md")).toBe("kobe-27");
+    expect(server.badRequests).toEqual([]);
+    // And a later restore onto a new, empty volume is a full one with the file.
+    const fresh = await volume();
+    await started(fresh);
+    expect(await text(fresh, "reports/q3.md")).toBe("kobe-27");
+    expect(server.reports.at(-1)).toMatchObject({ mode: "full", files: 1 });
+  }, 20_000);
+
+  it("sends no proof when other processes are alive or a cleanup failed (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "a.txt", "a");
+    await sync.flush(5_000, { connectionId: CONN, quiet: () => Promise.resolve(false) });
+    expect(server.content("a.txt")).toBe("a");
+    expect(server.flushed).toEqual([]);
+  });
+
+  it("retries the proof once when the hibernation is not committed yet (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    server.flushAnswers.push({ proven: false, reason: "not_hibernated" });
+    await sync.flush(5_000, PROOF);
+    expect(server.flushed).toEqual([CONN, CONN]);
+    // Refused for any other reason: never retried.
+    const other = await volume();
+    const again = await started(other);
+    server.flushed.length = 0;
+    server.flushAnswers.push({ proven: false, reason: "refused" });
+    await again.flush(5_000, PROOF);
+    expect(server.flushed).toEqual([CONN]);
+  });
+
+  it("sends no proof without a connection, or when the shutdown push fails (KOBE-733)", async () => {
+    const root = await volume();
+    const quietSync = await started(root);
+    await quietSync.flush(5_000);
+    expect(server.flushed).toEqual([]);
+
+    const other = await volume();
+    const failing = await started(other);
+    await put(other, "x.txt", "x");
+    server.failWith = 500;
+    await failing.flush(5_000, PROOF);
+    server.failWith = undefined;
+    expect(server.flushed).toEqual([]);
+  });
+
+  it("sends no proof while a file stays local only (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "ok.txt", "synced");
+    await put(root, "secret.txt", "owner-only");
+    await chmod(path.join(root, "secret.txt"), 0o000);
+    await sync.flush(5_000, PROOF);
+    expect(server.content("ok.txt")).toBe("synced");
+    expect(server.flushed).toEqual([]);
+  });
+
+  it("sends no proof with a symlink or a name the sync refuses (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "real.txt", "real");
+    await symlink("real.txt", path.join(root, "link.txt"));
+    await sync.flush(5_000, PROOF);
+    expect(server.flushed).toEqual([]);
+
+    const other = await volume();
+    const named = await started(other);
+    await put(other, "back\\slash.txt", "refused name");
+    await named.flush(5_000, PROOF);
+    expect(server.flushed).toEqual([]);
+  });
+
+  it("still proves with only rebuildable folders, agent state and empty folders unsynced (KOBE-733)", async () => {
+    const root = await volume();
+    const sync = await started(root);
+    await put(root, "app/.venv/lib/x.py", "rebuildable");
+    await put(root, "app/node_modules/m/index.js", "rebuildable");
+    await put(root, ".kobe/sessions/t.jsonl", "rebuilt from the server");
+    await mkdir(path.join(root, "empty-folder"));
+    await put(root, "app/main.py", "print(1)");
+    await sync.flush(5_000, PROOF);
+    expect(server.content("app/main.py")).toBe("print(1)");
+    expect(server.flushed).toEqual([CONN]);
+  });
+
+  it("a volume proven complete restores whole onto the new volume after a reclaim (KOBE-733)", async () => {
+    const old = await volume();
+    const before = await started(old);
+    await put(old, "notes/plan.md", "the plan");
+    await put(old, "data.csv", "a,b\n1,2\n");
+    // The shutdown push and the proof the reaper needs.
+    await before.flush(5_000, PROOF);
+    expect(server.flushed).toEqual([CONN]);
+    // Reclaimed: the next wake gets a new, empty volume.
+    const fresh = await volume();
+    await started(fresh);
+    expect(await text(fresh, "notes/plan.md")).toBe("the plan");
+    expect(await text(fresh, "data.csv")).toBe("a,b\n1,2\n");
   });
 
   it("lets a restore in flight finish before the flush returns: nothing is written after it", async () => {

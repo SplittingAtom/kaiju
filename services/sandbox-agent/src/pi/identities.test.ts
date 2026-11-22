@@ -106,6 +106,8 @@ describe("PiIdentities (KOBE-71)", () => {
           delaysMs: [10],
         }),
       ).rejects.toThrow(/reclaim as 2000 failed \(timed out\)/);
+      expect(ids.cleanupFailed).toBe(false);
+      expect(stuck.cleanupFailed).toBe(true);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -183,7 +185,10 @@ describe("PiIdentities (KOBE-71)", () => {
     const identity = { uid: 2000, gid: 2000 };
     await ids.signalGroup(identity, 42, "TERM");
     await ids.removeContents(identity, "/tmp/kobe-pi/pi-1/agent");
+    expect(ids.cleanupFailed).toBe(false);
     await expect(ids.killAll(identity)).rejects.toThrow(/kill-all as 2000 failed: kill: boom/);
+    // KOBE-733: remembered for the agent's life, so it never proves its copy complete.
+    expect(ids.cleanupFailed).toBe(true);
     expect(runner.calls).toEqual([
       ["2000", "/bin/kill", "-s", "TERM", "--", "-42"],
       ["2000", "/usr/bin/find", "/tmp/kobe-pi/pi-1/agent", "-mindepth", "1", "-delete"],

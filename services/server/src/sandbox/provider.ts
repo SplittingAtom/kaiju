@@ -3,7 +3,7 @@ import {
   type IsolationGate,
   type VerifiedIsolation,
 } from "../isolation/gate.js";
-import type { SandboxSettings } from "./config.js";
+import { quantityBytes, type SandboxSettings } from "./config.js";
 import { isIsolationHandler } from "../isolation/runtime-class.js";
 import {
   ANNOTATION_EVAL_RUN,
@@ -59,6 +59,9 @@ import { logger } from "../logger.js";
 import { podTermination, type PodTermination } from "./pod-termination.js";
 import { diagnoseStall, isPodReady, type StallDiagnosis } from "./stall-diagnosis.js";
 import { reconcileTeamNamespaces, type TeamReconcileSummary } from "./team-reconcile.js";
+
+/** KOBE-733: how long a new claim waits for a reclaimed volume of the same name to go. */
+const VOLUME_TERMINATING_WAIT_MS = 60_000;
 
 /** A team namespace converged except for these scoped ResourceQuotas (members are unaffected). */
 export class TeamQuotaDegradedError extends Error {
@@ -620,6 +623,11 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
   ): Promise<KubeObject> => {
     const name = evalSpec ? evalClaimName(evalSpec.threadId) : claimName(userId);
     let claim = await kube.get(CLAIM(namespace, name));
+    if (!claim && !evalSpec) {
+      // KOBE-733: right after a reclaim the old volume (same name) may still be terminating; a
+      // new claim must not meet it. Wait for it to go, bounded (GC finishes it otherwise).
+      await untilVolumeNotTerminating(namespace, workspacePvcName(name));
+    }
     if (!claim) {
       try {
         claim = await kube.create(
@@ -880,6 +888,7 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
           found.pvcName,
           since,
           now(),
+          quantityBytes(settings.workspace.size),
         );
         // Only a definite signal ends the wait early; otherwise the sandbox gets the whole budget.
         if (last || stall.definite) return { ready: false, sandboxId: found.sandboxId, stall };
@@ -955,6 +964,21 @@ export function createSandboxProvider(options: SandboxProviderOptions): SandboxP
     }
     if (!(await deleteWithRetry(PVC(teamNamespaceName(team), pvcName)))) {
       throw new SandboxProvisioningError(`Volume ${pvcName} could not be deleted; retry`);
+    }
+  };
+
+  const untilVolumeNotTerminating = async (namespace: string, pvcName: string): Promise<void> => {
+    const end = now() + VOLUME_TERMINATING_WAIT_MS;
+    for (;;) {
+      const pvc = await kube.get(PVC(namespace, pvcName));
+      if (!pvc?.metadata.deletionTimestamp) return;
+      if (now() >= end) {
+        logger.warn({ namespace, pvc: pvcName }, "old workspace volume still being deleted");
+        throw new SandboxProvisioningError(
+          `Old workspace volume ${namespace}/${pvcName} still being deleted; retry`,
+        );
+      }
+      await sleep(1000);
     }
   };
 

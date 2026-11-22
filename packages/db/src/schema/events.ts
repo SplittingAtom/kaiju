@@ -62,6 +62,8 @@ export const events = pgTable(
     // first, docs/install.md); not declared here. The same migration adds the SQL-only check
     // `events_schedule_id_ref` (schedule_id IS NULL OR schedule_id::text =
     // lower(ref->>'schedule_id'), NOT VALID).
+    // The retention sweep's (KOBE-741) `events_retention_idx` on (team_id, created_at) WHERE status
+    // IN ('processed', 'failed'): SQL-only (no-transaction migration `*_retention_sweep_indexes.sql`).
     check(
       "events_schedule_fire_keys",
       sql`${t.kind} <> 'schedule.fire' OR (${t.ref}->>'schedule_id' IS NOT NULL AND ${t.dueAt} IS NOT NULL)`,

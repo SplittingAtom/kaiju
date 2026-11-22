@@ -430,3 +430,56 @@ describe("wakeSandbox on an ended pod (KOBE-636)", () => {
     expect(ctx.kube.calls.filter((c) => c.verb === "delete")).toEqual([]);
   });
 });
+
+describe("a wake right after a reclaim (KOBE-733)", () => {
+  it("waits for the old workspace volume of the same name to finish terminating", async () => {
+    const pvc = { apiVersion: "v1", kind: "PersistentVolumeClaim", namespace: NS };
+    const name = `workspace-u-${USER}`;
+    let waits = 0;
+    const { kube, provider } = setup({
+      provider: {
+        sleep: async () => {
+          waits += 1;
+          if (waits === 2) await kube.delete({ ...pvc, name });
+          kube.finishTermination?.();
+        },
+      },
+    });
+    kube.seed({
+      ...pvc,
+      metadata: { name, namespace: NS, deletionTimestamp: "2026-11-21T10:00:00Z" },
+    } as never);
+    const handle = await provider.ensureSandbox(TEAM, USER);
+    expect(handle.claimName).toBe(`u-${USER}`);
+    // The claim was created only once the terminating volume was gone.
+    expect(waits).toBeGreaterThanOrEqual(2);
+    const created = kube.calls.findIndex((c) => c.verb === "create" && c.kind === "SandboxClaim");
+    const removed = kube.calls.findIndex(
+      (c) => c.verb === "delete" && c.kind === "PersistentVolumeClaim",
+    );
+    expect(removed).toBeGreaterThanOrEqual(0);
+    expect(created).toBeGreaterThan(removed);
+  });
+});
+
+describe("a wake meeting a volume that never finishes terminating (KOBE-733)", () => {
+  it("fails the wake with a clear retryable error instead of creating the claim", async () => {
+    const pvc = { apiVersion: "v1", kind: "PersistentVolumeClaim", namespace: NS };
+    const name = `workspace-u-${USER}`;
+    let clock = 0;
+    const { kube, provider } = setup({
+      provider: {
+        now: () => clock,
+        sleep: async () => {
+          clock += 5_000;
+        },
+      },
+    });
+    kube.seed({
+      ...pvc,
+      metadata: { name, namespace: NS, deletionTimestamp: "2026-11-21T10:00:00Z" },
+    } as never);
+    await expect(provider.ensureSandbox(TEAM, USER)).rejects.toThrow(/still being deleted; retry/);
+    expect(kube.calls.some((c) => c.verb === "create" && c.kind === "SandboxClaim")).toBe(false);
+  });
+});

@@ -42,6 +42,8 @@ export class FakeServer {
   readonly violations: string[] = [];
   readonly upgrades: { authorization: string | undefined; path: string | undefined }[] = [];
   connections = 0;
+  /** Connections the agent closed or lost (KOBE-733: the wire closes before the proof). */
+  closes = 0;
   #server: WebSocketServer;
   #socket: WebSocket | undefined;
   #options: FakeServerOptions;
@@ -163,6 +165,9 @@ export class FakeServer {
     if (path !== SANDBOX_WS_PATH) this.violations.push(`wrong path ${String(path)}`);
     this.#socket = socket;
     const connection = ++this.connections;
+    socket.on("close", () => {
+      this.closes += 1;
+    });
     socket.on("message", (data, isBinary) => {
       if (isBinary) {
         this.violations.push("binary frame");

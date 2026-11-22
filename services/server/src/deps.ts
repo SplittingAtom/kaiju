@@ -131,6 +131,8 @@ export interface ServerDeps {
   readonly publicUrl: string;
   /** The nightly retention pass, offboarding purges and workspace GC are paused (KOBE-243). */
   readonly retentionPaused: boolean;
+  /** Months per-call usage is kept (KOBE-741); null: for ever. */
+  readonly usageRetentionMonths: number | null;
   /** Chart-seeded branding defaults (KOBE-503); empty when none is configured. */
   readonly brandingDefaults: BrandingDefaults;
   /**
@@ -629,6 +631,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     auth,
     publicUrl: new URL(options.publicUrl).origin,
     retentionPaused: options.retentionPaused ?? false,
+    usageRetentionMonths: options.usageRetentionMonths ?? null,
     brandingDefaults: options.brandingDefaults ?? {},
     listen,
     eventStream: { hub, reader, timings: { ...STREAM_DEFAULTS, ...options.eventStream?.timings } },
