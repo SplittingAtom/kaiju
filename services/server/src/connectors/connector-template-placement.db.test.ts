@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { ProbeResult } from "./connectors/probe.js";
-import { refreshConnector } from "./connectors/refresh.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import type { ProbeResult } from "./probe.js";
+import { refreshConnector } from "./refresh.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-531 (spec MA3 as amended 2026-10-31): a site admin sets where each pinned template's app

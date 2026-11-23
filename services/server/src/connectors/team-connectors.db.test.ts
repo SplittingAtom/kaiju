@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
-import { loadTeamConnector, exposedTools } from "./mcp/catalog.js";
-import { loadTeamFacts } from "./runs/resolver-input.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { registerConnector } from "./testing/mcp-fixtures.js";
+import { loadTeamConnector, exposedTools } from "../mcp/catalog.js";
+import { loadTeamFacts } from "../runs/resolver-input.js";
+import { openHarness, type Harness } from "../testing/harness.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { registerConnector } from "../testing/mcp-fixtures.js";
 
 /**
  * Team connector enablement (KOBE-104, D27): off by default; team admins enable an install

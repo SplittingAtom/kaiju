@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { KOBE_BUILTIN_CONNECTOR_ID, seedKobeBuiltinConnector } from "@kobe/db";
-import { toolHash } from "./connectors/pin.js";
-import { refreshAllConnectors, refreshConnector } from "./connectors/refresh.js";
-import type { ProbeResult } from "./connectors/probe.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { pinnedTool } from "./testing/mcp-fixtures.js";
+import { toolHash } from "./pin.js";
+import { refreshAllConnectors, refreshConnector } from "./refresh.js";
+import type { ProbeResult } from "./probe.js";
+import { openHarness, type Harness } from "../testing/harness.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { pinnedTool } from "../testing/mcp-fixtures.js";
 
 const pinned = (connector: string, name: string) => pinnedTool(connector, { name });
 

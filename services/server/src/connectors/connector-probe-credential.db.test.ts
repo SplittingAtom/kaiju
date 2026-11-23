@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadEnvelope } from "@kobe/db";
-import { driftNoticesFor } from "./connectors/drift-recipients.js";
-import { notifyDrift } from "./connectors/drift-notify.js";
-import type { ProbeResult } from "./connectors/probe.js";
-import { refreshAllConnectors, refreshConnector } from "./connectors/refresh.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { driftNoticesFor } from "./drift-recipients.js";
+import { notifyDrift } from "./drift-notify.js";
+import type { ProbeResult } from "./probe.js";
+import { refreshAllConnectors, refreshConnector } from "./refresh.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-431 (decision (a), 2026-10-19): the periodic refresh of a connector that needs a credential

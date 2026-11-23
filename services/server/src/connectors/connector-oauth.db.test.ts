@@ -2,12 +2,12 @@ import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { withTestLoopback } from "@kobe/address-policy/testing";
 import { loadEnvelope } from "@kobe/db";
-import { logger } from "./logger.js";
-import { createInternalApp } from "./routes/internal.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { FakeOauthServer } from "./testing/fake-oauth-server.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import { INTERNAL_KEY, activeSandbox, mcpToken, MCP_VERIFY_KEYS } from "./testing/mcp-fixtures.js";
+import { logger } from "../logger.js";
+import { createInternalApp } from "../routes/internal.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { FakeOauthServer } from "../testing/fake-oauth-server.js";
+import { openHarness, type Harness } from "../testing/harness.js";
+import { INTERNAL_KEY, activeSandbox, mcpToken, MCP_VERIFY_KEYS } from "../testing/mcp-fixtures.js";
 
 /**
  * Per-user OAuth grants (KOBE-109) against a fake authorization server following the MCP

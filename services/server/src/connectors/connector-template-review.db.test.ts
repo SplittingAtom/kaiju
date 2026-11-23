@@ -1,11 +1,11 @@
 import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { ProbeResult } from "./connectors/probe.js";
-import { refreshConnector } from "./connectors/refresh.js";
-import { withWebRtcGuard } from "./connectors/app-frame.js";
-import { servedTemplate } from "./connectors/template-store.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import type { ProbeResult } from "./probe.js";
+import { refreshConnector } from "./refresh.js";
+import { withWebRtcGuard } from "./app-frame.js";
+import { servedTemplate } from "./template-store.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-434 (MA-2): site admins review changed and new templates (hashes, size, declared _meta.ui,

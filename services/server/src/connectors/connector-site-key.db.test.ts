@@ -3,12 +3,12 @@ import { readFileSync } from "node:fs";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { loadEnvelope } from "@kobe/db";
-import type { ProbeResult } from "./connectors/probe.js";
-import { refreshConnector } from "./connectors/refresh.js";
-import { logger } from "./logger.js";
-import { createInternalApp } from "./routes/internal.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import type { ProbeResult } from "./probe.js";
+import { refreshConnector } from "./refresh.js";
+import { logger } from "../logger.js";
+import { createInternalApp } from "../routes/internal.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 import { signSessionToken } from "@kobe/session-token";
 import {
   INTERNAL_KEY,
@@ -17,7 +17,7 @@ import {
   mcpToken,
   activeSandbox,
   MCP_VERIFY_KEYS,
-} from "./testing/mcp-fixtures.js";
+} from "../testing/mcp-fixtures.js";
 
 /**
  * A site-wide API key for an MCP connector (KOBE-303): a site admin sets one key, every member of
@@ -701,7 +701,7 @@ describe("removal races and team scoping (KOBE-454 review)", () => {
     );
     expect(audited.rows.map((r) => r.team_id).sort()).toEqual([teamOn, teamOff].sort());
     // CLAUDE.md: no code sets the team outside withTeam() (the budget functions excepted).
-    const source = readFileSync(new URL("./connectors/grants.ts", import.meta.url), "utf8");
+    const source = readFileSync(new URL("./grants.ts", import.meta.url), "utf8");
     expect(source).not.toMatch(/set_config/);
   });
 });

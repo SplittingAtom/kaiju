@@ -2,12 +2,12 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTestLoopback } from "@kobe/address-policy/testing";
 import { loadEnvelope } from "@kobe/db";
-import type { ProbeCredentialKind, ProbeResult } from "./connectors/probe.js";
-import { RefreshGate } from "./connectors/oauth/refresh-gate.js";
-import { refreshConnector } from "./connectors/refresh.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { FakeOauthServer } from "./testing/fake-oauth-server.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import type { ProbeCredentialKind, ProbeResult } from "./probe.js";
+import { RefreshGate } from "./oauth/refresh-gate.js";
+import { refreshConnector } from "./refresh.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { FakeOauthServer } from "../testing/fake-oauth-server.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-784 (P2-13, owner decision 2026-11-22: mirror KOBE-431 for OAuth). An `oauth` connector is

@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { runWithAuditContext } from "./audit/context.js";
-import { sweepDepartedGrants } from "./connectors/grant-departures.js";
-import { removeMemberInTx } from "./teams/members.js";
-import { deactivateUser } from "./users/deactivation.js";
+import { runWithAuditContext } from "../audit/context.js";
+import { sweepDepartedGrants } from "./grant-departures.js";
+import { removeMemberInTx } from "../teams/members.js";
+import { deactivateUser } from "../users/deactivation.js";
 import { withTeam } from "@kobe/db";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * A member's connector grants end with their standing in the team (KOBE-696): removal (team admin,

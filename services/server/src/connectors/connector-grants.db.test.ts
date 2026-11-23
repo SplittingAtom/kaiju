@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadEnvelope } from "@kobe/db";
-import type { ProbeResult } from "./connectors/probe.js";
-import { createMcpService } from "./mcp/service.js";
-import { createInternalApp } from "./routes/internal.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import { INTERNAL_KEY, mcpToken, activeSandbox, MCP_VERIFY_KEYS } from "./testing/mcp-fixtures.js";
+import type { ProbeResult } from "./probe.js";
+import { createMcpService } from "../mcp/service.js";
+import { createInternalApp } from "../routes/internal.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
+import { INTERNAL_KEY, mcpToken, activeSandbox, MCP_VERIFY_KEYS } from "../testing/mcp-fixtures.js";
 
 /**
  * Per-user API-key grants (KOBE-108): the key is sealed at rest, no API returns it, only the run's

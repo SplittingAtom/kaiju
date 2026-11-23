@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadEnvelope } from "@kobe/db";
-import type { ProbeResult } from "./connectors/probe.js";
+import type { ProbeResult } from "./probe.js";
 import {
   connectorRefreshLockName,
   connectorRefreshLocks,
   refreshAllConnectors,
-} from "./connectors/refresh.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+} from "./refresh.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-430: the Re-probe button (`POST /v1/site/connectors/:id/refresh`) runs the periodic
