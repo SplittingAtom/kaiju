@@ -78,6 +78,22 @@ status}`; admins the record minus the sealed credential and key id (both views f
 - **Legal hold / erase / backup:** nothing new: the tables hold no member content (KOBE-757
   ledger); disconnect touches nothing on the host (§9).
 
+## Review fixes (2026-11-22, review-g98)
+
+- M1: Git row for `team_git_connections_list` in `docs/guide/admin/admin-from-a-conversation.md`
+  (the For agents pages name admin tools only generically).
+- L1: back-off for `rate_limited` / `unexpected` / `conflict` is per connection; only
+  `host_unreachable` backs off the host.
+- L2: with no Site host list, an unreachable or unresolvable host and an address the policy
+  refuses all answer 422 `host_refused` / reason `not_reachable` (also in audit and health); the
+  detail goes to the server log only.
+- L3: health status `not_allowed` (protocol enum) when the Site turned Git off or dropped the host:
+  decided before any credential is opened or call made, stored as `host_refused:site_*`, re-decided
+  every pass so it clears soon after the Site allows the host again.
+- L4: the health pass reads Site settings before each check.
+- L5: `bodyLimit` 64 KiB on `/v1/team/git/*` (413 `too_large`).
+- L6: noted (token-cache forgetting stays best effort, per process).
+
 ## For GIT-5 (KOBE-761)
 
 - Shapes: `@kobe/protocol` `gitConnectionListSchema`, `gitConnectionAdminViewSchema`,

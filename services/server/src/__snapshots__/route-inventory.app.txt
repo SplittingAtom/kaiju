@@ -115,6 +115,7 @@ GET /v1/team/egress/requests (anonymous)
 POST /v1/team/egress/requests/:id (anonymous)
 POST /v1/team/egress/requests/:id (anonymous)
 ALL /v1/team/git/* (anonymous)
+ALL /v1/team/git/* bodyLimit
 GET /v1/team/git/connections (anonymous)
 GET /v1/team/git/connections (anonymous)
 GET /v1/team/git/connections/:id (anonymous)

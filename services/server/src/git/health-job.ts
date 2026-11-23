@@ -19,12 +19,13 @@ import { notifyGitTokenExpiry } from "./expiry-notify.js";
  * time (session advisory lock {@link GIT_HEALTH_LOCK}), re-probes connections not checked for
  * {@link GIT_HEALTH_RECHECK_MS} with at most {@link GIT_HEALTH_CONCURRENCY} probes at once, and
  * stores each outcome (last check, last success, error code, capabilities, token expiry). A host
- * that does not answer or rate-limits is backed off (doubling from {@link BACKOFF_MIN_MS} to
+ * that does not answer is backed off (doubling from {@link BACKOFF_MIN_MS} to
  * {@link BACKOFF_MAX_MS}, or until the host's own reset time) and its other connections wait for
- * a later pass. Then the token-expiry notices go out. Teams are listed with `scanTeams()` (reads
+ * a later pass. A rate limit or odd answer backs off only that connection. Site settings are read
+ * before each check; a Site refusal is stored as health (`not_allowed`) without a host call.
+ * Then the token-expiry notices go out. Teams are listed with `scanTeams()` (reads
  * only); every credential read and health write is its own short `withTeam()` transaction, and
- * no transaction is open during a host call. Connections at **Off** and a Site with Git turned
- * off are not probed.
+ * no transaction is open during a host call. Connections at **Off** are not probed.
  */
 export const GIT_HEALTH_LOCK = "kobe.git-health";
 export const GIT_HEALTH_SWEEP_MS = 15 * 60_000;
@@ -32,10 +33,18 @@ export const GIT_HEALTH_RECHECK_MS = 6 * 60 * 60_000;
 export const GIT_HEALTH_CONCURRENCY = 4;
 const BACKOFF_MIN_MS = 15 * 60_000;
 const BACKOFF_MAX_MS = 6 * 60 * 60_000;
-/** Codes that say the host (not the credential) is the problem: back off the host. */
-const HOST_TROUBLE = new Set(["host_unreachable", "rate_limited", "unexpected", "conflict"]);
+/**
+ * Only a host that does not answer is backed off as a whole. A rate limit or an odd answer belongs
+ * to one credential (on github.com a limit is per token), so it backs off that connection only:
+ * one Workspace's exhausted token never delays the others' checks (review L1).
+ */
+const HOST_TROUBLE = new Set(["host_unreachable"]);
+const CONNECTION_TROUBLE = new Set(["rate_limited", "unexpected", "conflict"]);
+const connectionKey = (c: GitConnectionRecord) => `connection:${c.teamId}:${c.id}`;
+/** Health codes of a Site refusal: re-decided every pass (no host call), so a change shows soon. */
+const SITE_REFUSED = /^host_refused:site_/;
 
-/** Per-host back-off, in memory (the pass runs on one replica at a time). */
+/** Back-off by host or by connection key, in memory (the pass runs on one replica at a time). */
 export class GitHostBackoff {
   private readonly hosts = new Map<string, { until: number; delay: number }>();
 
@@ -83,7 +92,9 @@ async function dueConnections(db: KobeDb, before: number): Promise<GitConnection
     const due = (await readGitConnections(tx, team.id)).filter(
       (c) =>
         c.accessLevel !== "off" &&
-        (c.lastCheckedAt === null || c.lastCheckedAt.getTime() <= before),
+        (c.lastCheckedAt === null ||
+          c.lastCheckedAt.getTime() <= before ||
+          (c.lastError !== null && SITE_REFUSED.test(c.lastError))),
     );
     return due.length > 0 ? due : undefined;
   });
@@ -103,8 +114,7 @@ export async function runGitHealthPass(
   let failed = 0;
   let deferred = 0;
   const envelope = d.envelope;
-  const settings = await readGitSiteSettings(d.db);
-  if (envelope && settings.enabled) {
+  if (envelope) {
     const queue = await dueConnections(d.db, now() - (d.recheckMs ?? GIT_HEALTH_RECHECK_MS));
     const busy = new Set<string>();
     const worker = async () => {
@@ -115,12 +125,15 @@ export async function runGitHealthPass(
         const [c] = queue.splice(index, 1);
         if (!c) return;
         const host = hostOf(c);
-        if (backoff.blocked(host, now())) {
+        if (backoff.blocked(host, now()) || backoff.blocked(connectionKey(c), now())) {
           deferred += 1;
           continue;
         }
         busy.add(host);
         try {
+          // Read before each check (review L4): Git turned off or a host dropped mid-pass applies
+          // to the next call; a refusal is stored without calling the host.
+          const settings = await readGitSiteSettings(d.db);
           const out = await checkGitConnection(
             {
               db: d.db,
@@ -134,14 +147,19 @@ export async function runGitHealthPass(
           if (out.kind === "checked") {
             checked += 1;
             backoff.ok(host);
+            backoff.ok(connectionKey(c));
           } else if (out.kind === "failed") {
             checked += 1;
             failed += 1;
-            if (HOST_TROUBLE.has(out.code)) backoff.fail(host, now(), out.error?.resetAt);
+            if (HOST_TROUBLE.has(out.code)) backoff.fail(host, now());
+            else backoff.ok(host);
+            if (CONNECTION_TROUBLE.has(out.code)) {
+              backoff.fail(connectionKey(c), now(), out.error?.resetAt);
+            }
           }
         } catch (err) {
           failed += 1;
-          backoff.fail(host, now());
+          backoff.fail(connectionKey(c), now());
           d.logger.warn({ err, team_id: c.teamId, connection_id: c.id }, "git health check failed");
         } finally {
           busy.delete(host);

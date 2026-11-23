@@ -25,6 +25,7 @@ import type { InstallationTokenCache } from "../git-hosts/github/app-auth.js";
 import type { GitHostNet } from "../git-hosts/http.js";
 import { logger } from "../logger.js";
 import { hitRateLimit, type RateLimitRule } from "../rate-limit.js";
+import { gitHostTarget } from "../git-hosts/target.js";
 import { forgetGitCredential, gitAdapterFor, type GitConnectionSubject } from "./adapters.js";
 import {
   appIdsOf,
@@ -43,6 +44,8 @@ import {
 import {
   assessProbe,
   healthErrorCode,
+  isSiteRefusal,
+  shownError,
   safeReason,
   testFailure,
   testReport,
@@ -134,7 +137,14 @@ const isAnswer = (v: unknown): v is Answer =>
 
 type ProbeOutcome =
   | { readonly ok: true; readonly probe: GitHostProbe }
-  | { readonly ok: false; readonly error: GitHostError; readonly failure: GitTestFailure };
+  | {
+      readonly ok: false;
+      /** The adapter's own error: for back-off and the server log only. */
+      readonly error: GitHostError;
+      /** What the Workspace admin is shown, audited and stored (review L2). */
+      readonly shown: GitHostError;
+      readonly failure: GitTestFailure;
+    };
 
 async function probe(
   d: GitConnectionDeps,
@@ -149,7 +159,14 @@ async function probe(
     return { ok: true, probe: await adapter.probe() };
   } catch (error) {
     if (!(error instanceof GitHostError)) throw error;
-    return { ok: false, error, failure: testFailure(error) };
+    const shown = shownError(error, settings.allowedHosts.length === 0);
+    if (shown !== error) {
+      logger.info(
+        { code: error.code, reason: safeReason(error) ?? null, host: auditHost(subject.baseUrl) },
+        "git host not reachable or its address refused",
+      );
+    }
+    return { ok: false, error, shown, failure: testFailure(shown) };
   }
 }
 
@@ -239,7 +256,7 @@ async function testNew(
   };
   const outcome = await probe(d, decided.settings, subject, secret);
   if (!outcome.ok) {
-    await auditFailure(d, teamId, stage, subject, outcome.error.code, safeReason(outcome.error));
+    await auditFailure(d, teamId, stage, subject, outcome.shown.code, safeReason(outcome.shown));
     return answer(outcome.failure.status, outcome.failure.body);
   }
   const report = testReport(
@@ -421,8 +438,8 @@ export async function replaceGitConnectionCredential(
       teamId,
       "replace",
       subject,
-      outcome.error.code,
-      safeReason(outcome.error),
+      outcome.shown.code,
+      safeReason(outcome.shown),
       connectionId,
     );
     return answer(outcome.failure.status, outcome.failure.body);
@@ -499,6 +516,18 @@ export async function checkGitConnection(
   connection: GitConnectionRecord,
 ): Promise<CheckOutcome> {
   const { teamId, id } = connection;
+  // The Site's decision first, with nothing sent and no credential opened (G3, review L3): a
+  // refusal is stored, so the console and members see why the connection does nothing.
+  try {
+    gitHostTarget(settings, connection.baseUrl);
+  } catch (error) {
+    if (!(error instanceof GitHostError) || !isSiteRefusal(error)) throw error;
+    await storeGitHealth(d.db, teamId, id, connection.credentialUpdatedAt, {
+      ok: false,
+      error: healthErrorCode(error),
+    });
+    return { kind: "refused", failure: testFailure(error) };
+  }
   const sealed = await withTeam(d.db, teamId, (tx) =>
     readGitConnectionSealedCredential(tx, teamId, id),
   );
@@ -520,7 +549,11 @@ export async function checkGitConnection(
       : { kind: "gone" };
   }
   const outcome = await probe(d, settings, subjectOf(connection), secret);
-  if (!outcome.ok && outcome.failure.status === 403) {
+  if (!outcome.ok && isSiteRefusal(outcome.shown)) {
+    await storeGitHealth(d.db, teamId, id, connection.credentialUpdatedAt, {
+      ok: false,
+      error: healthErrorCode(outcome.shown),
+    });
     return { kind: "refused", failure: outcome.failure };
   }
   const stored = await storeGitHealth(
@@ -537,7 +570,7 @@ export async function checkGitConnection(
             credentialExpiresAt: outcome.probe.credentialExpiresAt,
           },
         }
-      : { ok: false, error: healthErrorCode(outcome.error) },
+      : { ok: false, error: healthErrorCode(outcome.shown) },
   );
   if (!stored) return { kind: "gone" };
   if (outcome.ok) {
@@ -550,6 +583,7 @@ export async function checkGitConnection(
   return {
     kind: "failed",
     connection: stored,
+    /** The adapter's own error and code: the health job backs off on these. */
     error: outcome.error,
     code: outcome.error.code,
     failure: outcome.failure,
@@ -586,8 +620,8 @@ export async function checkGitConnectionNow(
     teamId,
     "check",
     subjectOf(current),
-    out.code,
-    out.error ? safeReason(out.error) : undefined,
+    out.failure?.body.test.code ?? out.code,
+    out.failure?.body.test.reason,
     connectionId,
   );
   return answer(200, {

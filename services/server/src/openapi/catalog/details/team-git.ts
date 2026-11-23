@@ -42,21 +42,21 @@ export const teamGitDetails: Readonly<Record<string, CatalogDetail>> = {
     status: 201,
     response: Saved,
     responseDescription: `Tested, then stored with the test's report. ${testFailure}`,
-    errors: ["409", "422", "429", "502", "503"],
+    errors: ["409", "413", "422", "429", "502", "503"],
   },
   "post /v1/team/git/connections/test": {
     body: named("TestGitConnectionBody", gitConnectionTestBodySchema),
     response: named("GitConnectionTestAnswer", gitConnectionTestAnswerSchema),
     responseDescription: `What the credential may do; \`test.ok\` false names what is missing. Nothing is stored. ${testFailure}`,
-    errors: ["422", "429", "502", "503"],
+    errors: ["413", "422", "429", "502", "503"],
   },
   "get /v1/team/git/connections/{id}": { response: One, errors: ["404"] },
   "patch /v1/team/git/connections/{id}": {
     body: named("UpdateGitConnectionBody", gitConnectionUpdateBodySchema),
     response: One,
+    errors: ["404", "413", "422"],
     responseDescription:
       "The admin view after the change; 422 `unknown_agent` or `internal_not_offered` (Gitea, Forgejo).",
-    errors: ["404", "422"],
   },
   "delete /v1/team/git/connections/{id}": {
     response: named("GitConnectionRemoved", gitConnectionRemovedSchema),
@@ -68,7 +68,7 @@ export const teamGitDetails: Readonly<Record<string, CatalogDetail>> = {
     body: CredentialBody,
     response: Saved,
     responseDescription: `The new credential passed its test and replaced the old one. ${testFailure}`,
-    errors: ["404", "422", "429", "502", "503"],
+    errors: ["404", "413", "422", "429", "502", "503"],
   },
   "post /v1/team/git/connections/{id}/check": {
     body: null,

@@ -14,7 +14,8 @@ export const GIT_CONNECTION_CREDENTIAL_KINDS = ["github_app", "access_token"] as
 export const GIT_CONNECTION_ACCESS_LEVELS = ["off", "read", "read_write"] as const;
 export const GIT_CONNECTION_REPO_VISIBILITIES = ["private", "internal"] as const;
 export const GIT_CONNECTION_CAPABILITY_VALUES = ["yes", "no", "unknown"] as const;
-export const GIT_CONNECTION_HEALTH = ["ok", "failing", "unchecked"] as const;
+/** `not_allowed`: the Site turned Git off or no longer allows the host (G3); nothing is sent. */
+export const GIT_CONNECTION_HEALTH = ["ok", "failing", "unchecked", "not_allowed"] as const;
 
 const provider = z.enum(GIT_CONNECTION_PROVIDERS);
 const accessLevel = z.enum(GIT_CONNECTION_ACCESS_LEVELS);

@@ -62,7 +62,11 @@ beforeAll(async () => {
       allowedPorts: [forgejo.port, gitea.port, github.port],
       allowedInternalCidrs: [],
       addresses: withTestLoopback(),
-      resolve: () => Promise.resolve(["127.0.0.1"]),
+      // Two made-up names for the L2 test: one does not resolve, one is a private address.
+      resolve: (host: string) =>
+        host === "nowhere.fake.test"
+          ? Promise.reject(new Error("ENOTFOUND"))
+          : Promise.resolve(host === "private.fake.test" ? ["10.0.0.5"] : ["127.0.0.1"]),
     },
   }));
   for (const level of ["info", "warn", "error", "debug"] as const) {
@@ -88,6 +92,16 @@ beforeEach(async () => {
     GIT_SITE_ENABLED_KEY,
     GIT_SITE_ALLOWED_HOSTS_KEY,
   ]);
+});
+
+const healthDeps = () => ({
+  db: fx.db,
+  envelope,
+  net: fx.replica(0).deps.gitHostNet,
+  mailer: fx.replica(0).deps.mailer,
+  publicUrl: "http://kobe.test",
+  logger,
+  recheckMs: 0,
 });
 
 interface World {
@@ -360,6 +374,64 @@ describe("the Site ceiling (G3, ac-3)", () => {
     const check = await call(w.admin, "POST", `${BASE}/${id}/check`);
     expect([check.status, check.json.code]).toEqual([403, "git_disabled"]);
   });
+
+  it("a host the Site dropped shows as not allowed, without a host call; allowed again, it recovers", async () => {
+    const w = await world();
+    const id = (await create(w, forgejoBody())).json.connection.id as string;
+    await fx.admin.query(`INSERT INTO site_settings (key, value) VALUES ($1, $2)`, [
+      GIT_SITE_ALLOWED_HOSTS_KEY,
+      JSON.stringify(["github.com"]),
+    ]);
+    const hits = forgejo.apiHits().length;
+    const check = await call(w.admin, "POST", `${BASE}/${id}/check`);
+    expect([check.status, check.json.code]).toEqual([403, "host_not_allowed"]);
+    const asAdmin = await call(w.admin, "GET", `${BASE}/${id}`);
+    expect(asAdmin.json.connection.health).toMatchObject({
+      status: "not_allowed",
+      last_error: "host_refused:site_host_limit",
+    });
+    expect((await call(w.member, "GET", `${BASE}/${id}`)).json.connection.status).toBe(
+      "not_allowed",
+    );
+    expect(forgejo.apiHits().length).toBe(hits);
+    await fx.admin.query(`DELETE FROM site_settings WHERE key = $1`, [GIT_SITE_ALLOWED_HOSTS_KEY]);
+    // Not due by age (6 h), but a Site refusal is re-decided every pass.
+    await runGitHealthPass({ ...healthDeps(), recheckMs: 6 * 3600_000 }, new GitHostBackoff());
+    const after = await call(w.admin, "GET", `${BASE}/${id}`);
+    expect(after.json.connection.health.status).toBe("ok");
+  });
+
+  it("with no host list, an unresolvable name and a refused private address read the same (L2)", async () => {
+    const w = await world();
+    const answers = [];
+    for (const host of ["nowhere.fake.test", "private.fake.test"]) {
+      const body = forgejoBody({ base_url: `https://${host}:${forgejo.port}` });
+      const res = await call(w.admin, "POST", `${BASE}/test`, body);
+      answers.push([res.status, res.json]);
+    }
+    expect(answers[0]).toEqual(answers[1]);
+    expect(answers[0]?.[0]).toBe(422);
+    expect(answers[0]?.[1]).toMatchObject({
+      code: "host_refused",
+      test: { code: "host_refused", reason: "not_reachable" },
+    });
+    const failures = (await auditRows(w.team)).map((r) => [r.target.failure, r.target.reason]);
+    expect(failures).toEqual([
+      ["host_refused", "not_reachable"],
+      ["host_refused", "not_reachable"],
+    ]);
+  });
+
+  it("refuses a body over 64 KiB before reading it (L5)", async () => {
+    const w = await world();
+    const res = await call(
+      w.admin,
+      "POST",
+      BASE,
+      forgejoBody({ display_name: "x".repeat(70_000) }),
+    );
+    expect([res.status, res.json.code]).toEqual([413, "too_large"]);
+  });
 });
 
 describe("who may call what", () => {
@@ -528,16 +600,6 @@ describe("change, replace, check, disconnect (G1, G8, G20)", () => {
 });
 
 describe("health job and token-expiry notices (§7, G6, ac-3)", () => {
-  const healthDeps = () => ({
-    db: fx.db,
-    envelope,
-    net: fx.replica(0).deps.gitHostNet,
-    mailer: fx.replica(0).deps.mailer,
-    publicUrl: "http://kobe.test",
-    logger,
-    recheckMs: 0,
-  });
-
   it("re-probes due connections, stores failures as codes and backs off a host that is down", async () => {
     const w = await world();
     const id = (await create(w, forgejoBody())).json.connection.id as string;
@@ -558,6 +620,32 @@ describe("health job and token-expiry notices (§7, G6, ac-3)", () => {
     const deferred = await runGitHealthPass(healthDeps(), backoff);
     expect(deferred.deferred).toBeGreaterThanOrEqual(1);
     expect(forgejo.apiHits().length).toBe(hits);
+  });
+
+  it("backs off a rate-limited connection, not its host (L1)", async () => {
+    const a = await world();
+    const b = await world();
+    await create(a, forgejoBody());
+    await create(b, forgejoBody());
+    forgejo.fail("rate_limited");
+    const backoff = new GitHostBackoff();
+    await runGitHealthPass(healthDeps(), backoff);
+    const host = new URL(forgejo.baseUrl).host;
+    expect(backoff.blocked(host, Date.now())).toBe(false);
+    forgejo.fail(null);
+    // A Workspace connecting now is checked on the next pass; the rate-limited ones wait.
+    const c = await world();
+    const fresh = (await create(c, forgejoBody())).json.connection.id as string;
+    await fx.admin.query(`UPDATE git_connections SET last_checked_at = NULL WHERE id = $1`, [
+      fresh,
+    ]);
+    const next = await runGitHealthPass(healthDeps(), backoff);
+    expect(next.deferred).toBeGreaterThanOrEqual(2);
+    const { rows } = await fx.admin.query(
+      `SELECT last_checked_at IS NOT NULL AS checked, last_error FROM git_connections WHERE id = $1`,
+      [fresh],
+    );
+    expect(rows[0]).toEqual({ checked: true, last_error: null });
   });
 
   it("emails the Workspace admins once when a token lapses within 14 days", async () => {

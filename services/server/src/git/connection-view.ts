@@ -13,9 +13,13 @@ import type { GitConnectionAdminView, GitConnectionMemberView } from "@kobe/prot
 export const GIT_EXPIRY_NOTICE_DAYS = 14;
 const DAY_MS = 86_400_000;
 
-export type GitHealthStatus = "ok" | "failing" | "unchecked";
+export type GitHealthStatus = "ok" | "failing" | "unchecked" | "not_allowed";
+
+/** Health codes of a Site refusal (G3): Git turned off, or the host dropped from the list. */
+const SITE_REFUSED = /^host_refused:site_(git_off|host_limit)$/;
 
 export function healthStatus(c: GitConnectionRecord): GitHealthStatus {
+  if (c.lastError !== null && SITE_REFUSED.test(c.lastError)) return "not_allowed";
   if (c.lastCheckedAt === null) return "unchecked";
   if (c.lastError !== null) return "failing";
   return "ok";
