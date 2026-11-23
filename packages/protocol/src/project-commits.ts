@@ -202,6 +202,51 @@ export const repoPushedCommitSchema = z.strictObject({
 });
 export type RepoPushedCommit = z.infer<typeof repoPushedCommitSchema>;
 
+/** A member's Repo working copy as their sandbox last reported it (KOBE-767, G19). */
+export const repoWorkingCopySchema = z.strictObject({
+  /** Null: detached HEAD. */
+  branch: repoBranchSchema.nullable(),
+  head_sha: gitCommitShaSchema.nullable(),
+  /** What ahead/behind count against (`origin/<branch>`, else `origin/<default>`). */
+  upstream: repoBranchSchema.nullable(),
+  ahead: z.number().int().min(0).max(10_000),
+  behind: z.number().int().min(0).max(10_000),
+  /** Uncommitted changes in the working copy. */
+  dirty: z.boolean(),
+  /** False when the last fetch failed: `behind` may be stale. */
+  fetched: z.boolean(),
+  problem: z.string().max(200).nullable(),
+  reported_at: timestampSchema,
+});
+export type RepoWorkingCopy = z.infer<typeof repoWorkingCopySchema>;
+
+/**
+ * `GET /v1/projects/:id/repo-status` (KOBE-767, readers and up): where the caller's commits to
+ * this Repo go and what is in flight. `repo` null for a project that is not a Repo.
+ * `direct_commits`: the connection allows committing straight to `default_branch` (where the host
+ * permits it); otherwise commits open a pull request. `can_commit`: the caller may commit here now
+ * (editor or owner, the Contributor role, the connection at Read and write). `pull_request`: the
+ * caller's pull request from their working copy that the next commit adds to while it is open.
+ */
+export const repoCommitInfoSchema = z.strictObject({
+  repo: z
+    .strictObject({
+      default_branch: repoBranchSchema,
+      direct_commits: z.boolean(),
+      can_commit: z.boolean(),
+      pull_request: z
+        .strictObject({
+          branch: repoBranchSchema,
+          number: z.number().int().positive(),
+          url: hostWebUrlSchema,
+        })
+        .nullable(),
+      working_copy: repoWorkingCopySchema.nullable(),
+    })
+    .nullable(),
+});
+export type RepoCommitInfo = z.infer<typeof repoCommitInfoSchema>;
+
 /**
  * 200 answers of commit and revert. A conflict is the 409 {@link commitConflictErrorSchema}, a
  * quota refusal the 413 {@link projectQuotaErrorSchema}. A commit to a Repo answers

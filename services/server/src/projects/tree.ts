@@ -287,6 +287,8 @@ export interface WrittenCommit {
  * cleared (a pre-copy reservation, {@link reserveKeys}). Audits `project.committed` unless
  * `audit` is false (a revert audits its own event). The caller holds the project row lock.
  * Throws {@link ProjectWriteBlocked} for a Repo or a project being converted (KOBE-765, G17).
+ * `repoMirror` (KOBE-767): Kobe's copy of a Repo takes the commit Kobe itself just pushed to the
+ * Repo's default branch (the caller moves the repository's mirror head in the same transaction).
  */
 export async function writeCommit(
   tx: KobeTx,
@@ -297,11 +299,14 @@ export async function writeCommit(
     readonly author: CommitAuthor;
     readonly message: string;
     readonly audit?: boolean;
+    readonly repoMirror?: boolean;
   },
 ): Promise<WrittenCommit> {
   const { teamId, projectId, tree, author } = input;
   const block = await projectWriteBlock(tx, teamId, projectId);
-  if (block !== null) throw new ProjectWriteBlocked(block);
+  if (block !== null && !(block === "repo" && input.repoMirror === true)) {
+    throw new ProjectWriteBlocked(block);
+  }
   const head = await headOf(tx, teamId, projectId);
   const before = await loadTree(tx, teamId, head?.id ?? null);
   const changes = diffVersions(before, tree);

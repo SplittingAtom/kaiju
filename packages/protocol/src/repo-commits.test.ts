@@ -123,3 +123,29 @@ describe("Repo working copy on the wire (KOBE-767)", () => {
     );
   });
 });
+
+describe("Repo commit info (KOBE-767)", () => {
+  it("is null for a project and bounded for a Repo", async () => {
+    const { repoCommitInfoSchema } = await import("./index.js");
+    expect(repoCommitInfoSchema.safeParse({ repo: null }).success).toBe(true);
+    const repo = {
+      default_branch: "main",
+      direct_commits: false,
+      can_commit: true,
+      pull_request: { branch: "kobe/a/b-1234567", number: 2, url: "" },
+      working_copy: {
+        branch: "main",
+        head_sha: SHA,
+        upstream: "origin/main",
+        ahead: 1,
+        behind: 0,
+        dirty: false,
+        fetched: true,
+        problem: null,
+        reported_at: "2026-11-23T10:00:00.000Z",
+      },
+    };
+    expect(repoCommitInfoSchema.safeParse({ repo }).success).toBe(true);
+    expect(repoCommitInfoSchema.safeParse({ repo: { ...repo, extra: 1 } }).success).toBe(false);
+  });
+});

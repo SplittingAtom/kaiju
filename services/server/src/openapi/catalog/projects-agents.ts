@@ -75,6 +75,12 @@ export const projectsAgentsAreas: readonly CatalogArea[] = [
         "The project's owner and Workspace admins. Resumes at the failed step; answers 202. Rate limited.",
       ],
       [
+        "get",
+        "/v1/projects/{id}/repo-status",
+        "Where the caller's commits to a Repo go",
+        "Every member who views the project; `repo` null for an ordinary project. Pull request or direct commits, whether the caller may commit, their open pull request and their sandbox's working copy (branch, ahead/behind). KOBE-767.",
+      ],
+      [
         "post",
         "/v1/projects/{id}/repo-conversion/abandon",
         "Abandon a failed Convert to repo attempt",

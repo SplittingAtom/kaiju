@@ -5,6 +5,7 @@ import { type TeamVariables } from "../../authz/middleware.js";
 import type { ServerDeps } from "../../deps.js";
 import { loadAccess, type ProjectAccess } from "../../projects/access.js";
 import { type CommitDeps, type CommitResult } from "../../projects/commits.js";
+import { REPO_REFUSAL_MESSAGES, type RepoCommitWiring } from "../../git/repo-commit/dispatch.js";
 import { type ProposalResult } from "../../projects/from-proposal.js";
 import { logger } from "../../logger.js";
 import {
@@ -51,6 +52,24 @@ export function commitAnswer(
       );
     case "commit_not_found":
       return fail(c, 404, "commit_not_found", "No such commit in this project (or it was pruned).");
+    case "pull_request":
+      return c.json({
+        status: "pull_request",
+        branch: result.branch,
+        commit_sha: result.commitSha,
+        number: result.number,
+        url: result.url,
+        opened: result.opened,
+        fallback: result.fallback,
+      });
+    case "pushed":
+      return c.json({
+        status: "pushed",
+        branch: result.branch,
+        commit_sha: result.commitSha,
+        seq: result.seq,
+        commit_id: result.commitId,
+      });
     case "refused":
       return refusal(c, result);
   }
@@ -105,6 +124,10 @@ export function refusal(c: Ctx, r: Extract<CommitResult, { status: "refused" }>)
         PROJECT_WRITE_BLOCK_CODES[r.error],
         PROJECT_WRITE_BLOCK_MESSAGES[r.error],
       );
+    case "repo_moved":
+    case "repo_unavailable":
+    case "repo_push_rejected":
+      return fail(c, 409, r.error, r.detail ?? REPO_REFUSAL_MESSAGES[r.error]);
   }
 }
 
@@ -157,6 +180,12 @@ export function commitKit(deps: ServerDeps, sync: WorkspaceSync | undefined) {
   const db = deps.database.db;
   const owner = (c: Ctx) => ({ teamId: c.get("team").id, userId: c.get("user").id });
   const settings = () => deps.uploads ?? DEFAULT_UPLOAD_SETTINGS;
+  /** KOBE-767: what a commit to a Repo needs besides the commit deps (read on use). */
+  const repoCommit = (): RepoCommitWiring => ({
+    envelope: deps.envelope,
+    net: deps.gitHostNet,
+    publicUrl: deps.publicUrl,
+  });
   const commitDeps = (): CommitDeps => ({
     db,
     blobs: deps.blobs,
@@ -185,5 +214,5 @@ export function commitKit(deps: ServerDeps, sync: WorkspaceSync | undefined) {
     });
   };
 
-  return { deps, db, sync, owner, settings, commitDeps, withProject };
+  return { deps, db, sync, owner, settings, commitDeps, repoCommit, withProject };
 }

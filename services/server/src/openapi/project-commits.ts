@@ -78,10 +78,13 @@ const op = (
 });
 
 const commitAnswers = {
-  "200": json("CommitProjectResult", "`committed {seq, commit_id}` or `nothing_to_commit`."),
+  "200": json(
+    "CommitProjectResult",
+    "`committed {seq, commit_id}` or `nothing_to_commit`; on a Repo (KOBE-767) `pull_request {branch, commit_sha, number, url, opened, fallback}` or `pushed {branch, commit_sha, seq, commit_id}`.",
+  ),
   "409": json(
     "CommitConflict",
-    "`commit_conflict {head_seq}` (Update first), `checkout_required`, `archived`, or `forbidden` under a legal hold.",
+    "`commit_conflict {head_seq}` (Update first), `checkout_required`, `archived`, or `forbidden` under a legal hold. On a Repo: `repo_moved` (the default branch moved on the host: Update, then commit), `repo_unavailable` (connection, host or repository), `repo_push_rejected` (the host refused the push).",
   ),
   "413": json("Error", "`file_too_large`."),
   "507": json("ProjectQuotaError", "`quota_exceeded {limit: bytes|objects}`."),
@@ -137,7 +140,7 @@ export function projectCommitsOpenApiPaths(): Record<string, Record<string, unkn
       post: op(
         "commitProject",
         "Commit the caller's working copy (editor+)",
-        "Diffs the caller's live rows under `projects/<slug>/` against the checkout's base, copies new contents server-side (hash-verified) into the project, writes the commit and its tree, moves the base. Counts against the team byte quota and object budget, attributed to the project. Audited `project.committed`.",
+        "Diffs the caller's live rows under `projects/<slug>/` against the checkout's base, copies new contents server-side (hash-verified) into the project, writes the commit and its tree, moves the base. Counts against the team byte quota and object budget, attributed to the project. Audited `project.committed`. On a Repo (KOBE-767) the server makes a git commit authored as the caller and pushes it to a branch with a pull request (opened, or added to the caller's open one), or straight to the default branch when the connection allows direct commits; needs the Contributor role and the connection at Read and write; audited `git.repo.committed`; rate limited.",
         commitAnswers,
         { requestBody: body("CommitProjectBody") },
       ),

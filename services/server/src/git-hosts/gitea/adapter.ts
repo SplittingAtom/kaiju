@@ -37,6 +37,14 @@ import {
   toIssue,
   toPullRequest,
 } from "../reads.js";
+import {
+  assertTreeSha,
+  assertTreeSize,
+  GIT_TREE_PAGE_SIZE,
+  treePage,
+  type GitTree,
+  type GitTreeEntry,
+} from "../trees.js";
 import { assertGitHostTarget, type GitHostTarget } from "../target.js";
 import {
   header,
@@ -446,6 +454,26 @@ class GiteaAdapter implements GitHostAdapter {
       throw new GitHostError("not_found", "That number is a pull request, not an issue.");
     }
     return toIssue(res.json, this.#webRoot, true);
+  }
+
+  async readTree(repository: string, sha: string): Promise<GitTree> {
+    const path = `${this.#repoPath(repository)}/git/trees/${assertTreeSha(sha)}`;
+    const entries: GitTreeEntry[] = [];
+    let treeSha: string | undefined;
+    // Gitea and Forgejo page a tree; one level is read whole or refused.
+    for (let page = 1; ; page += 1) {
+      const res = await this.#api(`${path}?page=${page}&per_page=${GIT_TREE_PAGE_SIZE}`, {
+        method: "GET",
+      });
+      const got = treePage(res.json);
+      treeSha ??= got.sha;
+      if (got.sha !== treeSha) throw new GitHostError("unexpected", "The tree changed while read.");
+      entries.push(...got.entries);
+      assertTreeSize(entries.length);
+      const more = got.total === null ? got.truncated : entries.length < got.total;
+      if (!more || got.entries.length === 0) break;
+    }
+    return { sha: treeSha, entries };
   }
 
   async createBranch(input: GitCreateBranchInput): Promise<GitBranch> {

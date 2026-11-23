@@ -1,3 +1,4 @@
+import type { RepoCommitWiring } from "../git/repo-commit/dispatch.js";
 import type { SessionSigningKey } from "@kobe/session-token";
 import type { QueryEmbedder } from "../memory/embeddings/service.js";
 import { randomUUID } from "node:crypto";
@@ -84,6 +85,11 @@ export interface SandboxWireOptions {
   readonly notebooks?: NotebookFiles;
   /** The Site's host for the git no-reply commit email (KOBE-764); absent: no `run.start.git`. */
   readonly gitSiteHost?: string;
+  /**
+   * KOBE-767: what an agent's `commit_project` on a Repo needs to reach the git host (read on use);
+   * absent: a Repo refuses Kobe commits as before.
+   */
+  readonly repoCommit?: () => RepoCommitWiring;
   readonly tuning?: Partial<WireTuning>;
   /** The model-gateway Ed25519 signing key (KOBE-118/521); unset: `run.start` carries no run token. */
   readonly runTokenKey?: SessionSigningKey;
@@ -346,6 +352,7 @@ export function createSandboxWire(options: SandboxWireOptions): SandboxWire {
       verifier: options.approvalVerifier,
       runMaxEvents: tuning.runMaxEvents,
       log,
+      ...(options.repoCommit ? { repo: options.repoCommit } : {}),
     },
     ...(options.skillDrafts ? { skillDrafts: options.skillDrafts } : {}),
     ...(options.notebooks ? { notebooks: options.notebooks } : {}),

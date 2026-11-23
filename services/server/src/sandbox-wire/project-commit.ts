@@ -2,6 +2,7 @@ import { type ServerToSandboxFrame, type ProjectCommitFrame } from "@kobe/protoc
 import {
   APPROVAL_TTL_MS,
   CAPABILITY_PROJECTS,
+  CAPABILITY_REPO_COMMITS,
   type PolicyDecision,
   type ProjectCommitOutcome,
 } from "@kobe/protocol";
@@ -10,12 +11,13 @@ import type { Logger } from "pino";
 import { approvalHolds, noPromptCode, recordDeniedWrite } from "../approvals/server-write.js";
 import type { ApprovalVerifier } from "../approvals/verify.js";
 import { loadAccess } from "../projects/access.js";
+import { type CommitDeps, type CommitResult } from "../projects/commits.js";
 import {
-  commitWorkingCopy,
-  previewCommit,
-  type CommitDeps,
-  type CommitResult,
-} from "../projects/commits.js";
+  commitProject,
+  previewProjectCommit,
+  REPO_REFUSAL_MESSAGES,
+  type RepoCommitWiring,
+} from "../git/repo-commit/dispatch.js";
 import type { ToolFrameSpec } from "./gated-frame.js";
 import type { ApprovalBroker, SandboxTarget } from "./types.js";
 import { PROJECT_WRITE_BLOCK_MESSAGES } from "../projects/repo-state.js";
@@ -40,6 +42,8 @@ import { PROJECT_WRITE_BLOCK_MESSAGES } from "../projects/repo-state.js";
  */
 export interface ProjectCommitDeps {
   readonly commit: CommitDeps;
+  /** KOBE-767: a Repo's commit goes to its git host (read on use; absent: Repos refuse as before). */
+  readonly repo?: () => RepoCommitWiring;
   readonly approvals: ApprovalBroker;
   readonly verifier: ApprovalVerifier | undefined;
   readonly runMaxEvents: number;
@@ -59,6 +63,8 @@ export interface ProjectCommitConnection {
   readonly pending: Set<string>;
   /** Aborts when the connection closes (a pending approval resolves as denied). */
   readonly signal: AbortSignal;
+  /** The agent's hello capabilities (KOBE-767: Repo outcomes only to `repo_commits` agents). */
+  readonly hasCapability?: (name: string) => boolean;
   send(frame: ServerToSandboxFrame): boolean;
 }
 
@@ -69,8 +75,12 @@ type Reply =
 
 const failed = (code: string, message: string): Reply => ({ ok: false, code, message });
 
-/** A commit outcome as the tool sees it (the message reaches the model verbatim). */
-export function replyOf(result: CommitResult): Reply {
+/**
+ * A commit outcome as the tool sees it (the message reaches the model verbatim). `repoCommits`:
+ * the agent understands the Repo outcomes (KOBE-767); an older one is told in words, as a failed
+ * call, because its parser fails closed on an unknown status.
+ */
+export function replyOf(result: CommitResult, repoCommits = true): Reply {
   switch (result.status) {
     case "committed":
       return { ok: true, outcome: { status: "committed", seq: result.seq } };
@@ -78,6 +88,28 @@ export function replyOf(result: CommitResult): Reply {
       return { ok: true, outcome: { status: "nothing_to_commit" } };
     case "commit_conflict":
       return { ok: true, outcome: { status: "commit_conflict", head_seq: result.headSeq } };
+    case "pull_request": {
+      const outcome = {
+        status: "pull_request" as const,
+        branch: result.branch,
+        number: result.number,
+        url: result.url,
+        opened: result.opened,
+      };
+      if (repoCommits) return { ok: true, outcome };
+      return failed(
+        "committed_as_pull_request",
+        `Committed to the Repo as pull request #${result.number} (branch ${result.branch})${result.url === "" ? "" : `: ${result.url}`}. Do not commit again for the same change.`,
+      );
+    }
+    case "pushed":
+      if (repoCommits) {
+        return { ok: true, outcome: { status: "pushed", branch: result.branch, seq: result.seq } };
+      }
+      return failed(
+        "committed_to_default_branch",
+        `Committed and pushed to the Repo's ${result.branch} branch. Do not commit again for the same change.`,
+      );
     case "refused":
       break;
   }
@@ -126,6 +158,10 @@ export function replyOf(result: CommitResult): Reply {
     case "repo":
     case "converting":
       return failed("not_allowed", PROJECT_WRITE_BLOCK_MESSAGES[result.error]);
+    case "repo_moved":
+    case "repo_unavailable":
+    case "repo_push_rejected":
+      return failed(result.error, result.detail ?? REPO_REFUSAL_MESSAGES[result.error]);
   }
 }
 
@@ -138,7 +174,8 @@ const approvalDecision = (): Extract<PolicyDecision, { effect: "require_approval
     {
       code: "risk_write",
       stage: "risk_class",
-      message: "commit_project writes a new version of the project's shared files.",
+      message:
+        "commit_project writes a new version of the project's shared files (on a Repo: a git commit on the host, by default as a pull request).",
     },
   ],
 });
@@ -315,9 +352,11 @@ async function run(
   c.pending.add(g.projectId);
   hold(g.projectId);
   const owner = { teamId: c.target.teamId, userId: c.target.userId };
-  const preview = await previewCommit(deps.commit, { owner, projectId: g.projectId });
+  const repo = deps.repo?.();
+  const repoCommits = c.hasCapability?.(CAPABILITY_REPO_COMMITS) === true;
+  const preview = await previewProjectCommit(deps.commit, repo, { owner, projectId: g.projectId });
   if ("status" in preview) {
-    answer(replyOf(preview));
+    answer(replyOf(preview, repoCommits));
     return;
   }
   const input = {
@@ -327,7 +366,7 @@ async function run(
     diff_sha256: preview.diffHash,
   };
   const commit = () =>
-    commitWorkingCopy(deps.commit, {
+    commitProject(deps.commit, repo, {
       owner,
       projectId: g.projectId,
       message: frame.input.message,
@@ -338,10 +377,16 @@ async function run(
         runId: frame.run_id,
       },
       expect: { baseSeq: preview.baseSeq, diffHash: preview.diffHash },
+      via: {
+        kind: "agent",
+        threadId: frame.thread_id,
+        runId: frame.run_id,
+        toolCallId: frame.tool_call_id,
+      },
     });
   if (c.ruleAllowed(frame)) {
     // A policy rule allowed commit_project outright (remembered or team rule): no approval.
-    answer(replyOf(await commit()));
+    answer(replyOf(await commit(), repoCommits));
     return;
   }
   const outcome = await deps.approvals.request(
@@ -369,8 +414,12 @@ async function run(
   }
   // Only reaches the sandbox when the approval was immediate; otherwise `pending_approval` went first.
   const result = await commit();
-  if (result.status !== "committed") {
+  if (
+    result.status !== "committed" &&
+    result.status !== "pull_request" &&
+    result.status !== "pushed"
+  ) {
     deps.log.warn({ run_id: frame.run_id, status: result.status }, "approved commit not written");
   }
-  answer(replyOf(result));
+  answer(replyOf(result, repoCommits));
 }

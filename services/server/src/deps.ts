@@ -492,6 +492,12 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     skillDrafts: skillDraftTool,
     notebooks: notebookFiles,
     gitSiteHost: new URL(options.publicUrl).hostname,
+    // KOBE-767: read on use; the git host net is built further down.
+    repoCommit: () => ({
+      envelope: options.envelope,
+      net: gitHostNet,
+      publicUrl: options.publicUrl,
+    }),
     hooks: {
       async onRunEnded(event) {
         if (event.status === "completed") serverCalls.afterRunCompleted(event);
