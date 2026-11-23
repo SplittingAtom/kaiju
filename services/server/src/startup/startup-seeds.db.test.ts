@@ -1,12 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { STARTUP_SEEDED_ROWS } from "@kobe/db";
-import { isolationAuditor } from "./audit/isolation.js";
-import { logger } from "./logger.js";
-import { FakeBifrost } from "./models/testing/fake-bifrost.js";
-import { seedAtStart, serverJobs } from "./startup/jobs.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { loadSsoSettings } from "./sso/settings.js";
+import { isolationAuditor } from "../audit/isolation.js";
+import { logger } from "../logger.js";
+import { FakeBifrost } from "../models/testing/fake-bifrost.js";
+import { seedAtStart, serverJobs } from "./jobs.js";
+import { openHarness, type Harness } from "../testing/harness.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { loadSsoSettings } from "../sso/settings.js";
 
 /**
  * What the server's start writes into a fresh site before first-run setup (KOBE-422): every row

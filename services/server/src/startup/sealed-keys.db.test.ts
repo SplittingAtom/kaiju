@@ -15,9 +15,9 @@ import {
   withTeam,
 } from "@kobe/db";
 import pino from "pino";
-import { siteKeyContext, urlSha256 } from "./connectors/site-key.js";
-import { checkSealedKeys, sealedFamilies, unknownKeys } from "./startup/sealed-keys.js";
-import { EventStreamFixture } from "./testing/event-stream-fixture.js";
+import { siteKeyContext, urlSha256 } from "../connectors/site-key.js";
+import { checkSealedKeys, sealedFamilies, unknownKeys } from "./sealed-keys.js";
+import { EventStreamFixture } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-425: a site restored with other Secrets holds sealed values no key of the server opens.
