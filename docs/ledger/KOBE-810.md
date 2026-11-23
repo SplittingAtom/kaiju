@@ -96,47 +96,33 @@ DO UPDATE …) SELECT … FROM up, n`: the insert's own values carry "now" into 
 - Not done (split Q3): a Helm NOTES warning when mcp-proxy or egress-proxy run more than one
   replica; their limits are documented per replica. Left for the coordinator to file if wanted.
 
-## Bringing group-91 (KOBE-813) on top of this
+## Combined branch (KOBE-810 + KOBE-813 + KOBE-812, one PR)
 
-group-91 adds `checkRateLimit`, `RateLimitVerdict`, `RateLimitDb` and `clearRateLimit` to
-`services/server/src/rate-limit.ts`, with a copy of the fixed-window SQL. When it merges main
-after this branch:
+Brought onto `group-89-merge-hotspots` (KOBE-815 layout: `openapi.json` untracked, audit rows in
+`audit/events/<area>.doc.ts`) with its `scripts/onto-main.sh`, then merged group-91 and group-90.
 
-1. Take this branch's `services/server/src/rate-limit.ts` and drop group-91's SQL (the upsert,
-   the prune `DELETE`, the `clearRateLimit` `DELETE`). `RateLimitDb` and `clearRateLimit` are
-   already exported from here (re-exported from `@kobe/db`); `pruneExpiredRateLimits` already
-   accepts a transaction.
-2. Re-add `checkRateLimit` and `RateLimitVerdict` as a wrapper, same signature, so none of its
-   callers change (but where a caller such as `admitOperation` forwards a `now` that defaults to
-   `Date.now()`, make that default `undefined` too, or it brings back the pod clock):
-
-   ```ts
-   export async function checkRateLimit(
-     db: RateLimitDb,
-     key: string,
-     rule: RateLimitRule,
-     now?: number, // undefined: the database clock (KOBE-810); g91's `= Date.now()` must go
-     options: { readonly prune?: boolean } = {},
-   ): Promise<RateLimitVerdict> {
-     const hit = await takeRateLimit(db, key, rule, {
-       ...(now === undefined ? {} : { now }),
-       onPruneError: logPruneError,
-       ...(options.prune === undefined ? {} : { prune: options.prune }),
-     });
-     return {
-       allowed: hit.allowed,
-       retryAfterSeconds: Math.max(1, Math.ceil(hit.retryAfterMs / 1000)),
-     };
-   }
-   ```
-
-   (`takeRateLimit` from `@kobe/db`; the non-finite `window_start` guard is moot: NOT NULL bigint.)
-   `hitRateLimit` stays this branch's (it already delegates to `@kobe/db`).
-
-3. `docs/rate-limits.md`: merge by hand. New rows use this branch's State vocabulary ("Postgres
-   (`kobe_rate_limits`, key …)" or "Memory (pod), per replica"); keep the "Per replica by design"
-   paragraph and the "Every model request needs Postgres" paragraph; do not bring back the removed
-   gaps (in-memory limits multiply, bucket-map clear, comment drift).
+- **group-91 (KOBE-813):** `checkRateLimit` / `RateLimitVerdict` are a server wrapper over
+  `@kobe/db`'s `takeRateLimit` (same signature, same Retry-After formula); `clearRateLimit` and
+  `RateLimitDb` are re-exported from `@kobe/db`; `admitWakeStart` runs its marker and hit inside
+  one transaction through the limiter's transaction parameter (`prune: false`). Its windows stay
+  fixed windows. Behaviour change by design: `admitOperation`, `admitWakeStart`,
+  `admitSandboxWake` and the notebook cell-run check now default to the database clock (their
+  `now = Date.now()` defaults became optional); tests that inject a time still pass it. The
+  test fixtures `fillLimit` / `clearLimit` (`testing/operation-limits.ts`) keep their raw SQL:
+  they seed and delete rows over the superuser `pg` client the harness exposes, the server has no
+  direct `drizzle-orm` dependency to wrap it, and they are fixtures, not a limiter.
+- **group-90 (KOBE-812):** the throttle's counter (`countRateLimitHit`, a server wrapper over
+  `takeRateLimit` with `max` unused), `refundRateLimitHit` and `clearRateLimits` (now in
+  `@kobe/db`) go through the limiter API, statement for statement the same SQL as before. The
+  throttle keeps passing its own injected clock to them, because its slot claim, slot refund,
+  marker and listing statements (`auth/sign-in-throttle.ts`, left as they are: they are slot and
+  marker semantics, not a counter, and moving them would not be a small faithful change) use the
+  same clock; so its timings and tests are unchanged. `client-ip-watch.ts` likewise passes its
+  time. The `auth.sign_in.throttled` row moved to `audit/events/identity.doc.ts`, table
+  regenerated.
+- `docs/rate-limits.md`: one document; the gaps the three tickets closed are gone (in-memory
+  limits multiply, bucket-map clear, comment drift; "no rate limit found on" by KOBE-813;
+  "sign-in is limited only per IP" by KOBE-812).
 
 ## Docs
 
