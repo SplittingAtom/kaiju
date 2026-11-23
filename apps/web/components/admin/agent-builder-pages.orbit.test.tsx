@@ -1,0 +1,368 @@
+// @vitest-environment happy-dom
+import { screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { must } from "../../lib/testing/must";
+import { EvalReportPage } from "./team/agent-builder/eval-report";
+import { AgentBuilderPage } from "./team/agent-builder/agent-builder-page";
+import { renderTeam, stubApi } from "./testing";
+import { AGENT, VERSIONS, READ, useAgentBuilderStubs } from "./agent-builder-pages.test-helpers";
+
+useAgentBuilderStubs();
+
+describe("Agent builder: Export to Orbit (KOBE-91)", () => {
+  const YAML = "# Note: MCP tools are not included\nname: kobe-triage-v2\n";
+  const ORBIT_URL = "/v1/agents/a-1/versions/2/orbit";
+
+  /** Routes the orbit URL to a raw YAML answer and everything else to `stubApi`. */
+  function stubOrbit(reply: Response) {
+    const calls = stubApi(READ);
+    const api = globalThis.fetch;
+    const fetchOrbit = vi.fn(async (url: string, init?: RequestInit) =>
+      url === ORBIT_URL ? reply.clone() : api(url, init),
+    );
+    vi.stubGlobal("fetch", fetchOrbit);
+    return { calls, fetchOrbit };
+  }
+
+  function stubDownload() {
+    const create = vi.fn((_blob: Blob) => "blob:orbit");
+    const revoke = vi.fn();
+    vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke }));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    return { create, click };
+  }
+
+  it("downloads the current version as YAML from the toolbar", async () => {
+    const { fetchOrbit } = stubOrbit(
+      new Response(YAML, { status: 200, headers: { "content-type": "application/yaml" } }),
+    );
+    const { create, click } = stubDownload();
+    renderTeam(<AgentBuilderPage agentId="a-1" />);
+    await userEvent.click(await screen.findByRole("button", { name: "Export to Orbit" }));
+    await waitFor(() => expect(click).toHaveBeenCalledOnce());
+    expect(fetchOrbit.mock.calls.some(([url]) => url === ORBIT_URL)).toBe(true);
+    expect(await must(create.mock.calls[0])[0].text()).toBe(YAML);
+  });
+
+  it("exports an older version from the history", async () => {
+    const { fetchOrbit } = stubOrbit(new Response(YAML, { status: 200 }));
+    stubDownload();
+    renderTeam(<AgentBuilderPage agentId="a-1" />);
+    const history = await screen.findByRole("region", { name: "Version history" });
+    await userEvent.click(
+      await within(history).findByRole("button", { name: "Export version 1 to Orbit" }),
+    );
+    await waitFor(() =>
+      expect(fetchOrbit.mock.calls.some(([url]) => url === "/v1/agents/a-1/versions/1/orbit")).toBe(
+        true,
+      ),
+    );
+  });
+
+  it("shows the server's reason and downloads nothing when the model can't be resolved", async () => {
+    stubOrbit(
+      new Response(
+        JSON.stringify({ code: "model_not_resolvable", message: "Model smart is not enabled." }),
+        { status: 409 },
+      ),
+    );
+    const { click } = stubDownload();
+    renderTeam(<AgentBuilderPage agentId="a-1" />);
+    await userEvent.click(await screen.findByRole("button", { name: "Export to Orbit" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/not enabled/);
+    expect(click).not.toHaveBeenCalled();
+  });
+
+  it("shows the toolbar button and a button per version only when canExport allows it", async () => {
+    stubApi(READ);
+    renderTeam(<AgentBuilderPage agentId="a-1" />);
+    const history = await screen.findByRole("region", { name: "Version history" });
+    expect(await screen.findByRole("button", { name: "Export to Orbit" })).toBeTruthy();
+    expect(
+      await within(history).findAllByRole("button", { name: /^Export version \d to Orbit$/ }),
+    ).toHaveLength(2);
+  });
+
+  it("hides every export button without canExport, even for an editor and publisher", async () => {
+    stubApi({
+      ...READ,
+      "GET /v1/agents/a-1": [200, { agent: { ...AGENT, canExport: false } }],
+    });
+    renderTeam(<AgentBuilderPage agentId="a-1" />);
+    const history = await screen.findByRole("region", { name: "Version history" });
+    await within(history).findAllByRole("row");
+    expect(screen.queryByRole("button", { name: /Orbit/ })).toBeNull();
+    // The other actions are unaffected by the export flag.
+    expect(within(history).getByRole("button", { name: "Restore version 1" })).toBeTruthy();
+  });
+
+  it("hides export when the server sends no canExport flag at all", async () => {
+    const { canExport: _omit, ...legacy } = AGENT;
+    stubApi({ ...READ, "GET /v1/agents/a-1": [200, { agent: legacy }] });
+    renderTeam(<AgentBuilderPage agentId="a-1" />);
+    const history = await screen.findByRole("region", { name: "Version history" });
+    await within(history).findAllByRole("row");
+    expect(screen.queryByRole("button", { name: /Orbit/ })).toBeNull();
+  });
+
+  it("offers no export for an agent that was never published", async () => {
+    stubApi({
+      ...READ,
+      "GET /v1/agents/a-1": [200, { agent: { ...AGENT, currentVersion: null } }],
+      "GET /v1/agents/a-1/versions": [
+        200,
+        { current_version: null, versions: [], next_before: null },
+      ],
+    });
+    renderTeam(<AgentBuilderPage agentId="a-1" />);
+    await screen.findByText("Never published.");
+    expect(screen.queryByRole("button", { name: /Export .*Orbit/ })).toBeNull();
+  });
+});
+
+describe("Agent builder: Orbit eval gate (KOBE-93)", () => {
+  const EVAL = {
+    id: "e-1",
+    status: "pending",
+    draftRevision: 3,
+    threshold: 0.2,
+    attackSuccessRate: null,
+    attempts: null,
+    attackSuccesses: null,
+    error: null,
+    version: null,
+    createdAt: "2026-10-05T10:00:00Z",
+    startedAt: null,
+    finishedAt: null,
+  };
+  const FINISHED = {
+    ...EVAL,
+    attackSuccessRate: 0,
+    attempts: 5,
+    attackSuccesses: 0,
+    finishedAt: "2026-10-05T10:05:00Z",
+  };
+  const started = {
+    "POST /v1/agents/a-1/publish": [
+      202,
+      { eval: EVAL, message: "Evaluating: the agent is published when it passes." },
+    ],
+  } as const;
+
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function startPublish() {
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) });
+    await user.click(await screen.findByRole("button", { name: "Publish…" }));
+    await user.click(screen.getByRole("button", { name: "Publish v3" }));
+    return user;
+  }
+
+  it("shows the draft as evaluating, then publishes when the eval passes", async () => {
+    stubApi({
+      ...READ,
+      ...started,
+      "GET /v1/agents/a-1/evals": [
+        [200, { evals: [], active: null }],
+        [200, { evals: [{ ...EVAL, status: "running" }], active: { ...EVAL, status: "running" } }],
+        [200, { evals: [{ ...FINISHED, status: "passed", version: 3 }], active: null }],
+      ],
+      "GET /v1/agents/a-1": [
+        [200, { agent: AGENT }],
+        [200, { agent: { ...AGENT, currentVersion: 3 } }],
+      ],
+    });
+    renderTeam(<AgentBuilderPage agentId="a-1" />);
+    await startPublish();
+    await screen.findByText(/Evaluating draft revision 3/);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(
+      ((await screen.findByRole("button", { name: "Evaluating…" })) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    // Polls every few seconds: running, then passed.
+    for (let i = 0; i < 4 && !screen.queryByText(/Passed: /); i++) {
+      await vi.advanceTimersByTimeAsync(3100);
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+    await screen.findByText(
+      /Passed: 0% of attacks succeeded \(0 of 5\); the team's limit is 20%\./,
+    );
+    await screen.findByText(/Published as v3\./);
+    await screen.findByText("Current version: v3.");
+  });
+
+  it("explains a block above the threshold and publishes nothing", async () => {
+    stubApi({
+      ...READ,
+      ...started,
+      "GET /v1/agents/a-1/evals": [
+        [200, { evals: [], active: null }],
+        [
+          200,
+          {
+            evals: [{ ...FINISHED, status: "blocked", attackSuccessRate: 0.6, attackSuccesses: 3 }],
+            active: null,
+          },
+        ],
+      ],
+    });
+    renderTeam(<AgentBuilderPage agentId="a-1" />);
+    await startPublish();
+    await vi.advanceTimersByTimeAsync(3100);
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toMatch(
+      /Blocked: 60% of attacks succeeded \(3 of 5\); the team's limit is 20%\. Nothing was published\./,
+    );
+    expect(screen.getByText("Current version: v2.")).toBeTruthy();
+  });
+
+  it("shows an errored eval with its reason and lets the person retry", async () => {
+    stubApi({
+      ...READ,
+      "GET /v1/agents/a-1/evals": [
+        200,
+        {
+          evals: [
+            {
+              ...EVAL,
+              status: "errored",
+              error: "The eval Job failed (DeadlineExceeded). Nothing was published.",
+              finishedAt: "2026-10-05T10:15:00Z",
+            },
+          ],
+          active: null,
+        },
+      ],
+    });
+    renderTeam(<AgentBuilderPage agentId="a-1" />);
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) });
+    const alert = await screen.findByText(/The evaluation could not complete/);
+    expect(alert.textContent).toMatch(/DeadlineExceeded/);
+    await user.click(screen.getByRole("button", { name: "Retry publish" }));
+    expect(await screen.findByRole("dialog", { name: "Publish Triage as v3" })).toBeTruthy();
+  });
+
+  it("picks up an eval already running when the page opens", async () => {
+    stubApi({
+      ...READ,
+      "GET /v1/agents/a-1/evals": [
+        200,
+        { evals: [{ ...EVAL, status: "running" }], active: { ...EVAL, status: "running" } },
+      ],
+    });
+    renderTeam(<AgentBuilderPage agentId="a-1" />);
+    await screen.findByText(/Evaluating draft revision 3/);
+    expect(
+      ((await screen.findByRole("button", { name: "Evaluating…" })) as HTMLButtonElement).disabled,
+    ).toBe(true);
+  });
+
+  it("shows each version's score in the history", async () => {
+    stubApi({
+      ...READ,
+      "GET /v1/agents/a-1/versions": [
+        200,
+        {
+          ...VERSIONS,
+          versions: [
+            {
+              ...VERSIONS.versions[0],
+              score: { attackSuccessRate: 0.2, threshold: 0.4, evalId: "e-2" },
+            },
+            { ...VERSIONS.versions[1], score: null },
+          ],
+        },
+      ],
+    });
+    renderTeam(<AgentBuilderPage agentId="a-1" />);
+    await screen.findByText("20% attacks succeeded (limit 40%)");
+    expect(screen.getByText("Not evaluated")).toBeTruthy();
+    // The score links to its report.
+    expect(screen.getByRole("link", { name: "Report for version 2" }).getAttribute("href")).toBe(
+      "/admin/team/agents/a-1/evals/e-2",
+    );
+    expect(screen.queryByRole("link", { name: "Report for version 1" })).toBeNull();
+  });
+
+  it("renders an eval report as text, never as HTML", async () => {
+    stubApi({
+      "GET /v1/agents/a-1/evals/e-2": [
+        200,
+        {
+          eval: {
+            id: "e-2",
+            status: "passed",
+            draftRevision: 2,
+            threshold: 0.2,
+            attack_success_rate: 0.2,
+            attempts: 5,
+            attack_successes: 1,
+            error: null,
+            version: 2,
+            created_at: "2026-10-02T09:00:00Z",
+            started_at: "2026-10-02T09:00:05Z",
+            finished_at: "2026-10-02T09:05:00Z",
+            report: {
+              schema_version: 1,
+              pack: { id: "kobe-default", version: 1 },
+              scenarios: [
+                {
+                  id: "<img src=x onerror=alert(1)>",
+                  category: "<b>exfiltration</b>",
+                  attempts: 5,
+                  successes: 1,
+                  errors: 0,
+                  attack_success_rate: 0.2,
+                },
+                "not a scenario",
+              ],
+            },
+          },
+        },
+      ],
+    });
+    const { container } = renderTeam(<EvalReportPage agentId="a-1" evalId="e-2" />);
+    await screen.findByText("<img src=x onerror=alert(1)>");
+    expect(screen.getByText("<b>exfiltration</b>")).toBeTruthy();
+    expect(container.querySelector("img, b")).toBeNull();
+    expect(screen.getByText("20% (1 of 5); limit 20%")).toBeTruthy();
+    expect(screen.getByText(/kobe-default v1/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Back to the agent" }).getAttribute("href")).toBe(
+      "/admin/team/agents/a-1",
+    );
+  });
+
+  it("says so when a report has no scenarios", async () => {
+    stubApi({
+      "GET /v1/agents/a-1/evals/e-9": [
+        200,
+        {
+          eval: {
+            id: "e-9",
+            status: "errored",
+            draftRevision: 1,
+            threshold: 0.2,
+            attackSuccessRate: null,
+            attempts: null,
+            attackSuccesses: null,
+            error: "The Job failed.",
+            version: null,
+            createdAt: "2026-10-02T09:00:00Z",
+            startedAt: null,
+            finishedAt: "2026-10-02T09:05:00Z",
+            report: null,
+          },
+        },
+      ],
+    });
+    renderTeam(<EvalReportPage agentId="a-1" evalId="e-9" />);
+    await screen.findByText("This evaluation has no scenario results.");
+    expect(screen.getByText("The Job failed.")).toBeTruthy();
+  });
+});
