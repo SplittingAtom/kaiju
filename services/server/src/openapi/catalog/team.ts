@@ -1,6 +1,7 @@
 import type { CatalogArea } from "./build.js";
 import { teamDetails } from "./details/team.js";
 import { teamAdminDetails } from "./details/team-admin.js";
+import { teamGitDetails } from "./details/team-git.js";
 import { teamWorkspaceRebuildDetails } from "./details/workspace-rebuild.js";
 
 /**
@@ -12,7 +13,12 @@ export const teamAreas: readonly CatalogArea[] = [
     tag: "Team",
     detailed: true,
     teamScoped: true,
-    details: { ...teamDetails, ...teamAdminDetails, ...teamWorkspaceRebuildDetails },
+    details: {
+      ...teamDetails,
+      ...teamAdminDetails,
+      ...teamGitDetails,
+      ...teamWorkspaceRebuildDetails,
+    },
     description:
       "The active team: members, invitations, policy, connectors, egress, budgets, retention, audit " +
       "and settings. Team-scoped: send X-Kobe-Team; changes need the named team permission.",
@@ -163,6 +169,54 @@ export const teamAreas: readonly CatalogArea[] = [
         "/v1/team/egress/requests/{id}",
         "Decide an egress access request",
         "Team admins (`team.egress.manage`); team-scope requests only unless also a site admin.",
+      ],
+      [
+        "get",
+        "/v1/team/git/connections",
+        "List the Workspace's git connections",
+        "Team members (`team.read`); credential details, capabilities and health only for Workspace admins.",
+      ],
+      [
+        "post",
+        "/v1/team/git/connections",
+        "Connect a git organization (tested before it is stored)",
+        "Workspace admins (`team.git.manage`). At most 5 per Workspace, one per host and organization; rate limited.",
+      ],
+      [
+        "post",
+        "/v1/team/git/connections/test",
+        "Test a git credential without saving",
+        "Workspace admins (`team.git.manage`). Rate limited.",
+      ],
+      [
+        "delete",
+        "/v1/team/git/connections/{id}",
+        "Disconnect a git organization",
+        "Workspace admins (`team.git.manage`). Deletes the credential; repositories on the host stay.",
+      ],
+      [
+        "get",
+        "/v1/team/git/connections/{id}",
+        "Get one git connection",
+        "Team members (`team.read`); the admin view for Workspace admins.",
+      ],
+      [
+        "patch",
+        "/v1/team/git/connections/{id}",
+        "Change a git connection's settings",
+        "Workspace admins (`team.git.manage`). Access level, repository defaults, push limit, direct commits, agents, display name.",
+      ],
+      [
+        "post",
+        "/v1/team/git/connections/{id}/check",
+        "Check a git connection's health now",
+        "Workspace admins (`team.git.manage`). Rate limited.",
+      ],
+      [
+        "put",
+        "/v1/team/git/connections/{id}/credential",
+        "Replace a git connection's credential (write-only)",
+        "Workspace admins (`team.git.manage`). Tested before it replaces the old one; rate limited.",
       ],
       [
         "get",

@@ -1,3 +1,4 @@
+import type { GitHostNet } from "./git-hosts/http.js";
 import { NO_APP_CALLER, type AppCaller } from "./apps/app-caller.js";
 import { createNotebookFiles, type NotebookFiles } from "./notebooks/files.js";
 import type { ForwardDestination } from "./audit/forward/types.js";
@@ -219,6 +220,8 @@ export interface ServerDeps {
   readonly kobeMcp: KobeMcpService;
   /** The address policy registered connector URLs must pass (KOBE-100). */
   readonly connectorUrlPolicy: ConnectorUrlPolicy;
+  /** Outbound requests to Workspace git hosts (KOBE-760): the connector policy, every call. */
+  readonly gitHostNet: GitHostNet;
   /** Fetches a connector's live `tools/list` through the MCP proxy, to pin it (KOBE-101). */
   readonly connectorProbe: ConnectorProbe;
   /** Sends MCP Apps' decided calls to the MCP proxy (KOBE-436). */
@@ -668,6 +671,10 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     mcp,
     kobeMcp,
     connectorUrlPolicy,
+    gitHostNet: {
+      policy: connectorUrlPolicy,
+      ...(options.gitHostRequest ? { request: options.gitHostRequest } : {}),
+    },
     connectorProbe: options.connectorProbe ?? NO_PROBE,
     appCaller: options.appCaller ?? NO_APP_CALLER,
     approvals,

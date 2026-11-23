@@ -48,6 +48,16 @@ export class InstallationTokenCache {
   private readonly entries = new Map<string, InstallationToken>();
   private readonly pending = new Map<string, Promise<InstallationToken>>();
   private readonly verified = new Map<string, number>();
+  /** Keys per credential ({@link credentialGroupKey}), so a removed credential can be forgotten. */
+  private readonly groups = new Map<string, Set<string>>();
+
+  private remember(group: string | undefined, key: string): void {
+    if (group === undefined) return;
+    const keys = this.groups.get(group) ?? new Set<string>();
+    keys.add(key);
+    if (!this.groups.has(group) && this.groups.size >= MAX_CACHE_ENTRIES) this.groups.clear();
+    this.groups.set(group, keys);
+  }
 
   get(key: string, nowMs: number): InstallationToken | undefined {
     const hit = this.entries.get(key);
@@ -56,7 +66,8 @@ export class InstallationTokenCache {
     return undefined;
   }
 
-  set(key: string, token: InstallationToken, nowMs: number): void {
+  set(key: string, token: InstallationToken, nowMs: number, group?: string): void {
+    this.remember(group, key);
     for (const [k, v] of this.entries) {
       if (v.expiresAt.getTime() - nowMs <= TOKEN_EXPIRY_MARGIN_MS) this.entries.delete(k);
     }
@@ -82,7 +93,8 @@ export class InstallationTokenCache {
   }
 
   /** Remembers that a credential's installation belongs to the connected account (an hour). */
-  markVerified(key: string, nowMs: number): void {
+  markVerified(key: string, nowMs: number, group?: string): void {
+    this.remember(group, key);
     if (this.verified.size >= MAX_CACHE_ENTRIES) this.verified.clear();
     this.verified.set(key, nowMs + VERIFIED_FOR_MS);
   }
@@ -92,9 +104,24 @@ export class InstallationTokenCache {
     return until !== undefined && until > nowMs;
   }
 
+  /**
+   * Drops every token and installation check of one credential (KOBE-760: a connection removed or
+   * its credential replaced), in this process. Other replicas never use them again either: every
+   * use reads the connection's current credential first, and a different credential hashes to
+   * other keys; their tokens lapse within the hour.
+   */
+  forgetGroup(group: string): void {
+    for (const key of this.groups.get(group) ?? []) {
+      this.entries.delete(key);
+      this.verified.delete(key);
+    }
+    this.groups.delete(group);
+  }
+
   clear(): void {
     this.entries.clear();
     this.verified.clear();
+    this.groups.clear();
   }
 
   get size(): number {
@@ -163,6 +190,21 @@ export function scopeKey(
       ]),
     )
     .digest("hex");
+}
+
+/** One credential's group in the cache: a hash of App ID, installation ID and private key. */
+export function credentialGroupKey(c: GitHubAppCredential): string {
+  return createHash("sha256")
+    .update(JSON.stringify(["group", c.appId, c.installationId, c.privateKeyPem]))
+    .digest("hex");
+}
+
+/** Forgets a GitHub App credential's cached installation tokens (removed or replaced, KOBE-760). */
+export function forgetGitHubAppCredential(
+  c: GitHubAppCredential,
+  cache: InstallationTokenCache = sharedTokenCache,
+): void {
+  cache.forgetGroup(credentialGroupKey(c));
 }
 
 export interface AppAuthContext {
@@ -235,7 +277,7 @@ export async function installationToken(
   if (hit) return hit;
   return ctx.cache.once(key, async () => {
     const token = await mint(ctx, scope);
-    ctx.cache.set(key, token, ctx.now());
+    ctx.cache.set(key, token, ctx.now(), credentialGroupKey(ctx.credential));
     return token;
   });
 }

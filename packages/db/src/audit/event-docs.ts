@@ -4,6 +4,7 @@ import { AGENTS_EVENT_DOCS } from "./events/agents.doc.js";
 import { CONNECTOR_GRANTS_EVENT_DOCS } from "./events/connector-grants.doc.js";
 import { CONNECTORS_EVENT_DOCS } from "./events/connectors.doc.js";
 import { EGRESS_EVENT_DOCS } from "./events/egress.doc.js";
+import { GIT_EVENT_DOCS } from "./events/git.doc.js";
 import { GOVERNANCE_EVENT_DOCS } from "./events/governance.doc.js";
 import { IDENTITY_EVENT_DOCS } from "./events/identity.doc.js";
 import { MCP_EVENT_DOCS } from "./events/mcp.doc.js";
@@ -40,6 +41,7 @@ export const AUDIT_EVENT_DOCS: Readonly<Record<AuditAction, AuditEventDoc>> = {
   ...CONNECTORS_EVENT_DOCS,
   ...MEMORY_EVENT_DOCS,
   ...CONNECTOR_GRANTS_EVENT_DOCS,
+  ...GIT_EVENT_DOCS,
 };
 
 /** Every area's rows, for the per-area checks in `events.test.ts`. */
@@ -58,6 +60,7 @@ export const AUDIT_EVENT_DOC_AREAS: readonly Readonly<Record<string, AuditEventD
   CONNECTORS_EVENT_DOCS,
   MEMORY_EVENT_DOCS,
   CONNECTOR_GRANTS_EVENT_DOCS,
+  GIT_EVENT_DOCS,
 ];
 
 export const AUDIT_TABLE_START =

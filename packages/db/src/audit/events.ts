@@ -13,6 +13,7 @@ import { SKILLS_EVENTS } from "./events/skills.js";
 import { CONNECTORS_EVENTS } from "./events/connectors.js";
 import { MEMORY_EVENTS } from "./events/memory.js";
 import { CONNECTOR_GRANTS_EVENTS } from "./events/connector-grants.js";
+import { GIT_EVENTS } from "./events/git.js";
 
 export * from "./events/vocab.js";
 export type { AuditScope } from "./events/fragments.js";
@@ -54,6 +55,7 @@ export const AUDIT_EVENT_AREAS = [
   CONNECTORS_EVENTS,
   MEMORY_EVENTS,
   CONNECTOR_GRANTS_EVENTS,
+  GIT_EVENTS,
 ] as const;
 
 export const AUDIT_EVENTS = {
@@ -71,6 +73,7 @@ export const AUDIT_EVENTS = {
   ...CONNECTORS_EVENTS,
   ...MEMORY_EVENTS,
   ...CONNECTOR_GRANTS_EVENTS,
+  ...GIT_EVENTS,
 } as const;
 
 export type AuditAction = keyof typeof AUDIT_EVENTS;

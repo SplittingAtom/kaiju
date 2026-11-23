@@ -101,6 +101,19 @@ async function enabledDomain(w: KobeWorld, headers: readonly string[] = []): Pro
   return domain;
 }
 
+/** A git connection row (KOBE-760); its sealed text is opaque here: the read never opens it. */
+async function gitConnection(w: KobeWorld): Promise<string> {
+  const { rows } = await fx.admin.query<{ id: string }>(
+    `INSERT INTO git_connections (team_id, provider, base_url, organization, display_name,
+       credential_kind, credential_sealed, credential_key_id, credential_hint, created_by)
+     VALUES ($1, 'forgejo', 'https://git.example.com', $2, 'Acme on Forgejo', 'access_token',
+       'e1.mcp.not-a-real-envelope', 'mcp', '••••hint', $3)
+     RETURNING id`,
+    [w.team, `acme-${short()}`, w.admin.id],
+  );
+  return rows[0]?.id ?? "";
+}
+
 async function egressRequest(w: KobeWorld): Promise<string> {
   const domain = await ceiling();
   const { rows } = await fx.admin.query<{ id: string }>(
@@ -282,6 +295,7 @@ const CASES: Readonly<Record<string, Case>> = {
     audit: "egress.request.decided",
     stale: "already_decided",
   },
+  team_git_connections_list: { arrange: async (w) => (await gitConnection(w), {}) },
   team_agents_list: { arrange: async (w) => (await teamAgent(w), {}) },
   team_agents_suspend: {
     arrange: async (w) => ({ agent_id: await teamAgent(w), from_suspended: false }),
@@ -420,6 +434,25 @@ describe("listing follows each tool's own permission", () => {
     expect(await adminNames(admin)).toEqual(reads);
     await h.setLevel(w.team, "read_write");
     expect(await adminNames(admin)).toEqual(teamTools.map((t) => t.name).sort());
+  });
+});
+
+describe("git connections: reads only, never a credential (KOBE-760)", () => {
+  it("the admin's tool lists the connection without its hint or sealed text; no write tool exists", async () => {
+    const w = await h.world();
+    const id = await gitConnection(w);
+    const s = await h.sandboxFor(w.team, w.admin);
+    const names = await h.listNames(s);
+    expect(names).toContain("team_git_connections_list");
+    expect(
+      names.filter((n) => n.startsWith("team_git_") && n !== "team_git_connections_list"),
+    ).toEqual([]);
+    const out = await h.call(s, "team_git_connections_list", {});
+    expect(out.isError, out.text).toBeUndefined();
+    expect(out.structured?.connections).toMatchObject([{ connection_id: id, health: "unchecked" }]);
+    for (const secret of ["••••hint", "e1.mcp.not-a-real-envelope", '"mcp"']) {
+      expect(out.text).not.toContain(secret);
+    }
   });
 });
 

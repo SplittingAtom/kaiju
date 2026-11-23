@@ -30,6 +30,7 @@ import {
 import {
   appHeaders,
   assertAppIds,
+  credentialGroupKey,
   sharedTokenCache,
   forgetAppToken,
   installationToken,
@@ -212,7 +213,7 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
     const key = `${scopeKey(ctx.apiRoot, ctx.credential, { permissions: {} })}:${org.toLowerCase()}`;
     if (ctx.cache.isVerified(key, now())) return;
     await installation(ctx);
-    ctx.cache.markVerified(key, now());
+    ctx.cache.markVerified(key, now(), credentialGroupKey(ctx.credential));
   }
 
   async function readOrganization(scope = METADATA): Promise<{

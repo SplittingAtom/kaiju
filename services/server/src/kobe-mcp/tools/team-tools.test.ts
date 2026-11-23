@@ -67,6 +67,7 @@ const TEAM_TOOLS = [
   "team_egress_disable",
   "team_egress_requests_list",
   "team_egress_requests_decide",
+  "team_git_connections_list",
   "team_agents_list",
   "team_agents_suspend",
   "team_agents_resume",
