@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-import { cleanup, screen, within } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { renderSite, stubApi } from "../testing";
+import { renderSite, stubApi, summary } from "../testing";
 import { UsersPage } from "./users-page";
 
 /**
@@ -57,11 +57,20 @@ describe("sign-in protection on the Users page", () => {
     expect(screen.queryByText(/Sign-in is slowed down/)).toBeNull();
   });
 
-  it("shows nothing extra when all is well or the check can't be read", async () => {
-    stubApi({ "GET /v1/site/users": [200, USERS] });
+  it.each([
+    ["all is well", [200, { throttled: [], unknownClientIp: null }]],
+    ["the check fails", [500, { code: "internal", message: "Something went wrong." }]],
+    ["the check is not there", undefined],
+  ] as const)("shows nothing extra when %s, and the users still load", async (_, reply) => {
+    const calls = stubApi({
+      "GET /v1/site/users": [200, USERS],
+      ...(reply ? { [PROTECTION]: reply } : {}),
+    });
     renderSite(<UsersPage />);
     await screen.findByRole("row", { name: /Ada/ });
+    await waitFor(() => expect(summary(calls)).toContain(PROTECTION));
     expect(screen.queryByText(/Sign-in is slowed down/)).toBeNull();
     expect(screen.queryByText(/client address/)).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });
