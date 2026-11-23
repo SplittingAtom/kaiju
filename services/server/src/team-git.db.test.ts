@@ -454,6 +454,7 @@ describe("who may call what", () => {
           "organization",
           "provider",
           "repo_name_prefix",
+          "repo_visibility",
           "status",
         ].sort(),
       );

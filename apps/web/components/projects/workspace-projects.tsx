@@ -50,6 +50,8 @@ export interface WorkspaceProjects {
   readonly notices: readonly RepoNotice[];
   dismissNotice(key: string): void;
   reloadRepo(projectId: string): void;
+  /** Read the git connections again (a dialog opens). */
+  reloadGit(): void;
   ensure(): void;
   reload(): void;
 }
@@ -75,7 +77,7 @@ export function WorkspaceProjectsProvider({
 }: {
   readonly teamId: string;
   readonly fetchFn?: typeof fetch | undefined;
-  /** How often the projects are read again while a conversion runs (tests shorten it). */
+  /** How often a running conversion is read at first (tests shorten it). */
   readonly conversionPollMs?: number | undefined;
   readonly children: ReactNode;
 }) {
@@ -119,7 +121,7 @@ export function WorkspaceProjectsProvider({
     teamId,
     fetchFn,
     projects: loaded.projects,
-    ready: status === "ready",
+    status,
     commits,
     reload,
     pollMs: conversionPollMs,

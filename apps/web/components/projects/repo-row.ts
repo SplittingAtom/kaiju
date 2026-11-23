@@ -40,8 +40,12 @@ export function repoRowWords(info: RepoInfo | undefined): RepoRowWords {
   return { subtitle: repoSubtitle(view), chips, words };
 }
 
-/** The member manages the project: its owner, or a Workspace admin (`my_role` null). */
-export const managesProject = (p: Project): boolean => p.myRole === "owner" || p.myRole === null;
+/**
+ * The member manages the project: its owner, or a Workspace admin (`my_role` null when not listed;
+ * a listed admin is known from the connections answer, review L1).
+ */
+export const managesProject = (p: Project, admin = false): boolean =>
+  admin || p.myRole === "owner" || p.myRole === null;
 
 /**
  * Convert to repo… on a project (G16, GQ13): its owner or a Workspace admin, a live ordinary
@@ -49,7 +53,11 @@ export const managesProject = (p: Project): boolean => p.myRole === "owner" || p
  * failed (to follow it, retry or abandon).
  */
 export function mayConvert(project: Project, git: GitConnections | null): boolean {
-  if (!managesProject(project) || project.archivedAt !== null || project.kind === "repo") {
+  if (
+    !managesProject(project, git?.admin) ||
+    project.archivedAt !== null ||
+    project.kind === "repo"
+  ) {
     return false;
   }
   if (project.repoConversion === "running" || project.repoConversion === "failed") return true;

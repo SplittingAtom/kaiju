@@ -77,8 +77,15 @@ describe("KOBE-768: a member's view of a connection", () => {
     };
     expect(gitConnectionMemberViewSchema.safeParse(view).success).toBe(true);
     expect(
-      gitConnectionMemberViewSchema.safeParse({ ...view, repo_name_prefix: "kobe-" }).success,
+      gitConnectionMemberViewSchema.safeParse({
+        ...view,
+        repo_name_prefix: "kobe-",
+        repo_visibility: "internal",
+      }).success,
     ).toBe(true);
+    expect(
+      gitConnectionMemberViewSchema.safeParse({ ...view, repo_visibility: "public" }).success,
+    ).toBe(false);
     expect(gitConnectionMemberViewSchema.safeParse({ ...view, credential: {} }).success).toBe(
       false,
     );

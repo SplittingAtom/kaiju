@@ -390,15 +390,66 @@ describe("Convert to repo… (ac-2, G16)", () => {
       { repo: wireRepo({ project_id: "p-budget" }) },
     ];
     routes["GET /v1/projects/p-budget/repo-status"] = [200, repoStatus()];
-    mount(30);
+    const done = { status: "completed", step: "done", full_name: "acme/kobe-budget" };
+    routes["GET /v1/projects/p-budget/repo-conversion"] = [
+      [200, { conversion: { status: "running", step: "push" } }],
+      [500, { code: "server_error", message: "x" }],
+      [200, { conversion: done }],
+    ];
+    const calls = mount(30);
     const budget = await row("Budget plan");
     expect(budget.textContent).toContain("converting to a Repo…");
+    const notices = await screen.findByRole("list", { name: "Repo notices" }, { timeout: 3000 });
+    expect(within(notices).getByText("Budget plan is now a Repo.")).toBeTruthy();
+    // One live region announces it.
     expect(
-      await screen.findByText("Budget plan is now a Repo.", {}, { timeout: 2000 }),
-    ).toBeTruthy();
+      screen.getAllByRole("status").some((s) => s.textContent === "Budget plan is now a Repo."),
+    ).toBe(true);
+    // Review M3: only that project's attempt is followed, and the list is read again once.
+    const polls = calls.filter((c) => c.url === "/v1/projects/p-budget/repo-conversion");
+    expect(polls.length).toBe(3);
+    await waitFor(() => expect(budget.querySelector("svg.lucide-git-branch")).not.toBeNull());
+    expect(calls.filter((c) => c.url === "/v1/projects").length).toBe(2);
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Dismiss: Budget plan is now a Repo." }));
-    expect(screen.queryByText("Budget plan is now a Repo.")).toBeNull();
+    expect(screen.queryByRole("list", { name: "Repo notices" })).toBeNull();
+  });
+
+  it("a reader is not followed for someone else's conversion (review L5)", async () => {
+    routes["GET /v1/projects"] = [
+      200,
+      { projects: [wireProject("budget", { my_role: "reader", repo_conversion: "running" })] },
+    ];
+    routes["GET /v1/team/git/connections"] = [
+      200,
+      { connections: [], site: { enabled: true }, limit: 5, envelope_configured: true },
+    ];
+    const calls = mount(10);
+    await row("Budget plan");
+    await new Promise((r) => setTimeout(r, 80));
+    expect(calls.some((c) => c.url.endsWith("/repo-conversion"))).toBe(false);
+  });
+
+  it("a Workspace admin listed as editor may still convert (review L1)", async () => {
+    routes["GET /v1/projects"] = [
+      200,
+      { projects: [wireProject("budget", { my_role: "editor", kind: "project" })] },
+    ];
+    routes["GET /v1/team/git/connections"] = [
+      200,
+      {
+        connections: [connection()],
+        site: { enabled: true, allowed_hosts: [] },
+        limit: 5,
+        envelope_configured: true,
+      },
+    ];
+    mount();
+    await waitFor(async () => {
+      const { menu, user } = await openMenu("Budget plan");
+      expect(within(menu).queryByRole("menuitem", { name: "Convert to repo…" })).not.toBeNull();
+      await user.keyboard("{Escape}");
+    });
   });
 });
 

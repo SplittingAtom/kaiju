@@ -84,5 +84,7 @@ export function memberConnectionView(c: GitConnectionRecord): GitConnectionMembe
     status: healthStatus(c),
     // KOBE-768: the Convert to repo dialog shows the new repository's name with it (G16).
     repo_name_prefix: c.repoNamePrefix,
+    // KOBE-768 review M2: the dialog says whether the new repository is private or internal.
+    repo_visibility: c.repoVisibility,
   };
 }

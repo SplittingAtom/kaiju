@@ -26,6 +26,10 @@ import type { GitConnections, RepoInfo } from "./workspace-repos";
 const BUTTON = "rounded-md border px-2 py-0.5 text-xs";
 const FIELD = "border-input bg-background rounded-md border px-1.5 py-0.5 text-sm";
 const COMMITS_SHOWN = 5;
+/** While the mirror refreshes, read it again after this, doubling up to the cap (review M1). */
+export const REFRESH_READ_MS = 2_000;
+const REFRESH_READ_MAX_MS = 30_000;
+const REFRESH_READS = 8;
 
 export function RepoPanel({
   project,
@@ -35,16 +39,18 @@ export function RepoPanel({
   onChanged,
   onDetached,
   onClose,
+  refreshReadMs = REFRESH_READ_MS,
 }: {
   readonly project: { readonly id: string; readonly name: string };
   readonly info: RepoInfo | undefined;
-  readonly api: Pick<RepoApi, "refresh" | "relink" | "detach">;
+  readonly api: Pick<RepoApi, "repo" | "refresh" | "relink" | "detach">;
   readonly git: GitConnections | null;
   /** The Repo changed (Refresh started, relinked): read it again. */
   onChanged(): void;
   /** The Repo is an ordinary project again. */
   onDetached(): void;
   onClose(): void;
+  readonly refreshReadMs?: number | undefined;
 }) {
   const id = useId();
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -54,6 +60,43 @@ export function RepoPanel({
   const [busy, setBusy] = useState(false);
   useEffect(() => setView(info?.view ?? null), [info?.view]);
   useEffect(() => closeButton.current?.focus(), []);
+  const changed = useRef(onChanged);
+  changed.current = onChanged;
+
+  // Review M1: while the mirror refreshes, read it again (back-off) until it settles, so the
+  // state and Refresh follow; the row is read again at the end.
+  const refreshing = view?.mirror.refreshing ?? false;
+  useEffect(() => {
+    if (!refreshing) return;
+    let stale = false;
+    let delay = refreshReadMs;
+    let reads = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = async () => {
+      const res = await api.repo(project.id);
+      if (stale) return;
+      reads += 1;
+      if (res.ok) setView(res.data);
+      if (res.ok && !res.data.mirror.refreshing) {
+        setNotice(null);
+        changed.current();
+        return;
+      }
+      if (reads >= REFRESH_READS) {
+        setNotice(
+          "Still refreshing. Close Repo details and open it again later to see the result.",
+        );
+        return;
+      }
+      delay = Math.min(delay * 2, REFRESH_READ_MAX_MS);
+      timer = setTimeout(() => void tick(), delay);
+    };
+    timer = setTimeout(() => void tick(), delay);
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
+  }, [refreshing, api, project.id, refreshReadMs]);
 
   const refresh = async () => {
     setBusy(true);
@@ -66,7 +109,6 @@ export function RepoPanel({
     setProblem(null);
     setView(res.data);
     setNotice("Refreshing from the host. The files follow in a moment.");
-    onChanged();
   };
 
   const copy = info?.status?.workingCopy ?? null;

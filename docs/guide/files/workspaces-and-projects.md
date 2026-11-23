@@ -138,7 +138,8 @@ other way: same roles, same place in the Files panel, same conversations.
 Repos sit among the projects, in the same order. A Repo has a git icon instead of the folder, and
 its row shows:
 
-- the host and `organization/repository` (hover the row, or read it with a screen reader);
+- the host and `organization/repository` (hover the row, read it with a screen reader, or open
+  **Repo details…** from the row's **⋯** menu, which keyboard and touch reach too);
 - the branch: your working copy's branch if a conversation of yours has one, else the default
   branch;
 - how many commits your working copy is **ahead** (↑) of or **behind** (↓) the host, or ✓ when it
@@ -163,10 +164,10 @@ The Repo's **⋯** menu has **Open on &lt;host&gt;** (the repository on the host
   appears after the next refresh.
 
 If the repository is archived or deleted on the host, or the Workspace's connection to it is
-removed, the Repo stays readable from its last mirror and **Repo details…** says why. A Workspace
-admin then sees **Relink…** (link it to another repository of a connected organization) and
+removed, the Repo stays readable from its last mirror and **Repo details…** says why. Workspace
+admins also see **Relink…** (link it to another repository of a connected organization) and
 **Detach…** (turn it back into an ordinary project, starting from the mirrored files as one
-commit). See
+commit) in **Repo details…**, for any Repo. See
 [Git organizations](../admin/git-organizations.md#repos-the-mirror-read-only-repos-relink-and-detach).
 
 ### Convert a project to a Repo
@@ -182,8 +183,10 @@ Workspace admins, when the Workspace has a git connection at **Read and write**.
 - for Workspace admins only, **Use an existing empty repository with this name** instead of
   creating one (it must be private, empty and in the connection's organization).
 
-Converting is one-way. The repository is private (internal only where the connection allows
-it), and the conversion stops if it becomes public. Commits carry each author's Kobe email, or a
+Converting is one-way. The repository gets the connection's default visibility, which the
+dialog names: private, or internal where a Workspace admin chose that for the connection (on
+GitHub everyone in the enterprise can then read it; on Gitea and Forgejo everyone with an
+account on the server). The conversion stops if it becomes public. Commits carry each author's Kobe email, or a
 no-reply address if the Workspace's [git settings](../admin/git-organizations.md#commit-author-email)
 say so; members who have left always get the no-reply address, and the committer reads
 "&lt;name&gt; via Kobe". Files under `.github/workflows/` run on the host if it runs Actions.

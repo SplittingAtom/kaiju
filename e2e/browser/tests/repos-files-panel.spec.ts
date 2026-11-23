@@ -14,16 +14,18 @@ import { pageApi } from "./support/gate5.js";
  * row (git icon, host and repository, branch, ahead/behind), Open on <host>, Repo details… and a
  * refusal of Convert to repo in the deployment's real shell and theme. Nothing is stored.
  *
- * The second test converts a real project and runs only when the active Workspace has a git
- * connection at Read and write (skipped otherwise, and with `KOBE_GIT_E2E_CONVERT=0`). It creates
- * a private repository named `<prefix>kobe-e2e-<unique>` in that organization, which Kobe never
- * deletes: remove it on the host afterwards. Spends no model tokens:
+ * The second test needs a git connection at Read and write in the active Workspace and goes
+ * through the dialog on a real project up to, not including, the start. Only with
+ * `KOBE_GIT_E2E_CONVERT=1` (opt-in, off by default, review H1) does it also convert: that creates
+ * a private repository named `<prefix>kobe-e2e-<unique>` in the organization, which Kobe never
+ * deletes (remove it on the host afterwards). Spends no model tokens:
  * `npx playwright test repos-files-panel`.
  */
 const REPO_ID = "77777777-7777-4777-8777-777777777777";
 const OWNED_ID = "88888888-8888-4888-8888-888888888888";
 const CONNECTION_ID = "99999999-9999-4999-8999-999999999999";
-const STAMP = "2026-11-23T10:00:00.000Z";
+/** Now, so the fake rows sort first and never fall behind "Show all" (review L8). */
+const STAMP = new Date().toISOString();
 
 const json = (route: Route, status: number, body: unknown) =>
   route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
@@ -213,11 +215,11 @@ interface Connection {
   readonly access_level: string;
 }
 
-test("Convert to repo: a real project becomes a Repo (needs a git connection at Read and write)", async ({
+test("Convert to repo on a real project (needs a git connection at Read and write; converts only with KOBE_GIT_E2E_CONVERT=1)", async ({
   chat,
   page,
 }) => {
-  test.skip(process.env["KOBE_GIT_E2E_CONVERT"] === "0", "KOBE_GIT_E2E_CONVERT=0");
+  const convert = process.env["KOBE_GIT_E2E_CONVERT"] === "1";
   await chat.open();
   const list = await pageApi<{ connections?: Connection[]; site?: { enabled: boolean } }>(
     page,
@@ -263,7 +265,17 @@ test("Convert to repo: a real project becomes a Repo (needs a git connection at 
       .getByRole("menuitem", { name: "Convert to repo…" })
       .click();
     const dialog = page.getByRole("dialog", { name: `Convert ${made.json.name} to a repo` });
+    await expect(dialog.getByRole("textbox", { name: "Repository name" })).toHaveValue(
+      new RegExp(`kobe-e2e-${unique}$`),
+    );
+    await expect(dialog.getByText(/^An? (private|internal) repository in /)).toBeVisible();
     await dialog.getByRole("radio", { name: "One commit of the current files" }).check();
+    if (!convert) {
+      // Off by default: nothing is created on the host.
+      await dialog.getByRole("button", { name: "Cancel" }).click();
+      await expect(dialog).toBeHidden();
+      return;
+    }
     await dialog.getByRole("button", { name: "Convert" }).click();
     await expect(dialog.getByText(/The project is now a Repo/)).toBeVisible({
       timeout: RUN_TIMEOUT_MS,

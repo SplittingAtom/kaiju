@@ -105,7 +105,7 @@ describe("the form", () => {
     await user.selectOptions(within(dialog).getByLabelText("Git connection"), "c2");
     expect(name.value).toBe("q4");
     expect(
-      within(dialog).getByText("A private repository in ops on git.example.com."),
+      within(dialog).getByText(/^A private repository in ops on git\.example\.com:/),
     ).toBeTruthy();
     // A typed name is kept when the connection changes.
     await user.clear(name);
@@ -256,5 +256,67 @@ describe("progress and end states", () => {
     await within(dialog).findByLabelText("Repository name");
     await user.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe("review round 1", () => {
+  it("says what the connection's visibility means (M2)", async () => {
+    const internal = { ...member("c1", "kobe-"), repoVisibility: "internal" as const };
+    const { dialog } = mount(api(), git({ connections: [internal] }));
+    expect(
+      await within(dialog).findByText(/^An internal repository in acme on github\.com: everyone/),
+    ).toBeTruthy();
+    expect(dialog.textContent).not.toMatch(/private repository/);
+  });
+
+  it("an unreadable attempt is not shown as 'no conversion' (L4), and Try again reads it", async () => {
+    const a = api({
+      conversion: vi
+        .fn<RepoApi["conversion"]>()
+        .mockResolvedValueOnce({
+          ok: false,
+          error: { status: 502, code: "server_error", message: "x" },
+        })
+        .mockResolvedValue(ok(null)),
+    });
+    const { dialog } = mount(a);
+    const retry = await within(dialog).findByRole("button", { name: "Try again" });
+    expect(document.activeElement).toBe(retry);
+    expect(within(dialog).queryByLabelText("Repository name")).toBeNull();
+    await userEvent.setup().click(retry);
+    expect(await within(dialog).findByLabelText("Repository name")).toBeTruthy();
+  });
+
+  it("stops following after failed reads and says so (L3)", async () => {
+    const conversion = vi
+      .fn<RepoApi["conversion"]>()
+      .mockResolvedValueOnce(ok(attempt()))
+      .mockResolvedValue({ ok: false, error: { status: 404, code: "not_found", message: "x" } });
+    const a = api({ conversion });
+    const { dialog } = mount(a);
+    expect(
+      await within(dialog).findByText(/could not read the conversion's progress/, undefined, {
+        timeout: 3000,
+      }),
+    ).toBeTruthy();
+    const reads = conversion.mock.calls.length;
+    await new Promise((r) => setTimeout(r, 400));
+    expect(conversion.mock.calls.length).toBe(reads);
+  });
+
+  it("the dialog itself has the focus while it reads (L6)", async () => {
+    let answer: (v: ApiResult<RepoConversion | null>) => void = () => undefined;
+    const a = api({
+      conversion: vi.fn<RepoApi["conversion"]>(
+        () =>
+          new Promise<ApiResult<RepoConversion | null>>((r) => {
+            answer = r;
+          }),
+      ),
+    });
+    const { dialog } = mount(a);
+    expect(document.activeElement).toBe(dialog);
+    answer(ok(null));
+    await within(dialog).findByLabelText("Repository name");
   });
 });

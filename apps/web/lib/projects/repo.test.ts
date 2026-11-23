@@ -110,6 +110,25 @@ describe("hostLink: only to the connection's own host (host strings are untruste
       expect(hostLink(repo({ webUrl })), webUrl).toBeNull();
     }
   });
+  it("normalises before comparing: backslash, default port, case, IDN; fails closed otherwise", () => {
+    // A backslash is a slash for https: the host stays github.com.
+    expect(hostLink(repo({ webUrl: "https://github.com\\@evil.example/x" }))).toBe(
+      "https://github.com/@evil.example/x",
+    );
+    expect(hostLink(repo({ webUrl: "https://GitHub.com:443/acme/q4" }))).toBe(
+      "https://github.com/acme/q4",
+    );
+    // Protocol-relative needs a base: refused.
+    expect(hostLink(repo({ webUrl: "//github.com/acme/q4" }))).toBeNull();
+    // A trailing dot is another host string: no link.
+    expect(hostLink(repo({ webUrl: "https://github.com./acme/q4" }))).toBeNull();
+    // IDN: both sides become punycode.
+    const idn = { baseUrl: "https://gït.example" };
+    expect(hostLink(repo({ ...idn, webUrl: "https://xn--gt-tja.example/a/b" }))).toBe(
+      "https://xn--gt-tja.example/a/b",
+    );
+    expect(hostLink(repo({ ...idn, webUrl: "https://git.example/a/b" }))).toBeNull();
+  });
   it("a plain-http connection may link over http to itself only", () => {
     const local = { baseUrl: "http://forgejo.local:3000" };
     expect(hostLink(repo({ ...local, webUrl: "http://forgejo.local:3000/a/b" }))).toBe(

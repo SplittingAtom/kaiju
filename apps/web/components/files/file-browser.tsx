@@ -208,6 +208,8 @@ export function FileBrowser({
     onOpenProjectPage: (id) => navigate(`/me/projects/${id}`),
     onRepo: (project, kind) => {
       setProjectAction(null);
+      // Review L2: connections may have changed since the panel read them.
+      workspaceProjects?.reloadGit();
       setRepoPanel({ project, kind });
     },
   });

@@ -50,10 +50,42 @@
 
 - The Threads panel's file map and project filters already treat Repos as projects (they list
   projects); its project headers keep the folder icon (no icon there today).
-- The browser spec's real conversion creates a repository on the host that Kobe never deletes
-  (named `<prefix>kobe-e2e-<unique>`); opt out with `KOBE_GIT_E2E_CONVERT=0`.
-- The browser spec has not run yet (first run after the next deploy); e2e/browser has no
-  installed dependencies in this worktree, so it was not typechecked here.
+- The browser spec has not run yet (first run after the next deploy); it typechecks (`npm ci`,
+  `npm run typecheck`) and lints clean.
+
+## Review round 1 (review-g109.md) — what changed
+
+Merged `origin/group-108-git-11-commit-flow` (KOBE-767 final, working copy at
+`/workspace/.kobe/repos/<slug>`; none of this ticket's text named the old path).
+
+- **H1** the browser spec's real conversion is opt-in (`KOBE_GIT_E2E_CONVERT=1`); without it the
+  second test goes through the dialog on a real project (name, visibility words, history) and
+  cancels before the start.
+- **M1** Repo details reads `/repo` again while the mirror refreshes (2 s, doubling to 30 s, at
+  most 8 reads, then says "Still refreshing"), so the state and Refresh follow; the row is read
+  again at the end. Test `repo-panel.test.tsx`.
+- **M2** the members' view of a connection carries `repo_visibility` (admin-set, benign); the
+  dialog words the default ("A private repository…: only people the organization gives access
+  can read it" / "An internal repository…: everyone with an account in the host's enterprise
+  (GitHub) or on the server (Gitea, Forgejo) can read it"); progress names the visibility; guide
+  says the same. Server test pins the member key set.
+- **M3** only running conversions of projects the member manages are followed, by
+  `GET .../repo-conversion` for those ids (10 s, ×1.5 up to 60 s); the project list is read again
+  once when one ends (retried up to 3 times if that read fails); Repo details are re-read when
+  the set of Repos changes, not on every reload. Server: the file count and the conversion state
+  come from one query per project (no extra query; the list already read one count per project).
+- **L1** a Workspace admin listed with a role is known from the connections answer (admin view or
+  `allowed_hosts`), read once the projects are in, for every member. **L2** connections are read
+  again when Repo details or Convert to repo opens. **L3** the dialog's poll has a stale guard,
+  doubles after failed reads and stops after 5 with a message. **L4** an unreadable attempt shows
+  "could not read" with Try again, not the form. **L5** readers are not followed and get no
+  failure notice. **L6** the dialog takes the focus while it reads; Close takes it when no
+  connection is writable. **L8** fake rows use the current time. **L9** guide: admins see Relink
+  and Detach for any Repo. **L10** one persistent `role="status"` region announces notices.
+  **L11** host-link tests for backslash, default port, case, protocol-relative, trailing dot, IDN.
+- **L7 kept as decided:** the host and repository are in the row's hover text and description,
+  and in Repo details…, which keyboard (the row's menu key) and touch (the ⋯ button is always
+  shown on coarse pointers) reach; the guide says so. A second line would break the 26 px rows.
 
 ## Docs
 
@@ -78,5 +110,6 @@ step (no tool). Release note is KOBE-769's.
   body sent; holding chip and "is now a Repo." notice; expiry notice).
 - ac-3: the tests above; `e2e/browser/tests/repos-files-panel.spec.ts` (fake-host test with
   `page.route`; real conversion skipped without a connection at Read and write); guide pages above.
-- Suites (2026-11-23): web 4274 (whole); protocol 1370; server unit 4559 (+8 skipped); server
+- Suites round 1 (2026-11-23): web 4282 (whole); server unit 4559 (+8 skipped); server `test:db`
+  3726; browser spec typechecks and lints. First run: web 4274; protocol 1370; server unit 4559; server
   `test:db` 3725; lint, typecheck, format:check, site wording, public hygiene clean.

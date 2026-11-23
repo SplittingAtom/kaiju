@@ -89,6 +89,8 @@ export const gitConnectionMemberViewSchema = z.strictObject({
    * with it, G16). Absent on older answers.
    */
   repo_name_prefix: z.string().optional(),
+  /** KOBE-768 review M2: new repositories' visibility (the dialog words it). Absent on older answers. */
+  repo_visibility: z.enum(GIT_CONNECTION_REPO_VISIBILITIES).optional(),
 });
 export type GitConnectionMemberView = z.infer<typeof gitConnectionMemberViewSchema>;
 
