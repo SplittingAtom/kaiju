@@ -3,11 +3,11 @@ import { strFromU8, unzipSync } from "fflate";
 import pino from "pino";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
-import { acceptedCases } from "./eval-cases/review.js";
-import { purgeDepartedCasesInTx } from "./retention/eval-cases.js";
-import { runRetentionPass } from "./retention/index.js";
-import { RunFixture, type RunWorld } from "./testing/run-fixture.js";
-import type { Person } from "./testing/event-stream-fixture.js";
+import { acceptedCases } from "./review.js";
+import { purgeDepartedCasesInTx } from "../retention/eval-cases.js";
+import { runRetentionPass } from "../retention/index.js";
+import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
+import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-276: shared eval cases through the API. The conversation's owner shares a thumbs-down
