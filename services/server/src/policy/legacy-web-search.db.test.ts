@@ -1,8 +1,8 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { LEGACY_WEB_SEARCH_MESSAGE } from "@kobe/protocol/sandbox-wire";
-import { EventStreamFixture } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
+import { EventStreamFixture } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 
 /**
  * KOBE-606 removed the built-in web search. A sandbox image from before it still announces the

@@ -2,11 +2,11 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CAPABILITY_FILE_EDITS } from "@kobe/protocol";
 import { createDb, type KobeDatabase } from "@kobe/db";
-import { approvalKeyring } from "./approvals/index.js";
-import { createPolicyEngine } from "./policy/engine.js";
-import { createDbRuleSource, createDbSettingsSource } from "./policy/rule-store.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
+import { approvalKeyring } from "../approvals/index.js";
+import { createPolicyEngine } from "./engine.js";
+import { createDbRuleSource, createDbSettingsSource } from "./rule-store.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 
 /**
  * KOBE-493: the server's `policy.check` never lets Pi `write`/`edit` change the file the run's

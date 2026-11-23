@@ -10,26 +10,26 @@ import {
   type PolicyDecision,
   type PolicyEngine,
 } from "@kobe/protocol";
-import { createApp } from "./app.js";
-import { createServerDeps, type ServerDeps } from "./deps.js";
-import { createPolicyEngine } from "./policy/engine.js";
-import { insertUserAllowRule } from "./policy/remember.js";
+import { createApp } from "../app.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { createPolicyEngine } from "./engine.js";
+import { insertUserAllowRule } from "./remember.js";
 import {
   createDbRuleSource,
   createDbSettingsSource,
   createTeamRule,
   updateTeamRule,
-} from "./policy/rule-store.js";
-import { TestBrowser, type TestResponse } from "./testing/browser.js";
-import { MemoryMailer } from "./testing/mailer.js";
-import { runWithAuditContext } from "./audit/context.js";
+} from "./rule-store.js";
+import { TestBrowser, type TestResponse } from "../testing/browser.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { runWithAuditContext } from "../audit/context.js";
 import {
   SAMPLE_INPUTS,
   mcpTool,
   policyInput,
   type InputOptions,
-} from "./testing/policy-fixtures.js";
-import { fakeIsolation } from "./testing/isolation.js";
+} from "../testing/policy-fixtures.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 const PUBLIC_URL = "http://kobe.test";
 const PASSWORD = "a long enough password";

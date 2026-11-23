@@ -1,11 +1,11 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDb, type KobeDatabase } from "@kobe/db";
-import { approvalKeyring } from "./approvals/index.js";
-import { createPolicyEngine } from "./policy/engine.js";
-import { createDbRuleSource, createDbSettingsSource } from "./policy/rule-store.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
+import { approvalKeyring } from "../approvals/index.js";
+import { createPolicyEngine } from "./engine.js";
+import { createDbRuleSource, createDbSettingsSource } from "./rule-store.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 
 /**
  * Dangerous mode at run time (AC1, KOBE-476): the server's `policy.check` allows a call that would
