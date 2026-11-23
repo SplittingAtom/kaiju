@@ -26,6 +26,8 @@ import { resealTeamHeaders } from "../egress/header-store.js";
 import { GIT_HEALTH_LOCK, GitHealthJob, runGitHealthPass } from "../git/health-job.js";
 import { conversionDeps } from "../git/conversion/deps.js";
 import { GitConversionSweep, sweepGitConversions } from "../git/conversion/job.js";
+import { mirrorDeps } from "../git/mirror/deps.js";
+import { GIT_MIRROR_LOCK, GitMirrorJob, sweepGitMirrors } from "../git/mirror/job.js";
 import { endSsoSessionsWhenOff, seedHelmProviders } from "../sso/providers.js";
 import { notifySsoRequiredOff } from "../sso/required-notify.js";
 import { EgressRequestSweeper, sweepEgressRequestNotifications } from "../egress/request-notify.js";
@@ -465,6 +467,19 @@ function siteJobs(o: ServerJobsOptions): ServerJob[] {
         return () => conversionSweep.stop();
       },
       () => sweepGitConversions(conversions),
+    ),
+  );
+  // Repo mirror (KOBE-766): refreshes due Repos (timer, pushes, opens), one replica at a time.
+  const mirror = { ...mirrorDeps(deps), log: o.logger };
+  const mirrorJob = new GitMirrorJob(mirror, lockFor(o, GIT_MIRROR_LOCK, "git mirror"));
+  jobs.push(
+    job(
+      "git-mirror",
+      () => {
+        mirrorJob.start();
+        return () => mirrorJob.stop();
+      },
+      () => sweepGitMirrors(mirror),
     ),
   );
   // Header values sealed with a previous header secret are re-sealed with the current one.

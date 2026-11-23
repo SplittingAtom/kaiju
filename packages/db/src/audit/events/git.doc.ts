@@ -76,6 +76,24 @@ export const GIT_EVENT_DOCS = {
       "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `number?`, `hostId`, `url?`",
     when: "An agent opened a pull request with `git_open_pull_request` (KOBE-762). Never the title, text or branch names",
   },
+  "git.repo.detached": {
+    fields: "`repositoryId`, `projectId`, `commitId`",
+    when: "A Workspace admin turned a Repo back into an ordinary project: one commit of the mirrored files starts its Kobe history again; the repository stays on the host (KOBE-766)",
+  },
+  "git.repo.host_state_changed": {
+    fields:
+      "`repositoryId`, `projectId`, `hostRepoId`, `from`, `to` (`active`, `archived`, `deleted`, `unreachable`)",
+    when: "A Repo mirror refresh (system) saw the repository archived or deleted on the host, or its connection removed: the Repo is read-only from its last mirror; `active` again lifts it (KOBE-766)",
+  },
+  "git.repo.mirror_updated": {
+    fields:
+      "`repositoryId`, `projectId`, `commitId`, `headSha`, `added`, `modified`, `deleted`, `fileCount`, `skipped`",
+    when: "A Repo mirror refresh (system) wrote the host's new files on the default branch into the Repo as one commit; `skipped` counts symlinks and submodules left out (KOBE-766). Never paths or messages",
+  },
+  "git.repo.relinked": {
+    fields: "`repositoryId`, `projectId`, `previousRepositoryId`, `connectionId`, `hostRepoId`",
+    when: "A Workspace admin linked a Repo to another repository of a connected organization (or the same one again, after a reconnect); the next refresh mirrors it (KOBE-766)",
+  },
   "git.repository.created": {
     fields:
       "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `hostId`, `visibility` (`private`, `internal`, `public` if the host made it so), `url?`",

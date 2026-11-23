@@ -85,6 +85,12 @@ runs them on its server with the Workspace's credential and decides every call f
 - **Repos.** Reading a repository that is a Kobe Repo follows its project's read rule. Today every
   Workspace member is a reader of every project, so this refuses no one; where a project's readers
   are restricted, the Repo does not exist for others (`not_found`) and listings leave it out.
+- **A Repo's mount is a mirror.** A Kobe Repo's files under `/workspace/projects/<slug>/` are a
+  mirror of the repository's default branch, refreshed about 30 seconds after a push from the
+  sandbox, when the Repo is opened and every 5 minutes. Right after a push the mount may still
+  show the previous state; the repository itself (`git fetch`) is always current. When the
+  repository was archived or deleted on the host, or its connection removed, the mount stays at
+  the last mirror and the Repo is read-only.
 - **Who may write.** The connection must be at **Read and write**, the user a Contributor or above,
   and for a Repo an editor or owner of its project. Nothing destructive exists: no deleting,
   archiving, merging, visibility or settings changes.

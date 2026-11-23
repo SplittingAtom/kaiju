@@ -286,7 +286,8 @@ export interface WrittenCommit {
  * rewritten to it, the storage counters, and the queued deletion of any key it now references
  * cleared (a pre-copy reservation, {@link reserveKeys}). Audits `project.committed` unless
  * `audit` is false (a revert audits its own event). The caller holds the project row lock.
- * Throws {@link ProjectWriteBlocked} for a Repo or a project being converted (KOBE-765, G17).
+ * Throws {@link ProjectWriteBlocked} for a Repo or a project being converted (KOBE-765, G17),
+ * except for the Repo mirror's own writes (`mirror`, KOBE-766).
  */
 export async function writeCommit(
   tx: KobeTx,
@@ -297,11 +298,18 @@ export async function writeCommit(
     readonly author: CommitAuthor;
     readonly message: string;
     readonly audit?: boolean;
+    /**
+     * KOBE-766: the Repo mirror writes the host's files into a Repo (G17). Only the mirror sets
+     * it; a project being converted stays blocked.
+     */
+    readonly mirror?: boolean;
   },
 ): Promise<WrittenCommit> {
   const { teamId, projectId, tree, author } = input;
   const block = await projectWriteBlock(tx, teamId, projectId);
-  if (block !== null) throw new ProjectWriteBlocked(block);
+  if (block !== null && !(block === "repo" && input.mirror === true)) {
+    throw new ProjectWriteBlocked(block);
+  }
   const head = await headOf(tx, teamId, projectId);
   const before = await loadTree(tx, teamId, head?.id ?? null);
   const changes = diffVersions(before, tree);

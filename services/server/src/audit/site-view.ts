@@ -47,6 +47,8 @@ export const SITE_VIEW_TARGET_KEYS: ReadonlySet<string> = new Set([
   "step",
   "repositoryCreated",
   "leftOnHost",
+  // Repo mirror (KOBE-766): the repository record a Repo was linked to before a relink.
+  "previousRepositoryId",
   // KOBE-733 sandbox.volume_proof: whether the shutdown proof was accepted.
   "accepted",
   // KOBE-733 sandbox.volume_reclaimed: the configured dormancy period.
