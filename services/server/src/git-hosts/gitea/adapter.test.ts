@@ -1,7 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { serializeError } from "../../log-safety.js";
 import { FAKE_GITEA_TOKEN, FAKE_VERSIONS, FakeGitea } from "../../testing/fake-gitea.js";
-import { contractNet, describeProviderContract } from "../../testing/git-host-contract.js";
+import {
+  contractNet,
+  contractTarget,
+  describeProviderContract,
+} from "../../testing/git-host-contract.js";
 import { GitHostError, type GitHostAdapter } from "../adapter.js";
 import type { GitHostNet } from "../http.js";
 import { createGiteaAdapter } from "./adapter.js";
@@ -12,7 +16,7 @@ function factory(fake: FakeGitea, provider: "gitea" | "forgejo" = fake.product) 
   return (net: GitHostNet = contractNet(fake), baseUrl = fake.baseUrl): GitHostAdapter =>
     createGiteaAdapter({
       provider,
-      baseUrl,
+      target: contractTarget(baseUrl),
       organization: fake.organization,
       token: fake.token,
       net,
@@ -26,7 +30,14 @@ for (const product of ["gitea", "forgejo"] as const) {
     fake,
     start: () => fake.start(),
     close: () => fake.close(),
-    makeAdapter: (net, overrides) => factory(fake)(net, overrides?.baseUrl ?? fake.baseUrl),
+    makeAdapter: (net, target) =>
+      createGiteaAdapter({
+        provider: product,
+        target,
+        organization: fake.organization,
+        token: fake.token,
+        net,
+      }),
     secrets: () => [FAKE_GITEA_TOKEN],
   });
 }

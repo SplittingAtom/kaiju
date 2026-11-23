@@ -1,6 +1,10 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import type { ContractFailure, GitHostContractFake } from "./git-host-contract.js";
+import {
+  FAKE_GIT_HOST,
+  type ContractFailure,
+  type GitHostContractFake,
+} from "./git-host-contract.js";
 
 /**
  * A fake Gitea / Forgejo `/api/v1` (tests only, KOBE-759): one organization, a bot account, an
@@ -67,7 +71,7 @@ export class FakeGitea implements GitHostContractFake {
   }
 
   get baseUrl(): string {
-    return `http://127.0.0.1:${this.port}`;
+    return `http://${FAKE_GIT_HOST}:${this.port}`;
   }
 
   start(): Promise<void> {

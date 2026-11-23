@@ -1,6 +1,8 @@
 import { z } from "zod";
 import {
+  cloneUrlFor,
   GitHostError,
+  safeWebUrl,
   type GitCreated,
   type GitOrganization,
   type GitRepository,
@@ -92,7 +94,7 @@ const repository = z.object({
   empty: z.boolean().optional(),
   archived: z.boolean().optional(),
   html_url: url,
-  clone_url: url,
+  // `clone_url` is not read: the clone URL is built from the base URL (review M2).
   permissions: z
     .object({ admin: z.boolean(), push: z.boolean(), pull: z.boolean() })
     .partial()
@@ -107,8 +109,19 @@ export interface GiteaRepository {
   readonly canWrite: boolean;
 }
 
-export function asRepository(json: unknown): GiteaRepository {
+/**
+ * A repository answer. `webUrl` only on the connection's web origin; `cloneUrl` built from the base
+ * URL and the connected organization, never from the answer (review M2).
+ */
+export function asRepository(
+  json: unknown,
+  webRoot: string,
+  organization: string,
+): GiteaRepository {
   const r = parse(repository, json);
+  if (!/^[A-Za-z0-9._-]{1,100}$/.test(r.name)) {
+    throw new GitHostError("unexpected", "The git host gave an unexpected answer.");
+  }
   const empty = r.empty === true;
   return {
     owner: r.owner.login,
@@ -124,16 +137,20 @@ export function asRepository(json: unknown): GiteaRepository {
       defaultBranch: empty ? null : r.default_branch || null,
       archived: r.archived === true,
       empty,
-      webUrl: r.html_url,
-      cloneUrl: r.clone_url,
+      webUrl: safeWebUrl(r.html_url, webRoot),
+      cloneUrl: cloneUrlFor(webRoot, organization, r.name),
     },
   };
 }
 
-export function asCreated(json: unknown, withNumber: boolean): GitCreated {
+export function asCreated(json: unknown, withNumber: boolean, webRoot: string): GitCreated {
   const c = parse(
     z.object({ id, number: z.number().int().positive().optional(), html_url: url }),
     json,
   );
-  return { id: c.id, number: withNumber ? (c.number ?? null) : null, webUrl: c.html_url };
+  return {
+    id: c.id,
+    number: withNumber ? (c.number ?? null) : null,
+    webUrl: safeWebUrl(c.html_url, webRoot),
+  };
 }

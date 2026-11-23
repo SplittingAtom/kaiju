@@ -87,7 +87,15 @@ export type GitBaseUrlResult =
  * targets by name); an optional port and path (Gitea and Forgejo may be served under a path).
  * Result: lowercase host, no trailing slash, e.g. `https://git.example.com/forgejo`.
  */
-export function parseGitBaseUrl(raw: string): GitBaseUrlResult {
+export interface GitBaseUrlOptions {
+  /**
+   * Accept plain `http:` too. Only for a server whose connector address policy allows HTTP (the
+   * chart's development flag, and the test fakes); production URLs are https.
+   */
+  readonly allowHttp?: boolean;
+}
+
+export function parseGitBaseUrl(raw: string, options: GitBaseUrlOptions = {}): GitBaseUrlResult {
   if (typeof raw !== "string" || raw.trim() === "" || raw.length > GIT_BASE_URL_MAX) {
     return { ok: false, reason: "enter the host's https address" };
   }
@@ -97,7 +105,8 @@ export function parseGitBaseUrl(raw: string): GitBaseUrlResult {
   } catch {
     return { ok: false, reason: "enter the host's https address, e.g. https://github.com" };
   }
-  if (url.protocol !== "https:") return { ok: false, reason: "the address must use https" };
+  const scheme = url.protocol === "http:" && options.allowHttp === true ? "http" : "https";
+  if (url.protocol !== `${scheme}:`) return { ok: false, reason: "the address must use https" };
   if (url.username !== "" || url.password !== "") {
     return { ok: false, reason: "the address must not contain a user name or password" };
   }
@@ -113,7 +122,7 @@ export function parseGitBaseUrl(raw: string): GitBaseUrlResult {
     return { ok: false, reason: "the address has an invalid path" };
   }
   const port = url.port === "" ? "" : `:${url.port}`;
-  const baseUrl = `https://${host}${port}${path}`;
+  const baseUrl = `${scheme}://${host}${port}${path}`;
   if (baseUrl.length > GIT_BASE_URL_MAX) return { ok: false, reason: "the address is too long" };
   return { ok: true, baseUrl, host };
 }
@@ -127,7 +136,11 @@ export type GitHostDecision =
     };
 
 /** Whether the Site allows a connection to `baseUrl` now (G3). */
-export function decideGitHost(settings: GitSiteSettings, baseUrl: string): GitHostDecision {
+export function decideGitHost(
+  settings: GitSiteSettings,
+  baseUrl: string,
+  options: GitBaseUrlOptions = {},
+): GitHostDecision {
   if (!settings.enabled) {
     return {
       ok: false,
@@ -135,7 +148,7 @@ export function decideGitHost(settings: GitSiteSettings, baseUrl: string): GitHo
       message: "Git connections are turned off for this Site.",
     };
   }
-  const parsed = parseGitBaseUrl(baseUrl);
+  const parsed = parseGitBaseUrl(baseUrl, options);
   if (!parsed.ok) return { ok: false, code: "invalid_base_url", message: parsed.reason };
   if (
     settings.allowedHosts.length > 0 &&

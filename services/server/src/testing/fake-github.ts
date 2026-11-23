@@ -1,7 +1,11 @@
 import { createPublicKey, verify, type KeyObject } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import type { ContractFailure, GitHostContractFake } from "./git-host-contract.js";
+import {
+  FAKE_GIT_HOST,
+  type ContractFailure,
+  type GitHostContractFake,
+} from "./git-host-contract.js";
 
 /**
  * A fake GitHub REST API (tests only, KOBE-758), served as an Enterprise Server under `/api/v3`.
@@ -47,6 +51,15 @@ export interface FakeGithubOptions {
   patRejected?: boolean;
   /** Old name → current repository name: GET on the old name answers 301 to /repositories/:id. */
   renamed?: Record<string, string>;
+  /** The organization is a user account (`/orgs/:o` 404, `/users/:o` 200; `/user/repos`). */
+  userNamespace?: boolean;
+  /** The PAT's own login (`/user`); default `kobe-bot-test`. */
+  patLogin?: string;
+  /** The token account's `permissions` on repositories (default pull and push). */
+  repoPermissions?: { pull: boolean; push: boolean };
+  /** Hostile answers: `html_url` / `clone_url` set to these instead of the fake's own URLs. */
+  hostileHtmlUrl?: string;
+  hostileCloneUrl?: string;
 }
 
 export class FakeGithub implements GitHostContractFake {
@@ -81,7 +94,7 @@ export class FakeGithub implements GitHostContractFake {
   async start(): Promise<void> {
     this.server = createServer((req, res) => void this.handle(req, res));
     await new Promise<void>((r) => this.server.listen(0, "127.0.0.1", r));
-    this.base = `http://127.0.0.1:${(this.server.address() as AddressInfo).port}`;
+    this.base = `http://${FAKE_GIT_HOST}:${(this.server.address() as AddressInfo).port}`;
   }
   close(): Promise<void> {
     this.server.closeAllConnections();
@@ -147,8 +160,13 @@ export class FakeGithub implements GitHostContractFake {
       default_branch: r.default_branch,
       archived: false,
       size: r.size,
-      html_url: `${this.base}/${full}`,
-      clone_url: `${this.base}/${full}.git`,
+      html_url: this.options.hostileHtmlUrl ?? `${this.base}/${full}`,
+      clone_url: this.options.hostileCloneUrl ?? `${this.base}/${full}.git`,
+      permissions: {
+        admin: false,
+        pull: this.options.repoPermissions?.pull ?? true,
+        push: this.options.repoPermissions?.push ?? true,
+      },
     };
   }
 
@@ -358,19 +376,37 @@ export class FakeGithub implements GitHostContractFake {
 
     if (path === "/user" && method === "GET") {
       if (who !== "pat") return reply(403, { message: "Resource not accessible by integration" });
-      return reply(200, { login: "kobe-bot-test", id: 77 });
+      return reply(200, { login: o.patLogin ?? "kobe-bot-test", id: 77 });
     }
     const orgM = /^\/(orgs|users)\/([^/]+)$/.exec(path);
     if (orgM && method === "GET") {
       if (orgM[2]?.toLowerCase() !== this.organization.toLowerCase())
         return reply(404, { message: "Not Found" });
-      if (orgM[1] === "users") return reply(404, { message: "Not Found" });
+      if ((orgM[1] === "users") !== (o.userNamespace === true))
+        return reply(404, { message: "Not Found" });
       return reply(200, {
         id: 900,
         login: this.organization,
         name: "Acme Test",
         html_url: `${this.base}/${this.organization}`,
       });
+    }
+    // A user namespace: the PAT's own repositories (GitHub creates in the token owner's account).
+    if (path === "/user/repos" && who === "pat") {
+      const login = o.patLogin ?? "kobe-bot-test";
+      if (method === "POST") {
+        const body = await this.body(req);
+        const name = String(body.name);
+        this.createdRepositories.push({ name, private: body.private, visibility: body.visibility });
+        const repo = this.addRepo(login, name);
+        repo.size = 0;
+        return reply(201, this.repoJson(repo));
+      }
+      const mine = [...this.repos.values()].filter((r) => r.owner === login);
+      return reply(
+        200,
+        mine.map((r) => this.repoJson(r)),
+      );
     }
     const listOrg = /^\/orgs\/([^/]+)\/repos$/.exec(path);
     if ((listOrg && method === "GET") || path === "/installation/repositories") {

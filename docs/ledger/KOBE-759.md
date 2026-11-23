@@ -116,6 +116,28 @@ ticket (GIT-13) fixes the spec; GIT-5's console text needs it too.
 - Everything else used is the same `/api/v1`; pagination is `page`/`limit` with `Link` and
   `X-Total-Count`, page size capped by the host (50 by default).
 
+## Adapter security review fixes (2026-11-22, phase-1 branch)
+
+- **M1, one Site matcher**: adapters take a `GitHostTarget` (`services/server/src/git-hosts/target.ts`)
+  instead of a base URL; only `gitHostTarget(settings, baseUrl)` makes one (it calls
+  `decideGitHost()`: switch, host patterns, https, no IP literal) and registers it in a private
+  set, so a look-alike is refused (`no_site_decision`). `hostRequest(net, target, ...)` re-checks
+  the request host and every redirect hop with the same decision (github.com pairs with
+  api.github.com only). `GitHostNet.allowedHosts` and `assertHostAllowed` are gone. Callers build
+  a fresh target per operation from `readGitSiteSettings()`. `decideGitHost` accepts http only
+  with `allowHttp` (the connector policy's dev flag; the fakes now serve `http://git.fake.test`).
+- **M2, host URLs**: `cloneUrl` is `cloneUrlFor(webBase, org, name)`, never the host's;
+  `webUrl`/`html_url` pass `safeWebUrl()` (same origin and scheme as the base URL, under its path)
+  or become "".
+- **M3 (GitHub)**: a token on a user namespace must belong to that user (probe, listing, create,
+  transport credential; `forbidden`/`token_owner_mismatch`); an App never creates in a user
+  account; organizations use `/orgs/{org}/repos`.
+- **Lows**: GitHub token `repositoryCredential` confirms the repository and pull/push first;
+  `narrowed` is required; `missingPermission` is kept only when permission-shaped (`GitHostError`
+  sanitizes it for every adapter); GitHub `resetAt` capped at a day; redirect edge cases tested
+  (`git-hosts/http.test.ts`: cross-origin, scheme downgrade, port change, outside the API path,
+  userinfo, POST/PATCH never followed, hop cap, credential never sent elsewhere).
+
 ## Guide
 
 No guide change: a server-side library with no route, UI or agent-visible behaviour yet. GIT-5

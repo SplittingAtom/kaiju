@@ -2,6 +2,7 @@ import { createHash, createPrivateKey, sign, type KeyObject } from "node:crypto"
 import type { GitCredentialKind } from "@kobe/db";
 import { GitHostError } from "../adapter.js";
 import { hostRequest, type GitHostNet } from "../http.js";
+import type { GitHostTarget } from "../target.js";
 import { githubError } from "./errors.js";
 
 /**
@@ -166,6 +167,8 @@ export function scopeKey(
 
 export interface AppAuthContext {
   readonly net: GitHostNet;
+  /** The Site's decision for the connection (G3); every request re-checks against it. */
+  readonly target: GitHostTarget;
   readonly apiRoot: string;
   readonly credential: GitHubAppCredential;
   readonly cache: InstallationTokenCache;
@@ -183,7 +186,7 @@ export function appHeaders(ctx: AppAuthContext): Record<string, string> {
 
 async function mint(ctx: AppAuthContext, scope: InstallationScope): Promise<InstallationToken> {
   const url = `${ctx.apiRoot}/app/installations/${ctx.credential.installationId}/access_tokens`;
-  const res = await hostRequest(ctx.net, ctx.apiRoot, url, {
+  const res = await hostRequest(ctx.net, ctx.target, ctx.apiRoot, url, {
     method: "POST",
     headers: appHeaders(ctx),
     body: {

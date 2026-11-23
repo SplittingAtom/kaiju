@@ -1,7 +1,12 @@
 import { generateKeyPairSync } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { FAKE_APP_ID, FAKE_INST_ID, FAKE_PAT, FakeGithub } from "../../testing/fake-github.js";
-import { contractNet, describeProviderContract } from "../../testing/git-host-contract.js";
+import {
+  contractNet,
+  contractTarget,
+  describeProviderContract,
+} from "../../testing/git-host-contract.js";
+import { gitHostTarget } from "../target.js";
 import { GitHostError } from "../adapter.js";
 import type { GitHostNet } from "../http.js";
 import { createGitHubAdapter, type GitHubCredential } from "./adapter.js";
@@ -32,9 +37,9 @@ function contractFor(name: string, credential: GitHubCredential) {
     prepare: () => {
       cache = new InstallationTokenCache();
     },
-    makeAdapter: (net, overrides) =>
+    makeAdapter: (net, target) =>
       createGitHubAdapter({
-        baseUrl: overrides?.baseUrl ?? fake.baseUrl,
+        target,
         organization: fake.organization,
         credential,
         net,
@@ -71,7 +76,7 @@ describe("GitHub adapter specifics (KOBE-758)", () => {
   });
   const make = (credential: GitHubCredential = APP, net: GitHostNet = contractNet(fake)) =>
     createGitHubAdapter({
-      baseUrl: fake.baseUrl,
+      target: contractTarget(fake.baseUrl),
       organization: fake.organization,
       credential,
       net,
@@ -263,9 +268,14 @@ describe("GitHub adapter specifics (KOBE-758)", () => {
 
     it("takes the primary rate limit's reset time from the header", async () => {
       fake.fail("rate_limited");
+      clock = 1900000123 * 1000 - 3_600_000; // an hour before the reset the fake reports
       const error = await caught(make(PAT).getRepository({ name: "docs" }));
       expect(error).toMatchObject({ code: "rate_limited", reason: "primary" });
       expect(error.resetAt?.getTime()).toBe(1900000123 * 1000);
+      // A reset further away than a day is capped (review L3).
+      clock = Date.now();
+      const capped = await caught(make(PAT).getRepository({ name: "docs" }));
+      expect(capped.resetAt?.getTime()).toBe(clock + 86_400_000);
     });
 
     it("takes a secondary rate limit's wait from retry-after", async () => {
@@ -305,13 +315,92 @@ describe("GitHub adapter specifics (KOBE-758)", () => {
         },
       };
       const a = createGitHubAdapter({
-        baseUrl: "https://github.com/",
+        target: gitHostTarget(
+          { enabled: true, allowedHosts: ["github.com"] },
+          "https://github.com/",
+        ),
         organization: "acme-test",
         credential: PAT,
         net,
       });
-      await a.describeOrganization();
+      const org = await a.describeOrganization();
       expect(seen).toEqual(["https://api.github.com/orgs/acme-test"]);
+      // A non-URL html_url is dropped, not passed on (review M2).
+      expect(org.webUrl).toBe("");
+    });
+
+    it("keeps github.com web links and drops API-origin or foreign ones", async () => {
+      const answers: Record<string, string> = {
+        "/orgs/acme-test": JSON.stringify({
+          id: 1,
+          login: "acme-test",
+          html_url: "https://github.com/acme-test",
+        }),
+        "/orgs/other": JSON.stringify({
+          id: 2,
+          login: "other",
+          html_url: "https://api.github.com/orgs/other",
+        }),
+      };
+      const net: GitHostNet = {
+        policy: {
+          allowHttp: false,
+          allowedPorts: [443],
+          allowedInternalCidrs: [],
+          deniedCidrs: [],
+          resolve: () => Promise.resolve(["140.82.112.6"]),
+        },
+        request: (url) =>
+          Promise.resolve({ status: 200, headers: {}, text: answers[url.pathname] ?? "{}" }),
+      };
+      const target = gitHostTarget({ enabled: true, allowedHosts: [] }, "https://github.com");
+      const mk = (organization: string) =>
+        createGitHubAdapter({ target, organization, credential: PAT, net });
+      expect((await mk("acme-test").describeOrganization()).webUrl).toBe(
+        "https://github.com/acme-test",
+      );
+      expect((await mk("other").describeOrganization()).webUrl).toBe("");
+    });
+
+    it.each([
+      ["javascript:alert(1)", ""],
+      ["https://evil.example/acme-test/docs", ""],
+    ])("drops a hostile html_url %s and never uses the host's clone_url", async (html, want) => {
+      fake.options = {
+        hostileHtmlUrl: html,
+        hostileCloneUrl: "https://evil.example/x.git",
+      };
+      const repo = await make(PAT).getRepository({ name: "docs" });
+      expect(repo.webUrl).toBe(want);
+      expect(repo.cloneUrl).toBe(`${fake.baseUrl}/${fake.organization}/docs.git`);
+    });
+
+    it("refuses a token of another account on a user namespace (review M3)", async () => {
+      fake.options = { userNamespace: true, patLogin: "bob" };
+      const probe = await caught(make(PAT).probe());
+      expect(probe).toMatchObject({ code: "forbidden", reason: "token_owner_mismatch" });
+      const create = await caught(make(PAT).createRepository({ name: "x", visibility: "private" }));
+      expect(create).toMatchObject({ code: "forbidden", reason: "token_owner_mismatch" });
+      expect(fake.createdRepositories).toEqual([]);
+      expect(fake.hits.some((h) => h.method === "POST")).toBe(false);
+    });
+
+    it("creates in a user namespace only with that user's own token", async () => {
+      fake.options = { userNamespace: true, patLogin: fake.organization };
+      const probe = await make(PAT).probe();
+      expect(probe.organization.kind).toBe("user");
+      const repo = await make(PAT).createRepository({ name: "mine", visibility: "private" });
+      expect(repo.fullName).toBe(`${fake.organization}/mine`);
+      const app = await caught(make(APP).createRepository({ name: "x", visibility: "private" }));
+      expect(app.code).toBe("forbidden");
+    });
+
+    it("checks the repository and the token's access before handing out a token (L1)", async () => {
+      fake.options = { repoPermissions: { pull: true, push: false } };
+      expect((await make(PAT).repositoryCredential("docs", "read")).narrowed).toBe(false);
+      const write = await caught(make(PAT).repositoryCredential("docs", "write"));
+      expect(write.code).toBe("forbidden");
+      expect((await caught(make(PAT).repositoryCredential("nope", "read"))).code).toBe("not_found");
     });
 
     it("lists repositories created through an App installation", async () => {

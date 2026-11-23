@@ -76,6 +76,12 @@ describe("git Site ceiling (G3)", () => {
     expect(decideGitHost(s, "https://example.com")).toMatchObject({ code: "host_not_allowed" });
     expect(decideGitHost(s, "https://evilgithub.com")).toMatchObject({ code: "host_not_allowed" });
     expect(decideGitHost(s, "http://github.com")).toMatchObject({ code: "invalid_base_url" });
+    // Plain HTTP only where the connector policy allows it (development, test fakes).
+    expect(decideGitHost(s, "http://github.com:8080", { allowHttp: true })).toMatchObject({
+      ok: true,
+      baseUrl: "http://github.com:8080",
+    });
+    expect(decideGitHost(s, "http://10.0.0.1", { allowHttp: true }).ok).toBe(false);
   });
 
   it("validates an admin's host list: canonical, unique, sorted; no IPs, schemes or paths", () => {

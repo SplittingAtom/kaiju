@@ -19,8 +19,8 @@ import {
   type GitRepositoryCredential,
   type GitRepositoryRef,
 } from "../adapter.js";
+import { assertGitHostTarget, type GitHostTarget } from "../target.js";
 import {
-  assertHostAllowed,
   header,
   hostRequest,
   type GitHostNet,
@@ -48,8 +48,11 @@ import {
 export interface GiteaAdapterOptions {
   /** What the admin chose; `probe()` reports the product the host identifies as. */
   readonly provider: Exclude<GitProvider, "github">;
-  /** e.g. `https://git.example.com` or `https://example.com/gitea` (a sub-path install). */
-  readonly baseUrl: string;
+  /**
+   * The Site's decision for the base URL (`gitHostTarget()`, G3), e.g. `https://git.example.com`
+   * or `https://example.com/gitea` (a sub-path install). The adapter cannot be built without one.
+   */
+  readonly target: GitHostTarget;
   readonly organization: string;
   /** The access token, unsealed by the caller; never stored or logged. */
   readonly token: string;
@@ -77,9 +80,10 @@ class GiteaAdapter implements GitHostAdapter {
   #login: Promise<string> | undefined;
 
   constructor(options: GiteaAdapterOptions) {
+    assertGitHostTarget(options.target);
     let base: URL;
     try {
-      base = new URL(options.baseUrl);
+      base = new URL(options.target.baseUrl);
     } catch {
       throw new GitHostError("invalid_request", "The git host URL is not valid.");
     }
@@ -102,11 +106,16 @@ class GiteaAdapter implements GitHostAdapter {
 
   /** One API call; a non-2xx answer becomes a {@link GitHostError}. */
   async #call(path: string, init: Omit<HostRequestInit, "headers">): Promise<HostResponse> {
-    assertHostAllowed(this.#o.net, this.#o.baseUrl);
-    const res = await hostRequest(this.#o.net, this.#apiRoot, `${this.#apiRoot}${path}`, {
-      ...init,
-      headers: { authorization: `token ${this.#o.token}` },
-    });
+    const res = await hostRequest(
+      this.#o.net,
+      this.#o.target,
+      this.#apiRoot,
+      `${this.#apiRoot}${path}`,
+      {
+        ...init,
+        headers: { authorization: `token ${this.#o.token}` },
+      },
+    );
     if (res.status < 200 || res.status >= 300) throw giteaError(res, this.#now());
     return res;
   }
@@ -215,7 +224,7 @@ class GiteaAdapter implements GitHostAdapter {
       throw new GitHostError("unexpected", "The git host returned no list.");
     }
     const items = (res.json as unknown[])
-      .map(asRepository)
+      .map((r) => asRepository(r, this.#webRoot, this.#o.organization))
       .filter((r) => sameLogin(r.owner, this.#o.organization))
       .map((r) => r.value);
     // Gitea sends a `Link` header and `X-Total-Count`; either says whether more follow.
@@ -230,7 +239,7 @@ class GiteaAdapter implements GitHostAdapter {
 
   /** A repository answer confined to the organization: another owner's is "not found". */
   #confined(json: unknown): GiteaRepository {
-    const repo = asRepository(json);
+    const repo = asRepository(json, this.#webRoot, this.#o.organization);
     if (!sameLogin(repo.owner, this.#o.organization)) {
       throw new GitHostError("not_found", "Not found in the connected organization.");
     }
@@ -311,14 +320,14 @@ class GiteaAdapter implements GitHostAdapter {
     // Gitea/Forgejo mark drafts by a `WIP:` title prefix rather than a field.
     const title = input.draft === true ? `WIP: ${input.title}` : input.title;
     const res = await this.#api(path, { method: "POST", body: { ...body, title } });
-    return asCreated(res.json, true);
+    return asCreated(res.json, true, this.#webRoot);
   }
 
   async comment(input: GitCommentInput): Promise<GitCreated> {
     // Pull requests are issues on Gitea/Forgejo: one comments endpoint for both.
     const path = `${this.#repoPath(input.repository)}/issues/${assertNumber(input.number)}/comments`;
     const res = await this.#api(path, { method: "POST", body: { body: input.body } });
-    return asCreated(res.json, false);
+    return asCreated(res.json, false, this.#webRoot);
   }
 
   async createIssue(input: GitCreateIssueInput): Promise<GitCreated> {
@@ -326,6 +335,6 @@ class GiteaAdapter implements GitHostAdapter {
       method: "POST",
       body: { title: input.title, body: input.body },
     });
-    return asCreated(res.json, true);
+    return asCreated(res.json, true, this.#webRoot);
   }
 }

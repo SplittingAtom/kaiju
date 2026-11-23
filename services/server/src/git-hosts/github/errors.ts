@@ -1,4 +1,4 @@
-import { GitHostError } from "../adapter.js";
+import { cappedResetAt, GitHostError } from "../adapter.js";
 import { header, type HostResponse } from "../http.js";
 
 /**
@@ -40,7 +40,7 @@ function rateLimited(res: HostResponse, nowMs: number): GitHostError | undefined
     const wait = retryAfter ?? SECONDARY_DEFAULT_WAIT_S;
     return new GitHostError("rate_limited", "The git host's rate limit was reached.", {
       status: res.status,
-      resetAt: new Date(nowMs + wait * 1000),
+      resetAt: cappedResetAt(nowMs + wait * 1000, nowMs),
       reason: "secondary",
     });
   }
@@ -49,8 +49,9 @@ function rateLimited(res: HostResponse, nowMs: number): GitHostError | undefined
     const reset = seconds(header(res, "x-ratelimit-reset"));
     return new GitHostError("rate_limited", "The git host's rate limit was reached.", {
       status: res.status,
-      resetAt: new Date(
+      resetAt: cappedResetAt(
         reset !== undefined ? reset * 1000 : nowMs + SECONDARY_DEFAULT_WAIT_S * 1000,
+        nowMs,
       ),
       reason: "primary",
     });
@@ -104,10 +105,11 @@ export function githubError(res: HostResponse, nowMs: number): GitHostError {
 /** Rate-limit headers of an answer, when present. */
 export function rateLimitOf(
   res: HostResponse,
+  nowMs: number = Date.now(),
 ): { limit: number; remaining: number; resetAt: Date } | null {
   const limit = seconds(header(res, "x-ratelimit-limit"));
   const remaining = seconds(header(res, "x-ratelimit-remaining"));
   const reset = seconds(header(res, "x-ratelimit-reset"));
   if (limit === undefined || remaining === undefined || reset === undefined) return null;
-  return { limit, remaining, resetAt: new Date(reset * 1000) };
+  return { limit, remaining, resetAt: cappedResetAt(reset * 1000, nowMs) };
 }

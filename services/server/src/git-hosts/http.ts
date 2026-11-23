@@ -1,6 +1,7 @@
 import { RedirectRefusedError, rawRequest } from "../connectors/oauth/http.js";
 import { checkConnectorUrl, type ConnectorUrlPolicy } from "../connectors/url-policy.js";
 import { GitHostError } from "./adapter.js";
+import { assertGitHostTarget, assertRequestHost, type GitHostTarget } from "./target.js";
 
 /**
  * Outbound HTTP for git host adapters (spec workspace-git §9; KOBE-758), shared by every provider.
@@ -8,15 +9,14 @@ import { GitHostError } from "./adapter.js";
  * only (port 443 unless the chart allows more), every resolved address public unless the Site lists
  * it as an internal target (a self-hosted Gitea or Enterprise Server, G3), the connection pinned to
  * the checked address (DNS rebinding), time and size capped. A redirect is followed only on the
- * API's own origin and path (a renamed repository); any other hop is refused. The Site's host limit
- * (G3) is checked before anything is sent.
+ * API's own origin and path (a renamed repository); any other hop is refused. Every request needs
+ * the Site's decision ({@link GitHostTarget}, G3) and re-checks its host, and each redirect hop's,
+ * against it before anything is sent.
  */
 export interface GitHostNet {
   readonly policy: ConnectorUrlPolicy;
   readonly timeoutMs?: number;
   readonly maxResponseBytes?: number;
-  /** The Site's host limit (G3): when non-empty, only these host names (lowercase). */
-  readonly allowedHosts?: readonly string[];
   /** The pinned request (tests may answer here instead of the network); default `rawRequest`. */
   readonly request?: typeof rawRequest;
 }
@@ -44,23 +44,6 @@ export interface HostRequestInit {
 export function header(res: HostResponse, name: string): string | undefined {
   const v = res.headers[name];
   return Array.isArray(v) ? v[0] : v;
-}
-
-/** Refuses a base URL whose host is outside the Site's host limit (G3). */
-export function assertHostAllowed(net: GitHostNet, baseUrl: string): void {
-  const limit = net.allowedHosts ?? [];
-  if (limit.length === 0) return;
-  let host: string;
-  try {
-    host = new URL(baseUrl).hostname.toLowerCase();
-  } catch {
-    throw new GitHostError("host_refused", "The git host URL is not valid.");
-  }
-  if (!limit.some((h) => h.toLowerCase() === host)) {
-    throw new GitHostError("host_refused", "This site does not allow connections to that host.", {
-      reason: "site_host_limit",
-    });
-  }
 }
 
 async function checkTarget(net: GitHostNet, url: URL): Promise<void> {
@@ -101,19 +84,21 @@ function sameOriginHop(location: string | undefined, from: URL, apiRoot: URL): U
 }
 
 /**
- * One API request to a git host under the rules above. `apiRoot` is the API's base URL; the
- * request URL must be on it. Throws {@link GitHostError} for transport failures; any HTTP status
+ * One API request to a git host under the rules above. `target` is the Site's decision for the
+ * connection; `apiRoot` is the API's base URL and the request URL must be on it. Throws {@link GitHostError} for transport failures; any HTTP status
  * is returned for the adapter to map.
  */
 export async function hostRequest(
   net: GitHostNet,
+  target: GitHostTarget,
   apiRoot: string,
   url: string,
   init: HostRequestInit,
 ): Promise<HostResponse> {
+  assertGitHostTarget(target);
   const root = new URL(apiRoot);
-  let target = new URL(url);
-  if (target.origin !== root.origin) {
+  let next = new URL(url);
+  if (next.origin !== root.origin) {
     throw new GitHostError("host_refused", "The request left the git host's API.");
   }
   const body = init.body === undefined ? undefined : JSON.stringify(init.body);
@@ -124,11 +109,12 @@ export async function hostRequest(
     ...(body === undefined ? {} : { "content-type": "application/json" }),
   };
   for (let hop = 0; ; hop += 1) {
-    await checkTarget(net, target);
+    assertRequestHost(target, next);
+    await checkTarget(net, next);
     let res: Awaited<ReturnType<typeof rawRequest>>;
     try {
       res = await (net.request ?? rawRequest)(
-        target,
+        next,
         { policy: net.policy, timeoutMs: net.timeoutMs ?? GIT_HOST_TIMEOUT_MS },
         {
           method: init.method,
@@ -139,9 +125,9 @@ export async function hostRequest(
       );
     } catch (error) {
       if (error instanceof RedirectRefusedError) {
-        const next = sameOriginHop(error.location, target, root);
-        if (next !== undefined && init.method === "GET" && hop < MAX_SAME_ORIGIN_HOPS) {
-          target = next;
+        const hopUrl = sameOriginHop(error.location, next, root);
+        if (hopUrl !== undefined && init.method === "GET" && hop < MAX_SAME_ORIGIN_HOPS) {
+          next = hopUrl;
           continue;
         }
         throw new GitHostError("host_refused", "The git host answered with a redirect.", {

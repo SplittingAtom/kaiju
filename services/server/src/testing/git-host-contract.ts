@@ -3,6 +3,10 @@ import { withTestLoopback } from "@kobe/address-policy/testing";
 import { serializeError } from "../log-safety.js";
 import { GitHostError, type GitHostAdapter, type GitProvider } from "../git-hosts/adapter.js";
 import type { GitHostNet } from "../git-hosts/http.js";
+import { gitHostTarget, type GitHostTarget } from "../git-hosts/target.js";
+
+/** The fakes' host name (resolved to 127.0.0.1 by {@link contractNet}): a name, never an IP literal. */
+export const FAKE_GIT_HOST = "git.fake.test";
 
 /**
  * The provider adapter contract (spec workspace-git §5, §9; KOBE-758): one suite every git host
@@ -22,7 +26,7 @@ export type ContractFailure =
   | "redirect_foreign";
 
 export interface GitHostContractFake {
-  /** The connection's base URL (`http://127.0.0.1:<port>`; the adapter derives its API root). */
+  /** The connection's base URL (`http://git.fake.test:<port>`; the adapter derives its API root). */
   readonly baseUrl: string;
   readonly port: number;
   /** The organization the fake hosts; the adapter is connected to it. */
@@ -43,22 +47,40 @@ export interface ContractSetup {
   close(): Promise<void>;
   /** Called after `reset()`, before each test: prepare credentials and fake options. */
   prepare?(): void;
-  makeAdapter(net: GitHostNet, overrides?: { readonly baseUrl?: string }): GitHostAdapter;
+  /** Builds the adapter for the Site's decision `target` (`gitHostTarget()`). */
+  makeAdapter(net: GitHostNet, target: GitHostTarget): GitHostAdapter;
   /** Every secret the adapter holds or received; no error may carry one. */
   secrets(): readonly string[];
 }
 
 export interface ContractNetOptions {
   readonly resolve?: readonly string[];
-  readonly allowedHosts?: readonly string[];
   readonly allowHttp?: boolean;
+}
+
+export interface ContractSiteOptions {
+  /** The Site switch (default on). */
+  readonly enabled?: boolean;
+  /** The Site's host limit (default any host). */
+  readonly allowedHosts?: readonly string[];
+}
+
+/**
+ * The Site's decision for a fake's base URL. Plain HTTP is accepted at the decision (the fakes
+ * serve HTTP); the net's address policy still decides whether HTTP may be sent.
+ */
+export function contractTarget(baseUrl: string, o: ContractSiteOptions = {}): GitHostTarget {
+  return gitHostTarget(
+    { enabled: o.enabled ?? true, allowedHosts: o.allowedHosts ?? [] },
+    baseUrl,
+    { allowHttp: true },
+  );
 }
 
 /** A net for the local fake: plain HTTP on its port, loopback allowed only through the test hook. */
 export function contractNet(fake: GitHostContractFake, o: ContractNetOptions = {}): GitHostNet {
   return {
     timeoutMs: 3000,
-    ...(o.allowedHosts ? { allowedHosts: o.allowedHosts } : {}),
     policy: {
       allowHttp: o.allowHttp ?? true,
       allowedPorts: [fake.port],
@@ -83,7 +105,7 @@ async function caught(p: Promise<unknown>): Promise<GitHostError> {
 export function describeProviderContract(name: string, setup: ContractSetup): void {
   const { fake } = setup;
   const adapter = (o?: ContractNetOptions, baseUrl?: string) =>
-    setup.makeAdapter(contractNet(fake, o), baseUrl ? { baseUrl } : undefined);
+    setup.makeAdapter(contractNet(fake, o), contractTarget(baseUrl ?? fake.baseUrl));
   const noSecrets = (error: GitHostError) => {
     const text = `${error.message} ${JSON.stringify(serializeError(error))} ${JSON.stringify(error)}`;
     for (const s of setup.secrets()) expect(text).not.toContain(s);
@@ -260,10 +282,53 @@ export function describeProviderContract(name: string, setup: ContractSetup): vo
       expect(fake.apiHits()).toEqual([]);
     });
 
-    it("refuses a host outside the Site's host limit", async () => {
-      const error = await caught(adapter({ allowedHosts: ["git.example.test"] }).probe());
-      expect(error).toMatchObject({ code: "host_refused", reason: "site_host_limit" });
+    it("refuses a host outside the Site's host limit: no adapter, nothing sent", () => {
+      expect(() => contractTarget(fake.baseUrl, { allowedHosts: ["git.example.test"] })).toThrow(
+        expect.objectContaining({ code: "host_refused", reason: "site_host_limit" }),
+      );
       expect(fake.apiHits()).toEqual([]);
+    });
+
+    it("accepts a host the Site limit covers by pattern", async () => {
+      const target = contractTarget(fake.baseUrl, { allowedHosts: ["*.fake.test"] });
+      const probe = await setup.makeAdapter(contractNet(fake), target).probe();
+      expect(probe.provider).toBe(setup.provider);
+    });
+
+    it("refuses everything while the Site switch is off: no adapter, nothing sent", () => {
+      expect(() => contractTarget(fake.baseUrl, { enabled: false })).toThrow(
+        expect.objectContaining({ code: "host_refused", reason: "site_git_off" }),
+      );
+      expect(fake.apiHits()).toEqual([]);
+    });
+
+    it("cannot be built without the Site's decision", () => {
+      const forged = { baseUrl: fake.baseUrl, host: FAKE_GIT_HOST } as unknown as GitHostTarget;
+      expect(() => setup.makeAdapter(contractNet(fake), forged)).toThrow(
+        expect.objectContaining({ code: "host_refused", reason: "no_site_decision" }),
+      );
+      expect(fake.apiHits()).toEqual([]);
+    });
+
+    it("refuses an IP-literal base URL at the decision", () => {
+      expect(() => contractTarget(`http://127.0.0.1:${fake.port}`)).toThrow(
+        expect.objectContaining({ code: "invalid_request" }),
+      );
+    });
+
+    it("builds the clone URL from the base URL, and web links stay on the host", async () => {
+      fake.seedRepositories(["docs"]);
+      const repo = await adapter().getRepository({ name: "docs" });
+      expect(repo.cloneUrl).toBe(`${fake.baseUrl}/${fake.organization}/docs.git`);
+      expect(repo.webUrl === "" || repo.webUrl.startsWith(`${fake.baseUrl}/`)).toBe(true);
+    });
+
+    it("hands out a transport credential only after the host confirms access", async () => {
+      fake.seedRepositories(["docs"]);
+      const cred = await adapter().repositoryCredential("docs", "read");
+      expect(typeof cred.narrowed).toBe("boolean");
+      const missing = await caught(adapter().repositoryCredential("nope", "read"));
+      expect(["not_found", "forbidden", "invalid_request"]).toContain(missing.code);
     });
 
     it("reports an unresolvable host as unreachable", async () => {
@@ -273,7 +338,7 @@ export function describeProviderContract(name: string, setup: ContractSetup): vo
         policy: { ...net.policy, resolve: () => Promise.reject(new Error("nxdomain")) },
       };
       const error = await caught(
-        setup.makeAdapter(failing, { baseUrl: `http://nowhere.test:${fake.port}` }).probe(),
+        setup.makeAdapter(failing, contractTarget(`http://nowhere.test:${fake.port}`)).probe(),
       );
       expect(error.code).toBe("host_unreachable");
     });

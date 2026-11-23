@@ -46,7 +46,7 @@ export interface GitRepository {
   /** True when the repository has no commits (Convert to repo may push into it, G16). */
   readonly empty: boolean;
   readonly webUrl: string;
-  /** The smart-HTTP clone URL (`<base>/<org>/<name>.git`). */
+  /** The smart-HTTP clone URL, built by {@link cloneUrlFor} (`<base>/<org>/<name>.git`). */
   readonly cloneUrl: string;
 }
 
@@ -93,9 +93,9 @@ export interface GitRepositoryCredential {
    * True when the host itself limits the credential to this repository and access (a GitHub App
    * installation token). False for a static token valid for everything it may do (a GitHub
    * fine-grained token, a Gitea/Forgejo token): the egress proxy must then enforce the
-   * organization path and read or write per service (G11). Unset reads as false.
+   * organization path and read or write per service (G11). Required, so no adapter omits it.
    */
-  readonly narrowed?: boolean;
+  readonly narrowed: boolean;
 }
 
 export interface GitCreateRepositoryInput {
@@ -182,6 +182,25 @@ export type GitHostErrorCode =
 export type GitAuthFailure =
   "credential_rejected" | "installation_removed" | "installation_suspended" | "invalid_private_key";
 
+/**
+ * A permission name a host reported missing, kept only when it looks like one (review L2): known
+ * characters, at most 120 of them; otherwise omitted. Never host prose.
+ */
+export function safePermissionName(raw: string | undefined): string | undefined {
+  if (raw === undefined) return undefined;
+  const value = raw.trim().toLowerCase();
+  if (value === "" || value.length > 120 || !/^[a-z0-9_:=;, -]+$/.test(value)) return undefined;
+  return value;
+}
+
+/** The latest a host's rate-limit reset is believed: a day ahead (review L3). */
+export const MAX_RATE_LIMIT_WAIT_MS = 86_400_000;
+
+/** A reset time capped to {@link MAX_RATE_LIMIT_WAIT_MS} after `nowMs`. */
+export function cappedResetAt(resetMs: number, nowMs: number): Date {
+  return new Date(Math.min(Math.max(resetMs, nowMs), nowMs + MAX_RATE_LIMIT_WAIT_MS));
+}
+
 export interface GitHostErrorDetails {
   readonly status?: number;
   readonly missingPermission?: string;
@@ -203,7 +222,8 @@ export class GitHostError extends Error {
     super(message);
     this.name = "GitHostError";
     this.status = details.status;
-    this.missingPermission = details.missingPermission;
+    // Host-supplied: kept only when it looks like a permission name (review L2).
+    this.missingPermission = safePermissionName(details.missingPermission);
     this.resetAt = details.resetAt;
     this.reason = details.reason;
   }
@@ -243,4 +263,35 @@ export function cursorPage(cursor: string | null | undefined): number {
     throw new GitHostError("invalid_request", "That is not a valid page cursor.");
   }
   return Number(cursor);
+}
+
+/**
+ * A web link the host returned (`html_url`), kept only when it is on the connection's own web
+ * origin, with its scheme, under its base path (review M2): anything else (`javascript:`, another
+ * host, another port, a scheme change) is dropped to "" rather than shown or followed.
+ */
+export function safeWebUrl(raw: unknown, webBase: string): string {
+  if (typeof raw !== "string" || raw.length > 2048) return "";
+  let url: URL;
+  let base: URL;
+  try {
+    url = new URL(raw);
+    base = new URL(webBase);
+  } catch {
+    return "";
+  }
+  if (url.origin !== base.origin || url.protocol !== base.protocol) return "";
+  if (url.username !== "" || url.password !== "") return "";
+  const root = base.pathname.replace(/\/+$/, "");
+  if (root !== "" && url.pathname !== root && !url.pathname.startsWith(`${root}/`)) return "";
+  return url.href;
+}
+
+/**
+ * The smart-HTTP clone URL of a repository of the connected organization, built from the
+ * validated base URL, never taken from the host's answer (review M2): `<web base>/<org>/<name>.git`.
+ */
+export function cloneUrlFor(webBase: string, organization: string, name: string): string {
+  const base = webBase.replace(/\/+$/, "");
+  return `${base}/${encodeURIComponent(organization)}/${encodeURIComponent(assertRepositoryName(name))}.git`;
 }

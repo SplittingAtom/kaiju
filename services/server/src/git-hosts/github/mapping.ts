@@ -1,5 +1,11 @@
 import type { GitCapabilities, GitCapability } from "@kobe/db";
-import { GitHostError, type GitOrganization, type GitRepository } from "../adapter.js";
+import {
+  cloneUrlFor,
+  GitHostError,
+  safeWebUrl,
+  type GitOrganization,
+  type GitRepository,
+} from "../adapter.js";
 
 /**
  * GitHub's base URLs and JSON mapped to the adapter's types (KOBE-758).
@@ -52,12 +58,16 @@ export function ownerLogin(json: unknown): string | null {
   return str(owner?.login);
 }
 
-export function toRepository(json: unknown): GitRepository {
+/**
+ * A repository answer of the connected organization (the caller confined it). `webUrl` only on the
+ * connection's web origin; `cloneUrl` built from the base URL, never from the answer (review M2).
+ */
+export function toRepository(json: unknown, webBase: string, organization: string): GitRepository {
   const r = (json ?? {}) as Json;
   const id = idOf(r.id);
   const name = str(r.name);
   const fullName = str(r.full_name);
-  if (id === null || name === null || fullName === null) {
+  if (id === null || name === null || fullName === null || !/^[A-Za-z0-9._-]{1,100}$/.test(name)) {
     throw new GitHostError("unexpected", "GitHub returned a repository without its fields.");
   }
   const visibility = str(r.visibility);
@@ -75,19 +85,23 @@ export function toRepository(json: unknown): GitRepository {
     archived: r.archived === true,
     // GitHub has no "empty" flag; a repository without commits reports size 0.
     empty: r.size === 0,
-    webUrl: str(r.html_url) ?? "",
-    cloneUrl: str(r.clone_url) ?? "",
+    webUrl: safeWebUrl(r.html_url, webBase),
+    cloneUrl: cloneUrlFor(webBase, organization, name),
   };
 }
 
-export function toOrganization(json: unknown, kind: "organization" | "user"): GitOrganization {
+export function toOrganization(
+  json: unknown,
+  kind: "organization" | "user",
+  webBase: string,
+): GitOrganization {
   const o = (json ?? {}) as Json;
   const id = idOf(o.id);
   const login = str(o.login);
   if (id === null || login === null) {
     throw new GitHostError("unexpected", "GitHub returned an organization without its fields.");
   }
-  return { id, login, name: str(o.name), kind, webUrl: str(o.html_url) ?? "" };
+  return { id, login, name: str(o.name), kind, webUrl: safeWebUrl(o.html_url, webBase) };
 }
 
 /** Permissions Kobe may ask an App for (G5); anything else granted is reported as excess (G4). */

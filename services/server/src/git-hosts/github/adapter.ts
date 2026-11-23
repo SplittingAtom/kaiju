@@ -5,6 +5,7 @@ import {
   assertRepositoryName,
   cursorPage,
   GitHostError,
+  safeWebUrl,
   type GitAccess,
   type GitCommentInput,
   type GitCreated,
@@ -18,8 +19,8 @@ import {
   type GitRepositoryCredential,
   type GitRepositoryRef,
 } from "../adapter.js";
+import { assertGitHostTarget, type GitHostTarget } from "../target.js";
 import {
-  assertHostAllowed,
   header,
   hostRequest,
   type GitHostNet,
@@ -67,8 +68,11 @@ export interface GitHubTokenCredential {
 export type GitHubCredential = GitHubAppCredential | GitHubTokenCredential;
 
 export interface GitHubAdapterOptions {
-  /** `https://github.com` or an Enterprise Server's base URL. */
-  readonly baseUrl: string;
+  /**
+   * The Site's decision for the connection's base URL (`gitHostTarget()`, G3): `https://github.com`
+   * or an Enterprise Server's. There is no way to build the adapter without one.
+   */
+  readonly target: GitHostTarget;
   readonly organization: string;
   /** Unsealed by the caller; never stored, logged or returned. */
   readonly credential: GitHubCredential;
@@ -87,7 +91,7 @@ const METADATA: InstallationScope = { permissions: { metadata: "read" } };
 const sameLogin = (a: string | null, b: string) =>
   a !== null && a.toLowerCase() === b.toLowerCase();
 
-function created(json: unknown, withNumber: boolean): GitCreated {
+function created(json: unknown, withNumber: boolean, webBase: string): GitCreated {
   const j = (json ?? {}) as { id?: unknown; number?: unknown; html_url?: unknown };
   if (typeof j.id !== "number" && typeof j.id !== "string") {
     throw new GitHostError("unexpected", "GitHub returned no id for what it created.");
@@ -95,17 +99,18 @@ function created(json: unknown, withNumber: boolean): GitCreated {
   return {
     id: String(j.id),
     number: withNumber && typeof j.number === "number" ? j.number : null,
-    webUrl: typeof j.html_url === "string" ? j.html_url : "",
+    webUrl: safeWebUrl(j.html_url, webBase),
   };
 }
 
 export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapter {
-  const { net, credential } = options;
+  const { net, credential, target } = options;
+  assertGitHostTarget(target);
   const org = options.organization;
   const now = options.now ?? Date.now;
   const urls = (() => {
     try {
-      return { ok: true as const, ...githubUrls(options.baseUrl) };
+      return { ok: true as const, ...githubUrls(target.baseUrl) };
     } catch (error) {
       return { ok: false as const, error };
     }
@@ -114,6 +119,7 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
     credential.kind === "github_app" && urls.ok
       ? {
           net,
+          target,
           apiRoot: urls.apiRoot,
           credential,
           cache: options.tokenCache ?? sharedTokenCache,
@@ -122,11 +128,10 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
       : null;
   let orgKind: "organization" | "user" | null = null;
 
-  /** Every call starts here: URL, organization, Site host limit, ids. */
+  /** Every call starts here: URL, organization, ids (the Site's decision is re-checked per request). */
   function preflight(): { apiRoot: string; webBase: string } {
     if (!urls.ok) throw urls.error;
     assertGithubLogin(org);
-    assertHostAllowed(net, urls.webBase);
     if (credential.kind === "github_app") assertAppIds(credential);
     return { apiRoot: urls.apiRoot, webBase: urls.webBase };
   }
@@ -139,7 +144,10 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
 
   const send = (path: string, init: Omit<HostRequestInit, "headers">, token: string) => {
     const { apiRoot } = preflight();
-    return hostRequest(net, apiRoot, `${apiRoot}${path}`, { ...init, headers: baseHeaders(token) });
+    return hostRequest(net, target, apiRoot, `${apiRoot}${path}`, {
+      ...init,
+      headers: baseHeaders(token),
+    });
   };
 
   /**
@@ -173,6 +181,7 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
     const { apiRoot } = preflight();
     const res = await hostRequest(
       net,
+      target,
       apiRoot,
       `${apiRoot}/app/installations/${ctx.credential.installationId}`,
       { method: "GET", headers: appHeaders(ctx) },
@@ -213,12 +222,12 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
     const res = await call(`/orgs/${org}`, { method: "GET" }, scope);
     if (res.status === 200) {
       orgKind = "organization";
-      return { org: toOrganization(res.json, "organization"), res };
+      return { org: toOrganization(res.json, "organization", web()), res };
     }
     if (res.status !== 404) throw githubError(res, now());
     const user = await ok(call(`/users/${org}`, { method: "GET" }, scope));
     orgKind = "user";
-    return { org: toOrganization(user.json, "user"), res: user };
+    return { org: toOrganization(user.json, "user", web()), res: user };
   }
 
   async function kind(): Promise<"organization" | "user"> {
@@ -227,13 +236,43 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
   }
 
   const repoPath = (name: string) => `/repos/${org}/${assertRepositoryName(name)}`;
+  const web = () => preflight().webBase;
 
   /** A repository answer that is not in the organization reads as not found (§9). */
   function confined(json: unknown): GitRepository {
     if (!sameLogin(ownerLogin(json), org)) {
       throw new GitHostError("not_found", "Not found in the connected organization.");
     }
-    return toRepository(json);
+    return toRepository(json, web(), org);
+  }
+
+  /**
+   * The login a token belongs to (`/user`), read once per adapter. In a user namespace a token
+   * acts on its owner's account, so the connected owner must be that login (review M3).
+   */
+  let tokenLogin: Promise<string | null> | undefined;
+  function loginOf(token: string): Promise<string | null> {
+    tokenLogin ??= ok(send("/user", { method: "GET" }, token))
+      .then((me) => {
+        const login = (me.json as { login?: unknown } | undefined)?.login;
+        return typeof login === "string" ? login : null;
+      })
+      .catch((error: unknown) => {
+        tokenLogin = undefined;
+        throw error;
+      });
+    return tokenLogin;
+  }
+
+  const ownerMismatch = () =>
+    new GitHostError("forbidden", "The token belongs to another account than the connected one.", {
+      reason: "token_owner_mismatch",
+    });
+
+  /** In a user namespace, a token may act only when it is that user's own (review M3). */
+  async function assertOwnNamespace(): Promise<void> {
+    if ((await kind()) !== "user" || credential.kind !== "access_token") return;
+    if (!sameLogin(await loginOf(credential.token), org)) throw ownerMismatch();
   }
 
   async function probeApp(ctx: AppAuthContext): Promise<GitHostProbe> {
@@ -256,7 +295,7 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
       capabilities,
       excess,
       credentialExpiresAt: null,
-      rateLimit: rateLimitOf(res),
+      rateLimit: rateLimitOf(res, now()),
     };
   }
 
@@ -264,6 +303,10 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
     const me = await ok(send("/user", { method: "GET" }, token));
     const login = (me.json as { login?: unknown } | undefined)?.login;
     const { org: organization, res } = await readOrganization();
+    // A user namespace: the token must be that user's (review M3), else it acts elsewhere.
+    if (organization.kind === "user" && !sameLogin(typeof login === "string" ? login : null, org)) {
+      throw ownerMismatch();
+    }
     const scopes = header(me, "x-oauth-scopes");
     let result: Pick<GitHostProbe, "capabilities" | "excess">;
     if (scopes !== undefined) {
@@ -295,7 +338,7 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
       actor: { kind: "token", login: typeof login === "string" ? login : null },
       ...result,
       credentialExpiresAt: tokenExpiry(header(me, "github-authentication-token-expiration")),
-      rateLimit: rateLimitOf(res),
+      rateLimit: rateLimitOf(res, now()),
     };
   }
 
@@ -323,13 +366,18 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
       let path: string;
       if (credential.kind === "github_app") path = `/installation/repositories?${query}`;
       else if ((await kind()) === "organization") path = `/orgs/${org}/repos?type=all&${query}`;
-      else path = `/user/repos?affiliation=owner&visibility=all&${query}`;
+      else {
+        await assertOwnNamespace();
+        path = `/user/repos?affiliation=owner&visibility=all&${query}`;
+      }
       const res = await ok(call(path, { method: "GET" }, METADATA));
       const raw = Array.isArray(res.json)
         ? (res.json as unknown[])
         : (((res.json as { repositories?: unknown } | undefined)?.repositories ?? []) as unknown[]);
       if (!Array.isArray(raw)) throw new GitHostError("unexpected", "GitHub returned no list.");
-      const items = raw.filter((r) => sameLogin(ownerLogin(r), org)).map(toRepository);
+      const items = raw
+        .filter((r) => sameLogin(ownerLogin(r), org))
+        .map((r) => toRepository(r, web(), org));
       const next = nextPage(header(res, "link"));
       return { items, next: next !== null && next > page ? String(next) : null };
     },
@@ -354,6 +402,16 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
         throw new GitHostError("invalid_request", "Kobe creates private repositories only.");
       }
       const k = await kind();
+      // Exactly the connected owner (review M3): the org endpoint for an organization; a user's
+      // own namespace only with that user's token (an App cannot create in a user account).
+      if (k === "user") {
+        if (credential.kind !== "access_token") {
+          throw new GitHostError("forbidden", "A GitHub App cannot create repositories there.", {
+            reason: "user_namespace",
+          });
+        }
+        await assertOwnNamespace();
+      }
       const path = k === "organization" ? `/orgs/${org}/repos` : "/user/repos";
       const body = {
         name,
@@ -375,6 +433,16 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
       }
       preflight();
       if (credential.kind === "access_token") {
+        // As for Gitea (review L1): the repository is in the organization and the token's account
+        // may read or write it, before the token is handed out (`narrowed: false`, G11).
+        await assertOwnNamespace();
+        const res = await ok(call(repoPath(name), { method: "GET" }, METADATA));
+        confined(res.json);
+        const perms = (res.json as { permissions?: { pull?: unknown; push?: unknown } })
+          .permissions;
+        if ((access === "write" ? perms?.push : perms?.pull) !== true) {
+          throw new GitHostError("forbidden", `The credential may not ${access} that repository.`);
+        }
         return {
           username: GIT_USERNAME,
           password: credential.token,
@@ -412,7 +480,7 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
         permissions: { pull_requests: "write", contents: "read", metadata: "read" },
       };
       const res = await ok(call(`${repoPath(name)}/pulls`, { method: "POST", body }, scope), [201]);
-      return created(res.json, true);
+      return created(res.json, true, web());
     },
 
     async comment(input: GitCommentInput) {
@@ -431,7 +499,7 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
         ),
         [201],
       );
-      return created(res.json, false);
+      return created(res.json, false, web());
     },
 
     async createIssue(input: GitCreateIssueInput) {
@@ -448,7 +516,7 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
         ),
         [201],
       );
-      return created(res.json, true);
+      return created(res.json, true, web());
     },
   };
 }
