@@ -35,6 +35,7 @@ import {
   GIT_CONVERSION_WORK_PREFIX,
   conversionMarker,
 } from "./limits.js";
+import { notifyConversionEndInTx } from "./bell.js";
 import { notifyConversion } from "./notify.js";
 import { buildHistory, ConversionStepError, initRepository, type BuiltHistory } from "./objects.js";
 import { parsePlan, type ConversionPlan } from "./plan.js";
@@ -598,6 +599,8 @@ async function finishStep(
         attempts: done.attempts,
       },
     });
+    // KOBE-819: the requester's bell notice commits with the end (a savepoint; never fails it).
+    await notifyConversionEndInTx(tx, done);
     return done;
   });
 }
@@ -670,6 +673,7 @@ async function recordFailure(
           repositoryCreated: failed.hostRepoId !== null && !failed.useExisting,
         },
       });
+      await notifyConversionEndInTx(tx, failed);
       return failed;
     });
   } catch (e) {

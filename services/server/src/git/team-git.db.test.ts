@@ -11,6 +11,7 @@ import {
 } from "@kobe/db";
 import { gitConnectionAdminViewSchema, gitConnectionMemberViewSchema } from "@kobe/protocol";
 import { rawRequest } from "../connectors/oauth/http.js";
+import { notifyGitTokenExpiry } from "./expiry-notify.js";
 import { runGitHealthPass, GitHostBackoff } from "./health-job.js";
 import { logger } from "../logger.js";
 import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
@@ -688,6 +689,120 @@ describe("health job and token-expiry notices (§7, G6, ac-3)", () => {
     );
     expect(notified).toHaveLength(1);
     expect(notified[0]?.target).toMatchObject({ notified: 1 });
+  });
+});
+
+describe("token-expiry bell notifications (KOBE-819)", () => {
+  async function expiringConnection(w: World, days = 5): Promise<{ id: string; expires: Date }> {
+    const expires = new Date(Date.now() + days * 86_400_000);
+    const stamp = `${expires.toISOString().slice(0, 10)} ${expires.toISOString().slice(11, 19)} UTC`;
+    github.options = { patExpiration: stamp };
+    const created = await create(w, githubTokenBody());
+    expect(created.status, created.text).toBe(201);
+    return { id: created.json.connection.id as string, expires };
+  }
+  async function bellRows(team: string) {
+    const { rows } = await fx.admin.query<{
+      user_id: string;
+      kind: string;
+      git_connection_id: string;
+      git_expires_at: Date;
+    }>(
+      `SELECT user_id, kind, git_connection_id, git_expires_at FROM notifications
+        WHERE team_id = $1 AND kind LIKE 'git.%' ORDER BY user_id`,
+      [team],
+    );
+    return rows;
+  }
+  /** A second Workspace admin, and a former admin who is a member now. */
+  async function admins(w: World): Promise<{ second: Person; former: Person }> {
+    const second = await fx.person(`gs${short()}`);
+    const former = await fx.person(`gf${short()}`);
+    for (const p of [second, former]) {
+      await fx.addMember(w.team, p);
+      await fx.activate(p, w.team);
+      await fx.admin.query(
+        `UPDATE team_members SET role = 'team_admin' WHERE team_id = $1 AND user_id = $2`,
+        [w.team, p.id],
+      );
+    }
+    await fx.admin.query(
+      `UPDATE team_members SET role = 'member' WHERE team_id = $1 AND user_id = $2`,
+      [w.team, former.id],
+    );
+    return { second, former };
+  }
+
+  it("tells each current Workspace admin once, in the bell; members and former admins get none", async () => {
+    const w = await world();
+    const { second, former } = await admins(w);
+    const { id } = await expiringConnection(w);
+    const first = await runGitHealthPass(healthDeps(), new GitHostBackoff());
+    expect(first.noticed).toBeGreaterThanOrEqual(1);
+    const rows = await bellRows(w.team);
+    expect(rows.map((r) => r.user_id).sort()).toEqual([w.admin.id, second.id].sort());
+    expect(rows.every((r) => r.kind === "git.connection.token_expiring")).toBe(true);
+    expect(rows.every((r) => r.git_connection_id === id)).toBe(true);
+    // A second pass claims nothing; a repeated write for the same expiry is a no-op.
+    await runGitHealthPass(healthDeps(), new GitHostBackoff());
+    await fx.admin.query(`UPDATE git_connections SET expiry_notified_at = NULL WHERE id = $1`, [
+      id,
+    ]);
+    await runGitHealthPass(healthDeps(), new GitHostBackoff());
+    expect(await bellRows(w.team)).toHaveLength(2);
+
+    const listed = await call(w.admin, "GET", "/v1/notifications");
+    expect(listed.status, listed.text).toBe(200);
+    const note = listed.json.notifications.find(
+      (n: { kind: string }) => n.kind === "git.connection.token_expiring",
+    );
+    expect(note).toMatchObject({
+      kind: "git.connection.token_expiring",
+      schedule_id: null,
+      thread_id: null,
+      run_id: null,
+      git_connection_id: id,
+      git_connection_name: expect.stringContaining(github.organization),
+    });
+    expect(Date.parse(note.git_expires_at as string)).toBeGreaterThan(Date.now());
+    for (const p of [w.member, w.contributor, former]) {
+      const theirs = await call(p, "GET", "/v1/notifications");
+      expect(
+        theirs.json.notifications.filter((n: { kind: string }) => n.kind.startsWith("git.")),
+      ).toEqual([]);
+    }
+  });
+
+  it("writes the bell notice without a mail relay (no email, still once)", async () => {
+    const w = await world();
+    const { id } = await expiringConnection(w);
+    const sent: unknown[] = [];
+    const quiet = {
+      db: fx.db,
+      mailer: {
+        disabled: true,
+        send: (m: unknown) => Promise.resolve(void sent.push(m)),
+        close: () => undefined,
+      },
+      publicUrl: "http://kobe.test",
+      logger,
+    };
+    expect(await notifyGitTokenExpiry(quiet)).toBeGreaterThanOrEqual(1);
+    expect(await notifyGitTokenExpiry(quiet)).toBe(0);
+    expect(sent).toEqual([]);
+    const rows = await bellRows(w.team);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ user_id: w.admin.id, git_connection_id: id });
+  });
+
+  it("is deleted with the connection", async () => {
+    const w = await world();
+    const { id } = await expiringConnection(w);
+    await runGitHealthPass(healthDeps(), new GitHostBackoff());
+    expect(await bellRows(w.team)).toHaveLength(1);
+    const res = await call(w.admin, "DELETE", `${BASE}/${id}`);
+    expect(res.status, res.text).toBeLessThan(300);
+    expect(await bellRows(w.team)).toEqual([]);
   });
 });
 
