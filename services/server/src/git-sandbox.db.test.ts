@@ -102,7 +102,10 @@ describe("loadRunGitContext (KOBE-764)", () => {
     const git = must(
       await loadRunGitContext(h.deps.database.db, { teamId: team, userId: member }, "kobe.test"),
     );
-    const noReply = gitNoReplyEmail({ id: member, name: email.split("@")[0] as string }, "kobe.test");
+    const noReply = gitNoReplyEmail(
+      { id: member, name: email.split("@")[0] as string },
+      "kobe.test",
+    );
     expect(noReply).toMatch(/^[0-9a-f]{10}\+ada-[0-9a-f]{6}@users\.noreply\.kobe\.test$/);
     expect(git.author.email).toBe(noReply);
     expect(git.committer.email).toBe(noReply);
