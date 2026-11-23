@@ -35,16 +35,16 @@ npx playwright install chromium   # once, unless you use the Playwright containe
 KOBE_BASE_URL=https://kobe.example.org KOBE_USER=member@example.org KOBE_PW='…' npx playwright test
 ```
 
-| Variable        | Meaning                                                                                                                              |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `KOBE_BASE_URL` | The deployment's URL (required).                                                                                                     |
-| `KOBE_USER`     | A member who can sign in with a password, can run conversations and (for the theme spec) can open the team admin console.            |
-| `KOBE_PW`       | That member's password. Pass it from a secret store; never write it to a file or a log.                                              |
-| `KOBE_USER2`    | A second member of the same team (password sign-in, only that team), for the sharing spec; optional.                                 |
-| `KOBE_PW2`      | That member's password; same rules as `KOBE_PW`.                                                                                     |
-| `KOBE_USER3`    | Another Team admin of the same team (password sign-in) who confirms in the Site proposals spec, so `KOBE_USER` may decide; optional. |
-| `KOBE_PW3`      | That admin's password; same rules as `KOBE_PW`.                                                                                      |
-| `KOBE_WORKERS`  | Specs in parallel (default 1: each one starts a sandbox and spends tokens).                                                          |
+| Variable        | Meaning                                                                                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `KOBE_BASE_URL` | The deployment's URL (required).                                                                                                                       |
+| `KOBE_USER`     | A member who can sign in with a password, can run conversations and (for the theme spec) can open the team admin console.                              |
+| `KOBE_PW`       | That member's password. Pass it from a secret store; never write it to a file or a log.                                                                |
+| `KOBE_USER2`    | A second member of the same team (password sign-in, only that team), for the sharing spec; optional.                                                   |
+| `KOBE_PW2`      | That member's password; same rules as `KOBE_PW`.                                                                                                       |
+| `KOBE_USER3`    | Another Team admin of the same team (password sign-in) who confirms in the Site proposals spec, so `KOBE_USER` may decide; without it that spec skips. |
+| `KOBE_PW3`      | That admin's password; same rules as `KOBE_PW`.                                                                                                        |
+| `KOBE_WORKERS`  | Specs in parallel (default 1: each one starts a sandbox and spends tokens).                                                                            |
 
 One spec: `npx playwright test theme` (by file name) or `-g "Compact now"` (by title). The
 **Regenerate with** spec skips itself when the team has only one enabled model.
@@ -194,6 +194,10 @@ Baselines land in `console-shots/<platform>/<theme|mobile>/<page>.png` (gitignor
 deployment data); take and compare them on the same platform (the Playwright container, or the
 Mac). Besides light and dark at 1280 px, a phone-width pass (390 px) covers the folded nav, a
 table and a form. A page that fails to load is reported at the end without stopping the rest.
+A page with no baseline on the machine (a fresh checkout, a container that keeps no files) is
+not compared: it still has to load and keep its spacing, and its screenshot is attached to the
+report. To compare in a container, copy `console-shots/` out of the baseline run and back into
+the next run's `e2e/browser/`.
 
 ## What you get
 

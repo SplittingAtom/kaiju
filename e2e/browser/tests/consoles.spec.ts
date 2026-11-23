@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { SHELL_TIMEOUT_MS } from "./support/constants.js";
 import { panelOf } from "./support/panel.js";
@@ -164,6 +165,19 @@ function choiceGaps(page: Page): Promise<number[]> {
 }
 
 /**
+ * Whether a page is compared with its baseline: when the baseline exists here, or when baselines
+ * are being written (`--update-snapshots=all` or `=changed`). The baselines show deployment data
+ * and stay out of git, so a suite run on a fresh checkout (the Playwright container) has none:
+ * there the page still has to load and keep its spacing, and its screenshot is attached instead
+ * of failing as "a snapshot doesn't exist".
+ */
+function comparing(name: string[]): boolean {
+  if (existsSync(test.info().snapshotPath(name.join("/"), { kind: "screenshot" }))) return true;
+  const mode = test.info().config.updateSnapshots;
+  return mode === "all" || mode === "changed";
+}
+
+/**
  * Shoots one page. A page that fails (navigation, a load that never settles) is recorded and the
  * run goes on to the next, so one broken page never hides the rest.
  */
@@ -183,14 +197,23 @@ async function shoot(
       for (const gap of await choiceGaps(page)) {
         expect.soft(gap, `${path}: space between choices`).toBeLessThanOrEqual(MAX_CHOICE_GAP_PX);
       }
-      // Soft: every page is shot even when an earlier one differs from its baseline.
-      await expect.soft(page).toHaveScreenshot(name, {
+      const options = {
         fullPage: true,
-        animations: "disabled",
-        caret: "hide",
+        animations: "disabled" as const,
+        caret: "hide" as const,
         // Times and dates change between runs.
         mask: [page.locator("time")],
-      });
+      };
+      if (comparing(name)) {
+        // Soft: every page is shot even when an earlier one differs from its baseline.
+        await expect.soft(page).toHaveScreenshot(name, options);
+      } else {
+        // No baseline on this machine (they stay out of git): the page loaded and is attached.
+        await test.info().attach(name.join("-"), {
+          body: await page.screenshot(options),
+          contentType: "image/png",
+        });
+      }
     } catch (error) {
       failures.push(`${path}: ${error instanceof Error ? error.message.split("\n")[0] : error}`);
     }
