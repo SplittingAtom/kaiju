@@ -578,6 +578,15 @@ raises the proxy's request-body deadline for header-injected uploads. The push l
 and push is counted in `egress.connection` with its repository and service; each push also writes
 an `egress.git_push` row with the refs it named.
 
+Convert to repo (KOBE-765) pushes a project's history from the **server** itself, not through
+the egress proxy: the server reaches the host directly under the connector address policy (so a
+private host needs its range in the connectors' internal CIDRs as for any server-side git host
+call). It builds the git objects in `/tmp/kobe-git-conversions` (one conversion per server replica,
+at most 2 GiB of content, up to about twice that on disk while a push is written) and streams each
+push from there. `server.tmpSizeLimit` (default `6Gi`) caps the server's `/tmp` emptyDir; the
+kubelet evicts a pod that passes it, so keep it at least `5Gi` and count it in the node's ephemeral
+storage.
+
 ### The catalog's git mirror (optional)
 
 A Site admin can mirror the skill catalog one way to any HTTPS git remote (KOBE-343, spec SK29):

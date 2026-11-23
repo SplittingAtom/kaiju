@@ -1,5 +1,7 @@
-import * as fs from "node:fs";
+import { rm } from "node:fs/promises";
 import git, { Errors, type HttpClient } from "isomorphic-git";
+import type { GitWireSession } from "../../git-hosts/git-wire.js";
+import { parseReportStatus, writeReceivePack } from "./pack.js";
 import { GitHostError } from "../../git-hosts/adapter.js";
 import { ConversionStepError, type BuiltHistory } from "./objects.js";
 
@@ -57,43 +59,74 @@ export function batchEnd(newBytes: readonly number[], from: number, batchBytes: 
   return end;
 }
 
-/** Pushes commits `from`.. in batches; `onPushed(n)` after the host took the first `n`. */
+/** Status codes of a receive-pack POST, as step failures. */
+function postFailure(status: number): ConversionStepError {
+  if (status === 401) return new ConversionStepError("credential_rejected");
+  if (status === 403) return new ConversionStepError("credential_forbidden");
+  if (status === 404) return new ConversionStepError("repository_gone");
+  if (status === 429) return new ConversionStepError("host_rate_limited");
+  if (status === 413) return new ConversionStepError("push_rejected", "the host refused the size");
+  return new ConversionStepError("host_unreachable");
+}
+
+/**
+ * Pushes commits `from`.. in batches of about `batchBytes` of new content, oldest first (a commit
+ * larger than that goes as its own batch). Each batch is one receive-pack request written to
+ * `packFile` and streamed from it (`pack.ts`), updating the branch from the previous batch's
+ * commit to this one's: a fast-forward, compare-and-swap on the host, never forced. Memory holds
+ * one object at a time whatever the commit's size. `onPushed(n)` after the host took the first `n`.
+ */
 export async function pushHistory(input: {
   readonly gitdir: string;
-  readonly http: () => Promise<HttpClient>;
+  readonly session: () => Promise<GitWireSession>;
   readonly url: string;
   readonly branch: string;
   readonly built: BuiltHistory;
   readonly from: number;
   readonly batchBytes: number;
+  readonly packFile: string;
   readonly onPushed: (pushed: number) => Promise<void>;
 }): Promise<void> {
   const ref = `refs/heads/${input.branch}`;
   let from = input.from;
-  while (from < input.built.commits.length) {
-    const end = batchEnd(input.built.newBytes, from, input.batchBytes);
-    const oid = input.built.commits[end - 1] as string;
-    await git.writeRef({ fs, gitdir: input.gitdir, ref, value: oid, force: true });
-    let result: Awaited<ReturnType<typeof git.push>>;
-    try {
-      result = await git.push({
-        fs,
-        http: await input.http(),
+  let old = from === 0 ? null : (input.built.commits[from - 1] ?? null);
+  try {
+    while (from < input.built.commits.length) {
+      const end = batchEnd(input.built.newBytes, from, input.batchBytes);
+      const oid = input.built.commits[end - 1] as string;
+      const size = await writeReceivePack({
         gitdir: input.gitdir,
-        url: input.url,
         ref,
-        remoteRef: ref,
-        force: false,
+        oldOid: old,
+        newOid: oid,
+        objects: input.built.introduced.slice(from, end).flat(),
+        file: input.packFile,
       });
-    } catch (err) {
-      throw pushFailure(err);
+      const session = await input.session();
+      let answer: { status: number; body: Buffer };
+      try {
+        answer = await session.postFile(
+          `${input.url}/git-receive-pack`,
+          input.packFile,
+          size,
+          "application/x-git-receive-pack-request",
+        );
+      } catch (err) {
+        throw pushFailure(err);
+      }
+      if (answer.status !== 200) throw postFailure(answer.status);
+      const report = parseReportStatus(answer.body, ref);
+      if (!report.ok) {
+        if (report.stale)
+          throw new ConversionStepError("repository_changed", hostReason(report.reason));
+        throw new ConversionStepError("push_rejected", hostReason(report.reason));
+      }
+      old = oid;
+      from = end;
+      await input.onPushed(end);
     }
-    const status = result.refs?.[ref];
-    if (!result.ok || (status && !status.ok)) {
-      throw new ConversionStepError("push_rejected", hostReason(status?.error ?? result.error));
-    }
-    from = end;
-    await input.onPushed(end);
+  } finally {
+    await rm(input.packFile, { force: true });
   }
 }
 

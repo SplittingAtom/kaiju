@@ -1,4 +1,5 @@
 import type { GitConversionFailure, GitConversionRefusal } from "@kobe/protocol";
+import { GIT_CONVERSION_MAX_BYTES } from "./limits.js";
 
 /**
  * Convert to repo's refusals (before anything starts) and failures (a step that failed), with the
@@ -33,7 +34,7 @@ export const REFUSAL_STATUS: Readonly<Record<GitConversionRefusal, 403 | 404 | 4
   existing_repository_admin_only: 403,
   file_rejected_by_host: 422,
   project_too_large: 422,
-  commit_too_large: 422,
+  file_too_large: 422,
   git_unavailable: 503,
 };
 
@@ -72,11 +73,13 @@ export function refusalMessage(r: StartRefusal): string {
       return `The git host would reject ${r.paths && r.paths.length > 1 ? "these files" : "this file"}: ${list || "a file"}. Rename or remove it in the project first; if only older commits have it, convert without history.`;
     }
     case "project_too_large":
-      return `The project's files (${mib(r.sizeBytes ?? 0)}) are more than one conversion may push (${mib(r.limitBytes ?? 0)}).`;
-    case "commit_too_large":
-      return r.seq === undefined
-        ? `The project's current files (${mib(r.sizeBytes ?? 0)}) are more than one push may carry (${mib(r.limitBytes ?? 0)}). Make the project smaller first.`
-        : `Commit #${r.seq} adds ${mib(r.sizeBytes ?? 0)}, more than one push may carry (${mib(r.limitBytes ?? 0)}). Convert without history instead.`;
+      return `The project's files across the history carried (${mib(r.sizeBytes ?? 0)}) are more than one conversion may push (${mib(r.limitBytes ?? 0)}). Convert without history if the current files are smaller, remove large files, or ask a Workspace admin to raise the connection's push limit (up to ${mib(GIT_CONVERSION_MAX_BYTES)}).`;
+    case "file_too_large": {
+      const list = (r.paths ?? (r.path === undefined ? [] : [{ path: r.path, seq: null }]))
+        .map((p) => (p.seq === null ? p.path : `${p.path} (from commit #${p.seq})`))
+        .join(", ");
+      return `Git hosts refuse files over ${mib(r.limitBytes ?? 0)}: ${list || "a file"}. Remove ${r.paths && r.paths.length > 1 ? "them" : "it"} from the project first (if only older commits have it, convert without history); large-file storage on the host is not available from Kobe yet.`;
+    }
     case "git_unavailable":
       return "Converting is not available on this server (no credential key or file storage).";
   }

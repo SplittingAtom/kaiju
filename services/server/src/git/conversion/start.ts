@@ -21,9 +21,8 @@ import { projectCheckouts } from "../../projects/checkouts.js";
 import { hitRateLimit } from "../../rate-limit.js";
 import {
   GIT_CONVERSION_MAX_BYTES,
-  GIT_CONVERSION_MAX_PUSH_BYTES,
   GIT_CONVERSION_RATE,
-  GIT_HOST_MAX_FILE_BYTES,
+  GIT_CONVERSION_MAX_FILE_BYTES,
 } from "./limits.js";
 import { pathRefusal } from "./paths.js";
 import { buildConversionPlan } from "./plan.js";
@@ -103,8 +102,8 @@ async function rejectedFiles(
   teamId: string,
   projectId: string,
   history: boolean,
-  maxFile: number | undefined,
-): Promise<{ path: string; seq: number | null }[]> {
+  maxFile: number,
+): Promise<{ path: string; seq: number | null; why: "name" | "size" }[]> {
   const rows = history
     ? (
         await tx.execute<{ path: string; seq: number; size: string }>(sql`
@@ -118,11 +117,12 @@ async function rejectedFiles(
           SELECT path, NULL AS seq, size_bytes AS size FROM project_files
            WHERE team_id = ${teamId} AND project_id = ${projectId} ORDER BY path`)
       ).rows;
-  const out: { path: string; seq: number | null }[] = [];
+  const out: { path: string; seq: number | null; why: "name" | "size" }[] = [];
   for (const r of rows) {
-    const tooBig = maxFile !== undefined && Number(r.size) > maxFile;
-    if (!tooBig && pathRefusal(r.path) === undefined) continue;
-    out.push({ path: r.path, seq: r.seq === null ? null : Number(r.seq) });
+    const why =
+      pathRefusal(r.path) !== undefined ? "name" : Number(r.size) > maxFile ? "size" : undefined;
+    if (why === undefined) continue;
+    out.push({ path: r.path, seq: r.seq === null ? null : Number(r.seq), why });
     if (out.length === REJECTED_LISTED) break;
   }
   return out;
@@ -178,23 +178,24 @@ async function check(
     teamId,
     projectId,
     history,
-    GIT_HOST_MAX_FILE_BYTES[connection.provider],
+    GIT_CONVERSION_MAX_FILE_BYTES,
   );
-  const first = rejected[0];
-  if (first) return { code: "file_rejected_by_host", path: first.path, paths: rejected };
+  const strip = (list: typeof rejected) => list.map(({ path, seq }) => ({ path, seq }));
+  const names = rejected.filter((r) => r.why === "name");
+  const big = rejected.filter((r) => r.why === "size");
+  if (names[0]) return { code: "file_rejected_by_host", path: names[0].path, paths: strip(names) };
+  if (big[0]) {
+    return {
+      code: "file_too_large",
+      path: big[0].path,
+      paths: strip(big),
+      limitBytes: GIT_CONVERSION_MAX_FILE_BYTES,
+    };
+  }
   const sizes = await contentPerCommit(tx, teamId, projectId, history);
   const limit = Math.min(GIT_CONVERSION_MAX_BYTES, connection.pushLimitBytes);
   const total = sizes.reduce((n, s) => n + s.bytes, 0);
   if (total > limit) return { code: "project_too_large", limitBytes: limit, sizeBytes: total };
-  const big = sizes.find((s) => s.bytes > GIT_CONVERSION_MAX_PUSH_BYTES);
-  if (big) {
-    return {
-      code: "commit_too_large",
-      limitBytes: GIT_CONVERSION_MAX_PUSH_BYTES,
-      sizeBytes: big.bytes,
-      ...(big.seq === null ? {} : { seq: big.seq }),
-    };
-  }
   return undefined;
 }
 

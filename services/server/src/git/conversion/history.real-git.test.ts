@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AddressPolicy } from "@kobe/address-policy";
 import { withTestLoopback } from "@kobe/address-policy/testing";
 import { GitHostError } from "../../git-hosts/adapter.js";
-import { gitWireClient } from "../../git-hosts/git-wire.js";
+import { gitWireClient, gitWireSession } from "../../git-hosts/git-wire.js";
 import type { GitHostNet } from "../../git-hosts/http.js";
 import { gitHostTarget } from "../../git-hosts/target.js";
 import { startGitServer, type GitServer } from "../../testing/git-http-server.js";
@@ -135,13 +135,15 @@ function clientFor(repo: string, password = CREDS.token) {
   });
   return {
     url,
-    http: gitWireClient({
-      net: policyFor(port),
-      target,
-      repositoryUrl: url,
-      credential: { username: CREDS.username, password },
-      maxRequestBytes: 64 * 1024 * 1024,
-    }),
+    ...((session) => ({ session, http: session.http }))(
+      gitWireSession({
+        net: policyFor(port),
+        target,
+        repositoryUrl: url,
+        credential: { username: CREDS.username, password },
+        maxRequestBytes: 64 * 1024 * 1024,
+      }),
+    ),
   };
 }
 
@@ -153,12 +155,13 @@ describe("conversion history on a real git server", () => {
     bare("acme/demo", ["config", "receive.fsckObjects", "true"]);
     const { gitdir, built } = await freshBuild("one");
     expect(built.commits).toHaveLength(3);
-    const { url, http } = clientFor("acme/demo");
+    const { url, http, session } = clientFor("acme/demo");
     const pushed: number[] = [];
     // 1-byte batches: one push per commit, each a fast-forward.
     await pushHistory({
       gitdir,
-      http: () => Promise.resolve(http),
+      session: () => Promise.resolve(session),
+      packFile: path.join(work, `push-${Math.random().toString(16).slice(2)}.pack`),
       url,
       branch: "main",
       built,
@@ -202,6 +205,55 @@ describe("conversion history on a real git server", () => {
     }
   });
 
+  it("pushes a commit larger than a batch as its own batch, streamed from disk", async () => {
+    server.repo("acme/large");
+    bare("acme/large", ["config", "receive.fsckObjects", "true"]);
+    const big = new Uint8Array(12 * 1024 * 1024);
+    for (let i = 0; i < big.length; i += 1) big[i] = (i * 2654435761) >>> 24;
+    const digest = sha(big);
+    blobs.set(digest, big);
+    const huge: SourceFile = {
+      path: "data/big.bin",
+      sha256: digest,
+      size: big.length,
+      executable: false,
+      blobRef: "k/big",
+    };
+    trees.big = [file("README.md", "# Demo\n"), huge];
+    const largePlan: ConversionPlan = {
+      ...plan,
+      commits: [
+        plan.commits[0],
+        { ...plan.commits[1], kobeCommitId: "big" },
+      ] as ConversionPlan["commits"],
+    };
+    const gitdir = path.join(work, "large");
+    await initRepository(gitdir, "main");
+    const built = await buildHistory(gitdir, largePlan, source);
+    expect(built.newBytes[1]).toBeGreaterThan(12 * 1024 * 1024 - 1);
+    const { url, session } = clientFor("acme/large");
+    const pushed: number[] = [];
+    await pushHistory({
+      gitdir,
+      session: () => Promise.resolve(session),
+      packFile: path.join(work, "large.pack"),
+      url,
+      branch: "main",
+      built,
+      from: 0,
+      batchBytes: 1024 * 1024,
+      onPushed: (n) => {
+        pushed.push(n);
+        return Promise.resolve();
+      },
+    });
+    expect(pushed).toEqual([1, 2]);
+    bare("acme/large", ["fsck", "--strict", "--no-dangling"]);
+    expect(bare("acme/large", ["cat-file", "-s", "main:data/big.bin"]).trim()).toBe(
+      String(big.length),
+    );
+  });
+
   it("builds the same hashes every time (a retry recognises what the host has)", async () => {
     const a = await freshBuild("det-a");
     const b = await freshBuild("det-b");
@@ -212,12 +264,13 @@ describe("conversion history on a real git server", () => {
   it("resumes an interrupted push after the last batch the host took", async () => {
     server.repo("acme/resume");
     const { gitdir, built } = await freshBuild("resume");
-    const { url, http } = clientFor("acme/resume");
+    const { url, http, session } = clientFor("acme/resume");
     const crash = new Error("crash after the first batch");
     await expect(
       pushHistory({
         gitdir,
-        http: () => Promise.resolve(http),
+        session: () => Promise.resolve(session),
+        packFile: path.join(work, `push-${Math.random().toString(16).slice(2)}.pack`),
         url,
         branch: "main",
         built,
@@ -233,7 +286,8 @@ describe("conversion history on a real git server", () => {
     expect(from).toBe(1);
     await pushHistory({
       gitdir: again.gitdir,
-      http: () => Promise.resolve(http),
+      session: () => Promise.resolve(session),
+      packFile: path.join(work, `push-${Math.random().toString(16).slice(2)}.pack`),
       url,
       branch: "main",
       built: again.built,

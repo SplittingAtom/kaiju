@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { createReadStream } from "node:fs";
 import http from "node:http";
 import { afterAll, beforeAll, beforeEach, expect } from "vitest";
 import { withTestLoopback } from "@kobe/address-policy/testing";
@@ -55,7 +56,9 @@ export const wire: GitWireSend = (exchange) => {
         path: `${exchange.url.pathname}${exchange.url.search}`,
         headers: {
           ...exchange.headers,
-          "content-length": String(exchange.body.reduce((n, c) => n + c.length, 0)),
+          "content-length": String(
+            exchange.file?.size ?? exchange.body.reduce((n, c) => n + c.length, 0),
+          ),
         },
       },
       (res) => {
@@ -70,6 +73,10 @@ export const wire: GitWireSend = (exchange) => {
       },
     );
     req.on("error", reject);
+    if (exchange.file) {
+      createReadStream(exchange.file.path).pipe(req);
+      return;
+    }
     for (const c of exchange.body) req.write(c);
     req.end();
   });

@@ -345,6 +345,38 @@ describe("resource guards (M3)", () => {
   });
 });
 
+describe("progress is a real advance (round 2)", () => {
+  it("stops an attempt whose runs keep dying mid-push before the host takes a batch", async () => {
+    const w = await world();
+    const p = await threeCommits(w);
+    hostRepo(p.slug);
+    const id = await begin(w, p.id);
+    // The replica dies as it sends the first batch (each run writes its head first: bookkeeping,
+    // not progress).
+    setWireHook((url, method) => {
+      if (method === "POST" && url.pathname.endsWith("/git-receive-pack")) throw new LeaseLost();
+    });
+    expect(await runConversion(deps(), w.team, id)).toBe("lost");
+    // The resume after the step change (create -> push) is real progress; the next two are not.
+    for (let i = 0; i < 3; i += 1) {
+      await fx.admin.query(
+        `UPDATE git_conversions SET lease_until = now() - interval '1 second' WHERE id = $1`,
+        [id],
+      );
+      const outcome = await runConversion(deps(), w.team, id);
+      expect(outcome).toBe(i < 2 ? "lost" : "failed");
+    }
+    setWireHook(undefined);
+    const view = await settled(w.owner, p.id);
+    expect(view).toMatchObject({ status: "failed", step: "push", error: { code: "interrupted" } });
+    const { rows } = await fx.admin.query<{ resumes: number; stalls: number }>(
+      `SELECT resumes, stalls FROM git_conversions WHERE id = $1`,
+      [id],
+    );
+    expect(rows[0]).toEqual({ resumes: 3, stalls: 2 });
+  });
+});
+
 describe("the project while a conversion holds it (L3) and unsaved working copies", () => {
   it("refuses delete and archive until the attempt is abandoned", async () => {
     const w = await world();

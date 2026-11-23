@@ -34,6 +34,11 @@ export interface BuiltHistory {
   readonly commits: readonly string[];
   /** The bytes of file content each commit adds that no earlier commit had. */
   readonly newBytes: readonly number[];
+  /**
+   * The objects each commit brings that no earlier commit has (its commit, new trees, new
+   * blobs): what a push of that commit sends when the host has the earlier ones (`pack.ts`).
+   */
+  readonly introduced: readonly (readonly string[])[];
 }
 
 /** A step's failure with its code and, where one is to blame, the file or commit. */
@@ -90,15 +95,26 @@ function place(root: Dir, path: string, oid: string, executable: boolean): void 
   node.files.set(name, { oid, executable });
 }
 
-async function writeDir(gitdir: string, node: Dir): Promise<string> {
+async function writeDir(
+  gitdir: string,
+  node: Dir,
+  seen: Set<string>,
+  fresh: string[],
+): Promise<string> {
   const entries: TreeEntry[] = [];
   for (const [name, child] of node.dirs) {
-    entries.push({ mode: TREE, path: name, type: "tree", oid: await writeDir(gitdir, child) });
+    const oid = await writeDir(gitdir, child, seen, fresh);
+    entries.push({ mode: TREE, path: name, type: "tree", oid });
   }
   for (const [name, f] of node.files) {
     entries.push({ mode: f.executable ? EXECUTABLE : BLOB, path: name, type: "blob", oid: f.oid });
   }
-  return git.writeTree({ fs, gitdir, tree: entries.sort(gitOrder) });
+  const oid = await git.writeTree({ fs, gitdir, tree: entries.sort(gitOrder) });
+  if (!seen.has(oid)) {
+    seen.add(oid);
+    fresh.push(oid);
+  }
+  return oid;
 }
 
 const signature = (who: PlanIdentity, time: number) => ({
@@ -122,11 +138,14 @@ export async function buildHistory(
 ): Promise<BuiltHistory> {
   const blobs = new Map<string, string>();
   const checkedAttrs = new Set<string>();
+  const trees = new Set<string>();
+  const introduced: string[][] = [];
   const commits: string[] = [];
   const newBytes: number[] = [];
   let parent: string | null = null;
   for (const [index, entry] of plan.commits.entries()) {
     const root = emptyDir();
+    const fresh: string[] = [];
     let added = 0;
     for (const file of await source.loadTree(entry.kobeCommitId)) {
       const attrs = isGitattributes(file.path.split("/").at(-1) ?? "");
@@ -147,12 +166,13 @@ export async function buildHistory(
         if (oid === undefined) {
           oid = await git.writeBlob({ fs, gitdir, blob: bytes });
           blobs.set(file.sha256, oid);
+          fresh.push(oid);
           added += file.size;
         }
       }
       place(root, file.path, oid, file.executable);
     }
-    const tree = await writeDir(gitdir, root);
+    const tree = await writeDir(gitdir, root, trees, fresh);
     const commit: string = await git.writeCommit({
       fs,
       gitdir,
@@ -166,8 +186,9 @@ export async function buildHistory(
     });
     commits.push(commit);
     newBytes.push(added);
+    introduced.push([...fresh, commit]);
     parent = commit;
     await onCommit?.(index);
   }
-  return { commits, newBytes };
+  return { commits, newBytes, introduced };
 }

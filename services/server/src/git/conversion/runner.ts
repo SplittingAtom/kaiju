@@ -19,7 +19,7 @@ import type { Logger } from "pino";
 import { recordAudit } from "../../audit/record.js";
 import { GitHostError, type GitHostAdapter, type GitRepository } from "../../git-hosts/adapter.js";
 import { gitHostAdapter, type GitAdapterInput } from "../../git-hosts/factory.js";
-import { gitWireClient } from "../../git-hosts/git-wire.js";
+import { gitWireSession, type GitWireSession } from "../../git-hosts/git-wire.js";
 import type { GitHostNet } from "../../git-hosts/http.js";
 import { gitHostTarget, type GitHostTarget } from "../../git-hosts/target.js";
 import type { Mailer } from "../../mail/mailer.js";
@@ -267,6 +267,10 @@ const checkVisible = (ctx: Context, row: ConversionRow, repo: GitRepository): Gi
  * L2: the Site switch and host list are read again for every client, i.e. before every batch).
  */
 async function wireFor(ctx: Context, repo: GitRepository): Promise<HttpClient> {
+  return (await sessionFor(ctx, repo)).http;
+}
+
+async function sessionFor(ctx: Context, repo: GitRepository): Promise<GitWireSession> {
   let target: GitHostTarget;
   try {
     target = gitHostTarget(await readGitSiteSettings(ctx.deps.db), ctx.connection.baseUrl, {
@@ -276,7 +280,7 @@ async function wireFor(ctx: Context, repo: GitRepository): Promise<HttpClient> {
     throw new ConversionStepError("connection_unavailable");
   }
   const credential = await ctx.adapter.repositoryCredential(repo.name, "write");
-  return gitWireClient({
+  return gitWireSession({
     net: ctx.deps.net,
     target,
     repositoryUrl: repo.cloneUrl,
@@ -433,14 +437,16 @@ async function pushStep(
   );
   await pushHistory({
     gitdir,
-    http: async () => {
+    session: async () => {
       // Before every batch (review H1): the repository is still the one recorded and no more
       // visible than asked. Then a fresh credential (an installation token lives an hour; cached
       // by the adapter) and a fresh Site decision.
       await recordedRepository(ctx, row);
-      http = await wireFor(ctx, repo);
-      return http;
+      const session = await sessionFor(ctx, repo);
+      http = session.http;
+      return session;
     },
+    packFile: path.join(ctx.workDir, "push.pack"),
     url: repo.cloneUrl,
     branch: plan.branch,
     built,
@@ -475,13 +481,21 @@ async function projectBytes(db: KobeDb, teamId: string, projectId: string): Prom
   return Number(res.rows[0]?.bytes ?? 0);
 }
 
-/** Refuses to start building when the folder's file system has no room (`server_capacity`). */
+/**
+ * Refuses to start building when the folder's file system has no room (`server_capacity`): the
+ * loose objects (at most the content) plus one batch's pack (at most the content again). Fails
+ * closed: a file system it cannot read is no room (round 2).
+ */
 async function assertRoom(dir: string, bytes: number): Promise<void> {
   const fsStats = await statfs(dir).catch(() => undefined);
-  if (!fsStats) return;
+  if (!fsStats)
+    throw new ConversionStepError("server_capacity", "the work folder's disk is unreadable");
   const free = Number(fsStats.bavail) * Number(fsStats.bsize);
-  if (free < bytes + GIT_CONVERSION_DISK_MARGIN_BYTES) {
-    throw new ConversionStepError("server_capacity", `${Math.ceil(bytes / 1048576)} MiB needed`);
+  if (free < 2 * bytes + GIT_CONVERSION_DISK_MARGIN_BYTES) {
+    throw new ConversionStepError(
+      "server_capacity",
+      `${Math.ceil((2 * bytes + GIT_CONVERSION_DISK_MARGIN_BYTES) / 1048576)} MiB needed`,
+    );
   }
 }
 

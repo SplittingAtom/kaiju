@@ -252,8 +252,15 @@ export async function updateHeld(
 ): Promise<ConversionRow> {
   const [row] = await tx
     .update(gitConversions)
-    // Every write of a run moves it forward (the poison guard reads `progress_at`).
-    .set({ ...changes, progressAt: sql`now()`, updatedAt: sql`now()` })
+    .set({
+      ...changes,
+      // Only a real advance counts as progress for the poison guard (round 2): a step change or
+      // a batch the host acknowledged (`commits_pushed`); bookkeeping writes do not.
+      ...(changes.step !== undefined || changes.commitsPushed !== undefined
+        ? { progressAt: sql`now()` }
+        : {}),
+      updatedAt: sql`now()`,
+    })
     .where(held(lease))
     .returning();
   if (!row) throw new LeaseLost();

@@ -1,4 +1,6 @@
+import { createReadStream } from "node:fs";
 import http from "node:http";
+import { pipeline } from "node:stream/promises";
 import https from "node:https";
 import type { GitHttpRequest, GitHttpResponse, HttpClient } from "isomorphic-git";
 import { pinnedLookup } from "../connectors/oauth/http.js";
@@ -22,8 +24,9 @@ import { assertGitHostTarget, assertRequestHost, type GitHostTarget } from "./ta
  *   address; the Basic credential is the one the adapter handed out for this repository
  *   (`repositoryCredential(repo, "write")`), and whatever isomorphic-git put in an
  *   `Authorization` header is dropped;
- * - time (idle and overall) and size (request and answer) are capped. The request body is sent
- *   from the chunks isomorphic-git built, without copying them into one buffer.
+ * - time (idle and overall) and size (request and answer) are capped. A request body is sent
+ *   from the chunks isomorphic-git built, without copying them into one buffer, or streamed from a
+ *   file (`postFile`: a receive-pack request written to disk, so memory does not grow with it).
  *
  * Errors are a {@link GitHostError} with fixed text: never the credential, a URL query or a body.
  */
@@ -32,6 +35,8 @@ export interface GitWireExchange {
   readonly method: string;
   readonly headers: Readonly<Record<string, string>>;
   readonly body: readonly Uint8Array[];
+  /** Instead of `body`: a request body streamed from this file (`size` bytes). */
+  readonly file?: { readonly path: string; readonly size: number };
 }
 
 export interface GitWireResponse {
@@ -127,7 +132,7 @@ export const sendGitWire: GitWireSend = (exchange, io) => {
     return Promise.reject(refused("scheme", "The git host must be reached over https."));
   }
   const transport = secure ? https : http;
-  const length = exchange.body.reduce((n, c) => n + c.length, 0);
+  const length = exchange.file?.size ?? exchange.body.reduce((n, c) => n + c.length, 0);
   return new Promise((resolve, reject) => {
     const req = transport.request(url, {
       method: exchange.method,
@@ -173,6 +178,10 @@ export const sendGitWire: GitWireSend = (exchange, io) => {
       });
     });
     void (async () => {
+      if (exchange.file) {
+        await pipeline(createReadStream(exchange.file.path), req);
+        return;
+      }
       for (const chunk of exchange.body) {
         if (!req.write(chunk)) await new Promise((r) => req.once("drain", r));
       }
@@ -201,8 +210,25 @@ async function chunksOf(
   return { chunks, size };
 }
 
+/** A session for one repository: isomorphic-git's client, and a POST streamed from a file. */
+export interface GitWireSession {
+  readonly http: HttpClient;
+  /** POSTs `size` bytes from `file` to one of the repository's endpoints; the answer read whole. */
+  postFile(
+    url: string,
+    file: string,
+    size: number,
+    contentType: string,
+  ): Promise<{ status: number; body: Buffer }>;
+}
+
 /** The client for one repository under the rules in the module header. */
 export function gitWireClient(options: GitWireOptions): HttpClient {
+  return gitWireSession(options).http;
+}
+
+/** {@link gitWireClient} plus {@link GitWireSession.postFile}, under the same rules. */
+export function gitWireSession(options: GitWireOptions): GitWireSession {
   assertGitHostTarget(options.target);
   const repository = new URL(options.repositoryUrl);
   assertRequestHost(options.target, repository);
@@ -212,13 +238,19 @@ export function gitWireClient(options: GitWireOptions): HttpClient {
   const timeoutMs = options.timeoutMs ?? GIT_WIRE_TIMEOUT_MS;
   const maxResponseBytes = options.maxResponseBytes ?? GIT_WIRE_MAX_RESPONSE_BYTES;
   const send = options.net.wire ?? sendGitWire;
+  const io = (deadlineAt: number) => ({
+    policy: options.net.policy,
+    timeoutMs,
+    deadlineAt,
+    maxResponseBytes,
+  });
 
-  async function request(req: GitHttpRequest): Promise<GitHttpResponse> {
+  /** The checks every request passes before anything is sent; returns its deadline. */
+  async function check(url: URL): Promise<number> {
     const deadlineAt = options.deadlineAt ?? Date.now() + timeoutMs;
     if (Date.now() >= deadlineAt) {
       throw new GitHostError("host_unreachable", "The git host took too long.");
     }
-    const url = new URL(req.url);
     assertRepositoryEndpoint(repository, url);
     assertRequestHost(options.target, url);
     const checked = await checkConnectorUrl(`${url.origin}${url.pathname}`, options.net.policy);
@@ -228,6 +260,12 @@ export function gitWireClient(options: GitWireOptions): HttpClient {
       }
       throw refused(checked.code, "The git host address is not allowed on this site.");
     }
+    return deadlineAt;
+  }
+
+  async function request(req: GitHttpRequest): Promise<GitHttpResponse> {
+    const url = new URL(req.url);
+    const deadlineAt = await check(url);
     const { chunks } = await chunksOf(req.body, options.maxRequestBytes);
     const headers: Record<string, string> = { "user-agent": USER_AGENT };
     for (const [k, v] of Object.entries(req.headers ?? {})) {
@@ -237,10 +275,7 @@ export function gitWireClient(options: GitWireOptions): HttpClient {
     }
     headers.authorization = authorization;
     const method = req.method ?? "GET";
-    const res = await send(
-      { url, method, headers, body: chunks },
-      { policy: options.net.policy, timeoutMs, deadlineAt, maxResponseBytes },
-    );
+    const res = await send({ url, method, headers, body: chunks }, io(deadlineAt));
     return {
       url: req.url,
       method,
@@ -251,5 +286,29 @@ export function gitWireClient(options: GitWireOptions): HttpClient {
     };
   }
 
-  return { request };
+  async function postFile(raw: string, file: string, size: number, contentType: string) {
+    const url = new URL(raw);
+    const deadlineAt = await check(url);
+    if (size > options.maxRequestBytes) {
+      throw new GitHostError(
+        "invalid_request",
+        "The push is larger than this conversion may send.",
+      );
+    }
+    const headers = {
+      "user-agent": USER_AGENT,
+      "content-type": contentType,
+      accept: contentType.replace("-request", "-result"),
+      authorization,
+    };
+    const res = await send(
+      { url, method: "POST", headers, body: [], file: { path: file, size } },
+      io(deadlineAt),
+    );
+    const chunks: Buffer[] = [];
+    for await (const c of res.body) chunks.push(Buffer.from(c));
+    return { status: res.status, body: Buffer.concat(chunks) };
+  }
+
+  return { http: { request }, postFile };
 }

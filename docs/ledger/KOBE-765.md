@@ -24,14 +24,21 @@
   fast-forward checks, and its objects pass `git fsck --strict` and a `receive.fsckObjects` host
   (tests). Objects go to a bare repository in the server's temp dir (an emptyDir in the chart),
   removed after each run.
-- **Bounded memory.** isomorphic-git builds each push's pack in memory, so commits are pushed in
-  batches of ~32 MiB of new content (each a fast-forward of the default branch); one file is in
-  memory at a time while objects are written (≤ a project file, 50 MiB). The request body is sent
-  from isomorphic-git's chunks without another copy. Limits (refused before anything starts, named
-  in the answer): distinct content ≤ min(connection push limit, 2 GiB) (`project_too_large`); one
-  commit's new content ≤ 128 MiB (`commit_too_large`, naming the commit; "convert without
-  history" for the current files). Git LFS is out of scope (§10); host file limits: GitHub 100 MiB
-  (Kobe's 50 MiB cap is below), Gitea/Forgejo none by default.
+- **Bounded memory, independent of commit size (round 2).** isomorphic-git builds the objects
+  (loose, in the work folder) and reads the remote's refs; its `push` is not used because it
+  holds a whole pack in memory. Each batch (~32 MiB of new content; a larger commit is its own
+  batch) is written by `pack.ts` as a receive-pack request file (ref update + an undeltified v2
+  pack of the objects the batch's commits introduce, one object in memory at a time) and streamed
+  from disk by `git-wire.ts` `postFile` under the same checks. Memory peak ≈ 3 × the largest file
+  (stored bytes, loose object, deflated form) ≤ 300 MiB at the 100 MiB file limit, within the
+  server's 1 GiB memory limit with one conversion per replica (≈ 150 MiB with Kobe's 50 MiB cap).
+  Limits, refused before anything starts and named in the answer: a file ≤ 100 MiB
+  (`file_too_large`, GitHub's hard limit; lists the files; Kobe's 50 MiB cap makes it moot today);
+  distinct content ≤ min(connection push limit, 2 GiB) (`project_too_large`, with sizes). **The
+  2 GiB ceiling is the coordinator's number (2026-11-23), pending the owner**; it is tied to the
+  work folder: loose objects + one pack ≤ ~4 GiB within `server.tmpSizeLimit` (6Gi, new chart
+  value + schema), and the free-space check asks for 2 × content + 64 MiB, failing closed.
+  Git LFS is out of scope (§10).
 - **Transport from the server only**, with `repositoryCredential(repo, "write")` (an App token
   narrowed to the repository, or the connection's token), never through a sandbox or the egress
   proxy: `gitWireClient` re-checks the Site decision (`gitHostTarget`/`assertRequestHost`) and the
@@ -152,12 +159,21 @@ the Git section's repositories list. Each failure is audited and emailed to the 
   `kobe-conversion:` mark (another Workspace's Repo is invisible under RLS, so marked ones are
   refused: `repository_in_use`), with the plan's default branch (checked at create, L6).
 - **M3 resources:** one conversion per replica (others wait for the sweep; a finished run drains
-  the queue); per-commit cap 128 MiB, distinct content ≤ min(push limit, 2 GiB), refused with
-  sizes; work folder `<tmp>/kobe-git-conversions/run-*` (0700), removed on every exit path, and
+  the queue); distinct content ≤ min(push limit, 2 GiB), refused with sizes (round 2 replaced the
+  128 MiB per-commit cap with streaming); work folder `<tmp>/kobe-git-conversions/run-*` (0700), removed on every exit path, and
   folders older than the process removed at start-up and every sweep; a free-space check first
   (`server_capacity`); the poison guard above (columns `claimed_at`, `progress_at`, `stalls`,
-  `resumes`). Blobs are still read whole (isomorphic-git writes a blob from a buffer), one at a
-  time, ≤ Kobe's 50 MiB file cap. A chart `sizeLimit` for the server's /tmp is a follow-up.
+  `resumes`). Blobs are read whole (isomorphic-git writes a blob from a buffer), one at a time.
+
+## Round 2 (2026-11-23)
+
+- Streaming push from disk (above); per-commit cap removed; `file_too_large` (100 MiB) replaces
+  `commit_too_large`; refusal texts say what to do (convert without history only where it helps).
+- Progress for the poison guard is only a step change or a batch the host acknowledged
+  (`commits_pushed`): a replica dying mid-push is stopped after two such runs (test).
+- The free-space check fails closed (`server_capacity`).
+- Chart: `server.tmpSizeLimit` (default 6Gi) on the server's /tmp emptyDir, schema entry, chart
+  test `tests/server-tmp.test.ts`; install notes in `docs/install.md`.
 - **Lows:** non-members get the no-reply form (L1); the Site decision is re-read for every wire
   client, i.e. before every batch (L2); deleting or archiving a project while a conversion runs or
   failed is refused (409 `conversion_in_progress`; abandon is the way out), and finish refuses an

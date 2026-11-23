@@ -35,12 +35,11 @@ describe("value lists", () => {
     );
     expect(
       refusalMessage({
-        code: "commit_too_large",
-        seq: 7,
-        limitBytes: 128 * 1024 * 1024,
-        sizeBytes: 200 * 1024 * 1024,
+        code: "file_too_large",
+        paths: [{ path: "big.bin", seq: 3 }],
+        limitBytes: 100 * 1024 * 1024,
       }),
-    ).toContain("#7 adds 200 MiB, more than one push may carry (128 MiB)");
+    ).toContain("Git hosts refuse files over 100 MiB: big.bin (from commit #3). Remove it");
     expect(refusalMessage({ code: "unsaved_checkouts", checkouts: 2 })).toContain(
       "2 working copies",
     );
@@ -109,7 +108,7 @@ describe("push batches and resume", () => {
     expect(batchEnd([50, 1, 1], 0, 10)).toBe(1);
     expect(batchEnd([1, 1, 1], 1, 100)).toBe(3);
   });
-  const built = { commits: ["a", "b", "c"], newBytes: [1, 1, 1] };
+  const built = { commits: ["a", "b", "c"], newBytes: [1, 1, 1], introduced: [[], [], []] };
   it("continues after the host's head, or from the start on an empty repository", () => {
     expect(resumeIndex(built, { head: null, refs: 0 })).toBe(0);
     expect(resumeIndex(built, { head: "b", refs: 1 })).toBe(2);
@@ -245,5 +244,34 @@ describe("visibility before every push (review H1)", () => {
     );
     expect(hostReason("x".repeat(500))?.length).toBe(200);
     expect(hostReason(undefined)).toBeNull();
+  });
+});
+
+describe("receive-pack requests (round 2: streamed from disk)", () => {
+  it("encodes entry sizes as git does and reads the host's report", async () => {
+    const { entryHeader, parseReportStatus, pktLine } = await import("./pack.js");
+    expect([...entryHeader(3, 10)]).toEqual([0x3a]);
+    expect([...entryHeader(3, 100)]).toEqual([0xb4, 0x06]);
+    expect([...entryHeader(1, 1 << 20)]).toEqual([0x90, 0x80, 0x80, 0x04]);
+    expect(pktLine("ok\n").toString()).toBe("0007ok\n");
+    const ref = "refs/heads/main";
+    const report = (...lines: string[]) =>
+      Buffer.concat([...lines.map((l) => pktLine(`${l}\n`)), Buffer.from("0000")]);
+    expect(parseReportStatus(report("unpack ok", `ok ${ref}`), ref)).toEqual({ ok: true });
+    expect(
+      parseReportStatus(report("unpack ok", `ng ${ref} pre-receive hook declined`), ref),
+    ).toEqual({
+      ok: false,
+      reason: "pre-receive hook declined",
+      stale: false,
+    });
+    expect(parseReportStatus(report("unpack ok", `ng ${ref} stale info`), ref)).toMatchObject({
+      stale: true,
+    });
+    expect(parseReportStatus(report("unpack index-pack abnormal exit"), ref)).toMatchObject({
+      ok: false,
+      stale: false,
+    });
+    expect(parseReportStatus(Buffer.from(""), ref).ok).toBe(false);
   });
 });
