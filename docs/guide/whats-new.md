@@ -1,12 +1,46 @@
 ---
 title: What's new
-summary: What changed in the latest Kobe release (v1.3, Semantic Memory) for members and admins, including that turning Allow memory off now turns memories off too, with links to the pages that explain each change.
+summary: What changed in the latest Kobe releases for members and admins, with links to the pages that explain each change. v1.4 connects Workspaces to git organizations on GitHub, Gitea and Forgejo and turns projects into Repos; v1.3 adds memories, and turning Allow memory off now turns memories off too.
 section: Getting started
 order: 4
 audience: member
 ---
 
 What changed in the latest release, in short, with a link to the page that explains each part.
+
+## v1.4: git organizations
+
+A Workspace admin can connect the Workspace to an organization on GitHub (including GitHub
+Enterprise Server), Gitea or Forgejo. Agents then work with its repositories, and a project can
+become a **Repo** that lives on the git host.
+
+### For everyone
+
+- **Git in the sandbox works with no setup** for the connected organizations: `git clone`, `fetch`
+  and `push` go through Kobe, which holds the credential. Your agent never sees it. Pushing needs
+  the Contributor role. See [Working with git repositories](for-agents/working-with-git.md).
+- **Agents get git host tools**: list and read repositories, branches, files, pull requests and
+  issues, and create branches. Creating a repository, opening a pull request, commenting and
+  creating an issue ask you first. See [Git changes](internet-and-approvals/approvals.md#git-changes).
+- **Convert a project to a Repo.** On a project's **⋯** menu in the Files panel, **Convert to
+  repo…** (for the project's owner and Workspace admins) creates a private repository with the
+  project's history. Repos show a git icon. Commits from the **Commit…** dialog become pull
+  requests by default, and in a conversation on a Repo the agent gets a real git working copy.
+  See [Repos](files/workspaces-and-projects.md#repos).
+- **See what your Workspace is connected to** under **Profile → My connectors**. See
+  [Git organizations](connectors-and-apps.md#git-organizations).
+
+### For admins
+
+- **A Git page in the Team console** connects, tests, limits, replaces credentials for and
+  disconnects git organizations (GitHub App, fine-grained token, or an access token for Gitea and
+  Forgejo). See [Git organizations](admin/git-organizations.md).
+- **Commits to a Repo's default branch** are off unless you turn on **Allow commits straight to the
+  default branch** for the connection. Protect the default branch on the host as well.
+- **Site admins** can switch git connections off for the Site and limit the hosts. See
+  [Site admin](admin/site-admin.md).
+- Repositories are outside Kobe's retention and erasure:
+  [Retention and deletion](reference/retention-and-deletion.md).
 
 ## v1.3: memories
 

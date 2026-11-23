@@ -122,6 +122,17 @@ describe("project API", () => {
       }).success,
     ).toBe(true);
   });
+  it("KOBE-768: carries the kind and a holding conversion, both optional", () => {
+    expect(
+      projectSchema.safeParse({ ...project, kind: "repo", repo_conversion: null }).success,
+    ).toBe(true);
+    expect(projectSchema.safeParse({ ...project, repo_conversion: "running" }).success).toBe(true);
+    expect(projectSchema.safeParse({ ...project, repo_conversion: "failed" }).success).toBe(true);
+    expect(projectSchema.safeParse({ ...project, kind: "folder" }).success).toBe(false);
+    expect(projectSchema.safeParse({ ...project, repo_conversion: "completed" }).success).toBe(
+      false,
+    );
+  });
   it("refuses members_mode, visibility (KOBE-587) and the old member role", () => {
     expect(projectSchema.safeParse({ ...project, members_mode: "team" }).success).toBe(false);
     expect(projectSchema.safeParse({ ...project, my_role: "member" }).success).toBe(false);

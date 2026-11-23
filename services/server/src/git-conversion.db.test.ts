@@ -135,6 +135,12 @@ describe("converting a project with history (ac-1, ac-3)", () => {
     const mail = mailer().sent.find(isDone);
     expect(mail?.text).toContain(repo);
 
+    // KOBE-768: the project list says it is a Repo (the Files panel's git icon, G19).
+    const listed = await w.owner.browser.request("GET", `/v1/projects`);
+    expect(listed.json.projects.find((x: { id: string }) => x.id === p.id)).toMatchObject({
+      kind: "repo",
+      repo_conversion: null,
+    });
     // After conversion: the Files panel reads it as before; every Kobe write is refused (G17).
     const files = await w.owner.browser.request("GET", `/v1/projects/${p.id}/files`);
     expect(files.status).toBe(200);
@@ -357,6 +363,9 @@ describe("crashes and failures (ac-2)", () => {
       error: { code: "host_unreachable" },
     });
     expect(await kind(w.team, p.id)).toBe("project");
+    // KOBE-768: the project says a failed conversion holds it, to every member who reads it.
+    const one = await w.member.browser.request("GET", `/v1/projects/${p.id}`);
+    expect(one.json).toMatchObject({ kind: "project", repo_conversion: "failed" });
     // The email goes out after the outcome committed.
     await until(() =>
       mailer().sent.some((m) => m.to === w.owner.email && m.subject.includes("failed")),

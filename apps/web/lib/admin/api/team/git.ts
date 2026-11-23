@@ -92,8 +92,11 @@ export interface GitFailureDetail {
   readonly retryAt?: string;
 }
 
-export function listGitConnections(teamId: string): Promise<ApiResult<GitConnectionsAnswer>> {
-  return apiRequest<GitConnectionsAnswer>(BASE, { teamId });
+export function listGitConnections(
+  teamId: string,
+  fetchFn?: typeof fetch,
+): Promise<ApiResult<GitConnectionsAnswer>> {
+  return apiRequest<GitConnectionsAnswer>(BASE, { teamId, fetchFn });
 }
 
 /** Tests without saving (G4). Errors keep their details (`test`), so the page can say why. */

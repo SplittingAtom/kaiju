@@ -37,6 +37,7 @@ import {
   FolderInputIcon,
   FolderPlusIcon,
   FolderKanbanIcon,
+  GitBranchIcon,
   GitBranchPlusIcon,
   GitCommitHorizontalIcon,
   GitForkIcon,
@@ -486,6 +487,11 @@ const LIST = [
     icon: FolderKanbanIcon,
     scope: "file-menu",
   },
+  // Repos (KOBE-768, workspace-git G16, G19): on a project's row in Files. The host link's label
+  // names the host ("Open on github.com"); Convert to repo… for owners and Workspace admins.
+  { id: "open-repo-on-host", name: "Open on the host", icon: ExternalLinkIcon, scope: "file-menu" },
+  { id: "repo-details", name: "Repo details…", icon: GitBranchIcon, scope: "file-menu" },
+  { id: "convert-to-repo", name: "Convert to repo…", icon: GitBranchIcon, scope: "file-menu" },
   // A project the conversation is not in (KOBE-590, FP4): on its row in the Files panel.
   {
     id: "new-conversation-in-project",

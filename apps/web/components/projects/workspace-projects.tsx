@@ -23,6 +23,13 @@ import {
   type ProjectCheckout,
   type ProjectCommitsApi,
 } from "../../lib/projects/commits-api";
+import type { RepoApi } from "../../lib/projects/repo-api";
+import {
+  useWorkspaceRepos,
+  type GitConnections,
+  type RepoInfo,
+  type RepoNotice,
+} from "./workspace-repos";
 
 export interface WorkspaceProjects {
   readonly status: "idle" | "loading" | "ready" | "error";
@@ -34,6 +41,17 @@ export interface WorkspaceProjects {
   readonly total: number;
   readonly projects: ProjectsApi;
   readonly commits: ProjectCommitsApi;
+  /** KOBE-768: each live Repo's repository, mirror and the member's working copy, by project id. */
+  readonly repos: ReadonlyMap<string, RepoInfo>;
+  readonly repoApi: RepoApi;
+  /** The Workspace's git connections; null until read (or unreadable, or nothing to convert). */
+  readonly git: GitConnections | null;
+  /** Conversions that finished or failed while the panel was open. */
+  readonly notices: readonly RepoNotice[];
+  dismissNotice(key: string): void;
+  reloadRepo(projectId: string): void;
+  /** Read the git connections again (a dialog opens). */
+  reloadGit(): void;
   ensure(): void;
   reload(): void;
 }
@@ -54,10 +72,13 @@ interface Loaded {
 export function WorkspaceProjectsProvider({
   teamId,
   fetchFn,
+  conversionPollMs,
   children,
 }: {
   readonly teamId: string;
   readonly fetchFn?: typeof fetch | undefined;
+  /** How often a running conversion is read at first (tests shorten it). */
+  readonly conversionPollMs?: number | undefined;
   readonly children: ReactNode;
 }) {
   const projects = useMemo(() => createProjectsApi(teamId, fetchFn), [teamId, fetchFn]);
@@ -96,6 +117,16 @@ export function WorkspaceProjectsProvider({
     if (current.current === "idle" || current.current === "error") reload();
   }, [reload]);
 
+  const repoState = useWorkspaceRepos({
+    teamId,
+    fetchFn,
+    projects: loaded.projects,
+    status,
+    commits,
+    reload,
+    pollMs: conversionPollMs,
+  });
+
   const value = useMemo<WorkspaceProjects>(() => {
     const bySlug = new Map(loaded.projects.map((p) => [p.slug, p]));
     const checkouts = new Map(loaded.checkouts.map((c) => [c.slug, c]));
@@ -110,10 +141,11 @@ export function WorkspaceProjectsProvider({
       total: loaded.projects.filter((p) => p.archivedAt === null).length,
       projects,
       commits,
+      ...repoState,
       ensure,
       reload,
     };
-  }, [status, loaded, projects, commits, ensure, reload]);
+  }, [status, loaded, projects, commits, repoState, ensure, reload]);
 
   return <Context value={value}>{children}</Context>;
 }

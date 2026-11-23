@@ -130,13 +130,97 @@ them, and readers see their own suggestions and what happened to them. See
 ## Repos
 
 A project converted to a Repo lives on a git host (GitHub, Gitea or Forgejo): the repository's
-default branch is its record, and Kobe shows a mirror of it. The mirror refreshes when Kobe pushes,
-when you open the Repo (if older than 5 minutes), every 5 minutes, and when you press **Refresh**; the Repo shows when it was
-last refreshed. A commit made on the host appears after the next refresh. If the repository is
-archived or deleted on the host, or the Workspace's connection to it is removed, the Repo stays
-readable from its last mirror with a banner, and a Workspace admin can link it to another
-repository or turn it back into an ordinary project. See
+default branch is its record, and Kobe shows a mirror of it. A Repo is still a project in every
+other way: same roles, same place in the Files panel, same conversations.
+
+### Repos in the Files panel
+
+Repos sit among the projects, in the same order. A Repo has a git icon instead of the folder, and
+its row shows:
+
+- the host and `organization/repository` (hover the row, read it with a screen reader, or open
+  **Repo details…** from the row's **⋯** menu, which keyboard and touch reach too);
+- the branch: your working copy's branch if a conversation of yours has one, else the default
+  branch;
+- how many commits your working copy is **ahead** (↑) of or **behind** (↓) the host, or ✓ when it
+  is even;
+- **read-only**, **too large to mirror** or **refresh failed** when one of those applies.
+
+A project that is being converted shows **converting to a Repo…**, and **conversion failed** after
+a failure; it takes no Kobe commits until the conversion ends or is abandoned.
+
+The Repo's **⋯** menu has **Open on &lt;host&gt;** (the repository on the host, in a new tab) and
+**Repo details…**, which shows:
+
+- the host and repository, the default branch and where commits go (a pull request, or straight
+  to the default branch where a Workspace admin allowed it), your working copy and your open pull
+  request;
+- when the mirror was last refreshed, that it is refreshing, or why the last refresh failed and
+  when Kobe tries again;
+- the newest commits on the host;
+- **Refresh**: the mirror refreshes when Kobe pushes, when you open the Repo (if older than 5
+  minutes), every 5 minutes, and when you press **Refresh** (30 per 10 minutes each, within the
+  connection's hourly limit; if a limit is reached Kobe says so). A commit made on the host
+  appears after the next refresh.
+
+If the repository is archived or deleted on the host, or the Workspace's connection to it is
+removed, the Repo stays readable from its last mirror and **Repo details…** says why. Workspace
+admins also see **Relink…** (link it to another repository of a connected organization) and
+**Detach…** (turn it back into an ordinary project, starting from the mirrored files as one
+commit) in **Repo details…**, for any Repo. See
 [Git organizations](../admin/git-organizations.md#repos-the-mirror-read-only-repos-relink-and-detach).
+
+### Convert a project to a Repo
+
+**Convert to repo…** is on a project's **⋯** menu in the Files panel for the project's owner and
+Workspace admins, when the Workspace has a git connection at **Read and write**. The dialog asks:
+
+- **Git connection**, when there are several at Read and write;
+- **Repository name**: the project's slug with the connection's name prefix, which you can change
+  (letters, digits, `.`, `-` and `_`, at most 100 characters, not ending in `.git`);
+- **History**: carry the history (each commit becomes a git commit with its author, time and
+  message, oldest first) or one commit of the current files;
+- for Workspace admins only, **Use an existing empty repository with this name** instead of
+  creating one (it must be private, empty and in the connection's organization).
+
+Converting is one-way. The repository gets the connection's default visibility, which the
+dialog names: private, or, on GitHub only, internal where a Workspace admin chose that for the
+connection (everyone in the GitHub enterprise can then read it). The conversion stops if it becomes public. Commits carry each author's Kobe email, or a
+no-reply address if the Workspace's [git settings](../admin/git-organizations.md#commit-author-email)
+say so; members who have left always get the no-reply address, and the committer reads
+"&lt;name&gt; via Kobe". Files under `.github/workflows/` run on the host if it runs Actions.
+
+Kobe refuses to start, and says which, when:
+
+- the project is archived, is already a Repo, or already has a conversion running or failed;
+- a legal hold covers the Workspace;
+- working copies hold changes that are not committed (commit or discard them first);
+- the connection is not at Read and write, may not create repositories, or its host is not
+  allowed by the Site;
+- the name is not valid, or a repository with it exists;
+- a file is one git hosts refuse (`.git` in any spelling, `.gitmodules`, very long
+  `.gitattributes` lines); the dialog lists the files and the commit each first appears in;
+- a file is over 100 MiB (hosts refuse it);
+- the current files are more than a Repo's mirror can show: 500 files, 50 MiB per file, 256 MiB in
+  all ("too large to mirror");
+- the files across the history carried are more than one conversion may push: the connection's
+  push limit, at most 2 GiB (convert without history if the current files are smaller).
+
+The conversion runs in the background. The dialog shows its progress (creating the repository,
+pushing commits, finishing) and you can close it; when it ends you get an email, and a notice in
+the Files panel if it is open. After a failure the dialog says why, with **Retry** (it resumes
+where it stopped) and **Abandon…** (the project is an ordinary project again; a repository the host
+already created stays there for a Workspace admin to delete or reuse).
+
+Afterwards the repository on the host is the record: Kobe shows the files read-only from the
+mirror and commits go to the host (see [Committing to a Repo](#committing-to-a-repo)). The
+repository is outside Kobe's retention, erasure and legal hold.
+
+### Notices
+
+The Files panel tells you when a conversion you are watching finished or failed. Workspace admins
+also see a notice when a git connection's credential expires within 14 days, with a link to the
+Git section to replace it (Kobe emails them too). Dismiss hides a notice until you reload.
 
 ## Related
 
