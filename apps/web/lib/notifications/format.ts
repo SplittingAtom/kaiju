@@ -42,10 +42,12 @@ function gitTitle(n: KobeNotification): string | null {
     case "git.conversion.failed":
       return `Converting ${n.projectName ?? "a project"} to a Repo failed`;
     case "git.connection.token_expiring": {
-      const name = n.gitConnectionName ?? "a Workspace";
-      if (!n.gitExpiresAt) return `The credential of the git connection ${name} expires soon`;
+      const which = n.gitConnectionName
+        ? `the git connection ${n.gitConnectionName}`
+        : "a git connection";
+      if (!n.gitExpiresAt) return `The credential of ${which} expires soon`;
       const lapsed = Date.parse(n.gitExpiresAt) <= Date.parse(n.createdAt);
-      return `The credential of the git connection ${name} ${lapsed ? "expired" : "expires"} on ${day(n.gitExpiresAt)}`;
+      return `The credential of ${which} ${lapsed ? "expired" : "expires"} on ${day(n.gitExpiresAt)}`;
     }
     default:
       return null;

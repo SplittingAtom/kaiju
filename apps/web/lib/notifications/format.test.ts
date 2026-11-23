@@ -143,6 +143,9 @@ describe("notification words (KOBE-181)", () => {
       expect(notificationTitle({ ...soon, gitExpiresAt: "2026-10-10T00:00:00Z" })).toBe(
         "The credential of the git connection Acme on GitHub expired on 2026-10-10",
       );
+      expect(notificationTitle({ ...soon, gitConnectionName: undefined })).toBe(
+        "The credential of a git connection expires on 2026-10-20",
+      );
     });
   });
 });

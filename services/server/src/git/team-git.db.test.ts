@@ -773,7 +773,7 @@ describe("token-expiry bell notifications (KOBE-819)", () => {
     }
   });
 
-  it("writes the bell notice without a mail relay (no email, still once)", async () => {
+  it("a process without a mail relay (the scheduler) claims nothing: bell and email wait", async () => {
     const w = await world();
     const { id } = await expiringConnection(w);
     const sent: unknown[] = [];
@@ -787,12 +787,47 @@ describe("token-expiry bell notifications (KOBE-819)", () => {
       publicUrl: "http://kobe.test",
       logger,
     };
-    expect(await notifyGitTokenExpiry(quiet)).toBeGreaterThanOrEqual(1);
     expect(await notifyGitTokenExpiry(quiet)).toBe(0);
     expect(sent).toEqual([]);
+    expect(await bellRows(w.team)).toEqual([]);
+    const { rows } = await fx.admin.query(
+      `SELECT expiry_notified_at FROM git_connections WHERE id = $1`,
+      [id],
+    );
+    expect(rows[0]?.expiry_notified_at).toBeNull();
+    // A process that can send then claims it: bell and email together.
+    await runGitHealthPass(healthDeps(), new GitHostBackoff());
+    expect(await bellRows(w.team)).toMatchObject([{ user_id: w.admin.id, git_connection_id: id }]);
+  });
+
+  it("replacing the credential removes the old token's notices; a new expiry is noticed anew", async () => {
+    const w = await world();
+    const { id } = await expiringConnection(w);
+    await runGitHealthPass(healthDeps(), new GitHostBackoff());
+    const [old] = await bellRows(w.team);
+    expect(old).toBeDefined();
+    const later = new Date(Date.now() + 10 * 86_400_000);
+    github.options = {
+      patExpiration: `${later.toISOString().slice(0, 10)} ${later.toISOString().slice(11, 19)} UTC`,
+    };
+    const replaced = await call(w.admin, "PUT", `${BASE}/${id}/credential`, {
+      credential: token(FAKE_PAT),
+    });
+    expect(replaced.status, replaced.text).toBe(200);
+    // The old token's notice is gone at once, read or not.
+    expect(await bellRows(w.team)).toEqual([]);
+    await runGitHealthPass(healthDeps(), new GitHostBackoff());
     const rows = await bellRows(w.team);
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ user_id: w.admin.id, git_connection_id: id });
+    expect(rows[0]?.git_expires_at.getTime()).not.toBe(old?.git_expires_at.getTime());
+    // A replacement token without an expiry leaves no notice at all.
+    github.options = {};
+    const again = await call(w.admin, "PUT", `${BASE}/${id}/credential`, {
+      credential: token(FAKE_PAT),
+    });
+    expect(again.status, again.text).toBe(200);
+    await runGitHealthPass(healthDeps(), new GitHostBackoff());
+    expect(await bellRows(w.team)).toEqual([]);
   });
 
   it("is deleted with the connection", async () => {

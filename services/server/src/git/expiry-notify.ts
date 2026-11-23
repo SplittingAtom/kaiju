@@ -35,8 +35,10 @@ import { GIT_EXPIRY_NOTICE_DAYS } from "./connection-view.js";
  * KOBE-819: the same claim also writes a bell notice (`git.connection.token_expiring`) to each
  * of those admins, in a savepoint of the claim's transaction (a failed write is logged and never
  * stops the claim or the emails). The unique index `notifications_git_expiry_uniq` (connection,
- * admin, expiry) keeps a repeated claim for the same expiry from doubling it. The bell needs no
- * mail relay, so a process without one claims and writes the notices and sends no email.
+ * admin, expiry) keeps a repeated claim for the same expiry from doubling it. A process without a
+ * mail relay (`mailer.disabled`: the scheduler) claims nothing, so the bell notice and the email
+ * stay with the one claim a process that can send makes. Replacing the credential deletes the
+ * connection's notices (`replaceGitCredential`).
  */
 export interface GitExpiryDeps {
   readonly db: KobeDb;
@@ -191,13 +193,13 @@ function claim(
 
 /** One pass: claims and sends every notice due; returns how many connections were noticed. */
 export async function notifyGitTokenExpiry(d: GitExpiryDeps): Promise<number> {
+  // A process without a mail relay leaves notices (email and bell) to one that has one: it claims
+  // nothing, so the claim that writes the bell notice is always the one that sends the email.
+  if (d.mailer.disabled) return 0;
   const now = d.now?.() ?? Date.now();
   const due = (await dueOf(d.db, new Date(now + GIT_EXPIRY_NOTICE_DAYS * DAY_MS))).flat();
   if (due.length === 0) return 0;
-  // KOBE-819: claims are made without a mail relay too (the bell needs none); only the emails
-  // wait for one.
-  const mail = !d.mailer.disabled;
-  const appName = mail ? await readAppName(d.db) : "";
+  const appName = await readAppName(d.db);
   const consoleUrl = `${d.publicUrl}${CONSOLE_PATHS.teamGit}`;
   let noticed = 0;
   for (const { teamName, connection } of due) {
@@ -210,7 +212,6 @@ export async function notifyGitTokenExpiry(d: GitExpiryDeps): Promise<number> {
     }
     if (emails === undefined) continue;
     noticed += 1;
-    if (!mail) continue;
     for (const to of emails) {
       try {
         await d.mailer.send(

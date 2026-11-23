@@ -34,10 +34,13 @@ DO NOTHING`. A person's retry that fails again is a new end (a new claim increme
   error is logged and rolls back only the notification. Tested with a trigger that refuses inserts.
 - **"Once per threshold"** = the email's single threshold (14 days, `GIT_EXPIRY_NOTICE_DAYS`), once
   per credential; one kind, the web says "expires on" or "expired on" (expiry vs. notice time).
-- \* **Expiry claims no longer need a mail relay.** Before, a process with `mailer.disabled` claimed
-  nothing ("leaves notices to one that has one"). The bell needs no relay, so it now claims and
-  writes the bell notice and sends no email. Owner please confirm: a Site without mail that turns
-  mail on later won't get emails for credentials already noticed in the bell.
+- **Mail relay (review M1).** `mailer.disabled` means "this process has no relay" (the
+  scheduler), not "the Site has no mail" (SMTP is mandatory). Such a process claims nothing, so
+  the one claim that writes the bell notices is always made by a process that sends the emails.
+  Test: a disabled mailer claims nothing; a sending process then claims bell and email together.
+- **Replaced credential (review M2).** `replaceGitCredential` deletes the connection's
+  `git.connection.token_expiring` notices (read or not) in the replacement's transaction; the
+  next claim notices a new token that also expires soon. Tested with a new expiry and with none.
 - **Text safety:** the row stores ids, the claim count and the failure _code_; names are joined at
   read time; the failure words are `FAILURE_MESSAGES[code]` (what the dialog shows). The stored
   `last_error_detail` (may quote the host) is never sent. No token, hint or host body.
@@ -46,6 +49,13 @@ DO NOTHING`. A person's retry that fails again is a new end (a new claim increme
   project row; the Repo row and its **Convert to repo…** are there.
 - Rows cascade with their conversion (i.e. the project) or connection; they never outlive what
   they name. Protocol contract changed inside this feature PR because the ticket requires it.
+
+## Review round 1
+
+M1 and M2 above. L1: the guide says the email names organization and host, the notification only
+the connection and date. L2: a nameless connection reads "the credential of a git connection".
+L3: `admin/git-organizations.md` gained a **Token expiry** heading; the member page links to it.
+L4 (project name read live, no project-role check) stays as decided; L5/L6 noted, no change.
 
 ## Doc evaluation
 

@@ -229,7 +229,7 @@ they are an active member of the Workspace.
 The Files panel also tells you when a conversion you are watching finished or failed. Workspace
 admins also see a notice when a git connection's credential expires within 14 days, with a link
 to the Git section to replace it (they get a notification in the bell and an email too, see
-[Token expiry](../admin/git-organizations.md)). Dismiss hides a Files panel notice until you
+[Token expiry](../admin/git-organizations.md#token-expiry)). Dismiss hides a Files panel notice until you
 reload; notifications in the bell stay until they are read and removed like any other.
 
 ## Related
