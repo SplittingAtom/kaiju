@@ -78,7 +78,8 @@ export const GIT_CONVERSION_REFUSALS = [
   "existing_repository_admin_only",
   "file_rejected_by_host",
   "project_too_large",
-  "commit_too_large",
+  /** A file is larger than git hosts accept (100 MiB, GitHub's hard limit). */
+  "file_too_large",
   "git_unavailable",
 ] as const;
 export type GitConversionRefusal = (typeof GIT_CONVERSION_REFUSALS)[number];
@@ -162,9 +163,9 @@ export type GitConversionAbandoned = z.infer<typeof gitConversionAbandonedSchema
 export const gitConversionRefusalSchema = z.strictObject({
   code: z.enum(GIT_CONVERSION_REFUSALS),
   message: z.string(),
-  /** `file_rejected_by_host`: the first file; `commit_too_large`: the commit's number. */
+  /** `file_rejected_by_host` / `file_too_large`: the first file. */
   path: z.string().optional(),
-  /** `file_rejected_by_host`: every offending path (up to 20) and the first commit that has it. */
+  /** `file_rejected_by_host` / `file_too_large`: every offending path (up to 20) and the first commit that has it. */
   paths: z
     .array(z.strictObject({ path: z.string(), seq: z.number().int().positive().nullable() }))
     .max(20)
@@ -172,7 +173,7 @@ export const gitConversionRefusalSchema = z.strictObject({
   seq: z.number().int().positive().optional(),
   /** `unsaved_checkouts`: how many working copies hold changes. */
   checkouts: z.number().int().positive().optional(),
-  /** `project_too_large` / `commit_too_large`: the limit in bytes, and the size found. */
+  /** `project_too_large` / `file_too_large`: the limit in bytes (and the project's size). */
   limit_bytes: z.number().int().positive().optional(),
   size_bytes: z.number().int().nonnegative().optional(),
   conversion: gitConversionViewSchema.optional(),
