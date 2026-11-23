@@ -25,6 +25,7 @@ import { UploadMeter, UploadTooLargeError } from "../uploads/meter.js";
 import { clashesInTree, fitsMount } from "./paths.js";
 import { checkLimitsAfterWrite, DEFAULT_TEAM_MAX_OBJECTS, OverLimit } from "./storage.js";
 import { commitFiles, queueProjectBlobs } from "./tree.js";
+import { projectWriteBlock } from "./repo-state.js";
 
 /**
  * Project files (KOBE-162, D23): the project's own copy of each file lives in object storage at
@@ -45,7 +46,10 @@ export type ProjectFileFailure =
   | "object_budget"
   | "project_full"
   | "archived"
-  | "storage_failed";
+  | "storage_failed"
+  /** KOBE-765: a Repo (G17) or a project being converted takes no file changes from Kobe. */
+  | "repo"
+  | "converting";
 
 export type FileOutcome =
   | { readonly ok: true; readonly file: ProjectFile }
@@ -200,6 +204,8 @@ export async function insertProjectFile(
     .for("update");
   if (!project) throw new Refused("storage_failed");
   if (project.archivedAt !== null) throw new Refused("archived");
+  const block = await projectWriteBlock(tx, teamId, projectId);
+  if (block !== null) throw new Refused(block);
   if (!fitsMount(project.slug, file.path)) throw new Refused("path_too_long");
   const held = new Set(
     (

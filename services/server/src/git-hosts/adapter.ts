@@ -45,6 +45,12 @@ export interface GitRepository {
   readonly archived: boolean;
   /** True when the repository has no commits (Convert to repo may push into it, G16). */
   readonly empty: boolean;
+  /**
+   * The repository's description as the host reports it (at most 512 characters; null when none).
+   * Convert to repo writes a marker into it, so an interrupted attempt recognises the repository
+   * it created (KOBE-765). Untrusted host text: never shown as markup or passed to a model.
+   */
+  readonly description?: string | null;
   readonly webUrl: string;
   /** The smart-HTTP clone URL, built by {@link cloneUrlFor} (`<base>/<org>/<name>.git`). */
   readonly cloneUrl: string;

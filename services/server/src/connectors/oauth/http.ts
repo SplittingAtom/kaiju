@@ -49,9 +49,10 @@ export const DEFAULT_TIMEOUT_MS = 10_000;
  * socket's own DNS lookup resolves the host, checks every address against the connector address
  * policy and hands the socket one checked address. The URL keeps its hostname, so Host and TLS
  * SNI/certificate checks are unchanged. A name that re-resolves to a private address after the
- * registration-time check (DNS rebinding) is refused here.
+ * registration-time check (DNS rebinding) is refused here. Also the git smart-HTTP client's lookup
+ * (KOBE-765, `git-hosts/git-wire.ts`).
  */
-function pinnedLookup(policy: ConnectorUrlPolicy): net.LookupFunction {
+export function pinnedLookup(policy: ConnectorUrlPolicy): net.LookupFunction {
   const addresses = connectorAddresses(policy);
   return (hostname, options, callback) => {
     const done = (found: readonly string[]) => {

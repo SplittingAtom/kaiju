@@ -26,6 +26,7 @@ interface Repo {
   empty: boolean;
   defaultBranch: string;
   issues: number;
+  description: string;
 }
 
 const ALL_SCOPES = [
@@ -130,7 +131,15 @@ export class FakeGitea implements GitHostContractFake {
   }
 
   private addRepo(owner: string, name: string, empty: boolean): Repo {
-    const repo: Repo = { id: this.nextId++, name, owner, empty, defaultBranch: "main", issues: 0 };
+    const repo: Repo = {
+      id: this.nextId++,
+      name,
+      owner,
+      empty,
+      defaultBranch: "main",
+      issues: 0,
+      description: "",
+    };
     this.repos.set(`${owner}/${name}`, repo);
     return repo;
   }
@@ -146,6 +155,7 @@ export class FakeGitea implements GitHostContractFake {
       private: true,
       empty: r.empty,
       archived: false,
+      description: r.description,
       html_url: `${this.baseUrl}/${full}`,
       clone_url: `${this.baseUrl}/${full}.git`,
       permissions: { admin: this.isOrgOwner, push: this.canWrite, pull: true },
@@ -300,7 +310,9 @@ export class FakeGitea implements GitHostContractFake {
       return this.send(res, 409, { message: "The repository with the same name already exists." });
     }
     if (b.private !== true) return this.send(res, 422, { message: "fake wants private" });
-    return this.send(res, 201, this.repoJson(this.addRepo(this.organization, name, true)));
+    const repo = this.addRepo(this.organization, name, true);
+    repo.description = typeof b.description === "string" ? b.description : "";
+    return this.send(res, 201, this.repoJson(repo));
   }
 
   private async repoRoute(

@@ -28,6 +28,7 @@ import {
   type ProjectContext,
   type ProjectKit,
 } from "./shared.js";
+import { projectWriteBlock } from "../../projects/repo-state.js";
 
 /** Project files (KOBE-162): list, upload, Add to project (KOBE-585), delete. */
 export function projectFileRoutes(kit: ProjectKit): Hono<{ Variables: TeamVariables }> {
@@ -143,6 +144,9 @@ export function projectFileRoutes(kit: ProjectKit): Hono<{ Variables: TeamVariab
     const res = await withProject(c, "edit", async (tx, access) => {
       // Archive freezes the project's files (P2-41), as it does uploads, commits and reverts.
       if (access.project.archivedAt !== null) return failure(c, "archived");
+      // A Repo, or a project being converted, takes no file changes from Kobe (KOBE-765).
+      const block = await projectWriteBlock(tx, access.project.teamId, access.project.id);
+      if (block !== null) return fileFailure(c, block);
       try {
         // A savepoint: the hold guard (KH001) refuses the delete without ending the transaction.
         key = await tx.transaction((sp) =>

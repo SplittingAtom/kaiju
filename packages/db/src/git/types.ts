@@ -201,3 +201,28 @@ export interface GitRepositoryRecord {
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
+
+/**
+ * Convert to repo (KOBE-765, G16): a conversion's status. `running` while the job works (or waits
+ * to be resumed after a restart); `failed` after a step failed, until a person retries or
+ * abandons it; `completed` once the project is a Repo; `abandoned` when a person gave up on a
+ * failed attempt (the project stays an ordinary project). While a conversion is `running` or
+ * `failed` the project takes no Kobe commits, and it has at most one such conversion.
+ */
+export const GIT_CONVERSION_STATUS_VALUES = [
+  "running",
+  "failed",
+  "completed",
+  "abandoned",
+] as const;
+export type GitConversionStatus = (typeof GIT_CONVERSION_STATUS_VALUES)[number];
+/** The statuses that hold the project (one per project; Kobe commits refused). */
+export const GIT_CONVERSION_ACTIVE_STATUSES = ["running", "failed"] as const;
+
+/**
+ * The next step of a conversion (G16): `create` the repository on the host (or adopt the chosen
+ * empty one), `push` the history, `finish` (verify the host's branch, then mark the project a Repo
+ * and link it in one transaction), `done`.
+ */
+export const GIT_CONVERSION_STEP_VALUES = ["create", "push", "finish", "done"] as const;
+export type GitConversionStep = (typeof GIT_CONVERSION_STEP_VALUES)[number];

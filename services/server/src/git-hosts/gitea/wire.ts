@@ -93,6 +93,7 @@ const repository = z.object({
   private: z.boolean(),
   empty: z.boolean().optional(),
   archived: z.boolean().optional(),
+  description: z.string().nullish(),
   html_url: url,
   // `clone_url` is not read: the clone URL is built from the base URL (review M2).
   permissions: z
@@ -137,6 +138,10 @@ export function asRepository(
       defaultBranch: empty ? null : r.default_branch || null,
       archived: r.archived === true,
       empty,
+      description:
+        typeof r.description === "string" && r.description !== ""
+          ? r.description.slice(0, 512)
+          : null,
       webUrl: safeWebUrl(r.html_url, webRoot),
       cloneUrl: cloneUrlFor(webRoot, organization, r.name),
     },

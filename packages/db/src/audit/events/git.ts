@@ -1,10 +1,12 @@
 import { z } from "zod";
 import {
   GIT_ACCESS_LEVEL_VALUES,
+  GIT_CONVERSION_STEP_VALUES,
   GIT_CREDENTIAL_KIND_VALUES,
   GIT_ORGANIZATION_MAX,
   GIT_ORGANIZATION_PATTERN,
   GIT_PROVIDER_VALUES,
+  GIT_REPO_VISIBILITY_VALUES,
 } from "../../git/types.js";
 import { count, event, id, reasonCode, type AuditEventDef } from "./fragments.js";
 
@@ -35,6 +37,11 @@ const settingField = z.enum([
   "direct_commits",
   "agent_ids",
 ]);
+
+/** A repository's id on its host (G20), as `git_repositories.host_repo_id` stores it. */
+const hostRepoId = z.string().regex(/^[A-Za-z0-9_=-]{1,64}$/);
+const gitSha = z.string().regex(/^([0-9a-f]{40}|[0-9a-f]{64})$/);
+const conversionRef = { conversionId: id, projectId: id };
 
 /** The commit author email choice (`teams.settings.git_commit_email`, KOBE-764). */
 const commitEmail = z.enum(["member", "noreply"]);
@@ -104,5 +111,55 @@ export const GIT_EVENTS = {
     setting: z.literal("commit_email"),
     value: commitEmail,
     previous: commitEmail,
+  }),
+
+  // ── Convert to repo (KOBE-765, spec workspace-git G16): ids, counts and codes; never the
+  // project's name, paths, commit messages or the repository's name ──
+  /** The project's owner or a Workspace admin started converting the project to a Repo. */
+  "git.project.conversion_requested": event("team", {
+    ...conversionRef,
+    connectionId: id,
+    provider,
+    host: gitHost,
+    organization,
+    visibility: z.enum(GIT_REPO_VISIBILITY_VALUES),
+    carryHistory: z.boolean(),
+    useExisting: z.boolean(),
+  }),
+  /**
+   * The history is on the host and the project is now a Repo, linked to `repositoryId` (system:
+   * the job finished it; `actor` stays the person who asked).
+   */
+  "git.project.converted": event("team", {
+    ...conversionRef,
+    connectionId: id.optional(),
+    repositoryId: id,
+    hostRepoId,
+    commits: count,
+    headSha: gitSha,
+    attempts: count,
+  }),
+  /** A step failed; the project stays an ordinary project until a retry or an abandon. */
+  "git.project.conversion_failed": event("team", {
+    ...conversionRef,
+    step: z.enum(GIT_CONVERSION_STEP_VALUES),
+    failure: reasonCode,
+    attempts: count,
+    repositoryCreated: z.boolean(),
+  }),
+  /** The project's owner or a Workspace admin retried a failed conversion (it resumes at `step`). */
+  "git.project.conversion_retried": event("team", {
+    ...conversionRef,
+    step: z.enum(GIT_CONVERSION_STEP_VALUES),
+  }),
+  /**
+   * The project's owner or a Workspace admin gave up on a failed conversion. A repository the
+   * host created for it stays there (`leftOnHost`, its record `repositoryId`); Kobe deletes
+   * nothing on a git host (§9).
+   */
+  "git.project.conversion_abandoned": event("team", {
+    ...conversionRef,
+    leftOnHost: z.boolean(),
+    repositoryId: id.optional(),
   }),
 } as const satisfies Record<string, AuditEventDef>;

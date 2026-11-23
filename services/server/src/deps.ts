@@ -675,6 +675,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     gitHostNet: {
       policy: connectorUrlPolicy,
       ...(options.gitHostRequest ? { request: options.gitHostRequest } : {}),
+      ...(options.gitWireSend ? { wire: options.gitWireSend } : {}),
     },
     connectorProbe: options.connectorProbe ?? NO_PROBE,
     appCaller: options.appCaller ?? NO_APP_CALLER,

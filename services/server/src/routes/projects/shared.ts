@@ -10,6 +10,10 @@ import type { WorkspaceSync } from "../../workspace-sync/service.js";
 import { type ProjectFileFailure } from "../../projects/files.js";
 import { type ProjectFailure } from "../../projects/repository.js";
 import { param } from "../../http/request.js";
+import {
+  PROJECT_WRITE_BLOCK_CODES,
+  PROJECT_WRITE_BLOCK_MESSAGES,
+} from "../../projects/repo-state.js";
 
 export type ProjectContext = Context<{ Variables: TeamVariables }>;
 
@@ -75,6 +79,8 @@ export const FILE_ERRORS = {
   project_full: [507, "quota_exceeded", "The project already holds the most files it can."],
   archived: [409, "archived", "The project is archived."],
   storage_failed: [503, "storage_unavailable", "File storage is not available. Try again."],
+  repo: [409, PROJECT_WRITE_BLOCK_CODES.repo, PROJECT_WRITE_BLOCK_MESSAGES.repo],
+  converting: [409, PROJECT_WRITE_BLOCK_CODES.converting, PROJECT_WRITE_BLOCK_MESSAGES.converting],
 } as const satisfies Record<ProjectFileFailure, readonly [number, string, string]>;
 
 /** Add to project (KOBE-585): the refusals before the copy; the rest are {@link FILE_ERRORS}. */

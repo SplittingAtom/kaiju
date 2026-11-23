@@ -1,6 +1,7 @@
 import { RedirectRefusedError, rawRequest } from "../connectors/oauth/http.js";
 import { checkConnectorUrl, type ConnectorUrlPolicy } from "../connectors/url-policy.js";
 import { GitHostError } from "./adapter.js";
+import type { GitWireSend } from "./git-wire.js";
 import { assertGitHostTarget, assertRequestHost, type GitHostTarget } from "./target.js";
 
 /**
@@ -19,6 +20,11 @@ export interface GitHostNet {
   readonly maxResponseBytes?: number;
   /** The pinned request (tests may answer here instead of the network); default `rawRequest`. */
   readonly request?: typeof rawRequest;
+  /**
+   * Git smart-HTTP from the server (Convert to repo, KOBE-765; `git-wire.ts`): tests may answer
+   * here after the checks; default the pinned `sendGitWire`.
+   */
+  readonly wire?: GitWireSend;
 }
 
 export const GIT_HOST_TIMEOUT_MS = 15_000;

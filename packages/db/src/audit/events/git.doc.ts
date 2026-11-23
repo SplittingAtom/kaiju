@@ -33,6 +33,29 @@ export const GIT_EVENT_DOCS = {
     fields: "`connectionId`, `fields`, `accessLevel?`, `previousAccessLevel?`",
     when: "A Workspace admin changed a git connection's settings (access level, repository defaults, push limit, direct commits, agents, display name)",
   },
+  "git.project.conversion_abandoned": {
+    fields: "`conversionId`, `projectId`, `leftOnHost`, `repositoryId?`",
+    when: "The project's owner or a Workspace admin abandoned a failed Convert to repo; the project stays an ordinary project and a repository created for it stays on the host (`leftOnHost`), listed in the Git section (KOBE-765)",
+  },
+  "git.project.conversion_failed": {
+    fields:
+      "`conversionId`, `projectId`, `step` (`create`, `push`, `finish`), `failure`, `attempts`, `repositoryCreated`",
+    when: "A Convert to repo step failed (system); the project stays an ordinary project until it is retried or abandoned. Codes only, never the host's answer",
+  },
+  "git.project.conversion_requested": {
+    fields:
+      "`conversionId`, `projectId`, `connectionId`, `provider`, `host`, `organization`, `visibility`, `carryHistory`, `useExisting`",
+    when: "The project's owner or a Workspace admin started converting a project to a Repo (KOBE-765). Never the project's or repository's name",
+  },
+  "git.project.conversion_retried": {
+    fields: "`conversionId`, `projectId`, `step`",
+    when: "The project's owner or a Workspace admin retried a failed Convert to repo; it resumes at `step`",
+  },
+  "git.project.converted": {
+    fields:
+      "`conversionId`, `projectId`, `connectionId?`, `repositoryId`, `hostRepoId`, `commits`, `headSha`, `attempts`",
+    when: "Convert to repo finished (system, on behalf of the requester): the project's commits are on the host's default branch and the project is now a Repo linked to the repository record",
+  },
   "git.settings.updated": {
     fields: "`setting` (`commit_email`), `value`, `previous` (`member` or `noreply`)",
     when: "A Workspace admin changed the Workspace's git settings: the author email of commits made in sandboxes, the member's Kobe email or the no-reply form (KOBE-761)",

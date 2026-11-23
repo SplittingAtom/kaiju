@@ -1,0 +1,427 @@
+import {
+  decideGitHost,
+  gitConversions,
+  readGitConnection,
+  readGitSiteSettings,
+  sql,
+  withTeam,
+  type GitConnectionRecord,
+  type GitRepoVisibility,
+  type KobeTx,
+} from "@kobe/db";
+import type {
+  GitConversionAbandoned,
+  GitConversionStartBody,
+  GitConversionView,
+} from "@kobe/protocol";
+import { recordAudit } from "../../audit/record.js";
+import { assertRepositoryName } from "../../git-hosts/adapter.js";
+import { loadAccess } from "../../projects/access.js";
+import { projectCheckouts } from "../../projects/checkouts.js";
+import { hitRateLimit } from "../../rate-limit.js";
+import {
+  GIT_CONVERSION_MAX_BYTES,
+  GIT_CONVERSION_MAX_PUSH_BYTES,
+  GIT_CONVERSION_RATE,
+  GIT_HOST_MAX_FILE_BYTES,
+} from "./limits.js";
+import { buildConversionPlan } from "./plan.js";
+import { refusalMessage, REFUSAL_STATUS, type StartRefusal } from "./refusals.js";
+import type { ConversionDeps } from "./runner.js";
+import { activeConversion, conversionView, latestConversion, type ConversionRow } from "./store.js";
+
+/**
+ * Starting, retrying and abandoning a conversion (KOBE-765, G16, GQ13), for the routes. The
+ * project's owner and Workspace admins (`manage`) may do all three; every member who views the
+ * project may read the attempt. A start checks everything Kobe can know without the host (G16:
+ * "refused ... and the dialog says which"), freezes the commit plan and inserts the attempt under
+ * the project row lock, the lock every Kobe write takes, so no commit slips in between: from then
+ * on the project takes no Kobe writes until the attempt completes (a Repo) or is abandoned.
+ */
+export type Viewer = { readonly teamId: string; readonly userId: string };
+
+export type Outcome<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly status: number; readonly body: Record<string, unknown> };
+
+const refuse = (r: StartRefusal, conversion?: ConversionRow): Outcome<never> => ({
+  ok: false,
+  status: REFUSAL_STATUS[r.code],
+  body: {
+    code: r.code,
+    message: refusalMessage(r),
+    ...(r.path === undefined ? {} : { path: r.path }),
+    ...(r.seq === undefined ? {} : { seq: r.seq }),
+    ...(r.checkouts === undefined ? {} : { checkouts: r.checkouts }),
+    ...(r.limitBytes === undefined ? {} : { limit_bytes: r.limitBytes }),
+    ...(conversion ? { conversion: conversionView(conversion) } : {}),
+  },
+});
+const plain = (status: number, code: string, message: string): Outcome<never> => ({
+  ok: false,
+  status,
+  body: { code, message },
+});
+const NOT_FOUND = plain(404, "not_found", "No project with that id is available to you.");
+const FORBIDDEN = plain(
+  403,
+  "forbidden",
+  "Only the project's owner and Workspace admins may convert it to a Repo.",
+);
+const RATE_LIMITED = plain(
+  429,
+  "rate_limited",
+  "Too many conversion attempts. Try again in an hour.",
+);
+
+/** HFS and NTFS spell `.git` in ways git's fsck still refuses (`hasDotgit`). */
+const IGNORABLE = new RegExp("[\\u200c-\\u200f\\u202a-\\u202e\\u206a-\\u206f\\ufeff]", "gu");
+const DOTGIT_SQL = String.raw`(^|/)(\.git[. ]*|git~1)(/|$)`;
+
+/** Whether a host's fsck would refuse a path (a `.git` folder or file in any spelling). */
+export function hostRejectsPath(path: string): boolean {
+  return path
+    .split("/")
+    .map((p) => p.replace(IGNORABLE, "").toLowerCase())
+    .some((p) => p === "git~1" || /^\.git[. ]*$/.test(p));
+}
+
+/** The repository name the dialog proposes: the connection's prefix + the project's slug (G16). */
+export function defaultRepositoryName(prefix: string, slug: string): string {
+  return `${prefix}${slug}`;
+}
+
+async function underHold(tx: KobeTx, teamId: string): Promise<boolean> {
+  const res = await tx.execute<{ held: boolean }>(
+    sql`SELECT public.memory_legal_hold_covers(${teamId}, NULL) AS held`,
+  );
+  return res.rows[0]?.held === true;
+}
+
+/** A file the host would reject, among the files the conversion carries. */
+async function rejectedFile(
+  tx: KobeTx,
+  teamId: string,
+  projectId: string,
+  history: boolean,
+  maxFile: number | undefined,
+): Promise<string | undefined> {
+  const tooBig = maxFile === undefined ? sql`false` : sql`size_bytes > ${maxFile}`;
+  const clean = sql`regexp_replace(lower(path), ${IGNORABLE.source}, '', 'g')`;
+  const res = history
+    ? await tx.execute<{ path: string }>(sql`
+        SELECT e.path FROM project_tree_entries e
+          JOIN project_commits c ON c.team_id = e.team_id AND c.id = e.commit_id
+         WHERE e.team_id = ${teamId} AND c.project_id = ${projectId}
+           AND (regexp_replace(lower(e.path), ${IGNORABLE.source}, '', 'g') ~ ${DOTGIT_SQL}
+                OR ${maxFile === undefined ? sql`false` : sql`e.size_bytes > ${maxFile}`})
+         LIMIT 1`)
+    : await tx.execute<{ path: string }>(sql`
+        SELECT path FROM project_files
+         WHERE team_id = ${teamId} AND project_id = ${projectId}
+           AND (${clean} ~ ${DOTGIT_SQL} OR ${tooBig})
+         LIMIT 1`);
+  return res.rows[0]?.path;
+}
+
+/** New content per git commit (bytes no earlier commit had), oldest first. */
+async function contentPerCommit(
+  tx: KobeTx,
+  teamId: string,
+  projectId: string,
+  history: boolean,
+): Promise<{ seq: number | null; bytes: number }[]> {
+  if (!history) {
+    const res = await tx.execute<{ bytes: string | null }>(sql`
+      SELECT sum(size_bytes) AS bytes FROM (
+        SELECT DISTINCT ON (sha256) sha256, size_bytes FROM project_files
+         WHERE team_id = ${teamId} AND project_id = ${projectId} ORDER BY sha256) f`);
+    return [{ seq: null, bytes: Number(res.rows[0]?.bytes ?? 0) }];
+  }
+  const res = await tx.execute<{ seq: number; bytes: string }>(sql`
+    SELECT seq, sum(size_bytes) AS bytes FROM (
+      SELECT DISTINCT ON (e.sha256) e.sha256, e.size_bytes, c.seq FROM project_tree_entries e
+        JOIN project_commits c ON c.team_id = e.team_id AND c.id = e.commit_id
+       WHERE e.team_id = ${teamId} AND c.project_id = ${projectId}
+       ORDER BY e.sha256, c.seq) f
+     GROUP BY seq ORDER BY seq`);
+  return res.rows.map((r) => ({ seq: Number(r.seq), bytes: Number(r.bytes) }));
+}
+
+/** The checks against the stored project and connection (no host call); undefined when fine. */
+async function check(
+  tx: KobeTx,
+  input: {
+    readonly teamId: string;
+    readonly projectId: string;
+    readonly connection: GitConnectionRecord;
+    readonly history: boolean;
+    readonly useExisting: boolean;
+  },
+): Promise<StartRefusal | undefined> {
+  const { teamId, projectId, connection, history } = input;
+  if (connection.accessLevel !== "read_write") return { code: "connection_read_only" };
+  if (!input.useExisting && connection.capabilities.create === "no") {
+    return { code: "cannot_create_repositories" };
+  }
+  if (await underHold(tx, teamId)) return { code: "legal_hold" };
+  const checkouts = (await projectCheckouts(tx, teamId, projectId)).filter(
+    (c) => c.changed_files > 0,
+  ).length;
+  if (checkouts > 0) return { code: "unsaved_checkouts", checkouts };
+  const path = await rejectedFile(
+    tx,
+    teamId,
+    projectId,
+    history,
+    GIT_HOST_MAX_FILE_BYTES[connection.provider],
+  );
+  if (path !== undefined) return { code: "file_rejected_by_host", path };
+  const sizes = await contentPerCommit(tx, teamId, projectId, history);
+  const limit = Math.min(GIT_CONVERSION_MAX_BYTES, connection.pushLimitBytes);
+  if (sizes.reduce((n, s) => n + s.bytes, 0) > limit) {
+    return { code: "project_too_large", limitBytes: limit };
+  }
+  const big = sizes.find((s) => s.bytes > GIT_CONVERSION_MAX_PUSH_BYTES);
+  if (big) {
+    return {
+      code: "commit_too_large",
+      limitBytes: GIT_CONVERSION_MAX_PUSH_BYTES,
+      ...(big.seq === null ? {} : { seq: big.seq }),
+    };
+  }
+  return undefined;
+}
+
+function visibilityOf(
+  connection: GitConnectionRecord,
+  asked: GitRepoVisibility | undefined,
+): GitRepoVisibility | undefined {
+  const wanted = asked ?? connection.repoVisibility;
+  if (wanted === "private") return "private";
+  // G10: internal only where the host has it (GitHub) and the admin allowed it.
+  return connection.provider === "github" && connection.repoVisibility === "internal"
+    ? "internal"
+    : undefined;
+}
+
+/** `POST /v1/projects/{id}/repo-conversion`: checks, freezes the plan, inserts the attempt. */
+export async function startConversion(
+  deps: Pick<ConversionDeps, "db" | "envelope" | "blobs" | "publicUrl">,
+  viewer: Viewer,
+  projectId: string,
+  body: GitConversionStartBody,
+): Promise<Outcome<GitConversionView>> {
+  if (!(await hitRateLimit(deps.db, `git-conversions:${viewer.userId}`, GIT_CONVERSION_RATE))) {
+    return RATE_LIMITED;
+  }
+  const settings = await readGitSiteSettings(deps.db);
+  const siteHost = new URL(deps.publicUrl).hostname;
+  return withTeam(deps.db, viewer.teamId, async (tx): Promise<Outcome<GitConversionView>> => {
+    const access = await loadAccess(tx, viewer, projectId, { lock: true });
+    if (!access) return NOT_FOUND;
+    if (!access.can.manage) return FORBIDDEN;
+    const { project } = access;
+    if (project.kind === "repo") return refuse({ code: "already_repo" });
+    const active = await activeConversion(tx, viewer.teamId, projectId);
+    if (active) return refuse({ code: "conversion_in_progress" }, active);
+    if (project.archivedAt !== null) return refuse({ code: "archived" });
+    if (!deps.envelope || !deps.blobs) return refuse({ code: "git_unavailable" });
+    const connection = await readGitConnection(tx, viewer.teamId, body.connection_id);
+    if (!connection) return refuse({ code: "connection_not_found" });
+    const decision = decideGitHost(settings, connection.baseUrl);
+    if (!decision.ok) {
+      return refuse({
+        code: decision.code === "git_disabled" ? "git_disabled" : "host_not_allowed",
+      });
+    }
+    const name =
+      body.repository_name ?? defaultRepositoryName(connection.repoNamePrefix, project.slug);
+    try {
+      assertRepositoryName(name);
+    } catch {
+      return refuse({ code: "invalid_repository_name" });
+    }
+    const visibility = visibilityOf(connection, body.visibility);
+    if (visibility === undefined) return refuse({ code: "internal_not_offered" });
+    const history = body.carry_history ?? true;
+    const useExisting = body.use_existing ?? false;
+    const refusal = await check(tx, {
+      teamId: viewer.teamId,
+      projectId,
+      connection,
+      history,
+      useExisting,
+    });
+    if (refusal) return refuse(refusal);
+    const requestedAt = new Date();
+    const plan = await buildConversionPlan(tx, {
+      teamId: viewer.teamId,
+      projectId,
+      carryHistory: history,
+      branch: connection.defaultBranch,
+      requestedBy: viewer.userId,
+      requestedAt,
+      siteHost,
+    });
+    const [row] = await tx
+      .insert(gitConversions)
+      .values({
+        teamId: viewer.teamId,
+        projectId,
+        connectionId: connection.id,
+        requestedBy: viewer.userId,
+        provider: connection.provider,
+        baseUrl: connection.baseUrl,
+        organization: connection.organization,
+        repositoryName: name,
+        visibility,
+        carryHistory: history,
+        useExisting,
+        defaultBranch: connection.defaultBranch,
+        plan,
+        commitsTotal: plan.commits.length,
+        createdAt: requestedAt,
+      })
+      .returning();
+    if (!row) throw new Error("git_conversions insert returned no row");
+    await recordAudit(tx, {
+      action: "git.project.conversion_requested",
+      actor: { kind: "user", id: viewer.userId },
+      teamId: viewer.teamId,
+      target: {
+        conversionId: row.id,
+        projectId,
+        connectionId: connection.id,
+        provider: connection.provider,
+        host: decision.host,
+        organization: connection.organization,
+        visibility,
+        carryHistory: history,
+        useExisting,
+      },
+    });
+    return { ok: true, value: conversionView(row) };
+  });
+}
+
+/** `GET /v1/projects/{id}/repo-conversion`: the latest attempt (any member who views the project). */
+export async function readProjectConversion(
+  deps: Pick<ConversionDeps, "db">,
+  viewer: Viewer,
+  projectId: string,
+): Promise<Outcome<GitConversionView | null>> {
+  return withTeam(deps.db, viewer.teamId, async (tx) => {
+    const access = await loadAccess(tx, viewer, projectId);
+    if (!access) return NOT_FOUND;
+    const row = await latestConversion(tx, viewer.teamId, projectId);
+    return { ok: true, value: row ? conversionView(row) : null };
+  });
+}
+
+const NOT_FAILED = (row: ConversionRow | undefined): Outcome<never> =>
+  row
+    ? {
+        ok: false,
+        status: 409,
+        body: {
+          code: "conversion_running",
+          message:
+            "The conversion is still running; it can be retried or abandoned once it failed.",
+          conversion: conversionView(row),
+        },
+      }
+    : plain(404, "conversion_not_found", "This project has no conversion to retry or abandon.");
+
+/** Retry: a failed attempt runs again from its step. */
+export async function retryConversion(
+  deps: Pick<ConversionDeps, "db">,
+  viewer: Viewer,
+  projectId: string,
+): Promise<Outcome<GitConversionView>> {
+  if (!(await hitRateLimit(deps.db, `git-conversions:${viewer.userId}`, GIT_CONVERSION_RATE))) {
+    return RATE_LIMITED;
+  }
+  return withTeam(deps.db, viewer.teamId, async (tx): Promise<Outcome<GitConversionView>> => {
+    const access = await loadAccess(tx, viewer, projectId, { lock: true });
+    if (!access) return NOT_FOUND;
+    if (!access.can.manage) return FORBIDDEN;
+    const row = await activeConversion(tx, viewer.teamId, projectId);
+    if (row?.status !== "failed") return NOT_FAILED(row);
+    if (await underHold(tx, viewer.teamId)) return refuse({ code: "legal_hold" }, row);
+    const [again] = await tx
+      .update(gitConversions)
+      .set({
+        status: "running",
+        lastError: null,
+        lastErrorDetail: null,
+        leaseOwner: null,
+        leaseUntil: null,
+        updatedAt: new Date(),
+      })
+      .where(sql`${gitConversions.teamId} = ${viewer.teamId} AND ${gitConversions.id} = ${row.id}`)
+      .returning();
+    if (!again) throw new Error("git_conversions update returned no row");
+    await recordAudit(tx, {
+      action: "git.project.conversion_retried",
+      actor: { kind: "user", id: viewer.userId },
+      teamId: viewer.teamId,
+      target: { conversionId: row.id, projectId, step: row.step },
+    });
+    return { ok: true, value: conversionView(again) };
+  });
+}
+
+/**
+ * Abandon: a failed attempt ends; the project stays an ordinary project and takes commits again.
+ * A repository the host created for it stays on the host (Kobe deletes nothing there, §9): the
+ * answer names it, and it stays listed in the Git section's repositories.
+ */
+export async function abandonConversion(
+  deps: Pick<ConversionDeps, "db">,
+  viewer: Viewer,
+  projectId: string,
+): Promise<Outcome<GitConversionAbandoned>> {
+  return withTeam(deps.db, viewer.teamId, async (tx): Promise<Outcome<GitConversionAbandoned>> => {
+    const access = await loadAccess(tx, viewer, projectId, { lock: true });
+    if (!access) return NOT_FOUND;
+    if (!access.can.manage) return FORBIDDEN;
+    const row = await activeConversion(tx, viewer.teamId, projectId);
+    if (row?.status !== "failed") return NOT_FAILED(row);
+    const now = new Date();
+    const [ended] = await tx
+      .update(gitConversions)
+      .set({
+        status: "abandoned",
+        finishedAt: now,
+        finishedBy: viewer.userId,
+        leaseOwner: null,
+        leaseUntil: null,
+        updatedAt: now,
+      })
+      .where(sql`${gitConversions.teamId} = ${viewer.teamId} AND ${gitConversions.id} = ${row.id}`)
+      .returning();
+    if (!ended) throw new Error("git_conversions update returned no row");
+    const leftOnHost = row.hostRepoId !== null && !row.useExisting;
+    await recordAudit(tx, {
+      action: "git.project.conversion_abandoned",
+      actor: { kind: "user", id: viewer.userId },
+      teamId: viewer.teamId,
+      target: {
+        conversionId: row.id,
+        projectId,
+        leftOnHost,
+        ...(row.repositoryId === null ? {} : { repositoryId: row.repositoryId }),
+      },
+    });
+    return {
+      ok: true,
+      value: {
+        conversion: conversionView(ended),
+        left_on_host: leftOnHost
+          ? { full_name: `${row.organization}/${row.repositoryName}`, base_url: row.baseUrl }
+          : null,
+      },
+    };
+  });
+}

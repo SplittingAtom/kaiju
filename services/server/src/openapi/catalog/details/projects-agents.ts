@@ -15,6 +15,10 @@ import {
   transferOwnerResponseSchema,
   updateProjectMemberRequestSchema,
   updateProjectRequestSchema,
+  gitConversionAbandonedSchema,
+  gitConversionAnswerSchema,
+  gitConversionStartBodySchema,
+  gitConversionStartedSchema,
 } from "@kobe/protocol";
 import { inventoryQuerySchema } from "../../../agents/inventory.js";
 import { runnableQuerySchema } from "../../../agents/runnable.js";
@@ -62,7 +66,37 @@ const Project = named("Project", projectSchema);
 const ProjectFile = named("ProjectFile", projectFileSchema);
 const ProjectMember = named("ProjectMember", projectMemberSchema);
 
+const Conversion = named("GitConversionStarted", gitConversionStartedSchema);
+const conversionRefusals =
+  "A refused start names its reason (`code`, `message`, and `path`, `seq`, `checkouts` or `limit_bytes` where they apply): 409 `already_repo`, `conversion_in_progress`, `archived`, `legal_hold`, `unsaved_checkouts`, `connection_read_only`; 403 `git_disabled`, `host_not_allowed`; 404 `connection_not_found`; 422 `cannot_create_repositories`, `internal_not_offered`, `invalid_repository_name`, `file_rejected_by_host`, `project_too_large`, `commit_too_large`; 503 `git_unavailable`.";
+
 export const projectsDetails: Readonly<Record<string, CatalogDetail>> = {
+  "get /v1/projects/{id}/repo-conversion": {
+    response: named("GitConversionAnswer", gitConversionAnswerSchema),
+    errors: ["404"],
+  },
+  "post /v1/projects/{id}/repo-conversion": {
+    body: named("GitConversionStartBody", gitConversionStartBodySchema),
+    status: 202,
+    response: Conversion,
+    responseDescription: `The attempt, running. ${conversionRefusals}`,
+    errors: ["403", "404", "409", "413", "422", "429", "503"],
+  },
+  "post /v1/projects/{id}/repo-conversion/retry": {
+    body: null,
+    status: 202,
+    response: Conversion,
+    responseDescription:
+      "The failed attempt, running again from its step. 409 `conversion_running` (not failed) or `legal_hold`; 404 `conversion_not_found`.",
+    errors: ["403", "404", "409", "429"],
+  },
+  "post /v1/projects/{id}/repo-conversion/abandon": {
+    body: null,
+    response: named("GitConversionAbandoned", gitConversionAbandonedSchema),
+    responseDescription:
+      "The ended attempt and the repository left on the host, if the host created one for it. 409 `conversion_running`; 404 `conversion_not_found`.",
+    errors: ["403", "404", "409"],
+  },
   "get /v1/projects": {
     query: listProjectsQuerySchema,
     response: named("ProjectList", projectListResponseSchema),

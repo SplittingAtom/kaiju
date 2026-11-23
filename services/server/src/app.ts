@@ -118,6 +118,7 @@ import { teamSkillBlockRoutes } from "./routes/team-skill-blocks.js";
 import { skillUsageRoutes, teamSkillUsageRoutes } from "./routes/skill-usage.js";
 import { teamRoutes } from "./routes/team.js";
 import { projectRoutes } from "./routes/projects.js";
+import { projectRepoRoutes } from "./routes/project-repo.js";
 import { projectFromFolderRoutes } from "./routes/project-from-folder.js";
 import {
   myCheckoutRoutes,
@@ -288,6 +289,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   api.route("/eval-cases", evalCaseRoutes(deps));
   api.route("/projects", projectRoutes(deps, options.workspaceFiles?.sync));
   api.route("/projects", projectCommitRoutes(deps, options.workspaceFiles?.sync));
+  api.route("/projects", projectRepoRoutes(deps));
   api.route("/projects", projectFromFolderRoutes(deps, options.workspaceFiles?.sync));
   // Before the `/:id` routes: `/threads/file-links` is not a thread id (KOBE-611).
   api.route("/threads", threadFileLinkRoutes(deps));

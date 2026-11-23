@@ -17,6 +17,7 @@ import {
 } from "./checkouts.js";
 import type { ProjectMounts } from "./mounts.js";
 import { fitsMount, isConflictCopy } from "./paths.js";
+import { projectWriteBlock, ProjectWriteBlocked } from "./repo-state.js";
 import { checkLimitsAfterWrite, OverLimit, type TeamLimits } from "./storage.js";
 import {
   diffHash,
@@ -71,7 +72,10 @@ export type CommitRefusal =
   | "quota_exceeded"
   | "legal_hold"
   | "changed"
-  | "storage_failed";
+  | "storage_failed"
+  /** KOBE-765: the project is a Repo (G17) or being converted to one. */
+  | "repo"
+  | "converting";
 
 export type CommitResult =
   | { readonly status: "committed"; readonly seq: number; readonly commitId: string }
@@ -143,6 +147,8 @@ export async function planCommit(
   if (!access) return refused("not_found");
   if (!access.can.edit) return refused("forbidden");
   if (access.project.archivedAt !== null) return refused("archived");
+  const block = await projectWriteBlock(tx, owner.teamId, projectId);
+  if (block !== null) return refused(block);
   const checkout = await findCheckout(tx, owner.teamId, projectId, owner.userId);
   if (!checkout) return refused("checkout_required");
   if (options.lock) await lockWorkspace(tx, owner);
@@ -365,6 +371,7 @@ async function writeStep(
     } catch (err) {
       if (isLegalHoldViolation(err)) return refused("legal_hold");
       if (err instanceof OverLimit) return refused("quota_exceeded", { limit: err.limit });
+      if (err instanceof ProjectWriteBlocked) return refused(err.block);
       throw err;
     }
   });
@@ -399,6 +406,8 @@ export async function revertTo(
       if (!access) return refused("not_found");
       if (!access.can.edit) return refused("forbidden");
       if (access.project.archivedAt !== null) return refused("archived");
+      const block = await projectWriteBlock(tx, owner.teamId, projectId);
+      if (block !== null) return refused(block);
       const target = await tx.execute<{ id: string }>(sql`
         SELECT id FROM project_commits
          WHERE team_id = ${owner.teamId} AND project_id = ${projectId} AND seq = ${seq}`);
@@ -434,6 +443,7 @@ export async function revertTo(
         return { status: "committed", seq: written.seq, commitId: written.commitId };
       } catch (err) {
         if (isLegalHoldViolation(err)) return refused("legal_hold");
+        if (err instanceof ProjectWriteBlocked) return refused(err.block);
         throw err;
       }
     },

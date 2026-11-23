@@ -18,6 +18,7 @@ import {
 } from "../projects/commits.js";
 import type { ToolFrameSpec } from "./gated-frame.js";
 import type { ApprovalBroker, SandboxTarget } from "./types.js";
+import { PROJECT_WRITE_BLOCK_MESSAGES } from "../projects/repo-state.js";
 
 /**
  * `project.commit` (KOBE-579, Workspaces CM6) on one connection: the agent's `commit_project`.
@@ -122,6 +123,9 @@ export function replyOf(result: CommitResult): Reply {
       );
     case "storage_failed":
       return failed("storage_failed", "The commit could not be stored. Try again.");
+    case "repo":
+    case "converting":
+      return failed("not_allowed", PROJECT_WRITE_BLOCK_MESSAGES[result.error]);
   }
 }
 
