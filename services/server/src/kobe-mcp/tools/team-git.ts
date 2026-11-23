@@ -48,7 +48,7 @@ export const teamGitConnectionsList = kobeTool({
             admin: capability,
           }),
           excess_permissions: z.array(z.string().max(100)).max(50),
-          health: z.enum(["ok", "failing", "unchecked"]),
+          health: z.enum(["ok", "failing", "unchecked", "not_allowed"]),
           last_error: z.string().max(64).nullable(),
           last_checked_at: z.string().nullable(),
           credential_expires_at: z.string().nullable(),

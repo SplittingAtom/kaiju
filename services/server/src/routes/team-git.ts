@@ -6,6 +6,7 @@ import {
   withTeam,
 } from "@kobe/db";
 import { Hono, type Context } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import { teamRoleAllows } from "../authz/permissions.js";
@@ -28,6 +29,9 @@ import {
   type Answer,
 } from "../git/connections.js";
 import { invalidRequest, param, parseBody } from "../http/request.js";
+
+/** Largest request body the git routes read (review L5). */
+export const GIT_BODY_MAX_BYTES = 64 * 1024;
 
 const send = (c: Context, a: Answer) => c.json(a.body, a.status);
 const notFound = (c: Context) =>
@@ -53,6 +57,14 @@ export function teamGitRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables
   const db = deps.database.db;
   const git = gitConnectionDeps(deps);
   app.use(requireTeam(deps));
+  // Bodies are small (a PEM key is a few KB): refuse anything larger before reading it (review L5).
+  app.use(
+    bodyLimit({
+      maxSize: GIT_BODY_MAX_BYTES,
+      onError: (c) =>
+        c.json({ code: "too_large", message: "The request body is over 64 KiB." }, 413),
+    }),
+  );
 
   app.get("/connections", requireTeamPermission("team.read"), async (c) => {
     const teamId = c.get("team").id;

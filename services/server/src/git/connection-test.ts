@@ -131,6 +131,45 @@ const SITE_REFUSALS: Readonly<Record<string, { code: string; message: string }>>
 
 const REASON = /^[A-Za-z0-9_]{1,64}$/;
 
+/** Refusals that are about the Site's rules or the host's answers, not the host's address. */
+const NOT_ADDRESS = new Set([
+  "site_git_off",
+  "site_host_limit",
+  "redirect",
+  "other_host",
+  "no_site_decision",
+]);
+
+/** The one answer for "cannot be reached or not allowed by address" (review L2). */
+export const NOT_REACHABLE_REASON = "not_reachable";
+
+/**
+ * With no Site host list (any host may be named), a Workspace admin must not learn which internal
+ * names resolve, or resolve to a refused private address (review L2): a name that does not
+ * resolve, a host that does not answer and an address the policy refuses all read the same. The
+ * detail stays in the server log. With a host list, the Site chose the hosts: no change.
+ */
+export function shownError(error: GitHostError, anyHost: boolean): GitHostError {
+  if (!anyHost) return error;
+  const byAddress =
+    error.code === "host_unreachable" ||
+    (error.code === "host_refused" && error.reason !== undefined && !NOT_ADDRESS.has(error.reason));
+  if (!byAddress) return error;
+  return new GitHostError(
+    "host_refused",
+    "The git host cannot be reached from this site, or its address is not allowed here.",
+    { reason: NOT_REACHABLE_REASON },
+  );
+}
+
+/** A Site refusal (G3): Git turned off, or the host not on the Site's list. */
+export function isSiteRefusal(error: GitHostError): boolean {
+  return (
+    error.code === "host_refused" &&
+    (error.reason === "site_git_off" || error.reason === "site_host_limit")
+  );
+}
+
 /** The machine code stored as a connection's `last_error` (at most 64 characters). */
 export function healthErrorCode(error: GitHostError): string {
   const reason = error.reason !== undefined && REASON.test(error.reason) ? `:${error.reason}` : "";
