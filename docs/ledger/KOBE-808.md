@@ -17,12 +17,19 @@
   `notebook_complete`, never an eval sandbox) → agent `KernelManager.complete`
   (`services/sandbox-agent/src/notebook/completion.ts`) → bridge ops `complete` / `doc`
   (`images/sandbox/kernel/kobe-kernel-bridge.py`). Contract: `packages/protocol/src/notebook-completion.ts`.
-- **Evaluation safety (the choice; security review rounds 1-3).** IPython's completer is not
+- **Evaluation safety (the choice; security review rounds 1-4).** IPython's completer is not
   used at all (round 3: after patching its evaluator, dir, key lister and generics, its
   keyword-argument matcher still `eval`ed the callee; a 10 M-entry dict blocked the kernel). The
-  launcher turns `complete_request` into an empty answer and jedi is irrelevant. Both `complete`
-  and `doc` run `STATIC_SOURCE` in a silent request's user expression (no execution count, no
-  `Out`; the code and the name enter only as string literals). The resolver tokenises the text
+  launcher replaces `IPythonKernel.do_complete`/`do_inspect` (async, so ipykernel warns about
+  nothing) with calls into `STATIC_SOURCE` on `shell.user_ns`, and the bridge sends
+  `complete_request` / `inspect_request` (round 4: the earlier silent `execute_request` with a user
+  expression fired `post_execute`, input transformers and any `str` formatter on every keystroke).
+  ipykernel 7.4's `complete_request`/`inspect_request` handlers call only `do_complete`/
+  `do_inspect`, `json_clean` and `send`: no transformers, events, formatters, history, `_` or
+  execution count. `transport.e2e.test.ts` (with `KOBE_TEST_KERNEL_PYTHON`) and `test-image.sh` run
+  `images/sandbox/kernel-transport-probe.py` through the real bridge with `pre/post_execute`,
+  `pre/post_run_cell`, an input transformer, a `str` formatter, a warnings hook and autoreload
+  (its callbacks wrapped): zero calls, count/history/Out unmoved; the round-3 bridge records 36. The resolver tokenises the text
   before the cursor itself (last 300 characters; open-call scan ≤ 2 000): a chain of names,
   `.attr`, `['str']`/`[int]` (≤ 10 steps) resolved through namespace dicts, module dicts, class
   dicts along `type.__mro__` and the instance dict via the C-level `__dict__` descriptor; it
@@ -32,8 +39,9 @@
   another exact type (keys are compared only with keys of the same exact plain type). It offers
   names from the user namespace (not `_`-prefixed or IPython's), attribute names from those
   dicts, keys of exact `dict` (str/int/float/bool), DataFrame column labels only through a
-  non-executing path (`_mgr` → C getset `axes` → the Index's numpy object array; PyArrow-backed
-  labels are not offered), and `name=` keyword arguments from plain functions' code objects, a
+  non-executing path (`_mgr` → C getset `axes` → the Index's numpy object array, or a Python-backed
+  `StringArray`'s `_ndarray` C getset; PyArrow-backed labels, pandas 3's default when PyArrow is
+  installed as in the image, are not offered), and `name=` keyword arguments from plain functions' code objects, a
   plain class's `__init__`/`__new__` and built-ins' `__text_signature__`. Caps: 10 000 entries
   examined (`itertools.islice`), 200 returned (the bridge then keeps 100), 200 ms budget checked
   between steps. Not while a member `ITIMER_REAL` is pending (`error: "timer"`); nothing is
@@ -46,13 +54,17 @@
   dict keys, kwargs from functions/classes/built-ins). The `test-image.sh` real-kernel check
   covers the same plus DataFrame columns, the pending timer and a run right after the big dict;
   the round-1 and round-2 bridges fail it. The reviewer's seven probe scripts give zero calls.
-  **Accepted (review R3-L3):** a namespace or dict holding a `str` subclass key with a colliding
-  hash can have its `__eq__` called by a lookup; contrived. `doc` uses the same dict-only reads,
+  Dict lookups iterate and compare only exact `str` keys (`_find`), so a non-str or `str`-subclass
+  key in a namespace, module, class or instance dict is never hashed or compared (round 4 L1;
+  tested). `doc` uses the same dict-only reads,
   classifies by `type(obj)`, builds signatures from `__code__`/`__defaults__` (defaults other than
   plain numbers/strings shown `…`, no annotations).
-- **Accepted (review L7):** the user expressions (`DOC_EXPRESSION`, like 803's snapshot) call
-  `exec` resolved in the member's namespace; a member who rebinds `exec` runs their own code on
-  hover. Self-inflicted in their own kernel; shared with KOBE-803.
+- **Follow-up (KOBE-803, not changed here):** the variables snapshot still travels as a silent
+  `execute_request` with a user expression, so it fires `post_execute`, input transformers and a
+  `str` formatter once per snapshot (after a member's run and on Refresh). Same remedy available
+  (a custom message or `inspect_request`-style handler); for the coordinator to ticket.
+- **Review L7 (gone):** completion and docs no longer use user expressions, so a rebound `exec`
+  no longer matters for them; 803's snapshot still has that pattern (part of the follow-up).
 - **Not activity (review L2).** Completion commands are routed with `activity: false`: they do
   not touch `sandboxes.last_active_at`, and the agent does not reset the kernel's idle timer, so
   typing never keeps a sandbox or kernel awake.

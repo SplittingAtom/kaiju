@@ -395,6 +395,13 @@ PY
 check "kernel completion and docs run no member code and leave no trace (KOBE-808)" \
   "^ok my_value\|alpha,beta\|alpha\|\| timer=refused big=ok m\(x, y=2\) Doc of m\. 3 \('-',False,False,0\)$" \
   run_ws python3 -c "$KERNEL_COMPLETE_PROBE" /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
+# KOBE-808 review round 4: the requests travel as complete_request / inspect_request answered by
+# the bridge's resolver, so none of the member's execution hooks, input transformers, `str`
+# formatter, warnings hook or autoreload run, and the execution count, history and Out stay put.
+check "kernel completion and docs fire none of the execution machinery (KOBE-808)" \
+  '^ok 0 1 0 0 cell_hooks_fire my_value\|method\|alpha=,beta=\|alpha= method\(alpha, beta=1\)$' \
+  run_ws python3 -c "$(cat "$(dirname "$0")/kernel-transport-probe.py")" \
+  /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
 run_ws_line() { run_ws "$@" | tr '\n' ' ' | sed 's/ $//'; }
 # NB17: a kernel reaches the internet like the shell tool: before each cell the bridge turns the
 # token file (never the token) into proxy variables, so a rotated token is used by the next cell.

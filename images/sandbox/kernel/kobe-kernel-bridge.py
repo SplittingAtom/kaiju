@@ -44,15 +44,15 @@ kernel. Each variable's description runs under a SIGALRM timer (`per_var_ms`) wi
 exception caught, so a `__repr__` that raises or loops costs that variable its repr, not the
 snapshot; the whole snapshot has a budget (`budget_ms`) and count and byte caps (`truncated`).
 
-Completion (KOBE-808): IPython's completer is never used (its matchers evaluate member code; the
-launcher turns `complete_request` into an empty answer). `complete` and `doc` run STATIC_SOURCE in
-a silent request's user expression (like `inspect`: no execution count, no history, nothing in
-`Out`): a resolver that reads only namespace, module, class and instance dicts (through C-level
+Completion (KOBE-808): IPython's completer and inspector are never used (their matchers evaluate
+member code). The launcher replaces the kernel's `do_complete` / `do_inspect` with calls into
+STATIC_SOURCE, and the bridge sends `complete_request` / `inspect_request`: those handlers run
+none of the execution machinery (no input transformers, events, formatters, history or execution
+count). STATIC_SOURCE reads only namespace, module, class and instance dicts (through C-level
 descriptors taken from built-in types), never calls, never invokes a descriptor, a property, a
 metaclass or a member's hook, and is bounded by caps and a 200 ms budget checked between steps.
-The member's code is passed only as a string literal; `doc` gets a dotted name the server
-checked. Neither runs while a member's timer is pending. Both answer within `timeout_ms` or
-`error: "timeout"`; a late reply is skipped by its message id.
+`doc` gets a dotted name the server checked. Neither runs while a member's timer is pending. Both
+answer within `timeout_ms` or `error: "timeout"`; a late reply is skipped by its message id.
 """
 
 import ast
@@ -103,13 +103,25 @@ _init = _io.IOPubThread.__init__
 def _no_pipe(self, socket, pipe=False, session=False):
     _init(self, socket, pipe=False, session=session)
 _io.IOPubThread.__init__ = _no_pipe
-# KOBE-808: IPython's own completer is never used (its matchers evaluate member code); kernel
-# completion is the bridge's static resolver (STATIC_SOURCE). A complete_request answers nothing.
+# KOBE-808: completion and docs are answered by the kernel's complete_request / inspect_request
+# handlers, replaced here to call only the bridge's static resolver (STATIC_SOURCE) on the user
+# namespace. Those handlers fire none of IPython's execution machinery: no input transformers, no
+# pre/post_execute or run_cell events, no display formatters, no history, no `_`, no execution
+# count. IPython's own completer and inspector are never called. `async def`, so ipykernel warns
+# about nothing (a member's warnings hook would run).
+_kobe_static = {"__name__": "kobe_static"}
+exec(@STATIC_SOURCE@, _kobe_static)
 from ipykernel import ipkernel as _ipk
-def _no_complete(self, code, cursor_pos):
+async def _kobe_complete(self, code, cursor_pos):
     pos = len(code) if cursor_pos is None else cursor_pos
-    return {"status": "ok", "matches": [], "cursor_start": pos, "cursor_end": pos, "metadata": {}}
-_ipk.IPythonKernel.do_complete = _no_complete
+    shell = self.shell
+    found = _kobe_static["complete"](code, pos, shell.user_ns, shell.user_ns_hidden)
+    return {"status": "ok", "matches": [], "cursor_start": pos, "cursor_end": pos, "metadata": {"kobe": found}}
+async def _kobe_inspect(self, code, cursor_pos, detail_level=0, omit_sections=()):
+    found = _kobe_static["doc"](code, self.shell.user_ns)
+    return {"status": "ok", "found": False, "data": {}, "metadata": {"kobe": found}}
+_ipk.IPythonKernel.do_complete = _kobe_complete
+_ipk.IPythonKernel.do_inspect = _kobe_inspect
 from ipykernel import kernelapp
 kernelapp.launch_new_instance()
 """
@@ -417,15 +429,23 @@ def _clip(text, limit):
     return text if len(text) <= limit else text[: limit - 1] + "…"
 
 
+def _find(d, name, missing):
+    # d[name] comparing only exact str keys: a member's key object is never hashed or compared.
+    for k, v in _it.islice(d.items(), EXAMINE_MAX):
+        if type(k) is str and k == name:
+            return v
+    return missing
+
+
 def _defines(t, name):
-    return any(klass is not object and name in _dict_of(klass) for klass in _mro(t))
+    return any(klass is not object and _find(_dict_of(klass), name, _find) is not _find for klass in _mro(t))
 
 
 def _lookup(t, name, missing):
     for klass in _mro(t):
-        d = _dict_of(klass)
-        if name in d:
-            return d[name]
+        found = _find(_dict_of(klass), name, missing)
+        if found is not missing:
+            return found
     return missing
 
 
@@ -433,7 +453,7 @@ def _attr(parent, name, missing):
     # The raw attribute (a descriptor is returned, never invoked), read from dicts only.
     t = type(parent)
     if issubclass(t, _types.ModuleType):
-        return _module_dict(parent).get(name, missing), False
+        return _find(_module_dict(parent), name, missing), False
     if issubclass(t, type):
         # A class: only of the plain metaclass (a metaclass's hooks would run on any lookup).
         if t is not type:
@@ -457,9 +477,9 @@ def _attr(parent, name, missing):
 def _resolve(name, ns):
     missing = object()
     parts = name.split(".")
-    obj = ns.get(parts[0], missing) if type(ns) is dict else missing
+    obj = _find(ns, parts[0], missing) if type(ns) is dict else missing
     if obj is missing:
-        obj = _builtins.__dict__.get(parts[0], missing)
+        obj = _find(_builtins.__dict__, parts[0], missing)
     bound = False
     for part in parts[1:]:
         if obj is missing:
@@ -473,7 +493,7 @@ def _class_doc(cls):
     for klass in _mro(cls):
         if klass is object:
             break
-        doc = _dict_of(klass).get("__doc__")
+        doc = _find(_dict_of(klass), "__doc__", None)
         if type(doc) is str:
             return doc
     return None
@@ -482,7 +502,7 @@ def _class_doc(cls):
 def _c_attr(obj, name):
     # A C attribute of a built-in callable (its type is one of _C_ROUTINES).
     for klass in _mro(type(obj)):
-        desc = _dict_of(klass).get(name)
+        desc = _find(_dict_of(klass), name, None)
         if desc is None:
             continue
         if type(desc) in _C_DESCRIPTORS:
@@ -558,7 +578,7 @@ def _class_signature(cls):
         if klass is object:
             break
         d = _dict_of(klass)
-        init, new = d.get("__init__"), d.get("__new__")
+        init, new = _find(d, "__init__", None), _find(d, "__new__", None)
         if type(init) is _types.FunctionType:
             return _function_signature(init, True)
         if type(new) is staticmethod and type(_static_func(new)) is _types.FunctionType:
@@ -589,7 +609,7 @@ def _describe(name, obj, bound=False):
     elif issubclass(t, type):
         doc, signature = _class_doc(obj), _class_signature(obj)
     elif issubclass(t, _types.ModuleType):
-        doc = _module_dict(obj).get("__doc__")
+        doc = _find(_module_dict(obj), "__doc__", None)
     else:
         # Any other object: its type's docstring; nothing of the object itself is read.
         doc = _class_doc(t)
@@ -709,11 +729,10 @@ def _static_attr(obj, name, budget):
     if issubclass(t, type):
         if t is not type:
             raise _Stop("metaclass")
-        for klass in _mro(obj):
-            d = _dict_of(klass)
-            if name in d:
-                return _class_value(d[name]), False
-        raise _Stop(name)
+        found = _lookup(obj, name, _Stop)
+        if found is _Stop:
+            raise _Stop(name)
+        return _class_value(found), False
     if _defines(t, "__getattribute__"):
         raise _Stop("__getattribute__")
     found = _lookup(t, name, _Stop)
@@ -752,11 +771,10 @@ def _resolve_chain(text, ns, budget):
     if not steps or len(steps) > CHAIN_MAX + 1 or steps[0].group(1) is None:
         raise _Stop("chain")
     first = steps[0].group(1)
-    if type(ns) is dict and first in ns:
-        obj = ns[first]
-    elif first in _builtins.__dict__:
-        obj = _builtins.__dict__[first]
-    else:
+    obj = _find(ns, first, _Stop) if type(ns) is dict else _Stop
+    if obj is _Stop:
+        obj = _find(_builtins.__dict__, first, _Stop)
+    if obj is _Stop:
         raise _Stop(first)
     bound = False
     for step in steps[1:]:
@@ -797,7 +815,8 @@ def _names(dicts, prefix, kind, budget, skip=frozenset()):
     found = {}
     for d in dicts:
         for k, v in budget.take(d.items()):
-            if k not in found and _wanted(k, prefix) and k not in skip:
+            # The type first: a member's key object is never hashed or compared.
+            if type(k) is str and _wanted(k, prefix) and k not in found and k not in skip:
                 found[k] = _kind(v, kind)
                 if len(found) >= RETURN_MAX:
                     return found
@@ -807,10 +826,10 @@ def _names(dicts, prefix, kind, budget, skip=frozenset()):
 
 
 def _pandas_frame():
-    m = _sys_modules().get("pandas")
+    m = _find(_sys_modules(), "pandas", None)
     if type(m) is not _types.ModuleType:
         return None
-    t = _module_dict(m).get("DataFrame")
+    t = _find(_module_dict(m), "DataFrame", None)
     return t if type(t) is type else None
 
 
@@ -833,20 +852,24 @@ def _frame_columns(frame, budget):
     # A DataFrame's column labels without running pandas: _mgr (instance dict) -> axes (C
     # getset) -> the columns Index's _data, when it is a numpy object array (or a StringArray over
     # one). Labels stored any other way (pyarrow strings) are not offered.
-    np = _sys_modules().get("numpy")
+    np = _find(_sys_modules(), "numpy", None)
     if type(np) is not _types.ModuleType:
         return []
-    ndarray = _module_dict(np).get("ndarray")
+    ndarray = _find(_module_dict(np), "ndarray", None)
     own = _own_dict(frame, type(frame))
-    mgr = own.get("_mgr") if own is not None else None
+    mgr = _find(own, "_mgr", None) if own is not None else None
     axes = _c_attr_of(mgr, "axes") if mgr is not None else None
     if type(axes) is not list or not axes:
         return []
     index_dict = _own_dict(axes[0], type(axes[0]))
-    data = index_dict.get("_data") if index_dict is not None else None
-    if type(data) is not ndarray:
-        data_dict = _own_dict(data, type(data)) if data is not None else None
-        data = data_dict.get("_ndarray") if data_dict is not None else None
+    data = _find(index_dict, "_data", None) if index_dict is not None else None
+    if type(data) is not ndarray and data is not None:
+        # pandas 3's Python-backed str labels: a StringArray's `_ndarray` is a C-level getset of
+        # pandas' NDArrayBacked (pyarrow-backed labels have no such field: not offered).
+        try:
+            data = _c_attr_of(data, "_ndarray")
+        except _Stop:
+            data = None
     if type(data) is not ndarray or _c_attr_of(data, "ndim") != 1:
         return []
     return [c for c in budget.take(iter(data)) if type(c) is str]
@@ -909,7 +932,7 @@ def _parameters(value, bound):
             if klass is object:
                 break
             d = _dict_of(klass)
-            init, new = d.get("__init__"), d.get("__new__")
+            init, new = _find(d, "__init__", None), _find(d, "__new__", None)
             if type(init) is _types.FunctionType:
                 return _parameters(init, True)
             if type(new) is staticmethod and type(_static_func(new)) is _types.FunctionType:
@@ -1035,12 +1058,8 @@ def complete(code, cursor, ns=None, hidden=None):
     return _json.dumps(result, ensure_ascii=True)
 '''
 
-# Evaluated as the silent request's user expressions: STATIC_SOURCE in a namespace of its own; the
-# member's code and the name only ever enter as string literals (repr).
-DOC_EXPRESSION = "(lambda g: (exec(%s, g), g['doc'])[1])({'__name__': 'kobe_static'})(%s)"
-COMPLETE_EXPRESSION = (
-    "(lambda g: (exec(%s, g), g['complete'])[1])({'__name__': 'kobe_static'})(%s, %d)"
-)
+# The kernel answers completion and docs from STATIC_SOURCE (the launcher above runs it).
+LAUNCHER = LAUNCHER.replace("@STATIC_SOURCE@", repr(STATIC_SOURCE))
 ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 
 
@@ -1301,27 +1320,20 @@ class Bridge:
             if reply.get("parent_header", {}).get("msg_id") == msg_id:
                 return reply
 
-    def static_call(self, expression, command):
-        """Runs a STATIC_SOURCE expression silently: (data, None) | (None, error) | False (died)."""
-        msg_id = self.kc.execute(
-            "",
-            silent=True,
-            store_history=False,
-            user_expressions={"kobe": expression},
-            allow_stdin=False,
-            stop_on_error=False,
-        )
+    def static_reply(self, msg_id, command):
+        """The resolver's answer in a complete/inspect reply: (data, None) | (None, error) | False."""
         reply = self.shell_reply(msg_id, timeout_of(command))
         if reply is False:
             return False
         if reply is None:
             return None, "timeout"
         content = reply.get("content", {})
-        found = (content.get("user_expressions") or {}).get("kobe") or {}
+        meta = content.get("metadata")
+        text = meta.get("kobe") if isinstance(meta, dict) else None
         try:
-            if content.get("status") != "ok" or found.get("status") != "ok":
+            if content.get("status") != "ok" or type(text) is not str:
                 raise ValueError("failed")
-            data = json.loads(ast.literal_eval(found["data"]["text/plain"]))
+            data = json.loads(text)
             if not isinstance(data, dict):
                 raise ValueError("failed")
         except Exception:  # noqa: BLE001 - reported as failed
@@ -1331,13 +1343,13 @@ class Bridge:
         return data, None
 
     def complete(self, command):
-        """KOBE-808: completions at the cursor from STATIC_SOURCE (IPython's completer is unused)."""
+        """KOBE-808: completions at the cursor (complete_request; the kernel runs STATIC_SOURCE)."""
         cid = str(command.get("id", ""))
         code, cursor = command.get("code"), command.get("cursor")
         if type(code) is not str or type(cursor) is not int or not 0 <= cursor <= len(code):
             emit({"ev": "completed", "id": cid, "error": "invalid"})
             return True
-        got = self.static_call(COMPLETE_EXPRESSION % (repr(STATIC_SOURCE), repr(code), cursor), command)
+        got = self.static_reply(self.kc.complete(code, cursor), command)
         if got is False:
             emit({"ev": "died"})
             return False
@@ -1350,13 +1362,13 @@ class Bridge:
         return True
 
     def doc(self, command):
-        """KOBE-808: a dotted name's signature and docstring (STATIC_SOURCE), silently."""
+        """KOBE-808: a dotted name's signature and docstring (inspect_request; STATIC_SOURCE)."""
         cid = str(command.get("id", ""))
         name = command.get("name")
         if type(name) is not str or len(name) > 256 or not DOC_NAME.fullmatch(name):
             emit({"ev": "completed", "id": cid, "error": "invalid"})
             return True
-        got = self.static_call(DOC_EXPRESSION % (repr(STATIC_SOURCE), repr(name)), command)
+        got = self.static_reply(self.kc.inspect(name, len(name), detail_level=0), command)
         if got is False:
             emit({"ev": "died"})
             return False

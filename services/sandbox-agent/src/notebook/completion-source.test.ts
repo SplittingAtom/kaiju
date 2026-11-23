@@ -159,6 +159,11 @@ describe.skipIf(!hasPython)("kernel completion: nothing of the member's runs (KO
     "dd2[(1, 1)].",
     "lazy_mod.nope.",
     "lazy_mod.",
+    // round 4: keys that are not plain str (namespace and instance dicts) are never touched
+    "zz",
+    "my_v",
+    "sized.",
+    "sized.method(",
   ];
   let r: ReturnType<typeof completeAll>;
   beforeAll(() => {

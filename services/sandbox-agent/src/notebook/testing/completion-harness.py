@@ -1,9 +1,8 @@
 """Runs the kernel bridge's completion helpers (KOBE-808) on plain Python, without IPython.
 
 Usage: python3 completion-harness.py <kobe-kernel-bridge.py> <scenario> [code...]. Prints JSON.
-`doc:<name>` evaluates the bridge's own DOC_EXPRESSION, `complete` its COMPLETE_EXPRESSION for each
-code given (the cursor at its end), with a stand-in `IPython` module whose shell holds a namespace
-of hostile objects (every probe of the security review's three rounds), and report what ran
+`doc:<name>` and `complete` run the bridge's STATIC_SOURCE resolver (`doc`, and `complete` for each
+code given, the cursor at its end) on a namespace of hostile objects (every probe of the security review's three rounds), and report what ran
 (`ran`: getters, descriptors, hooks, reprs, hashes, calls). `big` completes keys of a
 10-million-entry dict. `from:<json>` feeds `completion_from` an answer.
 """
@@ -247,6 +246,26 @@ class Sized:
         pass
 
 
+class HashKey:
+    def __hash__(self):
+        RAN.append("key_hash")
+        return 7
+
+    def __eq__(self, other):
+        RAN.append("key_eq")
+        return False
+
+
+class StrKey(str):
+    def __hash__(self):
+        RAN.append("strkey_hash")
+        return str.__hash__(self)
+
+    def __eq__(self, other):
+        RAN.append("strkey_eq")
+        return str.__eq__(self, other)
+
+
 def lazy_module():
     m = types.ModuleType("lazy_mod")
     m.real = 1
@@ -295,29 +314,25 @@ def namespace():
     }
 
 
-def install_shell(ns, hidden=None):
-    shell = types.SimpleNamespace(user_ns=ns, user_ns_hidden=hidden or {})
-    ipython = types.ModuleType("IPython")
-    ipython.get_ipython = lambda: shell
-    sys.modules["IPython"] = ipython
+def static(bridge):
+    g = {"__name__": "kobe_static"}
+    exec(bridge.STATIC_SOURCE, g)
+    return g
 
 
 def run_doc(bridge, name):
-    install_shell(namespace())
+    ns = namespace()
     RAN.clear()  # building the namespace hashed its dict keys
-    expression = bridge.DOC_EXPRESSION % (repr(bridge.STATIC_SOURCE), repr(name))
     started = time.monotonic()
-    text = eval(expression, {"__builtins__": __builtins__}, {})
-    out = json.loads(text)
+    out = json.loads(static(bridge)["doc"](name, ns))
     out["elapsed_ms"] = int((time.monotonic() - started) * 1000)
     out["ran"] = list(RAN)
     return out
 
 
-def complete(bridge, code):
-    expression = bridge.COMPLETE_EXPRESSION % (repr(bridge.STATIC_SOURCE), repr(code), len(code))
+def complete(g, code, ns, hidden):
     started = time.monotonic()
-    out = json.loads(eval(expression, {"__builtins__": __builtins__}, {}))
+    out = json.loads(g["complete"](code, len(code), ns, hidden))
     out["elapsed_ms"] = int((time.monotonic() - started) * 1000)
     if "matches" in out:
         out["texts"] = [m["text"] for m in out["matches"]]
@@ -334,17 +349,21 @@ def main():
         data, cursor = json.loads(name[5:])
         print(json.dumps(bridge.completion_from(data, cursor)))
         return
+    g = static(bridge)
     if name == "big":
-        install_shell({"big": dict.fromkeys(range(10_000_000)), "small": {"k": 1}})
-        first = complete(bridge, "big[")
-        then = complete(bridge, "small['")
+        ns = {"big": dict.fromkeys(range(10_000_000)), "small": {"k": 1}}
+        first = complete(g, "big[", ns, {})
+        then = complete(g, "small['", ns, {})
         print(json.dumps({"big": first, "then": then}))
         return
     ns = namespace()
-    install_shell(ns, {"hidden_name": 1})
     ns["hidden_name"] = 1
+    # Keys a namespace may hold that are not plain str: never hashed or compared.
+    ns[HashKey()] = 1
+    ns[StrKey("zz_strkey")] = 1
+    ns["sized"].__dict__[HashKey()] = 1
     RAN.clear()  # building the namespace hashed its dict keys; only completion's calls count
-    results = {code: complete(bridge, code) for code in sys.argv[3:]}
+    results = {code: complete(g, code, ns, {"hidden_name": 1}) for code in sys.argv[3:]}
     print(
         json.dumps(
             {

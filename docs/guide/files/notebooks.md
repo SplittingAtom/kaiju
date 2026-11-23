@@ -63,22 +63,27 @@ completion](file-editor.md#code-completion)). It offers:
 - inside `d['` or `d[`, the keys of a plain dict (strings, numbers);
 - inside a call such as `f(`, the keyword arguments of a plain Python function, class or built-in
   (`name=`);
-- DataFrame column names after `df.` or `df['`, only when pandas stores the labels as Python
-  objects (not with pandas' default PyArrow string storage).
+- DataFrame column names after `df.` or `df['`, only when pandas keeps the labels as Python
+  objects. String column names in the sandbox's pandas are stored by PyArrow and are not offered.
 
-Kobe does not use IPython's completer: a small resolver reads your namespace and the dictionaries
-of modules, classes and objects, and never calls anything. It stops, and you get only the
-editor's own suggestions, at a property, a `functools.cached_property` or any other descriptor, a
-class with a custom metaclass, an object that defines `__getattribute__`, a call, or a module
-attribute only `__getattr__` would supply. Its tests check that none of your getters, descriptors,
-`__getattr__`, `__getattribute__`, `__class__`, `__dir__`, `__signature__`, metaclass hooks, key
-`__hash__`/`__eq__` or registered completers run. Very large containers are only partly read: at
-most 10,000 entries are looked at and 200 suggestions returned, within a fifth of a second, so a
-huge dict may show only some of its keys. Completion does not start while a timer of yours
-(`signal.setitimer`) is pending, and it never interrupts running code. Docs come from signatures
-and docstrings read the same way (no repr, no getter; a default value that is not a plain number
-or string shows as `…`). Nothing about it is saved, and it does not count as using your sandbox:
-typing in the editor does not keep it awake.
+Kobe does not use IPython's completer. The request goes to the kernel as a completion or
+inspection request, not as code to run, so none of your execution hooks (`pre_run_cell`,
+`post_execute` and the like, autoreload, matplotlib's), input transformers or display formatters
+run, and the execution count, history and `Out` stay as they are. A small resolver reads your
+namespace and the dictionaries of modules, classes and objects, and never calls anything. It stops,
+and you get only the editor's own suggestions, at a property, a `functools.cached_property` or any
+other descriptor, a class with a custom metaclass (Enum members and many ORM or pydantic models), an
+object that defines `__getattribute__`, a call, or a module attribute only `__getattr__` would
+supply. It does not offer keys of dict subclasses (`OrderedDict`, `defaultdict`, `Counter`), tuple
+keys, NumPy field names, or builtins and keywords (the editor's own list has those). Its tests
+check that none of your getters, descriptors, `__getattr__`, `__getattribute__`, `__class__`,
+`__dir__`, `__signature__`, metaclass hooks, key `__hash__`/`__eq__`, registered completers or
+execution hooks run. Very large containers are only partly read: at most 10,000 entries are looked
+at and 200 suggestions returned, within a fifth of a second, so a huge dict may show only some of
+its keys. Completion does not start while a timer of yours (`signal.setitimer`) is pending, and it
+never interrupts running code. Docs come from signatures and docstrings read the same way (no repr,
+no getter; a default value that is not a plain number or string shows as `…`). Nothing about it is
+saved, and it does not count as using your sandbox: typing in the editor does not keep it awake.
 
 Kernel completion only works while the kernel runs and is idle. A note under the editor, next to
 the line and column, says when it is off and why: the kernel is not started (press **Start** or run
