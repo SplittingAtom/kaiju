@@ -1,13 +1,13 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDb, withTeam, type KobeDatabase } from "@kobe/db";
-import { approvalKeyring } from "./approvals/index.js";
-import { createPolicyEngine } from "./policy/engine.js";
-import { createDbRuleSource, createDbSettingsSource } from "./policy/rule-store.js";
-import { writeCommit, type TreeFile } from "./projects/tree.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
-import { BACKFILL_CURSOR_KEY, backfillThreadFileLinks } from "./thread-file-links/backfill.js";
+import { approvalKeyring } from "../approvals/index.js";
+import { createPolicyEngine } from "../policy/engine.js";
+import { createDbRuleSource, createDbSettingsSource } from "../policy/rule-store.js";
+import { writeCommit, type TreeFile } from "../projects/tree.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
+import { BACKFILL_CURSOR_KEY, backfillThreadFileLinks } from "./backfill.js";
 
 /**
  * Thread–file links recorded by the server (KOBE-610, spec thread-file-map §3): allowed file tool

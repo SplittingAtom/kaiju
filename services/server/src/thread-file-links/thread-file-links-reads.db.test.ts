@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
 
 /**
  * The reads of thread–file links (KOBE-611, contract thread-file-links.ts, privacy TFM7): per
