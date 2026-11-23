@@ -33,7 +33,7 @@ neither documented nor allowlisted, and on a stale entry in either list; `catalo
 fails on an operation of a detailed area without its schemas, a dangling `$ref` or an undeclared
 path parameter. After adding a route, add its line to the catalog (with its detail in a detailed
 area) and update the route-inventory snapshot
-(`pnpm --filter @kobe/server exec vitest run src/route-inventory.test.ts -u`), which is how route
+(`pnpm --filter @kobe/server exec vitest run src/routes/route-inventory.test.ts -u`), which is how route
 changes show in review. The OpenAPI JSON is not committed (KOBE-815): `pnpm --filter @kobe/server
 build && pnpm --filter @kobe/server openapi` writes it to `services/server/openapi.json`
 (gitignored), and CI keeps every push's copy as the `openapi` artifact of the `unit` job.

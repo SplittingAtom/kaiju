@@ -39,7 +39,7 @@ pnpm licenses:update  # regenerates THIRD_PARTY_LICENSES.md and NOTICE
 pnpm license:gate   # gate tickets: also fails while a license decision is pending
 
 pnpm --filter @kobe/server test                              # one package
-pnpm --filter @kobe/server exec vitest run src/app.test.ts   # one file
+pnpm --filter @kobe/server exec vitest run src/core/app.test.ts   # one file
 pnpm --filter @kobe/server exec vitest run -t "healthz"      # one test by name
 
 pnpm images:check   # build every service image, assert non-root (needs Docker)

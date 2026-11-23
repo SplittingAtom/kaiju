@@ -48,7 +48,7 @@ import { siteSsoRoutes } from "../routes/site-sso.js";
 
 // The JSON file is generated, not committed (KOBE-815): `pnpm --filter @kobe/server openapi`
 // writes it from the build, and CI keeps it as an artifact. Route changes show in review through
-// the route-inventory snapshot (src/__snapshots__/route-inventory.app.txt).
+// the route-inventory snapshot (src/routes/__snapshots__/route-inventory.app.txt).
 
 interface JsonSchemaNode {
   readonly required?: readonly string[];

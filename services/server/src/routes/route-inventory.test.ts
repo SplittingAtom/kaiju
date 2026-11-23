@@ -10,7 +10,7 @@ import { workspaceRoutes, type WorkspaceRoutesDeps } from "../workspace-sync/rou
 // (`ALL`) entries sit where they apply, so the list pins each route's middleware chain too. A
 // refactor that moves routes between modules must leave this file byte-identical.
 // Regenerate after adding or changing routes:
-//   pnpm --filter @kobe/server exec vitest run src/route-inventory.test.ts -u
+//   pnpm --filter @kobe/server exec vitest run src/routes/route-inventory.test.ts -u
 
 /**
  * A stand-in for every dependency: any property is another stand-in, calling one returns one.

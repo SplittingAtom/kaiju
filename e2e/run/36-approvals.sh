@@ -4,7 +4,7 @@
 # the API; allow lets it run, deny ends it denied. A team ask rule on bash (sandbox tools ask only
 # when a rule says so); a scripted agent holding the owner's sandbox identity (as above) sends real
 # policy.check frames; the owner allows the first call and denies the second over the API. The
-# 1 h TTL expiry is covered by services/server/src/approvals.db.test.ts (an e2e run can't wait it).
+# 1 h TTL expiry is covered by services/server/src/approvals/approvals.db.test.ts (an e2e run can't wait it).
 echo "==> approvals (KOBE-37)"
 psql_kobe "DELETE FROM tool_rules WHERE team_id = '$E2E_TEAM_ID' AND scope = 'team';
   INSERT INTO tool_rules (team_id, scope, effect, tool_glob, created_by)

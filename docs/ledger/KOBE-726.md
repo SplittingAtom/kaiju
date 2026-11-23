@@ -105,3 +105,25 @@ Decisions).
 - **`skills/` flat sources stay flat** (see Open questions): the tests there already sit next to
   their sources; grouping the ~50 flat skill sources is a source refactor across many importers,
   out of scope for a pure test move.
+
+## Path-keyed things checked
+
+- Test selection is by glob only: `vitest.config.ts` (`src/**/*.test.ts` minus `*.db.test.ts`),
+  `vitest.db.config.ts` (`src/**/*.db.test.ts`), `tsconfig.build.json` (excludes
+  `src/**/*.test.ts`), eslint (`**/*.test.ts`, `services/*/src/**/*.ts` typed files), guards in
+  `packages/db` and `scripts/check-site-wording.mjs` (test code matched by `.test.` / `testing/`).
+  None needed a change.
+- CI `db-server` shards use `vitest --shard=i/2`, which sorts files by a SHA-1 of their path and
+  splits by count, so moving files reshuffles but keeps 150/149 files per shard.
+- Updated for the new paths: `scripts/onto-main.sh` (route-inventory snapshots now in
+  `src/routes/__snapshots__/`, test at `src/routes/route-inventory.test.ts`), `docs/development.md`,
+  CLAUDE.md and README (one-file example now `src/core/app.test.ts`), comments in
+  `openapi/document.test.ts`, `e2e/run/36-approvals.sh`, `packages/db/src/startup-seeds.ts`.
+  Older ticket ledgers and gate documents keep the paths of their time.
+- Path fixes inside moved files: relative imports, `vi.mock` paths and `new URL(..., import.meta.url)`
+  reads (`connector-site-key`, `skill-promotion`, `skill-review`, `team-filter`'s repo root).
+
+## User-facing guide
+
+No change: test files are not visible to members, admins or in-sandbox agents, and `docs/guide/`
+names no test path.

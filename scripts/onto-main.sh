@@ -9,7 +9,7 @@
 # On a conflict it cannot resolve it stops: resolve the listed files, `git commit`, then run it
 # again with the same base. Needs a clean working tree. Generated files it handles:
 #   docs/audit-log.md                 event table regenerated (pnpm --filter @kobe/db audit:doc)
-#   services/server/src/__snapshots__/route-inventory.*.txt
+#   services/server/src/routes/__snapshots__/route-inventory.*.txt
 #                                     regenerated with vitest -u, only when they conflicted
 #   services/server/openapi.json      no longer tracked: a branch's old copy is dropped
 set -euo pipefail
@@ -20,7 +20,7 @@ BASE="${1:-origin/main}"
 STASH="packages/db/.migration-stash.json"
 AUDIT_DOC="docs/audit-log.md"
 OPENAPI="services/server/openapi.json"
-INVENTORY_DIR="services/server/src/__snapshots__/"
+INVENTORY_DIR="services/server/src/routes/__snapshots__/"
 
 say() { printf 'onto-main: %s\n' "$*"; }
 die() {
@@ -110,7 +110,7 @@ resolve_generated() {
 
 regenerate_inventory() {
   "$PNPM" exec turbo run build --filter='@kobe/server^...' --output-logs=errors-only
-  "$PNPM" --filter @kobe/server exec vitest run src/route-inventory.test.ts -u >/dev/null
+  "$PNPM" --filter @kobe/server exec vitest run src/routes/route-inventory.test.ts -u >/dev/null
   git add -- "$INVENTORY_DIR"route-inventory.*.txt
 }
 
