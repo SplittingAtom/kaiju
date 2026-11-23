@@ -2,13 +2,13 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { strFromU8, unzipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CAPABILITY_ARTIFACTS, type PolicyEngine } from "@kobe/protocol";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { WEBRTC_GUARD } from "./connectors/app-frame.js";
-import { exportZip } from "./retention/export.js";
-import { blobRecorder } from "./retention/job.js";
-import { deleteReleasedBlobs, purgeThreads } from "./retention/index.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { WEBRTC_GUARD } from "../connectors/app-frame.js";
+import { exportZip } from "../retention/export.js";
+import { blobRecorder } from "../retention/job.js";
+import { deleteReleasedBlobs, purgeThreads } from "../retention/index.js";
 
 /**
  * KOBE-129 end to end: `artifact.put` accepted only per D-3 of KOBE-55 (capability, active leased

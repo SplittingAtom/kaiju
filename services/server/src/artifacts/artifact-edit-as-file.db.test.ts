@@ -1,16 +1,16 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { workspaceFileEntrySchema } from "@kobe/protocol";
-import { createApp } from "./app.js";
+import { createApp } from "../app.js";
 import {
   EventStreamFixture,
   PUBLIC_URL,
   must,
   type Person,
-} from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { RawBody, TestBrowser } from "./testing/browser.js";
-import { createWorkspaceSync, type WorkspaceSync } from "./workspace-sync/index.js";
+} from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { RawBody, TestBrowser } from "../testing/browser.js";
+import { createWorkspaceSync, type WorkspaceSync } from "../workspace-sync/index.js";
 
 /**
  * Edit as file (KOBE-485): `POST /v1/artifacts/:id/versions/:n/edit-as-file` copies one version of
