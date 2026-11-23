@@ -269,6 +269,19 @@ describe("review round 1", () => {
     expect(dialog.textContent).not.toMatch(/private repository/);
   });
 
+  it("internal is GitHub only: a Gitea or Forgejo connection is described as private", async () => {
+    const forgejo = {
+      ...member("c2", ""),
+      provider: "forgejo" as const,
+      repoVisibility: "internal" as const,
+    };
+    const { dialog } = mount(api(), git({ connections: [forgejo] }));
+    expect(
+      await within(dialog).findByText(/^A private repository in ops on git\.example\.com:/),
+    ).toBeTruthy();
+    expect(dialog.textContent).not.toMatch(/internal/i);
+  });
+
   it("an unreadable attempt is not shown as 'no conversion' (L4), and Try again reads it", async () => {
     const a = api({
       conversion: vi

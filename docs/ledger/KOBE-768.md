@@ -67,7 +67,8 @@ Merged `origin/group-108-git-11-commit-flow` (KOBE-767 final, working copy at
 - **M2** the members' view of a connection carries `repo_visibility` (admin-set, benign); the
   dialog words the default ("A private repository…: only people the organization gives access
   can read it" / "An internal repository…: everyone with an account in the host's enterprise
-  (GitHub) or on the server (Gitea, Forgejo) can read it"); progress names the visibility; guide
+  (GitHub) or on the server (Gitea, Forgejo) can read it"; round 2: internal is described for
+  GitHub connections only, as the server refuses it elsewhere); progress names the visibility; guide
   says the same. Server test pins the member key set.
 - **M3** only running conversions of projects the member manages are followed, by
   `GET .../repo-conversion` for those ids (10 s, ×1.5 up to 60 s); the project list is read again

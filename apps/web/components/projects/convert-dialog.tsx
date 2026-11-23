@@ -41,13 +41,14 @@ type Connection = GitAdminConnection | GitMemberConnection;
 const prefixOf = (c: Connection | undefined): string | undefined =>
   c === undefined ? undefined : isAdminView(c) ? c.repoDefaults.namePrefix : c.repoNamePrefix;
 
-/** The connection's default visibility for new repositories (review M2). */
-const visibilityOf = (c: Connection | undefined): "private" | "internal" =>
-  c === undefined
-    ? "private"
-    : isAdminView(c)
-      ? c.repoDefaults.visibility
-      : (c.repoVisibility ?? "private");
+/**
+ * The connection's default visibility for new repositories (review M2). Internal exists only on
+ * GitHub (the server refuses it elsewhere), so any other host is described as private.
+ */
+const visibilityOf = (c: Connection | undefined): "private" | "internal" => {
+  if (c === undefined || c.provider !== "github") return "private";
+  return isAdminView(c) ? c.repoDefaults.visibility : (c.repoVisibility ?? "private");
+};
 
 /** What a new repository's visibility means, in plain words (review M2). */
 export function visibilityText(
@@ -56,7 +57,7 @@ export function visibilityText(
   host: string,
 ): string {
   return visibility === "internal"
-    ? `An internal repository in ${organization} on ${host}: everyone with an account in the host's enterprise (GitHub) or on the server (Gitea, Forgejo) can read it.`
+    ? `An internal repository in ${organization} on ${host}: everyone in the GitHub enterprise can read it.`
     : `A private repository in ${organization} on ${host}: only people the organization gives access can read it.`;
 }
 

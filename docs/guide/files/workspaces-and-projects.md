@@ -184,9 +184,8 @@ Workspace admins, when the Workspace has a git connection at **Read and write**.
   creating one (it must be private, empty and in the connection's organization).
 
 Converting is one-way. The repository gets the connection's default visibility, which the
-dialog names: private, or internal where a Workspace admin chose that for the connection (on
-GitHub everyone in the enterprise can then read it; on Gitea and Forgejo everyone with an
-account on the server). The conversion stops if it becomes public. Commits carry each author's Kobe email, or a
+dialog names: private, or, on GitHub only, internal where a Workspace admin chose that for the
+connection (everyone in the GitHub enterprise can then read it). The conversion stops if it becomes public. Commits carry each author's Kobe email, or a
 no-reply address if the Workspace's [git settings](../admin/git-organizations.md#commit-author-email)
 say so; members who have left always get the no-reply address, and the committer reads
 "&lt;name&gt; via Kobe". Files under `.github/workflows/` run on the host if it runs Actions.
