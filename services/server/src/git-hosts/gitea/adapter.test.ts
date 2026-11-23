@@ -44,21 +44,23 @@ async function caught(p: Promise<unknown>): Promise<GitHostError> {
 describe("judgeVersion", () => {
   it.each([
     ["1.27.2", "gitea", true],
-    ["1.20.0", "gitea", true],
-    ["v1.22.6", "gitea", true],
+    ["1.26.0", "gitea", true],
+    ["v1.26.4", "gitea", true],
     ["1.27.0+dev-120-gabcdef", "gitea", true],
-    ["1.19.4", "gitea", false],
+    ["1.25.9", "gitea", false],
+    ["1.20.0", "gitea", false],
     ["17.0.1+gitea-1.22.0", "forgejo", true],
-    ["15.0.3+gitea-1.22.0", "forgejo", true],
-    ["7.0.0+gitea-1.22.0", "forgejo", true],
-    ["6.0.1+gitea-1.21.0", "forgejo", false],
+    ["16.0.5+gitea-1.22.0", "forgejo", true],
+    ["15.0.0+gitea-1.22.0", "forgejo", true],
+    ["14.0.2+gitea-1.22.0", "forgejo", false],
+    ["7.0.0+gitea-1.22.0", "forgejo", false],
   ] as const)("%s is %s, supported %s", (raw, product, ok) => {
     expect(judgeVersion(raw)).toMatchObject({ product, supported: ok });
   });
 
   it("states the minimum per product", () => {
-    expect(judgeVersion("1.0.0")?.minimumVersion).toBe("1.20.0");
-    expect(judgeVersion("1.0.0+gitea-1.22.0")?.minimumVersion).toBe("7.0.0");
+    expect(judgeVersion("1.0.0")?.minimumVersion).toBe("1.26.0");
+    expect(judgeVersion("1.0.0+gitea-1.22.0")?.minimumVersion).toBe("15.0.0");
   });
 
   it("rejects what is not a version and cleans what it shows", () => {
@@ -138,7 +140,7 @@ for (const product of ["gitea", "forgejo"] as const) {
       const adapter = make();
       const error = await caught(adapter.probe());
       expect(error).toMatchObject({ code: "unsupported_host", reason: "version_too_old" });
-      const min = product === "gitea" ? "Gitea 1.20.0" : "Forgejo 7.0.0";
+      const min = product === "gitea" ? "Gitea 1.26.0" : "Forgejo 15.0.0";
       expect(error.message).toContain(`Kobe supports ${min} and later`);
       expect((await caught(adapter.getRepository({ name: "docs" }))).code).toBe("unsupported_host");
       expect(fake.apiHits().every((h) => h.path === "/api/v1/version")).toBe(true);
