@@ -245,6 +245,12 @@ export const gitRepositories = pgTable(
     mirrorHeadSha: text(),
     mirrorRefreshedAt: timestamp({ withTimezone: true }),
     /**
+     * KOBE-767: when the project was linked to this repository (conversion or relink). Commits the
+     * Repo got before it (an earlier repository's last mirror, KOBE-766 review M3; the project's
+     * history from before the conversion) are never swept; null on rows from before KOBE-767.
+     */
+    linkedAt: timestamp({ withTimezone: true }),
+    /**
      * KOBE-766: the Kobe commit (project_commits.id) the mirror last wrote, so the next refresh
      * may drop it once it is no longer the head (the Repo's history lives on the host). Null
      * while the project's head is Kobe's own commit (straight after conversion). No key: a pruned

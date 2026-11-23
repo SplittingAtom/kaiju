@@ -59,10 +59,12 @@ async function teamHeld(tx: KobeTx, teamId: string): Promise<boolean> {
 
 /**
  * Drops mirror commits nothing needs any more (review L1, KOBE-767): every commit written into the
- * Repo since it was converted (mirror commits, and direct commits from Kobe's commit flow; the
- * previous mirror commit among them) that is neither the head nor the base of a working copy, so a
+ * Repo since it was linked to its repository (`linked_at`: the conversion or a relink; mirror
+ * commits and direct commits from Kobe's commit flow, the previous mirror commit among them) that
+ * is neither the head nor the base of a working copy, so a
  * commit a checkout kept alive goes once that checkout moved on or ended. Never while a legal hold
- * covers the Workspace; never the project's history from before the conversion (kept as it was).
+ * covers the Workspace; never the project's history from before the conversion, nor an earlier
+ * repository's last mirror (KOBE-766 review M3).
  */
 async function prunePrevious(
   tx: KobeTx,
@@ -74,9 +76,12 @@ async function prunePrevious(
   const candidates = await tx.execute<{ id: string }>(sql`
     SELECT c.id FROM project_commits c
      WHERE c.team_id = ${row.teamId} AND c.project_id = ${row.projectId}
-       AND c.created_at > (SELECT max(g.finished_at) FROM git_conversions g
-                            WHERE g.team_id = c.team_id AND g.project_id = c.project_id
-                              AND g.status = 'completed')
+       AND c.created_at > COALESCE(
+             (SELECT r.linked_at FROM git_repositories r
+               WHERE r.team_id = c.team_id AND r.project_id = c.project_id),
+             (SELECT max(g.finished_at) FROM git_conversions g
+               WHERE g.team_id = c.team_id AND g.project_id = c.project_id
+                 AND g.status = 'completed'))
        AND c.id IS DISTINCT FROM (SELECT head_commit_id FROM projects
                                    WHERE team_id = ${row.teamId} AND id = ${row.projectId})
        AND NOT EXISTS (SELECT 1 FROM project_checkouts k

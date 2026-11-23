@@ -1,0 +1,1 @@
+ALTER TABLE "git_repositories" ADD COLUMN "linked_at" timestamp with time zone;
