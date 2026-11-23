@@ -243,6 +243,82 @@ class Key:
         return False
 
 
+def stdlib_values():
+    import datetime
+    import decimal
+    import fractions
+    import pathlib
+    import uuid
+
+    class RecTz(datetime.tzinfo):
+        def utcoffset(self, dt):
+            RAN.append("utcoffset")
+            return datetime.timedelta(0)
+
+        def tzname(self, dt):
+            RAN.append("tzname")
+            return "X"
+
+        def dst(self, dt):
+            RAN.append("dst")
+            return None
+
+        def __repr__(self):
+            RAN.append("tz_repr")
+            return "RecTz()"
+
+    def recording(base):
+        class Sub(base):
+            def __repr__(self):
+                RAN.append("sub_repr:" + base.__name__)
+                return "sub"
+
+            def __str__(self):
+                RAN.append("sub_str:" + base.__name__)
+                return "sub"
+
+        Sub.__name__ = "Sub" + base.__name__
+        Sub.__qualname__ = Sub.__name__
+        return Sub
+
+    class MyInt(int):
+        def __repr__(self):
+            RAN.append("myint_repr")
+            return "3"
+
+        def __str__(self):
+            RAN.append("myint_str")
+            return "3"
+
+    odd_fraction = fractions.Fraction(3, 4)
+    fractions.Fraction.__dict__["_numerator"].__set__(odd_fraction, MyInt(3))
+    base_path = pathlib.PurePosixPath
+    return {
+        "when": datetime.datetime(2026, 11, 22, 10, 30),
+        "when_utc": datetime.datetime(2026, 11, 22, 10, 30, tzinfo=datetime.timezone.utc),
+        "when_member_tz": datetime.datetime(2026, 11, 22, 10, 30, tzinfo=RecTz()),
+        "time_member_tz": datetime.time(10, 30, tzinfo=RecTz()),
+        "day": datetime.date(2026, 11, 22),
+        "span": datetime.timedelta(days=2, seconds=5),
+        "tz": datetime.timezone.utc,
+        "money": decimal.Decimal("12.50"),
+        "ratio": fractions.Fraction(3, 4),
+        "odd_ratio": odd_fraction,
+        "ident": uuid.UUID("12345678-1234-5678-1234-567812345678"),
+        "where": pathlib.PurePosixPath("/workspace/data.csv"),
+        "real_path": pathlib.PosixPath("/workspace"),
+        "dots": Ellipsis,
+        "kinds": [int, len, sys, Ellipsis],
+        "sub_datetime": recording(datetime.datetime)(2026, 1, 1),
+        "sub_date": recording(datetime.date)(2026, 1, 1),
+        "sub_decimal": recording(decimal.Decimal)("1"),
+        "sub_fraction": recording(fractions.Fraction)(1, 2),
+        "sub_uuid": recording(uuid.UUID)("12345678-1234-5678-1234-567812345678"),
+        "sub_path": recording(base_path)("/x"),
+        "in_list": [datetime.datetime(2026, 1, 1, tzinfo=RecTz()), decimal.Decimal("2")],
+    }
+
+
 def scenario(name):
     np, pd = libraries()
     if name == "basic":
@@ -286,6 +362,8 @@ def scenario(name):
             "frame_of_objects": pd.DataFrame({"a": [1]}),
             "ok": 1,
         }, {}
+    if name == "stdlib":
+        return stdlib_values(), {}
     if name == "huge":
         return {
             "big_list": list(range(5_000_000)),

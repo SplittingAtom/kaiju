@@ -86,10 +86,12 @@ there, such as new output or a failed run. This browser remembers the tab you ch
 
   Reading the variables runs none of your code. Kobe shows the value of numbers, strings, bytes,
   lists, tuples, dicts and sets (up to 8 items, two levels deep and 200 characters; an object
-  inside one shows as its type, such as `<Customer>`), ranges, NumPy arrays of numbers, and pandas
-  DataFrames and Series (sizes, column names and types). A subclass of a list, dict, string and
-  so on shows its items as the built-in type stores them. Any other object, including instances of
-  your own classes, shows only its type and "(value not shown for this type)": its `__repr__`,
+  inside one shows as its type, such as `<Customer>`), ranges, dates, times, durations, decimals,
+  fractions, UUIDs and paths from Python's standard library (a time with a time zone of your own
+  class shows only its type), NumPy arrays of numbers, and pandas DataFrames and Series (sizes,
+  column names and types). A subclass of a list, tuple, dict, set, string or bytes shows its items
+  as the built-in type stores them; a subclass of anything else, and any other object, including
+  instances of your own classes, shows only its type and "(value not shown for this type)": its `__repr__`,
   `__str__`, `__len__` and iteration are never called. The request is not run as code either, so
   your execution hooks (`post_execute` and the like, autoreload), input transformers and display
   formatters do not run, and the execution count and history do not change. One snapshot lists at

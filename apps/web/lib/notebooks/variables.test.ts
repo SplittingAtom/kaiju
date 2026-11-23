@@ -42,6 +42,10 @@ describe("variables (KOBE-804)", () => {
     expect(reprText(v("x", { repr: "", reprError: "not_read" }), 80)).toBe(
       "(value not shown for this type)",
     );
+    // A newer agent's reason this page does not know yet: not shown, never an error.
+    expect(reprText(v("x", { repr: "", reprError: "some_new_reason" }), 80)).toBe(
+      "(value not shown for this type)",
+    );
   });
 
   it("hides credential-like names and environment mappings until shown", () => {

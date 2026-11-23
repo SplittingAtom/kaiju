@@ -68,9 +68,13 @@ export const notebookVariableSchema = z.strictObject({
   /**
    * `not_read` (KOBE-816): a type whose value would need the member's code to show (its own
    * class, a subclass, another library's object); `raised`: reading a library object failed;
-   * `timeout`: from agents before KOBE-816 (a member's repr took too long).
+   * `timeout`: from agents before KOBE-816 (a member's repr took too long). Any other short
+   * lowercase code is accepted too (a newer agent's reason; shown as "not shown"), so a server
+   * never refuses a snapshot over a reason it does not know yet.
    */
-  repr_error: z.enum(["raised", "timeout", "not_read"]).optional(),
+  repr_error: z
+    .union([z.enum(["raised", "timeout", "not_read"]), z.string().regex(/^[a-z_]{1,32}$/)])
+    .optional(),
   len: z.number().int().nonnegative().optional(),
   shape: z.array(z.number().int().nonnegative()).max(64).optional(),
   dtype: short(128).optional(),

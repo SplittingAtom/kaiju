@@ -32,6 +32,22 @@
     pandas `DataFrame` (rows, columns, the first 50 column labels and dtypes; labels that are not
     plain values show as `<TypeName>` and then no dtypes are asked) and `Series` (length, dtype):
     library code on library objects.
+  - exact standard-library types (`type(v) is T`, never a subclass; classes compared by identity,
+    never hashed), each safe because its text is library C or library code over fields checked
+    to be plain: `datetime.date`/`timedelta`/`timezone` (C reprs over ints and an exact
+    timezone); `datetime.datetime`/`time` only when `tzinfo` (read through the C getset) is
+    `None`, an exact `datetime.timezone` or an exact `zoneinfo.ZoneInfo` (a member's tzinfo
+    subclass would run its `utcoffset`/`tzname`/`__repr__`: type only then); `decimal.Decimal`
+    (C repr over its own digits); `fractions.Fraction` rendered by Kobe from `_numerator` /
+    `_denominator` read through the class's member descriptors and required to be exact `int`
+    (else type only); `uuid.UUID` rendered by Kobe from its `int` slot (exact `int`, 128 bits);
+    `pathlib.PurePosixPath`/`PosixPath`/`PureWindowsPath`/`WindowsPath` (pathlib's repr, only
+    when `_raw_paths` holds exact strings); `Ellipsis`, `NotImplemented`; and inside containers
+    exact `type` objects (qualname, C getset), built-in functions (`__name__`, C getset) and
+    exact modules (`__name__` from the module dict) by name. Hostile variants (a recording tzinfo
+    subclass, recording subclasses of each type, a Fraction with an `int`-subclass numerator)
+    record zero calls and stay type-only (`inspect-source.test.ts` "exact standard-library
+    values").
   - Anything else (a member's class, another library's object, an object-dtype array): type only,
     `repr: ""`, `repr_error: "not_read"` (protocol enum extended; web shows "(value not shown for
     this type)"). Type names come from `type()` and C slots, never `__class__`.
@@ -43,8 +59,11 @@
   error (no member frame is ever interrupted: none runs).
 - **Variables tab contract.** Unchanged except the new `repr_error: "not_read"`; the
   hidden-until-Show rule for credential-like names and `os.environ` stays a web rule on the name
-  and type, which the snapshot still sends. An older server rejects `not_read` from a newer agent
-  (`unavailable`) during a rolling deploy until the server is updated: servers deploy first.
+  and type, which the snapshot still sends. **Deploy order:** a server from before KOBE-816
+  rejects `not_read` from a newer agent (the snapshot answers `unavailable`) until the server is
+  updated, so servers deploy before sandbox images. From this change on the protocol accepts any
+  short lowercase `repr_error` (`^[a-z_]{1,32}$`) and the web shows unknown ones as "not shown",
+  so a later reason needs no ordering.
 - **A member's timer:** unlike completion (which refuses while one is pending), the snapshot
   does not refuse: it runs nothing of the member's and no signal of its own; a member's signal
   handler can run whenever the kernel handles any message, this one included.
@@ -52,10 +71,17 @@
   OpenAPI description (`openapi/notebook-variables.ts`). No "For agents" change (agents never see
   snapshots).
 
+## Release notes (for the docs ticket)
+
+- The Variables tab no longer runs any of your code to show values: your own classes and other
+  libraries' objects (apart from NumPy and pandas) show their type only; standard-library dates,
+  times, decimals, fractions, UUIDs and paths still show their value.
+- Upgrade order: update the server before the sandbox image (an older server cannot read the new
+  "value not shown" reason and answers "did not answer in time" until it is updated).
+
 ## Open questions (for Chris or the coordinator)
 
-- Values of other libraries' objects (polars frames, datetime, Decimal) now show the type only.
-  A follow-up could add more exact library types read through their own C attributes.
+- Third-party objects other than NumPy/pandas (polars frames, Arrow tables) show the type only.
 
 ## Evidence (acceptance criteria → test or command output)
 

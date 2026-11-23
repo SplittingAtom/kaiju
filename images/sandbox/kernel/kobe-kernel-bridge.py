@@ -875,11 +875,15 @@ def _var_kind(t):
 
 
 def _library(module, name):
+    # A library class, compared by identity only (`type(v) is _library(...)`); its metaclass
+    # may be `type` or `abc.ABCMeta` (fractions.Fraction).
     m = _find(_sys_modules(), module, None)
     if type(m) is not _types.ModuleType:
         return None
     t = _find(_module_dict(m), name, None)
-    return t if type(t) is type else None
+    abcs = _find(_sys_modules(), "abc", None)
+    abc_meta = _find(_module_dict(abcs), "ABCMeta", None) if type(abcs) is _types.ModuleType else None
+    return t if type(t) is type or (abc_meta is not None and type(t) is abc_meta) else None
 
 
 def _int_text(value):
@@ -896,6 +900,85 @@ def _scalar_text(value, t):
     if t is type(None):
         return "None"
     return float.__repr__(value) if t is float else complex.__repr__(value)
+
+
+def _slot(t, name, value):
+    # A __slots__ field read through the class's own member descriptor (C), else _Stop.
+    desc = _lookup(t, name, None)
+    if type(desc) is not _types.MemberDescriptorType:
+        raise _Stop(name)
+    return desc.__get__(value, t)
+
+
+def _plain_tz(tz):
+    # A tzinfo whose methods are library code: None, the exact datetime.timezone or ZoneInfo.
+    return tz is None or type(tz) is _library("datetime", "timezone") or type(tz) is _library(
+        "zoneinfo", "ZoneInfo"
+    )
+
+
+def _stdlib_text(value, t):
+    # EXACT standard-library types whose text runs no member code (never a subclass); None when
+    # `value` is not one of them, or one holding something that would (a member's tzinfo).
+    if t is type(Ellipsis):
+        return "Ellipsis"
+    if t is type(NotImplemented):
+        return "NotImplemented"
+    if t is type:
+        return _clip(_qualname(value), 128)
+    if t is _types.BuiltinFunctionType:
+        name = _types.BuiltinFunctionType.__dict__["__name__"].__get__(value)
+        return "<built-in function %s>" % _clip(name, 128)
+    if t is _types.ModuleType:
+        name = _find(_module_dict(value), "__name__", None)
+        return "<module %s>" % (str.__repr__(name) if type(name) is str else "?")
+    dt = _find(_sys_modules(), "datetime", None)
+    if type(dt) is _types.ModuleType:
+        # Compared by identity (a member's class with a hooked metaclass is never hashed).
+        kind = next(
+            (n for n in ("datetime", "date", "time", "timedelta", "timezone") if t is _library("datetime", n)),
+            None,
+        )
+        if kind in ("date", "timedelta", "timezone"):
+            return t.__repr__(value)
+        if kind in ("datetime", "time"):
+            # A member's tzinfo subclass would run its utcoffset/tzname/repr: type only then.
+            tz = _lookup(t, "tzinfo", None).__get__(value, t)
+            return t.__repr__(value) if _plain_tz(tz) else None
+    if t is _library("decimal", "Decimal"):
+        return t.__repr__(value)
+    if t is _library("fractions", "Fraction"):
+        try:
+            n, d = _slot(t, "_numerator", value), _slot(t, "_denominator", value)
+        except _Stop:
+            return None
+        if type(n) is not int or type(d) is not int:
+            return None
+        return "Fraction(%s, %s)" % (_int_text(n), _int_text(d))
+    if t is _library("uuid", "UUID"):
+        try:
+            n = _slot(t, "int", value)
+        except _Stop:
+            return None
+        if type(n) is not int or not 0 <= n < 1 << 128:
+            return None
+        h = "%032x" % n
+        return "UUID('%s-%s-%s-%s-%s')" % (h[:8], h[8:12], h[12:16], h[16:20], h[20:])
+    for name in ("PurePosixPath", "PosixPath", "PureWindowsPath", "WindowsPath"):
+        if t is _library("pathlib", name):
+            return _path_text(value, t)
+    return None
+
+
+def _path_text(value, t):
+    # pathlib's own repr (library code) only when its parts are exact strings.
+    try:
+        raw = _slot(t, "_raw_paths", value) if _lookup(t, "_raw_paths", None) is not None else None
+    except _Stop:
+        raw = None
+    if raw is not None and (type(raw) is not list or any(type(p) is not str for p in raw)):
+        return None
+    return t.__repr__(value)
 
 
 class _Render:
@@ -919,7 +1002,8 @@ class _Render:
             return range.__repr__(value)
         base = next((b for b in _VAR_CONTAINERS if t is b), None)
         if base is None:
-            return "<%s>" % _type_names(t)[0]
+            known = _stdlib_text(value, t)
+            return known if known is not None else "<%s>" % _type_names(t)[0]
         return self.container(value, base, depth)
 
     def container(self, value, base, depth):
@@ -982,6 +1066,10 @@ class _Snapshot:
             if t in _VAR_SIZED:
                 out["len"] = t.__len__(value)
             out["repr"] = self.text(value)
+            return out
+        known = _stdlib_text(value, t)
+        if known is not None:
+            out["repr"] = _clip_keep(known, self.repr_chars)
             return out
         if self.frame is not None and t is self.frame:
             columns = value.columns

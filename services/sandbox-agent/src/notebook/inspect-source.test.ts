@@ -97,6 +97,41 @@ describe.skipIf(!hasPython)("kernel variables snapshot (KOBE-803)", () => {
     expect(v.get("keyed")?.repr).toBe("{<Key>: 1, 'plain': <Recorder>}");
   });
 
+  it("exact standard-library values are shown; subclasses and member tzinfo stay type-only, zero calls", () => {
+    const s = snap("stdlib") as Snap & { ran: string[] };
+    expect(s.ran).toEqual([]);
+    const repr = (name: string) => byName(s).get(name)?.repr;
+    const error = (name: string) => byName(s).get(name)?.repr_error;
+    expect(repr("when")).toBe("datetime.datetime(2026, 11, 22, 10, 30)");
+    expect(repr("when_utc")).toBe(
+      "datetime.datetime(2026, 11, 22, 10, 30, tzinfo=datetime.timezone.utc)",
+    );
+    expect(repr("day")).toBe("datetime.date(2026, 11, 22)");
+    expect(repr("span")).toBe("datetime.timedelta(days=2, seconds=5)");
+    expect(repr("tz")).toBe("datetime.timezone.utc");
+    expect(repr("money")).toBe("Decimal('12.50')");
+    expect(repr("ratio")).toBe("Fraction(3, 4)");
+    expect(repr("ident")).toBe("UUID('12345678-1234-5678-1234-567812345678')");
+    expect(repr("where")).toBe("PurePosixPath('/workspace/data.csv')");
+    expect(repr("real_path")).toBe("PosixPath('/workspace')");
+    expect(repr("dots")).toBe("Ellipsis");
+    expect(repr("kinds")).toBe("[int, <built-in function len>, <module 'sys'>, Ellipsis]");
+    expect(repr("in_list")).toBe("[<datetime>, Decimal('2')]");
+    for (const name of [
+      "when_member_tz",
+      "time_member_tz",
+      "odd_ratio",
+      "sub_datetime",
+      "sub_date",
+      "sub_decimal",
+      "sub_fraction",
+      "sub_uuid",
+      "sub_path",
+    ]) {
+      expect(error(name), name).toBe("not_read");
+    }
+  });
+
   it("huge values are bounded: a few items, capped text, a summarised int", () => {
     const s = snap("huge");
     const v = byName(s);
