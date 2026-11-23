@@ -12,14 +12,19 @@ import {
   withTeam,
   type Envelope,
 } from "@kobe/db";
-import { gitApprovalSchema } from "@kobe/protocol";
+import { gitApprovalSchema, projectPermissions } from "@kobe/protocol";
 import { rawRequest } from "./connectors/oauth/http.js";
 import { gitApprovalCard, kobeGitApprovalCard } from "./git-tools/card.js";
 import { guardGitToolCall } from "./git-tools/guard.js";
 import { describePinnedTool } from "./mcp/catalog.js";
 import { gitPinnedTools } from "./git-tools/pinned.js";
-import { GIT_TOOLS } from "./git-tools/catalog.js";
-import { GIT_CONNECTION_READS_PER_HOUR, GIT_TOOL_WRITES_PER_HOUR } from "./git-tools/execute.js";
+import { GIT_TOOLS, gitToolByName } from "./git-tools/catalog.js";
+import {
+  GIT_CONNECTION_READS_PER_HOUR,
+  GIT_TOOL_WRITES_PER_HOUR,
+  runGitTool,
+  type GitToolsDeps,
+} from "./git-tools/execute.js";
 import { listChatConnectors } from "./connectors/thread-connectors.js";
 import { hostHasRepos, repoReadRules } from "./git/transport.js";
 import { gitRunServer } from "./git-tools/run.js";
@@ -827,6 +832,85 @@ describe("round 2 (review g103)", () => {
     const again = await approved(s, "git_create_repository", { connection: id, name: "odd" });
     expect(again.out.text).toContain("outcome_unknown");
     expect(github.createdRepositories).toHaveLength(1);
+  });
+});
+
+describe("write tools apply the Repo read rule first (R2-L2)", () => {
+  it("answers a Repo the member may not read exactly as a missing repository, sending nothing", async () => {
+    const w = await world();
+    const id = await connect(w, "github");
+    const s = await h.sandboxFor(w.team, w.contributor);
+    const docsId = JSON.parse(
+      (await call(s, "git_get_repository", { connection: id, repository: "docs" })).text,
+    );
+    expect(docsId.repository.name).toBe("docs");
+    const project = randomUUID();
+    await h.fx.admin.query(
+      `INSERT INTO projects (team_id, id, slug, name, kind, created_by)
+       VALUES ($1, $2, 'restricted', 'Restricted', 'repo', $3)`,
+      [w.team, project, w.admin.id],
+    );
+    await h.fx.admin.query(
+      `INSERT INTO git_repositories (team_id, connection_id, base_url, host_repo_id, full_name,
+         project_id, origin, created_by)
+       SELECT $1, id, base_url, 'unused-id', $2, $3, 'conversion', $4
+         FROM git_connections WHERE id = $5`,
+      [w.team, `${github.organization}/docs`, project, w.admin.id, id],
+    );
+    // A restricted reader, through the test seam (today every member reads every project).
+    const deps: GitToolsDeps = {
+      db: h.fx.db,
+      envelope,
+      net: h.fx.replica(0).deps.gitHostNet,
+      publicUrl: "https://kobe.test",
+      projectPermissions: (role, projectRole) => ({
+        ...projectPermissions(role, projectRole),
+        view: false,
+        converse: false,
+        edit: false,
+      }),
+    };
+    const ctx = {
+      principal: { teamId: w.team, userId: w.contributor.id, sandboxId: s.sandboxId },
+      runId: s.runId,
+      threadId: s.threadId,
+      toolCallId: "toolu_r2l2",
+      agentId: null,
+    };
+    const run = (name: string, input: Record<string, unknown>) =>
+      runGitTool(deps, ctx, must(gitToolByName(name)), input);
+    const writes: [string, (repository: string) => Record<string, unknown>][] = [
+      ["git_create_branch", (r) => ({ connection: id, repository: r, name: "x", from: "main" })],
+      [
+        "git_open_pull_request",
+        (r) => ({ connection: id, repository: r, title: "t", body: "b", head: "x", base: "main" }),
+      ],
+      [
+        "git_comment",
+        (r) => ({ connection: id, repository: r, number: 1, on: "issue", body: "b" }),
+      ],
+      ["git_create_issue", (r) => ({ connection: id, repository: r, title: "t", body: "b" })],
+    ];
+    const missing = await run("git_create_issue", {
+      connection: id,
+      repository: "never",
+      title: "t",
+      body: "b",
+    });
+    for (const [name, input] of writes) {
+      const refused = await run(name, input("docs"));
+      expect(refused, name).toEqual(missing);
+      expect(refused).toMatchObject({ ok: false, code: "not_found" });
+    }
+    // Reads too, and the listing leaves it out.
+    expect(await run("git_read_file", { connection: id, repository: "docs", path: "" })).toEqual(
+      missing,
+    );
+    const listed = await run("git_list_repositories", { connection: id });
+    expect(listed.ok && JSON.parse(listed.text).repositories).toEqual([]);
+    expect(await auditRows(w.team, "git.write")).toEqual([]);
+    expect(github.issues).toEqual([]);
+    expect(github.pullRequests).toEqual([]);
   });
 });
 

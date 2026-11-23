@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { canonicalJson } from "@kobe/protocol";
+import { canonicalJson, projectPermissions } from "@kobe/protocol";
 import {
   gitRepositories,
   openGitCredential,
@@ -75,7 +75,6 @@ const CONNECTION_WRITE_RULE = {
   max: GIT_CONNECTION_WRITES_PER_HOUR,
 } as const;
 
-
 export interface GitToolsDeps {
   readonly db: KobeDb;
   /** Opens sealed credentials; unset (no envelope key): every host call is refused. */
@@ -84,6 +83,12 @@ export interface GitToolsDeps {
   /** The deployment's public origin: the conversation link in posted footers (G13). */
   readonly publicUrl: string;
   readonly tokenCache?: InstallationTokenCache;
+  /**
+   * Tests only: the project permission rule the Repo read rule applies (default
+   * `projectPermissions`), so a restricted reader can be simulated (KOBE-587 makes every member
+   * an implicit reader).
+   */
+  readonly projectPermissions?: typeof projectPermissions;
   /** Tests: a fake adapter. */
   readonly adapterFor?: (
     settings: GitSiteSettings,
@@ -329,7 +334,9 @@ async function mayRead(
   repos: readonly { readonly id: string; readonly fullName: string }[],
 ): Promise<(r: { readonly id: string; readonly fullName: string }) => boolean> {
   const rules = await repoReadRules(deps.db, principal, connection.baseUrl, repos);
-  return (r) => facts.role !== null && repoReadable(facts.role, rules, r);
+  return (r) =>
+    facts.role !== null &&
+    repoReadable(facts.role, rules, r, deps.projectPermissions ?? projectPermissions);
 }
 
 /**

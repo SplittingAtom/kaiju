@@ -62,8 +62,8 @@ Tools: reads `git_list_connections` (not in the spec's table: the agent needs th
   connection, host, organization, repository, host ids, number, link, `callDigest`. No titles,
   bodies or branch names (as `mcp.tool_call` records no input). Site view shows ids/number/link,
   hides `callDigest`.
-- **Rate limits**: server `hitRateLimit` (durable `kobe_rate_limits`; the `@kobe/db` limiter of PR
-  #688 is not on this branch): 300 reads / 10 min, 30 writes / hour per member per Workspace.
+- **Rate limits**: the server's `checkRateLimit` over the `@kobe/db` limiter (PR #688, merged in
+  with the phase-2 base): 300 reads / 10 min, 30 writes / hour per member per Workspace.
 - **Repositories created by tools** get a `git_repositories` row (`origin = tool`).
 - Footer name: the member's display name, never their email ("a Kobe member" when unset).
 
@@ -90,8 +90,7 @@ untrusted fences, refusal codes), `admin/git-organizations.md` (agent column per
   no table.
 - **M2**: per-connection budgets (the coordinator's numbers): 3,000 reads and 300 writes an hour
   per connection, all members together, in front of the adapter; `git_connection_budget` with the
-  window end as retry time (member limits now report their window end too). Server
-  `hitRateLimit` (no `@kobe/db` limiter on this branch).
+  window end as retry time (member limits report theirs too), from `checkRateLimit`.
 - **M3** (owner decision): the git tools are the built-in **git** connector (`builtin = 'git'`,
   id `6b6f6265-0000-4000-8000-000000000002`, name `kobe-git`, seeded at start; migration
   `0250_git_builtin_connector` widens the two CHECKs), served by `/internal/v1/mcp/git/{list,calls}`
