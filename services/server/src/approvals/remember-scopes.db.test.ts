@@ -2,12 +2,12 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_REMEMBER_LIMITS, type RememberLimits } from "@kobe/protocol";
 import { createDb, type KobeDatabase } from "@kobe/db";
-import { approvalKeyring } from "./approvals/index.js";
-import { createPolicyEngine } from "./policy/engine.js";
-import { createToolRegistry } from "./policy/registry.js";
-import { createDbRuleSource, createDbSettingsSource } from "./policy/rule-store.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
+import { approvalKeyring } from "./index.js";
+import { createPolicyEngine } from "../policy/engine.js";
+import { createToolRegistry } from "../policy/registry.js";
+import { createDbRuleSource, createDbSettingsSource } from "../policy/rule-store.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 
 /**
  * KOBE-289 end to end against Postgres and a real WebSocket sandbox: every remember scope is

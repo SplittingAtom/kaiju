@@ -2,14 +2,14 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { skippedActionsSchema, type PolicyDecision } from "@kobe/protocol";
 import { createDb, withTeam, type KobeDatabase } from "@kobe/db";
-import { approvalKeyring } from "./approvals/index.js";
-import { createPolicyEngine } from "./policy/engine.js";
-import { createToolRegistry } from "./policy/registry.js";
-import { createDbRuleSource, createDbSettingsSource } from "./policy/rule-store.js";
-import { lastMirroredEntryId, restoreParts } from "./sandbox-wire/entries.js";
-import { createDbRunContextSource, decidePolicyCheck } from "./sandbox-wire/policy-check.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
+import { approvalKeyring } from "./index.js";
+import { createPolicyEngine } from "../policy/engine.js";
+import { createToolRegistry } from "../policy/registry.js";
+import { createDbRuleSource, createDbSettingsSource } from "../policy/rule-store.js";
+import { lastMirroredEntryId, restoreParts } from "../sandbox-wire/entries.js";
+import { createDbRunContextSource, decidePolicyCheck } from "../sandbox-wire/policy-check.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 
 /**
  * Scheduled runs are unattended-safe end to end (KOBE-178, D29/D32): a call that would ask is

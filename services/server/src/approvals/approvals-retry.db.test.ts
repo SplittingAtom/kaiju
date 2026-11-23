@@ -3,12 +3,12 @@ import { Writable } from "node:stream";
 import { pino } from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createDb, type KobeDatabase } from "@kobe/db";
-import { approvalKeyring } from "./approvals/index.js";
-import { createPolicyEngine } from "./policy/engine.js";
-import { createToolRegistry } from "./policy/registry.js";
-import { createDbRuleSource, createDbSettingsSource } from "./policy/rule-store.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
+import { approvalKeyring } from "./index.js";
+import { createPolicyEngine } from "../policy/engine.js";
+import { createToolRegistry } from "../policy/registry.js";
+import { createDbRuleSource, createDbSettingsSource } from "../policy/rule-store.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 
 /**
  * The approval broker's retry of `#create` (KOBE-266), driven against Postgres: test triggers

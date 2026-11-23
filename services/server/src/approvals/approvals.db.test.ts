@@ -7,14 +7,14 @@ import {
   type ToolDescriptor,
 } from "@kobe/protocol";
 import { createDb, type KobeDatabase } from "@kobe/db";
-import { APPROVALS_MAX_PER_RUN, approvalKeyring } from "./approvals/index.js";
-import { voidUndeliveredAllowInTx } from "./approvals/run-end.js";
-import { withAppendTx } from "./event-stream/append.js";
-import { createPolicyEngine } from "./policy/engine.js";
-import { createToolRegistry } from "./policy/registry.js";
-import { createDbRuleSource, createDbSettingsSource } from "./policy/rule-store.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
+import { APPROVALS_MAX_PER_RUN, approvalKeyring } from "./index.js";
+import { voidUndeliveredAllowInTx } from "./run-end.js";
+import { withAppendTx } from "../event-stream/append.js";
+import { createPolicyEngine } from "../policy/engine.js";
+import { createToolRegistry } from "../policy/registry.js";
+import { createDbRuleSource, createDbSettingsSource } from "../policy/rule-store.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 
 /**
  * Approvals (KOBE-37, D29) end to end against Postgres, real WebSockets and two replicas: a
