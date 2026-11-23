@@ -2,13 +2,13 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { loadEnvelope, sealGitCredential, type Envelope } from "@kobe/db";
 import { generateSessionKeyPair, signSessionToken } from "@kobe/session-token";
-import type { GitAccess, GitHostAdapter } from "./git-hosts/adapter.js";
-import { GitHostError } from "./git-hosts/adapter.js";
-import type { GitAdapterInput } from "./git-hosts/factory.js";
-import { logger } from "./logger.js";
-import { createInternalApp } from "./routes/internal.js";
-import { INTERNAL_KEY, MCP_SESSION_KEY, MCP_VERIFY_KEYS } from "./testing/mcp-fixtures.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import type { GitAccess, GitHostAdapter } from "./adapter.js";
+import { GitHostError } from "./adapter.js";
+import type { GitAdapterInput } from "./factory.js";
+import { logger } from "../logger.js";
+import { createInternalApp } from "../routes/internal.js";
+import { INTERNAL_KEY, MCP_SESSION_KEY, MCP_VERIFY_KEYS } from "../testing/mcp-fixtures.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-763: the egress proxy's git decisions on the internal listener. The server matches the
