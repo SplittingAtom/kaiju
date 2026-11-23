@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { RawBody } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { RawBody } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /** KOBE-202 (CE8): layout preferences per user, server-side, following the member across devices. */
 let h: Harness;

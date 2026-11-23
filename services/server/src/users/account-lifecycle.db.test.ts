@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, PASSWORD, PUBLIC_URL, type Harness } from "./testing/harness.js";
-import { totpFromUri } from "./testing/totp.js";
-import { SoftwareAuthenticator } from "./testing/webauthn.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, PASSWORD, PUBLIC_URL, type Harness } from "../testing/harness.js";
+import { totpFromUri } from "../testing/totp.js";
+import { SoftwareAuthenticator } from "../testing/webauthn.js";
 
 // KOBE-13 ac-3 (password reset) and ac-4 (deactivation, reactivation).
 let h: Harness;
