@@ -3,19 +3,19 @@ import { Readable } from "node:stream";
 import { strFromU8, unzipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { UPLOAD_ERROR_HTTP_STATUS, uploadErrorSchema, uploadResponseSchema } from "@kobe/protocol";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { RawBody } from "./testing/browser.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { runWithAuditContext } from "./audit/context.js";
-import { exportResponseBody, exportZip } from "./retention/export.js";
-import { blobRecorder } from "./retention/job.js";
-import { deleteReleasedBlobs, purgeThreads } from "./retention/index.js";
-import { expireOrphanUploads } from "./uploads/expire.js";
-import { storeUpload } from "./uploads/store.js";
-import type { UploadSettings } from "./uploads/settings.js";
-import type { ObjectStore } from "./workspace-sync/object-store.js";
-import { OPERATION_LIMITS } from "./operation-limits.js";
-import { clearLimit, expectRateLimited, fillLimit } from "./testing/operation-limits.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { RawBody } from "../testing/browser.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { runWithAuditContext } from "../audit/context.js";
+import { exportResponseBody, exportZip } from "../retention/export.js";
+import { blobRecorder } from "../retention/job.js";
+import { deleteReleasedBlobs, purgeThreads } from "../retention/index.js";
+import { expireOrphanUploads } from "./expire.js";
+import { storeUpload } from "./store.js";
+import type { UploadSettings } from "./settings.js";
+import type { ObjectStore } from "../workspace-sync/object-store.js";
+import { OPERATION_LIMITS } from "../operation-limits.js";
+import { clearLimit, expectRateLimited, fillLimit } from "../testing/operation-limits.js";
 
 /**
  * KOBE-143: POST /v1/uploads end to end: S3 first then the files row, limits, the per-team quota

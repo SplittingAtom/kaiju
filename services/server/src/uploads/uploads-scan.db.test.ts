@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { uploadErrorSchema, uploadResponseSchema } from "@kobe/protocol";
-import { EventStreamFixture, type Person } from "./testing/event-stream-fixture.js";
-import { RawBody } from "./testing/browser.js";
-import { EICAR, startFakeClamd, type FakeClamd } from "./testing/fake-clamd.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import type { UploadSettings } from "./uploads/settings.js";
+import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
+import { RawBody } from "../testing/browser.js";
+import { EICAR, startFakeClamd, type FakeClamd } from "../testing/fake-clamd.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import type { UploadSettings } from "./settings.js";
 
 /**
  * KOBE-146: POST /v1/uploads with ClamAV on (a fake clamd): clean -> stored with scan_status
