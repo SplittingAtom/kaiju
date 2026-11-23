@@ -3,15 +3,15 @@ import path from "node:path";
 import { strToU8, zipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { skillPackageHashes } from "@kobe/protocol/node";
-import { validateZipBundle } from "./skills/bundle.js";
-import { ensureObject } from "./skills/kobe-seed.js";
-import { mirrorHttpClient } from "./skills/mirror/http-client.js";
-import { SkillMirror } from "./skills/mirror/runner.js";
-import { sha256Hex } from "./skills/storage.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { selfSignedCert, startGitServer, type GitServer } from "./testing/git-http-server.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
+import { validateZipBundle } from "../bundle.js";
+import { ensureObject } from "../kobe-seed.js";
+import { mirrorHttpClient } from "./http-client.js";
+import { SkillMirror } from "./runner.js";
+import { sha256Hex } from "../storage.js";
+import type { TestBrowser } from "../../testing/browser.js";
+import { selfSignedCert, startGitServer, type GitServer } from "../../testing/git-http-server.js";
+import { openHarness, type Harness } from "../../testing/harness.js";
+import { MemoryObjects } from "../../testing/memory-objects.js";
 
 /**
  * KOBE-343 (SK29, U36): the catalog's optional one-way git mirror against a local HTTPS git
