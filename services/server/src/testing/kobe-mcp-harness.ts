@@ -16,6 +16,7 @@ import { KOBE_BUILTIN_CONNECTOR_ID, KOBE_MCP_MODE_KEY, seedKobeBuiltinConnector 
 import { approvalKeyring } from "../approvals/index.js";
 import { routeCaller } from "../kobe-mcp/execute.js";
 import type { KobeRouteCaller } from "../kobe-mcp/catalog.js";
+import type { ServerDepsOptions } from "../deps.js";
 import { createInternalApp } from "../routes/internal.js";
 import { EventStreamFixture, type Person } from "./event-stream-fixture.js";
 import {
@@ -65,9 +66,14 @@ export class KobeMcpHarness {
   private kobeName = "kobe";
   private nextId = 1;
 
-  async setup(): Promise<void> {
+  /** `extra`: more server options (the git tools' envelope and host seam, KOBE-762). */
+  async setup(extra: Partial<ServerDepsOptions> = {}): Promise<void> {
     const fx = this.fx;
-    await fx.setup([{}], () => ({ sandboxWire: { sweep: false }, approvalKeys: this.keyring }));
+    await fx.setup([{}], () => ({
+      sandboxWire: { sweep: false },
+      approvalKeys: this.keyring,
+      ...extra,
+    }));
     const seeded = await seedKobeBuiltinConnector(fx.db);
     if (seeded.outcome === "names_taken") throw new Error("kobe names taken");
     this.kobeName = seeded.name;
