@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { seedGalleryAgents } from "./gallery/seed.js";
-import type { GalleryDefinition } from "./gallery/definitions.js";
-import type { TestBrowser, TestResponse } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { seedGalleryAgents } from "./seed.js";
+import type { GalleryDefinition } from "./definitions.js";
+import type { TestBrowser, TestResponse } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * Editing gallery agents (KOBE-494; D19/D21 as amended by Chris 2026-10-23): site admins save

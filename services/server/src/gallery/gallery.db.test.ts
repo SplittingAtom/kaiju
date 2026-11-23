@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { seedGalleryAgents } from "./gallery/seed.js";
-import type { GalleryDefinition } from "./gallery/definitions.js";
-import type { TestBrowser, TestResponse } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { seedGalleryAgents } from "./seed.js";
+import type { GalleryDefinition } from "./definitions.js";
+import type { TestBrowser, TestResponse } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * The gallery mechanism (KOBE-87): agents seeded from definitions in the repo, read-only through

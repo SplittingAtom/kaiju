@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { GALLERY_DEFINITIONS, type GalleryDefinition } from "./gallery/definitions.js";
-import { seedGalleryAgents } from "./gallery/seed.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { GALLERY_DEFINITIONS, type GalleryDefinition } from "./definitions.js";
+import { seedGalleryAgents } from "./seed.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-254: the gallery is one agent, Kobe. A fresh install seeds only Kobe; an install upgraded

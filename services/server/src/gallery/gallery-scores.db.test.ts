@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { EvalRunner } from "./agents/eval/service.js";
-import { seedGalleryAgents } from "./gallery/seed.js";
-import type { SandboxSettings } from "./sandbox/config.js";
-import type { KubeObject } from "./sandbox/manifests.js";
-import { createFakeKube, type FakeKube } from "./testing/fake-kube.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { KEYS, SETTINGS, gateFor, seedCluster } from "./testing/sandbox-fixtures.js";
+import { EvalRunner } from "../agents/eval/service.js";
+import { seedGalleryAgents } from "./seed.js";
+import type { SandboxSettings } from "../sandbox/config.js";
+import type { KubeObject } from "../sandbox/manifests.js";
+import { createFakeKube, type FakeKube } from "../testing/fake-kube.js";
+import { openHarness, type Harness } from "../testing/harness.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { KEYS, SETTINGS, gateFor, seedCluster } from "../testing/sandbox-fixtures.js";
 
 /**
  * Orbit scores shown in the inventory and published for gallery agents (KOBE-94). The eval Job is
