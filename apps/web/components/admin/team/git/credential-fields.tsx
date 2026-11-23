@@ -13,6 +13,9 @@ const TOKEN_MAX = 1024;
 const KEY_MAX = 8192;
 const TOKEN_SHAPE = /^[\x21-\x7e]+$/;
 const ID_SHAPE = /^[1-9]\d{0,15}$/;
+/** Refused before anything is sent (the server takes 8 KiB keys in requests of at most 64 KiB). */
+const KEY_TOO_LONG =
+  "That is too long for a private key: Kobe accepts up to 8 KiB (a GitHub App key is about 2 KiB). Use the .pem file GitHub generated.";
 
 /**
  * Reads the credential at submit time (the only moment it leaves the form) and wipes it. The
@@ -83,7 +86,8 @@ export const CredentialFields = forwardRef<
         }
         if (pem === "")
           next.privateKey = "Add the App's private key (paste it or choose the file).";
-        else if (pem.length > KEY_MAX || !/-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(pem)) {
+        else if (pem.length > KEY_MAX) next.privateKey = KEY_TOO_LONG;
+        else if (!/-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(pem)) {
           next.privateKey = "That is not a private key: use the .pem file GitHub generated.";
         } else if (pem.includes("ENCRYPTED PRIVATE KEY")) {
           next.privateKey = "An encrypted key cannot be used: use the key as GitHub hands it out.";
@@ -112,7 +116,7 @@ export const CredentialFields = forwardRef<
     e.target.value = "";
     if (!chosen) return;
     if (chosen.size > KEY_MAX) {
-      setProblems((p) => ({ ...p, privateKey: "That file is too large to be a private key." }));
+      setProblems((p) => ({ ...p, privateKey: KEY_TOO_LONG }));
       return;
     }
     const text = await chosen.text();
@@ -222,8 +226,11 @@ export const CredentialFields = forwardRef<
               rows={4}
               className={MASKED}
               disabled={disabled}
-              onInput={() => {
+              onInput={(e) => {
                 setKeyFile(null);
+                // Said at once, not only at submit: a pasted file of the wrong kind is obvious.
+                const tooLong = e.currentTarget.value.length > KEY_MAX;
+                setProblems((p) => ({ ...p, privateKey: tooLong ? KEY_TOO_LONG : undefined }));
                 onEdited();
               }}
             />

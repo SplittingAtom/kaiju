@@ -2,12 +2,16 @@
 
 import { GitBranchIcon } from "lucide-react";
 import { listGitConnections, type GitConnectionsAnswer } from "../../../../lib/admin/api/team/git";
-import { ACCESS_LABEL, HEALTH_LABEL, hostOf, providerName } from "../../../../lib/admin/git/labels";
+import {
+  ACCESS_LABEL,
+  HEALTH_LABEL,
+  HEALTH_TONE,
+  hostOf,
+  providerName,
+} from "../../../../lib/admin/git/labels";
 import { Badge, EmptyState, Notice, Section } from "../../../ui/console";
 import { ErrorNotice } from "../../error-notice";
 import { useResource } from "../../use-resource";
-
-const HEALTH_TONE = { ok: "running", failing: "failed", unchecked: "neutral" } as const;
 
 /**
  * Which git organizations the Workspace is connected to, read-only (spec §7: members see what

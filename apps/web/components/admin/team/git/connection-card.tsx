@@ -4,14 +4,18 @@ import { GitBranchIcon } from "lucide-react";
 import type { GitAdminConnection } from "../../../../lib/admin/api/team/git";
 import { hostAllowed } from "../../../../lib/admin/git/address";
 import { healthMessage } from "../../../../lib/admin/git/errors";
-import { ACCESS_LABEL, HEALTH_LABEL, hostOf, providerName } from "../../../../lib/admin/git/labels";
+import {
+  ACCESS_LABEL,
+  HEALTH_LABEL,
+  HEALTH_TONE,
+  hostOf,
+  providerName,
+} from "../../../../lib/admin/git/labels";
 import { Badge, Button, Card, Notice, eventTrigger } from "../../../ui/console";
 import { DateTime } from "../../parts";
 import { CapabilityList } from "./test-report";
 
 export type CardAction = "settings" | "replace" | "check" | "disconnect";
-
-const HEALTH_TONE = { ok: "running", failing: "failed", unchecked: "neutral" } as const;
 
 /** Whether the credential's expiry has passed. */
 export function expired(c: GitAdminConnection, now: number = Date.now()): boolean {
@@ -47,11 +51,12 @@ export function ConnectionCard({
           <Badge tone="attention">{expired(c) ? "Credential expired" : "Expires soon"}</Badge>
         ) : null}
       </div>
-      {blocked ? (
+      {health === "not_allowed" || blocked ? (
         <Notice tone="warn" role="none">
           <p className="m-0">
-            The Site no longer allows git connections to {host}: agents cannot use this connection
-            until a Site admin allows the host again.
+            {c.health.lastError?.endsWith("site_git_off")
+              ? "Git connections are turned off for this Site: agents cannot use this connection, and Kobe sends nothing to the host, until a Site admin turns them on again in the Site console's Settings."
+              : `The Site does not allow git connections to ${host} any more: agents cannot use this connection, and Kobe sends nothing to the host. Ask a Site admin to add the host to the Site's allowed git hosts, or disconnect it.`}
           </p>
         </Notice>
       ) : null}

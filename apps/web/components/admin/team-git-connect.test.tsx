@@ -333,6 +333,28 @@ describe("Connect: checks and errors (KOBE-761)", () => {
     expect(document.body.innerHTML).not.toContain("has space");
   });
 
+  it("refuses a private key over 8 KiB at once, pasted or from a file, and sends nothing", async () => {
+    const calls = stubApi({ [`GET ${GIT_BASE}`]: [200, list([])] });
+    renderTeam(<TeamGitPage />, ADMIN);
+    const d = await openConnect();
+    await stepOne(d, "GitHub");
+    await d.findByRole("heading", { name: /Step 2 of 3/ });
+    const big = `-----BEGIN RSA PRIVATE KEY-----\n${"A".repeat(9000)}\n-----END RSA PRIVATE KEY-----`;
+    await userEvent.click(d.getByRole("textbox", { name: "Private key" }));
+    await userEvent.paste(big);
+    expect(await d.findByText(/too long for a private key: Kobe accepts up to 8 KiB/)).toBeTruthy();
+    await userEvent.click(d.getByRole("button", { name: "Next" }));
+    expect(d.getByRole("heading", { name: /Step 2 of 3/ })).toBeTruthy();
+    await userEvent.clear(d.getByRole("textbox", { name: "Private key" }));
+    expect(d.queryByText(/too long for a private key/)).toBeNull();
+    await userEvent.upload(
+      d.getByLabelText("Private key file"),
+      new File([big], "big.pem", { type: "application/x-pem-file" }),
+    );
+    expect(await d.findByText(/too long for a private key/)).toBeTruthy();
+    expect(calls.filter((c) => c.method !== "GET")).toEqual([]);
+  });
+
   it("loads the private key from a file without showing it", async () => {
     const calls = stubApi({
       [`GET ${GIT_BASE}`]: [200, list([])],

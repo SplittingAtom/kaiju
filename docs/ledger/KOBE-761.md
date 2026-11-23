@@ -45,6 +45,8 @@ git-site-form.tsx`, `lib/admin/api/team/git.ts` (typed from `@kobe/protocol` thr
 - **Not built here (later phases have no data yet):** §7's Repositories and Activity lists
   (GIT-6/7/9), the GitHub app-manifest pre-fill (G5 "can pre-fill": links to the host's form
   instead). Expiry notice in the bell stays KOBE-760's open question.
+- UI hints for the access levels and the members' view still say what each level lets agents do
+  (spec G9); the guide does not until GIT-6/7 ship (coordinator's call on guide scope).
 - **Wording:** "Workspace admin", "Site admin", "member"; GitHub's "installation" kept (identifier
   renamed to pass `check-site-wording`).
 
@@ -54,15 +56,33 @@ New guide page `docs/guide/admin/git-organizations.md` (Team admin section): con
 provider with the exact permissions/scopes (KOBE-758/759 tables, incl. `write:issue`), access
 levels, settings, replace, check, disconnect, expiry banner/email, members' view, Site switch and
 host list. Rows/links added to `team-admin.md`, `site-admin.md` (Settings) and
-`connectors-and-apps.md` (members' section). GIT-13 should re-check the page once agents' tools
-and sandbox git land (it describes approvals and levels from spec G9/G12).
+`connectors-and-apps.md` (members' section). The tickets that build agents' git tools and sandbox
+git extend the page.
 
-## Open questions
+## After GIT-4's review fixes (merged `group-98` at dcd983a63)
 
-- The guide describes what agents can do per level (spec G9) before GIT-6/7 ship it; keep, or
-  mark "coming" until then? (Left as the spec says; GIT-13 owns the final text.)
-- Should the Site settings route name the bad host line (it validates with that message but
-  answers a generic 400)? Small server change; not done here.
+- Health `not_allowed` (Site switch off or host dropped from the list): its own badge "Not allowed
+  by the Site" and a notice saying which and what to do (Site admin, or disconnect); not "Failing".
+- `host_refused` / `not_reachable` (the uniform "cannot be reached or not allowed" answer) mapped
+  in `lib/admin/git/errors.ts`, also as a stored health code.
+- Private key over 8 KiB (requests are capped at 64 KiB) refused at once on paste or file, and at
+  submit, with a clear message; nothing sent.
+- Guide trimmed to what exists (coordinator): access levels described as a setting the test
+  checks, plus one sentence that agent git tools and pushing arrive with later updates; no Repo or
+  approval claims. The Site settings route's generic 400 for a bad host list stays (the form names
+  the line).
+
+## Accessibility pass
+
+Checked in component tests and by reading the markup: dialogs are Radix (focus trapped, Escape
+and Cancel close, focus returns to the Connect button or the card button that opened them; tested
+on Cancel); every control has a visible label (`Field`/`ChoiceGroup`, required marks, errors tied
+by `aria-describedby` and announced with `role="alert"`); the three Connect steps are a form, so
+Enter moves on, Back/Next/Test/Connect are buttons, and each step's heading takes focus (tested);
+the step list marks `aria-current="step"`; test results, pending text and errors sit in a
+`role="status"` live region; capabilities, health, level and expiry are words with icons
+(`aria-hidden`), never colour alone; card buttons carry the connection name for screen readers;
+the external host links say they open a new tab.
 
 ## Evidence
 

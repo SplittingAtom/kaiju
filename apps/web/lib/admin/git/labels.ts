@@ -102,6 +102,15 @@ export const HEALTH_LABEL = {
   ok: "Working",
   failing: "Failing",
   unchecked: "Not checked yet",
+  not_allowed: "Not allowed by the Site",
+} as const;
+
+/** Badge tones per health; the label carries the meaning. */
+export const HEALTH_TONE = {
+  ok: "running",
+  failing: "failed",
+  unchecked: "neutral",
+  not_allowed: "attention",
 } as const;
 
 /** The minimum push size limit input, and the most a Workspace admin may set (10 GiB). */

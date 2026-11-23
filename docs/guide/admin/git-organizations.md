@@ -1,6 +1,6 @@
 ---
 title: Git organizations
-summary: How Workspace admins connect a Workspace to an organization on GitHub, GitHub Enterprise Server, Gitea or Forgejo with a GitHub App or an access token, the exact permissions and scopes to choose, testing, access levels, repository defaults, replacing and disconnecting, what members see, and the Site admin's switch and allowed hosts.
+summary: How Workspace admins connect a Workspace to an organization on GitHub, GitHub Enterprise Server, Gitea or Forgejo with a GitHub App or an access token, the exact permissions and scopes to choose, testing, access levels, repository defaults, health, token expiry, replacing and disconnecting, what members see, and the Site admin's switch and allowed hosts.
 section: Team admin
 order: 3
 audience: admin
@@ -8,9 +8,8 @@ audience: admin
 
 A Workspace can be connected to an organization on a git host: **GitHub** (github.com),
 **GitHub Enterprise Server**, **Gitea** or **Forgejo** (Codeberg and other hosted Forgejo servers
-work the same way). Agents in the Workspace then work in that organization's repositories through
-Kobe. The credential is stored encrypted on the server and never enters a sandbox, a browser or a
-model; it is never shown again after you save it, not even to you.
+work the same way). The credential is stored encrypted on the server and never enters a sandbox,
+a browser or a model; it is never shown again after you save it, not even to you.
 
 Everything here is in the **Team console** under **Workspace settings → Git** (`/admin/team/git`),
 for Workspace admins. A Workspace can have up to **5** connections, one per organization and host.
@@ -25,8 +24,7 @@ Select **Connect a git organization**. The dialog has three steps:
    `https://git.example.com/forgejo` is fine). If the Site limits the hosts Workspaces may connect
    to, the dialog lists them and refuses any other host.
 2. **Organization and credential.** Enter the organization (or, for a personal namespace, the
-   user) as it appears in its address. Agents act only there; everything else on the host stays
-   out of reach. Choose the [access level](#access-levels) and the credential. The dialog shows
+   user) as it appears in its address. The connection covers only that organization. Choose the [access level](#access-levels) and the credential. The dialog shows
    the exact permissions to select, with a link to the host's own form.
 3. **Test and connect.** **Test** reads the organization and lists what the credential may do
    (read, push and open pull requests, create repositories, administer) without saving anything.
@@ -38,7 +36,9 @@ Select **Connect a git organization**. The dialog has three steps:
 When a test fails, the dialog says why in plain words: the credential was not accepted, a
 permission is missing (it names the one the host asked for), the organization does not exist or
 is not visible to the credential, the GitHub App is not installed or is suspended, the host runs
-a version Kobe does not support, or Kobe cannot reach the host. A server on a private network
+a version Kobe does not support, or Kobe cannot reach the host or its address is not allowed (one
+message for both, so the page does not reveal which internal names exist). A GitHub App's private
+key is at most 8 KiB. A server on a private network
 must also be reachable under the Site's egress rules: ask a Site admin to add it as an internal
 target.
 
@@ -93,21 +93,19 @@ what the server reports.
 
 ## Access levels
 
-| Level              | Agents can                                                                                                                            |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| **Off**            | Nothing: the connection is kept but unused.                                                                                           |
-| **Read**           | List and read repositories, branches, pull requests and issues, and clone.                                                            |
-| **Read and write** | Also create private repositories, branches, pull requests, issues and comments, and push. Members need the Contributor role to write. |
-
-Creating a repository, opening a pull request, commenting and creating an issue ask for approval
-by default; Workspace admins change that with ordinary policy rules. Agents never delete
-repositories, make them public, change organization settings or merge pull requests.
+Each connection has an access level: **Off**, **Read** or **Read and write**. The test checks the
+credential against the level you choose (at **Read and write** it must be able to write), and you
+change the level later in **Settings**. Agent git tools and pushing from sandboxes arrive with
+later updates.
 
 ## Settings
 
 Each connection card shows the provider, host, organization, credential (the App's ids, or the
 token's last characters), access level, health, when it was last checked, the token's expiry and
-what the credential may do. Its buttons:
+what the credential may do. Health is **Working**, **Failing** (with what went wrong, such as the
+credential no longer accepted or the App's installation removed), **Not checked yet**, or **Not
+allowed by the Site** (the Site turned git connections off or no longer allows the host; Kobe then
+sends nothing to the host). Its buttons:
 
 - **Settings**: display name, access level, defaults for new repositories (private, or internal
   on GitHub where the organization has it; an optional name prefix; the default branch), the
@@ -119,8 +117,7 @@ what the credential may do. Its buttons:
 - **Check now**: tests the stored credential and updates the health. Kobe also checks every
   connection every few hours.
 - **Disconnect**: deletes the stored credential. Nothing on the host changes: repositories there
-  stay. Repos in Kobe linked to the connection stay too, read-only from their last copy and marked
-  unreachable, until a Workspace admin links them again.
+  stay.
 
 When a token's expiry is less than 14 days away (or has passed), the page shows a banner and
 Workspace admins get one email. Create a new token on the host and use **Replace credential**.
@@ -136,12 +133,12 @@ with no settings and nothing about the credential.
 In the **Site console → Settings → Git connections**:
 
 - **Allow Workspaces to connect git organizations** (on by default). Off: no Workspace can connect,
-  test or check a git organization, and agents stop using existing connections until it is on
-  again. Connections and their stored credentials are kept. Workspace admins see a notice on the
+  test or check a git organization, and existing connections show **Not allowed by the Site**
+  until it is on again. Connections and their stored credentials are kept. Workspace admins see a notice on the
   Git page.
 - **Allowed git hosts**: one host per line, such as `github.com` or `*.example.com` (a wildcard
   covers subdomains only, never a public suffix such as `*.co.uk`), at most 50. Empty allows any
   host. Enter host names only, without `https://`, port or path. A connection to a host the list
-  no longer allows stays listed but cannot be used.
+  no longer allows stays listed, shows **Not allowed by the Site** and cannot be used.
 
 Both changes apply at once and are recorded in the audit log.

@@ -166,6 +166,41 @@ describe("Git section: states (KOBE-761)", () => {
     expect(gh.queryByText(/auth_failed/)).toBeNull();
   });
 
+  it("shows not_allowed health distinctly, with what to do for each Site refusal", async () => {
+    const refused = (lastError: string, id: string, name: string) =>
+      adminConnection({
+        id,
+        display_name: name,
+        organization: name,
+        health: {
+          status: "not_allowed",
+          last_checked_at: "2026-11-22T09:00:00.000Z",
+          last_ok_at: null,
+          last_error: lastError,
+        },
+      });
+    stubApi({
+      [`GET ${GIT_BASE}`]: [
+        200,
+        list([
+          refused("host_refused:site_host_limit", ID, "limited"),
+          refused("host_refused:site_git_off", ID2, "switched"),
+        ]),
+      ],
+    });
+    renderTeam(<TeamGitPage />, ADMIN);
+    await screen.findByRole("article", { name: "limited" });
+    const limited = card("limited");
+    expect(limited.getByText("Not allowed by the Site")).toBeTruthy();
+    expect(limited.queryByText("Failing")).toBeNull();
+    expect(
+      limited.getByText(/add the host to the Site's allowed git hosts, or disconnect it/),
+    ).toBeTruthy();
+    expect(
+      card("switched").getByText(/turned off for this Site: agents cannot use this connection/),
+    ).toBeTruthy();
+  });
+
   it("marks a connection whose host the Site no longer allows", async () => {
     stubApi({
       [`GET ${GIT_BASE}`]: [
@@ -174,7 +209,7 @@ describe("Git section: states (KOBE-761)", () => {
       ],
     });
     renderTeam(<TeamGitPage />, ADMIN);
-    await screen.findByText(/no longer allows git connections to code.example.org/);
+    await screen.findByText(/does not allow git connections to code.example.org any more/);
     expect(screen.getByText(/This Site allows connections to: github.com/)).toBeTruthy();
   });
 

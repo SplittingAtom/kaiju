@@ -24,6 +24,11 @@ describe("gitErrorMessage (KOBE-761 mapping of KOBE-760's typed errors)", () => 
     ["credential_forbidden", "user_namespace", /cannot act in a personal account/],
     ["unsupported_host", "version_unreadable", /did not say which version/],
     ["host_refused", "redirect", /redirect Kobe does not follow/],
+    [
+      "host_refused",
+      "not_reachable",
+      /cannot reach that host from this Site, or its address is not allowed/,
+    ],
   ])("%s / %s", (code, reason, expected) => {
     expect(gitErrorMessage(err(code, "x", { code: "auth_failed", reason }))).toMatch(expected);
   });
@@ -112,6 +117,7 @@ describe("healthMessage", () => {
   it("maps stored codes with and without reasons, and anything else to a plain sentence", () => {
     expect(healthMessage("auth_failed:installation_removed")).toMatch(/no longer installed/);
     expect(healthMessage("auth_failed:credential_rejected")).toMatch(/no longer accepts/);
+    expect(healthMessage("host_refused:not_reachable")).toMatch(/or its address is not allowed/);
     expect(healthMessage("weird")).toBe("The last check failed.");
     expect(healthMessage(null)).toBe("The last check failed.");
   });

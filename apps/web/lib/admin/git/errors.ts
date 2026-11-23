@@ -99,6 +99,9 @@ export function gitErrorMessage(
       }
       return `That address does not answer like a ${ctx.providerLabel ?? "git"} server. Check the address and the provider you chose.`;
     case "host_refused":
+      if (reason === "not_reachable") {
+        return "Kobe cannot reach that host from this Site, or its address is not allowed here. Check the address; a server on a private network needs the Site's internal targets entry (ask a Site admin).";
+      }
       if (reason === "redirect") {
         return "The host answered with a redirect Kobe does not follow. Use the address the server finally shows in your browser.";
       }
@@ -135,6 +138,10 @@ const HEALTH_CODE: Readonly<Record<string, string>> = {
   host_unreachable: "Kobe could not reach the host at the last check.",
   unsupported_host: "The host's version is no longer supported.",
   host_refused: "Kobe would not send requests to the host's address.",
+  "host_refused:not_reachable":
+    "Kobe could not reach the host at the last check, or its address is not allowed here.",
+  "host_refused:site_git_off": "Git connections are turned off for this Site.",
+  "host_refused:site_host_limit": "The Site no longer allows this host.",
   credential_unreadable: "Kobe could not open the stored credential.",
 };
 
