@@ -3,19 +3,19 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { AuditActor } from "@kobe/db";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { createApp } from "./app.js";
-import { createServerDeps, type ServerDeps } from "./deps.js";
-import { loadSsoSettings } from "./sso/settings.js";
+import { createApp } from "../app.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { loadSsoSettings } from "./settings.js";
 import {
   UnknownProviderError,
   applyIdpAccess,
   applyIdpAccessAndFollowUp,
   type IdpAccessResult,
-} from "./sso/access.js";
-import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
-import { TestBrowser } from "./testing/browser.js";
-import { MemoryMailer } from "./testing/mailer.js";
-import { fakeIsolation } from "./testing/isolation.js";
+} from "./access.js";
+import { waitForAppSessionsToClose } from "../testing/app-sessions.js";
+import { TestBrowser } from "../testing/browser.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 /**
  * KOBE-627 (spec sso-oidc-scim §7, SSO2/SSO6/SSO10): the access-mapping engine and its rules, the

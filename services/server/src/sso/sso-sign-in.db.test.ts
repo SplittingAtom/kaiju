@@ -1,13 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createApp } from "./app.js";
-import { endSsoSessionsWhenOff, seedHelmProviders } from "./sso/providers.js";
-import { loadSsoSettings, type SsoSettings } from "./sso/settings.js";
-import { resolver } from "./sso/testing.js";
-import { TestBrowser } from "./testing/browser.js";
-import { openHarness, PASSWORD, PUBLIC_URL, type Harness } from "./testing/harness.js";
-import { MockOidcProvider, routeMockOidc } from "./testing/mock-oidc.js";
-import { totpFromUri } from "./testing/totp.js";
-import { SoftwareAuthenticator } from "./testing/webauthn.js";
+import { createApp } from "../app.js";
+import { endSsoSessionsWhenOff, seedHelmProviders } from "./providers.js";
+import { loadSsoSettings, type SsoSettings } from "./settings.js";
+import { resolver } from "./testing.js";
+import { TestBrowser } from "../testing/browser.js";
+import { openHarness, PASSWORD, PUBLIC_URL, type Harness } from "../testing/harness.js";
+import { MockOidcProvider, routeMockOidc } from "../testing/mock-oidc.js";
+import { totpFromUri } from "../testing/totp.js";
+import { SoftwareAuthenticator } from "../testing/webauthn.js";
 
 /**
  * KOBE-628 (spec sso-oidc-scim §5, §6, §9, §13; SSO10): OIDC sign-in end to end against an

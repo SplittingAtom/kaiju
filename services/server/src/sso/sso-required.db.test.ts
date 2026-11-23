@@ -2,13 +2,13 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { loadEnvelope, type Envelope } from "@kobe/db";
-import { runWithAuditContext } from "./audit/context.js";
-import { deleteProvider, seedHelmProviders } from "./sso/providers.js";
-import { ssoRequired } from "./sso/required.js";
-import { loadSsoSettings, type SsoSettings } from "./sso/settings.js";
-import { FakeIdp, resolver } from "./sso/testing.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, PASSWORD, PUBLIC_URL, type Harness } from "./testing/harness.js";
+import { runWithAuditContext } from "../audit/context.js";
+import { deleteProvider, seedHelmProviders } from "./providers.js";
+import { ssoRequired } from "./required.js";
+import { loadSsoSettings, type SsoSettings } from "./settings.js";
+import { FakeIdp, resolver } from "./testing.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, PASSWORD, PUBLIC_URL, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-774: the Site setting "Require single sign-on". It turns on only from a session signed in

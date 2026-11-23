@@ -2,12 +2,12 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { sessions, sessionSsoContexts, ssoIdentities, ssoProviders } from "@kobe/db";
-import { createApp } from "./app.js";
-import { loadSsoSettings } from "./sso/settings.js";
-import { TestBrowser } from "./testing/browser.js";
-import { openHarness, PASSWORD, PUBLIC_URL, type Harness } from "./testing/harness.js";
-import { OPERATION_LIMITS } from "./operation-limits.js";
-import { clearLimit, expectRateLimited, fillLimit } from "./testing/operation-limits.js";
+import { createApp } from "../app.js";
+import { loadSsoSettings } from "./settings.js";
+import { TestBrowser } from "../testing/browser.js";
+import { openHarness, PASSWORD, PUBLIC_URL, type Harness } from "../testing/harness.js";
+import { OPERATION_LIMITS } from "../operation-limits.js";
+import { clearLimit, expectRateLimited, fillLimit } from "../testing/operation-limits.js";
 
 /**
  * SCIM 2.0 Users and tokens (KOBE-631, spec sso-oidc-scim §10, SSO5/SSO8/SSO9/SSO10): tokens from

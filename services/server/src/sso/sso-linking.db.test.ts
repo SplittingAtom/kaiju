@@ -1,12 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { seedHelmProviders } from "./sso/providers.js";
-import { loadSsoSettings } from "./sso/settings.js";
-import { resolver } from "./sso/testing.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, PASSWORD, type Harness } from "./testing/harness.js";
-import { MockOidcProvider, routeMockOidc } from "./testing/mock-oidc.js";
-import { totpFromUri } from "./testing/totp.js";
-import { SoftwareAuthenticator } from "./testing/webauthn.js";
+import { seedHelmProviders } from "./providers.js";
+import { loadSsoSettings } from "./settings.js";
+import { resolver } from "./testing.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, PASSWORD, type Harness } from "../testing/harness.js";
+import { MockOidcProvider, routeMockOidc } from "../testing/mock-oidc.js";
+import { totpFromUri } from "../testing/totp.js";
+import { SoftwareAuthenticator } from "../testing/webauthn.js";
 
 /**
  * KOBE-630 (spec sso-oidc-scim §6, SSO4, SSO9, SSO10): account linking. Email never links on its

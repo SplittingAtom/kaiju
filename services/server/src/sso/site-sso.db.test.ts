@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { loadEnvelope, type Envelope } from "@kobe/db";
-import { createApp } from "./app.js";
-import { logger } from "./logger.js";
-import { revealClientSecret, seedHelmProviders } from "./sso/providers.js";
-import { loadSsoSettings, type SsoSettings } from "./sso/settings.js";
-import { FakeIdp, resolver } from "./sso/testing.js";
-import { TestBrowser } from "./testing/browser.js";
-import { openHarness, PUBLIC_URL, type Harness } from "./testing/harness.js";
+import { createApp } from "../app.js";
+import { logger } from "../logger.js";
+import { revealClientSecret, seedHelmProviders } from "./providers.js";
+import { loadSsoSettings, type SsoSettings } from "./settings.js";
+import { FakeIdp, resolver } from "./testing.js";
+import { TestBrowser } from "../testing/browser.js";
+import { openHarness, PUBLIC_URL, type Harness } from "../testing/harness.js";
 
 /**
  * Single sign-on provider configuration (KOBE-626, spec sso-oidc-scim §4): CRUD for
