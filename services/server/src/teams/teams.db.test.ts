@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { createApp } from "./app.js";
-import { createServerDeps, type ServerDeps } from "./deps.js";
-import { MemoryMailer } from "./testing/mailer.js";
-import { TestBrowser } from "./testing/browser.js";
-import { fakeIsolation } from "./testing/isolation.js";
+import { createApp } from "../app.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { TestBrowser } from "../testing/browser.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 // Own throwaway database: this file needs an Owner, which the first-run tests must not see.
 const PUBLIC_URL = "http://kobe.test";

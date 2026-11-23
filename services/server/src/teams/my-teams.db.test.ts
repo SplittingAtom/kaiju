@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-456: a new sign-in session needs a usable default team. `/v1/me/teams` says which team the

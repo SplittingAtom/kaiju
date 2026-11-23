@@ -2,13 +2,13 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { createApp } from "./app.js";
-import { BackgroundTasks } from "./background.js";
-import { createServerDeps, type ServerDeps } from "./deps.js";
-import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
-import { TestBrowser } from "./testing/browser.js";
-import { MemoryMailer } from "./testing/mailer.js";
-import { fakeIsolation } from "./testing/isolation.js";
+import { createApp } from "../app.js";
+import { BackgroundTasks } from "../background.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { waitForAppSessionsToClose } from "../testing/app-sessions.js";
+import { TestBrowser } from "../testing/browser.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 /**
  * KOBE-638: a Site admin manages a team's members from the Site console (Site console › Teams):
