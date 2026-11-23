@@ -11,7 +11,8 @@
  * editor. Loaded lazily by the file tab with the kernel.
  */
 import { PanelBottomOpenIcon, PlayIcon, SquareIcon, TextSelectIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { KernelCompleter } from "../../lib/notebooks/kernel-completer";
 import { kernelBusy } from "../../lib/notebooks/executions";
 import { useDraft } from "../files/editor-save";
 import type { ToolbarAction } from "../files/editor-toolbar";
@@ -40,6 +41,17 @@ export default function PythonFile({ kernel, ...editor }: PythonFileProps) {
     busy: k.busy,
     onGoTo: (line) => setReveal((r) => ({ line, seq: (r?.seq ?? 0) + 1 })),
   });
+  // KOBE-808: completion from the conversation's kernel, for the owner (who can run code) only.
+  const threadId = k.threadId;
+  const api = kernel?.readOnly === true ? undefined : kernel?.api;
+  const completer = useMemo(
+    () => (api === undefined ? undefined : new KernelCompleter(api, threadId)),
+    [api, threadId],
+  );
+  useEffect(() => completer?.setRunning(k.busy), [completer, k.busy]);
+  useEffect(() => {
+    if (k.phase === "running" || k.phase === "stopped") completer?.kernelChanged();
+  }, [completer, k.phase]);
   const blocker = kernelBlocker(kernel);
 
   /** Saves first (KOBE-805 ac-1), then runs all of the file or the selected lines. */
@@ -151,6 +163,7 @@ export default function PythonFile({ kernel, ...editor }: PythonFileProps) {
           ? { label: "Run output", header: pane.tabs, node: pane.panels, onClose: pane.close }
           : null
       }
+      kernelCompletion={completer}
     />
   );
 }

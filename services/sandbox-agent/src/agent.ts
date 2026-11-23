@@ -579,6 +579,8 @@ export class Agent {
     const kernels = this.#deps.kernels;
     if (kernels === undefined) return fail("unknown_type", "this agent runs no kernels");
     if (frame.type === "notebook.interrupt") return kernels.interrupt(frame.thread_id);
+    // KOBE-808: the editor's kernel completion or a name's documentation; never starts a kernel.
+    if (frame.type === "notebook.inspect" && "op" in frame) return kernels.complete(frame);
     // KOBE-803: a silent variables snapshot; never starts a kernel.
     if (frame.type === "notebook.inspect") {
       return kernels.inspect(

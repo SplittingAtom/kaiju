@@ -9,6 +9,7 @@ import type {
   KobeEvent,
   KobeEventPayload,
   KobeEventType,
+  NotebookCompletionBody,
   NotebookHistoryEntry,
   NotebookOutput,
   NotebookRunBody,
@@ -18,7 +19,12 @@ import type { EventSourceLike } from "../../lib/chat/stream";
 import type { FilesApi } from "../../lib/files/api";
 import { sha256Hex } from "../../lib/files/editor";
 import { EditDraftStore, FileReviewStore } from "../../lib/files/editor-state";
-import type { KernelStart, NotebookApi, NotebookRunStarted } from "../../lib/notebooks/api";
+import type {
+  KernelCompletionAnswer,
+  KernelStart,
+  NotebookApi,
+  NotebookRunStarted,
+} from "../../lib/notebooks/api";
 import { NotebookExecStore } from "../../lib/notebooks/executions";
 import type { VariablesResult } from "../../lib/notebooks/variables";
 import { TooltipProvider } from "../ui/tooltip";
@@ -113,7 +119,16 @@ export class Kernel {
   /** How many `outputs` calls fail first. */
   outputFailures = 0;
   readonly store = new NotebookExecStore();
+  /** Kernel completion requests (KOBE-808), and their answers in order (then `no_kernel`). */
+  completions: NotebookCompletionBody[] = [];
+  completeAnswers: ApiResult<KernelCompletionAnswer>[] = [];
   readonly api: NotebookApi = {
+    complete: async (_thread, body) => {
+      this.completions.push(body);
+      return (
+        this.completeAnswers.shift() ?? { ok: true, status: 200, data: { status: "no_kernel" } }
+      );
+    },
     run: async (_thread, body) => {
       this.runs.push(body);
       const n = this.runs.length;

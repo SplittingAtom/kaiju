@@ -309,6 +309,99 @@ PY
 check "a variables snapshot is silent and survives hostile reprs (KOBE-803)" \
   '^ok 1 True \(5,1\) raised timeout \[3, 4\] float64 \[2, 2\] a:int64,b:(object|str) 5 Bad:class,Slow:class,np:module,pd:module$' \
   run_ws python3 -c "$KERNEL_INSPECT_PROBE" /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
+# KOBE-808: completion and documentation run none of the member's code (no property getter,
+# cached_property, descriptor, `__getattr__`, `__dir__`, key hook, key hash/eq, `__class__`
+# property, metaclass hook, registered completer or repr, also in an open call: the bridge's static
+# resolver, never IPython's completer), stay bounded on a 10-million-entry dict (a run right after
+# is immediate), start nothing while a member's timer is pending, and leave no trace (no execution
+# count, nothing in Out). DataFrame columns are offered from object-dtype labels.
+KERNEL_COMPLETE_PROBE=$(cat <<'PY'
+import json, subprocess, sys
+p = subprocess.Popen(sys.argv[1:], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, cwd="/workspace")
+read = lambda: json.loads(p.stdout.readline() or '{"ev": "eof"}')
+assert read()["ev"] == "ready"
+def send(m):
+    p.stdin.write(json.dumps(m) + "\n")
+    p.stdin.flush()
+def run(code, i):
+    send({"op": "execute", "id": i, "code": code})
+    outs = []
+    while True:
+        m = read()
+        if m["ev"] == "output":
+            outs.append(m["output"])
+        elif m["ev"] in ("done", "died", "fatal", "eof"):
+            return m, outs
+setup = ("import pandas as pd, functools, threading, time\nhits = []\nL = threading.Lock()\n"
+         "class C:\n    @property\n    def p(self): hits.append('p'); return self\n"
+         "    @functools.cached_property\n"
+         "    def cp(self): hits.append('cp'); L.acquire(); time.sleep(2); L.release(); return self\n"
+         "    def m(self, x, y=2):\n        '''Doc of m.'''\n"
+         "    def __getattr__(self, n): hits.append('g'); raise AttributeError(n)\n"
+         "    def __repr__(self): hits.append('r'); return 'C'\n"
+         "class Desc:\n    def __get__(self, o, t=None): hits.append('desc'); return self\n"
+         "class HD:\n    d = Desc()\n"
+         "class Key:\n    def __hash__(self): hits.append('hash'); return 1\n"
+         "    def __eq__(self, o): hits.append('eq'); return False\n"
+         "class K:\n    def __dir__(self): hits.append('dir'); return ['zz']\n"
+         "    def _ipython_key_completions_(self): hits.append('keys'); return ['zz']\n"
+         "    def __getattr__(self, n): hits.append('k:' + n); raise AttributeError(n)\n"
+         "class LZ:\n    @property\n    def __class__(self): hits.append('cls'); return C\n"
+         "    def m(self, a): pass\n"
+         "class M(type):\n    def __getattr__(cls, n): hits.append('meta:' + n); raise AttributeError(n)\n"
+         "    def __getattribute__(cls, n): hits.append('metaga:' + n); return type.__getattribute__(cls, n)\n"
+         "class WM(metaclass=M):\n    x = 1\n    def __init__(self, a): pass\n"
+         "from IPython.utils.generics import complete_object\nclass Reg: pass\n"
+         "@complete_object.register(Reg)\ndef _reg(o, prev): hits.append('registered'); return prev\n"
+         "k, lz, hd, reg = K(), LZ(), HD(), Reg()\ndd = {Key(): 1, 1: C()}\n"
+         "class PX:\n    def __getattr__(self, n): hits.append('px:' + n); return self\n"
+         "    @property\n    def __class__(self): hits.append('pxcls'); return C\n"
+         "px = PX()\nbig = dict.fromkeys(range(10_000_000))\n"
+         "c = C()\ndf = pd.DataFrame({'alpha': [1], 'beta': [2]})\n"
+         "df.columns = pd.Index(['alpha', 'beta'], dtype=object)\nmy_value = 3\nhits.clear()")
+d1, _ = run(setup, "a")
+def complete(code):
+    send({"op": "complete", "id": code, "code": code, "cursor": len(code), "timeout_ms": 2000})
+    m = read()
+    return ",".join(x["text"] for x in m["result"]["matches"]) if "result" in m else "!" + m["error"]
+got = [complete("my_v"), complete("df['"), complete("df.alp"), complete("c.p."), complete("c.p.m")]
+for hostile in ("k.", "k[", "(k).", "lz.", "lz[", "WM.", "WM.x.", "c.cp.", "hd.d.", "dd[1].", "reg.",
+                "c.p.m(", "c.cp.m(", "lz(", "px.m(", "WM(", "hd.d.bit_length("):
+    complete(hostile)
+import time
+started = time.monotonic()
+complete("big[")
+big_done = time.monotonic() - started
+started = time.monotonic()
+run("after_big = 1", "after-big")
+big = "big=ok" if big_done < 1 and time.monotonic() - started < 1 else "big=slow"
+send({"op": "doc", "id": "d", "name": "c.m", "timeout_ms": 2000})
+doc = read()["result"]
+for i, name in enumerate(("c.p", "c.cp", "hd.d", "lz", "lz.m", "k", "k.x", "WM", "WM.x")):
+    send({"op": "doc", "id": "e%d" % i, "name": name, "timeout_ms": 2000})
+    read()
+# A timer of the member's is pending: completion does not start (its handler would run inside).
+run("import signal\nsignal.signal(signal.SIGALRM, lambda *a: hits.append('alarm'))\n"
+    "previous_timer = signal.setitimer(signal.ITIMER_REAL, 30)", "t")
+timer = "timer=refused" if complete("my_v") == "!timer" else "timer=ran"
+d2, o2 = run("signal.setitimer(signal.ITIMER_REAL, 0)\n"
+             "(','.join(hits) or '-', L.locked(), 'cp' in c.__dict__, len(Out))", "b")
+send({"op": "shutdown"})
+p.wait(timeout=30)
+print("ok", "|".join(got), timer, big, doc["signature"], doc["doc"], d2["execution_count"] - d1["execution_count"],
+      o2[-1]["data"]["text/plain"].replace(" ", ""))
+PY
+)
+check "kernel completion and docs run no member code and leave no trace (KOBE-808)" \
+  "^ok my_value\|alpha,beta\|alpha\|\| timer=refused big=ok m\(x, y=2\) Doc of m\. 3 \('-',False,False,0\)$" \
+  run_ws python3 -c "$KERNEL_COMPLETE_PROBE" /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
+# KOBE-808 review round 4: the requests travel as complete_request / inspect_request answered by
+# the bridge's resolver, so none of the member's execution hooks, input transformers, `str`
+# formatter, warnings hook or autoreload run, and the execution count, history and Out stay put.
+check "kernel completion and docs fire none of the execution machinery (KOBE-808)" \
+  '^ok 0 1 0 0 cell_hooks_fire my_value\|method\|alpha=,beta=\|alpha= method\(alpha, beta=1\)$' \
+  run_ws python3 -c "$(cat "$(dirname "$0")/kernel-transport-probe.py")" \
+  /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
 run_ws_line() { run_ws "$@" | tr '\n' ' ' | sed 's/ $//'; }
 # NB17: a kernel reaches the internet like the shell tool: before each cell the bridge turns the
 # token file (never the token) into proxy variables, so a rotated token is used by the next cell.

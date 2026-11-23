@@ -81,6 +81,8 @@ export async function enqueueCommand(
     readonly requesterReplica: string;
     readonly timeoutMs: number;
     readonly staleMs: number;
+    /** False: the command is not activity (KOBE-808: editor completion keeps no sandbox awake). */
+    readonly activity?: boolean;
   },
 ): Promise<
   { id: string; live?: LiveConnection; evalThread: boolean } | { error: "thread_not_found" }
@@ -102,7 +104,7 @@ export async function enqueueCommand(
     // `sandboxes` row lock: a hibernation deciding right now finishes first, and then this
     // command finds no live connection below and wakes the sandbox. An eval sandbox never
     // hibernates and is not the member's.
-    if (!thread.skill_eval)
+    if (!thread.skill_eval && input.activity !== false)
       await tx.execute(sql`
         UPDATE sandboxes SET last_active_at = now()
          WHERE team_id = ${teamId} AND user_id = ${userId} AND state = 'running'`);

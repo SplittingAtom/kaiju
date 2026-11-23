@@ -21,6 +21,7 @@ import { useWorkspaceProjects } from "../projects/workspace-projects";
 import { editBlockReason } from "../../lib/files/editor";
 import type { EditDraftStore, FileReviewStore } from "../../lib/files/editor-state";
 import { fileVersion } from "../../lib/files/outside-change";
+import type { KernelCompleter } from "../../lib/notebooks/kernel-completer";
 import { defaultModeOf, fileName, previewOf } from "../../lib/files/preview";
 import { ErrorNotice } from "../admin/error-notice";
 import {
@@ -171,6 +172,8 @@ export interface FileEditorProps {
   readonly notices?: ReactNode;
   /** A run's output: the editor splits, code on top. */
   readonly output?: EditorOutput | null | undefined;
+  /** A `.py` file's kernel completion in Raw (KOBE-808). */
+  readonly kernelCompletion?: KernelCompleter | undefined;
 }
 
 export function FileEditor(props: FileEditorProps) {
@@ -275,6 +278,7 @@ export function FileEditor(props: FileEditorProps) {
           readOnly={blocked !== undefined}
           autoFocus={openedRaw}
           onChange={edit}
+          kernel={props.kernelCompletion}
           keys={{
             // Mod+S never opens the browser's Save page in the editor (KOBE-805).
             onSave: saveNow,
