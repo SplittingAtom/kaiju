@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { appendBackdatedAuditRow } from "@kobe/db/testing";
-import { runWithAuditContext } from "./audit/context.js";
-import { sweepAuditPii } from "./audit/pii-sweeper.js";
-import { createTeamWithAdmin } from "./teams/members.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { runWithAuditContext } from "./context.js";
+import { sweepAuditPii } from "./pii-sweeper.js";
+import { createTeamWithAdmin } from "../teams/members.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-17 (user decision 2026-10-03): audit rows lose their client IP and user agent after a

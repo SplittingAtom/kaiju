@@ -2,27 +2,27 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam, type AuditEntry } from "@kobe/db";
 import { generateSessionKeyPair } from "@kobe/session-token";
-import { AUDIT_FORWARD_LOCK, AuditForwarder } from "./audit/forward/forwarder.js";
-import { exportLogsRequest } from "./audit/forward/otlp.js";
-import { initialState, writeState } from "./audit/forward/state.js";
-import { formatSyslogMessage } from "./audit/forward/syslog.js";
-import { appendRunEvents } from "./event-stream/append.js";
-import { routeCaller } from "./kobe-mcp/execute.js";
-import { siteMemoryItemGet, siteMemoryItemsList } from "./kobe-mcp/tools/memory-items.js";
-import type { KobeTool } from "./kobe-mcp/catalog.js";
-import { buildRunSemantic, queryWords, readRecallRows } from "./memory/items/run-memory.js";
-import { sweepMemoryReminders } from "./notifications/memory.js";
-import { createPgReconcileLock } from "./sandbox/reconcile-lock.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { must } from "./testing/event-stream-fixture.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { AUDIT_FORWARD_LOCK, AuditForwarder } from "./forward/forwarder.js";
+import { exportLogsRequest } from "./forward/otlp.js";
+import { initialState, writeState } from "./forward/state.js";
+import { formatSyslogMessage } from "./forward/syslog.js";
+import { appendRunEvents } from "../event-stream/append.js";
+import { routeCaller } from "../kobe-mcp/execute.js";
+import { siteMemoryItemGet, siteMemoryItemsList } from "../kobe-mcp/tools/memory-items.js";
+import type { KobeTool } from "../kobe-mcp/catalog.js";
+import { buildRunSemantic, queryWords, readRecallRows } from "../memory/items/run-memory.js";
+import { sweepMemoryReminders } from "../notifications/memory.js";
+import { createPgReconcileLock } from "../sandbox/reconcile-lock.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { must } from "../testing/event-stream-fixture.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 import {
   canary,
   findLeaks,
   siteTableRows,
   SiteWallProbe,
   type Leak,
-} from "./testing/site-wall-probe.js";
+} from "../testing/site-wall-probe.js";
 
 /**
  * KOBE-406 (SMC5; SM20): the Site wall probe. Two threads carry canaries in the person's message,

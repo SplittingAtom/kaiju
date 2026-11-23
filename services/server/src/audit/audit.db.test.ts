@@ -1,14 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AUDIT_EVENTS, verifyAuditChain } from "@kobe/db";
-import { runWithAuditContext } from "./audit/context.js";
-import { SIGN_IN_THROTTLE } from "./auth/sign-in-throttle.js";
-import { anchorKey, anchorMac } from "./audit/anchor.js";
-import { isolationAuditor } from "./audit/isolation.js";
-import { deactivateUser, reactivateUser } from "./users/deactivation.js";
-import { RawBody, type TestBrowser } from "./testing/browser.js";
-import { openHarness, PASSWORD, type Harness } from "./testing/harness.js";
-import { totpFromUri } from "./testing/totp.js";
-import { SoftwareAuthenticator } from "./testing/webauthn.js";
+import { runWithAuditContext } from "./context.js";
+import { SIGN_IN_THROTTLE } from "../auth/sign-in-throttle.js";
+import { anchorKey, anchorMac } from "./anchor.js";
+import { isolationAuditor } from "./isolation.js";
+import { deactivateUser, reactivateUser } from "../users/deactivation.js";
+import { RawBody, type TestBrowser } from "../testing/browser.js";
+import { openHarness, PASSWORD, type Harness } from "../testing/harness.js";
+import { totpFromUri } from "../testing/totp.js";
+import { SoftwareAuthenticator } from "../testing/webauthn.js";
 
 /**
  * KOBE-15: every audited path records one metadata-only event, in the action's transaction, with

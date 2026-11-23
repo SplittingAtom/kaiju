@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { forwardingSecrets } from "./audit/forward/redact.js";
-import { initialState, writeState } from "./audit/forward/state.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { forwardingSecrets } from "./forward/redact.js";
+import { initialState, writeState } from "./forward/state.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-182: the forwarding health view (`GET /v1/site/audit/forwarding`) as configured by Helm

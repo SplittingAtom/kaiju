@@ -3,14 +3,14 @@ import net from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import { SYSTEM_ACTOR, auditStandalone, type AuditEntry } from "@kobe/db";
-import { AUDIT_FORWARD_LOCK, AuditForwarder, backoffMs } from "./audit/forward/forwarder.js";
-import { otlpSink } from "./audit/forward/otlp.js";
-import { forwardingSecrets } from "./audit/forward/redact.js";
-import { auditHeadSeq, initialState, writeState } from "./audit/forward/state.js";
-import { syslogSink } from "./audit/forward/syslog.js";
-import { createPgReconcileLock } from "./sandbox/reconcile-lock.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { AUDIT_FORWARD_LOCK, AuditForwarder, backoffMs } from "./forward/forwarder.js";
+import { otlpSink } from "./forward/otlp.js";
+import { forwardingSecrets } from "./forward/redact.js";
+import { auditHeadSeq, initialState, writeState } from "./forward/state.js";
+import { syslogSink } from "./forward/syslog.js";
+import { createPgReconcileLock } from "../sandbox/reconcile-lock.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /** KOBE-19: audit export (CSV/JSONL) and SIEM forwarding (syslog, OTLP) with retry and health. */
 let h: Harness;
@@ -410,7 +410,7 @@ describe("forwarding", () => {
 
 async function readHealth(destination: string) {
   const { deps } = h;
-  const { readForwardingHealth } = await import("./audit/forward/state.js");
+  const { readForwardingHealth } = await import("./forward/state.js");
   const health = await readForwardingHealth(deps.database.db, ["syslog", "otlp"]);
   return health.destinations.find((d) => d.destination === destination) as Record<string, any>;
 }
