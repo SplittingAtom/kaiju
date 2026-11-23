@@ -1,6 +1,9 @@
 import { sql, withTeam, type KobeDb } from "@kobe/db";
+import type { z } from "zod";
 import {
   notebookExecuteResultSchema,
+  notebookTimingSchema,
+  type NotebookTiming,
   notebookOutputPayloadSchema,
   type NotebookExecStatus,
   type NotebookFinishedPayload,
@@ -13,6 +16,7 @@ import type { CommandOutcome } from "../sandbox-wire/types.js";
 import { isReadOnlyPath } from "../workspace-files/paths.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import type { NotebookFiles } from "./files.js";
+import { execErrorOf } from "./run-log.js";
 import {
   cellSource,
   parseNotebook,
@@ -117,6 +121,9 @@ export interface ExecutionSummary {
   readonly truncated: boolean;
   readonly saved: NotebookFinishedPayload["saved"];
   readonly saveError?: string;
+  /** KOBE-803: from agents with `notebook_inspect` (absent otherwise). */
+  readonly timing?: NotebookFinishedPayload["timing"];
+  readonly error?: NotebookFinishedPayload["error"];
 }
 
 /** Records `notebook.started` on the run (inside the caller's transaction, when it has one). */
@@ -144,11 +151,7 @@ export async function finishExecution(
   e: Execution,
   outcome: CommandOutcome,
 ): Promise<ExecutionSummary> {
-  const result = outcome.ok ? notebookExecuteResultSchema.safeParse(outcome.data) : undefined;
-  if (outcome.ok && !result?.success) {
-    deps.log.warn({ run_id: e.runId }, "the sandbox sent a malformed notebook result");
-  }
-  const ran = result?.success === true ? result.data : undefined;
+  const ran = outcome.ok ? parseResult(deps, e, outcome.data) : undefined;
   const outputs = await readOutputs(deps.db, e.owner.teamId, e.runId, e.execId);
   const status: NotebookExecStatus = ran?.status ?? "failed";
   const executionCount = ran?.execution_count ?? null;
@@ -156,13 +159,18 @@ export async function finishExecution(
     ran !== undefined && e.source.notebook !== undefined
       ? await saveOutputs(deps, e, outputs, executionCount)
       : { saved: null };
+  const error = execErrorOf(status, outputs, executionCount);
   const summary: ExecutionSummary = {
     status,
     executionCount,
     outputs,
     truncated: ran?.truncated ?? false,
     ...save,
+    ...(ran?.timing === undefined ? {} : { timing: ran.timing }),
+    ...(error === undefined ? {} : { error }),
   };
+  // The run log (KOBE-803): who started it and the path are on `notebook.started`; how it ended,
+  // when and how long, and its error are here. Variables are never stored (owner-only, on demand).
   const finished: NotebookFinishedPayload = {
     exec_id: e.execId,
     status,
@@ -171,6 +179,8 @@ export async function finishExecution(
     truncated: summary.truncated,
     saved: summary.saved,
     ...(summary.saveError === undefined ? {} : { save_error: summary.saveError }),
+    ...(summary.timing === undefined ? {} : { timing: summary.timing }),
+    ...(summary.error === undefined ? {} : { error: summary.error }),
   };
   await withAppendTx(deps.db, e.owner.teamId, (tx) =>
     appendRunEventsInTx(tx, e.owner.teamId, e.runId, [
@@ -185,6 +195,52 @@ export async function finishExecution(
     throw err;
   });
   return summary;
+}
+
+/**
+ * The sandbox's answer, leniently (KOBE-803 review): the core (status, count, outputs, truncated)
+ * decides the execution; an optional part the server does not take (a newer agent's field, a
+ * malformed `timing`) is dropped and logged, never failing the execution and losing its outputs.
+ */
+const resultCoreSchema = notebookExecuteResultSchema.pick({
+  status: true,
+  execution_count: true,
+  outputs: true,
+  truncated: true,
+});
+
+type ParsedResult = z.infer<typeof resultCoreSchema> & { readonly timing?: NotebookTiming };
+
+function parseResult(deps: ExecutionDeps, e: Execution, data: unknown): ParsedResult | undefined {
+  // `pick` keeps the strictness: unknown keys are dropped here instead.
+  const record = typeof data === "object" && data !== null ? (data as Record<string, unknown>) : {};
+  const core = resultCoreSchema.safeParse({
+    status: record.status,
+    execution_count: record.execution_count,
+    outputs: record.outputs,
+    truncated: record.truncated,
+  });
+  if (!core.success) {
+    deps.log.warn({ run_id: e.runId }, "the sandbox sent a malformed notebook result");
+    return undefined;
+  }
+  const known = new Set(["status", "execution_count", "outputs", "truncated", "timing"]);
+  const extra = Object.keys(record).filter((k) => !known.has(k));
+  if (record.timing === undefined) {
+    if (extra.length > 0) logDropped(deps, e, extra);
+    return core.data;
+  }
+  const timing = notebookTimingSchema.safeParse(record.timing);
+  if (!timing.success) extra.push("timing");
+  if (extra.length > 0) logDropped(deps, e, extra);
+  return timing.success ? { ...core.data, timing: timing.data } : core.data;
+}
+
+function logDropped(deps: ExecutionDeps, e: Execution, fields: readonly string[]): void {
+  deps.log.warn(
+    { run_id: e.runId, fields: fields.slice(0, 10).map((f) => f.slice(0, 64)) },
+    "notebook result fields dropped",
+  );
 }
 
 /** The execution's outputs as the server stored them, in order. */

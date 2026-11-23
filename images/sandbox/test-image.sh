@@ -268,6 +268,47 @@ PY
 )
 check "a kernel runs 1+1 over the bridge, keeps state, draws PNG, opens no TCP port (KOBE-464)" '^ok 2 3 listeners=0 png=1$' \
   run_ws python3 -c "$KERNEL_PROBE" /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
+# KOBE-803: a variables snapshot runs silently (no execution count, nothing in `_` or `Out`), and a
+# repr that raises or loops costs only that variable's repr; numpy/pandas get summaries.
+KERNEL_INSPECT_PROBE=$(cat <<'PY'
+import json, subprocess, sys
+p = subprocess.Popen(sys.argv[1:], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, cwd="/workspace")
+read = lambda: json.loads(p.stdout.readline() or '{"ev": "eof"}')
+assert read()["ev"] == "ready"
+def send(m):
+    p.stdin.write(json.dumps(m) + "\n")
+    p.stdin.flush()
+def run(code, i):
+    send({"op": "execute", "id": i, "code": code})
+    outs = []
+    while True:
+        m = read()
+        if m["ev"] == "output":
+            outs.append(m["output"])
+        elif m["ev"] in ("done", "died", "fatal", "eof"):
+            return m, outs
+setup = ("import numpy as np, pandas as pd\n"
+         "class Bad:\n    def __repr__(self): raise RuntimeError('x')\n"
+         "class Slow:\n    def __repr__(self):\n        while True: pass\n"
+         "b, s, a = Bad(), Slow(), np.zeros((3, 4))\n"
+         "df = pd.DataFrame({'a': [1, 2], 'b': ['x', 'y']})\nn = 5\nn")
+d1, _ = run(setup, "a")
+send({"op": "inspect", "id": "i", "limits": {"per_var_ms": 200, "budget_ms": 2000}})
+snap = read()
+d2, o2 = run("(_, len(Out))", "b")
+send({"op": "shutdown"})
+p.wait(timeout=30)
+v = {x["name"]: x for x in snap["snapshot"]["variables"]}
+other = ",".join("%s:%s" % (x["name"], x["kind"]) for x in snap["snapshot"]["other"])
+print("ok", d2["execution_count"] - d1["execution_count"], snap["snapshot"]["execution_count"] == d1["execution_count"],
+      o2[-1]["data"]["text/plain"].replace(" ", ""), v["b"].get("repr_error"), v["s"].get("repr_error"),
+      v["a"]["shape"], v["a"]["dtype"], v["df"]["shape"], ",".join(c["name"] + ":" + c["dtype"] for c in v["df"]["columns"]),
+      v["n"]["repr"], other)
+PY
+)
+check "a variables snapshot is silent and survives hostile reprs (KOBE-803)" \
+  '^ok 1 True \(5,1\) raised timeout \[3, 4\] float64 \[2, 2\] a:int64,b:(object|str) 5 Bad:class,Slow:class,np:module,pd:module$' \
+  run_ws python3 -c "$KERNEL_INSPECT_PROBE" /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
 run_ws_line() { run_ws "$@" | tr '\n' ' ' | sed 's/ $//'; }
 # NB17: a kernel reaches the internet like the shell tool: before each cell the bridge turns the
 # token file (never the token) into proxy variables, so a rotated token is used by the next cell.

@@ -44,6 +44,51 @@ describe("thread kernels on the wire (KOBE-464)", () => {
     expect(h.server.frames("hello")[0]?.capabilities).toContain("notebook_start");
   });
 
+  it("announces notebook_inspect with kernels and answers notebook.inspect (KOBE-803)", async () => {
+    h = await startHarness();
+    expect(h.server.frames("hello")[0]?.capabilities ?? []).not.toContain("notebook_inspect");
+    h.server.send({ v: 1, type: "notebook.inspect", command_id: "cmd-i0", thread_id: THREAD });
+    const refused = await h.server.waitFor(
+      (f) => f.type === "command.result" && f.command_id === "cmd-i0",
+    );
+    expect(refused).toMatchObject({ ok: false, error: { code: "unknown_type" } });
+    await h.close();
+    const k = kernels();
+    h = await startHarness({ kernels: k.manager });
+    expect(h.server.frames("hello")[0]?.capabilities).toContain("notebook_inspect");
+    h.server.send({ v: 1, type: "notebook.inspect", command_id: "cmd-i1", thread_id: THREAD });
+    const none = await h.server.waitFor(
+      (f) => f.type === "command.result" && f.command_id === "cmd-i1",
+    );
+    expect(none).toMatchObject({ ok: true, data: { status: "no_kernel" } });
+    expect(k.control.launched).toEqual([]);
+    h.server.send({ ...execute("print:x", "cmd-x1"), with_timing: true, with_variables: true });
+    const ran = await h.server.waitFor(
+      (f) => f.type === "command.result" && f.command_id === "cmd-x1",
+    );
+    expect(ran).toMatchObject({
+      ok: true,
+      data: { status: "ok", timing: { duration_ms: expect.any(Number) as number } },
+    });
+    // The snapshot after the run is kept by the agent, never sent with the result.
+    expect((ran as { data?: object }).data).not.toHaveProperty("variables");
+    h.server.send({
+      v: 1,
+      type: "notebook.inspect",
+      command_id: "cmd-i2",
+      thread_id: THREAD,
+      timeout_ms: 2000,
+      refresh: true,
+    });
+    const snap = await h.server.waitFor(
+      (f) => f.type === "command.result" && f.command_id === "cmd-i2",
+    );
+    expect(snap).toMatchObject({
+      ok: true,
+      data: { status: "ok", stale: false, variables: [{ name: "x", type: "int", repr: "1" }] },
+    });
+  });
+
   it("streams an execution's outputs naming its command, then answers it", async () => {
     h = await startHarness({ kernels: kernels().manager });
     h.server.send(execute("result:42", "cmd-1"));

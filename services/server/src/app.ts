@@ -382,7 +382,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   api.route("/site/skills/registry", siteSkillRegistryRoutes(deps, options.skillMirror));
   // Before the tag routes: their Site-admin gate covers `/catalog/*`, and maintainers deprecate.
   api.route("/site/skills/catalog-skills", siteSkillCatalogEditRoutes(deps));
-  api.route("/site/skills", siteSkillRetireRoutes(deps));
+  api.route("/site/skills", siteSkillRetireRoutes(deps, options.skillMirror));
   api.route("/site/skills", siteSkillTagRoutes(deps));
   if (isolation) api.route("/site/isolation", siteIsolationRoutes(isolation));
   api.route(

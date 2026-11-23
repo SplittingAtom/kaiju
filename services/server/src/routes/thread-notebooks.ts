@@ -1,5 +1,5 @@
 import { Hono, type Context } from "hono";
-import { notebookRunBodySchema } from "@kobe/protocol";
+import { notebookRunBodySchema, notebookVariablesBodySchema } from "@kobe/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { NOTEBOOK_ERROR_STATUS, NotebookRunError } from "../notebooks/user-run.js";
@@ -7,7 +7,7 @@ import { RunError } from "../runs/errors.js";
 import { uuidSchema } from "../threads/schemas.js";
 import { refuseEvalThreadWrites } from "./eval-thread-guard.js";
 import { actorOf } from "../authz/actor.js";
-import { invalidRequest, param, parseBody } from "../http/request.js";
+import { invalidRequest, param, parseBody, readJson } from "../http/request.js";
 
 type Ctx = Context<{ Variables: TeamVariables }>;
 
@@ -18,6 +18,9 @@ type Ctx = Context<{ Variables: TeamVariables }>;
  * - `POST /v1/threads/{id}/notebook/interrupt` and `.../restart`: 200 {status};
  * - `POST /v1/threads/{id}/notebook/start` (KOBE-477): 202 {status: "waking", retry_after_ms} while
  *   the sandbox wakes, then 200 {status: "idle" | "busy"} once the kernel is up (no code runs).
+ * - `POST /v1/threads/{id}/notebook/variables` {refresh?} (KOBE-803): 200 a snapshot of the
+ *   kernel's variables (`stale` when kept from before code that ran since), or {status: "busy" |
+ *   "no_kernel" | "unavailable"}; never wakes the sandbox, stores nothing.
  * The thread's owner only (the kernel is in their sandbox); a shared reader is 403 `read_only`,
  * another member's or team's thread 404. Eval threads are refused like every other write.
  */
@@ -46,6 +49,19 @@ export function threadNotebookRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
       const started = await deps.runs.notebookStart(actorOf(c), id.data);
       return c.json(started, started.status === "waking" ? 202 : 200);
     });
+  });
+
+  // KOBE-803: the editor's Variables tab; a silent snapshot, never waking the sandbox.
+  app.post("/:id/notebook/variables", async (c) => {
+    const id = param(c, "id", uuidSchema);
+    // The body is optional ({refresh?}); a missing or empty body is no refresh.
+    const body = notebookVariablesBodySchema.safeParse(await readJson(c, {}));
+    if (!id.success) return invalidRequest(c, "Unknown conversation.");
+    if (!body.success) return invalidRequest(c, 'Send an empty body or {"refresh": true}.');
+    const refresh = body.data.refresh === true;
+    return answer(c, async () =>
+      c.json(await deps.runs.notebookVariables(actorOf(c), id.data, refresh)),
+    );
   });
 
   for (const op of ["interrupt", "restart"] as const) {

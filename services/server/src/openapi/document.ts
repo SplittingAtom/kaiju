@@ -13,6 +13,10 @@ import { evalCasesOpenApiPaths, evalCasesOpenApiSchemas } from "./eval-cases.js"
 import { feedbackOpenApiPaths, feedbackOpenApiSchemas } from "./feedback.js";
 import { markersOpenApiPaths, markersOpenApiSchemas } from "./markers.js";
 import { modelsOpenApiPaths, modelsOpenApiSchemas } from "./models.js";
+import {
+  notebookVariablesOpenApiPaths,
+  notebookVariablesOpenApiSchemas,
+} from "./notebook-variables.js";
 import { pendingOpenApiPaths, pendingOpenApiSchemas } from "./pending.js";
 import { projectCommitsOpenApiPaths, projectCommitsOpenApiSchemas } from "./project-commits.js";
 import { runsOpenApiPaths, runsOpenApiSchemas } from "./runs.js";
@@ -35,8 +39,9 @@ import {
 } from "./team-default-agent.js";
 
 /**
- * The server's OpenAPI 3.1 document, committed as `services/server/openapi.json` and checked for
- * drift by `document.test.ts`. Areas add their paths and schemas here (one line each). It covers
+ * The server's OpenAPI 3.1 document, written to `services/server/openapi.json` by
+ * `pnpm --filter @kobe/server openapi` (generated, not committed; CI keeps it as the `openapi`
+ * artifact, KOBE-815) and checked by `document.test.ts`. Areas add their paths and schemas here (one line each). It covers
  * every route of the member and admin API on the user-facing listener (`coverage.test.ts`, KOBE-727):
  * fully described areas here, the rest at summary level from `catalog/`; what is left out on
  * purpose is in `undocumented-allowlist.ts`.
@@ -70,6 +75,7 @@ export function openApiDocument(): Record<string, unknown> {
         ...compactOpenApiPaths(),
         ...branchSummaryOpenApiPaths(),
         ...contextOpenApiPaths(),
+        ...notebookVariablesOpenApiPaths(),
         ...approvalsOpenApiPaths(),
         ...usageOpenApiPaths(),
         ...modelsOpenApiPaths(),
@@ -98,6 +104,7 @@ export function openApiDocument(): Record<string, unknown> {
           ...compactOpenApiSchemas(),
           ...branchSummaryOpenApiSchemas(),
           ...contextOpenApiSchemas(),
+          ...notebookVariablesOpenApiSchemas(),
           ...approvalsOpenApiSchemas(),
           ...usageOpenApiSchemas(),
           ...modelsOpenApiSchemas(),

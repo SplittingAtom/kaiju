@@ -47,6 +47,14 @@ conversation.
 
 **Share with team builders** lets contributors and team admins open your draft.
 
+You can also run the evals of a saved version. Who may run them for a **team skill** version
+depends on its review:
+
+- **Approved**: any member of the team;
+- **waiting for review** (or suspended by a rescan): the member who saved it, contributors and
+  team admins;
+- **Rejected**: nobody.
+
 From a conversation, **Make a skill from this** (or `/skill`) opens a new skill-writing
 conversation with the current one attached read-only. When the agent has written the skill under
 `skills/<name>/` in My files, **Save skill to Workbench** (or `/saveskill <name>`) brings it into
@@ -83,6 +91,11 @@ A **personal skill** with a Pass verdict runs in every team without review. A Ca
 verdict, or a version not scanned yet, needs the approval of each team's admin. Kobe adds the
 version to that team's queue the first time one of your runs meets it.
 
+When a version's scan can't finish (for example while the server is busy), Kobe saves the version
+as **not scanned yet**, never as Block, and scans it again in the background, usually within a
+minute. Until a scan finishes, a team admin can reject the version but not approve it, and a
+personal version needs each team's approval. You don't need to save it again.
+
 Team admins approve or reject in the Team console under **Agents and skills → Skill review**. A
 Caution version needs its findings acknowledged (**Approve anyway**). Versions never change once
 saved, so each new version you save is reviewed again. Where the team turned on Kobe's admin tools,
@@ -92,7 +105,10 @@ version; the decision shows an **Admin change** card first (see
 comment on and decide Site Registry reviews the same way.
 
 **2. It was suspended or blocked.** A later rescan can turn an approved version into Block. Kobe
-then suspends it until a team admin decides again. A site admin can also put a skill's exact
+then suspends it until a team admin decides again. When the scanner's rules change and the rescan
+of a version keeps failing to finish, the version stays usable for a while (24 hours unless your
+site changed it) and is then suspended too, with the same notice. It comes back by itself once a
+rescan finishes without blocking it, or when a team admin approves it again. A site admin can also put a skill's exact
 content on the site's **Skill blocklist**, and it then never loads anywhere.
 
 **3. It is switched off.** On the **Mine** tab, **Skills in your runs in _workspace_** lists your

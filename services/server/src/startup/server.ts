@@ -261,6 +261,7 @@ function serverJobsOptions(
       sweeps: config.retentionSweeps,
     },
     connectorRefreshSeconds: config.connectorRefreshSeconds,
+    skillRescanIncompleteSuspendHours: config.skillRescanIncompleteSuspendHours,
     models:
       settings.models && settings.bifrostAdmin
         ? { config: settings.models, admin: settings.bifrostAdmin }

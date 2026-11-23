@@ -61,6 +61,7 @@ import {
 import { PERIOD_DAYS, effectiveAt } from "./periods.js";
 import { readMaximumLayer, readTeamLayer } from "./settings.js";
 import { compactRunEvents, type CompactionCounts } from "./compaction.js";
+import { sweepBudgetEmailCounts } from "../budgets/outbox.js";
 import {
   NO_TABLE_SWEEP_COUNTS,
   sweepTables,
@@ -170,6 +171,8 @@ export interface PassResult {
    * resumed pass leaves them to the next one).
    */
   readonly siteMemory?: { readonly site: SitePurgeCounts; readonly portable: SitePurgeCounts };
+  /** Per-person budget email counts of past days deleted (KOBE-786), once per new pass. */
+  readonly budgetEmailCounts?: number;
 }
 
 export interface PassDeps {
@@ -489,6 +492,16 @@ async function sitePass(
   }
 }
 
+/** Budget email counts of past days (KOBE-786; a failure is logged, never fatal). */
+async function budgetEmailCountsPass(deps: PassDeps): Promise<number> {
+  try {
+    return await sweepBudgetEmailCounts(deps.db);
+  } catch (err) {
+    deps.logger.error({ err, step: "budget_email_counts" }, "retention step failed");
+    return 0;
+  }
+}
+
 /** One pass over the teams (the caller holds the job lock). Also called by tests. */
 export async function runRetentionPass(
   deps: PassDeps,
@@ -503,7 +516,12 @@ export async function runRetentionPass(
     .where(after === null ? undefined : gt(teams.id, after))
     .orderBy(asc(teams.id));
   const siteMemory = after === null && !stop() ? await sitePass(deps, stop) : undefined;
-  const site = siteMemory ? { siteMemory } : {};
+  const budgetEmailCounts =
+    after === null && !stop() ? await budgetEmailCountsPass(deps) : undefined;
+  const site = {
+    ...(siteMemory ? { siteMemory } : {}),
+    ...(budgetEmailCounts === undefined ? {} : { budgetEmailCounts }),
+  };
   const results: TeamPassResult[] = [];
   for (const { id } of all) {
     if (stop()) {

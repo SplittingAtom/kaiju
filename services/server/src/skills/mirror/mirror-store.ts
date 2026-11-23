@@ -11,8 +11,8 @@ import { recordAudit } from "../../audit/record.js";
  * The mirror's records (KOBE-343): each catalog version's state against the configured remote in
  * `registry_versions.mirror` (a column the immutability trigger lets change), with backoff, and
  * the counts the Site console shows. Versions mirrored are the published ones: Approved and
- * Deprecated, not suspended. Withdrawn and Revoked versions are never pushed (one already pushed
- * stays: the mirror only appends).
+ * Deprecated, not suspended. Withdrawn, Revoked and suspended versions are never pushed; one
+ * already pushed keeps its commit and tag (the mirror only appends) but leaves `catalog.json`.
  */
 
 export const MIRROR_BACKOFF_BASE_MS = 60_000;
@@ -237,51 +237,87 @@ export async function mirrorCounts(db: KobeDb, url: string | null): Promise<Mirr
   };
 }
 
+/** A version to mark `withdrawn` for the remote (see `planWithdrawals`). */
+export interface Withdrawal {
+  readonly id: string;
+  readonly key: string;
+  readonly here: RegistryVersionMirror | null;
+}
+
+export interface WithdrawalPlan {
+  /** Every withdrawn version as `name@semver`: left out of `catalog.json`. */
+  readonly withdrawn: ReadonlySet<string>;
+  /**
+   * Withdrawn versions this remote may still list (pushed, or tried, there): marked only once a
+   * commit without them is on the remote (`markWithdrawn`), so a failed commit is redone.
+   */
+  readonly toCommit: readonly Withdrawal[];
+}
+
 /**
- * Withdraws blocklisted versions from the mirror (KOBE-343 review): every published version whose
- * runtime or package hash (or a hash of its group) is on the site skill blocklist gets status
- * `withdrawn` for `url` (a pushed commit and tag are kept in the record: they stay on the remote,
- * Kobe never rewrites history); one taken off the blocklist is pending again. Returns the
- * withdrawn versions as `name@semver`, to leave out of the next `catalog.json`.
+ * Which versions the mirror withdraws from `url` (KOBE-343 review, P2-10): every published version
+ * whose runtime or package hash (or a hash of its group) is on the site skill blocklist, and every
+ * version this remote carries that is no longer published (revoked, withdrawn, suspended). One
+ * never pushed here is marked `withdrawn` at once (so it is never pushed); one that may be listed
+ * waits in `toCommit`. A commit and tag already pushed are kept in the record: they stay on the
+ * remote, Kobe never rewrites history. A version published and unblocked again is pending again.
  */
-export async function withdrawBlocked(db: KobeDb, url: string, now: Date): Promise<Set<string>> {
+export async function planWithdrawals(db: KobeDb, url: string, now: Date): Promise<WithdrawalPlan> {
   const res = await db.execute<{
     id: string;
     name: string;
     semver: string;
     runtime_hash: string;
     package_hash: string;
+    published: boolean;
     mirror: unknown;
   }>(sql`
-    SELECT v.id, s.name, v.semver, v.runtime_hash, v.package_hash, v.mirror
+    SELECT v.id, s.name, v.semver, v.runtime_hash, v.package_hash, (${PUBLISHED}) AS published,
+           v.mirror
       FROM registry_versions v JOIN registry_skills s ON s.id = v.skill_id
-     WHERE ${PUBLISHED}`);
+     WHERE (${PUBLISHED}) OR v.mirror->>'url' = ${url}`);
   const hashes = [...new Set(res.rows.flatMap((r) => [r.runtime_hash, r.package_hash]))];
   const blocked = new Set(await db.transaction((tx) => blockedAmong(tx, hashes)));
   const withdrawn = new Set<string>();
+  const toCommit: Withdrawal[] = [];
   for (const r of res.rows) {
     const m = parseMirror(r.mirror);
     const here = m?.url === url ? m : null;
-    if (blocked.has(r.runtime_hash) || blocked.has(r.package_hash)) {
-      withdrawn.add(`${r.name}@${r.semver}`);
+    const out = !r.published || blocked.has(r.runtime_hash) || blocked.has(r.package_hash);
+    if (out) {
+      const w: Withdrawal = { id: r.id, key: `${r.name}@${r.semver}`, here };
+      withdrawn.add(w.key);
       if (here?.status === "withdrawn") continue;
-      const doc: RegistryVersionMirror = {
-        url,
-        status: "withdrawn",
-        ...(here?.commit ? { commit: here.commit } : {}),
-        ...(here?.tag ? { tag: here.tag } : {}),
-        ...(here?.tree ? { tree: here.tree } : {}),
-        ...(here?.pushedAt ? { pushedAt: here.pushedAt } : {}),
-        attempts: 0,
-        lastAttemptAt: now.toISOString(),
-      };
-      await db.execute(sql`
-        UPDATE registry_versions SET mirror = ${JSON.stringify(doc)}::jsonb, updated_at = now()
-         WHERE id = ${r.id}`);
+      if (here) toCommit.push(w);
+      else await markWithdrawn(db, url, [w], now);
     } else if (here?.status === "withdrawn") {
       await db.execute(sql`
         UPDATE registry_versions SET mirror = NULL, updated_at = now() WHERE id = ${r.id}`);
     }
   }
-  return withdrawn;
+  return { withdrawn, toCommit };
+}
+
+/** Records `withdrawn` for `url` on each version, keeping a pushed commit and tag. */
+export async function markWithdrawn(
+  db: KobeDb,
+  url: string,
+  versions: readonly Withdrawal[],
+  now: Date,
+): Promise<void> {
+  for (const { id, here } of versions) {
+    const doc: RegistryVersionMirror = {
+      url,
+      status: "withdrawn",
+      ...(here?.commit ? { commit: here.commit } : {}),
+      ...(here?.tag ? { tag: here.tag } : {}),
+      ...(here?.tree ? { tree: here.tree } : {}),
+      ...(here?.pushedAt ? { pushedAt: here.pushedAt } : {}),
+      attempts: 0,
+      lastAttemptAt: now.toISOString(),
+    };
+    await db.execute(sql`
+      UPDATE registry_versions SET mirror = ${JSON.stringify(doc)}::jsonb, updated_at = now()
+       WHERE id = ${id}`);
+  }
 }

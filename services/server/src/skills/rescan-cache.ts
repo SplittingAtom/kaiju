@@ -3,6 +3,7 @@ import type { Logger } from "pino";
 import type { BlobStore } from "../retention/blobs.js";
 import { IntegrityError, readVerified } from "./blob-read.js";
 import { scanCanonicalZip } from "./review.js";
+import { scanIncomplete } from "./scan-pool.js";
 
 /**
  * Reading and scanning stored bundles for a rescan (KOBE-313), with a cache bounded by bytes:
@@ -58,6 +59,9 @@ export class ScanCache {
   }
 }
 
+/** A stored bundle's scan ran out of time or memory: no verdict (see `scanStored`). */
+export const SCAN_DID_NOT_FINISH = "did_not_finish" as const;
+
 /** A stored bundle as its version row names it. */
 export interface StoredBundle {
   readonly storageKey: string;
@@ -92,15 +96,16 @@ export function integrityScan(): ScanResult {
 
 /**
  * Scans a stored version's whole package (or its runtime zip), verified. Null when the object is
- * missing or the scan fails (logged with its context: retried by the next pass); an integrity
- * failure is logged as an error and scans as Block `bundle-integrity`.
+ * missing or the scan fails, {@link SCAN_DID_NOT_FINISH} when the scan doesn't finish (P2-11:
+ * never stored as a verdict); both are logged with their context and retried by the next pass. An
+ * integrity failure is logged as an error and scans as Block `bundle-integrity`.
  */
 export async function scanStored(
   deps: { readonly blobs: BlobStore; readonly log: Pick<Logger, "warn" | "error"> },
   v: StoredBundle,
   cache: ScanCache,
   context: Readonly<Record<string, unknown>>,
-): Promise<ScanResult | null> {
+): Promise<ScanResult | typeof SCAN_DID_NOT_FINISH | null> {
   const key = v.packageStorageKey ?? v.storageKey;
   const cached = cache.get(key);
   if (cached) return cached;
@@ -114,6 +119,13 @@ export async function scanStored(
       return null;
     }
     const scan = await scanCanonicalZip(bytes);
+    if (scanIncomplete(scan)) {
+      deps.log.warn(
+        { ...context, key },
+        "skills: scan of a stored bundle didn't finish; retried later",
+      );
+      return SCAN_DID_NOT_FINISH;
+    }
     cache.set(key, scan);
     return scan;
   } catch (err) {

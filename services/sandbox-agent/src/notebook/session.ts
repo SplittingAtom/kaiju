@@ -26,6 +26,12 @@ export type BridgeEvent =
       readonly status: "ok" | "error" | "interrupted";
       readonly execution_count: number | null;
     }
+  | {
+      readonly ev: "inspected";
+      readonly id: string;
+      readonly snapshot?: Record<string, unknown>;
+      readonly error?: string;
+    }
   | { readonly ev: "died" }
   | { readonly ev: "fatal"; readonly message: string };
 
@@ -49,6 +55,14 @@ export function parseBridgeLine(line: string): BridgeEvent | undefined {
       return { ev: "fatal", message: String(m.message ?? "").slice(0, 500) };
     case "output":
       return typeof m.id === "string" ? { ev: "output", id: m.id, output: m.output } : undefined;
+    case "inspected": {
+      if (typeof m.id !== "string") return undefined;
+      const snap = m.snapshot;
+      if (typeof snap === "object" && snap !== null && !Array.isArray(snap)) {
+        return { ev: "inspected", id: m.id, snapshot: snap as Record<string, unknown> };
+      }
+      return { ev: "inspected", id: m.id, error: String(m.error ?? "no snapshot").slice(0, 200) };
+    }
     case "done": {
       const status = m.status;
       if (typeof m.id !== "string") return undefined;
@@ -75,6 +89,27 @@ export type SessionResult =
     }
   | { readonly kind: "gone"; readonly message: string };
 
+/** How a variables snapshot ended (KOBE-803): the bridge's object, untrusted until validated. */
+export type InspectResult =
+  | { readonly kind: "done"; readonly snapshot: Record<string, unknown> }
+  | { readonly kind: "failed"; readonly message: string }
+  | { readonly kind: "gone"; readonly message: string };
+
+/** The snapshot's caps, as the bridge takes them (`INSPECT_LIMIT_KEYS`). */
+export interface InspectLimits {
+  readonly max_vars: number;
+  readonly max_bytes: number;
+  readonly repr_chars: number;
+  readonly columns_max: number;
+  readonly per_var_ms: number;
+  readonly budget_ms: number;
+}
+
+interface Inspecting {
+  readonly id: string;
+  readonly resolve: (result: InspectResult) => void;
+}
+
 interface Running {
   readonly id: string;
   readonly onOutput: (output: unknown) => void;
@@ -86,6 +121,7 @@ export class KernelSession {
   readonly #diagnostic: (message: string) => void;
   #ready: Promise<void>;
   #running: Running | undefined;
+  #inspecting: Inspecting | undefined;
   #goneReason: string | undefined;
   #stopping: Promise<void> | undefined;
   #onReady: { resolve: () => void; reject: (error: Error) => void } | undefined;
@@ -125,6 +161,11 @@ export class KernelSession {
     return this.#running !== undefined;
   }
 
+  /** A variables snapshot was asked for and the bridge has not answered it yet (KOBE-803). */
+  get inspecting(): boolean {
+    return this.#inspecting !== undefined;
+  }
+
   /** Resolves once the kernel answered; rejects if the bridge fails first or `timeoutMs` passes. */
   ready(timeoutMs: number): Promise<void> {
     let timer: NodeJS.Timeout | undefined;
@@ -138,10 +179,29 @@ export class KernelSession {
     if (this.#goneReason !== undefined) {
       return Promise.resolve({ kind: "gone", message: this.#goneReason });
     }
-    if (this.#running !== undefined) throw new Error("the kernel is busy");
+    if (this.#running !== undefined || this.#inspecting !== undefined) {
+      throw new Error("the kernel is busy");
+    }
     return new Promise<SessionResult>((resolve) => {
       this.#running = { id, onOutput, resolve };
       this.#write({ op: "execute", id, code });
+    });
+  }
+
+  /**
+   * KOBE-803: snapshot the kernel's user variables (a silent request: no execution count). One at
+   * a time and never during an execution; resolves when the bridge answers or the kernel goes.
+   */
+  inspect(id: string, limits: InspectLimits): Promise<InspectResult> {
+    if (this.#goneReason !== undefined) {
+      return Promise.resolve({ kind: "gone", message: this.#goneReason });
+    }
+    if (this.#running !== undefined || this.#inspecting !== undefined) {
+      throw new Error("the kernel is busy");
+    }
+    return new Promise<InspectResult>((resolve) => {
+      this.#inspecting = { id, resolve };
+      this.#write({ op: "inspect", id, limits });
     });
   }
 
@@ -185,6 +245,17 @@ export class KernelSession {
       case "output":
         if (this.#running?.id === event.id) this.#running.onOutput(event.output);
         return;
+      case "inspected": {
+        const inspecting = this.#inspecting;
+        if (inspecting?.id !== event.id) return;
+        this.#inspecting = undefined;
+        inspecting.resolve(
+          event.snapshot === undefined
+            ? { kind: "failed", message: event.error ?? "no snapshot" }
+            : { kind: "done", snapshot: event.snapshot },
+        );
+        return;
+      }
       case "done": {
         const running = this.#running;
         if (running?.id !== event.id) return;
@@ -206,5 +277,8 @@ export class KernelSession {
     const running = this.#running;
     this.#running = undefined;
     running?.resolve({ kind: "gone", message: reason });
+    const inspecting = this.#inspecting;
+    this.#inspecting = undefined;
+    inspecting?.resolve({ kind: "gone", message: reason });
   }
 }

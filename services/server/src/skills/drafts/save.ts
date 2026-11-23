@@ -62,7 +62,8 @@ export async function saveDraftVersion(
   request: SaveRequest,
 ): Promise<SaveResult> {
   const loaded = await withTeam(ctx.db, ctx.teamId, async (tx) => {
-    const draft = await visibleDraft(tx, ctx.teamId, id, ctx.viewer);
+    // Under the row lock writers take (P2-36): the files read below are those of this revision.
+    const draft = await visibleDraft(tx, ctx.teamId, id, ctx.viewer, true);
     if (!draft) return null;
     const by = draft.rev !== request.rev;
     return {

@@ -32,15 +32,13 @@ import { isModelEnabled } from "../../models/team-store.js";
 import type { BlobStore } from "../../retention/blobs.js";
 import { resolveRunModel } from "../../runs/models.js";
 import { readVerified } from "../blob-read.js";
-import { isBlocked } from "../blocklist.js";
 import { validateZipBundle } from "../bundle.js";
 import { readAllFiles, visibleDraft } from "../drafts/records.js";
-import { testGate } from "../drafts/test-gates.js";
 import { readEvalJudgeAlias } from "../settings.js";
 import { readPackage } from "../registry/review-diff.js";
 import { versionRow as registryVersionRow } from "../registry/review-queue.js";
 import { scanCanonicalZip } from "../review.js";
-import { ScanBusyError } from "../scan-pool.js";
+import { ScanBusyError, scanIncomplete } from "../scan-pool.js";
 import { siteEvalLimits } from "./runner.js";
 import {
   evalBundleKey,
@@ -52,6 +50,7 @@ import {
 } from "./storage.js";
 import { evalBudgetBlock, evalBudgetBlockIn } from "./budget.js";
 import { estimateSkillEvalIn } from "./estimate.js";
+import { EVAL_GATE_REFUSALS, evalSubjectGate } from "./gates.js";
 import { insertEvalRun } from "./store.js";
 
 // Starting a skill eval (KOBE-325, SK16; routes in routes/skill-evals.ts): the subject's package
@@ -104,7 +103,8 @@ async function loadPackage(
 ): Promise<LoadedPackage | null> {
   if (subject.kind === "draft") {
     return withTeam(db, who.teamId, async (tx) => {
-      const draft = await visibleDraft(tx, who.teamId, subject.draftId, who);
+      // Under the row lock writers take (P2-36): the files are this revision's, as recorded.
+      const draft = await visibleDraft(tx, who.teamId, subject.draftId, who, true);
       if (!draft) return null;
       const files = await readAllFiles(tx, who.teamId, subject.draftId);
       return { kind: "draft" as const, id: subject.draftId, rev: draft.rev, files };
@@ -185,8 +185,6 @@ async function versionRow(
     : { key: v.storageKey, hash: v.contentHash, size: v.sizeBytes };
 }
 
-const INCOMPLETE = new Set(["scan-incomplete", "scan-resources-exceeded"]);
-
 async function scanPackage(
   zip: Uint8Array,
   owner: string,
@@ -198,7 +196,7 @@ async function scanPackage(
     if (!(err instanceof ScanBusyError)) throw err;
     return refuse(503, "scan_busy", "Skill scans are busy right now. Try again in a few seconds.");
   }
-  if (scan.findings.some((f) => INCOMPLETE.has(f.rule)))
+  if (scanIncomplete(scan))
     return refuse(503, "scan_incomplete", "The skill's scan couldn't finish. Try again.");
   if (scan.verdict === "block")
     return refuse(409, "scan_blocked", "The scan blocks this skill, so it can't be evaluated.");
@@ -330,16 +328,13 @@ async function prepareSubject(
       },
     };
   const suite = parsed.suite;
-  const gate = await withTeam(deps.db, who.teamId, async (tx) => {
-    if (await isBlocked(tx, runtimeHash)) return "blocklisted" as const;
-    // A team version passed the team's review; a Registry version is the Registry team's own
-    // review (KOBE-335). Drafts and personal versions are gated like a test chat.
-    if (pkg.kind !== "team" && pkg.kind !== "registry") return testGate(tx, who, runtimeHash);
-    return null;
-  });
-  if (gate === "blocklisted")
-    return refuse(409, "skill_blocklisted", "This skill is on the site's blocklist.");
-  if (gate) return refuse(403, gate, "This team's settings don't allow evaluating this skill.");
+  const gate = await withTeam(deps.db, who.teamId, (tx) =>
+    evalSubjectGate(tx, who, pkg, runtimeHash),
+  );
+  if (gate) {
+    const [status, message] = EVAL_GATE_REFUSALS[gate];
+    return refuse(status, gate, message);
+  }
   return { ok: true as const, pkg, valid: valid.value, runtime, runtimeHash, suite, limits };
 }
 

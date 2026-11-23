@@ -72,5 +72,12 @@ describe("mirror catalog.json (KOBE-343)", () => {
     expect(withoutVersions(index, new Set(["a@1.0.0", "b@1.0.0"]))).toEqual({
       b: { "1.1.0": index.b["1.1.0"] },
     });
+    // Rewritten with no new entry (a withdrawal-only commit, P2-10).
+    const doc = JSON.parse(
+      new TextDecoder().decode(
+        writeCatalogJson(withoutVersions(index, new Set(["a@1.0.0"])), null),
+      ),
+    );
+    expect(Object.keys(doc.skills)).toEqual(["b"]);
   });
 });

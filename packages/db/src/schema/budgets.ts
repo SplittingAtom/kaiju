@@ -245,3 +245,26 @@ export const budgetAlertEmails = pgTable(
     ),
   ],
 );
+
+/**
+ * Site-wide (†): budget alert emails sent to one person on one UTC day, over the Site and every
+ * Workspace (KOBE-786: the daily cap is per person, owner decision 2026-11-22). A slot is taken
+ * before a send (`count < cap`, one statement, so replicas never pass the cap) and given back if
+ * the send fails. Only a user id, a day and a count: no team id and nothing from any Workspace,
+ * so it may be read from every context. Old days are swept by the retention pass.
+ */
+export const budgetEmailDailyCounts = pgTable(
+  "budget_email_daily_counts",
+  {
+    recipientId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    day: date({ mode: "string" }).notNull(),
+    sent: integer().notNull().default(0),
+  },
+  (t) => [
+    primaryKey({ columns: [t.recipientId, t.day] }),
+    index("budget_email_daily_counts_day_idx").on(t.day),
+    check("budget_email_daily_counts_sent", sql`${t.sent} >= 0`),
+  ],
+);
