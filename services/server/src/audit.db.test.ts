@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AUDIT_EVENTS, verifyAuditChain } from "@kobe/db";
 import { runWithAuditContext } from "./audit/context.js";
+import { SIGN_IN_THROTTLE } from "./auth/sign-in-throttle.js";
 import { anchorKey, anchorMac } from "./audit/anchor.js";
 import { isolationAuditor } from "./audit/isolation.js";
 import { deactivateUser, reactivateUser } from "./users/deactivation.js";
@@ -631,7 +632,9 @@ describe("unauthenticated attempts are aggregated", () => {
   it("bounds a failed sign-in flood from rotating addresses to two rows per account", async () => {
     await h.deps.authAttempts.flush({ all: true });
     const mark = await head();
-    for (let i = 0; i < 30; i++) {
+    // Under the per-account sign-in throttle (KOBE-812), which would answer 429 from the 11th on.
+    const guesses = SIGN_IN_THROTTLE.failures - 1;
+    for (let i = 0; i < guesses; i++) {
       await h.browser().post("/api/auth/sign-in/email", {
         email: "nobody-flood@audit.test",
         password: `guess-${i}`,
@@ -656,8 +659,8 @@ describe("unauthenticated attempts are aggregated", () => {
         expect.objectContaining({
           of: "auth.sign_in.failed",
           method: "password",
-          suppressed: 29,
-          distinctIps: 29,
+          suppressed: guesses - 1,
+          distinctIps: guesses - 1,
         }),
       ],
       [
@@ -668,11 +671,12 @@ describe("unauthenticated attempts are aggregated", () => {
           of: "auth.sign_in.failed",
           method: "password",
           userId: ids.bob,
-          suppressed: 29,
+          suppressed: guesses - 1,
         }),
       ],
     ]);
     expect(JSON.stringify(summaries)).not.toContain("nobody-flood");
+    await h.admin.query(`DELETE FROM kobe_rate_limits WHERE key LIKE 'kobe:sign-in-%'`);
   });
 
   it("bounds reset-request floods the same way", async () => {

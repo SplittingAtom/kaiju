@@ -308,6 +308,28 @@ describe("authentication and the provider boundary", () => {
     expect((await scim("GET", "/nobody/Users", tokens.contoso)).status).toBe(401);
   });
 
+  it("counts failures without a trusted client IP per provider, and reports them (KOBE-812)", async () => {
+    // Only the trusted proxy itself in X-Forwarded-For: no client address can be resolved.
+    const noIp = { "x-forwarded-for": "127.0.0.1" };
+    expect((await scim("GET", "/contoso/Users", "kobe_scim_nope", undefined, noIp)).status).toBe(
+      401,
+    );
+    expect((await scim("GET", "/nobody/Users", "kobe_scim_nope", undefined, noIp)).status).toBe(
+      401,
+    );
+    const { rows } = await h.admin.query(
+      `SELECT key FROM kobe_rate_limits WHERE key LIKE 'kobe:scim-auth-fail:%' ORDER BY key`,
+    );
+    const keys = rows.map((r: { key: string }) => r.key);
+    expect(keys).toContain("kobe:scim-auth-fail:no-ip:contoso");
+    expect(keys).toContain("kobe:scim-auth-fail:no-ip:nobody");
+    expect(keys).not.toContain("kobe:scim-auth-fail:unknown");
+    await h.deps.background.idle();
+    expect(await h.deps.clientIps.seen()).not.toBeNull();
+    // The provider's own token is not held up by that bucket.
+    expect((await scim("GET", "/contoso/Users", tokens.contoso, undefined, noIp)).status).toBe(200);
+  });
+
   it("never authenticates with a session cookie", async () => {
     const cookie = [...owner.cookies].map(([k, v]) => `${k}=${v}`).join("; ");
     const res = await scim("GET", "/contoso/Users", undefined, undefined, {

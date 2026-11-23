@@ -187,6 +187,31 @@ describe("signing in (ac-5)", () => {
     expect(assign).not.toHaveBeenCalled();
   });
 
+  it("too many attempts (429) says to wait, for the password and the code (KOBE-812)", async () => {
+    auth.email
+      .mockResolvedValueOnce({ data: null, error: { status: 429 } })
+      .mockResolvedValueOnce({ data: { twoFactorRedirect: true }, error: null });
+    auth.verifyTotp.mockResolvedValueOnce({ data: null, error: { status: 429 } });
+    renderForm(<SignInForm providers={[]} />);
+    const user = userEvent.setup();
+    await user.type(field("Email"), "ada@example.com");
+    await user.type(field("Password"), "wrong");
+    await user.click(within(panel()).getByRole("button", { name: "Sign in" }));
+    expect((await within(panel()).findByRole("alert")).textContent).toBe(
+      "Too many sign-in attempts. Wait a minute, then try again.",
+    );
+    await user.click(within(panel()).getByRole("button", { name: "Sign in" }));
+    const code = await within(panel()).findByLabelText("Authenticator code");
+    await user.type(code, "123456");
+    await user.click(within(panel()).getByRole("button", { name: "Verify" }));
+    await waitFor(() =>
+      expect(within(panel()).getByRole("alert").textContent).toBe(
+        "Too many sign-in attempts. Wait a minute, then try again.",
+      ),
+    );
+    expect(assign).not.toHaveBeenCalled();
+  });
+
   it("with 2FA: the authenticator code in the same panel, then the app; a bad code alerts", async () => {
     auth.email.mockResolvedValue({ data: { twoFactorRedirect: true }, error: null });
     auth.verifyTotp

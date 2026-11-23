@@ -217,9 +217,35 @@ export async function returnRateBucketToken(
      WHERE key = ${`kobe:${key}`}`);
 }
 
+/**
+ * Takes back one fixed-window hit of the window that began at `windowStart` (a hit that turned out
+ * not to count, KOBE-812). Nothing when that window is over or the count is already 0.
+ */
+export async function refundRateLimitHit(
+  db: RateLimitDb,
+  key: string,
+  windowStart: number,
+): Promise<void> {
+  await db.execute(sql`
+    UPDATE kobe_rate_limits SET count = count - 1
+     WHERE key = ${`kobe:${key}`} AND window_start = ${windowStart} AND count > 0`);
+}
+
 /** Forgets `key`'s counter or bucket (a marker that is no longer true; tests). */
 export async function clearRateLimit(db: RateLimitDb, key: string): Promise<void> {
-  await db.execute(sql`DELETE FROM kobe_rate_limits WHERE key = ${`kobe:${key}`}`);
+  await clearRateLimits(db, [key]);
+}
+
+/** Forgets the counters named (e.g. a sign-in throttle cleared by a successful sign-in). */
+export async function clearRateLimits(db: RateLimitDb, keys: readonly string[]): Promise<void> {
+  if (keys.length === 0) return;
+  const names = keys.map((k) => `kobe:${k}`);
+  await db.execute(
+    sql`DELETE FROM kobe_rate_limits WHERE key IN (${sql.join(
+      names.map((n) => sql`${n}`),
+      sql`, `,
+    )})`,
+  );
 }
 
 /**

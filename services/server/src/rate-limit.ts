@@ -2,8 +2,10 @@ import {
   RATE_LIMIT_PRUNE_BATCH,
   backgroundPrune,
   clearRateLimit,
+  clearRateLimits,
   hitRateLimitWindow,
   pruneExpiredRateLimits as pruneRows,
+  refundRateLimitHit,
   takeRateBucket,
   takeRateLimit,
   type KobeDb,
@@ -21,6 +23,8 @@ import { logger } from "./logger.js";
 export {
   RATE_LIMIT_PRUNE_BATCH,
   clearRateLimit,
+  clearRateLimits,
+  refundRateLimitHit,
   type RateBucketRule,
   type RateLimitDb,
   type RateLimitRule,
@@ -47,6 +51,32 @@ export async function hitRateLimit(
     ...(now === undefined ? {} : { now }),
     onPruneError: logPruneError,
   });
+}
+
+/** One counter as a hit left it: hits in the window so far and when the window began (epoch ms). */
+export interface RateLimitHit {
+  readonly count: number;
+  readonly windowStart: number;
+}
+
+/**
+ * {@link hitRateLimit}, answering the counter itself: callers that need more than "within the
+ * limit" (the sign-in throttle's threshold and retry hint, KOBE-812). `rule.max` is not used.
+ * The throttle passes its own clock (its other statements use it too).
+ */
+export async function countRateLimitHit(
+  db: RateLimitDb,
+  key: string,
+  rule: Pick<RateLimitRule, "windowMs">,
+  now?: number,
+): Promise<RateLimitHit> {
+  const hit = await takeRateLimit(
+    db,
+    key,
+    { windowMs: rule.windowMs, max: Number.MAX_SAFE_INTEGER },
+    { ...(now === undefined ? {} : { now }), onPruneError: logPruneError },
+  );
+  return { count: hit.count, windowStart: hit.windowStart };
 }
 
 /** A hit's outcome, with when the window ends (the `Retry-After` of a refusal, KOBE-813). */
