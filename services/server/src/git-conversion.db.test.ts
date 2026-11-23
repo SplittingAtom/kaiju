@@ -187,6 +187,11 @@ async function project(
 const start = (p: Person, projectId: string, body: Record<string, unknown>) =>
   p.browser.request("POST", `/v1/projects/${projectId}/repo-conversion`, body);
 
+async function until(check: () => boolean): Promise<void> {
+  for (let i = 0; i < 200 && !check(); i += 1) await new Promise((r) => setTimeout(r, 25));
+  expect(check()).toBe(true);
+}
+
 async function settled(p: Person, projectId: string): Promise<GitConversionView> {
   for (let i = 0; i < 200; i += 1) {
     const res = await p.browser.request("GET", `/v1/projects/${projectId}/repo-conversion`);
@@ -336,9 +341,10 @@ describe("converting a project with history (ac-1, ac-3)", () => {
       commits: 3,
       headSha: view.head_sha,
     });
-    const mail = mailer().sent.find(
-      (m) => m.to === w.owner.email && m.subject.includes("is now a Repo"),
-    );
+    const isDone = (m: { to: string; subject: string }) =>
+      m.to === w.owner.email && m.subject.includes("is now a Repo");
+    await until(() => mailer().sent.some(isDone));
+    const mail = mailer().sent.find(isDone);
     expect(mail?.text).toContain(repo);
 
     // After conversion: the Files panel reads it as before; every Kobe write is refused (G17).
@@ -562,8 +568,9 @@ describe("crashes and failures (ac-2)", () => {
       error: { code: "host_unreachable" },
     });
     expect(await kind(w.team, p.id)).toBe("project");
-    expect(mailer().sent.some((m) => m.to === w.owner.email && m.subject.includes("failed"))).toBe(
-      true,
+    // The email goes out after the outcome committed.
+    await until(() =>
+      mailer().sent.some((m) => m.to === w.owner.email && m.subject.includes("failed")),
     );
     const rows = await audit(w.team);
     expect(rows.at(-1)).toMatchObject({
