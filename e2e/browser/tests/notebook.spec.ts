@@ -178,3 +178,127 @@ test("notebook: start, cells run with state, image and table outputs, interrupt,
     expect((await workspace(page, "delete", dir)).status).toBe(204);
   }
 });
+
+/**
+ * KOBE-804 / KOBE-805 (run with KOBE_TEAM=team1; needs a sandbox agent with KOBE-803's
+ * `notebook_inspect`): a `.py` file's run pane. Run splits the editor and the Run Output tab shows
+ * the output; the Log lists the run with its duration; Variables shows `x` and a DataFrame's size,
+ * and hides a token-like value until Show. An edit is saved by Run itself; a failing line is named
+ * in the Log and Go to line moves the cursor there; Run selection runs only the selected line; a
+ * sleeping run shows Stop and a clock, and Stop ends it. Tabs move with the arrow keys. One short
+ * model turn creates the thread; the file is removed at the end.
+ */
+const PY = [
+  "import pandas as pd",
+  "x = 41 + 1",
+  "API_TOKEN = 'not-a-real-token'",
+  "df = pd.DataFrame({'a': [1, 2, 3], 'b': ['p', 'q', 'r']})",
+  "print('hello from kobe')",
+  "",
+].join("\n");
+
+test("python file: run pane tabs, log, variables, save-and-run, run selection, stop", async ({
+  chat,
+  page,
+}) => {
+  test.setTimeout(4 * RUN_TIMEOUT_MS);
+  const dir = `kobe-804-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  await chat.open();
+  await watchStyleViolations(page);
+  expect((await workspace(page, "upload", `${dir}/job.py`, PY)).status).toBe(201);
+  try {
+    await chat.ask("Reply with the single word OK.");
+    const files = filesSection(page);
+    await files.getByRole("button", { name: "Refresh files" }).click();
+    const tree = files.getByRole("tree", { name: "My files" });
+    const folder = tree.getByRole("treeitem", { name: dir, exact: true });
+    if ((await folder.getAttribute("aria-expanded")) !== "true") await folder.click();
+    await tree.getByRole("treeitem", { name: "job.py", exact: true }).click();
+    const editor = page.locator('[data-kobe-file-editor$="job.py"]');
+    const toolbar = editor.getByRole("toolbar", { name: "job.py view" });
+    const pane = editor.getByRole("region", { name: "Run output" });
+    const tab = (name: RegExp) => pane.getByRole("tab", { name });
+    const panel = (id: string) => pane.locator(`[data-kobe-run-panel="${id}"]`);
+
+    // Run: the Run Output tab shows what it printed; the toolbar says how long it took.
+    await toolbar.getByRole("button", { name: "Run", exact: true }).click();
+    await expect(panel("output").getByText("hello from kobe")).toBeVisible({
+      timeout: RUN_TIMEOUT_MS,
+    });
+    await expect(toolbar.locator('[data-kobe-run-clock="ok"]')).toHaveText(/^Done in /u);
+
+    // The tabs move with the keyboard; the Log lists the run with its duration.
+    await tab(/^Run Output/u).focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(tab(/^Log/u)).toBeFocused();
+    await expect(tab(/^Log/u)).toHaveAttribute("aria-selected", "true");
+    const entry = panel("log").locator("[data-kobe-log-entry]").first();
+    await expect(entry).toContainText(/You · Done · [\d.]+ (ms|s)/u);
+
+    // Variables: live values, summaries, a hidden token until Show.
+    await page.keyboard.press("End");
+    await expect(tab(/^Variables/u)).toHaveAttribute("aria-selected", "true");
+    const variables = panel("variables");
+    await expect(variables.locator('[data-kobe-variable="x"]')).toContainText("42", {
+      timeout: RUN_TIMEOUT_MS,
+    });
+    await expect(variables.locator('[data-kobe-variable="df"]')).toContainText(
+      "3 rows × 2 columns",
+    );
+    const token = variables.locator('[data-kobe-variable="API_TOKEN"]');
+    await expect(token).not.toContainText("not-a-real-token");
+    await token.getByRole("button", { name: "Show the value of API_TOKEN" }).click();
+    await expect(token).toContainText("not-a-real-token");
+
+    // Run saves an edit first: a failing last line, named in the Log, and Go to line.
+    const code = page.getByLabel("Edit job.py");
+    await code.click();
+    await page.keyboard.press("ControlOrMeta+End");
+    await page.keyboard.type("y = missing_name");
+    await expect(editor.getByText("Run saves your changes first")).toBeVisible();
+    await toolbar.getByRole("button", { name: "Run", exact: true }).click();
+    await expect(tab(/^Log/u)).toContainText(/a run failed/u, { timeout: RUN_TIMEOUT_MS });
+    await tab(/^Log/u).click();
+    await expect(panel("log").getByText("NameError on line 6")).toBeVisible();
+    await expect(editor.getByText("Run saves your changes first")).toHaveCount(0);
+    await panel("log").getByRole("button", { name: "Go to line 6" }).first().click();
+    await expect(editor.locator("[data-kobe-editor-status]")).toContainText("Ln 6, Col 1");
+
+    // Run selection: only line 2 runs (x is set again, nothing printed).
+    await page.keyboard.press("Home");
+    await page.keyboard.press("ControlOrMeta+Home");
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Shift+End");
+    await page.keyboard.press("Shift+Enter");
+    await tab(/^Run Output/u).click();
+    await expect(toolbar.locator('[data-kobe-run-clock="ok"]')).toBeVisible({
+      timeout: RUN_TIMEOUT_MS,
+    });
+    await tab(/^Log/u).click();
+    await expect(panel("log").locator("[data-kobe-log-entry]").first()).toContainText("lines 2–2");
+
+    // A sleeping run: Stop and a live clock, then it ends stopped.
+    await page.getByLabel("Edit job.py").click();
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.type("import time\ntime.sleep(300)\n");
+    await page.keyboard.press("ControlOrMeta+s");
+    await expect(editor.getByText("Run saves your changes first")).toHaveCount(0);
+    await toolbar.getByRole("button", { name: "Run", exact: true }).click();
+    const stop = toolbar.getByRole("button", { name: "Stop", exact: true });
+    await expect(stop).toBeVisible({ timeout: RUN_TIMEOUT_MS });
+    await expect(toolbar.locator('[data-kobe-run-clock="running"]')).toHaveText(
+      /^Running \d+:\d\d$/u,
+    );
+    await page.waitForTimeout(2_000); // the code is sleeping in the kernel
+    await stop.click();
+    await expect(
+      toolbar.locator('[data-kobe-run-clock="interrupted"], [data-kobe-run-clock="error"]'),
+    ).toBeVisible({
+      timeout: RUN_TIMEOUT_MS,
+    });
+    await expect(stop).toHaveCount(0);
+    expect(await styleViolations(page)).toEqual([]);
+  } finally {
+    expect((await workspace(page, "delete", dir)).status).toBe(204);
+  }
+});

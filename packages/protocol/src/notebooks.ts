@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { idSchema, utf8ByteLength, uuidSchema } from "./common.js";
+import { idSchema, timestampSchema, utf8ByteLength, uuidSchema } from "./common.js";
 import {
   notebookExecErrorSchema,
   notebookTimingSchema,
@@ -150,6 +150,18 @@ export const notebookSavedSchema = z.strictObject({
   sha256: sha256HexSchema,
 });
 
+/** Highest line a Run selection names (KOBE-805); files are capped far below this anyway. */
+export const NOTEBOOK_LINE_MAX = 1_000_000;
+
+/** Lines of a `.py` file (1-based, inclusive): a Run selection (KOBE-805). */
+export const notebookLineRangeSchema = z
+  .strictObject({
+    start: z.number().int().min(1).max(NOTEBOOK_LINE_MAX),
+    end: z.number().int().min(1).max(NOTEBOOK_LINE_MAX),
+  })
+  .refine((l) => l.end >= l.start, "end before start");
+export type NotebookLineRange = z.infer<typeof notebookLineRangeSchema>;
+
 /** `notebook.started`: an execution began (the member's `notebook` run, or a `run_python` call). */
 export const notebookStartedPayloadSchema = z.strictObject({
   exec_id: uuidSchema,
@@ -157,6 +169,8 @@ export const notebookStartedPayloadSchema = z.strictObject({
   tool_call_id: idSchema.optional(),
   path: workspacePathSchema.optional(),
   cell_id: notebookCellIdSchema.optional(),
+  /** KOBE-805: only these lines of the `.py` file ran (a Run selection); error lines count from `start`. */
+  lines: notebookLineRangeSchema.optional(),
 });
 export type NotebookStartedPayload = z.infer<typeof notebookStartedPayloadSchema>;
 
@@ -212,9 +226,18 @@ export const notebookRunBodySchema = z
     cell_id: notebookCellIdSchema.optional(),
     /** Default {@link NOTEBOOK_TIMEOUT_DEFAULT_S}. */
     timeout_s: timeoutSchema.optional(),
+    /**
+     * KOBE-805, Run selection: only these lines (1-based, inclusive) of the saved `.py` file, with
+     * their common indentation removed. A line past the file's end is not an error (the range
+     * stops there); a range that starts past it is.
+     */
+    lines: notebookLineRangeSchema.optional(),
   })
   .superRefine((body, ctx) => {
     const notebook = body.path.endsWith(".ipynb");
+    if (notebook && body.lines !== undefined) {
+      ctx.addIssue({ code: "custom", path: ["lines"], message: "lines go with a .py file" });
+    }
     if (notebook && body.cell_id === undefined) {
       ctx.addIssue({ code: "custom", path: ["cell_id"], message: "a notebook cell id is needed" });
     }
@@ -229,6 +252,40 @@ export const notebookRunResponseSchema = z.strictObject({
   exec_id: uuidSchema,
 });
 export type NotebookRunResponse = z.infer<typeof notebookRunResponseSchema>;
+
+/** Most executions `GET .../notebook/executions` lists (KOBE-804 Log). */
+export const NOTEBOOK_HISTORY_MAX = 50;
+
+/**
+ * One past execution of a file (KOBE-804, the run pane's Log after a reload), from the thread's
+ * stored run events (kept until D18 compacts the run, 7 days after it ended): its run, when it
+ * started (the event's server time), the `notebook.started` payload and the `notebook.finished`
+ * one (null while it runs, or when it never finished), and whether its run has ended (an ended run
+ * without `finished` ended before the execution did). Outputs are read one execution at a time.
+ */
+export const notebookHistoryEntrySchema = z.strictObject({
+  run_id: uuidSchema,
+  run_ended: z.boolean(),
+  started_at: timestampSchema,
+  started: notebookStartedPayloadSchema,
+  finished: notebookFinishedPayloadSchema.nullable(),
+});
+export type NotebookHistoryEntry = z.infer<typeof notebookHistoryEntrySchema>;
+
+/**
+ * `GET /v1/threads/{id}/notebook/executions?path=` (owner only): the file's last
+ * {@link NOTEBOOK_HISTORY_MAX} executions in the thread (a `.py` file's, no cells), newest first.
+ */
+export const notebookHistoryResponseSchema = z.strictObject({
+  executions: z.array(notebookHistoryEntrySchema).max(NOTEBOOK_HISTORY_MAX),
+});
+export type NotebookHistoryResponse = z.infer<typeof notebookHistoryResponseSchema>;
+
+/** `GET /v1/threads/{id}/notebook/executions/{exec_id}/outputs` (owner only): in order. */
+export const notebookExecOutputsResponseSchema = z.strictObject({
+  outputs: z.array(notebookOutputSchema).max(NOTEBOOK_EXEC_OUTPUTS_MAX),
+});
+export type NotebookExecOutputsResponse = z.infer<typeof notebookExecOutputsResponseSchema>;
 
 /** `POST /v1/threads/{id}/notebook/interrupt` and `.../restart` (owner only): 200. */
 export const notebookKernelResponseSchema = z.strictObject({

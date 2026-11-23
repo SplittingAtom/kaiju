@@ -15,7 +15,8 @@ import type { ToolbarAction } from "../files/editor-toolbar";
 import { egressNotices, type Execution } from "../../lib/notebooks/executions";
 import type { KernelNote, KernelPhase, KernelWiring } from "./use-kernel";
 
-export const RESTART_PROMPT = "Restart the kernel? Its variables and imports are lost.";
+export const RESTART_PROMPT =
+  "Restart the kernel? Its variables are cleared and its imports are lost.";
 export const READ_ONLY_NOTE =
   "You are viewing a shared conversation: only its owner can run code in its kernel.";
 export const NO_THREAD_NOTE =
@@ -25,9 +26,10 @@ export const NO_THREAD_NOTE =
 function kernelState(phase: KernelPhase, busy: boolean, live: boolean) {
   if (phase === "waking") return { key: "waking", text: "Waking sandbox…" };
   if (phase === "starting") return { key: "starting", text: "Starting kernel…" };
+  if (phase === "restarting") return { key: "restarting", text: "Restarting kernel…" };
   if (busy) return { key: "busy", text: "Kernel busy" };
   if (live) return { key: "idle", text: "Kernel idle" };
-  if (phase === "stopped") return { key: "none", text: "No kernel" };
+  if (phase === "stopped") return { key: "none", text: "Kernel not started" };
   return { key: "unknown", text: "" };
 }
 
@@ -63,6 +65,7 @@ export function kernelActions({
   const reason = kernelBlocker(wiring);
   const ready = reason === undefined;
   const starting = phase === "waking" || phase === "starting";
+  const restarting = phase === "restarting";
   const interrupt: ToolbarAction = {
     id: "interrupt",
     label: "Interrupt",
@@ -72,13 +75,14 @@ export function kernelActions({
     onSelect: () => onKernel("interrupt"),
   };
   const second: ToolbarAction =
-    live && !starting
+    restarting || (live && !starting)
       ? {
           id: "restart",
           label: "Restart",
           icon: RotateCcwIcon,
-          disabled: !ready,
-          reason,
+          disabled: !ready || restarting,
+          busy: restarting,
+          reason: reason ?? (restarting ? "The kernel is restarting." : undefined),
           onSelect: () => {
             if (window.confirm(RESTART_PROMPT)) onKernel("restart");
           },

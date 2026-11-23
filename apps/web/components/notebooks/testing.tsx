@@ -2,9 +2,17 @@
  * Test doubles for the notebook views (KOBE-465): a workspace that saves and reads one file, a
  * kernel API that records calls, and run event streams the test feeds.
  */
+import { render } from "@testing-library/react";
 import { useState } from "react";
 import { vi } from "vitest";
-import type { KobeEvent, KobeEventPayload, KobeEventType, NotebookRunBody } from "@kobe/protocol";
+import type {
+  KobeEvent,
+  KobeEventPayload,
+  KobeEventType,
+  NotebookHistoryEntry,
+  NotebookOutput,
+  NotebookRunBody,
+} from "@kobe/protocol";
 import type { ApiResult } from "../../lib/api/client";
 import type { EventSourceLike } from "../../lib/chat/stream";
 import type { FilesApi } from "../../lib/files/api";
@@ -12,7 +20,10 @@ import { sha256Hex } from "../../lib/files/editor";
 import { EditDraftStore, FileReviewStore } from "../../lib/files/editor-state";
 import type { KernelStart, NotebookApi, NotebookRunStarted } from "../../lib/notebooks/api";
 import { NotebookExecStore } from "../../lib/notebooks/executions";
+import type { VariablesResult } from "../../lib/notebooks/variables";
+import { TooltipProvider } from "../ui/tooltip";
 import NotebookView from "./notebook-view";
+import PythonFile from "./python-run";
 import type { KernelWiring } from "./use-kernel";
 
 export const TEAM = "00000000-0000-4000-8000-0000000000aa";
@@ -60,6 +71,11 @@ export class Workspace {
     this.text = text;
   }
   readonly api = {
+    // A refused save names the version there now (file-editor's conflict choices).
+    list: vi.fn(async () => ({
+      ok: false as const,
+      error: { status: 404, code: "not_found", message: "gone" },
+    })),
     read: vi.fn(async () => ({
       ok: true as const,
       status: 200,
@@ -86,6 +102,16 @@ export class Kernel {
   /** `start` answers in order (then idle); a pending promise holds one. */
   starts: (ApiResult<KernelStart> | Promise<ApiResult<KernelStart>>)[] = [];
   sources: StubSource[] = [];
+  /** `variables` calls (`refresh` each) and their answers in order (then `no_kernel`). */
+  variableCalls: boolean[] = [];
+  variableAnswers: (ApiResult<VariablesResult> | Promise<ApiResult<VariablesResult>>)[] = [];
+  /** `history` calls (path each) and what it answers; `outputs` per execution id. */
+  historyCalls: string[] = [];
+  history: NotebookHistoryEntry[] = [];
+  outputCalls: string[] = [];
+  pastOutputs = new Map<string, NotebookOutput[]>();
+  /** How many `outputs` calls fail first. */
+  outputFailures = 0;
   readonly store = new NotebookExecStore();
   readonly api: NotebookApi = {
     run: async (_thread, body) => {
@@ -110,6 +136,24 @@ export class Kernel {
         status: 200,
         data: { status: op === "restart" ? "restarted" : "interrupted" },
       };
+    },
+    history: async (_thread, path) => {
+      this.historyCalls.push(path);
+      return { ok: true, status: 200, data: this.history };
+    },
+    outputs: async (_thread, exec) => {
+      this.outputCalls.push(exec);
+      if (this.outputFailures > 0) {
+        this.outputFailures -= 1;
+        return { ok: false, error: { status: 503, code: "unavailable", message: "down" } };
+      }
+      return { ok: true, status: 200, data: this.pastOutputs.get(exec) ?? [] };
+    },
+    variables: async (_thread, refresh) => {
+      this.variableCalls.push(refresh);
+      return (
+        this.variableAnswers.shift() ?? { ok: true, status: 200, data: { status: "no_kernel" } }
+      );
     },
   };
   wiring(threadId: string | null = THREAD, readOnly = false): KernelWiring {
@@ -166,4 +210,64 @@ export function Harness({
 
 export function notebookJson(cells: readonly Record<string, unknown>[], minor = 5): string {
   return `${JSON.stringify({ nbformat: 4, nbformat_minor: minor, metadata: {}, cells }, null, 1)}\n`;
+}
+
+/** A `.py` file as the file tab shows it (KOBE-804/805): `onSaved` shows the saved text. */
+export function PythonHarness({
+  workspace,
+  kernel,
+  sha,
+  drafts,
+}: {
+  readonly workspace: Workspace;
+  readonly kernel: KernelWiring | undefined;
+  readonly sha: string;
+  readonly drafts: EditDraftStore;
+}) {
+  const [file, setFile] = useState({ text: workspace.text, sha });
+  return (
+    <TooltipProvider>
+      <PythonFile
+        path={workspace.path}
+        text={file.text}
+        sha256={file.sha}
+        truncated={false}
+        api={workspace.api}
+        drafts={drafts}
+        reviews={new FileReviewStore()}
+        kernel={kernel}
+        onSaved={(text, sha256) => setFile({ text, sha: sha256 })}
+        onReload={() => {}}
+      />
+    </TooltipProvider>
+  );
+}
+
+/** Renders `path` with `text` as a `.py` file in a conversation's kernel. */
+export async function renderPython({
+  path = "src/job.py",
+  text = "print(1)\n",
+  drafts = new EditDraftStore(),
+  threadId = THREAD,
+  readOnly = false,
+  kernel = new Kernel(),
+}: {
+  readonly kernel?: Kernel;
+  readonly path?: string;
+  readonly text?: string;
+  readonly drafts?: EditDraftStore;
+  readonly threadId?: string | null;
+  readonly readOnly?: boolean;
+} = {}) {
+  const workspace = new Workspace(path, text);
+  const sha = await sha256Hex(enc(text));
+  render(
+    <PythonHarness
+      workspace={workspace}
+      kernel={kernel.wiring(threadId, readOnly)}
+      sha={sha}
+      drafts={drafts}
+    />,
+  );
+  return { kernel, workspace, drafts };
 }

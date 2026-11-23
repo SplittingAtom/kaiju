@@ -92,19 +92,20 @@ The editor fills the artifact column, and one toolbar at the top holds its contr
   Rendered is one click away. Your choice for a file stays while this page is open. A read-only
   Python file (a project file you cannot commit, one over 1 MB) also opens Raw, read-only, with the
   reason shown above it.
-- For a `.py` file: **Run**, **Interrupt**, **Start** or **Restart** and the kernel's state. See
-  [Notebooks and Python](notebooks.md).
+- For a `.py` file: **Run**, **Run selection**, **Stop** (while code runs), **Start** or
+  **Restart**, the run's clock and the kernel's state. See [Notebooks and Python](notebooks.md).
 
 Under the text, a small bar shows the cursor's line and column ("Ln 3, Col 5") and a **Wrap**
 button for long lines. Wrap is on by default; turning it off makes long lines scroll sideways, and
-Kobe remembers your choice on every device. In the raw text, **Find** (Mod+F), **Find next**,
-**Replace** and **Go to line** work with the keyboard; see [Keyboard
+Kobe remembers your choice on every device. In the raw text, **Mod+S** saves, and **Find**
+(Mod+F), **Find next**, **Replace** and **Go to line** work with the keyboard; see [Keyboard
 shortcuts](../reference/keyboard-shortcuts.md).
 
 The file's header also has **Copy path**: it copies the path the agent sees in its sandbox
 (for example `/workspace/notes/plan.md`), the same one an `@` mention uses, and says "Path copied".
 
-On a narrow column Save As moves into the **More file actions** menu. A disabled button says why
+On a narrow column Save As (and for a `.py` file Run selection and Show run pane) moves into the
+**More file actions** menu. A disabled button says why
 in its tooltip.
 
 ## Review the agent's proposed edit

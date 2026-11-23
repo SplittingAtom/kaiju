@@ -264,6 +264,68 @@ describe("the member runs a notebook cell (NB6, NB11)", () => {
     expect((await liveFile(w, "job.py").catch(() => ({ sha: base }))).sha).toBe(base);
   });
 
+  it("runs only the named lines of a .py file, dedented (KOBE-805 Run selection)", async () => {
+    const w = await world();
+    const seen: string[] = [];
+    await connected(w, (f) => {
+      seen.push(f.code);
+      return [stdout("ok\n")];
+    });
+    await seed(w, "sel.py", "import os\ndef f():\n    a = 1\n    print(a)\n");
+    await ranToEnd(w, { path: "sel.py", lines: { start: 3, end: 9 } });
+    expect(seen).toEqual(["a = 1\nprint(a)\n"]);
+    const blank = await run(w, { path: "sel.py", lines: { start: 7, end: 8 } });
+    expect(blank.status).toBe(400);
+    expect(blank.json).toMatchObject({ code: "invalid_request" });
+    const notebookLines = await run(w, {
+      path: "a.ipynb",
+      cell_id: "c1",
+      lines: { start: 1, end: 1 },
+    });
+    expect(notebookLines.status).toBe(400);
+  });
+
+  it("lists a .py file's past runs from stored events, newest first, with a selection's lines (KOBE-804)", async () => {
+    const w = await world();
+    await connected(w, () => [stdout("ok\n")]);
+    await seed(w, "hist.py", "a = 1\nb = 2\n");
+    await seed(w, "other.py", "c = 3\n");
+    const first = await ranToEnd(w, { path: "hist.py" });
+    await ranToEnd(w, { path: "other.py" });
+    const second = await ranToEnd(w, { path: "hist.py", lines: { start: 2, end: 2 } });
+    const list = await w.owner.browser.get(
+      `/v1/threads/${w.threadId}/notebook/executions?path=hist.py`,
+    );
+    expect(list.status, JSON.stringify(list.json)).toBe(200);
+    const executions = (list.json as { executions: Record<string, any>[] }).executions;
+    expect(executions.map((e) => e.started.exec_id)).toEqual([second.exec_id, first.exec_id]);
+    expect(executions[0]).toMatchObject({
+      run_id: second.run_id,
+      run_ended: true,
+      started: { origin: "user", path: "hist.py", lines: { start: 2, end: 2 } },
+      finished: { status: "ok", outputs: 1 },
+    });
+    expect(executions[1]?.started.lines).toBeUndefined();
+    expect(Number.isNaN(Date.parse(String(executions[0]?.started_at)))).toBe(false);
+    const outputs = await w.owner.browser.get(
+      `/v1/threads/${w.threadId}/notebook/executions/${first.exec_id}/outputs`,
+    );
+    expect(outputs.json).toEqual({
+      outputs: [{ output_type: "stream", name: "stdout", text: "ok\n" }],
+    });
+    // Bad input, an unknown execution, and someone else's thread.
+    const base = `/v1/threads/${w.threadId}/notebook/executions`;
+    expect((await w.owner.browser.get(`${base}?path=a.ipynb`)).status).toBe(400);
+    expect((await w.owner.browser.get(`${base}/${randomUUID()}/outputs`)).status).toBe(404);
+    await fx.activate(w.reader, w.team);
+    expect((await w.reader.browser.get(`${base}?path=hist.py`)).status).toBe(404);
+    expect((await w.reader.browser.get(`${base}/${first.exec_id}/outputs`)).status).toBe(404);
+    // A reader of a shared thread sees the conversation, not the owner's kernel runs (R2-L3).
+    await fx.admin.query(`UPDATE threads SET shared_to_team = true WHERE id = $1`, [w.threadId]);
+    const shared = await w.reader.browser.get(`${base}?path=hist.py`);
+    expect([shared.status, (shared.json as { code?: string }).code]).toEqual([403, "read_only"]);
+  });
+
   it("merges into the current version when the notebook changed meanwhile, if the cell is still there", async () => {
     const w = await world();
     await seed(w, "b.ipynb", notebook([code("c1", "1"), code("c2", "2")]));

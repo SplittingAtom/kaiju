@@ -48,14 +48,17 @@ sheet.
 When the cursor is in a file's raw text, these work like in most code editors (they also appear in
 the `?` sheet):
 
-| Keys        | Action                                        |
-| ----------- | --------------------------------------------- |
-| Mod+F       | Find (the panel has next, previous, Replace)  |
-| Mod+G       | Find next                                     |
-| Shift+Mod+G | Find previous                                 |
-| Mod+Alt+F   | Replace: opens the panel in the Replace field |
-| Mod+Alt+G   | Go to line (also `+5`, `-5`, `50%`, `12:4`)   |
-| Escape      | Close the find panel                          |
+| Keys        | Action                                                |
+| ----------- | ----------------------------------------------------- |
+| Mod+S       | Save the file                                         |
+| Shift+Enter | Run a `.py` file, or only the selected lines          |
+| Mod+Enter   | Run the whole `.py` file (in a notebook cell: run it) |
+| Mod+F       | Find (the panel has next, previous, Replace)          |
+| Mod+G       | Find next                                             |
+| Shift+Mod+G | Find previous                                         |
+| Mod+Alt+F   | Replace: opens the panel in the Replace field         |
+| Mod+Alt+G   | Go to line (also `+5`, `-5`, `50%`, `12:4`)           |
+| Escape      | Close the find panel                                  |
 
 ## In panels and lists
 
@@ -64,6 +67,8 @@ the `?` sheet):
   last.
 - Splitters (the Threads panel's workspace rail, a Python file's output) move with the arrow keys
   and Page Up/Down; Home and End go to the ends and Enter goes back to the default.
+- A Python file's run pane (Run Output, Log, Variables) is a set of tabs: Left and Right move
+  between them, Home and End go to the first and last.
 - Menus and tabs follow the usual arrow-key navigation.
 - In the PDF viewer, with the pages focused: Mod+F finds in the document (Enter and Shift+Enter
   step through the matches, Escape closes the search), Mod+= and Mod+- zoom, Mod+0 fits the width.
