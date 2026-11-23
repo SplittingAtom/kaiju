@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   clip,
+  isSecretName,
   isSensitive,
   reprText,
   shownVariables,
@@ -54,7 +56,7 @@ describe("variables (KOBE-804)", () => {
     }
     expect(isSensitive({ name: "env", type: "_Environ" })).toBe(true);
     expect(isSensitive({ name: "df", type: "DataFrame" })).toBe(false);
-    for (const name of ["access_key", "key", "aws_key", "pwd", "dsn", "conn_str", "auth_header"]) {
+    for (const name of ["access_key", "key", "pwd", "dsn", "conn_str", "auth_header"]) {
       expect(isSensitive({ name, type: "str" }), name).toBe(true);
     }
     for (const name of ["author", "keyboard", "monkey"]) {
@@ -74,5 +76,22 @@ describe("variables (KOBE-804)", () => {
       "alphabet",
       "Alpha",
     ]);
+  });
+});
+
+describe("credential-like names (KOBE-816): the table the kernel bridge uses too", () => {
+  const cases = JSON.parse(
+    readFileSync(
+      new URL("../../../../images/sandbox/kernel/secret-name-cases.json", import.meta.url),
+      "utf8",
+    ),
+  ) as { mask: string[]; show: string[] };
+
+  it.each(cases.mask)("masks %s", (name) => {
+    expect(isSecretName(name)).toBe(true);
+  });
+
+  it.each(cases.show)("shows %s", (name) => {
+    expect(isSecretName(name)).toBe(false);
   });
 });

@@ -1023,18 +1023,52 @@ def _path_text(value, t):
     return t.__repr__(value)
 
 
-# Credential-like names (the web's rule, here so their values never leave the kernel unasked):
-# a top-level variable named so is sent without its value, and inside a shown dict the value under
-# such a key is "<hidden>", until the member asks for that one variable (Show).
-_SECRET = _re.compile(
-    r"pass(word|wd)?|pwd|secret|token|(api|access|private|secret)_?key|^key$|_key$|credential"
-    r"|auth(?!or)|cookie|dsn|conn(ection)?_?str",
-    _re.IGNORECASE,
-)
+# Credential-like names (KOBE-816; the web's isSensitive implements the same rule, and both are
+# tested against images/sandbox/kernel/secret-name-cases.json). The name is split into lowercase
+# tokens (camelCase boundaries and any non-alphanumeric character separate), and it is
+# credential-like when a token is one of _SECRET_TOKENS (unless the next token is one of
+# _NOT_SECRET_NEXT: `token_count`), "key" alone or after a qualifier (`api_key`, `x-api-key`), or
+# conn/connection followed by str/string. "author", "authors" and "authored" are other tokens.
+# A top-level variable named so is sent without its value; inside a shown dict (or a 2-tuple pair)
+# the value under such a key is "<hidden>"; until the member asks for that one variable (Show).
+_SECRET_TOKENS = frozenset((
+    "password", "passwd", "pwd", "passphrase", "secret", "secrets", "token", "auth",
+    "authorization", "authorisation", "bearer", "credential", "credentials", "creds", "cookie",
+    "cookies", "session", "sessionid", "dsn", "jwt", "apikey", "accesskey", "privatekey",
+    "secretkey", "signingkey", "connstr", "connectionstring",
+))
+_KEY_QUALIFIERS = frozenset(("api", "access", "private", "secret", "signing", "encryption", "master", "client"))
+_NOT_SECRET_NEXT = frozenset(("count", "counts", "len", "length", "size", "limit", "type"))
+_CAMEL = _re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
+_TOKEN_SPLIT = _re.compile(r"[^a-z0-9]+")
+# userinfo in a URL-looking string: scheme://user:password@host
+_URL_USERINFO = _re.compile(r"([A-Za-z][A-Za-z0-9+.\-]*://)[^/@\s:]+:[^/@\s]*@")
+
+
+def _name_tokens(name):
+    return [t for t in _TOKEN_SPLIT.split(_CAMEL.sub(" ", name).lower()) if t]
 
 
 def _secret(name):
-    return type(name) is str and _SECRET.search(str.__getitem__(name, slice(0, 256))) is not None
+    if type(name) is bytes:
+        try:
+            name = bytes.decode(name, "utf-8")
+        except UnicodeDecodeError:
+            return False
+    if type(name) is not str:
+        return False
+    tokens = _name_tokens(str.__getitem__(name, slice(0, 256)))
+    if tokens == ["key"]:
+        return True
+    for i, tok in enumerate(tokens):
+        nxt = tokens[i + 1] if i + 1 < len(tokens) else None
+        if tok in _SECRET_TOKENS and nxt not in _NOT_SECRET_NEXT:
+            return True
+        if tok == "key" and i > 0 and tokens[i - 1] in _KEY_QUALIFIERS:
+            return True
+        if tok in ("conn", "connection") and nxt in ("str", "string"):
+            return True
+    return False
 
 
 class _Render:
@@ -1045,6 +1079,18 @@ class _Render:
         self.mask = mask
         self.masked = False
 
+    def text_part(self, value):
+        # The shown part of an exact str; with `mask`, the userinfo of URL-looking text hidden
+        # (looked for a little past the cut, so a cut never shows half a password).
+        left = max(1, self.left)
+        if not self.mask:
+            return str.__getitem__(value, slice(0, left))
+        chunk = str.__getitem__(value, slice(0, left + 512))
+        hidden = _URL_USERINFO.sub(r"\1<hidden>@", chunk)
+        if hidden != chunk:
+            self.masked = True
+        return str.__getitem__(hidden, slice(0, left))
+
     def put(self, parts, text):
         parts.append(text)
         self.left -= len(text)
@@ -1054,7 +1100,7 @@ class _Render:
         if t in _VAR_SCALARS:
             return _scalar_text(value, t)
         if t is str:
-            return str.__repr__(str.__getitem__(value, slice(0, max(1, self.left))))
+            return str.__repr__(self.text_part(value))
         if t is bytes or t is bytearray:
             return repr(bytes(t.__getitem__(value, slice(0, max(1, self.left)))))
         if t is range:
@@ -1074,6 +1120,12 @@ class _Render:
             return {list: "[]", tuple: "()", dict: "{}", set: "set()", frozenset: "frozenset()"}[base]
         if depth >= _VAR_DEPTH:
             return open_ + "..." + close
+        if base is tuple and n == 2 and self.mask:
+            first, second = tuple.__getitem__(value, 0), tuple.__getitem__(value, 1)
+            if _secret(first):
+                # A (name, value) pair whose name is credential-like: the value is withheld.
+                self.masked = True
+                return "(" + self.value(first, depth + 1) + ", <hidden>)"
         parts = []
         shown = 0
         items = dict.items(value) if base is dict else base.__iter__(value)
@@ -1162,7 +1214,10 @@ class _Snapshot:
             "NumpyExtensionArray", "PeriodArray", "SparseArray", "StringArray", "TimedeltaArray",
         ))
         self.pd_indexes = _module_classes("pandas", _PANDAS_INDEXES)
-        self.pd_free_indexes = _module_classes("pandas", ("RangeIndex", "MultiIndex"))
+        range_index = _module_classes("pandas", ("RangeIndex",))
+        multi_index = _module_classes("pandas", ("MultiIndex",))
+        self.range_index = range_index[0] if range_index else None
+        self.multi_index = multi_index[0] if multi_index else None
 
     def text(self, value, render=None):
         render = render or _Render(self.repr_chars, self.mask)
@@ -1184,10 +1239,19 @@ class _Snapshot:
         t = type(a)
         return (self.ndarray is not None and t is self.ndarray) or any(t is c for c in self.pd_arrays)
 
-    def allowed_index(self, index):
+    def allowed_index(self, index, depth=0):
         t = type(index)
-        if any(t is c for c in self.pd_free_indexes):
+        if self.range_index is not None and t is self.range_index:
             return True
+        if self.multi_index is not None and t is self.multi_index:
+            # A MultiIndex: each level must be an allowed index (its labels are built from them).
+            try:
+                levels = _field(index, "_levels")
+            except _Stop:
+                return False
+            if not issubclass(type(levels), list) or depth > 0:
+                return False
+            return all(self.allowed_index(level, 1) for level in _it.islice(list.__iter__(levels), 64))
         if not any(t is c for c in self.pd_indexes):
             return False
         try:
@@ -1285,7 +1349,11 @@ class _Snapshot:
             # A subclass of a built-in container or string: the built-in's own length and items
             # (its C methods), never the subclass's repr, len or iteration.
             out["len"] = base.__len__(value)
-            if base in _VAR_TEXT:
+            if base is str:
+                part = str(str.__getitem__(value, slice(0, self.repr_chars + 512)))
+                out["repr"] = _clip_keep(render.value(part, 0), self.repr_chars)
+                out["masked"] = render.masked
+            elif base in _VAR_TEXT:
                 out["repr"] = _clip_keep(repr(base(base.__getitem__(value, slice(0, self.repr_chars)))), self.repr_chars)
             elif base is range:
                 out["repr"] = ""
@@ -1376,7 +1444,9 @@ def variables(limits, ns, hidden=None, execution_count=None, show=None):
     # JSON text of the snapshot of `ns` (the kernel's user namespace). With `show` (one variable's
     # name, the member's Show), only that variable, its value unmasked.
     limits = limits if type(limits) is dict else {}
-    show = show if type(show) is str and show.isidentifier() else None
+    if show is not None and (type(show) is not str or not show.isidentifier() or len(show) > 256):
+        # Not a variable name: nothing by that name (never the whole snapshot).
+        return _json.dumps({"variables": [], "other": [], "truncated": False, "execution_count": execution_count if type(execution_count) is int else None})
     try:
         snap = _Snapshot(limits, show).take(ns, hidden or {})
     except KeyboardInterrupt:
@@ -1603,8 +1673,9 @@ class Bridge:
         one variable's name, its value unmasked (the member's Show)."""
         safe = {k: int(v) for k, v in limits.items() if k in INSPECT_LIMIT_KEYS and type(v) is int and 0 < v < 10**7}
         asked = {"limits": safe}
-        if type(show) is str and show.isidentifier() and len(show) <= 256:
-            asked["show"] = show
+        if show is not None:
+            # Passed on as given (cut short): the kernel answers an invalid name with nothing.
+            asked["show"] = show[:300] if type(show) is str else ""
         code = VARIABLES_MARKER + json.dumps(asked)
         msg_id = self.kc.inspect(code, len(code), detail_level=0)
         while True:

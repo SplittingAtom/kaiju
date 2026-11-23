@@ -70,14 +70,80 @@ export function clip(text: string, max: number): string {
   return chars.length <= max ? text : `${chars.slice(0, max - 1).join("")}…`;
 }
 
-// Credential-like names (review L6): a display guard against shoulder-surfing, not a boundary.
-const SECRET_NAME =
-  /pass(word|wd)?|pwd|secret|token|(api|access|private|secret)_?key|^key$|_key$|credential|auth(?!or)|cookie|dsn|conn(ection)?_?str/iu;
+// Credential-like names (review L6; KOBE-816): the same rule as the kernel bridge's `_secret`
+// (images/sandbox/kernel/kobe-kernel-bridge.py), both tested against
+// images/sandbox/kernel/secret-name-cases.json. The name splits into lowercase tokens (camelCase
+// boundaries and any non-alphanumeric character separate); it is credential-like when a token is
+// a secret word (unless followed by a size-like word: `token_count`), "key" alone or after a
+// qualifier (`api_key`, `x-api-key`), or conn/connection followed by str/string. A display guard
+// for values from older agents; newer agents withhold such values themselves (`hidden`).
+const SECRET_TOKENS = new Set([
+  "password",
+  "passwd",
+  "pwd",
+  "passphrase",
+  "secret",
+  "secrets",
+  "token",
+  "auth",
+  "authorization",
+  "authorisation",
+  "bearer",
+  "credential",
+  "credentials",
+  "creds",
+  "cookie",
+  "cookies",
+  "session",
+  "sessionid",
+  "dsn",
+  "jwt",
+  "apikey",
+  "accesskey",
+  "privatekey",
+  "secretkey",
+  "signingkey",
+  "connstr",
+  "connectionstring",
+]);
+const KEY_QUALIFIERS = new Set([
+  "api",
+  "access",
+  "private",
+  "secret",
+  "signing",
+  "encryption",
+  "master",
+  "client",
+]);
+const NOT_SECRET_NEXT = new Set(["count", "counts", "len", "length", "size", "limit", "type"]);
 const ENVIRON_TYPES = new Set(["_Environ", "environ"]);
+
+/** The name's lowercase tokens (camelCase and any non-alphanumeric character separate). */
+export function nameTokens(name: string): string[] {
+  return name
+    .slice(0, 256)
+    .replace(/(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/gu, " ")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/u)
+    .filter((t) => t !== "");
+}
+
+/** Whether a name is credential-like (see the rule above). */
+export function isSecretName(name: string): boolean {
+  const tokens = nameTokens(name);
+  if (tokens.length === 1 && tokens[0] === "key") return true;
+  return tokens.some((tok, i) => {
+    const next = tokens[i + 1];
+    if (SECRET_TOKENS.has(tok) && (next === undefined || !NOT_SECRET_NEXT.has(next))) return true;
+    if (tok === "key" && i > 0 && KEY_QUALIFIERS.has(tokens[i - 1] ?? "")) return true;
+    return (tok === "conn" || tok === "connection") && (next === "str" || next === "string");
+  });
+}
 
 /** Hidden until shown: a credential-like name, or an environment mapping (`os.environ`). */
 export function isSensitive(v: Pick<Variable, "name" | "type">): boolean {
-  return SECRET_NAME.test(v.name) || ENVIRON_TYPES.has(v.type);
+  return isSecretName(v.name) || ENVIRON_TYPES.has(v.type);
 }
 
 /** `DataFrame`, or `numpy.ndarray` when the module adds something. */

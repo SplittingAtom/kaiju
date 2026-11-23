@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
@@ -156,6 +157,44 @@ describe.skipIf(!hasPython)("kernel variables snapshot (KOBE-803)", () => {
     ]);
     expect(snap("secrets", "env").variables[0]?.repr).toContain("'AWS_SECRET_ACCESS_KEY': 'abc'");
     expect(snap("secrets", "missing").variables).toEqual([]);
+  });
+
+  it("the credential-name rule matches the shared table (the web tests the same one)", () => {
+    const table = fileURLToPath(
+      new URL("../../../../images/sandbox/kernel/secret-name-cases.json", import.meta.url),
+    );
+    const res = spawnSync("python3", ["-I", HARNESS, BRIDGE, "secret_names", table], {
+      encoding: "utf8",
+    });
+    if (res.status !== 0) throw new Error(res.stderr);
+    const masked = JSON.parse(res.stdout) as Record<string, boolean>;
+    const cases = JSON.parse(readFileSync(table, "utf8")) as { mask: string[]; show: string[] };
+    expect(cases.mask.filter((n) => !masked[n])).toEqual([]);
+    expect(cases.show.filter((n) => masked[n])).toEqual([]);
+  });
+
+  it("header names, bytes keys, (name, value) pairs and URL userinfo are withheld too", () => {
+    const s = snap("secrets");
+    const v = byName(s);
+    expect(v.get("headers")?.repr).toBe(
+      "{'Authorization': <hidden>, 'x-api-key': <hidden>, 'X-Api-Key': <hidden>, 'Accept': 'json'}",
+    );
+    expect(v.get("raw")?.repr).toBe("{b'password': <hidden>, b'user': b'me'}");
+    expect(v.get("pairs")?.repr).toBe("[('password', <hidden>), ('user', 'me')]");
+    expect(v.get("proxy")?.repr).toBe("{'HTTPS_PROXY': 'http://<hidden>@proxy:3128'}");
+    expect(v.get("url")).toMatchObject({ repr: "'postgres://<hidden>@db:5432/x'", hidden: "keys" });
+    for (const secret of [
+      "Bearer",
+      "k-xyz",
+      "bytes-secret",
+      "plain-in-tuple",
+      "egress-token",
+      "pw-in-url",
+    ]) {
+      expect(JSON.stringify(s), secret).not.toContain(secret);
+    }
+    // An invalid Show name is nothing by that name, never the whole snapshot.
+    expect(snap("secrets", "a.b").variables).toEqual([]);
   });
 
   it("standard-library values holding a member object stay type-only, zero calls", () => {

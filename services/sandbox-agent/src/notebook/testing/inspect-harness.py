@@ -473,6 +473,11 @@ def scenario(name):
             "API_KEY": "sk-live-123",
             "my_password": "hunter2",
             "env": {"PATH": "/usr/bin", "AWS_SECRET_ACCESS_KEY": "abc", "nested": {"token": "t"}},
+            "headers": {"Authorization": "Bearer abc123", "x-api-key": "k-xyz", "X-Api-Key": "k2", "Accept": "json"},
+            "raw": {b"password": b"bytes-secret", b"user": b"me"},
+            "pairs": [("password", "plain-in-tuple"), ("user", "me")],
+            "proxy": {"HTTPS_PROXY": "http://thread:egress-token@proxy:3128"},
+            "url": "postgres://app:pw-in-url@db:5432/x",
             "plain": {"a": 1},
             "count": 3,
         }, {}
@@ -504,8 +509,20 @@ def scenario(name):
     raise SystemExit("unknown scenario " + name)
 
 
+def secret_names(bridge, path):
+    """The bridge's credential-name rule over the shared table: which names it masks."""
+    g = {"__name__": "kobe_static"}
+    exec(bridge.STATIC_SOURCE, g)
+    with open(path, encoding="utf-8") as f:
+        cases = json.load(f)
+    names = cases["mask"] + cases["show"]
+    print(json.dumps({name: g["_secret"](name) for name in names}))
+
+
 def main():
     bridge = load_bridge(sys.argv[1])
+    if sys.argv[2] == "secret_names":
+        return secret_names(bridge, sys.argv[3])
     ns, hidden = scenario(sys.argv[2])
     show = sys.argv[3] if len(sys.argv) > 3 else None
     limits = {"max_vars": 200, "max_bytes": 65536, "repr_chars": 200, "per_var_ms": 200, "budget_ms": 2000}

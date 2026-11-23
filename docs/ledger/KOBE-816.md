@@ -40,7 +40,8 @@
     `__len__` called by pandas), else type only. No pandas repr is ever made, so display options
     (`display.float_format` and the like) never apply. dtypes are shown by `str()` only for
     numpy's own dtypes (metaclass `numpy._DTypeMeta`) and pandas' own dtype classes, compared by
-    identity, never by `__module__` (review L3).
+    identity, never by `__module__` (review L3). A MultiIndex counts only when each of its levels
+    (`_levels`, from the instance dict) is such an index (round 2 L3).
   - exact standard-library types (`type(v) is T`, never a subclass; classes compared by identity,
     never hashed), each safe because its text is library C or library code over fields checked
     to be plain: `datetime.date`/`timedelta`/`timezone` (C reprs over ints and an exact
@@ -70,17 +71,27 @@
   before); never wakes a sandbox or starts a kernel (route and agent unchanged). An agent-side
   timeout still interrupts the kernel; the handler catches `KeyboardInterrupt` and answers an
   error (no member frame is ever interrupted: none runs).
-- **Credential-like values stay in the sandbox (review L4, decided here).** The web's name rule
-  (`pass…`, `pwd`, `secret`, `token`, `api/access/private/secret_key`, `key`, `…_key`,
-  `credential`, `auth` not `author`, `cookie`, `dsn`, `conn_str`) now runs in the kernel: such a
-  variable is sent as name and type with `hidden: "name"` and no value or summary; inside a shown
-  dict (any depth) the value under such a key is `<hidden>` and the item says `hidden: "keys"`
-  (`env = dict(os.environ)` shows `PATH` but not `AWS_SECRET_ACCESS_KEY`). Show is a specific
-  request: `POST .../notebook/variables {"show": "<name>"}` (owner only, same route, rate limit and
-  non-execute channel) → frame `notebook.inspect` `show` → agent `KernelManager.show` (never the
-  kept snapshot, never stored, never during a run) → bridge `inspect` with `show` → that one
-  variable, not withheld. The web shows "Hidden" + Show (or "Show hidden values" for `keys`) and
-  replaces the row with the answer; the next snapshot withholds it again. Older agents (no
+- **Credential-like values stay in the sandbox (review L4, decided here; rule reworked in
+  review round 2).** One rule in the kernel (`_secret`) and the web (`isSecretName`), both tested
+  against `images/sandbox/kernel/secret-name-cases.json` (must-mask and must-show names): the name
+  splits into lowercase tokens (camelCase, `-`, `_`, `.`, spaces and any non-alphanumeric
+  character separate; bytes keys decoded as UTF-8); credential-like when a token is one of
+  password/passwd/pwd/passphrase/secret(s)/token/auth/authorization/authorisation/bearer/
+  credential(s)/creds/cookie(s)/session/sessionid/dsn/jwt (or the fused apikey, accesskey, …),
+  unless the next token is count/counts/len/length/size/limit/type (`token_count`); `key` alone or
+  after api/access/private/secret/signing/encryption/master/client (`x-api-key`); conn/connection
+  followed by str/string. `author(s)`, `authored`, `tokenizer`, `sort_key` are other tokens (round
+  2: `auth(?!or)` had spared `Authorization`, `_?key` missed `x-api-key`). Such a variable is sent
+  as name and type with `hidden: "name"` and no value or summary. Inside a shown value: the value
+  under such a dict key (str or bytes, any depth) and the second item of a 2-tuple whose first is
+  such a name read `<hidden>`, and the userinfo of URL-looking strings (`scheme://user:pass@`)
+  reads `<hidden>@` (looked for 512 characters past the cut), all with `hidden: "keys"`. Show is a
+  specific request: `POST .../notebook/variables {"show": "<name>"}` (owner only, same route, rate
+  limit and non-execute channel) → frame `notebook.inspect` `show` → agent `KernelManager.show`
+  (never the kept snapshot, never stored, never during a run) → bridge `inspect` with `show` →
+  that one variable, not withheld; a name that is not a Python identifier answers nothing (no
+  variables), never the whole snapshot. The web shows "Hidden" + Show (or "Show hidden values")
+  and replaces the row with the answer; the next snapshot withholds it again. Older agents (no
   `hidden`) keep the web-side rule. `os.environ` itself is type-only.
 - **Variables tab contract.** `repr_error: "not_read"` and `hidden` added; body `show` added (both
   accept unknown short codes for later reasons). Wire test: the transport probe shows the secret
