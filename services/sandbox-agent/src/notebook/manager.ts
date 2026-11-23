@@ -1,15 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { performance } from "node:perf_hooks";
-import type {
-  NotebookExecuteResult,
-  NotebookKernelResponse,
-  NotebookOutput,
-  NotebookStartResult,
-  NotebookTiming,
-  NotebookVariablesResult,
-  NotebookVariablesSnapshot,
+import {
+  NOTEBOOK_COMPLETE_TIMEOUT_MS,
+  type NotebookExecuteResult,
+  type NotebookKernelResponse,
+  type NotebookOutput,
+  type NotebookStartResult,
+  type NotebookTiming,
+  type NotebookVariablesResult,
+  type NotebookVariablesSnapshot,
 } from "@kobe/protocol";
-import type { NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
+import type { NotebookCompletionFrame, NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
+import { askKernel, BRIDGE_MARGIN_MS, COMPLETION_UNAVAILABLE } from "./completion.js";
 import { fail, ok, type CommandOutcome } from "../threads/outcome.js";
 import { OUTPUT_LIMITS, OutputLimiter, type OutputLimits } from "./outputs.js";
 import { KernelSession, type BridgeLauncher } from "./session.js";
@@ -177,6 +179,36 @@ export class KernelManager {
     } finally {
       kernel.queued -= 1;
       this.#touch(kernel);
+    }
+  }
+
+  /**
+   * `notebook.inspect` with `op: "complete"` / `"doc"` (KOBE-808): the editor's kernel completion.
+   * Never starts a kernel (`no_kernel`) and never waits: while code runs or waits, a snapshot is
+   * taken or another request is in the kernel, the answer is `busy`; past the frame's timeout it
+   * is `unavailable`. A request is not use: it never keeps the kernel from idling out (typing
+   * in the editor must not keep a kernel, or the sandbox, alive; review L2).
+   */
+  async complete(frame: NotebookCompletionFrame): Promise<CommandOutcome> {
+    const kernel = this.#kernels.get(frame.thread_id);
+    if (this.#closed || kernel === undefined || !kernel.session.alive) {
+      return ok({ status: "no_kernel" });
+    }
+    const s = kernel.session;
+    if (kernel.queued > 0 || s.busy || s.inspecting) return ok({ status: "busy" });
+    // Another request is in the kernel (a second tab, signature help beside completion): wait
+    // for it (each is short and bounded) instead of answering "code is running" (review L4).
+    if (s.completing) {
+      await s.completed((frame.timeout_ms ?? NOTEBOOK_COMPLETE_TIMEOUT_MS) + BRIDGE_MARGIN_MS + 50);
+      if (!s.alive) return ok({ status: "no_kernel" });
+      if (kernel.queued > 0 || s.busy || s.inspecting) return ok({ status: "busy" });
+      if (s.completing) return ok(COMPLETION_UNAVAILABLE);
+    }
+    try {
+      return ok(await askKernel(s, frame, (m) => this.#o.log(m, frame.thread_id)));
+    } catch {
+      // Another waiter got there first.
+      return ok(COMPLETION_UNAVAILABLE);
     }
   }
 

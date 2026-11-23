@@ -84,6 +84,45 @@ there, such as new output or a failed run. This browser remembers the tab you ch
   `os.environ`, stay hidden until you choose **Show**. The list refreshes after each run and with
   **Refresh**; while code runs it shows the values from before the run.
 
+## Code completion from the kernel
+
+In a `.py` file's editor, completion also asks the conversation's kernel (see [Code
+completion](file-editor.md#code-completion)). It offers:
+
+- names your runs (or the agent's) created, such as variables, functions, classes and imports;
+- after a dot, the attributes stored on a module, class or object, read from their dictionaries;
+- inside `d['` or `d[`, the keys of a plain dict (strings, numbers);
+- inside a call such as `f(`, the keyword arguments of a plain Python function, class or built-in
+  (`name=`);
+- DataFrame column names after `df.` or `df['`, only when pandas keeps the labels as Python
+  objects. String column names in the sandbox's pandas are stored by PyArrow and are not offered.
+
+Kobe does not use IPython's completer. The request goes to the kernel as a completion or
+inspection request, not as code to run, so none of your execution hooks (`pre_run_cell`,
+`post_execute` and the like, autoreload, matplotlib's), input transformers or display formatters
+run, and the execution count, history and `Out` stay as they are. A small resolver reads your
+namespace and the dictionaries of modules, classes and objects, and never calls anything. It stops,
+and you get only the editor's own suggestions, at a property, a `functools.cached_property` or any
+other descriptor, a class with a custom metaclass (Enum members and many ORM or pydantic models), an
+object that defines `__getattribute__`, a call, or a module attribute only `__getattr__` would
+supply. It does not offer keys of dict subclasses (`OrderedDict`, `defaultdict`, `Counter`), tuple
+keys, NumPy field names, or builtins and keywords (the editor's own list has those). Its tests
+check that none of your getters, descriptors, `__getattr__`, `__getattribute__`, `__class__`,
+`__dir__`, `__signature__`, metaclass hooks, key `__hash__`/`__eq__`, registered completers or
+execution hooks run. Very large containers are only partly read: at most 10,000 entries are looked
+at and 200 suggestions returned, within a fifth of a second, so a huge dict may show only some of
+its keys. Completion does not start while a timer of yours (`signal.setitimer`) is pending, and it
+never interrupts running code. Docs come from signatures and docstrings read the same way (no repr,
+no getter; a default value that is not a plain number or string shows as `…`). Nothing about it is
+saved, and it does not count as using your sandbox: typing in the editor does not keep it awake.
+
+Kernel completion only works while the kernel runs and is idle. A note under the editor, next to
+the line and column, says when it is off and why: the kernel is not started (press **Start** or run
+the file), your sandbox is asleep (it is never woken just to complete), code is running, the
+kernel did not answer in time, too many requests, or it is not available in your sandbox yet. The
+editor's own completion keeps working in every case. Only the conversation's owner gets kernel
+completion.
+
 ## The agent runs code too
 
 The agent runs Python with its `run_python` tool in the same kernel: it can pick up a DataFrame you

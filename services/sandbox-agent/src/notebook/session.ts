@@ -32,6 +32,12 @@ export type BridgeEvent =
       readonly snapshot?: Record<string, unknown>;
       readonly error?: string;
     }
+  | {
+      readonly ev: "completed";
+      readonly id: string;
+      readonly result?: Record<string, unknown>;
+      readonly error?: string;
+    }
   | { readonly ev: "died" }
   | { readonly ev: "fatal"; readonly message: string };
 
@@ -62,6 +68,14 @@ export function parseBridgeLine(line: string): BridgeEvent | undefined {
         return { ev: "inspected", id: m.id, snapshot: snap as Record<string, unknown> };
       }
       return { ev: "inspected", id: m.id, error: String(m.error ?? "no snapshot").slice(0, 200) };
+    }
+    case "completed": {
+      if (typeof m.id !== "string") return undefined;
+      const result = m.result;
+      if (typeof result === "object" && result !== null && !Array.isArray(result)) {
+        return { ev: "completed", id: m.id, result: result as Record<string, unknown> };
+      }
+      return { ev: "completed", id: m.id, error: String(m.error ?? "no answer").slice(0, 200) };
     }
     case "done": {
       const status = m.status;
@@ -95,6 +109,28 @@ export type InspectResult =
   | { readonly kind: "failed"; readonly message: string }
   | { readonly kind: "gone"; readonly message: string };
 
+/** How a completion or documentation request ended (KOBE-808): the bridge's answer, untrusted. */
+export type CompleteResult =
+  | { readonly kind: "done"; readonly result: Record<string, unknown> }
+  | { readonly kind: "failed"; readonly message: string }
+  | { readonly kind: "timeout" }
+  | { readonly kind: "gone"; readonly message: string };
+
+/** What the bridge's `complete` / `doc` ops take. */
+export type CompleteRequest =
+  | {
+      readonly op: "complete";
+      readonly code: string;
+      readonly cursor: number;
+      readonly timeout_ms: number;
+    }
+  | { readonly op: "doc"; readonly name: string; readonly timeout_ms: number };
+
+interface Completing {
+  readonly id: string;
+  readonly resolve: (result: CompleteResult) => void;
+}
+
 /** The snapshot's caps, as the bridge takes them (`INSPECT_LIMIT_KEYS`). */
 export interface InspectLimits {
   readonly max_vars: number;
@@ -122,6 +158,8 @@ export class KernelSession {
   #ready: Promise<void>;
   #running: Running | undefined;
   #inspecting: Inspecting | undefined;
+  #completing: Completing | undefined;
+  #completingDone: Promise<void> = Promise.resolve();
   #goneReason: string | undefined;
   #stopping: Promise<void> | undefined;
   #onReady: { resolve: () => void; reject: (error: Error) => void } | undefined;
@@ -166,6 +204,23 @@ export class KernelSession {
     return this.#inspecting !== undefined;
   }
 
+  /** A completion or documentation request is in the bridge (KOBE-808). */
+  get completing(): boolean {
+    return this.#completing !== undefined;
+  }
+
+  /** Resolves when the request in the bridge (if any) has ended, or after `waitMs`. */
+  completed(waitMs: number): Promise<void> {
+    if (this.#completing === undefined) return Promise.resolve();
+    let timer: NodeJS.Timeout | undefined;
+    return Promise.race([
+      this.#completingDone,
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, waitMs);
+      }),
+    ]).finally(() => clearTimeout(timer));
+  }
+
   /** Resolves once the kernel answered; rejects if the bridge fails first or `timeoutMs` passes. */
   ready(timeoutMs: number): Promise<void> {
     let timer: NodeJS.Timeout | undefined;
@@ -203,6 +258,36 @@ export class KernelSession {
       this.#inspecting = { id, resolve };
       this.#write({ op: "inspect", id, limits });
     });
+  }
+
+  /**
+   * KOBE-808: completions or a name's documentation (silent requests: no execution count, no
+   * code of the member's runs). One at a time; an execution sent meanwhile waits in the bridge
+   * behind it, which answers within the request's own `timeout_ms`. Past `waitMs` this answers
+   * `timeout` and forgets the request (a late answer is dropped by its id).
+   */
+  complete(id: string, request: CompleteRequest, waitMs: number): Promise<CompleteResult> {
+    if (this.#goneReason !== undefined) {
+      return Promise.resolve({ kind: "gone", message: this.#goneReason });
+    }
+    if (this.#completing !== undefined) throw new Error("a completion is already in the kernel");
+    const answer = new Promise<CompleteResult>((resolve) => {
+      const timer = setTimeout(() => {
+        if (this.#completing?.id === id) this.#completing = undefined;
+        resolve({ kind: "timeout" });
+      }, waitMs);
+      timer.unref();
+      this.#completing = {
+        id,
+        resolve: (result) => {
+          clearTimeout(timer);
+          resolve(result);
+        },
+      };
+      this.#write({ ...request, id });
+    });
+    this.#completingDone = answer.then(() => undefined);
+    return answer;
   }
 
   interrupt(): void {
@@ -256,6 +341,17 @@ export class KernelSession {
         );
         return;
       }
+      case "completed": {
+        const completing = this.#completing;
+        if (completing?.id !== event.id) return;
+        this.#completing = undefined;
+        completing.resolve(
+          event.result === undefined
+            ? { kind: "failed", message: event.error ?? "no answer" }
+            : { kind: "done", result: event.result },
+        );
+        return;
+      }
       case "done": {
         const running = this.#running;
         if (running?.id !== event.id) return;
@@ -280,5 +376,8 @@ export class KernelSession {
     const inspecting = this.#inspecting;
     this.#inspecting = undefined;
     inspecting?.resolve({ kind: "gone", message: reason });
+    const completing = this.#completing;
+    this.#completing = undefined;
+    completing?.resolve({ kind: "gone", message: reason });
   }
 }

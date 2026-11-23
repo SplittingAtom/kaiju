@@ -5,6 +5,7 @@ import {
   CAPABILITY_THREAD_CONTEXT,
 } from "@kobe/protocol/sandbox-wire";
 import {
+  CAPABILITY_NOTEBOOK_COMPLETE,
   CAPABILITY_NOTEBOOK_INSPECT,
   CAPABILITY_NOTEBOOK_START,
   CAPABILITY_NOTEBOOKS,
@@ -94,6 +95,14 @@ function kernelOrEvalRefusal(env: DeliveryEnv, row: CommandRow): DeliveryRefusal
       COMMAND_FAILURES.kernelStartUnsupported,
       "this sandbox can't start a kernel alone",
     );
+  }
+  // Kernel completion (KOBE-808) only to an agent that answers it: an older one can't read it.
+  if (
+    row.kind === "notebook.inspect" &&
+    "op" in row.frame &&
+    !host.hasCapability(CAPABILITY_NOTEBOOK_COMPLETE)
+  ) {
+    return refuse(COMMAND_FAILURES.completeUnsupported, "this sandbox answers no completions");
   }
   // A variables snapshot (KOBE-803) only to an agent that takes one: an older one can't read it.
   if (row.kind === "notebook.inspect" && !host.hasCapability(CAPABILITY_NOTEBOOK_INSPECT)) {

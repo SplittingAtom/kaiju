@@ -10,6 +10,12 @@ import {
   notebookRunOkFields,
 } from "../notebooks.js";
 import { NOTEBOOK_INSPECT_TIMEOUT_MAX_MS } from "../notebook-variables.js";
+import {
+  NOTEBOOK_COMPLETE_TIMEOUT_MAX_MS,
+  notebookCompleteFields,
+  notebookDocFields,
+} from "../notebook-completion.js";
+import { codePointLength } from "../semantic-memory/fields.js";
 import { SANDBOX_WIRE_VERSION } from "./connection.js";
 
 /**
@@ -73,12 +79,45 @@ export const notebookRestartFrameSchema = frame("notebook.restart", {
  * keeps when code is running (`stale: true`) or nothing ran since it was taken (unless `refresh`),
  * and takes a fresh one otherwise.
  */
-export const notebookInspectFrameSchema = frame("notebook.inspect", {
+export const notebookInspectVariablesFrameSchema = frame("notebook.inspect", {
   command_id: idSchema,
   thread_id: uuidSchema,
   refresh: z.literal(true).optional(),
   timeout_ms: z.number().int().min(500).max(NOTEBOOK_INSPECT_TIMEOUT_MAX_MS).optional(),
 });
+
+const completionTimeout = z
+  .number()
+  .int()
+  .min(100)
+  .max(NOTEBOOK_COMPLETE_TIMEOUT_MAX_MS)
+  .optional();
+
+/**
+ * KOBE-808 (capability `notebook_complete`, never sent to agents without it): the same command
+ * with `op: "complete"` (completions at `cursor`, code points into `code`) or `op: "doc"` (the
+ * signature and docstring of `name`). Never starts a kernel, never waits for running code (`busy`),
+ * `unavailable` past `timeout_ms`. `command.result.data`: `notebookCompletionResultSchema`.
+ */
+export const notebookCompleteFrameSchema = frame("notebook.inspect", {
+  command_id: idSchema,
+  thread_id: uuidSchema,
+  ...notebookCompleteFields,
+  timeout_ms: completionTimeout,
+}).refine((f) => f.cursor <= codePointLength(f.code), "cursor past the end of the code");
+
+export const notebookDocFrameSchema = frame("notebook.inspect", {
+  command_id: idSchema,
+  thread_id: uuidSchema,
+  ...notebookDocFields,
+  timeout_ms: completionTimeout,
+});
+
+export const notebookInspectFrameSchema = z.union([
+  notebookInspectVariablesFrameSchema,
+  notebookCompleteFrameSchema,
+  notebookDocFrameSchema,
+]);
 
 /** Sandbox -> server: the `index`-th output of the `notebook.execute` this `command_id` names. */
 export const notebookOutputFrameSchema = frame("notebook.output", {
@@ -114,6 +153,8 @@ export type NotebookExecuteFrame = z.infer<typeof notebookExecuteFrameSchema>;
 export type NotebookInterruptFrame = z.infer<typeof notebookInterruptFrameSchema>;
 export type NotebookRestartFrame = z.infer<typeof notebookRestartFrameSchema>;
 export type NotebookInspectFrame = z.infer<typeof notebookInspectFrameSchema>;
+export type NotebookCompletionFrame =
+  z.infer<typeof notebookCompleteFrameSchema> | z.infer<typeof notebookDocFrameSchema>;
 export type NotebookOutputFrame = z.infer<typeof notebookOutputFrameSchema>;
 export type NotebookRunFrame = z.infer<typeof notebookRunFrameSchema>;
 export type NotebookRunResultFrame = z.infer<typeof notebookRunResultFrameSchema>;

@@ -273,6 +273,24 @@ export class CommandRouter implements SandboxRouter {
     );
   }
 
+  notebookComplete(
+    target: SandboxTarget,
+    request: Parameters<SandboxRouter["notebookComplete"]>[1],
+    options?: SendOptions,
+  ) {
+    const { threadId, timeoutMs, ...asked } = request;
+    // KOBE-808: never woken for it, like a variables snapshot, and not activity: typing in the
+    // editor keeps no sandbox awake (review L2).
+    return this.#send(
+      target,
+      "notebook.inspect",
+      threadId,
+      undefined,
+      { ...options, wake: false, activity: false },
+      { thread_id: threadId, timeout_ms: timeoutMs, ...asked },
+    );
+  }
+
   wake(target: SandboxTarget): Promise<void> {
     return this.#waker.wake(target);
   }
@@ -380,6 +398,7 @@ export class CommandRouter implements SandboxRouter {
       requesterReplica: this.#replicaId,
       timeoutMs,
       staleMs: this.#tuning.staleConnectionMs,
+      ...(options?.activity === false ? { activity: false } : {}),
     });
     if ("error" in queued) {
       return {

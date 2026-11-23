@@ -13,8 +13,11 @@ import type { BridgeLauncher, BridgeProcess } from "../session.js";
  * `inspect` (KOBE-803) answers per `control.inspectMode`: `ok` (a one-variable snapshot with the
  * current execution count, which it never bumps), `fail` (an error), `malformed` (an invalid
  * snapshot), `hang` (answers an error once interrupted), `stuck` (ignores interrupts too).
+ * `complete` / `doc` (KOBE-808) answer per `control.completeMode`: `ok` (matches for `complete`, a
+ * signature for `doc`), `fail` (an error), `malformed` (an invalid answer), `silent` (never answers).
  */
 export type FakeInspectMode = "ok" | "fail" | "malformed" | "hang" | "stuck";
+export type FakeCompleteMode = "ok" | "fail" | "malformed" | "silent";
 
 export interface FakeBridgeOptions {
   /** Never sends `ready` (a kernel that does not start). */
@@ -32,6 +35,9 @@ export interface FakeBridgeControl {
   /** Every snapshot asked for (`<thread id>:<limits as JSON>`). */
   readonly inspected: string[];
   inspectMode: FakeInspectMode;
+  /** Every completion or doc request (`<thread id>:<op>:<code or name>`). */
+  readonly completed: string[];
+  completeMode: FakeCompleteMode;
 }
 
 export function fakeLauncher(options: FakeBridgeOptions = {}): {
@@ -45,6 +51,8 @@ export function fakeLauncher(options: FakeBridgeOptions = {}): {
     executed: [],
     inspected: [],
     inspectMode: "ok",
+    completed: [],
+    completeMode: "ok",
   };
   const launch: BridgeLauncher = (threadId) => {
     control.launched.push(threadId);
@@ -87,7 +95,14 @@ function fakeBridge(
     while ((nl = buffer.indexOf("\n")) >= 0) {
       const line = buffer.slice(0, nl);
       buffer = buffer.slice(nl + 1);
-      const m = JSON.parse(line) as { op: string; id?: string; code?: string; limits?: unknown };
+      const m = JSON.parse(line) as {
+        op: string;
+        id?: string;
+        code?: string;
+        limits?: unknown;
+        cursor?: number;
+        name?: string;
+      };
       if (m.op === "interrupt") {
         control.interrupts.push(threadId);
         if (inspecting?.mode === "hang") {
@@ -108,6 +123,8 @@ function fakeBridge(
         run(m.id, m.code);
       } else if (m.op === "inspect" && m.id !== undefined) {
         inspect(m.id, m.limits);
+      } else if ((m.op === "complete" || m.op === "doc") && m.id !== undefined) {
+        complete(m.id, m);
       }
     }
   });
@@ -132,6 +149,31 @@ function fakeBridge(
     } else {
       inspecting = { id, mode };
     }
+  };
+  const complete = (
+    id: string,
+    m: { op: string; code?: string; cursor?: number; name?: string },
+  ) => {
+    control.completed.push(`${threadId}:${m.op}:${m.op === "doc" ? m.name : m.code}`);
+    const mode = control.completeMode;
+    if (mode === "silent") return;
+    if (mode === "fail") return send({ ev: "completed", id, error: "failed" });
+    if (mode === "malformed") return send({ ev: "completed", id, result: { status: "ok" } });
+    const cursor = m.cursor ?? 0;
+    send({
+      ev: "completed",
+      id,
+      result:
+        m.op === "doc"
+          ? { status: "ok", op: "doc", found: true, signature: `${m.name ?? ""}(x)`, doc: "Doc." }
+          : {
+              status: "ok",
+              op: "complete",
+              matches: [{ text: "alpha", type: "attribute" }, { text: "beta" }],
+              cursor_start: cursor,
+              cursor_end: cursor,
+            },
+    });
   };
   const run = (id: string, code: string) => {
     current = { id, code };
