@@ -1,7 +1,7 @@
 import { SpanKind, idAttributes, recordSpan } from "@kobe/telemetry";
 import type { Socket } from "node:net";
 import type { SandboxIdentity } from "./auth.js";
-import type { ConnectionReason, ConnectionRecord } from "./connection-audit.js";
+import type { ConnectionReason, ConnectionRecord, GitTraffic } from "./connection-audit.js";
 import type { ConnectUpstream, ConnectionBytes, ProxyDeps } from "./proxy-deps.js";
 import type { RateBuckets } from "./rate-buckets.js";
 import { reply } from "./proxy-reply.js";
@@ -19,6 +19,7 @@ export interface Attempt {
   readonly host: string | undefined;
   readonly port: number | undefined;
   readonly started: number;
+  readonly git?: GitTraffic;
 }
 
 /** Counts an attempt in the connection audit, its span and the log. */
@@ -45,6 +46,7 @@ export function finishAttempt(
     reason,
     ...bytes,
     ...(identity.site ? { site: identity.site } : {}),
+    ...(a.git ? { git: a.git } : {}),
   });
   // Metadata only: the destination host and port (audited anyway), never a path or query.
   recordSpan("egress.connection", {
@@ -67,7 +69,7 @@ export function finishAttempt(
       "kobe.bytes_down": bytes.bytesDown,
       "kobe.upgraded": upgraded,
       // KOBE-525: a fixed route per kind, and the set-up latency of a tunnel that opened.
-      "http.route": upgraded ? "http-upgrade" : "CONNECT",
+      "http.route": a.git ? "git" : upgraded ? "http-upgrade" : "CONNECT",
       ...(bytes.setupMs === undefined ? {} : { "kobe.setup_ms": bytes.setupMs }),
     },
   });
@@ -83,6 +85,7 @@ export function finishAttempt(
       bytesUp: bytes.bytesUp,
       bytesDown: bytes.bytesDown,
       ...(upgraded ? { upgraded: true } : {}),
+      ...(a.git ? { repository: a.git.repository, gitService: a.git.service } : {}),
       ms: Date.now() - a.started,
     },
     "egress connection",

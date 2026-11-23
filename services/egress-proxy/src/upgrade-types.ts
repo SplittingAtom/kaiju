@@ -1,5 +1,5 @@
 import type { SandboxIdentity } from "./auth.js";
-import type { ConnectionReason, ConnectionRecord } from "./connection-audit.js";
+import type { ConnectionReason, ConnectionRecord, GitTraffic } from "./connection-audit.js";
 import type { ConnectionBytes, ProxyDeps } from "./proxy-deps.js";
 
 export interface UpgradeAttempt {
@@ -7,6 +7,8 @@ export interface UpgradeAttempt {
   readonly host: string | undefined;
   readonly port: number | undefined;
   readonly started: number;
+  /** A git smart-HTTP request (KOBE-763): audited with the repository and service. */
+  readonly git?: GitTraffic;
 }
 
 export interface UpgradeContext {

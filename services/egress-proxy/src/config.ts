@@ -120,6 +120,46 @@ const configSchema = z.object({
     2 * 1024 * 1024 * 1024,
   ),
   KOBE_EGRESS_UPGRADE_TIMEOUT_MS: int("KOBE_EGRESS_UPGRADE_TIMEOUT_MS", 1_000, 86_400_000, 600_000),
+  /**
+   * Git smart-HTTP for connected organizations (KOBE-763): the server's internal listener and the
+   * key the proxy presents there. Both or neither; unset: git paths get no credential.
+   */
+  KOBE_EGRESS_SERVER_URL: z
+    .string()
+    .default("")
+    .refine((v) => v === "" || /^https?:\/\/[^/@?#]+\/?$/.test(v), {
+      message: "KOBE_EGRESS_SERVER_URL must be an http(s) origin",
+    }),
+  KOBE_EGRESS_INTERNAL_KEY: optionalSecret("KOBE_EGRESS_INTERNAL_KEY"),
+  KOBE_EGRESS_GIT_MAX_FETCH_REQUEST_BYTES: int(
+    "KOBE_EGRESS_GIT_MAX_FETCH_REQUEST_BYTES",
+    1_024,
+    1_073_741_824,
+    64 * 1024 * 1024,
+  ),
+  KOBE_EGRESS_GIT_MAX_RESPONSE_BYTES: int(
+    "KOBE_EGRESS_GIT_MAX_RESPONSE_BYTES",
+    1_024,
+    1_099_511_627_776,
+    4 * 1024 * 1024 * 1024,
+  ),
+  KOBE_EGRESS_GIT_TIMEOUT_MS: int("KOBE_EGRESS_GIT_TIMEOUT_MS", 1_000, 86_400_000, 1_800_000),
+  KOBE_EGRESS_GIT_DECISION_TIMEOUT_MS: int(
+    "KOBE_EGRESS_GIT_DECISION_TIMEOUT_MS",
+    100,
+    120_000,
+    20_000,
+  ),
+  KOBE_EGRESS_GIT_CONCURRENT_PER_SANDBOX: int(
+    "KOBE_EGRESS_GIT_CONCURRENT_PER_SANDBOX",
+    1,
+    1_000,
+    8,
+  ),
+  KOBE_EGRESS_GIT_REQUEST_BURST: int("KOBE_EGRESS_GIT_REQUEST_BURST", 1, 10_000, 60),
+  KOBE_EGRESS_GIT_REQUESTS_PER_SECOND: int("KOBE_EGRESS_GIT_REQUESTS_PER_SECOND", 1, 1_000, 2),
+  /** Distinct repository decisions per sandbox per minute (cache misses; host API quota). */
+  KOBE_EGRESS_GIT_LOOKUPS_PER_MINUTE: int("KOBE_EGRESS_GIT_LOOKUPS_PER_MINUTE", 1, 10_000, 30),
 });
 
 export interface Config {
@@ -155,6 +195,21 @@ export interface Config {
     readonly maxResponseBytes: number;
     readonly timeoutMs: number;
   };
+  /** Git smart-HTTP for connected organizations (KOBE-763), or undefined when off. */
+  readonly git:
+    | {
+        readonly serverUrl: string;
+        readonly internalKey: string;
+        readonly decisionTimeoutMs: number;
+        readonly maxFetchRequestBytes: number;
+        readonly maxResponseBytes: number;
+        readonly timeoutMs: number;
+        readonly concurrentPerSandbox: number;
+        readonly requestBurst: number;
+        readonly requestsPerSecond: number;
+        readonly lookupsPerMinute: number;
+      }
+    | undefined;
 }
 
 export function loadConfig(env: Readonly<Record<string, string | undefined>>): Config {
@@ -193,7 +248,28 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     c.KOBE_EGRESS_HEADER_SECRET === ""
       ? undefined
       : [c.KOBE_EGRESS_HEADER_SECRET, c.KOBE_EGRESS_HEADER_SECRET_PREVIOUS].filter((v) => v !== "");
+  if ((c.KOBE_EGRESS_SERVER_URL === "") !== (c.KOBE_EGRESS_INTERNAL_KEY === "")) {
+    throw new Error(
+      "Invalid configuration: KOBE_EGRESS_SERVER_URL and KOBE_EGRESS_INTERNAL_KEY go together",
+    );
+  }
+  const git =
+    c.KOBE_EGRESS_SERVER_URL === ""
+      ? undefined
+      : {
+          serverUrl: c.KOBE_EGRESS_SERVER_URL.replace(/\/+$/, ""),
+          internalKey: c.KOBE_EGRESS_INTERNAL_KEY,
+          decisionTimeoutMs: c.KOBE_EGRESS_GIT_DECISION_TIMEOUT_MS,
+          maxFetchRequestBytes: c.KOBE_EGRESS_GIT_MAX_FETCH_REQUEST_BYTES,
+          maxResponseBytes: c.KOBE_EGRESS_GIT_MAX_RESPONSE_BYTES,
+          timeoutMs: c.KOBE_EGRESS_GIT_TIMEOUT_MS,
+          concurrentPerSandbox: c.KOBE_EGRESS_GIT_CONCURRENT_PER_SANDBOX,
+          requestBurst: c.KOBE_EGRESS_GIT_REQUEST_BURST,
+          requestsPerSecond: c.KOBE_EGRESS_GIT_REQUESTS_PER_SECOND,
+          lookupsPerMinute: c.KOBE_EGRESS_GIT_LOOKUPS_PER_MINUTE,
+        };
   return {
+    git,
     port: c.PORT,
     databaseUrl: c.KOBE_DATABASE_URL,
     dbPoolMax: c.KOBE_DB_POOL_MAX,

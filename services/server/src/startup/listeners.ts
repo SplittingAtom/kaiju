@@ -137,6 +137,24 @@ function internalListener(
           sessionVerifyKeys: sandbox.sessionVerifyKeys["kobe.mcp-proxy"],
           liveness,
         },
+        ...(i.config.egressProxyInternalKey
+          ? {
+              git: {
+                internalKey: i.config.egressProxyInternalKey,
+                auth: {
+                  db: deps.database.db,
+                  sessionVerifyKeys: sandbox.sessionVerifyKeys["kobe.egress-proxy"],
+                  liveness,
+                  audience: "kobe.egress-proxy" as const,
+                },
+                transport: {
+                  db: deps.database.db,
+                  envelope: deps.envelope,
+                  net: { policy: deps.connectorUrlPolicy },
+                },
+              },
+            }
+          : {}),
       }).fetch,
       port: i.config.internalPort,
     },

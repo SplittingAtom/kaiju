@@ -427,7 +427,7 @@ describe("release-side NetworkPolicy", () => {
         ],
         ports: [{ protocol: "TCP", port: 8081 }],
       },
-      // The internal listener (KOBE-58): MCP proxy pods only.
+      // The internal listener: MCP proxy pods (KOBE-58) and egress proxy pods (KOBE-763) only.
       {
         from: [
           {
@@ -436,6 +436,15 @@ describe("release-side NetworkPolicy", () => {
                 "app.kubernetes.io/name": "kobe",
                 "app.kubernetes.io/instance": "kobe",
                 "app.kubernetes.io/component": "mcp-proxy",
+              },
+            },
+          },
+          {
+            podSelector: {
+              matchLabels: {
+                "app.kubernetes.io/name": "kobe",
+                "app.kubernetes.io/instance": "kobe",
+                "app.kubernetes.io/component": "egress-proxy",
               },
             },
           },

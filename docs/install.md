@@ -545,6 +545,39 @@ the domain is still verified HTTPS. Put these in the agent's instructions or the
 upstream sees the headers and its responses reach the sandbox, so configure headers only for
 domains you trust with that credential; a body that echoes the credential is not filtered.
 
+### Git for connected organizations
+
+When a Workspace connects a git organization (GitHub, GitHub Enterprise Server, Gitea, Forgejo),
+the sandbox's git reaches it through the egress proxy without holding any credential (KOBE-763).
+The sandbox sends plain-HTTP proxy requests for `http://<host>/<org>/<repo>.git/...`; for a
+request in the strict git smart-HTTP grammar (`info/refs?service=git-upload-pack|git-receive-pack`,
+`git-upload-pack`, `git-receive-pack`, under the connection's base path) the proxy asks the server
+on its internal port 8082 (keyed with the chart-generated `<release>-egress-proxy-internal`
+Secret, or `egressProxy.git.internalKeySecret` for offline renders). The server matches the
+Workspace's connection (exact host and base path, the connected organization), decides fetch or
+push (push needs the connection at Read and write, the Contributor role, and editor or owner on a
+Repo's project) and hands back a per-repository credential (a GitHub App token narrowed to that
+repository and to read or write, or the connection's token). The proxy adds it upstream over
+verified HTTPS, keeps it in memory for at most 30 seconds, and never sends it to the sandbox:
+responses carry allow-listed headers only, redirects and 401s are not relayed, and a response
+that contains the credential is cut. Any other path on the host (its API, web pages) gets no
+credential and follows the ordinary egress rules.
+
+The git host must be in the site egress ceiling (the Workspace's connection stands in for the
+team's own enablement). A self-hosted host on a private address also needs that ceiling pattern
+marked internal with [same-cluster hosts](#same-cluster-hosts-internal), or its address in
+`egressProxy.allowedInternalCidrs`. The base URL must be served on port 443.
+
+Limits (`egressProxy.git`, per sandbox and proxy replica): fetch negotiation bodies 64 MiB,
+responses (clone and fetch packs) 4 GiB, 30 minutes per request, 8 requests at once, 60 requests
+burst then 2 per second, 30 different repositories per minute (each decision not in the proxy's
+cache may cost the git host API calls against the connection's quota). The proxy asks hosts for
+uncompressed responses and refuses encoded ones (git packs are compressed by git itself, so this
+costs only the small ref advertisement); a git request may take up to `timeoutSeconds`, which also
+raises the proxy's request-body deadline for header-injected uploads. The push limit is the connection's setting (default 1 GiB). Each fetch
+and push is counted in `egress.connection` with its repository and service; each push also writes
+an `egress.git_push` row with the refs it named.
+
 ### The catalog's git mirror (optional)
 
 A Site admin can mirror the skill catalog one way to any HTTPS git remote (KOBE-343, spec SK29):
@@ -1663,6 +1696,11 @@ Migrations report what an upgrade changed in the migration Job's log (`"msg":"mi
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
 
+- **Git through the egress proxy (KOBE-763).** The chart generates one more Secret,
+  `<release>-egress-proxy-internal` (or name your own with `egressProxy.git.internalKeySecret`;
+  offline renders need it), and lets the egress proxy reach the server's internal port 8082.
+  New values under `egressProxy.git` ([Git for connected organizations](#git-for-connected-organizations)).
+  Copy the new Secret with the others ([backups](backup-restore.md#secrets)).
 - **One LISTEN connection per server and connection budget (KOBE-704, KOBE-736).** A server pod
   now holds one LISTEN connection for every notification channel instead of up to six, so a
   default install needs about 74 connections with full pools instead of about 93. Pool sizes are

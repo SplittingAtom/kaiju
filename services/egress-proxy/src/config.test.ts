@@ -84,4 +84,39 @@ describe("loadConfig", () => {
       );
     }
   });
+
+  it("turns git smart-HTTP on only with both the server URL and the internal key (KOBE-763)", () => {
+    expect(loadConfig(base).git).toBeUndefined();
+    const key = "k".repeat(40);
+    const c = loadConfig({
+      ...base,
+      KOBE_EGRESS_SERVER_URL: "http://kobe-server:8082",
+      KOBE_EGRESS_INTERNAL_KEY: key,
+    });
+    expect(c.git).toMatchObject({
+      serverUrl: "http://kobe-server:8082",
+      internalKey: key,
+      maxResponseBytes: 4 * 1024 * 1024 * 1024,
+      timeoutMs: 1_800_000,
+      concurrentPerSandbox: 8,
+    });
+    expect(() =>
+      loadConfig({ ...base, KOBE_EGRESS_SERVER_URL: "http://kobe-server:8082" }),
+    ).toThrow(/go together/);
+    expect(() => loadConfig({ ...base, KOBE_EGRESS_INTERNAL_KEY: key })).toThrow(/go together/);
+    expect(() =>
+      loadConfig({
+        ...base,
+        KOBE_EGRESS_SERVER_URL: "http://user:pw@kobe-server:8082/x",
+        KOBE_EGRESS_INTERNAL_KEY: key,
+      }),
+    ).toThrow(/KOBE_EGRESS_SERVER_URL/);
+    expect(() =>
+      loadConfig({
+        ...base,
+        KOBE_EGRESS_SERVER_URL: "http://kobe-server:8082",
+        KOBE_EGRESS_INTERNAL_KEY: "short",
+      }),
+    ).toThrow(/KOBE_EGRESS_INTERNAL_KEY/);
+  });
 });

@@ -2,7 +2,9 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { isIP } from "node:net";
 import { normalizeHost, type InjectedHeader } from "@kobe/db";
 import type { EgressDecision } from "./allowlist.js";
-import { authenticate } from "./auth.js";
+import { authenticate, presentedToken } from "./auth.js";
+import { handleGit } from "./git/handle.js";
+import { matchGitRequest } from "./git/grammar.js";
 import { exchange, type PlainTarget } from "./upgrade-exchange.js";
 import { reply } from "./upgrade-reply.js";
 import type { UpgradeAttempt, UpgradeContext } from "./upgrade-types.js";
@@ -140,6 +142,35 @@ export async function handlePlainHttp(
         "Kobe egress: only GET, HEAD, POST, PUT, PATCH, DELETE and OPTIONS are relayed.",
       );
       return;
+    }
+    // KOBE-763: git smart-HTTP to a connected organization gets the Workspace's credential;
+    // anything else (including a host with no connection) continues as ordinary egress.
+    if (deps.git) {
+      const git = matchGitRequest(req.method ?? "", req.url ?? "");
+      if (git.kind === "invalid") {
+        ctx.finish(attempt, "blocked", "invalid_target");
+        reply(
+          res,
+          400,
+          "Kobe egress blocked: not a git smart-HTTP request",
+          `Kobe egress: this looks like a git request but is not one Kobe relays (${git.why}).`,
+        );
+        return;
+      }
+      const token = presentedToken(req.headers["proxy-authorization"]);
+      if (git.kind === "git" && token !== undefined) {
+        const handled = await handleGit({
+          req,
+          res,
+          ctx,
+          git: deps.git,
+          attempt,
+          host: parsed.target.host,
+          request: git.request,
+          token,
+        });
+        if (handled === "handled") return;
+      }
     }
     await upgrade(req, res, ctx, attempt, parsed.target);
   } finally {

@@ -908,6 +908,24 @@
           "type": "string",
           "description": "Existing Secret (key `secret`, optional `secret-previous`) sealing teams' injected egress headers (KOBE-39); empty: generated and kept."
         },
+        "git": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Git smart-HTTP for connected organizations (KOBE-763): per-repository credentials added by the proxy, limits per sandbox and replica.",
+          "properties": {
+            "internalKeySecret": {
+              "type": "string",
+              "description": "Existing Secret (key `key`) the egress proxy presents to the server's internal listener; empty: generated and kept."
+            },
+            "maxFetchRequestBytes": { "type": "integer", "minimum": 1024, "maximum": 1073741824 },
+            "maxResponseBytes": { "type": "integer", "minimum": 1024, "maximum": 1099511627776 },
+            "timeoutSeconds": { "type": "integer", "minimum": 1, "maximum": 86400 },
+            "concurrentPerSandbox": { "type": "integer", "minimum": 1, "maximum": 1000 },
+            "requestBurst": { "type": "integer", "minimum": 1, "maximum": 10000 },
+            "requestsPerSecond": { "type": "integer", "minimum": 1, "maximum": 1000 },
+            "lookupsPerMinute": { "type": "integer", "minimum": 1, "maximum": 10000 }
+          }
+        },
         "upgrade": {
           "type": "object",
           "additionalProperties": false,

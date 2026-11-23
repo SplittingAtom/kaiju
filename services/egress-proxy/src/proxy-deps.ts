@@ -10,6 +10,7 @@ import type { ResolveHost } from "./resolver.js";
 import type { PreAuthGate } from "./preauth-gate.js";
 import type { TunnelRegistry } from "./tunnel-registry.js";
 import type { InjectedHeader } from "@kobe/db";
+import type { GitTransportDeps } from "./git/types.js";
 
 /**
  * The egress proxy (spec D28): default deny, HTTPS only, per-team allowlists within the install
@@ -86,6 +87,8 @@ export interface ProxyDeps {
   readonly headers?: HeaderOpener;
   /** Limits of upgraded plain-HTTP requests (KOBE-39); absent: header injection off. */
   readonly upgrade?: UpgradeSettings;
+  /** Git smart-HTTP for connected organizations (KOBE-763); absent: git paths get no credential. */
+  readonly git?: GitTransportDeps;
   /** Extra CAs trusted for upgraded requests (tests); production uses the system store only. */
   readonly upstreamCa?: string | Buffer | readonly (string | Buffer)[];
 }

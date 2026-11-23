@@ -24,8 +24,8 @@ export const EGRESS_EVENT_DOCS = {
   },
   "egress.connection": {
     fields:
-      "`userId`, `sandboxId`, `domain?`, `port?`, `outcome`, `reason?`, `aggregated?`, `upgraded?`, `connections`, `bytesUp`, `bytesDown`, `from`, `to`",
-    when: "Sandbox connections through the egress proxy, aggregated per key and window (system; see below)",
+      "`userId`, `sandboxId`, `domain?`, `port?`, `outcome`, `reason?`, `aggregated?`, `upgraded?`, `repository?`, `gitService?` (upload-pack, receive-pack), `connections`, `bytesUp`, `bytesDown`, `from`, `to`",
+    when: "Sandbox connections through the egress proxy, aggregated per key and window (system; see below); git fetches and pushes to a connected organization carry the repository and service (KOBE-763)",
   },
   "egress.domain.disabled": {
     fields: "`domain`, `headersRemoved?`",
@@ -34,6 +34,11 @@ export const EGRESS_EVENT_DOCS = {
   "egress.domain.enabled": {
     fields: "`domain`",
     when: "Team admin enabled a ceiling domain for the team's sandboxes",
+  },
+  "egress.git_push": {
+    fields:
+      "`userId`, `sandboxId`, `connectionId?`, `domain`, `repository`, `outcome`, `reason?`, `refs?` (`ref`, `change`: create, update, delete), `refsTruncated?`, `status?`, `bytesUp`",
+    when: "A git push from a sandbox through the egress proxy to a connected organization, allowed or refused (`reason`: the server's decision code or the proxy's); refs read from the push's command list, never the pack; never a credential (system; KOBE-763)",
   },
   "egress.header.cleared": {
     fields: "`domain`",
