@@ -127,9 +127,12 @@ test("PDF viewer: pages, zoom, fit, find and selection; a broken PDF says so", a
     await find.press("Escape");
     await expect(tab.getByRole("search")).toHaveCount(0);
 
-    // Selecting the text layer selects the PDF's words.
+    // Selecting the text layer selects the PDF's words. A double-click selects the word under the
+    // pointer, so aim inside "Beta" (the span's first sixth), not the span's centre ("page").
     const second = tab.getByRole("group", { name: "Page 2 of 3" });
-    await second.locator(".textLayer span").first().dblclick();
+    const line = await second.locator(".textLayer span").first().boundingBox();
+    expect(line).not.toBeNull();
+    if (line) await page.mouse.dblclick(line.x + line.width / 6, line.y + line.height / 2);
     expect(await page.evaluate(() => window.getSelection()?.toString() ?? "")).toMatch(/Beta/);
 
     // A broken file: a clear message, and Download.

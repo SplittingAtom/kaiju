@@ -29,6 +29,7 @@ interface Repo {
   issues: number;
   description: string;
   private: boolean;
+  archived?: boolean;
   /** Branch → commit SHA. */
   branches: Map<string, string>;
   /** Path → text. */
@@ -172,13 +173,31 @@ export class FakeGitea implements GitHostContractFake {
   /** Changes a repository of the organization as a host admin would (Convert to repo tests). */
   editRepository(
     name: string,
-    change: { private?: boolean; description?: string; defaultBranch?: string },
+    change: {
+      private?: boolean;
+      description?: string;
+      defaultBranch?: string;
+      archived?: boolean;
+      /** Renames it (the id stays, as on the host); KOBE-766 mirror tests. */
+      name?: string;
+    },
   ): void {
     const repo = this.repos.get(`${this.organization}/${name}`);
     if (!repo) throw new Error(`fake gitea: no repository ${name}`);
+    if (change.name !== undefined) {
+      this.repos.delete(`${this.organization}/${name}`);
+      repo.name = change.name;
+      this.repos.set(`${this.organization}/${change.name}`, repo);
+    }
+    if (change.archived !== undefined) repo.archived = change.archived;
     if (change.private !== undefined) repo.private = change.private;
     if (change.description !== undefined) repo.description = change.description;
     if (change.defaultBranch !== undefined) repo.defaultBranch = change.defaultBranch;
+  }
+
+  /** Deletes a repository of the organization as a host admin would (KOBE-766 mirror tests). */
+  deleteRepository(name: string): void {
+    this.repos.delete(`${this.organization}/${name}`);
   }
 
   apiHits(): readonly { method: string; path: string; authorization: string | undefined }[] {
@@ -214,7 +233,7 @@ export class FakeGitea implements GitHostContractFake {
       default_branch: r.defaultBranch,
       private: r.private,
       empty: r.empty,
-      archived: false,
+      archived: r.archived === true,
       description: r.description,
       html_url: `${this.baseUrl}/${full}`,
       clone_url: `${this.baseUrl}/${full}.git`,

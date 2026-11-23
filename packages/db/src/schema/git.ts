@@ -4,6 +4,7 @@ import {
   boolean,
   check,
   index,
+  integer,
   jsonb,
   pgTable,
   primaryKey,
@@ -27,6 +28,7 @@ import {
   GIT_CREDENTIAL_SEALED_MAX,
   GIT_DISPLAY_NAME_MAX,
   GIT_HEALTH_ERROR_MAX,
+  GIT_MIRROR_ERROR_MAX,
   GIT_ORGANIZATION_MAX,
   GIT_ORGANIZATION_PATTERN,
   GIT_PROVIDER_VALUES,
@@ -242,6 +244,23 @@ export const gitRepositories = pgTable(
     /** G17: head commit of the mirrored default branch (SHA-1 or SHA-256 hex). */
     mirrorHeadSha: text(),
     mirrorRefreshedAt: timestamp({ withTimezone: true }),
+    /**
+     * KOBE-766: the Kobe commit (project_commits.id) the mirror last wrote, so the next refresh
+     * may drop it once it is no longer the head (the Repo's history lives on the host). Null
+     * while the project's head is Kobe's own commit (straight after conversion). No key: a pruned
+     * or detached commit leaves a stale id that matches nothing.
+     */
+    mirrorCommitId: uuid(),
+    /** KOBE-766: the refresh schedule (G17): last attempt, failure code, failures in a row, backoff. */
+    mirrorAttemptedAt: timestamp({ withTimezone: true }),
+    mirrorError: text(),
+    mirrorFailures: integer().notNull().default(0),
+    mirrorNextAt: timestamp({ withTimezone: true }),
+    /** KOBE-766: a push or an open asked for a refresh (the mirror job takes it on its next pass). */
+    mirrorRequestedAt: timestamp({ withTimezone: true }),
+    /** KOBE-766: the replica refreshing it now, until when (one refresh per Repo at a time). */
+    mirrorLeaseOwner: uuid(),
+    mirrorLeaseUntil: timestamp({ withTimezone: true }),
     createdBy: uuid()
       .notNull()
       .references(() => users.id),
@@ -279,5 +298,10 @@ export const gitRepositories = pgTable(
       "git_repositories_mirror_head",
       sql`${t.mirrorHeadSha} IS NULL OR ${t.mirrorHeadSha} ~ '^([0-9a-f]{40}|[0-9a-f]{64})$'`,
     ),
+    check(
+      "git_repositories_mirror_error",
+      sql`${t.mirrorError} IS NULL OR char_length(${t.mirrorError}) <= ${n(GIT_MIRROR_ERROR_MAX)}`,
+    ),
+    check("git_repositories_mirror_failures", sql`${t.mirrorFailures} >= 0`),
   ],
 );

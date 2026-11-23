@@ -395,7 +395,7 @@ async function writeStep(
           tree,
           author: req.author,
           message: req.message,
-          ...(mirror ? { repoMirror: true } : {}),
+          ...(mirror ? { mirror: true } : {}),
         });
         if (mirror) {
           // KOBE-767: the mirror head moves with Kobe's copy, only from the base it was pushed on.

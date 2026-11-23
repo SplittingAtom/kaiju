@@ -1,4 +1,5 @@
 import type { GitConversionFailure, GitConversionRefusal } from "@kobe/protocol";
+import { GIT_REPO_MAX_FILES } from "../repo-limits.js";
 import { GIT_CONVERSION_MAX_BYTES } from "./limits.js";
 
 /**
@@ -14,6 +15,8 @@ export interface StartRefusal {
   readonly limitBytes?: number;
   readonly sizeBytes?: number;
   readonly paths?: readonly { readonly path: string; readonly seq: number | null }[];
+  /** `too_large_to_mirror`: which Repo limit (not sent; it picks the message). */
+  readonly mirrorLimit?: "files" | "file_bytes" | "bytes";
 }
 
 const mib = (n: number) => `${Math.floor(n / (1024 * 1024))} MiB`;
@@ -35,6 +38,7 @@ export const REFUSAL_STATUS: Readonly<Record<GitConversionRefusal, 403 | 404 | 4
   file_rejected_by_host: 422,
   project_too_large: 422,
   file_too_large: 422,
+  too_large_to_mirror: 422,
   git_unavailable: 503,
 };
 
@@ -72,6 +76,12 @@ export function refusalMessage(r: StartRefusal): string {
         .join(", ");
       return `The git host would reject ${r.paths && r.paths.length > 1 ? "these files" : "this file"}: ${list || "a file"}. Rename or remove it in the project first; if only older commits have it, convert without history.`;
     }
+    case "too_large_to_mirror":
+      return r.mirrorLimit === "files"
+        ? `The project has more files than a Repo's mirror can show (${GIT_REPO_MAX_FILES}). Remove some files before converting.`
+        : r.mirrorLimit === "file_bytes"
+          ? `A file is larger than a Repo's mirror can show (${mib(r.limitBytes ?? 0)} per file). Remove or shrink it before converting.`
+          : `The project's current files (${mib(r.sizeBytes ?? 0)}) are more than a Repo's mirror can show (${mib(r.limitBytes ?? 0)}): after converting, Kobe could not show the repository's changes. Remove large files before converting.`;
     case "project_too_large":
       return `The project's files across the history carried (${mib(r.sizeBytes ?? 0)}) are more than one conversion may push (${mib(r.limitBytes ?? 0)}). Convert without history if the current files are smaller, remove large files, or ask a Workspace admin to raise the connection's push limit (up to ${mib(GIT_CONVERSION_MAX_BYTES)}).`;
     case "file_too_large": {

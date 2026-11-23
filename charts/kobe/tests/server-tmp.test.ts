@@ -37,9 +37,9 @@ const tmpOf = (ms: Manifest[], name: string) =>
     ?.spec.template.spec.volumes.find((v: { name: string }) => v.name === "tmp");
 
 describe("server /tmp size limit (KOBE-765)", () => {
-  it("limits the server's /tmp to 6Gi by default and leaves other services as they were", () => {
+  it("limits the server's /tmp to 8Gi by default and leaves other services as they were", () => {
     const ms = render();
-    expect(tmpOf(ms, "kobe-server")).toEqual({ name: "tmp", emptyDir: { sizeLimit: "6Gi" } });
+    expect(tmpOf(ms, "kobe-server")).toEqual({ name: "tmp", emptyDir: { sizeLimit: "8Gi" } });
     expect(tmpOf(ms, "kobe-web")).toEqual({ name: "tmp", emptyDir: {} });
   });
   it("takes another value, or none", () => {

@@ -279,9 +279,14 @@ server:
     limits: { cpu: "2", memory: 1Gi }
   # Size limit of the server's /tmp (an emptyDir; KOBE-765). Convert to repo builds a project's git
   # objects there (one conversion per replica, at most 2 GiB of content: the loose objects plus one
-  # push's pack, so up to about 4 GiB) next to the server's other temporary files. Above the limit
-  # the kubelet evicts the pod, so keep it at least 5Gi while conversions are possible.
-  tmpSizeLimit: 6Gi
+  # push's pack, so up to about 4 GiB) next to the server's other temporary files. The Repo mirror
+  # (KOBE-766) fetches there too: at most 816 MiB on disk per refresh (pack plus objects, derived
+  # from the Repo limits; up to one 50 MiB object past it), 2 at once, so about 1.7 GiB.
+  # Conversion 4 GiB + mirror 1.7 GiB = 5.7 GiB, plus 2.3 GiB for the server's other temporary
+  # files (uploads in flight, exports): 8Gi. Above the limit the kubelet evicts the pod, so keep
+  # it at least 7Gi while conversions and Repos are possible, and count it in the node's
+  # ephemeral storage.
+  tmpSizeLimit: 8Gi
   # Seconds between reconciles of every team namespace's NetworkPolicies, quota and other managed
   # objects (KOBE-115); also run at server start. 0 = only at start; otherwise 30..86400.
   teamReconcileSeconds: 300

@@ -62,12 +62,22 @@ test("the + menu: its items, a broken connector, a toggle across two runs (ac-1.
   for (const item of ["Attach files", "Connectors", "Memory", "Skills", "Apps"]) {
     await expect(menu.getByRole("menuitem", { name: new RegExp(`^${item}`) })).toBeVisible();
   }
-  await expect(menu.getByRole("menuitem", { name: /^Memory/ })).toHaveAttribute(
-    "aria-disabled",
-    "true",
-  );
   await shoot(page, "composer-plus-menu", menu);
+  // Memory is a submenu (KOBE-395); before the first message its Learn items are disabled with
+  // the reason beside them.
+  const memory = menu.getByRole("menuitem", { name: /^Memory/ });
+  await expect(memory).toHaveAttribute("aria-haspopup", "menu");
+  await memory.hover();
+  const memorySub = page.getByRole("menu", { name: "Memory", exact: true });
+  await expect(memorySub).toBeVisible();
+  for (const item of [/^Learn from this chat/, /^Rescan the whole chat/]) {
+    const learnItem = memorySub.getByRole("menuitem", { name: item });
+    await expect(learnItem).toHaveAttribute("aria-disabled", "true");
+    await expect(learnItem).toContainText("Send a message first.");
+  }
   await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  await expect(menu).toBeHidden();
 
   const threadId = await chat.ask(PROMPT);
   await chat.waitForIdle();

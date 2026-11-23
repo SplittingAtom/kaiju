@@ -24,6 +24,7 @@ import {
   GIT_CONVERSION_RATE,
   GIT_CONVERSION_MAX_FILE_BYTES,
 } from "./limits.js";
+import { repoContentRefusal } from "../repo-limits.js";
 import { pathRefusal } from "./paths.js";
 import { buildConversionPlan } from "./plan.js";
 import { refusalMessage, REFUSAL_STATUS, type StartRefusal } from "./refusals.js";
@@ -199,6 +200,30 @@ async function check(
       path: big[0].path,
       paths: strip(big),
       limitBytes: GIT_CONVERSION_MAX_FILE_BYTES,
+    };
+  }
+  // KOBE-766 review R3-M1: the Repo's mirror must be able to hold the current files, or Kobe
+  // could never show the host's changes after conversion.
+  const current = await tx.execute<{
+    files: string;
+    bytes: string | null;
+    largest: string | null;
+  }>(sql`
+    SELECT count(*) AS files, sum(size_bytes) AS bytes, max(size_bytes) AS largest
+      FROM project_files WHERE team_id = ${teamId} AND project_id = ${projectId}`);
+  const facts = current.rows[0];
+  const mirror = repoContentRefusal({
+    files: Number(facts?.files ?? 0),
+    bytes: Number(facts?.bytes ?? 0),
+    largest: Number(facts?.largest ?? 0),
+  });
+  if (mirror) {
+    return {
+      code: "too_large_to_mirror",
+      mirrorLimit: mirror.limit,
+      ...(mirror.limit === "files"
+        ? {}
+        : { limitBytes: mirror.limitValue, sizeBytes: Number(facts?.bytes ?? 0) }),
     };
   }
   const sizes = await contentPerCommit(tx, teamId, projectId, history);

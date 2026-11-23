@@ -80,6 +80,11 @@ export const GIT_CONVERSION_REFUSALS = [
   "project_too_large",
   /** A file is larger than git hosts accept (100 MiB, GitHub's hard limit). */
   "file_too_large",
+  /**
+   * KOBE-766 review R3-M1: the project's current files are more than a Repo's mirror can hold
+   * (500 files, 50 MiB each, 256 MiB in all), so Kobe could never show the host's changes.
+   */
+  "too_large_to_mirror",
   "git_unavailable",
 ] as const;
 export type GitConversionRefusal = (typeof GIT_CONVERSION_REFUSALS)[number];
@@ -173,7 +178,7 @@ export const gitConversionRefusalSchema = z.strictObject({
   seq: z.number().int().positive().optional(),
   /** `unsaved_checkouts`: how many working copies hold changes. */
   checkouts: z.number().int().positive().optional(),
-  /** `project_too_large` / `file_too_large`: the limit in bytes (and the project's size). */
+  /** `project_too_large` / `file_too_large` / `too_large_to_mirror`: the limit in bytes (and the project's size). */
   limit_bytes: z.number().int().positive().optional(),
   size_bytes: z.number().int().nonnegative().optional(),
   conversion: gitConversionViewSchema.optional(),

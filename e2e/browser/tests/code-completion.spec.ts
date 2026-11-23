@@ -17,7 +17,12 @@ const TEAM_KEY = "kobe.lastTeamId";
 const SOURCE =
   "import pandas as pd\n" +
   "df = pd.DataFrame({'alpha_col': [1], 'beta_col': [2]})\n" +
-  "kobe_live_value = 41\n";
+  // Labels kept as Python objects: the sandbox's pandas stores str labels in PyArrow, which the
+  // resolver does not read (docs/guide/files/notebooks.md; images/sandbox/test-image.sh does too).
+  "df.columns = pd.Index(['alpha_col', 'beta_col'], dtype=object)\n" +
+  // Set through globals(), not an assignment the editor can read: a name defined in the file is
+  // offered by the editor's own completion, and the kernel's duplicate is dropped (no "kernel").
+  'globals()["kobe_live_value"] = 41\n';
 
 async function workspace(page: Page, op: "upload" | "delete", path: string, content = "") {
   return page.evaluate(
@@ -82,6 +87,9 @@ test("code completion: built-in first, then the kernel's variables, columns and 
     await page.keyboard.type("df['al");
     await expect(list.getByRole("option", { name: /alpha_col/u })).toBeVisible({ timeout: 10_000 });
     await page.keyboard.press("Escape");
+    // Close the subscript: an open `[` (and string) would hold the lines below inside it, and
+    // the call further down would then not parse as a call (no signature help).
+    await page.keyboard.type("pha_col']");
     await page.keyboard.press("Enter");
     await page.keyboard.type("pri");
     await expect(list.getByRole("option", { name: /^print/u })).toBeVisible();

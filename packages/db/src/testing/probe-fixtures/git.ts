@@ -5,6 +5,7 @@ import {
   gitConnections,
   gitConversions,
   gitRepositories,
+  gitRepositoryCommits,
   gitWorkingCopies,
   projects,
   users,
@@ -35,6 +36,10 @@ async function insertConnection(tx: KobeTx, teamId: string) {
   return { connectionId: connection.id, userId };
 }
 
+async function insertRepository(tx: KobeTx, teamId: string): Promise<string> {
+  return (await insertRepo(tx, teamId)).repositoryId;
+}
+
 /** A Repo: a connection, a project of kind `repo` and its repository row. */
 async function insertRepo(tx: KobeTx, teamId: string) {
   const { connectionId, userId } = await insertConnection(tx, teamId);
@@ -44,21 +49,21 @@ async function insertRepo(tx: KobeTx, teamId: string) {
     .values({ teamId, slug, name: "Probe repo", kind: "repo", createdBy: userId })
     .returning({ id: projects.id });
   if (!project) throw new Error("probe: project insert returned nothing");
-  const [repo] = await tx
+  const [repository] = await tx
     .insert(gitRepositories)
     .values({
       teamId,
       connectionId,
       baseUrl: "https://git.probe.test",
-      hostRepoId: randomUUID().slice(0, 8),
+      hostRepoId: randomUUID(),
       fullName: `probe/${slug}`,
       projectId: project.id,
       origin: "conversion",
       createdBy: userId,
     })
     .returning({ id: gitRepositories.id });
-  if (!repo) throw new Error("probe: repository insert returned nothing");
-  return { userId, projectId: project.id, repositoryId: repo.id };
+  if (!repository) throw new Error("probe: git repository insert returned nothing");
+  return { userId, projectId: project.id, repositoryId: repository.id };
 }
 
 export const gitFixtures: Record<(typeof git.team)[number], ProbeFixture> = {
@@ -66,22 +71,18 @@ export const gitFixtures: Record<(typeof git.team)[number], ProbeFixture> = {
     await insertConnection(tx, teamId);
   },
   git_repositories: async (tx, teamId) => {
-    const { connectionId, userId } = await insertConnection(tx, teamId);
-    const slug = `probe-${randomUUID().slice(0, 8)}`;
-    const [project] = await tx
-      .insert(projects)
-      .values({ teamId, slug, name: "Probe repo", kind: "repo", createdBy: userId })
-      .returning({ id: projects.id });
-    if (!project) throw new Error("probe: project insert returned nothing");
-    await tx.insert(gitRepositories).values({
+    await insertRepository(tx, teamId);
+  },
+  git_repository_commits: async (tx, teamId) => {
+    const repositoryId = await insertRepository(tx, teamId);
+    await tx.insert(gitRepositoryCommits).values({
       teamId,
-      connectionId,
-      baseUrl: "https://git.probe.test",
-      hostRepoId: "42",
-      fullName: `probe/${slug}`,
-      projectId: project.id,
-      origin: "conversion",
-      createdBy: userId,
+      repositoryId,
+      position: 0,
+      sha: "a".repeat(40),
+      authorName: "Probe",
+      authoredAt: new Date(),
+      message: "Probe commit",
     });
   },
   git_conversions: async (tx, teamId) => {

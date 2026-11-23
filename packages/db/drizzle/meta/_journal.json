@@ -1772,6 +1772,20 @@
       "when": 1795419529495,
       "tag": "0252_git_conversions_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 253,
+      "version": "7",
+      "when": 1795426620224,
+      "tag": "0253_git_repository_mirror",
+      "breakpoints": true
+    },
+    {
+      "idx": 254,
+      "version": "7",
+      "when": 1795426629619,
+      "tag": "0254_git_repository_mirror_rls",
+      "breakpoints": true
     }
   ]
 }

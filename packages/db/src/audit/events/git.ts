@@ -7,6 +7,7 @@ import {
   GIT_ORGANIZATION_PATTERN,
   GIT_PROVIDER_VALUES,
   GIT_REPO_VISIBILITY_VALUES,
+  GIT_REPOSITORY_HOST_STATE_VALUES,
 } from "../../git/types.js";
 import { count, event, id, reasonCode, type AuditEventDef } from "./fragments.js";
 import { GIT_REPOSITORY_NAME_MAX, GIT_REPOSITORY_NAME_PATTERN } from "../../git/types.js";
@@ -43,6 +44,8 @@ const settingField = z.enum([
 const hostRepoId = z.string().regex(/^[A-Za-z0-9_=-]{1,64}$/);
 const gitSha = z.string().regex(/^([0-9a-f]{40}|[0-9a-f]{64})$/);
 const conversionRef = { conversionId: id, projectId: id };
+const repoRef = { repositoryId: id, projectId: id };
+const hostState = z.enum(GIT_REPOSITORY_HOST_STATE_VALUES);
 /**
  * What every git host tool write records (KOBE-762, spec workspace-git §8): the connection, the
  * agent of the named run (absent for a run without an agent), host and organization, the
@@ -272,5 +275,50 @@ export const GIT_EVENTS = {
     ...conversionRef,
     leftOnHost: z.boolean(),
     repositoryId: id.optional(),
+  }),
+
+  // ── Repo mirror (KOBE-766, spec workspace-git G17, G20): ids, counts and states; never the
+  // project's name, paths, commit messages or the repository's name ──
+  /**
+   * A refresh found new files on the host's default branch and wrote them into the Repo as one
+   * Kobe commit (system). Counts of the change; `skipped` symlinks and submodules left out;
+   * `prunedCommitId` the previous mirror commit, dropped (the history is on the host).
+   */
+  "git.repo.mirror_updated": event("team", {
+    ...repoRef,
+    commitId: id,
+    headSha: gitSha,
+    added: count,
+    modified: count,
+    deleted: count,
+    fileCount: count,
+    skipped: count,
+    prunedCommitId: id.optional(),
+  }),
+  /**
+   * A refresh saw the repository change state on the host (system): `archived` or `deleted`
+   * there, or `unreachable` (its connection is gone), makes the Repo read-only from its last
+   * mirror; back to `active` lifts it.
+   */
+  "git.repo.host_state_changed": event("team", {
+    ...repoRef,
+    hostRepoId,
+    from: hostState,
+    to: hostState,
+  }),
+  /** A Workspace admin linked the Repo to another repository (or the same one again) (G20). */
+  "git.repo.relinked": event("team", {
+    ...repoRef,
+    previousRepositoryId: id,
+    connectionId: id,
+    hostRepoId,
+  }),
+  /**
+   * A Workspace admin turned the Repo back into an ordinary project: one Kobe commit of the
+   * mirrored files (`commitId`); the repository stays on the host, its record unlinked (G20).
+   */
+  "git.repo.detached": event("team", {
+    ...repoRef,
+    commitId: id,
   }),
 } as const satisfies Record<string, AuditEventDef>;

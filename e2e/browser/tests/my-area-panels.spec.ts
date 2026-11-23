@@ -66,7 +66,9 @@ test.describe("My area pages as panels over the workspace (KOBE-424, KOBE-452)",
       expect(new URL(page.url()).pathname).toBe(path);
       // The workspace stays mounted underneath, out of reach while the panel is open.
       await expect(page.locator("[data-kobe-chat] main#kobe-chat-main")).toHaveCount(1);
-      await expect(chat.composer).toBeHidden();
+      // Out of reach means inert (useModalLayer), not hidden: Playwright ignores `inert`, so the
+      // composer stays "visible" to it and the check is on the attribute.
+      await expect(page.locator("[data-kobe-chat] [inert] #kobe-composer")).toHaveCount(1);
       await shoot(page, `panel-${slug(path)}-1280`, page.locator("body"));
 
       await panel.getByRole("button", { name: `Close ${name}` }).click();

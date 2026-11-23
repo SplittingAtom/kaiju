@@ -120,6 +120,7 @@ import { teamRoutes } from "./routes/team.js";
 import { projectRoutes } from "./routes/projects.js";
 import { projectRepoRoutes } from "./routes/project-repo.js";
 import { projectRepoCommitRoutes } from "./routes/project-repo-commits.js";
+import { projectRepoMirrorRoutes } from "./routes/project-repo-mirror.js";
 import { projectFromFolderRoutes } from "./routes/project-from-folder.js";
 import {
   myCheckoutRoutes,
@@ -292,6 +293,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   api.route("/projects", projectCommitRoutes(deps, options.workspaceFiles?.sync));
   api.route("/projects", projectRepoRoutes(deps));
   api.route("/projects", projectRepoCommitRoutes(deps));
+  api.route("/projects", projectRepoMirrorRoutes(deps));
   api.route("/projects", projectFromFolderRoutes(deps, options.workspaceFiles?.sync));
   // Before the `/:id` routes: `/threads/file-links` is not a thread id (KOBE-611).
   api.route("/threads", threadFileLinkRoutes(deps));

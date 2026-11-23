@@ -86,6 +86,30 @@ export const projectsAgentsAreas: readonly CatalogArea[] = [
         "Abandon a failed Convert to repo attempt",
         "The project's owner and Workspace admins. The project stays an ordinary project; a repository created for the attempt stays on the host (`left_on_host`).",
       ],
+      [
+        "get",
+        "/v1/projects/{id}/repo",
+        "Read a Repo: its repository, mirror state and newest commits",
+        "Every member who views the project. Opening a Repo whose mirror is older than a minute starts a refresh in the background; the answer is the mirror as it is (never waits for the host). `read_only` when the repository was archived or deleted on the host or its connection removed. 404 `not_a_repo`.",
+      ],
+      [
+        "post",
+        "/v1/projects/{id}/repo/refresh",
+        "Refresh a Repo's mirror now",
+        "Every member who views the project. Answers 202 with the mirror as it is; the refresh runs in the background past any back-off, within the connection's hourly read budget. Rate limited.",
+      ],
+      [
+        "post",
+        "/v1/projects/{id}/repo/relink",
+        "Link a Repo to another repository",
+        "Workspace admins. A repository (by name) of a connected organization, never a public one or another project's Repo; its default branch becomes the record and is mirrored at once. Rate limited.",
+      ],
+      [
+        "post",
+        "/v1/projects/{id}/repo/detach",
+        "Turn a Repo back into an ordinary project",
+        "Workspace admins. One commit of the mirrored files starts its Kobe history again; the repository stays on the host. Rate limited.",
+      ],
     ],
   },
   {

@@ -11,6 +11,7 @@ export const git = defineDomain({
     "git_connections",
     "git_repositories",
     "git_conversions",
+    "git_repository_commits",
     "git_commit_branches",
     "git_working_copies",
   ],
