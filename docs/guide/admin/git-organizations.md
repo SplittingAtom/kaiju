@@ -179,8 +179,9 @@ sends nothing to the host). Its buttons:
   stay. Sandboxes already working with the organization may keep their access for up to 30
   seconds.
 
-When a token's expiry is less than 14 days away (or has passed), the page shows a banner and
-Workspace admins get one email. Create a new token on the host and use **Replace credential**.
+When a token's expiry is less than 14 days away (or has passed), the page shows a banner,
+Workspace admins get one email, and the Files panel shows them a notice linking here (once they
+own or administer a project). Create a new token on the host and use **Replace credential**.
 
 ## Commits to Repos
 
@@ -275,6 +276,10 @@ admins then have two ways forward:
 - **Detach**: turn the Repo back into an ordinary project. One commit of the mirrored files
   starts its Kobe history again, and Kobe commits work as before. The repository stays on the host
   and stays listed under **Repositories**.
+
+Relink and detach are in the Files panel: a Repo's **⋯** menu → **Repo details…** → **Relink…**
+(choose the connection and type the repository's name) or **Detach…** (confirms first). See
+[Repos in the Files panel](../files/workspaces-and-projects.md#repos-in-the-files-panel).
 
 Both are recorded in the audit log (`git.repo.relinked`, `git.repo.detached`), as are mirror
 updates and changes of state on the host (`git.repo.mirror_updated`,

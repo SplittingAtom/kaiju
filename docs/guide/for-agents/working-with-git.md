@@ -143,7 +143,11 @@ conversation on a Repo:
   you did not push are lost. Files you want the user to see belong in their files outside
   `repos/`, or on the host.
 - Kobe reports the working copy's branch, how many commits it is ahead of and behind the host, and
-  whether it has uncommitted changes, so the user sees it in their Files panel.
+  whether it has uncommitted changes, so the user sees it in their Files panel (on the Repo's row,
+  next to the git icon).
+- **Converting a project to a Repo is the user's step**, not yours: there is no tool for it. The
+  project's owner or a Workspace admin uses **Convert to repo…** on the project's menu in the Files
+  panel. If the user asks, tell them that, and that it needs a git connection at Read and write.
 
 ## Credentials: there are none, and you must not ask
 

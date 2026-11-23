@@ -18,6 +18,10 @@ import {
   WorkspaceHeader,
 } from "./workspace-tree";
 import { ProjectWorkPanel, type ProjectRef, type WorkAction } from "../projects/project-work";
+import { ConvertDialog } from "../projects/convert-dialog";
+import { RepoNotices } from "../projects/repo-notices";
+import { RepoPanel } from "../projects/repo-panel";
+import type { RepoPanelKind } from "./file-row-menus";
 import { createProjectsApi } from "../../lib/projects/api";
 import { useWorkspaceProjects } from "../projects/workspace-projects";
 import { useNavigate } from "../shell/use-navigate";
@@ -154,6 +158,10 @@ export function FileBrowser({
     readonly project: ProjectRef;
     readonly action: WorkAction;
   } | null>(null);
+  const [repoPanel, setRepoPanel] = useState<{
+    readonly project: ProjectRef;
+    readonly kind: RepoPanelKind;
+  } | null>(null);
   const navigate = useNavigate();
   const projectsApi = useMemo(
     () => workspaceProjects?.projects ?? createProjectsApi(api.teamId),
@@ -193,9 +201,25 @@ export function FileBrowser({
     activeProjectId,
     onNewConversationIn,
     onMoveHere,
-    onProjectAction: (project, action) => setProjectAction({ project, action }),
+    onProjectAction: (project, action) => {
+      setRepoPanel(null);
+      setProjectAction({ project, action });
+    },
     onOpenProjectPage: (id) => navigate(`/me/projects/${id}`),
+    onRepo: (project, kind) => {
+      setProjectAction(null);
+      setRepoPanel({ project, kind });
+    },
   });
+  const repoProject =
+    repoPanel === null
+      ? undefined
+      : [...(workspaceProjects?.bySlug.values() ?? [])].find((p) => p.id === repoPanel.project.id);
+  const closeRepoPanel = () => {
+    const slug = repoProject?.slug;
+    setRepoPanel(null);
+    if (slug !== undefined) focusRow(`projects/${slug}`);
+  };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-auto px-2 py-1.5">
@@ -241,6 +265,32 @@ export function FileBrowser({
         <ShowAllProjects total={work.all} onShow={() => work.setShowAll(true)} />
       )}
       {work.rows.length === 0 && <NoProjects ready={work.ready} filtered={work.filter !== ""} />}
+      <RepoNotices />
+      {repoPanel && workspaceProjects && repoProject && repoPanel.kind === "convert" && (
+        <ConvertDialog
+          key={`convert:${repoProject.id}`}
+          project={repoProject}
+          api={workspaceProjects.repoApi}
+          git={workspaceProjects.git}
+          onChanged={workspaceProjects.reload}
+          onClose={closeRepoPanel}
+        />
+      )}
+      {repoPanel && workspaceProjects && repoProject && repoPanel.kind === "details" && (
+        <RepoPanel
+          key={`repo:${repoProject.id}`}
+          project={repoProject}
+          info={workspaceProjects.repos.get(repoProject.id)}
+          api={workspaceProjects.repoApi}
+          git={workspaceProjects.git}
+          onChanged={() => workspaceProjects.reloadRepo(repoProject.id)}
+          onDetached={() => {
+            setRepoPanel(null);
+            workspaceProjects.reload();
+          }}
+          onClose={closeRepoPanel}
+        />
+      )}
       {projectAction && (
         <ProjectWorkPanel
           key={`${projectAction.project.id}:${projectAction.action}`}

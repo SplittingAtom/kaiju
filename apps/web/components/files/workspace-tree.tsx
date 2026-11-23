@@ -9,7 +9,7 @@
  */
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FolderKanbanIcon, RefreshCwIcon, VaultIcon } from "lucide-react";
+import { FolderKanbanIcon, GitBranchIcon, RefreshCwIcon, VaultIcon } from "lucide-react";
 import type { FileEntry } from "../../lib/files/api";
 import { isWithin, splitProjectRows, visibleRows } from "../../lib/files/tree";
 import {
@@ -32,6 +32,8 @@ import {
 import type { Project } from "../../lib/projects/api";
 import { IconAction } from "../shell/icon-action";
 import { useWorkspaceProjects } from "../projects/workspace-projects";
+import type { RepoInfo } from "../projects/workspace-repos";
+import { mayConvert, repoRowWords } from "../projects/repo-row";
 import type { RowDecoration } from "./file-tree";
 import type { FileTree } from "./use-file-tree";
 
@@ -152,6 +154,10 @@ export function useProjectsInTree(
     return access.kind !== "none" && access.project ? (access as KnownAccess) : undefined;
   };
 
+  const repos = ctx?.repos;
+  const repoOf = (projectId: string): RepoInfo | undefined => repos?.get(projectId);
+  const repoWords = (project: Project) => repoRowWords(repoOf(project.id));
+
   const decorate = (entry: FileEntry): RowDecoration | undefined => {
     if (!isProjectFolder(entry.path)) return undefined;
     const slug = projectSlugOf(entry.path) ?? entry.name;
@@ -163,21 +169,45 @@ export function useProjectsInTree(
     const active = project !== undefined && project.id === activeProjectId;
     const greyed = !active;
     const role = project ? ROLE_LABELS[effectiveRole(project)] : undefined;
+    // KOBE-768 (G19): a Repo has the git icon, its host and repository, branch and ahead/behind;
+    // a project a conversion holds says so.
+    const isRepo = project?.kind === "repo";
+    const repo = isRepo ? repoWords(project) : undefined;
+    const held =
+      project?.repoConversion === "running"
+        ? "converting to a Repo…"
+        : project?.repoConversion === "failed"
+          ? "conversion failed"
+          : undefined;
     return {
       label: project?.name ?? slug,
-      title: slug,
+      title: repo ? `${slug} · ${repo.subtitle}` : slug,
       greyed,
       active,
+      ...(isRepo ? { icon: GitBranchIcon, kind: "Repo" } : {}),
       description: [
         greyed ? NOT_IN_CONVERSATION : undefined,
+        repo?.subtitle,
         role,
         editing ? "editing" : checked ? undefined : "read-only",
+        ...(repo?.words ?? []),
+        held,
       ]
         .filter(Boolean)
         .join(", "),
       chips: (
         <>
           {role && <span className={CHIP}>{role}</span>}
+          {repo?.chips.map((chip) => (
+            <span key={chip} className={CHIP} aria-hidden>
+              {chip}
+            </span>
+          ))}
+          {held && (
+            <span className={CHIP} aria-hidden>
+              {held}
+            </span>
+          )}
           {editing && (
             <span className="text-foreground shrink-0 text-[0.65rem] leading-4 font-medium">
               editing <span aria-hidden>●</span>
@@ -202,6 +232,10 @@ export function useProjectsInTree(
     isUnmounted,
     decorate,
     projectOf,
+    /** KOBE-768: a Repo's repository, mirror and working copy, once read. */
+    repoOf,
+    /** Whether the member may open Convert to repo… on the project (G16, GQ13). */
+    offersConvert: (project: Project): boolean => mayConvert(project, ctx?.git ?? null),
     /** Why the file at `path` cannot go into a message: its project is not mounted (FP4). */
     mentionRefusal: (path: string): string | undefined => {
       const slug = projectSlugOf(path);

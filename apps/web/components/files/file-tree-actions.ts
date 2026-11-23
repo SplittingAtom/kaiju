@@ -6,7 +6,13 @@ import { offersPromote } from "../../lib/projects/promote";
 import type { MenuBindings } from "../../lib/shell/menu";
 import type { FileThreads } from "../../lib/threads/file-links";
 import type { ProjectRef, WorkAction } from "../projects/project-work";
-import { projectBindings, rowBindings, usedInBindings } from "./file-row-menus";
+import {
+  projectBindings,
+  repoBindings,
+  rowBindings,
+  usedInBindings,
+  type RepoPanelKind,
+} from "./file-row-menus";
 import type { Dragging, TreeActions } from "./file-tree";
 import type { useFileActions } from "./use-file-actions";
 import type { FileTree } from "./use-file-tree";
@@ -31,6 +37,7 @@ export function treeActions({
   onMoveHere,
   onProjectAction,
   onOpenProjectPage,
+  onRepo,
 }: {
   readonly work: ReturnType<typeof useProjectsInTree>;
   readonly act: ReturnType<typeof useFileActions>;
@@ -46,6 +53,8 @@ export function treeActions({
   readonly onMoveHere: ((project: ProjectRef) => Promise<string | undefined>) | undefined;
   readonly onProjectAction: (project: ProjectRef, action: WorkAction) => void;
   readonly onOpenProjectPage: (projectId: string) => void;
+  /** KOBE-768: a Repo's details, or Convert to repo…. */
+  readonly onRepo: (project: ProjectRef, kind: RepoPanelKind) => void;
 }): { readonly actions: TreeActions; readonly projectActions: TreeActions } {
   const { checkedOut } = work;
   const { setDialog } = act;
@@ -105,6 +114,7 @@ export function treeActions({
       const own = actions.bindings(entry);
       const project = isProjectFolder(entry.path) ? work.projectOf(entry.path) : undefined;
       if (!project) return own;
+      const p = project.project;
       return {
         ...own,
         ...projectBindings(project, activeProjectId, {
@@ -113,6 +123,11 @@ export function treeActions({
           onMoveHere: onMoveHere && ((ref) => void act.moveHere(ref)),
           onOpenPage: onOpenProjectPage,
         }),
+        ...repoBindings(
+          { id: p.id, name: p.name },
+          { isRepo: p.kind === "repo", info: work.repoOf(p.id), convert: work.offersConvert(p) },
+          onRepo,
+        ),
       };
     },
   };

@@ -37,6 +37,10 @@ export interface Project {
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly archivedAt: string | null;
+  /** KOBE-768 (G19): a Repo is listed with projects, with the git icon. Absent on older answers. */
+  readonly kind?: "project" | "repo" | undefined;
+  /** KOBE-768: a conversion to a Repo that holds the project's writes (running or failed). */
+  readonly repoConversion?: "running" | "failed" | null | undefined;
 }
 
 export interface ProjectMember {
