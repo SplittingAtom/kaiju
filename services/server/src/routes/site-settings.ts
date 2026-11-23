@@ -5,6 +5,8 @@ import {
   KOBE_MCP_MODES,
   auditPiiRetentionHoursSchema,
   eq,
+  gitAllowedHostsSchema,
+  readGitSiteSettings,
   inArray,
   sessionSsoContexts,
   sessions,
@@ -23,6 +25,7 @@ import {
   storeKobeLimit,
 } from "../kobe-mcp/limits.js";
 import { readKobeMode, storeKobeMode } from "../kobe-mcp/switches.js";
+import { storeGitSiteSettings } from "../git/site-settings.js";
 import { readJson } from "../http/request.js";
 
 export const settingsSchema = z
@@ -36,6 +39,10 @@ export const settingsSchema = z
     kobeReadsPerMinute: z.number().int().min(KOBE_LIMIT_MIN).max(KOBE_LIMIT_MAX).optional(),
     /** Per-person Kobe admin writes per hour (KOBE-814): 1-10000, default 30. */
     kobeWritesPerHour: z.number().int().min(KOBE_LIMIT_MIN).max(KOBE_LIMIT_MAX).optional(),
+    /** Workspace git (KOBE-757, G3): Git connections allowed on this Site (default true). */
+    gitConnectionsEnabled: z.boolean().optional(),
+    /** Hosts Workspaces may connect to (`github.com`, `*.example.com`); [] = any host. */
+    gitAllowedHosts: gitAllowedHostsSchema.optional(),
   })
   .refine(
     (v) =>
@@ -43,7 +50,9 @@ export const settingsSchema = z
       v.auditPiiRetentionHours !== undefined ||
       v.kobeMcpMode !== undefined ||
       v.kobeReadsPerMinute !== undefined ||
-      v.kobeWritesPerHour !== undefined,
+      v.kobeWritesPerHour !== undefined ||
+      v.gitConnectionsEnabled !== undefined ||
+      v.gitAllowedHosts !== undefined,
     { message: "Change at least one setting." },
   );
 
@@ -63,12 +72,15 @@ export function siteSettingsRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
 
   const current = async () => {
     const limits = await readKobeLimits(db);
+    const git = await readGitSiteSettings(db);
     return {
       requireTwoFactor: await readRequireTwoFactor(deps),
       auditPiiRetentionHours: await readAuditPiiRetentionHours(db),
       kobeMcpMode: await readKobeMode(db),
       kobeReadsPerMinute: limits.readsPerMinute,
       kobeWritesPerHour: limits.writesPerHour,
+      gitConnectionsEnabled: git.enabled,
+      gitAllowedHosts: git.allowedHosts,
     };
   };
 
@@ -82,7 +94,9 @@ export function siteSettingsRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
           code: "invalid_request",
           message:
             "Send requireTwoFactor (true or false), auditPiiRetentionHours (1-8760) and/or " +
-            "kobeMcpMode (off, docs or admin), kobeReadsPerMinute and/or kobeWritesPerHour (1-10000).",
+            "kobeMcpMode (off, docs or admin), kobeReadsPerMinute and/or kobeWritesPerHour (1-10000), " +
+            "gitConnectionsEnabled (true or false) and/or gitAllowedHosts (up to 50 host names " +
+            "such as github.com or *.example.com).",
         },
         400,
       );
@@ -93,6 +107,8 @@ export function siteSettingsRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
       kobeMcpMode,
       kobeReadsPerMinute,
       kobeWritesPerHour,
+      gitConnectionsEnabled,
+      gitAllowedHosts,
     } = parsed.data;
     // Lowering the requirement weakens every account: Owner only.
     if (requireTwoFactor === false && c.get("siteRole") !== "owner") {
@@ -127,6 +143,12 @@ export function siteSettingsRoutes(deps: ServerDeps): Hono<{ Variables: AuthVari
       if (kobeMcpMode !== undefined) await storeKobeMode(tx, kobeMcpMode);
       if (kobeReadsPerMinute !== undefined) await storeKobeLimit(tx, "read", kobeReadsPerMinute);
       if (kobeWritesPerHour !== undefined) await storeKobeLimit(tx, "write", kobeWritesPerHour);
+      if (gitConnectionsEnabled !== undefined || gitAllowedHosts !== undefined) {
+        await storeGitSiteSettings(tx, {
+          ...(gitConnectionsEnabled !== undefined ? { enabled: gitConnectionsEnabled } : {}),
+          ...(gitAllowedHosts !== undefined ? { allowedHosts: gitAllowedHosts } : {}),
+        });
+      }
     });
     return c.json(await current());
   });

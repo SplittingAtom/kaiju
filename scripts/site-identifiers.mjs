@@ -19,6 +19,8 @@ const ALLOWED = new Set(["installMemoryHooks"]);
  * fails. KOBE-330..341 add the member's mayInstall (may install this catalog skill) and the
  * catalog's teamsInstalled count (an API field: how many teams installed the skill); their other
  * names say SkillInstall (skillInstallAnswers, SkillInstallUpdate, listSkillInstallRequests).
+ * KOBE-757: a GitHub App's installation on an organization (GitHub's noun, spec workspace-git G5),
+ * always prefixed githubInstallation / githubAppInstallation.
  */
 const SKILL_INSTALL = new RegExp(
   [
@@ -28,6 +30,7 @@ const SKILL_INSTALL = new RegExp(
     /^installCatalogSkill$/,
     /^(?:buildersM|m)ayInstall(?:Catalog)?$/,
     /^teamsInstalled$/,
+    /^github(?:App)?Installation\w*$/,
   ]
     .map((re) => re.source)
     .join("|"),

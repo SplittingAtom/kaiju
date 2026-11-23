@@ -2,6 +2,7 @@ export * from "./audit/index.js";
 export * from "./connectors/index.js";
 export * from "./egress/index.js";
 export * from "./envelope/index.js";
+export * from "./git/index.js";
 export * from "./models/index.js";
 export {
   BREAK_GLASS_ENTRIES_MAX,

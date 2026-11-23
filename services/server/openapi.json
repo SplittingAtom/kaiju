@@ -69187,6 +69187,7 @@
                 "team.connectors.manage",
                 "team.policy.manage",
                 "team.egress.manage",
+                "team.git.manage",
                 "team.skills.review",
                 "team.skills.installs.manage",
                 "team.retention.manage",
@@ -76753,6 +76754,15 @@
           },
           "kobeWritesPerHour": {
             "type": "integer"
+          },
+          "gitConnectionsEnabled": {
+            "type": "boolean"
+          },
+          "gitAllowedHosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -76760,7 +76770,9 @@
           "auditPiiRetentionHours",
           "kobeMcpMode",
           "kobeReadsPerMinute",
-          "kobeWritesPerHour"
+          "kobeWritesPerHour",
+          "gitConnectionsEnabled",
+          "gitAllowedHosts"
         ],
         "x-kobe-untyped": true
       },
@@ -76788,6 +76800,17 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 10000
+          },
+          "gitConnectionsEnabled": {
+            "type": "boolean"
+          },
+          "gitAllowedHosts": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 300
+            }
           }
         },
         "additionalProperties": false

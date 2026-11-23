@@ -71,6 +71,9 @@ export const GIT_PUSH_LIMIT_MAX_BYTES = 10 * 1024 * 1024 * 1024;
 /** Agents a connection may be limited to (GQ8); null on the row means every agent. */
 export const GIT_CONNECTION_AGENTS_MAX = 50;
 
+/** Host patterns a Site admin may list in the Site's host limit (G3). */
+export const GIT_ALLOWED_HOSTS_MAX = 50;
+
 /** Field limits, shared by the table checks and the route validation. */
 export const GIT_BASE_URL_MAX = 2048;
 export const GIT_ORGANIZATION_MAX = 100;
