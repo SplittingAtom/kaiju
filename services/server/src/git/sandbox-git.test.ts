@@ -6,6 +6,8 @@ import {
   gitAuthorName,
   gitCommitEmailMode,
   gitNoReplyEmail,
+  gitNoReplyShortId,
+  gitNoReplySlug,
   gitRemotesOf,
   type RunGitInput,
 } from "./sandbox-git.js";
@@ -42,10 +44,27 @@ describe("run.start.git (KOBE-764)", () => {
 
   it("switches to the no-reply form under the Site's host when the Workspace says so (GQ10)", () => {
     const git = buildRunGitContext(input({ mode: "noreply" }));
-    const noReply = `${USER}@users.noreply.kobe.acme.test`;
+    const noReply = `${gitNoReplyShortId(USER)}+ada-lovelace@users.noreply.kobe.acme.test`;
     expect(git.author).toEqual({ name: "Ada Lovelace", email: noReply });
     expect(git.committer).toEqual({ name: "Ada Lovelace via Kobe", email: noReply });
     expect(JSON.stringify(git)).not.toContain("ada@acme.test");
+  });
+
+  it("builds the no-reply address as GitHub's: short non-reversible id, name slug, valid", () => {
+    const id = gitNoReplyShortId(USER);
+    expect(id).toMatch(/^[0-9a-f]{10}$/);
+    expect(USER.replace(/-/g, "")).not.toContain(id);
+    expect(gitNoReplyShortId(USER.toUpperCase())).toBe(id);
+    expect(gitNoReplySlug("Zoë  O'Brien-Şahin")).toBe("zoe-o-brien-sahin");
+    expect(gitNoReplySlug("李雷")).toBe("member");
+    expect(gitNoReplySlug("--")).toBe("member");
+    const long = gitNoReplySlug(`${"a".repeat(38)} bcd`);
+    expect(long).toBe("a".repeat(38));
+    expect(gitNoReplySlug("x".repeat(80))).toHaveLength(39);
+    const email = gitNoReplyEmail({ id: USER, name: "x".repeat(80) }, "Kobe.Acme.Test");
+    expect(email).toBe(`${id}+${"x".repeat(39)}@users.noreply.kobe.acme.test`);
+    expect((email.split("@")[0] ?? "").length).toBeLessThanOrEqual(64);
+    expect(runGitContextSchema.shape.author.shape.email.safeParse(email).success).toBe(true);
   });
 
   it("reads the setting from teams.settings; anything else is the member's email", () => {
@@ -59,7 +78,7 @@ describe("run.start.git (KOBE-764)", () => {
 
   it("falls back to the no-reply form for an address git would misread", () => {
     const git = buildRunGitContext(input({ user: { id: USER, name: "A", email: "a <b>@c.test" } }));
-    expect(git.author.email).toBe(gitNoReplyEmail(USER, "kobe.acme.test"));
+    expect(git.author.email).toBe(gitNoReplyEmail({ id: USER, name: "A" }, "kobe.acme.test"));
   });
 
   it("cleans names git would misread and keeps room for the suffix", () => {

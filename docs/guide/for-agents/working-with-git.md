@@ -27,9 +27,12 @@ git push -u origin fix/typo
   so that remotes of connected organizations go through Kobe's egress proxy, which adds the
   Workspace's credential on the way out. `git@host:org/repo.git` works too on hosts that serve
   repositories at their root. Do not add a user name or token to the URL.
-- Spell the organization as the connection shows it (letter case included).
-- Clone, fetch, pull and push work. Git LFS and submodules are not supported, and there are no SSH
-  connections: `git@…` URLs of connected organizations are carried over HTTPS for you.
+- Spell the organization as the connection shows it, letter case included: a URL with another
+  spelling is not routed through Kobe and fails as if the repository were private.
+- Clone, fetch, pull and push work, and so do submodules whose URLs are in a connected
+  organization. Git LFS is not supported. There are no SSH connections: `git@…` URLs of connected
+  organizations are carried over HTTPS for you, and any other SSH remote fails at once with
+  `kobe: SSH is not available in the sandbox`; use the `https://` URL instead.
 - A single git request may run for up to 30 minutes. Start each long operation in a new `bash` call.
 
 Repositories outside the connected organizations: public ones can be cloned only when the
@@ -48,11 +51,14 @@ credentials is refused.
 
 ## Who the commits are from
 
-Commits you make carry the user as author: their name and their Kobe email, or a no-reply address
-if the Workspace chose that. The committer is the user's name followed by "via Kobe". Do not change
-`user.name`, `user.email` or the author of a commit. The global git config is Kobe's and read-only;
-`git config --global` fails with "could not lock config file", which is expected. Settings for one
-repository (`git config <key> <value>` inside it) work.
+Commits you make carry the user as author: their name and their Kobe email, or, if the Workspace
+chose that, a no-reply address of the form `<short id>+<name>@users.noreply.<this site's address>`. The committer is the user's name followed by "via Kobe". Do not change
+`user.name`, `user.email` or the author of a commit. The global git config belongs to Kobe and is
+rewritten before every message: do not use `git config --global`. In a normal sandbox it fails with
+"could not lock config file", which is expected; where the sandbox runs without separate tool
+users (some development setups) the change goes through, and Kobe then stops your session at the
+next message because its file was changed. Settings for one repository (`git config <key> <value>`
+inside it) work.
 
 On the host, the push itself appears as the Workspace's app or bot account.
 

@@ -17,6 +17,7 @@ import { isTempOf, writeFileAtomic } from "../atomic-file.js";
  *
  * What it says:
  * - `http.proxyAuthMethod=basic`: the egress token (in `http_proxy`) goes with the first request;
+ * - `core.sshCommand` that only prints why and fails: there is no SSH from the sandbox;
  * - `credential.helper` reset to nothing and `core.askPass` empty, with `GIT_TERMINAL_PROMPT=0` in
  *   the environment: git never prompts for, stores or reads a credential (there is none in the
  *   sandbox, and the egress proxy never passes a host's `WWW-Authenticate` through, KOBE-763);
@@ -75,6 +76,10 @@ export function remoteRewrites(remotes: readonly RunGitRemote[]): RemoteRewrite[
   return out;
 }
 
+/** What `core.sshCommand` runs: a message on stderr, then failure (git appends its arguments). */
+export const SSH_REFUSAL =
+  "echo 'kobe: SSH is not available in the sandbox; use the https:// URL of a repository in a connected organization' >&2; false";
+
 /** A config value in double quotes (the schema and `validIdentity` keep `"`, `\` and controls out). */
 const quoted = (value: string): string => `"${value}"`;
 
@@ -95,6 +100,8 @@ export function gitConfigText(context: RunGitContext | undefined): string {
     "\thelper =",
     "[core]",
     "\taskPass =",
+    // No SSH in the sandbox: an ssh remote git did not rewrite fails at once, with the reason.
+    `\tsshCommand = ${quoted(SSH_REFUSAL)}`,
     // The egress token goes with the first request (as curl and pip send it), not after a 407.
     "[http]",
     "\tproxyAuthMethod = basic",

@@ -38,10 +38,15 @@
 
 - **Authorship (G13, GQ10):** author = member's name + Kobe email; committer = "<name> via Kobe"
   - same email. Workspace setting `teams.settings.git_commit_email = "noreply"` switches both to
-    `<user id>@users.noreply.<Site host>`: the spec names a "no-reply form" without a shape; this
-    one is stable per member, under the Site's own host only (no invented foreign domain), and
-    never a real mailbox. An email git would misread also falls back to it. Names are cleaned
-    (`<>"\`, controls) and capped so the suffix fits.
+    the owner's form (2026-11-22): `<short id>+<name slug>@users.noreply.<Site host>`. Short id =
+    first 10 hex of SHA-256(user id): stable, not reversible, never the internal UUID (collisions
+    harmless: never delivered). Slug = display name NFKD, accents dropped, lowercase `[a-z0-9-]`,
+    runs collapsed, trimmed, ≤ 39, else `member`; local part ≤ 50. The host follows
+    `KOBE_PUBLIC_URL`: if the Site's public address changes, new commits get the new host and
+    existing commits keep the old one. An email git would misread also falls back to it. Names are
+    cleaned (`<>"\`, controls) and capped so the suffix fits.
+- **SSH fails closed:** `core.sshCommand` prints `kobe: SSH is not available in the sandbox; …` and
+  fails, so an ssh remote that was not rewritten never tries a connection.
 - **One sandbox per member** (KOBE-763: one sandbox serves all of a member's agents), so the
   identity is per member; it is still written per Pi process and per run, so nothing mixes.
 - **Image unchanged:** git is already in `images/sandbox/Dockerfile` (with system
@@ -51,14 +56,13 @@
 
 ## Left for other tickets
 
-- **Setting route/UI:** no route writes `git_commit_email` yet. GIT-4 (connection routes,
-  `/v1/team/git/*`, `team.git.manage`, audited) and GIT-5 (Git section) should add the switch;
-  the reader and key are `TEAM_GIT_COMMIT_EMAIL_SETTING` / `gitCommitEmailMode()` here.
+- **Setting route/UI (ac-2):** no route writes `git_commit_email` yet; per the coordinator it
+  goes into the phase-2 integration (routes + console, `team.git.manage`, audited). The reader and
+  key are `TEAM_GIT_COMMIT_EMAIL_SETTING` / `gitCommitEmailMode()` here.
 - GIT-13: Workspace admin and members' pages; e2e from a real sandbox against Forgejo.
 
 ## Open questions
 
-- No-reply shape `<user id>@users.noreply.<Site host>`: confirm, or name another (GQ10 is silent).
 - Organization case: `insteadOf` is case-sensitive, the proxy is not; agents are told to use the
   connection's spelling. Add lower-case variants if this trips agents.
 
@@ -70,9 +74,12 @@
   `http://github.com/acme/app.git/info/refs?...`, egress token on every request, no
   `Authorization`; a 401 host fails with "terminal prompts disabled", planted system and
   `~/.gitconfig` helpers never run, no `~/.git-credentials`, `git credential fill` gets nothing.
+  Also: the connected org's `git@` spelling is rewritten, other ssh remotes fail with the SSH
+  message and reach nothing; another organization and another letter case are not rewritten
+  (a credential-less tunnel); a submodule in the same organization clones through the proxy.
 - ac-2: same test pushes a commit with author `Ada Lovelace <ada@…>` and committer
   `Ada Lovelace via Kobe <ada@…>`; `services/server/src/git-sandbox.db.test.ts` (member email, then
-  the setting switches to the no-reply form, other Workspace's connections absent, no credential);
+  the setting switches to the no-reply form `<short id>+<slug>@users.noreply.<host>`, other Workspace's connections absent, no credential);
   `git/sandbox-git.test.ts`, `delivery/run-start-git.test.ts` (capability, eval, failure).
 - Agent wiring: `src/agent.git.test.ts` (env, file mode, rewrite per run, tripwire), `git-config.test.ts`.
 - Protocol: `git-config.test.ts` (schema, compatibility both ways).

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadEnvelope, sealGitCredential, type Envelope } from "@kobe/db";
 import { runGitContextSchema } from "@kobe/protocol/sandbox-wire";
-import { loadRunGitContext } from "./git/sandbox-git.js";
+import { gitNoReplyEmail, loadRunGitContext } from "./git/sandbox-git.js";
 import { openHarness, type Harness } from "./testing/harness.js";
 
 /**
@@ -102,8 +102,11 @@ describe("loadRunGitContext (KOBE-764)", () => {
     const git = must(
       await loadRunGitContext(h.deps.database.db, { teamId: team, userId: member }, "kobe.test"),
     );
-    expect(git.author.email).toBe(`${member}@users.noreply.kobe.test`);
-    expect(git.committer.email).toBe(`${member}@users.noreply.kobe.test`);
+    const noReply = gitNoReplyEmail({ id: member, name: email.split("@")[0] as string }, "kobe.test");
+    expect(noReply).toMatch(/^[0-9a-f]{10}\+ada-[0-9a-f]{6}@users\.noreply\.kobe\.test$/);
+    expect(git.author.email).toBe(noReply);
+    expect(git.committer.email).toBe(noReply);
+    expect(JSON.stringify(git)).not.toContain(member);
     expect(JSON.stringify(git)).not.toContain(email);
   });
 

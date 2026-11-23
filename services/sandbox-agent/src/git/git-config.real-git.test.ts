@@ -2,6 +2,7 @@ import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
+import type { Duplex } from "node:stream";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -119,6 +120,37 @@ describe.skipIf(backend === undefined)(
       execFileSync("git", ["-C", seed, "add", "."]);
       execFileSync("git", ["-C", seed, ...ident, "commit", "-q", "-m", "init"]);
       execFileSync("git", ["-C", seed, "push", "-q", bare, "main"]);
+      // A repository whose submodule is another repository of the same organization (https URL).
+      const libBare = path.join(repos, "acme", "lib.git");
+      execFileSync("git", ["init", "--bare", "-q", "-b", "main", libBare]);
+      const libSeed = path.join(root, "lib-seed");
+      execFileSync("git", ["init", "-q", "-b", "main", libSeed]);
+      writeFileSync(path.join(libSeed, "lib.txt"), "library\n");
+      execFileSync("git", ["-C", libSeed, "add", "."]);
+      execFileSync("git", ["-C", libSeed, ...ident, "commit", "-q", "-m", "lib"]);
+      execFileSync("git", ["-C", libSeed, "push", "-q", libBare, "main"]);
+      const libHead = execFileSync("git", ["-C", libSeed, "rev-parse", "HEAD"], {
+        encoding: "utf8",
+      }).trim();
+      const withSub = path.join(root, "withsub-seed");
+      execFileSync("git", ["init", "-q", "-b", "main", withSub]);
+      writeFileSync(
+        path.join(withSub, ".gitmodules"),
+        '[submodule "lib"]\n\tpath = lib\n\turl = https://github.com/acme/lib.git\n',
+      );
+      execFileSync("git", ["-C", withSub, "add", ".gitmodules"]);
+      execFileSync("git", [
+        "-C",
+        withSub,
+        "update-index",
+        "--add",
+        "--cacheinfo",
+        `160000,${libHead},lib`,
+      ]);
+      execFileSync("git", ["-C", withSub, ...ident, "commit", "-q", "-m", "with submodule"]);
+      const withSubBare = path.join(repos, "acme", "withsub.git");
+      execFileSync("git", ["init", "--bare", "-q", "-b", "main", withSubBare]);
+      execFileSync("git", ["-C", withSub, "push", "-q", withSubBare, "main"]);
 
       proxy = createServer((req, res) => {
         const target = req.url ?? "";
@@ -139,6 +171,17 @@ describe.skipIf(backend === undefined)(
         }
         // A host asking for credentials: git must neither prompt nor ask a helper.
         res.writeHead(401, { "www-authenticate": 'Basic realm="host"' }).end();
+      });
+      // A tunnel (CONNECT) is what git uses for an https URL it did not rewrite: the real proxy
+      // then gives no credential; here it is refused outright, and recorded.
+      proxy.on("connect", (req: IncomingMessage, socket: Duplex) => {
+        seen.push({
+          method: "CONNECT",
+          url: req.url ?? "",
+          proxyAuth: req.headers["proxy-authorization"],
+          auth: req.headers.authorization,
+        });
+        socket.end("HTTP/1.1 403 Forbidden\r\ncontent-length: 0\r\n\r\n");
       });
       await new Promise<void>((resolve) => proxy.listen(0, "127.0.0.1", resolve));
       const port = (proxy.address() as AddressInfo).port;
@@ -249,6 +292,46 @@ describe.skipIf(backend === undefined)(
       expect(fill.status).not.toBe(0);
       expect(fill.stdout).not.toContain("stolen");
       expect(existsSync(path.join(root, "helper.log"))).toBe(false);
+    });
+
+    it("rewrites the connected organization's ssh spelling, and fails closed on any other ssh remote", async () => {
+      const ok = await tool("git clone -q git@github.com:acme/app.git app-ssh");
+      expect(ok.status, ok.stderr).toBe(0);
+      for (const url of [
+        "git@github.com:other/x.git",
+        "ssh://git@gitlab.example.test/acme/x.git",
+      ]) {
+        const before = seen.length;
+        const out = await tool(`git clone -q ${url} ssh-out`);
+        expect(out.status, url).not.toBe(0);
+        expect(out.stderr).toContain("kobe: SSH is not available in the sandbox");
+        expect(seen.length).toBe(before);
+      }
+    });
+
+    it("does not rewrite another organization or another letter case: a tunnel without credential", async () => {
+      for (const url of ["https://github.com/other/app.git", "https://github.com/ACME/app.git"]) {
+        const before = seen.length;
+        const out = await tool(`git clone -q ${url} not-rewritten`);
+        expect(out.status, url).not.toBe(0);
+        const asked = seen.slice(before);
+        expect(asked.map((s) => s.method)).toEqual(["CONNECT"]);
+        expect(asked[0]?.url).toBe("github.com:443");
+        expect(asked[0]?.auth).toBeUndefined();
+      }
+      expect(existsSync(path.join(root, "helper.log"))).toBe(false);
+    });
+
+    it("clones a submodule in the same organization through the proxy too", async () => {
+      const before = seen.length;
+      const out = await tool(
+        "git clone -q --recurse-submodules https://github.com/acme/withsub.git withsub",
+      );
+      expect(out.status, out.stderr).toBe(0);
+      expect(readFileSync(path.join(root, "withsub", "lib", "lib.txt"), "utf8")).toBe("library\n");
+      const urls = seen.slice(before).map((s) => s.url);
+      expect(urls).toContain("http://github.com/acme/lib.git/info/refs?service=git-upload-pack");
+      expect(seen.slice(before).every((s) => s.method !== "CONNECT")).toBe(true);
     });
 
     it("keeps ~/.gitconfig out of it: global config is the agent's file", async () => {

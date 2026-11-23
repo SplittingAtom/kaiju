@@ -76,6 +76,7 @@ describe("gitConfigText", () => {
     expect(text).toContain("[credential]\n\thelper =\n");
     expect(text).toContain("[core]\n\taskPass =\n");
     expect(text).toContain("[http]\n\tproxyAuthMethod = basic\n");
+    expect(text).toContain("\tsshCommand = \"echo 'kobe: SSH is not available");
     expect(text).toContain("[user]\n\tuseConfigOnly = true\n");
     expect(text).not.toContain("[url ");
     expect(text).not.toMatch(/extraHeader|proxy\s*=|password|token/i);
