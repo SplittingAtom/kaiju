@@ -80,6 +80,9 @@ async function answer(c: Ctx, fn: () => Promise<Response>): Promise<Response> {
     return await fn();
   } catch (err) {
     if (err instanceof NotebookRunError) {
+      if (err.retryAfterSeconds !== undefined) {
+        c.header("Retry-After", String(err.retryAfterSeconds));
+      }
       return c.json(
         { code: err.code, message: err.message },
         NOTEBOOK_ERROR_STATUS[err.code] as 400,

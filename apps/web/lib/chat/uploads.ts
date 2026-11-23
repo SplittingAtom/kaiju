@@ -98,7 +98,8 @@ function fail(code: string, message: string | undefined): UploadFailure {
   return { code, message: message ?? "The upload failed.", retryable: false };
 }
 
-function failureFrom(status: number, body: unknown): UploadFailure {
+/** The refusal an upload answer means (exported for tests). */
+export function failureFrom(status: number, body: unknown): UploadFailure {
   const parsed = uploadErrorSchema.safeParse(body);
   if (parsed.success) {
     const { code, limit_bytes } = parsed.data;
@@ -106,6 +107,18 @@ function failureFrom(status: number, body: unknown): UploadFailure {
       code,
       message: uploadErrorMessage(code, limit_bytes) ?? parsed.data.message,
       retryable: code === "scan_unavailable",
+    };
+  }
+  // The member's upload limit (KOBE-813): the server's sentence, else a plain one; later is fine.
+  if (status === 429) {
+    const message = (body as { message?: unknown } | null | undefined)?.message;
+    return {
+      code: "rate_limited",
+      message:
+        typeof message === "string" && message.trim() !== "" && message.length <= 300
+          ? message
+          : "Too many uploads. Wait a few minutes and try again.",
+      retryable: true,
     };
   }
   if (status === 401) return fail("unauthenticated", "Your session has ended. Sign in again.");

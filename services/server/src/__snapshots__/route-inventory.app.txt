@@ -272,6 +272,7 @@ ALL /v1/runs/* (anonymous)
 GET /v1/runs/:id/usage (anonymous)
 ALL /v1/runs/* (anonymous)
 ALL /v1/runs/* (anonymous)
+ALL /v1/runs/:id/feedback (anonymous)
 PUT /v1/runs/:id/feedback bodyLimit
 PUT /v1/runs/:id/feedback (anonymous)
 DELETE /v1/runs/:id/feedback (anonymous)

@@ -1105,7 +1105,16 @@ to restore a backup into: see [Backup and restore](#backup-and-restore)):
    ```
 
    (with `auth.existingSecret`, the `setup-token` key of that Secret). Setup runs once; afterwards
-   `/setup` is closed.
+   `/setup` is closed. Kobe accepts 10 setup attempts per client address in 10 minutes. If the
+   wizard says "Too many setup attempts" although you made few, `auth.trustedProxies` is probably
+   wrong, so every visitor counts as one address (or as one shared "unknown" bucket). Fix it, or
+   create the Owner straight on the server, which then counts as its own address:
+
+   ```bash
+   kubectl -n kobe port-forward svc/kobe-server 8080:8080 &
+   curl -s http://localhost:8080/v1/setup -H 'content-type: application/json' -d \
+     '{"setupToken":"<token>","email":"<you>","name":"<your name>","password":"<12+ characters>"}'
+   ```
 
 2. **Add a model.** Site console → **Models and providers**: add a provider with its API key, then a
    catalog model with an alias (for example `fast`). See [Models](#models). Bifrost picks the

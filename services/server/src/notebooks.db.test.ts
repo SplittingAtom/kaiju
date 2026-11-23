@@ -12,6 +12,8 @@ import { EventStreamFixture, must, type Person } from "./testing/event-stream-fi
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
 import { MemoryObjects } from "./testing/memory-objects.js";
 import { createWorkspaceSync, workspaceBlobKey } from "./workspace-sync/index.js";
+import { OPERATION_LIMITS } from "./operation-limits.js";
+import { expectRateLimited, fillLimit } from "./testing/operation-limits.js";
 
 /**
  * KOBE-464 end to end (docs/specs/notebooks.md): the member's `notebook` runs (NB6, NB7, NB11), the
@@ -205,6 +207,32 @@ async function ranToEnd(w: World, body: unknown) {
 }
 
 describe("the member runs a notebook cell (NB6, NB11)", () => {
+  it("limits cell runs per member, counting only runs that start (KOBE-813)", async () => {
+    const w = await world();
+    await connected(w, () => []);
+    await seed(w, "lim.ipynb", notebook([code("c1", "1")]));
+    const limit = OPERATION_LIMITS.notebookRun;
+    const key = `kobe:${limit.bucket}:${w.owner.id}`;
+    const count = async () =>
+      (
+        await fx.admin.query<{ count: number }>(
+          `SELECT count FROM kobe_rate_limits WHERE key = $1`,
+          [key],
+        )
+      ).rows[0]?.count ?? 0;
+    // A busy answer (Run all retries it) does not count.
+    await fx.admin.query(`UPDATE threads SET status = 'running' WHERE id = $1`, [w.threadId]);
+    expect((await run(w, { path: "lim.ipynb", cell_id: "c1" })).status).toBe(409);
+    expect(await count()).toBe(0);
+    await fx.admin.query(`UPDATE threads SET status = 'idle' WHERE id = $1`, [w.threadId]);
+    await fillLimit(fx.admin, limit, w.owner.id);
+    expectRateLimited(await run(w, { path: "lim.ipynb", cell_id: "c1" }), limit);
+    // The refusal rolled its own hit back, and no run was made.
+    expect(await count()).toBe(limit.max);
+    const { rows } = await fx.admin.query(`SELECT 1 FROM runs WHERE thread_id = $1`, [w.threadId]);
+    expect(rows).toHaveLength(0);
+  });
+
   it("runs the cell's source in the thread's kernel, streams its outputs and saves them", async () => {
     const w = await world();
     const seen: string[] = [];

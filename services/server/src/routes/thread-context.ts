@@ -19,6 +19,7 @@ import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
 import { readThreadMemories } from "../memory/items/run-records.js";
 import { hitRateLimit } from "../rate-limit.js";
+import { admitWakeStart, wakeStartOver } from "../operation-limits.js";
 import { SandboxWakeError } from "../sandbox-wire/types.js";
 import { viewerProjectIds } from "../threads/references.js";
 import { findThread } from "../threads/repository.js";
@@ -159,6 +160,13 @@ export function threadContextRoutes(deps: ServerDeps): Hono<{ Variables: TeamVar
       if (refusedAt !== undefined && Date.now() - refusedAt < CONTEXT_WAKE_REFUSAL_MEMORY_MS) {
         return fail(c, "sandbox_refused");
       }
+      // KOBE-813: starting the asleep sandbox counts against the member's wake limit, once per
+      // start: the viewer's polls while it comes up are free.
+      const wake = await admitWakeStart(db, target);
+      if (!wake.allowed) {
+        c.header("Retry-After", String(wake.retryAfterSeconds));
+        return fail(c, "rate_limited");
+      }
       // Like sending (D14): the sandbox wakes; the viewer shows progress and asks again.
       const waking = router.wake(target).then(
         () => "woken" as const,
@@ -185,6 +193,8 @@ export function threadContextRoutes(deps: ServerDeps): Hono<{ Variables: TeamVar
       const body: ThreadContextWaking = { status: "waking", retry_after_ms: CONTEXT_WAKE_RETRY_MS };
       return c.json(body, 202);
     }
+    // Connected: any start is over, the next wake is a new one (KOBE-813).
+    await wakeStartOver(db, target);
     // A one-use key pair per request (CV8): the sandbox seals its answer to it, so the command row
     // that carries it between replicas never holds plaintext; the private key stays in `pair`.
     const pair = sealedReplyKeyPair();

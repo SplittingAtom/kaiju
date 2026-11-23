@@ -56,7 +56,11 @@ export function contextOpenApiPaths(): Record<string, Record<string, unknown>> {
           ),
           "404": json("Error", "`thread_not_found`: unknown id, or another user's or team's."),
           "409": json("ThreadContextError", codes("thread_busy", "context_unsupported")),
-          "429": json("ThreadContextError", codes("rate_limited")),
+          "429": json(
+            "ThreadContextError",
+            `${codes("rate_limited")}: more than 30 reads a minute, or waking the sleeping ` +
+              "workspace would pass the member's 20 sandbox starts in 10 minutes (`Retry-After`).",
+          ),
           "502": json("ThreadContextError", codes("context_unavailable")),
           "503": json("ThreadContextError", codes("sandbox_unavailable")),
         },

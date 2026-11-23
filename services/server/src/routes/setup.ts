@@ -3,6 +3,13 @@ import { z } from "zod";
 import { count, eq, siteRoles } from "@kobe/db";
 import type { ServerDeps } from "../deps.js";
 import { readJson } from "../http/request.js";
+import { currentAuditContext } from "../audit/context.js";
+import {
+  OPERATION_LIMITS,
+  UNKNOWN_CLIENT,
+  admitOperation,
+  rateLimited,
+} from "../operation-limits.js";
 
 /** Serializes first-run setup across server replicas. */
 const SETUP_LOCK = 0x6b6f6201;
@@ -36,6 +43,12 @@ export function setupRoutes(deps: ServerDeps): Hono {
   app.post("/", async (c) => {
     // Cheap check first, without the lock: a finished install never holds a connection here.
     if (await ownerExists()) return c.json(complete, 409);
+    // KOBE-813: the token can't be guessed at speed. Per client IP (resolved through the trusted
+    // proxies, as audit does); without one every caller shares a bucket (fails closed).
+    const limit = OPERATION_LIMITS.setupAttempt;
+    const ip = currentAuditContext()?.ip ?? UNKNOWN_CLIENT;
+    const verdict = await admitOperation(deps.database.db, limit, ip);
+    if (!verdict.allowed) return rateLimited(c, limit, verdict);
     const parsed = setupSchema.safeParse(await readJson(c, null));
     if (!parsed.success) {
       return c.json(

@@ -29,6 +29,7 @@ import {
   type SourceProblem,
 } from "./execution.js";
 import type { NotebookFiles } from "./files.js";
+import { OPERATION_LIMITS, admitOperation } from "../operation-limits.js";
 
 /**
  * The member runs a cell or a `.py` file (docs/specs/notebooks.md NB6, NB7): a run of kind
@@ -39,6 +40,8 @@ export class NotebookRunError extends Error {
   constructor(
     readonly code: NotebookError["code"],
     message: string,
+    /** `Retry-After` of a `rate_limited` refusal (KOBE-813). */
+    readonly retryAfterSeconds?: number,
   ) {
     super(message);
     this.name = "NotebookRunError";
@@ -128,6 +131,13 @@ export async function startNotebookRun(
     );
     if (active || thread.status !== "idle") {
       throw new NotebookRunError("thread_busy", "The conversation is busy; wait for it to finish.");
+    }
+    // KOBE-813: counted in this transaction, so only a run that is created counts (a busy answer,
+    // which Run all retries, does not; a refusal rolls its own hit back).
+    const limit = OPERATION_LIMITS.notebookRun;
+    const verdict = await admitOperation(tx, limit, actor.user_id, undefined, { prune: false });
+    if (!verdict.allowed) {
+      throw new NotebookRunError("rate_limited", limit.message, verdict.retryAfterSeconds);
     }
     const inserted = await tx.execute<{ id: string }>(sql`
       INSERT INTO runs (team_id, thread_id, trigger, kind, status, started_at)

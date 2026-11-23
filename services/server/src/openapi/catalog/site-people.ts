@@ -4,6 +4,9 @@ import { sitePeopleDetails } from "./details/site-people.js";
 
 const MANAGE = "Site admins (`site.users.manage`).";
 const SETTINGS = "Site admins (`site.settings.manage`).";
+/** KOBE-813: creation and rotation share one limit per admin. */
+const SCIM_TOKEN_LIMIT =
+  "429 `rate_limited` past 10 creations and rotations per Site admin an hour (`Retry-After`).";
 const BG = "Site admins (`site.break_glass.request`).";
 const BG_APPROVE =
   "Site admins who may approve (`site.break_glass.approve`); a second admin decides.";
@@ -122,7 +125,7 @@ export const sitePeopleAreas: readonly CatalogArea[] = [
         "post",
         "/v1/site/sso/providers/{id}/scim/tokens",
         "Create a SCIM token for a provider",
-        MANAGE,
+        `${MANAGE} ${SCIM_TOKEN_LIMIT}`,
       ],
       [
         "post",
@@ -134,7 +137,7 @@ export const sitePeopleAreas: readonly CatalogArea[] = [
         "post",
         "/v1/site/sso/providers/{id}/scim/tokens/{tokenId}/rotate",
         "Rotate a SCIM token",
-        MANAGE,
+        `${MANAGE} ${SCIM_TOKEN_LIMIT}`,
       ],
       [
         "post",

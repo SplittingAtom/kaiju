@@ -73,7 +73,11 @@ export function compactOpenApiPaths(): Record<string, Record<string, unknown>> {
             `${codes("thread_busy", "nothing_to_compact", "model_not_configured")}; also ` +
               "`thread_in_trash`, `no_active_team`, `team_mismatch` (as `Error`).",
           ),
-          "429": json("Error", "`budget_exhausted`: the member's or team's budget is used up."),
+          "429": json(
+            "Error",
+            "`budget_exhausted`: the member's or team's budget is used up; or `rate_limited`: more " +
+              "than 10 compactions per member in 10 minutes (`Retry-After` in seconds).",
+          ),
           "502": json("CompactThreadError", codes("compaction_failed")),
           "503": json(
             "CompactThreadError",

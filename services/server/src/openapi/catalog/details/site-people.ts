@@ -475,7 +475,7 @@ export const sitePeopleDetails: Readonly<Record<string, CatalogDetail>> = {
     body: null,
     status: 201,
     response: untyped("ScimTokenCreated", obj(scimTokenCreated(false))),
-    errors: ["404", "409"],
+    errors: ["404", "409", "429"],
   },
   "post /v1/site/sso/providers/{id}/scim/tokens/{tokenId}/revoke": {
     body: null,
@@ -487,7 +487,7 @@ export const sitePeopleDetails: Readonly<Record<string, CatalogDetail>> = {
     status: 201,
     response: untyped("ScimTokenRotated", obj(scimTokenCreated(true))),
     responseDescription: "A new token; the one it `replaces` keeps working until revoked.",
-    errors: ["404", "409"],
+    errors: ["404", "409", "429"],
   },
   "post /v1/site/sso/providers/{id}/test": {
     body: null,

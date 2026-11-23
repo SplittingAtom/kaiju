@@ -5,6 +5,7 @@ import {
   hitRateLimitWindow,
   pruneExpiredRateLimits as pruneRows,
   takeRateBucket,
+  takeRateLimit,
   type KobeDb,
   type RateBucketRule,
   type RateLimitDb,
@@ -46,6 +47,37 @@ export async function hitRateLimit(
     ...(now === undefined ? {} : { now }),
     onPruneError: logPruneError,
   });
+}
+
+/** A hit's outcome, with when the window ends (the `Retry-After` of a refusal, KOBE-813). */
+export interface RateLimitVerdict {
+  readonly allowed: boolean;
+  /** Whole seconds until the current window ends, at least 1. */
+  readonly retryAfterSeconds: number;
+}
+
+/**
+ * {@link hitRateLimit}, also reporting how long until the window ends (KOBE-813). Inside a
+ * transaction pass `prune: false`: the hit then commits or rolls back with it (a refused
+ * operation that rolls back leaves no extra count), and no prune can fail inside it. Time is the
+ * database clock unless `now` is given.
+ */
+export async function checkRateLimit(
+  db: RateLimitDb,
+  key: string,
+  rule: RateLimitRule,
+  now?: number,
+  options: { readonly prune?: boolean } = {},
+): Promise<RateLimitVerdict> {
+  const hit = await takeRateLimit(db, key, rule, {
+    ...(now === undefined ? {} : { now }),
+    ...(options.prune === undefined ? {} : { prune: options.prune }),
+    onPruneError: logPruneError,
+  });
+  return {
+    allowed: hit.allowed,
+    retryAfterSeconds: Math.max(1, Math.ceil(hit.retryAfterMs / 1000)),
+  };
 }
 
 /**
