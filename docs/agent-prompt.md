@@ -14,10 +14,14 @@ cp CLAUDE.local.md ../Kobe-wt<N>/
 scripts/hadron.sh brief <N> > ../Kobe-wt<N>/BRIEF.md   # untracked; the agent reads only this
 ```
 
-Before starting a ticket, check the other open tickets: don't run two tickets at once that both add
-migrations or touch the same area (`tenancy/<area>.ts`, a route module, `packages/protocol`),
-unless one is meant to wait for the other. Rebase and conflict rounds cost a full re-run of the
-tests and review.
+Before starting a ticket, check the other open tickets: don't run two tickets at once that touch
+the same area (`tenancy/<area>.ts`, a route module, `packages/protocol`), unless one is meant to
+wait for the other. Rebase and conflict rounds cost a full re-run of the tests and review. Two
+migration tickets can run at once when the second is stacked on the first: start its worktree
+from the first branch (`git worktree add ../Kobe-wt<N> -b <branch> origin/<first-branch>`) and
+name the base in the prompt; `scripts/onto-main.sh <base>` keeps it current (see
+[parallel-work.md](parallel-work.md#bringing-a-branch-onto-main-or-onto-another-branch)). Audit
+events and the OpenAPI document are no longer conflict hotspots (KOBE-815).
 
 ## Model per job
 
@@ -49,8 +53,11 @@ with a reason and carry on, never stop to ask);
 user-facing docs: decide how the change belongs in docs/guide/ (served at /docs and /llms.txt) and
 update the pages in the same change, or note in the ledger why none is needed;
 notes in docs/ledger/KOBE-<N>.md (template; stay under ~150 lines, link
-evidence instead of pasting logs). Before pushing run `pnpm verify` (it formats, so commit after
-it). Open a PR, then wait for CI with exactly one background `gh pr checks <n> --watch`; never
+evidence instead of pasting logs). An audit event's docs/audit-log.md row goes in its area's
+packages/db/src/audit/events/<area>.doc.ts, then `pnpm --filter @kobe/db audit:doc`; never edit
+the table or commit services/server/openapi.json. To bring the branch onto main (or onto
+<base>), run `scripts/onto-main.sh [<base>]` and act on what it prints. Before pushing run
+`pnpm verify` (it formats, so commit after it). Open a PR, then wait for CI with exactly one background `gh pr checks <n> --watch`; never
 write until/while loops around pgrep or sleep (they outlive you and never exit). Fix failures.
 Skip packages/db/drizzle/meta/*_snapshot.json when reading diffs: generated. Don't merge, don't
 touch Hadron.
@@ -71,6 +78,12 @@ agents can then work on a migration ticket's feature half while the next migrati
 | `packages/db`, migrations, auth, approvals/HMAC, sandbox, isolation, egress | Opus: one security + DB pass on the diff |
 | Other service or web code                                                   | `/code-review medium` on the PR          |
 | Docs, CI config, chart values only                                          | Coordinator reads the diff               |
+
+`services/server/openapi.json` is not committed (KOBE-815), so a change to a request or response
+schema (zod in a route module or `@kobe/protocol`) shows only as a source change. When a diff
+touches routes, `services/server/src/openapi/` or `packages/protocol`, the reviewer runs
+`pnpm --filter @kobe/server openapi:diff [base-ref]` (default `origin/main`; builds both sides,
+about two minutes) and reads the API diff.
 
 One review pass per PR with a combined checklist (it includes: is docs/guide/ updated, or is the
 ledger's reason for no doc change sound?); send findings back to the same agent
