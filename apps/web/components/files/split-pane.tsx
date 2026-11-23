@@ -6,7 +6,8 @@
  * Up/Down by 5%, Page Up/Down by 20%, Home/End to the bounds; Enter or a double-click goes back to
  * half. The share is the top pane's percentage of the height, so it follows the column as it
  * resizes, and is remembered per viewer in this browser (a convenience: unreadable storage gives
- * the default). The output pane's header collapses it to its bar or closes it.
+ * the default). The output pane's header collapses it to its bar or closes it; it shows the pane's
+ * label, or what the caller puts there (a `.py` file's Run Output, Log and Variables tabs).
  */
 import { ChevronDownIcon, ChevronUpIcon, XIcon } from "lucide-react";
 import { useCallback, useId, useState, type CSSProperties, type ReactNode } from "react";
@@ -75,12 +76,16 @@ export function SplitPane({
   top,
   bottom,
   bottomLabel,
+  header,
   onClose,
 }: {
   readonly top: ReactNode;
+  /** The output; null shows the code alone (the code keeps its place, so its editor stays). */
   readonly bottom: ReactNode;
   /** The output pane's name ("Run output"). */
   readonly bottomLabel: string;
+  /** In the header row instead of the label (the run pane's tabs, KOBE-804). */
+  readonly header?: ReactNode;
   /** Close the output: the code takes the full height again. */
   onClose(): void;
 }) {
@@ -109,25 +114,27 @@ export function SplitPane({
     fallback: { value: share, ...SPLIT_BOUNDS },
   });
   const style = { [SPLIT_VAR]: `${share}%` } as CSSProperties;
+  const alone = bottom === null;
   const Toggle = collapsed ? ChevronUpIcon : ChevronDownIcon;
   return (
     <div
       data-kobe-split=""
       data-collapsed={collapsed || undefined}
+      data-alone={alone || undefined}
       style={style}
       className="flex min-h-0 min-w-0 flex-1 flex-col"
     >
       <div
         data-kobe-split-top=""
         className={
-          collapsed
+          collapsed || alone
             ? "flex min-h-0 min-w-0 flex-1 flex-col"
             : "flex min-h-0 min-w-0 shrink-0 basis-(--kobe-editor-split) flex-col"
         }
       >
         {top}
       </div>
-      {!collapsed && (
+      {!alone && !collapsed && (
         <div
           {...splitter}
           aria-label="Resize the code and its output"
@@ -140,39 +147,45 @@ export function SplitPane({
           />
         </div>
       )}
-      <section
-        id={`${id}-out`}
-        aria-label={bottomLabel}
-        className={
-          collapsed
-            ? "flex shrink-0 flex-col border-t"
-            : "flex min-h-0 min-w-0 flex-1 flex-col border-t"
-        }
-      >
-        <div className="flex shrink-0 items-center gap-1 py-1">
-          <h3 className="me-auto text-xs font-medium">{bottomLabel}</h3>
-          <button
-            type="button"
-            aria-label={collapsed ? "Expand the output" : "Collapse the output"}
-            title={collapsed ? "Expand the output" : "Collapse the output"}
-            aria-expanded={!collapsed}
-            className="hover:bg-muted rounded-md p-0.5"
-            onClick={() => setCollapsed((c) => !c)}
-          >
-            <Toggle aria-hidden className="size-3.5" />
-          </button>
-          <button
-            type="button"
-            aria-label="Close the output"
-            title="Close the output"
-            className="hover:bg-muted rounded-md p-0.5"
-            onClick={onClose}
-          >
-            <XIcon aria-hidden className="size-3.5" />
-          </button>
-        </div>
-        {!collapsed && <div className="min-h-0 min-w-0 flex-1 overflow-auto">{bottom}</div>}
-      </section>
+      {!alone && (
+        <section
+          id={`${id}-out`}
+          aria-label={bottomLabel}
+          className={
+            collapsed
+              ? "flex shrink-0 flex-col border-t"
+              : "flex min-h-0 min-w-0 flex-1 flex-col border-t"
+          }
+        >
+          <div className="flex min-w-0 shrink-0 items-center gap-1 py-1">
+            {header === undefined ? (
+              <h3 className="me-auto text-xs font-medium">{bottomLabel}</h3>
+            ) : (
+              <div className="me-auto min-w-0">{header}</div>
+            )}
+            <button
+              type="button"
+              aria-label={collapsed ? "Expand the output" : "Collapse the output"}
+              title={collapsed ? "Expand the output" : "Collapse the output"}
+              aria-expanded={!collapsed}
+              className="hover:bg-muted rounded-md p-0.5"
+              onClick={() => setCollapsed((c) => !c)}
+            >
+              <Toggle aria-hidden className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Close the output"
+              title="Close the output"
+              className="hover:bg-muted rounded-md p-0.5"
+              onClick={onClose}
+            >
+              <XIcon aria-hidden className="size-3.5" />
+            </button>
+          </div>
+          {!collapsed && <div className="min-h-0 min-w-0 flex-1 overflow-auto">{bottom}</div>}
+        </section>
+      )}
     </div>
   );
 }

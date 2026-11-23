@@ -39,9 +39,9 @@ export type KernelNote =
 /**
  * What this tab knows of the kernel (KOBE-477): `unknown` until something says (a kernel from
  * before may be live), `waking` / `starting` while Start works, `running` once started or used,
- * `stopped` after a restart or a `no_kernel` answer.
+ * `stopped` after a restart or a `no_kernel` answer, `restarting` while Restart works (KOBE-805).
  */
-export type KernelPhase = "unknown" | "waking" | "starting" | "running" | "stopped";
+export type KernelPhase = "unknown" | "waking" | "starting" | "running" | "restarting" | "stopped";
 
 /** Wakes take up to a few minutes (the server's wake budget); Start gives up after this. */
 export const START_GIVE_UP_MS = 5 * 60_000;
@@ -140,6 +140,7 @@ export function useKernel(wiring: KernelWiring | undefined) {
             origin: "user",
             path: body.path,
             ...(body.cell_id === undefined ? {} : { cell_id: body.cell_id }),
+            ...(body.lines === undefined ? {} : { lines: body.lines }),
           },
         },
       ]);
@@ -206,9 +207,12 @@ export function useKernel(wiring: KernelWiring | undefined) {
         text: op === "interrupt" ? "Interrupting…" : "Restarting the kernel…",
       });
       const thread = wiring.threadId;
+      if (op === "restart") setPhase(thread, "restarting");
       const res = await wiring.api.kernel(thread, op);
       if (res.ok && (res.data.status === "restarted" || res.data.status === "no_kernel")) {
         setPhase(thread, "stopped");
+      } else if (op === "restart") {
+        setPhase(thread, "unknown");
       }
       setNote(
         res.ok
