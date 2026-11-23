@@ -8,10 +8,10 @@ import {
 } from "@kobe/protocol";
 import { generateSessionKeyPair, verifyServerCallToken } from "@kobe/session-token";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createServerCallClient } from "./models/gateway-client.js";
-import { createSkillEvalJudge } from "./skills/evals/judge.js";
-import { must, type Person } from "./testing/event-stream-fixture.js";
-import { SkillEvalBench, type SkillEvalWorld } from "./testing/skill-eval-bench.js";
+import { createServerCallClient } from "../../models/gateway-client.js";
+import { createSkillEvalJudge } from "./judge.js";
+import { must, type Person } from "../../testing/event-stream-fixture.js";
+import { SkillEvalBench, type SkillEvalWorld } from "../../testing/skill-eval-bench.js";
 
 /**
  * The skill eval judge (KOBE-326, SK17) end to end against Postgres, the real wire and a scripted

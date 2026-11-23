@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { strToU8, zipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { failEvalRun, hasQueuedExecution } from "./skills/evals/store.js";
-import { RawBody } from "./testing/browser.js";
-import { reapSkillEvals } from "./skills/evals/reaper.js";
-import { purgeSkillEvals } from "./retention/skill-evals.js";
-import { skillEvalEventStream } from "./skills/evals/events.js";
-import { evalStreamAccess } from "./skills/evals/views.js";
-import { SkillEvalBench, skillMd, type FakeEvalProvider } from "./testing/skill-eval-bench.js";
-import { must, type Person } from "./testing/event-stream-fixture.js";
+import { failEvalRun, hasQueuedExecution } from "./store.js";
+import { RawBody } from "../../testing/browser.js";
+import { reapSkillEvals } from "./reaper.js";
+import { purgeSkillEvals } from "../../retention/skill-evals.js";
+import { skillEvalEventStream } from "./events.js";
+import { evalStreamAccess } from "./views.js";
+import { SkillEvalBench, skillMd, type FakeEvalProvider } from "../../testing/skill-eval-bench.js";
+import { must, type Person } from "../../testing/event-stream-fixture.js";
 
 /**
  * The skill eval runner (KOBE-325) end to end against Postgres, the real wire and a scripted eval

@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto";
 import { recordModelUsage, type ModelUsageRecord, type UsageKind } from "@kobe/db";
 import { TEAM_EVAL_CAP_USD_MESSAGE } from "@kobe/protocol";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { ServerCallError, type ServerCallClient } from "./models/gateway-client.js";
-import { createSkillEvalJudge } from "./skills/evals/judge.js";
-import { must } from "./testing/event-stream-fixture.js";
-import { SkillEvalBench, type SkillEvalWorld } from "./testing/skill-eval-bench.js";
-import type { RunStart } from "./testing/run-fixture.js";
+import { ServerCallError, type ServerCallClient } from "../../models/gateway-client.js";
+import { createSkillEvalJudge } from "./judge.js";
+import { must } from "../../testing/event-stream-fixture.js";
+import { SkillEvalBench, type SkillEvalWorld } from "../../testing/skill-eval-bench.js";
+import type { RunStart } from "../../testing/run-fixture.js";
 
 /**
  * Skill eval budgets (KOBE-327, SK18, D30) against Postgres, the real wire and a scripted eval
