@@ -203,10 +203,12 @@ refreshed:
 
 - when Kobe pushes to the repository, including a push from git in a sandbox (about 30 seconds
   later);
-- when someone opens the Repo, if it was last refreshed more than a minute ago (in the
+- when someone opens the Repo, if it was last refreshed more than 5 minutes ago (in the
   background: the panel shows the mirror as it is meanwhile);
 - every 5 minutes;
 - with **Refresh**, which any member who can see the project can use (30 per 10 minutes each).
+  Refresh skips the waiting after failures, but not a rate limit set by the host or the end of
+  the connection's hourly budget: it then says when to try again.
 
 A commit made on the host appears in Kobe after the next refresh. Each refresh uses one of the
 connection's 3,000 git reads an hour, the budget agents' git tools share; when it is used up the
@@ -214,18 +216,24 @@ refresh waits for the next hour. The panel shows when the mirror was last refres
 failure, what went wrong. Kobe retries a failed refresh after 5 minutes, then waits twice as long
 after each further failure, up to 6 hours (or until the host's rate limit resets); the mirror
 stays as it was in the meantime. A mirror follows Kobe's project limits: at most 500 files of at
-most 50 MiB each, 1 GiB in all. A repository beyond them keeps its last mirror and shows the
-reason. Symlinks and submodules are left out. Kobe's history settings for projects don't apply to
+most 50 MiB each, 1 GiB in all; Kobe checks every file's size before reading it, and downloads at
+most 128 MiB per refresh. A repository beyond them keeps its last mirror and shows the reason. Symlinks and submodules are left out. Kobe's history settings for projects don't apply to
 a Repo: its history is on the host.
 
 A repository renamed or transferred on the host is followed: Kobe knows it by the host's id. When
 the repository is **archived** or **deleted** on the host, or its connection is **disconnected**,
-the Repo becomes read-only in Kobe from its last mirror and shows a banner saying why. Workspace
+the Repo becomes read-only in Kobe from its last mirror and shows a banner saying why. Hosts
+answer "not found" both for a deleted repository and for one the Workspace's credential can no
+longer see (for example a GitHub App whose repository list was narrowed), so Kobe marks a Repo
+deleted only after four such answers in a row, over at least half an hour, and keeps checking a
+deleted Repo every 6 hours: when the host shows it again, it is active again. Workspace
 admins then have two ways forward:
 
 - **Relink**: link the Repo to another repository of a connected organization (or to the same one
-  again through a new connection). Its default branch becomes the record and is mirrored at once.
-  A public repository, or one that is already another project's Repo, is refused.
+  again through a new connection). Its default branch becomes the record and is mirrored at once,
+  as a new commit on top: the old repository's last mirror stays in the project's history, so
+  nothing is lost. A public repository, or one that is already another project's Repo, is
+  refused.
 - **Detach**: turn the Repo back into an ordinary project. One commit of the mirrored files
   starts its Kobe history again, and Kobe commits work as before. The repository stays on the host
   and stays listed under **Repositories**.

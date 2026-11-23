@@ -1,11 +1,12 @@
 import { readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { scanTeams, sql } from "@kobe/db";
+import { scanTeams, sql, withTeam } from "@kobe/db";
 import { fireAndLog } from "../../async-util.js";
 import type { ReconcileLock } from "../../sandbox/reconcile-lock.js";
 import {
   GIT_MIRROR_DIR_NAME,
+  GIT_MIRROR_GONE_RECHECK_MS,
   GIT_MIRROR_INTERVAL_MS,
   GIT_MIRROR_PER_TEAM,
   GIT_MIRROR_SLOTS,
@@ -13,16 +14,18 @@ import {
   GIT_MIRROR_WORK_PREFIX,
 } from "./limits.js";
 import { refreshRepository, type MirrorDeps, type RefreshOutcome } from "./refresh.js";
+import { requestMirrorRefresh } from "./store.js";
 
 /**
  * The Repo mirror's timer (KOBE-766, G17: default every 5 minutes, no webhooks). One replica at a
  * time (session advisory lock {@link GIT_MIRROR_LOCK}) lists the Repos that are due, with
  * `scanTeams()` (reads only): linked to a project and a connection, on the host (`active` or
  * `archived`), not held by a refresh, past their back-off, and either asked for (a push, an open)
- * or not tried for {@link GIT_MIRROR_INTERVAL_MS}. Oldest first, at most
- * {@link GIT_MIRROR_PER_TEAM} per Workspace per pass, {@link GIT_MIRROR_SLOTS} at once. A deleted
- * repository or one whose connection was removed is not refreshed by the timer (G20: read-only
- * from its last mirror until a Workspace admin relinks or detaches it; Refresh still tries).
+ * or not tried for {@link GIT_MIRROR_INTERVAL_MS}; a `deleted` one every
+ * {@link GIT_MIRROR_GONE_RECHECK_MS}. Oldest first, at most
+ * {@link GIT_MIRROR_PER_TEAM} per Workspace per pass, {@link GIT_MIRROR_SLOTS} at once. A Repo
+ * whose connection was removed has nothing to check against (G20: read-only from its last mirror
+ * until a Workspace admin relinks or detaches it).
  */
 export const GIT_MIRROR_LOCK = "kobe.git-mirror";
 
@@ -37,18 +40,23 @@ export interface DueRepo {
 export async function dueRepositories(
   deps: Pick<MirrorDeps, "db">,
   intervalMs = GIT_MIRROR_INTERVAL_MS,
+  goneMs = GIT_MIRROR_GONE_RECHECK_MS,
 ): Promise<DueRepo[]> {
   const interval = sql.raw(`interval '${Math.max(0, Math.floor(intervalMs))} milliseconds'`);
+  const gone = sql.raw(`interval '${Math.max(0, Math.floor(goneMs))} milliseconds'`);
   return (
     await scanTeams(deps.db, "git mirror", async (tx, team) => {
       const res = await tx.execute<{ id: string }>(sql`
         SELECT id FROM git_repositories
          WHERE team_id = ${team.id} AND project_id IS NOT NULL AND connection_id IS NOT NULL
-           AND host_state IN ('active', 'archived')
            AND (mirror_lease_until IS NULL OR mirror_lease_until < now())
            AND (mirror_next_at IS NULL OR mirror_next_at <= now())
-           AND (mirror_requested_at <= now() OR mirror_attempted_at IS NULL
-                OR mirror_attempted_at < now() - ${interval})
+           AND ((host_state IN ('active', 'archived')
+                 AND (mirror_requested_at <= now() OR mirror_attempted_at IS NULL
+                      OR mirror_attempted_at < now() - ${interval}))
+                -- Review M2: a deleted repository is checked again slowly (access may return).
+                OR (host_state = 'deleted'
+                    AND (mirror_attempted_at IS NULL OR mirror_attempted_at < now() - ${gone})))
          ORDER BY mirror_attempted_at ASC NULLS FIRST
          LIMIT ${GIT_MIRROR_PER_TEAM}`);
       return res.rows.length > 0 ? res.rows.map((r) => ({ teamId: team.id, id: r.id })) : undefined;
@@ -84,9 +92,17 @@ export async function sweepGitMirrors(deps: MirrorDeps): Promise<MirrorPass> {
   return counts;
 }
 
-/** A refresh now on this replica, without waiting (an open, Refresh, a push Kobe made). */
+/**
+ * A refresh now on this replica, without waiting (an open, Refresh, a push Kobe made). When this
+ * replica has no free slot, or another run holds the Repo, it is asked for instead so the next
+ * pass takes it (review L6).
+ */
 export function kickMirrorRefresh(deps: MirrorDeps, teamId: string, repositoryId: string): void {
-  fireAndLog(deps.log, "git mirror refresh", refreshRepository(deps, teamId, repositoryId), {
+  const work = refreshRepository(deps, teamId, repositoryId).then(async (outcome) => {
+    if (outcome !== "busy") return;
+    await withTeam(deps.db, teamId, (tx) => requestMirrorRefresh(tx, teamId, { repositoryId }));
+  });
+  fireAndLog(deps.log, "git mirror refresh", work, {
     team_id: teamId,
     repository_id: repositoryId,
   });

@@ -13,7 +13,7 @@ import {
   GIT_MIRROR_REFRESH_RATE,
 } from "./limits.js";
 import { MirrorStop, openConnection, type MirrorDeps } from "./refresh.js";
-import { failureView, MIRROR_FAILURE_MESSAGES, readOnlyReason } from "./store.js";
+import { failureView, MIRROR_FAILURE_MESSAGES, readOnlyReason, revokeLease } from "./store.js";
 
 /**
  * The Repo routes' work (KOBE-766, G17, G20): reading a Repo (any member who views the project:
@@ -122,8 +122,11 @@ async function viewOf(
       attempted_at: iso(row.mirror_attempted_at),
       refreshing: row.refreshing,
       next_attempt_at: iso(row.mirror_next_at),
-      failures: Number(row.mirror_failures),
-      error: failureView(row.mirror_error),
+      // A running refresh counted itself already (pessimistic claim, review M1).
+      failures: Math.max(0, Number(row.mirror_failures) - (row.refreshing ? 1 : 0)),
+      // The claim's provisional `interrupted` is not a failure while that refresh runs.
+      error:
+        row.refreshing && row.mirror_error === "interrupted" ? null : failureView(row.mirror_error),
     },
     commits: commits.rows.map((c) => ({
       sha: c.sha,
@@ -195,6 +198,26 @@ export async function refreshRepo(
           "connection_removed",
           "The Repo's git connection was removed: it is read-only from its last mirror. A Workspace admin can relink it.",
         ),
+      };
+    }
+    // Review L2: Refresh skips the doubling back-off, never the host's rate-limit reset or the
+    // connection's budget window.
+    const waitMs =
+      row.mirror_next_at === null ? 0 : new Date(row.mirror_next_at).getTime() - Date.now();
+    if (
+      waitMs > 0 &&
+      (row.mirror_error === "host_rate_limited" || row.mirror_error === "connection_budget")
+    ) {
+      return {
+        outcome: {
+          ok: false as const,
+          status: 429,
+          body: {
+            code: row.mirror_error,
+            message: MIRROR_FAILURE_MESSAGES[row.mirror_error],
+            retry_after_seconds: Math.ceil(waitMs / 1000),
+          },
+        },
       };
     }
     const view = await viewOf(tx, viewer.teamId, projectId, row, await isAdmin(tx, viewer));
@@ -291,6 +314,8 @@ export async function relinkRepo(
   const out = await withTeam(deps.db, viewer.teamId, async (tx) => {
     const access = await loadAccess(tx, viewer, projectId, { lock: true });
     if (!access) return { outcome: NOT_FOUND };
+    // Review L7: the role again, under the lock.
+    if (!(await isAdmin(tx, viewer))) return { outcome: ADMINS_ONLY };
     const current =
       access.project.kind === "repo" ? await repoOf(tx, viewer.teamId, projectId) : undefined;
     if (!current) return { outcome: NOT_A_REPO };
@@ -313,19 +338,25 @@ export async function relinkRepo(
                mirror_requested_at = NULL, updated_at = now()
          WHERE team_id = ${viewer.teamId} AND id = ${current.id}`);
     }
-    // The project's head is still the old mirror's commit: the new link may drop it once it
-    // mirrored the new repository.
+    // Review M3: the project's head is the old repository's last mirror, maybe the only copy of
+    // its files left (the repository may be gone). Another repository's link starts without a
+    // mirror commit of its own, so its first refresh adds a commit on top and never drops that
+    // one; it stays in the project's history. The same repository again keeps its own.
+    await revokeLease(tx, viewer.teamId, current.id);
     const linked = await tx.execute<{ id: string }>(sql`
       INSERT INTO git_repositories
         (team_id, connection_id, base_url, host_repo_id, full_name, default_branch, project_id,
          origin, is_private, mirror_commit_id, mirror_requested_at, created_by)
       VALUES (${viewer.teamId}, ${connectionId}, ${baseUrl}, ${repo.id}, ${repo.fullName},
               ${repo.defaultBranch ?? current.default_branch}, ${projectId}, 'link', true,
-              ${current.mirror_commit_id}, now(), ${viewer.userId})
+              NULL, now(), ${viewer.userId})
       ON CONFLICT (team_id, base_url, host_repo_id) DO UPDATE
         SET connection_id = EXCLUDED.connection_id, full_name = EXCLUDED.full_name,
             default_branch = EXCLUDED.default_branch, project_id = EXCLUDED.project_id,
-            host_state = 'active', mirror_commit_id = EXCLUDED.mirror_commit_id,
+            host_state = 'active', is_private = true,
+            mirror_commit_id = CASE WHEN git_repositories.id = ${current.id}
+                                    THEN git_repositories.mirror_commit_id END,
+            mirror_lease_owner = NULL, mirror_lease_until = NULL,
             mirror_head_sha = CASE WHEN git_repositories.id = ${current.id}
                                    THEN git_repositories.mirror_head_sha END,
             mirror_requested_at = now(), mirror_next_at = NULL, mirror_failures = 0,
@@ -384,6 +415,7 @@ export async function detachRepo(
     await tx.execute(sql`
       UPDATE projects SET kind = 'project', updated_at = now()
        WHERE team_id = ${viewer.teamId} AND id = ${projectId}`);
+    await revokeLease(tx, viewer.teamId, row.id);
     await tx.execute(sql`
       UPDATE git_repositories SET project_id = NULL, mirror_commit_id = NULL,
              mirror_requested_at = NULL, updated_at = now()

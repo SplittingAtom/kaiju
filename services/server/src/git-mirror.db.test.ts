@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { renameSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -5,7 +6,9 @@ import { withTeam } from "@kobe/db";
 import { gitRepoAnswerSchema, type GitRepoView } from "@kobe/protocol";
 import { mirrorDeps } from "./git/mirror/deps.js";
 import { dueRepositories } from "./git/mirror/job.js";
+import { GIT_MIRROR_GONE_CONFIRMATIONS } from "./git/mirror/limits.js";
 import { refreshRepository, type MirrorDeps } from "./git/mirror/refresh.js";
+import { claimRefresh } from "./git/mirror/store.js";
 import { projectWriteBlock } from "./projects/repo-state.js";
 import {
   forgejo,
@@ -279,6 +282,44 @@ describe("refreshes back off and never block reads (ac-2)", () => {
     expect(Object.keys(await files(c.w.member, c.projectId))).toContain("later.txt");
   });
 
+  it("a refresh that dies still backs off: the claim counts it first (M1)", async () => {
+    const c = await converted();
+    await idle(c);
+    const claimed = await claimRefresh(fx.db, c.w.team, c.repositoryId, randomUUID());
+    expect(claimed).not.toBe("busy");
+    // The process "dies" here: nothing settles the attempt. The lease lapses.
+    await fx.admin.query(
+      `UPDATE git_repositories SET mirror_lease_until = now() - interval '1 second'
+        WHERE team_id = $1 AND id = $2`,
+      [c.w.team, c.repositoryId],
+    );
+    const row = await repoRow(c);
+    expect([row.mirror_failures, row.mirror_error]).toEqual([1, "interrupted"]);
+    expect(must(row.mirror_next_at).getTime() - Date.now()).toBeGreaterThan(4 * 60_000);
+    expect((await dueRepositories(deps(), 0)).some((r) => r.id === c.repositoryId)).toBe(false);
+    expect((await repoView(c.w.owner, c.projectId)).mirror.error?.code).toBe("interrupted");
+    // The next run settles it.
+    expect(await refreshRepository(deps(), c.w.team, c.repositoryId)).toBe("unchanged");
+    expect(await repoRow(c)).toMatchObject({ mirror_failures: 0, mirror_error: null });
+  });
+
+  it("Refresh waits for the host's rate-limit reset (L2)", async () => {
+    const c = await converted();
+    await idle(c);
+    await fx.admin.query(
+      `UPDATE git_repositories SET mirror_error = 'host_rate_limited', mirror_failures = 1,
+              mirror_next_at = now() + interval '20 minutes'
+        WHERE team_id = $1 AND id = $2`,
+      [c.w.team, c.repositoryId],
+    );
+    const res = await c.w.member.browser.request(
+      "POST",
+      `/v1/projects/${c.projectId}/repo/refresh`,
+    );
+    expect([res.status, res.json.code]).toEqual([429, "host_rate_limited"]);
+    expect(res.json.retry_after_seconds).toBeGreaterThan(1100);
+  });
+
   it("one refresh per Repo at a time", async () => {
     const c = await converted();
     await idle(c);
@@ -329,6 +370,17 @@ describe("read-only Repos, relink and detach (ac-3)", () => {
 
     forgejo.deleteRepository(`${c.slug}-renamed`);
     await idle(c);
+    // Review M2: one "not found" is a failure, not a deletion (the credential may only have
+    // lost sight of it); only several in a row mark the Repo deleted.
+    for (let i = 1; i < GIT_MIRROR_GONE_CONFIRMATIONS; i += 1) {
+      expect(await refreshRepository(deps(), c.w.team, c.repositoryId)).toBe("failed");
+      expect(await repoRow(c)).toMatchObject({
+        host_state: "archived",
+        mirror_error: "repository_not_found",
+        mirror_failures: i,
+      });
+    }
+    expect((await repoView(c.w.owner, c.projectId)).read_only_reason).toBe("archived");
     expect(await refreshRepository(deps(), c.w.team, c.repositoryId)).toBe("deleted");
     view = await repoView(c.w.owner, c.projectId);
     expect([view.host_state, view.read_only_reason]).toEqual(["deleted", "deleted"]);
@@ -343,9 +395,31 @@ describe("read-only Repos, relink and detach (ac-3)", () => {
     ]);
   });
 
+  it("re-checks a deleted Repo slowly and brings it back when the host shows it again (M2)", async () => {
+    const c = await converted();
+    await idle(c);
+    // As if the credential had lost sight of it earlier and it was marked deleted.
+    await fx.admin.query(
+      `UPDATE git_repositories SET host_state = 'deleted', mirror_attempted_at = now() - interval '1 hour'
+        WHERE team_id = $1 AND id = $2`,
+      [c.w.team, c.repositoryId],
+    );
+    const due = async (goneMs?: number) =>
+      (await dueRepositories(deps(), 5 * 60_000, goneMs)).some((r) => r.id === c.repositoryId);
+    expect(await due()).toBe(false);
+    expect(await due(30 * 60_000)).toBe(true);
+    expect(await refreshRepository(deps(), c.w.team, c.repositoryId)).toBe("unchanged");
+    expect((await repoRow(c)).host_state).toBe("active");
+    expect((await repoAudit(c.w.team)).map((a) => a.target.to)).toEqual(["active"]);
+  });
+
   it("a removed connection makes the Repo read-only; an admin relinks it to another repository", async () => {
     const c = await converted();
     await idle(c);
+    // A host change since conversion: its last mirror is the only copy once the host is gone.
+    commitOnHost(git.root, hostName(c), { "only-here.txt": "precious\n" }, "Precious");
+    expect(await refreshRepository(deps(), c.w.team, c.repositoryId)).toBe("refreshed");
+    const lastMirror = must((await repoRow(c)).mirror_commit_id);
     const removed = await c.w.admin.browser.request(
       "DELETE",
       `/v1/team/git/connections/${c.w.connectionId}`,
@@ -427,6 +501,14 @@ describe("read-only Repos, relink and detach (ac-3)", () => {
     expect((await repoView(c.w.owner, c.projectId)).mirror.head_sha).toBe(otherHead);
     const old = await repoRow(c);
     expect(old.project_id).toBeNull();
+    // Review M3: the old repository's last mirror stays in the project's history.
+    const { rows: kept } = await fx.admin.query<{ id: string }>(
+      `SELECT c.id FROM project_commits c
+         JOIN project_tree_entries e ON e.team_id = c.team_id AND e.commit_id = c.id
+        WHERE c.team_id = $1 AND c.id = $2 AND e.path = 'only-here.txt'`,
+      [c.w.team, lastMirror],
+    );
+    expect(kept).toHaveLength(1);
     const relinkAudit = (await repoAudit(c.w.team)).find((a) => a.action === "git.repo.relinked");
     expect(relinkAudit?.target).toMatchObject({
       projectId: c.projectId,
@@ -440,6 +522,9 @@ describe("read-only Repos, relink and detach (ac-3)", () => {
     const c = await converted();
     await idle(c);
     forgejo.deleteRepository(c.slug);
+    for (let i = 1; i < GIT_MIRROR_GONE_CONFIRMATIONS; i += 1) {
+      expect(await refreshRepository(deps(), c.w.team, c.repositoryId)).toBe("failed");
+    }
     expect(await refreshRepository(deps(), c.w.team, c.repositoryId)).toBe("deleted");
     const byOwner = await c.w.owner.browser.request(
       "POST",

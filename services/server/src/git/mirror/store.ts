@@ -6,7 +6,12 @@ import {
   type GitRepoReadOnlyReason,
 } from "@kobe/protocol";
 import { recordAudit } from "../../audit/record.js";
-import { GIT_MIRROR_LEASE_MS, GIT_MIRROR_PUSH_DELAY_MS } from "./limits.js";
+import {
+  GIT_MIRROR_BACKOFF_BASE_MS,
+  GIT_MIRROR_BACKOFF_MAX_MS,
+  GIT_MIRROR_LEASE_MS,
+  GIT_MIRROR_PUSH_DELAY_MS,
+} from "./limits.js";
 
 /**
  * Reads and writes of the Repo mirror's state on `git_repositories` (KOBE-766). Every write is a
@@ -25,7 +30,9 @@ export interface MirrorRow {
   readonly hostState: GitRepoHostState;
   readonly mirrorHeadSha: string | null;
   readonly mirrorCommitId: string | null;
+  /** Failures in a row and the last failure code before this claim. */
   readonly mirrorFailures: number;
+  readonly mirrorError: string | null;
   readonly createdBy: string;
 }
 
@@ -55,13 +62,9 @@ type RawRow = {
   mirror_head_sha: string | null;
   mirror_commit_id: string | null;
   mirror_failures: number;
+  mirror_error: string | null;
   created_by: string;
 };
-
-const COLUMNS = sql.raw(
-  `team_id, id, connection_id, base_url, host_repo_id, full_name, default_branch, project_id,
-   host_state, mirror_head_sha, mirror_commit_id, mirror_failures, created_by`,
-);
 
 const toRow = (r: RawRow): MirrorRow => ({
   teamId: r.team_id,
@@ -76,12 +79,19 @@ const toRow = (r: RawRow): MirrorRow => ({
   mirrorHeadSha: r.mirror_head_sha,
   mirrorCommitId: r.mirror_commit_id,
   mirrorFailures: Number(r.mirror_failures),
+  mirrorError: r.mirror_error,
   createdBy: r.created_by,
 });
 
 /**
- * Takes the refresh of one Repo for `owner`: free (no live lease) and linked to a project. Clears
- * a pending request (a push during the refresh asks again). `busy` when another run holds it.
+ * Takes the refresh of one Repo for `owner`: free (no live lease) and linked to a project.
+ *
+ * Pessimistic (review M1): the claim already counts the attempt as a failure, sets the back-off
+ * and, when there was no failure code, `interrupted`; a refresh that ends settles them (success,
+ * failure or deferral). So a refresh whose process dies (out of memory, a crash, an eviction)
+ * still backs off instead of being retried at once when its lease lapses. A request that is due
+ * is cleared; one still in the future (a push's) is kept (review L6). Returns the row as it was
+ * before the claim; `busy` when another run holds it.
  */
 export async function claimRefresh(
   db: KobeDb,
@@ -89,15 +99,30 @@ export async function claimRefresh(
   repositoryId: string,
   owner: string,
 ): Promise<MirrorRow | "busy"> {
+  const base = GIT_MIRROR_BACKOFF_BASE_MS / 1000;
+  const max = GIT_MIRROR_BACKOFF_MAX_MS / 1000;
   return withTeam(db, teamId, async (tx) => {
     const res = await tx.execute<RawRow>(sql`
-      UPDATE git_repositories
+      WITH old AS (
+        SELECT team_id, id, connection_id, base_url, host_repo_id, full_name, default_branch,
+               project_id, host_state, mirror_head_sha, mirror_commit_id, mirror_failures,
+               mirror_error, created_by
+          FROM git_repositories
+         WHERE team_id = ${teamId} AND id = ${repositoryId} AND project_id IS NOT NULL
+           AND (mirror_lease_until IS NULL OR mirror_lease_until < now())
+           FOR UPDATE)
+      UPDATE git_repositories g
          SET mirror_lease_owner = ${owner},
              mirror_lease_until = now() + ${sql.raw(`interval '${GIT_MIRROR_LEASE_MS} milliseconds'`)},
-             mirror_attempted_at = now(), mirror_requested_at = NULL
-       WHERE team_id = ${teamId} AND id = ${repositoryId} AND project_id IS NOT NULL
-         AND (mirror_lease_until IS NULL OR mirror_lease_until < now())
-       RETURNING ${COLUMNS}`);
+             mirror_attempted_at = now(),
+             mirror_requested_at = CASE WHEN g.mirror_requested_at <= now() THEN NULL
+                                        ELSE g.mirror_requested_at END,
+             mirror_failures = g.mirror_failures + 1,
+             mirror_next_at = now() + make_interval(secs => LEAST(${sql.raw(String(base))} * power(2, LEAST(g.mirror_failures, 20)), ${sql.raw(String(max))})),
+             mirror_error = COALESCE(g.mirror_error, 'interrupted')
+        FROM old
+       WHERE g.team_id = old.team_id AND g.id = old.id
+       RETURNING old.*`);
     const row = res.rows[0];
     return row ? toRow(row) : "busy";
   });
@@ -123,6 +148,7 @@ const RELEASE = sql.raw(`mirror_lease_owner = NULL, mirror_lease_until = NULL`);
 export async function recordFailure(
   db: KobeDb,
   lease: MirrorLease,
+  row: Pick<MirrorRow, "mirrorFailures">,
   code: GitMirrorFailure,
   nextAt: Date,
   countsAsFailure: boolean,
@@ -131,7 +157,7 @@ export async function recordFailure(
     tx.execute(sql`
       UPDATE git_repositories
          SET mirror_error = ${code}, mirror_next_at = ${nextAt.toISOString()}::timestamptz,
-             mirror_failures = mirror_failures + ${countsAsFailure ? 1 : 0}, ${RELEASE}
+             mirror_failures = ${row.mirrorFailures + (countsAsFailure ? 1 : 0)}, ${RELEASE}
        WHERE team_id = ${lease.teamId} AND id = ${lease.id}
          AND mirror_lease_owner = ${lease.owner}`),
   );
@@ -187,11 +213,23 @@ export async function recordSuccess(
      WHERE team_id = ${lease.teamId} AND id = ${lease.id} AND mirror_lease_owner = ${lease.owner}`);
 }
 
-/** Releases the lease without recording an outcome (the Repo went away meanwhile). */
+/**
+ * Releases the lease with a settled outcome that is not a mirror write: the repository is gone
+ * for good or its connection was removed (failures cleared; the slow re-check finds it again), or
+ * the Repo was unlinked meanwhile.
+ */
 export async function releaseLease(tx: KobeTx, lease: MirrorLease): Promise<void> {
   await tx.execute(sql`
-    UPDATE git_repositories SET ${RELEASE}
+    UPDATE git_repositories
+       SET mirror_failures = 0, mirror_error = NULL, mirror_next_at = NULL, ${RELEASE}
      WHERE team_id = ${lease.teamId} AND id = ${lease.id} AND mirror_lease_owner = ${lease.owner}`);
+}
+
+/** Relink and detach end any refresh in flight: its later writes are refused (review L5). */
+export async function revokeLease(tx: KobeTx, teamId: string, repositoryId: string): Promise<void> {
+  await tx.execute(sql`
+    UPDATE git_repositories SET ${RELEASE}
+     WHERE team_id = ${teamId} AND id = ${repositoryId}`);
 }
 
 /**
@@ -211,7 +249,9 @@ export async function requestMirrorRefresh(
       : sql`base_url = ${match.baseUrl} AND host_repo_id = ${match.hostRepoId}`;
   const res = await tx.execute(sql`
     UPDATE git_repositories
-       SET mirror_requested_at = now() + ${sql.raw(`interval '${Math.max(0, Math.floor(delayMs))} milliseconds'`)}
+       SET mirror_requested_at = CASE
+             WHEN mirror_requested_at > now() THEN mirror_requested_at
+             ELSE now() + ${sql.raw(`interval '${Math.max(0, Math.floor(delayMs))} milliseconds'`)} END
      WHERE team_id = ${teamId} AND ${where} AND project_id IS NOT NULL
      RETURNING id`);
   return res.rows.length > 0;
@@ -281,6 +321,9 @@ export const MIRROR_FAILURE_MESSAGES: Readonly<Record<GitMirrorFailure, string>>
   legal_hold:
     "A legal hold covers this Workspace and the change would remove files, so the mirror waits.",
   git_unavailable: "Git is not available on this server.",
+  repository_not_found:
+    "The host does not show this repository to the Workspace's credential (deleted, moved out of the organization, or access narrowed); Kobe checks again before marking it deleted.",
+  interrupted: "The last refresh stopped before it finished; Kobe tries again later.",
   internal_error: "The mirror could not be refreshed; Kobe tries again later.",
 };
 

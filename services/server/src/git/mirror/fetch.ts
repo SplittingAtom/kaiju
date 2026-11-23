@@ -3,7 +3,9 @@ import path from "node:path";
 import git, { Errors, type HttpClient } from "isomorphic-git";
 import { GitHostError } from "../../git-hosts/adapter.js";
 import { fitsMount } from "../../projects/paths.js";
-import { largestPackedObject } from "./pack-sizes.js";
+import { GIT_MIRROR_MAX_OBJECTS } from "./limits.js";
+import { MirrorError } from "./mirror-error.js";
+import { downloadPack, unpackPack, writeShallow } from "./pack-unpack.js";
 import { GIT_MIRROR_AUTHOR_MAX, GIT_MIRROR_LOG_MAX, GIT_MIRROR_MESSAGE_MAX } from "@kobe/db";
 
 /**
@@ -17,32 +19,15 @@ import { GIT_MIRROR_AUTHOR_MAX, GIT_MIRROR_LOG_MAX, GIT_MIRROR_MESSAGE_MAX } fro
  * plain text.
  */
 
-export type MirrorErrorCode =
-  /** The default branch is not on the host (renamed, or the repository is empty). */
-  | "branch_missing"
-  | "too_many_files"
-  | "file_too_large"
-  | "repository_too_large"
-  /** A path Kobe's projects cannot hold (too long once mounted, or not a valid workspace path). */
-  | "unsupported_path"
-  | "fetch_failed"
-  /** The server has no room for the fetch now. */
-  | "server_capacity";
-
-/** A refresh that cannot complete; `detail` names the path or size when one is to blame. */
-export class MirrorError extends Error {
-  constructor(
-    readonly code: MirrorErrorCode,
-    readonly detail?: string,
-  ) {
-    super(`git mirror: ${code}`);
-    this.name = "MirrorError";
-  }
-}
+export { MirrorError, type MirrorErrorCode } from "./mirror-error.js";
 
 export interface MirrorCaps {
   readonly maxFiles: number;
   readonly maxFileBytes: number;
+  /** All objects of the fetch together, inflated (history included). */
+  readonly maxTotalBytes: number;
+  /** Milliseconds since the epoch past which reading stops. */
+  readonly deadlineAt: number;
   /** The project's slug: paths must still be valid once mounted under `projects/<slug>/`. */
   readonly slug: string;
 }
@@ -91,23 +76,43 @@ function asFailure(err: unknown): Error {
   return new MirrorError("fetch_failed");
 }
 
-/** The commit the host's `branch` points at; null when the branch does not exist. */
+export interface RemoteHead {
+  /** The commit the branch points at; null when the branch does not exist. */
+  readonly head: string | null;
+  /** The upload-pack capabilities the host advertised. */
+  readonly capabilities: readonly string[];
+}
+
+/** The head of the host's `branch` and the host's capabilities (one `info/refs`). */
 export async function remoteHead(
   http: HttpClient,
   url: string,
   branch: string,
-): Promise<string | null> {
+): Promise<RemoteHead> {
   try {
     const info = await git.getRemoteInfo2({ http, url, protocolVersion: 1 });
     const refs = (info.refs ?? []) as { ref: string; oid: string }[];
-    return refs.find((r) => r.ref === `refs/heads/${branch}`)?.oid ?? null;
+    const capabilities = Array.isArray(info.capabilities)
+      ? (info.capabilities as string[])
+      : Object.keys(info.capabilities ?? {});
+    return {
+      head: refs.find((r) => r.ref === `refs/heads/${branch}`)?.oid ?? null,
+      capabilities,
+    };
   } catch (err) {
     throw asFailure(err);
   }
 }
 
 const firstLine = (message: string) => message.split("\n", 1)[0]?.trim() ?? "";
-const cut = (text: string, max: number) => [...text].slice(0, max).join("");
+// Review L4: no control characters (Postgres refuses NUL); cut by code point.
+// eslint-disable-next-line no-control-regex
+const CONTROL = /[\u0000-\u001f\u007f-\u009f]/g;
+const cut = (text: string, max: number) => [...text.replace(CONTROL, " ")].slice(0, max).join("");
+/** A commit time within what Postgres and JS dates hold; out of range becomes the epoch. */
+const MAX_SECONDS = 253_402_300_799; // 9999-12-31
+const commitTime = (seconds: number) =>
+  new Date(Number.isFinite(seconds) && seconds >= 0 && seconds <= MAX_SECONDS ? seconds * 1000 : 0);
 
 /**
  * Fetches `branch` (its newest {@link GIT_MIRROR_LOG_MAX} commits) into `dir` and reads the
@@ -116,37 +121,41 @@ const cut = (text: string, max: number) => [...text].slice(0, max).join("");
 export async function fetchBranch(
   http: HttpClient,
   url: string,
-  branch: string,
+  remote: RemoteHead & { readonly head: string },
   dir: string,
   caps: MirrorCaps,
 ): Promise<FetchedBranch> {
-  let head: string;
+  const head = remote.head;
   try {
     await fs.promises.mkdir(dir, { recursive: true });
-    await git.init({ fs, dir, defaultBranch: branch });
-    await git.addRemote({ fs, dir, remote: "origin", url });
-    const fetched = await git.fetch({
-      fs,
+    await git.init({ fs, dir });
+    const packFile = path.join(dir, "fetch.pack");
+    const { packOffset, shallows } = await downloadPack(
       http,
-      dir,
-      remote: "origin",
-      ref: branch,
-      singleBranch: true,
-      depth: GIT_MIRROR_LOG_MAX,
-      tags: false,
+      url,
+      head,
+      remote.capabilities,
+      GIT_MIRROR_LOG_MAX,
+      packFile,
+    );
+    // Review H1: every object's size is checked before it is inflated (pack-unpack.ts).
+    await unpackPack(packFile, packOffset, dir, {
+      maxObjectBytes: caps.maxFileBytes,
+      maxTotalBytes: caps.maxTotalBytes,
+      maxObjects: GIT_MIRROR_MAX_OBJECTS,
+      deadlineAt: caps.deadlineAt,
     });
-    if (fetched.fetchHead === null) throw new MirrorError("branch_missing");
-    head = fetched.fetchHead;
+    await fs.promises.rm(packFile, { force: true });
+    await writeShallow(dir, shallows);
   } catch (err) {
-    if (err instanceof Errors.NotFoundError) throw new MirrorError("branch_missing");
     throw asFailure(err);
   }
-  // Before anything is inflated: no object of the fetch may be larger than a file may be.
-  const largest = await largestPackedObject(path.join(dir, ".git"));
-  if (largest > caps.maxFileBytes) throw new MirrorError("file_too_large", String(largest));
   const files: MirrorFile[] = [];
   let skipped = 0;
   const walk = async (oid: string, prefix: string): Promise<void> => {
+    if (Date.now() > caps.deadlineAt) {
+      throw new GitHostError("host_unreachable", "The refresh took too long.");
+    }
     for (const e of (await git.readTree({ fs, dir, oid })).tree) {
       const path = `${prefix}${e.path}`;
       if (e.type === "tree") {
@@ -164,7 +173,9 @@ export async function fetchBranch(
       files.push({ path, oid: e.oid, executable: e.mode === "100755" });
     }
   };
-  const commit = await git.readCommit({ fs, dir, oid: head });
+  const commit = await git.readCommit({ fs, dir, oid: head }).catch(() => {
+    throw new MirrorError("fetch_failed");
+  });
   try {
     await walk(commit.commit.tree, "");
   } catch (err) {
@@ -178,7 +189,7 @@ export async function fetchBranch(
   const commits = log.slice(0, GIT_MIRROR_LOG_MAX).map((c): MirrorCommit => ({
     sha: c.oid,
     authorName: cut(c.commit.author.name, GIT_MIRROR_AUTHOR_MAX),
-    authoredAt: new Date(c.commit.author.timestamp * 1000),
+    authoredAt: commitTime(c.commit.author.timestamp),
     message: cut(firstLine(c.commit.message), GIT_MIRROR_MESSAGE_MAX),
   }));
   return {

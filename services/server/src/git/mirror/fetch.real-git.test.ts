@@ -11,7 +11,6 @@ import { gitHostTarget } from "../../git-hosts/target.js";
 import { commitOnHost, symlinkOnHost } from "../../testing/git-host-commits.js";
 import { startGitServer, type GitServer } from "../../testing/git-http-server.js";
 import { fetchBranch, MirrorError, remoteHead } from "./fetch.js";
-import { largestPackedObject } from "./pack-sizes.js";
 
 /**
  * KOBE-766 (GIT-10) against a real `git http-backend`: the mirror reads the host's head through
@@ -59,7 +58,26 @@ function client(name: string) {
   return { http, url };
 }
 
-const caps = { maxFiles: 500, maxFileBytes: 1024 * 1024, slug: "demo" };
+const caps = {
+  maxFiles: 500,
+  maxFileBytes: 1024 * 1024,
+  maxTotalBytes: 16 * 1024 * 1024,
+  slug: "demo",
+  deadlineAt: Date.now() + 10 * 60_000,
+};
+
+/** The refresh's two steps: the head, then the fetch when there is one. */
+async function fetchOf(
+  http: ReturnType<typeof client>["http"],
+  url: string,
+  branch: string,
+  dir: string,
+  c: typeof caps,
+) {
+  const remote = await remoteHead(http, url, branch);
+  if (remote.head === null) throw new MirrorError("branch_missing");
+  return fetchBranch(http, url, { ...remote, head: remote.head }, dir, c);
+}
 const fresh = () => {
   n += 1;
   const name = `r${n}`;
@@ -71,7 +89,7 @@ describe("remoteHead and fetchBranch", () => {
   it("reads the head, the files and the newest commits", async () => {
     const name = fresh();
     const { http, url } = client(name);
-    expect(await remoteHead(http, url, "main")).toBeNull();
+    expect((await remoteHead(http, url, "main")).head).toBeNull();
     commitOnHost(server.root, `acme/${name}`, { "README.md": "# Hi\n" }, "Start");
     commitOnHost(
       server.root,
@@ -80,8 +98,8 @@ describe("remoteHead and fetchBranch", () => {
       "Add a script\n\nWith a body.",
     );
     const head = symlinkOnHost(server.root, `acme/${name}`, "link", "README.md");
-    expect(await remoteHead(http, url, "main")).toBe(head);
-    const got = await fetchBranch(http, url, "main", path.join(work, name), caps);
+    expect((await remoteHead(http, url, "main")).head).toBe(head);
+    const got = await fetchOf(http, url, "main", path.join(work, name), caps);
     expect(got.head).toBe(head);
     expect(got.skipped).toBe(1);
     expect(got.files.map((f) => [f.path, f.executable])).toEqual([
@@ -106,7 +124,7 @@ describe("remoteHead and fetchBranch", () => {
     for (let i = 0; i < GIT_MIRROR_LOG_MAX + 3; i += 1) {
       commitOnHost(server.root, `acme/${name}`, { "n.txt": String(i) }, `Commit ${i}`);
     }
-    const got = await fetchBranch(http, url, "main", path.join(work, name), caps);
+    const got = await fetchOf(http, url, "main", path.join(work, name), caps);
     expect(got.commits).toHaveLength(GIT_MIRROR_LOG_MAX);
     expect(got.commits[0]?.message).toBe(`Commit ${GIT_MIRROR_LOG_MAX + 2}`);
   });
@@ -116,25 +134,33 @@ describe("remoteHead and fetchBranch", () => {
     const { http, url } = client(name);
     commitOnHost(server.root, `acme/${name}`, { "a.txt": "a", "b.txt": "b" }, "Two");
     await expect(
-      fetchBranch(http, url, "main", path.join(work, `${name}-1`), { ...caps, maxFiles: 1 }),
+      fetchOf(http, url, "main", path.join(work, `${name}-1`), { ...caps, maxFiles: 1 }),
     ).rejects.toMatchObject({ code: "too_many_files" });
     commitOnHost(server.root, `acme/${name}`, { "back\\slash.txt": "x" }, "Backslash");
     await expect(
-      fetchBranch(http, url, "main", path.join(work, `${name}-2`), caps),
+      fetchOf(http, url, "main", path.join(work, `${name}-2`), caps),
     ).rejects.toMatchObject({ code: "unsupported_path" });
 
     const big = fresh();
     const c = client(big);
-    // Zeros compress to almost nothing: the pack is small, the object is not.
-    commitOnHost(server.root, `acme/${big}`, { "zeros.bin": Buffer.alloc(4 * 1024 * 1024) }, "Big");
-    const err = await fetchBranch(c.http, c.url, "main", path.join(work, big), caps).catch(
+    // 64 MiB of zeros: the pack is tiny, the object is not; it is refused from its header,
+    // before anything is inflated (review H1).
+    commitOnHost(
+      server.root,
+      `acme/${big}`,
+      { "zeros.bin": Buffer.alloc(64 * 1024 * 1024) },
+      "Big",
+    );
+    const before = process.memoryUsage().arrayBuffers;
+    const err = await fetchOf(c.http, c.url, "main", path.join(work, big), caps).catch(
       (e: unknown) => e,
     );
     expect(err).toBeInstanceOf(MirrorError);
-    expect(err).toMatchObject({ code: "file_too_large", detail: String(4 * 1024 * 1024) });
+    expect(err).toMatchObject({ code: "file_too_large", detail: String(64 * 1024 * 1024) });
+    expect(process.memoryUsage().arrayBuffers - before).toBeLessThan(16 * 1024 * 1024);
   });
 
-  it("reads delta objects' sizes from the pack headers", async () => {
+  it("reads a repacked (delta-compressed) repository", async () => {
     const name = fresh();
     const { http, url } = client(name);
     const base = randomBytes(64 * 1024).toString("hex");
@@ -142,16 +168,17 @@ describe("remoteHead and fetchBranch", () => {
     commitOnHost(server.root, `acme/${name}`, { "f.txt": `${base}more` }, "Two");
     server.git(`acme/${name}`, ["repack", "-a", "-d", "-f"], { bare: true });
     const dir = path.join(work, name);
-    await fetchBranch(http, url, "main", dir, caps);
-    expect(await largestPackedObject(path.join(dir, ".git"))).toBe(base.length + 4);
+    const got = await fetchOf(http, url, "main", dir, caps);
+    const f = got.files[0];
+    expect(Buffer.from(await got.readBlob(f?.oid ?? "")).toString()).toBe(`${base}more`);
   });
 
   it("names a missing branch", async () => {
     const name = fresh();
     const { http, url } = client(name);
     commitOnHost(server.root, `acme/${name}`, { "a.txt": "a" }, "One");
-    await expect(
-      fetchBranch(http, url, "trunk", path.join(work, name), caps),
-    ).rejects.toMatchObject({ code: "branch_missing" });
+    await expect(fetchOf(http, url, "trunk", path.join(work, name), caps)).rejects.toMatchObject({
+      code: "branch_missing",
+    });
   });
 });

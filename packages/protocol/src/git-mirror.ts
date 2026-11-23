@@ -45,6 +45,13 @@ export const GIT_MIRROR_FAILURES = [
   /** A legal hold covers the Workspace and the refresh would remove files. */
   "legal_hold",
   "git_unavailable",
+  /**
+   * The host answered "not found" for the repository: deleted, moved out of the organization, or
+   * no longer visible to the credential. Marked `deleted` only after several answers in a row.
+   */
+  "repository_not_found",
+  /** The previous refresh stopped before it finished (the server restarted or ran out of room). */
+  "interrupted",
   "internal_error",
 ] as const;
 export type GitMirrorFailure = (typeof GIT_MIRROR_FAILURES)[number];

@@ -40,8 +40,11 @@ import {
   GIT_MIRROR_DISK_MARGIN_BYTES,
   GIT_MIRROR_MAX_BYTES,
   GIT_MIRROR_MAX_FILE_BYTES,
+  GIT_MIRROR_GONE_CONFIRMATIONS,
   GIT_MIRROR_MAX_FILES,
+  GIT_MIRROR_MAX_INFLATED_BYTES,
   GIT_MIRROR_MAX_PACK_BYTES,
+  GIT_MIRROR_RUN_MS,
   GIT_MIRROR_SLOTS,
   GIT_MIRROR_WORK_PREFIX,
   mirrorBackoffMs,
@@ -200,7 +203,7 @@ async function fail(
     { err, team_id: lease.teamId, repository_id: lease.id, failure: code },
     "git mirror refresh failed",
   );
-  await recordFailure(deps.db, lease, code, nextAt, counts);
+  await recordFailure(deps.db, lease, row, code, nextAt, counts);
   return counts ? "failed" : "deferred";
 }
 
@@ -261,6 +264,8 @@ async function run(
   claimed: MirrorRow,
   workDir: string,
 ): Promise<RefreshOutcome> {
+  // Review M1: the whole run, local work included, ends well before the lease lapses.
+  const deadlineAt = Date.now() + GIT_MIRROR_RUN_MS;
   const budget = claimed.connectionId
     ? await checkRateLimit(
         deps.db,
@@ -276,14 +281,16 @@ async function run(
   }
   if (opened === "removed") {
     // G20: the connection is gone; the Repo stays readable from its last mirror.
-    await withTeam(deps.db, lease.teamId, async (tx) => {
-      await recordHostFacts(tx, claimed, {
-        fullName: claimed.fullName,
-        defaultBranch: claimed.defaultBranch,
-        hostState: "unreachable",
-      });
-      await releaseLease(tx, lease);
-    });
+    await withTeam(deps.db, lease.teamId, (tx) =>
+      underLease(tx, lease, async () => {
+        await recordHostFacts(tx, claimed, {
+          fullName: claimed.fullName,
+          defaultBranch: claimed.defaultBranch,
+          hostState: "unreachable",
+        });
+        await releaseLease(tx, lease);
+      }),
+    );
     return "read_only";
   }
   const { adapter, target } = opened;
@@ -292,14 +299,23 @@ async function run(
     repo = await adapter.getRepository({ id: claimed.hostRepoId });
   } catch (err) {
     if (!(err instanceof GitHostError) || err.code !== "not_found") throw err;
-    await withTeam(deps.db, lease.teamId, async (tx) => {
-      await recordHostFacts(tx, claimed, {
-        fullName: claimed.fullName,
-        defaultBranch: claimed.defaultBranch,
-        hostState: "deleted",
-      });
-      await releaseLease(tx, lease);
-    });
+    // Review M2: "not found" can also mean "no longer visible to this credential" (a narrowed
+    // App installation or token). Only several answers in a row, spread by the back-off, mark the
+    // Repo deleted; until then it is a failure like any other. A Repo already deleted stays so.
+    const inARow = claimed.mirrorError === "repository_not_found" ? claimed.mirrorFailures + 1 : 1;
+    if (claimed.hostState !== "deleted" && inARow < GIT_MIRROR_GONE_CONFIRMATIONS) {
+      throw new MirrorStop("repository_not_found");
+    }
+    await withTeam(deps.db, lease.teamId, (tx) =>
+      underLease(tx, lease, async () => {
+        await recordHostFacts(tx, claimed, {
+          fullName: claimed.fullName,
+          defaultBranch: claimed.defaultBranch,
+          hostState: "deleted",
+        });
+        await releaseLease(tx, lease);
+      }),
+    );
     return "deleted";
   }
   const row: MirrorRow = {
@@ -326,9 +342,10 @@ async function run(
     credential: { username: credential.username, password: credential.password },
     maxRequestBytes: 1024 * 1024,
     maxResponseBytes: GIT_MIRROR_MAX_PACK_BYTES,
-    deadlineAt: Date.now() + GIT_MIRROR_DEADLINE_MS,
+    deadlineAt: Math.min(Date.now() + GIT_MIRROR_DEADLINE_MS, deadlineAt),
   });
-  const head = await remoteHead(session.http, repo.cloneUrl, row.defaultBranch);
+  const remote = await remoteHead(session.http, repo.cloneUrl, row.defaultBranch);
+  const head = remote.head;
   if (head === null) throw new MirrorError("branch_missing");
   if (head === claimed.mirrorHeadSha) {
     await withTeam(deps.db, lease.teamId, (tx) =>
@@ -341,11 +358,17 @@ async function run(
   const fetched = await fetchBranch(
     session.http,
     repo.cloneUrl,
-    row.defaultBranch,
+    { ...remote, head },
     path.join(workDir, "repo"),
-    { maxFiles: GIT_MIRROR_MAX_FILES, maxFileBytes: GIT_MIRROR_MAX_FILE_BYTES, slug: project },
+    {
+      maxFiles: GIT_MIRROR_MAX_FILES,
+      maxFileBytes: GIT_MIRROR_MAX_FILE_BYTES,
+      maxTotalBytes: GIT_MIRROR_MAX_INFLATED_BYTES,
+      slug: project,
+      deadlineAt,
+    },
   );
-  const tree = await storeFiles(deps, deps.blobs, row, fetched);
+  const tree = await storeFiles(deps, deps.blobs, row, fetched, deadlineAt);
   const applied = await applyMirror(deps.db, lease, row, {
     head: fetched.head,
     tree,
@@ -369,7 +392,9 @@ async function projectSlug(db: KobeDb, row: MirrorRow): Promise<string> {
 async function assertRoom(dir: string): Promise<void> {
   const fsStats = await statfs(dir).catch(() => undefined);
   const free = fsStats ? Number(fsStats.bavail) * Number(fsStats.bsize) : 0;
-  if (free < GIT_MIRROR_MAX_PACK_BYTES + GIT_MIRROR_DISK_MARGIN_BYTES) {
+  // The pack, plus its objects written loose (compressed again: at most about the pack's size
+  // for content that does not compress, far less for content that does).
+  if (free < 2 * GIT_MIRROR_MAX_PACK_BYTES + GIT_MIRROR_DISK_MARGIN_BYTES) {
     throw new MirrorError("server_capacity");
   }
 }
@@ -395,10 +420,17 @@ async function storeFiles(
   blobs: BlobStore,
   row: MirrorRow,
   fetched: FetchedBranch,
+  deadlineAt: number,
 ): Promise<Tree> {
+  const tooLong = () => {
+    if (Date.now() > deadlineAt) {
+      throw new GitHostError("host_unreachable", "The refresh took too long.");
+    }
+  };
   const hashed: Hashed[] = [];
   let total = 0;
   for (const f of fetched.files) {
+    tooLong();
     const bytes = await fetched.readBlob(f.oid);
     total += bytes.length;
     if (total > GIT_MIRROR_MAX_BYTES) {
@@ -442,6 +474,7 @@ async function storeFiles(
       ),
     );
     for (const h of fresh.values()) {
+      tooLong();
       const bytes = await fetched.readBlob(h.oid);
       await blobs.objects.put(keyOf(h.sha256), Readable.from([Buffer.from(bytes)]), h.size);
     }

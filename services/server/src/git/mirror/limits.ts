@@ -11,8 +11,21 @@ import type { RateLimitRule } from "../../rate-limit.js";
 export const GIT_MIRROR_INTERVAL_MS = 5 * 60_000;
 /** How often the mirror job looks for due Repos (one replica at a time). */
 export const GIT_MIRROR_SWEEP_MS = 60_000;
-/** Opening a Repo refreshes it when the last attempt is older than this. */
-export const GIT_MIRROR_OPEN_STALE_MS = 60_000;
+/**
+ * Opening a Repo refreshes it when the last attempt is older than this: the timer's interval, so
+ * opens never make a Repo cost more of the connection's shared read budget than the timer does
+ * (review L3).
+ */
+export const GIT_MIRROR_OPEN_STALE_MS = GIT_MIRROR_INTERVAL_MS;
+/**
+ * A deleted repository, or one the host stopped showing, is checked again this often (review M2):
+ * a narrowed App installation or token that is widened again brings the Repo back.
+ */
+export const GIT_MIRROR_GONE_RECHECK_MS = 6 * 60 * 60_000;
+/** "Not found" answers in a row (spread by the back-off, ≥ 35 minutes) before a Repo is `deleted`. */
+export const GIT_MIRROR_GONE_CONFIRMATIONS = 4;
+/** One refresh's whole run, local work included, stays well inside its lease (review M1). */
+export const GIT_MIRROR_RUN_MS = 8 * 60_000;
 /**
  * A push through the egress proxy is decided before its data is sent: the refresh it asks for is
  * due this long after the decision, so it sees the pushed commits.
@@ -32,15 +45,22 @@ export const GIT_MIRROR_SLOTS = 2;
 /** Due Repos one pass takes per Workspace (oldest first). */
 export const GIT_MIRROR_PER_TEAM = 20;
 
-/** The pack one refresh may download (the guarded smart-HTTP client's answer cap). */
-export const GIT_MIRROR_MAX_PACK_BYTES = 256 * 1024 * 1024;
+/** The pack one refresh may download, streamed to the work folder (never held in memory). */
+export const GIT_MIRROR_MAX_PACK_BYTES = 128 * 1024 * 1024;
+/**
+ * Every object of a fetch together, inflated (the head's files plus the newest commits' changes),
+ * written as loose objects to the work folder; the head's files are capped again below.
+ */
+export const GIT_MIRROR_MAX_INFLATED_BYTES = 2 * 1024 * 1024 * 1024;
+/** Most objects in one fetched pack. */
+export const GIT_MIRROR_MAX_OBJECTS = 200_000;
 /** A Repo's mirrored files follow Kobe's project limits: at most this many files... */
 export const GIT_MIRROR_MAX_FILES = PROJECT_FILES_MAX;
 /** ...of at most this size each... */
 export const GIT_MIRROR_MAX_FILE_BYTES = PROJECT_FILE_MAX_BYTES;
 /** ...and at most this much content in all. */
 export const GIT_MIRROR_MAX_BYTES = 1024 * 1024 * 1024;
-/** Free space a refresh needs in its work folder beyond the pack. */
+/** Free space a refresh needs in its work folder beyond the pack and its objects. */
 export const GIT_MIRROR_DISK_MARGIN_BYTES = 64 * 1024 * 1024;
 
 /** A member's Refresh action (`git-mirror-refresh:<user>`). */

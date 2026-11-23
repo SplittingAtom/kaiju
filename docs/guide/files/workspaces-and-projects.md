@@ -101,7 +101,7 @@ them, and readers see their own suggestions and what happened to them. See
 
 A project converted to a Repo lives on a git host (GitHub, Gitea or Forgejo): the repository's
 default branch is its record, and Kobe shows a mirror of it. The mirror refreshes when Kobe pushes,
-when you open the Repo, every 5 minutes, and when you press **Refresh**; the Repo shows when it was
+when you open the Repo (if older than 5 minutes), every 5 minutes, and when you press **Refresh**; the Repo shows when it was
 last refreshed. A commit made on the host appears after the next refresh. If the repository is
 archived or deleted on the host, or the Workspace's connection to it is removed, the Repo stays
 readable from its last mirror with a banner, and a Workspace admin can link it to another

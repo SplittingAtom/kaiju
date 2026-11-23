@@ -55,9 +55,9 @@ async function teamHeld(tx: KobeTx, teamId: string): Promise<boolean> {
 }
 
 /** Drops the mirror's previous commit when nothing needs it any more. */
-async function prunePrevious(tx: KobeTx, row: MirrorRow, previous: string): Promise<void> {
+async function prunePrevious(tx: KobeTx, row: MirrorRow, previous: string): Promise<string | null> {
   await lockLegalHolds(tx);
-  if (await teamHeld(tx, row.teamId)) return;
+  if (await teamHeld(tx, row.teamId)) return null;
   const refs = await tx.execute<{ key: string }>(sql`
     SELECT DISTINCT blob_ref AS key FROM project_tree_entries
      WHERE team_id = ${row.teamId} AND commit_id = ${previous}`);
@@ -70,7 +70,7 @@ async function prunePrevious(tx: KobeTx, row: MirrorRow, previous: string): Prom
                         WHERE k.team_id = c.team_id AND k.project_id = c.project_id
                           AND k.base_commit_id = c.id)
      RETURNING id`);
-  if (gone.rows.length === 0) return;
+  if (gone.rows.length === 0) return null;
   const keys = refs.rows.map((r) => r.key);
   const still = await referencedKeys(tx, row.teamId, row.projectId, keys);
   await queueProjectBlobs(
@@ -81,6 +81,7 @@ async function prunePrevious(tx: KobeTx, row: MirrorRow, previous: string): Prom
     keys.filter((k) => !still.has(k)),
   );
   await refreshProjectStorage(tx, row.teamId, row.projectId);
+  return previous;
 }
 
 async function replaceCommits(
@@ -130,6 +131,7 @@ export async function applyMirror(
       const head = await headOf(tx, row.teamId, row.projectId);
       const changes = diffVersions(await loadTree(tx, row.teamId, head?.id ?? null), input.tree);
       let commitId: string | null = null;
+      let pruned: string | null = null;
       if (changes.length > 0) {
         try {
           const written = await writeCommit(tx, {
@@ -146,7 +148,9 @@ export async function applyMirror(
           if (isLegalHoldViolation(err)) throw new MirrorHeld();
           throw err;
         }
-        if (row.mirrorCommitId !== null) await prunePrevious(tx, row, row.mirrorCommitId);
+        if (row.mirrorCommitId !== null) {
+          pruned = await prunePrevious(tx, row, row.mirrorCommitId);
+        }
       }
       await replaceCommits(tx, row, input.commits);
       await recordSuccess(tx, lease, {
@@ -168,6 +172,8 @@ export async function applyMirror(
             deleted: changes.filter((c) => c.change === "deleted").length,
             fileCount: input.tree.size,
             skipped: input.skipped,
+            // Review L1: the previous mirror commit this one replaced, when it was dropped.
+            ...(pruned === null ? {} : { prunedCommitId: pruned }),
           },
         });
       }

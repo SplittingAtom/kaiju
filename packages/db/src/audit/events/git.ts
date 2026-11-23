@@ -251,7 +251,8 @@ export const GIT_EVENTS = {
   // project's name, paths, commit messages or the repository's name ──
   /**
    * A refresh found new files on the host's default branch and wrote them into the Repo as one
-   * Kobe commit (system). Counts of the change; `skipped` symlinks and submodules left out.
+   * Kobe commit (system). Counts of the change; `skipped` symlinks and submodules left out;
+   * `prunedCommitId` the previous mirror commit, dropped (the history is on the host).
    */
   "git.repo.mirror_updated": event("team", {
     ...repoRef,
@@ -262,6 +263,7 @@ export const GIT_EVENTS = {
     deleted: count,
     fileCount: count,
     skipped: count,
+    prunedCommitId: id.optional(),
   }),
   /**
    * A refresh saw the repository change state on the host (system): `archived` or `deleted`

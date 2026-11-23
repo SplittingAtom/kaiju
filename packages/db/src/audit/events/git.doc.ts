@@ -83,12 +83,12 @@ export const GIT_EVENT_DOCS = {
   "git.repo.host_state_changed": {
     fields:
       "`repositoryId`, `projectId`, `hostRepoId`, `from`, `to` (`active`, `archived`, `deleted`, `unreachable`)",
-    when: "A Repo mirror refresh (system) saw the repository archived or deleted on the host, or its connection removed: the Repo is read-only from its last mirror; `active` again lifts it (KOBE-766)",
+    when: 'A Repo mirror refresh (system) saw the repository archived on the host, or deleted (several "not found" answers in a row: also when the credential no longer sees it), or its connection removed: the Repo is read-only from its last mirror; `active` again lifts it (KOBE-766)',
   },
   "git.repo.mirror_updated": {
     fields:
-      "`repositoryId`, `projectId`, `commitId`, `headSha`, `added`, `modified`, `deleted`, `fileCount`, `skipped`",
-    when: "A Repo mirror refresh (system) wrote the host's new files on the default branch into the Repo as one commit; `skipped` counts symlinks and submodules left out (KOBE-766). Never paths or messages",
+      "`repositoryId`, `projectId`, `commitId`, `headSha`, `added`, `modified`, `deleted`, `fileCount`, `skipped`, `prunedCommitId?`",
+    when: "A Repo mirror refresh (system) wrote the host's new files on the default branch into the Repo as one commit; `skipped` counts symlinks and submodules left out; `prunedCommitId` is the previous mirror commit it dropped (KOBE-766). Never paths or messages",
   },
   "git.repo.relinked": {
     fields: "`repositoryId`, `projectId`, `previousRepositoryId`, `connectionId`, `hostRepoId`",
