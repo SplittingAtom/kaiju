@@ -50,7 +50,8 @@ test("thread badges: an artifact and a written file each open in their own edito
       .getByRole("tabpanel")
       .filter({ has: page.getByRole("toolbar", { name: "notes.md view" }) });
     await expect(fileTab.getByText("Written by the agent.")).toBeVisible();
-    await fileTab.getByRole("button", { name: "Raw", exact: true }).click();
+    // Since KOBE-615 the file editor's Raw is a switch in its toolbar (artifacts keep the buttons).
+    await fileTab.getByRole("switch", { name: "Raw", exact: true }).click();
     await expect(page.getByLabel("Edit notes.md")).toHaveAttribute("contenteditable", "true");
 
     // The artifact: its artifact tab, read-only.
