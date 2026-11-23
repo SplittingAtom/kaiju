@@ -3,6 +3,7 @@ import type { AddressInfo } from "node:net";
 import {
   FAKE_GIT_HOST,
   type ContractFailure,
+  type FakeTreeEntry,
   type GitHostContractFake,
 } from "./git-host-contract.js";
 
@@ -35,6 +36,8 @@ interface Repo {
   branches: Map<string, string>;
   /** Path → text. */
   files: Map<string, string>;
+  /** Tree SHA → one level of entries (KOBE-767 `readTree`). */
+  trees: Map<string, readonly FakeTreeEntry[]>;
   /** Pull requests and issues share one number sequence, as on Gitea. */
   items: {
     number: number;
@@ -121,6 +124,8 @@ export class FakeGitea implements GitHostContractFake {
     this.failure = null;
     this.answers = [];
     this.hits = [];
+    this.treeSource = undefined;
+    this.closedPulls.clear();
   }
 
   fail(failure: ContractFailure | null): void {
@@ -146,6 +151,25 @@ export class FakeGitea implements GitHostContractFake {
 
   seedForeignRepository(owner: string, name: string): string {
     return String(this.addRepo(owner, name, false).id);
+  }
+
+  seedTree(name: string, sha: string, entries: readonly FakeTreeEntry[]): void {
+    this.repos.get(`${this.organization}/${name}`)?.trees.set(sha, entries);
+  }
+
+  /**
+   * Where `git/trees/{sha}` reads from when no tree was seeded (KOBE-767 db tests: the real git
+   * server's repository); undefined = 404.
+   */
+  treeSource: ((full: string, sha: string) => readonly FakeTreeEntry[] | undefined) | undefined;
+  /** Pull request numbers answered as closed (KOBE-767). */
+  readonly closedPulls = new Set<number>();
+
+  /** The pull requests opened in a repository of the organization (KOBE-767 tests). */
+  pullRequests(
+    name: string,
+  ): readonly { number: number; title: string; body: string; head?: string; base?: string }[] {
+    return (this.repos.get(`${this.organization}/${name}`)?.items ?? []).filter((i) => i.pull);
   }
 
   /** Changes a repository of the organization as a host admin would (Convert to repo tests). */
@@ -197,6 +221,7 @@ export class FakeGitea implements GitHostContractFake {
       private: true,
       branches: new Map(empty ? [] : [["main", "c".repeat(40)]]),
       files: new Map(empty ? [] : [["README.md", "# Hello\n"]]),
+      trees: new Map(),
       items: [],
     };
     this.repos.set(`${owner}/${name}`, repo);
@@ -442,7 +467,7 @@ export class FakeGitea implements GitHostContractFake {
       number: i.number,
       title: i.title,
       body: i.body,
-      state: "open",
+      state: this.closedPulls.has(i.number) ? "closed" : "open",
       user: { login: this.login },
       comments: 0,
       html_url: `${this.baseUrl}/${full}/${i.pull ? "pulls" : "issues"}/${i.number}`,
@@ -528,6 +553,22 @@ export class FakeGitea implements GitHostContractFake {
           size: repo.files.get(`${prefix}${n}`)?.length ?? 0,
         })),
       );
+    }
+    const tree = /^\/git\/trees\/([0-9a-f]{40,64})$/.exec(rest);
+    if (tree && method === "GET") {
+      if (!this.need(res, "read:repository")) return;
+      const sha = tree[1] ?? "";
+      const entries = repo.trees.get(sha) ?? this.treeSource?.(`${repo.owner}/${repo.name}`, sha);
+      if (entries === undefined) return this.send(res, 404, { message: "sha not found" });
+      const perPage = Math.min(Number(url.searchParams.get("per_page") ?? "1000"), 1000);
+      const slice = entries.slice((page - 1) * perPage, page * perPage);
+      return this.send(res, 200, {
+        sha,
+        tree: slice.map((e) => ({ ...e, size: 0, url: "" })),
+        truncated: page * perPage < entries.length,
+        page,
+        total_count: entries.length,
+      });
     }
     if (rest === "/pulls" && method === "GET") {
       if (!this.need(res, "read:repository")) return;

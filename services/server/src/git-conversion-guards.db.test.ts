@@ -464,10 +464,10 @@ describe("a converted Repo under the Repo read rule (KOBE-762)", () => {
       [repo],
     );
     expect(repoRefusal("contributor", ownerRules)).toBeUndefined();
-    // Kobe writes to the project are refused.
+    // Kobe's own writes are refused; a commit goes to the host (KOBE-767) and needs a checkout.
     const upload = await w.owner.browser.request("POST", `/v1/projects/${p.id}/commit`, {
       message: "more",
     });
-    expect([upload.status, upload.json.code]).toEqual([409, "project_is_repo"]);
+    expect([upload.status, upload.json.code]).toEqual([409, "checkout_required"]);
   });
 });

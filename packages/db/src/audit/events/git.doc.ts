@@ -76,6 +76,21 @@ export const GIT_EVENT_DOCS = {
       "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `number?`, `hostId`, `url?`",
     when: "An agent opened a pull request with `git_open_pull_request` (KOBE-762). Never the title, text or branch names",
   },
+  "git.repo.commit_attempted": {
+    fields:
+      "`projectId`, `repositoryId`, `connectionId`, `mode` (`pull_request`, `direct`), `commitSha`",
+    when: "Kobe is about to push a member's commit to a Repo (written before the push, so a push whose outcome Kobe could not record is still on record by its commit id) (KOBE-767)",
+  },
+  "git.repo.commit_failed": {
+    fields:
+      "`projectId`, `repositoryId`, `connectionId`, `mode` (`pull_request`, `direct`), `failure`",
+    when: "A commit to a Repo from Kobe's commit flow was refused, by Kobe (a name the host would refuse, storage, a file changed on the host since the member's copy) or by the git host (the default branch moved, a hook or size limit, the repository gone); nothing changed (KOBE-767)",
+  },
+  "git.repo.committed": {
+    fields:
+      "`projectId`, `repositoryId`, `connectionId`, `hostRepoId`, `mode` (`pull_request`, `direct`), `commitSha`, `number?`, `url?`, `opened?`, `fallback`, `kobeCommitId?`",
+    when: "A member's commit to a Repo (Commit dialog, or an agent's `commit_project` with run and tool call in `viaAgent`) became a git commit on the host: a branch with a pull request opened or added to, or straight to the default branch where the connection allows it (`fallback`: the host protected it, so a pull request was opened) (KOBE-767). Never the message, paths or branch name",
+  },
   "git.repo.detached": {
     fields: "`repositoryId`, `projectId`, `commitId`",
     when: "A Workspace admin turned a Repo back into an ordinary project: one commit of the mirrored files starts its Kobe history again; the repository stays on the host (KOBE-766)",
@@ -87,8 +102,8 @@ export const GIT_EVENT_DOCS = {
   },
   "git.repo.mirror_updated": {
     fields:
-      "`repositoryId`, `projectId`, `commitId`, `headSha`, `added`, `modified`, `deleted`, `fileCount`, `skipped`, `prunedCommitId?`",
-    when: "A Repo mirror refresh (system) wrote the host's new files on the default branch into the Repo as one commit; `skipped` counts symlinks and submodules left out; `prunedCommitId` is the previous mirror commit it dropped (KOBE-766). Never paths or messages",
+      "`repositoryId`, `projectId`, `commitId`, `headSha`, `added`, `modified`, `deleted`, `fileCount`, `skipped`, `prunedCommitId?`, `sweptCommits?`",
+    when: "A Repo mirror refresh (system) wrote the host's new files on the default branch into the Repo as one commit; `skipped` counts symlinks and submodules left out; `prunedCommitId` is the previous mirror commit it dropped (KOBE-766); `sweptCommits` counts older commits written since the conversion that no working copy needed any more (KOBE-767). Never paths or messages",
   },
   "git.repo.relinked": {
     fields: "`repositoryId`, `projectId`, `previousRepositoryId`, `connectionId`, `hostRepoId`",

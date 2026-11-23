@@ -28,6 +28,8 @@ export interface ToolFrameDeps {
   readonly pendingCommits: Set<string>;
   /** Aborts pending approvals (memory, commits) when the connection ends. */
   readonly signal: AbortSignal;
+  /** The agent's hello capabilities (KOBE-767). */
+  hasCapability?(name: string): boolean;
   /** Sends a `notebook.execute` on this connection and resolves with its answer. */
   notebookExecute(frame: NotebookExecuteFrame, timeoutMs: number): Promise<CommandOutcome>;
 }
@@ -50,6 +52,7 @@ export function toolFrameSpecs(d: ToolFrameDeps): ToolFrameSpecs {
       ruleAllowed: (frame) => d.allowed.ruleAllowed(frame.run_id, frame.tool_call_id),
       pending: d.pendingCommits,
       signal: d.signal,
+      hasCapability: (name) => d.hasCapability?.(name) === true,
       send: (out) => port.send(out),
     }),
     "file.edit_propose": fileEditProposeSpec({

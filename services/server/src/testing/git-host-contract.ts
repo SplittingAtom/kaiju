@@ -25,6 +25,14 @@ export type ContractFailure =
   | "server_error"
   | "redirect_foreign";
 
+/** A tree entry as the hosts answer it (`git/trees/{sha}`). */
+export interface FakeTreeEntry {
+  readonly path: string;
+  readonly mode: string;
+  readonly type: "blob" | "tree" | "commit";
+  readonly sha: string;
+}
+
 export interface GitHostContractFake {
   /** The connection's base URL (`http://git.fake.test:<port>`; the adapter derives its API root). */
   readonly baseUrl: string;
@@ -38,6 +46,8 @@ export interface GitHostContractFake {
   seedFile(repository: string, path: string, text: string): void;
   /** A repository in another organization; returns its id. */
   seedForeignRepository(owner: string, name: string): string;
+  /** One level of a tree `sha` in a seeded repository (KOBE-767, `readTree`). */
+  seedTree(repository: string, sha: string, entries: readonly FakeTreeEntry[]): void;
   /** API requests received, without credential minting. */
   apiHits(): readonly { method: string; path: string }[];
 }
@@ -267,6 +277,36 @@ export function describeProviderContract(name: string, setup: ContractSetup): vo
         a.createBranch({ repository: "docs", name: "kobe/feature", from: "main" }),
       );
       expect(again.code).toBe("conflict");
+    });
+
+    it("reads one level of a tree, whole, and refuses odd answers (KOBE-767)", async () => {
+      fake.seedRepositories(["docs"]);
+      const root = "1".repeat(40);
+      const entries = Array.from({ length: 1205 }, (_, i) => ({
+        path: `f${String(i).padStart(4, "0")}.txt`,
+        mode: "100644",
+        type: "blob" as const,
+        sha: "2".repeat(40),
+      }));
+      fake.seedTree("docs", root, [
+        { path: "src", mode: "040000", type: "tree", sha: "3".repeat(40) },
+        ...entries,
+      ]);
+      const tree = await adapter().readTree("docs", root);
+      expect(tree.sha).toBe(root);
+      expect(tree.entries).toHaveLength(1206);
+      expect(tree.entries[0]).toEqual({
+        name: "src",
+        mode: "40000",
+        type: "tree",
+        sha: "3".repeat(40),
+      });
+      fake.seedTree("docs", "4".repeat(40), [
+        { path: "../x", mode: "100644", type: "blob", sha: "2".repeat(40) },
+      ]);
+      expect((await caught(adapter().readTree("docs", "4".repeat(40)))).code).toBe("unexpected");
+      expect((await caught(adapter().readTree("docs", "main"))).code).toBe("invalid_request");
+      expect((await caught(adapter().readTree("docs", "5".repeat(40)))).code).toBe("not_found");
     });
 
     it.each(["bad..name", "owner:branch", "-x", "a b"])(

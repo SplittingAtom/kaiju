@@ -17,6 +17,7 @@ import {
   updateProjectRequestSchema,
   gitConversionAbandonedSchema,
   gitConversionAnswerSchema,
+  repoCommitInfoSchema,
   gitConversionStartBodySchema,
   gitConversionStartedSchema,
   gitRepoAnswerSchema,
@@ -92,6 +93,10 @@ export const projectsDetails: Readonly<Record<string, CatalogDetail>> = {
     responseDescription:
       "The failed attempt, running again from its step. 409 `conversion_running` (not failed) or `legal_hold`; 404 `conversion_not_found`.",
     errors: ["403", "404", "409", "429"],
+  },
+  "get /v1/projects/{id}/repo-status": {
+    response: named("RepoCommitInfo", repoCommitInfoSchema),
+    errors: ["404"],
   },
   "post /v1/projects/{id}/repo-conversion/abandon": {
     body: null,

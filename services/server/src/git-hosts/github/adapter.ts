@@ -33,6 +33,7 @@ import {
   toIssue,
   toPullRequest,
 } from "../reads.js";
+import { assertTreeSha, assertTreeSize, GIT_TREE_MAX_ENTRIES, treePage } from "../trees.js";
 import { assertGitHostTarget, type GitHostTarget } from "../target.js";
 import {
   header,
@@ -626,6 +627,22 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
         throw new GitHostError("not_found", "That number is a pull request, not an issue.");
       }
       return toIssue(res.json, web(), true);
+    },
+
+    async readTree(repository: string, sha: string) {
+      const name = assertRepositoryName(repository);
+      const res = await ok(
+        call(
+          `${repoPath(name)}/git/trees/${assertTreeSha(sha)}`,
+          { method: "GET" },
+          { repositories: [name], permissions: { contents: "read", metadata: "read" } },
+        ),
+      );
+      const page = treePage(res.json);
+      // GitHub cuts a large tree (`truncated`) rather than paging it: refused, never half read.
+      if (page.truncated) assertTreeSize(GIT_TREE_MAX_ENTRIES + 1);
+      assertTreeSize(page.entries.length);
+      return { sha: page.sha, entries: page.entries };
     },
 
     async createBranch(input: GitCreateBranchInput) {

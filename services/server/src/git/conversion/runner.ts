@@ -572,7 +572,7 @@ async function finishStep(
          SET project_id = ${row.projectId}, default_branch = ${plan.branch},
              full_name = ${fresh.fullName}, is_private = ${fresh.visibility !== "public"},
              mirror_head_sha = ${headSha}, mirror_refreshed_at = now(), host_state = 'active',
-             updated_at = now()
+             mirror_commit_id = ${plan.headCommitId}, linked_at = now(), updated_at = now()
        WHERE team_id = ${lease.teamId} AND id = ${repositoryId}`);
     const done = await updateHeld(tx, lease, {
       status: "completed",

@@ -1,3 +1,4 @@
+import { REPO_STATUS_CAPABILITY, RepoStatusIntake } from "./frames/repo-status.js";
 import {
   CAPABILITY_SESSION_RENEW,
   CAPABILITY_TRACE_SPANS,
@@ -122,6 +123,8 @@ export class SandboxConnection implements RegisteredConnection {
   #capabilities: ReadonlySet<string> = new Set();
   /** `workspace.sync_now` asks sent here and not answered yet (KOBE-599). */
   readonly #syncAsks: WorkspaceSyncAsks;
+  /** `repo.status` reports of Repo working copies (KOBE-767). */
+  readonly #repoStatus: RepoStatusIntake;
   /** Relayed sandbox spans (KOBE-274): the replica's run state; absent when it does not relay. */
   readonly #traces: TraceIntake | undefined;
   readonly #traceRate: TraceFrameRate | undefined;
@@ -163,6 +166,9 @@ export class SandboxConnection implements RegisteredConnection {
       : undefined;
     this.#port = this.#newPort();
     this.#syncAsks = new WorkspaceSyncAsks(this.#port);
+    this.#repoStatus = new RepoStatusIntake(this.#port, () =>
+      this.hasCapability(REPO_STATUS_CAPABILITY),
+    );
     this.#checks = new RunChecks({
       leases: this.#leases.runs,
       threads: this.#leases.threads,
@@ -218,6 +224,7 @@ export class SandboxConnection implements RegisteredConnection {
       recalled: this.#recalled,
       pendingCommits: this.#pendingCommits,
       signal: this.#memoryAbort.signal,
+      hasCapability: (name) => this.hasCapability(name),
       notebookExecute: (execute, timeoutMs) => this.#delivery.notebookExecute(execute, timeoutMs),
     });
   }
@@ -465,6 +472,9 @@ export class SandboxConnection implements RegisteredConnection {
         return;
       case "workspace.synced":
         this.#syncAsks.synced(frame.request_id, frame.ok);
+        return;
+      case "repo.status":
+        this.#repoStatus.take(frame);
         return;
       case "notebook.output":
         onNotebookOutput(

@@ -24,6 +24,12 @@ audience: member
 - **A sandbox's volume** may be freed after it has slept a long time, if your site turns this on
   (see [Storage limits](../files/storage-limits.md#when-your-volume-is-reclaimed)).
 
+- **Git repositories are outside Kobe's retention and erasure.** A Repo's history lives on the git
+  host, and Kobe never deletes or rewrites anything there: not when a thread is deleted, a member
+  leaves or a legal hold ends. Disconnecting a git organization deletes only its stored credential.
+  Delete or archive repositories on the host itself (see
+  [Git organizations](../admin/git-organizations.md)).
+
 A legal hold keeps everything it covers until it is released. A hold on you in any workspace, or a
 hold on a whole workspace you are a member of, also keeps your unfinished personal skill uploads,
 since a personal skill belongs to no workspace; they are removed by a later clean-up once no such

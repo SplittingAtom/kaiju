@@ -190,6 +190,7 @@ export class ThreadManager {
           this.#options.projectTools ? frame.project : undefined,
           this.#options.fileEditTools ? frame.viewing : undefined,
           frame.sync_conflicts,
+          this.#options.projectTools ? frame.git?.repo : undefined,
         );
         // Git identity and connected organizations (KOBE-764): the tools' git config.
         await thread.attachGit(frame.git);
@@ -217,6 +218,11 @@ export class ThreadManager {
         }
       }
       mark("workspace ready");
+      // The conversation's Repo as a git working copy (KOBE-767), with the files in place.
+      if (frame.git?.repo !== undefined) {
+        await thread.prepareRepo(frame.run_id, frame.git.repo);
+        mark("repo ready");
+      }
       // The files are in place now: confine them again (the model can write symlinks into the
       // workspace) and read the images Pi gets inline.
       const media = await this.#promptMedia(frame);

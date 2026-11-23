@@ -367,10 +367,10 @@ export async function relinkRepo(
     const linked = await tx.execute<{ id: string }>(sql`
       INSERT INTO git_repositories
         (team_id, connection_id, base_url, host_repo_id, full_name, default_branch, project_id,
-         origin, is_private, mirror_commit_id, mirror_requested_at, created_by)
+         origin, is_private, mirror_commit_id, mirror_requested_at, created_by, linked_at)
       VALUES (${viewer.teamId}, ${connectionId}, ${baseUrl}, ${repo.id}, ${repo.fullName},
               ${repo.defaultBranch ?? current.default_branch}, ${projectId}, 'link', true,
-              NULL, now(), ${viewer.userId})
+              NULL, now(), ${viewer.userId}, now())
       ON CONFLICT (team_id, base_url, host_repo_id) DO UPDATE
         SET connection_id = EXCLUDED.connection_id, full_name = EXCLUDED.full_name,
             default_branch = EXCLUDED.default_branch, project_id = EXCLUDED.project_id,
@@ -381,7 +381,9 @@ export async function relinkRepo(
             mirror_head_sha = CASE WHEN git_repositories.id = ${current.id}
                                    THEN git_repositories.mirror_head_sha END,
             mirror_requested_at = now(), mirror_next_at = NULL, mirror_failures = 0,
-            mirror_error = NULL, updated_at = now()
+            mirror_error = NULL, updated_at = now(),
+            linked_at = CASE WHEN git_repositories.id = ${current.id}
+                             THEN git_repositories.linked_at ELSE now() END
       RETURNING id`);
     const repositoryId = linked.rows[0]?.id;
     if (repositoryId === undefined) throw new Error("git_repositories upsert returned no row");

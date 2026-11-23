@@ -74,7 +74,52 @@ export interface ProjectCommitDetail {
 
 export type CommitResult =
   | { readonly status: "committed"; readonly seq: number; readonly commitId: string }
-  | { readonly status: "nothing_to_commit" };
+  | { readonly status: "nothing_to_commit" }
+  /** KOBE-767: a commit to a Repo went to a branch with a pull request (opened or added to). */
+  | {
+      readonly status: "pull_request";
+      readonly branch: string;
+      readonly commitSha: string;
+      readonly number: number;
+      /** The pull request on the host; "" when the host gave no link Kobe could keep. */
+      readonly url: string;
+      readonly opened: boolean;
+      /** Direct commits were allowed but the host refused the default branch. */
+      readonly fallback: boolean;
+    }
+  /** KOBE-767: a commit to a Repo pushed straight to its default branch. */
+  | {
+      readonly status: "pushed";
+      readonly branch: string;
+      readonly commitSha: string;
+      readonly seq: number | null;
+      readonly commitId: string | null;
+    };
+
+/** `GET /v1/projects/:id/repo-status` (KOBE-767): where the caller's commits to a Repo go. */
+export interface RepoCommitInfo {
+  readonly repo: {
+    readonly defaultBranch: string;
+    readonly directCommits: boolean;
+    readonly canCommit: boolean;
+    readonly pullRequest: {
+      readonly branch: string;
+      readonly number: number;
+      readonly url: string;
+    } | null;
+    readonly workingCopy: {
+      readonly branch: string | null;
+      readonly headSha: string | null;
+      readonly upstream: string | null;
+      readonly ahead: number;
+      readonly behind: number;
+      readonly dirty: boolean;
+      readonly fetched: boolean;
+      readonly problem: string | null;
+      readonly reportedAt: string;
+    } | null;
+  } | null;
+}
 
 /** `POST /v1/projects/:id/commits/from-proposal` (KOBE-591): Accept on an agent's proposal. */
 export interface FromProposalResult {
@@ -105,6 +150,8 @@ export interface ProjectCommitsApi {
   commit(id: string, message: string): Promise<ApiResult<CommitResult>>;
   /** `POST /v1/projects/:id/checkout/update`. */
   update(id: string): Promise<ApiResult<UpdateResult>>;
+  /** `GET /v1/projects/:id/repo-status` (KOBE-767); `repo` null for an ordinary project. */
+  repoStatus(id: string): Promise<ApiResult<RepoCommitInfo>>;
   /** `GET /v1/projects/:id/checkouts` (owners, admins: "Working copies"). */
   workingCopies(id: string): Promise<ApiResult<readonly WorkingCopy[]>>;
   history(id: string, before?: number | null): Promise<ApiResult<ProjectHistoryPage>>;
@@ -145,6 +192,7 @@ export function createCommitsApi(teamId: string, fetchFn?: typeof fetch): Projec
     discard: (id) => call(`${base(id)}/checkout`, "DELETE"),
     commit: (id, message) => call(`${base(id)}/commit`, "POST", { message }),
     update: (id) => call(`${base(id)}/checkout/update`, "POST", {}),
+    repoStatus: (id) => call(`${base(id)}/repo-status`),
     workingCopies: async (id) => {
       const res = await call<{ checkouts: WorkingCopy[] }>(`${base(id)}/checkouts`);
       return res.ok ? { ...res, data: res.data.checkouts } : res;

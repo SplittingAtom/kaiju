@@ -6,6 +6,7 @@ import {
   CAPABILITY_SEMANTIC_MEMORY_PLACEMENT,
   CAPABILITY_FILES,
   CAPABILITY_PROJECTS,
+  CAPABILITY_REPO_COMMITS,
   CAPABILITY_SKILL_DRAFTS,
   CAPABILITY_FILE_EDITS,
   CAPABILITY_NOTEBOOKS,
@@ -113,6 +114,8 @@ export function helloCapabilities(deps: AgentDeps): string[] {
     ...(deps.toolsExtension === undefined ? [] : [CAPABILITY_ARTIFACTS]),
     ...(caps.files ? [CAPABILITY_FILES] : []),
     ...(caps.projects ? [CAPABILITY_PROJECTS] : []),
+    // `commit_project` answers for a Repo, `pull_request` and `pushed` (KOBE-767).
+    ...(caps.projects ? [CAPABILITY_REPO_COMMITS] : []),
     ...(caps.skillDrafts ? [CAPABILITY_SKILL_DRAFTS] : []),
     ...(caps.fileEdits ? [CAPABILITY_FILE_EDITS] : []),
     // Thread kernels (KOBE-464): the kernel commands, and `run_python` with the tools channel.

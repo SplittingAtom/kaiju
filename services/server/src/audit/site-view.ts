@@ -47,10 +47,19 @@ export const SITE_VIEW_TARGET_KEYS: ReadonlySet<string> = new Set([
   "step",
   "repositoryCreated",
   "leftOnHost",
+  // Commit to a Repo (KOBE-767): the mode, the git commit and Kobe's copy of it, whether a pull
+  // request was opened (or joined) and whether a direct commit fell back to one; never the
+  // message, paths or branch name.
+  "mode",
+  "commitSha",
+  "opened",
+  "fallback",
+  "kobeCommitId",
   // Repo mirror (KOBE-766): the repository record a Repo was linked to before a relink; the
   // previous mirror commit a refresh dropped (an id, like `commitId`).
   "previousRepositoryId",
   "prunedCommitId",
+  "sweptCommits",
   // KOBE-733 sandbox.volume_proof: whether the shutdown proof was accepted.
   "accepted",
   // KOBE-733 sandbox.volume_reclaimed: the configured dormancy period.

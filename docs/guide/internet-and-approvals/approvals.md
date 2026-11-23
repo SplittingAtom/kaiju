@@ -95,6 +95,11 @@ The exact input is below.
   prefer remembering exactly this input, since a broader one also allows other repositories and
   texts.
 
+When the agent commits to a **Repo** with `commit_project`, the approval is a separate kind,
+`commit_repo`: the card names the host, repository and the pull request or branch the commit goes
+to. It always asks: rules that allow `commit_project` do not cover it, and it cannot be
+remembered.
+
 See [Git organizations](../admin/git-organizations.md).
 
 ## Remember an approval

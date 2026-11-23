@@ -167,7 +167,8 @@ sends nothing to the host). Its buttons:
 
 - **Settings**: display name, access level, defaults for new repositories (private, or internal
   on GitHub where the organization has it; an optional name prefix; the default branch), the
-  largest push from a sandbox (default 1 GiB), and whether every agent in the Workspace may use
+  largest push from a sandbox (default 1 GiB), **Allow commits straight to the default branch**
+  (see [Commits to Repos](#commits-to-repos)), and whether every agent in the Workspace may use
   it or only agents you choose. Git in sandboxes cannot use a connection limited
   to chosen agents, because one sandbox serves all of a member's agents.
 - **Replace credential**: paste a new token or key. Kobe tests it first; the old one is then
@@ -178,8 +179,42 @@ sends nothing to the host). Its buttons:
   stay. Sandboxes already working with the organization may keep their access for up to 30
   seconds.
 
-When a token's expiry is less than 14 days away (or has passed), the page shows a banner and
-Workspace admins get one email. Create a new token on the host and use **Replace credential**.
+When a token's expiry is less than 14 days away (or has passed), the page shows a banner,
+Workspace admins get one email, and the Files panel shows them a notice linking here (once they
+own or administer a project). Create a new token on the host and use **Replace credential**.
+
+## Commits to Repos
+
+A Repo is a project whose record is a repository in a connected organization. When a member
+commits to a Repo with Kobe's **Commit…** dialog, or their agent does with `commit_project`,
+Kobe's server makes a git commit authored as the member (with the address chosen under
+[Commit author email](#commit-author-email), and "_name_ via Kobe" as committer) and pushes it
+with the connection's credential:
+
+- **By default**, to a new branch named `kobe/<member>/<message>-<commit>`, and opens a pull
+  request into the default branch. Further commits from the same working copy are added to that
+  pull request while it is open; after it is merged or closed, the next commit opens a new one.
+- **With "Allow commits straight to the default branch"** (off by default), straight to the
+  default branch, and Kobe's copy of the Repo takes the same commit. Where the host protects the
+  default branch, Kobe opens a pull request instead and says so. Turning the setting on or off is
+  recorded as `git.connection.updated` (field `direct_commits`).
+
+Kobe builds each commit on the host's current branch and checks every file it changes: if
+someone changed the same file on the host since the member's copy, the commit is refused ("changed
+on the git host") and nothing on the host is overwritten; the member presses **Update**, then
+commits again. Changes to other files on the host are kept. Kobe never force-pushes. A commit needs
+the connection at **Read and write**, the Contributor role or above and editor or owner of the
+project; an agent's commit also needs the connection to allow that agent (when it is limited to
+chosen agents) and the member's approval each time (`commit_repo`: the card names the host,
+repository and branch; rules that allow `commit_project` do not cover it, and it cannot be
+remembered). Kobe records `git.repo.commit_attempted` before each push and `git.repo.committed`
+after it, with the pull request's number and link but never the message, file names or branch
+name; `git.repo.commit_failed` when Kobe or the host refused the commit. Members may commit to
+Repos 60 times an hour (more answers "Too many commits to Repos" with when to try again).
+
+This setting governs Kobe's own commit flow only. Agents pushing with git in their sandbox push to
+whatever branch the host allows them: protect the default branch on the host (require a pull
+request) to keep it reviewed either way.
 
 ## Commit author email
 
@@ -188,8 +223,11 @@ committer. Under **Commit author email** on the Git page, choose the address the
 
 - **Member's Kobe email** (the default): the email the member signs in with. Anyone who can read
   the repository on the host sees it.
-- **No-reply address**: `<short id>+<name>@users.noreply.<Site host>`, which receives no mail and
-  does not reveal the member's email. The page shows your own as an example.
+- **No-reply address**: `<short id>+<name slug>@users.noreply.<Site host>` (the first characters
+  of the member's id, a plus sign, their display name in lower-case letters, digits and hyphens,
+  then the Site's own host name), which receives no mail and does not reveal the member's email.
+  The page shows your own as an example. If the Site's address changes, new commits use the new
+  host and earlier ones keep the old.
 
 Commits pushed to the host keep the address in their history for good; a change applies to new
 commits only. Changes are recorded in the audit log (`git.settings.updated`).
@@ -246,6 +284,10 @@ admins then have two ways forward:
 - **Detach**: turn the Repo back into an ordinary project. One commit of the mirrored files
   starts its Kobe history again, and Kobe commits work as before. The repository stays on the host
   and stays listed under **Repositories**.
+
+Relink and detach are in the Files panel: a Repo's **⋯** menu → **Repo details…** → **Relink…**
+(choose the connection and type the repository's name) or **Detach…** (confirms first). See
+[Repos in the Files panel](../files/workspaces-and-projects.md#repos-in-the-files-panel).
 
 Both are recorded in the audit log (`git.repo.relinked`, `git.repo.detached`), as are mirror
 updates and changes of state on the host (`git.repo.mirror_updated`,

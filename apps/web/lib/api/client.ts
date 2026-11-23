@@ -96,6 +96,8 @@ const SHOWN_5XX_CODES: ReadonlySet<string> = new Set([
   "host_unreachable",
   "host_error",
   "host_rate_limited",
+  // The Repo mirror's Refresh and Relink (KOBE-766/768): Kobe's fixed sentence, never the host's.
+  "credential_rejected",
 ]);
 
 function fallback(status: number): ApiError {

@@ -12,6 +12,7 @@
  */
 
 import type { GitCapabilities, GitCapability, GitCredentialKind, GitProvider } from "@kobe/db";
+import type { GitTree } from "./trees.js";
 
 /**
  * The provider, credential kinds and capabilities are declared once, in `@kobe/db` (shared with
@@ -271,6 +272,11 @@ export interface GitHostAdapter {
   getIssue(repository: string, number: number): Promise<GitIssue>;
   /** A new branch from an existing branch or commit; `conflict` when the name is taken (G9). */
   createBranch(input: GitCreateBranchInput): Promise<GitBranch>;
+  /**
+   * One level of the tree of a commit or tree `sha` (KOBE-767: a commit to a Repo is written on
+   * top of the host's tree, folder by folder); a folder past `GIT_TREE_MAX_ENTRIES` is refused.
+   */
+  readTree(repository: string, sha: string): Promise<GitTree>;
 }
 
 export type GitHostErrorCode =

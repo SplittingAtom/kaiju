@@ -73,10 +73,16 @@ export async function toProject(
   row: ProjectRow,
   myRole: ProjectRole | undefined,
 ): Promise<Project> {
-  const [files] = await tx
-    .select({ n: count() })
-    .from(projectFiles)
-    .where(and(eq(projectFiles.teamId, teamId), eq(projectFiles.projectId, row.id)));
+  // One query per project: its file count and (KOBE-768) a running or failed conversion, which
+  // holds the project's writes (at most one, a partial unique index); the Files panel says so.
+  const facts = await tx.execute<{ n: number; held: string | null }>(sql`
+    SELECT
+      (SELECT count(*)::int FROM project_files
+        WHERE team_id = ${teamId} AND project_id = ${row.id}) AS n,
+      (SELECT status FROM git_conversions
+        WHERE team_id = ${teamId} AND project_id = ${row.id} AND status IN ('running', 'failed')
+        LIMIT 1) AS held`);
+  const held = facts.rows[0]?.held;
   return {
     id: row.id,
     team_id: row.teamId,
@@ -86,7 +92,7 @@ export async function toProject(
     instructions: row.instructions,
     default_agent_id: row.defaultAgentId,
     my_role: myRole ?? null,
-    file_count: files?.n ?? 0,
+    file_count: Number(facts.rows[0]?.n ?? 0),
     head_commit_id: row.headCommitId,
     live_bytes: row.liveBytes,
     history_bytes: row.historyBytes,
@@ -96,6 +102,8 @@ export async function toProject(
     created_at: row.createdAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
     archived_at: row.archivedAt?.toISOString() ?? null,
+    kind: row.kind,
+    repo_conversion: held === "running" || held === "failed" ? held : null,
   };
 }
 

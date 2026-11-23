@@ -76,4 +76,5 @@ export * from "./site-memory-proposals.js";
 export * from "./kobe-rate-limits.js";
 export * from "./git.js";
 export * from "./git-conversions.js";
+export * from "./git-repo-work.js";
 export * from "./git-mirror.js";

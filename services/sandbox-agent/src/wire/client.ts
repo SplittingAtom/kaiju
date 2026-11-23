@@ -36,9 +36,9 @@ const FATAL_CODES = new Map<number, FatalReason>([
  * Frames with a `run_id` that the agent drops once the run ended locally (KOBE-483): a UI request,
  * a policy check or a tool call of an ended run would only reach a server that already released it.
  * `pi.event` (journaled by the outbox, acked by the server even when late) and `trace.spans`
- * (tolerated late by design) are kept.
+ * (tolerated late by design) are kept, and so is `repo.status` (KOBE-767: read when the run ended).
  */
-const KEPT_AFTER_END = new Set(["pi.event", "trace.spans"]);
+const KEPT_AFTER_END = new Set(["pi.event", "trace.spans", "repo.status"]);
 const ENDED_RUNS_MAX = 1024;
 
 function droppableRunId(frame: OutboundFrame): string | undefined {

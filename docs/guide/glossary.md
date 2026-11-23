@@ -53,6 +53,10 @@ site's list of allowed sites. See [Internet access](internet-and-approvals/inter
 
 **Fork.** A new thread copied from another up to a point.
 
+**Git connection.** A Workspace's link to one organization on a git host, set up by a Workspace
+admin with a GitHub App or an access token. The credential stays on the server. See
+[Git organizations](admin/git-organizations.md).
+
 **Identity provider.** Your organization's sign-in service (for example Microsoft Entra ID) that
 Kobe trusts for single sign-on.
 
@@ -91,6 +95,11 @@ editors and readers. See [Workspaces, My files and projects](files/workspaces-an
 
 **Rail.** The left-hand column with the workspace switcher, New conversation, the Threads panel
 and your files.
+
+**Repo.** A project whose record is a repository in a git organization the Workspace is connected
+to (GitHub, Gitea or Forgejo). It shows a git icon in the Files panel. See
+[Repos](files/workspaces-and-projects.md#repos) and
+[Git organizations](admin/git-organizations.md).
 
 **Roster.** The list of agents a team or the whole site can run.
 

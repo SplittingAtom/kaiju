@@ -1,9 +1,12 @@
 import type { FileEntry } from "../../lib/files/api";
 import { isReadOnlyPath } from "../../lib/files/format";
+import { hostOf } from "../../lib/admin/git/labels";
+import { hostLink } from "../../lib/projects/repo";
 import type { MenuBindings } from "../../lib/shell/menu";
 import type { FileThreads } from "../../lib/threads/file-links";
 import { threadsUsing, usedInLabel } from "../../lib/threads/file-map";
 import type { ProjectRef, WorkAction } from "../projects/project-work";
+import type { RepoInfo } from "../projects/workspace-repos";
 import type { useProjectsInTree } from "./workspace-tree";
 
 /**
@@ -73,6 +76,40 @@ export function usedInBindings(
 }
 
 type KnownProject = NonNullable<ReturnType<ReturnType<typeof useProjectsInTree>["projectOf"]>>;
+
+/** What a Repo panel shows: the Repo's details, or the Convert to repo dialog (KOBE-768). */
+export type RepoPanelKind = "details" | "convert";
+
+/**
+ * A Repo's own items (KOBE-768, G19): Open on <host> (only to the connection's own host, in a new
+ * tab without an opener or referrer) and Repo details…; Convert to repo… on a project the member
+ * may convert (G16).
+ */
+export function repoBindings(
+  ref: ProjectRef,
+  repo: {
+    readonly isRepo: boolean;
+    readonly info: RepoInfo | undefined;
+    readonly convert: boolean;
+  },
+  onRepo: (ref: ProjectRef, kind: RepoPanelKind) => void,
+): MenuBindings {
+  const panel = (kind: RepoPanelKind) => ({ onSelect: () => onRepo(ref, kind), movesFocus: true });
+  if (!repo.isRepo) return repo.convert ? { "convert-to-repo": panel("convert") } : {};
+  const view = repo.info?.view ?? null;
+  const link = view === null ? null : hostLink(view);
+  return {
+    ...(view !== null && link !== null
+      ? {
+          "open-repo-on-host": {
+            label: `Open on ${hostOf(view.baseUrl)}`,
+            onSelect: () => void window.open(link, "_blank", "noopener,noreferrer"),
+          },
+        }
+      : {}),
+    "repo-details": panel("details"),
+  };
+}
 
 /**
  * A project folder's own items (Workspaces FP4, CM): commit, update, discard or check out; and,

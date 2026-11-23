@@ -139,6 +139,16 @@ export function canAddToProject(
 
 // ----------------------------------------------------------------------------- REST: projects
 
+/**
+ * What a project is (workspace-git G15): an ordinary project, or a Repo (converted to a repository
+ * on a git host, which is then the record; KOBE-765). Repeats `@kobe/db`'s `PROJECT_KIND_VALUES`.
+ */
+export const PROJECT_KINDS = ["project", "repo"] as const;
+export type ProjectKind = (typeof PROJECT_KINDS)[number];
+
+/** A Convert to repo attempt that holds the project's writes (KOBE-765): running, or failed. */
+export const PROJECT_REPO_CONVERSION_STATES = ["running", "failed"] as const;
+
 export const projectSchema = z.strictObject({
   id: uuidSchema,
   team_id: uuidSchema,
@@ -162,6 +172,13 @@ export const projectSchema = z.strictObject({
   created_at: timestampSchema,
   updated_at: timestampSchema,
   archived_at: timestampSchema.nullable(),
+  /** KOBE-768 (G19): a Repo is listed with projects, with the git icon. Absent on older answers. */
+  kind: z.enum(PROJECT_KINDS).optional(),
+  /**
+   * KOBE-768: a conversion to a Repo that is running or failed (the project takes no Kobe writes
+   * meanwhile; retry or abandon it), else null. Absent on older answers.
+   */
+  repo_conversion: z.enum(PROJECT_REPO_CONVERSION_STATES).nullable().optional(),
 });
 export type Project = z.infer<typeof projectSchema>;
 

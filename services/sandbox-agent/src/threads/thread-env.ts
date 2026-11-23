@@ -1,5 +1,9 @@
 import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { PiExtensionUiRequest, RunMcpContext } from "@kobe/protocol/sandbox-wire";
+import type {
+  PiExtensionUiRequest,
+  RepoStatusFrame,
+  RunMcpContext,
+} from "@kobe/protocol/sandbox-wire";
 import type { EgressWiring } from "../egress/egress-wiring.js";
 import type { ExecRelay } from "../exec/relay.js";
 import type { McpWiring } from "../mcp/pi-mcp-config.js";
@@ -48,6 +52,8 @@ export interface ThreadHooks {
   /** The thread's tools channel is unusable: every pending request of the thread fails. */
   readonly toolsChannelClosed?: (threadId: string, reason: string) => void;
   readonly diagnostic: (threadId: string, message: string) => void;
+  /** The run's Repo working copy state (KOBE-767), at run start and at its end. */
+  readonly repoStatus?: (frame: RepoStatusFrame) => void;
   /** Something went wrong that does not end a run but an operator should see (warn level). */
   readonly warning?: (threadId: string, message: string) => void;
 }
@@ -137,4 +143,29 @@ export interface RuntimeOf {
   /** Pi's private HOME/TMPDIR root beside `dir` (KOBE-196), under paired identities. */
   readonly piDir?: string | undefined;
   readonly relay?: ExecRelay | undefined;
+  /**
+   * How a program runs as this process's tools (KOBE-767: the Repo working copy): their
+   * environment (shared HOME, egress BASH_ENV and token file, git config) and their uid (the
+   * identity's partner under paired identities, the identity itself without the executor).
+   */
+  readonly tools?: ToolCommand | undefined;
+}
+
+/** A program run as a Pi process's tools (see {@link RuntimeOf.tools}). */
+export interface ToolCommand {
+  readonly env: Readonly<Record<string, string>>;
+  readonly cwd: string;
+  /**
+   * True only without Pi identities (development, tests): the tools then run as the agent's own
+   * uid, so a program run as them crosses no boundary. Without it and without `runAs` nothing is
+   * run (review L5): git never runs as the agent over a repository the tools control.
+   */
+  readonly sameUid?: boolean;
+  readonly runAs?:
+    | {
+        readonly identities: PiIdentities;
+        readonly identity: PiIdentity;
+        readonly partner: boolean;
+      }
+    | undefined;
 }

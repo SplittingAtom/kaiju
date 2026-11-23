@@ -9,7 +9,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { ChevronRightIcon, LoaderCircleIcon } from "lucide-react";
+import { ChevronRightIcon, LoaderCircleIcon, type LucideIcon } from "lucide-react";
 import { WORKSPACE_DROP_FOLDER } from "@kobe/protocol";
 import type { FileEntry } from "../../lib/files/api";
 import { carriesFiles, droppedItems, type DroppedItems } from "../../lib/files/drop";
@@ -81,6 +81,10 @@ export interface RowDecoration {
   readonly active?: boolean;
   /** Words for screen readers after the kind ("reader", "editing"). */
   readonly description: string;
+  /** In place of the folder icon (a Repo's git icon, KOBE-768 G19). */
+  readonly icon?: LucideIcon | undefined;
+  /** What screen readers call the row in place of "Project" (a Repo). */
+  readonly kind?: string | undefined;
 }
 
 /** What the tree reports up: the focused row's folder (uploads go there) and the drag target. */
@@ -104,7 +108,7 @@ function describe(
   const parts = [
     entry.type === "dir"
       ? decoration
-        ? "Project"
+        ? (decoration.kind ?? "Project")
         : "Folder"
       : FILE_KIND_LABELS[fileKind(entry.name)],
     ...(entry.sizeBytes === null ? [] : [formatBytes(entry.sizeBytes)]),
@@ -180,9 +184,11 @@ function EntryRow({
   const folder = dropFolderOf(row);
   const takesFiles = dir && canUploadInto(entry.path, checkedOut);
   // A project's folder shows a lock unless it is checked out (writable inside, CM3).
-  const Icon = dir
-    ? folderIcon(expanded, isProjectMount(entry.path) && !takesFiles)
-    : fileKindIcon(fileKind(entry.name));
+  const Icon =
+    decoration?.icon ??
+    (dir
+      ? folderIcon(expanded, isProjectMount(entry.path) && !takesFiles)
+      : fileKindIcon(fileKind(entry.name)));
   const refusal = dir && !takesFiles ? actions.dropRefusal?.(entry.path) : undefined;
   const badge = !decoration && (isProjectMount(entry.path) || entry.path === WORKSPACE_DROP_FOLDER);
   return (

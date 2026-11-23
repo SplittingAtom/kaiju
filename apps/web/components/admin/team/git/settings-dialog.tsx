@@ -91,6 +91,7 @@ function SettingsForm({
   });
   const [pushMib, setPushMib] = useState(String(mibOf(c.pushLimitBytes)));
   const [agents, setAgents] = useState<readonly string[] | null>(c.agentIds);
+  const [direct, setDirect] = useState(c.directCommits);
   const [problems, setProblems] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -114,6 +115,7 @@ function SettingsForm({
         ...checked.value,
         access_level: level,
         push_limit_bytes: bytesOf(mib),
+        direct_commits: direct,
         agent_ids: agents,
       });
       if (res.ok) onSaved(res.data);
@@ -168,6 +170,12 @@ function SettingsForm({
             onChange={(e) => setPushMib(e.target.value)}
           />
         </Field>
+        <Checkbox
+          label="Allow commits straight to the default branch"
+          hint={`Kobe's Commit dialog and an agent's commit_project on a Repo push to the default branch instead of opening a pull request, where the host allows it (a protected branch still gets a pull request). Off by default. Pushes from a sandbox follow the host's own branch rules either way.`}
+          checked={direct}
+          onChange={(e) => setDirect(e.target.checked)}
+        />
         <AgentsChoice
           teamId={teamId}
           value={agents}

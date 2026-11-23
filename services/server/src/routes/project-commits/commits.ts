@@ -5,7 +5,7 @@ import {
   projectHistoryQuerySchema,
 } from "@kobe/protocol";
 import { type TeamVariables } from "../../authz/middleware.js";
-import { commitWorkingCopy } from "../../projects/commits.js";
+import { commitProject } from "../../git/repo-commit/dispatch.js";
 import { commitProposal } from "../../projects/from-proposal.js";
 import { commitDetail, historyPage } from "../../projects/history.js";
 import { invalidRequest, param, parseBody } from "../../http/request.js";
@@ -21,7 +21,7 @@ import {
 /** Committing (also from an accepted proposal) and reading the history. */
 export function projectCommitWriteRoutes(kit: CommitKit): Hono<{ Variables: TeamVariables }> {
   const app = new Hono<{ Variables: TeamVariables }>();
-  const { owner, commitDeps, withProject } = kit;
+  const { owner, commitDeps, repoCommit, withProject } = kit;
 
   app.post("/:id/commit", async (c) => {
     const id = param(c, "id", idParam);
@@ -29,7 +29,8 @@ export function projectCommitWriteRoutes(kit: CommitKit): Hono<{ Variables: Team
     const body = await parseBody(c, commitProjectRequestSchema);
     if (!body) return invalidRequest(c, "Give a message (1 to 500 characters).");
     const viewer = owner(c);
-    const result = await commitWorkingCopy(commitDeps(), {
+    // KOBE-767: a Repo's commit goes to its git host (pull request, or the default branch).
+    const result = await commitProject(commitDeps(), repoCommit(), {
       owner: viewer,
       projectId: id.data,
       message: body.message,

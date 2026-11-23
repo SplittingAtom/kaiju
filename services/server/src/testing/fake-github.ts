@@ -4,6 +4,7 @@ import type { AddressInfo } from "node:net";
 import {
   FAKE_GIT_HOST,
   type ContractFailure,
+  type FakeTreeEntry,
   type GitHostContractFake,
 } from "./git-host-contract.js";
 
@@ -128,6 +129,8 @@ export class FakeGithub implements GitHostContractFake {
     this.repos.clear();
     this.branches.clear();
     this.files.clear();
+    this.trees.clear();
+    this.truncatedTrees.clear();
     this.failure = null;
     this.failPostsOnly = false;
     this.options = {};
@@ -143,6 +146,19 @@ export class FakeGithub implements GitHostContractFake {
 
   seedForeignRepository(owner: string, name: string): string {
     return String(this.addRepo(owner, name).id);
+  }
+
+  /** Repository id → tree SHA → one level of entries (KOBE-767 `readTree`). */
+  readonly trees = new Map<number, Map<string, readonly FakeTreeEntry[]>>();
+  /** Tree SHAs GitHub answers as `truncated` (too large to list). */
+  readonly truncatedTrees = new Set<string>();
+
+  seedTree(name: string, sha: string, entries: readonly FakeTreeEntry[]): void {
+    const repo = this.findRepo(this.organization, name);
+    if (!repo) return;
+    const trees = this.trees.get(repo.id) ?? new Map<string, readonly FakeTreeEntry[]>();
+    trees.set(sha, entries);
+    this.trees.set(repo.id, trees);
   }
 
   apiHits(): readonly { method: string; path: string }[] {
@@ -383,6 +399,19 @@ export class FakeGithub implements GitHostContractFake {
         commit: { sha },
         protected: b === "main",
       }));
+    }
+    const tree = /^\/git\/trees\/([0-9a-f]{40,64})$/.exec(rest);
+    if (tree && method === "GET") {
+      if (!this.needs(res, who, name, "contents", "read")) return;
+      const sha = tree[1] ?? "";
+      const entries = this.trees.get(repo.id)?.get(sha);
+      if (entries === undefined) return reply(404, { message: "Not Found" });
+      return reply(200, {
+        sha,
+        url: "",
+        tree: entries.map((e) => ({ ...e, url: "" })),
+        truncated: this.truncatedTrees.has(sha),
+      });
     }
     const ref = /^\/git\/ref\/heads\/(.+)$/.exec(rest);
     if (ref && method === "GET") {

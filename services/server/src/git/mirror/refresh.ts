@@ -33,7 +33,7 @@ import {
 import { checkRateLimit } from "../../rate-limit.js";
 import type { BlobStore } from "../../retention/blobs.js";
 import { resolveMime, SNIFF_BYTES } from "../../uploads/mime.js";
-import { applyMirror, MirrorHeld } from "./apply.js";
+import { applyMirror, MirrorHeld, sweepRepoCommits } from "./apply.js";
 import { fetchBranch, MirrorError, remoteHead, type FetchedBranch } from "./fetch.js";
 import {
   GIT_MIRROR_DEADLINE_MS,
@@ -369,7 +369,11 @@ async function run(
   if (head === null) throw new MirrorError("branch_missing");
   if (head === claimed.mirrorHeadSha) {
     await withTeam(deps.db, lease.teamId, (tx) =>
-      underLease(tx, lease, () => recordSuccess(tx, lease, { headSha: head })),
+      underLease(tx, lease, async () => {
+        // KOBE-767 (review L1): commits a working copy kept alive go once nothing needs them.
+        await sweepRepoCommits(tx, claimed);
+        await recordSuccess(tx, lease, { headSha: head, fromHead: claimed.mirrorHeadSha });
+      }),
     );
     return "unchanged";
   }
@@ -397,6 +401,7 @@ async function run(
     commits: fetched.commits,
     skipped: fetched.skipped,
   });
+  if (applied.kind === "stale") return "deferred";
   return applied.kind === "gone" ? "gone" : "refreshed";
 }
 

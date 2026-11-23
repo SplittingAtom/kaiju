@@ -22,6 +22,7 @@ import {
   removeFile,
   pruneEmptyParents,
   renameWithin,
+  scanWorkspace,
   truncateUtf8,
 } from "./fs.js";
 
@@ -157,4 +158,21 @@ describe("workspace fs helpers", () => {
       expect(await readFile(path.join(root, "locked/f.txt"), "utf8")).toBe("kept");
     },
   );
+});
+
+describe("Repo working copies in the scan (KOBE-767)", () => {
+  it("leaves out the Repo working copies under .kobe/repos, keeps a member's repos/ (review N2)", async () => {
+    const root = await dir();
+    for (const rel of [
+      ".kobe/repos/app/.git/HEAD",
+      ".kobe/repos/app/README.md",
+      "repos/notes.md",
+      "repos/app/README.md",
+    ]) {
+      await mkdir(path.dirname(path.join(root, rel)), { recursive: true });
+      await writeFile(path.join(root, rel), "x");
+    }
+    const scan = await scanWorkspace(root, { skipDirs: new Set(), maxFiles: 100 });
+    expect([...scan.files.keys()].sort()).toEqual(["repos/app/README.md", "repos/notes.md"]);
+  });
 });

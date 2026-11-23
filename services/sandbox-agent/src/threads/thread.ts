@@ -6,10 +6,12 @@ import {
   type SyncConflict,
 } from "@kobe/protocol";
 import {
+  REPO_WORKING_COPY_DIR,
   type PiExtensionUiRequest,
   type PiExtensionUiResponse,
   type PiRpcResponse,
   type RunGitContext,
+  type RunGitRepo,
 } from "@kobe/protocol/sandbox-wire";
 import { PolicyChannel } from "../policy/channel.js";
 import { ToolsChannel } from "../tools/channel.js";
@@ -35,6 +37,18 @@ import type { ModelFile } from "../models/model-file.js";
 import type { RunModel } from "../models/types.js";
 import type { EgressTokenFile } from "../egress/egress-wiring.js";
 import { gitConfigText, type GitConfigFile } from "../git/git-config.js";
+import {
+  REPO_PREPARE_TIMEOUT_MS,
+  REPO_STATUS_TIMEOUT_MS,
+  failedStatus,
+  repoStatusFrame,
+  workingCopyStatus,
+  type RepoStatus,
+} from "../git/working-copy.js";
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
+import { shareOnVolume } from "../workspace/volume.js";
+import { toolCommandRunner } from "./tool-command.js";
 import { BranchSummaryState } from "./branch-summary-state.js";
 import { cancelDialog, routeUiRequest } from "./dialogs.js";
 import { reclaimRuntime } from "./reclaim.js";
@@ -88,6 +102,8 @@ export class Thread {
   #egressFile: EgressTokenFile | undefined;
   /** The current Pi's git config file (KOBE-764). */
   #gitFile: GitConfigFile | undefined;
+  /** The current run's Repo working copy (KOBE-767): its status is read again at the run's end. */
+  #repo: { readonly runId: string; readonly repo: RunGitRepo } | undefined;
   #promptFile: SystemPromptFile | undefined;
   #memoryFile: MemoryContextFile | undefined;
   /** Where the current Pi's kobe-models records its latest model call (KOBE-470). */
@@ -349,6 +365,54 @@ export class Thread {
   }
 
   /**
+   * The run's Repo as a git working copy (KOBE-767): cloned, re-initialised or fetched as the
+   * tools, then its state reported (`repo.status`). Call after `attachGit` (the tools' git config
+   * routes the clone through the egress proxy) and after the workspace pull (the folder's files
+   * are in place). Never throws; waits at most {@link REPO_PREPARE_TIMEOUT_MS} and a little.
+   */
+  async prepareRepo(runId: string, repo: RunGitRepo | undefined): Promise<void> {
+    this.#repo = repo === undefined ? undefined : { runId, repo };
+    if (repo === undefined) return;
+    const status = await this.#repoStatus(repo, REPO_PREPARE_TIMEOUT_MS);
+    this.#hooks.repoStatus?.(repoStatusFrame(runId, this.id, repo, status));
+  }
+
+  #repoStatus(repo: RunGitRepo, timeoutMs: number): Promise<RepoStatus> {
+    const pi = this.#pi;
+    const tools = pi === undefined ? undefined : this.#runtimeDirs.get(pi)?.tools;
+    if (tools === undefined) return Promise.resolve(failedStatus("the tools are not running"));
+    return this.#reposRoot(tools).then(() =>
+      workingCopyStatus(toolCommandRunner(tools), this.#env.workspaceDir, repo, {
+        fetch: true,
+        timeoutMs,
+      }),
+    );
+  }
+
+  /**
+   * `.kobe/repos` made by the agent (under the shared `.kobe/`, 2770 like the sessions folder) so
+   * the tools' uid can create its working copies there; never followed through a link.
+   */
+  async #reposRoot(tools: { readonly runAs?: unknown }): Promise<void> {
+    const dir = path.join(this.#env.workspaceDir, REPO_WORKING_COPY_DIR);
+    await mkdir(dir, { recursive: true, mode: 0o770 }).catch(() => undefined);
+    if (tools.runAs !== undefined) {
+      await shareOnVolume(this.#env.workspaceDir, dir, 0o2770).catch(() => undefined);
+    }
+  }
+
+  /** At a run's end: the working copy's state once more, sent only when git gave one. */
+  #reportRepoAtEnd(runId: string): void {
+    const held = this.#repo;
+    if (held === undefined || held.runId !== runId || this.#hooks.repoStatus === undefined) return;
+    this.#repo = undefined;
+    void this.#repoStatus(held.repo, REPO_STATUS_TIMEOUT_MS).then((status) => {
+      if (status.head_sha === null && status.branch === null && status.problem !== null) return;
+      this.#hooks.repoStatus?.(repoStatusFrame(runId, this.id, held.repo, status));
+    });
+  }
+
+  /**
    * The run's memory (KOBE-157): the kobe-tools extension lists `remember` / `recall` and adds the
    * fenced index to the run's prompt only while this says so. A per-run file, not a launch input.
    */
@@ -357,6 +421,7 @@ export class Thread {
     project?: RunProjectContext,
     viewing?: RunViewingContext,
     conflicts?: readonly SyncConflict[],
+    repo?: RunGitRepo,
   ): Promise<void> {
     this.#liveConflicts = [];
     // Per-thread fence nonce (KOBE-383): the memory blocks stay byte-stable across runs.
@@ -366,6 +431,7 @@ export class Thread {
       project,
       viewing,
       conflicts,
+      repo,
     );
     // KOBE-662: what kobe-tools will put before this run's message, kept for later messages.
     const note =
@@ -546,6 +612,7 @@ export class Thread {
         this.#warn(`model file not updated at run end: ${(error as Error).message}`),
       );
     this.#hooks.runEnded(run.runId, this.id);
+    this.#reportRepoAtEnd(run.runId);
     run.resolveEnded();
   }
 
