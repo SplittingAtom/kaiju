@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { parse } from "yaml";
-import { orbitExperimentSchema } from "./agents/orbit/orbit-schema.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { enableConnector, piName, registerConnector } from "./testing/mcp-fixtures.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { orbitExperimentSchema } from "./orbit/orbit-schema.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { enableConnector, piName, registerConnector } from "../testing/mcp-fixtures.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * Orbit export over HTTP (KOBE-91): a published version as YAML, the model alias resolved to a

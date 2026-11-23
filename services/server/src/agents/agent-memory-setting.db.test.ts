@@ -10,11 +10,11 @@ import {
   type AgentMemorySetting,
 } from "@kobe/protocol";
 import { memoryResultFrameSchema } from "@kobe/protocol/sandbox-wire";
-import { readRunMemoryPlan } from "./agents/run-memory.js";
-import { loadRunAgentTools } from "./policy/run-agent-tools.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
+import { readRunMemoryPlan } from "./run-memory.js";
+import { loadRunAgentTools } from "../policy/run-agent-tools.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
 
 /**
  * KOBE-646 (v1.3 SMA14, Chris Q3): an agent version's memory setting, `all | notes_only | off`.

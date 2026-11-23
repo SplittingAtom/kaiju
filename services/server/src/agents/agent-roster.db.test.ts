@@ -3,13 +3,13 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { serializeAgentFile } from "@kobe/agent-file";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { createApp } from "./app.js";
-import { createServerDeps, type ServerDeps } from "./deps.js";
-import { seedGalleryAgents } from "./gallery/seed.js";
-import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
-import { TestBrowser } from "./testing/browser.js";
-import { MemoryMailer } from "./testing/mailer.js";
-import { fakeIsolation } from "./testing/isolation.js";
+import { createApp } from "../app.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { seedGalleryAgents } from "../gallery/seed.js";
+import { waitForAppSessionsToClose } from "../testing/app-sessions.js";
+import { TestBrowser } from "../testing/browser.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 /**
  * Agent rosters (KOBE-566, spec agents-roster AR6, AR7, AR16, §5, §6.3-6.5, §6.8, §6.9): the

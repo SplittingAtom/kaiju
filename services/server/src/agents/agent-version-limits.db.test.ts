@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * Limits on agent versions (KOBE-46 review M3): versions are immutable and never deleted by the

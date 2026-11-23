@@ -1,9 +1,9 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { approvalKeyring } from "./approvals/index.js";
-import { createInternalApp } from "./routes/internal.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
+import { approvalKeyring } from "../approvals/index.js";
+import { createInternalApp } from "../routes/internal.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 import {
   INTERNAL_KEY,
   MCP_VERIFY_KEYS,
@@ -12,7 +12,7 @@ import {
   mcpToken,
   piName,
   registerConnector,
-} from "./testing/mcp-fixtures.js";
+} from "../testing/mcp-fixtures.js";
 
 /**
  * An agent's `tools.allow` on every call (KOBE-776): the server refuses a call outside the run's

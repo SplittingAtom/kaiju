@@ -2,12 +2,12 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { createApp } from "./app.js";
-import { createServerDeps, type ServerDeps } from "./deps.js";
-import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
-import { RawBody, TestBrowser, type TestResponse } from "./testing/browser.js";
-import { MemoryMailer } from "./testing/mailer.js";
-import { fakeIsolation } from "./testing/isolation.js";
+import { createApp } from "../app.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { waitForAppSessionsToClose } from "../testing/app-sessions.js";
+import { RawBody, TestBrowser, type TestResponse } from "../testing/browser.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 /**
  * Dangerous mode over HTTP (AC1, KOBE-476): only site admins and team admins may create, import,

@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
-import { seedGalleryAgents } from "./gallery/seed.js";
-import { resolveAgentPin, resolvePinnedAgent } from "./agents/versions.js";
-import { toolManifestSchema } from "./agents/manifest.js";
-import type { TestBrowser, TestResponse } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { seedGalleryAgents } from "../gallery/seed.js";
+import { resolveAgentPin, resolvePinnedAgent } from "./versions.js";
+import { toolManifestSchema } from "./manifest.js";
+import type { TestBrowser, TestResponse } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * Agent versions over HTTP (KOBE-46, spec D19, U8, Gate 3): publish with a frozen tool manifest,

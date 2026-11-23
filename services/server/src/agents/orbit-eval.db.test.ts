@@ -2,21 +2,21 @@ import { randomUUID } from "node:crypto";
 import { loadEvalCaseFile, loadGatewayPrincipal } from "@kobe/db";
 import { verifySessionToken } from "@kobe/session-token";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { EvalRunner } from "./agents/eval/service.js";
+import { EvalRunner } from "./eval/service.js";
 import {
   createEval,
   finishEval,
   getEval,
   markRunning,
   readEvalSettings,
-} from "./agents/eval/store.js";
-import type { SandboxSettings } from "./sandbox/config.js";
-import type { KubeObject } from "./sandbox/manifests.js";
-import { createFakeKube, type FakeKube } from "./testing/fake-kube.js";
-import { enableConnector, piName, registerConnector } from "./testing/mcp-fixtures.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { KEYS, SETTINGS, gateFor, seedCluster, VERIFY_KEYS } from "./testing/sandbox-fixtures.js";
+} from "./eval/store.js";
+import type { SandboxSettings } from "../sandbox/config.js";
+import type { KubeObject } from "../sandbox/manifests.js";
+import { createFakeKube, type FakeKube } from "../testing/fake-kube.js";
+import { enableConnector, piName, registerConnector } from "../testing/mcp-fixtures.js";
+import { openHarness, type Harness } from "../testing/harness.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { KEYS, SETTINGS, gateFor, seedCluster, VERIFY_KEYS } from "../testing/sandbox-fixtures.js";
 
 /**
  * The pre-publish eval gate (KOBE-93) end to end on a fake cluster: the Job's result is
@@ -547,8 +547,8 @@ describe("Evaluated manifest (KOBE-93)", () => {
 describe("Publish with the gate on but no runner", () => {
   it("blocks with a clear message instead of publishing unevaluated", async () => {
     await gateOn();
-    const app = (await import("./app.js")).createApp(h.deps);
-    const { TestBrowser } = await import("./testing/browser.js");
+    const app = (await import("../app.js")).createApp(h.deps);
+    const { TestBrowser } = await import("../testing/browser.js");
     const b = new TestBrowser(app, "http://kobe.test");
     await b.post("/api/auth/sign-in/email", {
       email: "bob@eval.test",

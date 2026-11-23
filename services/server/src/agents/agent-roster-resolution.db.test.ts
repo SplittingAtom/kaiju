@@ -4,16 +4,16 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
 import { serializeAgentFile } from "@kobe/agent-file";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { resolvePinnedAgent } from "./agents/versions.js";
-import { sweepAgentSchedules } from "./agents/roster-schedules.js";
-import { pauseOwnerSchedulesInTx } from "./schedules/offboard.js";
-import { createApp } from "./app.js";
-import { seedGalleryAgents } from "./gallery/seed.js";
-import { createServerDeps, type ServerDeps } from "./deps.js";
-import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
-import { TestBrowser } from "./testing/browser.js";
-import { MemoryMailer } from "./testing/mailer.js";
-import { fakeIsolation } from "./testing/isolation.js";
+import { resolvePinnedAgent } from "./versions.js";
+import { sweepAgentSchedules } from "./roster-schedules.js";
+import { pauseOwnerSchedulesInTx } from "../schedules/offboard.js";
+import { createApp } from "../app.js";
+import { seedGalleryAgents } from "../gallery/seed.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { waitForAppSessionsToClose } from "../testing/app-sessions.js";
+import { TestBrowser } from "../testing/browser.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 /**
  * Roster-driven resolution (KOBE-567, spec agents-roster AR5, AR9-AR11, §6.2): other members run
