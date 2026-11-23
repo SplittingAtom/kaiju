@@ -9,8 +9,15 @@ import {
   type GitCommentInput,
   type GitCreated,
   type GitCreateIssueInput,
+  type GitBranch,
+  type GitCreateBranchInput,
   type GitCreateRepositoryInput,
+  type GitFileContent,
   type GitHostAdapter,
+  type GitIssue,
+  type GitListOptions,
+  type GitListState,
+  type GitPullRequest,
   type GitHostProbe,
   type GitOpenPullRequestInput,
   type GitOrganization,
@@ -19,6 +26,17 @@ import {
   type GitRepositoryCredential,
   type GitRepositoryRef,
 } from "../adapter.js";
+import {
+  encodeFilePath,
+  isCommitSha,
+  isPullRequestIssue,
+  listState,
+  readPageSize,
+  toBranch,
+  toFileContent,
+  toIssue,
+  toPullRequest,
+} from "../reads.js";
 import { assertGitHostTarget, type GitHostTarget } from "../target.js";
 import {
   header,
@@ -336,5 +354,109 @@ class GiteaAdapter implements GitHostAdapter {
       body: { title: input.title, body: input.body },
     });
     return asCreated(res.json, true, this.#webRoot);
+  }
+  /** A page of `items`: more follow when `Link` names a next page or the total says so. */
+  #page<T>(res: HostResponse, page: number, limit: number, items: T[], raw: number): GitPage<T> {
+    const link = header(res, "link");
+    const totalHeader = header(res, "x-total-count");
+    const total = totalHeader === undefined ? Number.NaN : Number(totalHeader);
+    const more =
+      (link !== undefined && /;\s*rel="?next"?/i.test(link)) ||
+      (Number.isFinite(total) ? page * limit < total : raw === limit);
+    return { items, next: more && raw > 0 ? String(page + 1) : null };
+  }
+
+  async #list(
+    path: string,
+    opts: GitListOptions,
+    extra = "",
+  ): Promise<{
+    res: HostResponse;
+    rows: unknown[];
+    page: number;
+    limit: number;
+  }> {
+    const page = cursorPage(opts.cursor);
+    const limit = Math.min(readPageSize(opts.perPage), GITEA_MAX_PAGE_SIZE);
+    const res = await this.#api(`${path}?${extra}page=${page}&limit=${limit}`, { method: "GET" });
+    if (!Array.isArray(res.json)) {
+      throw new GitHostError("unexpected", "The git host returned no list.");
+    }
+    return { res, rows: res.json as unknown[], page, limit };
+  }
+
+  async listBranches(repository: string, opts: GitListOptions = {}): Promise<GitPage<GitBranch>> {
+    const { res, rows, page, limit } = await this.#list(
+      `${this.#repoPath(repository)}/branches`,
+      opts,
+    );
+    return this.#page(res, page, limit, rows.map(toBranch), rows.length);
+  }
+
+  async readFile(repository: string, path: string, ref?: string): Promise<GitFileContent> {
+    const encoded = encodeFilePath(path);
+    const query = ref === undefined ? "" : `?ref=${encodeURIComponent(assertBranch(ref))}`;
+    const res = await this.#api(
+      `${this.#repoPath(repository)}/contents${encoded === "" ? "" : `/${encoded}`}${query}`,
+      { method: "GET" },
+    );
+    return toFileContent(res.json, path.replace(/^\/+|\/+$/g, ""));
+  }
+
+  async listPullRequests(
+    repository: string,
+    opts: GitListOptions & { readonly state?: GitListState } = {},
+  ): Promise<GitPage<GitPullRequest>> {
+    const { res, rows, page, limit } = await this.#list(
+      `${this.#repoPath(repository)}/pulls`,
+      opts,
+      `state=${listState(opts.state)}&`,
+    );
+    const items = rows.map((p) => toPullRequest(p, this.#webRoot, this.#o.organization, false));
+    return this.#page(res, page, limit, items, rows.length);
+  }
+
+  async getPullRequest(repository: string, number: number): Promise<GitPullRequest> {
+    const res = await this.#api(`${this.#repoPath(repository)}/pulls/${assertNumber(number)}`, {
+      method: "GET",
+    });
+    return toPullRequest(res.json, this.#webRoot, this.#o.organization, true);
+  }
+
+  async listIssues(
+    repository: string,
+    opts: GitListOptions & { readonly state?: GitListState } = {},
+  ): Promise<GitPage<GitIssue>> {
+    const { res, rows, page, limit } = await this.#list(
+      `${this.#repoPath(repository)}/issues`,
+      opts,
+      `state=${listState(opts.state)}&type=issues&`,
+    );
+    const items = rows
+      .filter((i) => !isPullRequestIssue(i))
+      .map((i) => toIssue(i, this.#webRoot, false));
+    return this.#page(res, page, limit, items, rows.length);
+  }
+
+  async getIssue(repository: string, number: number): Promise<GitIssue> {
+    const res = await this.#api(`${this.#repoPath(repository)}/issues/${assertNumber(number)}`, {
+      method: "GET",
+    });
+    if (isPullRequestIssue(res.json)) {
+      throw new GitHostError("not_found", "That number is a pull request, not an issue.");
+    }
+    return toIssue(res.json, this.#webRoot, true);
+  }
+
+  async createBranch(input: GitCreateBranchInput): Promise<GitBranch> {
+    const branch = assertBranch(input.name);
+    const from = assertBranch(input.from);
+    const res = await this.#api(`${this.#repoPath(input.repository)}/branches`, {
+      method: "POST",
+      body: isCommitSha(from)
+        ? { new_branch_name: branch, old_ref_name: from }
+        : { new_branch_name: branch, old_branch_name: from },
+    });
+    return toBranch(res.json);
   }
 }
