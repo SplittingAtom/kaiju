@@ -309,8 +309,10 @@ describe("Git section: per-connection actions (KOBE-761)", () => {
     const push = dialog.getByRole("spinbutton", { name: /Push size limit/ });
     await userEvent.clear(push);
     await userEvent.type(push, "2048");
-    // Held back until Kobe's commit dialog enforces it (GIT-11).
-    expect(dialog.queryByRole("checkbox", { name: /default branch/ })).toBeNull();
+    // KOBE-767: Kobe's commit dialog enforces it (off by default: pull requests).
+    const direct = dialog.getByRole("checkbox", { name: /straight to the default branch/ });
+    expect((direct as HTMLInputElement).checked).toBe(false);
+    await userEvent.click(direct);
     await userEvent.click(dialog.getByRole("radio", { name: "Only the agents I choose" }));
     await userEvent.click(dialog.getByRole("button", { name: "Save settings" }));
     expect(await dialog.findByText("Choose at least one agent.")).toBeTruthy();
@@ -326,6 +328,7 @@ describe("Git section: per-connection actions (KOBE-761)", () => {
       default_branch: "main",
       access_level: "read",
       push_limit_bytes: 2048 * 1024 * 1024,
+      direct_commits: true,
       agent_ids: ["a-1"],
     });
   });

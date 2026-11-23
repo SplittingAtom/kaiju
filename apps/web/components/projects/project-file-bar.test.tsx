@@ -82,6 +82,69 @@ describe("a file in a checked-out project (CM8)", () => {
     ]);
   });
 
+  it("on a Repo, says where the commit goes and links the pull request it opened (KOBE-767)", async () => {
+    mount("projects/budget/plan.md", {
+      ...routes,
+      [`GET ${P}/repo-status`]: [
+        200,
+        {
+          repo: {
+            default_branch: "main",
+            direct_commits: false,
+            can_commit: true,
+            pull_request: null,
+            working_copy: null,
+          },
+        },
+      ],
+      [`POST ${P}/commit`]: [
+        [
+          409,
+          {
+            code: "repo_moved",
+            message:
+              "main moved on the git host since Kobe's copy. Kobe refreshes its copy; Update, then commit again.",
+          },
+        ],
+        [
+          200,
+          {
+            status: "pull_request",
+            branch: "kobe/ada/q4-numbers-abcdef1",
+            commit_sha: "a".repeat(40),
+            number: 7,
+            url: "https://git.acme.test/acme/budget/pulls/7",
+            opened: true,
+            fallback: false,
+          },
+        ],
+      ],
+      [`POST ${P}/checkout/update`]: [200, { base_commit_seq: 3, conflict_paths: [] }],
+    });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Commit…" }));
+    const dialog = await screen.findByRole("dialog", { name: "Commit to Budget plan" });
+    expect(
+      await within(dialog).findByText(
+        /goes to a new branch on the git host, with a pull request into main/,
+      ),
+    ).toBeTruthy();
+    await user.type(within(dialog).getByLabelText("What changed?"), "Q4 numbers");
+    await user.click(within(dialog).getByRole("button", { name: "Commit" }));
+    // The default branch moved on the host: Update, then commit again.
+    await user.click(await within(dialog).findByRole("button", { name: "Update" }));
+    await within(dialog).findByText("Updated Budget plan to the latest commit.");
+    await user.click(within(dialog).getByRole("button", { name: "Commit" }));
+    expect(
+      await screen.findByText(
+        /Opened pull request #7 for Budget plan \(branch kobe\/ada\/q4-numbers-abcdef1\)\./,
+      ),
+    ).toBeTruthy();
+    const link = screen.getByRole("link", { name: "Open pull request #7" }) as HTMLAnchorElement;
+    expect(link.href).toBe("https://git.acme.test/acme/budget/pulls/7");
+    expect(link.rel).toContain("noopener");
+  });
+
   it("Update names both-changed files inside the project (workspace paths from the server)", async () => {
     mount("projects/budget/plan.md", {
       ...routes,

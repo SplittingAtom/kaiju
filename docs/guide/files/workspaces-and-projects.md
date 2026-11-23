@@ -74,6 +74,28 @@ The mounted folder is read-only until you check it out:
    committed in the meantime, press **Update** to bring their changes into your copy, then commit
    again. **Discard** ends the checkout and throws your changes away.
 
+### Committing to a Repo
+
+A Repo is a project converted to a repository on a connected git host (GitHub, Gitea or
+Forgejo); its record is the repository's default branch, and Kobe keeps a copy of it. On a Repo,
+**Commit…** says where your commit goes before you commit:
+
+- usually to a new branch on the host with a **pull request** into the default branch. The result
+  names the branch and links the pull request (**Open pull request #N**). Commit again from the
+  same working copy and your commit is added to that pull request while it is open;
+- straight to the default branch, if a Workspace admin allowed that for the connection and the
+  host does not protect the branch (otherwise you get a pull request and are told why).
+
+Commits carry your name as author, as the Workspace's [git settings](../admin/git-organizations.md#commit-author-email)
+say. If the default branch moved on the host, Kobe says so: press **Update**, then commit again.
+Committing needs the Contributor role in the Workspace and editor or owner of the project.
+
+In a conversation on a Repo, the agent also gets a real git working copy of it at
+`/workspace/repos/<slug>/` (next to the read-only copy at `/workspace/projects/<slug>/`): it can
+work on a branch, commit, push and open a pull request there. Its `.git` folder stays in the
+sandbox and is not synced to your files; Kobe keeps the branch and how many commits it is ahead of
+or behind the host.
+
 In a project conversation an editor's agent can also propose an edit to a project file; **Accept**
 commits it at once, with no checkout. The agent can commit a checkout itself with its
 `commit_project` tool, after your approval or a team rule allows it. See
