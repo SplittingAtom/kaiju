@@ -4,12 +4,12 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { MAX_ACTIVE_SCHEDULES_PER_USER, scheduleResponseSchema } from "@kobe/protocol";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { createApp } from "./app.js";
-import { createServerDeps, type ServerDeps } from "./deps.js";
-import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
-import { TestBrowser } from "./testing/browser.js";
-import { MemoryMailer } from "./testing/mailer.js";
-import { fakeIsolation } from "./testing/isolation.js";
+import { createApp } from "../app.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { waitForAppSessionsToClose } from "../testing/app-sessions.js";
+import { TestBrowser } from "../testing/browser.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 /** Schedules API (KOBE-173): CRUD under RLS, the per-user cap across teams, next_due_at. */
 const PUBLIC_URL = "http://kobe.test";
