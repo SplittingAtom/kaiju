@@ -1,10 +1,10 @@
 import { createHash } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { BRANDING_ASSET_MAX_BYTES, siteBrandingSchema } from "@kobe/protocol";
-import { REQUIRE_TWO_FACTOR } from "./auth/session.js";
-import { readAppName } from "./branding/settings.js";
-import { brandingCache } from "./branding/store.js";
-import { RawBody, type TestBrowser } from "./testing/browser.js";
+import { REQUIRE_TWO_FACTOR } from "../auth/session.js";
+import { readAppName } from "./settings.js";
+import { brandingCache } from "./store.js";
+import { RawBody, type TestBrowser } from "../testing/browser.js";
 import {
   GRADIENT_SVG,
   REFUSED_SVGS,
@@ -15,8 +15,8 @@ import {
   webp,
   webpLossless,
   webpLossy,
-} from "./testing/branding-fixtures.js";
-import { PUBLIC_URL, openHarness, type Harness } from "./testing/harness.js";
+} from "../testing/branding-fixtures.js";
+import { PUBLIC_URL, openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-499 (theming plan §4.2, TH4-TH8, TH12): the public branding GETs and the admin writes.
