@@ -8,11 +8,11 @@ import {
   withTeam,
   type ModelUsageRecord,
 } from "@kobe/db";
-import { runWithAuditContext } from "./audit/context.js";
-import { threadUsageResponseSchema } from "./openapi/usage.js";
-import { createTeamWithAdmin } from "./teams/members.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { runWithAuditContext } from "../audit/context.js";
+import { threadUsageResponseSchema } from "../openapi/usage.js";
+import { createTeamWithAdmin } from "../teams/members.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-43: catalog prices, the run_usage ledger's dashboards (team admin, site admin) and the

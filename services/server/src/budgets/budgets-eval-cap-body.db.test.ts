@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { openHarness, type Harness } from "./testing/harness.js";
-import type { TestBrowser } from "./testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
+import type { TestBrowser } from "../testing/browser.js";
 
 /**
  * KOBE-703 (review CODE-26): `PUT /v1/team/budgets/eval-cap` read `"evalCap" in body` on an

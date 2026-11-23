@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { modelCatalog, modelProviders, recordModelUsage, type ModelUsageRecord } from "@kobe/db";
-import { FAILURE_MESSAGES } from "./runs/failure-codes.js";
-import type { MemoryMailer } from "./testing/mailer.js";
-import { RunFixture, type FakeWorkspace } from "./testing/run-fixture.js";
+import { FAILURE_MESSAGES } from "../runs/failure-codes.js";
+import type { MemoryMailer } from "../testing/mailer.js";
+import { RunFixture, type FakeWorkspace } from "../testing/run-fixture.js";
 
 /**
  * KOBE-42 against a real Postgres, the real sandbox wire and two replicas. Gate 2: "budget stops a
