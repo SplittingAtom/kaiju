@@ -59,6 +59,8 @@ export interface FakeGithubOptions {
   repoPermissions?: { pull: boolean; push: boolean };
   /** Hostile answers: `html_url` / `clone_url` set to these instead of the fake's own URLs. */
   hostileHtmlUrl?: string;
+  /** A created repository is answered with this owner (an odd answer after a 201; KOBE-762). */
+  createdOwner?: string;
   hostileCloneUrl?: string;
 }
 
@@ -69,12 +71,25 @@ export class FakeGithub implements GitHostContractFake {
   readonly hits: { method: string; path: string; authorization: string | undefined }[] = [];
   readonly mintRequests: { repositories?: string[]; permissions: Record<string, string> }[] = [];
   readonly createdRepositories: { name: string; private: unknown; visibility: unknown }[] = [];
-  readonly pullRequests: { repository: string; title: string; head: string; base: string }[] = [];
-  readonly issues: { repository: string; title: string }[] = [];
+  readonly pullRequests: {
+    repository: string;
+    title: string;
+    head: string;
+    base: string;
+    body: string;
+    number: number;
+  }[] = [];
+  readonly issues: { repository: string; title: string; body: string; number: number }[] = [];
+  /** Branches per repository id (name → commit SHA); `main` exists from the start. */
+  readonly branches = new Map<number, Map<string, string>>();
+  /** Files per repository id (path → text). */
+  readonly files = new Map<number, Map<string, string>>();
   readonly comments: { repository: string; number: number; body: string }[] = [];
   readonly tokens: IssuedToken[] = [];
   options: FakeGithubOptions = {};
   private failure: ContractFailure | null = null;
+  /** Apply `fail()` to POST requests only (a write fails, its reads before it pass; KOBE-762). */
+  failPostsOnly = false;
   private repos = new Map<number, Repo>();
   private nextId = 5000;
   private publicKey: KeyObject | null = null;
@@ -110,7 +125,10 @@ export class FakeGithub implements GitHostContractFake {
     this.comments.length = 0;
     this.tokens.length = 0;
     this.repos.clear();
+    this.branches.clear();
+    this.files.clear();
     this.failure = null;
+    this.failPostsOnly = false;
     this.options = {};
   }
 
@@ -145,7 +163,48 @@ export class FakeGithub implements GitHostContractFake {
       size: 10,
     };
     this.repos.set(repo.id, repo);
+    this.branches.set(repo.id, new Map([["main", "a".repeat(40)]]));
+    this.files.set(repo.id, new Map([["README.md", "# Hello\n"]]));
     return repo;
+  }
+
+  /** Adds a file to a repository of the organization (tests). */
+  seedFile(name: string, path: string, text: string): void {
+    const repo = this.findRepo(this.organization, name);
+    if (repo) this.files.get(repo.id)?.set(path, text);
+  }
+
+  private prJson(owner: string, name: string, p: (typeof this.pullRequests)[number]) {
+    return {
+      id: 70000 + p.number,
+      number: p.number,
+      title: p.title,
+      body: p.body,
+      state: "open",
+      draft: false,
+      head: { ref: p.head, repo: { owner: { login: owner } } },
+      base: { ref: p.base },
+      user: { login: "kobe-bot-test" },
+      html_url: `${this.base}/${owner}/${name}/pull/${p.number}`,
+      created_at: "2026-11-01T00:00:00Z",
+      updated_at: "2026-11-01T00:00:00Z",
+      merged_at: null,
+    };
+  }
+
+  private issueJson(owner: string, name: string, i: (typeof this.issues)[number]) {
+    return {
+      id: 80000 + i.number,
+      number: i.number,
+      title: i.title,
+      body: i.body,
+      state: "open",
+      user: { login: "kobe-bot-test" },
+      comments: this.comments.filter((c) => c.repository === name && c.number === i.number).length,
+      html_url: `${this.base}/${owner}/${name}/issues/${i.number}`,
+      created_at: "2026-11-01T00:00:00Z",
+      updated_at: "2026-11-01T00:00:00Z",
+    };
   }
 
   private repoJson(r: Repo) {
@@ -289,6 +348,127 @@ export class FakeGithub implements GitHostContractFake {
     );
   }
 
+  /** Branches, contents, pull requests and issues of one repository (KOBE-762 reads). */
+  private async readRoute(
+    res: ServerResponse,
+    who: "pat" | IssuedToken,
+    repo: Repo,
+    owner: string,
+    name: string,
+    rest: string,
+    method: string,
+    url: URL,
+    req: IncomingMessage,
+    reply: (status: number, body?: unknown, extra?: Record<string, string>) => void,
+  ): Promise<void> {
+    const branches = this.branches.get(repo.id) ?? new Map<string, string>();
+    const page = Number(url.searchParams.get("page") ?? "1");
+    const perPage = Number(url.searchParams.get("per_page") ?? "30");
+    const paged = <T>(all: T[], map: (t: T) => unknown) => {
+      const more = page * perPage < all.length;
+      const link = more
+        ? {
+            link: `<${this.base}/api/v3/repos/${owner}/${name}${rest}?per_page=${perPage}&page=${page + 1}>; rel="next"`,
+          }
+        : {};
+      reply(200, all.slice((page - 1) * perPage, page * perPage).map(map), link);
+    };
+    if (rest === "/branches" && method === "GET") {
+      if (!this.needs(res, who, name, "contents", "read")) return;
+      return paged([...branches.entries()], ([b, sha]) => ({
+        name: b,
+        commit: { sha },
+        protected: b === "main",
+      }));
+    }
+    const ref = /^\/git\/ref\/heads\/(.+)$/.exec(rest);
+    if (ref && method === "GET") {
+      if (!this.needs(res, who, name, "contents", "read")) return;
+      const sha = branches.get(decodeURIComponent(ref[1] ?? ""));
+      if (sha === undefined) return reply(404, { message: "Not Found" });
+      return reply(200, { ref: `refs/heads/${ref[1]}`, object: { sha, type: "commit" } });
+    }
+    if (rest === "/git/refs" && method === "POST") {
+      if (!this.needs(res, who, name, "contents", "write")) return;
+      const b = await this.body(req);
+      const branch = String(b.ref).replace(/^refs\/heads\//, "");
+      if (branches.has(branch)) return reply(422, { message: "Reference already exists" });
+      if (![...branches.values()].includes(String(b.sha))) {
+        return reply(422, { message: "Object does not exist" });
+      }
+      branches.set(branch, String(b.sha));
+      return reply(201, { ref: b.ref, object: { sha: b.sha, type: "commit" } });
+    }
+    const contents = /^\/contents(?:\/(.*))?$/.exec(rest);
+    if (contents && method === "GET") {
+      if (!this.needs(res, who, name, "contents", "read")) return;
+      const files = this.files.get(repo.id) ?? new Map<string, string>();
+      const path = decodeURIComponent(contents[1] ?? "");
+      const text = files.get(path);
+      if (text !== undefined) {
+        return reply(200, {
+          type: "file",
+          path,
+          name: path.split("/").pop(),
+          size: Buffer.byteLength(text),
+          sha: "b".repeat(40),
+          encoding: "base64",
+          content: Buffer.from(text, "utf8").toString("base64"),
+        });
+      }
+      const prefix = path === "" ? "" : `${path}/`;
+      const under = [...files.keys()].filter((f) => f.startsWith(prefix));
+      if (under.length === 0) return reply(404, { message: "Not Found" });
+      const names = [...new Set(under.map((f) => f.slice(prefix.length).split("/")[0] ?? ""))];
+      return reply(
+        200,
+        names.map((n) => ({
+          name: n,
+          path: `${prefix}${n}`,
+          type: files.has(`${prefix}${n}`) ? "file" : "dir",
+          size: files.get(`${prefix}${n}`)?.length ?? 0,
+        })),
+      );
+    }
+    if (rest === "/pulls" && method === "GET") {
+      if (!this.needs(res, who, name, "pull_requests", "read")) return;
+      return paged(
+        this.pullRequests.filter((p) => p.repository === name),
+        (p) => this.prJson(owner, name, p),
+      );
+    }
+    const pr = /^\/pulls\/(\d+)$/.exec(rest);
+    if (pr && method === "GET") {
+      if (!this.needs(res, who, name, "pull_requests", "read")) return;
+      const p = this.pullRequests.find((x) => x.repository === name && x.number === Number(pr[1]));
+      return p ? reply(200, this.prJson(owner, name, p)) : reply(404, { message: "Not Found" });
+    }
+    if (rest === "/issues" && method === "GET") {
+      if (!this.needs(res, who, name, "issues", "read")) return;
+      // As GitHub: pull requests are listed among issues, marked with `pull_request`.
+      const all = [
+        ...this.issues
+          .filter((i) => i.repository === name)
+          .map((i) => this.issueJson(owner, name, i)),
+        ...this.pullRequests
+          .filter((p) => p.repository === name)
+          .map((p) => ({ ...this.prJson(owner, name, p), pull_request: {} })),
+      ];
+      return paged(all, (x) => x);
+    }
+    const issue = /^\/issues\/(\d+)$/.exec(rest);
+    if (issue && method === "GET") {
+      if (!this.needs(res, who, name, "issues", "read")) return;
+      const n = Number(issue[1]);
+      const i = this.issues.find((x) => x.repository === name && x.number === n);
+      if (i) return reply(200, this.issueJson(owner, name, i));
+      const p = this.pullRequests.find((x) => x.repository === name && x.number === n);
+      if (p) return reply(200, { ...this.prJson(owner, name, p), pull_request: {} });
+      return reply(404, { message: "Not Found" });
+    }
+    return reply(404, { message: "Not Found" });
+  }
+
   private async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? "/", this.base);
     const auth = req.headers.authorization;
@@ -359,7 +539,7 @@ export class FakeGithub implements GitHostContractFake {
       });
     }
 
-    if (this.failNow(res)) return;
+    if ((!this.failPostsOnly || method === "POST") && this.failNow(res)) return;
     const who = this.caller(auth);
     if (who === null) return this.send(res, 401, { message: "Bad credentials" });
     const patHeaders: Record<string, string> =
@@ -454,7 +634,8 @@ export class FakeGithub implements GitHostContractFake {
       const repo = this.addRepo(this.organization, name);
       repo.size = 0;
       if (body.visibility === "internal") repo.visibility = "internal";
-      return reply(201, this.repoJson(repo));
+      const json = this.repoJson(repo);
+      return reply(201, o.createdOwner ? { ...json, owner: { login: o.createdOwner } } : json);
     }
     const byId = /^\/repositories\/(\d+)$/.exec(path);
     if (byId && method === "GET") {
@@ -492,13 +673,15 @@ export class FakeGithub implements GitHostContractFake {
             errors: [{ message: "A pull request already exists for acme-test:feature." }],
           });
         }
+        const number = this.pullRequests.length + 1;
         this.pullRequests.push({
           repository: name,
           title: String(b.title),
           head: String(b.head),
           base: String(b.base),
+          body: String(b.body ?? ""),
+          number,
         });
-        const number = this.pullRequests.length;
         return reply(201, {
           id: 70000 + number,
           number,
@@ -508,8 +691,13 @@ export class FakeGithub implements GitHostContractFake {
       if (rest === "/issues" && method === "POST") {
         if (!this.needs(res, who, name, "issues", "write")) return;
         const b = await this.body(req);
-        this.issues.push({ repository: name, title: String(b.title) });
-        const number = 100 + this.issues.length;
+        const number = 100 + this.issues.length + 1;
+        this.issues.push({
+          repository: name,
+          title: String(b.title),
+          body: String(b.body ?? ""),
+          number,
+        });
         return reply(201, {
           id: 80000 + number,
           number,
@@ -529,6 +717,7 @@ export class FakeGithub implements GitHostContractFake {
           html_url: `${this.base}/${owner}/${name}/issues/${comment[1]}#issuecomment-${id}`,
         });
       }
+      return this.readRoute(res, who, repo, owner, name, rest, method, url, req, reply);
     }
     return reply(404, { message: "Not Found" });
   }

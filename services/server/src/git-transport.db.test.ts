@@ -346,6 +346,23 @@ describe("git transport decisions (KOBE-763)", () => {
     });
   });
 
+  it("reads a Repo with a role on its project, also after a rename or a reconnect (M4)", async () => {
+    // Every Workspace member is at least an implicit reader of every project (KOBE-587).
+    for (const repository of ["docs", "docs-renamed", "legacy", "legacy-new-name"]) {
+      expect((await ask({ user: "reader", repository })).json).toMatchObject({
+        decision: "allow",
+        access: "read",
+      });
+    }
+  });
+
+  it("refuses a fetch it cannot resolve while the host has Repos, exactly as a missing one (M4)", async () => {
+    const before = minted.length;
+    const ghost = (await ask({ user: "reader", repository: "ghost" })).json;
+    expect(ghost).toMatchObject({ decision: "deny", code: "repository_unavailable" });
+    expect(minted.length).toBe(before);
+  });
+
   it("refuses a push to a repository it cannot resolve, without minting (fail closed)", async () => {
     const before = minted.length;
     expect((await ask({ user: "contrib", repository: "ghost", service: PUSH })).json).toMatchObject(

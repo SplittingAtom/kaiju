@@ -26,6 +26,19 @@ interface Repo {
   empty: boolean;
   defaultBranch: string;
   issues: number;
+  /** Branch → commit SHA. */
+  branches: Map<string, string>;
+  /** Path → text. */
+  files: Map<string, string>;
+  /** Pull requests and issues share one number sequence, as on Gitea. */
+  items: {
+    number: number;
+    pull: boolean;
+    title: string;
+    body: string;
+    head?: string;
+    base?: string;
+  }[];
 }
 
 const ALL_SCOPES = [
@@ -121,6 +134,11 @@ export class FakeGitea implements GitHostContractFake {
     for (const name of names) this.addRepo(this.organization, name, false);
   }
 
+  /** Adds a file to a repository of the organization (tests). */
+  seedFile(name: string, path: string, text: string): void {
+    this.repos.get(`${this.organization}/${name}`)?.files.set(path, text);
+  }
+
   seedForeignRepository(owner: string, name: string): string {
     return String(this.addRepo(owner, name, false).id);
   }
@@ -130,7 +148,17 @@ export class FakeGitea implements GitHostContractFake {
   }
 
   private addRepo(owner: string, name: string, empty: boolean): Repo {
-    const repo: Repo = { id: this.nextId++, name, owner, empty, defaultBranch: "main", issues: 0 };
+    const repo: Repo = {
+      id: this.nextId++,
+      name,
+      owner,
+      empty,
+      defaultBranch: "main",
+      issues: 0,
+      branches: new Map(empty ? [] : [["main", "c".repeat(40)]]),
+      files: new Map(empty ? [] : [["README.md", "# Hello\n"]]),
+      items: [],
+    };
     this.repos.set(`${owner}/${name}`, repo);
     return repo;
   }
@@ -270,7 +298,7 @@ export class FakeGitea implements GitHostContractFake {
     const m = /^\/repos\/([^/]+)\/([^/]+)(\/.*)?$/.exec(path);
     if (m) {
       const key = `${decodeURIComponent(m[1] ?? "")}/${decodeURIComponent(m[2] ?? "")}`;
-      return this.repoRoute(method, this.repos.get(key), m[3] ?? "", req, res);
+      return this.repoRoute(method, this.repos.get(key), m[3] ?? "", req, res, url);
     }
     this.send(res, 404, { message: "not found" });
   }
@@ -309,6 +337,7 @@ export class FakeGitea implements GitHostContractFake {
     rest: string,
     req: IncomingMessage,
     res: ServerResponse,
+    url: URL,
   ): Promise<void> {
     if (!repo) return this.send(res, 404, { message: "repository does not exist" });
     const full = `${repo.owner}/${repo.name}`;
@@ -321,6 +350,14 @@ export class FakeGitea implements GitHostContractFake {
       const b = await this.body(req);
       if (b.head === b.base) return this.send(res, 422, { message: "same branch" });
       const number = ++repo.issues;
+      repo.items.push({
+        number,
+        pull: true,
+        title: String(b.title),
+        body: String(b.body ?? ""),
+        head: String(b.head),
+        base: String(b.base),
+      });
       return this.send(res, 201, {
         id: 5000 + number,
         number,
@@ -333,6 +370,7 @@ export class FakeGitea implements GitHostContractFake {
       if (!this.need(res, "write:issue")) return;
       const b = await this.body(req);
       const number = ++repo.issues;
+      repo.items.push({ number, pull: false, title: String(b.title), body: String(b.body ?? "") });
       return this.send(res, 201, {
         id: 6000 + number,
         number,
@@ -349,6 +387,130 @@ export class FakeGitea implements GitHostContractFake {
         id,
         html_url: `${this.baseUrl}/${full}/issues/${c[1]}#issuecomment-${id}`,
       });
+    }
+    return this.readRoute(method, repo, rest, req, res, url);
+  }
+
+  private itemJson(repo: Repo, i: Repo["items"][number]) {
+    const full = `${repo.owner}/${repo.name}`;
+    return {
+      id: (i.pull ? 5000 : 6000) + i.number,
+      number: i.number,
+      title: i.title,
+      body: i.body,
+      state: "open",
+      user: { login: this.login },
+      comments: 0,
+      html_url: `${this.baseUrl}/${full}/${i.pull ? "pulls" : "issues"}/${i.number}`,
+      created_at: "2026-11-01T00:00:00Z",
+      updated_at: "2026-11-01T00:00:00Z",
+      ...(i.pull
+        ? {
+            merged: false,
+            draft: false,
+            head: { ref: i.head, repo: { owner: { login: repo.owner } } },
+            base: { ref: i.base },
+            pull_request: { merged: false },
+          }
+        : { pull_request: null }),
+    };
+  }
+
+  /** Branches, contents, pull requests and issues (KOBE-762 reads, create branch). */
+  private async readRoute(
+    method: string,
+    repo: Repo,
+    rest: string,
+    req: IncomingMessage,
+    res: ServerResponse,
+    url: URL,
+  ): Promise<void> {
+    const page = Number(url.searchParams.get("page") ?? "1");
+    const limit = Math.min(Number(url.searchParams.get("limit") ?? "30"), 50);
+    const paged = (all: unknown[]) =>
+      this.send(res, 200, all.slice((page - 1) * limit, page * limit), {
+        "x-total-count": String(all.length),
+      });
+    if (rest === "/branches" && method === "GET") {
+      if (!this.need(res, "read:repository")) return;
+      return paged(
+        [...repo.branches.entries()].map(([name, id]) => ({
+          name,
+          commit: { id },
+          protected: false,
+        })),
+      );
+    }
+    if (rest === "/branches" && method === "POST") {
+      if (!this.need(res, "write:repository")) return;
+      const b = await this.body(req);
+      const name = String(b.new_branch_name);
+      if (repo.branches.has(name)) return this.send(res, 409, { message: "branch exists" });
+      const from =
+        typeof b.old_ref_name === "string"
+          ? [...repo.branches.values()].find((v) => v === b.old_ref_name)
+          : repo.branches.get(String(b.old_branch_name));
+      if (from === undefined) return this.send(res, 404, { message: "no such ref" });
+      repo.branches.set(name, from);
+      return this.send(res, 201, { name, commit: { id: from }, protected: false });
+    }
+    const contents = /^\/contents(?:\/(.*))?$/.exec(rest);
+    if (contents && method === "GET") {
+      if (!this.need(res, "read:repository")) return;
+      const path = decodeURIComponent(contents[1] ?? "");
+      const text = repo.files.get(path);
+      if (text !== undefined) {
+        return this.send(res, 200, {
+          type: "file",
+          path,
+          name: path.split("/").pop(),
+          size: Buffer.byteLength(text),
+          sha: "d".repeat(40),
+          encoding: "base64",
+          content: Buffer.from(text, "utf8").toString("base64"),
+        });
+      }
+      const prefix = path === "" ? "" : `${path}/`;
+      const under = [...repo.files.keys()].filter((f) => f.startsWith(prefix));
+      if (under.length === 0) return this.send(res, 404, { message: "not found" });
+      const names = [...new Set(under.map((f) => f.slice(prefix.length).split("/")[0] ?? ""))];
+      return this.send(
+        res,
+        200,
+        names.map((n) => ({
+          name: n,
+          path: `${prefix}${n}`,
+          type: repo.files.has(`${prefix}${n}`) ? "file" : "dir",
+          size: repo.files.get(`${prefix}${n}`)?.length ?? 0,
+        })),
+      );
+    }
+    if (rest === "/pulls" && method === "GET") {
+      if (!this.need(res, "read:repository")) return;
+      return paged(repo.items.filter((i) => i.pull).map((i) => this.itemJson(repo, i)));
+    }
+    const pr = /^\/pulls\/(\d+)$/.exec(rest);
+    if (pr && method === "GET") {
+      if (!this.need(res, "read:repository")) return;
+      const i = repo.items.find((x) => x.pull && x.number === Number(pr[1]));
+      return i
+        ? this.send(res, 200, this.itemJson(repo, i))
+        : this.send(res, 404, { message: "not found" });
+    }
+    if (rest === "/issues" && method === "GET") {
+      if (!this.need(res, "read:issue")) return;
+      const onlyIssues = url.searchParams.get("type") === "issues";
+      return paged(
+        repo.items.filter((i) => !onlyIssues || !i.pull).map((i) => this.itemJson(repo, i)),
+      );
+    }
+    const issue = /^\/issues\/(\d+)$/.exec(rest);
+    if (issue && method === "GET") {
+      if (!this.need(res, "read:issue")) return;
+      const i = repo.items.find((x) => x.number === Number(issue[1]));
+      return i
+        ? this.send(res, 200, this.itemJson(repo, i))
+        : this.send(res, 404, { message: "not found" });
     }
     this.send(res, 404, { message: "not found" });
   }

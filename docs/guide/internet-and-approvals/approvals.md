@@ -79,6 +79,24 @@ model's words), a **Before and after** table, and the exact input.
 
 See [Admin from a conversation](../admin/admin-from-a-conversation.md).
 
+## Git changes
+
+When the agent creates a repository, opens a pull request, comments or creates an issue on a
+connected git organization, the card says what will happen on which host, organization and
+repository, and shows the title and the full text that will be posted (shown as plain text; long
+text has **Show all**), including the last line Kobe adds with your name and a link to the
+conversation. For a new repository it shows the visibility (private, or internal; never public).
+The exact input is below.
+
+- Once posted, the text is on the git host, outside Kobe: Kobe cannot take it back.
+- Creating a branch and reading do not ask, unless your team's policy says so (in scheduled runs
+  and auto mode creating a branch is refused unless your team allow-lists it).
+- These cards are never part of **Approve all waiting**. You can remember them like other tools;
+  prefer remembering exactly this input, since a broader one also allows other repositories and
+  texts.
+
+See [Git organizations](../admin/git-organizations.md).
+
 ## Remember an approval
 
 Tick **Remember: allow _tool_** before pressing Allow, and pick how long under **Remember for**:

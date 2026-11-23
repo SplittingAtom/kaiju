@@ -131,6 +131,7 @@ function internalListener(
         internalKey,
         mcp: deps.mcp,
         kobe: deps.kobeMcp,
+        gitMcp: deps.gitMcp,
         appResults: deps.appResults,
         auth: {
           db: deps.database.db,

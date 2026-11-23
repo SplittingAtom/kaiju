@@ -3,6 +3,7 @@ import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import type { Logger } from "pino";
 import {
+  GIT_BUILTIN_CONNECTOR_ID,
   KOBE_BUILTIN_CONNECTOR_ID,
   canonicalJson,
   toolInputSchema,
@@ -15,7 +16,7 @@ import type { CredentialResolver } from "./credentials.js";
 import { JSONRPC_ERRORS, parseMessage, rpcError, rpcResult, type JsonRpcId } from "./jsonrpc.js";
 import { annotate, contentAttributes, idAttributes, withSpan } from "@kobe/telemetry";
 import type { Limiter } from "./limits.js";
-import type { ExposedTool, PolicyServer } from "./server-client.js";
+import type { BuiltinServer, ExposedTool, PolicyServer } from "./server-client.js";
 import type { UpstreamClient, UpstreamFailure } from "./upstream.js";
 
 /**
@@ -213,12 +214,21 @@ function serverFailure(id: JsonRpcId, failure: string): Answer {
  * upstream. Its tools are listed and its calls decided and executed by the server's internal
  * listener; the proxy attaches no credential and contacts nothing else.
  */
-const isKobe = (ctx: CallContext) => ctx.connectorId === KOBE_BUILTIN_CONNECTOR_ID;
+const builtinOf = (ctx: CallContext): BuiltinServer | undefined =>
+  ctx.connectorId === KOBE_BUILTIN_CONNECTOR_ID
+    ? "kobe"
+    : ctx.connectorId === GIT_BUILTIN_CONNECTOR_ID
+      ? "git"
+      : undefined;
+/** The built-in git connector (KOBE-762) is hosted by the server the same way. */
+const isKobe = (ctx: CallContext) => builtinOf(ctx) !== undefined;
 
-const listFor = (ctx: CallContext) =>
-  isKobe(ctx)
-    ? ctx.deps.server.kobeList(ctx.token)
+const listFor = (ctx: CallContext) => {
+  const builtin = builtinOf(ctx);
+  return builtin !== undefined
+    ? ctx.deps.server.kobeList(ctx.token, builtin)
     : ctx.deps.server.listTools(ctx.token, ctx.connectorId);
+};
 
 async function initialize(ctx: CallContext, id: JsonRpcId, params: unknown): Promise<Answer> {
   const requested = isObject(params) ? params.protocolVersion : undefined;
@@ -302,12 +312,16 @@ async function callKobe(
   if (!release) return [rpcError(id, JSONRPC_ERRORS.internal, "Too many calls in flight."), 429];
   const started = Date.now();
   try {
-    const answered = await deps.server.kobeCall(ctx.token, {
-      tool: toolName,
-      arguments: args,
-      ...(threadId === undefined ? {} : { threadId }),
-      ...(typeof toolCallId === "string" && toolCallId.length <= 128 ? { toolCallId } : {}),
-    });
+    const answered = await deps.server.kobeCall(
+      ctx.token,
+      {
+        tool: toolName,
+        arguments: args,
+        ...(threadId === undefined ? {} : { threadId }),
+        ...(typeof toolCallId === "string" && toolCallId.length <= 128 ? { toolCallId } : {}),
+      },
+      builtinOf(ctx) ?? "kobe",
+    );
     const log = (outcome: string, reason?: string) =>
       deps.log.info(
         {

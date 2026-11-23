@@ -61,3 +61,4 @@ export * from "./team-default-agent.js";
 export * from "./theme/index.js";
 export * from "./kobe-mcp.js";
 export * from "./git-connections.js";
+export * from "./git-tools.js";

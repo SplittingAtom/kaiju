@@ -10,8 +10,11 @@ import {
   type GitCommentInput,
   type GitCreated,
   type GitCreateIssueInput,
+  type GitCreateBranchInput,
   type GitCreateRepositoryInput,
   type GitHostAdapter,
+  type GitListOptions,
+  type GitPage,
   type GitHostProbe,
   type GitOpenPullRequestInput,
   type GitOrganization,
@@ -19,6 +22,17 @@ import {
   type GitRepositoryCredential,
   type GitRepositoryRef,
 } from "../adapter.js";
+import {
+  encodeFilePath,
+  isCommitSha,
+  isPullRequestIssue,
+  listState,
+  readPageSize,
+  toBranch,
+  toFileContent,
+  toIssue,
+  toPullRequest,
+} from "../reads.js";
 import { assertGitHostTarget, type GitHostTarget } from "../target.js";
 import {
   header,
@@ -519,5 +533,144 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
       );
       return created(res.json, true, web());
     },
+
+    async listBranches(repository: string, opts: GitListOptions = {}) {
+      const name = assertRepositoryName(repository);
+      const page = cursorPage(opts.cursor);
+      const perPage = readPageSize(opts.perPage);
+      const res = await ok(
+        call(
+          `${repoPath(name)}/branches?per_page=${perPage}&page=${page}`,
+          { method: "GET" },
+          { repositories: [name], permissions: { contents: "read", metadata: "read" } },
+        ),
+      );
+      if (!Array.isArray(res.json))
+        throw new GitHostError("unexpected", "GitHub returned no list.");
+      return pageOf(res, page, (res.json as unknown[]).map(toBranch));
+    },
+
+    async readFile(repository: string, path: string, ref?: string) {
+      const name = assertRepositoryName(repository);
+      const encoded = encodeFilePath(path);
+      const query = ref === undefined ? "" : `?ref=${encodeURIComponent(assertBranch(ref))}`;
+      const res = await ok(
+        call(
+          `${repoPath(name)}/contents${encoded === "" ? "" : `/${encoded}`}${query}`,
+          { method: "GET" },
+          { repositories: [name], permissions: { contents: "read", metadata: "read" } },
+        ),
+      );
+      return toFileContent(res.json, path.replace(/^\/+|\/+$/g, ""));
+    },
+
+    async listPullRequests(repository: string, opts = {}) {
+      const name = assertRepositoryName(repository);
+      const page = cursorPage(opts.cursor);
+      const perPage = readPageSize(opts.perPage);
+      const res = await ok(
+        call(
+          `${repoPath(name)}/pulls?state=${listState(opts.state)}&per_page=${perPage}&page=${page}`,
+          { method: "GET" },
+          { repositories: [name], permissions: { pull_requests: "read", metadata: "read" } },
+        ),
+      );
+      if (!Array.isArray(res.json))
+        throw new GitHostError("unexpected", "GitHub returned no list.");
+      const items = (res.json as unknown[]).map((p) => toPullRequest(p, web(), org, false));
+      return pageOf(res, page, items);
+    },
+
+    async getPullRequest(repository: string, number: number) {
+      const name = assertRepositoryName(repository);
+      const res = await ok(
+        call(
+          `${repoPath(name)}/pulls/${assertNumber(number)}`,
+          { method: "GET" },
+          { repositories: [name], permissions: { pull_requests: "read", metadata: "read" } },
+        ),
+      );
+      return toPullRequest(res.json, web(), org, true);
+    },
+
+    async listIssues(repository: string, opts = {}) {
+      const name = assertRepositoryName(repository);
+      const page = cursorPage(opts.cursor);
+      const perPage = readPageSize(opts.perPage);
+      const res = await ok(
+        call(
+          `${repoPath(name)}/issues?state=${listState(opts.state)}&per_page=${perPage}&page=${page}`,
+          { method: "GET" },
+          { repositories: [name], permissions: { issues: "read", metadata: "read" } },
+        ),
+      );
+      if (!Array.isArray(res.json))
+        throw new GitHostError("unexpected", "GitHub returned no list.");
+      // GitHub lists pull requests among issues: they are left out here.
+      const items = (res.json as unknown[])
+        .filter((i) => !isPullRequestIssue(i))
+        .map((i) => toIssue(i, web(), false));
+      return pageOf(res, page, items);
+    },
+
+    async getIssue(repository: string, number: number) {
+      const name = assertRepositoryName(repository);
+      const res = await ok(
+        call(
+          `${repoPath(name)}/issues/${assertNumber(number)}`,
+          { method: "GET" },
+          { repositories: [name], permissions: { issues: "read", metadata: "read" } },
+        ),
+      );
+      if (isPullRequestIssue(res.json)) {
+        throw new GitHostError("not_found", "That number is a pull request, not an issue.");
+      }
+      return toIssue(res.json, web(), true);
+    },
+
+    async createBranch(input: GitCreateBranchInput) {
+      const name = assertRepositoryName(input.repository);
+      const branch = assertBranch(input.name);
+      const from = assertBranch(input.from);
+      const scope: InstallationScope = {
+        repositories: [name],
+        permissions: { contents: "write", metadata: "read" },
+      };
+      let sha = from;
+      if (!isCommitSha(from)) {
+        const ref = await ok(
+          call(`${repoPath(name)}/git/ref/heads/${refPath(from)}`, { method: "GET" }, scope),
+        );
+        const found = (ref.json as { object?: { sha?: unknown } } | undefined)?.object?.sha;
+        if (typeof found !== "string" || !isCommitSha(found)) {
+          throw new GitHostError("not_found", "That branch was not found.");
+        }
+        sha = found;
+      }
+      const res = await ok(
+        call(
+          `${repoPath(name)}/git/refs`,
+          { method: "POST", body: { ref: `refs/heads/${branch}`, sha } },
+          scope,
+        ),
+        [201],
+      );
+      const made = (res.json as { object?: { sha?: unknown } } | undefined)?.object?.sha;
+      return { name: branch, commitSha: typeof made === "string" ? made : sha, protected: false };
+    },
   };
+}
+
+/** A branch name as a URL path (each `/`-separated part encoded). */
+function refPath(branch: string): string {
+  return branch
+    .split("/")
+    .map((s) => encodeURIComponent(s))
+    .join("/");
+}
+
+/** A page of `items` with the next cursor from the `Link` header. */
+function pageOf<T>(res: HostResponse, page: number, items: T[]): GitPage<T> {
+  const next = nextPage(header(res, "link"));
+  return { items, next: next !== null && next > page ? String(next) : null };
 }

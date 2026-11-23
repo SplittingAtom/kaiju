@@ -29,6 +29,7 @@ import { loadRunAgentTools } from "../policy/run-agent-tools.js";
 import { guardViewedFile, proposeAvailable } from "../policy/viewed-file-guard.js";
 import { guardKobeAdmin } from "../policy/kobe-admin-guard.js";
 import { guardKobeAdminCall } from "../kobe-mcp/person-guard.js";
+import { guardGitToolCall } from "../git-tools/guard.js";
 import { recordSkippedActionInTx } from "../policy/skipped-actions.js";
 import { decideAcrossRuns, policyInputFor } from "../mcp/decide-policy.js";
 import { loadActiveRuns } from "../mcp/run-context.js";
@@ -610,8 +611,21 @@ async function guardedDecision(d: Deciding, evaluated: Decided): Promise<PolicyD
     evaluated.input.tool,
     frame.input,
   );
+  // KOBE-762: a git host tool only with a connection, role and Site that allow it now.
+  const gitGuarded = await guardGitToolCall(
+    deps.db,
+    {
+      teamId: target.teamId,
+      userId: target.userId,
+      sandboxId: target.sandboxId,
+      ...(d.evalRun ? { evalThreadId: frame.thread_id } : {}),
+    },
+    guarded,
+    evaluated.input.tool,
+    frame.input,
+  );
   // KOBE-777/800: an MCP or server-run call under every active run of the sandbox.
-  return acrossSandboxRuns(deps, target, frame, evaluated.input, guarded);
+  return acrossSandboxRuns(deps, target, frame, evaluated.input, gitGuarded);
 }
 
 /**

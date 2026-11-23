@@ -10,6 +10,7 @@ import { reportCapturedResult, resultReportSchema, type AppResultsDeps } from ".
 import { authenticateSandbox, type McpAuthDeps } from "../mcp/principal.js";
 import type { McpService } from "../mcp/service.js";
 import type { KobeMcpService } from "../kobe-mcp/service.js";
+import type { GitMcpService } from "../git-tools/mcp-service.js";
 import { createRateLimiter, type RateLimiter } from "../sandbox/rate-limit.js";
 import { invalidRequest, notFound, readJson } from "../http/request.js";
 import { createInternalGitRoutes, type InternalGitDeps } from "./internal-git.js";
@@ -33,6 +34,7 @@ import { createInternalGitRoutes, type InternalGitDeps } from "./internal-git.js
  *      token the upstream refused; 404 `not_connected` | `connector_not_available`, 503 `unavailable`
  * POST /internal/v1/mcp/connectors/{id}/results `{ticket, input, result}` (KOBE-438) → 201
  *      `{storage}`; 403 `ticket_invalid`, 409 `run_not_active`, 429 `too_many_unclaimed` (the allow's `app_capture.ticket`, MCP Apps)
+ * POST /internal/v1/mcp/git/list, /git/calls → the same for the built-in git connector (KOBE-762).
  * POST /internal/v1/mcp/kobe/list → 200 `{connector, tools}` (KOBE-619: the built-in Kobe connector's
  *      tools for this person now) | 404 `connector_not_available`
  * POST /internal/v1/mcp/kobe/calls `{tool, arguments, thread_id?, tool_call_id?}` → 200
@@ -64,6 +66,8 @@ export interface InternalAppDeps {
   readonly decideLimiter?: RateLimiter;
   /** The built-in Kobe MCP server (KOBE-619); unset: its routes answer not available. */
   readonly kobe?: KobeMcpService;
+  /** The built-in git connector (KOBE-762), served like the Kobe connector. */
+  readonly gitMcp?: GitMcpService;
   /** The egress proxy's git decisions (KOBE-763), with its own key; unset: not mounted. */
   readonly git?: InternalGitDeps;
 }
@@ -211,37 +215,44 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
 
   // The built-in Kobe connector (KOBE-619): listed and decided-and-executed by the server itself.
   const notAvailable = (c: Context) => notFound(c, "connector_not_available", "Not available.");
-  mcp.post("/kobe/list", async (c) => {
-    if (!deps.kobe) return notAvailable(c);
-    const auth = await principalOf(c.req.header("kobe-sandbox-token"));
-    if (!auth.ok) return c.json({ code: "sandbox_unauthorized", message: auth.code }, 401);
-    const wait = decideLimiter.take(auth.principal.sandboxId);
-    if (wait > 0) {
-      c.header("Retry-After", String(Math.ceil(wait / 1000)));
-      return c.json({ code: "rate_limited", message: "Too many calls." }, 429);
-    }
-    const listed = await deps.kobe.list(auth.principal);
-    return listed ? c.json(listed) : notAvailable(c);
-  });
-  mcp.post("/kobe/calls", async (c) => {
-    if (!deps.kobe) return notAvailable(c);
-    const body = callBodySchema.safeParse(await readJson(c, null));
-    if (!body.success) return invalidRequest(c, "Invalid call.");
-    const auth = await principalOf(c.req.header("kobe-sandbox-token"));
-    if (!auth.ok) return c.json({ code: "sandbox_unauthorized", message: auth.code }, 401);
-    const wait = decideLimiter.take(auth.principal.sandboxId);
-    if (wait > 0) {
-      c.header("Retry-After", String(Math.ceil(wait / 1000)));
-      return c.json({ code: "rate_limited", message: "Too many calls." }, 429);
-    }
-    const answer = await deps.kobe.call(auth.principal, {
-      tool: body.data.tool,
-      arguments: body.data.arguments,
-      ...(body.data.thread_id === undefined ? {} : { threadId: body.data.thread_id }),
-      ...(body.data.tool_call_id === undefined ? {} : { toolCallId: body.data.tool_call_id }),
+  // The built-in git connector (KOBE-762) is served the same way, on its own paths.
+  const builtins: [string, Pick<KobeMcpService, "list" | "call"> | undefined][] = [
+    ["kobe", deps.kobe],
+    ["git", deps.gitMcp],
+  ];
+  for (const [path, service] of builtins) {
+    mcp.post(`/${path}/list`, async (c) => {
+      if (!service) return notAvailable(c);
+      const auth = await principalOf(c.req.header("kobe-sandbox-token"));
+      if (!auth.ok) return c.json({ code: "sandbox_unauthorized", message: auth.code }, 401);
+      const wait = decideLimiter.take(auth.principal.sandboxId);
+      if (wait > 0) {
+        c.header("Retry-After", String(Math.ceil(wait / 1000)));
+        return c.json({ code: "rate_limited", message: "Too many calls." }, 429);
+      }
+      const listed = await service.list(auth.principal);
+      return listed ? c.json(listed) : notAvailable(c);
     });
-    return answer.outcome === "unavailable" ? notAvailable(c) : c.json(answer);
-  });
+    mcp.post(`/${path}/calls`, async (c) => {
+      if (!service) return notAvailable(c);
+      const body = callBodySchema.safeParse(await readJson(c, null));
+      if (!body.success) return invalidRequest(c, "Invalid call.");
+      const auth = await principalOf(c.req.header("kobe-sandbox-token"));
+      if (!auth.ok) return c.json({ code: "sandbox_unauthorized", message: auth.code }, 401);
+      const wait = decideLimiter.take(auth.principal.sandboxId);
+      if (wait > 0) {
+        c.header("Retry-After", String(Math.ceil(wait / 1000)));
+        return c.json({ code: "rate_limited", message: "Too many calls." }, 429);
+      }
+      const answer = await service.call(auth.principal, {
+        tool: body.data.tool,
+        arguments: body.data.arguments,
+        ...(body.data.thread_id === undefined ? {} : { threadId: body.data.thread_id }),
+        ...(body.data.tool_call_id === undefined ? {} : { toolCallId: body.data.tool_call_id }),
+      });
+      return answer.outcome === "unavailable" ? notAvailable(c) : c.json(answer);
+    });
+  }
 
   // MCP Apps (KOBE-438): the proxy reports a UI tool's full upstream result under the ticket the
   // allow carried. 201 `{storage}`; 403 `ticket_invalid`; 409 `run_not_active`.

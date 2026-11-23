@@ -10,7 +10,12 @@ import {
   type AuditVia,
 } from "./audit/index.js";
 import { createDb } from "./client.js";
-import { readKobeMcpMode, seedKobeBuiltinConnector } from "./connectors/builtin.js";
+import {
+  readKobeMcpMode,
+  seedGitBuiltinConnector,
+  seedKobeBuiltinConnector,
+} from "./connectors/builtin.js";
+import { GIT_BUILTIN_CONNECTOR_ID, GIT_BUILTIN_CONNECTOR_URL } from "./schema/connectors.js";
 import {
   KOBE_BUILTIN_CONNECTOR_ID,
   KOBE_BUILTIN_CONNECTOR_URL,
@@ -48,6 +53,29 @@ describe("the built-in kobe connector row", () => {
       outcome: "present",
       name: rows[0]?.name,
     });
+  });
+
+  it("seeds the built-in git connector once, apart from the Kobe one (KOBE-762)", async () => {
+    const results = await Promise.all(
+      Array.from({ length: 4 }, () => seedGitBuiltinConnector(app.db)),
+    );
+    expect(results.filter((r) => r.outcome === "seeded")).toHaveLength(1);
+    const rows = await app.db.select().from(connectors).where(eq(connectors.builtin, "git"));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ id: GIT_BUILTIN_CONNECTOR_ID, url: GIT_BUILTIN_CONNECTOR_URL });
+    await expect(
+      app.db
+        .insert(connectors)
+        .values({ name: `fake-${randomUUID().slice(0, 8)}`, url: GIT_BUILTIN_CONNECTOR_URL }),
+    ).rejects.toSatisfy((e) => pgCodeOf(e) === "23514");
+    // The git row never carries the Kobe URL, nor the Kobe id.
+    await expect(
+      app.db.transaction((tx) =>
+        tx.execute(
+          sql`UPDATE connectors SET url = 'http://kobe-server.internal/internal/v1/mcp/kobe' WHERE builtin = 'git'`,
+        ),
+      ),
+    ).rejects.toSatisfy((e) => pgCodeOf(e) === "23514");
   });
 
   it("refuses a registered connector carrying the internal URL", async () => {
