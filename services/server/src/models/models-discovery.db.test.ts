@@ -1,11 +1,11 @@
 import pino from "pino";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PROVIDER_KEY_PURPOSE, SecretBox, VIRTUAL_KEY_PURPOSE } from "@kobe/db";
-import { catalogModelIds, failureReason } from "./models/discovery.js";
-import { ModelGatewaySync } from "./models/sync.js";
-import { FakeBifrost } from "./models/testing/fake-bifrost.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { catalogModelIds, failureReason } from "./discovery.js";
+import { ModelGatewaySync } from "./sync.js";
+import { FakeBifrost } from "./testing/fake-bifrost.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-44: the catalog editor's model picker. Site admins list a provider's models through

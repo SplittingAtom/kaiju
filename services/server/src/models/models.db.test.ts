@@ -12,15 +12,15 @@ import {
   virtualKeyContext,
   withTeam,
 } from "@kobe/db";
-import { runWithAuditContext } from "./audit/context.js";
-import { gatewayTeamName, virtualKeyName } from "./models/desired.js";
-import { ModelGatewaySync } from "./models/sync.js";
-import { teamModelsResponseSchema } from "./openapi/models.js";
-import { FakeBifrost } from "./models/testing/fake-bifrost.js";
-import { createTeamWithAdmin, removeMember } from "./teams/members.js";
-import { deactivateUser } from "./users/deactivation.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { runWithAuditContext } from "../audit/context.js";
+import { gatewayTeamName, virtualKeyName } from "./desired.js";
+import { ModelGatewaySync } from "./sync.js";
+import { teamModelsResponseSchema } from "../openapi/models.js";
+import { FakeBifrost } from "./testing/fake-bifrost.js";
+import { createTeamWithAdmin, removeMember } from "../teams/members.js";
+import { deactivateUser } from "../users/deactivation.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-40: site model admin (providers with write-only keys, catalog), team enablement, audit,
