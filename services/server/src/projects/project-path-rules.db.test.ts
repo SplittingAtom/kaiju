@@ -12,8 +12,8 @@ import {
   workspaceUpload,
   world,
   type World,
-} from "./testing/project-commits-fixture.js";
-import type { TestBrowser } from "./testing/browser.js";
+} from "../testing/project-commits-fixture.js";
+import type { TestBrowser } from "../testing/browser.js";
 
 /**
  * KOBE-780 against a real Postgres: the path rules of every write of a project's files. P2-8: a

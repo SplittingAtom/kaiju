@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { PROJECT_FILES_MAX } from "@kobe/protocol";
 import { type FileEditProposeFrame } from "@kobe/protocol/sandbox-wire";
-import { proposeFileEdit, type ProposeOutcome } from "./sandbox-wire/file-edit-propose.js";
-import { RawBody, type TestBrowser } from "./testing/browser.js";
-import { must } from "./testing/event-stream-fixture.js";
+import { proposeFileEdit, type ProposeOutcome } from "../sandbox-wire/file-edit-propose.js";
+import { RawBody, type TestBrowser } from "../testing/browser.js";
+import { must } from "../testing/event-stream-fixture.js";
 import {
   PREFIX,
   audits,
@@ -21,7 +21,7 @@ import {
   treeOf,
   world,
   type World,
-} from "./testing/project-commits-fixture.js";
+} from "../testing/project-commits-fixture.js";
 
 /**
  * KOBE-591 (projects-in-conversations PE1-PE7) against a real Postgres: `propose_file_edit` for a

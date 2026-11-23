@@ -14,7 +14,7 @@ import {
   treeOf,
   workspaceUpload,
   world,
-} from "./testing/project-commits-fixture.js";
+} from "../testing/project-commits-fixture.js";
 
 /**
  * KOBE-579 (Workspaces WS-4, ac-1) against a real Postgres: checkout, editing through the FE4 save

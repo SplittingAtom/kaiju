@@ -2,19 +2,19 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CAPABILITY_PROJECTS, type PolicyDecision, type PolicyEngine } from "@kobe/protocol";
 import { projectCommitResultFrameSchema } from "@kobe/protocol/sandbox-wire";
-import { approvalKeyring } from "./approvals/index.js";
-import { createApp } from "./app.js";
-import { diffHash } from "./projects/tree.js";
-import { RawBody, TestBrowser } from "./testing/browser.js";
+import { approvalKeyring } from "../approvals/index.js";
+import { createApp } from "../app.js";
+import { diffHash } from "./tree.js";
+import { RawBody, TestBrowser } from "../testing/browser.js";
 import {
   EventStreamFixture,
   PUBLIC_URL,
   must,
   type Person,
-} from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { createWorkspaceSync, type WorkspaceSync } from "./workspace-sync/index.js";
+} from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { createWorkspaceSync, type WorkspaceSync } from "../workspace-sync/index.js";
 
 /**
  * KOBE-579 ac-3 (Workspaces CM6): the agent's `commit_project` over the wire. Approval is required

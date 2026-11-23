@@ -1,9 +1,9 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { RawBody } from "./testing/browser.js";
-import type { Person } from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { RunFixture } from "./testing/run-fixture.js";
+import { RawBody } from "../testing/browser.js";
+import type { Person } from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { RunFixture } from "../testing/run-fixture.js";
 
 /**
  * KOBE-578 (Workspaces WS-3, ac-1 and ac-3): the PR3 matrix row by row through the API, the

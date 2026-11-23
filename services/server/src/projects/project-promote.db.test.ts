@@ -14,9 +14,9 @@ import {
   workspaceUpload,
   world,
   type World,
-} from "./testing/project-commits-fixture.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { listLive } from "./workspace-sync/store.js";
+} from "../testing/project-commits-fixture.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { listLive } from "../workspace-sync/store.js";
 
 /**
  * KOBE-586 (projects-in-conversations PF1-PF6) against a real Postgres: a My files folder becomes

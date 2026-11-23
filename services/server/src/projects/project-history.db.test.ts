@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { deleteReleasedBlobs } from "./retention/blobs.js";
-import { blobRecorder } from "./retention/job.js";
-import { pruneProjectHistory } from "./retention/project-history.js";
+import { deleteReleasedBlobs } from "../retention/blobs.js";
+import { blobRecorder } from "../retention/job.js";
+import { pruneProjectHistory } from "../retention/project-history.js";
 import {
   PREFIX,
   audits,
@@ -18,7 +18,7 @@ import {
   setHold,
   sha,
   world,
-} from "./testing/project-commits-fixture.js";
+} from "../testing/project-commits-fixture.js";
 
 /**
  * KOBE-579: losing `edit` ends a checkout (editor row removed: a reader, KOBE-587; team admin demoted);

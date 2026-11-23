@@ -2,17 +2,17 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
 import { ARTIFACT_CONTENT_MAX_BYTES, projectFileSchema } from "@kobe/protocol";
-import { createApp } from "./app.js";
+import { createApp } from "../app.js";
 import {
   EventStreamFixture,
   PUBLIC_URL,
   must,
   type Person,
-} from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { RawBody, TestBrowser } from "./testing/browser.js";
-import { createWorkspaceSync, type WorkspaceSync } from "./workspace-sync/index.js";
-import { listLive } from "./workspace-sync/store.js";
+} from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { RawBody, TestBrowser } from "../testing/browser.js";
+import { createWorkspaceSync, type WorkspaceSync } from "../workspace-sync/index.js";
+import { listLive } from "../workspace-sync/store.js";
 
 /**
  * Add to project (KOBE-585, ac-1/ac-2): `POST /v1/projects/:id/files/import` copies an artifact

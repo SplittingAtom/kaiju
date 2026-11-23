@@ -12,8 +12,8 @@ import {
   sha,
   workspaceUpload,
   world,
-} from "./testing/project-commits-fixture.js";
-import { RawBody } from "./testing/browser.js";
+} from "../testing/project-commits-fixture.js";
+import { RawBody } from "../testing/browser.js";
 
 /**
  * KOBE-579 ac-2 and ac-4 (sync and quotas): the sandbox pushes into a project folder only with a

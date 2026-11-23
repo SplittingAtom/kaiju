@@ -1,14 +1,14 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
-import { RawBody } from "./testing/browser.js";
-import type { Person } from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { RunFixture } from "./testing/run-fixture.js";
-import { createWorkspaceSync } from "./workspace-sync/index.js";
-import { listLive } from "./workspace-sync/store.js";
-import { MOUNTS_MAX_SETTING } from "./projects/mounts.js";
-import { endUserProjects } from "./projects/offboard.js";
+import { RawBody } from "../testing/browser.js";
+import type { Person } from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import { createWorkspaceSync } from "../workspace-sync/index.js";
+import { listLive } from "../workspace-sync/store.js";
+import { MOUNTS_MAX_SETTING } from "./mounts.js";
+import { endUserProjects } from "./offboard.js";
 
 /**
  * KOBE-578 (Workspaces MT1-MT4, ac-2): a project is mounted into a member's workspace only while

@@ -1,15 +1,15 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
-import { RawBody } from "./testing/browser.js";
-import type { Person } from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { RunFixture } from "./testing/run-fixture.js";
-import { createWorkspaceSync } from "./workspace-sync/index.js";
-import { storageUsed } from "./uploads/quota.js";
-import { listLive } from "./workspace-sync/store.js";
-import { OPERATION_LIMITS } from "./operation-limits.js";
-import { expectRateLimited, fillLimit } from "./testing/operation-limits.js";
+import { RawBody } from "../testing/browser.js";
+import type { Person } from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import { createWorkspaceSync } from "../workspace-sync/index.js";
+import { storageUsed } from "../uploads/quota.js";
+import { listLive } from "../workspace-sync/store.js";
+import { OPERATION_LIMITS } from "../operation-limits.js";
+import { expectRateLimited, fillLimit } from "../testing/operation-limits.js";
 
 /**
  * KOBE-162 (ac-1): the project files API and how files reach members' workspaces. The `projects/`
