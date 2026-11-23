@@ -41,6 +41,12 @@ export interface ApprovalServiceOptions {
   readonly registry?: ToolRegistry;
   /** The deployment's public origin (git approval cards' conversation links, KOBE-762). */
   readonly publicUrl?: string;
+  /**
+   * Whether this process decides or verifies approvals (default true). The scheduler process
+   * serves no approval route and attaches no sandbox wire, so it never signs or verifies one and
+   * does not log the missing key (KOBE-817); without a key every approval is still denied.
+   */
+  readonly decides?: boolean;
 }
 
 /**
@@ -80,7 +86,7 @@ export class ApprovalService {
       now: this.#ctx.now,
       log,
     });
-    if (!options.keys) {
+    if (!options.keys && options.decides !== false) {
       log.error("KOBE_APPROVAL_KEY is not set: tool calls that need approval are denied");
     }
   }

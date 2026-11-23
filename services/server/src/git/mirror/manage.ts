@@ -11,6 +11,8 @@ import {
   GIT_MIRROR_MANAGE_RATE,
   GIT_MIRROR_OPEN_STALE_MS,
   GIT_MIRROR_REFRESH_RATE,
+  GIT_MIRROR_TOO_LARGE_CODES,
+  GIT_MIRROR_TOO_LARGE_REFRESH_RATE,
 } from "./limits.js";
 import { MirrorStop, openConnection, type MirrorDeps } from "./refresh.js";
 import { failureView, MIRROR_FAILURE_MESSAGES, readOnlyReason, revokeLease } from "./store.js";
@@ -73,13 +75,6 @@ type RepoRow = {
   refreshing: boolean;
 };
 
-/** The failures that mean "too large to mirror" (review R3-M1). */
-const TOO_LARGE: ReadonlySet<string> = new Set([
-  "too_many_files",
-  "file_too_large",
-  "repository_too_large",
-]);
-
 const iso = (d: Date | string | null) => (d === null ? null : new Date(d).toISOString());
 
 async function repoOf(tx: KobeTx, teamId: string, projectId: string): Promise<RepoRow | undefined> {
@@ -134,7 +129,7 @@ async function viewOf(
       // The claim's provisional `interrupted` is not a failure while that refresh runs.
       error:
         row.refreshing && row.mirror_error === "interrupted" ? null : failureView(row.mirror_error),
-      too_large: TOO_LARGE.has(row.mirror_error ?? ""),
+      too_large: GIT_MIRROR_TOO_LARGE_CODES.has(row.mirror_error ?? ""),
     },
     commits: commits.rows.map((c) => ({
       sha: c.sha,
@@ -232,8 +227,23 @@ export async function refreshRepo(
       };
     }
     const view = await viewOf(tx, viewer.teamId, projectId, row, await isAdmin(tx, viewer));
-    return { outcome: { ok: true as const, value: view }, kick: row.id };
+    return {
+      outcome: { ok: true as const, value: view },
+      kick: row.id,
+      tooLarge: GIT_MIRROR_TOO_LARGE_CODES.has(row.mirror_error ?? ""),
+    };
   });
+  // KOBE-818: a Repo too large to mirror is tried by hand once an hour (one try for all members);
+  // otherwise each Refresh fetches the pack up to the cap again.
+  if (out.kick !== undefined && out.tooLarge === true) {
+    const limit = await limited(
+      deps,
+      `git-mirror-refresh-large:${out.kick}`,
+      GIT_MIRROR_TOO_LARGE_REFRESH_RATE,
+      "This Repo is too large to mirror, so Refresh can check it only once an hour. It is also checked again on its own every few hours.",
+    );
+    if (limit) return limit;
+  }
   if (out.kick !== undefined) kickMirrorRefresh(deps, viewer.teamId, out.kick);
   return out.outcome;
 }
