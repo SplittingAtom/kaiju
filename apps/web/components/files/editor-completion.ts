@@ -359,7 +359,10 @@ export const completionTheme = EditorView.theme({
     padding: "0.375rem 0.5rem",
     fontSize: "0.75rem",
   },
-  ".cm-kobe-doc-signature": { fontFamily: "var(--kobe-font-mono)", whiteSpace: "pre-wrap" },
+  ".cm-kobe-doc-signature": {
+    whiteSpace: "pre-wrap",
+    fontFamily: "var(--kobe-font-mono)",
+  },
   ".cm-kobe-doc-body": {
     whiteSpace: "pre-wrap",
     color: "var(--muted-foreground)",
