@@ -1041,7 +1041,7 @@ _KEY_QUALIFIERS = frozenset(("api", "access", "private", "secret", "signing", "e
 _NOT_SECRET_NEXT = frozenset(("count", "counts", "len", "length", "size", "limit", "type"))
 _CAMEL = _re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
 _TOKEN_SPLIT = _re.compile(r"[^a-z0-9]+")
-# userinfo in a URL-looking string: scheme://user:password@host
+# userinfo in a URL-looking string (a user name, a colon, a password and "@" after the scheme)
 _URL_USERINFO = _re.compile(r"([A-Za-z][A-Za-z0-9+.\-]*://)[^/@\s:]+:[^/@\s]*@")
 
 
