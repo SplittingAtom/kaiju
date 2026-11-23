@@ -93,19 +93,21 @@ runs them on its server with the Workspace's credential and decides every call f
 
 Errors carry a code. Do not retry a refusal unless it says when.
 
-| Code                                          | Meaning and what to do                                                                                                      |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `git_not_allowed` with `read-only`            | The connection is at **Read**. A Workspace admin can raise it.                                                              |
-| `git_not_allowed` with `Contributor`          | The user is a reader in this Workspace.                                                                                     |
-| `git_not_allowed` with `chosen agents`        | The connection is limited to agents other than one running in this sandbox.                                                 |
-| `git_not_allowed` with `Name the connection`  | Several connections fit: pass `connection`.                                                                                 |
-| `project_reader`                              | The repository is a Repo the user cannot edit. Its owner can make them an editor.                                           |
-| `name_prefix`, `visibility_not_allowed`       | New repository names must start with the prefix given; only private repositories are allowed on this connection.            |
-| `not_found`                                   | Not in the connected organization, or the credential cannot see it. Check the name.                                         |
-| `already_exists`                              | The repository or branch name is taken, or a pull request for that branch is already open.                                  |
-| `host_rate_limited`, `git_rate_limited`       | The host's limit, or Kobe's per-user limit (300 reads per 10 minutes, 30 changes per hour). Try again after the time given. |
-| `credential_rejected`, `credential_forbidden` | The Workspace's credential no longer works or lacks a permission. Tell the user; a Workspace admin fixes it.                |
-| `site_refused`                                | The Site no longer allows this host.                                                                                        |
+| Code                                          | Meaning and what to do                                                                                                                                                                        |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `git_not_allowed` with `read-only`            | The connection is at **Read**. A Workspace admin can raise it.                                                                                                                                |
+| `git_not_allowed` with `Contributor`          | The user is a reader in this Workspace.                                                                                                                                                       |
+| `git_not_allowed` with `chosen agents`        | The connection is limited to agents other than one running in this sandbox.                                                                                                                   |
+| `git_not_allowed` with `Name the connection`  | Several connections fit: pass `connection`.                                                                                                                                                   |
+| `project_reader`                              | The repository is a Repo the user cannot edit. Its owner can make them an editor.                                                                                                             |
+| `name_prefix`, `visibility_not_allowed`       | New repository names must start with the prefix given; only private repositories are allowed on this connection.                                                                              |
+| `not_found`                                   | Not in the connected organization, or the credential cannot see it. Check the name.                                                                                                           |
+| `already_exists`                              | The repository or branch name is taken, or a pull request for that branch is already open.                                                                                                    |
+| `host_rate_limited`, `git_rate_limited`       | The host's limit, or Kobe's per-user limit (300 reads per 10 minutes, 30 changes per hour). Try again after the time given.                                                                   |
+| `git_connection_budget`                       | The connection's hourly budget, shared by everyone in the Workspace (3,000 reads, 300 changes), is used up. Try again after the time given.                                                   |
+| `outcome_unknown`                             | An earlier attempt of exactly this call in this reply got no answer from the host. Check the repository on the host for what it would have created and tell the user; do not repeat the call. |
+| `credential_rejected`, `credential_forbidden` | The Workspace's credential no longer works or lacks a permission. Tell the user; a Workspace admin fixes it.                                                                                  |
+| `site_refused`                                | The Site no longer allows this host.                                                                                                                                                          |
 
 ## Credentials: there are none, and you must not ask
 

@@ -114,6 +114,17 @@ untrusted fences, refusal codes), `admin/git-organizations.md` (agent column per
 - Not done: L3 (footer name may change between card and post), L4 (names unfenced, bounded), L6
   (index for `callDigest`), L8 (file cap vs result cap).
 
+## Round 2 lows (review g103, 2026-11-23)
+
+- R2-L1: no capped list of Repo rules: `hostHasRepos` (EXISTS) decides whether to resolve, and
+  `repoReadRules` is asked for exactly the requested repository (or the listed page) by host id
+  or name, so any number of Repos fails closed (DB test with 5,002 Repos).
+- R2-L2: write tools apply the read rule first; a Repo the member may not read looks missing.
+- R2-L3: only a 4xx answer to the write itself is a certain refusal (`git.write.failed`); an error
+  after a 2xx (e.g. an unexpected owner) leaves the attempt open, so a retry answers
+  `outcome_unknown` and records never claim failure for a created repository (DB test).
+- R2-L4: agents' refusal table lists `git_connection_budget` and `outcome_unknown`.
+
 ## Open questions (for the coordinator)
 
 - Opus security review (ticket) not run here.

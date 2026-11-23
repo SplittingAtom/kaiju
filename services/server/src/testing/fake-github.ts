@@ -59,6 +59,8 @@ export interface FakeGithubOptions {
   repoPermissions?: { pull: boolean; push: boolean };
   /** Hostile answers: `html_url` / `clone_url` set to these instead of the fake's own URLs. */
   hostileHtmlUrl?: string;
+  /** A created repository is answered with this owner (an odd answer after a 201; KOBE-762). */
+  createdOwner?: string;
   hostileCloneUrl?: string;
 }
 
@@ -632,7 +634,8 @@ export class FakeGithub implements GitHostContractFake {
       const repo = this.addRepo(this.organization, name);
       repo.size = 0;
       if (body.visibility === "internal") repo.visibility = "internal";
-      return reply(201, this.repoJson(repo));
+      const json = this.repoJson(repo);
+      return reply(201, o.createdOwner ? { ...json, owner: { login: o.createdOwner } } : json);
     }
     const byId = /^\/repositories\/(\d+)$/.exec(path);
     if (byId && method === "GET") {

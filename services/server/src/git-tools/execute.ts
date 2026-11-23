@@ -13,7 +13,13 @@ import {
   type KobeDb,
 } from "@kobe/db";
 import { gitAdapterFor } from "../git/adapters.js";
-import { repoProjectRoles, repoReadRules, repoReadable, repoRefusal } from "../git/transport.js";
+import {
+  hostHasRepos,
+  repoProjectRoles,
+  repoReadRules,
+  repoReadable,
+  repoRefusal,
+} from "../git/transport.js";
 import { GitHostError, type GitHostAdapter } from "../git-hosts/adapter.js";
 import type { InstallationTokenCache } from "../git-hosts/github/app-auth.js";
 import type { GitHostNet } from "../git-hosts/http.js";
@@ -242,14 +248,13 @@ async function readTool(
   adapter: GitHostAdapter,
 ): Promise<GitExecution> {
   const repo = input.repository ?? "";
-  // M4 (owner decision 2026-11-22): a Kobe Repo is read only with a role on its project; it is
-  // left out of listings and refused exactly as a missing repository (no existence oracle).
-  const rules = await repoReadRules(deps.db, principal, connection.baseUrl);
-  const readable = (r: { id: string; fullName: string }) =>
-    facts.role !== null && repoReadable(facts.role, rules, r);
+  // M4 (owner decision 2026-11-22): a Kobe Repo is read by its project's read rule; one the
+  // member may not read is left out of listings and refused exactly as a missing repository.
+  const repos = await hostHasRepos(deps.db, principal, connection.baseUrl);
   try {
-    if (rules.length > 0 && tool.name !== "git_list_repositories") {
-      if (!readable(await adapter.getRepository({ name: repo }))) {
+    if (repos && tool.name !== "git_list_repositories") {
+      const resolved = await adapter.getRepository({ name: repo });
+      if (!(await mayRead(deps, principal, facts, connection, [resolved]))(resolved)) {
         return hostError(new GitHostError("not_found", "Not found."));
       }
     }
@@ -264,6 +269,9 @@ async function readTool(
     switch (tool.name) {
       case "git_list_repositories": {
         const listed = await adapter.listRepositories(page);
+        const readable = repos
+          ? await mayRead(deps, principal, facts, connection, listed.items)
+          : () => true;
         return readResult(connection, {
           kind: "repositories",
           page: { ...listed, items: listed.items.filter(readable) },
@@ -319,7 +327,22 @@ async function readTool(
   }
 }
 
-/** The repository a write acts on, checked for G12's Repo rule (editor or owner of its project). */
+/** The read rule for `repos` (rules asked for exactly these, by host id or name; no cap). */
+async function mayRead(
+  deps: GitToolsDeps,
+  principal: GitToolPrincipal,
+  facts: GitToolFacts,
+  connection: GitConnectionRecord,
+  repos: readonly { readonly id: string; readonly fullName: string }[],
+): Promise<(r: { readonly id: string; readonly fullName: string }) => boolean> {
+  const rules = await repoReadRules(deps.db, principal, connection.baseUrl, repos);
+  return (r) => facts.role !== null && repoReadable(facts.role, rules, r);
+}
+
+/**
+ * The repository a write acts on: first the read rule (a Repo the member may not read looks
+ * missing, as on every read tool; review g103 R2-L2), then G12's Repo rule (editor or owner).
+ */
 async function repoAllowed(
   deps: GitToolsDeps,
   principal: GitToolPrincipal,
@@ -329,6 +352,9 @@ async function repoAllowed(
   repository: string,
 ): Promise<{ readonly ok: true; readonly hostId: string } | GitToolError> {
   const resolved = await adapter.getRepository({ name: repository });
+  if (!(await mayRead(deps, principal, facts, connection, [resolved]))(resolved)) {
+    return hostError(new GitHostError("not_found", "Not found."));
+  }
   const repos = await repoProjectRoles(
     deps.db,
     principal,
@@ -382,7 +408,7 @@ async function writeTool(
   } catch (err) {
     // Refused for certain (nothing created): recorded, so a repeat may try again. A timeout or a
     // 5xx leaves the attempt open: the host may have acted.
-    if (attempted && err instanceof GitHostError && !AMBIGUOUS.has(err.code)) {
+    if (attempted && certainRefusal(err)) {
       await auditFailed(
         deps.db,
         ctx,
@@ -401,6 +427,21 @@ async function writeTool(
 
 /** Host errors after which the host may still have acted. */
 const AMBIGUOUS: ReadonlySet<string> = new Set(["host_unreachable", "unexpected"]);
+
+/**
+ * The host refused for certain: it answered the write itself with a 4xx (R2-L3). An error raised
+ * after a 2xx (an answer the adapter would not accept, e.g. an owner it did not expect), or with
+ * no answer at all, leaves the attempt open: the host may have acted.
+ */
+function certainRefusal(err: unknown): err is GitHostError {
+  return (
+    err instanceof GitHostError &&
+    !AMBIGUOUS.has(err.code) &&
+    err.status !== undefined &&
+    err.status >= 400 &&
+    err.status < 500
+  );
+}
 
 type Acted = Omit<GitWriteRecord, "idempotencyKey">;
 

@@ -21,6 +21,7 @@ import { gitPinnedTools } from "./git-tools/pinned.js";
 import { GIT_TOOLS } from "./git-tools/catalog.js";
 import { GIT_CONNECTION_READS_PER_HOUR, GIT_TOOL_WRITES_PER_HOUR } from "./git-tools/execute.js";
 import { listChatConnectors } from "./connectors/thread-connectors.js";
+import { hostHasRepos, repoReadRules } from "./git/transport.js";
 import { gitRunServer } from "./git-tools/run.js";
 import { KobeMcpHarness, type KobeSandbox } from "./testing/kobe-mcp-harness.js";
 import type { Person } from "./testing/event-stream-fixture.js";
@@ -763,6 +764,69 @@ describe("Kobe Repos are read with a role on their project (M4)", () => {
     const missing = await call(s, "git_read_file", { repository: "never", path: "README.md" });
     expect(gone.isError).toBe(true);
     expect(gone.text).toBe(missing.text);
+  });
+});
+
+describe("round 2 (review g103)", () => {
+  it("R2-L1: finds a Repo's rule however many Repos the host has (no cap)", async () => {
+    const w = await world();
+    const id = await connect(w, "github");
+    await h.fx.admin.query(
+      `WITH p AS (
+         INSERT INTO projects (team_id, id, slug, name, kind, created_by)
+         SELECT $1, gen_random_uuid(), 'bulk-' || n, 'Bulk', 'repo', $2 FROM generate_series(1, 5001) n
+         RETURNING id, slug)
+       INSERT INTO git_repositories (team_id, connection_id, base_url, host_repo_id, full_name,
+         project_id, origin, created_by)
+       SELECT $1, c.id, c.base_url, 'b' || p.slug, 'acme-test/' || p.slug, p.id, 'conversion', $2
+         FROM p, git_connections c WHERE c.id = $3`,
+      [w.team, w.admin.id, id],
+    );
+    const project = randomUUID();
+    await h.fx.admin.query(
+      `INSERT INTO projects (team_id, id, slug, name, kind, created_by)
+       VALUES ($1, $2, 'zz-last', 'Last', 'repo', $3)`,
+      [w.team, project, w.admin.id],
+    );
+    await h.fx.admin.query(
+      `INSERT INTO git_repositories (team_id, connection_id, base_url, host_repo_id, full_name,
+         project_id, origin, created_by)
+       SELECT $1, id, base_url, 'zz-host-id', 'acme-test/zz-last', $2, 'conversion', $3
+         FROM git_connections WHERE id = $4`,
+      [w.team, project, w.admin.id, id],
+    );
+    const base = must(
+      (
+        await h.fx.admin.query<{ base_url: string }>(
+          `SELECT base_url FROM git_connections WHERE id = $1`,
+          [id],
+        )
+      ).rows[0],
+    ).base_url;
+    const principal = { teamId: w.team, userId: w.reader.id };
+    expect(await hostHasRepos(h.fx.db, principal, base)).toBe(true);
+    const rules = await repoReadRules(h.fx.db, principal, base, [
+      { id: "zz-host-id", fullName: "elsewhere/renamed" },
+    ]);
+    expect(rules.map((r) => r.fullName)).toEqual(["acme-test/zz-last"]);
+    const byName = await repoReadRules(h.fx.db, principal, base, [
+      { id: "stale", fullName: "ACME-TEST/zz-last" },
+    ]);
+    expect(byName).toHaveLength(1);
+  });
+
+  it("R2-L3: a repository the host created but answered oddly is never recorded as failed", async () => {
+    const w = await world();
+    const id = await connect(w, "github");
+    github.options = { createdOwner: "someone-else" };
+    const s = await h.sandboxFor(w.team, w.contributor);
+    const first = await approved(s, "git_create_repository", { connection: id, name: "odd" });
+    expect(first.out.isError).toBe(true);
+    const rows = (await auditRows(w.team, "git.write")).map((r) => r.action);
+    expect(rows).toEqual(["git.write.attempted"]);
+    const again = await approved(s, "git_create_repository", { connection: id, name: "odd" });
+    expect(again.out.text).toContain("outcome_unknown");
+    expect(github.createdRepositories).toHaveLength(1);
   });
 });
 
