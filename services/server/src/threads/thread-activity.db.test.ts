@@ -4,9 +4,9 @@ import {
   threadActivityListSchema,
   threadPageSchema,
   threadSummarySchema,
-} from "./threads/schemas.js";
-import { RunFixture } from "./testing/run-fixture.js";
-import type { Person } from "./testing/event-stream-fixture.js";
+} from "./schemas.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-301: thread summaries say `pending_approval: true` while the thread holds an approval only

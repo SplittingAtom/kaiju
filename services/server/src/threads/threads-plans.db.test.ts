@@ -2,8 +2,8 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDb, searchThreads, withTeam, type KobeDatabase, type KobeTx } from "@kobe/db";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { lastMirroredEntryId, mirrorEntriesInTx, restoreParts } from "./sandbox-wire/entries.js";
-import { loadRun } from "./sandbox-wire/run-state.js";
+import { lastMirroredEntryId, mirrorEntriesInTx, restoreParts } from "../sandbox-wire/entries.js";
+import { loadRun } from "../sandbox-wire/run-state.js";
 import {
   bindUserEntry,
   entryExists,
@@ -14,11 +14,11 @@ import {
   setQueuePaused,
   setThreadStatus,
   touchThread,
-} from "./runs/store.js";
-import { sweepRuns } from "./runs/sweeper.js";
-import { fileThread, moveThread, setArchived, setPinned } from "./threads/organize.js";
-import { listFolders } from "./threads/folders.js";
-import { projectMarkers } from "./threads/project-moves.js";
+} from "../runs/store.js";
+import { sweepRuns } from "../runs/sweeper.js";
+import { fileThread, moveThread, setArchived, setPinned } from "./organize.js";
+import { listFolders } from "./folders.js";
+import { projectMarkers } from "./project-moves.js";
 import {
   findThread,
   listEntries,
@@ -29,7 +29,7 @@ import {
   switchAgentVersion,
   updateThread,
   type Viewer,
-} from "./threads/repository.js";
+} from "./repository.js";
 
 /**
  * KOBE-16 decision: `threads` and `thread_entries` carry a second, PERMISSIVE `break_glass_read`

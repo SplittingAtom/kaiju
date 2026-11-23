@@ -1,13 +1,13 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadEnvelope, withTeam } from "@kobe/db";
-import { createMcpService } from "./mcp/service.js";
-import { createDbRunContextSource } from "./sandbox-wire/policy-check.js";
-import { must } from "./testing/event-stream-fixture.js";
-import { PINNED_AGENTS } from "./runs/agents.js";
-import { enableConnector, registerConnector } from "./testing/mcp-fixtures.js";
-import { RunFixture } from "./testing/run-fixture.js";
-import type { Person } from "./testing/event-stream-fixture.js";
+import { createMcpService } from "../mcp/service.js";
+import { createDbRunContextSource } from "../sandbox-wire/policy-check.js";
+import { must } from "../testing/event-stream-fixture.js";
+import { PINNED_AGENTS } from "../runs/agents.js";
+import { enableConnector, registerConnector } from "../testing/mcp-fixtures.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-451 ac-2/ac-3/ac-6: the composer's Connectors. The list is exactly the member's usable

@@ -11,9 +11,9 @@ import {
   type ServerToSandboxFrame,
 } from "@kobe/protocol/sandbox-wire";
 import { sealReply } from "@kobe/protocol/node";
-import { RunFixture, type FakeWorkspace, type RunWorld } from "./testing/run-fixture.js";
-import type { TestResponse } from "./testing/browser.js";
-import { SandboxWakeError, type SandboxRouter } from "./sandbox-wire/types.js";
+import { RunFixture, type FakeWorkspace, type RunWorld } from "../testing/run-fixture.js";
+import type { TestResponse } from "../testing/browser.js";
+import { SandboxWakeError, type SandboxRouter } from "../sandbox-wire/types.js";
 
 /**
  * The context viewer's route (KOBE-470, docs/specs/context-viewer.md): `GET /v1/threads/{id}/context`

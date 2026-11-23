@@ -8,11 +8,11 @@ import {
 } from "@kobe/protocol";
 import { generateSessionKeyPair } from "@kobe/session-token";
 import { recordModelUsage, type ModelUsageRecord } from "@kobe/db";
-import { must } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, isFake } from "./testing/fake-sandbox.js";
-import { loadActiveRuns } from "./mcp/run-context.js";
-import { FakeWorkspace, RunFixture, type RunWorld } from "./testing/run-fixture.js";
-import type { TestResponse } from "./testing/browser.js";
+import { must } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, isFake } from "../testing/fake-sandbox.js";
+import { loadActiveRuns } from "../mcp/run-context.js";
+import { FakeWorkspace, RunFixture, type RunWorld } from "../testing/run-fixture.js";
+import type { TestResponse } from "../testing/browser.js";
 
 /**
  * Compact now on the server (KOBE-213, CE15): `POST /v1/threads/{id}/compact` creates a hidden

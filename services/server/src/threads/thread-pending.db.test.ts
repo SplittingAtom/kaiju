@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { pendingMessagesSchema } from "./routes/thread-pending.js";
-import { must } from "./testing/event-stream-fixture.js";
-import { RunFixture } from "./testing/run-fixture.js";
+import { pendingMessagesSchema } from "../routes/thread-pending.js";
+import { must } from "../testing/event-stream-fixture.js";
+import { RunFixture } from "../testing/run-fixture.js";
 
 /**
  * `GET /v1/threads/{id}/pending-messages` (KOBE-32): the text of queued messages and of the active

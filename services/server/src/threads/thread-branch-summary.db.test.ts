@@ -9,9 +9,9 @@ import {
 } from "@kobe/protocol";
 import { generateSessionKeyPair } from "@kobe/session-token";
 import { recordModelUsage, type ModelUsageRecord } from "@kobe/db";
-import { must } from "./testing/event-stream-fixture.js";
-import { RunFixture, type RunWorld } from "./testing/run-fixture.js";
-import type { TestResponse } from "./testing/browser.js";
+import { must } from "../testing/event-stream-fixture.js";
+import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
+import type { TestResponse } from "../testing/browser.js";
 
 /**
  * Make it current and carry a summary on the server (KOBE-548, CT11): `POST

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { threadMarkersSchema } from "./routes/thread-markers.js";
-import { RunFixture } from "./testing/run-fixture.js";
-import type { Person } from "./testing/event-stream-fixture.js";
+import { threadMarkersSchema } from "../routes/thread-markers.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
  * Pin, archive and move to project (CE19, KOBE-220): the owner's own organization of their

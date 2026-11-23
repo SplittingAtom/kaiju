@@ -2,10 +2,10 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { threadFilesResponseSchema } from "@kobe/protocol";
 import { runEvents, runs, threadEntries, withTeam } from "@kobe/db";
-import { readAgentFiles } from "./threads/agent-files.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { createWorkspaceSync, workspaceBlobKey } from "./workspace-sync/index.js";
+import { readAgentFiles } from "./agent-files.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { createWorkspaceSync, workspaceBlobKey } from "../workspace-sync/index.js";
 
 /**
  * KOBE-488 (ac-1): `GET /v1/threads/{id}/files` lists the workspace files the agent wrote in the

@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { MAX_MARKERS, threadMarkersSchema } from "./routes/thread-markers.js";
-import { FAILURE_MESSAGES } from "./runs/failure-codes.js";
-import { RunFixture } from "./testing/run-fixture.js";
-import type { Person } from "./testing/event-stream-fixture.js";
+import { MAX_MARKERS, threadMarkersSchema } from "../routes/thread-markers.js";
+import { FAILURE_MESSAGES } from "../runs/failure-codes.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
  * `GET /v1/threads/{id}/markers` (KOBE-209, CE12/CE16): what the chat marks inline that is not in

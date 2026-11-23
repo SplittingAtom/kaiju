@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import pino from "pino";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { RunFixture } from "./testing/run-fixture.js";
-import { SseReader } from "./testing/sse.js";
-import type { Person } from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { runRetentionPass, type BlobStore } from "./retention/index.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import { SseReader } from "../testing/sse.js";
+import type { Person } from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { runRetentionPass, type BlobStore } from "../retention/index.js";
 
 /**
  * KOBE-163: share a thread to its project, read-only access for members, unshare, fork (D23).

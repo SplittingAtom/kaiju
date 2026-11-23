@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withItemReferences, withSkillRequest } from "@kobe/protocol";
-import { RunFixture } from "./testing/run-fixture.js";
+import { RunFixture } from "../testing/run-fixture.js";
 
 /**
  * KOBE-490 ac-3: items an MCP App put in the composer as chips go with the member's message as

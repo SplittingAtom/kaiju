@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { SYSTEM_PROMPT_MAX_BYTES } from "@kobe/protocol";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { RunFixture } from "./testing/run-fixture.js";
-import type { Person } from "./testing/event-stream-fixture.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-85: the builder's test pane chats with the unpublished draft through the normal run start

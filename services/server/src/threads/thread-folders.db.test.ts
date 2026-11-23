@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { strFromU8, unzipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { exportZip } from "./retention/export.js";
-import { RunFixture } from "./testing/run-fixture.js";
-import type { Person } from "./testing/event-stream-fixture.js";
+import { exportZip } from "../retention/export.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
  * Thread folders (KOBE-534, spec TF1-TF11): the team's folders, which any member creates,

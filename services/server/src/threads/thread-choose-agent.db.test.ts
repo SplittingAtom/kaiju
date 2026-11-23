@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { seedGalleryAgents } from "./gallery/seed.js";
+import { seedGalleryAgents } from "../gallery/seed.js";
 import {
   pinnedApp,
   publishedAgent,
   runConnectors,
   teamModel,
   threadAgent,
-} from "./testing/app-launch-fixtures.js";
-import { RunFixture, type RunWorld } from "./testing/run-fixture.js";
+} from "../testing/app-launch-fixtures.js";
+import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
 
 /**
  * KOBE-458 ac-3: `POST /v1/threads/:id/agent` gives the owner's agentless thread an agent once,

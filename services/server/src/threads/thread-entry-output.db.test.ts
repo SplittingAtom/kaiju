@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { RunFixture } from "./testing/run-fixture.js";
-import type { Person } from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import type { BlobStore } from "./retention/index.js";
-import { MAX_OUTPUT_BLOB_BYTES, OUTPUT_INLINE_MAX_BYTES } from "./threads/entry-output.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import type { Person } from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import type { BlobStore } from "../retention/index.js";
+import { MAX_OUTPUT_BLOB_BYTES, OUTPUT_INLINE_MAX_BYTES } from "./entry-output.js";
 
 /**
  * KOBE-208 (CE12): a tool output over 64 KB is trimmed to a preview in the entry list and read in

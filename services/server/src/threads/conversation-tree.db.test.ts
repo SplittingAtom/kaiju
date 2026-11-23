@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { strFromU8, unzipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { exportZip } from "./retention/export.js";
-import type { Person } from "./testing/event-stream-fixture.js";
-import { RunFixture, type RunWorld } from "./testing/run-fixture.js";
+import { exportZip } from "../retention/export.js";
+import type { Person } from "../testing/event-stream-fixture.js";
+import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
 
 /**
  * The conversation tree's server side (KOBE-543, docs/specs/conversation-tree.md CT2, CT3, CT9,

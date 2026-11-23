@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PINNED_AGENTS } from "./runs/agents.js";
-import { RunFixture } from "./testing/run-fixture.js";
+import { PINNED_AGENTS } from "../runs/agents.js";
+import { RunFixture } from "../testing/run-fixture.js";
 
 /**
  * KOBE-44: a thread's model choice (D30, KOBE-41's open question). The owner picks one of the

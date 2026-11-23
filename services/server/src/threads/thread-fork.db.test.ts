@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { Person } from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { RunFixture } from "./testing/run-fixture.js";
-import type { BlobStore } from "./retention/index.js";
+import type { Person } from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import type { BlobStore } from "../retention/index.js";
 
 /**
  * KOBE-216 (CE16): "Fork to a new thread" from a message. The fork copies the entries from the

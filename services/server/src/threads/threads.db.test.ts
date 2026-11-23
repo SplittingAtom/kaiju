@@ -3,11 +3,11 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { createApp } from "./app.js";
-import { createServerDeps, type ServerDeps } from "./deps.js";
-import { TestBrowser } from "./testing/browser.js";
-import { MemoryMailer } from "./testing/mailer.js";
-import { findThread, updateThread } from "./threads/repository.js";
+import { createApp } from "../app.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { TestBrowser } from "../testing/browser.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { findThread, updateThread } from "./repository.js";
 import {
   entryPageSchema,
   threadDetailSchema,
@@ -15,8 +15,8 @@ import {
   threadPageSchema,
   threadSearchPageSchema,
   threadSummarySchema,
-} from "./threads/schemas.js";
-import { fakeIsolation } from "./testing/isolation.js";
+} from "./schemas.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 // KOBE-34 Thread API against a real Postgres: own throwaway database (it needs an Owner).
 const PUBLIC_URL = "http://kobe.test";

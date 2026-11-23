@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { sql, type KobeTx } from "@kobe/db";
-import { appendRunEventsInTx, withAppendTx } from "./event-stream/append.js";
-import { reorderQueuedRuns } from "./runs/queue-order.js";
-import { lockRunRow, lockThreadRow } from "./runs/store.js";
-import { findThread } from "./threads/repository.js";
-import { EventStreamFixture, delta, must, type Person } from "./testing/event-stream-fixture.js";
+import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
+import { reorderQueuedRuns } from "../runs/queue-order.js";
+import { lockRunRow, lockThreadRow } from "../runs/store.js";
+import { findThread } from "./repository.js";
+import { EventStreamFixture, delta, must, type Person } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-266: the thread lock must not deadlock with a run's own event writer.

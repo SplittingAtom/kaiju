@@ -1,9 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withSkillRequest } from "@kobe/protocol";
-import { RunFixture } from "./testing/run-fixture.js";
-import type { Person } from "./testing/event-stream-fixture.js";
-import { must } from "./testing/event-stream-fixture.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import type { Person } from "../testing/event-stream-fixture.js";
+import { must } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-451 ac-4: the composer's Skills. The list is the run-start resolver's effective set; a

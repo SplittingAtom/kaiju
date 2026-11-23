@@ -17,12 +17,12 @@ import {
   type ServerCallClaims,
 } from "@kobe/protocol";
 import { generateSessionKeyPair, verifyServerCallToken } from "@kobe/session-token";
-import { SseReader } from "./testing/sse.js";
-import { threadCardSchema } from "./threads/schemas.js";
-import { withAppendTx } from "./event-stream/append.js";
-import { endRunInTx } from "./sandbox-wire/run-state.js";
-import { RunFixture, type FakeWorkspace, type RunWorld } from "./testing/run-fixture.js";
-import type { Person } from "./testing/event-stream-fixture.js";
+import { SseReader } from "../testing/sse.js";
+import { threadCardSchema } from "./schemas.js";
+import { withAppendTx } from "../event-stream/append.js";
+import { endRunInTx } from "../sandbox-wire/run-state.js";
+import { RunFixture, type FakeWorkspace, type RunWorld } from "../testing/run-fixture.js";
+import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-219 (CE18 auto-titles) on the KOBE-234 contract, end to end on the server: a scripted

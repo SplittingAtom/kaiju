@@ -1,8 +1,8 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { RunFixture, type RunWorld } from "./testing/run-fixture.js";
-import { SseReader } from "./testing/sse.js";
-import type { Person } from "./testing/event-stream-fixture.js";
+import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
+import { SseReader } from "../testing/sse.js";
+import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-221 (CE20): share scope none / project / team. The author is a plain member; `w.owner` is

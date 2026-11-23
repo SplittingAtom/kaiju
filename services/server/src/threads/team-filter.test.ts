@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
  *
  * A statement that really needs no team predicate carries `team-filter-ok: <reason>` in it.
  */
-const REPO = fileURLToPath(new URL("../../../", import.meta.url));
+const REPO = fileURLToPath(new URL("../../../../", import.meta.url));
 const ROOTS = ["packages/db/src", "services/server/src"];
 
 /** Any of these in the statement counts as its team predicate. */
