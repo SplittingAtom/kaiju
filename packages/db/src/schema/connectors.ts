@@ -57,7 +57,7 @@ export const CONNECTOR_URL_MAX = 2048;
  * never to its URL, which only marks the row (a check ties the two together, so no registered
  * connector can carry the internal URL and no built-in can point anywhere else).
  */
-export const BUILTIN_CONNECTORS = ["kobe"] as const;
+export const BUILTIN_CONNECTORS = ["kobe", "git"] as const;
 export type BuiltinConnector = (typeof BUILTIN_CONNECTORS)[number];
 
 /**
@@ -68,6 +68,15 @@ export const KOBE_BUILTIN_CONNECTOR_ID = "6b6f6265-0000-4000-8000-000000000001";
 
 /** The `kobe` row's URL: a marker in the reserved `.internal` zone, never fetched. */
 export const KOBE_BUILTIN_CONNECTOR_URL = "http://kobe-server.internal/internal/v1/mcp/kobe";
+
+/**
+ * The `git` built-in (KOBE-762, owner decision 2026-11-22): the git host tools as their own
+ * connector, so the Kobe MCP switch and the Kobe connector's thread toggle never reach them; the
+ * Site's Git switch and each connection's settings are their ceiling. Fixed id ("kobe" in hex,
+ * tail 2) and an internal marker URL, as for `kobe`.
+ */
+export const GIT_BUILTIN_CONNECTOR_ID = "6b6f6265-0000-4000-8000-000000000002";
+export const GIT_BUILTIN_CONNECTOR_URL = "http://kobe-server.internal/internal/v1/mcp/git";
 
 /**
  * Site switch of the Kobe MCP server (`site_settings`, spec §6, KA5): `off` (no `kobe` connector),
@@ -205,12 +214,12 @@ export const connectors = pgTable(
       .where(sql`${t.builtin} IS NOT NULL`),
     check(
       "connectors_builtin",
-      sql`${t.builtin} IS NULL OR (${t.builtin} = 'kobe' AND ${t.id} = '${sql.raw(KOBE_BUILTIN_CONNECTOR_ID)}'::uuid AND ${t.authKind} = 'none' AND ${t.credentialSource} = 'member' AND ${t.toolsHash} IS NULL AND ${t.toolsSnapshot} = '[]'::jsonb)`,
+      sql`${t.builtin} IS NULL OR (((${t.builtin} = 'kobe' AND ${t.id} = '${sql.raw(KOBE_BUILTIN_CONNECTOR_ID)}'::uuid) OR (${t.builtin} = 'git' AND ${t.id} = '${sql.raw(GIT_BUILTIN_CONNECTOR_ID)}'::uuid)) AND ${t.authKind} = 'none' AND ${t.credentialSource} = 'member' AND ${t.toolsHash} IS NULL AND ${t.toolsSnapshot} = '[]'::jsonb)`,
     ),
-    // Only the built-in carries the internal URL, and the built-in carries nothing else.
+    // Only a built-in carries an internal URL, each its own, and a built-in carries nothing else.
     check(
       "connectors_builtin_url",
-      sql`(${t.builtin} IS NOT NULL) = (${t.url} = '${sql.raw(KOBE_BUILTIN_CONNECTOR_URL)}')`,
+      sql`(${t.builtin} IS NULL AND ${t.url} NOT IN ('${sql.raw(KOBE_BUILTIN_CONNECTOR_URL)}', '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}')) OR (${t.builtin} = 'kobe' AND ${t.url} = '${sql.raw(KOBE_BUILTIN_CONNECTOR_URL)}') OR (${t.builtin} = 'git' AND ${t.url} = '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}')`,
     ),
     check(
       "connectors_oauth_client",

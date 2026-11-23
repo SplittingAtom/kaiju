@@ -4,7 +4,7 @@ import {
   type RiskClass,
   type ToolDescriptor,
 } from "@kobe/protocol";
-import { KOBE_BUILTIN_CONNECTOR_ID } from "@kobe/db";
+import { GIT_BUILTIN_CONNECTOR_ID } from "@kobe/db";
 import { GIT_PROMPT_EXEMPT_TOOL } from "../git-tools/catalog.js";
 
 /**
@@ -46,7 +46,7 @@ export const PROMPT_EXEMPT_KOBE_TOOLS: ReadonlySet<string> = new Set([
  *   Kobe-owned content into the user's own thread, shown in a sandboxed frame with no network;
  * - `save_skill_draft` (KOBE-442; Chris, 2026-10-19): it only writes the member's own private
  *   Workbench draft; saving a version, review and evals stay the member's actions there.
- * - `git_create_branch` of the built-in connector (KOBE-762, spec workspace-git G9): a branch is
+ * - `git_create_branch` of the built-in git connector (KOBE-762, spec workspace-git G9): a branch is
  *   allowed by default, unlike the other git writes.
  * Site/team ask rules and `ask-all` still prompt for them (evaluate.ts runs those first).
  * Only interactive runs use this table; auto mode and scheduled runs don't (evaluate.ts).
@@ -61,7 +61,7 @@ export function riskClassPrompts(
   // the other git writes ask as external writes do. Rules and `ask-all` still apply.
   if (
     tool.source === "mcp" &&
-    tool.connector_id === KOBE_BUILTIN_CONNECTOR_ID &&
+    tool.connector_id === GIT_BUILTIN_CONNECTOR_ID &&
     parseMcpToolName(tool.name)?.tool_segment === GIT_PROMPT_EXEMPT_TOOL
   ) {
     return false;

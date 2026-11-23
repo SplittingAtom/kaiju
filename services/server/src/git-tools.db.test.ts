@@ -2,7 +2,9 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { withTestLoopback } from "@kobe/address-policy/testing";
 import {
+  GIT_BUILTIN_CONNECTOR_ID,
   KOBE_BUILTIN_CONNECTOR_ID,
+  KOBE_MCP_MODE_KEY,
   GIT_SITE_ALLOWED_HOSTS_KEY,
   GIT_SITE_ENABLED_KEY,
   loadEnvelope,
@@ -15,10 +17,11 @@ import { rawRequest } from "./connectors/oauth/http.js";
 import { gitApprovalCard, kobeGitApprovalCard } from "./git-tools/card.js";
 import { guardGitToolCall } from "./git-tools/guard.js";
 import { describePinnedTool } from "./mcp/catalog.js";
-import { kobePinnedTools } from "./kobe-mcp/pinned.js";
+import { gitPinnedTools } from "./git-tools/pinned.js";
 import { GIT_TOOLS } from "./git-tools/catalog.js";
-import { GIT_TOOL_WRITES_PER_HOUR } from "./git-tools/execute.js";
-import { kobeRunServer } from "./kobe-mcp/run.js";
+import { GIT_CONNECTION_READS_PER_HOUR, GIT_TOOL_WRITES_PER_HOUR } from "./git-tools/execute.js";
+import { listChatConnectors } from "./connectors/thread-connectors.js";
+import { gitRunServer } from "./git-tools/run.js";
 import { KobeMcpHarness, type KobeSandbox } from "./testing/kobe-mcp-harness.js";
 import type { Person } from "./testing/event-stream-fixture.js";
 import { FAKE_GITEA_TOKEN, FakeGitea } from "./testing/fake-gitea.js";
@@ -61,6 +64,8 @@ beforeAll(async () => {
       resolve: () => Promise.resolve(["127.0.0.1"]),
     },
   });
+  // KOBE-762: the git tools are the built-in git connector's.
+  h.builtin = "git";
 }, 120_000);
 
 afterAll(async () => {
@@ -184,13 +189,12 @@ describe("offering follows the connections and the member's role", () => {
     await connect(w, "gitea");
     const names = async (eligible: boolean) =>
       withTeam(h.fx.db, w.team, async (tx) => {
-        const server = await kobeRunServer(tx, {
+        const server = await gitRunServer(tx, {
           teamId: w.team,
           userId: w.contributor.id,
-          answerable: false,
+          agentId: null,
+          eligible,
           frontmatter: undefined,
-          off: new Set(),
-          git: { agentId: null, eligible },
         });
         return (server?.tools ?? []).map((t) => t.name).filter((n) => n.startsWith("git_"));
       });
@@ -567,8 +571,8 @@ describe("the sandbox's policy.check refuses before anyone is asked", () => {
     const rw = await connect(w, "gitea");
     const s = await h.sandboxFor(w.team, w.contributor);
     const tool = describePinnedTool(
-      KOBE_BUILTIN_CONNECTOR_ID,
-      must(kobePinnedTools("kobe").find((t) => t.name === "git_create_issue")),
+      GIT_BUILTIN_CONNECTOR_ID,
+      must(gitPinnedTools("kobe-git").find((t) => t.name === "git_create_issue")),
     );
     const ask = {
       effect: "require_approval" as const,
@@ -612,6 +616,113 @@ describe("the sandbox's policy.check refuses before anyone is asked", () => {
       kobeGitApprovalCard(tx, { ...req, piName: "mcp__other__git_create_issue" }),
     );
     expect(lookalike).toBeUndefined();
+  });
+});
+
+describe("a write whose outcome is unknown never acts twice (M1)", () => {
+  const issue = (connection: string) => ({ connection, repository: "docs", title: "t", body: "b" });
+
+  it("answers outcome_unknown after an attempt that ended without an answer", async () => {
+    const w = await world();
+    const id = await connect(w, "github");
+    const s = await h.sandboxFor(w.team, w.contributor);
+    github.failPostsOnly = true;
+    github.fail("server_error");
+    const first = await approved(s, "git_create_issue", issue(id));
+    expect(first.out.text).toContain("host_unavailable");
+    github.fail(null);
+    const again = await approved(s, "git_create_issue", issue(id));
+    expect(again.out.isError).toBe(true);
+    expect(again.out.text).toContain("outcome_unknown");
+    expect(github.issues).toEqual([]);
+    const rows = await auditRows(w.team, "git.write");
+    expect(rows.map((r) => r.action)).toEqual(["git.write.attempted"]);
+    expect(rows[0]?.target).toMatchObject({ tool: "git_create_issue", repository: "docs" });
+  });
+
+  it("lets a call the host refused for certain be tried again", async () => {
+    const w = await world();
+    const id = await connect(w, "github");
+    const s = await h.sandboxFor(w.team, w.contributor);
+    github.failPostsOnly = true;
+    github.fail("forbidden");
+    expect((await approved(s, "git_create_issue", issue(id))).out.text).toContain(
+      "credential_forbidden",
+    );
+    github.fail(null);
+    const again = await approved(s, "git_create_issue", issue(id));
+    expect(again.out.isError, again.out.text).toBeUndefined();
+    expect(github.issues).toHaveLength(1);
+    expect((await auditRows(w.team, "git.write")).map((r) => r.action)).toEqual([
+      "git.write.attempted",
+      "git.write.failed",
+      "git.write.attempted",
+    ]);
+  });
+});
+
+describe("per-connection budget (M2)", () => {
+  it("refuses once the connection's hourly budget is spent, with the retry time", async () => {
+    const w = await world();
+    const id = await connect(w, "gitea");
+    const s = await h.sandboxFor(w.team, w.reader);
+    await h.fx.admin.query(
+      `INSERT INTO kobe_rate_limits (key, count, window_start, expires_at) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (key) DO UPDATE SET count = $2, window_start = $3, expires_at = $4`,
+      [
+        `kobe:git-tools:connection:read:${id}`,
+        GIT_CONNECTION_READS_PER_HOUR,
+        Date.now(),
+        Date.now() + 3_600_000,
+      ],
+    );
+    const out = await call(s, "git_list_repositories", { connection: id });
+    expect(out.isError).toBe(true);
+    expect(out.text).toContain("git_connection_budget");
+    expect(out.text).toMatch(/Try again after \d{4}-/);
+  });
+});
+
+describe("the git tools follow the Git switch, never the Kobe connector's (M3)", () => {
+  const kobeMode = (mode: string | null) => h.setSite(KOBE_MCP_MODE_KEY, mode);
+  const gitSwitch = (on: boolean) => h.setSite(GIT_SITE_ENABLED_KEY, on ? null : "false");
+
+  it.each([
+    [true, "off", true],
+    [true, "docs", true],
+    [true, "admin", true],
+    [false, "off", false],
+    [false, "admin", false],
+  ] as const)("Git switch %s, Kobe MCP %s: git tools offered %s", async (git, mode, offered) => {
+    const w = await world();
+    const id = await connect(w, "forgejo");
+    const s = await h.sandboxFor(w.team, w.contributor);
+    await kobeMode(mode);
+    await gitSwitch(git);
+    try {
+      expect((await gitNames(s)).length > 0).toBe(offered);
+      const out = await call(s, "git_list_repositories", { connection: id });
+      expect(out.isError === true).toBe(!offered);
+      const picker = await withTeam(h.fx.db, w.team, (tx) =>
+        listChatConnectors(tx, { teamId: w.team, userId: w.contributor.id }, null),
+      );
+      expect(picker.some((c) => c.builtin?.kind === "git")).toBe(offered);
+    } finally {
+      await kobeMode(null);
+      await gitSwitch(true);
+    }
+  });
+
+  it("keeps the git tools when the Kobe connector is off in the conversation", async () => {
+    const w = await world();
+    const id = await connect(w, "gitea");
+    const s = await h.sandboxFor(w.team, w.contributor);
+    await h.fx.admin.query(
+      `INSERT INTO thread_connectors_off (team_id, thread_id, connector_id) VALUES ($1, $2, $3)`,
+      [w.team, s.threadId, KOBE_BUILTIN_CONNECTOR_ID],
+    );
+    const out = await call(s, "git_list_repositories", { connection: id });
+    expect(out.isError, out.text).toBeUndefined();
   });
 });
 

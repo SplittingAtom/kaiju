@@ -4,6 +4,7 @@ import {
   gitRepositories,
   openGitCredential,
   readGitConnectionSealedCredential,
+  sql,
   withTeam,
   type Envelope,
   type GitConnectionRecord,
@@ -13,7 +14,7 @@ import {
 } from "@kobe/db";
 import { gitAdapterFor } from "../git/adapters.js";
 import { repoProjectRoles, repoRefusal } from "../git/transport.js";
-import type { GitHostAdapter } from "../git-hosts/adapter.js";
+import { GitHostError, type GitHostAdapter } from "../git-hosts/adapter.js";
 import type { InstallationTokenCache } from "../git-hosts/github/app-auth.js";
 import type { GitHostNet } from "../git-hosts/http.js";
 import { withAdvisoryLockRetry } from "../kobe-mcp/limits.js";
@@ -28,7 +29,14 @@ import {
 } from "./access.js";
 import type { GitToolDef, GitToolInput } from "./catalog.js";
 import { hostError, toolError, type GitToolError } from "./errors.js";
-import { auditWrite, findDone, gitWriteAction, type GitWriteRecord } from "./ledger.js";
+import {
+  auditAttempt,
+  auditFailed,
+  auditWrite,
+  findPrior,
+  gitWriteAction,
+  type GitWriteRecord,
+} from "./ledger.js";
 import { footerLine, memberName, postedBody } from "./posted.js";
 import { connectionView, readResult, writeResult } from "./results.js";
 
@@ -49,6 +57,27 @@ export const GIT_TOOL_READS_PER_10_MIN = 300;
 export const GIT_TOOL_WRITES_PER_HOUR = 30;
 const READ_RULE = { windowMs: 10 * 60_000, max: GIT_TOOL_READS_PER_10_MIN } as const;
 const WRITE_RULE = { windowMs: 60 * 60_000, max: GIT_TOOL_WRITES_PER_HOUR } as const;
+/**
+ * Per-connection budgets (M2, review g103; the coordinator's numbers): the host's API quota is
+ * shared by the whole Workspace (and by git transport and health checks), so all members' tool
+ * calls on one connection stay well under GitHub's 5,000 requests an hour for a token.
+ */
+export const GIT_CONNECTION_READS_PER_HOUR = 3_000;
+export const GIT_CONNECTION_WRITES_PER_HOUR = 300;
+const CONNECTION_READ_RULE = { windowMs: 60 * 60_000, max: GIT_CONNECTION_READS_PER_HOUR } as const;
+const CONNECTION_WRITE_RULE = {
+  windowMs: 60 * 60_000,
+  max: GIT_CONNECTION_WRITES_PER_HOUR,
+} as const;
+
+/** When the window of a refused limit `key` ends (falls back to a whole window from now). */
+async function windowEnd(db: KobeDb, key: string, windowMs: number): Promise<Date> {
+  const res = await db.execute<{ window_start: string | number }>(
+    sql`SELECT window_start FROM kobe_rate_limits WHERE key = ${`kobe:${key}`}`,
+  );
+  const start = Number(res.rows[0]?.window_start ?? Number.NaN);
+  return new Date(Number.isFinite(start) ? start + windowMs : Date.now() + windowMs);
+}
 
 export interface GitToolsDeps {
   readonly db: KobeDb;
@@ -110,13 +139,22 @@ export async function runGitTool(
         tool.access === "write"
           ? `Too many git changes in the last hour (at most ${GIT_TOOL_WRITES_PER_HOUR} per member).`
           : `Too many git reads in the last 10 minutes (at most ${GIT_TOOL_READS_PER_10_MIN} per member).`,
-        new Date(Date.now() + rule.windowMs),
+        await windowEnd(deps.db, key, rule.windowMs),
       );
     }
     const facts = await loadGitToolFacts(deps.db, principal);
     if (tool.name === "git_list_connections") return listConnections(facts);
     const decided = decideGitAccess(tool, input.connection, facts);
     if (!decided.ok) return toolError(decided.code, decided.message);
+    const budget = tool.access === "write" ? CONNECTION_WRITE_RULE : CONNECTION_READ_RULE;
+    const budgetKey = `git-tools:connection:${tool.access}:${decided.connection.id}`;
+    if (!(await hitRateLimit(deps.db, budgetKey, budget))) {
+      return toolError(
+        "git_connection_budget",
+        `The Workspace's agents used this connection's hourly budget for git ${tool.access === "write" ? "changes" : "reads"} (${budget.max} an hour, shared by every member).`,
+        await windowEnd(deps.db, budgetKey, budget.windowMs),
+      );
+    }
     const adapter = await openAdapter(deps, principal, facts.settings, decided.connection);
     if (!adapter.ok) return adapter;
     if (tool.access === "read") {
@@ -290,21 +328,52 @@ async function writeTool(
   const action = gitWriteAction(tool.name);
   if (action === undefined) return toolError("unknown_tool", "Unknown git tool.");
   const idempotencyKey = gitIdempotencyKey(principal.teamId, ctx.runId, tool.name, rawInput);
-  const done = await findDone(deps.db, principal, action, idempotencyKey);
-  if (done !== undefined) return writeResult(connection, done, true);
+  const prior = await findPrior(deps.db, principal, action, idempotencyKey);
+  if (prior?.state === "done") return writeResult(connection, prior.record, true);
+  const repository = (tool.name === "git_create_repository" ? input.name : input.repository) ?? "";
+  if (prior?.state === "unknown") {
+    return toolError(
+      "outcome_unknown",
+      `An earlier attempt of exactly this ${tool.name} call in this run was sent to the git host, but Kobe has no record of how it ended, so it was not sent again. Check ${connection.organization}/${repository} on the host (its newest branches, pull requests, issues or comments) and tell the user what you find; if it is not there, ask again with a changed input.`,
+    );
+  }
+  let attempted = false;
+  // M1: the attempt is committed before the host is asked to act; a failure here stops the call.
+  const attempt = async () => {
+    await auditAttempt(deps.db, ctx, connection, tool.name, repository, idempotencyKey);
+    attempted = true;
+  };
   try {
-    const record = await act(deps, ctx, tool, input, facts, connection, adapter);
+    const record = await act(deps, ctx, tool, input, facts, connection, adapter, attempt);
     if ("ok" in record) return record;
     const full: GitWriteRecord = { ...record, idempotencyKey };
     await auditWrite(deps.db, ctx, connection, action, full).catch((err: unknown) => {
-      // The host already acted: the call's `mcp.tool_call` row stands; the miss is logged.
+      // The host acted and the attempt row stands: a repeat answers outcome_unknown, never acts.
       logger.error({ err, action, runId: ctx.runId }, "git-tools: write could not be audited");
     });
     return writeResult(connection, full, false);
   } catch (err) {
+    // Refused for certain (nothing created): recorded, so a repeat may try again. A timeout or a
+    // 5xx leaves the attempt open: the host may have acted.
+    if (attempted && err instanceof GitHostError && !AMBIGUOUS.has(err.code)) {
+      await auditFailed(
+        deps.db,
+        ctx,
+        connection,
+        tool.name,
+        repository,
+        idempotencyKey,
+        err.code,
+      ).catch((e: unknown) =>
+        logger.error({ err: e, runId: ctx.runId }, "git-tools: failure not audited"),
+      );
+    }
     return hostError(err);
   }
 }
+
+/** Host errors after which the host may still have acted. */
+const AMBIGUOUS: ReadonlySet<string> = new Set(["host_unreachable", "unexpected"]);
 
 type Acted = Omit<GitWriteRecord, "idempotencyKey">;
 
@@ -316,21 +385,24 @@ async function act(
   facts: GitToolFacts,
   connection: GitConnectionRecord,
   adapter: GitHostAdapter,
+  attempt: () => Promise<void>,
 ): Promise<Acted | GitToolError> {
   const { principal } = ctx;
   if (tool.name === "git_create_repository")
-    return createRepository(deps, ctx, input, connection, adapter);
+    return createRepository(deps, ctx, input, connection, adapter, attempt);
   const repository = input.repository ?? "";
   const allowed = await repoAllowed(deps, principal, facts, connection, adapter, repository);
   if (!allowed.ok) return allowed;
   const base = { repository, hostRepoId: allowed.hostId };
   switch (tool.name) {
     case "git_create_branch": {
+      await attempt();
       await adapter.createBranch({ repository, name: input.name ?? "", from: input.from ?? "" });
       return { ...base, kind: "branch" };
     }
     case "git_open_pull_request": {
       const body = await posted(deps, ctx, "opened", input.body ?? "");
+      await attempt();
       const pr = await adapter.openPullRequest({
         repository,
         title: input.title ?? "",
@@ -343,6 +415,7 @@ async function act(
     }
     case "git_comment": {
       const body = await posted(deps, ctx, "posted", input.body ?? "");
+      await attempt();
       const c = await adapter.comment({
         repository,
         number: input.number ?? 0,
@@ -360,6 +433,7 @@ async function act(
     }
     case "git_create_issue": {
       const body = await posted(deps, ctx, "opened", input.body ?? "");
+      await attempt();
       const issue = await adapter.createIssue({ repository, title: input.title ?? "", body });
       return { ...base, kind: "issue", hostId: issue.id, number: issue.number, url: issue.webUrl };
     }
@@ -386,6 +460,7 @@ async function createRepository(
   input: GitToolInput,
   connection: GitConnectionRecord,
   adapter: GitHostAdapter,
+  attempt: () => Promise<void>,
 ): Promise<Acted | GitToolError> {
   const name = input.name ?? "";
   const prefix = connection.repoNamePrefix;
@@ -402,11 +477,18 @@ async function createRepository(
       "The Workspace admin allows private repositories only on this connection.",
     );
   }
+  await attempt();
   const repo = await adapter.createRepository({
     name,
     visibility,
     ...(input.description === undefined ? {} : { description: input.description }),
   });
+  if (repo.visibility === "public") {
+    logger.warn(
+      { connectionId: connection.id, runId: ctx.runId },
+      "git-tools: the host created a public repository",
+    );
+  }
   // The Workspace's record of a repository its agents created (§7 Repositories, G20).
   await withTeam(deps.db, ctx.principal.teamId, (tx) =>
     tx
@@ -434,7 +516,8 @@ async function createRepository(
     hostId: repo.id,
     number: null,
     url: repo.webUrl,
-    visibility: repo.visibility === "internal" ? "internal" : "private",
+    // L7: the host's real visibility, public included (no tool can create one, but say so).
+    visibility: repo.visibility,
     cloneUrl: repo.cloneUrl,
   };
 }

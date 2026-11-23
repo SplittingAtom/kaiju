@@ -7,6 +7,7 @@ import {
   type ToolDescriptor,
 } from "@kobe/protocol";
 import {
+  GIT_BUILTIN_CONNECTOR_ID,
   KOBE_BUILTIN_CONNECTOR_ID,
   and,
   connectors,
@@ -27,6 +28,7 @@ import type { McpToolCatalog } from "../policy/registry.js";
 import { loadKobeBuiltin, loadKobeSwitches, switchesAllow } from "../kobe-mcp/access.js";
 import { kobeConnector, kobePinnedTools } from "../kobe-mcp/pinned.js";
 import { KOBE_ADMIN_TOOLS } from "../kobe-mcp/tools/index.js";
+import { gitConnector, gitPinnedTools, loadGitBuiltin } from "../git-tools/pinned.js";
 
 /**
  * Connector state as the MCP proxy core sees it (KOBE-58 minimal model over `connectors` and
@@ -159,12 +161,29 @@ export function createDbMcpCatalog(db: KobeDb): McpToolCatalog & ConnectorStateS
         .where(sql`replace(${connectors.name}, '-', '_') = ${parsed.server_segment}`);
       if (!row) return undefined;
       // The built-in Kobe connector (KOBE-619): its tools come from Kobe's own catalog.
+      // KOBE-762: the built-in git connector's from the git tools' catalog.
       const tools =
-        row.builtin === "kobe" ? kobePinnedTools(row.name) : parseToolsSnapshot(row.snapshot);
+        row.builtin === "kobe"
+          ? kobePinnedTools(row.name)
+          : row.builtin === "git"
+            ? gitPinnedTools(row.name)
+            : parseToolsSnapshot(row.snapshot);
       const tool = tools.find((t) => t.pi_name === toolName);
       return tool ? describePinnedTool(row.id, tool) : undefined;
     },
     async get(teamId, connectorId): Promise<ConnectorPolicyState | undefined> {
+      if (connectorId === GIT_BUILTIN_CONNECTOR_ID) {
+        // Enabled while the row exists: no switch of its own; the Site's Git switch and the
+        // connections are the git tools' own check (git-tools/access.ts), made with the person.
+        const row = await loadGitBuiltin(db);
+        if (!row) return undefined;
+        return {
+          enabled: true,
+          exposure: "custom",
+          enabled_tools: [...gitConnector(row).enabledTools],
+          drifted_tools: [],
+        };
+      }
       if (connectorId === KOBE_BUILTIN_CONNECTOR_ID) {
         // Enabled while the site switch is not off; `custom` over what the switches allow (the
         // person's own permission is the Kobe MCP service's check, which knows the person).

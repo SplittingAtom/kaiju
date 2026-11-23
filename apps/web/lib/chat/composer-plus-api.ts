@@ -21,7 +21,11 @@ export interface ChatConnector {
    * so it has no toggle; `admin` is what the member's admin tools would be where the agent uses
    * it (the site's and team's switches and the member's role decide).
    */
-  readonly builtin?: { readonly kind: "kobe"; readonly admin: "off" | "read" | "read_write" };
+  readonly builtin?: {
+    /** `git`: the built-in git connector (KOBE-762); `admin` then says read or read and write. */
+    readonly kind: "kobe" | "git";
+    readonly admin: "off" | "read" | "read_write";
+  };
 }
 
 const enc = encodeURIComponent;

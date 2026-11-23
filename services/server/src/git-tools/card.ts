@@ -95,9 +95,9 @@ export async function gitApprovalCard(
 }
 
 /**
- * The card for an approval request of the built-in connector's git tool `piName`, or undefined
+ * The card for an approval request of the built-in git connector's tool `piName`, or undefined
  * (any other tool, including a connector that merely uses a git tool's name: the Pi name's server
- * segment must be the built-in Kobe connector's).
+ * segment must be the built-in git connector's).
  */
 export async function kobeGitApprovalCard(
   tx: KobeTx,
@@ -109,7 +109,7 @@ export async function kobeGitApprovalCard(
   const parsed = parseMcpToolName(req.piName);
   if (parsed === undefined || ACTIONS[parsed.tool_segment] === undefined) return undefined;
   const res = await tx.execute<{ name: string }>(
-    sql`SELECT name FROM public.connectors WHERE builtin = 'kobe'`,
+    sql`SELECT name FROM public.connectors WHERE builtin = 'git'`,
   );
   const builtin = res.rows[0]?.name;
   if (builtin === undefined || builtin.replace(/[^A-Za-z0-9_]/g, "_") !== parsed.server_segment) {

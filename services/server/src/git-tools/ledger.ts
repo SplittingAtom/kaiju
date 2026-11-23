@@ -41,7 +41,7 @@ export interface GitWriteRecord {
   /** The host's web link (same origin as the connection), or "". */
   readonly url?: string;
   readonly on?: "issue" | "pull_request";
-  readonly visibility?: "private" | "internal";
+  readonly visibility?: "private" | "internal" | "public";
   readonly cloneUrl?: string;
   readonly idempotencyKey: string;
 }
@@ -72,24 +72,54 @@ export async function auditWrite(
   action: GitWriteAction,
   record: GitWriteRecord,
 ): Promise<void> {
-  const { principal } = ctx;
   const target = {
+    ...common(ctx, connection, record.repository, record.idempotencyKey),
+    hostRepoId: safeHostId(record.hostRepoId),
+    ...(record.hostId === undefined ? {} : { hostId: safeHostId(record.hostId) }),
+    ...(safeNumber(record.number) === undefined ? {} : { number: safeNumber(record.number) }),
+    ...(safeUrl(record.url) === undefined ? {} : { url: safeUrl(record.url) }),
+    ...(record.on === undefined ? {} : { on: record.on }),
+    ...(record.visibility === undefined ? {} : { visibility: record.visibility }),
+  };
+  await write(db, ctx, action, target);
+}
+
+type Ctx = Parameters<typeof auditWrite>[1];
+
+/** Fields every git tool write row carries; values made to fit the allowlist, never refused. */
+function common(ctx: Ctx, connection: GitConnectionRecord, repository: string, digest: string) {
+  return {
     connectionId: connection.id,
     ...(ctx.agentId === null ? {} : { agentId: ctx.agentId }),
     host: auditHost(connection.baseUrl),
     organization: connection.organization,
-    repository: record.repository,
-    hostRepoId: record.hostRepoId,
-    ...(record.hostId === undefined ? {} : { hostId: record.hostId }),
-    ...(record.number === undefined || record.number === null ? {} : { number: record.number }),
-    ...(record.url === undefined || record.url === "" ? {} : { url: record.url }),
-    ...(record.on === undefined ? {} : { on: record.on }),
-    ...(record.visibility === undefined ? {} : { visibility: record.visibility }),
-    callDigest: record.idempotencyKey,
+    repository: safeRepository(repository),
+    callDigest: digest,
   };
+}
+
+// M1 (review g103): a host value the allowlist would refuse is stored in a sanitised, truncated
+// form, so the row (and with it the record of the write) is never lost to an odd value.
+export const safeHostId = (v: string): string =>
+  v.replace(/[^A-Za-z0-9_=-]/g, "").slice(0, 64) || "unknown";
+const safeRepository = (v: string): string =>
+  v.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 100) || "unknown";
+const safeNumber = (v: number | null | undefined): number | undefined =>
+  typeof v === "number" && Number.isSafeInteger(v) && v > 0 && v <= 2_147_483_647 ? v : undefined;
+function safeUrl(v: string | undefined): string | undefined {
+  if (v === undefined || v === "" || v.length > 2048) return undefined;
+  try {
+    return new URL(v).protocol === "https:" ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function write(db: KobeDb, ctx: Ctx, action: string, target: Record<string, unknown>) {
+  const { principal } = ctx;
   await withTeam(db, principal.teamId, (tx) =>
     recordAudit(tx, {
-      action,
+      action: action as GitWriteAction,
       actor: { kind: "user", id: principal.userId },
       teamId: principal.teamId,
       via: {
@@ -104,38 +134,85 @@ export async function auditWrite(
   );
 }
 
-/** The recorded result of the same call in the last day, if it already acted. */
-export async function findDone(
+/**
+ * Recorded under the member's git write lock and committed BEFORE the host is asked to act (M1):
+ * a later repeat that finds this row without a completion knows the outcome is unknown and does
+ * not act again.
+ */
+export async function auditAttempt(
+  db: KobeDb,
+  ctx: Ctx,
+  connection: GitConnectionRecord,
+  tool: string,
+  repository: string,
+  digest: string,
+): Promise<void> {
+  await write(db, ctx, "git.write.attempted", {
+    ...common(ctx, connection, repository, digest),
+    tool,
+  });
+}
+
+/** The host refused for certain (nothing was created): a repeat may try again. */
+export async function auditFailed(
+  db: KobeDb,
+  ctx: Ctx,
+  connection: GitConnectionRecord,
+  tool: string,
+  repository: string,
+  digest: string,
+  failure: string,
+): Promise<void> {
+  await write(db, ctx, "git.write.failed", {
+    ...common(ctx, connection, repository, digest),
+    tool,
+    failure: failure.replace(/[^A-Za-z0-9_]/g, "_").slice(0, 64) || "unknown",
+  });
+}
+
+export type GitPrior =
+  | { readonly state: "done"; readonly record: GitWriteRecord }
+  /** Started, never finished or refused: the host may or may not have acted. */
+  | { readonly state: "unknown" }
+  | undefined;
+
+/** The last record of the same call in the last day: done, unknown, or nothing to go on. */
+export async function findPrior(
   db: KobeDb,
   principal: GitToolPrincipal,
   action: GitWriteAction,
   idempotencyKey: string,
-): Promise<GitWriteRecord | undefined> {
-  const res = await db.execute<{ target: Record<string, unknown> }>(sql`
+): Promise<GitPrior> {
+  const res = await db.execute<{ action: string; target: Record<string, unknown> }>(sql`
     WITH boundary AS (
       SELECT min(a.seq) AS seq FROM public.audit_log a WHERE a.at > now() - interval '1 day')
-    SELECT a.target FROM public.audit_log a, boundary b
+    SELECT a.action, a.target FROM public.audit_log a, boundary b
      WHERE a.actor_id = ${principal.userId} AND a.seq >= b.seq
        AND a.team_id = ${principal.teamId}
-       AND a.action = ${action}
+       AND a.action IN (${action}, 'git.write.attempted', 'git.write.failed')
        AND a.target ->> 'callDigest' = ${idempotencyKey}
      ORDER BY a.seq DESC
      LIMIT 1`);
-  const t = res.rows[0]?.target;
-  if (t === undefined) return undefined;
+  const row = res.rows[0];
+  if (row === undefined || row.action === "git.write.failed") return undefined;
+  if (row.action === "git.write.attempted") return { state: "unknown" };
+  const t = row.target;
   const str = (v: unknown) => (typeof v === "string" ? v : undefined);
   const hostId = str(t.hostId);
   return {
-    kind: KIND_OF[action],
-    repository: str(t.repository) ?? "",
-    hostRepoId: str(t.hostRepoId) ?? "",
-    ...(hostId === undefined ? {} : { hostId }),
-    number: typeof t.number === "number" ? t.number : null,
-    url: str(t.url) ?? "",
-    ...(t.on === "issue" || t.on === "pull_request" ? { on: t.on } : {}),
-    ...(t.visibility === "private" || t.visibility === "internal"
-      ? { visibility: t.visibility }
-      : {}),
-    idempotencyKey,
+    state: "done",
+    record: {
+      kind: KIND_OF[action],
+      repository: str(t.repository) ?? "",
+      hostRepoId: str(t.hostRepoId) ?? "",
+      ...(hostId === undefined ? {} : { hostId }),
+      number: typeof t.number === "number" ? t.number : null,
+      url: str(t.url) ?? "",
+      ...(t.on === "issue" || t.on === "pull_request" ? { on: t.on } : {}),
+      ...(t.visibility === "private" || t.visibility === "internal" || t.visibility === "public"
+        ? { visibility: t.visibility }
+        : {}),
+      idempotencyKey,
+    },
   };
 }

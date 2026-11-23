@@ -139,3 +139,13 @@ describe("idempotency key", () => {
     expect(a).toMatch(/^[0-9a-f]{32}$/);
   });
 });
+
+describe("audit values (M1)", () => {
+  it("stores an odd host id in a sanitised, truncated form instead of failing the row", async () => {
+    const { safeHostId } = await import("./ledger.js");
+    expect(safeHostId("123")).toBe("123");
+    expect(safeHostId("abc/def?x=1")).toBe("abcdefx=1");
+    expect(safeHostId("é".repeat(10))).toBe("unknown");
+    expect(safeHostId("a".repeat(100))).toHaveLength(64);
+  });
+});

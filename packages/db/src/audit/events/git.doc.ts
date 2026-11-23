@@ -55,11 +55,21 @@ export const GIT_EVENT_DOCS = {
   },
   "git.repository.created": {
     fields:
-      "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `hostId`, `visibility` (`private`, `internal`), `url?`",
+      "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `hostId`, `visibility` (`private`, `internal`, `public` if the host made it so), `url?`",
     when: "An agent created a repository with `git_create_repository` (KOBE-762); Kobe also records it among the Workspace's repositories",
   },
   "git.settings.updated": {
     fields: "`setting` (`commit_email`), `value`, `previous` (`member` or `noreply`)",
     when: "A Workspace admin changed the Workspace's git settings: the author email of commits made in sandboxes, the member's Kobe email or the no-reply form (KOBE-761)",
+  },
+  "git.write.attempted": {
+    fields:
+      "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `callDigest`, `tool`",
+    when: "Kobe is about to send a git host tool write (KOBE-762); committed first, so a repeat of the same call that finds no completion reports the outcome unknown instead of acting again",
+  },
+  "git.write.failed": {
+    fields:
+      "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `callDigest`, `tool`, `failure`",
+    when: "The git host refused a git host tool write for certain, so nothing was created; `failure` is the error code (KOBE-762)",
   },
 } satisfies Record<keyof typeof GIT_EVENTS, AuditEventDoc>;

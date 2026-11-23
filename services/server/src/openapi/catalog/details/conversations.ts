@@ -48,7 +48,10 @@ const chatConnector = obj({
   connector_id: uuid,
   name: str,
   enabled: bool,
-  "builtin?": obj({ kind: oneOfStrings("kobe"), admin: oneOfStrings("off", "read", "read_write") }),
+  "builtin?": obj({
+    kind: oneOfStrings("kobe", "git"),
+    admin: oneOfStrings("off", "read", "read_write"),
+  }),
   problem: nullable(obj({ code: oneOfStrings(...CONNECTOR_PROBLEMS), message: str, fix: str })),
 });
 const ChatConnectors = untyped("ChatConnectorList", obj({ connectors: arr(chatConnector) }));

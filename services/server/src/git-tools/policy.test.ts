@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { KOBE_BUILTIN_CONNECTOR_ID, type ToolDescriptor } from "@kobe/protocol";
+import { GIT_BUILTIN_CONNECTOR_ID, type ToolDescriptor } from "@kobe/protocol";
 import { evaluatePolicy } from "../policy/evaluate.js";
 import { isKobeAdminTool, guardKobeAdmin } from "../policy/kobe-admin-guard.js";
 import type { PolicyRule } from "../policy/rules.js";
 import { DEFAULT_POLICY_SETTINGS } from "../policy/settings.js";
 import { describePinnedTool } from "../mcp/catalog.js";
-import { kobePinnedTools } from "../kobe-mcp/pinned.js";
+import { gitPinnedTools } from "./pinned.js";
 import {
   NOW,
   policyInput,
@@ -23,11 +23,11 @@ import { GIT_TOOLS, gitToolByName } from "./catalog.js";
  */
 const CONN = "55555555-0000-4000-8000-000000000005";
 
-const pinned = kobePinnedTools("kobe");
+const pinned = gitPinnedTools("kobe");
 function descriptor(name: string): ToolDescriptor {
   const tool = pinned.find((t) => t.name === name);
   if (!tool) throw new Error(name);
-  return describePinnedTool(KOBE_BUILTIN_CONNECTOR_ID, tool);
+  return describePinnedTool(GIT_BUILTIN_CONNECTOR_ID, tool);
 }
 
 function decide(

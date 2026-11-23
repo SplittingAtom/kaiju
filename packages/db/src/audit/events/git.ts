@@ -51,6 +51,13 @@ const repository = z
   .regex(new RegExp(GIT_REPOSITORY_NAME_PATTERN));
 const hostId = z.string().regex(/^[A-Za-z0-9_=-]{1,64}$/);
 const webUrl = z.url({ protocol: /^https$/ }).max(2048);
+const gitWriteTool = z.enum([
+  "git_create_repository",
+  "git_create_branch",
+  "git_open_pull_request",
+  "git_comment",
+  "git_create_issue",
+]);
 const toolWrite = {
   connectionId: id,
   agentId: id.optional(),
@@ -154,8 +161,25 @@ export const GIT_EVENTS = {
   "git.repository.created": event("team", {
     ...toolWrite,
     hostId,
-    visibility: z.enum(["private", "internal"]),
+    visibility: z.enum(["private", "internal", "public"]),
     url: webUrl.optional(),
+  }),
+  /**
+   * Before a git host tool write is sent (M1, review g103): committed first, so a repeat of the
+   * same call (`callDigest`) that finds it without a completion reports the outcome unknown and
+   * never acts twice.
+   */
+  "git.write.attempted": event("team", {
+    ...toolWrite,
+    hostRepoId: hostId.optional(),
+    tool: gitWriteTool,
+  }),
+  /** The host refused a git host tool write for certain (nothing created); `failure` its code. */
+  "git.write.failed": event("team", {
+    ...toolWrite,
+    hostRepoId: hostId.optional(),
+    tool: gitWriteTool,
+    failure: reasonCode,
   }),
   "git.settings.updated": event("team", {
     setting: z.literal("commit_email"),

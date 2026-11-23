@@ -6,7 +6,6 @@ import type { KobeBuiltinRow } from "./access.js";
 import { zodOf, type KobeTool } from "./catalog.js";
 import { KOBE_DOCS_TOOLS } from "./docs/index.js";
 import { KOBE_ADMIN_TOOLS } from "./tools/index.js";
-import { GIT_TOOLS, type GitToolDef } from "../git-tools/catalog.js";
 
 /**
  * The Kobe catalog in the shape the MCP decision path already understands (KOBE-619): each tool as
@@ -22,29 +21,9 @@ import { GIT_TOOLS, type GitToolDef } from "../git-tools/catalog.js";
 /** What a pinned entry is made from: an admin tool or a docs tool. */
 export type KobePinnable = Pick<KobeTool, "name" | "title" | "description" | "input"> & {
   readonly output?: KobeTool["output"] | z.ZodType;
-  /** Reaches a system outside Kobe (the git host tools, KOBE-762): `openWorldHint: true`. */
+  /** Reaches a system outside Kobe (the git built-in's tools, KOBE-762): `openWorldHint: true`. */
   readonly openWorld?: boolean;
 } & ({ readonly readOnly: true } | { readonly readOnly: false; readonly destructive: boolean });
-
-/**
- * A git host tool (KOBE-762) as a pinned tool of the built-in connector: open world (it acts on
- * the git host), never destructive. Its descriptor is `external` like every MCP tool, so writes
- * ask by default in interactive runs (`policy/settings.ts`).
- */
-export function gitPinnable(tool: GitToolDef): KobePinnable {
-  const common = {
-    name: tool.name,
-    title: tool.title,
-    description: tool.description,
-    input: tool.input,
-    openWorld: true,
-  };
-  return tool.readOnly
-    ? { ...common, readOnly: true }
-    : { ...common, readOnly: false, destructive: false };
-}
-
-export const GIT_PINNABLES: readonly KobePinnable[] = GIT_TOOLS.map(gitPinnable);
 
 const schemaOf = (type: z.ZodType) =>
   z.toJSONSchema(type, { target: "draft-2020-12", unrepresentable: "any" }) as Record<
@@ -77,19 +56,16 @@ export function kobePinnedTool(connectorName: string, tool: KobePinnable): Pinne
 }
 
 export function kobePinnedTools(connectorName: string): PinnedTool[] {
-  return [...KOBE_DOCS_TOOLS, ...KOBE_ADMIN_TOOLS, ...GIT_PINNABLES].map((t) =>
-    kobePinnedTool(connectorName, t),
-  );
+  return [...KOBE_DOCS_TOOLS, ...KOBE_ADMIN_TOOLS].map((t) => kobePinnedTool(connectorName, t));
 }
 
 /**
- * The built-in as a team connector: `custom` exposure over the docs tools, the admin tools in
- * `enabled` and the git host tools (Pi names). Who may use a git tool with which connection is
- * the git tools' own check (`git-tools/access.ts`), made with the person and the sandbox.
+ * The built-in as a team connector: `custom` exposure over the docs tools and the admin tools in
+ * `enabled` (Pi names).
  */
 export function kobeConnector(row: KobeBuiltinRow, enabled: readonly KobeTool[]): EnabledConnector {
   const tools = kobePinnedTools(row.name);
-  const allowed = new Set([...KOBE_DOCS_TOOLS, ...enabled, ...GIT_PINNABLES].map((t) => t.name));
+  const allowed = new Set([...KOBE_DOCS_TOOLS, ...enabled].map((t) => t.name));
   return {
     id: row.id,
     name: row.name,

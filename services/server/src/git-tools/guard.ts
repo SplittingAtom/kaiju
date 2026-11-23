@@ -1,6 +1,7 @@
 import type { PolicyDecision, ToolDescriptor } from "@kobe/protocol";
 import type { KobeDb } from "@kobe/db";
-import { isKobeGitTool, kobeToolName } from "../policy/kobe-admin-guard.js";
+import { GIT_BUILTIN_CONNECTOR_ID } from "@kobe/db";
+import { kobeToolName } from "../policy/kobe-admin-guard.js";
 import { decideGitAccess, loadGitToolFacts, type GitToolPrincipal } from "./access.js";
 import { gitToolByName } from "./catalog.js";
 
@@ -13,6 +14,15 @@ import { gitToolByName } from "./catalog.js";
  */
 export const GIT_NOT_ALLOWED_REASON = "git_not_allowed";
 
+/** A tool of the built-in git connector, by the server's own descriptor (never by its name alone). */
+export function isGitBuiltinTool(
+  tool: Pick<ToolDescriptor, "source" | "connector_id" | "name">,
+): boolean {
+  if (tool.source !== "mcp" || tool.connector_id !== GIT_BUILTIN_CONNECTOR_ID) return false;
+  const name = kobeToolName(tool.name);
+  return name !== undefined && gitToolByName(name) !== undefined;
+}
+
 export async function guardGitToolCall(
   db: KobeDb,
   principal: GitToolPrincipal,
@@ -20,7 +30,7 @@ export async function guardGitToolCall(
   tool: ToolDescriptor,
   input: unknown,
 ): Promise<PolicyDecision> {
-  if (!isKobeGitTool(tool) || decision.effect === "deny") return decision;
+  if (!isGitBuiltinTool(tool) || decision.effect === "deny") return decision;
   const name = kobeToolName(tool.name);
   const def = name === undefined ? undefined : gitToolByName(name);
   const refuse = (code: "invalid_input" | typeof GIT_NOT_ALLOWED_REASON, message: string) => ({

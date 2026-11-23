@@ -1751,6 +1751,13 @@
       "when": 1795397597779,
       "tag": "0249_git_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 250,
+      "version": "7",
+      "when": 1795410613724,
+      "tag": "0250_git_builtin_connector",
+      "breakpoints": true
     }
   ]
 }

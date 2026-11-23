@@ -86,6 +86,8 @@ export class FakeGithub implements GitHostContractFake {
   readonly tokens: IssuedToken[] = [];
   options: FakeGithubOptions = {};
   private failure: ContractFailure | null = null;
+  /** Apply `fail()` to POST requests only (a write fails, its reads before it pass; KOBE-762). */
+  failPostsOnly = false;
   private repos = new Map<number, Repo>();
   private nextId = 5000;
   private publicKey: KeyObject | null = null;
@@ -124,6 +126,7 @@ export class FakeGithub implements GitHostContractFake {
     this.branches.clear();
     this.files.clear();
     this.failure = null;
+    this.failPostsOnly = false;
     this.options = {};
   }
 
@@ -534,7 +537,7 @@ export class FakeGithub implements GitHostContractFake {
       });
     }
 
-    if (this.failNow(res)) return;
+    if ((!this.failPostsOnly || method === "POST") && this.failNow(res)) return;
     const who = this.caller(auth);
     if (who === null) return this.send(res, 401, { message: "Bad credentials" });
     const patHeaders: Record<string, string> =

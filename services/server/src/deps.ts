@@ -68,6 +68,7 @@ import type { AppResultsDeps } from "./apps/results.js";
 import { captureKey } from "./apps/capture-ticket.js";
 import { createMcpService, DENIED_AUDIT_RATE, type McpService } from "./mcp/service.js";
 import { createKobeMcpService, type KobeMcpService } from "./kobe-mcp/service.js";
+import { createGitMcpService, type GitMcpService } from "./git-tools/mcp-service.js";
 import { createRateLimiter } from "./sandbox/rate-limit.js";
 import { createPolicyEngine } from "./policy/engine.js";
 import { createToolRegistry } from "./policy/registry.js";
@@ -218,6 +219,7 @@ export interface ServerDeps {
    * internal listener; `createApp` binds the public API router it dispatches admin tools to.
    */
   readonly kobeMcp: KobeMcpService;
+  readonly gitMcp: GitMcpService;
   /** The address policy registered connector URLs must pass (KOBE-100). */
   readonly connectorUrlPolicy: ConnectorUrlPolicy;
   /** Outbound requests to Workspace git hosts (KOBE-760): the connector policy, every call. */
@@ -544,7 +546,21 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   const kobeMcp = createKobeMcpService({
     db: database.db,
     publicUrl: new URL(options.publicUrl).origin,
-    git: { envelope: options.envelope, net: gitHostNet },
+    policy: policySources,
+    runContext,
+    approvals: approvalVerifierForMcp(database.db, approvals.verifier),
+    mayAuditDenied: (() => {
+      const limiter = createRateLimiter(DENIED_AUDIT_RATE);
+      return (sandboxId: string) => limiter.take(sandboxId) === 0;
+    })(),
+    ...(options.mcp?.now ? { now: options.mcp.now } : {}),
+  });
+  // KOBE-762: the built-in git connector, on the same decision path as the Kobe connector.
+  const gitMcp = createGitMcpService({
+    db: database.db,
+    publicUrl: new URL(options.publicUrl).origin,
+    envelope: options.envelope,
+    net: gitHostNet,
     policy: policySources,
     runContext,
     approvals: approvalVerifierForMcp(database.db, approvals.verifier),
@@ -678,6 +694,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     memoryVectors,
     mcp,
     kobeMcp,
+    gitMcp,
     connectorUrlPolicy,
     gitHostNet,
     connectorProbe: options.connectorProbe ?? NO_PROBE,

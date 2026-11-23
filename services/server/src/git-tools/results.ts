@@ -220,6 +220,12 @@ export function writeResult(
     ...(record.number === undefined || record.number === null ? {} : { number: record.number }),
     ...(record.on === undefined ? {} : { on: record.on }),
     ...(record.visibility === undefined ? {} : { visibility: record.visibility }),
+    ...(record.visibility === "public"
+      ? {
+          warning:
+            "The git host made this repository PUBLIC although Kobe asked for a private one. Tell the user now: a Workspace admin should make it private on the host.",
+        }
+      : {}),
     ...(record.url === undefined || record.url === "" ? {} : { web_url: record.url }),
     ...clone,
   });

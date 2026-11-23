@@ -24,5 +24,7 @@ export {
   KOBE_BUILTIN_NAMES,
   readKobeMcpMode,
   seedKobeBuiltinConnector,
+  seedGitBuiltinConnector,
+  GIT_BUILTIN_NAMES,
   type KobeBuiltinSeed,
 } from "./builtin.js";

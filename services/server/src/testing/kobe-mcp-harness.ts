@@ -12,7 +12,13 @@ import {
   createUpstreamClient,
   type UpstreamClient,
 } from "@kobe/mcp-proxy";
-import { KOBE_BUILTIN_CONNECTOR_ID, KOBE_MCP_MODE_KEY, seedKobeBuiltinConnector } from "@kobe/db";
+import {
+  GIT_BUILTIN_CONNECTOR_ID,
+  KOBE_BUILTIN_CONNECTOR_ID,
+  KOBE_MCP_MODE_KEY,
+  seedGitBuiltinConnector,
+  seedKobeBuiltinConnector,
+} from "@kobe/db";
 import { approvalKeyring } from "../approvals/index.js";
 import { routeCaller } from "../kobe-mcp/execute.js";
 import type { KobeRouteCaller } from "../kobe-mcp/catalog.js";
@@ -64,6 +70,9 @@ export class KobeMcpHarness {
   private upstream: UpstreamClient | undefined;
   private proxy: ReturnType<typeof createProxyApp> | undefined;
   private kobeName = "kobe";
+  private gitName = "kobe-git";
+  /** Which built-in the calls below address (KOBE-762: the git connector is its own). */
+  builtin: "kobe" | "git" = "kobe";
   private nextId = 1;
 
   /** `extra`: more server options (the git tools' envelope and host seam, KOBE-762). */
@@ -77,11 +86,15 @@ export class KobeMcpHarness {
     const seeded = await seedKobeBuiltinConnector(fx.db);
     if (seeded.outcome === "names_taken") throw new Error("kobe names taken");
     this.kobeName = seeded.name;
+    const git = await seedGitBuiltinConnector(fx.db);
+    if (git.outcome === "names_taken") throw new Error("kobe-git names taken");
+    this.gitName = git.name;
     await this.upstreamServer.start();
     const app = createInternalApp({
       internalKey: INTERNAL_KEY,
       mcp: fx.replica(0).deps.mcp,
       kobe: fx.replica(0).deps.kobeMcp,
+      gitMcp: fx.replica(0).deps.gitMcp,
       auth: {
         db: fx.db,
         sessionVerifyKeys: MCP_VERIFY_KEYS,
@@ -196,7 +209,8 @@ export class KobeMcpHarness {
 
   async rpc(s: KobeSandbox, method: string, params?: Record<string, unknown>) {
     if (!this.proxy) throw new Error("harness not set up");
-    const res = await this.proxy.request(`/v1/mcp/${KOBE_BUILTIN_CONNECTOR_ID}`, {
+    const connector = this.builtin === "git" ? GIT_BUILTIN_CONNECTOR_ID : KOBE_BUILTIN_CONNECTOR_ID;
+    const res = await this.proxy.request(`/v1/mcp/${connector}`, {
       method: "POST",
       headers: {
         authorization: `Bearer ${s.token}`,
@@ -250,7 +264,8 @@ export class KobeMcpHarness {
   }
 
   pi(tool: string): string {
-    return `mcp__${this.kobeName.replace(/-/g, "_")}__${tool}`;
+    const name = this.builtin === "git" ? this.gitName : this.kobeName;
+    return `mcp__${name.replace(/-/g, "_")}__${tool}`;
   }
 
   approve(s: KobeSandbox, tool: string, input: Record<string, unknown>) {

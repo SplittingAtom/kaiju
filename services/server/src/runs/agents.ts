@@ -26,6 +26,7 @@ import {
 } from "./run-mcp.js";
 import type { AgentResolution, AgentResolutionInput, RunAgentResolver } from "./seams.js";
 import { connectorsOffIn } from "../connectors/thread-connectors.js";
+import { gitRunServer } from "../git-tools/run.js";
 import { kobeRunServer } from "../kobe-mcp/run.js";
 import { kobeBuiltinName } from "../kobe-mcp/access.js";
 import { hiddenBuiltins } from "../policy/agent-allow.js";
@@ -183,14 +184,22 @@ export const PINNED_AGENTS: RunAgentResolver = {
         answerable: false,
         frontmatter: undefined,
         off: await connectorsOffIn(tx, input.teamId, input.threadId),
-        git: { agentId: null, eligible: gitEligible(input) },
       });
+      // KOBE-762: the built-in git connector, apart from the Kobe connector.
+      const git = await gitRunServer(tx, {
+        teamId: input.teamId,
+        userId: input.ownerUserId,
+        agentId: null,
+        eligible: gitEligible(input),
+        frontmatter: undefined,
+      });
+      const builtins = [kobe, git].filter((s) => s !== undefined);
       const config =
-        kobe === undefined
+        builtins.length === 0
           ? required.config
           : {
               ...required.config,
-              mcp_servers: [{ name: kobe.name, connector_id: kobe.connector_id }],
+              mcp_servers: builtins.map((s) => ({ name: s.name, connector_id: s.connector_id })),
             };
       return {
         ok: true,
@@ -267,9 +276,19 @@ export const PINNED_AGENTS: RunAgentResolver = {
         input.noPersonalGrants === undefined,
       frontmatter,
       off,
-      git: { agentId, eligible: gitEligible(input) },
     });
-    const mcp = kobe === undefined ? teamMcp : { servers: [...teamMcp.servers, kobe] };
+    // KOBE-762: the built-in git connector, on its own: the Kobe switches never reach it.
+    const git = await gitRunServer(tx, {
+      teamId: input.teamId,
+      userId: input.ownerUserId,
+      agentId,
+      eligible: gitEligible(input),
+      frontmatter,
+    });
+    const mcp = {
+      ...teamMcp,
+      servers: [...teamMcp.servers, ...[kobe, git].filter((s) => s !== undefined)],
+    };
     const mcpServers = mcp.servers.map((s) => ({ name: s.name, connector_id: s.connector_id }));
     // Both this and `resolveRunModel` (lifecycle.ts) exist because the resolver sees aliases only:
     // `resolveRunModel` adds the gateway id/API style and the thread's choice (no resolver input).
