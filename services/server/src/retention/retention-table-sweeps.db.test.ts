@@ -2,16 +2,16 @@ import { randomUUID } from "node:crypto";
 import pino from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { withTeam, sql } from "@kobe/db";
-import { runWithAuditContext } from "./audit/context.js";
-import { runRetentionPass } from "./retention/job.js";
+import { runWithAuditContext } from "../audit/context.js";
+import { runRetentionPass } from "./job.js";
 import {
   DEFAULT_TABLE_SWEEPS,
   NO_TABLE_SWEEPS,
   sweepTable,
   sweepTables,
-} from "./retention/table-sweeps.js";
-import { createTeamWithAdmin } from "./teams/members.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+} from "./table-sweeps.js";
+import { createTeamWithAdmin } from "../teams/members.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /** KOBE-741: the retention pass's table sweeps against a real Postgres (RLS, triggers, holds). */
 let h: Harness;

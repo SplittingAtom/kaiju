@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 import pino from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { runWithAuditContext } from "./audit/context.js";
-import { purgeDepartedMember, purgeThreads, runRetentionPass } from "./retention/index.js";
-import { createTeamWithAdmin } from "./teams/members.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { runWithAuditContext } from "../audit/context.js";
+import { purgeDepartedMember, purgeThreads, runRetentionPass } from "./index.js";
+import { createTeamWithAdmin } from "../teams/members.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-216 ac-4 (review-280 M1): purging a fork's source clears the fork's link (ON DELETE SET

@@ -3,7 +3,7 @@ import { strFromU8, unzipSync } from "fflate";
 import type { PoolClient } from "pg";
 import pino from "pino";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { runWithAuditContext } from "./audit/context.js";
+import { runWithAuditContext } from "../audit/context.js";
 import {
   RetentionJob,
   StillAMemberError,
@@ -11,11 +11,11 @@ import {
   purgeThreads,
   runRetentionPass,
   type BlobStore,
-} from "./retention/index.js";
-import { createTeamWithAdmin } from "./teams/members.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
+} from "./index.js";
+import { createTeamWithAdmin } from "../teams/members.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
 
 /**
  * KOBE-18 end to end: team retention settings within the site maximum, the nightly pass
