@@ -179,8 +179,6 @@ export async function applyMirror(
       const head = await headOf(tx, row.teamId, row.projectId);
       const changes = diffVersions(await loadTree(tx, row.teamId, head?.id ?? null), input.tree);
       let commitId: string | null = null;
-      let pruned: string | null = null;
-      let swept = 0;
       if (changes.length > 0) {
         try {
           const written = await writeCommit(tx, {
@@ -198,11 +196,11 @@ export async function applyMirror(
           throw err;
         }
       }
-      ({ previous: pruned, swept } = await prunePrevious(
+      const { previous: pruned, swept } = await prunePrevious(
         tx,
         row,
         commitId === null ? null : row.mirrorCommitId,
-      ));
+      );
       await replaceCommits(tx, row, input.commits);
       await recordSuccess(tx, lease, {
         headSha: input.head,
