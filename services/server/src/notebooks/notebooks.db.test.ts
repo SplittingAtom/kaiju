@@ -8,12 +8,12 @@ import {
 } from "@kobe/protocol";
 import { type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
 import { withTeam } from "@kobe/db";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { createWorkspaceSync, workspaceBlobKey } from "./workspace-sync/index.js";
-import { OPERATION_LIMITS } from "./operation-limits.js";
-import { expectRateLimited, fillLimit } from "./testing/operation-limits.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { createWorkspaceSync, workspaceBlobKey } from "../workspace-sync/index.js";
+import { OPERATION_LIMITS } from "../operation-limits.js";
+import { expectRateLimited, fillLimit } from "../testing/operation-limits.js";
 
 /**
  * KOBE-464 end to end (docs/specs/notebooks.md): the member's `notebook` runs (NB6, NB7, NB11), the

@@ -1,13 +1,13 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createApp } from "./app.js";
-import { FRAME_HEADERS } from "./artifacts/serve.js";
-import { WEBRTC_GUARD } from "./connectors/app-frame.js";
-import { NOTEBOOK_OUTPUT_FRAME_MESSAGE } from "./routes/notebook-output-frame.js";
-import { EventStreamFixture, PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { TestBrowser } from "./testing/browser.js";
-import { createWorkspaceSync } from "./workspace-sync/index.js";
+import { createApp } from "../app.js";
+import { FRAME_HEADERS } from "../artifacts/serve.js";
+import { WEBRTC_GUARD } from "../connectors/app-frame.js";
+import { NOTEBOOK_OUTPUT_FRAME_MESSAGE } from "../routes/notebook-output-frame.js";
+import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { TestBrowser } from "../testing/browser.js";
+import { createWorkspaceSync } from "../workspace-sync/index.js";
 
 /**
  * The notebook output frame (KOBE-465, docs/specs/notebooks.md NB4): a fixed shell document with

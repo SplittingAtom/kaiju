@@ -8,11 +8,11 @@ import {
   type PolicyEngine,
 } from "@kobe/protocol";
 import { type SandboxToServerFrame, type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
-import { EventStreamFixture, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
-import type { SandboxRouter } from "./sandbox-wire/types.js";
-import { COMPLETION_RATE_LIMIT } from "./notebooks/completion.js";
-import { hitRateLimit } from "./rate-limit.js";
+import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
+import type { SandboxRouter } from "../sandbox-wire/types.js";
+import { COMPLETION_RATE_LIMIT } from "./completion.js";
+import { hitRateLimit } from "../rate-limit.js";
 
 /**
  * KOBE-808 end to end against a fake sandbox: `POST /v1/threads/{id}/notebook/complete` (a

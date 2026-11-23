@@ -9,13 +9,13 @@ import {
 } from "@kobe/protocol";
 import { type SandboxToServerFrame, type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
 import { withTeam } from "@kobe/db";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { createWorkspaceSync, workspaceBlobKey } from "./workspace-sync/index.js";
-import type { SandboxRouter } from "./sandbox-wire/types.js";
-import { VARIABLES_RATE_LIMIT } from "./notebooks/variables.js";
-import { hitRateLimit } from "./rate-limit.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { createWorkspaceSync, workspaceBlobKey } from "../workspace-sync/index.js";
+import type { SandboxRouter } from "../sandbox-wire/types.js";
+import { VARIABLES_RATE_LIMIT } from "./variables.js";
+import { hitRateLimit } from "../rate-limit.js";
 
 /**
  * KOBE-803 end to end against a fake sandbox: `POST /v1/threads/{id}/notebook/variables` (a
