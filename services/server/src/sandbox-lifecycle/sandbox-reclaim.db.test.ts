@@ -1,19 +1,19 @@
 import { randomUUID } from "node:crypto";
 import pino from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { runWithAuditContext } from "./audit/context.js";
+import { runWithAuditContext } from "../audit/context.js";
 import {
   createSandboxLifecycle,
   type LifecycleProvider,
   type SandboxLifecycle,
-} from "./sandbox-lifecycle/index.js";
+} from "./index.js";
 import { withTeam } from "@kobe/db";
-import { recordFlushProof, type ReclaimSettings } from "./sandbox-lifecycle/reclaim.js";
-import { lockWorkspace, reserveUpload, saveState } from "./workspace-sync/store.js";
-import type { DestroyResult, HibernateOutcome, WakeResult } from "./sandbox/provider.js";
-import type { SandboxTarget } from "./sandbox-wire/types.js";
-import { createTeamWithAdmin } from "./teams/members.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { recordFlushProof, type ReclaimSettings } from "./reclaim.js";
+import { lockWorkspace, reserveUpload, saveState } from "../workspace-sync/store.js";
+import type { DestroyResult, HibernateOutcome, WakeResult } from "../sandbox/provider.js";
+import type { SandboxTarget } from "../sandbox-wire/types.js";
+import { createTeamWithAdmin } from "../teams/members.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * Dormant-volume reclaim (KOBE-733) against a real Postgres: off by default, the agent's shutdown

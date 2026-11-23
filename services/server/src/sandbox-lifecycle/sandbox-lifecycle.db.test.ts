@@ -2,19 +2,19 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { SANDBOX_CLOSE_CODES } from "@kobe/protocol/sandbox-wire";
 import { SYSTEM_ACTOR, runs, threads, withTeam } from "@kobe/db";
-import { recordAuditAfter } from "./audit/record.js";
-import { IsolationRuntimeMissingError } from "./isolation/gate.js";
+import { recordAuditAfter } from "../audit/record.js";
+import { IsolationRuntimeMissingError } from "../isolation/gate.js";
 import {
   createDeferredWaker,
   createSandboxLifecycle,
   type LifecycleProvider,
   type SandboxLifecycle,
-} from "./sandbox-lifecycle/index.js";
-import type { PodTermination } from "./sandbox/pod-termination.js";
-import type { HibernateOutcome, ReadyOutcome, WakeResult } from "./sandbox/provider.js";
-import { wakeStartedAt } from "./sandbox-lifecycle/store.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
+} from "./index.js";
+import type { PodTermination } from "../sandbox/pod-termination.js";
+import type { HibernateOutcome, ReadyOutcome, WakeResult } from "../sandbox/provider.js";
+import { wakeStartedAt } from "./store.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 
 /**
  * Hibernation and wake (KOBE-25, D14) against a real Postgres, real WebSockets and two server

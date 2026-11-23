@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
 import pino from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { runWithAuditContext } from "./audit/context.js";
-import { createSandboxLifecycle, type LifecycleProvider } from "./sandbox-lifecycle/index.js";
-import { completeRebuild, type RebuildProvider } from "./sandbox-lifecycle/rebuild.js";
-import type { DiscardGuard, HibernateOutcome, WakeResult } from "./sandbox/provider.js";
-import type { VolumeHealth } from "./sandbox/volume-loss.js";
-import { createTeamWithAdmin } from "./teams/members.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { runWithAuditContext } from "../audit/context.js";
+import { createSandboxLifecycle, type LifecycleProvider } from "./index.js";
+import { completeRebuild, type RebuildProvider } from "./rebuild.js";
+import type { DiscardGuard, HibernateOutcome, WakeResult } from "../sandbox/provider.js";
+import type { VolumeHealth } from "../sandbox/volume-loss.js";
+import { createTeamWithAdmin } from "../teams/members.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * Rebuilding a workspace whose volume is lost (KOBE-739) against a real Postgres, through the
