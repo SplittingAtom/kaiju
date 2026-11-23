@@ -200,13 +200,16 @@ export async function refreshRepo(
         ),
       };
     }
-    // Review L2: Refresh skips the doubling back-off, never the host's rate-limit reset or the
-    // connection's budget window.
+    // Review L2: Refresh skips the doubling back-off, never the host's rate-limit reset, the
+    // connection's budget window, or the wait between "not found" answers (R2-L2).
     const waitMs =
       row.mirror_next_at === null ? 0 : new Date(row.mirror_next_at).getTime() - Date.now();
     if (
       waitMs > 0 &&
-      (row.mirror_error === "host_rate_limited" || row.mirror_error === "connection_budget")
+      (row.mirror_error === "host_rate_limited" ||
+        row.mirror_error === "connection_budget" ||
+        // Review R2-L2: the "not found" answers that mark a Repo deleted stay spread out.
+        row.mirror_error === "repository_not_found")
     ) {
       return {
         outcome: {

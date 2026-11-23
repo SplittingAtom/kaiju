@@ -42,6 +42,7 @@ import {
   GIT_MIRROR_MAX_FILE_BYTES,
   GIT_MIRROR_GONE_CONFIRMATIONS,
   GIT_MIRROR_MAX_FILES,
+  GIT_MIRROR_MAX_DISK_BYTES,
   GIT_MIRROR_MAX_INFLATED_BYTES,
   GIT_MIRROR_MAX_PACK_BYTES,
   GIT_MIRROR_RUN_MS,
@@ -364,6 +365,7 @@ async function run(
       maxFiles: GIT_MIRROR_MAX_FILES,
       maxFileBytes: GIT_MIRROR_MAX_FILE_BYTES,
       maxTotalBytes: GIT_MIRROR_MAX_INFLATED_BYTES,
+      maxDiskBytes: GIT_MIRROR_MAX_DISK_BYTES,
       slug: project,
       deadlineAt,
     },
@@ -392,9 +394,9 @@ async function projectSlug(db: KobeDb, row: MirrorRow): Promise<string> {
 async function assertRoom(dir: string): Promise<void> {
   const fsStats = await statfs(dir).catch(() => undefined);
   const free = fsStats ? Number(fsStats.bavail) * Number(fsStats.bsize) : 0;
-  // The pack, plus its objects written loose (compressed again: at most about the pack's size
-  // for content that does not compress, far less for content that does).
-  if (free < 2 * GIT_MIRROR_MAX_PACK_BYTES + GIT_MIRROR_DISK_MARGIN_BYTES) {
+  // The refresh's disk budget (pack plus loose objects, enforced as they are written). On an
+  // emptyDir this sees the node's file system; the budget itself keeps /tmp within its limit.
+  if (free < GIT_MIRROR_MAX_DISK_BYTES + GIT_MIRROR_DISK_MARGIN_BYTES) {
     throw new MirrorError("server_capacity");
   }
 }

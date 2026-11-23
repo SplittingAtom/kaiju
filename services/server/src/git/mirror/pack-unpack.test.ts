@@ -88,6 +88,7 @@ async function unpack(bytes: Buffer, caps: Partial<Parameters<typeof unpackPack>
     maxObjectBytes: MiB,
     maxTotalBytes: 4 * MiB,
     maxObjects: 1000,
+    maxDiskBytes: 64 * MiB,
     deadlineAt: Date.now() + 60_000,
     ...caps,
   });
@@ -182,10 +183,100 @@ describe("unpackPack", () => {
       code: "repository_too_large",
     });
     await expect(unpack(pack(parts), { maxObjects: 2 })).rejects.toMatchObject({
-      code: "too_many_files",
+      code: "repository_too_large",
+      detail: "objects",
     });
     const small = entry(3, 3, Buffer.from("abc"));
     await expect(unpack(pack([small], true))).rejects.toMatchObject({ code: "fetch_failed" });
+  });
+});
+
+/** A delta that copies the whole base and appends `extra`. */
+function appendDelta(baseLength: number, extra: Buffer): Buffer {
+  const copy = [0x80];
+  const offLen: number[] = [];
+  // Length in up to three bytes (0x10, 0x20, 0x40).
+  for (let i = 0; i < 3; i += 1) {
+    const b = (baseLength >> (8 * i)) & 0xff;
+    if (b !== 0) {
+      copy[0] = (copy[0] ?? 0) | (0x10 << i);
+      offLen.push(b);
+    }
+  }
+  return Buffer.from([
+    ...varint(baseLength),
+    ...varint(baseLength + extra.length),
+    ...copy,
+    ...offLen,
+    extra.length,
+    ...extra,
+  ]);
+}
+
+describe("disk and work bounds (review round 2)", () => {
+  it("stops a small, delta-heavy pack at the disk budget (R2-M1)", async () => {
+    // 256 KiB of random bytes, then 40 one-byte variants as ref deltas: the pack stays near
+    // 256 KiB, the objects written out would be 41 × 256 KiB.
+    const base = Buffer.from(
+      Array.from({ length: 256 * 1024 }, () => Math.floor(Math.random() * 256)),
+    );
+    const entries = [entry(3, base.length, base)];
+    for (let i = 0; i < 40; i += 1) {
+      const d = appendDelta(base.length, Buffer.from([i]));
+      entries.push(
+        Buffer.concat([
+          objectHeader(7, d.length),
+          Buffer.from(blobOid(base), "hex"),
+          deflateSync(d),
+        ]),
+      );
+    }
+    const bytes = pack(entries);
+    expect(bytes.length).toBeLessThan(400 * 1024);
+    // Within every other cap; only the disk budget stops it.
+    await expect(unpack(bytes, { maxDiskBytes: 2 * MiB })).rejects.toMatchObject({
+      code: "repository_too_large",
+      detail: String(2 * MiB),
+    });
+    const fine = await unpack(bytes, { maxDiskBytes: 32 * MiB, maxTotalBytes: 32 * MiB });
+    expect(fine.count).toBe(41);
+  });
+
+  it("counts deltas whose base never comes against the inflation total (R2-L1)", async () => {
+    const d = Buffer.alloc(600 * 1024);
+    const orphan = () =>
+      Buffer.concat([objectHeader(7, d.length), Buffer.alloc(20, 7), deflateSync(d)]);
+    await expect(unpack(pack([orphan(), orphan()]), { maxTotalBytes: MiB })).rejects.toMatchObject({
+      code: "repository_too_large",
+    });
+    await expect(unpack(pack([orphan()]))).rejects.toMatchObject({ code: "fetch_failed" });
+  });
+
+  it("resolves a long reverse-ordered chain of ref deltas in one pass", async () => {
+    // Objects v0..v299, each a ref delta on the previous; the pack lists them newest first,
+    // then the base last.
+    const chain: Buffer[] = [Buffer.from("v0")];
+    for (let i = 1; i < 300; i += 1)
+      chain.push(Buffer.concat([chain[i - 1] as Buffer, Buffer.from([i % 256])]));
+    const entries: Buffer[] = [];
+    for (let i = 299; i >= 1; i -= 1) {
+      const prev = chain[i - 1] as Buffer;
+      const d = appendDelta(prev.length, Buffer.from([i % 256]));
+      entries.push(
+        Buffer.concat([
+          objectHeader(7, d.length),
+          Buffer.from(blobOid(prev), "hex"),
+          deflateSync(d),
+        ]),
+      );
+    }
+    entries.push(entry(3, chain[0]?.length ?? 0, chain[0] as Buffer));
+    const started = Date.now();
+    const { dir, count } = await unpack(pack(entries));
+    expect(count).toBe(300);
+    expect(Date.now() - started).toBeLessThan(20_000);
+    const last = chain[299] as Buffer;
+    expect(Buffer.from((await git.readBlob({ fs, dir, oid: blobOid(last) })).blob)).toEqual(last);
   });
 });
 

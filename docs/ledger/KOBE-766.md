@@ -20,7 +20,7 @@
 
 ## Decisions (owner please confirm the starred ones)
 
-- \* **Mirror limits = Kobe's project limits**: at most 500 files of at most 50 MiB, 1 GiB in all,
+- \* **Mirror limits = Kobe's project limits**: at most 500 files of at most 50 MiB, 512 MiB in all,
   pack ≤ 128 MiB. A repository beyond them is refused whole (`too_many_files`, …) and keeps its
   last mirror; no partial mirror. (Conversion only converts projects within these limits; a Repo
   that grows past 500 files on the host stops mirroring until it shrinks.)
@@ -59,11 +59,14 @@
   4 in a row (≥ 35 min); `deleted` Repos are re-checked every 6 h and return to `active`. Tests.
 - **M3** relink to another repository starts without a mirror commit, so the old last mirror stays
   in history; the same repository keeps its own. Test asserts the old commit survives.
-- **L1** `prunedCommitId` on `git.repo.mirror_updated`. **Not fixed**: sweeping older mirror
-  commits kept by a checkout. Mirror commits have no marker that tells them apart from the
-  pre-relink mirror commit that M3 now keeps on purpose. The leak is bounded by checkouts based on
-  a mirror commit, and today a Repo takes no checkouts (writes are blocked until KOBE-767), so it
-  is left to KOBE-767, which defines checkouts on Repos.
+- **L1** `prunedCommitId` on `git.repo.mirror_updated`. The sweep of older mirror commits is
+  **deferred to KOBE-767** (corrected in round 2): Repos _can_ be checked out today
+  (`POST /v1/projects/{id}/checkout` needs only `edit`), and every mirror commit a checkout is
+  based on is skipped by the prune and never removed later (retention skips Repos). This is a
+  storage-only leak (one snapshot's tree rows and the blobs only it holds, per checkout per mirror
+  update), not a correctness or safety issue. KOBE-767 defines checkouts and commits on Repos and
+  should add a reliable marker (a nullable `mirror_repository_id` on `project_commits`) and the
+  sweep.
 - **L2** Refresh answers 429 `host_rate_limited`/`connection_budget` with Retry-After. Test.
 - **L3** opens refresh only when older than the 5-minute interval.
 - **L4** control characters (NUL included) stripped from author/subject; out-of-range times
@@ -74,6 +77,22 @@
 - **L7** relink re-checks the admin role under the lock; `is_private = true` on conflict.
 - **L8** partly: a pending push request is no longer pushed forward by later decisions; one
   refresh per Repo per minute at most remains possible (≤ 60 budget reads/h per Repo), accepted.
+
+## Review round 2 — what changed
+
+- **R2-M1** per-refresh disk budget (`GIT_MIRROR_MAX_DISK_BYTES` 768 MiB): the pack plus every
+  loose object as stored, counted as each is written. Inflated cap lowered to 768 MiB, head
+  content cap to 512 MiB (\* owner to confirm: was 1 GiB). Two refreshes (1.5 GiB) plus a
+  conversion (~4 GiB) fit `server.tmpSizeLimit` 6 GiB (chart comment updated; value unchanged).
+  Test: a ~260 KiB pack of 40 one-byte delta variants of a 256 KiB random blob stops at the budget.
+- **R2-L1** delta data counts against the inflation total as it is inflated; deltas waiting for a
+  base are kept in a map by base position/id and resolved iteratively when it arrives (linear);
+  object cap 20,000. Tests: orphan deltas refused by the total; a 300-long reverse ref-delta chain
+  resolves in one pass. Memory per refresh (~200 MiB worst) noted in `limits.ts`.
+- **R2-L2** Refresh honours `mirror_next_at` after `repository_not_found` too (429). Test.
+- **R2-L3** L1 reason corrected above.
+- **R2-L4** upload-pack 403 → `credential_forbidden`; a pack over the object cap is
+  `repository_too_large` with detail `objects`.
 
 ## Docs
 

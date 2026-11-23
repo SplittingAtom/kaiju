@@ -62,6 +62,7 @@ const caps = {
   maxFiles: 500,
   maxFileBytes: 1024 * 1024,
   maxTotalBytes: 16 * 1024 * 1024,
+  maxDiskBytes: 64 * 1024 * 1024,
   slug: "demo",
   deadlineAt: Date.now() + 10 * 60_000,
 };

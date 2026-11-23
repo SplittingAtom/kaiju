@@ -26,6 +26,8 @@ export interface MirrorCaps {
   readonly maxFileBytes: number;
   /** All objects of the fetch together, inflated (history included). */
   readonly maxTotalBytes: number;
+  /** Bytes on disk: the pack plus the objects written loose. */
+  readonly maxDiskBytes: number;
   /** Milliseconds since the epoch past which reading stops. */
   readonly deadlineAt: number;
   /** The project's slug: paths must still be valid once mounted under `projects/<slug>/`. */
@@ -143,6 +145,7 @@ export async function fetchBranch(
       maxObjectBytes: caps.maxFileBytes,
       maxTotalBytes: caps.maxTotalBytes,
       maxObjects: GIT_MIRROR_MAX_OBJECTS,
+      maxDiskBytes: caps.maxDiskBytes,
       deadlineAt: caps.deadlineAt,
     });
     await fs.promises.rm(packFile, { force: true });

@@ -40,7 +40,11 @@ export const GIT_MIRROR_BACKOFF_MAX_MS = 6 * 60 * 60_000;
 export const GIT_MIRROR_LEASE_MS = 10 * 60_000;
 /** One refresh's deadline for all its exchanges with the host. */
 export const GIT_MIRROR_DEADLINE_MS = 5 * 60_000;
-/** Refreshes one replica runs at once; the rest wait for the next pass. */
+/**
+ * Refreshes one replica runs at once; the rest wait for the next pass. Each holds at most about
+ * 200 MiB of memory (a delta, its base and the result, each within the file cap, plus a read
+ * window), so two fit the server's 1 GiB limit next to its other work.
+ */
 export const GIT_MIRROR_SLOTS = 2;
 /** Due Repos one pass takes per Workspace (oldest first). */
 export const GIT_MIRROR_PER_TEAM = 20;
@@ -48,18 +52,24 @@ export const GIT_MIRROR_PER_TEAM = 20;
 /** The pack one refresh may download, streamed to the work folder (never held in memory). */
 export const GIT_MIRROR_MAX_PACK_BYTES = 128 * 1024 * 1024;
 /**
- * Every object of a fetch together, inflated (the head's files plus the newest commits' changes),
- * written as loose objects to the work folder; the head's files are capped again below.
+ * Every object of a fetch together, inflated (the head's files plus the newest commits' trees,
+ * commits and changed files): the head's content cap plus room for that history.
  */
-export const GIT_MIRROR_MAX_INFLATED_BYTES = 2 * 1024 * 1024 * 1024;
-/** Most objects in one fetched pack. */
-export const GIT_MIRROR_MAX_OBJECTS = 200_000;
+export const GIT_MIRROR_MAX_INFLATED_BYTES = 768 * 1024 * 1024;
+/**
+ * Bytes one refresh may put on disk: the pack plus every object written loose (review R2-M1).
+ * Two refreshes at once (1.5 GiB) and a conversion (about 4 GiB) stay inside the server's /tmp
+ * limit (`server.tmpSizeLimit`, 6 GiB).
+ */
+export const GIT_MIRROR_MAX_DISK_BYTES = 768 * 1024 * 1024;
+/** Most objects in one fetched pack: 25 commits of a project of at most 500 files need far fewer. */
+export const GIT_MIRROR_MAX_OBJECTS = 20_000;
 /** A Repo's mirrored files follow Kobe's project limits: at most this many files... */
 export const GIT_MIRROR_MAX_FILES = PROJECT_FILES_MAX;
 /** ...of at most this size each... */
 export const GIT_MIRROR_MAX_FILE_BYTES = PROJECT_FILE_MAX_BYTES;
-/** ...and at most this much content in all. */
-export const GIT_MIRROR_MAX_BYTES = 1024 * 1024 * 1024;
+/** ...and at most this much content in all (review R2-M1: within the per-refresh disk budget). */
+export const GIT_MIRROR_MAX_BYTES = 512 * 1024 * 1024;
 /** Free space a refresh needs in its work folder beyond the pack and its objects. */
 export const GIT_MIRROR_DISK_MARGIN_BYTES = 64 * 1024 * 1024;
 

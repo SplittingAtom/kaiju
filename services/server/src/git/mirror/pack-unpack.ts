@@ -20,7 +20,9 @@ import { MirrorError } from "./mirror-error.js";
  *    (a stream that inflates further is refused, not buffered); a delta's target size is read
  *    from its (bounded) delta data before it is applied; the sum of all objects is capped too;
  * 4. objects are written as loose objects, one at a time, so memory holds at most one object,
- *    its base and its delta (each within the cap), never the pack's content.
+ *    its base and its delta (each within the cap; with the read window about 200 MiB per refresh
+ *    at worst), never the pack's content; the bytes they take on disk, with the pack's, are
+ *    capped per refresh.
  *
  * isomorphic-git then reads the loose objects (each within the cap) to walk the tree.
  */
@@ -32,6 +34,11 @@ export interface UnpackCaps {
   readonly maxTotalBytes: number;
   /** Most objects in the pack. */
   readonly maxObjects: number;
+  /**
+   * Bytes on disk for this fetch: the pack plus every loose object as stored (review R2-M1: a
+   * pack of deltas is small, its objects written out need not be).
+   */
+  readonly maxDiskBytes: number;
   /** Milliseconds since the epoch past which unpacking stops. */
   readonly deadlineAt: number;
 }
@@ -88,6 +95,7 @@ export async function downloadPack(
     })(),
   });
   if (res.statusCode === 401) throw new GitHostError("auth_failed", "The git host refused.");
+  if (res.statusCode === 403) throw new GitHostError("forbidden", "The git host refused.");
   if (res.statusCode === 404) throw new GitHostError("not_found", "Not on the host.");
   if (res.statusCode === 429) throw new GitHostError("rate_limited", "Rate limited.");
   if (res.statusCode >= 500) throw new GitHostError("host_unreachable", "Not answering.");
@@ -316,15 +324,16 @@ export async function unpackPack(
       throw new MirrorError("fetch_failed");
     }
     const count = head.readUInt32BE(8);
-    if (count > caps.maxObjects) throw new MirrorError("too_many_files", String(caps.maxObjects));
+    // Review R2-L4: a count beyond the cap is a size refusal, not a file count.
+    if (count > caps.maxObjects) throw new MirrorError("repository_too_large", "objects");
     const written = new Map<number, { oid: string; type: string }>();
     const byOid = new Map<string, { oid: string; type: string }>();
-    const remember = (objAt: number, w: { oid: string; type: string }) => {
-      written.set(objAt, w);
-      byOid.set(w.oid, w);
-    };
-    const pending: { at: number; entry: Entry }[] = [];
+    // Review R2-L1: deltas waiting for their base, by the base's position or id (linear).
+    const waiting = new Map<string, { at: number; entry: Entry }[]>();
+    let waitingCount = 0;
     let total = 0;
+    // Review R2-M1: bytes this unpack put on disk (the pack, then each loose object as stored).
+    let disk = size;
     let at = offset + 12;
     const tick = () => {
       if (Date.now() > caps.deadlineAt) throw new GitHostError("host_unreachable", "Too long.");
@@ -336,9 +345,53 @@ export async function unpackPack(
         throw new MirrorError("repository_too_large", String(caps.maxTotalBytes));
       }
     };
-    const resolveDelta = async (objAt: number, e: Entry, inflated?: Buffer): Promise<boolean> => {
+    const checkDisk = () => {
+      if (disk > caps.maxDiskBytes) {
+        throw new MirrorError("repository_too_large", String(caps.maxDiskBytes));
+      }
+    };
+    checkDisk();
+    const store = async (type: string, object: Buffer): Promise<string> => {
+      const oid = await git.writeObject({
+        fs,
+        dir,
+        type: type as "blob",
+        object,
+        format: "content",
+      });
+      if (!byOid.has(oid)) {
+        const loose = path.join(dir, ".git", "objects", oid.slice(0, 2), oid.slice(2));
+        disk += (await fs.promises.stat(loose)).size;
+        checkDisk();
+      }
+      return oid;
+    };
+    const keyOf = (e: Entry) => (e.baseAt !== undefined ? `@${e.baseAt}` : `#${e.baseOid ?? ""}`);
+    const remember = (objAt: number, w: { oid: string; type: string }): void => {
+      written.set(objAt, w);
+      byOid.set(w.oid, w);
+      // Deltas that waited for this object become ready (resolved by `drain`, iteratively).
+      for (const key of [`@${objAt}`, `#${w.oid}`]) {
+        const list = waiting.get(key);
+        if (!list) continue;
+        waiting.delete(key);
+        waitingCount -= list.length;
+        ready.push(...list);
+      }
+    };
+    const ready: { at: number; entry: Entry }[] = [];
+    const drain = async () => {
+      for (let p = ready.pop(); p; p = ready.pop()) await resolveDelta(p.at, p.entry);
+    };
+    async function resolveDelta(objAt: number, e: Entry, inflated?: Buffer): Promise<void> {
+      tick();
       const base = e.baseAt !== undefined ? written.get(e.baseAt) : byOid.get(e.baseOid ?? "");
-      if (!base) return false;
+      if (!base) {
+        const key = keyOf(e);
+        waiting.set(key, [...(waiting.get(key) ?? []), { at: objAt, entry: e }]);
+        waitingCount += 1;
+        return;
+      }
       const delta = inflated ?? (await inflateAt(handle, e.dataAt, e.size, end)).data;
       const source = deltaVarint(delta, 0);
       const target = deltaVarint(delta, source.next);
@@ -347,43 +400,28 @@ export async function unpackPack(
       const baseBuf = Buffer.from(object as Uint8Array);
       if (baseBuf.length !== source.value) throw new MirrorError("fetch_failed");
       const result = applyDelta(baseBuf, delta, target.next, target.value);
-      const oid = await git.writeObject({
-        fs,
-        dir,
-        type: base.type as "blob",
-        object: result,
-        format: "content",
-      });
-      remember(objAt, { oid, type: base.type });
-      return true;
-    };
+      remember(objAt, { oid: await store(base.type, result), type: base.type });
+    }
     for (let n = 0; n < count; n += 1) {
       tick();
       if (at >= end) throw new MirrorError("fetch_failed");
       const e = await header(handle, at);
       // The stated size first: nothing over the cap is ever inflated.
       if (e.size > caps.maxObjectBytes) throw new MirrorError("file_too_large", String(e.size));
+      // Every inflation counts, a delta's data too (review R2-L1: a delta whose base never
+      // comes cannot make the server inflate without limit).
+      account(e.size);
       const { data, used } = await inflateAt(handle, e.dataAt, e.size, end);
       if (e.type === OFS_DELTA || e.type === REF_DELTA) {
-        if (!(await resolveDelta(at, e, data))) pending.push({ at, entry: e });
+        await resolveDelta(at, e, data);
       } else {
-        account(e.size);
-        const type = TYPES[e.type] as "blob";
-        const oid = await git.writeObject({ fs, dir, type, object: data, format: "content" });
-        remember(at, { oid, type });
+        const type = TYPES[e.type] as string;
+        remember(at, { oid: await store(type, data), type });
       }
+      await drain();
       at = e.dataAt + used;
     }
-    if (at !== end) throw new MirrorError("fetch_failed");
-    // A REF delta whose base came later in the pack.
-    while (pending.length > 0) {
-      tick();
-      const before = pending.length;
-      for (const p of [...pending]) {
-        if (await resolveDelta(p.at, p.entry)) pending.splice(pending.indexOf(p), 1);
-      }
-      if (pending.length === before) throw new MirrorError("fetch_failed");
-    }
+    if (at !== end || waitingCount > 0) throw new MirrorError("fetch_failed");
     return count;
   } finally {
     await handle.close();

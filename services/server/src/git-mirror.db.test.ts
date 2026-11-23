@@ -303,21 +303,23 @@ describe("refreshes back off and never block reads (ac-2)", () => {
     expect(await repoRow(c)).toMatchObject({ mirror_failures: 0, mirror_error: null });
   });
 
-  it("Refresh waits for the host's rate-limit reset (L2)", async () => {
+  it("Refresh waits for the host's rate-limit reset and between not-found answers (L2, R2-L2)", async () => {
     const c = await converted();
     await idle(c);
-    await fx.admin.query(
-      `UPDATE git_repositories SET mirror_error = 'host_rate_limited', mirror_failures = 1,
-              mirror_next_at = now() + interval '20 minutes'
-        WHERE team_id = $1 AND id = $2`,
-      [c.w.team, c.repositoryId],
-    );
-    const res = await c.w.member.browser.request(
-      "POST",
-      `/v1/projects/${c.projectId}/repo/refresh`,
-    );
-    expect([res.status, res.json.code]).toEqual([429, "host_rate_limited"]);
-    expect(res.json.retry_after_seconds).toBeGreaterThan(1100);
+    for (const code of ["host_rate_limited", "repository_not_found"]) {
+      await fx.admin.query(
+        `UPDATE git_repositories SET mirror_error = $3, mirror_failures = 1,
+                mirror_next_at = now() + interval '20 minutes'
+          WHERE team_id = $1 AND id = $2`,
+        [c.w.team, c.repositoryId, code],
+      );
+      const res = await c.w.member.browser.request(
+        "POST",
+        `/v1/projects/${c.projectId}/repo/refresh`,
+      );
+      expect([res.status, res.json.code]).toEqual([429, code]);
+      expect(res.json.retry_after_seconds).toBeGreaterThan(1100);
+    }
   });
 
   it("one refresh per Repo at a time", async () => {
