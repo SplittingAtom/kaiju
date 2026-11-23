@@ -3,9 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CAPABILITY_RUN_TOKEN, CAPABILITY_THREAD_COMPACT } from "@kobe/protocol";
 import { generateSessionKeyPair } from "@kobe/session-token";
 import { auditQuerySchema, listAuditEvents, listTeamAuditEvents, withTeam } from "@kobe/db";
-import { must } from "./testing/event-stream-fixture.js";
-import { RunFixture, type FakeWorkspace, type RunWorld } from "./testing/run-fixture.js";
-import { TAMPER_AUDIT_ATTEMPTS, auditRuntimeTamperInTx } from "./sandbox-wire/runtime-tamper.js";
+import { must } from "../testing/event-stream-fixture.js";
+import { RunFixture, type FakeWorkspace, type RunWorld } from "../testing/run-fixture.js";
+import { TAMPER_AUDIT_ATTEMPTS, auditRuntimeTamperInTx } from "./runtime-tamper.js";
 
 /**
  * A tampered Pi runtime (KOBE-271) is a security event: the run's failure is recorded with an

@@ -1,8 +1,8 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CAPABILITY_SESSION_RENEW, SANDBOX_CLOSE_CODES } from "@kobe/protocol/sandbox-wire";
-import { EventStreamFixture, must } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
+import { EventStreamFixture, must } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 
 /**
  * Sandbox wire limits with aggressive timings (KOBE-24): heartbeat timeout, periodic revalidation

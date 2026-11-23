@@ -2,12 +2,12 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CAPABILITY_RUN_TOKEN } from "@kobe/protocol";
 import { generateSessionKeyPair, verifyRunToken } from "@kobe/session-token";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
-import { withAppendTx } from "./event-stream/append.js";
-import { createSandboxWire } from "./sandbox-wire/index.js";
-import { endRunInTx } from "./sandbox-wire/run-state.js";
-import { RUN_TOKEN_TTL_SECONDS } from "./sandbox-wire/constants.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
+import { withAppendTx } from "../event-stream/append.js";
+import { createSandboxWire } from "./index.js";
+import { endRunInTx } from "./run-state.js";
+import { RUN_TOKEN_TTL_SECONDS } from "./constants.js";
 
 /** KOBE-118: the server mints a run token at run.start (capable agents only) and revokes it at run end. */
 const fx = new EventStreamFixture();

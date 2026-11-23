@@ -4,8 +4,8 @@ import { parseTraceparent, runRootSpanId, runTraceId } from "@kobe/protocol";
 import { CAPABILITY_TRACE_SPANS, SANDBOX_CLOSE_CODES } from "@kobe/protocol/sandbox-wire";
 import { deriveTraceSpanKey, mapSandboxSpanId } from "@kobe/protocol/node";
 import { InMemorySpanExporter, initTelemetry, spanRelay, type Telemetry } from "@kobe/telemetry";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 
 /**
  * Relayed sandbox spans over the real wire (KOBE-274 ac-2/ac-3/ac-6): trace context on run.start
