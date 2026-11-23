@@ -56,9 +56,10 @@
 
 ## Left for other tickets
 
-- **Setting route/UI (ac-2):** no route writes `git_commit_email` yet; per the coordinator it
-  goes into the phase-2 integration (routes + console, `team.git.manage`, audited). The reader and
-  key are `TEAM_GIT_COMMIT_EMAIL_SETTING` / `gitCommitEmailMode()` here.
+- **Setting route/UI (ac-2):** done in the phase-2 integration (KOBE-761 ledger):
+  `/v1/team/git/settings` (`team.git.manage`, audited `git.settings.updated`) and the Git
+  section's "Commit author email". The reader and key stay `TEAM_GIT_COMMIT_EMAIL_SETTING` /
+  `gitCommitEmailMode()` here.
 - GIT-13: Workspace admin and members' pages; e2e from a real sandbox against Forgejo.
 
 ## Open questions

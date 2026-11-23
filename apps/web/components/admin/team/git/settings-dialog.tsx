@@ -221,13 +221,14 @@ function AgentsChoice({
       <Radio
         name={`${ids}-agents`}
         label="Every agent in the Workspace"
-        hint="Members still need the Contributor role to write."
+        hint="Pushing still needs the Contributor role (and editor or owner on a Repo's project)."
         checked={value === null}
         onChange={() => onChange(null)}
       />
       <Radio
         name={`${ids}-agents`}
         label="Only the agents I choose"
+        hint="Sandboxes cannot fetch or push through a connection limited to chosen agents: one sandbox serves all of a member's agents."
         checked={value !== null}
         onChange={() => onChange(value ?? [])}
       />

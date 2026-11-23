@@ -11,6 +11,7 @@ import type {
   GitConnectionAdminView,
   GitConnectionList,
   GitConnectionMemberView,
+  GitTeamSettings,
   GitTestReport,
 } from "@kobe/protocol";
 import { apiRequest, type ApiResult } from "../../../api/client";
@@ -151,4 +152,23 @@ export function removeGitConnection(
   id: string,
 ): Promise<ApiResult<{ readonly id: string; readonly repositoriesKept: number }>> {
   return apiRequest(`${BASE}/${enc(id)}`, { method: "DELETE", teamId });
+}
+
+export type GitWorkspaceSettings = Camelized<GitTeamSettings>;
+export type GitCommitEmail = GitTeamSettings["commit_email"];
+
+/** The Workspace's git settings (`team.git.manage`): the commit author email of sandbox commits. */
+export function getGitSettings(teamId: string): Promise<ApiResult<GitWorkspaceSettings>> {
+  return apiRequest("/v1/team/git/settings", { teamId });
+}
+
+export function setGitCommitEmail(
+  teamId: string,
+  commitEmail: GitCommitEmail,
+): Promise<ApiResult<GitWorkspaceSettings>> {
+  return apiRequest("/v1/team/git/settings", {
+    method: "PATCH",
+    json: { commit_email: commitEmail },
+    teamId,
+  });
 }

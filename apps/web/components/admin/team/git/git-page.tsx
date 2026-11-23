@@ -18,6 +18,7 @@ import { useTeamAccess } from "../../console-context";
 import { ErrorNotice } from "../../error-notice";
 import { DateTime } from "../../parts";
 import { useResource } from "../../use-resource";
+import { CommitEmailSection } from "./commit-email-section";
 import { GitConnectionsReadOnly } from "./member-view";
 import { ConnectDialog } from "./connect-dialog";
 import { ConnectionCard, expired, type CardAction } from "./connection-card";
@@ -62,7 +63,10 @@ export function TeamGitPage() {
       ) : null}
       {state.status === "ready" ? (
         manager ? (
-          <ManagedConnections teamId={teamId} data={state.data} reload={reload} />
+          <>
+            <ManagedConnections teamId={teamId} data={state.data} reload={reload} />
+            <CommitEmailSection teamId={teamId} />
+          </>
         ) : (
           <>
             <Notice tone="info">
@@ -140,7 +144,7 @@ function ManagedConnections({
     const yes = await confirm(
       {
         title: `Disconnect ${c.displayName}?`,
-        description: `Kobe deletes the stored credential and agents lose access to ${c.organization} on ${hostOf(c.baseUrl)}. Nothing on the host is changed: repositories there stay. Repos in Kobe linked to this connection stay too, read-only from their last copy and marked unreachable, until a Workspace admin links them again.`,
+        description: `Kobe deletes the stored credential and agents lose access to ${c.organization} on ${hostOf(c.baseUrl)}. Nothing on the host is changed: repositories there stay. Sandboxes already working with the organization may keep their access for up to 30 seconds.`,
         confirmLabel: "Disconnect",
       },
       from,

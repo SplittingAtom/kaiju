@@ -29,6 +29,12 @@ import {
   type Answer,
 } from "../git/connections.js";
 import { invalidRequest, param, parseBody } from "../http/request.js";
+import { gitNoReplyEmail } from "../git/sandbox-git.js";
+import {
+  gitTeamSettingsBodySchema,
+  readGitCommitEmail,
+  writeGitCommitEmail,
+} from "../git/team-git-settings.js";
 
 /** Largest request body the git routes read (review L5). */
 export const GIT_BODY_MAX_BYTES = 64 * 1024;
@@ -180,6 +186,29 @@ export function teamGitRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables
     const id = param(c, "id", z.uuid());
     if (!id.success) return notFound(c);
     return send(c, await removeGitConnectionNow(git, c.get("team").id, id.data));
+  });
+
+  // The Workspace's git settings (KOBE-761): the author email of sandbox commits (G13, GQ10).
+  // Console-only, like connecting: the Kobe admin MCP has no tool for it.
+  const settingsAnswer = (c: Context<{ Variables: TeamVariables }>, mode: string) => {
+    const user = c.get("user");
+    // Read per request (as run starts do), so a deps without a valid public URL still mounts.
+    const siteHost = new URL(deps.publicUrl).hostname;
+    return {
+      commit_email: mode,
+      noreply_example: gitNoReplyEmail({ id: user.id, name: user.name }, siteHost),
+    };
+  };
+
+  app.get("/settings", requireTeamPermission("team.git.manage"), async (c) =>
+    c.json(settingsAnswer(c, await readGitCommitEmail(db, c.get("team").id))),
+  );
+
+  app.patch("/settings", requireTeamPermission("team.git.manage"), async (c) => {
+    const body = await parseBody(c, gitTeamSettingsBodySchema);
+    if (!body) return invalidRequest(c, 'Send {"commit_email": "member" | "noreply"}.');
+    const mode = await writeGitCommitEmail(db, c.get("team").id, body.commit_email);
+    return c.json(settingsAnswer(c, mode));
   });
 
   return app;

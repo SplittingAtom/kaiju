@@ -1,6 +1,6 @@
 ---
 title: Git organizations
-summary: How Workspace admins connect a Workspace to an organization on GitHub, GitHub Enterprise Server, Gitea or Forgejo with a GitHub App or an access token, the exact permissions and scopes to choose, testing, access levels, repository defaults, health, token expiry, replacing and disconnecting, what members see, and the Site admin's switch and allowed hosts.
+summary: How Workspace admins connect a Workspace to an organization on GitHub, GitHub Enterprise Server, Gitea or Forgejo with a GitHub App or an access token, the exact permissions and scopes to choose, testing, access levels for git in sandboxes, repository defaults, the commit author email, health, token expiry, replacing and disconnecting, what members see, and the Site admin's switch and allowed hosts.
 section: Team admin
 order: 3
 audience: admin
@@ -93,10 +93,22 @@ what the server reports.
 
 ## Access levels
 
-Each connection has an access level: **Off**, **Read** or **Read and write**. The test checks the
-credential against the level you choose (at **Read and write** it must be able to write), and you
-change the level later in **Settings**. Agent git tools and pushing from sandboxes arrive with
-later updates.
+Each connection has an access level, which decides what git in members' sandboxes may do with the
+organization's repositories. The credential stays on the server: the egress proxy adds it to each
+git request and checks the request first.
+
+| Level              | Git in sandboxes                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| **Off**            | Nothing: the connection is kept but unused.                                                                         |
+| **Read**           | Any member's sandbox may fetch (clone and pull).                                                                    |
+| **Read and write** | Also push, when the member has the Contributor role or above and, for a Repo, is an editor or owner of its project. |
+
+The test checks the credential against the level you choose (at **Read and write** it must be able
+to write), and you change the level later in **Settings**. Git reaches only the connected
+organization: a request for another organization on the same host is refused. The host must be in
+the Site's egress ceiling (a server on a private network through an internal entry). A renamed
+repository's old address is not followed: use its current name. Agent tools that act on the
+host's API (creating repositories, opening pull requests) arrive with later updates.
 
 ## Settings
 
@@ -109,24 +121,40 @@ sends nothing to the host). Its buttons:
 
 - **Settings**: display name, access level, defaults for new repositories (private, or internal
   on GitHub where the organization has it; an optional name prefix; the default branch), the
-  push size limit (default 1 GiB), whether commits from Kobe may go straight to the default branch
-  (off by default: a branch and a pull request), and whether every agent in the Workspace may use
-  it or only agents you choose.
+  largest push from a sandbox (default 1 GiB), whether commits from Kobe may go straight to the
+  default branch (off by default: a branch and a pull request), and whether every agent in the
+  Workspace may use it or only agents you choose. Git in sandboxes cannot use a connection limited
+  to chosen agents, because one sandbox serves all of a member's agents.
 - **Replace credential**: paste a new token or key. Kobe tests it first; the old one is then
-  discarded.
+  discarded. Sandboxes may keep using the old one for up to 30 seconds.
 - **Check now**: tests the stored credential and updates the health. Kobe also checks every
   connection every few hours.
 - **Disconnect**: deletes the stored credential. Nothing on the host changes: repositories there
-  stay.
+  stay. Sandboxes already working with the organization may keep their access for up to 30
+  seconds.
 
 When a token's expiry is less than 14 days away (or has passed), the page shows a banner and
 Workspace admins get one email. Create a new token on the host and use **Replace credential**.
 
+## Commit author email
+
+Commits made in members' sandboxes carry the member's name as author, and "_name_ via Kobe" as
+committer. Under **Commit author email** on the Git page, choose the address they carry:
+
+- **Member's Kobe email** (the default): the email the member signs in with. Anyone who can read
+  the repository on the host sees it.
+- **No-reply address**: `<short id>+<name>@users.noreply.<Site host>`, which receives no mail and
+  does not reveal the member's email. The page shows your own as an example.
+
+Commits pushed to the host keep the address in their history for good; a change applies to new
+commits only. Changes are recorded in the audit log (`git.settings.updated`).
+
 ## What members see
 
 Members see which organizations the Workspace is connected to, read-only, under **Profile → My
-connectors** (`/me/connectors`), section **Git organizations**: the host, organization, access level and whether it works,
-with no settings and nothing about the credential.
+connectors** (`/me/connectors`), section **Git organizations**: the host, organization, access
+level and whether it works, with no settings and nothing about the credential, and whether their
+sandbox can fetch or also push there.
 
 ## Site admins: allow git connections and limit hosts
 

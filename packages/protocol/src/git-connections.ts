@@ -173,3 +173,17 @@ export const gitConnectionRemovedSchema = z.strictObject({
   id: uuidSchema,
   repositories_kept: z.number().int().nonnegative(),
 });
+
+/** How commits made in sandboxes name their author (G13, GQ10; KOBE-764's reader). */
+export const GIT_COMMIT_EMAIL_MODES = ["member", "noreply"] as const;
+export type GitCommitEmailMode = (typeof GIT_COMMIT_EMAIL_MODES)[number];
+
+/**
+ * `GET` / `PATCH /v1/team/git/settings` (Workspace admins): the Workspace's git settings.
+ * `noreply_example` is the caller's own no-reply address, to show what the choice writes.
+ */
+export const gitTeamSettingsSchema = z.strictObject({
+  commit_email: z.enum(GIT_COMMIT_EMAIL_MODES),
+  noreply_example: z.string(),
+});
+export type GitTeamSettings = z.infer<typeof gitTeamSettingsSchema>;

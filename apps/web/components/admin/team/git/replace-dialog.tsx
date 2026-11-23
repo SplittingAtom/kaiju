@@ -40,7 +40,7 @@ export function ReplaceCredentialDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={`Replace the credential of ${connection.displayName}`}
-      description="Kobe tests the new credential before it replaces the old one, which is then discarded."
+      description="Kobe tests the new credential before it replaces the old one, which is then discarded. Sandboxes may keep using the old one for up to 30 seconds."
       returnFocus={returnFocus}
     >
       {open ? (

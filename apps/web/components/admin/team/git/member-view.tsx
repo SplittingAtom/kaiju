@@ -59,9 +59,9 @@ export function GitConnectionsReadOnly({ data }: { readonly data: GitConnections
         })}
       </ul>
       <p className="m-0 mt-2 text-sm text-console-muted">
-        With Read, your agents read and clone repositories there; with Read and write they can also
-        create repositories, open pull requests and push, if your role is Contributor or above.
-        Agents never see the credential.
+        With Read, your sandbox can fetch (clone and pull) repositories there; with Read and write
+        it can also push, if your role is Contributor or above (and, for a Repo, you are an editor
+        or owner of its project). The credential never enters your sandbox.
       </p>
     </>
   );

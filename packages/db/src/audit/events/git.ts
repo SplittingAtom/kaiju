@@ -36,6 +36,9 @@ const settingField = z.enum([
   "agent_ids",
 ]);
 
+/** The commit author email choice (`teams.settings.git_commit_email`, KOBE-764). */
+const commitEmail = z.enum(["member", "noreply"]);
+
 export const GIT_EVENTS = {
   // ── Workspace git connections (KOBE-760, spec workspace-git §3, §4, §8): ids, names and codes;
   // never a credential, its hint, a host's message or a URL query ──
@@ -92,5 +95,14 @@ export const GIT_EVENTS = {
     connectionId: id,
     expiresAt: z.iso.datetime({ offset: true }),
     notified: count,
+  }),
+  /**
+   * A Workspace admin changed the Workspace's git settings (KOBE-761): today the commit author
+   * email of sandbox commits (G13, GQ10), member's Kobe email or the no-reply form.
+   */
+  "git.settings.updated": event("team", {
+    setting: z.literal("commit_email"),
+    value: commitEmail,
+    previous: commitEmail,
   }),
 } as const satisfies Record<string, AuditEventDef>;

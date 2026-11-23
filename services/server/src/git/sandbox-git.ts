@@ -16,6 +16,7 @@ import {
   type RunGitContext,
   type RunGitRemote,
 } from "@kobe/protocol/sandbox-wire";
+import { GIT_COMMIT_EMAIL_MODES, type GitCommitEmailMode } from "@kobe/protocol";
 import { reachableBase } from "./transport.js";
 
 /**
@@ -33,8 +34,7 @@ import { reachableBase } from "./transport.js";
 
 /** The `teams.settings` key of the commit email choice (no migration: `teams.settings` is jsonb). */
 export const TEAM_GIT_COMMIT_EMAIL_SETTING = "git_commit_email";
-export const GIT_COMMIT_EMAIL_MODES = ["member", "noreply"] as const;
-export type GitCommitEmailMode = (typeof GIT_COMMIT_EMAIL_MODES)[number];
+export { GIT_COMMIT_EMAIL_MODES, type GitCommitEmailMode };
 
 /** What "via Kobe" says in the committer (G13). */
 export const GIT_COMMITTER_SUFFIX = " via Kobe";

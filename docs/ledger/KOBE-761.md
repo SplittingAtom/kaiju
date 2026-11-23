@@ -45,8 +45,8 @@ git-site-form.tsx`, `lib/admin/api/team/git.ts` (typed from `@kobe/protocol` thr
 - **Not built here (later phases have no data yet):** §7's Repositories and Activity lists
   (GIT-6/7/9), the GitHub app-manifest pre-fill (G5 "can pre-fill": links to the host's form
   instead). Expiry notice in the bell stays KOBE-760's open question.
-- UI hints for the access levels and the members' view still say what each level lets agents do
-  (spec G9); the guide does not until GIT-6/7 ship (coordinator's call on guide scope).
+- Access-level hints and the members' view describe fetch and push (GIT-7), not agent host tools
+  (GIT-6, not built).
 - **Wording:** "Workspace admin", "Site admin", "member"; GitHub's "installation" kept (identifier
   renamed to pass `check-site-wording`).
 
@@ -71,6 +71,32 @@ git extend the page.
   checks, plus one sentence that agent git tools and pushing arrive with later updates; no Repo or
   approval claims. The Site settings route's generic 400 for a bad host list stays (the form names
   the line).
+
+## Phase-2 integration (merged GIT-7 `group-99` de7d9b645, GIT-8 `group-102` 15b7c4a17)
+
+- Both merges were clean (no conflicts); `docs/audit-log.md` regenerated with the new event.
+- **Commit author email (KOBE-764 ac-2):** `GET` / `PATCH /v1/team/git/settings`
+  (`team.git.manage`, zod `gitTeamSettingsBodySchema`, answer `gitTeamSettingsSchema` in
+  `@kobe/protocol` with the caller's `noreply_example`), stored in
+  `teams.settings.git_commit_email` (KOBE-764's key and reader; team row locked), audited
+  `git.settings.updated` `{setting, value, previous}` once per real change (event + `.doc.ts`
+  row). OpenAPI catalog entries + details; route inventory regenerated. Not in the Kobe admin
+  MCP: no tool, and `kobe-mcp-team.db.test.ts` already fails on any `team_git_*` tool beyond the
+  connection list. DB test `git-settings.db.test.ts`: default + example, store/reader agreement,
+  audit once with old/new, other settings kept, validation, member/contributor 403, Site admin
+  without membership and another Workspace's admin refused, isolation. `GIT_COMMIT_EMAIL_MODES`
+  now lives in the protocol (sandbox-git re-exports it).
+- **Console:** "Commit author email" section on the Git page (two radios, one sentence each on
+  what lands in history on the host, the admin's own no-reply example); component tests.
+- **Access-level hints and guide** follow KOBE-763: any member at Read may fetch; push needs Read
+  and write, Contributor or above and, on a Repo, editor/owner of its project; agent-limited
+  connections are not usable by sandbox git; another organization refused; egress ceiling;
+  renamed repositories not followed. Nothing about agent host tools beyond "later updates".
+- **30 s:** disconnect and replace confirmations and the guide say sandboxes may keep access for
+  up to 30 s (the proxy's credential cache). The proxy already drops entries on a change hint,
+  but no route sends one yet (KOBE-763 "Left for other tickets"); not built here.
+- **Rate limits:** `packages/db/src/rate-limit.ts` is not on this branch (PR #688), so the git
+  routes keep the server's `hitRateLimit`.
 
 ## Accessibility pass
 

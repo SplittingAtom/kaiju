@@ -40,7 +40,7 @@ describe("Git section: states (KOBE-761)", () => {
     await screen.findByText(/Kobe had a problem/);
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     await screen.findByText("No git organization is connected");
-    expect(summary(calls)).toEqual([`GET ${GIT_BASE}`, `GET ${GIT_BASE}`]);
+    expect(summary(calls).filter((c) => c === `GET ${GIT_BASE}`)).toHaveLength(2);
   });
 
   it("shows an empty state with Connect offered", async () => {
@@ -256,7 +256,7 @@ describe("Git section: per-connection actions (KOBE-761)", () => {
     expect(summary(calls).filter((c) => c.startsWith("POST"))).toHaveLength(2);
   });
 
-  it("Disconnect asks first, says Repos stay and are marked unreachable, then deletes", async () => {
+  it("Disconnect asks first, says repositories stay and access ends within 30 s, then deletes", async () => {
     const calls = stubApi({
       [`GET ${GIT_BASE}`]: [
         [200, list([adminConnection()])],
@@ -269,7 +269,7 @@ describe("Git section: per-connection actions (KOBE-761)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Disconnect acme on GitHub" }));
     const text = await answerConfirm("Disconnect acme on GitHub?", "Disconnect");
     expect(text).toMatch(/repositories there stay/);
-    expect(text).toMatch(/marked unreachable/);
+    expect(text).toMatch(/up to 30 seconds/);
     await screen.findByText(/Disconnected acme on GitHub\. 2 repository record\(s\) kept/);
     expect(summary(calls)).toContain(`DELETE ${GIT_BASE}/${ID}`);
   });
@@ -395,5 +395,56 @@ describe("members' read-only view on My connector keys (KOBE-761)", () => {
     await waitFor(() =>
       expect(screen.getByText(/turned off for this Site, so agents cannot use them/)).toBeTruthy(),
     );
+  });
+});
+
+describe("Commit author email (KOBE-761, G13, GQ10)", () => {
+  const SETTINGS = "/v1/team/git/settings";
+  const EXAMPLE = "0123456789+ada@users.noreply.kobe.example";
+
+  it("shows both choices with what ends up in git history and the admin's own no-reply example", async () => {
+    stubApi({
+      [`GET ${GIT_BASE}`]: [200, list([])],
+      [`GET ${SETTINGS}`]: [200, { commit_email: "member", noreply_example: EXAMPLE }],
+    });
+    renderTeam(<TeamGitPage />, ADMIN);
+    const form = within(await screen.findByRole("form", { name: "Commit author email" }));
+    const member = form.getByRole("radio", { name: "Member's Kobe email" });
+    expect(member).toHaveProperty("checked", true);
+    expect(form.getByText(/email they sign in to Kobe with/)).toBeTruthy();
+    expect(form.getByText(EXAMPLE)).toBeTruthy();
+    expect(screen.getByText(/keep it in their history for good/)).toBeTruthy();
+    expect(form.getByRole("button", { name: "Save commit email" })).toHaveProperty(
+      "disabled",
+      true,
+    );
+  });
+
+  it("switches to the no-reply address and says so", async () => {
+    const calls = stubApi({
+      [`GET ${GIT_BASE}`]: [200, list([])],
+      [`GET ${SETTINGS}`]: [
+        [200, { commit_email: "member", noreply_example: EXAMPLE }],
+        [200, { commit_email: "noreply", noreply_example: EXAMPLE }],
+      ],
+      [`PATCH ${SETTINGS}`]: [200, { commit_email: "noreply", noreply_example: EXAMPLE }],
+    });
+    renderTeam(<TeamGitPage />, ADMIN);
+    const form = within(await screen.findByRole("form", { name: "Commit author email" }));
+    await userEvent.click(form.getByRole("radio", { name: "No-reply address" }));
+    await userEvent.click(form.getByRole("button", { name: "Save commit email" }));
+    await screen.findByText("New commits in sandboxes now use each member's no-reply address.");
+    const patch = calls.find((c) => c.method === "PATCH");
+    expect(JSON.parse(String(patch?.body))).toEqual({ commit_email: "noreply" });
+  });
+
+  it("is not shown to members without team.git.manage", async () => {
+    const calls = stubApi({
+      [`GET ${GIT_BASE}`]: [200, list([memberConnection()], { site: { enabled: true } })],
+    });
+    renderTeam(<TeamGitPage />, MEMBER);
+    await screen.findByText(/Only Workspace admins can connect/);
+    expect(screen.queryByRole("form", { name: "Commit author email" })).toBeNull();
+    expect(calls.some((c) => c.url === SETTINGS)).toBe(false);
   });
 });

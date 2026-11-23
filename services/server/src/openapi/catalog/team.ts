@@ -213,6 +213,18 @@ export const teamAreas: readonly CatalogArea[] = [
         "Workspace admins (`team.git.manage`). Rate limited.",
       ],
       [
+        "get",
+        "/v1/team/git/settings",
+        "Get the Workspace's git settings",
+        "Workspace admins (`team.git.manage`). The commit author email of sandbox commits.",
+      ],
+      [
+        "patch",
+        "/v1/team/git/settings",
+        "Change the Workspace's git settings",
+        "Workspace admins (`team.git.manage`). Audited with the old and new value; not available to agents.",
+      ],
+      [
         "put",
         "/v1/team/git/connections/{id}/credential",
         "Replace a git connection's credential (write-only)",

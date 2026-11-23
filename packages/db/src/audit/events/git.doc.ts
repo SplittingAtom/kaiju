@@ -33,4 +33,8 @@ export const GIT_EVENT_DOCS = {
     fields: "`connectionId`, `fields`, `accessLevel?`, `previousAccessLevel?`",
     when: "A Workspace admin changed a git connection's settings (access level, repository defaults, push limit, direct commits, agents, display name)",
   },
+  "git.settings.updated": {
+    fields: "`setting` (`commit_email`), `value`, `previous` (`member` or `noreply`)",
+    when: "A Workspace admin changed the Workspace's git settings: the author email of commits made in sandboxes, the member's Kobe email or the no-reply form (KOBE-761)",
+  },
 } satisfies Record<keyof typeof GIT_EVENTS, AuditEventDoc>;

@@ -5,6 +5,7 @@ import {
   gitConnectionRemovedSchema,
   gitConnectionSavedSchema,
   gitConnectionTestAnswerSchema,
+  gitTeamSettingsSchema,
 } from "@kobe/protocol";
 import {
   gitConnectionCreateBodySchema,
@@ -12,6 +13,7 @@ import {
   gitConnectionTestBodySchema,
   gitConnectionUpdateBodySchema,
 } from "../../../git/connection-schemas.js";
+import { gitTeamSettingsBodySchema } from "../../../git/team-git-settings.js";
 import { named, type CatalogDetail } from "../build.js";
 
 /**
@@ -31,7 +33,22 @@ const testFailure =
   "`host_refused`, `invalid_base_url`, `credential_insufficient` with the test), 502 " +
   "`host_unreachable` / `host_error` or 503 `host_rate_limited`; never the host's answer.";
 
+const Settings = named("GitTeamSettings", gitTeamSettingsSchema);
+const settingsDescription =
+  "`commit_email`: `member` (the member's Kobe email as author of sandbox commits, the default) or " +
+  "`noreply` (`<short id>+<name>@users.noreply.<Site host>`); `noreply_example` is the caller's own " +
+  "no-reply address.";
+
 export const teamGitDetails: Readonly<Record<string, CatalogDetail>> = {
+  "get /v1/team/git/settings": {
+    response: Settings,
+    responseDescription: settingsDescription,
+  },
+  "patch /v1/team/git/settings": {
+    body: named("GitTeamSettingsBody", gitTeamSettingsBodySchema),
+    response: Settings,
+    responseDescription: `${settingsDescription} A change is audited as \`git.settings.updated\`.`,
+  },
   "get /v1/team/git/connections": {
     response: named("GitConnectionList", gitConnectionListSchema),
     responseDescription:
