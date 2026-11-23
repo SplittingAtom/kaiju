@@ -20,8 +20,10 @@ From left to right:
 - **My area**: **My memory** (its **Memories** and **Notes** tabs), **My schedules**, **Agents**
   and **Skills**.
 - **Site console**, shown only to site admins. See [Site admin overview](../admin/site-admin.md).
-- **Notifications**: scheduled runs, catalog skill and team changes, and memory reviews that need
-  you (see [Memory](../memory.md#memory-in-your-notifications)). Each opens where you act.
+- **Notifications**: scheduled runs, catalog skill and team changes, memory reviews that need
+  you (see [Memory](../memory.md#memory-in-your-notifications)), Repo conversions you started (see
+  [Workspaces and projects](../files/workspaces-and-projects.md#notices)) and, for Workspace admins,
+  git tokens about to expire. Each opens where you act.
 - **Docs**: opens this guide in a panel over your conversation, the way the consoles open. Pick a
   page from its contents; **Close** or Escape takes you back to the conversation as you left it.
   Each page has its own address (`/docs/<page>`), so you can share a link to it.

@@ -207,8 +207,9 @@ Kobe refuses to start, and says which, when:
   push limit, at most 2 GiB (convert without history if the current files are smaller).
 
 The conversion runs in the background. The dialog shows its progress (creating the repository,
-pushing commits, finishing) and you can close it; when it ends you get an email, and a notice in
-the Files panel if it is open. After a failure the dialog says why, with **Retry** (it resumes
+pushing commits, finishing) and you can close it; when it ends you get a notification in the bell
+(see [Notices](#notices)), an email, and a notice in the Files panel if it is open. After a failure
+the dialog says why, with **Retry** (it resumes
 where it stopped) and **Abandon…** (the project is an ordinary project again; a repository the host
 already created stays there for a Workspace admin to delete or reuse).
 
@@ -218,9 +219,18 @@ repository is outside Kobe's retention, erasure and legal hold.
 
 ### Notices
 
-The Files panel tells you when a conversion you are watching finished or failed. Workspace admins
-also see a notice when a git connection's credential expires within 14 days, with a link to the
-Git section to replace it (Kobe emails them too). Dismiss hides a notice until you reload.
+When a conversion you started ends, the notifications bell tells you, once for each end:
+"_project_ is now a Repo", or "Converting _project_ to a Repo failed" with the same reason the
+Convert to repo dialog shows. Each names the repository; **Show in Files** opens the Files panel,
+where the project's **Convert to repo…** retries or abandons a failed conversion. Retrying and
+failing again tells you again. Only the member who started the conversion is told, and only while
+they are an active member of the Workspace.
+
+The Files panel also tells you when a conversion you are watching finished or failed. Workspace
+admins also see a notice when a git connection's credential expires within 14 days, with a link
+to the Git section to replace it (they get a notification in the bell and an email too, see
+[Token expiry](../admin/git-organizations.md)). Dismiss hides a Files panel notice until you
+reload; notifications in the bell stay until they are read and removed like any other.
 
 ## Related
 

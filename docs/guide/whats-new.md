@@ -26,7 +26,8 @@ become a **Repo** that lives on the git host.
   repo…** (for the project's owner and Workspace admins) creates a private repository with the
   project's history. Repos show a git icon. Commits from the **Commit…** dialog become pull
   requests by default, and in a conversation on a Repo the agent gets a real git working copy.
-  See [Repos](files/workspaces-and-projects.md#repos).
+  See [Repos](files/workspaces-and-projects.md#repos). When the conversion finishes or fails, the
+  notifications bell tells you, with the reason when it failed.
 - **See what your Workspace is connected to** under **Profile → My connectors**. See
   [Git organizations](connectors-and-apps.md#git-organizations).
 
@@ -34,7 +35,8 @@ become a **Repo** that lives on the git host.
 
 - **A Git page in the Team console** connects, tests, limits, replaces credentials for and
   disconnects git organizations (GitHub App, fine-grained token, or an access token for Gitea and
-  Forgejo). See [Git organizations](admin/git-organizations.md).
+  Forgejo). See [Git organizations](admin/git-organizations.md). A token that expires within 14
+  days is noticed once, in the bell and by email, to every Workspace admin.
 - **Commits to a Repo's default branch** are off unless you turn on **Allow commits straight to the
   default branch** for the connection. Protect the default branch on the host as well.
 - **Site admins** can switch git connections off for the Site and limit the hosts. See

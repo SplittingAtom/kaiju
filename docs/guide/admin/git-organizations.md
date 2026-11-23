@@ -180,8 +180,14 @@ sends nothing to the host). Its buttons:
   seconds.
 
 When a token's expiry is less than 14 days away (or has passed), the page shows a banner,
-Workspace admins get one email, and the Files panel shows them a notice linking here (once they
-own or administer a project). Create a new token on the host and use **Replace credential**.
+Workspace admins get one notification in the bell ("The credential of the git connection _name_
+expires on _date_", or "expired on" once it has passed) and one email, and the Files panel shows
+them a notice linking here (once they own or administer a project). The notification's **Open the
+Git section** links here. Each credential is noticed once: the Workspace admins at that moment
+are told, and an admin added later, or one who has since lost the role, is not told about that
+credential. Replacing the credential starts again, so a new token that also expires soon is
+noticed again. The notification and the email name the connection, its organization and host,
+and the date; never the token. Create a new token on the host and use **Replace credential**.
 
 ## Commits to Repos
 
