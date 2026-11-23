@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { idSchema, riskClassSchema, timestampSchema, uuidSchema } from "./common.js";
+import { GIT_CONVERSION_FAILURES } from "./git-conversions.js";
 import { policyReasonCodeSchema } from "./policy.js";
 import { schedulePausedBySchema } from "./schedules.js";
 import { MEMORY_NOTIFICATION_KINDS } from "./semantic-memory/governance.js";
@@ -91,7 +92,18 @@ export const NOTIFICATION_KINDS = [
    * name no schedule, thread, run or skill; see {@link memoryNotificationFields} for what each names.
    */
   ...MEMORY_NOTIFICATION_KINDS,
+  /**
+   * Workspace git (KOBE-819): a Convert to repo attempt finished or failed (told to the member who
+   * started it; names the conversion, its project and repository, and for a failure its code and
+   * the member-safe reason), and a git connection's access token nearing expiry (told to the
+   * Workspace admins once per credential; names the connection and the expiry).
+   */
+  "git.conversion.completed",
+  "git.conversion.failed",
+  "git.connection.token_expiring",
 ] as const;
+/** The git kinds (KOBE-819): see {@link gitNotificationFields} for what each names. */
+export const GIT_NOTIFICATION_KINDS = NOTIFICATION_KINDS.filter((k) => k.startsWith("git."));
 /** Kinds about a catalog skill: they name it (`skill_id`, `skill_name`), not a schedule. */
 export const SKILL_NOTIFICATION_KINDS = NOTIFICATION_KINDS.filter((k) => k.startsWith("skill."));
 /** Skill kinds about one version: they also name it (`skill_semver`). */
@@ -167,13 +179,31 @@ export const notificationSchema = z
     related_kind: z.enum(MEMORY_DIGESTIBLE_NOTIFICATION_KINDS).optional(),
     /** `memory.review.digest`: how many it rolled up; `candidates_ready`: how many wait. */
     item_count: z.number().int().positive().optional(),
-    /** `memory.suggestion.*` (and a reminder about one): the project whose notes it is for. */
+    /**
+     * `memory.suggestion.*` (and a reminder about one): the project whose notes it is for;
+     * `git.conversion.*`: the project converted (KOBE-819).
+     */
     project_id: uuidSchema.optional(),
+    /** `git.conversion.*` (KOBE-819): the attempt, its project's name and the repository. */
+    git_conversion_id: uuidSchema.optional(),
+    project_name: z.string().min(1).max(200).optional(),
+    /** `organization/repository` on the host. */
+    git_repository: z.string().min(1).max(400).optional(),
+    /** `git.conversion.failed`: the failure code and the same member-safe words the dialog shows. */
+    git_failure: z.enum(GIT_CONVERSION_FAILURES).optional(),
+    git_failure_message: z.string().min(1).max(500).optional(),
+    /** `git.connection.token_expiring` (KOBE-819): the connection, its name and the expiry. */
+    git_connection_id: uuidSchema.optional(),
+    git_connection_name: z.string().min(1).max(200).optional(),
+    git_expires_at: timestampSchema.optional(),
     read_at: timestampSchema.nullable(),
     created_at: timestampSchema,
   })
   .refine(
     (n) => {
+      const git = (GIT_NOTIFICATION_KINDS as readonly string[]).includes(n.kind);
+      if (git) return gitNotificationFields(n);
+      if (hasGitFields(n)) return false;
       if ((MEMORY_NOTIFICATION_KINDS as readonly string[]).includes(n.kind)) {
         return memoryNotificationFields(n);
       }
@@ -210,6 +240,88 @@ export const notificationSchema = z
     },
   );
 export type Notification = z.infer<typeof notificationSchema>;
+
+interface GitFields {
+  readonly kind: NotificationKind;
+  readonly schedule_id: string | null;
+  readonly thread_id: string | null;
+  readonly run_id: string | null;
+  readonly skill_id?: string | undefined;
+  readonly skill_semver?: string | undefined;
+  readonly memory_scope?: unknown;
+  readonly memory_object_id?: string | undefined;
+  readonly related_kind?: unknown;
+  readonly item_count?: number | undefined;
+  readonly project_id?: string | undefined;
+  readonly git_conversion_id?: string | undefined;
+  readonly project_name?: string | undefined;
+  readonly git_repository?: string | undefined;
+  readonly git_failure?: string | undefined;
+  readonly git_failure_message?: string | undefined;
+  readonly git_connection_id?: string | undefined;
+  readonly git_connection_name?: string | undefined;
+  readonly git_expires_at?: string | undefined;
+}
+
+const hasGitFields = (n: GitFields): boolean =>
+  n.git_conversion_id !== undefined ||
+  n.project_name !== undefined ||
+  n.git_repository !== undefined ||
+  n.git_failure !== undefined ||
+  n.git_failure_message !== undefined ||
+  n.git_connection_id !== undefined ||
+  n.git_connection_name !== undefined ||
+  n.git_expires_at !== undefined;
+
+/**
+ * What a git notification names (KOBE-819; the DB check `notifications_git` mirrors it): a
+ * conversion kind its attempt and repository (and its project, while it exists), a failed one its
+ * failure code too; `git.connection.token_expiring` its connection and the expiry. None names a
+ * schedule, thread, run, skill or memory object.
+ */
+export function gitNotificationFields(n: GitFields): boolean {
+  if (
+    n.schedule_id !== null ||
+    n.thread_id !== null ||
+    n.run_id !== null ||
+    n.skill_id !== undefined ||
+    n.skill_semver !== undefined ||
+    n.memory_scope !== undefined ||
+    n.memory_object_id !== undefined ||
+    n.related_kind !== undefined ||
+    n.item_count !== undefined
+  ) {
+    return false;
+  }
+  const conversion = n.git_conversion_id !== undefined && n.git_repository !== undefined;
+  const connection = n.git_connection_id !== undefined || n.git_connection_name !== undefined;
+  const failure = n.git_failure !== undefined || n.git_failure_message !== undefined;
+  switch (n.kind) {
+    case "git.conversion.completed":
+      return conversion && !connection && !failure && n.git_expires_at === undefined;
+    case "git.conversion.failed":
+      return (
+        conversion &&
+        !connection &&
+        n.git_failure !== undefined &&
+        n.git_failure_message !== undefined &&
+        n.git_expires_at === undefined
+      );
+    case "git.connection.token_expiring":
+      return (
+        n.git_connection_id !== undefined &&
+        n.git_connection_name !== undefined &&
+        n.git_expires_at !== undefined &&
+        n.git_conversion_id === undefined &&
+        n.git_repository === undefined &&
+        n.project_id === undefined &&
+        n.project_name === undefined &&
+        !failure
+      );
+    default:
+      return false;
+  }
+}
 
 interface MemoryFields {
   readonly kind: NotificationKind;

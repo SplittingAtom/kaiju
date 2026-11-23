@@ -113,7 +113,64 @@ describe("notification", () => {
       "team.site_admin.member_removed",
       "team.site_admin.member_taken_over",
       ...MEMORY_NOTIFICATION_KINDS,
+      "git.conversion.completed",
+      "git.conversion.failed",
+      "git.connection.token_expiring",
     ]);
+  });
+  describe("git kinds (KOBE-819)", () => {
+    const git = {
+      ...notification,
+      schedule_id: null,
+      thread_id: null,
+      run_id: null,
+      skipped_count: undefined,
+    };
+    const ok = (n: Record<string, unknown>) => notificationSchema.safeParse(n).success;
+    const completed = {
+      ...git,
+      kind: "git.conversion.completed",
+      git_conversion_id: EXAMPLE_IDS.agent,
+      project_id: EXAMPLE_IDS.thread,
+      project_name: "Sales analysis",
+      git_repository: "acme/sales-analysis",
+    };
+    const failed = {
+      ...completed,
+      kind: "git.conversion.failed",
+      git_failure: "host_unreachable",
+      git_failure_message: "The git host could not be reached. Retry shortly.",
+    };
+    const expiring = {
+      ...git,
+      kind: "git.connection.token_expiring",
+      git_connection_id: EXAMPLE_IDS.agent,
+      git_connection_name: "Acme on GitHub",
+      git_expires_at: "2026-12-01T00:00:00Z",
+    };
+    it("parses a finished and a failed conversion: the conversion, project and repository", () => {
+      expect(ok(completed)).toBe(true);
+      expect(ok(failed)).toBe(true);
+    });
+    it("parses a token nearing expiry: the connection and the expiry", () => {
+      expect(ok(expiring)).toBe(true);
+    });
+    it("refuses what a git kind does not name", () => {
+      // A finished conversion carries no failure; a failed one needs its code.
+      expect(ok({ ...completed, git_failure: "host_unreachable" })).toBe(false);
+      expect(ok({ ...failed, git_failure: undefined })).toBe(false);
+      expect(ok({ ...failed, git_failure: "nope" })).toBe(false);
+      expect(ok({ ...completed, git_conversion_id: undefined })).toBe(false);
+      expect(ok({ ...completed, git_connection_id: EXAMPLE_IDS.agent })).toBe(false);
+      expect(ok({ ...expiring, git_expires_at: undefined })).toBe(false);
+      expect(ok({ ...expiring, git_conversion_id: EXAMPLE_IDS.agent })).toBe(false);
+      expect(ok({ ...expiring, project_id: EXAMPLE_IDS.thread })).toBe(false);
+      expect(ok({ ...completed, schedule_id: EXAMPLE_IDS.agent })).toBe(false);
+      expect(ok({ ...completed, thread_id: EXAMPLE_IDS.thread })).toBe(false);
+      // Other kinds carry no git fields.
+      expect(ok({ ...notification, git_repository: "acme/x" })).toBe(false);
+      expect(ok({ ...notification, git_connection_id: EXAMPLE_IDS.agent })).toBe(false);
+    });
   });
   describe("memory kinds (KOBE-645)", () => {
     const memory = {

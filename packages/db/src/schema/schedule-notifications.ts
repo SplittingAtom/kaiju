@@ -12,6 +12,8 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { users } from "./auth.js";
+import { gitConnections } from "./git.js";
+import { gitConversions } from "./git-conversions.js";
 import { projects } from "./projects.js";
 import { registrySkills } from "./registry.js";
 import { runs } from "./runs.js";
@@ -84,6 +86,15 @@ export const NOTIFICATION_KINDS = [
   "memory.site_proposal.accepted",
   "memory.site_proposal.dismissed",
   "memory.site_proposal.expired",
+  /**
+   * Workspace git (KOBE-819): a Convert to repo attempt finished or failed (to its requester;
+   * `git_conversion_id`, `git_attempt`, and `git_failure` when failed), and a connection's token
+   * nearing expiry (to each Workspace admin; `git_connection_id`, `git_expires_at`). Same names
+   * and order as in @kobe/protocol (a server test compares the lists).
+   */
+  "git.conversion.completed",
+  "git.conversion.failed",
+  "git.connection.token_expiring",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -164,6 +175,18 @@ export const notifications = pgTable(
     itemCount: integer(),
     /** `memory.suggestion.*` (and a reminder about one): the project whose notes it is for. */
     projectId: uuid(),
+    /**
+     * `git.conversion.*` (KOBE-819): the attempt (deleted with it, i.e. with its project) and the
+     * claim count it ended on (`git_conversions.attempts`): with the kind, one notification per
+     * end, however often the job or a racing replica tries to write it.
+     */
+    gitConversionId: uuid(),
+    gitAttempt: integer(),
+    /** `git.conversion.failed`: the failure code (`git_conversions.last_error`), never a detail. */
+    gitFailure: text(),
+    /** `git.connection.token_expiring`: the connection (deleted with it) and the expiry noticed. */
+    gitConnectionId: uuid(),
+    gitExpiresAt: timestamp({ withTimezone: true }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     readAt: timestamp({ withTimezone: true }),
   },
@@ -184,6 +207,16 @@ export const notifications = pgTable(
       columns: [t.teamId, t.projectId],
       foreignColumns: [projects.teamId, projects.id],
     }).onDelete("cascade"),
+    foreignKey({
+      name: "notifications_git_conversion_fk",
+      columns: [t.teamId, t.gitConversionId],
+      foreignColumns: [gitConversions.teamId, gitConversions.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "notifications_git_connection_fk",
+      columns: [t.teamId, t.gitConnectionId],
+      foreignColumns: [gitConnections.teamId, gitConnections.id],
+    }).onDelete("cascade"),
     check("notifications_kind", sql`${t.kind} IN (${list(NOTIFICATION_KINDS)})`),
     // A run notification names its thread and run; a pause names neither and says who paused; a
     // skill notification (KOBE-338, KOBE-340) names its catalog skill and no schedule, thread or
@@ -196,7 +229,8 @@ export const notifications = pgTable(
         OR (${t.kind} LIKE 'skill.%' AND ${t.scheduleId} IS NULL AND ${t.threadId} IS NULL AND ${t.runId} IS NULL AND ${t.pausedBy} IS NULL AND ${t.skillId} IS NOT NULL
           AND (${t.skillSemver} IS NOT NULL) = (${t.kind} LIKE 'skill.version.%'))
         OR (${t.kind} LIKE 'memory.%' AND ${t.scheduleId} IS NULL AND (${t.threadId} IS NULL OR ${t.kind} = 'memory.review.candidates_ready') AND ${t.runId} IS NULL AND ${t.pausedBy} IS NULL AND ${t.skillId} IS NULL AND ${t.skillSemver} IS NULL)
-        OR (${t.kind} <> 'schedule.paused' AND ${t.kind} NOT LIKE 'skill.%' AND ${t.kind} NOT LIKE 'team.%' AND ${t.kind} NOT LIKE 'memory.%' AND ${t.threadId} IS NOT NULL AND ${t.runId} IS NOT NULL AND ${t.pausedBy} IS NULL AND ${t.skillId} IS NULL AND ${t.skillSemver} IS NULL)`,
+        OR (${t.kind} LIKE 'git.%' AND ${t.scheduleId} IS NULL AND ${t.threadId} IS NULL AND ${t.runId} IS NULL AND ${t.pausedBy} IS NULL AND ${t.skillId} IS NULL AND ${t.skillSemver} IS NULL)
+        OR (${t.kind} <> 'schedule.paused' AND ${t.kind} NOT LIKE 'skill.%' AND ${t.kind} NOT LIKE 'team.%' AND ${t.kind} NOT LIKE 'memory.%' AND ${t.kind} NOT LIKE 'git.%' AND ${t.threadId} IS NOT NULL AND ${t.runId} IS NOT NULL AND ${t.pausedBy} IS NULL AND ${t.skillId} IS NULL AND ${t.skillSemver} IS NULL)`,
     ),
     check(
       "notifications_skill_semver",
@@ -228,6 +262,16 @@ export const notifications = pgTable(
       sql`(${t.kind} LIKE 'team.site_admin.%') = (${t.subjectUserId} IS NOT NULL)
         AND (${t.teamRole} IS NULL OR ${t.kind} LIKE 'team.site_admin.%')`,
     ),
+    // Git kinds (KOBE-819): a conversion names its attempt and the claim count it ended on, a
+    // failed one its code; an expiry names its connection and the expiry. Nothing else carries
+    // these columns, and the git kinds carry none of the memory ones (`notifications_memory`).
+    check(
+      "notifications_git",
+      sql`COALESCE((${t.kind} NOT LIKE 'git.%' AND ${t.gitConversionId} IS NULL AND ${t.gitAttempt} IS NULL AND ${t.gitFailure} IS NULL AND ${t.gitConnectionId} IS NULL AND ${t.gitExpiresAt} IS NULL)
+        OR (${t.kind} = 'git.conversion.completed' AND ${t.gitConversionId} IS NOT NULL AND ${t.gitAttempt} >= 0 AND ${t.gitFailure} IS NULL AND ${t.gitConnectionId} IS NULL AND ${t.gitExpiresAt} IS NULL)
+        OR (${t.kind} = 'git.conversion.failed' AND ${t.gitConversionId} IS NOT NULL AND ${t.gitAttempt} >= 0 AND ${t.gitFailure} ~ '^[a-z0-9_]{1,64}$' AND ${t.gitConnectionId} IS NULL AND ${t.gitExpiresAt} IS NULL)
+        OR (${t.kind} = 'git.connection.token_expiring' AND ${t.gitConnectionId} IS NOT NULL AND ${t.gitExpiresAt} IS NOT NULL AND ${t.gitConversionId} IS NULL AND ${t.gitAttempt} IS NULL AND ${t.gitFailure} IS NULL), false)`,
+    ),
     check("notifications_skipped_count", sql`${t.skippedCount} >= 0`),
     // The notifier is at-least-once: one notification per run and kind.
     uniqueIndex("notifications_run_kind_uniq")
@@ -253,6 +297,17 @@ export const notifications = pgTable(
     index("notifications_project_idx")
       .on(t.teamId, t.projectId)
       .where(sql`${t.projectId} IS NOT NULL`),
+    // Once per conversion end (KOBE-819): the job writes it in the transaction that records the
+    // end; this makes a second write a no-op whatever retried or raced.
+    uniqueIndex("notifications_git_conversion_uniq")
+      .on(t.teamId, t.gitConversionId, t.kind, t.gitAttempt)
+      .where(sql`${t.gitConversionId} IS NOT NULL`),
+    // Once per connection, expiry and admin (KOBE-819): the expiry job's claim decides when;
+    // this keeps a repeated write from doubling a notice. Also covers the cascade from a
+    // connection delete.
+    uniqueIndex("notifications_git_expiry_uniq")
+      .on(t.teamId, t.gitConnectionId, t.userId, t.gitExpiresAt)
+      .where(sql`${t.gitConnectionId} IS NOT NULL`),
   ],
 );
 
