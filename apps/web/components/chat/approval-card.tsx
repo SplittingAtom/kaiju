@@ -6,6 +6,7 @@ import type { ApiError } from "../../lib/api/client";
 import type { ChatApi } from "../../lib/chat/api";
 import { visible } from "../../lib/security/visible";
 import { AdminChange, ApprovalTitle, InputPreview } from "./approval-card-parts";
+import { GitChange } from "./git-approval";
 import { RememberControls, askedForUnattendedRun, type RememberChoice } from "./approval-remember";
 import { useApprovalInput, useRememberOptions } from "./use-approval-card";
 import styles from "./chat.module.css";
@@ -183,6 +184,7 @@ export function ApprovalCard({
     >
       <ApprovalTitle ids={ids} requested={requested} toolShown={toolShown} />
       {admin !== undefined && <AdminChange admin={admin} input={input} />}
+      {requested.git !== undefined && <GitChange git={requested.git} />}
       <p className={styles.who}>Exactly this input runs if you allow it:</p>
       <InputPreview tool={requested.tool} input={input} state={inputState} onRetry={retry} />
       {expired ? (
