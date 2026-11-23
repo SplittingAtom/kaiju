@@ -13,25 +13,25 @@ import {
   type Envelope,
 } from "@kobe/db";
 import { gitApprovalSchema, projectPermissions } from "@kobe/protocol";
-import { rawRequest } from "./connectors/oauth/http.js";
-import { gitApprovalCard, kobeGitApprovalCard } from "./git-tools/card.js";
-import { guardGitToolCall } from "./git-tools/guard.js";
-import { describePinnedTool } from "./mcp/catalog.js";
-import { gitPinnedTools } from "./git-tools/pinned.js";
-import { GIT_TOOLS, gitToolByName } from "./git-tools/catalog.js";
+import { rawRequest } from "../connectors/oauth/http.js";
+import { gitApprovalCard, kobeGitApprovalCard } from "./card.js";
+import { guardGitToolCall } from "./guard.js";
+import { describePinnedTool } from "../mcp/catalog.js";
+import { gitPinnedTools } from "./pinned.js";
+import { GIT_TOOLS, gitToolByName } from "./catalog.js";
 import {
   GIT_CONNECTION_READS_PER_HOUR,
   GIT_TOOL_WRITES_PER_HOUR,
   runGitTool,
   type GitToolsDeps,
-} from "./git-tools/execute.js";
-import { listChatConnectors } from "./connectors/thread-connectors.js";
-import { hostHasRepos, repoReadRules } from "./git/transport.js";
-import { gitRunServer } from "./git-tools/run.js";
-import { KobeMcpHarness, type KobeSandbox } from "./testing/kobe-mcp-harness.js";
-import type { Person } from "./testing/event-stream-fixture.js";
-import { FAKE_GITEA_TOKEN, FakeGitea } from "./testing/fake-gitea.js";
-import { FAKE_PAT, FakeGithub } from "./testing/fake-github.js";
+} from "./execute.js";
+import { listChatConnectors } from "../connectors/thread-connectors.js";
+import { hostHasRepos, repoReadRules } from "../git/transport.js";
+import { gitRunServer } from "./run.js";
+import { KobeMcpHarness, type KobeSandbox } from "../testing/kobe-mcp-harness.js";
+import type { Person } from "../testing/event-stream-fixture.js";
+import { FAKE_GITEA_TOKEN, FakeGitea } from "../testing/fake-gitea.js";
+import { FAKE_PAT, FakeGithub } from "../testing/fake-github.js";
 
 /**
  * KOBE-762 (GIT-6, spec workspace-git G9-G13, §9) end to end on a real Postgres: a sandbox calls
