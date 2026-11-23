@@ -18,7 +18,7 @@
   "scripts": {
     "build": "NODE_OPTIONS=--max-old-space-size=4096 tsc -p tsconfig.build.json",
     "test": "vitest run",
-    "lint": "eslint .",
+    "lint": "NODE_OPTIONS=--max-old-space-size=6144 eslint .",
     "typecheck": "NODE_OPTIONS=--max-old-space-size=4096 tsc --noEmit",
     "test:db": "vitest run -c vitest.db.config.ts",
     "openapi": "node scripts/write-openapi.mjs",
