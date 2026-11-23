@@ -29,6 +29,7 @@ import {
   GIT_CONVERSION_HEARTBEAT_MS,
   GIT_CONVERSION_MAX_REQUEST_BYTES,
   GIT_CONVERSION_STEP_DEADLINE_MS,
+  GIT_CONVERSION_WORK_PREFIX,
   conversionMarker,
 } from "./limits.js";
 import { notifyConversion } from "./notify.js";
@@ -108,8 +109,9 @@ export async function runConversion(
     });
   }, deps.heartbeatMs ?? GIT_CONVERSION_HEARTBEAT_MS);
   beat.unref();
-  const workDir = await mkdtemp(path.join(tmpdir(), "kobe-git-conversion-"));
+  let workDir: string | undefined;
   try {
+    workDir = await mkdtemp(path.join(tmpdir(), GIT_CONVERSION_WORK_PREFIX));
     const ctx = await context(deps, lease, row, workDir);
     let built: { built: BuiltHistory; http: HttpClient; repo: GitRepository } | undefined;
     while (row.step !== "done") {
@@ -133,7 +135,9 @@ export async function runConversion(
     return "failed";
   } finally {
     clearInterval(beat);
-    await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
+    if (workDir !== undefined) {
+      await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
+    }
   }
 }
 

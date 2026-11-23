@@ -32,6 +32,11 @@ export const GIT_CONVERSION_HEARTBEAT_MS = 30_000;
 /** How often a replica looks for running conversions nobody holds (a restart, a crash). */
 export const GIT_CONVERSION_SWEEP_MS = 2 * 60_000;
 
+/** The local work directories (under the server's temp dir); the sweep removes stale ones. */
+export const GIT_CONVERSION_WORK_PREFIX = "kobe-git-conversion-";
+/** A work directory older than this belongs to a run that died with its process. */
+export const GIT_CONVERSION_WORK_STALE_MS = 6 * 60 * 60_000;
+
 /** One step's deadline for all its exchanges with the host. */
 export const GIT_CONVERSION_STEP_DEADLINE_MS = 30 * 60_000;
 

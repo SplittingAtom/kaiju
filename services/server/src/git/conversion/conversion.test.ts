@@ -190,3 +190,25 @@ describe("the requester's email", () => {
     expect(failed.text).toContain("a.txt");
   });
 });
+
+describe("stale work directories", () => {
+  it("removes only old conversion directories", async () => {
+    const { mkdtemp, mkdir, utimes, readdir, rm } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const path = await import("node:path");
+    const { removeStaleWorkDirs } = await import("./job.js");
+    const root = await mkdtemp(path.join(tmpdir(), "kobe-stale-test-"));
+    try {
+      await mkdir(path.join(root, "kobe-git-conversion-old"));
+      await mkdir(path.join(root, "kobe-git-conversion-new"));
+      await mkdir(path.join(root, "other-old"));
+      const old = new Date(Date.now() - 7 * 3600_000);
+      await utimes(path.join(root, "kobe-git-conversion-old"), old, old);
+      await utimes(path.join(root, "other-old"), old, old);
+      expect(await removeStaleWorkDirs(Date.now() - 6 * 3600_000, root)).toBe(1);
+      expect((await readdir(root)).sort()).toEqual(["kobe-git-conversion-new", "other-old"]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});

@@ -1,5 +1,12 @@
+import { readdir, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { scanTeams, sql } from "@kobe/db";
-import { GIT_CONVERSION_SWEEP_MS } from "./limits.js";
+import {
+  GIT_CONVERSION_SWEEP_MS,
+  GIT_CONVERSION_WORK_PREFIX,
+  GIT_CONVERSION_WORK_STALE_MS,
+} from "./limits.js";
 import { runConversion, type ConversionDeps } from "./runner.js";
 
 /**
@@ -11,6 +18,7 @@ import { runConversion, type ConversionDeps } from "./runner.js";
  * transactions.
  */
 export async function sweepGitConversions(deps: ConversionDeps): Promise<number> {
+  await removeStaleWorkDirs(Date.now() - GIT_CONVERSION_WORK_STALE_MS);
   const due = (
     await scanTeams(deps.db, "git conversion sweep", async (tx, team) => {
       const res = await tx.execute<{ id: string }>(sql`
@@ -27,6 +35,21 @@ export async function sweepGitConversions(deps: ConversionDeps): Promise<number>
     if (outcome !== "busy") ran += 1;
   }
   return ran;
+}
+
+/** Work directories a run left when its process died (a container restart keeps the emptyDir). */
+export async function removeStaleWorkDirs(before: number, dir = tmpdir()): Promise<number> {
+  let removed = 0;
+  const names = await readdir(dir).catch(() => [] as string[]);
+  for (const name of names) {
+    if (!name.startsWith(GIT_CONVERSION_WORK_PREFIX)) continue;
+    const full = path.join(dir, name);
+    const info = await stat(full).catch(() => undefined);
+    if (!info?.isDirectory() || info.mtimeMs >= before) continue;
+    await rm(full, { recursive: true, force: true }).catch(() => undefined);
+    removed += 1;
+  }
+  return removed;
 }
 
 /** The periodic sweep: at start and every {@link GIT_CONVERSION_SWEEP_MS}. */
