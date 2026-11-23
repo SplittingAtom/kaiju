@@ -11,6 +11,7 @@
 import { agents } from "./tenancy/agents.js";
 import { connectors } from "./tenancy/connectors.js";
 import { conversations } from "./tenancy/conversations.js";
+import { git } from "./tenancy/git.js";
 import { identity } from "./tenancy/identity.js";
 import { memory } from "./tenancy/memory.js";
 import { models } from "./tenancy/models.js";
@@ -36,6 +37,7 @@ export const TENANCY_DOMAINS = [
   connectors,
   schedules,
   memory,
+  git,
 ] as const;
 
 type Domain = (typeof TENANCY_DOMAINS)[number];

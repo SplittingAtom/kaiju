@@ -148,6 +148,8 @@ const SiteSettings = untyped(
     kobeMcpMode: oneOfStrings(...KOBE_MCP_MODES),
     kobeReadsPerMinute: int,
     kobeWritesPerHour: int,
+    gitConnectionsEnabled: bool,
+    gitAllowedHosts: arr(str),
   }),
 );
 const Branding = named("SiteBranding", siteBrandingSchema);

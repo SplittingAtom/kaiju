@@ -74,3 +74,4 @@ export * from "./semantic-memory-learning.js";
 export * from "./memory-project-suggestions.js";
 export * from "./site-memory-proposals.js";
 export * from "./kobe-rate-limits.js";
+export * from "./git.js";

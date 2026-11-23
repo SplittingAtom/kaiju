@@ -78,6 +78,8 @@ export const TEAM_PERMISSIONS = {
   "team.connectors.manage": "team_admin",
   "team.policy.manage": "team_admin",
   "team.egress.manage": "team_admin",
+  // Workspace git (KOBE-757, spec §7): connect, test, limit and disconnect git organizations.
+  "team.git.manage": "team_admin",
   "team.skills.review": "team_admin",
   /** Uninstall catalog skills (a Default one records an opt-out) and reinstall defaults (SK7). */
   "team.skills.installs.manage": "team_admin",

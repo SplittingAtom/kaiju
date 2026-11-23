@@ -6,9 +6,11 @@ import {
   VIRTUAL_KEY_PURPOSE,
   connectorSiteKeys,
   connectors,
+  gitConnections,
   modelGatewayKeys,
   modelProviders,
   providerKeyContext,
+  sealGitCredential,
   virtualKeyContext,
   withTeam,
 } from "@kobe/db";
@@ -91,6 +93,25 @@ beforeAll(async () => {
       ),
     }),
   );
+  // A Workspace git connection's credential (KOBE-757), sealed with the envelope like the others.
+  const gitId = "00000000-0000-4000-8000-000000000757";
+  await withTeam(f.db, teamId, (tx) =>
+    tx.insert(gitConnections).values({
+      teamId,
+      id: gitId,
+      provider: "github",
+      baseUrl: "https://github.com",
+      organization: "acme",
+      displayName: "Acme on GitHub",
+      credentialKind: "access_token",
+      ...sealGitCredential(
+        new Envelope(SOURCE.envelope),
+        { teamId, connectionId: gitId },
+        { kind: "access_token", token: "ghp_sealedtest" },
+      ),
+      createdBy: ann.id,
+    }),
+  );
 });
 afterAll(async () => {
   await f.teardown();
@@ -110,10 +131,13 @@ describe("the sealed key check at start (KOBE-425)", () => {
       ["model provider API keys", 1],
       ["members' model gateway virtual keys", 1],
       ["connector site-wide keys", 1],
+      ["git host credentials", 1],
     ]);
     expect(findings[0]?.secret).toContain("provider-keys");
     expect(findings[1]?.secret).toContain("virtual-keys");
-    expect(lines).toHaveLength(3);
+    expect(lines).toHaveLength(4);
+    expect(findings[3]?.secret).toContain("envelope");
+    expect(JSON.stringify(lines)).not.toContain("ghp_sealedtest");
     expect(findings[2]?.secret).toContain("envelope");
     expect(String(lines[0]?.msg)).toContain("cannot be opened");
     expect(String(lines[0]?.msg)).toContain("docs/backup-restore.md");
@@ -132,6 +156,7 @@ describe("the sealed key check at start (KOBE-425)", () => {
     expect(findings.map((x) => x.name)).toEqual([
       "members' model gateway virtual keys",
       "connector site-wide keys",
+      "git host credentials",
     ]);
   });
 });

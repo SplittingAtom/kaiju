@@ -92,7 +92,7 @@ export const PLATFORM_EVENT_DOCS = {
   },
   "site.settings.updated": {
     fields:
-      "`setting` (require_two_factor, audit_pii_retention_hours, kobe_mcp_mode, kobe_reads_per_minute, kobe_writes_per_hour), `value`",
+      "`setting` (require_two_factor, audit_pii_retention_hours, kobe_mcp_mode, kobe_reads_per_minute, kobe_writes_per_hour, git_connections, git_allowed_hosts), `value`, `hosts?`, `previous?`, `previousHosts?`",
     when: "Site setting changed",
   },
 } satisfies Record<keyof typeof PLATFORM_EVENTS, AuditEventDoc>;

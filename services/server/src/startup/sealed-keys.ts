@@ -2,6 +2,7 @@ import {
   connectorGrants,
   connectorSiteKeys,
   connectors,
+  gitConnections,
   modelGatewayKeys,
   modelProviders,
   scanTeams,
@@ -112,6 +113,13 @@ export function sealedFamilies(keys: {
         secret: envelope,
         keyIds: keys.envelopeKeyIds,
         site: kidCount(sql`${ssoProviders.clientSecretSealed}`, sql`${ssoProviders}`),
+      },
+      {
+        // KOBE-757: Workspace git connections' tokens and GitHub App keys (kind `git-hosts`).
+        name: "git host credentials",
+        secret: envelope,
+        keyIds: keys.envelopeKeyIds,
+        team: kidCount(sql`${gitConnections.credentialSealed}`, sql`${gitConnections}`),
       },
     );
   }
