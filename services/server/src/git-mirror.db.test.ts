@@ -437,6 +437,71 @@ describe("the Repo limits agree on both sides (R4-M1)", () => {
   });
 });
 
+describe("a Repo too large to mirror is not downloaded again (KOBE-818)", () => {
+  const MiB = 1024 * 1024;
+  const repoLimits = { maxFiles: 500, maxFileBytes: 4 * MiB, maxContentBytes: 4 * MiB };
+  const limits = mirrorFetchLimits(repoLimits);
+  const scaled = (): MirrorDeps => ({ ...deps(), limits });
+
+  /** A Repo marked too large, with a small new commit on the host that a fetch would mirror. */
+  async function tooLarge(): Promise<Converted> {
+    const c = await converted();
+    await idle(c);
+    await fx.admin.query(
+      `UPDATE git_repositories SET mirror_error = 'repository_too_large', mirror_failures = 1
+        WHERE team_id = $1 AND id = $2`,
+      [c.w.team, c.repositoryId],
+    );
+    commitOnHost(git.root, hostName(c), { "small.txt": "small" }, "Small");
+    return c;
+  }
+
+  it("ac-1: stays too large without fetching when the host reports a size far over the limit", async () => {
+    const c = await tooLarge();
+    forgejo.editRepository(c.slug, { size: 64 * 1024 * 1024 }); // 64 GiB, in KiB
+    expect(await refreshRepository(scaled(), c.w.team, c.repositoryId)).toBe("failed");
+    const row = await repoRow(c);
+    expect(row.mirror_error).toBe("repository_too_large");
+    expect(must(row.mirror_next_at).getTime() - Date.now()).toBeGreaterThan(5 * 60 * 60_000);
+    // Nothing was fetched: the new commit is not mirrored.
+    expect(Object.keys(await files(c.w.owner, c.projectId))).not.toContain("small.txt");
+  });
+
+  it("fetches as before when the host reports a small size or none (the size is a hint)", async () => {
+    const c = await tooLarge();
+    forgejo.editRepository(c.slug, { size: 100 }); // 100 KiB
+    expect(await refreshRepository(scaled(), c.w.team, c.repositoryId)).toBe("refreshed");
+    expect(Object.keys(await files(c.w.owner, c.projectId))).toContain("small.txt");
+    expect(await repoRow(c)).toMatchObject({ mirror_error: null });
+  });
+
+  it("does not skip a Repo that is not already too large, whatever the host reports", async () => {
+    const c = await converted();
+    await idle(c);
+    commitOnHost(git.root, hostName(c), { "small.txt": "small" }, "Small");
+    forgejo.editRepository(c.slug, { size: 64 * 1024 * 1024 });
+    expect(await refreshRepository(scaled(), c.w.team, c.repositoryId)).toBe("refreshed");
+  });
+
+  it("ac-2: Refresh on a too-large Repo is limited to once an hour and says why", async () => {
+    const c = await tooLarge();
+    forgejo.editRepository(c.slug, { size: 64 * 1024 * 1024 }); // the first try is then skipped
+    const first = await c.w.member.browser.request(
+      "POST",
+      `/v1/projects/${c.projectId}/repo/refresh`,
+    );
+    expect(first.status, first.text).toBe(202);
+    await idle(c);
+    const second = await c.w.owner.browser.request(
+      "POST",
+      `/v1/projects/${c.projectId}/repo/refresh`,
+    );
+    expect([second.status, second.json.code]).toEqual([429, "rate_limited"]);
+    expect(second.json.message).toMatch(/too large to mirror.*once an hour/);
+    expect(second.json.retry_after_seconds).toBeGreaterThan(0);
+  });
+});
+
 describe("read-only Repos, relink and detach (ac-3)", () => {
   it("follows a rename, then marks an archived and a deleted repository read-only", async () => {
     const c = await converted();

@@ -104,6 +104,13 @@ export interface ProcessDepsInput {
   readonly waker: SandboxWaker;
 }
 
+/**
+ * KOBE-817: the scheduler holds no approval key (the chart gives it only to the server) because it
+ * never decides one: it serves health endpoints only and attaches no sandbox wire, and a scheduled
+ * run does not wait for approvals. It must not log the missing key as an error.
+ */
+export const SCHEDULER_APPROVALS = { decides: false } as const;
+
 /** The scheduler's dependencies (KOBE-174): it fires runs through the same orchestrator and wire. */
 function schedulerDeps(i: ProcessDepsInput): ServerDeps {
   const { config } = i;
@@ -117,6 +124,7 @@ function schedulerDeps(i: ProcessDepsInput): ServerDeps {
     ...schedulerAuthStandIn(),
     // No run-token key: the wire host that delivers run.start mints run tokens, not the scheduler.
     sandboxWire: { waker: i.waker },
+    approvals: SCHEDULER_APPROVALS,
     connectors: loadConnectorUrlPolicy(i.env),
     agents: { maxVersions: config.agentMaxVersions },
     modelTokenDefaults: config.modelTokenDefaults,
