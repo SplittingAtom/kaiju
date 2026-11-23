@@ -26,14 +26,21 @@ export const GIT_CONVERSION_FAILURES = [
   "repository_not_empty",
   /** The repository (created for this attempt, or chosen) is not on the host (deleted, transferred). */
   "repository_gone",
-  /** The chosen existing repository is public: Kobe never writes a project into one (G10). */
+  /**
+   * The repository is public (or internal where the connection allows only private), checked
+   * before every push: Kobe never writes a project into one (G10). Nothing more is pushed.
+   */
   "repository_public",
+  /** The chosen existing repository carries another Kobe conversion's mark (it may be another Workspace's Repo). */
+  "repository_in_use",
   /** Someone pushed something else to the repository's default branch meanwhile. */
   "repository_changed",
   /** The host's default branch is not the one Kobe pushed. */
   "default_branch_mismatch",
   /** A saved file of the project could not be read from Kobe's storage. */
   "content_missing",
+  /** A file the host's fsck refuses (found while building, before anything was created). */
+  "file_rejected_by_host",
   /** The connection was removed, turned down from Read and write, or the Site no longer allows it. */
   "connection_unavailable",
   "credential_rejected",
@@ -42,6 +49,10 @@ export const GIT_CONVERSION_FAILURES = [
   "host_unreachable",
   "host_rate_limited",
   "project_changed",
+  /** The attempt stopped its server more than once without progress (a person must retry it). */
+  "interrupted",
+  /** The server has no room for the conversion's work files now. */
+  "server_capacity",
   "internal_error",
 ] as const;
 export type GitConversionFailure = (typeof GIT_CONVERSION_FAILURES)[number];
@@ -63,6 +74,8 @@ export const GIT_CONVERSION_REFUSALS = [
   "host_not_allowed",
   "internal_not_offered",
   "invalid_repository_name",
+  /** Only Workspace admins may choose an existing repository (G16). */
+  "existing_repository_admin_only",
   "file_rejected_by_host",
   "project_too_large",
   "commit_too_large",
@@ -149,12 +162,18 @@ export type GitConversionAbandoned = z.infer<typeof gitConversionAbandonedSchema
 export const gitConversionRefusalSchema = z.strictObject({
   code: z.enum(GIT_CONVERSION_REFUSALS),
   message: z.string(),
-  /** `file_rejected_by_host`: the file; `commit_too_large`: the commit's number. */
+  /** `file_rejected_by_host`: the first file; `commit_too_large`: the commit's number. */
   path: z.string().optional(),
+  /** `file_rejected_by_host`: every offending path (up to 20) and the first commit that has it. */
+  paths: z
+    .array(z.strictObject({ path: z.string(), seq: z.number().int().positive().nullable() }))
+    .max(20)
+    .optional(),
   seq: z.number().int().positive().optional(),
   /** `unsaved_checkouts`: how many working copies hold changes. */
   checkouts: z.number().int().positive().optional(),
-  /** `project_too_large` / `commit_too_large`: the limit in bytes. */
+  /** `project_too_large` / `commit_too_large`: the limit in bytes, and the size found. */
   limit_bytes: z.number().int().positive().optional(),
+  size_bytes: z.number().int().nonnegative().optional(),
   conversion: gitConversionViewSchema.optional(),
 });
