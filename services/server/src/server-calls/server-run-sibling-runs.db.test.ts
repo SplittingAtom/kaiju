@@ -1,9 +1,9 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { canonicalJson } from "@kobe/protocol";
-import { approvalKeyring } from "./approvals/index.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
+import { approvalKeyring } from "../approvals/index.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 
 /**
  * Tools the server runs itself, through a gated frame (KOBE-800): the server can't tell which of
