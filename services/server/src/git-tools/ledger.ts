@@ -9,7 +9,7 @@ import type { GitToolPrincipal } from "./access.js";
  * connection's own origin, as the adapters guarantee). Never a title, body, branch name or
  * credential: like `mcp.tool_call`, the audit log holds no tool input.
  *
- * The same rows make writes idempotent: each carries the call's idempotency key (a hash of team,
+ * The same rows make writes idempotent: each carries the call's idempotency key (`callDigest`) (a hash of team,
  * run, tool and canonical input), and a repeat of that call in the same run within a day returns
  * the recorded result instead of acting on the host again.
  */
@@ -85,7 +85,7 @@ export async function auditWrite(
     ...(record.url === undefined || record.url === "" ? {} : { url: record.url }),
     ...(record.on === undefined ? {} : { on: record.on }),
     ...(record.visibility === undefined ? {} : { visibility: record.visibility }),
-    idempotencyKey: record.idempotencyKey,
+    callDigest: record.idempotencyKey,
   };
   await withTeam(db, principal.teamId, (tx) =>
     recordAudit(tx, {
@@ -118,7 +118,7 @@ export async function findDone(
      WHERE a.actor_id = ${principal.userId} AND a.seq >= b.seq
        AND a.team_id = ${principal.teamId}
        AND a.action = ${action}
-       AND a.target ->> 'idempotencyKey' = ${idempotencyKey}
+       AND a.target ->> 'callDigest' = ${idempotencyKey}
      ORDER BY a.seq DESC
      LIMIT 1`);
   const t = res.rows[0]?.target;

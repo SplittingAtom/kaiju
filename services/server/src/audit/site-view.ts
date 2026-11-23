@@ -343,7 +343,7 @@ export const SITE_HIDDEN_TARGET_KEYS: ReadonlySet<string> = new Set([
   "refs",
   "refsTruncated",
   // KOBE-762: a hash of the run and the tool input, so a retried git write acts once.
-  "idempotencyKey",
+  "callDigest",
 ]);
 
 /** Allowed keys an action still hides (a shared key name that carries thread-derived text there). */

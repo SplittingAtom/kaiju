@@ -50,7 +50,7 @@ Tools: reads `git_list_connections` (not in the spec's table: the agent needs th
   number, `on`, name, from, description, visibility (default private, never the connection's
   default). Name prefix is checked, not added. The footer (G13) is added by the server from the
   run's member and thread and shown on the card exactly as posted.
-- **Idempotency**: key = sha256(team, run, tool, canonical input)[:32] in the write's audit row;
+- **Idempotency**: key = sha256(team, run, tool, canonical input)[:32] in the write's audit row (`callDigest`: the taxonomy forbids keys ending in "key");
   under the member's git write lock (`withAdvisoryLockRetry`) the executor looks for a row with
   that key from the last day before acting; a repeat answers `already_done` with the first result.
   Gap: if the host acted but the audit row failed (logged), a retry acts again.
@@ -59,9 +59,9 @@ Tools: reads `git_list_connections` (not in the spec's table: the agent needs th
   (`too_large`); file text cut at 48 KiB; error text fixed per code, host rate limit with
   `retry_at`. Never a credential.
 - **Audit**: actor = member, `viaAgent` = run/thread/tool call, plus `agentId` of the named run,
-  connection, host, organization, repository, host ids, number, link, idempotency key. No titles,
+  connection, host, organization, repository, host ids, number, link, `callDigest`. No titles,
   bodies or branch names (as `mcp.tool_call` records no input). Site view shows ids/number/link,
-  hides the idempotency key.
+  hides `callDigest`.
 - **Rate limits**: server `hitRateLimit` (durable `kobe_rate_limits`; the `@kobe/db` limiter of PR
   #688 is not on this branch): 300 reads / 10 min, 30 writes / hour per member per Workspace.
 - **Repositories created by tools** get a `git_repositories` row (`origin = tool`).

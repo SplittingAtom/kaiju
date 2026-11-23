@@ -41,7 +41,7 @@ const settingField = z.enum([
  * What every git host tool write records (KOBE-762, spec workspace-git §8): the connection, the
  * agent of the named run (absent for a run without an agent), host and organization, the
  * repository, the host's ids and number, the host's web link (same origin as the connection, as
- * the adapters guarantee), and the call's idempotency key. The member is the actor; run, thread
+ * the adapters guarantee), and `callDigest`, the call's idempotency key. The member is the actor; run, thread
  * and tool call are in `viaAgent`. Never a title, body, branch name or credential.
  */
 const repository = z
@@ -58,7 +58,7 @@ const toolWrite = {
   organization,
   repository,
   hostRepoId: hostId,
-  idempotencyKey: z.string().regex(/^[0-9a-f]{32}$/),
+  callDigest: z.string().regex(/^[0-9a-f]{32}$/),
 };
 
 /** The commit author email choice (`teams.settings.git_commit_email`, KOBE-764). */
