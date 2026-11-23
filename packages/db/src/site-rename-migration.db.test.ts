@@ -249,6 +249,15 @@ const SKILL_INSTALL_OBJECTS = [
   "type team_skill_installs",
 ];
 
+/**
+ * KOBE-757's GitHub App installation id (GitHub's own term for an App installed on an
+ * organization, spec workspace-git G5), not the old scope; the credential-shape check names it.
+ */
+const GITHUB_INSTALLATION_OBJECTS = [
+  "column git_connections.github_installation_id",
+  "constraint git_connections.git_connections_credential_shape",
+];
+
 let before: Relation[] = [];
 let after: Relation[] = [];
 
@@ -277,7 +286,10 @@ describe("site rename migration on an existing database (KOBE-256)", () => {
       c.query<{ hit: string }>(LEFTOVER_OBJECTS).then((r) => r.rows.map((row) => row.hit)),
     );
     // KOBE-311's skill installs use "install" as a noun (installing a skill), not the old scope.
-    expect(hits).toEqual([...KEPT, ...SKILL_INSTALL_OBJECTS].sort());
+    // KOBE-757's GitHub App installation id is GitHub's term, not the old scope either.
+    expect(hits).toEqual(
+      [...KEPT, ...SKILL_INSTALL_OBJECTS, ...GITHUB_INSTALLATION_OBJECTS].sort(),
+    );
   });
 
   it("renames in place: same relations, same data files, same row counts", () => {
