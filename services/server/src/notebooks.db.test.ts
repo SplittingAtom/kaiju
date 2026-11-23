@@ -320,6 +320,10 @@ describe("the member runs a notebook cell (NB6, NB11)", () => {
     await fx.activate(w.reader, w.team);
     expect((await w.reader.browser.get(`${base}?path=hist.py`)).status).toBe(404);
     expect((await w.reader.browser.get(`${base}/${first.exec_id}/outputs`)).status).toBe(404);
+    // A reader of a shared thread sees the conversation, not the owner's kernel runs (R2-L3).
+    await fx.admin.query(`UPDATE threads SET shared_to_team = true WHERE id = $1`, [w.threadId]);
+    const shared = await w.reader.browser.get(`${base}?path=hist.py`);
+    expect([shared.status, (shared.json as { code?: string }).code]).toEqual([403, "read_only"]);
   });
 
   it("merges into the current version when the notebook changed meanwhile, if the cell is still there", async () => {

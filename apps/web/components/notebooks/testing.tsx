@@ -110,6 +110,8 @@ export class Kernel {
   history: NotebookHistoryEntry[] = [];
   outputCalls: string[] = [];
   pastOutputs = new Map<string, NotebookOutput[]>();
+  /** How many `outputs` calls fail first. */
+  outputFailures = 0;
   readonly store = new NotebookExecStore();
   readonly api: NotebookApi = {
     run: async (_thread, body) => {
@@ -141,6 +143,10 @@ export class Kernel {
     },
     outputs: async (_thread, exec) => {
       this.outputCalls.push(exec);
+      if (this.outputFailures > 0) {
+        this.outputFailures -= 1;
+        return { ok: false, error: { status: 503, code: "unavailable", message: "down" } };
+      }
       return { ok: true, status: 200, data: this.pastOutputs.get(exec) ?? [] };
     },
     variables: async (_thread, refresh) => {

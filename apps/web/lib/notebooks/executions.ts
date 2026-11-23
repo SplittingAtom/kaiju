@@ -132,7 +132,8 @@ export class NotebookExecStore {
           startedAt: h.started_at,
           seenAt: pastInstant(h.started_at),
           outputs: [],
-          outputsPending: h.finished !== null && h.finished.outputs > 0,
+          // One whose run ended first may still have stored outputs (review R2-L2).
+          outputsPending: h.finished === null || h.finished.outputs > 0,
           // Its run ended before it did: it ended `failed`, as `endRun` says live.
           finished:
             h.finished === null

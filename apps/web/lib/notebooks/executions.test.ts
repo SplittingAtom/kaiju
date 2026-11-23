@@ -195,7 +195,10 @@ describe("NotebookExecStore", () => {
     store.seed(TH, [entry(live, null, false), entry(E2, 1), entry(old, 2), entry(E1, 0)]);
     store.seed(TH, [entry(orphan, null, true)]);
     expect(store.snapshot().some((e) => e.execId === live)).toBe(false);
-    expect(store.snapshot().find((e) => e.execId === orphan)?.finished?.status).toBe("failed");
+    expect(store.snapshot().find((e) => e.execId === orphan)).toMatchObject({
+      finished: { status: "failed" },
+      outputsPending: true,
+    });
     expect(kernelBusy(store.snapshot(), TH)).toBe(true); // E2, seen live, still runs
     expect(fileRuns(store.snapshot(), TH, "a.py").map((e) => e.execId)).toEqual([
       E2,

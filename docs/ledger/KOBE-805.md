@@ -25,9 +25,7 @@
   optional `lines: {start, end}` (1-based, inclusive, `.py` only). The server still reads the
   saved file and slices it (`services/server/src/notebooks/lines.ts`: stops at the file's end,
   removes common indentation, a range with no code is `invalid_request` 400). The body never
-  carries code. `openapi.json` regenerated with `UPDATE_OPENAPI=1` (the document test), not by
-  hand; no new route or audit event. The web notes the range on the execution
-  (`NotebookExecStore.noteLines`) to show "lines 2–3" in the Log and map an error line back.
+  carries code. OpenAPI follows from the schema (`openapi.json` is generated, not committed, since KOBE-815); no new route or audit event here. The range is recorded on `notebook.started` (review L1) to show "lines 2–3" in the Log and map an error line back.
   Note: this is a protocol contract change inside a feature branch (parallel-work.md prefers its
   own PR); it is additive and optional, in its own files plus one schema field.
 - **ac-4 kernel:** Restart still confirms; the prompt now says "Its variables are cleared and its

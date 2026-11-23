@@ -226,12 +226,23 @@ export function useRunPane({
       else loaded.current.delete(key);
     });
   }, [open, owner, wiring, threadId, path]);
-  const pendingId = shown?.outputsPending === true ? shown.execId : undefined;
+  // Asked while Run Output shows it; a failed read says so and is tried again the next time the
+  // tab shows it (review R2-L1).
+  const pendingId =
+    shown?.outputsPending === true && tab === "output" && open ? shown.execId : undefined;
+  const [outputsFailed, setOutputsFailed] = useState<string | null>(null);
   useEffect(() => {
     if (pendingId === undefined || wiring === undefined || threadId === null) return;
+    let live = true;
     void wiring.api.outputs(threadId, pendingId).then((res) => {
+      if (!live) return;
       if (res.ok) wiring.runs.fillOutputs(pendingId, res.data);
+      setOutputsFailed(res.ok ? null : pendingId);
     });
+    return () => {
+      live = false;
+      setOutputsFailed(null);
+    };
   }, [pendingId, wiring, threadId]);
 
   const running = last !== undefined && last.finished === undefined;
@@ -273,6 +284,7 @@ export function useRunPane({
           exec={shown}
           latest={shown === last}
           cleared={shown !== undefined && mem.cleared === shown.execId}
+          loadFailed={shown !== undefined && outputsFailed === shown.execId}
           path={path}
           teamId={wiring?.teamId ?? ""}
           onClear={() => remember({ cleared: shown?.execId ?? null })}

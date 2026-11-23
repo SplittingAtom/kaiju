@@ -46,7 +46,7 @@
   `run_ended`) and `GET .../executions/{exec_id}/outputs` (`services/server/src/notebooks/history.ts`,
   inside `withTeam()`, `team_id` stated, owner check via `findThread`; readers 404 like the other
   notebook routes for non-shared threads, 403 `read_only` for shared readers). OpenAPI catalog
-  entries + regenerated `openapi.json`, route-inventory snapshot updated. The pane loads it once per
+  entries (generated `openapi.json`, not committed since KOBE-815), route-inventory snapshot updated. The pane loads it once per
   file and thread when it opens (`NotebookExecStore.seed`), outputs of a shown older run on demand
   (`fillOutputs`); responses keep wire casing (read as text, checked with the protocol schemas). An
   unfinished entry whose run is still active is left to its live stream; one whose run ended shows
@@ -71,6 +71,10 @@
   browser's future) so a reload keeps counting; L6 wider credential-name guard (`access_key`,
   `key`, `pwd`, `dsn`, `conn_str`; no longer `author`); L7 an ask after a run waits 1 s (bursts
   cost one ask) and a 429 is a quiet line.
+- Round 2 lows: R2-L1 a failed outputs read says so and is retried when Run Output shows the run
+  again; R2-L2 a run that ended before its execution still has its stored outputs read; R2-L3 DB
+  test pins 403 `read_only` for a shared reader; R2-L4 guide wording ("7 days after the run they
+  were part of ended").
 - Skipped: L8 (tab remembered per browser, not per user id: same as the split's existing key;
   keying it needs the user id plumbed into the editor; only matters on a shared browser).
 

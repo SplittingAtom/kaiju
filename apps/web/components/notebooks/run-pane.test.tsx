@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { ApiResult } from "../../lib/api/client";
 import type { VariablesResult } from "../../lib/notebooks/variables";
 import { LOG_EMPTY } from "./run-log-panel";
-import { CLEARED_NOTE, OUTPUT_EMPTY } from "./run-output-panel";
+import { CLEARED_NOTE, OUTPUT_EMPTY, OUTPUTS_FAILED } from "./run-output-panel";
 import { RUN_TAB_KEY } from "./run-pane";
 import { ev, execId, Kernel, renderPython, runId, THREAD } from "./testing";
 import {
@@ -246,6 +246,31 @@ describe("the Log after a reload (review M2, L1)", () => {
     // The selection's error line maps back to the file even though this page did not run it.
     expect(within(panel("log")).getByText("NameError on line 6")).toBeTruthy();
     expect(within(panel("log")).getByText(/lines 5–6/u)).toBeTruthy();
+  });
+
+  it("says when a stored run's output cannot be loaded, and tries again on the next show", async () => {
+    const kernel = new Kernel();
+    kernel.history = [
+      {
+        run_id: runId(9),
+        run_ended: true,
+        started_at: "2026-11-22T09:00:00Z",
+        started: { exec_id: execId(9), origin: "agent", tool_call_id: "t9", path: PATH },
+        // Its run ended before the execution did: partial outputs are still read (R2-L2).
+        finished: null,
+      },
+    ];
+    kernel.pastOutputs.set(execId(9), [
+      { output_type: "stream", name: "stdout", text: "partial\n" },
+    ]);
+    kernel.outputFailures = 1;
+    await renderPython({ kernel });
+    const user = await openPane();
+    expect(await within(panel("output")).findByText(OUTPUTS_FAILED)).toBeTruthy();
+    await user.click(tab(/^Log/u));
+    await user.click(tab(/^Run Output/u));
+    expect(await within(panel("output")).findByText("partial")).toBeTruthy();
+    expect(kernel.outputCalls).toEqual([execId(9), execId(9)]);
   });
 
   it("a shared reader does not ask for the stored runs", async () => {

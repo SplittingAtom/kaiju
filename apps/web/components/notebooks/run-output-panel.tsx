@@ -21,6 +21,8 @@ import { NotebookOutputs } from "./output-view";
 
 export const OUTPUT_EMPTY =
   "Run Output shows what the code prints and returns: text, tables, plots and errors. Run the file to see it here.";
+export const OUTPUTS_FAILED =
+  "Could not load this run's output. It is tried again when you come back to it.";
 export const CLEARED_NOTE = "Output cleared. The next run shows here, or choose a run in the Log.";
 
 function summary(exec: Execution): string {
@@ -41,6 +43,7 @@ export function RunOutputPanel({
   exec,
   latest,
   cleared,
+  loadFailed = false,
   path,
   teamId,
   onClear,
@@ -51,6 +54,8 @@ export function RunOutputPanel({
   /** It is the newest run of the file. */
   readonly latest: boolean;
   readonly cleared: boolean;
+  /** A stored run's outputs could not be read (KOBE-804 review R2-L1). */
+  readonly loadFailed?: boolean;
   readonly path: string;
   readonly teamId: string;
   onClear(): void;
@@ -82,7 +87,7 @@ export function RunOutputPanel({
       <ExecutionNote exec={exec} notebook={false} />
       {exec.outputsPending === true && (
         <p role="status" className="text-muted-foreground text-xs">
-          Loading the output…
+          {loadFailed ? OUTPUTS_FAILED : "Loading the output…"}
         </p>
       )}
       <NotebookOutputs outputs={exec.outputs} teamId={teamId} />
