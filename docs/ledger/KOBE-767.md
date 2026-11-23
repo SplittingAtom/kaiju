@@ -62,8 +62,15 @@ member may converse, the repository is active and its connection is among the sa
 connection at Read and write. The agent keeps the working copy at `/workspace/repos/<slug>`
 (cloned through the egress proxy by git running as the tools' identity with the tools' env),
 reports `repo.status` at run start and end; the server keeps it only for a run of that member on a
-thread in that Repo (≤ 30/min per connection). Details of the agent part: see the commit message
-and `services/sandbox-agent/src/git/working-copy.ts`.
+thread in that Repo (≤ 30/min per connection; the end-of-run report arrives after the run ended,
+so the run need not be active). Agent: `src/git/working-copy.ts` (fixed bash script, positional
+args only, wrapped in `/usr/bin/timeout`: 120 s at start, 30 s at run end; strict parse of one
+status line), `src/threads/tool-command.ts` (runs as the tools' uid via the identities helper with
+the tools' env: egress BASH_ENV + token file, the thread's gitconfig), hooks in `thread.ts` /
+`manager.ts`; `repo.status` allowed after run end in `wire/client.ts`; sync skips `repos/<x>/.git`
+(`workspace/fs.ts`, `sync.ts`, `sync/push.ts`); prompt text in `memory/project-context.ts`; git
+never runs as the agent's own uid over the tool-owned repository. Not tested: the agent-level
+`prepareRepo` → frame wiring and the tool-uid spawn path (the real-git test runs one uid).
 
 ## Decisions (owner to confirm)
 
@@ -119,3 +126,8 @@ Guide: `admin/git-organizations.md` (Settings bullet, new "Commits to Repos"),
 - ac-3: db test "names the Repo in run.start.git and keeps the sandbox's ahead/behind"; sandbox
   agent tests (see below); `tree-edit.real-git.test.ts` (ids, order, edits vs real git).
 - DB: `packages/db/src/git-repo-work.db.test.ts`, probe suite (918).
+- Suites (2026-11-23): protocol 1372; db unit 1095; db DB git + probe 958; server unit 4540 (after
+  the Site audit view fix); server test:db 3703 (two KOBE-765 tests updated: a Repo commit without
+  a checkout is now `checkout_required`); web 4237; sandbox-agent 1284 (run it without
+  `TMPDIR=~/tmp`: `runtime-dir.test.ts` depends on the default temp dir); typecheck, eslint,
+  prettier, site wording, public hygiene.
