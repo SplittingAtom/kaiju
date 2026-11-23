@@ -269,6 +269,7 @@ export class CommandRouter implements SandboxRouter {
         thread_id: request.threadId,
         timeout_ms: request.timeoutMs,
         ...(request.refresh === true ? { refresh: true } : {}),
+        ...(request.show === undefined ? {} : { show: request.show }),
       },
     );
   }

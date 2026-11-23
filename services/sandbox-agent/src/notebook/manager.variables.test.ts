@@ -286,3 +286,31 @@ describe("automatic snapshots pause after one times out (KOBE-803 re-review)", (
     await manager.stopAll();
   });
 });
+
+describe("Show: one variable, not withheld (KOBE-816)", () => {
+  it("asks the bridge for that variable, never answers from or replaces the kept snapshot", async () => {
+    const { manager, control } = setup();
+    await exec(manager, frame("print:a", { with_variables: true }));
+    expect(control.inspected).toHaveLength(1);
+    const shown = data(await manager.show(T1, "API_KEY", 1000));
+    expect(shown).toMatchObject({ status: "ok", stale: false });
+    expect(control.inspected[1]).toBe(`${T1}:${JSON.stringify(INSPECT_LIMITS)}:show=API_KEY`);
+    // The kept snapshot is still the one taken after the run (nothing ran since).
+    expect(data(await manager.inspect(T1, 1000))).toMatchObject({ stale: false });
+    expect(control.inspected).toHaveLength(2);
+    await manager.stopAll();
+  });
+
+  it("never during a run, never starts a kernel", async () => {
+    const { manager, control } = setup();
+    expect(data(await manager.show(T1, "x", 1000))).toEqual({ status: "no_kernel" });
+    expect(control.launched).toEqual([]);
+    await exec(manager, frame("print:a"));
+    const running = exec(manager, frame("sleep"));
+    await until(() => control.executed.length === 2);
+    expect(data(await manager.show(T1, "x", 1000))).toEqual({ status: "busy" });
+    manager.interrupt(T1);
+    await running;
+    await manager.stopAll();
+  });
+});

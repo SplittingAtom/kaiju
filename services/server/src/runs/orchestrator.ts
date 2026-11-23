@@ -389,8 +389,9 @@ export class DbRunOrchestrator implements ServerRunOrchestrator {
     actor: ActorContext,
     threadId: string,
     refresh = false,
+    show?: string,
   ): Promise<NotebookVariablesResult> {
-    return notebookVariables(this.#notebookHost(), actor, threadId, refresh);
+    return notebookVariables(this.#notebookHost(), actor, threadId, refresh, show);
   }
 
   notebookComplete(

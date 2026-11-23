@@ -102,6 +102,7 @@ function fakeBridge(
         limits?: unknown;
         cursor?: number;
         name?: string;
+        show?: string;
       };
       if (m.op === "interrupt") {
         control.interrupts.push(threadId);
@@ -122,14 +123,16 @@ function fakeBridge(
       } else if (m.op === "execute" && m.id !== undefined && m.code !== undefined) {
         run(m.id, m.code);
       } else if (m.op === "inspect" && m.id !== undefined) {
-        inspect(m.id, m.limits);
+        inspect(m.id, m.limits, m.show);
       } else if ((m.op === "complete" || m.op === "doc") && m.id !== undefined) {
         complete(m.id, m);
       }
     }
   });
-  const inspect = (id: string, limits: unknown) => {
-    control.inspected.push(`${threadId}:${JSON.stringify(limits)}`);
+  const inspect = (id: string, limits: unknown, show?: string) => {
+    control.inspected.push(
+      `${threadId}:${JSON.stringify(limits)}${show === undefined ? "" : `:show=${show}`}`,
+    );
     const mode = control.inspectMode;
     if (mode === "ok") {
       send({

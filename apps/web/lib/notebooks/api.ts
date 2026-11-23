@@ -63,7 +63,7 @@ export interface NotebookApi {
    * `POST .../notebook/variables` (KOBE-803): the kernel's variables, live from the sandbox and
    * never stored; `refresh` asks for a fresh snapshot instead of the one kept after the last run.
    */
-  variables(threadId: string, refresh: boolean): Promise<ApiResult<VariablesResult>>;
+  variables(threadId: string, refresh: boolean, show?: string): Promise<ApiResult<VariablesResult>>;
   /**
    * `GET .../notebook/executions?path=` (KOBE-804): the `.py` file's last 50 runs from the
    * stored run events, newest first, without outputs. Kept in the server's wire casing (the
@@ -112,10 +112,11 @@ export function createNotebookApi(teamId: string, fetchFn?: typeof fetch): Noteb
       apiRequest(`/v1/threads/${enc(threadId)}/notebook/${op}`, { ...opts, json: {} }),
     complete: (threadId, body, signal) =>
       apiRequest(`/v1/threads/${enc(threadId)}/notebook/complete`, { ...opts, json: body, signal }),
-    variables: (threadId, refresh) =>
+    variables: (threadId, refresh, show) =>
       apiRequest(`/v1/threads/${enc(threadId)}/notebook/variables`, {
         ...opts,
-        json: refresh ? { refresh: true } : {},
+        // KOBE-816: Show asks for that one variable, its value not withheld by the sandbox.
+        json: show !== undefined ? { show } : refresh ? { refresh: true } : {},
       }),
     history: async (threadId, path) => {
       const q = new URLSearchParams({ path }).toString();

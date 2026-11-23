@@ -109,7 +109,7 @@ export class Kernel {
   starts: (ApiResult<KernelStart> | Promise<ApiResult<KernelStart>>)[] = [];
   sources: StubSource[] = [];
   /** `variables` calls (`refresh` each) and their answers in order (then `no_kernel`). */
-  variableCalls: boolean[] = [];
+  variableCalls: (boolean | string)[] = [];
   variableAnswers: (ApiResult<VariablesResult> | Promise<ApiResult<VariablesResult>>)[] = [];
   /** `history` calls (path each) and what it answers; `outputs` per execution id. */
   historyCalls: string[] = [];
@@ -164,8 +164,8 @@ export class Kernel {
       }
       return { ok: true, status: 200, data: this.pastOutputs.get(exec) ?? [] };
     },
-    variables: async (_thread, refresh) => {
-      this.variableCalls.push(refresh);
+    variables: async (_thread, refresh, show) => {
+      this.variableCalls.push(show === undefined ? refresh : `show:${show}`);
       return (
         this.variableAnswers.shift() ?? { ok: true, status: 200, data: { status: "no_kernel" } }
       );

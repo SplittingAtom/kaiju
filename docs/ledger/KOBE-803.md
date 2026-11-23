@@ -29,6 +29,9 @@
 - **Timing is measured by the agent** around the bridge call (wall-clock ISO instants for display,
   `performance.now()` for `duration_ms`); absent when the code never ran (dropped, timed out
   waiting) or the agent is old.
+- **Superseded by KOBE-816:** the snapshot now travels as an inspection request answered without
+  running member code (no `repr`, no SIGALRM); see `docs/ledger/KOBE-816.md`. The notes below are
+  history.
 - **Snapshot mechanics (kernel side, `images/sandbox/kernel/kobe-kernel-bridge.py` `inspect`).**
   An empty execute request with `silent=True, store_history=False` and one `user_expressions`
   entry: `silent` means no execution-count bump, no iopub output, nothing in `Out`/`_`/`In`. The

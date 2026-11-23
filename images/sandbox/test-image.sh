@@ -306,8 +306,8 @@ print("ok", d2["execution_count"] - d1["execution_count"], snap["snapshot"]["exe
       v["n"]["repr"], other)
 PY
 )
-check "a variables snapshot is silent and survives hostile reprs (KOBE-803)" \
-  '^ok 1 True \(5,1\) raised timeout \[3, 4\] float64 \[2, 2\] a:int64,b:(object|str) 5 Bad:class,Slow:class,np:module,pd:module$' \
+check "a variables snapshot is silent and never reads a member's object (KOBE-803, KOBE-816)" \
+  '^ok 1 True \(5,1\) not_read not_read \[3, 4\] float64 \[2, 2\] a:int64,b:(object|str) 5 Bad:class,Slow:class,np:module,pd:module$' \
   run_ws python3 -c "$KERNEL_INSPECT_PROBE" /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
 # KOBE-808: completion and documentation run none of the member's code (no property getter,
 # cached_property, descriptor, `__getattr__`, `__dir__`, key hook, key hash/eq, `__class__`
@@ -395,11 +395,12 @@ PY
 check "kernel completion and docs run no member code and leave no trace (KOBE-808)" \
   "^ok my_value\|alpha,beta\|alpha\|\| timer=refused big=ok m\(x, y=2\) Doc of m\. 3 \('-',False,False,0\)$" \
   run_ws python3 -c "$KERNEL_COMPLETE_PROBE" /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
-# KOBE-808 review round 4: the requests travel as complete_request / inspect_request answered by
-# the bridge's resolver, so none of the member's execution hooks, input transformers, `str`
-# formatter, warnings hook or autoreload run, and the execution count, history and Out stay put.
-check "kernel completion and docs fire none of the execution machinery (KOBE-808)" \
-  '^ok 0 1 0 0 cell_hooks_fire my_value\|method\|alpha=,beta=\|alpha= method\(alpha, beta=1\)$' \
+# KOBE-808 review round 4, KOBE-816: completion, docs and the variables snapshot travel as
+# complete_request / inspect_request answered by the bridge's static code, so none of the member's
+# execution hooks, input transformers, `str` formatter, warnings hook, autoreload or `__repr__` run,
+# and the execution count, history and Out stay put.
+check "kernel completion, docs and variables fire none of the execution machinery (KOBE-808, KOBE-816)" \
+  '^ok 0 1 0 0 cell_hooks_fire my_value\|method\|alpha=,beta=\|alpha= method\(alpha, beta=1\) vars=3,not_read,\[0\.0, 1\.0, 2\.0\],name,secret_absent,shown='"'"'sk-live-123'"'"'$' \
   run_ws python3 -c "$(cat "$(dirname "$0")/kernel-transport-probe.py")" \
   /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
 run_ws_line() { run_ws "$@" | tr '\n' ' ' | sed 's/ $//'; }

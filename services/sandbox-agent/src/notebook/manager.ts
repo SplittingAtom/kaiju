@@ -148,6 +148,32 @@ export class KernelManager {
     return ok(this.#status(busy ? "busy" : "idle"));
   }
 
+  /**
+   * `notebook.inspect` with `show` (KOBE-816): that one variable, its value not withheld; always
+   * a fresh read (never the kept snapshot, which it does not replace), never during a run.
+   */
+  async show(threadId: string, name: string, timeoutMs: number): Promise<CommandOutcome> {
+    const kernel = this.#kernels.get(threadId);
+    if (this.#closed || kernel === undefined || !kernel.session.alive) {
+      return ok({ status: "no_kernel" });
+    }
+    if (kernel.queued > 0 || kernel.session.busy || kernel.session.inspecting) {
+      return ok({ status: "busy" });
+    }
+    kernel.queued += 1;
+    const snap = kernel.tail.then(() => this.#inspectNow(kernel, timeoutMs, false, name));
+    kernel.tail = snap.catch(() => undefined);
+    try {
+      return ok(await snap);
+    } catch (error) {
+      this.#o.log(`variable show failed: ${(error as Error).message}`, threadId);
+      return ok(UNAVAILABLE);
+    } finally {
+      kernel.queued -= 1;
+      this.#touch(kernel);
+    }
+  }
+
   /** `notebook.inspect` (KOBE-803): the thread kernel's variables, never starting a kernel. */
   async inspect(threadId: string, timeoutMs: number, refresh = false): Promise<CommandOutcome> {
     const paused = this.#autoPaused.has(threadId);
@@ -399,10 +425,11 @@ export class KernelManager {
     kernel: Kernel,
     timeoutMs: number,
     auto: boolean,
+    show?: string,
   ): Promise<NotebookVariablesResult> {
     if (!kernel.session.alive) return { status: "no_kernel" };
     const takenAt = new Date();
-    const pending = kernel.session.inspect(randomUUID(), INSPECT_LIMITS);
+    const pending = kernel.session.inspect(randomUUID(), INSPECT_LIMITS, show);
     kernel.inspection = pending.then(() => undefined);
     let timer: NodeJS.Timeout | undefined;
     const late = new Promise<undefined>((resolve) => {
@@ -422,6 +449,8 @@ export class KernelManager {
     }
     const result = snapshotResult(got, takenAt, log);
     if (result.status !== "ok") return result;
+    // A Show answer (one variable, unmasked) is never kept.
+    if (show !== undefined) return { ...result, stale: false };
     kernel.kept = result;
     kernel.keptCurrent = true;
     return { ...result, stale: false };

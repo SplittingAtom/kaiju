@@ -326,7 +326,13 @@ export interface SandboxRouter {
    */
   notebookInspect(
     target: SandboxTarget,
-    request: { readonly threadId: string; readonly timeoutMs: number; readonly refresh?: boolean },
+    request: {
+      readonly threadId: string;
+      readonly timeoutMs: number;
+      readonly refresh?: boolean;
+      /** KOBE-816: Show: that one variable, its value not withheld. */
+      readonly show?: string;
+    },
     options?: SendOptions,
   ): Promise<CommandOutcome>;
   /**

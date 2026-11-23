@@ -247,7 +247,7 @@ export class KernelSession {
    * KOBE-803: snapshot the kernel's user variables (a silent request: no execution count). One at
    * a time and never during an execution; resolves when the bridge answers or the kernel goes.
    */
-  inspect(id: string, limits: InspectLimits): Promise<InspectResult> {
+  inspect(id: string, limits: InspectLimits, show?: string): Promise<InspectResult> {
     if (this.#goneReason !== undefined) {
       return Promise.resolve({ kind: "gone", message: this.#goneReason });
     }
@@ -256,7 +256,8 @@ export class KernelSession {
     }
     return new Promise<InspectResult>((resolve) => {
       this.#inspecting = { id, resolve };
-      this.#write({ op: "inspect", id, limits });
+      // KOBE-816: `show` asks for that one variable, its value not withheld.
+      this.#write({ op: "inspect", id, limits, ...(show === undefined ? {} : { show }) });
     });
   }
 

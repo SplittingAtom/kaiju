@@ -1,5 +1,5 @@
-"""KOBE-808: completion and docs through the real bridge transport fire none of the kernel's
-execution machinery. Usage: python3 kernel-transport-probe.py <python> <kobe-kernel-bridge.py>.
+"""KOBE-808/816: completion, docs and the variables snapshot through the real bridge transport
+fire none of the kernel's execution machinery. Usage: python3 kernel-transport-probe.py <python> <kobe-kernel-bridge.py>.
 
 Run by images/sandbox/test-image.sh (in the image) and by sandbox-agent's
 transport.e2e.test.ts (with KOBE_TEST_KERNEL_PYTHON pointing at a Python with ipykernel).
@@ -9,7 +9,8 @@ hook, and autoreload (whose own event callbacks are wrapped to record calls). Ce
 requests measure: the hooks a cell itself fires are the same before and after, so any difference
 is the requests'. Also the execution count, history and Out must not move. Prints one line:
 `ok <hook calls by the requests> <count moved> <history moved> <Out moved> cell_hooks_fire
-<complete> <doc>` (cell_hooks_fire: the hooks do fire for a cell, so the zero means something).
+<complete> <doc> vars=<my_value>,<thing: not_read>,<arr preview>,<API_KEY: name>,secret_absent,
+shown=<API_KEY's value after Show>` (cell_hooks_fire: the hooks do fire for a cell, so the zero means something).
 """
 
 import json
@@ -81,8 +82,15 @@ warnings.showwarning = _warned
 class Thing:
     def method(self, alpha, beta=1):
         '''Doc of method.'''
+    def __repr__(self):
+        hits.append("repr")
+        return "Thing()"
 thing = Thing()
 my_value = 3
+API_KEY = "sk-live-123"
+import numpy as np
+np.set_printoptions(formatter={"float": lambda x: (hits.append("np_formatter"), "F")[1]})
+arr = np.arange(3.0)
 """
 
 MEASURE = (
@@ -101,6 +109,17 @@ send({"op": "doc", "id": "d", "name": "thing.method", "timeout_ms": 2000})
 doc = read().get("result", {})
 send({"op": "doc", "id": "e", "name": "my_value", "timeout_ms": 2000})
 read()
+send({"op": "inspect", "id": "v", "limits": {"budget_ms": 2000}})
+raw = p.stdout.readline()
+snap = json.loads(raw).get("snapshot", {})
+values = {v["name"]: v.get("repr") or v.get("repr_error") or v.get("hidden") for v in snap.get("variables", [])}
+# KOBE-816: a credential-like name's value never leaves the kernel in a snapshot; Show asks for it.
+absent = "secret_absent" if "sk-live" not in raw else "secret_sent"
+send({"op": "inspect", "id": "s", "limits": {}, "show": "API_KEY"})
+shown = read().get("snapshot", {}).get("variables", [{}])[0].get("repr")
+variables = "vars=%s,%s,%s,%s,%s,shown=%s" % (
+    values.get("my_value"), values.get("thing"), values.get("arr"), values.get("API_KEY"), absent, shown
+)
 run(MEASURE + "\nsecond = measured", "m2")
 run(MEASURE + "\nthird = measured", "m3")
 _, outs = run(
@@ -112,4 +131,4 @@ _, outs = run(
 send({"op": "shutdown"})
 p.wait(timeout=30)
 report = "".join(o.get("text", "") for o in outs if o.get("output_type") == "stream").split()
-print("ok", *report, "|".join(completed), doc.get("signature"))
+print("ok", *report, "|".join(completed), doc.get("signature"), variables)

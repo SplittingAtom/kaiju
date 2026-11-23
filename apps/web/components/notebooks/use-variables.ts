@@ -113,5 +113,28 @@ export function useVariables({
     void ask(true);
   }, [ask, threadId, followKey]);
 
-  return { ...value, allowed, refresh };
+  /**
+   * KOBE-816: Show for a value the sandbox withheld: asks for that one variable (not withheld)
+   * and puts it in place of the withheld row; the next snapshot withholds it again.
+   */
+  const show = useCallback(
+    async (name: string) => {
+      if (!allowed || threadId === null || wiring === undefined) return;
+      const res = await wiring.api.variables(threadId, false, name);
+      setState((s) => {
+        if (s.thread !== threadId || s.value.snapshot === null) return s;
+        if (!res.ok) return { ...s, value: { ...s.value, error: res.error } };
+        if (res.data.status !== "ok") return s;
+        const shown = res.data.variables.find((v) => v.name === name);
+        const snapshot = s.value.snapshot;
+        const variables = shown
+          ? snapshot.variables.map((v) => (v.name === name ? shown : v))
+          : snapshot.variables.filter((v) => v.name !== name);
+        return { ...s, value: { ...s.value, snapshot: { ...snapshot, variables } } };
+      });
+    },
+    [allowed, threadId, wiring],
+  );
+
+  return { ...value, allowed, refresh, show };
 }
