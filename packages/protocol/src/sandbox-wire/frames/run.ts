@@ -14,6 +14,7 @@ import { runTokenGrantSchema } from "../../run-token.js";
 import { SYNC_CONFLICT_NOTES_MAX, syncConflictSchema } from "../../sync-conflicts.js";
 import { connectorNameSchema } from "../../tools.js";
 import { UPLOAD_MAX_FILES_PER_MESSAGE, uploadFileNameSchema } from "../../uploads.js";
+import { runGitContextSchema } from "../git-config.js";
 import { runMcpContextSchema } from "../mcp-config.js";
 import { SKILL_BUNDLES_MAX, skillBundleRefSchema } from "../skill-bundles.js";
 import { wireTraceContextSchema } from "../trace-frames.js";
@@ -158,6 +159,11 @@ export const runStartFrameSchema = frame("run.start", {
    * have to the thread's session before the branch marker, so the model sees them in this run.
    */
   app_cards: z.array(appCardEntrySchema).max(APP_CARDS_PER_RUN_MAX).optional(),
+  /**
+   * The thread's git identity and connected organizations (KOBE-764, git-config.ts): only for
+   * agents with capability `git`. Absent = the agent keeps git's safe defaults and no identity.
+   */
+  git: runGitContextSchema.optional(),
 });
 
 /** Pi `steer`: delivered after the current turn's tool calls, before the next model call. */
