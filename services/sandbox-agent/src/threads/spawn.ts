@@ -35,12 +35,7 @@ import { TOOL_HOME_ENV } from "../kobe-exec/protocol.js";
 import type { ExecRelay } from "../exec/relay.js";
 import { assertPaired, openRelay, preparePiPrivateDirs, prepareToolDir } from "./exec-wiring.js";
 import { EGRESS_TOKEN_FILE_NAME, EgressTokenFile, egressEnv } from "../egress/egress-wiring.js";
-import {
-  GIT_CONFIG_FILE_NAME,
-  GitConfigFile,
-  gitConfigText,
-  gitEnv,
-} from "../git/git-config.js";
+import { GIT_CONFIG_FILE_NAME, GitConfigFile, gitConfigText, gitEnv } from "../git/git-config.js";
 import type { McpConfigState, RuntimeOf, ThreadEnv } from "./thread-env.js";
 
 /** What `Thread#spawn` gets back: the started Pi and the files the thread then watches. */

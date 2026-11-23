@@ -117,6 +117,18 @@ git extend the page.
   mention that connections limited to chosen agents are not usable by sandbox git.
 - L5 (PSL private suffixes like `*.github.io` pass the form, server 400 is generic) left as known.
 
+## Before the PR (merged phase 1 `origin/group-95-git-1-foundation` 05f118253)
+
+- Clean merge; audit table and route inventory unchanged by it.
+- Guard from main (KOBE-666 `audit/site-view.test.ts`): the git events' target keys were
+  unclassified. Site audit view now shows connection id, host, organization, repository, git
+  service, credential kind, levels, excess permissions, counts, stage, failure, setting/value;
+  hides `refs` / `refsTruncated` of `egress.git_push` (members' own branch names, like folder
+  names).
+- Prettier on KOBE-764's `threads/spawn.ts`. Sandbox secret scan (gate2 regexes) over
+  `images/sandbox` and the sandbox-agent `dist`: only the existing `egress-env.sh` variable URL and
+  test-image fixtures (not shipped); nothing new.
+
 ## Accessibility pass
 
 Checked in component tests and by reading the markup: dialogs are Radix (focus trapped, Escape
