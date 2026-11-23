@@ -99,6 +99,31 @@ describe("apiRequest", () => {
     expect(errorKind(res.error)).toBe("isolation");
   });
 
+  it("keeps a shown 5xx code's details when asked, never another 5xx's (KOBE-761)", async () => {
+    const rate = await apiRequest("/v1/x", {
+      errorDetails: true,
+      fetchFn: respond(503, {
+        code: "host_rate_limited",
+        message: "The git host's rate limit is used up.",
+        test: { code: "rate_limited", retry_at: "2026-11-22T10:00:00.000Z" },
+      }),
+    });
+    expect(rate.ok).toBe(false);
+    if (rate.ok) return;
+    expect(rate.error).toMatchObject({
+      code: "host_rate_limited",
+      details: { test: { code: "rate_limited", retryAt: "2026-11-22T10:00:00.000Z" } },
+    });
+    const other = await apiRequest("/v1/x", {
+      errorDetails: true,
+      fetchFn: respond(500, { code: "boom", message: "internal", stack: "secret" }),
+    });
+    expect(other.ok).toBe(false);
+    if (other.ok) return;
+    expect(other.error.details).toBeUndefined();
+    expect(other.error.code).toBe("server_error");
+  });
+
   it("reports a network failure without throwing", async () => {
     const fetchFn = vi.fn(async () => {
       throw new TypeError("Failed to fetch");

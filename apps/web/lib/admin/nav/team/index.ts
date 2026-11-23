@@ -20,3 +20,4 @@ export { default as schedules } from "./schedules";
 export { default as followUps } from "./follow-ups";
 export { default as storage } from "./storage";
 export { default as defaultAgent } from "./default-agent";
+export { default as git } from "./git";

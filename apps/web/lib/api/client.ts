@@ -15,7 +15,8 @@ export interface ApiError {
   readonly reason?: string;
   /**
    * The rest of a 4xx body, camelized, when the request asked for it (`errorDetails`): e.g. the
-   * memory checks' `warnings` and `duplicates` (KOBE-384). Never set for 5xx answers.
+   * memory checks' `warnings` and `duplicates` (KOBE-384). For 5xx answers only with a code
+   * meant for people (`SHOWN_5XX_CODES`), whose bodies are fixed text.
    */
   readonly details?: Readonly<Record<string, unknown>>;
 }
@@ -89,6 +90,12 @@ const SHOWN_5XX_CODES: ReadonlySet<string> = new Set([
   // code, never the model's text; and the server without a gateway for its own calls.
   "call_failed",
   "model_calls_unavailable",
+  // Workspace git connections (KOBE-760/761): the adapters' fixed text and codes (with the test's
+  // code, reason and retry time, never the host's answer); the Git section maps them to its words.
+  "git_unavailable",
+  "host_unreachable",
+  "host_error",
+  "host_rate_limited",
 ]);
 
 function fallback(status: number): ApiError {
@@ -192,7 +199,8 @@ export async function apiRequest<T>(
   const parsed = await readJson(res);
   if (!res.ok) {
     const error = toError(res.status, parsed);
-    const keep = errorDetails && res.status < 500 && parsed !== null && typeof parsed === "object";
+    const shown = res.status < 500 || SHOWN_5XX_CODES.has(error.code);
+    const keep = errorDetails && shown && parsed !== null && typeof parsed === "object";
     return {
       ok: false,
       error: keep

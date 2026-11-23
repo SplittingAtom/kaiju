@@ -11,6 +11,7 @@ import {
 } from "../../lib/admin/api/team/connector-grants";
 import { listTeamConnectors, type TeamConnector } from "../../lib/admin/api/team/connectors";
 import { useTeamAccess } from "../admin/console-context";
+import { MyGitConnections } from "../admin/team/git/member-view";
 import { MutationStatus } from "../admin/error-notice";
 import { DateTime, ResourceView } from "../admin/parts";
 import { useMutation, useResource, type Mutation } from "../admin/use-resource";
@@ -84,6 +85,7 @@ export function MyConnectorsPage() {
           );
         }}
       </ResourceView>
+      <MyGitConnections teamId={teamId} />
     </>
   );
 }

@@ -277,6 +277,18 @@ The spec imports the mock's SCIM client from `../sso/`, so copy `e2e/sso` beside
 when you run the suite elsewhere (for example in the Playwright container:
 `tar -c e2e/browser e2e/sso --exclude node_modules`, then `cd e2e/browser`).
 
+## Git section (`git-section.spec.ts`, KOBE-761)
+
+The Workspace admin console's Git page and the members' read-only list on My connectors.
+`KOBE_USER` must be a Workspace admin of the active team. Self-contained: the first two tests
+answer `/v1/team/git/connections*` in the browser with a fake (`page.route`), so no git host is
+needed and nothing is stored; they walk the three-step Connect dialog with a fake token and check
+it is sent only in request bodies and never shown. The third test runs **Test** (without saving)
+against a real host and is skipped unless `KOBE_GIT_PROVIDER` (`github`, `gitea` or `forgejo`),
+`KOBE_GIT_ORG`, `KOBE_GIT_TOKEN` and, for GitHub Enterprise Server, Gitea or Forgejo,
+`KOBE_GIT_BASE_URL` are set (pass the token from a secret store). No tokens:
+`npx playwright test git-section`.
+
 ## Writing specs
 
 - Select by role and accessible name, labels and `data-kobe-*` attributes (`data-kobe-steering`,

@@ -89,6 +89,7 @@ const TEAM_ADMIN = [
   "team.agents.suspend",
   "team.agents.manage",
   "team.projects.manage",
+  "team.git.manage",
 ];
 const team = (role: TeamAccess["role"], permissions: string[]): TeamAccess => ({
   console: "team",

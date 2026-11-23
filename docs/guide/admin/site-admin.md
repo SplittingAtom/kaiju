@@ -201,7 +201,10 @@ read a person's portable preferences either; reading them needs its own break-gl
   [Search by meaning](../memory.md#search-by-meaning). The **Kobe connector** setting is **Off**, **Docs only** (the
   default) or **Docs and admin tools**; see below. **Kobe admin limits** set how many admin reads
   per minute (default 60) and admin changes per hour (default 30) one person's agents may make,
-  1 to 10,000 each; they apply to the next call, and every change is audited.
+  1 to 10,000 each; they apply to the next call, and every change is audited. **Git
+  connections**: whether Workspaces may connect git organizations (on by default; off stops every
+  connection without deleting it) and the **allowed git hosts** (empty allows any host); see
+  [Git organizations](git-organizations.md#site-admins-allow-git-connections-and-limit-hosts).
 - **Isolation**: whether agents can run. Kobe refuses to run agents unless the cluster offers a
   gVisor or Kata sandbox runtime; this page shows the check and how to fix it.
 - **Backup and restore**: how to back up and restore the site, and the last restore.

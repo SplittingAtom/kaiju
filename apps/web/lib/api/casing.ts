@@ -13,6 +13,20 @@
  */
 const OPAQUE_KEYS: ReadonlySet<string> = new Set(["frontmatter", "argPattern", "payload", "input"]);
 
+type CamelKey<S extends string> = S extends `${infer Head}_${infer Tail}`
+  ? `${Head}${Capitalize<CamelKey<Tail>>}`
+  : S;
+
+/**
+ * A snake_case wire type (e.g. from `@kobe/protocol`) as `camelizeKeys` hands it to the page:
+ * every key camelized, values kept, read-only. For plain lowercase keys like the protocol's.
+ */
+export type Camelized<T> = T extends readonly (infer U)[]
+  ? readonly Camelized<U>[]
+  : T extends object
+    ? { readonly [K in keyof T as K extends string ? CamelKey<K> : K]: Camelized<T[K]> }
+    : T;
+
 /** `owner_user_id` → `ownerUserId`; camelCase and leading/double underscores are left alone. */
 export function toCamel(key: string): string {
   return key.replace(/([a-z0-9])_([a-z0-9])/g, (_, a: string, b: string) => a + b.toUpperCase());
