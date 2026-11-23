@@ -6,11 +6,11 @@ import {
   SiteHoldIsolationError,
   siteMemoryHeld,
   withSiteMemoryPurge,
-} from "./legal-hold/site-memory-hold.js";
-import { logger } from "./logger.js";
-import { tagsFingerprint } from "./memory/items/tag-fingerprint.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+} from "./site-memory-hold.js";
+import { logger } from "../logger.js";
+import { tagsFingerprint } from "../memory/items/tag-fingerprint.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-647 (v1.3 SM28) phase 2: the Site-wide legal hold in the Site console (request, two-person
