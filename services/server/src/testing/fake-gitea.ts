@@ -35,8 +35,8 @@ const ALL_SCOPES = [
 ];
 
 export const FAKE_VERSIONS: Record<FakeProduct, { current: string; tooOld: string }> = {
-  gitea: { current: "1.27.2", tooOld: "1.19.4" },
-  forgejo: { current: "15.0.3+gitea-1.22.0", tooOld: "6.0.1+gitea-1.21.0" },
+  gitea: { current: "1.27.2", tooOld: "1.25.4" },
+  forgejo: { current: "15.0.3+gitea-1.22.0", tooOld: "14.0.2+gitea-1.22.0" },
 };
 
 /** A made-up token; never a real credential. */

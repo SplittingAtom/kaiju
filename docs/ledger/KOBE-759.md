@@ -63,24 +63,36 @@ organization, token, net })` implements KOBE-758's `GitHostAdapter` (`git-hosts/
 
 ## Minimum versions (constants in `src/git-hosts/gitea/version.ts`)
 
-Set to the oldest release with every API call and token-scope behaviour the adapter uses
-(coordinator, 2026-11-22, replacing my first "current and one major back" reading of GQ7, which
-refused Forgejo's current LTS v15). Open for Chris: this is a looser reading of GQ7.
+**Rule (Chris, 2026-11-22; for the guide ticket):** Kobe supports the release line current at
+build time and one major back, **plus always the vendor's current long-term-support release**;
+anything older is refused (`unsupported_host`, message names the minimum). Each minimum is the
+older of "previous major .0" and "current LTS .0". Newer than current is accepted. Re-check at
+every release of either product and move the constants. (This replaces my first reading of GQ7,
+which refused Forgejo's LTS, and the coordinator's interim "oldest that works".)
 
-- **Gitea 1.20.0.** Rests on the token scope model: the scope names Kobe asks admins for
-  (`read:user`, `read:organization`, `write:organization`, `write:repository`, `write:issue`) and
-  the 403 naming the missing scope come from the scoped-token redesign, go-gitea PR #24767
-  (merged 2023-06-04). _Assumed:_ that PR first shipped in 1.20.0 (its date fits the 1.20 cycle;
-  not confirmed against release notes). Every endpoint is older: org permissions
-  (`/users/{u}/orgs/{org}/permissions`, PR #17232, 2021, assumed 1.16), the others (`/version`,
-  `/user`, `/orgs/{org}`, `/orgs/{org}/repos`, `/repositories/{id}`, `/repos/{o}/{r}`, pulls,
-  issues, comments, `Link`/`X-Total-Count`) long before.
-- **Forgejo 7.0.0.** The first release that identifies itself in `/api/v1/version`
-  (`7.0.0+gitea-1.22.0`), on the Gitea 1.22 API, so above the Gitea minimum. Includes the current
-  LTS (v15). _Assumed:_ Forgejo before 7.0 (1.20.x, 1.21.x) reports a Gitea-style version without
-  `+gitea-`; it is then judged as Gitea of the same API level (accepted from 1.20, labelled Gitea).
-  Both are long out of support.
-- Raise a minimum only when the adapter starts using something newer.
+Checked 2026-11-22:
+
+| Product | Current           | Previous major | Current LTS                    | Minimum    | Confirmed                      |
+| ------- | ----------------- | -------------- | ------------------------------ | ---------- | ------------------------------ |
+| Gitea   | 1.27 (2026-07-13) | 1.26           | none (Gitea has no LTS line)   | **1.26.0** | partly: secondary sources only |
+| Forgejo | 17.0 (2026-10-15) | 16.0           | 15.0 (supported to 2027-07-15) | **15.0.0** | yes: forgejo.org               |
+
+Sources:
+
+- Forgejo (official): release schedule https://forgejo.org/docs/latest/admin/release-schedule/,
+  v17.0 announcement https://forgejo.org/2026-10-release-v17-0/, releases
+  https://forgejo.org/releases/ (v16.0.5 listed), 15.x https://forgejo.org/releases/15.x/.
+  The pages disagree on v16/v17 end-of-life dates by two weeks; that does not change the minimum.
+- Gitea: the official 1.27.0 blog post was not found by search. 1.27.0 on 2026-07-13 rests on
+  https://newreleases.io/project/github/go-gitea/gitea/release/v1.27.0,
+  https://linuxiac.com/gitea-1-27-released-with-actions-improvements-and-45-cve-fixes/ and
+  https://about.gitea.com/blog/gitea-cloud-release-1-27-1/; 1.26 on
+  https://blog.gitea.com/release-of-1.26.0/. **Unconfirmed:** that no 1.28 has shipped by
+  2026-11-22 (if it has, the minimum becomes 1.27.0). Check https://github.com/go-gitea/gitea/releases.
+
+API check: every call and token-scope behaviour the adapter uses exists in both minimums (the
+scoped-token model since Gitea 1.20, go-gitea PR #24767; Forgejo 15 reports `+gitea-1.22.0`).
+Detection: `+gitea-` in `/api/v1/version` means Forgejo (all supported Forgejo releases have it).
 
 ## Token scopes (bot account token)
 
@@ -114,6 +126,6 @@ No guide change: a server-side library with no route, UI or agent-visible behavi
 - ac-1: `pnpm --filter @kobe/server exec vitest run src/git-hosts` — the shared contract passes
   for Gitea, Forgejo and both GitHub credential kinds (195 tests in the two adapter files).
 - ac-2: "refuses a version older than supported, naming the minimum, before any other call" (both
-  products) + `judgeVersion` table; message e.g. "The git host runs Gitea 1.19.4; Kobe supports
-  Gitea 1.20.0 and later."
+  products) + `judgeVersion` table; message e.g. "The git host runs Gitea 1.25.4; Kobe supports
+  Gitea 1.26.0 and later."
 - ac-3: deferred by the owner (above).
