@@ -19,6 +19,9 @@ import {
   gitConversionAnswerSchema,
   gitConversionStartBodySchema,
   gitConversionStartedSchema,
+  gitRepoAnswerSchema,
+  gitRepoDetachedSchema,
+  gitRepoRelinkBodySchema,
 } from "@kobe/protocol";
 import { inventoryQuerySchema } from "../../../agents/inventory.js";
 import { runnableQuerySchema } from "../../../agents/runnable.js";
@@ -68,7 +71,7 @@ const ProjectMember = named("ProjectMember", projectMemberSchema);
 
 const Conversion = named("GitConversionStarted", gitConversionStartedSchema);
 const conversionRefusals =
-  "A refused start names its reason (`code`, `message`, and `path`/`paths`, `seq`, `checkouts`, `limit_bytes`/`size_bytes` where they apply): 409 `already_repo`, `conversion_in_progress`, `archived`, `legal_hold`, `unsaved_checkouts`, `connection_read_only`; 403 `git_disabled`, `host_not_allowed`, `existing_repository_admin_only` (only Workspace admins choose an existing repository); 404 `connection_not_found`; 422 `cannot_create_repositories`, `internal_not_offered`, `invalid_repository_name`, `file_rejected_by_host`, `file_too_large`, `project_too_large`; 503 `git_unavailable`.";
+  "A refused start names its reason (`code`, `message`, and `path`/`paths`, `seq`, `checkouts`, `limit_bytes`/`size_bytes` where they apply): 409 `already_repo`, `conversion_in_progress`, `archived`, `legal_hold`, `unsaved_checkouts`, `connection_read_only`; 403 `git_disabled`, `host_not_allowed`, `existing_repository_admin_only` (only Workspace admins choose an existing repository); 404 `connection_not_found`; 422 `cannot_create_repositories`, `internal_not_offered`, `invalid_repository_name`, `file_rejected_by_host`, `file_too_large`, `project_too_large`, `too_large_to_mirror` (the current files are more than a Repo's mirror can hold); 503 `git_unavailable`.";
 
 export const projectsDetails: Readonly<Record<string, CatalogDetail>> = {
   "get /v1/projects/{id}/repo-conversion": {
@@ -96,6 +99,32 @@ export const projectsDetails: Readonly<Record<string, CatalogDetail>> = {
     responseDescription:
       "The ended attempt and the repository left on the host, if the host created one for it. 409 `conversion_running`; 404 `conversion_not_found`.",
     errors: ["403", "404", "409"],
+  },
+  "get /v1/projects/{id}/repo": {
+    response: named("GitRepoAnswer", gitRepoAnswerSchema),
+    errors: ["404"],
+  },
+  "post /v1/projects/{id}/repo/refresh": {
+    body: null,
+    status: 202,
+    response: named("GitRepoAnswer", gitRepoAnswerSchema),
+    responseDescription:
+      "The Repo as mirrored now; the refresh runs in the background. 409 `connection_removed`; 404 `not_a_repo`.",
+    errors: ["404", "409", "429"],
+  },
+  "post /v1/projects/{id}/repo/relink": {
+    body: named("GitRepoRelinkBody", gitRepoRelinkBodySchema),
+    response: named("GitRepoAnswer", gitRepoAnswerSchema),
+    responseDescription:
+      "The Repo, linked; its mirror refreshes at once. 403 `forbidden` (Workspace admins only), `host_not_allowed`; 404 `not_a_repo`, `connection_not_found`, `repository_not_found`; 409 `connection_off`, `repository_in_use`; 422 `repository_public`; 502 `credential_rejected`, `host_rate_limited`, `host_unreachable`; 503 `git_unavailable`.",
+    errors: ["403", "404", "409", "413", "422", "429", "502", "503"],
+  },
+  "post /v1/projects/{id}/repo/detach": {
+    body: null,
+    response: named("GitRepoDetached", gitRepoDetachedSchema),
+    responseDescription:
+      "The project and the commit of the mirrored files. 403 `forbidden` (Workspace admins only); 404 `not_a_repo`.",
+    errors: ["403", "404", "429"],
   },
   "get /v1/projects": {
     query: listProjectsQuerySchema,

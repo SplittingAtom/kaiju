@@ -20,6 +20,8 @@ import { GitHostError, type GitHostAdapter } from "../git-hosts/adapter.js";
 import { gitHostAdapter, type GitAdapterInput } from "../git-hosts/factory.js";
 import type { GitHostNet } from "../git-hosts/http.js";
 import { gitHostTarget } from "../git-hosts/target.js";
+import { logger } from "../logger.js";
+import { requestPushRefresh } from "./mirror/store.js";
 
 /**
  * The server's decision for one git smart-HTTP request from a sandbox (spec workspace-git G11,
@@ -446,6 +448,13 @@ export async function decideGitTransport(
       );
       const refused = repoRefusal(facts.role as TeamRole, repos);
       if (refused) return refused;
+      // KOBE-766 (G17): a push to a Repo refreshes its mirror shortly after (the push itself
+      // follows this decision). A failure here never refuses the push.
+      if (repos.length > 0) {
+        await requestPushRefresh(deps.db, principal.teamId, connection.baseUrl, resolved.id).catch(
+          (err: unknown) => logger.warn({ err }, "git mirror refresh not requested"),
+        );
+      }
     }
     const credential = await adapter.repositoryCredential(request.repository, access);
     const base = reachableBase(connection.baseUrl);

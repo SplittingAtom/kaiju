@@ -453,7 +453,7 @@
           "$ref": "#/$defs/resources"
         },
         "tmpSizeLimit": {
-          "description": "Size limit of the server's /tmp emptyDir (Convert to repo's work folder, KOBE-765); empty for none.",
+          "description": "Size limit of the server's /tmp emptyDir (Convert to repo's and the Repo mirror's work folders, KOBE-765/766); empty for none.",
           "oneOf": [
             { "type": "string", "pattern": "^([0-9]+(\\.[0-9]+)?(k|M|G|T|Ki|Mi|Gi|Ti)?)?$" },
             { "type": "number", "minimum": 0 }

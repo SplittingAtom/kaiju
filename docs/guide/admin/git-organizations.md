@@ -194,6 +194,59 @@ committer. Under **Commit author email** on the Git page, choose the address the
 Commits pushed to the host keep the address in their history for good; a change applies to new
 commits only. Changes are recorded in the audit log (`git.settings.updated`).
 
+## Repos: the mirror, read-only Repos, relink and detach
+
+After a project is converted to a Repo, the repository's default branch on the host is the
+project's record. Kobe keeps a mirror of it, its files and its newest 25 commits, so the Files
+panel, project mounts in sandboxes and members without git access keep working. The mirror is
+refreshed:
+
+- when Kobe pushes to the repository, including a push from git in a sandbox (about 30 seconds
+  later);
+- when someone opens the Repo, if it was last refreshed more than 5 minutes ago (in the
+  background: the panel shows the mirror as it is meanwhile);
+- every 5 minutes;
+- with **Refresh**, which any member who can see the project can use (30 per 10 minutes each).
+  Refresh skips the waiting after failures, but not a rate limit set by the host or the end of
+  the connection's hourly budget: it then says when to try again.
+
+A commit made on the host appears in Kobe after the next refresh. Each refresh uses one of the
+connection's 3,000 git reads an hour, the budget agents' git tools share; when it is used up the
+refresh waits for the next hour. The panel shows when the mirror was last refreshed and, after a
+failure, what went wrong. Kobe retries a failed refresh after 5 minutes, then waits twice as long
+after each further failure, up to 6 hours (or until the host's rate limit resets); the mirror
+stays as it was in the meantime. A mirror can hold at most 500 files of at most 50 MiB each, 256 MiB in all, at the tip of the
+default branch; Kobe checks every file's size before reading it. A repository whose newest 25
+commits add more than about half as much again (large files rewritten often) is also too large to
+mirror until those commits are older. Convert to repo refuses a project whose current files are already beyond that ("too
+large to mirror"). If a repository grows past it on the host, the Repo says it is too large to
+mirror and keeps showing its last mirror; nothing changes on the host. Kobe checks again every 6
+hours (or on Refresh) and the mirror resumes once the repository is back within the limits. Symlinks and submodules are left out. Kobe's history settings for projects don't apply to
+a Repo: its history is on the host.
+
+A repository renamed or transferred on the host is followed: Kobe knows it by the host's id. When
+the repository is **archived** or **deleted** on the host, or its connection is **disconnected**,
+the Repo becomes read-only in Kobe from its last mirror and shows a banner saying why. Hosts
+answer "not found" both for a deleted repository and for one the Workspace's credential can no
+longer see (for example a GitHub App whose repository list was narrowed), so Kobe marks a Repo
+deleted only after four such answers in a row, over at least half an hour, and keeps checking a
+deleted Repo every 6 hours: when the host shows it again, it is active again. Workspace
+admins then have two ways forward:
+
+- **Relink**: link the Repo to another repository of a connected organization (or to the same one
+  again through a new connection). Its default branch becomes the record and is mirrored at once,
+  as a new commit on top: the old repository's last mirror stays in the project's history, so
+  nothing is lost. A public repository, or one that is already another project's Repo, is
+  refused.
+- **Detach**: turn the Repo back into an ordinary project. One commit of the mirrored files
+  starts its Kobe history again, and Kobe commits work as before. The repository stays on the host
+  and stays listed under **Repositories**.
+
+Both are recorded in the audit log (`git.repo.relinked`, `git.repo.detached`), as are mirror
+updates and changes of state on the host (`git.repo.mirror_updated`,
+`git.repo.host_state_changed`). Kobe never changes anything on the host when a Repo is relinked
+or detached.
+
 ## What members see
 
 Members see which organizations the Workspace is connected to, read-only, under **Profile → My
