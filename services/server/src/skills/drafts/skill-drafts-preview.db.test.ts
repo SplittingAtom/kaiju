@@ -1,17 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { clearPreviewCache } from "./skills/drafts/scan-preview.js";
-import { DRAFT_PREVIEW_RATE } from "./skills/drafts/files.js";
+import { clearPreviewCache } from "./scan-preview.js";
+import { DRAFT_PREVIEW_RATE } from "./files.js";
 import {
   incompleteScan,
   ScanBusyError,
   ScanCancelledError,
   setScanPool,
   type ScanPool,
-} from "./skills/scan-pool.js";
-import { RawBody, type TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
+} from "../scan-pool.js";
+import { RawBody, type TestBrowser } from "../../testing/browser.js";
+import { openHarness, type Harness } from "../../testing/harness.js";
+import { MemoryObjects } from "../../testing/memory-objects.js";
 
 /**
  * The Workbench editor's server half (KOBE-321, SK12, SK14): the live scan preview of a draft

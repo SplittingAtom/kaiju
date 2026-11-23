@@ -1,16 +1,16 @@
 import { createHash, randomUUID } from "node:crypto";
 import { strToU8, zipSync } from "fflate";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { RawBody, type TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { seedKobeSkills } from "./skills/kobe-seed.js";
+import { RawBody, type TestBrowser } from "../../testing/browser.js";
+import { openHarness, type Harness } from "../../testing/harness.js";
+import { MemoryObjects } from "../../testing/memory-objects.js";
+import { seedKobeSkills } from "../kobe-seed.js";
 import { withTeam } from "@kobe/db";
 import {
   createWorkspaceSync,
   workspaceBlobKey,
   type WorkspaceSync,
-} from "./workspace-sync/index.js";
+} from "../../workspace-sync/index.js";
 
 /**
  * Draft starts (KOBE-322, SK10): a template, an upload (zip or SKILL.md, through the upload's own

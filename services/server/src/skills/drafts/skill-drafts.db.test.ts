@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import pino from "pino";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { sweepDepartedDraftsInTeam } from "./retention/skill-drafts.js";
-import { runRetentionPass } from "./retention/index.js";
-import { RawBody, type TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
+import { sweepDepartedDraftsInTeam } from "../../retention/skill-drafts.js";
+import { runRetentionPass } from "../../retention/index.js";
+import { RawBody, type TestBrowser } from "../../testing/browser.js";
+import { openHarness, type Harness } from "../../testing/harness.js";
+import { MemoryObjects } from "../../testing/memory-objects.js";
 
 /**
  * Workbench drafts (KOBE-320, SK11): owned by (author, team), private until shared with the team's

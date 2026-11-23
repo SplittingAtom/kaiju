@@ -2,11 +2,11 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CAPABILITY_SKILL_DRAFTS, type PolicyEngine } from "@kobe/protocol";
 import { withTeam } from "@kobe/db";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { RawBody } from "./testing/browser.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { createWorkspaceSync, workspaceBlobKey } from "./workspace-sync/index.js";
+import { EventStreamFixture, must, type Person } from "../../testing/event-stream-fixture.js";
+import { RawBody } from "../../testing/browser.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../../testing/fake-sandbox.js";
+import { MemoryObjects } from "../../testing/memory-objects.js";
+import { createWorkspaceSync, workspaceBlobKey } from "../../workspace-sync/index.js";
 
 /**
  * KOBE-442 end to end: `skill.draft_save` accepted only for a connection that announced
