@@ -2,15 +2,15 @@ import { createHash } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CAPABILITY_FILE_EDITS, VIEWING_CONTENT_MAX_BYTES } from "@kobe/protocol";
 import { withTeam } from "@kobe/db";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { RunFixture, type RunWorld } from "./testing/run-fixture.js";
-import { must } from "./testing/event-stream-fixture.js";
-import { createViewingReader } from "./workspace-files/viewing.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
+import { must } from "../testing/event-stream-fixture.js";
+import { createViewingReader } from "../workspace-files/viewing.js";
 import {
   createWorkspaceSync,
   workspaceBlobKey,
   type WorkspaceSync,
-} from "./workspace-sync/index.js";
+} from "../workspace-sync/index.js";
 
 /**
  * KOBE-462 (spec FE6): a message's `viewing {path}` reaches its run as `run.start.viewing`, read

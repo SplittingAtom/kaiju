@@ -6,10 +6,10 @@ import {
   type PolicyEngine,
 } from "@kobe/protocol";
 import { withTeam } from "@kobe/db";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { createWorkspaceSync, workspaceBlobKey } from "./workspace-sync/index.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { createWorkspaceSync, workspaceBlobKey } from "../workspace-sync/index.js";
 
 /**
  * KOBE-462 end to end (spec FE8, FE9): `file.edit_propose` accepted only for a connection that

@@ -2,12 +2,12 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CAPABILITY_FILES, sharedFileSchema, type PolicyEngine } from "@kobe/protocol";
 import { withTeam } from "@kobe/db";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { blobRecorder } from "./retention/job.js";
-import { deleteReleasedBlobs, purgeThreads } from "./retention/index.js";
-import { createWorkspaceSync, workspaceBlobKey } from "./workspace-sync/index.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { blobRecorder } from "../retention/job.js";
+import { deleteReleasedBlobs, purgeThreads } from "../retention/index.js";
+import { createWorkspaceSync, workspaceBlobKey } from "../workspace-sync/index.js";
 
 /**
  * KOBE-150 end to end: `file.share` accepted only for a connection that announced `files`, an

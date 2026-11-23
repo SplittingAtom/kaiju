@@ -1,9 +1,9 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { mentionMarker } from "@kobe/protocol";
-import type { Person } from "./testing/event-stream-fixture.js";
-import { RunFixture, type RunWorld } from "./testing/run-fixture.js";
-import { SchedulerRunner } from "./scheduler/runner.js";
+import type { Person } from "../testing/event-stream-fixture.js";
+import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
+import { SchedulerRunner } from "../scheduler/runner.js";
 
 /**
  * KOBE-223 (CE22): `@file` mentions are structured. The body lists the picked paths; the server
