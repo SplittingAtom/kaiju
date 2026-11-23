@@ -79,4 +79,17 @@ describe("git smart-HTTP grammar (KOBE-763)", () => {
       "/acme/app.git/git-receive-pack",
     );
   });
+
+  it("refuses backslashes anywhere and userinfo in the authority (review L4)", () => {
+    expect(matchGitRequest("POST", `${H}\\evil/acme/r.git/git-upload-pack`)).toMatchObject({
+      kind: "invalid",
+    });
+    expect(matchGitRequest("GET", `${H}/plain\\path`)).toMatchObject({ kind: "invalid" });
+    expect(
+      matchGitRequest(
+        "GET",
+        "http://u:p@git.example.test/acme/r.git/info/refs?service=git-upload-pack",
+      ),
+    ).toMatchObject({ kind: "invalid" });
+  });
 });

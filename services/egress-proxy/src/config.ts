@@ -158,6 +158,8 @@ const configSchema = z.object({
   ),
   KOBE_EGRESS_GIT_REQUEST_BURST: int("KOBE_EGRESS_GIT_REQUEST_BURST", 1, 10_000, 60),
   KOBE_EGRESS_GIT_REQUESTS_PER_SECOND: int("KOBE_EGRESS_GIT_REQUESTS_PER_SECOND", 1, 1_000, 2),
+  /** Distinct repository decisions per sandbox per minute (cache misses; host API quota). */
+  KOBE_EGRESS_GIT_LOOKUPS_PER_MINUTE: int("KOBE_EGRESS_GIT_LOOKUPS_PER_MINUTE", 1, 10_000, 30),
 });
 
 export interface Config {
@@ -205,6 +207,7 @@ export interface Config {
         readonly concurrentPerSandbox: number;
         readonly requestBurst: number;
         readonly requestsPerSecond: number;
+        readonly lookupsPerMinute: number;
       }
     | undefined;
 }
@@ -263,6 +266,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
           concurrentPerSandbox: c.KOBE_EGRESS_GIT_CONCURRENT_PER_SANDBOX,
           requestBurst: c.KOBE_EGRESS_GIT_REQUEST_BURST,
           requestsPerSecond: c.KOBE_EGRESS_GIT_REQUESTS_PER_SECOND,
+          lookupsPerMinute: c.KOBE_EGRESS_GIT_LOOKUPS_PER_MINUTE,
         };
   return {
     git,

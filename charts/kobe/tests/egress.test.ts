@@ -405,6 +405,7 @@ describe("git smart-HTTP for connected organizations (KOBE-763)", () => {
       concurrentPerSandbox: 8,
       requestBurst: 60,
       requestsPerSecond: 2,
+      lookupsPerMinute: 30,
     });
     const tuned = render({ "egressProxy.git.maxResponseBytes": "8589934592" });
     const tunedVars = Object.fromEntries(

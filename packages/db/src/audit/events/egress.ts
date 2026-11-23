@@ -15,6 +15,10 @@ const GIT_PROXY_REASONS = [
   "upstream_auth",
   "redirect_refused",
   "secret_reflected",
+  // KOBE-763 review: compressed bodies are never relayed or forwarded for git; stalled receivers.
+  "encoded_response",
+  "encoded_request",
+  "buffer_limit",
 ] as const;
 /** Codes of the server's git transport decision (services/server/src/git/transport.ts). */
 export const GIT_TRANSPORT_DENY_CODES = [

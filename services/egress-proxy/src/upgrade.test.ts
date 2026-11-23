@@ -65,6 +65,7 @@ const certs = {
 let upstreams: HttpsServer[] = [];
 const ports: Record<string, number> = {};
 let seen: Seen[] = [];
+let streamedBytes = 0;
 
 async function upstream(cert: { key: string; cert: string }): Promise<number> {
   const server = createHttpsServer({ ...cert }, (req, res) => {
@@ -107,6 +108,20 @@ async function upstream(cert: { key: string; cert: string }): Promise<number> {
       } else if (req.url === "/not-modified") {
         res.writeHead(304, { etag: '"v1"' });
         res.end();
+      } else if (req.url === "/stream-forever") {
+        res.writeHead(200, { "content-type": "application/octet-stream" });
+        const chunk = Buffer.alloc(64 * 1024, 0x62);
+        const pump = () => {
+          while (streamedBytes < 400 * 1024 * 1024 && !res.destroyed) {
+            streamedBytes += chunk.length;
+            if (!res.write(chunk)) {
+              res.once("drain", pump);
+              return;
+            }
+          }
+          res.end();
+        };
+        pump();
       } else if (req.url === "/hang") {
         // never answers
       } else {
@@ -662,4 +677,34 @@ describe("upgrade helpers", () => {
     ]);
     expect(secretParts([{ name: "X", value: "ab" }])).toEqual([]);
   });
+});
+
+describe("upgrade back-pressure (KOBE-763 review M2, pre-existing on main)", () => {
+  it("stops the upstream when the sandbox stops reading, even while throttled", async () => {
+    const throttled = new (class extends BandwidthLimiter {
+      override take(): number {
+        return 2;
+      }
+    })(1);
+    await start({
+      bandwidth: throttled,
+      upgrade: { maxRequestBytes: 1_000, maxResponseBytes: 1_000_000_000, timeoutMs: 30_000 },
+    });
+    streamedBytes = 0;
+    const socket = connect({ host: "127.0.0.1", port: proxyPort }, () => {
+      socket.write(
+        `GET http://pkgs.example.com/stream-forever HTTP/1.1\r\nHost: pkgs.example.com\r\n` +
+          `Proxy-Authorization: ${proxyAuth()}\r\n\r\n`,
+      );
+      socket.pause();
+    });
+    await new Promise((r) => setTimeout(r, 2_500));
+    const first = streamedBytes;
+    await new Promise((r) => setTimeout(r, 2_000));
+    const second = streamedBytes;
+    expect(audit).toEqual([]);
+    socket.destroy();
+    expect(second).toBeLessThan(48 * 1024 * 1024);
+    expect(second - first).toBeLessThan(4 * 1024 * 1024);
+  }, 20_000);
 });

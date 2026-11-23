@@ -191,6 +191,12 @@ export class GitDecisionCache {
     return this.entries.size;
   }
 
+  /** Whether a live decision is cached for the query (no server call, no host API call). */
+  has(query: Omit<GitDecisionQuery, "token">): boolean {
+    const hit = this.entries.get(GitDecisionCache.keyOf(query));
+    return hit !== undefined && hit.until > this.now();
+  }
+
   async get(query: GitDecisionQuery): Promise<GitDecision> {
     const key = GitDecisionCache.keyOf(query);
     const now = this.now();

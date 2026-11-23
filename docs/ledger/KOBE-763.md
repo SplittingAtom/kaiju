@@ -76,6 +76,42 @@
 | server          | credential in logs/audit                                         | logs carry decision metadata only; audit rows carry no credential                                                           | db test "never logs the credential"; `connection-audit.test.ts`; real-git test                                                                                |
 | resources       | huge packs, floods                                               | streaming with back-pressure, size/time limits, rate + concurrency                                                          | "enforces the push limit", "caps clone responses", "applies the per-sandbox git rate limit"                                                                   |
 
+## Security review fixes (2026-11-22, `~/.kobe-coord/review-2026-11-20/review-g99.md`)
+
+- **M1 compressed echo.** The proxy sends `Accept-Encoding: identity` upstream (the sandbox's is
+  dropped), refuses any response with a `Content-Encoding` other than identity or a
+  `Transfer-Encoding` other than chunked (`encoded_response`, 502), and scans for the password and
+  `user:password`, each raw, base64 at all three alignments inside a longer base64 stream, and
+  percent-encoded (upper/lower hex), across chunk boundaries. The scan is a backstop: a
+  well-behaved git host never echoes `Authorization` (GitHub, Gitea and Forgejo answer smart-HTTP
+  with refs and packs, errors as short fixed text); only a debug page or a misconfigured reverse
+  proxy would, and the primary defence is that the credential goes only to the connection's own
+  host and canonical git paths. Bandwidth: git packs are zlib-compressed by git itself; a 21.6 MB
+  text repository cloned and fetched with 0.88 MB relayed (real-git test), so refusing HTTP
+  compression costs only the ref advertisement and negotiation.
+- **M2 back-pressure.** New `src/flow.ts` (tunnel.ts's rule): a source resumes only when the
+  destination drained AND the throttle delay passed; a direction holding more than 8 MiB unsent is
+  cut (`buffer_limit`). Used by the git relay and by **`upgrade-exchange.ts` (header injection),
+  which had the same bug on main** (same shared proxy, same cross-tenant denial of service).
+  Tests: `flow.test.ts`, a non-reading client with a throttling limiter for git
+  (`git-proxy.test.ts` "M2") and for header injection (`upgrade.test.ts` "upgrade back-pressure");
+  both fail on the old code.
+- **M3 Repo rule fails open.** A push now resolves the repository's host id through the adapter
+  (`getRepository`) first; an unresolvable repository is refused without minting. The Repo
+  (project editor/owner) rule applies when any `git_repositories` row of the Workspace with the
+  connection's base URL has a project and matches by host id OR by last-seen name, under any
+  connection (a reconnect clears `connection_id`); several matches need edit rights on each. A
+  push to an organization repository that is not a Kobe Repo needs exactly G12's rest: the
+  connection at Read and write and Contributor or above. Tests: db "rename", "reconnect",
+  "cannot resolve". Cost: one more host API call per push decision (cached 30 s).
+- **L1** the proxy refuses an allow whose `access` does not fit the service. **L2** a push body
+  with a `Content-Encoding` is refused (`encoded_request`, 400; git never compresses pushes, so
+  the push audit can always read the command list); unparsable ref lines are still skipped.
+  **L3** distinct repositories (decisions not cached) per sandbox: 30 per minute per replica
+  (`egressProxy.git.lookupsPerMinute`, `docs/rate-limits.md`). **L4** `\` anywhere and `@` in the
+  authority are refused by the git grammar. **L5** documented in install.md. **L6** audit rows
+  use the server's canonical `org/repo` once allowed.
+
 ## For GIT-13 (guide pages) — what they must say
 
 - Workspace admin (Git section): pushes need Read and write + Contributor (+ editor on a Repo);

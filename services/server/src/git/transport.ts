@@ -135,8 +135,6 @@ interface Facts {
   readonly connection: GitConnectionRecord | undefined;
   readonly organizations: readonly string[];
   readonly role: TeamRole | null;
-  readonly projectRole: "owner" | "editor" | undefined;
-  readonly isRepo: boolean;
 }
 
 async function readFacts(
@@ -158,48 +156,65 @@ async function readFacts(
       .where(
         and(eq(teamMembers.teamId, principal.teamId), eq(teamMembers.userId, principal.userId)),
       );
-    let projectRole: Facts["projectRole"];
-    let isRepo = false;
-    if (connection) {
-      const fullName = `${connection.organization}/${request.repository}`.toLowerCase();
-      const [repo] = await tx
-        .select({ projectId: gitRepositories.projectId })
-        .from(gitRepositories)
-        .where(
-          and(
-            eq(gitRepositories.teamId, principal.teamId),
-            eq(gitRepositories.connectionId, connection.id),
-            sql`lower(${gitRepositories.fullName}) = ${fullName}`,
-          ),
-        );
-      if (repo?.projectId) {
-        isRepo = true;
-        const [row] = await tx
-          .select({ role: projectMembers.role })
-          .from(projectMembers)
-          .where(
-            and(
-              eq(projectMembers.teamId, principal.teamId),
-              eq(projectMembers.projectId, repo.projectId),
-              eq(projectMembers.userId, principal.userId),
-            ),
-          );
-        projectRole = row?.role;
-      }
-    }
     return {
       connection,
       organizations: onHost.map((c) => c.organization),
       role: member?.role ?? null,
-      projectRole,
-      isRepo,
     };
   });
 }
 
-/** The access rules (G12) for a matched connection; undefined when allowed. */
+/**
+ * The member's explicit roles on every Kobe Repo (G15) the pushed repository is (review M3):
+ * matched on the host's stable id within the connection's base URL under ANY connection (a
+ * reconnect leaves `connection_id` cleared, G20) and also on the last-seen name (a rename or a
+ * stale id must not lose the rule). Both match sets apply: fail closed.
+ */
+async function repoProjectRoles(
+  db: KobeDb,
+  principal: GitTransportPrincipal,
+  baseUrl: string,
+  hostRepoId: string,
+  fullName: string,
+): Promise<{ readonly projectRole: "owner" | "editor" | undefined }[]> {
+  return withTeam(db, principal.teamId, async (tx) => {
+    const repos = await tx
+      .select({ projectId: gitRepositories.projectId })
+      .from(gitRepositories)
+      .where(
+        and(
+          eq(gitRepositories.teamId, principal.teamId),
+          eq(gitRepositories.baseUrl, baseUrl),
+          sql`(${gitRepositories.hostRepoId} = ${hostRepoId} OR lower(${gitRepositories.fullName}) = ${fullName.toLowerCase()})`,
+          sql`${gitRepositories.projectId} IS NOT NULL`,
+        ),
+      );
+    const out: { projectRole: "owner" | "editor" | undefined }[] = [];
+    for (const repo of repos) {
+      const [row] = await tx
+        .select({ role: projectMembers.role })
+        .from(projectMembers)
+        .where(
+          and(
+            eq(projectMembers.teamId, principal.teamId),
+            eq(projectMembers.projectId, repo.projectId as string),
+            eq(projectMembers.userId, principal.userId),
+          ),
+        );
+      out.push({ projectRole: row?.role });
+    }
+    return out;
+  });
+}
+
+/**
+ * The access rules (G12) for a matched connection that need no host call; undefined when allowed
+ * so far. A push to an organization repository that is not a Kobe Repo needs exactly this: the
+ * connection at Read and write and the Contributor role or above (G12). A Repo additionally needs
+ * editor or owner on its project ({@link repoRefusal}, after the host id is known).
+ */
 export function accessRefusal(
-  facts: Pick<Facts, "role" | "projectRole" | "isRepo">,
+  facts: Pick<Facts, "role">,
   connection: Pick<GitConnectionRecord, "accessLevel" | "agentIds" | "displayName">,
   service: GitService,
 ): GitTransportAnswer | undefined {
@@ -226,13 +241,19 @@ export function accessRefusal(
       "Pushing needs the Contributor role in this Workspace; readers can fetch and clone.",
     );
   }
-  if (facts.isRepo && !projectPermissions(facts.role, facts.projectRole).edit) {
-    return deny(
-      "project_reader",
-      "This repository is a Repo: pushing needs the editor or owner role on its project.",
-    );
-  }
   return undefined;
+}
+
+/** A push to a Kobe Repo needs editor or owner on every project the repository is the record of. */
+export function repoRefusal(
+  role: TeamRole,
+  repos: readonly { readonly projectRole: "owner" | "editor" | undefined }[],
+): GitTransportAnswer | undefined {
+  if (repos.every((r) => projectPermissions(role, r.projectRole).edit)) return undefined;
+  return deny(
+    "project_reader",
+    "This repository is a Repo: pushing needs the editor or owner role on its project.",
+  );
 }
 
 function adapterRefusal(err: unknown): GitTransportAnswer {
@@ -322,6 +343,20 @@ export async function decideGitTransport(
       target,
       net: deps.net,
     });
+    if (access === "write") {
+      // Review M3: resolve the host's stable id first; an unresolvable repository is refused
+      // (fail closed), and a Kobe Repo by id or by name keeps its project rule.
+      const resolved = await adapter.getRepository({ name: request.repository });
+      const repos = await repoProjectRoles(
+        deps.db,
+        principal,
+        connection.baseUrl,
+        resolved.id,
+        `${connection.organization}/${request.repository}`,
+      );
+      const refused = repoRefusal(facts.role as TeamRole, repos);
+      if (refused) return refused;
+    }
     const credential = await adapter.repositoryCredential(request.repository, access);
     const base = reachableBase(connection.baseUrl);
     return {

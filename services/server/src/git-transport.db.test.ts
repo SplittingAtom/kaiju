@@ -32,6 +32,14 @@ const ids: Record<string, string> = {};
 const logged: string[] = [];
 const minted: { repository: string; access: GitAccess; input: GitAdapterInput }[] = [];
 let adapterError: GitHostError | undefined;
+const HOST_IDS: Record<string, string> = {
+  app: "1",
+  readonly: "2",
+  docs: "42",
+  "docs-renamed": "42",
+  legacy: "77",
+  "legacy-new-name": "77",
+};
 
 function egressToken(userId: string, teamId = team, aud = "kobe.egress-proxy"): string {
   const now = Math.floor(Date.now() / 1000);
@@ -53,6 +61,14 @@ function egressToken(userId: string, teamId = team, aud = "kobe.egress-proxy"): 
 const fakeAdapter = (input: GitAdapterInput): GitHostAdapter =>
   ({
     provider: input.connection.provider,
+    // The host's stable ids: `docs-renamed` is `docs` after a rename on the host; `legacy` is
+    // the Repo whose connection was removed and re-added.
+    getRepository: async (ref: { name: string }) => {
+      if (adapterError) throw adapterError;
+      const id = HOST_IDS[ref.name.toLowerCase()];
+      if (id === undefined) throw new GitHostError("not_found", "not found");
+      return { id, name: ref.name, fullName: `acme/${ref.name}` };
+    },
     repositoryCredential: async (repository: string, access: GitAccess) => {
       if (adapterError) throw adapterError;
       minted.push({ repository, access, input });
@@ -156,6 +172,17 @@ beforeAll(async () => {
     `INSERT INTO git_repositories (team_id, connection_id, base_url, host_repo_id, full_name, project_id, origin, created_by)
      VALUES ($1, $2, 'https://github.com', '42', 'acme/docs', $3, 'conversion', $4)`,
     [team, ids.github, project, ids.admin],
+  );
+  // A Repo whose connection was removed (connection_id cleared, G20) before this one was added.
+  const legacy = randomUUID();
+  await h.admin.query(
+    `INSERT INTO projects (team_id, id, slug, name, kind, created_by) VALUES ($1, $2, 'legacy', 'Legacy', 'repo', $3)`,
+    [team, legacy, ids.admin],
+  );
+  await h.admin.query(
+    `INSERT INTO git_repositories (team_id, connection_id, base_url, host_repo_id, full_name, project_id, origin, created_by)
+     VALUES ($1, NULL, 'https://github.com', '77', 'acme/legacy', $2, 'conversion', $3)`,
+    [team, legacy, ids.admin],
   );
   internal = createInternalApp({
     internalKey: INTERNAL_KEY,
@@ -295,6 +322,38 @@ describe("git transport decisions (KOBE-763)", () => {
       decision: "allow",
       access: "read",
     });
+  });
+
+  it("keeps the Repo rule after a rename on the host (matched by the host's id)", async () => {
+    expect(
+      (await ask({ user: "contrib", repository: "docs-renamed", service: PUSH })).json,
+    ).toMatchObject({ code: "project_reader" });
+    expect(
+      (await ask({ user: "editor", repository: "docs-renamed", service: PUSH })).json,
+    ).toMatchObject({ decision: "allow", access: "write" });
+  });
+
+  it("keeps the Repo rule after a reconnect (row without a connection), by id and by name", async () => {
+    for (const repository of ["legacy", "legacy-new-name"]) {
+      expect((await ask({ user: "contrib", repository, service: PUSH })).json).toMatchObject({
+        code: "project_reader",
+      });
+    }
+    expect(
+      (await ask({ user: "admin", repository: "legacy-new-name", service: PUSH })).json,
+    ).toMatchObject({
+      decision: "allow",
+    });
+  });
+
+  it("refuses a push to a repository it cannot resolve, without minting (fail closed)", async () => {
+    const before = minted.length;
+    expect((await ask({ user: "contrib", repository: "ghost", service: PUSH })).json).toMatchObject(
+      {
+        code: "repository_unavailable",
+      },
+    );
+    expect(minted.length).toBe(before);
   });
 
   it("maps adapter refusals to fixed messages", async () => {
