@@ -4,10 +4,10 @@ import { recordModelUsage, type UsageKind } from "@kobe/db";
 import { SERVER_CALL_TOKEN_HEADER, type ServerCallClaims } from "@kobe/protocol";
 import { generateSessionKeyPair, verifyServerCallToken } from "@kobe/session-token";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { RawBody, type TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { pkg } from "./testing/registry-fixtures.js";
+import { RawBody, type TestBrowser } from "../../testing/browser.js";
+import { openHarness, type Harness } from "../../testing/harness.js";
+import { MemoryObjects } from "../../testing/memory-objects.js";
+import { pkg } from "../../testing/registry-fixtures.js";
 
 /**
  * KOBE-564 ac-4: Create kobe.skill.yaml for a version without one, end to end against Postgres
