@@ -30,6 +30,17 @@ export const SITE_VIEW_TARGET_KEYS: ReadonlySet<string> = new Set([
   "setting",
   "value",
   "access",
+  // Convert to repo (KOBE-765): the attempt, its step and flags, the repository record and the
+  // host's id and head; never the project's or repository's name, paths or messages.
+  "conversionId",
+  "carryHistory",
+  "useExisting",
+  "repositoryId",
+  "hostRepoId",
+  "headSha",
+  "step",
+  "repositoryCreated",
+  "leftOnHost",
   // KOBE-733 sandbox.volume_proof: whether the shutdown proof was accepted.
   "accepted",
   // KOBE-733 sandbox.volume_reclaimed: the configured dormancy period.
