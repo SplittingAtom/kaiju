@@ -51,6 +51,12 @@ export interface GitRepository {
    * it created (KOBE-765). Untrusted host text: never shown as markup or passed to a model.
    */
   readonly description?: string | null;
+  /**
+   * The repository's size in KiB as the host reports it (the whole repository with its history,
+   * not the default branch's tip), when it says. An untrusted hint only (KOBE-818): never a limit
+   * or a reason to trust what a fetch then sends.
+   */
+  readonly sizeKb?: number;
   readonly webUrl: string;
   /** The smart-HTTP clone URL, built by {@link cloneUrlFor} (`<base>/<org>/<name>.git`). */
   readonly cloneUrl: string;

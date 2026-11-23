@@ -11,7 +11,8 @@ import { ApprovalService } from "./service.js";
  */
 
 const db = {} as KobeDb;
-const logger = () => ({ error: vi.fn() }) as unknown as Logger & { error: ReturnType<typeof vi.fn> };
+const logger = () =>
+  ({ error: vi.fn() }) as unknown as Logger & { error: ReturnType<typeof vi.fn> };
 
 describe("the approval key's startup log (KOBE-817)", () => {
   it("logs an error on a server process without the key", () => {

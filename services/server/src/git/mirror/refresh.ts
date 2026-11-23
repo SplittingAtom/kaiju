@@ -43,7 +43,9 @@ import {
   GIT_MIRROR_LIMITS,
   GIT_MIRROR_TOO_LARGE_RECHECK_MS,
   GIT_MIRROR_RUN_MS,
+  GIT_MIRROR_SIZE_HINT_MARGIN,
   GIT_MIRROR_SLOTS,
+  GIT_MIRROR_TOO_LARGE_CODES,
   GIT_MIRROR_WORK_PREFIX,
   mirrorBackoffMs,
 } from "./limits.js";
@@ -111,12 +113,6 @@ class MirrorDeferred extends Error {
   }
 }
 
-const TOO_LARGE: ReadonlySet<string> = new Set([
-  "too_many_files",
-  "file_too_large",
-  "repository_too_large",
-]);
-
 const CONNECTION_READ_RULE = { windowMs: 60 * 60_000, max: GIT_CONNECTION_READS_PER_HOUR } as const;
 
 let running = 0;
@@ -176,7 +172,7 @@ export function failureOf(
   if (err instanceof MirrorStop) return at(err.code);
   if (err instanceof MirrorError) {
     // Review R4-M1: too large is not transient; tried again slowly (it may shrink).
-    if (TOO_LARGE.has(err.code))
+    if (GIT_MIRROR_TOO_LARGE_CODES.has(err.code))
       return at(err.code, new Date(now + GIT_MIRROR_TOO_LARGE_RECHECK_MS));
     return at(err.code);
   }
@@ -346,6 +342,17 @@ async function run(
       }),
     ),
   );
+  // KOBE-818: a Repo already too large to mirror is not downloaded again while the host (an
+  // untrusted hint) still reports it far over the limit. It stays too large, with the same
+  // failure, and is checked again on the usual slow timer.
+  if (
+    claimed.mirrorError !== null &&
+    GIT_MIRROR_TOO_LARGE_CODES.has(claimed.mirrorError) &&
+    repo.sizeKb !== undefined &&
+    repo.sizeKb * 1024 > limits.maxPackBytes * GIT_MIRROR_SIZE_HINT_MARGIN
+  ) {
+    throw new MirrorError(claimed.mirrorError as MirrorError["code"]);
+  }
   const credential = await adapter.repositoryCredential(repo.name, "read");
   const session = gitWireSession({
     net: deps.net,

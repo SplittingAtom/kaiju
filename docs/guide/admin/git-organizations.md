@@ -221,7 +221,12 @@ commits add more than about half as much again (large files rewritten often) is 
 mirror until those commits are older. Convert to repo refuses a project whose current files are already beyond that ("too
 large to mirror"). If a repository grows past it on the host, the Repo says it is too large to
 mirror and keeps showing its last mirror; nothing changes on the host. Kobe checks again every 6
-hours (or on Refresh) and the mirror resumes once the repository is back within the limits. Symlinks and submodules are left out. Kobe's history settings for projects don't apply to
+hours (or on Refresh) and the mirror resumes once the repository is back within the limits. When
+the host reports a repository size far over the limit (more than four times the largest pack Kobe
+accepts), Kobe skips the download and the Repo stays too large; the size is only a hint, so a
+repository that is only a little over is still fetched and judged by what it sends. Refresh on a
+Repo that is too large to mirror works once an hour for the whole Repo; before that it says why
+and when to try again. Symlinks and submodules are left out. Kobe's history settings for projects don't apply to
 a Repo: its history is on the host.
 
 A repository renamed or transferred on the host is followed: Kobe knows it by the host's id. When

@@ -29,6 +29,8 @@ interface Repo {
   description: string;
   private: boolean;
   archived?: boolean;
+  /** The size the host reports, in KiB (KOBE-818); omitted when unset. */
+  size?: number;
   /** Branch → commit SHA. */
   branches: Map<string, string>;
   /** Path → text. */
@@ -156,6 +158,8 @@ export class FakeGitea implements GitHostContractFake {
       archived?: boolean;
       /** Renames it (the id stays, as on the host); KOBE-766 mirror tests. */
       name?: string;
+      /** The size it reports, in KiB (KOBE-818). */
+      size?: number;
     },
   ): void {
     const repo = this.repos.get(`${this.organization}/${name}`);
@@ -165,6 +169,7 @@ export class FakeGitea implements GitHostContractFake {
       repo.name = change.name;
       this.repos.set(`${this.organization}/${change.name}`, repo);
     }
+    if (change.size !== undefined) repo.size = change.size;
     if (change.archived !== undefined) repo.archived = change.archived;
     if (change.private !== undefined) repo.private = change.private;
     if (change.description !== undefined) repo.description = change.description;
@@ -210,6 +215,7 @@ export class FakeGitea implements GitHostContractFake {
       empty: r.empty,
       archived: r.archived === true,
       description: r.description,
+      ...(r.size === undefined ? {} : { size: r.size }),
       html_url: `${this.baseUrl}/${full}`,
       clone_url: `${this.baseUrl}/${full}.git`,
       permissions: { admin: this.isOrgOwner, push: this.canWrite, pull: true },
