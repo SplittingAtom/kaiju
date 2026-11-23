@@ -236,3 +236,7 @@ public hygiene; gate2 scan regexes match nothing this branch added.
   wire connection: a rule that allows `commit_project` still asks, the approval row is
   `commit_repo` with `pushes_to`, remember is refused, and the approved commit never writes
   Kobe's copy.
+
+**Suites after round 2:** protocol 1368; db unit 1105, DB 2176; server unit 4567, test:db 3726;
+sandbox-agent 1486 (1290 run); typecheck, lint, format:check, site wording, hygiene; gate2 scan
+regexes match nothing this branch changed in sandbox-image files. Web untouched this round.
