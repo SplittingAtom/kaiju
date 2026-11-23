@@ -30,7 +30,7 @@ describe("Site settings: git connections (KOBE-761, spec G3)", () => {
     const form = await gitForm();
     const box = form.getByRole("checkbox", { name: /Allow Workspaces to connect/ });
     expect((box as HTMLInputElement).checked).toBe(true);
-    expect(form.getByText(/agents stop using existing connections/)).toBeTruthy();
+    expect(form.getByText(/git in sandboxes stops using existing connections/)).toBeTruthy();
     expect(form.getByText(/Leave empty to allow any host/)).toBeTruthy();
     expect(form.getByRole("button", { name: "Save git connections" })).toHaveProperty(
       "disabled",

@@ -61,7 +61,8 @@ export function GitConnectionsReadOnly({ data }: { readonly data: GitConnections
       <p className="m-0 mt-2 text-sm text-console-muted">
         With Read, your sandbox can fetch (clone and pull) repositories there; with Read and write
         it can also push, if your role is Contributor or above (and, for a Repo, you are an editor
-        or owner of its project). The credential never enters your sandbox.
+        or owner of its project). A connection limited to chosen agents is not available to git in
+        sandboxes. The credential never enters your sandbox.
       </p>
     </>
   );

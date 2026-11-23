@@ -9,6 +9,7 @@ import {
   type GitSaved,
 } from "../../../../lib/admin/api/team/git";
 import { gitErrorMessage, insufficientReport } from "../../../../lib/admin/git/errors";
+import { checkBaseUrl } from "../../../../lib/admin/git/address";
 import { providerName } from "../../../../lib/admin/git/labels";
 import { Button, Dialog, DialogClose, Notice } from "../../../ui/console";
 import { CredentialFields, type CredentialHandle } from "./credential-fields";
@@ -111,7 +112,7 @@ function ReplaceForm({
         <PermissionsHelp
           provider={c.provider}
           kind={kind}
-          webBase={c.baseUrl}
+          webBase={safeBase(c.baseUrl)}
           organization={c.organization}
         />
         <div aria-live="polite" role="status">
@@ -138,4 +139,10 @@ function ReplaceForm({
       </div>
     </form>
   );
+}
+
+/** The stored address, checked again before it becomes a link (https, no user name). */
+function safeBase(baseUrl: string): string | null {
+  const checked = checkBaseUrl(baseUrl);
+  return checked.ok ? checked.value.baseUrl : null;
 }

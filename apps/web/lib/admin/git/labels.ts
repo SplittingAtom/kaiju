@@ -70,9 +70,9 @@ export const ACCESS_LABEL: Readonly<Record<GitAccessLevel, string>> = {
 
 export const ACCESS_HINT: Readonly<Record<GitAccessLevel, string>> = {
   off: "Connected but unused: sandboxes can neither fetch from nor push to the organization.",
-  read: "Any member's sandbox may fetch (clone and pull) the organization's repositories.",
+  read: "Any member's sandbox may fetch (clone and pull) the organization's repositories, unless the connection is limited to chosen agents.",
   read_write:
-    "Sandboxes may also push. Pushing needs the Contributor role and, for a Repo, editor or owner of its project.",
+    "Sandboxes may also push. Pushing needs the Contributor role and, for a Repo, editor or owner of its project. A member who may push can push to any branch the host allows: protect branches on the host.",
 };
 
 export const VISIBILITY_LABEL: Readonly<Record<GitVisibility, string>> = {

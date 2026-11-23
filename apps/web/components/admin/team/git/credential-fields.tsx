@@ -35,6 +35,20 @@ interface Problems {
   readonly privateKey?: string | undefined;
 }
 
+/**
+ * Keeps browsers and password managers away from a secret field: no saving, no filling, no
+ * spelling or capitalisation help (which can send the text elsewhere).
+ */
+const SECRET_FIELD = {
+  autoComplete: "new-password",
+  autoCapitalize: "off",
+  spellCheck: false,
+  "data-1p-ignore": true,
+  "data-lpignore": "true",
+  "data-bwignore": true,
+  "data-form-type": "other",
+} as const;
+
 /** Masks a textarea's characters like a password field (a PEM key needs its line breaks). */
 const MASKED = "[-webkit-text-security:disc] font-mono";
 
@@ -166,8 +180,7 @@ export const CredentialFields = forwardRef<
             ref={token}
             type="password"
             name="git-access-token"
-            autoComplete="off"
-            spellCheck={false}
+            {...SECRET_FIELD}
             disabled={disabled}
             onInput={onEdited}
           />
@@ -221,8 +234,7 @@ export const CredentialFields = forwardRef<
             <Textarea
               ref={key}
               name="git-private-key"
-              autoComplete="off"
-              spellCheck={false}
+              {...SECRET_FIELD}
               rows={4}
               className={MASKED}
               disabled={disabled}

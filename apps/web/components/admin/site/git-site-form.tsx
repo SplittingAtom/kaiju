@@ -54,7 +54,7 @@ export function GitSiteForm({
       <ChoiceGroup legend="Git connections" stacked className="my-4">
         <Checkbox
           label="Allow Workspaces to connect git organizations"
-          hint="Off: no Workspace can connect, test or check a git organization, and agents stop using existing connections (git tools and git from sandboxes) until it is on again. Stored credentials and connections are kept."
+          hint="Off: no Workspace can connect, test or check a git organization, and git in sandboxes stops using existing connections until it is on again. Stored credentials and connections are kept."
           checked={on}
           onChange={(e) => setOn(e.target.checked)}
         />

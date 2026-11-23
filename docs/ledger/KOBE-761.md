@@ -98,6 +98,25 @@ git extend the page.
 - **Rate limits:** `packages/db/src/rate-limit.ts` is not on this branch (PR #688), so the git
   routes keep the server's `hitRateLimit`.
 
+## Phase-2 review fixes (review-g101)
+
+- **M1:** "Allow commits straight to the default branch" is held back: removed from the Settings
+  dialog and the guide (stored default `direct_commits = false` and the server field untouched).
+  It governs Kobe's own commit dialog (G18/GQ11), not sandbox pushes; GIT-11 adds the control
+  with its enforcement. The access-level hint and the guide now say a member who may push can
+  push to any branch the host allows, so branches are protected on the host.
+- **L1:** token and key fields: `autocomplete="new-password"`, `autoCapitalize="off"`,
+  `spellCheck={false}`, `data-1p-ignore`, `data-lpignore="true"`, `data-bwignore`,
+  `data-form-type="other"`.
+- **L2 (intended):** after a failed Test, Connect or Replace the secret stays in its field so the
+  admin can retry; it is wiped on success and dropped when the dialog closes (tested).
+- **L3:** the masked key textarea relies on `-webkit-text-security` (Chromium, Safari, current
+  Firefox); where unsupported the pasted key shows on screen only (not in state or attributes).
+- **L4:** the Replace dialog's host links re-check the stored address with `checkBaseUrl`.
+- **L6:** "git tools" removed from the Site form (not built); the Read hint and the members' view
+  mention that connections limited to chosen agents are not usable by sandbox git.
+- L5 (PSL private suffixes like `*.github.io` pass the form, server 400 is generic) left as known.
+
 ## Accessibility pass
 
 Checked in component tests and by reading the markup: dialogs are Radix (focus trapped, Escape

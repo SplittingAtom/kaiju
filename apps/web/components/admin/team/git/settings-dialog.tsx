@@ -90,7 +90,6 @@ function SettingsForm({
     branch: c.repoDefaults.defaultBranch,
   });
   const [pushMib, setPushMib] = useState(String(mibOf(c.pushLimitBytes)));
-  const [direct, setDirect] = useState(c.directCommits);
   const [agents, setAgents] = useState<readonly string[] | null>(c.agentIds);
   const [problems, setProblems] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -115,7 +114,6 @@ function SettingsForm({
         ...checked.value,
         access_level: level,
         push_limit_bytes: bytesOf(mib),
-        direct_commits: direct,
         agent_ids: agents,
       });
       if (res.ok) onSaved(res.data);
@@ -170,12 +168,6 @@ function SettingsForm({
             onChange={(e) => setPushMib(e.target.value)}
           />
         </Field>
-        <Checkbox
-          label="Allow commits straight to the default branch"
-          hint="Off: a commit from Kobe goes to a new branch with a pull request, which is the default."
-          checked={direct}
-          onChange={(e) => setDirect(e.target.checked)}
-        />
         <AgentsChoice
           teamId={teamId}
           value={agents}

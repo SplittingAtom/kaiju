@@ -103,6 +103,9 @@ git request and checks the request first.
 | **Read**           | Any member's sandbox may fetch (clone and pull).                                                                    |
 | **Read and write** | Also push, when the member has the Contributor role or above and, for a Repo, is an editor or owner of its project. |
 
+A member who may push can push to any branch the host allows: protect important branches on the
+git host (branch protection rules or rulesets).
+
 The test checks the credential against the level you choose (at **Read and write** it must be able
 to write), and you change the level later in **Settings**. Git reaches only the connected
 organization: a request for another organization on the same host is refused. The host must be in
@@ -121,9 +124,8 @@ sends nothing to the host). Its buttons:
 
 - **Settings**: display name, access level, defaults for new repositories (private, or internal
   on GitHub where the organization has it; an optional name prefix; the default branch), the
-  largest push from a sandbox (default 1 GiB), whether commits from Kobe may go straight to the
-  default branch (off by default: a branch and a pull request), and whether every agent in the
-  Workspace may use it or only agents you choose. Git in sandboxes cannot use a connection limited
+  largest push from a sandbox (default 1 GiB), and whether every agent in the Workspace may use
+  it or only agents you choose. Git in sandboxes cannot use a connection limited
   to chosen agents, because one sandbox serves all of a member's agents.
 - **Replace credential**: paste a new token or key. Kobe tests it first; the old one is then
   discarded. Sandboxes may keep using the old one for up to 30 seconds.
