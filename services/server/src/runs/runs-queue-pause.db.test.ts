@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { must } from "./testing/event-stream-fixture.js";
-import { threadRunsSchema } from "./openapi/runs.js";
+import { must } from "../testing/event-stream-fixture.js";
+import { threadRunsSchema } from "../openapi/runs.js";
 import type { ActorContext } from "@kobe/protocol";
-import { RunFixture, type FakeWorkspace, type RunWorld } from "./testing/run-fixture.js";
+import { RunFixture, type FakeWorkspace, type RunWorld } from "../testing/run-fixture.js";
 
 /**
  * Stop pauses the queue (KOBE-26, decided by Chris): after Stop of the active run, the messages

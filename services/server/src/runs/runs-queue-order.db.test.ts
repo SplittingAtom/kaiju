@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { threadRunsSchema } from "./openapi/runs.js";
-import { must } from "./testing/event-stream-fixture.js";
-import { RunFixture, type FakeWorkspace, type RunWorld } from "./testing/run-fixture.js";
+import { threadRunsSchema } from "../openapi/runs.js";
+import { must } from "../testing/event-stream-fixture.js";
+import { RunFixture, type FakeWorkspace, type RunWorld } from "../testing/run-fixture.js";
 
 /**
  * Reordering the queue (CE10, KOBE-206): `POST /v1/threads/{id}/queue/order`. Owner only, the ids

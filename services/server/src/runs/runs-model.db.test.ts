@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
-import { FAILURE_MESSAGES } from "./runs/failure-codes.js";
-import { PINNED_AGENTS } from "./runs/agents.js";
-import { startedModelAlias } from "./runs/lifecycle.js";
-import { apiForKind, resolveRunModel } from "./runs/models.js";
-import { RunFixture } from "./testing/run-fixture.js";
+import { FAILURE_MESSAGES } from "./failure-codes.js";
+import { PINNED_AGENTS } from "./agents.js";
+import { startedModelAlias } from "./lifecycle.js";
+import { apiForKind, resolveRunModel } from "./models.js";
+import { RunFixture } from "../testing/run-fixture.js";
 
 /**
  * KOBE-41 on the server: the run's model is resolved from the team's catalog into `run.start`

@@ -4,10 +4,10 @@ import { withTeam } from "@kobe/db";
 import {
   enableConnector as enableTeamConnector,
   registerConnector,
-} from "./testing/mcp-fixtures.js";
-import { PINNED_AGENTS } from "./runs/agents.js";
-import { RunFixture } from "./testing/run-fixture.js";
-import type { Person } from "./testing/event-stream-fixture.js";
+} from "../testing/mcp-fixtures.js";
+import { PINNED_AGENTS } from "./agents.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-76: run start gathers the resolver's inputs inside `withTeam()` and the run uses what

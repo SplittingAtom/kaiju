@@ -1,12 +1,12 @@
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
-import { lockOwnedThread } from "./runs/access.js";
-import { DbRunOrchestrator } from "./runs/orchestrator.js";
-import { RunError } from "./runs/errors.js";
-import { must } from "./testing/event-stream-fixture.js";
-import { RunFixture, piDelta } from "./testing/run-fixture.js";
-import { fakeIsolation } from "./testing/isolation.js";
+import { lockOwnedThread } from "./access.js";
+import { DbRunOrchestrator } from "./orchestrator.js";
+import { RunError } from "./errors.js";
+import { must } from "../testing/event-stream-fixture.js";
+import { RunFixture, piDelta } from "../testing/run-fixture.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 /**
  * Run orchestrator (KOBE-30), coordinator review round: Retry edge cases, the interrupted run after

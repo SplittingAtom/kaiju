@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { runSnapshotSchema, submitMessageResultSchema } from "@kobe/protocol";
-import { must } from "./testing/event-stream-fixture.js";
-import { threadRunsSchema } from "./openapi/runs.js";
-import { RunFixture, piDelta } from "./testing/run-fixture.js";
+import { must } from "../testing/event-stream-fixture.js";
+import { threadRunsSchema } from "../openapi/runs.js";
+import { RunFixture, piDelta } from "../testing/run-fixture.js";
 
 /**
  * Run orchestrator (KOBE-30) against a real Postgres, the real sandbox wire (KOBE-24) over real

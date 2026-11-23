@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { RunFixture, type FakeWorkspace, type RunWorld } from "./testing/run-fixture.js";
+import { RunFixture, type FakeWorkspace, type RunWorld } from "../testing/run-fixture.js";
 
 /**
  * Interrupted runs and manual Retry (KOBE-26, spec D14, Gate 1) end to end against a real

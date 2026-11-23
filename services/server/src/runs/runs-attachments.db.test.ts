@@ -2,18 +2,18 @@ import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { UPLOAD_ATTACHMENT_ROOT } from "@kobe/protocol";
 import { withTeam } from "@kobe/db";
-import { storageUsed } from "./uploads/quota.js";
-import type { Person } from "./testing/event-stream-fixture.js";
-import { RawBody } from "./testing/browser.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { RunFixture } from "./testing/run-fixture.js";
-import { blobRecorder } from "./retention/job.js";
-import { deleteReleasedBlobs, purgeThreads } from "./retention/index.js";
-import { createAttachmentStager } from "./uploads/attach.js";
-import type { UploadSettings } from "./uploads/settings.js";
-import { workspaceBlobKey } from "./workspace-sync/keys.js";
-import { createWorkspaceSync } from "./workspace-sync/service.js";
-import { logger } from "./logger.js";
+import { storageUsed } from "../uploads/quota.js";
+import type { Person } from "../testing/event-stream-fixture.js";
+import { RawBody } from "../testing/browser.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import { blobRecorder } from "../retention/job.js";
+import { deleteReleasedBlobs, purgeThreads } from "../retention/index.js";
+import { createAttachmentStager } from "../uploads/attach.js";
+import type { UploadSettings } from "../uploads/settings.js";
+import { workspaceBlobKey } from "../workspace-sync/keys.js";
+import { createWorkspaceSync } from "../workspace-sync/service.js";
+import { logger } from "../logger.js";
 
 /**
  * KOBE-144: message submit with file_ids: validation, copy into the thread's tree and the

@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { must } from "./testing/event-stream-fixture.js";
-import { RunFixture, type FakeWorkspace, type RunStart } from "./testing/run-fixture.js";
+import { must } from "../testing/event-stream-fixture.js";
+import { RunFixture, type FakeWorkspace, type RunStart } from "../testing/run-fixture.js";
 
 /**
  * KOBE-290: a prompt whose run ends before Pi's first `turn_end` (Stop, a failed or timed-out

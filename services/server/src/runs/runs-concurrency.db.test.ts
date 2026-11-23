@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { KobeEvent } from "@kobe/protocol";
-import { must, type Person } from "./testing/event-stream-fixture.js";
-import { RunFixture, piDelta, type FakeWorkspace, type RunWorld } from "./testing/run-fixture.js";
-import type { SseReader } from "./testing/sse.js";
+import { must, type Person } from "../testing/event-stream-fixture.js";
+import { RunFixture, piDelta, type FakeWorkspace, type RunWorld } from "../testing/run-fixture.js";
+import type { SseReader } from "../testing/sse.js";
 
 /**
  * Run orchestrator (KOBE-30) under concurrency, across two replicas on one database: racing
