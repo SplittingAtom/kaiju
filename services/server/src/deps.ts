@@ -1,3 +1,4 @@
+import { repoCommitWiring } from "./git/repo-commit/wiring.js";
 import type { GitHostNet } from "./git-hosts/http.js";
 import { NO_APP_CALLER, type AppCaller } from "./apps/app-caller.js";
 import { createNotebookFiles, type NotebookFiles } from "./notebooks/files.js";
@@ -492,6 +493,16 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     skillDrafts: skillDraftTool,
     notebooks: notebookFiles,
     gitSiteHost: new URL(options.publicUrl).hostname,
+    // KOBE-767: read on use; the git host net is built further down.
+    repoCommit: () =>
+      repoCommitWiring({
+        database,
+        envelope: options.envelope,
+        gitHostNet,
+        publicUrl: options.publicUrl,
+        blobs: options.blobs,
+        log: logger,
+      }),
     hooks: {
       async onRunEnded(event) {
         if (event.status === "completed") serverCalls.afterRunCompleted(event);

@@ -166,7 +166,17 @@ export type ProjectCommitOutcome =
   | { readonly status: "committed"; readonly seq: number }
   | { readonly status: "commit_conflict"; readonly head_seq: number }
   | { readonly status: "nothing_to_commit" }
-  | { readonly status: "pending_approval" };
+  | { readonly status: "pending_approval" }
+  /** KOBE-767: the project is a Repo; the commit went to a pull request on the git host. */
+  | {
+      readonly status: "pull_request";
+      readonly branch: string;
+      readonly number: number;
+      readonly url: string;
+      readonly opened: boolean;
+    }
+  /** KOBE-767: pushed straight to the Repo's default branch; `seq` Kobe's copy, null if not yet. */
+  | { readonly status: "pushed"; readonly branch: string; readonly seq: number | null };
 export interface ProjectCommitAnswer {
   readonly ok: true;
   readonly op: "project_commit";

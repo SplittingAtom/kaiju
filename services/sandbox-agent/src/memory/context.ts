@@ -19,6 +19,7 @@ import {
 } from "../kobe-tools/memory-fence.js";
 import type { MemoryFileContent, PicksPlacement } from "./context-file.js";
 import { projectContextText } from "./project-context.js";
+import type { RunGitRepo } from "@kobe/protocol/sandbox-wire";
 import { viewingContextText } from "./viewing-context.js";
 import { conflictNoteText } from "./conflict-context.js";
 import { semanticContextText, type SemanticRender } from "./semantic-context.js";
@@ -113,6 +114,7 @@ export function memoryRunFileContent(
   project?: RunProjectContext,
   viewing?: RunViewingContext,
   conflicts?: readonly SyncConflict[],
+  repo?: RunGitRepo,
 ): MemoryFileContent {
   const tools = memory !== undefined && memory.scopes.length > 0;
   const note = conflictNoteText(conflicts);
@@ -128,7 +130,7 @@ export function memoryRunFileContent(
     ...(known.held === "" ? {} : { held: known.held, heldSections: known.heldSections }),
     // KOBE-658: the picks beside the newest user message unless the Site keeps them in the prompt.
     picksPlacement: picksPlacementOf(known.placement),
-    project: projectContextText(project) ?? "",
+    project: projectContextText(project, repo) ?? "",
     viewing: viewingContextText(viewing) ?? "",
     ...(note === undefined ? {} : { conflicts: note }),
     // CM6 (KOBE-580): only an explicit `write` lists `commit_project` (absent = an old server).

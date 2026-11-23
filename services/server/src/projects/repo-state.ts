@@ -5,8 +5,9 @@ import { sql, type KobeTx } from "@kobe/db";
  *
  * - `repo`: the project was converted to a Repo. Its record is the repository on the git host and
  *   Kobe keeps a mirror of the default branch (G17, GQ4: "Kobe's commits stop for that project").
- *   Until committing to a Repo through Kobe lands (GIT-11), every Kobe write path refuses:
- *   commit, revert, upload, Add to project, an accepted proposal, removing a file.
+ *   Every direct Kobe write refuses: revert, upload, Add to project, an accepted proposal,
+ *   removing a file. A commit from Kobe's commit flow goes to the host instead (KOBE-767,
+ *   `git/repo-commit`), and Kobe's copy takes it only through `writeCommit`'s `repoMirror`.
  * - `converting`: a conversion is running, or failed and waits for a retry or abandon. The
  *   history being written to the host must not move under it.
  *
@@ -45,7 +46,7 @@ export class ProjectWriteBlocked extends Error {
 
 /** What a member (and the model, for the agent's commit tool) is told. */
 export const PROJECT_WRITE_BLOCK_MESSAGES: Readonly<Record<ProjectWriteBlock, string>> = {
-  repo: "This project is a Repo: its record is the repository on the git host, so it takes no Kobe commits, uploads or file changes. Change it on the host; Kobe shows its files read-only.",
+  repo: "This project is a Repo: its record is the repository on the git host, so its files change only through a git commit. Check it out and use Commit… (a pull request on the host), or change it on the host.",
   converting:
     "This project is being converted to a Repo: its files can't change until the conversion finishes or is abandoned.",
 };

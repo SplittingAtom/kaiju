@@ -1,10 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { KobeTx } from "../../client.js";
 import {
+  gitCommitBranches,
   gitConnections,
   gitConversions,
   gitRepositories,
   gitRepositoryCommits,
+  gitWorkingCopies,
   projects,
   users,
 } from "../../schema/index.js";
@@ -35,6 +37,11 @@ async function insertConnection(tx: KobeTx, teamId: string) {
 }
 
 async function insertRepository(tx: KobeTx, teamId: string): Promise<string> {
+  return (await insertRepo(tx, teamId)).repositoryId;
+}
+
+/** A Repo: a connection, a project of kind `repo` and its repository row. */
+async function insertRepo(tx: KobeTx, teamId: string) {
   const { connectionId, userId } = await insertConnection(tx, teamId);
   const slug = `probe-${randomUUID().slice(0, 8)}`;
   const [project] = await tx
@@ -56,7 +63,7 @@ async function insertRepository(tx: KobeTx, teamId: string): Promise<string> {
     })
     .returning({ id: gitRepositories.id });
   if (!repository) throw new Error("probe: git repository insert returned nothing");
-  return repository.id;
+  return { userId, projectId: project.id, repositoryId: repository.id };
 }
 
 export const gitFixtures: Record<(typeof git.team)[number], ProbeFixture> = {
@@ -98,6 +105,32 @@ export const gitFixtures: Record<(typeof git.team)[number], ProbeFixture> = {
       visibility: "private",
       carryHistory: true,
       defaultBranch: "main",
+    });
+  },
+  git_commit_branches: async (tx, teamId) => {
+    const { userId, projectId, repositoryId } = await insertRepo(tx, teamId);
+    await tx.insert(gitCommitBranches).values({
+      teamId,
+      projectId,
+      userId,
+      repositoryId,
+      baseCommitId: randomUUID(),
+      baseSha: "a".repeat(40),
+      branch: "kobe/probe",
+      headSha: "b".repeat(40),
+      treeSha: "c".repeat(40),
+      pullNumber: 1,
+    });
+  },
+  git_working_copies: async (tx, teamId) => {
+    const { userId, projectId } = await insertRepo(tx, teamId);
+    await tx.insert(gitWorkingCopies).values({
+      teamId,
+      projectId,
+      userId,
+      branch: "main",
+      headSha: "a".repeat(40),
+      upstream: "origin/main",
     });
   },
 };

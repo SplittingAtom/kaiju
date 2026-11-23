@@ -99,3 +99,31 @@ describe("memoryRunFileContent with a project", () => {
     expect(of(undefined)).toBe(false);
   });
 });
+
+describe("a Repo in the project section (KOBE-767)", () => {
+  const repo = {
+    project_id: "11111111-1111-4111-8111-111111111111",
+    slug: "apollo",
+    clone_url: "https://github.com/acme/apollo.git",
+    default_branch: "main",
+    access: "write" as const,
+  };
+
+  it("names the working copy, the read-only mirror and how changes reach the host", () => {
+    const text = projectContextText(project({ access: "write" }), repo) ?? "";
+    expect(text).toContain("/workspace/.kobe/repos/apollo");
+    expect(text).toContain("https://github.com/acme/apollo.git (default branch main)");
+    expect(text).toContain("projects/apollo is Kobe's read-only copy");
+    expect(text).toContain("git_open_pull_request");
+    const read = projectContextText(project({ access: "read" }), { ...repo, access: "read" }) ?? "";
+    expect(read).toContain("cannot push");
+  });
+
+  it("ignores a Repo of another project", () => {
+    const other = { ...repo, project_id: "22222222-2222-4222-8222-222222222222" };
+    expect(projectContextText(project(), other)).toBe(projectContextText(project()));
+    expect(
+      memoryRunFileContent(undefined, "n", project(), undefined, undefined, repo).project,
+    ).toContain("/workspace/.kobe/repos/apollo");
+  });
+});

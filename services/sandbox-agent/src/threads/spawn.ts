@@ -36,7 +36,7 @@ import type { ExecRelay } from "../exec/relay.js";
 import { assertPaired, openRelay, preparePiPrivateDirs, prepareToolDir } from "./exec-wiring.js";
 import { EGRESS_TOKEN_FILE_NAME, EgressTokenFile, egressEnv } from "../egress/egress-wiring.js";
 import { GIT_CONFIG_FILE_NAME, GitConfigFile, gitConfigText, gitEnv } from "../git/git-config.js";
-import type { McpConfigState, RuntimeOf, ThreadEnv } from "./thread-env.js";
+import type { McpConfigState, RuntimeOf, ThreadEnv, ToolCommand } from "./thread-env.js";
 
 /** What `Thread#spawn` gets back: the started Pi and the files the thread then watches. */
 export interface SpawnedPi {
@@ -101,6 +101,7 @@ export async function spawnPi(
   let promptFile: SystemPromptFile | undefined;
   let memoryFile: MemoryContextFile | undefined;
   let contextFile: string | undefined;
+  let tools: ToolCommand | undefined;
   try {
     runtimeDir = await mkdtemp(path.join(threadEnv.runtimeDir, RUNTIME_DIR_PREFIX));
     const env: Record<string, string> = { ...launch.env };
@@ -212,6 +213,23 @@ export async function spawnPi(
     delete env.GIT_ASKPASS;
     delete env.SSH_ASKPASS;
     if (exec === undefined) Object.assign(env, gitVars);
+    // The tools as a program runs them (KOBE-767): their env, never Pi's private HOME or files.
+    tools = {
+      env: {
+        ...toolEnvBase,
+        ...(exec === undefined && threadEnv.toolEnvScript !== undefined
+          ? { BASH_ENV: threadEnv.toolEnvScript }
+          : {}),
+        ...egressVars,
+        ...gitVars,
+      },
+      cwd: threadEnv.workspaceDir,
+      runAs:
+        identity === undefined || identities === undefined
+          ? undefined
+          : { identities, identity, partner: exec !== undefined },
+      sameUid: identities === undefined,
+    };
     if (launch.systemPrompt !== undefined) {
       promptFile = new SystemPromptFile(
         path.join(runtimeDir, SYSTEM_PROMPT_FILE_NAME),
@@ -284,7 +302,7 @@ export async function spawnPi(
   }
   return {
     pi,
-    runtime: { dir: runtimeDir, identity, toolDir, piDir, relay },
+    runtime: { dir: runtimeDir, identity, toolDir, piDir, relay, tools },
     modelFile,
     mcpConfig,
     egressFile,

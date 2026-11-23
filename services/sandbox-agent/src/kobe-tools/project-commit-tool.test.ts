@@ -129,4 +129,48 @@ describe("commit_project (KOBE-580)", () => {
       );
     }
   });
+
+  it("parses and words the Repo outcomes (KOBE-767), failing closed on bad ones", () => {
+    const pr = {
+      status: "pull_request",
+      branch: "kobe/ada/fix-aaaaaaa",
+      number: 12,
+      url: "https://github.com/acme/app/pull/12",
+      opened: true,
+    };
+    const pushed = { status: "pushed", branch: "main", seq: 9 };
+    for (const outcome of [
+      pr,
+      { ...pr, url: "", opened: false },
+      pushed,
+      { ...pushed, seq: null },
+    ]) {
+      const reply = { id: "kt_1", ok: true, op: "project_commit", outcome };
+      expect(kobeToolsResponseSchema.safeParse(reply).success).toBe(true);
+      expect(parseProjectCommitReply(reply)).toEqual(reply);
+    }
+    for (const outcome of [
+      { ...pr, url: "javascript:alert(1)" },
+      { ...pr, branch: "a b" },
+      { ...pr, number: 0 },
+      { ...pr, extra: 1 },
+      { status: "pull_request", branch: "x", number: 1, url: "" },
+      { ...pushed, seq: "9" },
+      { status: "pushed", branch: "main" },
+    ]) {
+      expect(parseProjectCommitReply({ id: "kt_1", ok: true, op: "project_commit", outcome })).toBe(
+        undefined,
+      );
+    }
+    expect(commitOutcomeText(pr as P.ProjectCommitOutcome)).toMatch(
+      /opened pull request #12 \(https:\/\/github\.com\/acme\/app\/pull\/12\)/,
+    );
+    expect(commitOutcomeText({ ...pr, opened: false } as P.ProjectCommitOutcome)).toMatch(
+      /added to the open pull request #12/,
+    );
+    expect(commitOutcomeText(pushed as P.ProjectCommitOutcome)).toMatch(/straight to main.*#9/);
+    expect(commitOutcomeText({ ...pushed, seq: null } as P.ProjectCommitOutcome)).toMatch(
+      /next refresh/,
+    );
+  });
 });

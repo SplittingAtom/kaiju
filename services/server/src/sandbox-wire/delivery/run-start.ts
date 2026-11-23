@@ -12,6 +12,7 @@ import {
   CAPABILITY_SYNC_CONFLICTS,
 } from "@kobe/protocol";
 import { loadRunGitContext } from "../../git/sandbox-git.js";
+import { runGitRepo } from "../../git/working-copy.js";
 import { untoldNotes, type AgentNotes } from "../../sync-conflicts/store.js";
 import type { CommandRow } from "../commands.js";
 import type { DeliveryEnv } from "./env.js";
@@ -93,7 +94,7 @@ export async function prepareRunStart(
   const { git: _git, ...withoutGit } = out as RunStartFrame;
   out = withoutGit as ServerToSandboxFrame;
   if (!evalSandbox && host.hasCapability(CAPABILITY_GIT)) {
-    const git = await runGit(env);
+    const git = await runGit(env, row.threadId);
     if (git !== undefined) out = { ...out, git } as ServerToSandboxFrame;
   }
   // Same for the per-session MCP config (KOBE-111): an agent without it has no connector tools.
@@ -123,14 +124,26 @@ async function runConflicts(env: DeliveryEnv, threadId: string): Promise<AgentNo
   }
 }
 
-/** `run.start.git`; a failed read means none (git keeps its safe defaults, no identity). */
-async function runGit(env: DeliveryEnv): Promise<RunStartFrame["git"]> {
+/**
+ * `run.start.git`; a failed read means none (git keeps its safe defaults, no identity). With the
+ * thread in a Repo, `repo` names its working copy (KOBE-767); a failed read of that leaves it out.
+ */
+async function runGit(env: DeliveryEnv, threadId: string): Promise<RunStartFrame["git"]> {
   const siteHost = env.ctx.gitSiteHost;
   if (siteHost === undefined) return undefined;
+  let context: RunStartFrame["git"];
   try {
-    return await loadRunGitContext(env.ctx.db, env.host.target, siteHost);
+    context = await loadRunGitContext(env.ctx.db, env.host.target, siteHost);
   } catch (err) {
     env.host.log.warn({ err }, "run.start.git could not be read; sent without it");
     return undefined;
+  }
+  if (context === undefined) return undefined;
+  try {
+    const repo = await runGitRepo(env.ctx.db, env.host.target, threadId, context);
+    return repo === undefined ? context : { ...context, repo };
+  } catch (err) {
+    env.host.log.warn({ err }, "run.start.git.repo could not be read; sent without it");
+    return context;
   }
 }

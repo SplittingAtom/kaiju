@@ -206,13 +206,32 @@ export async function recordHostFacts(
 export async function recordSuccess(
   tx: KobeTx,
   lease: MirrorLease,
-  mirror: { readonly headSha: string; readonly commitId?: string | null },
+  mirror: {
+    readonly headSha: string;
+    readonly commitId?: string | null;
+    /**
+     * KOBE-767: the mirror head the refresh started from. When Kobe's commit flow moved the head
+     * meanwhile (a direct commit written into Kobe's copy), the head and commit are left as they
+     * are: this refresh read an older state and must not put it back.
+     */
+    readonly fromHead?: string | null;
+  },
 ): Promise<void> {
   const commit =
-    mirror.commitId === undefined ? sql`` : sql`mirror_commit_id = ${mirror.commitId},`;
+    mirror.commitId === undefined
+      ? sql``
+      : mirror.fromHead === undefined
+        ? sql`mirror_commit_id = ${mirror.commitId},`
+        : sql`mirror_commit_id = CASE WHEN mirror_head_sha IS NOT DISTINCT FROM ${mirror.fromHead}
+                THEN ${mirror.commitId}::uuid ELSE mirror_commit_id END,`;
+  const head =
+    mirror.fromHead === undefined
+      ? sql`${mirror.headSha}`
+      : sql`CASE WHEN mirror_head_sha IS NOT DISTINCT FROM ${mirror.fromHead}
+              THEN ${mirror.headSha} ELSE mirror_head_sha END`;
   await tx.execute(sql`
     UPDATE git_repositories
-       SET mirror_head_sha = ${mirror.headSha}, ${commit} mirror_refreshed_at = now(),
+       SET mirror_head_sha = ${head}, ${commit} mirror_refreshed_at = now(),
            mirror_error = NULL, mirror_failures = 0, mirror_next_at = NULL, ${RELEASE},
            updated_at = now()
      WHERE team_id = ${lease.teamId} AND id = ${lease.id} AND mirror_lease_owner = ${lease.owner}`);

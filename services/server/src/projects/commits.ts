@@ -75,18 +75,47 @@ export type CommitRefusal =
   | "storage_failed"
   /** KOBE-765: the project is a Repo (G17) or being converted to one. */
   | "repo"
-  | "converting";
+  | "converting"
+  /** KOBE-767 (commit to a Repo): the default branch moved on the host since Kobe's copy. */
+  | "repo_moved"
+  /** KOBE-767: the Repo's connection, the host or the repository cannot take a commit now. */
+  | "repo_unavailable"
+  /** KOBE-767: the host refused the push (hook, size, protection). */
+  | "repo_push_rejected"
+  /** KOBE-767 (review L2): too many commits to Repos; `retryAfterSeconds` says when. */
+  | "rate_limited";
 
 export type CommitResult =
   | { readonly status: "committed"; readonly seq: number; readonly commitId: string }
   | { readonly status: "nothing_to_commit" }
   | { readonly status: "commit_conflict"; readonly headSeq: number }
+  /** KOBE-767: a commit to a Repo pushed to a branch with a pull request (opened or added to). */
+  | {
+      readonly status: "pull_request";
+      readonly branch: string;
+      readonly commitSha: string;
+      readonly number: number;
+      readonly url: string;
+      readonly opened: boolean;
+      readonly fallback: boolean;
+    }
+  /** KOBE-767: a commit to a Repo pushed straight to the default branch. */
+  | {
+      readonly status: "pushed";
+      readonly branch: string;
+      readonly commitSha: string;
+      readonly seq: number | null;
+      readonly commitId: string | null;
+    }
   | {
       readonly status: "refused";
       readonly error: CommitRefusal;
       /** The file a path or size refusal names (shown to the member and the model). */
       readonly path?: string;
       readonly limit?: "bytes" | "objects";
+      /** KOBE-767: why a Repo commit was refused, in words (never a credential or host body). */
+      readonly detail?: string;
+      readonly retryAfterSeconds?: number;
     };
 
 export interface CommitRequest {
@@ -96,9 +125,19 @@ export interface CommitRequest {
   readonly author: CommitAuthor;
   /** An approved agent commit (CM6): the working copy must still be exactly this. */
   readonly expect?: { readonly baseSeq: number | null; readonly diffHash: string };
+  /**
+   * KOBE-767: Kobe pushed this working copy to the Repo's default branch as `headSha`; its copy of
+   * the Repo takes the same commit, and the repository's mirror head moves from `baseSha` to it
+   * in the same transaction (refused as `changed` when the mirror head moved meanwhile).
+   */
+  readonly repoMirror?: {
+    readonly repositoryId: string;
+    readonly baseSha: string;
+    readonly headSha: string;
+  };
 }
 
-interface Plan {
+export interface Plan {
   readonly checkout: CheckoutRow;
   readonly slug: string;
   readonly changes: readonly Change[];
@@ -140,7 +179,7 @@ export async function planCommit(
   tx: KobeTx,
   deps: Pick<CommitDeps, "blobs" | "limits">,
   req: Pick<CommitRequest, "owner" | "projectId" | "expect">,
-  options: { lock?: boolean } = {},
+  options: { lock?: boolean; repo?: boolean } = {},
 ): Promise<Plan | CommitResult> {
   const { owner, projectId } = req;
   const access = await loadAccess(tx, owner, projectId, { lock: options.lock === true });
@@ -148,7 +187,8 @@ export async function planCommit(
   if (!access.can.edit) return refused("forbidden");
   if (access.project.archivedAt !== null) return refused("archived");
   const block = await projectWriteBlock(tx, owner.teamId, projectId);
-  if (block !== null) return refused(block);
+  // KOBE-767: a Repo's working copy is planned for the commit that goes to the git host.
+  if (block !== null && !(block === "repo" && options.repo === true)) return refused(block);
   const checkout = await findCheckout(tx, owner.teamId, projectId, owner.userId);
   if (!checkout) return refused("checkout_required");
   if (options.lock) await lockWorkspace(tx, owner);
@@ -278,7 +318,10 @@ export async function commitWorkingCopy(
     limits: deps.limits,
     log: deps.log,
     failure: "project commit: a copy failed",
-    plan: () => withTeam(deps.db, owner.teamId, (tx) => planCommit(tx, deps, req)),
+    plan: () =>
+      withTeam(deps.db, owner.teamId, (tx) =>
+        planCommit(tx, deps, req, { repo: req.repoMirror !== undefined }),
+      ),
     isPlan: (p): p is Plan => "files" in p,
     copiesOf: (p) => p.copies,
     store: deps.blobs ? copyFrom(deps.blobs.objects) : undefined,
@@ -339,7 +382,8 @@ async function writeStep(
 ): Promise<CommitResult | "again"> {
   const { owner, projectId } = req;
   return withTeam(deps.db, owner.teamId, async (tx) => {
-    const plan = await planCommit(tx, deps, req, { lock: true });
+    const mirror = req.repoMirror;
+    const plan = await planCommit(tx, deps, req, { lock: true, repo: mirror !== undefined });
     if (!("files" in plan)) return plan;
     if (plan.copies.some((c) => !mimes.has(c.sha256))) return "again";
     const tree = new Map<string, TreeFile>();
@@ -354,7 +398,18 @@ async function writeStep(
           tree,
           author: req.author,
           message: req.message,
+          ...(mirror ? { mirror: true } : {}),
         });
+        if (mirror) {
+          // KOBE-767: the mirror head moves with Kobe's copy, only from the base it was pushed on.
+          const moved = await sp.execute(sql`
+            UPDATE git_repositories
+               SET mirror_head_sha = ${mirror.headSha}, mirror_commit_id = ${commit.commitId},
+                   mirror_refreshed_at = now(), updated_at = now()
+             WHERE team_id = ${owner.teamId} AND id = ${mirror.repositoryId}
+               AND project_id = ${projectId} AND mirror_head_sha = ${mirror.baseSha}`);
+          if ((moved.rowCount ?? 0) !== 1) throw new MirrorMoved();
+        }
         // The team quota under its lock, after the history aggregate (P2-44).
         await checkLimitsAfterWrite(sp, owner.teamId, deps.limits, {
           bytes: sumSizes(plan.copies),
@@ -372,17 +427,29 @@ async function writeStep(
       if (isLegalHoldViolation(err)) return refused("legal_hold");
       if (err instanceof OverLimit) return refused("quota_exceeded", { limit: err.limit });
       if (err instanceof ProjectWriteBlocked) return refused(err.block);
+      if (err instanceof MirrorMoved) return refused("changed");
       throw err;
     }
   });
+}
+
+/** The Repo's mirror head moved between the push and Kobe's copy of the commit (KOBE-767). */
+class MirrorMoved extends Error {
+  constructor() {
+    super("the repository's mirror head moved");
+    this.name = "MirrorMoved";
+  }
 }
 
 /** Read-only preview for an agent's approval (CM6): base seq and diff hash, or the answer now. */
 export async function previewCommit(
   deps: Pick<CommitDeps, "db" | "blobs" | "limits">,
   req: Pick<CommitRequest, "owner" | "projectId">,
+  options: { repo?: boolean } = {},
 ): Promise<{ readonly baseSeq: number | null; readonly diffHash: string } | CommitResult> {
-  const plan = await withTeam(deps.db, req.owner.teamId, (tx) => planCommit(tx, deps, req));
+  const plan = await withTeam(deps.db, req.owner.teamId, (tx) =>
+    planCommit(tx, deps, req, { repo: options.repo === true }),
+  );
   if (!("files" in plan)) return plan;
   return { baseSeq: plan.checkout.baseSeq, diffHash: plan.hash };
 }

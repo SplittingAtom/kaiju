@@ -15,6 +15,7 @@ import {
   DiscardConfirm,
   useProjectWork,
   useWorkDialogs,
+  WorkNotice,
   WORK_BUTTON,
   type ProjectRef,
 } from "./project-work";
@@ -161,11 +162,7 @@ function CheckedOut({
         />
       )}
       {dialogs.open === null && work.error && <ErrorNotice error={work.error} />}
-      {dialogs.open === null && (
-        <p role="status" className="m-0">
-          {work.notice}
-        </p>
-      )}
+      {dialogs.open === null && <WorkNotice work={work} />}
     </>
   );
 }
