@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { KobeNotification } from "./api";
-import { notificationLabel, notificationTitle, scheduleLabel } from "./format";
+import { notificationDetail, notificationLabel, notificationTitle, scheduleLabel } from "./format";
 
 const base: KobeNotification = {
   notificationId: "n",
@@ -97,5 +97,55 @@ describe("notification words (KOBE-181)", () => {
     expect(scheduleLabel("s1", known)).toBe("Every day at 09:00 (Europe/Berlin)");
     expect(scheduleLabel("s2", known)).toBe("A schedule that no longer exists");
     expect(scheduleLabel("s1", null)).toBe("One of your schedules");
+  });
+
+  describe("git notifications (KOBE-819)", () => {
+    const git = { ...base, scheduleId: null, threadId: null, runId: null } as const;
+    const conversion = {
+      ...git,
+      gitConversionId: "c1",
+      projectId: "p1",
+      projectName: "Sales analysis",
+      gitRepository: "acme/sales-analysis",
+    } as const;
+    it("says a conversion finished or failed, naming the project and the Repo", () => {
+      const done = { ...conversion, kind: "git.conversion.completed" } as const;
+      expect(notificationTitle(done)).toBe("Sales analysis is now a Repo");
+      expect(notificationLabel(done, null)).toBe("Repo acme/sales-analysis");
+      expect(notificationDetail(done)).toBeNull();
+      const failed = {
+        ...conversion,
+        kind: "git.conversion.failed",
+        gitFailure: "repository_exists",
+        gitFailureMessage: "A repository with that name already exists in the organization.",
+      } as const;
+      expect(notificationTitle(failed)).toBe("Converting Sales analysis to a Repo failed");
+      expect(notificationDetail(failed)).toBe(
+        "A repository with that name already exists in the organization.",
+      );
+      expect(notificationTitle({ ...done, projectName: undefined })).toBe(
+        "A project is now a Repo",
+      );
+    });
+    it("says when a connection's credential expires, or that it expired", () => {
+      const soon = {
+        ...git,
+        kind: "git.connection.token_expiring",
+        gitConnectionId: "g1",
+        gitConnectionName: "Acme on GitHub",
+        gitExpiresAt: "2026-10-20T00:00:00Z",
+        createdAt: "2026-10-11T08:00:00Z",
+      } as const;
+      expect(notificationTitle(soon)).toBe(
+        "The credential of the git connection Acme on GitHub expires on 2026-10-20",
+      );
+      expect(notificationLabel(soon, null)).toBe("Git connection Acme on GitHub");
+      expect(notificationTitle({ ...soon, gitExpiresAt: "2026-10-10T00:00:00Z" })).toBe(
+        "The credential of the git connection Acme on GitHub expired on 2026-10-10",
+      );
+      expect(notificationTitle({ ...soon, gitConnectionName: undefined })).toBe(
+        "The credential of a git connection expires on 2026-10-20",
+      );
+    });
   });
 });

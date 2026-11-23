@@ -1,5 +1,7 @@
 import {
+  GIT_CONVERSION_FAILURES,
   MARK_READ_IDS_MAX,
+  type GitConversionFailure,
   type ListNotificationsQuery,
   type ListNotificationsResponse,
   type MarkNotificationsReadBody,
@@ -10,6 +12,7 @@ import {
 } from "@kobe/protocol";
 import { sql, withTeam, type KobeDb, type KobeTx, makeCursorCodec } from "@kobe/db";
 import { z } from "zod";
+import { FAILURE_MESSAGES } from "../git/conversion/refusals.js";
 
 /**
  * The caller's notifications in the active team (KOBE-179; contract in KOBE-176): every query is
@@ -67,6 +70,14 @@ type Row = {
   related_kind: NotificationKind | null;
   item_count: number | null;
   project_id: string | null;
+  git_conversion_id: string | null;
+  git_project_id: string | null;
+  project_name: string | null;
+  git_repository: string | null;
+  git_failure: string | null;
+  git_connection_id: string | null;
+  git_connection_name: string | null;
+  git_expires_at: Date | string | null;
   read_at: Date | null;
   created_at: Date;
   created_key: string;
@@ -99,10 +110,48 @@ function toNotification(row: Row): Notification {
       : {}),
     ...(row.item_count !== null ? { item_count: row.item_count } : {}),
     ...(row.project_id !== null ? { project_id: row.project_id } : {}),
+    ...gitFields(row),
     read_at: row.read_at === null ? null : iso(row.read_at),
     created_at: iso(row.created_at),
   };
 }
+
+/**
+ * What a git notification names (KOBE-819): a conversion its attempt, project and repository and,
+ * when it failed, the code and the same member-safe words the Convert to repo dialog shows (never
+ * the stored detail, which may quote the host); an expiry its connection's name and the expiry.
+ */
+function gitFields(row: Row): Partial<Notification> {
+  if (row.git_conversion_id !== null && row.git_repository !== null) {
+    const failure = row.git_failure === null ? null : failureOf(row.git_failure);
+    return {
+      git_conversion_id: row.git_conversion_id,
+      git_repository: row.git_repository,
+      ...(row.git_project_id !== null ? { project_id: row.git_project_id } : {}),
+      ...(row.project_name !== null ? { project_name: row.project_name } : {}),
+      ...(failure !== null
+        ? { git_failure: failure, git_failure_message: FAILURE_MESSAGES[failure] }
+        : {}),
+    };
+  }
+  if (
+    row.git_connection_id !== null &&
+    row.git_connection_name !== null &&
+    row.git_expires_at !== null
+  ) {
+    return {
+      git_connection_id: row.git_connection_id,
+      git_connection_name: row.git_connection_name,
+      git_expires_at: iso(row.git_expires_at),
+    };
+  }
+  return {};
+}
+
+const failureOf = (code: string): GitConversionFailure =>
+  (GIT_CONVERSION_FAILURES as readonly string[]).includes(code)
+    ? (code as GitConversionFailure)
+    : "internal_error";
 
 // A schedule notification needs its schedule (the contract names it); a skill notification
 // (KOBE-338) names a catalog skill instead, and a Site admin's new version (KOBE-495) its version
@@ -112,7 +161,7 @@ const mine = (v: Viewer) =>
   sql`team_id = ${v.teamId} AND user_id = ${v.userId}
     AND (schedule_id IS NOT NULL
       OR kind IN ('skill.member_add.blocked', 'skill.version.site_published')
-      OR kind LIKE 'team.%' OR kind LIKE 'memory.%')`;
+      OR kind LIKE 'team.%' OR kind LIKE 'memory.%' OR kind LIKE 'git.%')`;
 
 async function unreadCount(tx: KobeTx, v: Viewer): Promise<number> {
   const res = await tx.execute<{ n: number }>(sql`
@@ -137,6 +186,20 @@ export async function listNotifications(
              (SELECT u.name FROM users u WHERE u.id = notifications.subject_user_id)
                AS subject_name,
              team_role, memory_scope, memory_object_id, related_kind, item_count, project_id,
+             git_conversion_id, git_failure, git_connection_id, git_expires_at,
+             (SELECT c.organization || '/' || c.repository_name FROM git_conversions c
+               WHERE c.team_id = notifications.team_id AND c.id = notifications.git_conversion_id)
+               AS git_repository,
+             (SELECT c.project_id FROM git_conversions c
+               WHERE c.team_id = notifications.team_id AND c.id = notifications.git_conversion_id)
+               AS git_project_id,
+             (SELECT p.name FROM git_conversions c
+                JOIN projects p ON p.team_id = c.team_id AND p.id = c.project_id
+               WHERE c.team_id = notifications.team_id AND c.id = notifications.git_conversion_id)
+               AS project_name,
+             (SELECT g.display_name FROM git_connections g
+               WHERE g.team_id = notifications.team_id AND g.id = notifications.git_connection_id)
+               AS git_connection_name,
              read_at, created_at,
              to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_key
         FROM notifications

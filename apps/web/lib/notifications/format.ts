@@ -26,10 +26,60 @@ const siteAdmin = (n: KobeNotification) => `${n.actorName ?? "A site admin"} (si
 const member = (n: KobeNotification) => n.subjectName ?? "a member";
 const asRole = (n: KobeNotification) => (n.teamRole ? ` as ${roleLabel(n.teamRole)}` : "");
 
+/** The day of an instant (UTC), as the expiry email says it. */
+const day = (iso: string) => iso.slice(0, 10);
+
+/**
+ * Git notices (KOBE-819), in the Files panel's words (KOBE-768): a conversion names its project,
+ * an expiry its connection and the day the credential expires (or expired, when it had already
+ * lapsed as the notice was written).
+ */
+function gitTitle(n: KobeNotification): string | null {
+  const project = n.projectName ?? "A project";
+  switch (n.kind) {
+    case "git.conversion.completed":
+      return `${project} is now a Repo`;
+    case "git.conversion.failed":
+      return `Converting ${n.projectName ?? "a project"} to a Repo failed`;
+    case "git.connection.token_expiring": {
+      const which = n.gitConnectionName
+        ? `the git connection ${n.gitConnectionName}`
+        : "a git connection";
+      if (!n.gitExpiresAt) return `The credential of ${which} expires soon`;
+      const lapsed = Date.parse(n.gitExpiresAt) <= Date.parse(n.createdAt);
+      return `The credential of ${which} ${lapsed ? "expired" : "expires"} on ${day(n.gitExpiresAt)}`;
+    }
+    default:
+      return null;
+  }
+}
+
+/** The Workspace console's Git section, where an admin replaces a credential (KOBE-761). */
+export const GIT_SECTION_HREF = "/admin/team/git";
+
+/** Where a git notice sends its reader (KOBE-819): an expiry to the Git section; else none. */
+export function gitNotificationLink(
+  n: KobeNotification,
+): { readonly href: string; readonly label: string } | null {
+  return n.kind === "git.connection.token_expiring"
+    ? { href: GIT_SECTION_HREF, label: "Open the Git section" }
+    : null;
+}
+
+/**
+ * A line under the headline, when the notice has one: why a conversion failed, in the same
+ * member-safe words the Convert to repo dialog shows (KOBE-819).
+ */
+export function notificationDetail(n: KobeNotification): string | null {
+  return n.kind === "git.conversion.failed" ? (n.gitFailureMessage ?? null) : null;
+}
+
 /** The headline: what happened to the run (or the schedule), or to a catalog skill. */
 export function notificationTitle(n: KobeNotification): string {
   const memory = memoryNotificationTitle(n);
   if (memory !== null) return memory;
+  const git = gitTitle(n);
+  if (git !== null) return git;
   switch (n.kind) {
     case "schedule.run.succeeded":
       return "Scheduled run finished";
@@ -79,6 +129,8 @@ export function notificationLabel(
   if (n.kind.startsWith("skill.")) return `Catalog skill ${n.skillName ?? ""}`.trim();
   if (n.kind.startsWith("team.")) return "Team membership";
   if (n.kind.startsWith("memory.")) return memoryNotificationLabel(n);
+  if (n.kind.startsWith("git.conversion.")) return `Repo ${n.gitRepository ?? ""}`.trim();
+  if (n.kind.startsWith("git.")) return `Git connection ${n.gitConnectionName ?? ""}`.trim();
   return n.scheduleId === null
     ? "A schedule that no longer exists"
     : scheduleLabel(n.scheduleId, known);

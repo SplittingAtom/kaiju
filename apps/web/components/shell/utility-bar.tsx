@@ -59,10 +59,13 @@ export function UtilityBar({
   teamId,
   fetchFn,
   onOpenThread,
+  onOpenFiles,
 }: {
   readonly teamId: string | null;
   readonly fetchFn?: typeof fetch | undefined;
   readonly onOpenThread: (threadId: string) => void;
+  /** A Repo conversion notice's "Show in Files" (KOBE-819). */
+  readonly onOpenFiles?: ((projectId: string) => void) | undefined;
 }) {
   const single = useShellBand() === "single";
   const menu = useBarMenu();
@@ -109,6 +112,7 @@ export function UtilityBar({
                 fetchFn={fetchFn}
                 onOpenThread={onOpenThread}
                 onOpenSkill={navigate}
+                onOpenFiles={onOpenFiles}
               />
             )}
             {/* The Kobe guide (KOBE-616): a panel over the workspace, like the consoles. */}

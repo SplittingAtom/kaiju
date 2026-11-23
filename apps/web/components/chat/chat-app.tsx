@@ -12,6 +12,7 @@ import type { UploadTransport } from "../../lib/chat/uploads";
 import { useActiveTeam } from "../../lib/chat/use-active-team";
 import { useHistoryRoute, type WorkspaceRoute } from "../../lib/chat/use-history-route";
 import { openThreadInChat } from "../../lib/chat/use-thread-url";
+import { requestShowFiles } from "../../lib/shell/files-request";
 import { onChatPage } from "../../lib/shell/areas";
 import { lastThreadHref } from "../../lib/shell/last-thread";
 import { followWorkspaceEntries, stepsBackToWorkspace } from "../../lib/shell/panel-history";
@@ -103,6 +104,14 @@ export function ChatApp({
     },
     [panel, route],
   );
+  // KOBE-819: a Repo conversion notice shows the Files panel; a panel over the chat closes first.
+  const openFilesFromHeader = useCallback(
+    (projectId: string) => {
+      if (panel !== undefined) closePanel();
+      requestShowFiles({ projectId });
+    },
+    [panel, closePanel],
+  );
 
   let body: ReactNode;
   if (team.status === "loading" || team.status === "choosing")
@@ -158,7 +167,12 @@ export function ChatApp({
                 <a className={styles.skipLink} href="#kobe-chat-main">
                   Skip to the conversation
                 </a>
-                <UtilityBar teamId={teamId} fetchFn={fetchFn} onOpenThread={openThreadFromHeader} />
+                <UtilityBar
+                  teamId={teamId}
+                  fetchFn={fetchFn}
+                  onOpenThread={openThreadFromHeader}
+                  onOpenFiles={openFilesFromHeader}
+                />
                 <TeamInvites />
                 {/* No active team yet: activates one (the selector itself is in the rail, KOBE-419). */}
                 <TeamActivation />

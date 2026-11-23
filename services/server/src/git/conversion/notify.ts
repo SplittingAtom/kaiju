@@ -11,9 +11,8 @@ import type { ConversionRow } from "./store.js";
  * Tells the member who asked for a conversion how it ended (KOBE-765): one email when it completed
  * and one each time it failed, sent after the outcome committed; a failed send is logged, not
  * retried (the project's conversion state says the same). Names, the host and the outcome only:
- * never a credential or the host's own text. The in-app bell needs a notification kind (protocol,
- * the `notifications_kind` CHECK and the web's rendering): a follow-up, as for KOBE-760's expiry
- * notices.
+ * never a credential or the host's own text. The in-app bell notice (KOBE-819) is written with
+ * the end itself, in `bell.ts`.
  */
 export interface ConversionNotifyDeps {
   readonly db: KobeDb;

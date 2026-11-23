@@ -14,6 +14,7 @@ import {
   withTeam,
   type GitConnectionRecord,
   type KobeDb,
+  type KobeTx,
 } from "@kobe/db";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
@@ -30,6 +31,14 @@ import { GIT_EXPIRY_NOTICE_DAYS } from "./connection-view.js";
  * cleared when the credential is replaced) and the audit row commit together before any email is
  * sent; a failed send is logged, not retried (the Git section shows the expiry too). Names,
  * host and date only: never the credential or its hint.
+ *
+ * KOBE-819: the same claim also writes a bell notice (`git.connection.token_expiring`) to each
+ * of those admins, in a savepoint of the claim's transaction (a failed write is logged and never
+ * stops the claim or the emails). The unique index `notifications_git_expiry_uniq` (connection,
+ * admin, expiry) keeps a repeated claim for the same expiry from doubling it. A process without a
+ * mail relay (`mailer.disabled`: the scheduler) claims nothing, so the bell notice and the email
+ * stay with the one claim a process that can send makes. Replacing the credential deletes the
+ * connection's notices (`replaceGitCredential`).
  */
 export interface GitExpiryDeps {
   readonly db: KobeDb;
@@ -103,8 +112,39 @@ function dueOf(db: KobeDb, before: Date): Promise<Due[][]> {
   });
 }
 
+/** The admins' bell notices of one claim, in a savepoint (KOBE-819). */
+async function bellInTx(
+  tx: KobeTx,
+  c: GitConnectionRecord,
+  expiresAt: Date,
+  adminIds: readonly string[],
+  log: GitExpiryDeps["logger"],
+): Promise<void> {
+  if (adminIds.length === 0) return;
+  try {
+    await tx.transaction(async (sp) => {
+      for (const userId of adminIds) {
+        await sp.execute(sql`
+          INSERT INTO notifications (team_id, user_id, kind, git_connection_id, git_expires_at)
+          VALUES (${c.teamId}, ${userId}, 'git.connection.token_expiring', ${c.id},
+            ${expiresAt.toISOString()}::timestamptz)
+          ON CONFLICT DO NOTHING`);
+      }
+    });
+  } catch (err) {
+    log.error(
+      { err, team_id: c.teamId, connection_id: c.id },
+      "git expiry bell notice not recorded",
+    );
+  }
+}
+
 /** Claims one notice and records it; the admins' addresses, or undefined if already claimed. */
-function claim(db: KobeDb, c: GitConnectionRecord): Promise<string[] | undefined> {
+function claim(
+  db: KobeDb,
+  c: GitConnectionRecord,
+  log: GitExpiryDeps["logger"],
+): Promise<string[] | undefined> {
   return withTeam(db, c.teamId, async (tx) => {
     const claimed = await tx
       .update(gitConnections)
@@ -120,13 +160,23 @@ function claim(db: KobeDb, c: GitConnectionRecord): Promise<string[] | undefined
           ),
         ),
       )
-      .returning({ id: gitConnections.id });
-    if (claimed.length === 0) return undefined;
-    const { rows } = await tx.execute<{ email: string }>(sql`
-      SELECT u.email FROM team_members tm
+      .returning({ id: gitConnections.id, expiresAt: gitConnections.credentialExpiresAt });
+    const [won] = claimed;
+    if (!won) return undefined;
+    const { rows } = await tx.execute<{ id: string; email: string }>(sql`
+      SELECT u.id, u.email FROM team_members tm
         JOIN users u ON u.id = tm.user_id AND u.deactivated_at IS NULL
        WHERE tm.team_id = ${c.teamId} AND tm.role = 'team_admin'
        ORDER BY u.email`);
+    if (won.expiresAt !== null) {
+      await bellInTx(
+        tx,
+        c,
+        won.expiresAt,
+        rows.map((r) => r.id),
+        log,
+      );
+    }
     await recordAudit(tx, {
       action: "git.connection.expiry_notified",
       teamId: c.teamId,
@@ -143,7 +193,8 @@ function claim(db: KobeDb, c: GitConnectionRecord): Promise<string[] | undefined
 
 /** One pass: claims and sends every notice due; returns how many connections were noticed. */
 export async function notifyGitTokenExpiry(d: GitExpiryDeps): Promise<number> {
-  // A process without a mail relay leaves notices to one that has one (claims nothing).
+  // A process without a mail relay leaves notices (email and bell) to one that has one: it claims
+  // nothing, so the claim that writes the bell notice is always the one that sends the email.
   if (d.mailer.disabled) return 0;
   const now = d.now?.() ?? Date.now();
   const due = (await dueOf(d.db, new Date(now + GIT_EXPIRY_NOTICE_DAYS * DAY_MS))).flat();
@@ -154,7 +205,7 @@ export async function notifyGitTokenExpiry(d: GitExpiryDeps): Promise<number> {
   for (const { teamName, connection } of due) {
     let emails: string[] | undefined;
     try {
-      emails = await claim(d.db, connection);
+      emails = await claim(d.db, connection, d.logger);
     } catch (err) {
       d.logger.error({ err, team_id: connection.teamId }, "git expiry notice not recorded");
       continue;

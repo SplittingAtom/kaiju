@@ -15,6 +15,7 @@ import {
   type GitConversionView,
 } from "@kobe/protocol";
 import { recordAudit } from "../../audit/record.js";
+import { notifyConversionEndInTx } from "./bell.js";
 import {
   GIT_CONVERSION_LEASE_MS,
   GIT_CONVERSION_MAX_RESUMES,
@@ -195,6 +196,7 @@ export async function claimConversion(
           repositoryCreated: failed.hostRepoId !== null && !failed.useExisting,
         },
       });
+      await notifyConversionEndInTx(tx, failed);
       return { kind: "gave_up", row: failed };
     }
     const [row] = await tx

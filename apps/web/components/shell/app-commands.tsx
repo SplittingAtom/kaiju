@@ -1,8 +1,9 @@
 "use client";
 
 import { useAui, useAuiState } from "@assistant-ui/react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { adjacentThread, threadOrder } from "../../lib/chat/thread-groups";
+import { onShowFilesRequest } from "../../lib/shell/files-request";
 import type { MenuBinding, MenuBindings } from "../../lib/shell/menu";
 import { useArtifactPanel, type ArtifactPanelApi } from "../chat/artifact-state";
 import { useDetail } from "../chat/detail";
@@ -75,6 +76,8 @@ export function AppCommands() {
   const theme = useTheme();
   const steps = useThreadSteps();
   const endDraftProject = useEndDraftProject();
+  // KOBE-819: a Repo conversion notice in the bell (outside the rail) shows the Files panel.
+  useEffect(() => (rail ? onShowFilesRequest(() => rail.reveal("files")) : undefined), [rail]);
   useBindCommands({
     "new-thread": {
       onSelect: () => {

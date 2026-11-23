@@ -1,5 +1,5 @@
 /**
- * The caller's notifications: scheduled runs, skill, team and memory notices (`/v1/notifications`, KOBE-179; contract KOBE-176).
+ * The caller's notifications: scheduled runs, skill, team, memory and git notices (`/v1/notifications`, KOBE-179; contract KOBE-176).
  * Responses arrive camelized; request bodies use the route's snake_case. Every call sends
  * `X-Kobe-Team`: notifications belong to the active team.
  */
@@ -31,6 +31,17 @@ export interface KobeNotification {
   readonly relatedKind?: NotificationKind | undefined;
   readonly itemCount?: number | undefined;
   readonly projectId?: string | undefined;
+  /** `git.conversion.*` (KOBE-819): the attempt, its project's name and the repository. */
+  readonly gitConversionId?: string | undefined;
+  readonly projectName?: string | undefined;
+  readonly gitRepository?: string | undefined;
+  /** `git.conversion.failed`: the failure code and the member-safe reason the dialog shows. */
+  readonly gitFailure?: string | undefined;
+  readonly gitFailureMessage?: string | undefined;
+  /** `git.connection.token_expiring` (KOBE-819): the connection and when its credential expires. */
+  readonly gitConnectionId?: string | undefined;
+  readonly gitConnectionName?: string | undefined;
+  readonly gitExpiresAt?: string | undefined;
   readonly readAt: string | null;
   readonly createdAt: string;
 }

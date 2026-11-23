@@ -358,6 +358,12 @@ export function replaceGitCredential(db: KobeDb, r: CredentialReplacement): Prom
       .where(and(eq(gitConnections.teamId, r.teamId), eq(gitConnections.id, r.connectionId)))
       .returning(gitConnectionPublicColumns);
     if (!row) return { ok: false, code: "not_found" };
+    // KOBE-819: the old token's expiry notices go with it (read or not); a new credential that
+    // also expires soon is noticed anew by the next claim.
+    await tx.execute(sql`
+      DELETE FROM notifications
+       WHERE team_id = ${r.teamId} AND git_connection_id = ${r.connectionId}
+         AND kind = 'git.connection.token_expiring'`);
     await recordAudit(tx, {
       action: "git.connection.credential_replaced",
       teamId: r.teamId,
