@@ -938,7 +938,8 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "poolMax": { "type": "integer", "minimum": 1, "maximum": 200 }
+            "poolMax": { "type": "integer", "minimum": 1, "maximum": 200 },
+            "ratePoolMax": { "type": "integer", "minimum": 1, "maximum": 50 }
           }
         },
         "replicas": {

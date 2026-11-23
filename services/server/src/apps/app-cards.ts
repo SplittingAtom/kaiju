@@ -21,7 +21,7 @@ import {
 } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
 import { usableSiteKeyIds } from "../connectors/site-key.js";
-import type { RateLimiter } from "../sandbox/rate-limit.js";
+import type { SharedRateLimit } from "../rate-limit.js";
 import { loadUserGrantFacts } from "../runs/run-mcp.js";
 import { piBranchPoint } from "../runs/run-prompt.js";
 import { abortPending } from "../runs/store.js";
@@ -64,13 +64,16 @@ export interface AppCardDeps {
   readonly call: AppCallDeps;
   readonly store: AppResultStoreDeps;
   /** Launches per member (review LOW-3): a launch writes, so a tighter bucket than app calls. */
-  readonly launches: RateLimiter;
+  readonly launches: SharedRateLimit;
   /** Stop's grace (re-review LOW-R2): a launch while Pi still aborts a stopped run waits. */
   readonly abortHoldMs?: () => number;
 }
 
-/** A burst of 5 launches, then one every 2 s, per member and server pod. */
-export const APP_LAUNCH_RATE = { capacity: 5, refillPerSecond: 0.5 } as const;
+/**
+ * A burst of 5 launches, then one every 2 s, per member, counted in Postgres across server
+ * replicas (KOBE-810).
+ */
+export const APP_LAUNCH_RATE = { burst: 5, perSecond: 0.5 } as const;
 
 /** Waiting cards one thread may hold. */
 export const MAX_QUEUED_APP_CARDS = 5;
@@ -277,7 +280,7 @@ export async function launchAppCard(
   appId: string,
   draft: NewThreadDraft = { connectorsOff: [] },
 ): Promise<LaunchOutcome> {
-  if (deps.launches.take(p.userId) !== 0) return RATE_LIMITED;
+  if (!(await deps.launches.allow(p.userId))) return RATE_LIMITED;
   const db = deps.call.db;
   const app = await memberApp(db, p.teamId, p.userId, appId);
   if (!app) return NOT_AVAILABLE;

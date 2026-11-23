@@ -3,6 +3,7 @@ import {
   MAX_FILE_BYTES,
   MAX_FILES,
   MAX_MESSAGE_BYTES,
+  failureFrom,
   formatBytes,
   precheck,
   splitAttachedFiles,
@@ -41,6 +42,15 @@ describe("messages and sizes", () => {
       expect(uploadErrorMessage(code)).toBeTruthy();
     }
     expect(uploadErrorMessage("other")).toBeUndefined();
+  });
+  it("shows the upload limit's message and lets the member try again later (KOBE-813)", () => {
+    const message = "Too many uploads. Wait a few minutes and try again.";
+    expect(failureFrom(429, { code: "rate_limited", message })).toEqual({
+      code: "rate_limited",
+      message,
+      retryable: true,
+    });
+    expect(failureFrom(429, undefined).message).toBe(message);
   });
   it("formats sizes", () => {
     expect(formatBytes(12)).toBe("12 B");

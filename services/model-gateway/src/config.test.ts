@@ -24,6 +24,10 @@ describe("loadConfig", () => {
   it("reads the query pool size (KOBE-736): default 10, 1..200", () => {
     expect(loadConfig(env).dbPoolMax).toBe(10);
     expect(loadConfig({ ...env, KOBE_DB_POOL_MAX: "25" }).dbPoolMax).toBe(25);
+    // The member rate limiter's own pool (KOBE-810).
+    expect(loadConfig(env).ratePoolMax).toBe(2);
+    expect(loadConfig({ ...env, KOBE_MODEL_GATEWAY_RATE_POOL_MAX: "4" }).ratePoolMax).toBe(4);
+    expect(() => loadConfig({ ...env, KOBE_MODEL_GATEWAY_RATE_POOL_MAX: "0" })).toThrow();
     expect(() => loadConfig({ ...env, KOBE_DB_POOL_MAX: "201" })).toThrow(/KOBE_DB_POOL_MAX/);
   });
 

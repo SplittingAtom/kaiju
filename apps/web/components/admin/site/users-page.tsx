@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { listSsoProviders } from "../../../lib/admin/api/site/sso";
 import {
+  getSignInProtection,
   purgePortableMemory,
   setUserActive,
   listUsers,
@@ -26,6 +27,7 @@ import {
   eventTrigger,
   useConfirm,
 } from "../../ui/console";
+import { SignInProtectionNotices } from "./sign-in-protection";
 import { useSiteAccess } from "../console-context";
 import { MutationStatus } from "../error-notice";
 import { DateTime, ResourceView } from "../parts";
@@ -60,6 +62,11 @@ export function UsersPage() {
   // Single sign-on links (KOBE-630): only while SSO is on (the providers list answers 404 when off).
   const sso = useResource(listSsoProviders);
   const [ssoUserId, setSsoUserId] = useState<string | null>(null);
+  // Sign-in protection (KOBE-812): throttled accounts and unknown client addresses; best effort.
+  const protection = useResource(getSignInProtection);
+  const slowed = new Set(
+    protection.state.status === "ready" ? protection.state.data.throttled.map((t) => t.userId) : [],
+  );
 
   async function toggle(user: SiteUser, trigger: HTMLElement | null) {
     const activate = user.deactivatedAt !== null;
@@ -127,6 +134,9 @@ export function UsersPage() {
         }
       />
       <MutationStatus error={mutation.error} notice={mutation.notice} />
+      {protection.state.status === "ready" && state.status === "ready" && (
+        <SignInProtectionNotices protection={protection.state.data} users={state.data} />
+      )}
       <ResourceView state={state} label="users">
         {(users) => (
           <Table caption={users.length === 1 ? "1 user" : `${users.length} users`}>
@@ -152,6 +162,12 @@ export function UsersPage() {
                   <TableCell>{u.twoFactorEnabled ? "On" : "Off"}</TableCell>
                   <TableCell>
                     {u.deactivatedAt ? <Badge tone="failed">Deactivated</Badge> : "Active"}
+                    {slowed.has(u.id) && (
+                      <>
+                        {" "}
+                        <Badge tone="attention">Sign-in slowed</Badge>
+                      </>
+                    )}
                   </TableCell>
                   <TableCell>
                     <DateTime value={u.createdAt} />

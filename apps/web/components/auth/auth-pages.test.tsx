@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ForgotPasswordPage from "../../app/forgot-password/page";
@@ -124,6 +125,28 @@ describe("the signed-out pages share the AuthPanel (ac-6)", () => {
     const panel = await screen.findByRole("region", { name: `Set up ${NAME}` });
     expect(panel).toBe(panelEl());
     expect(within(panel).getByLabelText("Setup token")).toBeTruthy();
+  });
+
+  it("setup says plainly when there were too many attempts (KOBE-813)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) =>
+        init?.method === "POST"
+          ? new Response(JSON.stringify({ code: "rate_limited", message: "x" }), { status: 429 })
+          : new Response(JSON.stringify({ required: true })),
+      ),
+    );
+    const user = userEvent.setup();
+    renderPage(<SetupPage />);
+    const panel = await screen.findByRole("region", { name: `Set up ${NAME}` });
+    await user.type(within(panel).getByLabelText("Setup token"), "guess");
+    await user.type(within(panel).getByLabelText("Name"), "Owner");
+    await user.type(within(panel).getByLabelText("Email"), "owner@example.test");
+    await user.type(within(panel).getByLabelText("Password"), "a long enough password");
+    await user.click(within(panel).getByRole("button", { name: "Create Owner" }));
+    expect(
+      await within(panel).findByText("Too many setup attempts. Wait a few minutes and try again."),
+    ).toBeTruthy();
   });
 
   it("link sign-in", async () => {

@@ -19,6 +19,7 @@ import {
 import { openUpload } from "../../uploads/parse.js";
 import { DEFAULT_TEAM_MAX_OBJECTS, DEFAULT_UPLOAD_SETTINGS } from "../../uploads/settings.js";
 import { invalidRequest, param, parseBody } from "../../http/request.js";
+import { OPERATION_LIMITS, admitOperation, rateLimited } from "../../operation-limits.js";
 import {
   failure,
   FILE_ERRORS,
@@ -70,6 +71,10 @@ export function projectFileRoutes(kit: ProjectKit): Hono<{ Variables: TeamVariab
     const access = await withTeam(db, viewer.teamId, (tx) => loadAccess(tx, viewer, id.data));
     if (!access) return failure(c, "not_found");
     if (!access.can.edit) return failure(c, "forbidden");
+    // KOBE-813: the member's upload limit, shared with the composer and the Files panel.
+    const limit = OPERATION_LIMITS.upload;
+    const verdict = await admitOperation(db, limit, viewer.userId);
+    if (!verdict.allowed) return rateLimited(c, limit, verdict);
     const opened = await openUpload(
       c.req.header("content-type"),
       Readable.fromWeb(body as WebReadableStream<Uint8Array>),

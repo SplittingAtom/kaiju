@@ -20,6 +20,7 @@ import { viewerProjectIds } from "../threads/references.js";
 import type { Viewer } from "../threads/repository.js";
 import { uuidSchema } from "../threads/schemas.js";
 import { param, parseBody } from "../http/request.js";
+import { OPERATION_LIMITS, admitOperation, rateLimited } from "../operation-limits.js";
 
 type Ctx = Context<{ Variables: TeamVariables }>;
 
@@ -67,6 +68,14 @@ export function runFeedbackRoutes(deps: ServerDeps): Hono<{ Variables: TeamVaria
   const app = new Hono<{ Variables: TeamVariables }>();
   app.use(requireTeam(deps));
   app.use(requireTeamPermission("team.chat"));
+  // KOBE-813: rating and clearing both count, per member.
+  app.use("/:id/feedback", async (c, next) => {
+    if (c.req.method !== "PUT" && c.req.method !== "DELETE") return next();
+    const limit = OPERATION_LIMITS.feedback;
+    const verdict = await admitOperation(deps.database.db, limit, c.get("user").id);
+    if (!verdict.allowed) return rateLimited(c, limit, verdict);
+    return next();
+  });
 
   app.put(
     "/:id/feedback",

@@ -218,7 +218,9 @@ blocked. **SCIM** on a provider's row shows:
 - **Create token**: the token is shown once; copy it into the provider's Secret Token field;
 - the tokens with when they were created and **Last used**. **Rotate** adds a second token while
   the old one keeps working (at most two), so you can switch the provider over, then **Revoke** the
-  old one. Revoking stops it at once and can't be undone.
+  old one. Revoking stops it at once and can't be undone. Each site admin can create or rotate
+  at most 10 tokens an hour; past that Kobe says "Too many SCIM tokens created" until the hour is
+  over.
 
 Provisioning works only while the provider is turned on. What SCIM does:
 

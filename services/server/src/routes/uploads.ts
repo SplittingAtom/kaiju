@@ -8,6 +8,7 @@ import { createClamdScanner } from "../uploads/clamd.js";
 import { DEFAULT_UPLOAD_SETTINGS } from "../uploads/settings.js";
 import { storeUpload } from "../uploads/store.js";
 import { invalidRequest } from "../http/request.js";
+import { OPERATION_LIMITS, admitOperation, rateLimited } from "../operation-limits.js";
 
 /**
  * `POST /v1/uploads` (KOBE-143; contract in packages/protocol `uploads.ts`): multipart/form-data
@@ -30,6 +31,10 @@ export function uploadRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables 
     }
     const body = c.req.raw.body;
     if (!body) return invalidRequest(c, "No file was sent.");
+    // KOBE-813: per member, before anything is read or stored.
+    const limit = OPERATION_LIMITS.upload;
+    const verdict = await admitOperation(deps.database.db, limit, c.get("user").id);
+    if (!verdict.allowed) return rateLimited(c, limit, verdict);
     const opened = await openUpload(
       c.req.header("content-type"),
       // The web stream of the request is bridged to Node so the parser can pull from it.

@@ -40,6 +40,9 @@ export default function SetupPage() {
     else if (res.status === 409) setRequired(false);
     else if (res.status === 403)
       setError("The setup token is wrong. Copy it from the command in the Helm install notes.");
+    // KOBE-813: 10 attempts per address in 10 minutes before setup is finished.
+    else if (res.status === 429)
+      setError("Too many setup attempts. Wait a few minutes and try again.");
     else setError("Setup failed. Check the details and try again.");
   }
 

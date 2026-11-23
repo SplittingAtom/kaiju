@@ -16,6 +16,7 @@ import { uuidSchema } from "../threads/schemas.js";
 import { prepareTestChat } from "../skills/drafts/test-chat.js";
 import { actorOf } from "../authz/actor.js";
 import { invalidRequest, param, parseBody } from "../http/request.js";
+import { OPERATION_LIMITS, admitOperation, rateLimited } from "../operation-limits.js";
 
 function idParam(c: Context): string | undefined {
   const parsed = param(c, "id", uuidSchema);
@@ -54,6 +55,16 @@ async function threadRuns(deps: ServerDeps, actor: ActorContext, threadId: strin
   };
 }
 
+/**
+ * A message or Retry the member asks for counts against their run limit (KOBE-813), across
+ * conversations and Workspaces. Runs the server starts (schedules, skill evals) never pass here.
+ */
+async function runLimitRefusal(deps: ServerDeps, c: Context): Promise<Response | undefined> {
+  const limit = OPERATION_LIMITS.runSubmit;
+  const verdict = await admitOperation(deps.database.db, limit, actorOf(c).user_id);
+  return verdict.allowed ? undefined : rateLimited(c, limit, verdict);
+}
+
 function scoped(deps: ServerDeps): Hono<{ Variables: TeamVariables }> {
   const app = new Hono<{ Variables: TeamVariables }>();
   app.use(requireTeam(deps));
@@ -80,6 +91,8 @@ export function threadRunRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariabl
       return invalidRequest(c, "Idempotency-Key must be 1–128 visible ASCII characters.");
     }
     const options = key?.success ? { clientKey: key.data } : {};
+    const limited = await runLimitRefusal(deps, c);
+    if (limited) return limited;
     // A Workbench test chat (KOBE-323): its draft is scanned and stored before the message counts.
     const actor = actorOf(c);
     const refused = await prepareTestChat(
@@ -176,6 +189,8 @@ export function runRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }> 
   app.post("/:id/retry", async (c) => {
     const id = idParam(c);
     if (!id) return invalidRequest(c);
+    const limited = await runLimitRefusal(deps, c);
+    if (limited) return limited;
     return answer(c, async () => c.json(await deps.runs.retry(actorOf(c), id), 201));
   });
 

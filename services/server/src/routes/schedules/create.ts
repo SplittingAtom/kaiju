@@ -23,6 +23,7 @@ import {
   toResponse,
 } from "../../schedules/store.js";
 import { invalidRequest } from "../../http/request.js";
+import { OPERATION_LIMITS, admitOperation, rateLimited } from "../../operation-limits.js";
 import { MARKERS_REFUSED, serverMarkers, mentionsAnswer, type ScheduleKit } from "./shared.js";
 
 /** The caller's schedules (team admins: the team's) and creating one. */
@@ -51,6 +52,9 @@ export function scheduleListRoutes(kit: ScheduleKit): Hono<{ Variables: TeamVari
     if (serverMarkers(body.prompt)) return invalidRequest(c, MARKERS_REFUSED);
     const teamId = c.get("team").id;
     const userId = c.get("user").id;
+    const limit = OPERATION_LIMITS.scheduleCreate; // KOBE-813, per member across Workspaces
+    const verdict = await admitOperation(db, limit, userId);
+    if (!verdict.allowed) return rateLimited(c, limit, verdict);
     const due = body.active ? nextDueAt(body.recurrence, body.tz) : null;
     if (body.active && due === null) return send(c, scheduleError("invalid_recurrence"));
     const answer = await inTeam(
