@@ -84,6 +84,17 @@ there, such as new output or a failed run. This browser remembers the tab you ch
   `os.environ`, stay hidden until you choose **Show**. The list refreshes after each run and with
   **Refresh**; while code runs it shows the values from before the run.
 
+  Reading the variables runs none of your code. Kobe shows the value of numbers, strings, bytes,
+  lists, tuples, dicts and sets (up to 8 items, two levels deep and 200 characters; an object
+  inside one shows as its type, such as `<Customer>`), ranges, NumPy arrays of numbers, and pandas
+  DataFrames and Series (sizes, column names and types). A subclass of a list, dict, string and
+  so on shows its items as the built-in type stores them. Any other object, including instances of
+  your own classes, shows only its type and "(value not shown for this type)": its `__repr__`,
+  `__str__`, `__len__` and iteration are never called. The request is not run as code either, so
+  your execution hooks (`post_execute` and the like, autoreload), input transformers and display
+  formatters do not run, and the execution count and history do not change. One snapshot lists at
+  most 200 variables and 64 KB, and stops after 2 seconds (the list then says it is incomplete).
+
 ## Code completion from the kernel
 
 In a `.py` file's editor, completion also asks the conversation's kernel (see [Code

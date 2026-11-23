@@ -39,6 +39,9 @@ describe("variables (KOBE-804)", () => {
     expect(reprText(v("x", { repr: "<b>x</b>" }), 80)).toBe("<b>x</b>");
     expect(reprText(v("x", { repr: "", reprError: "raised" }), 80)).toMatch(/raised/u);
     expect(reprText(v("x", { repr: "", reprError: "timeout" }), 80)).toMatch(/too long/u);
+    expect(reprText(v("x", { repr: "", reprError: "not_read" }), 80)).toBe(
+      "(value not shown for this type)",
+    );
   });
 
   it("hides credential-like names and environment mappings until shown", () => {

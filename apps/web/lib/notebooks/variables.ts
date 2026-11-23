@@ -14,7 +14,7 @@ export interface Variable {
   /** The type's top-level package (`numpy`, `pandas`, `__main__`); absent for built-ins. */
   readonly module?: string | undefined;
   readonly repr: string;
-  readonly reprError?: "raised" | "timeout" | undefined;
+  readonly reprError?: "raised" | "timeout" | "not_read" | undefined;
   readonly len?: number | undefined;
   readonly shape?: readonly number[] | undefined;
   readonly dtype?: string | undefined;
@@ -95,10 +95,15 @@ export function summaryOf(v: Variable): string {
   return parts.join(" · ");
 }
 
+/** What a value Kobe does not read says (its type is in the Type column). */
+export const NOT_READ_TEXT = "(value not shown for this type)";
+
 /** The value as the row says it: the repr (cut), or why there is none. */
 export function reprText(v: Variable, max: number): string {
   if (v.reprError === "raised") return "(its repr raised an error)";
   if (v.reprError === "timeout") return "(its repr took too long)";
+  // KOBE-816: shown only for built-in types, NumPy arrays and pandas objects (no code of yours runs).
+  if (v.reprError === "not_read") return NOT_READ_TEXT;
   return clip(visibleText(v.repr), max);
 }
 
