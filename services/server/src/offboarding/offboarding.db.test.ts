@@ -4,16 +4,16 @@ import { unzipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
 import { sql, teamMembers, withTeam } from "@kobe/db";
-import { createApp } from "./app.js";
-import { createServerDeps, type ServerDeps } from "./deps.js";
-import { createSandboxLifecycle } from "./sandbox-lifecycle/index.js";
-import { RETAIN_DAYS } from "./offboarding/index.js";
-import type { OffboardProvider } from "./offboarding/types.js";
-import { TestBrowser } from "./testing/browser.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { MemoryMailer } from "./testing/mailer.js";
-import { workspaceBlobKey } from "./workspace-sync/keys.js";
-import { fakeIsolation } from "./testing/isolation.js";
+import { createApp } from "../app.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { createSandboxLifecycle } from "../sandbox-lifecycle/index.js";
+import { RETAIN_DAYS } from "./index.js";
+import type { OffboardProvider } from "./types.js";
+import { TestBrowser } from "../testing/browser.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { workspaceBlobKey } from "../workspace-sync/keys.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 /**
  * Offboarding (KOBE-28, D12) against a real Postgres: a removed or deactivated member's sandbox is
