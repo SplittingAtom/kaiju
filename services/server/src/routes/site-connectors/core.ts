@@ -100,7 +100,7 @@ export function connectorCoreRoutes(kit: ConnectorKit): Hono<{ Variables: AuthVa
   });
 
   // Re-probe now (KOBE-430): the refresh's probe and drift for this connector, under its lock.
-  // Read per request: building the app must not touch the probe (threads.db.test ac-2).
+  // Read per request: building the app must not touch the probe (threads.list.db.test ac-2).
   const reprobeDeps = () => ({
     db,
     prober: deps.connectorProbe,

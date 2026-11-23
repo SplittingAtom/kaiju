@@ -69,7 +69,8 @@ export interface GitConnectionDeps {
 
 /**
  * Read lazily: building the router touches no deps, so an app that serves other routes (thread
- * reads from Postgres alone, `threads.db.test.ts`) never reaches the envelope or the host client.
+ * reads from Postgres alone, `threads.list.db.test.ts`) never reaches the envelope or the host
+ * client.
  */
 export function gitConnectionDeps(deps: ServerDeps): GitConnectionDeps {
   return {

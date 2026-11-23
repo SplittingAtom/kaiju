@@ -1,4 +1,5 @@
-// D29 order table, stages 5 on: thread mode, allow rules, agent tools, MCP exposure (KOBE-725: split from evaluate.test.ts; the D29 table is EARLY_CASES then LATE_CASES).
+// D29 order table, stages 5 on: thread mode, allow rules, agent tools, MCP exposure.
+// Split from evaluate.test.ts (KOBE-725); evaluate.order.test.ts runs EARLY_CASES then LATE_CASES.
 import { builtin, ENABLED_ALL, NOW, rule } from "../testing/policy-fixtures.js";
 import {
   type Case,

@@ -1,4 +1,5 @@
-// D29 order table, stages 0-4: input checks, site and team deny, ask rules, risk class (KOBE-725: split from evaluate.test.ts; the D29 table is EARLY_CASES then LATE_CASES).
+// D29 order table, stages 0-4: input checks, site and team deny, ask rules, risk class.
+// Split from evaluate.test.ts (KOBE-725); evaluate.order.test.ts runs EARLY_CASES then LATE_CASES.
 import { builtin, rule } from "../testing/policy-fixtures.js";
 import {
   type Case,

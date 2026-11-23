@@ -11,7 +11,7 @@ import { KEYS, SETTINGS, gateFor, seedCluster } from "../testing/sandbox-fixture
 
 /**
  * Orbit scores shown in the inventory and published for gallery agents (KOBE-94). The eval Job is
- * simulated as in orbit-eval.db.test.ts; the site admin's eval runs in one of their teams and
+ * simulated as in orbit-eval.test-helpers.ts; the site admin's eval runs in one of their teams and
  * its verdict becomes a site-level score every team reads.
  */
 const finance = randomUUID();

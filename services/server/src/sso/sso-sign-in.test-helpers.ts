@@ -1,4 +1,5 @@
-// Shared setup for the sso-sign-in.*.db.test.ts files (split from sso-sign-in.db.test.ts, KOBE-725).
+// Shared setup for the sso-sign-in.*.db.test.ts files
+// (split from sso-sign-in.db.test.ts, KOBE-725).
 import { afterAll, beforeAll, expect } from "vitest";
 import { seedHelmProviders } from "./providers.js";
 import { loadSsoSettings, type SsoSettings } from "./settings.js";
