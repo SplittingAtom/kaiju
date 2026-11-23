@@ -3,20 +3,20 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
 import { InMemorySpanExporter, SpanStatusCode, initTelemetry } from "@kobe/telemetry";
 import { WORKSPACE_SYNC_PATH } from "@kobe/protocol/sandbox-wire";
-import { createApp } from "./app.js";
-import { createSandboxApp } from "./routes/sandbox.js";
-import { EventStreamFixture, PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandboxAuth } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { RawBody, TestBrowser } from "./testing/browser.js";
-import { KEYS } from "./testing/sandbox-fixtures.js";
+import { createApp } from "../app.js";
+import { createSandboxApp } from "../routes/sandbox.js";
+import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandboxAuth } from "../testing/fake-sandbox.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { RawBody, TestBrowser } from "../testing/browser.js";
+import { KEYS } from "../testing/sandbox-fixtures.js";
 import {
   createSandboxAuthenticator,
   createWorkspaceSync,
   workspaceBlobKey,
   type WorkspaceSync,
-} from "./workspace-sync/index.js";
-import { WRITE_ATTR, WRITE_SPAN } from "./workspace-sync/write-spans.js";
+} from "./index.js";
+import { WRITE_ATTR, WRITE_SPAN } from "./write-spans.js";
 
 /**
  * KOBE-529: the three workspace write routes record child spans under their server span that

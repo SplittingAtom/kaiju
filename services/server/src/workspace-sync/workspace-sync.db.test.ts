@@ -8,12 +8,12 @@ import {
   type WorkspaceEntry,
 } from "@kobe/protocol/sandbox-wire";
 import { sql, withTeam } from "@kobe/db";
-import { createSandboxApp } from "./routes/sandbox.js";
-import { moveFiles } from "./workspace-sync/move.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandboxAuth } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { KEYS } from "./testing/sandbox-fixtures.js";
+import { createSandboxApp } from "../routes/sandbox.js";
+import { moveFiles } from "./move.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandboxAuth } from "../testing/fake-sandbox.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { KEYS } from "../testing/sandbox-fixtures.js";
 import {
   createSandboxAuthenticator,
   createWorkspaceSync,
@@ -21,7 +21,7 @@ import {
   putServerFile,
   workspaceBlobKey,
   type WorkspaceSync,
-} from "./workspace-sync/index.js";
+} from "./index.js";
 
 /**
  * Workspace sync endpoints (KOBE-27) on the sandbox listener against a real Postgres: auth, the

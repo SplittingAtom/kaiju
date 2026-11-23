@@ -2,18 +2,18 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { workspaceFileChangeSchema, type WorkspaceFileChange } from "@kobe/protocol";
 import { withTeam } from "@kobe/db";
-import { createApp } from "./app.js";
-import { HUB_DEFAULTS } from "./event-stream/hub.js";
-import { EventStreamFixture, PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { RawBody, TestBrowser } from "./testing/browser.js";
-import { SseReader } from "./testing/sse.js";
-import { commitChanges, currentEntry, recordBlob } from "./workspace-sync/store.js";
+import { createApp } from "../app.js";
+import { HUB_DEFAULTS } from "../event-stream/hub.js";
+import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { RawBody, TestBrowser } from "../testing/browser.js";
+import { SseReader } from "../testing/sse.js";
+import { commitChanges, currentEntry, recordBlob } from "./store.js";
 import {
   createWorkspaceSync,
   workspaceBlobKey,
   type WorkspaceSync,
-} from "./workspace-sync/index.js";
+} from "./index.js";
 
 /**
  * KOBE-496: `GET /v1/workspace/changes` against a real Postgres. A change reaches the member's own

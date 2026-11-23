@@ -3,19 +3,19 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { WORKSPACE_SYNC_PATH, type WorkspaceChange } from "@kobe/protocol/sandbox-wire";
 import { sql, withTeam } from "@kobe/db";
-import { createSandboxApp } from "./routes/sandbox.js";
-import { EventStreamFixture, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandboxAuth } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { KEYS } from "./testing/sandbox-fixtures.js";
+import { createSandboxApp } from "../routes/sandbox.js";
+import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandboxAuth } from "../testing/fake-sandbox.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { KEYS } from "../testing/sandbox-fixtures.js";
 import {
   createSandboxAuthenticator,
   createWorkspaceSync,
   workspaceBlobKey,
   type WorkspaceLimits,
   type WorkspaceSync,
-} from "./workspace-sync/index.js";
-import type { WorkspaceRoutesDeps } from "./workspace-sync/routes.js";
+} from "./index.js";
+import type { WorkspaceRoutesDeps } from "./routes.js";
 
 /**
  * Workspace sync under a hostile sandbox (KOBE-27 security review): database in-flight caps and

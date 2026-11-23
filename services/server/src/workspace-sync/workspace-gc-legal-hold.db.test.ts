@@ -2,15 +2,15 @@ import { createHash, randomBytes } from "node:crypto";
 import { Readable } from "node:stream";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { EventStreamFixture, type Person } from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { collectWorkspace, workspaceBlobKey } from "./workspace-sync/index.js";
-import { collectAll, type CollectOptions } from "./workspace-sync/gc.js";
-import { purgeDeparted } from "./offboarding/purge.js";
-import { DeleteAbortedError } from "./retention/bounded-delete.js";
-import { discardOrphanedResend } from "./workspace-sync/lost.js";
-import type { ObjectStore } from "./workspace-sync/object-store.js";
-import type { OffboardingContext } from "./offboarding/types.js";
+import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { collectWorkspace, workspaceBlobKey } from "./index.js";
+import { collectAll, type CollectOptions } from "./gc.js";
+import { purgeDeparted } from "../offboarding/purge.js";
+import { DeleteAbortedError } from "../retention/bounded-delete.js";
+import { discardOrphanedResend } from "./lost.js";
+import type { ObjectStore } from "./object-store.js";
+import type { OffboardingContext } from "../offboarding/types.js";
 
 /**
  * Workspace blob collection under a legal hold (KOBE-183): the held (team, user)'s blobs, objects

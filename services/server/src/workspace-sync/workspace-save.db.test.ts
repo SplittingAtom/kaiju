@@ -2,16 +2,16 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { workspaceFileEntrySchema, workspaceSaveConflictSchema } from "@kobe/protocol";
 import { withTeam } from "@kobe/db";
-import { createApp } from "./app.js";
-import { EventStreamFixture, PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { RawBody, TestBrowser } from "./testing/browser.js";
-import { currentEntry } from "./workspace-sync/store.js";
+import { createApp } from "../app.js";
+import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { RawBody, TestBrowser } from "../testing/browser.js";
+import { currentEntry } from "./store.js";
 import {
   createWorkspaceSync,
   workspaceBlobKey,
   type WorkspaceSync,
-} from "./workspace-sync/index.js";
+} from "./index.js";
 
 /**
  * KOBE-462 (spec FE4/FE5): `PUT /v1/workspace/file` against a real Postgres: the version check,

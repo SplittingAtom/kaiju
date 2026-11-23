@@ -7,20 +7,20 @@ import {
   workspaceMoveResponseSchema,
 } from "@kobe/protocol";
 import { withTeam } from "@kobe/db";
-import { createApp } from "./app.js";
-import { hitRateLimit } from "./rate-limit.js";
-import { purgeReleasedWorkspaceHoldHistory } from "./retention/workspace-hold-history.js";
-import { MOVE_RATE_LIMIT } from "./routes/workspace-move.js";
-import { rewriteMentions } from "./runs/mentions.js";
-import { EventStreamFixture, PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { TestBrowser } from "./testing/browser.js";
-import { manifestPage } from "./workspace-sync/store.js";
+import { createApp } from "../app.js";
+import { hitRateLimit } from "../rate-limit.js";
+import { purgeReleasedWorkspaceHoldHistory } from "../retention/workspace-hold-history.js";
+import { MOVE_RATE_LIMIT } from "../routes/workspace-move.js";
+import { rewriteMentions } from "../runs/mentions.js";
+import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { TestBrowser } from "../testing/browser.js";
+import { manifestPage } from "./store.js";
 import {
   createWorkspaceSync,
   workspaceBlobKey,
   type WorkspaceSync,
-} from "./workspace-sync/index.js";
+} from "./index.js";
 
 /**
  * KOBE-304: `POST /v1/workspace/files/move` against a real Postgres: the manifest-first move, the

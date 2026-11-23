@@ -2,18 +2,18 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { withTeam } from "@kobe/db";
-import { createApp } from "./app.js";
-import { FRAME_HEADERS } from "./artifacts/serve.js";
-import { WEBRTC_GUARD } from "./connectors/app-frame.js";
-import { WORKSPACE_FRAME_MAX_BYTES } from "./routes/workspace-frame.js";
-import { EventStreamFixture, PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { TestBrowser } from "./testing/browser.js";
+import { createApp } from "../app.js";
+import { FRAME_HEADERS } from "../artifacts/serve.js";
+import { WEBRTC_GUARD } from "../connectors/app-frame.js";
+import { WORKSPACE_FRAME_MAX_BYTES } from "../routes/workspace-frame.js";
+import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { TestBrowser } from "../testing/browser.js";
 import {
   createWorkspaceSync,
   workspaceBlobKey,
   type WorkspaceSync,
-} from "./workspace-sync/index.js";
+} from "./index.js";
 
 /**
  * The workspace HTML frame (KOBE-268) against a real Postgres: the caller's own synced HTML file

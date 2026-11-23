@@ -2,15 +2,15 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { WORKSPACE_SYNC_PATH, type WorkspaceChange } from "@kobe/protocol/sandbox-wire";
-import { createSandboxApp } from "./routes/sandbox.js";
-import { EventStreamFixture, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandboxAuth } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { KEYS } from "./testing/sandbox-fixtures.js";
-import { runWithAuditContext } from "./audit/context.js";
-import { storeUpload } from "./uploads/store.js";
-import type { UploadSettings } from "./uploads/settings.js";
-import { createSandboxAuthenticator, createWorkspaceSync } from "./workspace-sync/index.js";
+import { createSandboxApp } from "../routes/sandbox.js";
+import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandboxAuth } from "../testing/fake-sandbox.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { KEYS } from "../testing/sandbox-fixtures.js";
+import { runWithAuditContext } from "../audit/context.js";
+import { storeUpload } from "../uploads/store.js";
+import type { UploadSettings } from "../uploads/settings.js";
+import { createSandboxAuthenticator, createWorkspaceSync } from "./index.js";
 
 /**
  * KOBE-185: workspace sync pushes count against the team storage quota (files + live workspace

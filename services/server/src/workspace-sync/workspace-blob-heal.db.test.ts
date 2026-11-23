@@ -1,18 +1,18 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { WORKSPACE_SYNC_PATH, workspaceBlobsLostResponseSchema } from "@kobe/protocol/sandbox-wire";
-import { createSandboxApp } from "./routes/sandbox.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandboxAuth } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { KEYS } from "./testing/sandbox-fixtures.js";
+import { createSandboxApp } from "../routes/sandbox.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandboxAuth } from "../testing/fake-sandbox.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { KEYS } from "../testing/sandbox-fixtures.js";
 import {
   createSandboxAuthenticator,
   createWorkspaceSync,
   repairWorkspaces,
   workspaceBlobKey,
   type WorkspaceSync,
-} from "./workspace-sync/index.js";
+} from "./index.js";
 
 /**
  * KOBE-475: content the manifest says is stored but object storage lost (gate1's store move). A

@@ -3,21 +3,21 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { workspaceEventSchema, type WorkspaceEvent } from "@kobe/protocol";
 import { CAPABILITY_WORKSPACE_SYNC_NOW } from "@kobe/protocol/sandbox-wire";
 import { withTeam } from "@kobe/db";
-import { createApp } from "./app.js";
-import { notifyTeamWorkspaces } from "./event-stream/access.js";
-import { EventStreamFixture, PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing/fake-sandbox.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { TestBrowser } from "./testing/browser.js";
-import { SseReader } from "./testing/sse.js";
-import { OPERATION_LIMITS } from "./operation-limits.js";
-import { expectRateLimited, fillLimit } from "./testing/operation-limits.js";
-import { commitChanges, currentEntry, recordBlob } from "./workspace-sync/store.js";
+import { createApp } from "../app.js";
+import { notifyTeamWorkspaces } from "../event-stream/access.js";
+import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
+import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { TestBrowser } from "../testing/browser.js";
+import { SseReader } from "../testing/sse.js";
+import { OPERATION_LIMITS } from "../operation-limits.js";
+import { expectRateLimited, fillLimit } from "../testing/operation-limits.js";
+import { commitChanges, currentEntry, recordBlob } from "./store.js";
 import {
   createWorkspaceSync,
   workspaceBlobKey,
   type WorkspaceSync,
-} from "./workspace-sync/index.js";
+} from "./index.js";
 
 /**
  * KOBE-599 against a real Postgres and the real sandbox wire: Refresh asks the member's own live
