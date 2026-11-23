@@ -8,17 +8,17 @@ import { withTeam } from "@kobe/db";
 import {
   NOTIFICATION_EMAIL_MAX_ATTEMPTS,
   deliverNotificationEmails,
-} from "./notifications/email.js";
-import { notifyScheduledRunEndInTx } from "./notifications/record.js";
-import { endRunInTx } from "./sandbox-wire/run-state.js";
-import type { RunEnd } from "./sandbox-wire/types.js";
+} from "./email.js";
+import { notifyScheduledRunEndInTx } from "./record.js";
+import { endRunInTx } from "../sandbox-wire/run-state.js";
+import type { RunEnd } from "../sandbox-wire/types.js";
 import {
   EventStreamFixture,
   PUBLIC_URL,
   must,
   type Person,
-} from "./testing/event-stream-fixture.js";
-import type { MemoryMailer } from "./testing/mailer.js";
+} from "../testing/event-stream-fixture.js";
+import type { MemoryMailer } from "../testing/mailer.js";
 
 /**
  * Scheduled-run notifications (KOBE-179, D32; contract in docs/ledger/KOBE-176.md): one in-app
