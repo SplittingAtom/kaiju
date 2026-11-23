@@ -167,4 +167,21 @@ describe("answer feedback (KOBE-275)", () => {
     );
     expect(thumbs(only as HTMLElement).up.getAttribute("aria-pressed")).toBe("false");
   });
+
+  it("says so when the member rated too often (KOBE-813)", async () => {
+    const x = answeredThread();
+    const user = userEvent.setup();
+    openApp(fake, x.thread);
+    const [first] = await answerBars();
+    const message = "Too many ratings. Wait a minute and try again.";
+    fake.failNext.set(
+      `PUT /v1/runs/${x.r1}/feedback`,
+      new Response(JSON.stringify({ code: "rate_limited", message }), {
+        status: 429,
+        headers: { "content-type": "application/json", "retry-after": "42" },
+      }),
+    );
+    await user.click(thumbs(first as HTMLElement).up);
+    expect((await screen.findByRole("alert")).textContent).toBe(message);
+  });
 });

@@ -28,6 +28,12 @@ const TEAM_HEADER = {
   schema: { type: "string", format: "uuid" },
 };
 
+/** KOBE-813: rating and clearing count together, per member. */
+const RATE_LIMITED = json(
+  "Error",
+  "`rate_limited`: more than 60 ratings or clears per member a minute (`Retry-After` in seconds).",
+);
+
 const COMMON = {
   "401": json("Error", "`unauthenticated`: no session."),
   "403": json("Error", "`not_a_team_member` or `forbidden` (no `team.chat`)."),
@@ -64,6 +70,7 @@ export function feedbackOpenApiPaths(): Record<string, Record<string, unknown>> 
             "`run_not_ended`, `not_an_answer`, `thread_in_trash`, `test_thread`, " +
               "`no_active_team` or `team_mismatch`.",
           ),
+          "429": RATE_LIMITED,
         },
       },
       delete: {
@@ -77,6 +84,7 @@ export function feedbackOpenApiPaths(): Record<string, Record<string, unknown>> 
           ...COMMON,
           "404": json("Error", "`run_not_found`: the id is not a uuid."),
           "409": json("Error", "`no_active_team` or `team_mismatch`."),
+          "429": RATE_LIMITED,
         },
       },
     },

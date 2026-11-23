@@ -75,7 +75,11 @@ export function branchSummaryOpenApiPaths(): Record<string, Record<string, unkno
             `${codes("thread_busy", "nothing_to_summarize", "summary_limit", "model_not_configured", "test_thread")}; ` +
               "also `skill_eval_thread`, `thread_in_trash`, `no_active_team`, `team_mismatch` (as `Error`).",
           ),
-          "429": json("Error", "`budget_exhausted`: the member's or team's budget is used up."),
+          "429": json(
+            "Error",
+            "`budget_exhausted`: the member's or team's budget is used up; or `rate_limited`: more " +
+              "than 10 branch summaries per member in 10 minutes (`Retry-After` in seconds).",
+          ),
           "502": json("BranchSummaryError", codes("summary_failed")),
           "503": json(
             "BranchSummaryError",

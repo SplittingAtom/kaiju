@@ -8,6 +8,8 @@ import { RunFixture } from "./testing/run-fixture.js";
 import { createWorkspaceSync } from "./workspace-sync/index.js";
 import { storageUsed } from "./uploads/quota.js";
 import { listLive } from "./workspace-sync/store.js";
+import { OPERATION_LIMITS } from "./operation-limits.js";
+import { expectRateLimited, fillLimit } from "./testing/operation-limits.js";
 
 /**
  * KOBE-162 (ac-1): the project files API and how files reach members' workspaces. The `projects/`
@@ -94,6 +96,15 @@ async function converse(p: Person, project: string): Promise<string> {
 }
 
 describe("project files API", () => {
+  it("shares the member's upload limit (KOBE-813): nothing is added past it", async () => {
+    const w = await f.world();
+    const b = await builder(w.team);
+    const project = await create(b, { name: "Limited" });
+    await fillLimit(f.fx.admin, OPERATION_LIMITS.upload, b.id);
+    expectRateLimited(await upload(b, project.id, "x.md", "x"), OPERATION_LIMITS.upload);
+    expect((await as(b).get(`/v1/projects/${project.id}/files`)).json.files).toHaveLength(0);
+  });
+
   it("lets owners and admins add and remove files; readers and outsiders cannot", async () => {
     const w = await f.world();
     const b = await builder(w.team);

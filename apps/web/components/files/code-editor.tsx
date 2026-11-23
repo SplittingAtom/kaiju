@@ -11,7 +11,7 @@
  * above the editor (`proposal-review.tsx`) moves between the changes and decides the change at the
  * cursor through `onReview`.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useLineWrap } from "./use-line-wrap";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
@@ -36,6 +36,12 @@ import type { EditorLanguage } from "../../lib/files/editor";
 import { minimalChange } from "../../lib/files/outside-change";
 import { documentCspNonce } from "../../lib/security/csp-nonce";
 import { languageExtension } from "./editor-languages";
+import { builtInCompletion, completionTheme, kernelCompletion } from "./editor-completion";
+import {
+  KERNEL_STATE_TEXT,
+  type KernelCompleter,
+  type KernelCompletionState,
+} from "../../lib/notebooks/kernel-completer";
 
 export interface CodeEditorProps {
   readonly value: string;
@@ -70,6 +76,8 @@ export interface CodeEditorProps {
   readonly reveal?: { readonly line: number; readonly seq: number } | undefined;
   /** Put the cursor in the editor when it opens (never when read-only). */
   readonly autoFocus?: boolean | undefined;
+  /** A `.py` file's kernel completion (KOBE-808); built-in completion needs nothing. */
+  readonly kernel?: KernelCompleter | undefined;
 }
 
 export interface SelectedLines {
@@ -302,8 +310,27 @@ function baseExtensions(label: string): Extension[] {
     // un-nonced ones, leaving the gutter above the text and the diff uncoloured (KOBE-469).
     EditorView.cspNonce.of(documentCspNonce()),
     theme,
+    completionTheme,
   ];
 }
+
+/** KOBE-808: completion only where the member can type, plus the kernel's for a `.py` file. */
+function completionExtensions(readOnly: boolean, kernel: KernelCompleter | undefined): Extension[] {
+  if (readOnly) return [];
+  return [builtInCompletion(), kernel === undefined ? [] : kernelCompletion(kernel)];
+}
+
+/** The states announced to screen readers: kernel completion stopped, and why. */
+const ANNOUNCED_STATES: ReadonlySet<KernelCompletionState> = new Set([
+  "no_kernel",
+  "asleep",
+  "unsupported",
+  "unavailable",
+  "rate_limited",
+]);
+
+const NO_STATE = () => () => undefined;
+const noState = (): KernelCompletionState | null => null;
 
 /** The member is typing in some other field (the composer, a dialog): never take that focus. */
 function typingElsewhere(editor: HTMLElement): boolean {
@@ -336,6 +363,7 @@ export default function CodeEditor({
   onSelectionLines,
   reveal,
   autoFocus = false,
+  kernel,
 }: CodeEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<EditorView | null>(null);
@@ -369,11 +397,26 @@ export default function CodeEditor({
     language: new Compartment(),
     readOnly: new Compartment(),
     wrap: new Compartment(),
+    completion: new Compartment(),
   });
+  const kernelRef = useRef(kernel);
+  kernelRef.current = kernel;
+  const kernelState = useSyncExternalStore(
+    kernel?.subscribe ?? NO_STATE,
+    kernel?.getState ?? noState,
+    kernel?.getState ?? noState,
+  );
   const [lineWrap, setLineWrap] = useLineWrap();
   const lineWrapRef = useRef(lineWrap);
   lineWrapRef.current = lineWrap;
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
+  // Screen readers hear only when kernel completion turns off, each reason once (review L6).
+  const [announced, setAnnounced] = useState("");
+  useEffect(() => {
+    if (kernelState === null || !ANNOUNCED_STATES.has(kernelState)) return;
+    const text = KERNEL_STATE_TEXT[kernelState];
+    setAnnounced((was) => (was === text ? was : text));
+  }, [kernelState]);
 
   // One view per file and per review; text, language and read-only change in place.
   useEffect(() => {
@@ -438,6 +481,9 @@ export default function CodeEditor({
           compartments.current.wrap.of(wrapExtension(lineWrapRef.current)),
           // Read-only from the start (a read-only view is never briefly editable, KOBE-485).
           compartments.current.readOnly.of(readOnlyExtensions(readOnlyRef.current)),
+          compartments.current.completion.of(
+            completionExtensions(readOnlyRef.current, kernelRef.current),
+          ),
           original === undefined
             ? []
             : unifiedMergeView({
@@ -495,9 +541,12 @@ export default function CodeEditor({
 
   useEffect(() => {
     view?.dispatch({
-      effects: compartments.current.readOnly.reconfigure(readOnlyExtensions(readOnly)),
+      effects: [
+        compartments.current.readOnly.reconfigure(readOnlyExtensions(readOnly)),
+        compartments.current.completion.reconfigure(completionExtensions(readOnly, kernel)),
+      ],
     });
-  }, [view, readOnly]);
+  }, [view, readOnly, kernel]);
 
   // Go to a line (the Log tab's "Go to line", KOBE-804): the cursor at its start, scrolled in.
   const revealSeq = reveal?.seq;
@@ -555,6 +604,22 @@ export default function CodeEditor({
           >
             Wrap
           </button>
+          {kernelState !== null && !readOnly && (
+            <>
+              <span
+                role="status"
+                aria-live="off"
+                data-kobe-kernel-completion={kernelState}
+                className="ml-auto truncate"
+                title="Completion from the conversation's Python kernel, added to the editor's own"
+              >
+                {KERNEL_STATE_TEXT[kernelState]}
+              </span>
+              <span className="sr-only" aria-live="polite" data-kobe-kernel-announce>
+                {announced}
+              </span>
+            </>
+          )}
           <span role="status" aria-live="off" aria-label="Cursor position" className="tabular-nums">
             {`Ln ${cursor.line}, Col ${cursor.column}`}
           </span>

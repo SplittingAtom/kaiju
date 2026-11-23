@@ -49,8 +49,8 @@ export const COMPOSER_KEYS: readonly { readonly keys: string; readonly name: str
 ];
 
 /**
- * Keys of the code editor (KOBE-806, CodeMirror's search keymap; KOBE-805 run and save) the `?`
- * sheet also names.
+ * Keys of the code editor (KOBE-806, CodeMirror's search keymap; KOBE-805 run and save; KOBE-808,
+ * its completion keymap) the `?` sheet also names.
  */
 export const EDITOR_KEYS: readonly { readonly keys: string; readonly name: string }[] = [
   { keys: "Mod+S", name: "Save the file" },
@@ -61,7 +61,10 @@ export const EDITOR_KEYS: readonly { readonly keys: string; readonly name: strin
   { keys: "Shift+Mod+G", name: "Find previous" },
   { keys: "Mod+Alt+F", name: "Replace" },
   { keys: "Mod+Alt+G", name: "Go to line" },
-  { keys: "Escape", name: "Close the find panel" },
+  { keys: "Ctrl+Space", name: "Show completions (on a Mac also Alt+I)" },
+  { keys: "Tab", name: "Accept the selected completion (Enter too)" },
+  { keys: "Ctrl+Shift+Space", name: "Python: signature and docs from the kernel" },
+  { keys: "Escape", name: "Close the find panel, completions or docs" },
 ];
 
 /** macOS (and iPadOS, which reports itself as a Mac): `Mod` is Cmd there. */

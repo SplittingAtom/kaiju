@@ -87,7 +87,27 @@ describe("variables snapshot contract (KOBE-803)", () => {
     expect(notebookVariableSchema.safeParse(v).success).toBe(true);
     expect(notebookVariableSchema.safeParse({ ...v, repr: `${v.repr}x` }).success).toBe(false);
     expect(notebookVariableSchema.safeParse({ ...v, repr: "a\u0000" }).success).toBe(false);
-    expect(notebookVariableSchema.safeParse({ ...v, repr_error: "hung" }).success).toBe(false);
+    // KOBE-816: a withheld value says why; Show names one variable.
+    for (const hidden of ["name", "keys", "later_reason"]) {
+      expect(notebookVariableSchema.safeParse({ ...v, repr: "", hidden }).success, hidden).toBe(
+        true,
+      );
+    }
+    expect(notebookVariableSchema.safeParse({ ...v, hidden: "No!" }).success).toBe(false);
+    expect(notebookVariablesBodySchema.safeParse({ show: "API_KEY" }).success).toBe(true);
+    for (const show of ["", "a.b", "x()", "1a", "a b"]) {
+      expect(notebookVariablesBodySchema.safeParse({ show }).success, show).toBe(false);
+    }
+    // An unknown short reason from a newer agent is accepted; anything else is not.
+    expect(notebookVariableSchema.safeParse({ ...v, repr_error: "hung" }).success).toBe(true);
+    expect(notebookVariableSchema.safeParse({ ...v, repr_error: "Hung up!" }).success).toBe(false);
+    expect(notebookVariableSchema.safeParse({ ...v, repr_error: "x".repeat(33) }).success).toBe(
+      false,
+    );
+    // KOBE-816: a value not read (it would need the member's code) says so.
+    expect(
+      notebookVariableSchema.safeParse({ ...v, repr: "", repr_error: "not_read" }).success,
+    ).toBe(true);
     const col = { name: "c", dtype: "int64" };
     expect(
       notebookVariableSchema.safeParse({

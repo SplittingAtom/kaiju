@@ -98,6 +98,12 @@ export const conversationsAreas: readonly CatalogArea[] = [
       ],
       [
         "post",
+        "/v1/threads/{id}/notebook/complete",
+        "Complete code or read a name's documentation from the kernel",
+        "Owner only. Never wakes the sandbox; 600 per minute per member.",
+      ],
+      [
+        "post",
         "/v1/threads/{id}/notebook/interrupt",
         "Interrupt the conversation's notebook kernel",
         "Owner only.",
@@ -112,7 +118,8 @@ export const conversationsAreas: readonly CatalogArea[] = [
         "post",
         "/v1/threads/{id}/notebook/run",
         "Run a notebook cell or Python file in the kernel",
-        "Owner only. Answers 202.",
+        "Owner only. Answers 202. 429 `rate_limited` past 300 cell runs per member a minute " +
+          "(`Retry-After`, KOBE-813); a `thread_busy` answer does not count.",
       ],
       [
         "post",
@@ -253,7 +260,12 @@ export const conversationsAreas: readonly CatalogArea[] = [
         "List schedules with the active count",
         "`scope=team` is for team admins (`team.schedules.pause`).",
       ],
-      ["post", "/v1/schedules", "Create a schedule"],
+      [
+        "post",
+        "/v1/schedules",
+        "Create a schedule",
+        "429 `rate_limited` past 20 new schedules per member an hour (`Retry-After`, KOBE-813).",
+      ],
       ["delete", "/v1/schedules/{id}", "Delete one of the member's schedules", "Answers 204."],
       ["get", "/v1/schedules/{id}", "Read one of the member's schedules"],
       ["patch", "/v1/schedules/{id}", "Change one of the member's schedules"],

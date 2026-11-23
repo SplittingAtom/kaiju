@@ -266,6 +266,42 @@ describe("POST /v1/threads/{id}/notebook/variables (KOBE-803)", () => {
     expect(sb.frames("notebook.inspect")).toHaveLength(2);
   });
 
+  it("Show (KOBE-816): forwards that one name, only for the owner; a plain ask names none", async () => {
+    const w = await world();
+    const sb = await connected(w, NEW_AGENT, (f) =>
+      "show" in f && f.show !== undefined
+        ? { ...SNAPSHOT, variables: [{ name: "API_KEY", type: "str", repr: "'sk-1'", len: 4 }] }
+        : {
+            ...SNAPSHOT,
+            variables: [{ name: "API_KEY", type: "str", repr: "", hidden: "name" }],
+          },
+    );
+    const plain = await variables(w);
+    expect(plain.json).toMatchObject({
+      variables: [{ name: "API_KEY", repr: "", hidden: "name" }],
+    });
+    expect(sb.frames("notebook.inspect")[0]).not.toHaveProperty("show");
+    const shown = await w.owner.browser.post(`/v1/threads/${w.threadId}/notebook/variables`, {
+      show: "API_KEY",
+    });
+    expect([shown.status, shown.json]).toMatchObject([
+      200,
+      { variables: [{ name: "API_KEY", repr: "'sk-1'" }] },
+    ]);
+    expect(sb.frames("notebook.inspect")[1]).toMatchObject({ show: "API_KEY" });
+    const bad = await w.owner.browser.post(`/v1/threads/${w.threadId}/notebook/variables`, {
+      show: "os.environ",
+    });
+    expect(bad.status).toBe(400);
+    await fx.activate(w.reader, w.team);
+    await fx.admin.query(`UPDATE threads SET shared_to_team = true WHERE id = $1`, [w.threadId]);
+    const reader = await w.reader.browser.post(`/v1/threads/${w.threadId}/notebook/variables`, {
+      show: "API_KEY",
+    });
+    expect(reader.status).toBe(403);
+    expect(sb.frames("notebook.inspect")).toHaveLength(2);
+  });
+
   it("passes busy and unavailable through, and an unreadable answer is unavailable", async () => {
     const w = await world();
     let answer: unknown = { status: "busy" };

@@ -20,6 +20,8 @@ import { NotebookRunError, type NotebookRunHost } from "./user-run.js";
  * (no event, no audit of values) and the snapshot goes to the owner only: a repr can hold a secret.
  * The agent keeps the snapshot it took after the member's last run and answers from it while code
  * runs (`stale`) or when nothing ran since; `refresh` asks for a fresh one when the kernel is idle.
+ * KOBE-816: the sandbox withholds values of credential-like names (`hidden`); `show` (the owner's
+ * Show) asks for that one variable, not withheld, through the same owner-only path.
  */
 /** Snapshots per member per minute: each runs code in their kernel. */
 export const VARIABLES_RATE_LIMIT = { windowMs: 60_000, max: 60 };
@@ -36,6 +38,7 @@ export async function notebookVariables(
   actor: ActorContext,
   threadId: string,
   refresh = false,
+  show?: string,
 ): Promise<NotebookVariablesResult> {
   if (host.isolationMissing()) {
     throw new NotebookRunError("isolation_unavailable", "Sandboxes are unavailable right now.");
@@ -49,11 +52,15 @@ export async function notebookVariables(
   }
   const target = { teamId: actor.team_id, userId: actor.user_id };
   // That a snapshot was asked for is logged; its content never is, nor stored anywhere.
-  host.log.info({ thread_id: threadId, refresh }, "notebook variables requested");
+  // KOBE-816: whether a Show was asked is logged, never which variable or its value.
+  host.log.info(
+    { thread_id: threadId, refresh, show: show !== undefined },
+    "notebook variables requested",
+  );
   if (!(await host.router.isConnected(target, threadId))) return { status: "no_kernel" };
   const outcome = await host.router.notebookInspect(
     target,
-    { threadId, timeoutMs: NOTEBOOK_INSPECT_TIMEOUT_MS, refresh },
+    { threadId, timeoutMs: NOTEBOOK_INSPECT_TIMEOUT_MS, refresh, ...(show ? { show } : {}) },
     { timeoutMs: NOTEBOOK_INSPECT_TIMEOUT_MS + VARIABLES_COMMAND_MARGIN_MS },
   );
   if (!outcome.ok) {

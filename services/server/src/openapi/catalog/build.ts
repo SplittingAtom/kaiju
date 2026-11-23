@@ -74,7 +74,10 @@ export const ERROR_RESPONSES = {
     "The request is well-formed but refused (for example an invalid value the code names).",
   ],
   "428": ["PreconditionRequired", "Send `If-Match` with the version the change is based on."],
-  "429": ["RateLimited", "`rate_limited`: too many requests; retry later."],
+  "429": [
+    "RateLimited",
+    "`rate_limited`: too many requests; retry after `Retry-After` seconds where the answer sends it.",
+  ],
   "502": ["BadGateway", "An upstream (sandbox, connector, model or registry) failed."],
   "503": ["Unavailable", "Not available right now (switched off, waking or not configured)."],
   "507": ["InsufficientStorage", "`storage_full`: the member's or team's storage is full."],

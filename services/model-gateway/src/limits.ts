@@ -68,29 +68,58 @@ export class ByteBudget {
 /**
  * Requests per sandbox (token bucket: `burst`, refilled at `perSecond`), checked right after the
  * token, before anything touches the database: a sandbox cannot turn invalid run ids or retries
- * into database load for every team.
+ * into database load for every team. Per replica by design (docs/rate-limits.md). At most
+ * `maxSandboxes` buckets: a new sandbox beyond that first drops the idle (full) buckets, then the
+ * least recently used ones (KOBE-810; it used to clear every bucket, refilling them all at once).
  */
 export class RequestRate {
   private readonly buckets = new Map<string, { tokens: number; at: number }>();
 
   constructor(
-    private readonly limits: { readonly burst: number; readonly perSecond: number },
+    private readonly limits: {
+      readonly burst: number;
+      readonly perSecond: number;
+      readonly maxSandboxes?: number;
+    },
     private readonly now: () => number = Date.now,
   ) {}
 
   allow(sandboxId: string): boolean {
     const t = this.now();
-    const b = this.buckets.get(sandboxId) ?? { tokens: this.limits.burst, at: t };
-    const tokens = Math.min(
-      this.limits.burst,
-      b.tokens + ((t - b.at) / 1000) * this.limits.perSecond,
-    );
-    if (this.buckets.size > 10_000) this.buckets.clear();
+    const b = this.buckets.get(sandboxId);
+    if (!b && this.buckets.size >= this.max) this.prune(t);
+    const tokens = b ? this.level(b, t) : this.limits.burst;
+    // Re-inserting keeps Map order = recency.
+    this.buckets.delete(sandboxId);
     if (tokens < 1) {
       this.buckets.set(sandboxId, { tokens, at: t });
       return false;
     }
     this.buckets.set(sandboxId, { tokens: tokens - 1, at: t });
     return true;
+  }
+
+  /** Buckets held (tests). */
+  get size(): number {
+    return this.buckets.size;
+  }
+
+  private get max(): number {
+    return this.limits.maxSandboxes ?? 10_000;
+  }
+
+  private level(b: { tokens: number; at: number }, t: number): number {
+    return Math.min(this.limits.burst, b.tokens + ((t - b.at) / 1000) * this.limits.perSecond);
+  }
+
+  private prune(t: number): void {
+    // A full bucket is the same as no bucket: dropping it changes nothing for that sandbox.
+    for (const [key, b] of this.buckets)
+      if (this.level(b, t) >= this.limits.burst) this.buckets.delete(key);
+    // Still too many active sandboxes: drop the least recently used.
+    for (const key of this.buckets.keys()) {
+      if (this.buckets.size < this.max) break;
+      this.buckets.delete(key);
+    }
   }
 }

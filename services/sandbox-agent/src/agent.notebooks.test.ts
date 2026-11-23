@@ -89,6 +89,44 @@ describe("thread kernels on the wire (KOBE-464)", () => {
     });
   });
 
+  it("announces notebook_complete with kernels and answers completion requests (KOBE-808)", async () => {
+    h = await startHarness();
+    expect(h.server.frames("hello")[0]?.capabilities ?? []).not.toContain("notebook_complete");
+    await h.close();
+    const k = kernels();
+    h = await startHarness({ kernels: k.manager });
+    expect(h.server.frames("hello")[0]?.capabilities).toContain("notebook_complete");
+    const ask = async (commandId: string, extra: Record<string, unknown>) => {
+      h.server.send({
+        v: 1,
+        type: "notebook.inspect",
+        command_id: commandId,
+        thread_id: THREAD,
+        ...extra,
+      });
+      return h.server.waitFor((f) => f.type === "command.result" && f.command_id === commandId);
+    };
+    // No kernel: none is started for it.
+    expect(await ask("cmd-c0", { op: "complete", code: "x.", cursor: 2 })).toMatchObject({
+      ok: true,
+      data: { status: "no_kernel" },
+    });
+    expect(k.control.launched).toEqual([]);
+    h.server.send(execute("print:x", "cmd-x1"));
+    await h.server.waitFor((f) => f.type === "command.result" && f.command_id === "cmd-x1");
+    expect(await ask("cmd-c1", { op: "complete", code: "x.", cursor: 2 })).toMatchObject({
+      ok: true,
+      data: { status: "ok", op: "complete", matches: [{ text: "alpha" }, { text: "beta" }] },
+    });
+    expect(await ask("cmd-c2", { op: "doc", name: "x.f" })).toMatchObject({
+      ok: true,
+      data: { status: "ok", op: "doc", found: true, signature: "x.f(x)" },
+    });
+    expect(k.control.completed).toEqual([`${THREAD}:complete:x.`, `${THREAD}:doc:x.f`]);
+    // Nothing ran in the kernel for them.
+    expect(k.control.executed).toEqual([`${THREAD}:print:x`]);
+  });
+
   it("streams an execution's outputs naming its command, then answers it", async () => {
     h = await startHarness({ kernels: kernels().manager });
     h.server.send(execute("result:42", "cmd-1"));

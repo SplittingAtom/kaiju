@@ -57,6 +57,30 @@ thread**) to continue in your own copy.
 **I deleted a thread by mistake.** Open **Deleted** in the Threads panel and **Restore** it. Threads
 in Trash are deleted for good after 30 days.
 
+## "Too many …, wait and try again"
+
+Kobe limits how often each person can do a few things, counted across all your workspaces. The
+limits are generous, so you only meet them when something repeats far faster than people work
+(a script, a stuck key, a page reloading in a loop). Wait the time the message says and try again;
+nothing was lost. The limits are the same on every site:
+
+| What                                                                                 | Limit per person                | Message starts with                  |
+| ------------------------------------------------------------------------------------ | ------------------------------- | ------------------------------------ |
+| Sending messages and **Retry**                                                       | 60 a minute                     | "You are sending messages too fast"  |
+| **Compact now**                                                                      | 10 in 10 minutes                | "Too many compactions"               |
+| Summarizing a branch you leave                                                       | 10 in 10 minutes                | "Too many branch summaries"          |
+| Uploading files (composer, Files panel, dropping on the conversation, project files) | 120 in 10 minutes, one per file | "Too many uploads"                   |
+| Running notebook cells (**Run all** counts each cell)                                | 300 a minute                    | "Too many cell runs"                 |
+| Creating schedules                                                                   | 20 an hour                      | "Too many new schedules"             |
+| Starting your sleeping sandbox by hand                                               | 20 in 10 minutes                | "Your sandbox was started too often" |
+| Rating answers (thumbs up or down)                                                   | 60 a minute                     | "Too many ratings"                   |
+
+Scheduled runs never count and are never held back by these limits. Starting your sandbox counts
+once per start, only when it was asleep and you opened the Files panel, pressed Refresh or opened
+the context viewer; asking again while it is still starting is free, and sending a message or
+running a cell still wakes it as usual. Site admins can create or rotate at most 10
+SCIM tokens an hour, and first-run setup accepts 10 attempts per address in 10 minutes.
+
 ## Models and budgets
 
 **"No models are enabled for your team yet."** A team admin needs to enable models in the team
@@ -248,6 +272,17 @@ in. Ask a site admin.
 **I forgot my password.** Use **Forgot your password?** on the sign-in page. If you sign in with
 your organization's account and never had a Kobe password, there is none to reset: use **Sign in
 with _your organization_**.
+
+**"Too many sign-in attempts. Wait a minute, then try again."** Kobe slows down guessing. After
+10 wrong passwords or authenticator codes for one account in 15 minutes, from anywhere, that
+account gets one try a minute until the 15 minutes have passed. During that time even the right
+password is refused until the next try is due, so wait a minute before trying again. Signing in
+with a passkey or your organization's account is not affected. Signing in with your
+organization's account, or with your password and code once a try is due, or a password reset
+(**Forgot your password?**) ends the wait at once. The same message appears when
+one network sends many sign-ins within a few seconds. Kobe never locks an account. If it keeps
+happening although you are not mistyping, someone else may be trying your address: tell your site
+admin, who sees it in the audit log and on **Users**.
 
 **I see the wrong workspace's threads.** Switch with the **Workspace** switcher at the top of the
 rail.
