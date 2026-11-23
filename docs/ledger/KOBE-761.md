@@ -95,8 +95,7 @@ git extend the page.
 - **30 s:** disconnect and replace confirmations and the guide say sandboxes may keep access for
   up to 30 s (the proxy's credential cache). The proxy already drops entries on a change hint,
   but no route sends one yet (KOBE-763 "Left for other tickets"); not built here.
-- **Rate limits:** `packages/db/src/rate-limit.ts` is not on this branch (PR #688), so the git
-  routes keep the server's `hitRateLimit`.
+- **Rate limits:** see "After main's #688/#691" below.
 
 ## Phase-2 review fixes (review-g101)
 
@@ -128,6 +127,15 @@ git extend the page.
 - Prettier on KOBE-764's `threads/spawn.ts`. Sandbox secret scan (gate2 regexes) over
   `images/sandbox` and the sandbox-agent `dist`: only the existing `egress-env.sh` variable URL and
   test-image fixtures (not shipped); nothing new.
+
+## After main's #688/#691 (merge ce74e16d1)
+
+- `docs/rate-limits.md`: main's layout kept; the four KOBE-763 egress/decision rows moved into
+  Internet access as "Memory (pod), per replica", named in the per-replica paragraph; the
+  `git-host-calls` shared bucket and the fixed `GIT_DECIDE_RATE` added to the gaps list. The
+  git connection rows were already in Admin and Site; the settings route has no limit of its own.
+- Rate limits: the server's `hitRateLimit` is now a thin wrapper on `@kobe/db`'s limiter
+  (`hitRateLimitWindow`), so the git routes keep their calls.
 
 ## Accessibility pass
 
