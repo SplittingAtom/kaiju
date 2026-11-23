@@ -95,14 +95,14 @@ asking.
 Committing needs the Contributor role in the Workspace and editor or owner of the project.
 
 In a conversation on a Repo, the agent also gets a real git working copy of it at
-`/workspace/repos/<slug>/` (next to the read-only copy at `/workspace/projects/<slug>/`): it can
-work on a branch, commit, push and open a pull request there. The working copy stays in the
+`/workspace/.kobe/repos/<slug>/` (next to the read-only copy at `/workspace/projects/<slug>/`):
+it can work on a branch, commit, push and open a pull request there. The working copy stays in the
 sandbox: it is not synced to your files (so it never counts against your storage, and the Repo's
 read rule, retention and legal hold are those of the project and the host). Work the agent has not
 pushed lives only on the sandbox's disk and is lost if that disk is replaced; Kobe then clones the
-Repo again. Kobe keeps the branch and how many commits it is ahead of or behind the host. Your own
-files under a `repos/` folder in My files are not synced while a sandbox runs either, so keep
-them elsewhere.
+Repo again. Kobe keeps the branch and how many commits it is ahead of or behind the host. It
+lives in the sandbox's own `.kobe/` area, so it never mixes with your files: a folder of yours
+named `repos/` stays an ordinary synced folder.
 
 In a project conversation an editor's agent can also propose an edit to a project file; **Accept**
 commits it at once, with no checkout. The agent can commit a checkout itself with its

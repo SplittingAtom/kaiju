@@ -17,7 +17,7 @@
 | REST commit route and agent `commit_project` dispatch to it for a Repo                                                                                                                                                                        | `routes/project-commits/*`, `sandbox-wire/project-commit.ts`                                                                        |
 | `run.start.git.repo`, `repo.status` intake, `GET /v1/projects/{id}/repo-status`                                                                                                                                                               | `git/working-copy.ts`, `sandbox-wire/delivery/run-start.ts`, `sandbox-wire/frames/repo-status.ts`, `routes/project-repo-commits.ts` |
 | Web: Commit dialog hint/outcome/link, `repo_moved` → Update; Settings "Allow commits straight to the default branch"                                                                                                                          | `apps/web/components/projects/project-work.tsx`, `apps/web/components/admin/team/git/settings-dialog.tsx`                           |
-| Sandbox agent: Repo working copy at `/workspace/repos/<slug>`, status reports, `.git` not synced, Repo outcomes of `commit_project`                                                                                                           | `services/sandbox-agent/src/git/working-copy.ts` and hooks (see "Sandbox agent" below)                                              |
+| Sandbox agent: Repo working copy at `/workspace/.kobe/repos/<slug>` (round 2), status reports, `.git` not synced, Repo outcomes of `commit_project`                                                                                           | `services/sandbox-agent/src/git/working-copy.ts` and hooks (see "Sandbox agent" below)                                              |
 
 ## How a commit to a Repo works (ac-1, ac-2)
 
@@ -59,7 +59,7 @@ allowed by every host (`allowReachableSHA1InWant`) and downloads the whole snaps
 `run.start.git.repo` (`z.object`, so older agents strip it) is sent for a thread in a Repo when the
 member may converse, the repository is active and its connection is among the sandbox's
 `remotes` (on, not agent-limited, https on 443). `access` = write for editor/owner + Contributor +
-connection at Read and write. The agent keeps the working copy at `/workspace/repos/<slug>`
+connection at Read and write. The agent keeps the working copy at `/workspace/.kobe/repos/<slug>` (round 2; first `repos/<slug>`)
 (cloned through the egress proxy by git running as the tools' identity with the tools' env),
 reports `repo.status` at run start and end; the server keeps it only for a run of that member on a
 thread in that Repo (≤ 30/min per connection; the end-of-run report arrives after the run ended,
@@ -204,3 +204,35 @@ conversion's `finished_at`.
 3725 (one unrelated `memory-review.db.test.ts` case failed once in the full run and passes alone,
 twice); web 4237; sandbox-agent 1485 (1289 run); typecheck, lint, format:check, site wording,
 public hygiene; gate2 scan regexes match nothing this branch added.
+
+## Review g108 round 2 (2026-11-23)
+
+- **N1:** before any host call or credential mint, the 60/h commit limit is looked at (a hit taken
+  in a transaction and rolled back) and one attempt is taken from a 300/h attempt bucket
+  (`GIT_REPO_COMMIT_ATTEMPT_RATE`), after the cheap refusals (plan, role, connection, chosen
+  agents, approval subject). The 60/h is still taken only when a commit goes out (L2). Test: an
+  over-limit commit makes zero API and zero git requests.
+- **N2 (owner to confirm):** the working copy moved to `/workspace/.kobe/repos/<slug>`
+  (`REPO_WORKING_COPY_DIR`). `.kobe/` is the workspace's reserved area: the sandbox's scan, push,
+  pull and restore never touch it, and the server refuses any path there, so nothing can collide
+  with My files and nothing of a member's files can land in a working copy. Chosen over reserving
+  `repos/` in My files because that needed a migration of existing folders, a refusal in the Files
+  UI/API and a notice, and still left the sync with a special case; `.kobe/` needs none. The
+  `repos/` exceptions in the sync are removed, so a member's own `repos/` folder syncs both ways as
+  before (test: push, pull and restore with `repos/notes.md` next to `.kobe/repos/app`). The agent
+  makes `.kobe/repos` group-shared (2770, like the sessions folder) for the tools' uid. Guide and
+  run context updated.
+- **R2-L1:** an agent's commit carries the subject it was approved as (`approvedAs`);
+  `commitToRepo` refuses an agent commit approved as `commit_project`. Test.
+- **R2-L2:** the subject is decided on `projects.kind = 'repo'` alone (a missing record still asks).
+- **R2-L3:** the spawn test's line counts split on a real newline; the output-cap case now has
+  output (`yes x`) and asserts exactly cap + 1.
+- **R2-L4:** custom migration `0258` backfills `linked_at` (relinked rows: their last write;
+  converted Repos: the completed conversion), FORCE RLS lifted for the updates only, as 0235.
+  Upgrade test `git-linked-at-upgrade.db.test.ts`.
+- **R2-L5:** unchanged, owner to confirm (sweep on an unchanged refresh is not audited).
+- **L3:** still not fixed (reason above).
+- **Agent approval path:** `project-commit-agent.db.test.ts` "asks as commit_repo…" drives a real
+  wire connection: a rule that allows `commit_project` still asks, the approval row is
+  `commit_repo` with `pushes_to`, remember is refused, and the approved commit never writes
+  Kobe's copy.

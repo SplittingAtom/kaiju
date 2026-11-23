@@ -60,20 +60,21 @@ describe("running a program as the tools (KOBE-767)", () => {
     expect(await run("/bin/sleep", ["30"], { timeoutMs: 1_000, maxOutput: 16 })).toEqual({
       failed: "timed out",
     });
-    const long = await run("/bin/sh", ["-c", "head -c 5000 /dev/zero | tr '\\\\0' x"], {
+    const long = await run("/bin/sh", ["-c", "yes x | head -c 5000"], {
       timeoutMs: 5_000,
       maxOutput: 100,
     });
-    expect("stdout" in long && long.stdout.length).toBeLessThanOrEqual(101);
+    // Cut one past the cap (so the caller sees it was cut), never more.
+    expect("stdout" in long ? long.stdout.length : 0).toBe(101);
   });
 
   it("runs nothing without a tools identity unless the tools are the agent's own uid", async () => {
-    const lines = readFileSync(log, "utf8").split("\\n").length;
+    const lines = readFileSync(log, "utf8").split("\n").length;
     const refused = toolCommandRunner({ env, cwd: root });
     expect(await refused("/bin/true", [], { timeoutMs: 1_000, maxOutput: 16 })).toEqual({
       failed: "no tools identity",
     });
-    expect(readFileSync(log, "utf8").split("\\n").length).toBe(lines);
+    expect(readFileSync(log, "utf8").split("\n").length).toBe(lines);
     const same = toolCommandRunner({ env, cwd: root, sameUid: true });
     expect(await same("/bin/sh", ["-c", "printf ok"], { timeoutMs: 5_000, maxOutput: 16 })).toEqual(
       { stdout: "ok" },

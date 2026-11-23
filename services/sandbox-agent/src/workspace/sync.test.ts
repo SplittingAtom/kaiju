@@ -169,6 +169,32 @@ describe("workspace sync (agent)", () => {
     expect((await restored.push()).changes).toBe(0);
   });
 
+  it("syncs a member's own repos/ folder both ways and never the Repo working copies (KOBE-767 N2)", async () => {
+    const first = await volume();
+    await put(first, "repos/notes.md", "mine v1");
+    await put(first, ".kobe/repos/app/README.md", "a Repo's file"); // the agent's working copy
+    await put(first, ".kobe/repos/app/.git/HEAD", "ref: refs/heads/main\n");
+    const sync = await started(first);
+    await sync.push();
+    expect(server.livePaths()).toEqual(["repos/notes.md"]);
+    // Pull: an edit in My files reaches the sandbox, and stays out of the working copy.
+    server.serverWrite("repos/notes.md", "mine v2, from the web");
+    await sync.pull();
+    expect(await text(first, "repos/notes.md")).toBe("mine v2, from the web");
+    expect(await text(first, ".kobe/repos/app/README.md")).toBe("a Repo's file");
+    // Push: an edit in the sandbox is saved back.
+    await put(first, "repos/notes.md", "mine v3, from the sandbox");
+    await utimes(path.join(first, "repos/notes.md"), new Date(), new Date(Date.now() + 5_000));
+    await sync.push();
+    expect(server.content("repos/notes.md")).toBe("mine v3, from the sandbox");
+    expect(server.livePaths()).toEqual(["repos/notes.md"]);
+    // Restore onto a new volume: the member's folder comes back, the working copy does not.
+    const second = await volume();
+    await started(second);
+    expect(await text(second, "repos/notes.md")).toBe("mine v3, from the sandbox");
+    expect(await exists(second, ".kobe/repos")).toBe(false);
+  });
+
   it("wakes on a kept volume without downloading anything", async () => {
     const root = await volume();
     await put(root, "notes.txt", "keep me");

@@ -11,7 +11,6 @@ import {
 import { constants as FS } from "node:fs";
 import { access } from "node:fs/promises";
 import { join } from "node:path";
-import { isRepoGitPath } from "../../git/working-copy.js";
 import { SyncHttpError } from "../client.js";
 import {
   hashFile,
@@ -292,7 +291,6 @@ export async function planPush(
     if (k.deleted || scan.files.has(path) || isExcludedPath(path) || unsure(path)) continue;
     if (s.retry.has(path) || s.deferred.has(path)) continue; // not settled yet: never a deletion
     if (path.split("/").some((part) => s.o.skipDirs.has(part))) continue;
-    if (isRepoGitPath(path)) continue; // a Repo working copy's git data is local (KOBE-767)
     if (locked(s, path)) {
       await revertLocal(s, path, undefined);
       reverted = true;

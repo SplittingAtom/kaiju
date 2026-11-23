@@ -434,3 +434,59 @@ describe("project.commit (ac-3)", () => {
     expect((await commits(w.projectId)).map((c) => c.seq)).toEqual([1]);
   });
 });
+
+describe("project.commit on a Repo (KOBE-767 review M2)", () => {
+  it("asks as commit_repo with where it pushes, even when a rule allows commit_project", async () => {
+    mode = "rule";
+    const w = await world("editor");
+    // The project is a Repo of a connected organization (no reachable host: the push itself is
+    // KOBE-767's db suite; this checks the decision and the approval).
+    const { rows } = await fx.admin.query<{ id: string }>(
+      `INSERT INTO git_connections
+         (team_id, provider, base_url, organization, display_name, credential_kind,
+          credential_sealed, credential_key_id, access_level, created_by)
+       VALUES ($1, 'forgejo', 'https://git.repo.test', 'acme', 'Acme', 'access_token',
+               'e1.kid.a.b', 'kid', 'read_write', $2) RETURNING id`,
+      [w.team, w.owner.id],
+    );
+    await fx.admin.query(
+      `INSERT INTO git_repositories
+         (team_id, connection_id, base_url, host_repo_id, full_name, project_id, origin,
+          created_by, mirror_head_sha)
+       VALUES ($1, $2, 'https://git.repo.test', '7', 'acme/app', $3, 'conversion', $4, $5)`,
+      [w.team, must(rows[0], "connection").id, w.projectId, w.owner.id, "a".repeat(40)],
+    );
+    await fx.admin.query(`UPDATE projects SET kind = 'repo' WHERE team_id = $1 AND id = $2`, [
+      w.team,
+      w.projectId,
+    ]);
+    const sb = await started(w);
+    expect((await check(sb, w, "r1")).decision).toBe("allow");
+    // The rule allowed commit_project, but a push to a git host still asks a person.
+    expect(await commit(sb, w, "r1")).toMatchObject({
+      ok: true,
+      outcome: { status: "pending_approval" },
+    });
+    const [approval] = await approvals(w.team);
+    expect(approval?.tool).toBe("commit_repo");
+    expect(approval?.input).toMatchObject({
+      project_id: w.projectId,
+      base_seq: 1,
+      message,
+      diff_sha256: expectedHash("A2"),
+      pushes_to: "git.repo.test/acme/app: a branch with a pull request into main",
+    });
+    // A push to a git host can't be remembered as a rule.
+    const remembered = await browserFor(w.owner, w.team).post(
+      `/v1/approvals/${must(approval, "approval").id}`,
+      { decision: "allow", remember: { tool_glob: "commit_repo", scope: "thread" } },
+    );
+    expect(remembered.status).toBe(400);
+    expect(String(remembered.json.message)).toMatch(/approved each time/);
+    // Approved: the commit goes to the Repo's flow (which cannot reach this host), never Kobe's.
+    await decide(w.owner, w.team, must(approval, "approval").id, "allow");
+    await new Promise((r) => setTimeout(r, 500));
+    expect(await commits(w.projectId)).toHaveLength(1);
+    mode = "ask";
+  });
+});
