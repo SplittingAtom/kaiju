@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { RunFixture, type FakeWorkspace, type RunStart } from "./testing/run-fixture.js";
+import { RunFixture, type FakeWorkspace, type RunStart } from "../testing/run-fixture.js";
 
 /**
  * KOBE-492 review: a thread's untold sync conflicts ride its next `run.start` and are marked told

@@ -3,15 +3,15 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { threadSyncConflictsResponseSchema } from "@kobe/protocol";
 import { type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
 import { runEvents, withTeam } from "@kobe/db";
-import { ConflictRate, onWorkspaceConflict } from "./sandbox-wire/sync-conflict.js";
+import { ConflictRate, onWorkspaceConflict } from "../sandbox-wire/sync-conflict.js";
 import {
   CONFLICTS_PER_MEMBER_HOUR,
   CONFLICTS_PER_MEMBER_MAX,
   markTold,
   recordConflict as recordOrDrop,
   untoldNotes,
-} from "./sync-conflicts/store.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
+} from "./store.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-492 (ac-1, ac-2, ac-3): a sync conflict the sandbox reports is recorded for the thread
