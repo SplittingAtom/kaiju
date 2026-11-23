@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { NOTEBOOK_COMPLETE_MATCHES_MAX, notebookCompletionResultSchema } from "@kobe/protocol";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 /**
  * The kernel bridge's completion helpers (KOBE-808, images/sandbox/kernel/kobe-kernel-bridge.py)
@@ -14,6 +14,7 @@ const BRIDGE = fileURLToPath(
   new URL("../../../../images/sandbox/kernel/kobe-kernel-bridge.py", import.meta.url),
 );
 const HARNESS = fileURLToPath(new URL("./testing/completion-harness.py", import.meta.url));
+const GUARD = fileURLToPath(new URL("./testing/guard-harness.py", import.meta.url));
 const hasPython = spawnSync("python3", ["--version"]).status === 0;
 
 function harness(scenario: string): Record<string, unknown> | null {
@@ -72,12 +73,16 @@ describe.skipIf(!hasPython)("kernel documentation lookup (KOBE-808)", () => {
     ["ga", { found: true, type: "GetAttribute", doc: "Every attribute read runs code." }],
     ["ga.method", { found: true, signature: "method(a)", doc: "Doc of a watched method." }],
     ["WM", { found: true, type: "Meta", doc: "A class with a hooked metaclass." }],
-    ["WM.__init__", { found: true, signature: "__init__(self, a, b=2)" }],
+    // A class with a metaclass other than `type` is not looked into (its hooks would run).
+    ["WM.__init__", { found: false }],
     ["proxy", { found: true, type: "LazyProxy" }],
     ["proxy.anything", { found: false }],
     ["with_defaults", { signature: "with_defaults(a, b=…, *rest, c=1, d=…, **more)" }],
     ["wrapped", { signature: "wrapped(a)", doc: "Wrapped." }],
     ["WD", { signature: "WD(x)" }],
+    ["WMG", { found: true, type: "MetaGA", doc: "Hooked class." }],
+    ["WMG.method", { found: false }],
+    ["wmg.method", { found: true, signature: "method()", doc: "Never looked into." }],
   ])("%s: described statically, nothing of the member's runs", (name, expected) => {
     const d = harness(`doc:${name}`);
     expect(d).toMatchObject({ ...expected, ran: [] });
@@ -127,5 +132,68 @@ describe.skipIf(!hasPython)("kernel completion answers (KOBE-808)", () => {
   it("an error reply is no answer; a cursor span outside the code falls back to the cursor", () => {
     expect(harness("complete-error")).toBeNull();
     expect(harness("complete-bad-cursor")).toMatchObject({ cursor_start: 2, cursor_end: 2 });
+  });
+});
+
+/**
+ * Review round 2: the kernel launcher's completer guard (COMPLETER_GUARD) on stand-in IPython
+ * modules. Typing completion evaluates the expression before the cursor statically: no getter,
+ * descriptor, `cached_property`, metaclass hook, key hash/eq, object hook or registered completer
+ * of the member's runs; nothing is interrupted; nothing starts while a member's timer is pending.
+ */
+describe.skipIf(!hasPython)("the kernel's completer guard (KOBE-808 review)", () => {
+  const run = () => {
+    const res = spawnSync("python3", ["-I", GUARD, BRIDGE], { encoding: "utf8", timeout: 60_000 });
+    if (res.status !== 0) throw new Error(`guard harness failed: ${res.stderr}`);
+    return JSON.parse(res.stdout) as Record<string, unknown>;
+  };
+  let r: Record<string, unknown> = {};
+  beforeAll(() => {
+    r = run();
+  });
+
+  it("runs nothing of the member's: the lock is never taken, nothing is cached", () => {
+    expect(r.ran).toEqual([]);
+    expect(r.lock_locked).toBe(false);
+    expect(r.cached_stored).toBe(false);
+  });
+
+  it("refuses properties, cached_property, descriptors, metaclass hooks and calls", () => {
+    expect(r.evaluated).toEqual({
+      "slow.locked": "rejected:GuardRejection",
+      "slow.lazy": "rejected:GuardRejection",
+      "slow.prop": "rejected:GuardRejection",
+      "slow.method": "ok:function",
+      "hd.nd": "rejected:GuardRejection",
+      "hd.dd": "rejected:GuardRejection",
+      "HD.nd": "rejected:GuardRejection",
+      "WM.x": "rejected:GuardRejection",
+      "wm.x": "ok:int",
+      "ga.x": "rejected:GuardRejection",
+      "d[1]": "ok:Plain",
+      "d['a']['b']": "ok:int",
+      "d[(1, 2)]": "rejected:GuardRejection",
+      "hooks.zz": "rejected:GuardRejection",
+      "plain.own['k'][0]": "ok:type",
+      "plain.attr": "ok:int",
+      "Plain.attr": "ok:int",
+      "json.dumps": "ok:function",
+      len: "ok:builtin_function_or_method",
+      "slow.method()": "rejected:GuardRejection",
+      "plain + 1": "rejected:GuardRejection",
+    });
+    expect(r.subscript).toEqual(["a", 1]);
+  });
+
+  it("lists attributes and keys statically; a registered completer is never consulted", () => {
+    expect(r.dirs).toEqual({ hooks: false, plain_own: true, wm: true });
+    expect(r.keys).toEqual({ hooks: [], dict: ["a"] });
+    expect(r.generic).toEqual(["x"]);
+  });
+
+  it("completes normally, but not while a timer of the member's is pending", () => {
+    expect(r.plain_answer).toEqual(["real"]);
+    expect(r.with_timer).toEqual([]);
+    expect(r.real_completions).toEqual(["pla"]);
   });
 });

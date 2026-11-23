@@ -45,14 +45,14 @@ exception caught, so a `__repr__` that raises or loops costs that variable its r
 snapshot; the whole snapshot has a budget (`budget_ms`) and count and byte caps (`truncated`).
 
 Completion (KOBE-808): `complete` is Jupyter's `complete_request` on the shell channel (no
-execution count, no history). The kernel starts with IPython's completer set to jedi off and
-`evaluation = "limited"` (KERNEL_ARGS): jedi's interpreter mode runs property getters on live
-objects, the limited policy evaluates no calls, no property getters, no imports and only
-allow-listed item and attribute access. `doc` never sends the member's code at all: the agent
-sends a dotted name the server checked, and DOC_SOURCE (a silent request's user expression, like
-`inspect`) resolves it with `inspect.getattr_static` (no descriptors, no `__getattr__`) and reads
-the signature and docstring, never a repr, under a SIGALRM timer. Both answer within `timeout_ms`
-or `error: "timeout"`; a late reply is skipped by its message id.
+execution count, no history). The kernel starts with IPython's completer set to jedi off
+(KERNEL_ARGS: jedi's interpreter mode runs property getters on live objects) and the launcher's
+COMPLETER_GUARD replaces every part of the completer that touches member objects with static
+reads (see there). `doc` never sends the member's code at all: the agent sends a dotted name the
+server checked, and DOC_SOURCE (a silent request's user expression, like `inspect`) resolves it
+from dicts only and reads the signature and docstring, never a repr. Neither interrupts anything
+or runs while a member's timer is pending. Both answer within `timeout_ms` or `error: "timeout"`;
+a late reply is skipped by its message id.
 """
 
 import ast
@@ -108,17 +108,27 @@ from ipykernel import kernelapp
 kernelapp.launch_new_instance()
 """
 
-# KOBE-808 review L1: IPython's completer, even with limited evaluation, calls an object's own
-# completion hooks (`__dir__`, `_ipython_key_completions_`, a `__getattr__` canary) and reads
-# `__class__` (dir2, singledispatch). In the kernel, before it starts: attribute names come from a
-# static dir (the type's and the instance's dicts, read with C-level descriptors only), dictionary
-# keys only from real dicts, pandas DataFrames and numpy arrays (library code), generics dispatch
-# on `type(obj)`; a pandas DataFrame or Series keeps its real dir (its columns). Each completion
-# has an in-kernel time limit (SIGALRM, main thread, when no timer of the member's is pending):
-# past it the answer is empty. If any of this fails to apply, the kernel completes nothing.
+# KOBE-808 (security review rounds 1 and 2): IPython's completer, even with limited evaluation,
+# runs member code: an object's completion hooks (`__dir__`, `_ipython_key_completions_`, a
+# `__getattr__` canary), `__class__` reads, custom descriptors and `functools.cached_property`,
+# metaclass hooks, and the `__hash__`/`__eq__` of dictionary keys. In the kernel, before it
+# starts, the guard replaces the parts that touch member objects:
+# - expression evaluation (`guarded_eval`, used only by the completer) by a static evaluator:
+#   names, plain constants, attributes read from the type's and instance's dicts (only plain
+#   values, functions, static/class methods and C-level descriptors; never a property, another
+#   descriptor, a class with a metaclass other than `type`, or a type with its own
+#   `__getattribute__`), and items of exact dicts, lists, tuples and pandas DataFrames by keys of
+#   plain immutable built-in types (dict keys compared only with keys of the same exact type);
+#   anything else gives no kernel completions;
+# - attribute names from a static dir (a pandas DataFrame or Series keeps its real dir: columns);
+# - dictionary keys only from exact dicts (str/bytes keys), DataFrames and numpy arrays;
+# - generics (`complete_object`): never consulted, so completers a member registered don't run.
+# No signal or exception is ever injected into running code; the bridge's deadline discards a late
+# answer. A completion is not started while a timer of the member's is pending (its handler would
+# run inside it). If any of this fails to apply, the kernel completes nothing.
 COMPLETER_GUARD = r"""
 def _kobe_guard_completer():
-    import signal, sys, threading, types
+    import signal, sys, types
     from ipykernel import ipkernel
     plain_complete = ipkernel.IPythonKernel.do_complete
 
@@ -127,13 +137,27 @@ def _kobe_guard_completer():
         return {"status": "ok", "matches": [], "cursor_start": pos, "cursor_end": pos, "metadata": {}}
 
     try:
+        import ast
         import IPython.core.completer as completer
+        import IPython.core.guarded_eval as guarded
         import IPython.utils.generics as generics
 
         mro_of = type.__dict__["__mro__"].__get__
         dict_of = type.__dict__["__dict__"].__get__
         module_dict = types.ModuleType.__dict__["__dict__"].__get__
+        static_func = staticmethod.__dict__["__func__"].__get__
+        class_func = classmethod.__dict__["__func__"].__get__
         c_level = (types.GetSetDescriptorType, types.MemberDescriptorType)
+        c_methods = (
+            types.BuiltinFunctionType,
+            types.MethodDescriptorType,
+            types.WrapperDescriptorType,
+            types.ClassMethodDescriptorType,
+        )
+        plain = (str, bytes, int, float, complex, bool, type(None))
+        Rejected = guarded.GuardRejection
+        builtins_dict = module_dict(sys.modules["builtins"])
+        missing = object()
 
         def library_type(module, name):
             m = sys.modules.get(module)
@@ -141,6 +165,135 @@ def _kobe_guard_completer():
                 return None
             t = module_dict(m).get(name)
             return t if type(t) is type else None
+
+        def lookup(t, name):
+            for klass in mro_of(t):
+                d = dict_of(klass)
+                if name in d:
+                    return d[name]
+            return missing
+
+        def defines(t, name):
+            # Whether a class in t's MRO other than object defines `name` (read statically).
+            return any(klass is not object and name in dict_of(klass) for klass in mro_of(t))
+
+        def instance_dict(obj, t):
+            d = lookup(t, "__dict__")
+            if type(d) in c_level:
+                try:
+                    own = d.__get__(obj, t)
+                except Exception:
+                    return None
+                return own if type(own) is dict else None
+            return None
+
+        def plain_key(key):
+            if type(key) is tuple:
+                return all(plain_key(k) for k in key)
+            return type(key) in plain
+
+        def static_attr(obj, name):
+            t = type(obj)
+            if issubclass(t, types.ModuleType):
+                value = module_dict(obj).get(name, missing)
+                if value is missing:
+                    raise Rejected(name)
+                return value
+            if issubclass(t, type):
+                # A class: only of the plain metaclass (no metaclass hooks).
+                if t is not type:
+                    raise Rejected("metaclass")
+                meta = dict_of(type).get(name, missing)
+                if type(meta) in c_level:
+                    return meta.__get__(obj, t)
+                value = lookup(obj, name)
+                if value is missing:
+                    raise Rejected(name)
+                return class_value(value)
+            if defines(t, "__getattribute__"):
+                raise Rejected("__getattribute__")
+            found = lookup(t, name)
+            if found is not missing and type(found) in c_level:
+                return found.__get__(obj, t)
+            vt = type(found)
+            data = found is not missing and (defines(vt, "__set__") or defines(vt, "__delete__"))
+            if found is not missing and data:
+                raise Rejected("data descriptor")
+            own = instance_dict(obj, t)
+            if own is not None and name in own:
+                return own[name]
+            if found is missing:
+                raise Rejected(name)
+            return class_value(found)
+
+        def class_value(value):
+            vt = type(value)
+            if vt is types.FunctionType or vt in c_methods:
+                return value
+            if vt is staticmethod:
+                return static_func(value)
+            if vt is classmethod:
+                return class_func(value)
+            if defines(vt, "__get__"):
+                # A property, cached_property or any other descriptor: its getter would run.
+                raise Rejected("descriptor")
+            return value
+
+        def static_item(container, key):
+            if not plain_key(key):
+                raise Rejected("key")
+            t = type(container)
+            if t is dict:
+                if len(container) > 100_000:
+                    raise Rejected("large")
+                kt = type(key)
+                for k, v in container.items():
+                    if type(k) is kt and k == key:
+                        return v
+                raise Rejected("no key")
+            if t in (list, tuple) and type(key) is int:
+                return container[key]
+            if t is library_type("pandas", "DataFrame") and type(key) is str:
+                for column in container.columns:
+                    if type(column) is str and column == key:
+                        return container[column]
+                raise Rejected("no column")
+            raise Rejected("container")
+
+        def static_eval(code, context):
+            if context.in_subscript:
+                # The keys typed before the cursor in a tuple subscript: plain constants only.
+                try:
+                    tree = ast.parse("(" + code + ",)", mode="eval") if code else None
+                    return () if tree is None else tuple(constant(e) for e in tree.body.elts)
+                except Exception:
+                    return ()
+            tree = ast.parse(code, mode="exec")
+            if len(tree.body) != 1 or type(tree.body[0]) is not ast.Expr:
+                raise Rejected("statements")
+            return evaluate(tree.body[0].value, context)
+
+        def constant(node):
+            if type(node) is ast.Constant and type(node.value) in plain:
+                return node.value
+            if type(node) is ast.Tuple:
+                return tuple(constant(e) for e in node.elts)
+            raise Rejected("constant")
+
+        def evaluate(node, context):
+            nt = type(node)
+            if nt in (ast.Constant, ast.Tuple):
+                return constant(node)
+            if nt is ast.Name:
+                for ns in (context.locals, context.globals, builtins_dict):
+                    if type(ns) is dict and node.id in ns:
+                        return ns[node.id]
+                raise NameError(node.id)
+            if nt is ast.Attribute:
+                return static_attr(evaluate(node.value, context), node.attr)
+            if nt is ast.Subscript:
+                return static_item(evaluate(node.value, context), constant(node.slice))
+            raise Rejected(nt.__name__)
 
         def static_dir(obj):
             t = type(obj)
@@ -152,18 +305,12 @@ def _kobe_guard_completer():
             words = set()
             for klass in classes:
                 words.update(k for k in dict_of(klass) if type(k) is str)
-            for klass in mro_of(t):
-                d = dict_of(klass).get("__dict__")
-                if d is None:
-                    continue
-                if type(d) in c_level:
-                    try:
-                        own = d.__get__(obj, t)
-                    except Exception:
-                        own = None
-                    if type(own) is dict:
-                        words.update(k for k in own if type(k) is str)
-                break
+            if issubclass(t, types.ModuleType):
+                words.update(k for k in module_dict(obj) if type(k) is str)
+            else:
+                own = instance_dict(obj, t)
+                if own is not None:
+                    words.update(k for k in own if type(k) is str)
             return sorted(words)
 
         def safe_keys(obj):
@@ -171,7 +318,7 @@ def _kobe_guard_completer():
             if t is dict:
                 return [k for k in obj if type(k) in (str, bytes)]
             if t is library_type("pandas", "DataFrame"):
-                return list(obj.columns)
+                return [c for c in obj.columns if type(c) in plain]
             if t is library_type("numpy", "ndarray"):
                 return list(obj.dtype.names or [])
             return []
@@ -179,13 +326,15 @@ def _kobe_guard_completer():
         dispatching = generics.complete_object
 
         def complete_object(obj, prev_completions):
-            return dispatching.dispatch(type(obj))(obj, prev_completions)
+            # Never consulted while completing (a registered completer is member code).
+            return prev_completions
 
         # Still a singledispatch function to the member (register, dispatch, registry).
         for attr in ("register", "dispatch", "registry", "__doc__", "__wrapped__"):
             if hasattr(dispatching, attr):
                 setattr(complete_object, attr, getattr(dispatching, attr))
 
+        guarded.guarded_eval = static_eval
         completer.dir2 = static_dir
         completer.IPCompleter._get_keys = staticmethod(safe_keys)
         generics.complete_object = complete_object
@@ -193,38 +342,14 @@ def _kobe_guard_completer():
         ipkernel.IPythonKernel.do_complete = lambda self, code, cursor_pos: empty(code, cursor_pos)
         return
 
-    class Late(BaseException):
-        pass
-
     def do_complete(self, code, cursor_pos):
-        active = [False]
-
-        def late(signum, frame):
-            if active[0]:
-                raise Late()
-
-        armed = False
-        previous = None
+        # Not while a timer of the member's is pending: its handler would run inside completion.
         try:
-            if threading.current_thread() is threading.main_thread() and signal.getitimer(signal.ITIMER_REAL)[0] == 0:
-                previous = signal.signal(signal.SIGALRM, late)
-                armed = True
-        except (ValueError, OSError):
-            armed = False
-        try:
-            if armed:
-                active[0] = True
-                signal.setitimer(signal.ITIMER_REAL, @LIMIT_S@)
-            try:
-                return plain_complete(self, code, cursor_pos)
-            finally:
-                active[0] = False
-        except Late:
-            return empty(code, cursor_pos)
-        finally:
-            if armed:
-                signal.setitimer(signal.ITIMER_REAL, 0)
-                signal.signal(signal.SIGALRM, previous if previous is not None else signal.SIG_DFL)
+            if signal.getitimer(signal.ITIMER_REAL)[0] > 0:
+                return empty(code, cursor_pos)
+        except (ValueError, OSError, AttributeError):
+            pass
+        return plain_complete(self, code, cursor_pos)
 
     ipkernel.IPythonKernel.do_complete = do_complete
 
@@ -232,10 +357,7 @@ def _kobe_guard_completer():
 _kobe_guard_completer()
 del _kobe_guard_completer
 """
-COMPLETE_KERNEL_LIMIT_S = 0.5
-LAUNCHER = LAUNCHER.replace(
-    "@COMPLETER_GUARD@", COMPLETER_GUARD.replace("@LIMIT_S@", repr(COMPLETE_KERNEL_LIMIT_S))
-)
+LAUNCHER = LAUNCHER.replace("@COMPLETER_GUARD@", COMPLETER_GUARD)
 
 INSPECT_SOURCE = r'''
 import json as _json
@@ -493,8 +615,9 @@ COMPLETE_TIMEOUT_MAX_S = 2.0
 DOC_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*){0,15}")
 
 # The documentation of a dotted name, read without running the member's code: the name resolves
-# through the user namespace (then builtins) with inspect.getattr_static, so no property getter,
-# descriptor or __getattr__ runs; only signatures and docstrings are read, never a repr.
+# through the user namespace (then builtins) and the type, class and instance dicts only (a
+# descriptor is returned, never invoked; a class with a metaclass other than `type` is not looked
+# into); only signatures and docstrings are read, never a repr.
 DOC_SOURCE = r'''
 import builtins as _builtins
 import inspect as _inspect
@@ -532,10 +655,6 @@ _C_DESCRIPTORS = (_types.GetSetDescriptorType, _types.MemberDescriptorType)
 _PLAIN = (int, float, complex, bool, str, bytes, type(None))
 
 
-class _Timeout(BaseException):
-    pass
-
-
 def _clip(text, limit):
     if type(text) is not str:
         return None
@@ -543,6 +662,43 @@ def _clip(text, limit):
     if not text:
         return None
     return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def _defines(t, name):
+    return any(klass is not object and name in _dict_of(klass) for klass in _mro(t))
+
+
+def _lookup(t, name, missing):
+    for klass in _mro(t):
+        d = _dict_of(klass)
+        if name in d:
+            return d[name]
+    return missing
+
+
+def _attr(parent, name, missing):
+    # The raw attribute (a descriptor is returned, never invoked), read from dicts only.
+    t = type(parent)
+    if issubclass(t, _types.ModuleType):
+        return _module_dict(parent).get(name, missing), False
+    if issubclass(t, type):
+        # A class: only of the plain metaclass (a metaclass's hooks would run on any lookup).
+        if t is not type:
+            return missing, False
+        return _lookup(parent, name, missing), False
+    found = _lookup(t, name, missing)
+    vt = type(found)
+    data = found is not missing and (_defines(vt, "__set__") or _defines(vt, "__delete__"))
+    if not data:
+        d = _lookup(t, "__dict__", missing)
+        if type(d) in _C_DESCRIPTORS:
+            own = d.__get__(parent, t)
+            if type(own) is dict:
+                for k, v in own.items():
+                    if type(k) is str and k == name:
+                        return v, False
+    # A plain function found through an instance is a method: its first parameter is bound.
+    return found, type(found) is _types.FunctionType
 
 
 def _resolve(name, ns):
@@ -555,12 +711,7 @@ def _resolve(name, ns):
     for part in parts[1:]:
         if obj is missing:
             break
-        parent = obj
-        obj = _inspect.getattr_static(parent, part, missing)
-        # A plain function found through an instance is a method: its first parameter is bound.
-        bound = type(obj) is _types.FunctionType and not issubclass(
-            type(parent), (type, _types.ModuleType)
-        )
+        obj, bound = _attr(obj, part, missing)
     return None if obj is missing else (obj, bound)
 
 
@@ -695,43 +846,23 @@ def _describe(name, obj, bound=False):
     return {k: v for k, v in out.items() if v is not None}
 
 
-def doc(name, per_ms=300, ns=None):
-    # JSON text of the name's documentation. Inside the kernel, the IPython user namespace.
+def doc(name, ns=None):
+    # JSON text of the name's documentation. Inside the kernel, the IPython user namespace. Runs
+    # nothing of the member's, so nothing is interrupted; not while a member's timer is pending
+    # (its handler would run in the middle).
+    if hasattr(_signal, "getitimer") and _signal.getitimer(_signal.ITIMER_REAL)[0] > 0:
+        return _json.dumps({"error": "timer"})
     if ns is None:
         from IPython import get_ipython
 
         ns = get_ipython().user_ns
-    alarm = False
-    previous = None
-    armed = [False]
-
-    def on_alarm(signum, frame):
-        if armed[0]:
-            raise _Timeout()
-
     try:
-        if hasattr(_signal, "setitimer") and _signal.getitimer(_signal.ITIMER_REAL)[0] == 0:
-            previous = _signal.signal(_signal.SIGALRM, on_alarm)
-            alarm = True
-    except (ValueError, OSError):
-        alarm = False
-    try:
-        if alarm:
-            armed[0] = True
-            _signal.setitimer(_signal.ITIMER_REAL, per_ms / 1000)
         found = _resolve(name, ns)
         result = {"found": False} if found is None else _describe(name, found[0], found[1])
-    except _Timeout:
-        result = {"error": "timeout"}
     except KeyboardInterrupt:
         raise
     except BaseException:
         result = {"error": "raised"}
-    finally:
-        armed[0] = False
-        if alarm:
-            _signal.setitimer(_signal.ITIMER_REAL, 0)
-            _signal.signal(_signal.SIGALRM, previous if previous is not None else _signal.SIG_DFL)
     return _json.dumps(result, ensure_ascii=True)
 '''
 

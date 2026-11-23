@@ -87,6 +87,19 @@ class Meta(type):
         raise AttributeError(name)
 
 
+class MetaGA(type):
+    def __getattribute__(cls, name):
+        RAN.append("meta_getattribute:" + name)
+        return type.__getattribute__(cls, name)
+
+
+class WithMetaGA(metaclass=MetaGA):
+    """Hooked class."""
+
+    def method(self):
+        """Never looked into."""
+
+
 class WithMeta(metaclass=Meta):
     """A class with a hooked metaclass."""
 
@@ -161,6 +174,8 @@ def namespace():
         "with_defaults": with_defaults,
         "wrapped": wrapped,
         "WD": WithDescriptors,
+        "WMG": WithMetaGA,
+        "wmg": WithMetaGA(),
     }
 
 
