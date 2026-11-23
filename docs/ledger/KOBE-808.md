@@ -59,6 +59,18 @@
   tested). `doc` uses the same dict-only reads,
   classifies by `type(obj)`, builds signatures from `__code__`/`__defaults__` (defaults other than
   plain numbers/strings shown `…`, no annotations).
+- **Round 5 (merge verdict) notes.** R4-L1 is fixed (since 7077c4253): a probe through the real
+  bridge with a non-str key (recording `__hash__`/`__eq__`) and a `str`-subclass key in the user
+  namespace and an instance dict records zero calls for `pri`, `zz`, `hko.`, `hko.zz`, kwargs and
+  docs; the harness test covers the same. R5-L1 accepted: only the kernel's own message handling
+  runs (ipykernel flushes `sys.stdout`/`sys.stderr` and sets their parent for every message, any
+  Jupyter message; a member who replaced those streams sees those calls). R5-L2: a member can swap
+  the handlers in their own kernel; nothing downstream trusts the answer (bridge caps, protocol
+  schema, text-only rendering; the web maps `type` through its own keys only). **CI:** the unit job
+  has no Python with ipykernel, so `transport.e2e.test.ts` skips there (opt-in with
+  `KOBE_TEST_KERNEL_PYTHON`); the transport guarantee is enforced by `images/sandbox/test-image.sh`
+  (`kernel-transport-probe.py`), run by the `sandbox-image` workflow on every change under
+  `images/sandbox/**` or `services/sandbox-agent/**`.
 - **Follow-up (KOBE-803, not changed here):** the variables snapshot still travels as a silent
   `execute_request` with a user expression, so it fires `post_execute`, input transformers and a
   `str` formatter once per snapshot (after a member's run and on Refresh). Same remedy available

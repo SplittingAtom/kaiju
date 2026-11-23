@@ -129,7 +129,10 @@ export function kernelCompletionSource(completer: KernelCompleter): CompletionSo
         label: m.label,
         boost: KERNEL_BOOST,
         detail: "kernel",
-        ...(m.type !== undefined ? { type: KIND[m.type] ?? "variable" } : {}),
+        // Only the map's own keys (an inherited name such as "constructor" is not a type).
+        ...(m.type !== undefined
+          ? { type: Object.hasOwn(KIND, m.type) ? KIND[m.type] : "variable" }
+          : {}),
       }));
     if (options.length === 0) return null;
     return { from: start + got.from, to: start + got.to, options, validFor: /^\w*$/ };
