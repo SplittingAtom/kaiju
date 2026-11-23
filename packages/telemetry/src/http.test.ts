@@ -155,16 +155,17 @@ describe("traceNodeRequest", () => {
   it("opens the span under the parent the handler chose, with attributes set before", async () => {
     const exporter = start(false);
     const parent = runParentContext("3e4f5a6b-7c8d-4e9f-8a1b-2c3d4e5f6071");
-    await serve((req, res) =>
-      traceNodeRequest("gateway.request", req, res, async (span) => {
+    await serve((req, res) => {
+      // The handler cannot reject; the request ends when it does.
+      void traceNodeRequest("gateway.request", req, res, async (span) => {
         span.setAttributes({ "kobe.call_id": "c1" });
         await new Promise((r) => setTimeout(r, 5));
         span.open(parent);
         span.open(); // the first call wins
         span.setAttributes({ "kobe.route": "openai" });
         res.end("ok");
-      }),
-    );
+      });
+    });
     const [span] = exporter.getFinishedSpans();
     expect(span?.spanContext().traceId).toBe("3e4f5a6b7c8d4e9f8a1b2c3d4e5f6071");
     expect(span?.parentSpanContext?.spanId).toBe("8a1b2c3d4e5f6071");

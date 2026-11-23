@@ -1,0 +1,623 @@
+import { randomUUID } from "node:crypto";
+import pg from "pg";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { withTeam } from "@kobe/db";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import {
+  builtinToolDescriptor,
+  DEFAULT_REMEMBER_LIMITS,
+  policyDecisionSchema,
+  type PolicyDecision,
+  type PolicyEngine,
+} from "@kobe/protocol";
+import { createApp } from "../app.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { createPolicyEngine } from "./engine.js";
+import { insertUserAllowRule } from "./remember.js";
+import {
+  createDbRuleSource,
+  createDbSettingsSource,
+  createTeamRule,
+  updateTeamRule,
+} from "./rule-store.js";
+import { TestBrowser, type TestResponse } from "../testing/browser.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { runWithAuditContext } from "../audit/context.js";
+import {
+  SAMPLE_INPUTS,
+  mcpTool,
+  policyInput,
+  type InputOptions,
+} from "../testing/policy-fixtures.js";
+import { fakeIsolation } from "../testing/isolation.js";
+
+const PUBLIC_URL = "http://kobe.test";
+const PASSWORD = "a long enough password";
+
+let database: TestDatabase;
+let deps: ServerDeps;
+let app: ReturnType<typeof createApp>;
+let engine: PolicyEngine;
+
+const people = ["owner", "siteAdmin", "alice", "bob", "carol", "dave", "erin"] as const;
+type Person = (typeof people)[number];
+const ids = Object.fromEntries(people.map((p) => [p, ""])) as Record<Person, string>;
+const email = (who: Person) => `${who.toLowerCase()}@policy.test`;
+let as: Record<Person, TestBrowser>;
+let finance = "";
+let marketing = "";
+
+// finance: alice team_admin, bob member, carol builder, erin member. marketing: dave team_admin.
+// siteAdmin and owner are in no team.
+
+async function signIn(who: Person): Promise<TestBrowser> {
+  const b = new TestBrowser(app, PUBLIC_URL);
+  const res = await b.post("/api/auth/sign-in/email", { email: email(who), password: PASSWORD });
+  expect(res.status, JSON.stringify(res.json)).toBe(200);
+  return b;
+}
+
+async function activate(who: Person, teamId: string): Promise<void> {
+  const res = await as[who].put("/v1/me/teams/active", { teamId });
+  expect(res.status, JSON.stringify(res.json)).toBe(200);
+  as[who].team = teamId;
+}
+
+async function createTeam(slug: string, admin: Person): Promise<string> {
+  const res = await as.siteAdmin.post("/v1/site/teams", {
+    slug,
+    name: slug,
+    adminUserId: ids[admin],
+  });
+  expect(res.status, JSON.stringify(res.json)).toBe(201);
+  return res.json.team.id as string;
+}
+
+/** Store calls outside a request record their audit events as Dave (KOBE-15). */
+const asDave = <T>(fn: () => Promise<T>) =>
+  runWithAuditContext({ actor: { kind: "user", id: ids.dave }, ip: null, userAgent: null }, fn);
+
+/** Adds an existing user through a team invitation they accept (KOBE-13). */
+async function addMember(teamAdmin: Person, who: Person, role: string): Promise<void> {
+  const res = await as[teamAdmin].post("/v1/team/invites", { email: email(who), role });
+  expect(res.status, JSON.stringify(res.json)).toBe(202);
+  const teamId = as[teamAdmin].team;
+  const accepted = await as[who].post(`/v1/me/invites/${teamId}/accept`);
+  expect(accepted.status, JSON.stringify(accepted.json)).toBe(200);
+}
+
+function decide(
+  who: Person,
+  teamId: string,
+  tool: string,
+  input: Record<string, unknown> = {},
+  options: InputOptions = {},
+): Promise<PolicyDecision> {
+  const descriptor = builtinToolDescriptor(tool);
+  if (!descriptor) throw new Error(tool);
+  // An empty input means "a valid call of this tool" (artifact tools validate their inputs).
+  const effective = Object.keys(input).length === 0 ? (SAMPLE_INPUTS[tool] ?? {}) : input;
+  const base = policyInput(descriptor, effective as never, options);
+  return engine.decide({ ...base, team_id: teamId, actor: { ...base.actor, user_id: ids[who] } });
+}
+
+beforeAll(async () => {
+  database = await createTestDatabase(testServerUrl());
+  deps = createServerDeps({
+    isolation: fakeIsolation().probe,
+    databaseUrl: database.appUrl,
+    publicUrl: PUBLIC_URL,
+    authSecret: "p".repeat(48),
+    setupToken: "setup-token-for-policy-tests-01",
+    trustedProxies: ["127.0.0.1/32"],
+    mailer: new MemoryMailer(),
+  });
+  app = createApp(deps);
+  engine = createPolicyEngine({
+    rules: createDbRuleSource(deps.database.db),
+    settings: createDbSettingsSource(deps.database.db, 0),
+  });
+  for (const who of people) {
+    const siteRole = who === "owner" ? "owner" : who === "siteAdmin" ? "admin" : undefined;
+    const user = await deps.createUserWithPassword(
+      { email: email(who), name: who, password: PASSWORD },
+      siteRole ? { siteRole } : {},
+    );
+    ids[who] = user.id;
+  }
+  as = Object.fromEntries(
+    await Promise.all(people.map(async (w) => [w, await signIn(w)])),
+  ) as Record<Person, TestBrowser>;
+  finance = await createTeam("finance", "alice");
+  marketing = await createTeam("marketing", "dave");
+  await activate("alice", finance);
+  await activate("dave", marketing);
+  await addMember("alice", "bob", "member");
+  await addMember("alice", "carol", "contributor");
+  await addMember("alice", "erin", "member");
+  for (const who of ["bob", "carol", "erin"] as const) await activate(who, finance);
+});
+
+/** Waits until the app role has no sessions left, so dropping the database can't kill live ones. */
+async function waitForAppSessionsToClose(): Promise<void> {
+  const server = new pg.Client({ connectionString: testServerUrl() });
+  await server.connect();
+  try {
+    const deadline = Date.now() + 10_000;
+    for (;;) {
+      const { rows } = await server.query<{ n: number }>(
+        `SELECT count(*)::int AS n FROM pg_stat_activity WHERE usename = $1`,
+        [database.appRole],
+      );
+      if (rows[0]?.n === 0) return;
+      if (Date.now() > deadline) throw new Error("app-role sessions still open after 10 s");
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  } finally {
+    await server.end();
+  }
+}
+
+afterAll(async () => {
+  await deps?.close();
+  if (database) {
+    await waitForAppSessionsToClose();
+    await database.drop();
+  }
+});
+
+const status = (res: TestResponse) => res.status;
+
+/** Superuser query on the test database (bypasses RLS: fixtures and assertions only). */
+async function adminQuery<T extends pg.QueryResultRow>(text: string, values: unknown[] = []) {
+  const client = new pg.Client({ connectionString: database.adminUrl });
+  await client.connect();
+  try {
+    return (await client.query<T>(text, values)).rows;
+  } finally {
+    await client.end();
+  }
+}
+
+describe("site policy routes (D8: site Owner/Admin)", () => {
+  const path = "/v1/site/policy/rules";
+
+  it("refuses plain users and team admins", async () => {
+    expect(status(await as.alice.get(path))).toBe(403);
+    expect(status(await as.bob.post(path, { effect: "deny", tool_glob: "bash" }))).toBe(403);
+    expect(status(await as.dave.get("/v1/site/policy/settings"))).toBe(403);
+  });
+
+  it("lets site admins and the Owner create, list, update and delete floor rules", async () => {
+    const created = await as.siteAdmin.post(path, {
+      effect: "ask",
+      tool_glob: "mcp__*",
+      note: "Ask before any connector call",
+    });
+    expect(created.status, JSON.stringify(created.json)).toBe(201);
+    expect(created.json.rule).toMatchObject({
+      scope: "site",
+      scope_ref: null,
+      effect: "ask",
+      tool_glob: "mcp__*",
+      arg_pattern: null,
+      created_by: ids.siteAdmin,
+      expires_at: null,
+    });
+    const id = created.json.rule.id as string;
+    expect((await as.owner.get(path)).json.rules.map((r: { id: string }) => r.id)).toContain(id);
+    const updated = await as.owner.put(`${path}/${id}`, {
+      effect: "deny",
+      tool_glob: "mcp__*",
+      arg_pattern: { "/force": "true" },
+    });
+    expect(updated.status, JSON.stringify(updated.json)).toBe(200);
+    expect(updated.json.rule).toMatchObject({ effect: "deny", arg_pattern: { "/force": "true" } });
+    expect(status(await as.siteAdmin.delete(`${path}/${id}`))).toBe(204);
+    expect(status(await as.siteAdmin.delete(`${path}/${id}`))).toBe(404);
+    expect(
+      status(await as.siteAdmin.put(`${path}/${randomUUID()}`, { effect: "deny", tool_glob: "x" })),
+    ).toBe(404);
+  });
+
+  it.each([
+    ["allow (the floor only tightens)", { effect: "allow", tool_glob: "read" }],
+    ["missing glob", { effect: "deny" }],
+    ["empty glob", { effect: "deny", tool_glob: "" }],
+    ["trailing escape", { effect: "deny", tool_glob: "bash\\" }],
+    ["over-long glob", { effect: "deny", tool_glob: "a".repeat(257) }],
+    ["regex-shaped pointer", { effect: "deny", tool_glob: "bash", arg_pattern: { command: "x" } }],
+    ["root pointer", { effect: "deny", tool_glob: "bash", arg_pattern: { "": "x" } }],
+    ["bad pointer escape", { effect: "deny", tool_glob: "bash", arg_pattern: { "/a~2": "x" } }],
+    ["empty arg pattern", { effect: "deny", tool_glob: "bash", arg_pattern: {} }],
+    [
+      "too many arg entries",
+      {
+        effect: "deny",
+        tool_glob: "bash",
+        arg_pattern: Object.fromEntries(Array.from({ length: 17 }, (_, i) => [`/k${i}`, "*"])),
+      },
+    ],
+    ["non-string glob value", { effect: "deny", tool_glob: "bash", arg_pattern: { "/a": 1 } }],
+    ["expired", { effect: "deny", tool_glob: "bash", expires_at: "2020-01-01T00:00:00Z" }],
+    ["unknown field", { effect: "deny", tool_glob: "bash", scope: "team" }],
+    ["long note", { effect: "deny", tool_glob: "bash", note: "n".repeat(501) }],
+  ])("rejects %s", async (_name, body) => {
+    const res = await as.siteAdmin.post(path, body);
+    expect(res.status, JSON.stringify(res.json)).toBe(400);
+    expect(res.json.code).toBe("invalid_request");
+  });
+
+  it("rejects a non-uuid rule id", async () => {
+    expect(status(await as.siteAdmin.delete(`${path}/1`))).toBe(400);
+  });
+
+  it("flips the sandbox-writes switch (site admins only) and the engine follows it", async () => {
+    expect((await as.siteAdmin.get("/v1/site/policy/settings")).json).toEqual({
+      promptSandboxWrites: false,
+    });
+    expect((await decide("bob", finance, "bash", { command: "ls" })).effect).toBe("allow");
+    const on = await as.siteAdmin.put("/v1/site/policy/settings", {
+      promptSandboxWrites: true,
+    });
+    expect(on.status).toBe(200);
+    expect((await decide("bob", finance, "bash", { command: "ls" })).effect).toBe(
+      "require_approval",
+    );
+    expect(
+      status(await as.siteAdmin.put("/v1/site/policy/settings", { promptSandboxWrites: "no" })),
+    ).toBe(400);
+    await as.owner.put("/v1/site/policy/settings", { promptSandboxWrites: false });
+    expect((await decide("bob", finance, "bash", { command: "ls" })).effect).toBe("allow");
+  });
+});
+
+describe("team policy routes (D8: team admins manage, members read)", () => {
+  const path = "/v1/team/policy/rules";
+
+  it("needs a team: site admins outside the team get nothing", async () => {
+    expect(status(await as.siteAdmin.get(path))).toBe(409); // no active team
+    const forced = await as.siteAdmin.get(path, { "x-kobe-team": finance });
+    expect(forced.status).toBe(409);
+  });
+
+  it("refuses rule changes to members and builders", async () => {
+    for (const who of ["bob", "carol"] as const) {
+      expect(status(await as[who].post(path, { effect: "deny", tool_glob: "bash" }))).toBe(403);
+    }
+  });
+
+  it("lets team admins manage rules and members read them", async () => {
+    const created = await as.alice.post(path, {
+      effect: "ask",
+      tool_glob: "share_file",
+      expires_at: "2099-01-01T00:00:00Z",
+    });
+    expect(created.status, JSON.stringify(created.json)).toBe(201);
+    expect(created.json.rule).toMatchObject({
+      scope: "team",
+      scope_ref: finance,
+      effect: "ask",
+      expires_at: "2099-01-01T00:00:00.000Z",
+    });
+    const id = created.json.rule.id as string;
+    const listed = await as.bob.get(path);
+    expect(listed.status).toBe(200);
+    expect(listed.json.rules.map((r: { id: string }) => r.id)).toEqual([id]);
+    const updated = await as.alice.put(`${path}/${id}`, {
+      effect: "allow",
+      tool_glob: "share_file",
+    });
+    expect(updated.json.rule).toMatchObject({ effect: "allow", expires_at: null });
+    expect(status(await as.bob.delete(`${path}/${id}`))).toBe(403);
+    expect(status(await as.alice.delete(`${path}/${id}`))).toBe(204);
+  });
+
+  it("refuses blanket team allow rules (no bypass)", async () => {
+    for (const tool_glob of ["*", "mcp__*", "b*"]) {
+      const res = await as.alice.post(path, { effect: "allow", tool_glob });
+      expect(res.status, tool_glob).toBe(400);
+    }
+    const scoped = await as.alice.post(path, { effect: "allow", tool_glob: "mcp__jira__*" });
+    expect(scoped.status).toBe(201);
+    expect(status(await as.alice.delete(`${path}/${scoped.json.rule.id}`))).toBe(204);
+    // Deny and ask rules may be as broad as the team likes.
+    const broad = await as.alice.post(path, { effect: "ask", tool_glob: "*" });
+    expect(broad.status).toBe(201);
+    expect(status(await as.alice.delete(`${path}/${broad.json.rule.id}`))).toBe(204);
+  });
+
+  it("requires the X-Kobe-Team header on changes", async () => {
+    const b = await signIn("alice");
+    await b.put("/v1/me/teams/active", { teamId: finance });
+    expect(status(await b.post(path, { effect: "deny", tool_glob: "bash" }))).toBe(400);
+  });
+
+  it("keeps teams apart: another team's admin can't see, change or delete a rule", async () => {
+    const created = await as.alice.post(path, { effect: "deny", tool_glob: "powershell" });
+    const id = created.json.rule.id as string;
+    expect((await as.dave.get(path)).json.rules).toEqual([]);
+    expect(status(await as.dave.put(`${path}/${id}`, { effect: "ask", tool_glob: "*" }))).toBe(404);
+    expect(status(await as.dave.delete(`${path}/${id}`))).toBe(404);
+    // The finance deny applies in finance only.
+    expect((await decide("bob", finance, "powershell", { command: "x" })).effect).toBe("deny");
+    expect((await decide("dave", marketing, "powershell", { command: "x" })).effect).toBe("allow");
+    // A finance admin can't reach marketing by naming it in the header.
+    expect(
+      (await as.alice.request("DELETE", `${path}/${id}`, undefined, { "x-kobe-team": marketing }))
+        .status,
+    ).toBe(409);
+    expect(status(await as.alice.delete(`${path}/${id}`))).toBe(204);
+  });
+
+  it("caps rules per scope", async () => {
+    const db = deps.database.db;
+    const limits = { rules: 1, argEntries: 100 };
+    const fields = { tool_glob: "x", arg_pattern: null, note: null, expires_at: null };
+    const first = await asDave(() =>
+      createTeamRule(db, marketing, { ...fields, effect: "deny" }, ids.dave, limits),
+    );
+    expect(first.ok).toBe(true);
+    const second = await asDave(() =>
+      createTeamRule(db, marketing, { ...fields, effect: "deny" }, ids.dave, limits),
+    );
+    expect(second).toEqual({ ok: false, error: "too_many_rules" });
+    if (first.ok) await as.dave.delete(`${path}/${first.rule.id}`);
+  });
+
+  it("caps arg-pattern entries per scope, counting updates", async () => {
+    const db = deps.database.db;
+    const limits = { rules: 10, argEntries: 3 };
+    const pattern = (n: number) =>
+      Object.fromEntries(Array.from({ length: n }, (_, i) => [`/k${i}`, "*"]));
+    const base = { tool_glob: "x", note: null, expires_at: null, effect: "deny" as const };
+    const a = await asDave(() =>
+      createTeamRule(db, marketing, { ...base, arg_pattern: pattern(2) }, ids.dave, limits),
+    );
+    expect(a.ok).toBe(true);
+    const b = await asDave(() =>
+      createTeamRule(db, marketing, { ...base, arg_pattern: pattern(2) }, ids.dave, limits),
+    );
+    expect(b).toEqual({ ok: false, error: "too_many_rules" });
+    if (!a.ok) return;
+    // Replacing a rule's own entries doesn't count them twice.
+    const grown = await asDave(() =>
+      updateTeamRule(db, marketing, a.rule.id, { ...base, arg_pattern: pattern(3) }, limits),
+    );
+    expect(grown.ok).toBe(true);
+    const tooBig = await asDave(() =>
+      updateTeamRule(db, marketing, a.rule.id, { ...base, arg_pattern: pattern(4) }, limits),
+    );
+    expect(tooBig).toEqual({ ok: false, error: "too_many_rules" });
+    await as.dave.delete(`${path}/${a.rule.id}`);
+  });
+});
+
+describe("D29 order end to end (rules from Postgres)", () => {
+  const site = "/v1/site/policy/rules";
+  const team = "/v1/team/policy/rules";
+  const created: { path: string; id: string; by: Person }[] = [];
+
+  async function make(by: Person, path: string, body: object): Promise<string> {
+    const res = await as[by].post(path, body);
+    expect(res.status, JSON.stringify(res.json)).toBe(201);
+    created.push({ path, id: res.json.rule.id, by });
+    return res.json.rule.id as string;
+  }
+
+  async function cleanup(): Promise<void> {
+    for (const r of created.splice(0)) await as[r.by].delete(`${r.path}/${r.id}`);
+  }
+
+  async function remember(
+    who: Person,
+    teamId: string,
+    tool: string,
+    rememberRule: object,
+    input: Record<string, unknown> = {},
+  ) {
+    const descriptor =
+      builtinToolDescriptor(tool) ??
+      mcpTool(tool, tool.includes("delete") ? "destructive" : "write");
+    return withTeam(deps.database.db, teamId, (tx) =>
+      insertUserAllowRule(tx, {
+        teamId,
+        userId: ids[who],
+        // Not stored for these scopes (no thread or run binding).
+        call: {
+          tool: descriptor,
+          input: input as never,
+          threadId: randomUUID(),
+          runId: randomUUID(),
+        },
+        remember: { scope: "forever", ...rememberRule },
+        limits: DEFAULT_REMEMBER_LIMITS,
+        timeZone: null,
+        now: new Date(),
+        actor: { kind: "user", id: ids[who] },
+      }),
+    );
+  }
+
+  it("site deny beats a team allow and the user's own allow", async () => {
+    await make("siteAdmin", site, { effect: "deny", tool_glob: "share_file" });
+    await make("alice", team, { effect: "allow", tool_glob: "share_file" });
+    expect((await remember("bob", finance, "share_file", { tool_glob: "share_file" })).ok).toBe(
+      true,
+    );
+    const decision = await decide("bob", finance, "share_file", { path: "/workspace/a" });
+    expect(decision.effect).toBe("deny");
+    expect(decision.reasons[0]).toMatchObject({
+      code: "site_deny_rule",
+      rule_id: created[0]?.id,
+    });
+    expect(policyDecisionSchema.safeParse(decision).success).toBe(true);
+    await cleanup();
+  });
+
+  it("an site ask can't be removed by a remember-rule; without it the remember-rule allows", async () => {
+    const askId = await make("siteAdmin", site, {
+      effect: "ask",
+      tool_glob: "remember",
+    });
+    expect((await remember("bob", finance, "remember", { tool_glob: "remember" })).ok).toBe(true);
+    const asked = await decide("bob", finance, "remember");
+    expect(asked).toMatchObject({ effect: "require_approval" });
+    expect(asked.reasons[0]).toMatchObject({ code: "site_ask_rule", rule_id: askId });
+    await cleanup();
+    const allowed = await decide("bob", finance, "remember");
+    expect(allowed.effect).toBe("allow");
+    expect(allowed.reasons[0]?.code).toBe("user_allow_rule");
+  });
+
+  it("a remember-rule applies to its owner in its team only", async () => {
+    expect((await remember("erin", finance, "share_file", { tool_glob: "share_file" })).ok).toBe(
+      true,
+    );
+    expect((await decide("erin", finance, "share_file")).effect).toBe("allow");
+    // carol, not bob: earlier tests left bob remember-rules of his own for share_file.
+    expect((await decide("carol", finance, "share_file")).effect).toBe("require_approval");
+    // erin is not in marketing; dave's decision there ignores erin's finance rule.
+    expect((await decide("dave", marketing, "share_file")).effect).toBe("require_approval");
+  });
+
+  it("members list and revoke only their own remember-rules", async () => {
+    const mine = await as.erin.get("/v1/team/policy/my-rules");
+    expect(mine.status).toBe(200);
+    const rule = mine.json.rules.find((r: { tool_glob: string }) => r.tool_glob === "share_file");
+    expect(rule).toMatchObject({ user_id: ids.erin, remember_scope: "forever" });
+    expect(
+      (await as.bob.get("/v1/team/policy/my-rules")).json.rules.map(
+        (r: { user_id: string }) => r.user_id,
+      ),
+    ).not.toContain(ids.erin);
+    expect(status(await as.bob.delete(`/v1/team/policy/my-rules/${rule.id}`))).toBe(404);
+    // Team rule routes never touch user rules.
+    expect(status(await as.alice.delete(`/v1/team/policy/rules/${rule.id}`))).toBe(404);
+    expect(status(await as.erin.delete(`/v1/team/policy/my-rules/${rule.id}`))).toBe(204);
+    expect((await decide("erin", finance, "share_file")).effect).toBe("require_approval");
+  });
+
+  it("remember-rules: validation, scope to the approved tool, expiry", async () => {
+    expect(await remember("bob", finance, "bash", { tool_glob: "*" })).toEqual({
+      ok: false,
+      error: "glob_too_broad",
+    });
+    expect(
+      await remember("bob", finance, "bash", { tool_glob: "bash", arg_pattern: { x: "y" } }),
+    ).toEqual({
+      ok: false,
+      error: "invalid_rule",
+    });
+    expect(await remember("bob", finance, "bash", { tool_glob: "bash", extra: 1 })).toEqual({
+      ok: false,
+      error: "invalid_rule",
+    });
+    // KOBE-289: destructive tools are never remembered, whatever the client asks.
+    expect(await remember("bob", finance, "bash", { tool_glob: "bash" })).toEqual({
+      ok: false,
+      error: "remember_not_allowed",
+    });
+    const edits = [{ oldText: "a", newText: "b" }];
+    const timed = await remember(
+      "bob",
+      finance,
+      "edit",
+      { tool_glob: "edit", scope: "day", exact: true },
+      { path: "x", edits },
+    );
+    expect(timed.ok && timed.rule.arg_pattern).toEqual({ "/path": "/workspace/x" });
+    // An exact MCP rule pins every argument and their key set (review S3); a path tool only its path.
+    const mcp = await remember(
+      "bob",
+      finance,
+      "mcp__jira__create_issue",
+      { tool_glob: "mcp__jira__create_issue", scope: "day", exact: true },
+      { project: "KOBE", summary: "Fix" },
+    );
+    const flags = await adminQuery<{ id: string; exact_keys: boolean }>(
+      `SELECT id, exact_keys FROM tool_rules WHERE id = ANY($1)`,
+      [[mcp.ok && mcp.rule.id, timed.ok && timed.rule.id]],
+    );
+    expect(Object.fromEntries(flags.map((f) => [f.id, f.exact_keys]))).toEqual({
+      [mcp.ok ? mcp.rule.id : ""]: true,
+      [timed.ok ? timed.rule.id : ""]: false,
+    });
+    expect(timed.ok && Date.parse(timed.rule.expires_at ?? "") - Date.now()).toBeGreaterThan(
+      86_000_000,
+    );
+  });
+
+  it("stores the exact tool: no widening to a connector or wildcard", async () => {
+    for (const tool_glob of ["mcp__jira__*", "mcp__jira__create_*", "*"]) {
+      expect(await remember("bob", finance, "mcp__jira__create_issue", { tool_glob })).toEqual({
+        ok: false,
+        error: "glob_too_broad",
+      });
+    }
+  });
+
+  it("refuses a remember-rule for someone outside the team", async () => {
+    await expect(remember("dave", finance, "edit", { tool_glob: "edit" })).rejects.toThrow();
+  });
+
+  it("ignores expired rules from Postgres", async () => {
+    // The engine's clock decides expiry (the database server's clock may differ).
+    await adminQuery(
+      `UPDATE tool_rules SET expires_at = $1 WHERE scope = 'user' AND tool_glob = 'edit'`,
+      [new Date(Date.now() - 1000)],
+    );
+    await as.siteAdmin.put("/v1/site/policy/settings", { promptSandboxWrites: true });
+    const edits = [{ oldText: "a", newText: "b" }];
+    expect((await decide("bob", finance, "edit", { path: "/workspace/x", edits })).effect).toBe(
+      "require_approval",
+    );
+    await as.siteAdmin.put("/v1/site/policy/settings", { promptSandboxWrites: false });
+  });
+
+  it("drops a user's remember-rules when they leave the team", async () => {
+    expect((await remember("bob", finance, "recall", { tool_glob: "recall" })).ok).toBe(true);
+    const before = await as.bob.get("/v1/team/policy/my-rules");
+    expect(before.json.rules.length).toBeGreaterThan(0);
+    expect(status(await as.alice.delete(`/v1/team/members/${ids.bob}`))).toBe(204);
+    const rows = await adminQuery<{ n: number }>(
+      `SELECT count(*)::int AS n FROM tool_rules WHERE user_id = $1`,
+      [ids.bob],
+    );
+    expect(rows[0]?.n).toBe(0);
+  });
+
+  it("a team allow rule only allow-lists for auto; it never lifts an interactive prompt", async () => {
+    await make("alice", team, { effect: "allow", tool_glob: "share_file" });
+    expect((await decide("carol", finance, "share_file")).effect).toBe("require_approval");
+    expect((await decide("carol", finance, "share_file", {}, { mode: "auto" })).effect).toBe(
+      "allow",
+    );
+    await cleanup();
+    expect((await decide("carol", finance, "share_file", {}, { mode: "auto" })).effect).toBe(
+      "deny",
+    );
+  });
+
+  it("denies MCP resource tools in v1", async () => {
+    const decision = await decide("carol", finance, "read_mcp_resource", { server: "x", uri: "y" });
+    expect(decision.effect).toBe("deny");
+  });
+
+  it("scheduled runs never wait: an ask rule becomes a deny", async () => {
+    await make("alice", team, { effect: "ask", tool_glob: "grep" });
+    const decision = await decide(
+      "carol",
+      finance,
+      "grep",
+      { pattern: "x" },
+      { mode: "auto", kind: "schedule" },
+    );
+    expect(decision.effect).toBe("deny");
+    expect(decision.reasons.map((r) => r.code)).toEqual([
+      "scheduled_run_no_prompt",
+      "team_ask_rule",
+    ]);
+    await cleanup();
+  });
+});

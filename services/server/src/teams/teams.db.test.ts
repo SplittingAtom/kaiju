@@ -1,0 +1,527 @@
+import { randomUUID } from "node:crypto";
+import pg from "pg";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createApp } from "../app.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { TestBrowser } from "../testing/browser.js";
+import { fakeIsolation } from "../testing/isolation.js";
+
+// Own throwaway database: this file needs an Owner, which the first-run tests must not see.
+const PUBLIC_URL = "http://kobe.test";
+const PASSWORD = "a long enough password";
+
+let database: TestDatabase;
+let deps: ServerDeps;
+let app: ReturnType<typeof createApp>;
+let admin: pg.Client;
+
+const ids: Record<"owner" | "siteAdmin" | "alice" | "bob" | "carol" | "dave", string> = {
+  owner: "",
+  siteAdmin: "",
+  alice: "",
+  bob: "",
+  carol: "",
+  dave: "",
+};
+type Person = keyof typeof ids;
+const email = (who: Person) => `${who.toLowerCase()}@teams.test`;
+
+async function signIn(who: Person): Promise<TestBrowser> {
+  const b = new TestBrowser(app, PUBLIC_URL);
+  const res = await b.post("/api/auth/sign-in/email", { email: email(who), password: PASSWORD });
+  expect(res.status, JSON.stringify(res.json)).toBe(200);
+  return b;
+}
+
+let as: Record<Person, TestBrowser>;
+let finance = "";
+let marketing = "";
+
+beforeAll(async () => {
+  database = await createTestDatabase(testServerUrl());
+  // A single client: unlike Pool#end, Client#end resolves only once the connection is closed.
+  admin = new pg.Client({ connectionString: database.adminUrl });
+  await admin.connect();
+  deps = createServerDeps({
+    isolation: fakeIsolation().probe,
+    databaseUrl: database.appUrl,
+    publicUrl: PUBLIC_URL,
+    authSecret: "t".repeat(48),
+    setupToken: "setup-token-for-team-tests-0123",
+    trustedProxies: ["127.0.0.1/32"],
+    mailer: new MemoryMailer(),
+  });
+  app = createApp(deps);
+  for (const who of Object.keys(ids) as Person[]) {
+    const siteRole = who === "owner" ? "owner" : who === "siteAdmin" ? "admin" : undefined;
+    const user = await deps.createUserWithPassword(
+      { email: email(who), name: who, password: PASSWORD },
+      siteRole ? { siteRole } : {},
+    );
+    ids[who] = user.id;
+  }
+  as = Object.fromEntries(
+    await Promise.all((Object.keys(ids) as Person[]).map(async (w) => [w, await signIn(w)])),
+  ) as Record<Person, TestBrowser>;
+});
+
+/**
+ * Pool#end resolves before its idle connections have closed; dropping the database WITH (FORCE)
+ * meanwhile terminates them (57P01) on clients without an error listener. Wait until the server
+ * sees none of our app-role sessions before dropping.
+ */
+async function waitForAppSessionsToClose(): Promise<void> {
+  const server = new pg.Client({ connectionString: testServerUrl() });
+  await server.connect();
+  try {
+    const deadline = Date.now() + 10_000;
+    for (;;) {
+      const { rows } = await server.query<{ n: number }>(
+        `SELECT count(*)::int AS n FROM pg_stat_activity WHERE usename = $1`,
+        [database.appRole],
+      );
+      if (rows[0]?.n === 0) return;
+      if (Date.now() > deadline) throw new Error("app-role sessions still open after 10 s");
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  } finally {
+    await server.end();
+  }
+}
+
+afterAll(async () => {
+  await deps?.close();
+  await admin?.end();
+  if (database) {
+    await waitForAppSessionsToClose();
+    await database.drop();
+  }
+});
+
+describe("site roles (ac-3)", () => {
+  it("lets site admins list roles and refuses plain users", async () => {
+    expect((await as.alice.get("/v1/site/roles")).status).toBe(403);
+    const res = await as.siteAdmin.get("/v1/site/roles");
+    expect(res.status).toBe(200);
+    expect(res.json.roles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ userId: ids.owner, role: "owner" }),
+        expect.objectContaining({ userId: ids.siteAdmin, role: "admin" }),
+      ]),
+    );
+  });
+
+  it("lets only the Owner grant and revoke Admin", async () => {
+    expect((await as.siteAdmin.put(`/v1/site/roles/${ids.dave}`, { role: "admin" })).status).toBe(
+      403,
+    );
+    expect((await as.owner.put(`/v1/site/roles/${ids.dave}`, { role: "admin" })).status).toBe(200);
+    expect((await as.dave.get("/v1/me")).json.siteRole).toBe("admin");
+    expect((await as.owner.put(`/v1/site/roles/${ids.dave}`, { role: "user" })).status).toBe(200);
+    expect((await as.dave.get("/v1/me")).json.siteRole).toBeNull();
+  });
+
+  it("never changes the Owner's role except by transfer", async () => {
+    const res = await as.owner.put(`/v1/site/roles/${ids.owner}`, { role: "user" });
+    expect(res).toMatchObject({ status: 409, json: { code: "owner_role_fixed" } });
+    expect((await as.owner.put(`/v1/site/roles/${ids.owner}`, { role: "owner" })).status).toBe(400);
+    expect((await as.owner.put(`/v1/site/roles/${randomUUID()}`, { role: "admin" })).status).toBe(
+      404,
+    );
+  });
+
+  it("transfers ownership atomically: the old Owner becomes an Admin", async () => {
+    const path = "/v1/site/roles/transfer-ownership";
+    expect((await as.siteAdmin.post(path, { userId: ids.siteAdmin })).status).toBe(403);
+    expect((await as.owner.post(path, { userId: ids.owner })).status).toBe(400);
+    expect((await as.owner.post(path, { userId: randomUUID() })).status).toBe(404);
+
+    expect((await as.owner.post(path, { userId: ids.siteAdmin })).status).toBe(200);
+    expect((await as.owner.get("/v1/me")).json.siteRole).toBe("admin");
+    expect((await as.siteAdmin.get("/v1/me")).json.siteRole).toBe("owner");
+    // The former Owner can no longer transfer; the new one hands it back.
+    expect((await as.owner.post(path, { userId: ids.owner })).status).toBe(403);
+    expect((await as.siteAdmin.post(path, { userId: ids.owner })).status).toBe(200);
+    const { rows } = await admin.query(`SELECT user_id, role FROM site_roles ORDER BY role`);
+    expect(rows).toEqual([
+      { user_id: ids.owner, role: "owner" },
+      { user_id: ids.siteAdmin, role: "admin" },
+    ]);
+  });
+  it("never leaves the install without an Owner when a demotion races a transfer", async () => {
+    const path = "/v1/site/roles/transfer-ownership";
+    for (let i = 0; i < 5; i++) {
+      await Promise.all([
+        as.owner.post(path, { userId: ids.dave }),
+        as.owner.put(`/v1/site/roles/${ids.dave}`, { role: "user" }),
+      ]);
+      const { rows } = await admin.query(`SELECT user_id FROM site_roles WHERE role = 'owner'`);
+      expect(rows).toHaveLength(1);
+      // Restore: the Owner, the site admin, and Dave as a plain user.
+      if (rows[0].user_id === ids.dave) await as.dave.post(path, { userId: ids.owner });
+      await as.owner.put(`/v1/site/roles/${ids.dave}`, { role: "user" });
+    }
+    const { rows } = await admin.query(`SELECT user_id, role FROM site_roles ORDER BY role`);
+    expect(rows).toEqual([
+      { user_id: ids.owner, role: "owner" },
+      { user_id: ids.siteAdmin, role: "admin" },
+    ]);
+  });
+});
+
+describe("teams (ac-1)", () => {
+  it("refuses team creation to plain users", async () => {
+    const res = await as.alice.post("/v1/site/teams", {
+      slug: "rogue",
+      name: "Rogue",
+      adminUserId: ids.alice,
+    });
+    expect(res.status).toBe(403);
+    expect((await as.alice.get("/v1/site/teams")).status).toBe(403);
+  });
+
+  it("creates a team with its first team admin", async () => {
+    const res = await as.siteAdmin.post("/v1/site/teams", {
+      slug: "finance",
+      name: "Finance",
+      adminUserId: ids.alice,
+    });
+    expect(res.status, JSON.stringify(res.json)).toBe(201);
+    finance = res.json.team.id;
+    expect(res.json.team).toMatchObject({ slug: "finance", name: "Finance" });
+    const members = await as.siteAdmin.get(`/v1/site/teams/${finance}/members`);
+    expect(members.json.members).toEqual([
+      expect.objectContaining({ userId: ids.alice, role: "team_admin", email: email("alice") }),
+    ]);
+
+    const second = await as.owner.post("/v1/site/teams", {
+      slug: "marketing",
+      name: "Marketing",
+      adminUserId: ids.bob,
+    });
+    expect(second.status).toBe(201);
+    marketing = second.json.team.id;
+  });
+
+  it("validates input and leaves no team behind on failure", async () => {
+    const bad = (body: object) => as.siteAdmin.post("/v1/site/teams", body);
+    expect((await bad({ slug: "Bad Slug", name: "X", adminUserId: ids.alice })).status).toBe(400);
+    expect((await bad({ slug: "x".repeat(33), name: "X", adminUserId: ids.alice })).status).toBe(
+      400,
+    );
+    expect(await bad({ slug: "finance", name: "Dup", adminUserId: ids.alice })).toMatchObject({
+      status: 409,
+      json: { code: "slug_taken" },
+    });
+    expect(await bad({ slug: "ghost", name: "Ghost", adminUserId: randomUUID() })).toMatchObject({
+      status: 404,
+      json: { code: "user_not_found" },
+    });
+    const { rows } = await admin.query(`SELECT slug FROM teams ORDER BY slug`);
+    expect(rows.map((r) => r.slug)).toEqual(["finance", "marketing"]);
+  });
+
+  it("lists and renames teams; the slug never changes", async () => {
+    const renamed = await as.siteAdmin.patch(`/v1/site/teams/${finance}`, {
+      name: "Finance & Ops",
+    });
+    expect(renamed.json.team).toEqual({ id: finance, slug: "finance", name: "Finance & Ops" });
+    expect((await as.siteAdmin.patch(`/v1/site/teams/${finance}`, { slug: "x" })).status).toBe(400);
+    expect((await as.siteAdmin.patch(`/v1/site/teams/${randomUUID()}`, { name: "N" })).status).toBe(
+      404,
+    );
+    const list = await as.siteAdmin.get("/v1/site/teams");
+    expect(list.json.teams.map((t: { slug: string }) => t.slug)).toEqual(["finance", "marketing"]);
+  });
+
+  it("lets site admins manage members but never their own membership (KOBE-638)", async () => {
+    // Chris 2026-11-12 (KOBE-638) replaces D8's "team admins only": site admins add existing users,
+    // change roles and remove (site-team-members.db.test.ts); they never add or change themselves,
+    // so team content stays behind break-glass. There is no PUT.
+    const path = (user: string) => `/v1/site/teams/${finance}/members/${user}`;
+    expect((await as.siteAdmin.put(path(ids.bob), { role: "team_admin" })).status).toBe(404);
+    expect((await as.siteAdmin.patch(path(ids.siteAdmin), { role: "member" })).status).toBe(403);
+    expect((await as.siteAdmin.delete(path(ids.siteAdmin))).status).toBe(403);
+    expect((await as.siteAdmin.patch(path(ids.bob), { role: "member" })).status).toBe(404);
+    expect((await as.siteAdmin.patch(path(ids.alice), { role: "member" })).status).toBe(409);
+    const { rows } = await admin.query(
+      `SELECT user_id, role FROM team_members WHERE team_id = $1`,
+      [finance],
+    );
+    expect(rows).toEqual([{ user_id: ids.alice, role: "team_admin" }]);
+  });
+
+  it("lets the first team admin build the team", async () => {
+    await as.alice.put("/v1/me/teams/active", { teamId: finance });
+    as.alice.team = finance;
+    for (const who of ["bob", "carol"] as const) {
+      // People join by accepting a team invitation (KOBE-13), never by being added.
+      const res = await as.alice.post("/v1/team/invites", { email: email(who), role: "member" });
+      expect(res.status, JSON.stringify(res.json)).toBe(202);
+      expect((await as[who].post(`/v1/me/invites/${finance}/accept`)).status).toBe(200);
+    }
+  });
+});
+
+describe("active team and switcher API (ac-5)", () => {
+  it("lists only the caller's teams with their role, and no active team at first", async () => {
+    const res = await as.bob.get("/v1/me/teams");
+    const hints = { registry: false, chatReady: false };
+    expect(res.json).toEqual({
+      activeTeamId: null,
+      lastTeamId: null,
+      teams: [
+        { id: finance, slug: "finance", name: "Finance & Ops", role: "member", ...hints },
+        { id: marketing, slug: "marketing", name: "Marketing", role: "team_admin", ...hints },
+      ],
+    });
+    expect((await as.dave.get("/v1/me/teams")).json).toEqual({
+      activeTeamId: null,
+      lastTeamId: null,
+      teams: [],
+    });
+  });
+
+  it("requires an active team for team-scoped routes", async () => {
+    expect(await as.bob.get("/v1/team")).toMatchObject({
+      status: 409,
+      json: { code: "no_active_team" },
+    });
+  });
+
+  it("only lets members select a team (same answer for unknown teams)", async () => {
+    const other = await as.alice.put("/v1/me/teams/active", { teamId: marketing });
+    const unknown = await as.alice.put("/v1/me/teams/active", { teamId: randomUUID() });
+    expect(other).toMatchObject({ status: 403, json: { code: "not_a_team_member" } });
+    expect(unknown.status).toBe(403);
+    expect(unknown.json.code).toBe(other.json.code);
+    expect((await as.alice.put("/v1/me/teams/active", { teamId: "finance" })).status).toBe(400);
+  });
+
+  it("switches teams; every team-scoped request resolves to the active one", async () => {
+    expect((await as.bob.put("/v1/me/teams/active", { teamId: finance })).json).toEqual({
+      activeTeamId: finance,
+      role: "member",
+    });
+    const inFinance = await as.bob.get("/v1/team");
+    expect(inFinance.json).toMatchObject({ team: { id: finance }, role: "member" });
+    expect(inFinance.json.permissions).toContain("team.chat");
+    expect(inFinance.json.permissions).not.toContain("team.members.manage");
+
+    await as.bob.put("/v1/me/teams/active", { teamId: marketing });
+    const inMarketing = await as.bob.get("/v1/team");
+    expect(inMarketing.json).toMatchObject({ team: { id: marketing }, role: "team_admin" });
+    expect(inMarketing.json.permissions).toContain("team.members.manage");
+    expect((await as.bob.get("/v1/me/teams")).json.activeTeamId).toBe(marketing);
+  });
+
+  it("keeps the active team per session", async () => {
+    const otherDevice = await signIn("bob");
+    expect((await otherDevice.get("/v1/me/teams")).json.activeTeamId).toBeNull();
+    expect((await as.bob.get("/v1/me/teams")).json.activeTeamId).toBe(marketing);
+  });
+
+  it("rejects a request whose X-Kobe-Team names a different team (stale tab)", async () => {
+    const stale = await as.bob.get("/v1/team", { "x-kobe-team": finance });
+    expect(stale).toMatchObject({
+      status: 409,
+      json: { code: "team_mismatch", activeTeamId: marketing },
+    });
+    expect((await as.bob.get("/v1/team", { "x-kobe-team": marketing })).status).toBe(200);
+    expect((await as.bob.get("/v1/team", { "x-kobe-team": "nope" })).status).toBe(400);
+  });
+
+  it("cannot be set through Better Auth's update-session endpoint", async () => {
+    const before = await admin.query(`SELECT count(*)::int AS n FROM session_active_teams`);
+    const res = await as.dave.post("/api/auth/update-session", {
+      teamId: marketing,
+      activeTeamId: marketing,
+    });
+    expect(res.status).not.toBe(200);
+    const after = await admin.query(`SELECT count(*)::int AS n FROM session_active_teams`);
+    expect(after.rows).toEqual(before.rows);
+    expect(await as.dave.get("/v1/team")).toMatchObject({ status: 409 });
+  });
+
+  it("drops the active team with the session on sign-out", async () => {
+    const b = await signIn("carol");
+    await b.put("/v1/me/teams/active", { teamId: finance });
+    expect((await b.post("/api/auth/sign-out")).status).toBe(200);
+    const { rows } = await admin.query(
+      `SELECT count(*)::int AS n FROM session_active_teams s
+       LEFT JOIN sessions x ON x.id = s.session_id WHERE x.id IS NULL`,
+    );
+    expect(rows[0]).toEqual({ n: 0 });
+  });
+});
+
+describe("team membership via /v1/team (ac-2, ac-4)", () => {
+  beforeAll(async () => {
+    await as.alice.put("/v1/me/teams/active", { teamId: finance });
+    await as.bob.put("/v1/me/teams/active", { teamId: finance });
+    await as.carol.put("/v1/me/teams/active", { teamId: finance });
+    for (const who of ["alice", "bob", "carol"] as const) as[who].team = finance;
+  });
+
+  it("requires X-Kobe-Team on team changes (a stale tab can't write to another team)", async () => {
+    const res = await as.alice.request(
+      "PATCH",
+      `/v1/team/members/${ids.bob}`,
+      { role: "contributor" },
+      { "x-kobe-team": "" },
+    );
+    expect(res.status).toBe(400);
+    as.alice.team = undefined;
+    expect(
+      await as.alice.patch(`/v1/team/members/${ids.bob}`, { role: "contributor" }),
+    ).toMatchObject({
+      status: 400,
+      json: { code: "team_header_required" },
+    });
+    as.alice.team = finance;
+    expect((await as.alice.get("/v1/team/members")).json.members).toEqual(
+      expect.arrayContaining([expect.objectContaining({ userId: ids.bob, role: "member" })]),
+    );
+  });
+
+  it("lets members read the roster but not change it", async () => {
+    const roster = await as.bob.get("/v1/team/members");
+    expect(roster.status).toBe(200);
+    expect(
+      roster.json.members.map((m: { userId: string; role: string }) => [m.userId, m.role]),
+    ).toEqual([
+      [ids.alice, "team_admin"],
+      [ids.bob, "member"],
+      [ids.carol, "member"],
+    ]);
+    expect(
+      (await as.bob.post("/v1/team/invites", { email: email("dave"), role: "member" })).status,
+    ).toBe(403);
+    expect(
+      (await as.bob.patch(`/v1/team/members/${ids.carol}`, { role: "contributor" })).status,
+    ).toBe(403);
+    expect((await as.bob.delete(`/v1/team/members/${ids.carol}`)).status).toBe(403);
+  });
+
+  it("lets the team admin add, re-role and remove members", async () => {
+    const invite = await as.alice.post("/v1/team/invites", {
+      email: "DAVE@teams.test",
+      role: "contributor",
+    });
+    expect(invite).toMatchObject({
+      status: 202,
+      json: { invitation: { email: email("dave"), role: "contributor" } },
+    });
+    expect(await as.dave.post(`/v1/me/invites/${finance}/accept`)).toMatchObject({
+      status: 200,
+      json: { teamId: finance, role: "contributor" },
+    });
+    expect(
+      (await as.alice.post("/v1/team/invites", { email: email("dave"), role: "member" })).json.code,
+    ).toBe("already_member");
+    expect(
+      (await as.alice.post("/v1/team/invites", { email: email("dave"), role: "boss" })).status,
+    ).toBe(400);
+
+    expect(
+      (await as.alice.patch(`/v1/team/members/${ids.carol}`, { role: "contributor" })).status,
+    ).toBe(200);
+    expect((await as.carol.get("/v1/team")).json.role).toBe("contributor");
+    expect(
+      (await as.alice.patch(`/v1/team/members/${randomUUID()}`, { role: "member" })).status,
+    ).toBe(404);
+  });
+
+  it("never leaves a team without a team admin", async () => {
+    expect(
+      (await as.alice.patch(`/v1/team/members/${ids.alice}`, { role: "member" })).json.code,
+    ).toBe("last_team_admin");
+    expect((await as.alice.delete(`/v1/team/members/${ids.alice}`)).json.code).toBe(
+      "last_team_admin",
+    );
+  });
+
+  it("keeps one team admin when two admins demote themselves concurrently", async () => {
+    expect(
+      (await as.alice.patch(`/v1/team/members/${ids.bob}`, { role: "team_admin" })).status,
+    ).toBe(200);
+    const results = await Promise.all([
+      as.alice.patch(`/v1/team/members/${ids.alice}`, { role: "member" }),
+      as.bob.patch(`/v1/team/members/${ids.bob}`, { role: "member" }),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    const { rows } = await admin.query(
+      `SELECT count(*)::int AS n FROM team_members WHERE team_id = $1 AND role = 'team_admin'`,
+      [finance],
+    );
+    expect(rows[0]).toEqual({ n: 1 });
+    // Restore Alice as the only team admin, Bob as a member.
+    const aliceDemoted = results[0]?.status === 200;
+    if (aliceDemoted) await as.bob.patch(`/v1/team/members/${ids.alice}`, { role: "team_admin" });
+    await as.alice.patch(`/v1/team/members/${ids.bob}`, { role: "member" });
+    expect((await as.alice.get("/v1/team")).json.role).toBe("team_admin");
+  });
+
+  it("revokes access on the next request after removal", async () => {
+    expect((await as.carol.get("/v1/team")).status).toBe(200);
+    expect((await as.alice.delete(`/v1/team/members/${ids.carol}`)).status).toBe(204);
+    expect(await as.carol.get("/v1/team")).toMatchObject({
+      status: 403,
+      json: { code: "not_a_team_member" },
+    });
+    expect((await as.carol.get("/v1/me/teams")).json).toEqual({
+      activeTeamId: null,
+      lastTeamId: null,
+      teams: [],
+    });
+    expect((await as.alice.delete(`/v1/team/members/${ids.carol}`)).status).toBe(404);
+  });
+
+  it("stores memberships under the right team only", async () => {
+    const { rows } = await admin.query(
+      `SELECT t.slug, m.user_id, m.role FROM team_members m JOIN teams t ON t.id = m.team_id
+       ORDER BY t.slug, m.role, m.user_id`,
+    );
+    const expected = [
+      { slug: "finance", user_id: ids.alice, role: "team_admin" },
+      { slug: "finance", user_id: ids.bob, role: "member" },
+      { slug: "finance", user_id: ids.dave, role: "contributor" },
+      { slug: "marketing", user_id: ids.bob, role: "team_admin" },
+    ];
+    expect(rows).toHaveLength(expected.length);
+    expect(rows).toEqual(expect.arrayContaining(expected));
+  });
+});
+
+describe("site admins and team content (ac-4)", () => {
+  it("gives site roles no team access: they can't select or use a team they're not in", async () => {
+    for (const who of ["owner", "siteAdmin"] as const) {
+      expect((await as[who].get("/v1/me/teams")).json.teams).toEqual([]);
+      expect((await as[who].put("/v1/me/teams/active", { teamId: finance })).status).toBe(403);
+      expect((await as[who].get("/v1/team/members")).status).toBe(409);
+    }
+  });
+
+  it("keeps a removed member out even with a stale active-team pointer", async () => {
+    // Plant a pointer directly (as if set before removal) and check every request re-verifies.
+    const [sessionRow] = (
+      await admin.query(`SELECT id FROM sessions WHERE user_id = $1 LIMIT 1`, [ids.siteAdmin])
+    ).rows;
+    await admin.query(
+      `INSERT INTO session_active_teams (session_id, team_id) VALUES ($1, $2)
+       ON CONFLICT (session_id) DO UPDATE SET team_id = EXCLUDED.team_id`,
+      [sessionRow.id, finance],
+    );
+    const sessions = await admin.query(
+      `SELECT count(*)::int AS n FROM sessions WHERE user_id = $1`,
+      [ids.siteAdmin],
+    );
+    expect(sessions.rows[0]).toEqual({ n: 1 });
+    expect(await as.siteAdmin.get("/v1/team/members")).toMatchObject({
+      status: 403,
+      json: { code: "not_a_team_member" },
+    });
+  });
+});

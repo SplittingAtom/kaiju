@@ -21,6 +21,7 @@ const WEB_FILES = [
   "apps/web/**/*.mjs",
   "apps/web/**/*.js",
 ];
+const TYPED_FILES = ["services/*/src/**/*.ts", "packages/*/src/**/*.ts"];
 
 export default tseslint.config(
   {
@@ -46,6 +47,19 @@ export default tseslint.config(
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
+    },
+  },
+  {
+    // KOBE-722: type-aware promise rules for services and packages only. Scoped to `src/`, which
+    // every service and package tsconfig includes (tests too), so the project service never has to
+    // fall back to a default project; the rest of the repo stays on the faster untyped lint.
+    files: TYPED_FILES,
+    languageOptions: {
+      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
+    },
+    rules: {
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-misused-promises": "error",
     },
   },
   {

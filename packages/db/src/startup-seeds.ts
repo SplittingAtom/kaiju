@@ -16,7 +16,7 @@
  * someone chose) is real data and the target is refused.
  *
  * `rows` is a SQL condition over one row of the table (unqualified column names), true for a
- * startup-seeded row. `services/server/src/startup-seeds.db.test.ts` runs one pass of the
+ * startup-seeded row. `services/server/src/startup/startup-seeds.db.test.ts` runs one pass of the
  * server's start-up jobs (`services/server/src/startup/jobs.ts`, the list `index.ts` starts) on
  * a fresh database and fails when one writes a row these conditions don't cover, so a new
  * start-up writer must be added here.

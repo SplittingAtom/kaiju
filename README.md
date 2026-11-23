@@ -44,7 +44,7 @@ Run one package's tests, or a single test file / test name:
 
 ```bash
 pnpm --filter @kobe/server test
-pnpm --filter @kobe/server exec vitest run src/app.test.ts
+pnpm --filter @kobe/server exec vitest run src/core/app.test.ts
 pnpm --filter @kobe/server exec vitest run -t "healthz"
 ```
 

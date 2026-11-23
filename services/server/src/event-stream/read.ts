@@ -166,6 +166,7 @@ export function createStreamReader(options: {
     max: options.max ?? STREAM_POOL_MAX,
     application_name: "kobe-event-stream",
     connectionTimeoutMillis: 10_000,
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises -- pg-pool 3.x awaits the hook; @types/pg says void
     onConnect: appSessionHook(options.session),
   });
   // An idle client's error (e.g. server restart) must not crash the process; the pool drops it.

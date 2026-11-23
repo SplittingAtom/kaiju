@@ -154,6 +154,7 @@ export function createDb(connectionString: string, options: CreateDbOptions = {}
     ...(options.applicationName ? { application_name: options.applicationName } : {}),
     connectionTimeoutMillis: options.acquireTimeoutMs ?? 10_000,
     // Awaited by the pool before it hands the connection out (a failure fails the acquire).
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises -- pg-pool 3.x awaits the hook; @types/pg says void
     onConnect: appSessionHook(options),
   });
   const db = drizzle({ client: pool, schema, casing: "snake_case" });

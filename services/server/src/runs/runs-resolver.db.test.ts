@@ -1,0 +1,698 @@
+import { randomBytes } from "node:crypto";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { withTeam } from "@kobe/db";
+import {
+  enableConnector as enableTeamConnector,
+  registerConnector,
+} from "../testing/mcp-fixtures.js";
+import { PINNED_AGENTS } from "./agents.js";
+import { RunFixture } from "../testing/run-fixture.js";
+import type { Person } from "../testing/event-stream-fixture.js";
+
+/**
+ * KOBE-76: run start gathers the resolver's inputs inside `withTeam()` and the run uses what
+ * `resolveEffective` returns (model, approval mode, connectors), through a real published agent.
+ */
+const f = new RunFixture();
+const ANY = { "if-match": "*" };
+
+beforeAll(async () => {
+  await f.setup();
+});
+afterAll(async () => {
+  await f.teardown();
+});
+
+async function catalog(team: string, ownerId: string, enabled: [string, boolean][]) {
+  const admin = f.fx.admin;
+  await admin.query(
+    `INSERT INTO model_providers (id, kind, name, api_key_enc, created_by)
+     VALUES ('openai', 'openai', 'openai', 'v2.test.sealed-provider-key', $1) ON CONFLICT (id) DO NOTHING`,
+    [ownerId],
+  );
+  for (const alias of ["fast", "smart"]) {
+    await admin.query(
+      `INSERT INTO model_catalog (alias, provider_id, model, created_by)
+       VALUES ($1, 'openai', $2, $3) ON CONFLICT (alias) DO NOTHING`,
+      [alias, `${alias}-fake`, ownerId],
+    );
+  }
+  for (const [alias, isDefault] of enabled) {
+    await admin.query(
+      `INSERT INTO team_models (team_id, alias, is_default, enabled_by) VALUES ($1, $2, $3, $4)`,
+      [team, alias, isDefault, ownerId],
+    );
+  }
+}
+
+/** Publishes a team agent with `frontmatter` and returns a thread of `p` pinned to it. */
+async function pinnedThread(p: Person, frontmatter: Record<string, unknown>) {
+  const b = f.on(0, p);
+  const created = await b.post("/v1/agents", {
+    scope: "team",
+    frontmatter: { name: "Resolved", ...frontmatter },
+    prompt: "You are resolved.",
+  });
+  expect(created.status, JSON.stringify(created.json)).toBe(201);
+  const id = created.json.agent.id as string;
+  const pub = await b.request("POST", `/v1/agents/${id}/publish`, {}, ANY);
+  expect(pub.status, JSON.stringify(pub.json)).toBe(201);
+  const thread = await b.post("/v1/threads", { agent_id: id });
+  expect(thread.status, JSON.stringify(thread.json)).toBe(201);
+  return thread.json.thread_id as string;
+}
+
+async function enableConnector(team: string, ownerId: string, name: string) {
+  const { rows } = await f.fx.admin.query<{ id: string }>(
+    `INSERT INTO connectors (name, url, auth_kind) VALUES ($1, 'https://mcp.example/x', 'api_key') RETURNING id`,
+    [name],
+  );
+  await f.fx.admin.query(
+    `INSERT INTO team_connectors (team_id, connector_id, enabled_by) VALUES ($1, $2, $3)`,
+    [team, rows[0]?.id, ownerId],
+  );
+}
+
+describe("run start uses the resolver (KOBE-76)", () => {
+  it("ac-1: the run uses the resolved model and approval mode", async () => {
+    const w = await f.world();
+    await catalog(w.team, w.owner.id, [
+      ["fast", true],
+      ["smart", false],
+    ]);
+    const ws = await f.connect(w, 0);
+    const pinned = await pinnedThread(w.owner, { model: "smart", approval_mode: "ask-all" });
+    const run = await f.message(w.owner, pinned, "hello");
+    const start = await ws.started(run);
+    expect(start.config).toMatchObject({
+      model: { alias: "smart", gateway_model: "openai/smart-fake" },
+      approval_mode: "ask-all",
+    });
+    expect((await f.run(w.team, run)).approval_mode).toBe("ask-all");
+    ws.reply(start, "ok");
+    await f.until(w.team, run, "completed");
+
+    // No pin: the team default and the agent default mode (ask-on-write).
+    const plain = await pinnedThread(w.owner, {});
+    const second = await f.message(w.owner, plain, "again");
+    const start2 = await ws.started(second);
+    expect(start2.config).toMatchObject({
+      model: { alias: "fast" },
+      approval_mode: "ask-on-write",
+    });
+    ws.reply(start2, "ok");
+    await f.until(w.team, second, "completed");
+  });
+
+  it("KOBE-420: each run records the agent version it started on; the switch is marked on the first run on the new one", async () => {
+    const w = await f.world();
+    await catalog(w.team, w.owner.id, [["fast", true]]);
+    const ws = await f.connect(w, 0);
+    const b = f.on(0, w.owner);
+    const thread = await pinnedThread(w.owner, {});
+    const agentId = (await b.get(`/v1/threads/${thread}`)).json.agent_id as string;
+    const version = async (run: string) =>
+      (
+        await f.fx.admin.query<{ v: number | null }>(
+          `SELECT agent_version AS v FROM runs WHERE team_id = $1 AND id = $2`,
+          [w.team, run],
+        )
+      ).rows[0]?.v;
+    const turn = async (text: string) => {
+      const run = await f.message(w.owner, thread, text);
+      ws.reply(await ws.started(run), "ok");
+      await f.until(w.team, run, "completed");
+      return run;
+    };
+    const first = await turn("on v1");
+    expect(await version(first)).toBe(1);
+
+    const edited = await b.request(
+      "PUT",
+      `/v1/agents/${agentId}`,
+      { frontmatter: { name: "Resolved" }, prompt: "You are v2." },
+      ANY,
+    );
+    expect(edited.status, JSON.stringify(edited.json)).toBe(200);
+    expect((await b.request("POST", `/v1/agents/${agentId}/publish`, {}, ANY)).status).toBe(201);
+    const still = await turn("still on v1");
+    expect(await version(still)).toBe(1);
+    const markers = async () =>
+      (await b.get(`/v1/threads/${thread}/markers`)).json.agents as Record<string, unknown>[];
+    expect(await markers()).toEqual([]);
+
+    expect((await b.post(`/v1/threads/${thread}/agent-version`, {})).json.agent_version).toBe(2);
+    expect(await markers()).toEqual([]); // nothing ran on v2 yet
+    const switched = await turn("on v2");
+    expect(await version(switched)).toBe(2);
+    // The prompt entry is mirrored as the run goes; the marker sits above it.
+    await expect.poll(async () => (await f.run(w.team, switched)).user_entry_id).not.toBeNull();
+    const row = await f.run(w.team, switched);
+    expect(await markers()).toEqual([
+      {
+        run_id: switched,
+        user_entry_id: row.user_entry_id,
+        parent_entry_id: row.parent_entry_id,
+        from_version: 1,
+        to_version: 2,
+      },
+    ]);
+  });
+
+  it("ac-2: a pinned alias the team did not enable fails the run with the agreed error", async () => {
+    const w = await f.world();
+    await catalog(w.team, w.owner.id, [["fast", true]]);
+    const ws = await f.connect(w, 0);
+    const thread = await pinnedThread(w.owner, { model: "smart" });
+    const run = await f.message(w.owner, thread, "hello");
+    await f.until(w.team, run, "failed");
+    expect((await f.events(w.team, run)).at(-1)?.payload).toEqual({
+      error: {
+        code: "agent_model_not_enabled",
+        message:
+          "This agent's model (smart) isn't enabled for your team. Ask your team admin to enable it.",
+      },
+    });
+    expect(ws.starts().map((s) => s.run_id)).not.toContain(run);
+  });
+
+  it("returns omissions: a team-enabled connector the user has not connected is left out", async () => {
+    const w = await f.world();
+    await catalog(w.team, w.owner.id, [["fast", true]]);
+    const name = `gh-${randomBytes(3).toString("hex")}`;
+    await enableConnector(w.team, w.owner.id, name);
+    const thread = await pinnedThread(w.owner, { connectors: [name, "unlisted"] });
+    const db = f.fx.replica(0).deps.database.db;
+    const res = await withTeam(db, w.team, async (tx) => {
+      const { rows } = await tx.execute<{ agent_scope: string; agent_id: string; v: number }>(
+        `SELECT agent_scope, agent_id, agent_version AS v FROM threads WHERE id = '${thread}'`,
+      );
+      const t = rows[0];
+      if (t === undefined) throw new Error("thread row missing");
+      return PINNED_AGENTS.resolve(tx, {
+        teamId: w.team,
+        ownerUserId: w.owner.id,
+        threadId: thread,
+        runId: "00000000-0000-4000-8000-000000000000",
+        trigger: "user",
+        agentScope: t.agent_scope as "team",
+        agentId: t.agent_id,
+        agentVersion: t.v,
+        approvalMode: "auto",
+      });
+    });
+    expect(res.ok && res.omissions).toEqual([
+      { kind: "connector", name, reason: "not_user_connected" },
+      { kind: "connector", name: "unlisted", reason: "not_team_enabled" },
+    ]);
+    expect(res.ok && res.config?.mcp_servers).toBeUndefined();
+  });
+
+  it("KOBE-77: omissions are a context.omitted event right after run.started; none, no event", async () => {
+    const w = await f.world();
+    await catalog(w.team, w.owner.id, [["fast", true]]);
+    const ws = await f.connect(w, 0);
+    const thread = await pinnedThread(w.owner, { connectors: ["unlisted"] });
+    const run = await f.message(w.owner, thread, "hello");
+    const start = await ws.started(run);
+    ws.reply(start, "ok");
+    await f.until(w.team, run, "completed");
+    const types = (await f.events(w.team, run)).map((e) => e.type);
+    const at = types.indexOf("run.started");
+    expect(types[at + 1]).toBe("context.omitted");
+    expect(types.filter((t) => t === "context.omitted")).toHaveLength(1);
+    const event = (await f.events(w.team, run)).find((e) => e.type === "context.omitted");
+    expect(event?.payload).toEqual({
+      items: [{ kind: "connector", name: "unlisted", reason: "not_team_enabled" }],
+    });
+
+    const plain = await pinnedThread(w.owner, {});
+    const second = await f.message(w.owner, plain, "again");
+    ws.reply(await ws.started(second), "ok");
+    await f.until(w.team, second, "completed");
+    expect((await f.events(w.team, second)).map((e) => e.type)).not.toContain("context.omitted");
+  });
+
+  it("a pinned agent ignores the thread's chosen model; an unpinned one uses it over the default", async () => {
+    const w = await f.world();
+    await catalog(w.team, w.owner.id, [
+      ["fast", true],
+      ["smart", false],
+    ]);
+    const ws = await f.connect(w, 0);
+    const choose = (thread: string, alias: string) =>
+      f.fx.admin.query(`UPDATE threads SET model_alias = $2 WHERE id = $1`, [thread, alias]);
+
+    const pinned = await pinnedThread(w.owner, { model: "fast" });
+    await choose(pinned, "smart");
+    const run = await f.message(w.owner, pinned, "hello");
+    const start = await ws.started(run);
+    expect(start.config?.model?.alias).toBe("fast");
+    ws.reply(start, "ok");
+    await f.until(w.team, run, "completed");
+
+    const unpinned = await pinnedThread(w.owner, {});
+    await choose(unpinned, "smart");
+    const second = await f.message(w.owner, unpinned, "hello");
+    const start2 = await ws.started(second);
+    expect(start2.config?.model?.alias).toBe("smart");
+    ws.reply(start2, "ok");
+    await f.until(w.team, second, "completed");
+  });
+});
+
+async function seedTeamSkill(
+  team: string,
+  userId: string,
+  slug: string,
+  versions: readonly ("pending" | "approved" | "rejected" | "none")[],
+) {
+  const admin = f.fx.admin;
+  const { rows } = await admin.query<{ id: string }>(
+    `INSERT INTO team_skills (team_id, owner_user_id, slug, description, latest_version)
+     VALUES ($1, $2, $3, 'd', $4) RETURNING id`,
+    [team, userId, slug, versions.length],
+  );
+  const skillId = rows[0]?.id;
+  for (const [i, status] of versions.entries()) {
+    await admin.query(
+      `INSERT INTO team_skill_versions (team_id, skill_id, version, frontmatter, source, content_hash,
+         storage_key, size_bytes, file_count, uncompressed_bytes, uploaded_by, semver, seq)
+       VALUES ($1, $2, $3, '{}', 'zip', $4, 'k', 1, 1, 1, $5, '0.' || $3::int || '.0', $3::int)`,
+      [team, skillId, i + 1, `${slug.length}${i}`.padEnd(64, "a"), userId],
+    );
+    if (status === "none") continue;
+    await admin.query(
+      `INSERT INTO team_skill_reviews (team_id, skill_id, version, scope, slug, content_hash, status,
+         flagged, findings, scripts, skipped, reviewed_by, reviewed_at)
+       VALUES ($1, $2, $3, 'team', $7, $8, $4, false, '[]', '[]', '[]', $5, $6)`,
+      [
+        team,
+        skillId,
+        i + 1,
+        status,
+        status === "pending" ? null : userId,
+        status === "pending" ? null : new Date(),
+        slug,
+        `${slug.length}${i}`.padEnd(64, "a"),
+      ],
+    );
+  }
+}
+
+async function seedPersonalSkill(userId: string, slug: string, flagged = false) {
+  const { rows } = await f.fx.admin.query<{ id: string }>(
+    `INSERT INTO personal_skills (owner_user_id, slug, description) VALUES ($1, $2, 'd') RETURNING id`,
+    [userId, slug],
+  );
+  await f.fx.admin.query(
+    `INSERT INTO personal_skill_versions (skill_id, version, frontmatter, source, content_hash,
+       storage_key, size_bytes, file_count, uncompressed_bytes, uploaded_by, semver, seq)
+     VALUES ($1, 1, '{}', 'zip', $2, 'k', 1, 1, 1, $3, '0.1.0', 1)`,
+    [rows[0]?.id, "b".repeat(64), userId],
+  );
+  await f.fx.admin.query(
+    `INSERT INTO personal_skill_scans (skill_id, version, flagged, findings, scripts, skipped)
+     VALUES ($1, 1, $2, '[]', '[]', '[]')`,
+    [rows[0]?.id, flagged],
+  );
+}
+
+/** Starts a run on `thread` and returns the skills the sandbox is told to load and omissions. */
+async function skillsOfRun(w: Awaited<ReturnType<typeof f.world>>, thread: string) {
+  const ws = await f.connect(w, 0);
+  const run = await f.message(w.owner, thread, "hello");
+  const start = await ws.started(run);
+  ws.reply(start, "ok");
+  await f.until(w.team, run, "completed");
+  const omitted = (await f.events(w.team, run)).find((e) => e.type === "context.omitted");
+  return {
+    skills: start.config?.skills ?? [],
+    bundleNames: (start.config?.skill_bundles ?? []).map((b: { name: string }) => b.name),
+    omitted: (omitted?.payload as { items: unknown[] } | undefined)?.items ?? [],
+  };
+}
+
+describe("run start resolves skills (KOBE-80)", () => {
+  it("ac-1: only approved team skill versions resolve; unreviewed and rejected ones don't", async () => {
+    const w = await f.world();
+    await catalog(w.team, w.owner.id, [["fast", true]]);
+    await seedTeamSkill(w.team, w.owner.id, "approved-one", ["approved"]);
+    await seedTeamSkill(w.team, w.owner.id, "pending-one", ["pending"]);
+    await seedTeamSkill(w.team, w.owner.id, "rejected-one", ["rejected"]);
+    await seedTeamSkill(w.team, w.owner.id, "no-review", ["none"]);
+    // Newer pending/rejected versions never hide the older approved one.
+    await seedTeamSkill(w.team, w.owner.id, "kept-old", ["approved", "pending", "rejected"]);
+    const thread = await pinnedThread(w.owner, {
+      skills: ["approved-one", "pending-one", "rejected-one", "no-review", "kept-old"],
+    });
+    const { skills, omitted, bundleNames } = await skillsOfRun(w, thread);
+    expect([...skills].sort()).toEqual(["approved-one", "kept-old"]);
+    // Omitted skills are never materialized (no bundle).
+    expect([...bundleNames].sort()).toEqual(["approved-one", "kept-old"]);
+    // KOBE-99: the dropped ones are named in the notice.
+    expect(
+      [...(omitted as { name: string; reason: string }[])].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
+    ).toEqual(
+      ["no-review", "pending-one", "rejected-one"].map((name) => ({
+        kind: "skill",
+        name,
+        reason: "not_approved",
+      })),
+    );
+  });
+
+  it("ac-2: disabling personal skills hides them for that team, with a visible notice", async () => {
+    const w = await f.world();
+    await catalog(w.team, w.owner.id, [["fast", true]]);
+    await seedPersonalSkill(w.owner.id, "my-helper");
+    const thread = await pinnedThread(w.owner, {});
+    expect((await skillsOfRun(w, thread)).skills).toEqual(["my-helper"]);
+
+    await f.fx.admin.query(
+      `INSERT INTO team_skill_settings (team_id, personal_skills_disabled, updated_by) VALUES ($1, true, $2)`,
+      [w.team, w.owner.id],
+    );
+    const hidden = await skillsOfRun(w, thread);
+    expect(hidden.skills).toEqual([]);
+    expect(hidden.omitted).toEqual([{ kind: "skill", name: "my-helper", reason: "team_disabled" }]);
+  });
+
+  it("a flagged personal skill is unusable in the team until its admin approves it there", async () => {
+    const w = await f.world();
+    await catalog(w.team, w.owner.id, [["fast", true]]);
+    await seedPersonalSkill(w.owner.id, "clean-helper");
+    await seedPersonalSkill(w.owner.id, "risky-helper", true);
+    const thread = await pinnedThread(w.owner, {});
+    const first = await skillsOfRun(w, thread);
+    expect(first.skills).toEqual(["clean-helper"]);
+    expect(first.omitted).toEqual([
+      { kind: "skill", name: "risky-helper", reason: "not_approved" },
+    ]);
+    // The blocked version is now in this team's queue, pending.
+    const { rows } = await f.fx.admin.query(
+      `SELECT slug, scope, status, flagged FROM team_skill_reviews WHERE team_id = $1`,
+      [w.team],
+    );
+    expect(rows).toEqual([
+      { slug: "risky-helper", scope: "personal", status: "pending", flagged: true },
+    ]);
+    await f.fx.admin.query(
+      `UPDATE team_skill_reviews SET status = 'approved', reviewed_by = $2, reviewed_at = now() WHERE team_id = $1`,
+      [w.team, w.owner.id],
+    );
+    const approved = await skillsOfRun(w, thread);
+    expect([...approved.skills].sort()).toEqual(["clean-helper", "risky-helper"]);
+    expect(approved.omitted).toEqual([]);
+  });
+});
+
+describe("effective connectors from grants (KOBE-111)", () => {
+  async function resolveFor(
+    team: string,
+    ownerId: string,
+    thread: string,
+    extra: { readonly noPersonalGrants?: true } = {},
+  ) {
+    const db = f.fx.replica(0).deps.database.db;
+    return withTeam(db, team, async (tx) => {
+      const { rows } = await tx.execute<{ agent_scope: string; agent_id: string; v: number }>(
+        `SELECT agent_scope, agent_id, agent_version AS v FROM threads WHERE id = '${thread}'`,
+      );
+      const t = rows[0];
+      if (t === undefined) throw new Error("thread row missing");
+      return PINNED_AGENTS.resolve(tx, {
+        teamId: team,
+        ownerUserId: ownerId,
+        threadId: thread,
+        runId: "00000000-0000-4000-8000-000000000000",
+        trigger: "user",
+        agentScope: t.agent_scope as "team",
+        agentId: t.agent_id,
+        agentVersion: t.v,
+        approvalMode: "auto",
+        ...extra,
+      });
+    });
+  }
+  const grant = (team: string, user: string, connector: string, kind: string, expires: string) =>
+    f.fx.admin.query(
+      `INSERT INTO connector_grants (team_id, user_id, connector_id, kind, sealed, key_id, hint, expires_at)
+       VALUES ($1, $2, $3, $4, 'e1.k.sealed', 'k', '', $5)`,
+      [team, user, connector, kind, expires === "" ? null : expires],
+    );
+
+  it("ac-1: the agent gets exactly the connectors with a usable grant, and their exposed tools", async () => {
+    const w = await f.world(1);
+    await catalog(w.team, w.owner.id, [["fast", true]]);
+    const tag = randomBytes(3).toString("hex");
+    const keyed = await registerConnector(f.fx.admin, {
+      name: `keyed-${tag}`,
+      authKind: "api_key",
+    });
+    const ungranted = await registerConnector(f.fx.admin, {
+      name: `bare-${tag}`,
+      authKind: "api_key",
+    });
+    const stale = await registerConnector(f.fx.admin, { name: `stale-${tag}`, authKind: "oauth" });
+    const open = await registerConnector(f.fx.admin, { name: `open-${tag}`, authKind: "none" });
+    for (const c of [keyed, ungranted, stale, open]) {
+      await enableTeamConnector(f.fx.admin, w.team, c.id, w.owner.id, "read_only");
+    }
+    await grant(w.team, w.owner.id, keyed.id, "api_key", "");
+    await grant(w.team, w.owner.id, stale.id, "oauth", "2020-01-01T00:00:00Z");
+    const names = [keyed.name, ungranted.name, stale.name, open.name];
+    const thread = await pinnedThread(w.owner, { connectors: names });
+    const res = await resolveFor(w.team, w.owner.id, thread);
+    expect(res.ok && res.mcp?.servers.map((s) => s.name)).toEqual([keyed.name, open.name]);
+    // read_only exposure: the one read-only tool of the fixture's standard set, as mcp__<server>__<tool>.
+    expect(res.ok && res.mcp?.servers.flatMap((s) => s.tools.map((t) => t.pi_name))).toEqual([
+      `mcp__${keyed.name.replace(/-/g, "_")}__get_issue`,
+      `mcp__${open.name.replace(/-/g, "_")}__get_issue`,
+    ]);
+    expect(res.ok && res.config?.mcp_servers?.map((s) => s.name)).toEqual([keyed.name, open.name]);
+    expect(res.ok && res.omissions).toEqual(
+      expect.arrayContaining([
+        { kind: "connector", name: ungranted.name, reason: "not_user_connected" },
+        { kind: "connector", name: stale.name, reason: "not_user_connected" },
+      ]),
+    );
+    // ac-2: the frame field names connectors and tools only: no URL, no credential, no token.
+    const wire = JSON.stringify(res.ok ? res.mcp : null);
+    expect(wire).not.toMatch(/https?:\/\/|e1\.|sealed|token|api_key/i);
+    // Another user's grant never counts: a teammate's run has only the `none` connector.
+    const mate = w.others[0];
+    if (mate === undefined) throw new Error("no teammate");
+    const theirs = await resolveFor(w.team, mate.id, thread);
+    expect(theirs.ok && theirs.mcp?.servers.map((s) => s.name)).toEqual([open.name]);
+  });
+
+  it("KOBE-449: a usable site-wide key connects every member; exposure and globs apply; stale, removed and evals do not", async () => {
+    const w = await f.world(1);
+    await catalog(w.team, w.owner.id, [["fast", true]]);
+    const site = await registerConnector(f.fx.admin, {
+      name: `site-${randomBytes(3).toString("hex")}`,
+      url: "https://site.example/mcp",
+      authKind: "api_key",
+    });
+    await f.fx.admin.query(`UPDATE connectors SET credential_source = 'site' WHERE id = $1`, [
+      site.id,
+    ]);
+    await enableTeamConnector(f.fx.admin, w.team, site.id, w.owner.id, "read_only");
+    const setKey = () =>
+      f.fx.admin.query(
+        `INSERT INTO connector_site_keys (connector_id, sealed, key_id, url_sha256, hint, updated_by)
+         SELECT id, 'e1.k.sealed', 'k', encode(sha256(convert_to(url, 'UTF8')), 'hex'), '••••', $2
+           FROM connectors WHERE id = $1`,
+        [site.id, w.owner.id],
+      );
+    await setKey();
+    const seg = site.name.replace(/-/g, "_");
+    const thread = await pinnedThread(w.owner, { connectors: [site.name] });
+    const mate = w.others[0];
+    if (mate === undefined) throw new Error("no teammate");
+    const tools = async (user: string, extra: { readonly noPersonalGrants?: true } = {}) => {
+      const r = await resolveFor(w.team, user, thread, extra);
+      return r.ok ? (r.mcp?.servers.flatMap((s) => s.tools.map((t) => t.pi_name)) ?? []) : "failed";
+    };
+    // Neither member holds a grant: the site key alone connects both; read_only exposure applies.
+    const grants = await f.fx.admin.query(
+      `SELECT 1 FROM connector_grants WHERE connector_id = $1`,
+      [site.id],
+    );
+    expect(grants.rowCount).toBe(0);
+    expect(await tools(w.owner.id)).toEqual([`mcp__${seg}__get_issue`]);
+    expect(await tools(mate.id)).toEqual([`mcp__${seg}__get_issue`]);
+    const res = await resolveFor(w.team, mate.id, thread);
+    expect(res.ok && res.config?.mcp_servers?.map((s) => s.name)).toEqual([site.name]);
+    expect(res.ok && res.omissions).toEqual([]);
+    // The agent's globs still apply.
+    const denied = await pinnedThread(w.owner, {
+      connectors: [site.name],
+      tools: { deny: [`mcp__${seg}__*`] },
+    });
+    const none = await resolveFor(w.team, mate.id, denied);
+    expect(none.ok && none.mcp).toEqual({ servers: [] });
+    // A skill eval (noPersonalGrants) never gets the site-key connector (KOBE-325/326).
+    expect(await tools(mate.id, { noPersonalGrants: true })).toEqual([]);
+    // Stale: the URL changed after the key was set.
+    await f.fx.admin.query(
+      `UPDATE connectors SET url = 'https://moved.example/mcp' WHERE id = $1`,
+      [site.id],
+    );
+    expect(await tools(mate.id)).toEqual([]);
+    const stale = await resolveFor(w.team, mate.id, thread);
+    expect(stale.ok && stale.omissions).toEqual([
+      { kind: "connector", name: site.name, reason: "not_user_connected" },
+    ]);
+    // Re-entered for the new URL, then removed.
+    await f.fx.admin.query(`DELETE FROM connector_site_keys WHERE connector_id = $1`, [site.id]);
+    await setKey();
+    expect(await tools(mate.id)).toEqual([`mcp__${seg}__get_issue`]);
+    await f.fx.admin.query(`DELETE FROM connector_site_keys WHERE connector_id = $1`, [site.id]);
+    expect(await tools(mate.id)).toEqual([]);
+    // A key left behind after the connector went back to member keys does not count either.
+    await setKey();
+    await f.fx.admin.query(`UPDATE connectors SET credential_source = 'member' WHERE id = $1`, [
+      site.id,
+    ]);
+    expect(await tools(mate.id)).toEqual([]);
+  });
+
+  it("the agent's tools.allow narrows the tools; a connector left empty is not offered", async () => {
+    const w = await f.world();
+    await catalog(w.team, w.owner.id, [["fast", true]]);
+    const c = await registerConnector(f.fx.admin, {
+      name: `nar-${randomBytes(3).toString("hex")}`,
+    });
+    await enableTeamConnector(f.fx.admin, w.team, c.id, w.owner.id, "all");
+    const seg = c.name.replace(/-/g, "_");
+    const narrowed = await pinnedThread(w.owner, {
+      connectors: [c.name],
+      tools: { allow: [`mcp__${seg}__get_*`] },
+    });
+    const r1 = await resolveFor(w.team, w.owner.id, narrowed);
+    expect(r1.ok && r1.mcp?.servers.flatMap((s) => s.tools.map((t) => t.name))).toEqual([
+      "get_issue",
+    ]);
+    // KOBE-776: a list naming no built-in leaves Pi's built-ins offered.
+    expect(r1.ok && r1.config?.hidden_tools).toBeUndefined();
+    const none = await pinnedThread(w.owner, { connectors: [c.name], tools: { allow: ["read"] } });
+    const r2 = await resolveFor(w.team, w.owner.id, none);
+    expect(r2.ok && r2.mcp).toEqual({ servers: [] });
+    expect(r2.ok && r2.config?.mcp_servers).toBeUndefined();
+    // A list naming a built-in: Pi is not offered the built-ins it leaves out.
+    const hidden = r2.ok ? (r2.config?.hidden_tools ?? []) : [];
+    expect(hidden).toContain("bash");
+    expect(hidden).toContain("write");
+    expect(hidden).not.toContain("read");
+  });
+  it("KOBE-112 ac-1: every change shows in the next resolve of the same thread (nothing is cached)", async () => {
+    const w = await f.world();
+    await catalog(w.team, w.owner.id, [["fast", true]]);
+    const c = await registerConnector(f.fx.admin, {
+      name: `chg-${randomBytes(3).toString("hex")}`,
+      authKind: "api_key",
+    });
+    await enableTeamConnector(f.fx.admin, w.team, c.id, w.owner.id, "all");
+    await grant(w.team, w.owner.id, c.id, "api_key", "");
+    const thread = await pinnedThread(w.owner, { connectors: [c.name] });
+    const tools = async () => {
+      const r = await resolveFor(w.team, w.owner.id, thread);
+      return r.ok ? r.mcp?.servers.flatMap((s) => s.tools.map((t) => t.name)) : "failed";
+    };
+    expect(await tools()).toEqual(["get_issue", "create_issue", "delete_issue"]);
+    // Team exposure narrowed.
+    await enableTeamConnector(f.fx.admin, w.team, c.id, w.owner.id, "read_only");
+    expect(await tools()).toEqual(["get_issue"]);
+    // The user's grant removed, then added back.
+    await f.fx.admin.query(`DELETE FROM connector_grants WHERE connector_id = $1`, [c.id]);
+    expect(await tools()).toEqual([]);
+    await grant(w.team, w.owner.id, c.id, "api_key", "");
+    expect(await tools()).toEqual(["get_issue"]);
+    // A tool re-pinned (drifted) is dropped; the connector disabled is gone.
+    await f.fx.admin.query(
+      `UPDATE connectors SET tools_snapshot = (
+         SELECT jsonb_agg(CASE WHEN t->>'name' = 'get_issue' THEN jsonb_set(t, '{status}', '"drifted"') ELSE t END)
+         FROM jsonb_array_elements(tools_snapshot) t) WHERE id = $1`,
+      [c.id],
+    );
+    expect(await tools()).toEqual([]);
+    await f.fx.admin.query(`UPDATE connectors SET status = 'disabled' WHERE id = $1`, [c.id]);
+    expect(await tools()).toEqual([]);
+  });
+});
+
+describe("connectors: all (KOBE-254 ac-3)", () => {
+  it("uses the team's enabled connectors, under exposure, drift and each user's grants", async () => {
+    const w = await f.world(1);
+    const elsewhere = await f.world();
+    await catalog(w.team, w.owner.id, [["fast", true]]);
+    const tag = randomBytes(3).toString("hex");
+    const keyed = await registerConnector(f.fx.admin, { name: `allk-${tag}`, authKind: "api_key" });
+    const bare = await registerConnector(f.fx.admin, { name: `allb-${tag}`, authKind: "api_key" });
+    const open = await registerConnector(f.fx.admin, { name: `allo-${tag}`, authKind: "none" });
+    // Registered but never enabled here; enabled (and granted) only in another team.
+    const idle = await registerConnector(f.fx.admin, { name: `alli-${tag}`, authKind: "none" });
+    const foreign = await registerConnector(f.fx.admin, { name: `allf-${tag}`, authKind: "none" });
+    await enableTeamConnector(f.fx.admin, w.team, keyed.id, w.owner.id, "all");
+    await enableTeamConnector(f.fx.admin, w.team, bare.id, w.owner.id, "all");
+    await enableTeamConnector(f.fx.admin, w.team, open.id, w.owner.id, "read_only");
+    await enableTeamConnector(f.fx.admin, elsewhere.team, foreign.id, elsewhere.owner.id, "all");
+    await f.fx.admin.query(
+      `INSERT INTO connector_grants (team_id, user_id, connector_id, kind, sealed, key_id, hint)
+       VALUES ($1, $2, $3, 'api_key', 'e1.k.sealed', 'k', '')`,
+      [w.team, w.owner.id, keyed.id],
+    );
+    const thread = await pinnedThread(w.owner, { connectors: "all" });
+    const resolve = (userId: string) =>
+      withTeam(f.fx.replica(0).deps.database.db, w.team, async (tx) => {
+        const { rows } = await tx.execute<{ agent_id: string; v: number }>(
+          `SELECT agent_id, agent_version AS v FROM threads WHERE id = '${thread}'`,
+        );
+        const t = rows[0];
+        if (t === undefined) throw new Error("thread row missing");
+        return PINNED_AGENTS.resolve(tx, {
+          teamId: w.team,
+          ownerUserId: userId,
+          threadId: thread,
+          runId: "00000000-0000-4000-8000-000000000000",
+          trigger: "user",
+          agentScope: "team",
+          agentId: t.agent_id,
+          agentVersion: t.v,
+          approvalMode: "auto",
+        });
+      });
+    const seg = (name: string) => name.replace(/-/g, "_");
+    const mine = await resolve(w.owner.id);
+    expect(mine.ok && mine.mcp?.servers.map((s) => s.name).sort()).toEqual(
+      [keyed.name, open.name].sort(),
+    );
+    // Team exposure still applies: the read-only connector offers its read tool only.
+    expect(
+      mine.ok && mine.mcp?.servers.find((s) => s.name === open.name)?.tools.map((t) => t.pi_name),
+    ).toEqual([`mcp__${seg(open.name)}__get_issue`]);
+    // Nothing named, so nothing to explain: no notice for the connector the user lacks.
+    expect(mine.ok && mine.omissions).toEqual([]);
+    const names = JSON.stringify(mine.ok ? mine.mcp : null);
+    for (const c of [bare, idle, foreign]) expect(names).not.toContain(c.name);
+    // Another member's run never borrows the owner's grant.
+    const mate = w.others[0];
+    if (mate === undefined) throw new Error("no teammate");
+    const theirs = await resolve(mate.id);
+    expect(theirs.ok && theirs.mcp?.servers.map((s) => s.name)).toEqual([open.name]);
+    // A drifted tool is dropped and a disabled connector is gone, at the next run start.
+    await f.fx.admin.query(
+      `UPDATE connectors SET tools_snapshot = (
+         SELECT jsonb_agg(CASE WHEN t->>'name' = 'get_issue' THEN jsonb_set(t, '{status}', '"drifted"') ELSE t END)
+         FROM jsonb_array_elements(tools_snapshot) t) WHERE id = $1`,
+      [open.id],
+    );
+    await f.fx.admin.query(`UPDATE connectors SET status = 'disabled' WHERE id = $1`, [keyed.id]);
+    const later = await resolve(w.owner.id);
+    expect(later.ok && later.mcp).toEqual({ servers: [] });
+  });
+});
