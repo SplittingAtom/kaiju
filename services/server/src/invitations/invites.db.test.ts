@@ -1,9 +1,9 @@
 import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { INVITES_PER_ADDRESS_PER_HOUR, INVITES_PER_ADMIN_PER_HOUR } from "./routes/site-invites.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, PASSWORD, type Harness } from "./testing/harness.js";
-import { totpFromUri } from "./testing/totp.js";
+import { INVITES_PER_ADDRESS_PER_HOUR, INVITES_PER_ADMIN_PER_HOUR } from "../routes/site-invites.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, PASSWORD, type Harness } from "../testing/harness.js";
+import { totpFromUri } from "../testing/totp.js";
 
 // KOBE-13 ac-1 (site invitations) and ac-2 (team invitations): invite-only onboarding (D7, U1).
 let h: Harness;
