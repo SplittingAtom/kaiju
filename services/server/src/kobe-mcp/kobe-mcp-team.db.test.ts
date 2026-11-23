@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { verifyAuditChain } from "@kobe/db";
-import { isWriteTool, type KobeTool } from "./kobe-mcp/catalog.js";
-import { KOBE_ADMIN_TOOLS, kobeToolByName } from "./kobe-mcp/tools/index.js";
-import { KobeMcpHarness, type KobeWorld } from "./testing/kobe-mcp-harness.js";
+import { isWriteTool, type KobeTool } from "./catalog.js";
+import { KOBE_ADMIN_TOOLS, kobeToolByName } from "./tools/index.js";
+import { KobeMcpHarness, type KobeWorld } from "../testing/kobe-mcp-harness.js";
 
 /**
  * The Team console tools end to end (KOBE-621, spec kobe-admin-mcp §5, KA-4): every tool through

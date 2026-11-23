@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { Person } from "./testing/event-stream-fixture.js";
-import { KobeMcpHarness, type KobeWorld } from "./testing/kobe-mcp-harness.js";
+import type { Person } from "../testing/event-stream-fixture.js";
+import { KobeMcpHarness, type KobeWorld } from "../testing/kobe-mcp-harness.js";
 
 /**
  * The read-only memory item tools end to end (KOBE-650, v1.3 SMA15, Chris Q4): through the real

@@ -3,10 +3,10 @@ import pg from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { KOBE_ADMIN_RESULT_HIDDEN, type KobeEvent } from "@kobe/protocol";
 import { KOBE_MCP_MODE_KEY, withTeam } from "@kobe/db";
-import { appendRunEventsInTx } from "./event-stream/append.js";
-import { KOBE_ADMIN_WRITE_REASON } from "./policy/kobe-admin-guard.js";
-import { KobeMcpHarness, type KobeWorld } from "./testing/kobe-mcp-harness.js";
-import type { Person } from "./testing/event-stream-fixture.js";
+import { appendRunEventsInTx } from "../event-stream/append.js";
+import { KOBE_ADMIN_WRITE_REASON } from "../policy/kobe-admin-guard.js";
+import { KobeMcpHarness, type KobeWorld } from "../testing/kobe-mcp-harness.js";
+import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
  * KA-6 (KOBE-623, spec kobe-admin-mcp §6–§8): what the web relies on from the server. The

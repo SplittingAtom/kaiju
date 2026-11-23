@@ -22,20 +22,20 @@ import {
 import { KOBE_BUILTIN_CONNECTOR_ID as PROTOCOL_KOBE_ID } from "@kobe/protocol";
 import { llmsTxt, PAGES } from "@kobe/guide";
 import { withTeam } from "@kobe/db";
-import { approvalKeyring } from "./approvals/index.js";
-import { delegationBacked, delegationBacking } from "./kobe-mcp/delegation-live.js";
-import { kobeRunServer } from "./kobe-mcp/run.js";
-import { KOBE_ADMIN_TOOLS } from "./kobe-mcp/tools/index.js";
-import { createInternalApp } from "./routes/internal.js";
-import { TestBrowser } from "./testing/browser.js";
-import { EventStreamFixture, PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";
+import { approvalKeyring } from "../approvals/index.js";
+import { delegationBacked, delegationBacking } from "./delegation-live.js";
+import { kobeRunServer } from "./run.js";
+import { KOBE_ADMIN_TOOLS } from "./tools/index.js";
+import { createInternalApp } from "../routes/internal.js";
+import { TestBrowser } from "../testing/browser.js";
+import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
 import {
   INTERNAL_KEY,
   MCP_VERIFY_KEYS,
   allowApproval,
   leaseRun,
   mcpToken,
-} from "./testing/mcp-fixtures.js";
+} from "../testing/mcp-fixtures.js";
 
 /**
  * The built-in Kobe MCP server end to end (KOBE-619, spec kobe-admin-mcp §3, §6–§8, KA-2 ac-1..6):

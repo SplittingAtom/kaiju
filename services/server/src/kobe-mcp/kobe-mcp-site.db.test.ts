@@ -19,22 +19,22 @@ import {
   seedKobeBuiltinConnector,
   verifyAuditChain,
 } from "@kobe/db";
-import { approvalKeyring } from "./approvals/index.js";
-import { runWithAuditContext } from "./audit/context.js";
-import { recordAuditAfter } from "./audit/record.js";
-import type { KobeTool } from "./kobe-mcp/catalog.js";
-import { routeCaller } from "./kobe-mcp/execute.js";
-import { KOBE_SITE_TOOLS } from "./kobe-mcp/tools/site/index.js";
-import { createInternalApp } from "./routes/internal.js";
-import { EventStreamFixture, type Person } from "./testing/event-stream-fixture.js";
+import { approvalKeyring } from "../approvals/index.js";
+import { runWithAuditContext } from "../audit/context.js";
+import { recordAuditAfter } from "../audit/record.js";
+import type { KobeTool } from "./catalog.js";
+import { routeCaller } from "./execute.js";
+import { KOBE_SITE_TOOLS } from "./tools/site/index.js";
+import { createInternalApp } from "../routes/internal.js";
+import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
 import {
   INTERNAL_KEY,
   MCP_VERIFY_KEYS,
   allowApproval,
   leaseRun,
   mcpToken,
-} from "./testing/mcp-fixtures.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
+} from "../testing/mcp-fixtures.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
 
 /**
  * The Site console tools of the built-in Kobe MCP server end to end (KOBE-622, spec
