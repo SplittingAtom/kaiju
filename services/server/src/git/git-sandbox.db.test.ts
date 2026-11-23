@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadEnvelope, sealGitCredential, type Envelope } from "@kobe/db";
 import { runGitContextSchema } from "@kobe/protocol/sandbox-wire";
-import { gitNoReplyEmail, loadRunGitContext } from "./git/sandbox-git.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { gitNoReplyEmail, loadRunGitContext } from "./sandbox-git.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-764: the member's `run.start.git` read from the database: name and Kobe email (or the

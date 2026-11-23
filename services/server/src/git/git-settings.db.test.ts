@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { gitTeamSettingsSchema } from "@kobe/protocol";
-import { gitCommitEmailMode, gitNoReplyEmail } from "./git/sandbox-git.js";
-import { EventStreamFixture, type Person } from "./testing/event-stream-fixture.js";
+import { gitCommitEmailMode, gitNoReplyEmail } from "./sandbox-git.js";
+import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-761: the Workspace's git settings (`/v1/team/git/settings`, `team.git.manage`): the commit

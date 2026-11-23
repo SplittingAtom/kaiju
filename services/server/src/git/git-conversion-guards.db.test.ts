@@ -2,11 +2,11 @@ import { createHash } from "node:crypto";
 import { chmodSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { sweepGitConversions } from "./git/conversion/job.js";
-import { runConversion } from "./git/conversion/runner.js";
-import { repoReadRules, repoReadable, repoRefusal } from "./git/transport.js";
-import { startConversion } from "./git/conversion/start.js";
-import { LeaseLost } from "./git/conversion/store.js";
+import { sweepGitConversions } from "./conversion/job.js";
+import { runConversion } from "./conversion/runner.js";
+import { repoReadRules, repoReadable, repoRefusal } from "./transport.js";
+import { startConversion } from "./conversion/start.js";
+import { LeaseLost } from "./conversion/store.js";
 import {
   audit,
   bare,
@@ -23,7 +23,7 @@ import {
   start,
   world,
   type World,
-} from "./testing/git-conversion-fixture.js";
+} from "../testing/git-conversion-fixture.js";
 
 /**
  * KOBE-765 review (g104): the guards. H1: private history never goes to a public repository

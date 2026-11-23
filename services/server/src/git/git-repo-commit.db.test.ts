@@ -4,25 +4,25 @@ import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
 import { repoCommitInfoSchema } from "@kobe/protocol";
-import { applyMirror } from "./git/mirror/apply.js";
-import { mirrorDeps } from "./git/mirror/deps.js";
-import { refreshRepository } from "./git/mirror/refresh.js";
-import { claimRefresh } from "./git/mirror/store.js";
+import { applyMirror } from "./mirror/apply.js";
+import { mirrorDeps } from "./mirror/deps.js";
+import { refreshRepository } from "./mirror/refresh.js";
+import { claimRefresh } from "./mirror/store.js";
 import {
   commitToRepo,
   GIT_REPO_COMMIT_RATE,
   type RepoCommitDeps,
-} from "./git/repo-commit/commit.js";
-import { repoCommitWiring } from "./git/repo-commit/wiring.js";
-import { headOf, loadTree } from "./projects/tree.js";
-import { checkRateLimit } from "./rate-limit.js";
-import { createApp } from "./app.js";
-import { RawBody, TestBrowser } from "./testing/browser.js";
-import { PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";
-import { createWorkspaceSync } from "./workspace-sync/index.js";
-import { loadRunGitContext } from "./git/sandbox-git.js";
-import { recordRepoStatus, runGitRepo } from "./git/working-copy.js";
-import { commitOnHost } from "./testing/git-host-commits.js";
+} from "./repo-commit/commit.js";
+import { repoCommitWiring } from "./repo-commit/wiring.js";
+import { headOf, loadTree } from "../projects/tree.js";
+import { checkRateLimit } from "../rate-limit.js";
+import { createApp } from "../app.js";
+import { RawBody, TestBrowser } from "../testing/browser.js";
+import { PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
+import { createWorkspaceSync } from "../workspace-sync/index.js";
+import { loadRunGitContext } from "./sandbox-git.js";
+import { recordRepoStatus, runGitRepo } from "./working-copy.js";
+import { commitOnHost } from "../testing/git-host-commits.js";
 import {
   PREFIX,
   objects,
@@ -38,7 +38,7 @@ import {
   start,
   world,
   type World,
-} from "./testing/git-conversion-fixture.js";
+} from "../testing/git-conversion-fixture.js";
 
 /**
  * KOBE-767 (GIT-11, spec workspace-git G18, GQ11) on a real Postgres with a real `git

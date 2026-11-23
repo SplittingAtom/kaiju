@@ -5,7 +5,7 @@ import {
   decideGitHost,
   readGitSiteSettings,
 } from "@kobe/db";
-import { KobeMcpHarness } from "./testing/kobe-mcp-harness.js";
+import { KobeMcpHarness } from "../testing/kobe-mcp-harness.js";
 
 /**
  * KOBE-757 (Workspace git G3): the Site switch and host limit through the Site settings API,

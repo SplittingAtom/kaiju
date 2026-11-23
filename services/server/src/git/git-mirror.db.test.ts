@@ -4,14 +4,14 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
 import { gitRepoAnswerSchema, type GitRepoView } from "@kobe/protocol";
-import { mirrorDeps } from "./git/mirror/deps.js";
-import { dueRepositories } from "./git/mirror/job.js";
-import { GIT_MIRROR_GONE_CONFIRMATIONS } from "./git/mirror/limits.js";
-import { mirrorFetchLimits, repoContentRefusal } from "./git/repo-limits.js";
-import { refreshRepository, type MirrorDeps } from "./git/mirror/refresh.js";
-import { claimRefresh } from "./git/mirror/store.js";
-import { projectWriteBlock } from "./projects/repo-state.js";
-import { writeCommit, type TreeFile } from "./projects/tree.js";
+import { mirrorDeps } from "./mirror/deps.js";
+import { dueRepositories } from "./mirror/job.js";
+import { GIT_MIRROR_GONE_CONFIRMATIONS } from "./mirror/limits.js";
+import { mirrorFetchLimits, repoContentRefusal } from "./repo-limits.js";
+import { refreshRepository, type MirrorDeps } from "./mirror/refresh.js";
+import { claimRefresh } from "./mirror/store.js";
+import { projectWriteBlock } from "../projects/repo-state.js";
+import { writeCommit, type TreeFile } from "../projects/tree.js";
 import {
   forgejo,
   fx,
@@ -24,9 +24,9 @@ import {
   start,
   world,
   type World,
-} from "./testing/git-conversion-fixture.js";
-import { commitOnHost } from "./testing/git-host-commits.js";
-import type { Person } from "./testing/event-stream-fixture.js";
+} from "../testing/git-conversion-fixture.js";
+import { commitOnHost } from "../testing/git-host-commits.js";
+import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-766 (GIT-10, spec workspace-git G17, G20) end to end on a real Postgres, with the Forgejo
@@ -219,7 +219,7 @@ describe("a commit made on the host appears after a refresh (ac-1)", () => {
     );
     const due = async () => (await dueRepositories(deps())).some((r) => r.id === c.repositoryId);
     expect(await due()).toBe(false);
-    const { requestPushRefresh } = await import("./git/mirror/store.js");
+    const { requestPushRefresh } = await import("./mirror/store.js");
     const { rows } = await fx.admin.query<{ base_url: string; host_repo_id: string }>(
       `SELECT base_url, host_repo_id FROM git_repositories WHERE team_id = $1 AND id = $2`,
       [c.w.team, c.repositoryId],

@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { GIT_SITE_ENABLED_KEY } from "@kobe/db";
-import { sweepGitConversions } from "./git/conversion/job.js";
-import { runConversion, type ConversionDeps } from "./git/conversion/runner.js";
-import { LeaseLost } from "./git/conversion/store.js";
+import { sweepGitConversions } from "./conversion/job.js";
+import { runConversion, type ConversionDeps } from "./conversion/runner.js";
+import { LeaseLost } from "./conversion/store.js";
 import {
   audit,
   bare,
@@ -22,7 +22,7 @@ import {
   unreachable,
   until,
   world,
-} from "./testing/git-conversion-fixture.js";
+} from "../testing/git-conversion-fixture.js";
 
 /**
  * KOBE-765 (GIT-9, spec workspace-git G15-G17, GQ12, GQ13) end to end on a real Postgres
@@ -251,7 +251,7 @@ describe("crashes and failures (ac-2)", () => {
     ]);
     hostRepo(p.slug);
     // Started without the route's own run: this test drives the job.
-    const started = await import("./git/conversion/start.js").then((m) =>
+    const started = await import("./conversion/start.js").then((m) =>
       m.startConversion(deps(), { teamId: w.team, userId: w.owner.id }, p.id, {
         connection_id: w.connectionId,
       }),
@@ -291,7 +291,7 @@ describe("crashes and failures (ac-2)", () => {
     const w = await world();
     const p = await project(w, [{ by: w.owner, message: "one", files: { "a.txt": "1" } }]);
     hostRepo(p.slug);
-    const m = await import("./git/conversion/start.js");
+    const m = await import("./conversion/start.js");
     const started = await m.startConversion(deps(), { teamId: w.team, userId: w.owner.id }, p.id, {
       connection_id: w.connectionId,
     });

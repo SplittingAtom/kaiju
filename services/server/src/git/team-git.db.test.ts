@@ -10,13 +10,13 @@ import {
   type Envelope,
 } from "@kobe/db";
 import { gitConnectionAdminViewSchema, gitConnectionMemberViewSchema } from "@kobe/protocol";
-import { rawRequest } from "./connectors/oauth/http.js";
-import { runGitHealthPass, GitHostBackoff } from "./git/health-job.js";
-import { logger } from "./logger.js";
-import { EventStreamFixture, type Person } from "./testing/event-stream-fixture.js";
-import { FAKE_GITEA_TOKEN, FakeGitea } from "./testing/fake-gitea.js";
-import { FAKE_APP_ID, FAKE_INST_ID, FAKE_PAT, FakeGithub } from "./testing/fake-github.js";
-import type { MemoryMailer } from "./testing/mailer.js";
+import { rawRequest } from "../connectors/oauth/http.js";
+import { runGitHealthPass, GitHostBackoff } from "./health-job.js";
+import { logger } from "../logger.js";
+import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
+import { FAKE_GITEA_TOKEN, FakeGitea } from "../testing/fake-gitea.js";
+import { FAKE_APP_ID, FAKE_INST_ID, FAKE_PAT, FakeGithub } from "../testing/fake-github.js";
+import type { MemoryMailer } from "../testing/mailer.js";
 
 /**
  * KOBE-760 (GIT-4, spec workspace-git §3, §4, §7, §8): the connection routes end to end on a real
