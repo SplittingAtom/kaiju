@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { accessRefusal, reachableBase, repoRefusal } from "./transport.js";
+import type { projectPermissions } from "@kobe/protocol";
+import { accessRefusal, reachableBase, repoReadable, repoRefusal } from "./transport.js";
 
 describe("git transport rules (KOBE-763)", () => {
   it("matches only base URLs the proxy can reach: https on 443", () => {
@@ -49,5 +50,29 @@ describe("git transport rules (KOBE-763)", () => {
       repoRefusal("contributor", [{ projectRole: "editor" }, { projectRole: undefined }]),
     ).toMatchObject({ code: "project_reader" });
     expect(repoRefusal("team_admin", [{ projectRole: undefined }])).toBeUndefined();
+  });
+});
+
+describe("repoReadable (M4, owner decision 2026-11-22)", () => {
+  const rules = [
+    { hostRepoId: "42", fullName: "acme/docs", projectRole: undefined },
+    { hostRepoId: "77", fullName: "acme/legacy", projectRole: "editor" as const },
+  ];
+  const noView = () => ({ view: false }) as ReturnType<typeof projectPermissions>;
+
+  it("lets a role on the project read, matched by id and by name", () => {
+    expect(repoReadable("member", rules, { id: "42", fullName: "acme/renamed" })).toBe(true);
+    expect(repoReadable("member", rules, { id: "9", fullName: "ACME/legacy" })).toBe(true);
+  });
+
+  it("refuses without a role on the project, by id (rename) and by name (stale id)", () => {
+    expect(repoReadable("member", rules, { id: "42", fullName: "acme/renamed" }, noView)).toBe(
+      false,
+    );
+    expect(repoReadable("member", rules, { id: "9", fullName: "acme/docs" }, noView)).toBe(false);
+  });
+
+  it("leaves repositories that are no Repo alone", () => {
+    expect(repoReadable("member", rules, { id: "5", fullName: "acme/app" }, noView)).toBe(true);
   });
 });

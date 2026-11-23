@@ -30,7 +30,7 @@ import { endSsoSessionsWhenOff, seedHelmProviders } from "../sso/providers.js";
 import { notifySsoRequiredOff } from "../sso/required-notify.js";
 import { EgressRequestSweeper, sweepEgressRequestNotifications } from "../egress/request-notify.js";
 import { seedGalleryAgents } from "../gallery/seed.js";
-import { seedKobeBuiltinConnector } from "@kobe/db";
+import { seedGitBuiltinConnector, seedKobeBuiltinConnector } from "@kobe/db";
 import { seedBrandingDefaults } from "../branding/defaults.js";
 import type { BifrostAdmin } from "../models/bifrost-admin.js";
 import type { ModelsConfig } from "../models/config.js";
@@ -123,6 +123,23 @@ export async function seedAtStart(deps: ServerDeps, logger: Logger): Promise<Sta
     })
     .catch((err: unknown) =>
       logger.error({ err }, "the built-in Kobe connector could not be seeded"),
+    );
+  // The built-in git connector row (KOBE-762), apart from the Kobe connector.
+  await seedGitBuiltinConnector(deps.database.db)
+    .then((seeded) => {
+      if (seeded.outcome === "seeded" && seeded.fallback) {
+        logger.warn(
+          { name: seeded.name },
+          "a connector named kobe-git exists: the built-in git connector is kobe-git-builtin",
+        );
+      } else if (seeded.outcome === "names_taken") {
+        logger.error(
+          "connectors named kobe-git and kobe-git-builtin exist: the git host tools are not available",
+        );
+      }
+    })
+    .catch((err: unknown) =>
+      logger.error({ err }, "the built-in git connector could not be seeded"),
     );
   // The kill switch also ends the SSO sessions still in the database (review finding 6).
   await endSsoSessionsWhenOff(deps.database.db, deps.sso.settings)

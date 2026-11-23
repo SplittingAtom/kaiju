@@ -55,6 +55,26 @@ export function siteUsersRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariabl
   });
 
   /**
+   * Sign-in protection (KOBE-812): accounts whose failed sign-ins are being slowed down now (one
+   * attempt a minute until `until`), and since when, in the last day, requests arrived without a
+   * client IP Kobe can trust (per-address limits are then shared). Ids only; the page has the
+   * names from the user list.
+   */
+  app.get("/sign-in-protection", async (c) => {
+    const [throttled, unknownIp] = await Promise.all([
+      deps.signInThrottle.throttled(),
+      deps.clientIps.seen(),
+    ]);
+    return c.json({
+      throttled: throttled.map((t) => ({
+        userId: t.userId,
+        until: new Date(t.until).toISOString(),
+      })),
+      unknownClientIp: unknownIp ? { since: new Date(unknownIp.since).toISOString() } : null,
+    });
+  });
+
+  /**
    * Checks that the caller may change this user's activation (or purge their memories, `what`);
    * a Response when not.
    */

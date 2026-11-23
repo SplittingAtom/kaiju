@@ -147,6 +147,17 @@ describe("GET /v1/threads/{id}/context (KOBE-470)", () => {
     expect(await commandRows(w.team)).toBe("0");
   });
 
+  it("counts one sandbox start however often the viewer asks while it wakes (KOBE-813)", async () => {
+    const w = await f.world(0);
+    const threadId = await f.thread(w.owner);
+    for (let i = 0; i < 6; i += 1) expect((await read(w, threadId)).status).toBe(202);
+    const { rows } = await f.fx.admin.query<{ count: number }>(
+      `SELECT count FROM kobe_rate_limits WHERE key = $1`,
+      [`kobe:sandbox-wake:${w.owner.id}`],
+    );
+    expect(rows[0]?.count).toBe(1);
+  });
+
   it("refuses a skill eval's thread without waking anything", async () => {
     const w = await f.world(0);
     // skill_eval never changes on a thread: an eval thread is made as one.

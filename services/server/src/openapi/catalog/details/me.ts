@@ -190,7 +190,7 @@ export const filesDetails: Readonly<Record<string, CatalogDetail>> = {
       "Send multipart/form-data with an optional `thread_id` text field and one file part. " +
       "Refusals with an upload code (`file_too_large`, `quota_exceeded`, `scan_rejected`, " +
       "`scan_unavailable`) also carry `limit_bytes` where it applies.",
-    errors: ["404", "413", "422", "503", "507"],
+    errors: ["404", "413", "422", "429", "503", "507"],
   },
 };
 
@@ -232,6 +232,6 @@ export const setupDetails: Readonly<Record<string, CatalogDetail>> = {
     status: 201,
     response: untyped("SetupOwnerCreated", obj({ userId: uuid })),
     responseDescription: "The Owner was created; sign in with the email and password sent.",
-    errors: ["400", "403", "409"],
+    errors: ["400", "403", "409", "429"],
   },
 };

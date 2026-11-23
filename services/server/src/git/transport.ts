@@ -170,7 +170,7 @@ async function readFacts(
  * reconnect leaves `connection_id` cleared, G20) and also on the last-seen name (a rename or a
  * stale id must not lose the rule). Both match sets apply: fail closed.
  */
-async function repoProjectRoles(
+export async function repoProjectRoles(
   db: KobeDb,
   principal: GitTransportPrincipal,
   baseUrl: string,
@@ -205,6 +205,85 @@ async function repoProjectRoles(
     }
     return out;
   });
+}
+
+/** A Kobe Repo's record and the member's explicit role on its project (M4 read rule). */
+export interface RepoReadRule {
+  readonly hostRepoId: string;
+  readonly fullName: string;
+  readonly projectRole: "owner" | "editor" | undefined;
+}
+
+/** Whether any repository on `baseUrl` is a Kobe Repo in the member's Workspace (no cap). */
+export async function hostHasRepos(
+  db: KobeDb,
+  principal: Pick<GitTransportPrincipal, "teamId">,
+  baseUrl: string,
+): Promise<boolean> {
+  return withTeam(db, principal.teamId, async (tx) => {
+    const res = await tx.execute<{ any: boolean }>(sql`
+      SELECT EXISTS (
+        SELECT 1 FROM git_repositories r
+         WHERE r.team_id = ${principal.teamId} AND r.base_url = ${baseUrl}
+           AND r.project_id IS NOT NULL) AS any`);
+    return res.rows[0]?.any === true;
+  });
+}
+
+/**
+ * The Kobe Repo records (a `git_repositories` row with a project) for `baseUrl` that match one of
+ * `repos` by the host's id or by the last-seen name (either matches; fail closed), under any
+ * connection (a reconnect clears `connection_id`, G20), with the member's explicit role on each
+ * project. Asked per requested repository (or per listed page), never as a capped list of all
+ * Repos (review g103 R2-L1).
+ */
+export async function repoReadRules(
+  db: KobeDb,
+  principal: Pick<GitTransportPrincipal, "teamId" | "userId">,
+  baseUrl: string,
+  repos: readonly { readonly id: string; readonly fullName: string }[],
+): Promise<RepoReadRule[]> {
+  if (repos.length === 0) return [];
+  const ids = repos.map((r) => r.id);
+  const names = repos.map((r) => r.fullName.toLowerCase());
+  return withTeam(db, principal.teamId, async (tx) => {
+    const res = await tx.execute<{
+      host_repo_id: string;
+      full_name: string;
+      role: "owner" | "editor" | null;
+    }>(sql`
+      SELECT r.host_repo_id, r.full_name, m.role
+        FROM git_repositories r
+        LEFT JOIN project_members m
+          ON m.team_id = r.team_id AND m.project_id = r.project_id AND m.user_id = ${principal.userId}
+       WHERE r.team_id = ${principal.teamId} AND r.base_url = ${baseUrl}
+         AND r.project_id IS NOT NULL
+         AND (r.host_repo_id = ANY(${sql.param(ids)}::text[])
+              OR lower(r.full_name) = ANY(${sql.param(names)}::text[]))`);
+    return res.rows.map((r) => ({
+      hostRepoId: r.host_repo_id,
+      fullName: r.full_name,
+      projectRole: r.role ?? undefined,
+    }));
+  });
+}
+
+/**
+ * Owner decision 2026-11-22 (review g103 M4): reading a repository that is a Kobe Repo needs a role
+ * on its project (reader, editor or owner: {@link projectPermissions} `view`), matched by the
+ * host's id and by the last-seen name, both applying (fail closed). Other repositories of the
+ * organization need nothing more. `permissions` is replaceable in tests only.
+ */
+export function repoReadable(
+  role: TeamRole,
+  rules: readonly RepoReadRule[],
+  repo: { readonly id: string; readonly fullName: string },
+  permissions: typeof projectPermissions = projectPermissions,
+): boolean {
+  const name = repo.fullName.toLowerCase();
+  return rules
+    .filter((r) => r.hostRepoId === repo.id || r.fullName.toLowerCase() === name)
+    .every((r) => permissions(role, r.projectRole).view);
 }
 
 /**
@@ -343,6 +422,17 @@ export async function decideGitTransport(
       target,
       net: deps.net,
     });
+    if (access === "read") {
+      // M4 (owner decision 2026-11-22): a Repo is read only with a role on its project; refused
+      // exactly as a missing repository. Only when the host has Repos recorded at all.
+      if (await hostHasRepos(deps.db, principal, connection.baseUrl)) {
+        const resolved = await adapter.getRepository({ name: request.repository });
+        const rules = await repoReadRules(deps.db, principal, connection.baseUrl, [resolved]);
+        if (!repoReadable(facts.role as TeamRole, rules, resolved)) {
+          return adapterRefusal(new GitHostError("not_found", "Not found."));
+        }
+      }
+    }
     if (access === "write") {
       // Review M3: resolve the host's stable id first; an unresolvable repository is refused
       // (fail closed), and a Kobe Repo by id or by name keeps its project rule.

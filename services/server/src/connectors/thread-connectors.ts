@@ -1,3 +1,5 @@
+import { gitToolsForRun } from "../git-tools/listing.js";
+import { loadGitBuiltin } from "../git-tools/pinned.js";
 import {
   and,
   connectors,
@@ -76,7 +78,11 @@ export interface ChatConnector {
    * conversation, so it has no toggle; `admin` says which admin tools the member gets where the
    * agent uses the Kobe connector (`off` while the switches or their role give none).
    */
-  readonly builtin?: { readonly kind: "kobe"; readonly admin: "off" | "read" | "read_write" };
+  readonly builtin?: {
+    /** `git`: the built-in git connector (KOBE-762); `admin` then says read or read and write. */
+    readonly kind: "kobe" | "git";
+    readonly admin: "off" | "read" | "read_write";
+  };
 }
 
 export interface ChatViewer {
@@ -127,8 +133,36 @@ export async function listChatConnectors(
   now = new Date(),
 ): Promise<ChatConnector[]> {
   const kobe = await kobeChatConnector(tx, viewer);
+  const git = await gitChatConnector(tx, viewer);
   const listed = await listRegisteredChatConnectors(tx, viewer, threadId, now);
-  return kobe === undefined ? listed : [kobe, ...listed];
+  return [...[kobe, git].filter((c) => c !== undefined), ...listed];
+}
+
+/**
+ * The built-in git connector's row (KOBE-762): its own group, independent of the Kobe connector
+ * and its switches, shown while the member's agents get git tools (the Site's Git switch and the
+ * connections are its ceiling). No toggle; connections limited to chosen agents are not counted.
+ */
+async function gitChatConnector(
+  tx: KobeTx,
+  viewer: ChatViewer,
+): Promise<ChatConnector | undefined> {
+  const row = await loadGitBuiltin(tx);
+  if (row === undefined) return undefined;
+  const tools = await gitToolsForRun(tx, {
+    teamId: viewer.teamId,
+    userId: viewer.userId,
+    agentId: null,
+    eligible: true,
+  });
+  if (tools.length === 0) return undefined;
+  return {
+    id: row.id,
+    name: row.name,
+    enabled: true,
+    problem: null,
+    builtin: { kind: "git", admin: tools.some((t) => !t.readOnly) ? "read_write" : "read" },
+  };
 }
 
 /**

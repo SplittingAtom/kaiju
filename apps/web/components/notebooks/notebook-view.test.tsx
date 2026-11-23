@@ -480,6 +480,15 @@ describe("running (ac-1)", () => {
     expect(await screen.findByText("Only the owner can run code.")).toBeTruthy();
   });
 
+  it("says plainly when the member ran too many cells (KOBE-813)", async () => {
+    const { kernel } = await setup();
+    const message = "Too many cell runs. Wait a minute and try again.";
+    kernel.next.push({ ok: false, error: { status: 429, code: "rate_limited", message } });
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Run cell 2" }));
+    expect(await screen.findByText(message)).toBeTruthy();
+  });
+
   it("shows a shared reader no run or kernel controls", async () => {
     const { kernel } = await setup(undefined, THREAD, true);
     expect(await screen.findByText(READ_ONLY_NOTE)).toBeTruthy();

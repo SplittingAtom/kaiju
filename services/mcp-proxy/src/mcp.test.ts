@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { pino } from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { withTestLoopback } from "@kobe/address-policy/testing";
-import { KOBE_BUILTIN_CONNECTOR_ID, canonicalJson } from "@kobe/protocol";
+import { GIT_BUILTIN_CONNECTOR_ID, KOBE_BUILTIN_CONNECTOR_ID, canonicalJson } from "@kobe/protocol";
 import {
   generateSessionKeyPair,
   signSessionToken,
@@ -128,10 +128,14 @@ class FakePolicyServer implements PolicyServer {
       },
     },
   };
-  kobeList() {
+  /** Which built-in server each list and call went to (KOBE-762). */
+  readonly builtinAsked: string[] = [];
+  kobeList(_t?: string, builtin = "kobe") {
+    this.builtinAsked.push(`list:${builtin}`);
     return Promise.resolve(this.kobeTools);
   }
-  kobeCall(t: string, query: Omit<CallQuery, "connectorId">) {
+  kobeCall(t: string, query: Omit<CallQuery, "connectorId">, builtin = "kobe") {
+    this.builtinAsked.push(`call:${builtin}`);
     this.kobeAsked.push({ token: t, query });
     return Promise.resolve(this.kobeAnswer);
   }
@@ -1093,6 +1097,20 @@ describe("tracing (KOBE-274)", () => {
       expect(spans.length).toBeGreaterThan(0);
       expect(spans.every((s) => s.spanContext().traceId !== caller)).toBe(true);
     });
+  });
+});
+
+describe("the built-in git connector (KOBE-762)", () => {
+  it("is served by the server's git endpoints, never upstream, apart from the Kobe connector", async () => {
+    const git = { connector: GIT_BUILTIN_CONNECTOR_ID };
+    expect((await rpc("tools/list", undefined, git)).status).toBe(200);
+    const res = await rpc("tools/call", { name: "git_list_connections", arguments: {} }, git);
+    expect(res.status).toBe(200);
+    expect(server.builtinAsked).toEqual(["list:git", "call:git"]);
+    expect(server.asked).toEqual([]);
+    expect(fake.received).toEqual([]);
+    await rpc("tools/list", undefined, { connector: KOBE_BUILTIN_CONNECTOR_ID });
+    expect(server.builtinAsked.at(-1)).toBe("list:kobe");
   });
 });
 

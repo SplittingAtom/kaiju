@@ -23,6 +23,13 @@ function usePasskeys(): boolean {
 }
 
 /**
+ * Shown on a 429: Better Auth's per-address limit or Kobe's per-account throttle of failed
+ * attempts (KOBE-812), which allows one attempt a minute after 10 failures in 15 minutes.
+ */
+const TOO_MANY = "Too many sign-in attempts. Wait a minute, then try again.";
+const tooMany = (error: { status?: number } | null | undefined) => error?.status === 429;
+
+/**
  * The sign-in page's panel (KOBE-755): the logo and "Sign in to <name>" (the name from the Site
  * branding), email, password, **Sign in** and **Forgot your password?** first; then, after an "or"
  * divider, one full-width button per enabled identity provider (KOBE-628) in the server's order,
@@ -90,7 +97,8 @@ export function SignInForm({
         email: String(form.get("email") ?? ""),
         password: String(form.get("password") ?? ""),
       });
-      if (res.error) return setError("Email or password is incorrect.");
+      if (res.error)
+        return setError(tooMany(res.error) ? TOO_MANY : "Email or password is incorrect.");
       setError(null);
       if ((res.data as { twoFactorRedirect?: boolean } | null)?.twoFactorRedirect)
         return setStep("totp");
@@ -103,7 +111,10 @@ export function SignInForm({
     const code = String(new FormData(e.currentTarget).get("code") ?? "");
     void attempt(async () => {
       const res = await authClient.twoFactor.verifyTotp({ code });
-      if (res.error) return setError("That code didn't work. Try the current one.");
+      if (res.error)
+        return setError(
+          tooMany(res.error) ? TOO_MANY : "That code didn't work. Try the current one.",
+        );
       await done();
     });
   }

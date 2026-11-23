@@ -24,6 +24,8 @@ const configSchema = z.object({
     .min(1, "KOBE_DATABASE_URL is required"),
   /** Query pool size per pod (KOBE-736; chart `<component>.database.poolMax`). */
   KOBE_DB_POOL_MAX: int("KOBE_DB_POOL_MAX", 1, 200, 10),
+  /** The member rate limiter's own pool per pod (KOBE-810; chart `modelGateway.database.ratePoolMax`). */
+  KOBE_MODEL_GATEWAY_RATE_POOL_MAX: int("KOBE_MODEL_GATEWAY_RATE_POOL_MAX", 1, 50, 2),
   // Shared with the server for `k_trace` (sandbox span id remapping, KOBE-274) and the budget
   // reservation salt; authorises nothing (KOBE-521: run and server-call tokens are Ed25519).
   KOBE_TRACE_SPAN_KEY: z
@@ -107,6 +109,8 @@ export interface Config {
   readonly databaseUrl: string;
   /** Query pool size (KOBE_DB_POOL_MAX, KOBE-736); one LISTEN connection comes on top. */
   readonly dbPoolMax: number;
+  /** The member rate limiter's pool size (KOBE_MODEL_GATEWAY_RATE_POOL_MAX, KOBE-810). */
+  readonly ratePoolMax: number;
   /**
    * The trace-span secret (KOBE_TRACE_SPAN_KEY, KOBE-521): `k_trace` and the budget reservation
    * salt derive from it. A pseudonymisation secret: no credential any service accepts derives
@@ -175,6 +179,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     port: c.PORT,
     databaseUrl: c.KOBE_DATABASE_URL,
     dbPoolMax: c.KOBE_DB_POOL_MAX,
+    ratePoolMax: c.KOBE_MODEL_GATEWAY_RATE_POOL_MAX,
     traceSpanSecret: c.KOBE_TRACE_SPAN_KEY,
     sessionVerifyKeys: verifyKeysFromEnv(env, "kobe.model-gateway"),
     virtualKeySecret: c.KOBE_MODELS_VIRTUAL_KEY_SECRET,

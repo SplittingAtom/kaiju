@@ -144,6 +144,91 @@ export interface GitCreated {
   readonly webUrl: string;
 }
 
+/** A branch of a repository (G9 `git_list_branches`). */
+export interface GitBranch {
+  readonly name: string;
+  /** The commit the branch points at. */
+  readonly commitSha: string;
+  /** Whether the host protects it; null when the host did not say. */
+  readonly protected: boolean | null;
+}
+
+/** One entry of a directory listing (G9 `git_read_file` on a directory). */
+export interface GitFileEntry {
+  readonly name: string;
+  readonly path: string;
+  readonly type: "file" | "dir" | "symlink" | "submodule";
+  readonly size: number | null;
+}
+
+/**
+ * A file or a directory read at a ref (G9 `git_read_file`). Text only: a file that is not UTF-8
+ * text comes back with `binary: true` and no content; content beyond the cap is cut
+ * (`truncated`).
+ */
+export type GitFileContent =
+  | {
+      readonly kind: "file";
+      readonly path: string;
+      readonly size: number;
+      readonly sha: string;
+      readonly binary: boolean;
+      readonly truncated: boolean;
+      readonly content: string;
+    }
+  | {
+      readonly kind: "directory";
+      readonly path: string;
+      readonly entries: readonly GitFileEntry[];
+    };
+
+/** A pull request as listed; `body` only when read one by one (G9). */
+export interface GitPullRequest {
+  readonly number: number;
+  readonly title: string;
+  readonly state: "open" | "closed" | "merged";
+  readonly draft: boolean;
+  /** The branch with the changes (`owner:branch` when it lives in another repository). */
+  readonly head: string;
+  readonly base: string;
+  readonly author: string | null;
+  readonly webUrl: string;
+  readonly createdAt: string | null;
+  readonly updatedAt: string | null;
+  readonly body?: string;
+  /** True when `body` was cut to the read cap. */
+  readonly bodyTruncated?: boolean;
+}
+
+/** An issue as listed; `body` only when read one by one (G9). */
+export interface GitIssue {
+  readonly number: number;
+  readonly title: string;
+  readonly state: "open" | "closed";
+  readonly author: string | null;
+  readonly webUrl: string;
+  readonly comments: number | null;
+  readonly createdAt: string | null;
+  readonly updatedAt: string | null;
+  readonly body?: string;
+  readonly bodyTruncated?: boolean;
+}
+
+export type GitListState = "open" | "closed" | "all";
+
+export interface GitListOptions {
+  readonly cursor?: string | null;
+  readonly perPage?: number;
+}
+
+export interface GitCreateBranchInput {
+  readonly repository: string;
+  /** The new branch. */
+  readonly name: string;
+  /** The branch (or full commit SHA) it starts from. */
+  readonly from: string;
+}
+
 export interface GitHostAdapter {
   readonly provider: GitProvider;
   /** Tests the connection: organization, capabilities, excess permissions, expiry, version. */
@@ -162,6 +247,24 @@ export interface GitHostAdapter {
   openPullRequest(input: GitOpenPullRequestInput): Promise<GitCreated>;
   comment(input: GitCommentInput): Promise<GitCreated>;
   createIssue(input: GitCreateIssueInput): Promise<GitCreated>;
+  /** One page of a repository's branches (G9). */
+  listBranches(repository: string, options?: GitListOptions): Promise<GitPage<GitBranch>>;
+  /** A file's text, or a directory's entries, at `ref` (default branch when absent) (G9). */
+  readFile(repository: string, path: string, ref?: string): Promise<GitFileContent>;
+  listPullRequests(
+    repository: string,
+    options?: GitListOptions & { readonly state?: GitListState },
+  ): Promise<GitPage<GitPullRequest>>;
+  getPullRequest(repository: string, number: number): Promise<GitPullRequest>;
+  /** Issues only: pull requests are left out (GitHub lists them among issues). */
+  listIssues(
+    repository: string,
+    options?: GitListOptions & { readonly state?: GitListState },
+  ): Promise<GitPage<GitIssue>>;
+  /** An issue; a pull request's number is "not found" here. */
+  getIssue(repository: string, number: number): Promise<GitIssue>;
+  /** A new branch from an existing branch or commit; `conflict` when the name is taken (G9). */
+  createBranch(input: GitCreateBranchInput): Promise<GitBranch>;
 }
 
 export type GitHostErrorCode =

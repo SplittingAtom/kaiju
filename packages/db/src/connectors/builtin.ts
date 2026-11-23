@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm";
 import type { KobeDb } from "../client.js";
 import {
+  GIT_BUILTIN_CONNECTOR_ID,
+  GIT_BUILTIN_CONNECTOR_URL,
   KOBE_BUILTIN_CONNECTOR_ID,
   KOBE_BUILTIN_CONNECTOR_URL,
   KOBE_MCP_MODE_KEY,
@@ -62,4 +64,38 @@ export async function readKobeMcpMode(db: Pick<KobeDb, "execute">): Promise<Kobe
     sql`SELECT value FROM public.site_settings WHERE key = ${KOBE_MCP_MODE_KEY}`,
   );
   return parseKobeMcpMode(res.rows[0]?.value);
+}
+
+/** The `git` row's preferred name, and the fallback when a registered connector holds it. */
+export const GIT_BUILTIN_NAMES = ["kobe-git", "kobe-git-builtin"] as const;
+
+/**
+ * Seeds the built-in `git` connector row (KOBE-762): the git host tools as their own connector.
+ * Idempotent and race-safe exactly as {@link seedKobeBuiltinConnector}.
+ */
+export async function seedGitBuiltinConnector(db: KobeDb): Promise<KobeBuiltinSeed> {
+  const existing = async () => {
+    const res = await db.execute<{ name: string }>(
+      sql`SELECT name FROM public.connectors WHERE builtin = 'git'`,
+    );
+    return res.rows[0]?.name;
+  };
+  const before = await existing();
+  if (before !== undefined) return { outcome: "present", name: before };
+  for (const [index, name] of GIT_BUILTIN_NAMES.entries()) {
+    const inserted = await db.execute<{ name: string }>(sql`
+      INSERT INTO public.connectors (id, name, url, auth_kind, credential_source, builtin)
+      SELECT ${GIT_BUILTIN_CONNECTOR_ID}::uuid, ${name}, ${GIT_BUILTIN_CONNECTOR_URL},
+             'none', 'member', 'git'
+       WHERE NOT EXISTS (
+         SELECT 1 FROM public.connectors c
+          WHERE c.builtin IS NULL AND replace(c.name, '-', '_') = ${pgServerSegment(name)})
+      ON CONFLICT DO NOTHING
+      RETURNING name`);
+    const row = inserted.rows[0];
+    if (row !== undefined) return { outcome: "seeded", name: row.name, fallback: index > 0 };
+    const raced = await existing();
+    if (raced !== undefined) return { outcome: "present", name: raced };
+  }
+  return { outcome: "names_taken" };
 }

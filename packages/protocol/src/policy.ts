@@ -170,6 +170,9 @@ export const POLICY_REASON_CODES = [
   "kobe_admin_not_allowed",
   // KOBE-619: the person's admin reads per minute or writes per hour are used up → deny.
   "kobe_admin_rate_limited",
+  // KOBE-762 (spec workspace-git G9, G12): a git host tool the connection (level, agents), the
+  // member's role or the Site refuses now → deny (stage team_deny), before anyone is asked.
+  "git_not_allowed",
   // Sandbox-side deny (kobe-policy / kobe-sandbox-agent): no server decision could be obtained
   // (policy channel closed, timed out, extension refused). Never produced by the server.
   "sandbox_policy_unavailable",

@@ -35,6 +35,18 @@ read a person's portable preferences either; reading them needs its own break-gl
   sign-ins (**Unlink**) and **Expect SSO link**: their next sign-in from the chosen provider links
   automatically when its verified address matches theirs and lies in one of the provider's
   verified domains (once, within 14 days). The Owner and Admins link only by signing in themselves.
+  **Sign-in protection** notices at the top: an account that had 10 failed password or
+  authenticator-code attempts in 15 minutes (from any address, counted together) gets one attempt
+  a minute until the 15 minutes are over, and shows **Sign-in slowed**. Kobe never locks an
+  account; passkeys and single sign-on still work. A password reset, or signing in with the
+  password (and code) or through single sign-on, clears it; a passkey sign-in does not, since
+  anyone holding a session could add a passkey. Each time an account starts being slowed down the audit log records
+  `auth.sign_in.throttled` (once per 15 minutes, not per attempt; no email is sent). Addresses
+  with no account are slowed down the same way, so the answer never tells whether an account
+  exists. A second notice appears when, in the last day, sign-in or SCIM requests arrived without
+  a client address Kobe can trust: per-address limits are then shared by everyone. Fix the trusted
+  proxies (`auth.trustedProxies` in the Helm values, `KOBE_TRUSTED_PROXIES`) so they name the
+  proxies in front of Kobe; the server also warns in its log.
 - **Single sign-on** and **SSO access mappings**: let people sign in with Microsoft Entra ID or
   another OpenID Connect provider, decide which app roles or groups give which team role,
   create SCIM tokens so the provider provisions and deactivates accounts, and **Require single
@@ -199,7 +211,8 @@ read a person's portable preferences either; reading them needs its own break-gl
   memories: choose a provider your
   organization may send that to (the in-cluster model keeps it in your cluster). See
   [Search by meaning](../memory.md#search-by-meaning). The **Kobe connector** setting is **Off**, **Docs only** (the
-  default) or **Docs and admin tools**; see below. **Kobe admin limits** set how many admin reads
+  default) or **Docs and admin tools**; see below. It does not affect agents' git host tools,
+  which follow **Git connections**. **Kobe admin limits** set how many admin reads
   per minute (default 60) and admin changes per hour (default 30) one person's agents may make,
   1 to 10,000 each; they apply to the next call, and every change is audited. **Git
   connections**: whether Workspaces may connect git organizations (on by default; off stops every

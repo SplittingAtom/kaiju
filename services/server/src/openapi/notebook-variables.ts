@@ -41,13 +41,20 @@ export function notebookVariablesOpenApiPaths(): Record<string, Record<string, u
           "or when nothing ran since, and takes a fresh one when the kernel is idle and code ran " +
           "since or `refresh` is true. After a snapshot taken after a run timed out, automatic " +
           "snapshots pause for the conversation until the workspace restarts (`auto_paused`: " +
-          "`snapshot_timeout`): only `refresh` takes one then. Per variable its name, type, a short repr (capped; empty " +
-          "with `repr_error` when it raised or took too long) and summaries for common types " +
+          "`snapshot_timeout`): only `refresh` takes one then. Per variable its name, type, a short " +
+          "value (capped) and summaries for common types. The value is read without running the " +
+          "member's code: only for exact built-in scalars, strings, bytes and containers, ranges " +
+          "and numpy/pandas objects; for anything else it is empty with `repr_error`: " +
+          "`not_read` (`raised` when reading a library object failed). Values of credential-like " +
+          "names are withheld in the workspace (`hidden`: `name`; inside a shown dict, values " +
+          "under credential-like keys read `<hidden>` with `hidden`: `keys`) until `show` names " +
+          "that one variable, which answers it alone, not withheld " +
           "(`len`; `shape` and `dtype` for numpy arrays; `shape`, `columns` and " +
           "`columns_total` for pandas DataFrames, never their data). Modules, functions and " +
           "classes are listed by name in `other`; names starting with `_` and IPython's own " +
-          "are left out; `truncated` when a cap left variables out. It runs silently in the " +
-          "kernel (no execution count, not a run, nothing stored) and never wakes a sleeping " +
+          "are left out; `truncated` when a cap left variables out. It is an inspection request " +
+          "in the kernel, not code run (no execution hooks, no execution count, nothing stored) " +
+          "and never wakes a sleeping " +
           "workspace or starts a kernel: `no_kernel`, `busy` (code is running) and " +
           "`unavailable` (no answer in time) are answers too. Nothing is stored: snapshots " +
           "are never in run events and go to the owner only, since a repr can hold a secret. " +

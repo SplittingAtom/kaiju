@@ -38,7 +38,8 @@ time: while the agent is answering in the conversation, your run waits its turn.
 ## Notebooks
 
 A notebook opens as cells. **Run cell N** runs one cell; **Run all** runs the code cells in order
-and stops at the first error. Cells can be edited (**Edit cell N**, then **Done**), moved, deleted,
+and stops at the first error. You can run up to 300 cells a minute (each cell of **Run all**
+counts); past that the kernel bar says "Too many cell runs" until the minute is over. Cells can be edited (**Edit cell N**, then **Done**), moved, deleted,
 and added (Add code cell, or a Markdown cell below). **Save** writes the notebook; outputs are saved
 into it.
 
@@ -77,12 +78,76 @@ there, such as new output or a failed run. This browser remembers the tab you ch
   The Log shows the last 50 runs and lasts across reloads; runs drop off 7 days after the run
   they were part of ended (an agent's long run keeps its early executions until it ends).
 - **Variables** shows what your code defined in the kernel, with each value's type and a short
-  value: a DataFrame says its rows and columns, an array its shape and type, a list its length.
-  Sort and filter by name, and open a row for the longer value and a DataFrame's columns. The
-  values come straight from your kernel when you look; Kobe does not store them, and the agent
-  does not see them. Values of names that look like passwords, tokens or keys, and of
-  `os.environ`, stay hidden until you choose **Show**. The list refreshes after each run and with
-  **Refresh**; while code runs it shows the values from before the run.
+  value: a DataFrame says its rows and columns, an array its shape and type, a list its length. Sort
+  and filter by name, and open a row for the longer value and a DataFrame's columns. The values come
+  straight from your kernel when you look; Kobe does not store them, and the agent does not see
+  them. Values of names that look like credentials stay in your sandbox until you choose **Show**,
+  which asks for that one variable. A name is split into words (at `_`, `-`, `.`, spaces and capital
+  letters, so `apiKey`, `x-api-key` and `API_KEY` are the same) and counts as a credential when a
+  word is password, passwd, pwd, passphrase, secret, token, auth, authorization, bearer,
+  credential(s), creds, cookie, session, dsn or jwt (but not when the next word is count, len,
+  length, size, limit or type, as in `token_count`), when it is `key` alone or key after api,
+  access, private, secret, signing, encryption, master or client, or when it says connection string.
+  `author`, `keyboard` or `sort_key` do not count. Inside a value that is shown, the value under
+  such a key of a dict (or the second item of a pair like `("password", ...)`) reads `<hidden>`, as
+  does the user and password part of a URL (`https://user:pass@host` shows as
+  `https://<hidden>@host`), until you choose **Show hidden values**. `os.environ` shows only its
+  type. The list refreshes after each run and with **Refresh**; while code runs it shows the values
+  from before the run.
+
+  Reading the variables runs none of your code. Kobe shows the value of numbers, strings, bytes,
+  lists, tuples, dicts and sets (up to 8 items, two levels deep and 200 characters; an object inside
+  one shows as its type, such as `<Customer>`), ranges, dates, times, durations, decimals,
+  fractions, UUIDs and paths from Python's standard library (a time with a time zone of your own
+  class shows only its type), NumPy arrays of numbers (a few values per row, never through NumPy's
+  print options), and pandas DataFrames and Series backed by NumPy or pandas' own arrays (sizes,
+  column names and types; one backed by an array type of your own shows only its type). A subclass
+  of a list, tuple, dict, set, string or bytes shows its items as the built-in type stores them; a
+  subclass of anything else, and any other object, including instances of your own classes, shows
+  only its type and "(value not shown for this type)": its `__repr__`, `__str__`, `__len__` and
+  iteration are never called. The request is not run as code either, so your execution hooks
+  (`post_execute` and the like, autoreload), input transformers and display formatters do not run,
+  and the execution count and history do not change. One snapshot lists at most 200 variables and 64
+  KB, and stops after 2 seconds (the list then says it is incomplete).
+
+## Code completion from the kernel
+
+In a `.py` file's editor, completion also asks the conversation's kernel (see [Code
+completion](file-editor.md#code-completion)). It offers:
+
+- names your runs (or the agent's) created, such as variables, functions, classes and imports;
+- after a dot, the attributes stored on a module, class or object, read from their dictionaries;
+- inside `d['` or `d[`, the keys of a plain dict (strings, numbers);
+- inside a call such as `f(`, the keyword arguments of a plain Python function, class or built-in
+  (`name=`);
+- DataFrame column names after `df.` or `df['`, only when pandas keeps the labels as Python
+  objects. String column names in the sandbox's pandas are stored by PyArrow and are not offered.
+
+Kobe does not use IPython's completer. The request goes to the kernel as a completion or
+inspection request, not as code to run, so none of your execution hooks (`pre_run_cell`,
+`post_execute` and the like, autoreload, matplotlib's), input transformers or display formatters
+run, and the execution count, history and `Out` stay as they are. A small resolver reads your
+namespace and the dictionaries of modules, classes and objects, and never calls anything. It stops,
+and you get only the editor's own suggestions, at a property, a `functools.cached_property` or any
+other descriptor, a class with a custom metaclass (Enum members and many ORM or pydantic models), an
+object that defines `__getattribute__`, a call, or a module attribute only `__getattr__` would
+supply. It does not offer keys of dict subclasses (`OrderedDict`, `defaultdict`, `Counter`), tuple
+keys, NumPy field names, or builtins and keywords (the editor's own list has those). Its tests
+check that none of your getters, descriptors, `__getattr__`, `__getattribute__`, `__class__`,
+`__dir__`, `__signature__`, metaclass hooks, key `__hash__`/`__eq__`, registered completers or
+execution hooks run. Very large containers are only partly read: at most 10,000 entries are looked
+at and 200 suggestions returned, within a fifth of a second, so a huge dict may show only some of
+its keys. Completion does not start while a timer of yours (`signal.setitimer`) is pending, and it
+never interrupts running code. Docs come from signatures and docstrings read the same way (no repr,
+no getter; a default value that is not a plain number or string shows as `…`). Nothing about it is
+saved, and it does not count as using your sandbox: typing in the editor does not keep it awake.
+
+Kernel completion only works while the kernel runs and is idle. A note under the editor, next to
+the line and column, says when it is off and why: the kernel is not started (press **Start** or run
+the file), your sandbox is asleep (it is never woken just to complete), code is running, the
+kernel did not answer in time, too many requests, or it is not available in your sandbox yet. The
+editor's own completion keeps working in every case. Only the conversation's owner gets kernel
+completion.
 
 ## The agent runs code too
 

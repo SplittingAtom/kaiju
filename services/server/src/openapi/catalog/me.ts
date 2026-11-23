@@ -119,7 +119,8 @@ export const meAreas: readonly CatalogArea[] = [
         "post",
         "/v1/uploads",
         "Upload a file (multipart form data) to private storage",
-        "Answers 201 with the file; refusals are 403, 413, 422 or 503. Private to the uploader.",
+        "Answers 201 with the file; refusals are 403, 413, 422 or 503. Private to the uploader. " +
+          "429 `rate_limited` past 120 uploads per member in 10 minutes (`Retry-After`, KOBE-813).",
       ],
     ],
   },
@@ -166,7 +167,9 @@ export const meAreas: readonly CatalogArea[] = [
         "post",
         "/v1/setup",
         "Create the site's Owner account during first-run setup",
-        "Needs the site's setup token. Answers 201; 409 once set up, 403 on a wrong token.",
+        "Needs the site's setup token. Answers 201; 409 once set up, 403 on a wrong token. " +
+          "429 `rate_limited` past 10 attempts per client IP in 10 minutes (one shared bucket " +
+          "when the IP can't be resolved; `Retry-After`, KOBE-813).",
       ],
     ],
   },

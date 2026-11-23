@@ -23,6 +23,8 @@ import { AuthAttemptAudit } from "./audit/attempts.js";
 import { recordAudit } from "./audit/record.js";
 import { BackgroundTasks } from "./background.js";
 import { createAuth, type KobeAuth } from "./auth/auth.js";
+import { createClientIpWatch, type ClientIpWatch } from "./auth/client-ip-watch.js";
+import { createSignInThrottle, type SignInThrottle } from "./auth/sign-in-throttle.js";
 import { createRunEventHub, type RunEventHub } from "./event-stream/hub.js";
 import { notifyWorkspaceAccess } from "./event-stream/access.js";
 import { createStreamReader, type StreamReader } from "./event-stream/read.js";
@@ -68,6 +70,7 @@ import type { AppResultsDeps } from "./apps/results.js";
 import { captureKey } from "./apps/capture-ticket.js";
 import { createMcpService, DENIED_AUDIT_RATE, type McpService } from "./mcp/service.js";
 import { createKobeMcpService, type KobeMcpService } from "./kobe-mcp/service.js";
+import { createGitMcpService, type GitMcpService } from "./git-tools/mcp-service.js";
 import { createRateLimiter } from "./sandbox/rate-limit.js";
 import { createPolicyEngine } from "./policy/engine.js";
 import { createToolRegistry } from "./policy/registry.js";
@@ -160,6 +163,10 @@ export interface ServerDeps {
   readonly auditForwardingSecrets: readonly string[];
   /** Aggregated audit of unauthenticated auth attempts (flushed on close). */
   readonly authAttempts: AuthAttemptAudit;
+  /** Per-account throttle of failed password and second-factor attempts (KOBE-812). */
+  readonly signInThrottle: SignInThrottle;
+  /** Reports requests without a resolvable client IP (KOBE-812). */
+  readonly clientIps: ClientIpWatch;
   /** Downstream steps of deactivation/reactivation (sandboxes, grants, schedules, audit). */
   readonly lifecycle: UserLifecycle;
   /**
@@ -218,6 +225,7 @@ export interface ServerDeps {
    * internal listener; `createApp` binds the public API router it dispatches admin tools to.
    */
   readonly kobeMcp: KobeMcpService;
+  readonly gitMcp: GitMcpService;
   /** The address policy registered connector URLs must pass (KOBE-100). */
   readonly connectorUrlPolicy: ConnectorUrlPolicy;
   /** Outbound requests to Workspace git hosts (KOBE-760): the connector policy, every call. */
@@ -315,9 +323,13 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   };
   // SSO sign-in applies access mappings, whose side effects need the finished deps (bound below).
   const lateDeps: { deps?: ServerDeps } = {};
+  const signInThrottle = createSignInThrottle({ db: database.db });
+  const clientIps = createClientIpWatch({ db: database.db, log: logger, background });
   const auth = createAuth({
     attempts: authAttempts,
     background,
+    signInThrottle,
+    clientIps,
     db: database.db,
     publicUrl: options.publicUrl,
     secret: options.authSecret,
@@ -352,6 +364,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   const toolRegistry = createToolRegistry(mcpCatalog);
   const approvals = new ApprovalService({
     registry: toolRegistry,
+    publicUrl: new URL(options.publicUrl).origin,
     ...(options.sandboxWire?.tuning?.runMaxEvents === undefined
       ? {}
       : { runMaxEvents: options.sandboxWire.tuning.runMaxEvents }),
@@ -535,9 +548,30 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     ...(options.mcp?.now ? { now: options.mcp.now } : {}),
     captureKey: captureKey(options.authSecret),
   });
+  // One git host net for the connection routes, the egress transport and the git tools (KOBE-762).
+  const gitHostNet: GitHostNet = {
+    policy: connectorUrlPolicy,
+    ...(options.gitHostRequest ? { request: options.gitHostRequest } : {}),
+    ...(options.gitWireSend ? { wire: options.gitWireSend } : {}),
+  };
   const kobeMcp = createKobeMcpService({
     db: database.db,
     publicUrl: new URL(options.publicUrl).origin,
+    policy: policySources,
+    runContext,
+    approvals: approvalVerifierForMcp(database.db, approvals.verifier),
+    mayAuditDenied: (() => {
+      const limiter = createRateLimiter(DENIED_AUDIT_RATE);
+      return (sandboxId: string) => limiter.take(sandboxId) === 0;
+    })(),
+    ...(options.mcp?.now ? { now: options.mcp.now } : {}),
+  });
+  // KOBE-762: the built-in git connector, on the same decision path as the Kobe connector.
+  const gitMcp = createGitMcpService({
+    db: database.db,
+    publicUrl: new URL(options.publicUrl).origin,
+    envelope: options.envelope,
+    net: gitHostNet,
     policy: policySources,
     runContext,
     approvals: approvalVerifierForMcp(database.db, approvals.verifier),
@@ -655,6 +689,8 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     agentLimits: { ...AGENT_LIMIT_DEFAULTS, ...options.agents },
     background,
     authAttempts,
+    signInThrottle,
+    clientIps,
     auditAnchor: new AuditAnchorLogger(database.db, options.authSecret),
     auditForwardingDestinations: options.auditForwardingDestinations ?? [],
     auditForwardingSecrets: options.auditForwardingSecrets ?? [],
@@ -671,12 +707,9 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     memoryVectors,
     mcp,
     kobeMcp,
+    gitMcp,
     connectorUrlPolicy,
-    gitHostNet: {
-      policy: connectorUrlPolicy,
-      ...(options.gitHostRequest ? { request: options.gitHostRequest } : {}),
-      ...(options.gitWireSend ? { wire: options.gitWireSend } : {}),
-    },
+    gitHostNet,
     connectorProbe: options.connectorProbe ?? NO_PROBE,
     appCaller: options.appCaller ?? NO_APP_CALLER,
     approvals,

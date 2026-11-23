@@ -18,6 +18,7 @@ import {
 import { approvalResolutionCauseSchema, policyReasonSchema } from "./policy.js";
 import { rememberScopeSchema } from "./remember.js";
 import { kobeAdminApprovalSchema } from "./kobe-mcp.js";
+import { gitApprovalSchema } from "./git-tools.js";
 import { fileEditProposedPayloadSchema } from "./file-editor.js";
 import { fileOpenedPayloadSchema } from "./file-open.js";
 import {
@@ -270,6 +271,11 @@ export const EVENT_PAYLOAD_SCHEMAS = {
      * server. Additive: clients that predate it show the ordinary card.
      */
     admin: kobeAdminApprovalSchema.optional(),
+    /**
+     * A git host write (KOBE-762): host, organization, repository and exactly what will be created
+     * or posted, built by the server. Additive: older clients show the ordinary card.
+     */
+    git: gitApprovalSchema.optional(),
   }),
   "approval.resolved": z.strictObject({
     approval_id: uuidSchema,

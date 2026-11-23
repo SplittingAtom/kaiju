@@ -10,6 +10,8 @@ import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "./testing
 import { MemoryObjects } from "./testing/memory-objects.js";
 import { TestBrowser } from "./testing/browser.js";
 import { SseReader } from "./testing/sse.js";
+import { OPERATION_LIMITS } from "./operation-limits.js";
+import { expectRateLimited, fillLimit } from "./testing/operation-limits.js";
 import { commitChanges, currentEntry, recordBlob } from "./workspace-sync/store.js";
 import {
   createWorkspaceSync,
@@ -143,6 +145,14 @@ describe("POST /v1/workspace/sync (KOBE-599)", () => {
     const res = await refresh(w.alice, w.team);
     expect(res).toMatchObject({ status: 200, body: { status: "asleep" } });
     expect(woken).toContain(w.alice.id);
+  });
+
+  it("asleep past the member's wake limit: 429, the sandbox stays asleep (KOBE-813)", async () => {
+    const w = await world();
+    const limit = OPERATION_LIMITS.sandboxWake;
+    await fillLimit(fx.admin, limit, w.alice.id);
+    expectRateLimited(await browserFor(w.alice, w.team).post("/v1/workspace/sync", {}), limit);
+    expect(woken).not.toContain(w.alice.id);
   });
 
   it("running: the sandbox pushes on request and the listing then shows the file", async () => {

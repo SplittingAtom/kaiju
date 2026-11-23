@@ -7,6 +7,16 @@ import type { GIT_EVENTS } from "./git.js";
  * name order.
  */
 export const GIT_EVENT_DOCS = {
+  "git.branch.created": {
+    fields:
+      "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`",
+    when: "An agent created a branch with the git host tool `git_create_branch` (KOBE-762); the member is the actor, run and tool call in `viaAgent`. Never the branch name",
+  },
+  "git.comment.created": {
+    fields:
+      "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `on`, `number`, `hostId`, `url?`",
+    when: "An agent commented on an issue or pull request with `git_comment` (KOBE-762). Never the comment text",
+  },
   "git.connection.created": {
     fields:
       "`connectionId`, `provider`, `host`, `organization`, `credentialKind`, `accessLevel`, `excessPermissions`",
@@ -33,6 +43,11 @@ export const GIT_EVENT_DOCS = {
     fields: "`connectionId`, `fields`, `accessLevel?`, `previousAccessLevel?`",
     when: "A Workspace admin changed a git connection's settings (access level, repository defaults, push limit, direct commits, agents, display name)",
   },
+  "git.issue.created": {
+    fields:
+      "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `number?`, `hostId`, `url?`",
+    when: "An agent created an issue with `git_create_issue` (KOBE-762). Never the title or text",
+  },
   "git.project.conversion_abandoned": {
     fields: "`conversionId`, `projectId`, `leftOnHost`, `repositoryId?`",
     when: "The project's owner or a Workspace admin abandoned a failed Convert to repo; the project stays an ordinary project and a repository created for it stays on the host (`leftOnHost`), listed in the Git section (KOBE-765)",
@@ -56,8 +71,28 @@ export const GIT_EVENT_DOCS = {
       "`conversionId`, `projectId`, `connectionId?`, `repositoryId`, `hostRepoId`, `commits`, `headSha`, `attempts`",
     when: "Convert to repo finished (system, on behalf of the requester): the project's commits are on the host's default branch and the project is now a Repo linked to the repository record",
   },
+  "git.pull_request.opened": {
+    fields:
+      "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `number?`, `hostId`, `url?`",
+    when: "An agent opened a pull request with `git_open_pull_request` (KOBE-762). Never the title, text or branch names",
+  },
+  "git.repository.created": {
+    fields:
+      "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `hostId`, `visibility` (`private`, `internal`, `public` if the host made it so), `url?`",
+    when: "An agent created a repository with `git_create_repository` (KOBE-762); Kobe also records it among the Workspace's repositories",
+  },
   "git.settings.updated": {
     fields: "`setting` (`commit_email`), `value`, `previous` (`member` or `noreply`)",
     when: "A Workspace admin changed the Workspace's git settings: the author email of commits made in sandboxes, the member's Kobe email or the no-reply form (KOBE-761)",
+  },
+  "git.write.attempted": {
+    fields:
+      "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `callDigest`, `tool`",
+    when: "Kobe is about to send a git host tool write (KOBE-762); committed first, so a repeat of the same call that finds no completion reports the outcome unknown instead of acting again",
+  },
+  "git.write.failed": {
+    fields:
+      "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `callDigest`, `tool`, `failure`",
+    when: "The git host refused a git host tool write for certain, so nothing was created; `failure` is the error code (KOBE-762)",
   },
 } satisfies Record<keyof typeof GIT_EVENTS, AuditEventDoc>;

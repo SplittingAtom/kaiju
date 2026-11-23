@@ -109,14 +109,21 @@ const grantSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("oauth"), access_token: z.string().min(1), source: grantSource }),
 ]);
 
+/** The built-in connectors the server hosts itself. */
+export type BuiltinServer = "kobe" | "git";
+
 export interface PolicyServer {
   listTools(token: string, connectorId: string): Promise<ServerAnswer<ToolsResponse>>;
-  /** The built-in Kobe connector's tools for the sandbox's person (KOBE-619). */
-  kobeList(token: string): Promise<ServerAnswer<ToolsResponse>>;
-  /** A built-in Kobe tool call, decided and executed by the server (KOBE-619). */
+  /**
+   * A built-in connector's tools for the sandbox's person: the Kobe connector (KOBE-619), or the
+   * git connector (`builtin: "git"`, KOBE-762).
+   */
+  kobeList(token: string, builtin?: BuiltinServer): Promise<ServerAnswer<ToolsResponse>>;
+  /** A built-in connector's tool call, decided and executed by the server (KOBE-619, KOBE-762). */
   kobeCall(
     token: string,
     query: Omit<CallQuery, "connectorId">,
+    builtin?: BuiltinServer,
   ): Promise<ServerAnswer<KobeCallAnswer>>;
   decide(token: string, query: CallQuery): Promise<ServerAnswer<CallDecision>>;
   /**
@@ -285,8 +292,10 @@ export function createPolicyServer(options: PolicyServerOptions): PolicyServer {
   return {
     fetchGrant,
     reportResult,
-    kobeList: (token) => post("/kobe/list", token, undefined, toolsResponseSchema),
-    kobeCall: (token, query) => post("/kobe/calls", token, callBody(query), kobeCallSchema),
+    kobeList: (token, builtin = "kobe") =>
+      post(`/${builtin}/list`, token, undefined, toolsResponseSchema),
+    kobeCall: (token, query, builtin = "kobe") =>
+      post(`/${builtin}/calls`, token, callBody(query), kobeCallSchema),
     listTools: (token, connectorId) =>
       post(
         `/connectors/${encodeURIComponent(connectorId)}/tools`,

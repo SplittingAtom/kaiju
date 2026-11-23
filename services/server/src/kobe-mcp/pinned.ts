@@ -21,6 +21,8 @@ import { KOBE_ADMIN_TOOLS } from "./tools/index.js";
 /** What a pinned entry is made from: an admin tool or a docs tool. */
 export type KobePinnable = Pick<KobeTool, "name" | "title" | "description" | "input"> & {
   readonly output?: KobeTool["output"] | z.ZodType;
+  /** Reaches a system outside Kobe (the git built-in's tools, KOBE-762): `openWorldHint: true`. */
+  readonly openWorld?: boolean;
 } & ({ readonly readOnly: true } | { readonly readOnly: false; readonly destructive: boolean });
 
 const schemaOf = (type: z.ZodType) =>
@@ -41,12 +43,12 @@ export function kobePinnedTool(connectorName: string, tool: KobePinnable): Pinne
     ...definition,
     pi_name: `mcp__${connectorName.replace(/[^A-Za-z0-9_]/g, "_")}__${tool.name}`,
     annotations: tool.readOnly
-      ? { title: tool.title, readOnlyHint: true, openWorldHint: false }
+      ? { title: tool.title, readOnlyHint: true, openWorldHint: tool.openWorld === true }
       : {
           title: tool.title,
           readOnlyHint: false,
           destructiveHint: tool.destructive,
-          openWorldHint: false,
+          openWorldHint: tool.openWorld === true,
         },
     sha256: createHash("sha256").update(JSON.stringify(definition)).digest("hex"),
     status: "pinned",

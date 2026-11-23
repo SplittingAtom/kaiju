@@ -11,6 +11,8 @@ import {
   learnStateSchema,
   listSchedulesQuerySchema,
   listSchedulesResponseSchema,
+  notebookCompletionBodySchema,
+  notebookCompletionResultSchema,
   notebookExecOutputsResponseSchema,
   notebookHistoryResponseSchema,
   notebookKernelResponseSchema,
@@ -48,7 +50,10 @@ const chatConnector = obj({
   connector_id: uuid,
   name: str,
   enabled: bool,
-  "builtin?": obj({ kind: oneOfStrings("kobe"), admin: oneOfStrings("off", "read", "read_write") }),
+  "builtin?": obj({
+    kind: oneOfStrings("kobe", "git"),
+    admin: oneOfStrings("off", "read", "read_write"),
+  }),
   problem: nullable(obj({ code: oneOfStrings(...CONNECTOR_PROBLEMS), message: str, fix: str })),
 });
 const ChatConnectors = untyped("ChatConnectorList", obj({ connectors: arr(chatConnector) }));
@@ -130,6 +135,22 @@ export const threadsDetails: Readonly<Record<string, CatalogDetail>> = {
     responseDescription: "The pass started; a refusal answers with its code and status.",
     errors: ["402", "404", "409", "429"],
   },
+  "post /v1/threads/{id}/notebook/complete": {
+    body: named("NotebookCompletionBody", notebookCompletionBodySchema),
+    response: named("NotebookCompletionResult", notebookCompletionResultSchema),
+    responseDescription:
+      "The code editor's kernel completion (KOBE-808). `op: complete`: the matches at `cursor` " +
+      "(code points into `code`) and the span they replace; `op: doc`: the signature and " +
+      "docstring of a dotted name. Both come from a static resolver in the sandbox that reads " +
+      "namespace, module, class and instance dicts only (no calls, properties, descriptors or " +
+      "object hooks, never a repr), bounded by caps and a time budget; neither counts as " +
+      "sandbox activity. It " +
+      "never wakes the sandbox or starts a kernel, and never waits for running code: `asleep`, " +
+      "`no_kernel`, `busy`, `unsupported` (an older sandbox agent) and `unavailable` (no answer " +
+      "within about a second) are answers too. Nothing is stored. Matches and docs are " +
+      "untrusted: show them as plain text.",
+    errors: ["404", "409", "429", "503"],
+  },
   "get /v1/threads/{id}/notebook/executions": {
     query: {
       path: { type: "string", description: "The `.py` file, relative to `/workspace`." },
@@ -158,7 +179,7 @@ export const threadsDetails: Readonly<Record<string, CatalogDetail>> = {
     status: 202,
     response: named("NotebookRunResponse", notebookRunResponseSchema),
     responseDescription: "Accepted; follow `GET /v1/runs/{run_id}/events`.",
-    errors: ["404", "409", "503"],
+    errors: ["404", "409", "429", "503"],
   },
   "post /v1/threads/{id}/notebook/start": {
     body: null,
@@ -277,7 +298,7 @@ export const schedulesDetails: Readonly<Record<string, CatalogDetail>> = {
     body: named("CreateScheduleBody", createScheduleBodySchema),
     status: 201,
     response: Schedule,
-    errors: [...SCHEDULE_ERRORS],
+    errors: [...SCHEDULE_ERRORS, "429"],
   },
   "delete /v1/schedules/{id}": { status: 204, errors: ["404"] },
   "get /v1/schedules/{id}": { response: Schedule, errors: ["404"] },

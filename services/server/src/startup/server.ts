@@ -29,6 +29,7 @@ import type { ReclaimSettings } from "../sandbox-lifecycle/reclaim.js";
 import type { SandboxSettings } from "../sandbox/config.js";
 import { DRAIN_TIMEOUT_MS, processJobs, type ProcessJobsContext } from "./process-jobs.js";
 import { startListeners } from "./listeners.js";
+import { warnTrustedProxies } from "../auth/client-ip-watch.js";
 import {
   checkSealedKeysAtStart,
   createProcessDeps,
@@ -338,6 +339,7 @@ export async function startServer(
   if (deps && isServer) await checkSealedKeysAtStart(deps, settings, log);
   if (deps) isolation.audit.record = isolationAuditor(deps.database.db);
   if (isServer) warnMissingServerSettings(settings, log);
+  if (isServer && config.auth) warnTrustedProxies(config.auth.trustedProxies, log);
   const { sandbox, providerRuntime } = sandboxRuntimes(config, env, isolation.gate, deps, log);
   const workspaceSync =
     sandbox && deps ? workspaceSyncOf(deps, sandbox, settings, config, log) : undefined;

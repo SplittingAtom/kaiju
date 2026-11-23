@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { startCompletion } from "@codemirror/autocomplete";
 import { EditorView, runScopeHandlers } from "@codemirror/view";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EditDraftStore } from "../../lib/files/editor-state";
@@ -364,5 +365,39 @@ describe("Python opens in Raw (KOBE-802)", () => {
     await renderPython({ readOnly: true });
     await waitFor(() => expect(editor()).toBeTruthy());
     expect(screen.getByRole("switch", { name: "Raw" }).getAttribute("aria-checked")).toBe("true");
+  });
+});
+
+describe("kernel completion in a .py file (KOBE-808)", () => {
+  const indicator = () => document.querySelector("[data-kobe-kernel-completion]");
+  const editor = () => document.querySelector("[data-kobe-code-editor]");
+
+  it("the owner's editor completes from the conversation's kernel and says when it is off", async () => {
+    const { kernel } = await renderPython();
+    await waitFor(() => expect(indicator()).toBeTruthy());
+    expect(indicator()?.textContent).toBe("Kernel completion: on while the kernel runs");
+    const v = await editorView();
+    act(() => v.dispatch({ selection: { anchor: 5 } }));
+    act(() => void startCompletion(v));
+    // The fake kernel answers no_kernel: the editor keeps its own completion and says why.
+    await waitFor(() =>
+      expect(indicator()?.textContent).toBe("Kernel completion off: the kernel is not started"),
+    );
+    // The code around the cursor: its line, up to the end.
+    expect(kernel.completions).toEqual([{ op: "complete", code: "print(1)", cursor: 5 }]);
+  });
+
+  it("a shared reader's read-only view has no kernel completion", async () => {
+    const { kernel } = await renderPython({ readOnly: true });
+    await waitFor(() => expect(editor()).toBeTruthy());
+    expect(indicator()).toBeNull();
+    expect(kernel.completions).toEqual([]);
+  });
+
+  it("without a conversation it never asks, and says so", async () => {
+    const { kernel } = await renderPython({ threadId: null });
+    await waitFor(() => expect(indicator()).toBeTruthy());
+    expect(indicator()?.textContent).toBe("Kernel completion off: send a message first");
+    expect(kernel.completions).toEqual([]);
   });
 });

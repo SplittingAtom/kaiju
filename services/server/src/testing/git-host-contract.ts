@@ -34,6 +34,8 @@ export interface GitHostContractFake {
   reset(): void;
   fail(failure: ContractFailure | null): void;
   seedRepositories(names: readonly string[]): void;
+  /** A file in a seeded repository of the organization (every repository has `README.md`). */
+  seedFile(repository: string, path: string, text: string): void;
   /** A repository in another organization; returns its id. */
   seedForeignRepository(owner: string, name: string): string;
   /** API requests received, without credential minting. */
@@ -243,6 +245,108 @@ export function describeProviderContract(name: string, setup: ContractSetup): vo
         }),
       );
       expect(error.code).toBe("invalid_request");
+    });
+
+    it("lists branches and creates one from a branch and from a commit (KOBE-762)", async () => {
+      fake.seedRepositories(["docs"]);
+      const a = adapter();
+      const first = await a.listBranches("docs");
+      const main = first.items.find((b) => b.name === "main");
+      expect(main?.commitSha).toMatch(/^[0-9a-f]{40}$/);
+      const made = await a.createBranch({ repository: "docs", name: "kobe/feature", from: "main" });
+      expect(made).toMatchObject({ name: "kobe/feature", commitSha: main?.commitSha });
+      const bySha = await a.createBranch({
+        repository: "docs",
+        name: "from-sha",
+        from: main?.commitSha ?? "",
+      });
+      expect(bySha.commitSha).toBe(main?.commitSha);
+      const names = (await a.listBranches("docs")).items.map((b) => b.name);
+      expect(names).toEqual(expect.arrayContaining(["main", "kobe/feature", "from-sha"]));
+      const again = await caught(
+        a.createBranch({ repository: "docs", name: "kobe/feature", from: "main" }),
+      );
+      expect(again.code).toBe("conflict");
+    });
+
+    it.each(["bad..name", "owner:branch", "-x", "a b"])(
+      "refuses the branch name %j before sending",
+      async (bad) => {
+        fake.seedRepositories(["docs"]);
+        const error = await caught(
+          adapter().createBranch({ repository: "docs", name: bad, from: "main" }),
+        );
+        expect(error.code).toBe("invalid_request");
+        expect(fake.apiHits()).toEqual([]);
+      },
+    );
+
+    it("reads a file, a directory, and says when a file is binary (KOBE-762)", async () => {
+      fake.seedRepositories(["docs"]);
+      fake.seedFile("docs", "src/app.ts", "export const x = 1;\n");
+      fake.seedFile("docs", "img.bin", "a\u0000b");
+      const a = adapter();
+      expect(await a.readFile("docs", "README.md")).toMatchObject({
+        kind: "file",
+        path: "README.md",
+        binary: false,
+        truncated: false,
+        content: "# Hello\n",
+      });
+      const dir = await a.readFile("docs", "");
+      expect(dir.kind).toBe("directory");
+      if (dir.kind === "directory") {
+        expect(dir.entries.map((e) => e.name)).toEqual(
+          expect.arrayContaining(["README.md", "src"]),
+        );
+      }
+      expect(await a.readFile("docs", "src/app.ts", "main")).toMatchObject({
+        content: "export const x = 1;\n",
+      });
+      expect(await a.readFile("docs", "img.bin")).toMatchObject({ binary: true, content: "" });
+      expect((await caught(a.readFile("docs", "nope.md"))).code).toBe("not_found");
+    });
+
+    it.each(["../etc/passwd", "a/../b", "a//b", "x\u0000y"])(
+      "refuses the file path %j before sending",
+      async (bad) => {
+        fake.seedRepositories(["docs"]);
+        const error = await caught(adapter().readFile("docs", bad));
+        expect(error.code).toBe("invalid_request");
+        expect(fake.apiHits()).toEqual([]);
+      },
+    );
+
+    it("lists and reads pull requests and issues apart (KOBE-762)", async () => {
+      fake.seedRepositories(["docs"]);
+      const a = adapter();
+      await a.createBranch({ repository: "docs", name: "feature", from: "main" });
+      const pr = await a.openPullRequest({
+        repository: "docs",
+        title: "Change",
+        body: "PR body",
+        head: "feature",
+        base: "main",
+      });
+      const issue = await a.createIssue({ repository: "docs", title: "Bug", body: "Issue body" });
+      const prs = await a.listPullRequests("docs", { state: "open" });
+      expect(prs.items.map((p) => p.number)).toContain(pr.number);
+      expect(prs.items[0]).not.toHaveProperty("body");
+      expect(await a.getPullRequest("docs", pr.number ?? 0)).toMatchObject({
+        title: "Change",
+        body: "PR body",
+        head: "feature",
+        base: "main",
+        state: "open",
+      });
+      const issues = await a.listIssues("docs");
+      expect(issues.items.map((i) => i.number)).toEqual([issue.number]);
+      expect(await a.getIssue("docs", issue.number ?? 0)).toMatchObject({
+        title: "Bug",
+        body: "Issue body",
+        state: "open",
+      });
+      expect((await caught(a.getIssue("docs", pr.number ?? 0))).code).toBe("not_found");
     });
 
     it.each([

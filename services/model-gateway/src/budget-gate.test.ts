@@ -710,3 +710,49 @@ describe("BudgetGate: an eval cap on a team without budgets (KOBE-327 review L5)
     expect(seen).toEqual([{ scopes: ["eval"] }]);
   });
 });
+
+describe("BudgetGate: the member per-minute rate's store (KOBE-810)", () => {
+  it("refuses the call (503, fail closed) when the rate cannot be counted", async () => {
+    const errors: unknown[] = [];
+    const g = new BudgetGate(
+      {
+        load: async () => ({ lines: [], requestsPerMinute: 60 }),
+        prices: async () => new Map(),
+      },
+      {
+        ttlMs: 1_000,
+        rate: { take: () => Promise.reject(new Error("connect ECONNREFUSED")) },
+        onError: (err) => errors.push(err),
+      },
+    );
+    expect(await g.admit(call(randomUUID()))).toEqual({
+      ok: false,
+      status: 503,
+      code: "rate_limit_unavailable",
+      message: "The request-rate check is unavailable; retry shortly.",
+      retryAfterSeconds: 2,
+    });
+    expect(errors).toHaveLength(1);
+  });
+
+  it("gives the request back when a budget refuses the admitted call", async () => {
+    const giveBack = vi.fn();
+    const g = new BudgetGate(
+      {
+        load: async () => ({ lines: [line({ limit: 1e9, spent: 1 })], requestsPerMinute: 60 }),
+        prices: async () => new Map([["openai/m", { input: 1_000_000, output: 1_000_000 }]]),
+      },
+      {
+        ttlMs: 1_000,
+        rate: { take: async () => ({ ok: true, giveBack }) },
+        reservations: {
+          reserve: async () => ({ ok: false, verdict: "own_share", line: 0 }),
+          extend: async () => undefined,
+          end: async () => undefined,
+        } as unknown as ReservationStore,
+      },
+    );
+    expect((await g.admit(call(randomUUID()))).ok).toBe(false);
+    expect(giveBack).toHaveBeenCalledTimes(1);
+  });
+});

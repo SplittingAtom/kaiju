@@ -12,6 +12,8 @@ import {
   type NotebookRunResponse,
   type NotebookStartResponse,
   type NotebookVariablesResult,
+  type NotebookCompletionBody,
+  type NotebookCompletionResult,
   type RunSnapshot,
   type RunTransitionListener,
   type SteerBody,
@@ -23,6 +25,7 @@ import { sql, withTeam } from "@kobe/db";
 import { notebookKernel, startNotebookRun, type NotebookRunHost } from "../notebooks/user-run.js";
 import { startKernel, WakeRefusals } from "../notebooks/kernel-start.js";
 import { notebookVariables } from "../notebooks/variables.js";
+import { notebookComplete } from "../notebooks/completion.js";
 import { recordAudit } from "../audit/record.js";
 import { AppendError, appendRunEvents } from "../event-stream/append.js";
 import { findThread } from "../threads/repository.js";
@@ -386,8 +389,17 @@ export class DbRunOrchestrator implements ServerRunOrchestrator {
     actor: ActorContext,
     threadId: string,
     refresh = false,
+    show?: string,
   ): Promise<NotebookVariablesResult> {
-    return notebookVariables(this.#notebookHost(), actor, threadId, refresh);
+    return notebookVariables(this.#notebookHost(), actor, threadId, refresh, show);
+  }
+
+  notebookComplete(
+    actor: ActorContext,
+    threadId: string,
+    body: NotebookCompletionBody,
+  ): Promise<NotebookCompletionResult> {
+    return notebookComplete(this.#notebookHost(), actor, threadId, body);
   }
 
   #notebookHost(): NotebookRunHost {

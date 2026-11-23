@@ -83,6 +83,14 @@ const KOBE_ADMIN_TEXT = {
     "Docs always on. Admin tools: read and change, as you, when the agent uses Kobe; each change asks you first.",
 } as const;
 
+/** The built-in git connector (KOBE-762): its own group, apart from Kobe's switches. */
+const GIT_TEXT = {
+  off: "Always on. No git tools for you here.",
+  read: "Always on. Git tools: read the connected git organizations.",
+  read_write:
+    "Always on. Git tools: read, and create branches, repositories, pull requests, issues and comments; most changes ask you first.",
+} as const;
+
 /**
  * The built-in Kobe connector (KOBE-623, spec kobe-admin-mcp KA7): no toggle, its docs tools are
  * in every conversation; the line says which admin tools the member has, as the server decided.
@@ -94,7 +102,7 @@ function BuiltinKobe({ connector }: { readonly connector: ChatConnector }) {
     <DropdownMenu.Item
       className={PLUS_ITEM}
       data-kobe-connector={connector.connectorId}
-      data-kobe-connector-builtin="kobe"
+      data-kobe-connector-builtin={connector.builtin?.kind ?? "kobe"}
       aria-disabled
       aria-describedby={textId}
       onSelect={(e) => e.preventDefault()}
@@ -103,7 +111,7 @@ function BuiltinKobe({ connector }: { readonly connector: ChatConnector }) {
       <span className="flex min-w-0 flex-col">
         <span className="truncate">{connector.name}</span>
         <span id={textId} className="text-muted-foreground text-xs whitespace-normal">
-          {KOBE_ADMIN_TEXT[admin]}
+          {connector.builtin?.kind === "git" ? GIT_TEXT[admin] : KOBE_ADMIN_TEXT[admin]}
         </span>
       </span>
     </DropdownMenu.Item>

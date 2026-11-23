@@ -12,6 +12,7 @@ import { uuidSchema } from "../threads/schemas.js";
 import { refuseEvalThreadWrites } from "./eval-thread-guard.js";
 import { actorOf } from "../authz/actor.js";
 import { invalidRequest, param, parseBody } from "../http/request.js";
+import { OPERATION_LIMITS, admitOperation, rateLimited } from "../operation-limits.js";
 
 const ENTRY_NOT_FOUND = {
   code: "entry_not_found",
@@ -37,6 +38,9 @@ export function threadBranchSummaryRoutes(deps: ServerDeps): Hono<{ Variables: T
     if (!id.success || !body) {
       return invalidRequest(c, "Give the entry to switch to and an optional one-line focus.");
     }
+    const limit = OPERATION_LIMITS.branchSummary; // KOBE-813, per member
+    const verdict = await admitOperation(deps.database.db, limit, c.get("user").id);
+    if (!verdict.allowed) return rateLimited(c, limit, verdict);
     try {
       const result = await deps.runs.branchSummary(
         actorOf(c),
