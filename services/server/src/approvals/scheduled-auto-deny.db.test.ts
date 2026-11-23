@@ -15,7 +15,7 @@ import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testin
  * Scheduled runs are unattended-safe end to end (KOBE-178, D29/D32): a call that would ask is
  * denied at once (never queued), recorded as a skipped action, reported on the run's terminal event
  * and in the thread; allow-listed and read-only calls still run; no approval row ever exists for a
- * scheduled run. The MCP proxy's half is in `mcp.db.test.ts`.
+ * scheduled run. The MCP proxy's half is in `mcp.approvals.db.test.ts`.
  */
 const fx = new EventStreamFixture();
 const auth = new FakeSandboxAuth();

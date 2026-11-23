@@ -64,7 +64,7 @@ export default tseslint.config(
   },
   {
     // Tests poke at loosely typed HTTP/JSON payloads; production code stays strict.
-    files: ["**/*.test.ts", "**/testing/**/*.ts"],
+    files: ["**/*.test.ts", "**/*.test-helpers.ts", "**/testing/**/*.ts"],
     rules: { "@typescript-eslint/no-explicit-any": "off" },
   },
   {
@@ -96,6 +96,7 @@ export default tseslint.config(
     ignores: [
       "**/*.test.ts",
       "**/*.test.tsx",
+      "**/*.test-helpers.ts",
       "**/testing/**",
       "packages/address-policy/src/testing.ts",
     ],
@@ -122,7 +123,7 @@ export default tseslint.config(
   {
     // This block replaces the KOBE-694 rule for web production files, so it repeats that path.
     files: WEB_FILES,
-    ignores: ["**/*.test.ts", "**/*.test.tsx", "**/testing/**"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx", "**/*.test-helpers.ts", "**/testing/**"],
     rules: {
       "no-restricted-imports": [
         "error",

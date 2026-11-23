@@ -31,7 +31,8 @@ export function appCallDepsFor(deps: ServerDeps): AppCallDeps {
     close: async () => pool?.close(),
   };
   // The MCP service and the proxy caller are read at call time: building the routes touches no
-  // dependency but the database (history reads never wake sandboxes, threads.db.test.ts).
+  // dependency but the database (history reads never wake sandboxes,
+  // threads.list.db.test.ts).
   const callDeps: AppCallDeps = {
     db,
     get mcp() {

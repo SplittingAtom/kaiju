@@ -18,7 +18,8 @@ function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
     const path = join(dir, name);
     if (statSync(path).isDirectory()) return sources(path);
-    return /\.ts$/.test(name) && !/\.test\.ts$/.test(name) ? [path] : [];
+    // Test code (tests and their *.test-helpers.ts) is not a delete path.
+    return /\.ts$/.test(name) && !/\.test(?:-helpers)?\.ts$/.test(name) ? [path] : [];
   });
 }
 

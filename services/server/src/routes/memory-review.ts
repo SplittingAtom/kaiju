@@ -57,7 +57,8 @@ export function memoryReviewRoutes(deps: ServerDeps): Hono<{ Variables: TeamVari
   app.use("*", refuseAgentWrites);
   const { answer, readBody } = memoryRouteKit(deps);
   const candidateId = (raw: string | undefined) => uuidSchema.safeParse(raw);
-  // Read per request: building the app must not touch blobs or keys (threads.db.test.ts ac-2).
+  // Read per request: building the app must not touch blobs or keys (threads.list.db.test.ts
+  // ac-2).
   const notes = (): NotesDeps => ({ db, blobs: deps.blobs, keys: deps.approvalKeys });
   /** Notes storage failures are 503, as on the Notes routes. */
   const storage = async <T>(c: Context, fn: () => Promise<T>): Promise<T | Response> => {

@@ -70,7 +70,7 @@ export function agentRoutes(
     mayUseDangerousMode: (c) => mayDangerous(c as Ctx),
     evals: {
       runner: evalOptions.runner,
-      // A getter: read-only requests never touch deps.background (threads.db.test.ts checks).
+      // A getter: read-only requests never touch deps.background (threads.list.db.test.ts checks).
       get background() {
         return deps.background;
       },
