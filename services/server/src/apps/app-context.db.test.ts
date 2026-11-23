@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { appIdOf } from "./apps/app-id.js";
-import { APP_CONTEXT_PREAMBLE, withAppContext } from "./apps/context-block.js";
-import { enableConnector, registerConnector } from "./testing/mcp-fixtures.js";
-import { RunFixture, type RunWorld } from "./testing/run-fixture.js";
+import { appIdOf } from "./app-id.js";
+import { APP_CONTEXT_PREAMBLE, withAppContext } from "./context-block.js";
+import { enableConnector, registerConnector } from "../testing/mcp-fixtures.js";
+import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
 
 /**
  * KOBE-439 (MA-7, spec §8): context chips go with the member's message. Each part must name an

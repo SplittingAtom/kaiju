@@ -1,16 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CAPABILITY_APP_CARDS } from "@kobe/protocol";
-import { seedGalleryAgents } from "./gallery/seed.js";
+import { seedGalleryAgents } from "../gallery/seed.js";
 import {
   pinnedApp,
   publishedAgent,
   runConnectors,
   teamModel,
   threadAgent,
-} from "./testing/app-launch-fixtures.js";
-import { enableConnector, registerConnector } from "./testing/mcp-fixtures.js";
-import { RunFixture, type RunWorld } from "./testing/run-fixture.js";
+} from "../testing/app-launch-fixtures.js";
+import { enableConnector, registerConnector } from "../testing/mcp-fixtures.js";
+import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
 
 /**
  * KOBE-458: a thread a rail launch starts gets the agent a new conversation would: the one the

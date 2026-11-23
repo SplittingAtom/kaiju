@@ -2,15 +2,15 @@ import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadEnvelope } from "@kobe/db";
 import { InMemorySpanExporter, SpanKind, SpanStatusCode, initTelemetry } from "@kobe/telemetry";
-import type { AppCallAnswer, AppCallRequest } from "./apps/app-caller.js";
-import { appCallDepsFor } from "./apps/call-deps.js";
-import { appIdOf } from "./apps/app-id.js";
-import type { ProbeResult } from "./connectors/probe.js";
-import { withWebRtcGuard } from "./connectors/app-frame.js";
-import { refreshConnector } from "./connectors/refresh.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { logger } from "./logger.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import type { AppCallAnswer, AppCallRequest } from "./app-caller.js";
+import { appCallDepsFor } from "./call-deps.js";
+import { appIdOf } from "./app-id.js";
+import type { ProbeResult } from "../connectors/probe.js";
+import { withWebRtcGuard } from "../connectors/app-frame.js";
+import { refreshConnector } from "../connectors/refresh.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { logger } from "../logger.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-436 (MA-4): MCP Apps' own calls under the member's browser principal: only pinned,

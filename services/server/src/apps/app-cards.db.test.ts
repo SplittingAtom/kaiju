@@ -8,12 +8,12 @@ import {
   CAPABILITY_APP_CARDS,
   isAppCardEntryId,
 } from "@kobe/protocol";
-import type { AppCallRequest } from "./apps/app-caller.js";
-import { appIdOf } from "./apps/app-id.js";
-import { enableConnector, registerConnector } from "./testing/mcp-fixtures.js";
-import { logger } from "./logger.js";
-import { sweepRuns } from "./runs/sweeper.js";
-import { RunFixture, type RunWorld } from "./testing/run-fixture.js";
+import type { AppCallRequest } from "./app-caller.js";
+import { appIdOf } from "./app-id.js";
+import { enableConnector, registerConnector } from "../testing/mcp-fixtures.js";
+import { logger } from "../logger.js";
+import { sweepRuns } from "../runs/sweeper.js";
+import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
 
 /**
  * KOBE-440 (MA-6, spec MA11): a rail launch calls the app's opening tool as the member (the MA-4

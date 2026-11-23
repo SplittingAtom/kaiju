@@ -2,14 +2,14 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withTeam } from "@kobe/db";
-import { appIdOf } from "./apps/app-id.js";
-import { claimAppResultsInTx } from "./apps/claim.js";
-import { approvalKeyring } from "./approvals/index.js";
-import { inputDigest } from "./mcp/decide.js";
-import { createInternalApp } from "./routes/internal.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
+import { appIdOf } from "./app-id.js";
+import { claimAppResultsInTx } from "./claim.js";
+import { approvalKeyring } from "../approvals/index.js";
+import { inputDigest } from "../mcp/decide.js";
+import { createInternalApp } from "../routes/internal.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
 import { strFromU8, unzipSync } from "fflate";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
 import {
   INTERNAL_KEY,
   enableConnector,
@@ -18,7 +18,7 @@ import {
   piName,
   registerConnector,
   MCP_VERIFY_KEYS,
-} from "./testing/mcp-fixtures.js";
+} from "../testing/mcp-fixtures.js";
 
 /**
  * KOBE-438 (MA-9, spec MA10): a model call to a UI tool gets a capture ticket; mcp-proxy's report
