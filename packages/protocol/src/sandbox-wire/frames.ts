@@ -17,6 +17,7 @@ import {
   evalSnapshotFrameSchema,
 } from "./eval-frames.js";
 import { threadContextFrameSchema } from "./context-frames.js";
+import { repoStatusFrameSchema } from "./git-config.js";
 import { sessionRenewFrameSchema } from "./session-renew-frames.js";
 import {
   skillDraftSaveFrameSchema,
@@ -111,6 +112,7 @@ export const sandboxToServerFrameSchema = z.union([
   fileOpenFrameSchema,
   workspaceConflictFrameSchema,
   workspaceSyncedFrameSchema,
+  repoStatusFrameSchema,
   notebookOutputFrameSchema,
   notebookRunFrameSchema,
   legacyWebSearchQueryFrameSchema, // retired (KOBE-606): answered unavailable

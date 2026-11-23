@@ -49,6 +49,9 @@ export const PROJECT_COMMIT_ERROR_CODES = [
   "proposal_not_allowed", // 409 the proposal can no longer be accepted (see its reason)
   "project_is_repo", // 409 a Repo takes no Kobe commits or file changes (KOBE-765, G17)
   "conversion_in_progress", // 409 the project is being converted to a Repo (KOBE-765)
+  "repo_moved", // 409 a Repo's default branch moved on the host since Kobe's copy: Update, then commit (KOBE-767)
+  "repo_unavailable", // 409 a Repo's connection, host or repository cannot take the commit now (KOBE-767)
+  "repo_push_rejected", // 409 the git host refused the push (hook, size, protection) (KOBE-767)
 ] as const;
 export const projectCommitErrorCodeSchema = z.enum(PROJECT_COMMIT_ERROR_CODES);
 export type ProjectCommitErrorCode = z.infer<typeof projectCommitErrorCodeSchema>;
@@ -156,13 +159,59 @@ export type ProjectCheckoutsResponse = z.infer<typeof projectCheckoutsResponseSc
 export const commitProjectRequestSchema = z.strictObject({ message: messageSchema });
 export type CommitProjectRequest = z.infer<typeof commitProjectRequestSchema>;
 
+/** A git commit id on the host (SHA-1, or SHA-256 for a SHA-256 repository). */
+export const gitCommitShaSchema = z.string().regex(/^([0-9a-f]{40}|[0-9a-f]{64})$/);
+/** A branch Kobe pushed a Repo commit to (`refs/heads/<branch>`, at most 255 characters). */
+export const repoBranchSchema = z
+  .string()
+  .min(1)
+  .max(255)
+  .regex(/^[^\s:~^?*[\\]+$/);
+/** The host's web link, or "" when the host gave none Kobe could keep. */
+const hostWebUrlSchema = z.union([z.url({ protocol: /^https?$/ }).max(2048), z.literal("")]);
+
+/**
+ * KOBE-767 (spec workspace-git G18, GQ11): a commit to a Repo from Kobe's commit flow became a git
+ * commit on the host. By default it is pushed to a branch of its own and a pull request is opened
+ * (`opened`: true) or, while the member's pull request from the same working copy is still open,
+ * added to it (`opened`: false). `fallback`: the connection allows direct commits but the host
+ * refused one to the default branch (a protected branch), so a pull request was opened instead.
+ */
+export const repoPullRequestCommitSchema = z.strictObject({
+  status: z.literal("pull_request"),
+  branch: repoBranchSchema,
+  commit_sha: gitCommitShaSchema,
+  number: z.number().int().positive(),
+  url: hostWebUrlSchema,
+  opened: z.boolean(),
+  fallback: z.boolean(),
+});
+export type RepoPullRequestCommit = z.infer<typeof repoPullRequestCommitSchema>;
+
+/**
+ * KOBE-767: a commit to a Repo pushed straight to its default branch (the connection allows direct
+ * commits, G18). `seq`/`commit_id`: Kobe's copy of the Repo took the same commit; null when the
+ * working copy changed meanwhile (Kobe's copy then follows at its next refresh).
+ */
+export const repoPushedCommitSchema = z.strictObject({
+  status: z.literal("pushed"),
+  branch: repoBranchSchema,
+  commit_sha: gitCommitShaSchema,
+  seq: seqSchema.nullable(),
+  commit_id: uuidSchema.nullable(),
+});
+export type RepoPushedCommit = z.infer<typeof repoPushedCommitSchema>;
+
 /**
  * 200 answers of commit and revert. A conflict is the 409 {@link commitConflictErrorSchema}, a
- * quota refusal the 413 {@link projectQuotaErrorSchema}.
+ * quota refusal the 413 {@link projectQuotaErrorSchema}. A commit to a Repo answers
+ * {@link repoPullRequestCommitSchema} or {@link repoPushedCommitSchema} (KOBE-767).
  */
 export const commitProjectResponseSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("committed"), seq: seqSchema, commit_id: uuidSchema }),
   z.strictObject({ status: z.literal("nothing_to_commit") }),
+  repoPullRequestCommitSchema,
+  repoPushedCommitSchema,
 ]);
 export type CommitProjectResponse = z.infer<typeof commitProjectResponseSchema>;
 
@@ -290,14 +339,35 @@ export const commitProjectToolInputSchema = z.strictObject({ message: messageSch
 export type CommitProjectToolInput = z.infer<typeof commitProjectToolInputSchema>;
 
 /**
+ * Hello capability of agents that understand the Repo outcomes of `commit_project` (KOBE-767):
+ * `pull_request` and `pushed`. An agent without it gets those as a failed call whose message says
+ * what happened (its parser fails closed on an unknown status).
+ */
+export const CAPABILITY_REPO_COMMITS = "repo_commits";
+
+/**
  * What the server answers an agent commit (CM6). `pending_approval`: the signed approval is open
- * and the commit happens when it is granted, over the same canonical input.
+ * and the commit happens when it is granted, over the same canonical input. `pull_request` and
+ * `pushed` (KOBE-767): the project is a Repo and the commit went to the git host; only to agents
+ * announcing {@link CAPABILITY_REPO_COMMITS}.
  */
 export const projectCommitOutcomeSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("committed"), seq: seqSchema }),
   z.strictObject({ status: z.literal("commit_conflict"), head_seq: seqSchema }),
   z.strictObject({ status: z.literal("nothing_to_commit") }),
   z.strictObject({ status: z.literal("pending_approval") }),
+  z.strictObject({
+    status: z.literal("pull_request"),
+    branch: repoBranchSchema,
+    number: z.number().int().positive(),
+    url: hostWebUrlSchema,
+    opened: z.boolean(),
+  }),
+  z.strictObject({
+    status: z.literal("pushed"),
+    branch: repoBranchSchema,
+    seq: seqSchema.nullable(),
+  }),
 ]);
 export type ProjectCommitOutcome = z.infer<typeof projectCommitOutcomeSchema>;
 
