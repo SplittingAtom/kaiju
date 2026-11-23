@@ -1247,14 +1247,14 @@ and rollouts fill them.
 | ------------- | ------------------------------------------------------------------------------------------------------------ | ------------ | ------------- |
 | server        | query pool `server.database.poolMax` (10) + event-stream pool `server.database.streamPoolMax` (4) + 1 LISTEN | 2            | 30            |
 | scheduler     | `scheduler.database.poolMax` (10) + 1 LISTEN                                                                 | 1            | 11            |
-| model gateway | `modelGateway.database.poolMax` (10) + 1 LISTEN                                                              | 2            | 22            |
+| model gateway | `modelGateway.database.poolMax` (10) + 1 LISTEN + 2 for the member rate limiter (fixed)                      | 2            | 26            |
 | egress proxy  | `egressProxy.database.poolMax` (10) + 1 LISTEN                                                               | 1            | 11            |
-| **total**     | connections = replicas x (pool + stream pool + listener), summed over components                             |              | **74**        |
+| **total**     | connections = replicas x (pool + stream pool + listener), summed over components                             |              | **78**        |
 
 On top of that: a rollout starts one extra pod per Deployment before the old one stops (server
-+15, model gateway +11, scheduler and egress proxy +11 each at the defaults), the migration Job
++15, model gateway +13, scheduler and egress proxy +11 each at the defaults), the migration Job
 uses 2, `kobe backup` 1 to 2, and Postgres reserves `superuser_reserved_connections` (3) for
-superusers. At the defaults a rollout peaks near 125, above PostgreSQL's default
+superusers. At the defaults a rollout peaks near 130, above PostgreSQL's default
 `max_connections` of 100 if every pool were full at once; in practice pools rarely are, but give
 Postgres headroom when you add replicas or raise pool sizes:
 
@@ -1276,7 +1276,8 @@ Postgres headroom when you add replicas or raise pool sizes:
 Each connection names its service in `pg_stat_activity.application_name`: `kobe-server` /
 `kobe-scheduler` (query pool), `kobe-event-stream` (the server's stream pool),
 `kobe-server-listen` / `kobe-scheduler-listen` (the one LISTEN connection per process, which
-carries every notification channel), `kobe-gateway` and `kobe-gateway-listen`,
+carries every notification channel), `kobe-gateway`, `kobe-gateway-listen` and `kobe-gateway-rate`
+(the member rate limiter's pool, KOBE-810),
 `kobe-egress-proxy` and `kobe-egress-proxy-listen`, `kobe-migrate`, `kobe-cli`:
 
 ```sql

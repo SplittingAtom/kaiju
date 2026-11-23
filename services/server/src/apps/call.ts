@@ -212,8 +212,9 @@ async function decide(
 
 /**
  * Step 0 (review MEDIUM-1, LOW-5): the per-member rate limit, taken before the request body is
- * read. Keyed by the user (not team and user) and counted in Postgres, so it holds across server
- * replicas (KOBE-810); Postgres unreachable fails the request. A refusal is audited at most once a minute per member.
+ * read. Keyed by the user (not team and user) and counted in Postgres, so the bucket holds across
+ * server replicas (KOBE-810); Postgres unreachable fails the request. A refusal is audited at most
+ * once a minute per member.
  */
 export async function takeRateToken(
   deps: AppCallDeps,

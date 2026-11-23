@@ -78,9 +78,13 @@ const RESOURCES = [{ uri: "ui://cat/explorer", mimeType: MIME, text: TEMPLATE, m
 /** Every log line, to check no key is ever logged (ac-2). */
 const logged: string[] = [];
 
-// Every case starts from an empty window (2026-10-31, CI flake): the member's 30 app calls per
-// 6 s window (in Postgres since KOBE-810) could be used up by a fast run of the earlier cases.
-beforeEach(() => appCallDepsFor(h.deps).limiter.reset());
+// Every case starts from a full burst (2026-10-31, CI flake): the member's 30 app-call tokens
+// refill at 5 per second (in Postgres since KOBE-810), so a fast run of the earlier cases left
+// alice none for a later one.
+beforeEach(async () => {
+  const { limiter } = appCallDepsFor(h.deps);
+  for (const id of [rootId, aliceId, bobId]) if (id) await limiter.reset(id);
+});
 
 beforeAll(async () => {
   for (const level of ["info", "warn", "error", "debug"] as const) {
@@ -587,7 +591,7 @@ describe("rate limit (spec T10)", () => {
   it("allows a burst of 30 calls per member, then refuses with 429, audited once", async () => {
     const id = await connector("apps4-rate");
     const appId = appIdOf(id, "ui://cat/explorer");
-    // Calls take a few ms each; a window may end during the loop: go until refused.
+    // Calls take a few ms each and tokens refill at 5 per second: go until refused.
     const statuses: number[] = [];
     while (statuses.length < 200 && statuses.at(-1) !== 429) {
       statuses.push((await appCall(root, appId, "preview_table")).status);

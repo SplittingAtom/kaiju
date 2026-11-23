@@ -7,10 +7,10 @@ import type { AppCallDeps } from "./call.js";
 import { createValidatorPool, type SchemaValidator } from "./validate-pool.js";
 
 /**
- * Per member: 30 app calls per 6 s window (spec T10: a burst of 30, 5 per second sustained), counted
- * in Postgres so the limit holds across server replicas (KOBE-810).
+ * Per member: a burst of 30 app calls, then 5 per second (spec T10), counted in Postgres so the
+ * bucket holds across server replicas (KOBE-810).
  */
-export const APP_CALL_RATE = { windowMs: 6_000, max: 30 } as const;
+export const APP_CALL_RATE = { burst: 30, perSecond: 5 } as const;
 
 const shared = new WeakMap<ServerDeps, AppCallDeps>();
 

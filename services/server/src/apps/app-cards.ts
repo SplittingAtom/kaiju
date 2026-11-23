@@ -70,10 +70,10 @@ export interface AppCardDeps {
 }
 
 /**
- * 5 launches per 10 s window per member (a burst of 5, one every 2 s sustained), counted in Postgres
- * across server replicas (KOBE-810).
+ * A burst of 5 launches, then one every 2 s, per member, counted in Postgres across server
+ * replicas (KOBE-810).
  */
-export const APP_LAUNCH_RATE = { windowMs: 10_000, max: 5 } as const;
+export const APP_LAUNCH_RATE = { burst: 5, perSecond: 0.5 } as const;
 
 /** Waiting cards one thread may hold. */
 export const MAX_QUEUED_APP_CARDS = 5;

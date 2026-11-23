@@ -60,10 +60,16 @@ export {
 } from "./pg-errors.js";
 export {
   RATE_LIMIT_PRUNE_BATCH,
+  bucketIntervalMs,
+  clearRateLimit,
   hitRateLimit as hitRateLimitWindow,
   pruneExpiredRateLimits,
-  returnRateLimitHit,
+  returnRateBucketToken,
+  takeRateBucket,
   takeRateLimit,
+  type RateBucketHit,
+  type RateBucketRule,
+  type RateLimitDb,
   type RateLimitHit,
   type RateLimitOptions,
   type RateLimitRule,

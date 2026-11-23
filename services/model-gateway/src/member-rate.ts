@@ -1,4 +1,10 @@
-import { returnRateLimitHit, takeRateLimit, type KobeDb } from "@kobe/db";
+import {
+  pruneExpiredRateLimits,
+  returnRateBucketToken,
+  takeRateBucket,
+  type RateBucketRule,
+  type RateLimitDb,
+} from "@kobe/db";
 
 /** One request taken from a member's per-minute model rate. */
 export type MemberRateTake =
@@ -18,18 +24,41 @@ export interface MemberRate {
 }
 
 const MINUTE_MS = 60_000;
+/** Expired rows are pruned at most this often per replica, off the model path. */
+const PRUNE_EVERY_MS = 10_000;
+
+/** A bucket of `perMinute` requests refilled at perMinute/60 per second: the old shim bucket. */
+export function memberRateRule(perMinute: number): RateBucketRule {
+  return { burst: perMinute, perSecond: perMinute / 60 };
+}
 
 /**
- * Production (KOBE-810): a fixed one-minute window per member in Postgres (`kobe_rate_limits`,
- * key `kobe:model-rpm:<team>:<user>`), one atomic upsert per model request, shared by every
- * gateway replica, so the admin's number holds whatever the replica count. The same window shape
- * as Bifrost's per-virtual-key limit, which stays as the backstop.
+ * The Postgres limiter's own connection settings in the gateway (KOBE-810): a small pool apart from
+ * the gateway's main one, so a slow or saturated database refuses a model request within about
+ * 2 s (acquire, then statement) instead of the main pool's 10 s acquire and 120 s statement limits.
+ */
+export const MEMBER_RATE_DB = { max: 2, acquireTimeoutMs: 2_000, statementTimeoutMs: 2_000 };
+
+/**
+ * Production (KOBE-810): the member's bucket in Postgres (`kobe_rate_limits`, key
+ * `kobe:model-rpm:<team>:<user>`, GCRA in one atomic upsert per model request), shared by every
+ * gateway replica, with the old in-memory bucket's behaviour: a burst of the per-minute value,
+ * refilled at value/60 per second, refused requests not charged. A refusal's Retry-After is the
+ * time until one request is available plus a jitter of up to one interval (at most 1 s), so a
+ * member's throttled runs do not all retry at the same instant. Bifrost's per-key window stays as
+ * the backstop. The prune of expired rows does not ride on the request (most members find their
+ * bucket full again, which would add a DELETE to most calls): it runs in the background, at most
+ * every 10 s per replica.
  */
 export class DbMemberRate implements MemberRate {
+  private lastPrune = 0;
+
   constructor(
-    private readonly db: KobeDb,
+    private readonly db: RateLimitDb,
     private readonly options: {
       readonly now?: () => number;
+      /** In [0, 1): the jitter's share of its maximum (tests pin it). */
+      readonly random?: () => number;
       /** A give-back or a prune of expired rows failed (logged; never fails the call). */
       readonly onError?: (err: unknown) => void;
     } = {},
@@ -38,19 +67,25 @@ export class DbMemberRate implements MemberRate {
   async take(key: string, perMinute: number): Promise<MemberRateTake> {
     const onError = this.options.onError ?? (() => undefined);
     const rowKey = `model-rpm:${key}`;
-    const hit = await takeRateLimit(
-      this.db,
-      rowKey,
-      { windowMs: MINUTE_MS, max: perMinute },
-      { now: this.options.now?.() ?? Date.now(), onPruneError: onError },
-    );
+    const rule = memberRateRule(perMinute);
+    const now = this.options.now?.() ?? Date.now();
+    const hit = await takeRateBucket(this.db, rowKey, rule, { now, prune: false });
+    if (now - this.lastPrune >= PRUNE_EVERY_MS) {
+      this.lastPrune = now;
+      void pruneExpiredRateLimits(this.db, now, undefined, onError);
+    }
     if (!hit.allowed) {
-      return { ok: false, retryAfterSeconds: Math.max(1, Math.ceil(hit.retryAfterMs / 1000)) };
+      const jitter =
+        (this.options.random ?? Math.random)() * Math.min(1_000, MINUTE_MS / perMinute);
+      return {
+        ok: false,
+        retryAfterSeconds: Math.max(1, Math.ceil((hit.retryAfterMs + jitter) / 1000)),
+      };
     }
     return {
       ok: true,
       giveBack: () => {
-        returnRateLimitHit(this.db, rowKey, hit.windowStart).catch(onError);
+        returnRateBucketToken(this.db, rowKey, rule).catch(onError);
       },
     };
   }
