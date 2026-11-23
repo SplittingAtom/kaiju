@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { sweepGitConversions } from "./git/conversion/job.js";
 import { runConversion } from "./git/conversion/runner.js";
+import { repoReadRules, repoReadable, repoRefusal } from "./git/transport.js";
 import { startConversion } from "./git/conversion/start.js";
 import { LeaseLost } from "./git/conversion/store.js";
 import {
@@ -425,5 +426,48 @@ describe("the project while a conversion holds it (L3) and unsaved working copie
     const res = await start(w.owner, p.id, { connection_id: w.connectionId });
     expect(res.json).toMatchObject({ code: "unsaved_checkouts", checkouts: 1 });
     expect(res.status).toBe(409);
+  });
+});
+
+describe("a converted Repo under the Repo read rule (KOBE-762)", () => {
+  it("is matched by its host id: project readers read it, pushes need editor, Kobe writes are refused", async () => {
+    const w = await world();
+    const p = await project(w, [{ by: w.owner, message: "one", files: { "a.txt": "1" } }]);
+    hostRepo(p.slug);
+    const id = await begin(w, p.id);
+    expect(await runConversion(deps(), w.team, id)).toBe("completed");
+    const { rows } = await fx.admin.query<{
+      host_repo_id: string;
+      full_name: string;
+      base_url: string;
+    }>(
+      `SELECT host_repo_id, full_name, base_url FROM git_repositories
+        WHERE team_id = $1 AND project_id = $2`,
+      [w.team, p.id],
+    );
+    const record = must(rows[0]);
+    // The host's own view of the repository, as git_get_repository resolves it.
+    const repo = { id: record.host_repo_id, fullName: `acme/${p.slug}` };
+    const asMember = { teamId: w.team, userId: w.member.id };
+    const rules = await repoReadRules(fx.db, asMember, record.base_url, [repo]);
+    expect(rules).toEqual([
+      { hostRepoId: record.host_repo_id, fullName: record.full_name, projectRole: undefined },
+    ]);
+    // Every Workspace member reads every project (RV1), so a reader reads the Repo.
+    expect(repoReadable("member", rules, repo)).toBe(true);
+    // A push needs editor or owner on the project: a contributor who only reads it is refused.
+    expect(repoRefusal("contributor", rules)).toMatchObject({ code: "project_reader" });
+    const ownerRules = await repoReadRules(
+      fx.db,
+      { teamId: w.team, userId: w.owner.id },
+      record.base_url,
+      [repo],
+    );
+    expect(repoRefusal("contributor", ownerRules)).toBeUndefined();
+    // Kobe writes to the project are refused.
+    const upload = await w.owner.browser.request("POST", `/v1/projects/${p.id}/commit`, {
+      message: "more",
+    });
+    expect([upload.status, upload.json.code]).toEqual([409, "project_is_repo"]);
   });
 });

@@ -22,8 +22,12 @@ type Ctx = Context<{ Variables: TeamVariables }>;
 const notFound = (c: Ctx) =>
   c.json({ code: "not_found", message: "No project with that id is available to you." }, 404);
 
-const answer = <T>(c: Ctx, outcome: Outcome<T>, ok: (value: T) => Response): Response =>
-  outcome.ok ? ok(outcome.value) : c.json(outcome.body, outcome.status as 400);
+const answer = <T>(c: Ctx, outcome: Outcome<T>, ok: (value: T) => Response): Response => {
+  if (outcome.ok) return ok(outcome.value);
+  const retry = outcome.body.retry_after_seconds;
+  if (typeof retry === "number") c.header("Retry-After", String(retry));
+  return c.json(outcome.body, outcome.status as 400);
+};
 
 /**
  * Convert to repo (`/v1/projects/{id}/repo-conversion`, KOBE-765; spec workspace-git G15-G17,

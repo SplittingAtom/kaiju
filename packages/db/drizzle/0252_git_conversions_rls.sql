@@ -1,5 +1,5 @@
 -- KOBE-765 (Workspace git GIT-9, Convert to repo): team isolation and the SQL-only keys of
--- git_conversions (0250). Custom, so db:rebase keeps this SQL as written. The table is new and
+-- git_conversions (0251). Custom, so db:rebase keeps this SQL as written. The table is new and
 -- empty: nothing is backfilled and FORCE RLS needs no lifting.
 --
 -- Team isolation: ENABLE + FORCE RLS and the canonical policy. No break_glass_read policy: an

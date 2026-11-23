@@ -18,7 +18,7 @@ import { recordAudit } from "../../audit/record.js";
 import { assertRepositoryName } from "../../git-hosts/adapter.js";
 import { loadAccess, teamRoleFor } from "../../projects/access.js";
 import { projectCheckouts } from "../../projects/checkouts.js";
-import { hitRateLimit } from "../../rate-limit.js";
+import { checkRateLimit } from "../../rate-limit.js";
 import {
   GIT_CONVERSION_MAX_BYTES,
   GIT_CONVERSION_RATE,
@@ -70,11 +70,20 @@ const FORBIDDEN = plain(
   "forbidden",
   "Only the project's owner and Workspace admins may convert it to a Repo.",
 );
-const RATE_LIMITED = plain(
-  429,
-  "rate_limited",
-  "Too many conversion attempts. Try again in an hour.",
-);
+/** The shared Postgres limiter (`checkRateLimit`, as the git host tools use it). */
+async function rateLimited(deps: Pick<ConversionDeps, "db">, userId: string) {
+  const verdict = await checkRateLimit(deps.db, `git-conversions:${userId}`, GIT_CONVERSION_RATE);
+  if (verdict.allowed) return undefined;
+  return {
+    ok: false as const,
+    status: 429,
+    body: {
+      code: "rate_limited",
+      message: "Too many conversion attempts. Try again later.",
+      retry_after_seconds: verdict.retryAfterSeconds,
+    },
+  };
+}
 
 export { hostRejectsPath } from "./paths.js";
 
@@ -218,9 +227,8 @@ export async function startConversion(
   projectId: string,
   body: GitConversionStartBody,
 ): Promise<Outcome<GitConversionView>> {
-  if (!(await hitRateLimit(deps.db, `git-conversions:${viewer.userId}`, GIT_CONVERSION_RATE))) {
-    return RATE_LIMITED;
-  }
+  const limited = await rateLimited(deps, viewer.userId);
+  if (limited) return limited;
   const settings = await readGitSiteSettings(deps.db);
   const siteHost = new URL(deps.publicUrl).hostname;
   return withTeam(deps.db, viewer.teamId, async (tx): Promise<Outcome<GitConversionView>> => {
@@ -349,9 +357,8 @@ export async function retryConversion(
   viewer: Viewer,
   projectId: string,
 ): Promise<Outcome<GitConversionView>> {
-  if (!(await hitRateLimit(deps.db, `git-conversions:${viewer.userId}`, GIT_CONVERSION_RATE))) {
-    return RATE_LIMITED;
-  }
+  const limited = await rateLimited(deps, viewer.userId);
+  if (limited) return limited;
   return withTeam(deps.db, viewer.teamId, async (tx): Promise<Outcome<GitConversionView>> => {
     const access = await loadAccess(tx, viewer, projectId, { lock: true });
     if (!access) return NOT_FOUND;
