@@ -197,10 +197,30 @@ export interface GitRepositoryRecord {
   /** G17: the mirrored head of the default branch and when it was last refreshed. */
   readonly mirrorHeadSha: string | null;
   readonly mirrorRefreshedAt: Date | null;
+  /** KOBE-766: the Kobe commit the mirror last wrote (null while the head is Kobe's own). */
+  readonly mirrorCommitId: string | null;
+  /** KOBE-766: the last refresh attempt, its failure code, failures in a row and the backoff. */
+  readonly mirrorAttemptedAt: Date | null;
+  readonly mirrorError: string | null;
+  readonly mirrorFailures: number;
+  readonly mirrorNextAt: Date | null;
+  /** KOBE-766: a push or an open asked for a refresh at this time (the timer takes it soon). */
+  readonly mirrorRequestedAt: Date | null;
   readonly createdBy: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
+
+/**
+ * The Repo mirror (KOBE-766, G17, G20): the host's commit list of the mirrored default branch is
+ * kept newest first, at most this many commits (`git_repository_commits`); older history is on
+ * the host. Field limits of one listed commit (untrusted host text, shown as plain text only).
+ */
+export const GIT_MIRROR_LOG_MAX = 25;
+export const GIT_MIRROR_AUTHOR_MAX = 200;
+export const GIT_MIRROR_MESSAGE_MAX = 500;
+/** Short machine code of the last failed mirror refresh (never a host's message text). */
+export const GIT_MIRROR_ERROR_MAX = 64;
 
 /**
  * Convert to repo (KOBE-765, G16): a conversion's status. `running` while the job works (or waits

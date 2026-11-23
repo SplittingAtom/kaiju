@@ -7,7 +7,7 @@ import { defineDomain } from "./types.js";
  * site-wide git table (the Site switch and host limit are `site_settings` keys).
  */
 export const git = defineDomain({
-  team: ["git_connections", "git_repositories", "git_conversions"],
+  team: ["git_connections", "git_repositories", "git_conversions", "git_repository_commits"],
   siteWide: [],
   grants: {},
   teamReferencing: {},
