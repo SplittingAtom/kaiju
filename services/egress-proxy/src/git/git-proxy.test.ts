@@ -1,5 +1,8 @@
 import { request as httpRequest, type IncomingHttpHeaders } from "node:http";
 import { createServer as createHttpsServer, type Server as HttpsServer } from "node:https";
+import { connect } from "node:net";
+import { gzipSync } from "node:zlib";
+import { BandwidthLimiter } from "../limits.js";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   CREDENTIAL,
@@ -32,6 +35,7 @@ const BASIC = `Basic ${Buffer.from(`${CREDENTIAL.username}:${CREDENTIAL.password
 let upstream: HttpsServer;
 let upstreamPort = 0;
 let seen: Seen[] = [];
+let streamed = 0;
 let h: GitProxyHarness | undefined;
 
 beforeAll(async () => {
@@ -51,6 +55,49 @@ beforeAll(async () => {
         res.writeHead(200, { "content-type": "text/plain" });
         res.write("0008NAK\n".repeat(50));
         res.end(`debug: ${req.headers.authorization ?? ""}`);
+      } else if (repo === "gzip.git") {
+        // A host that echoes the header and compresses when asked (review M1).
+        const echoed = `you sent: ${req.headers.authorization ?? ""}`;
+        if (/gzip/.test(String(req.headers["accept-encoding"] ?? ""))) {
+          res.writeHead(200, { "content-type": "text/plain", "content-encoding": "gzip" });
+          res.end(gzipSync(echoed));
+        } else {
+          res.writeHead(200, { "content-type": "text/plain" });
+          res.end("plain answer");
+        }
+      } else if (repo === "forcegzip.git") {
+        res.writeHead(200, { "content-type": "text/plain", "content-encoding": "gzip" });
+        res.end(gzipSync(`you sent: ${req.headers.authorization ?? ""}`));
+      } else if (repo === "reflect64.git") {
+        // The password inside a longer base64 blob, at an offset that changes its encoding.
+        const blob = Buffer.concat([
+          Buffer.from("x"),
+          Buffer.from(CREDENTIAL.password),
+          Buffer.from("yz"),
+        ]);
+        res.writeHead(200, { "content-type": "text/plain" });
+        res.end(`data=${blob.toString("base64")}`);
+      } else if (repo === "reflectpct.git") {
+        const pair = `${CREDENTIAL.username}:${CREDENTIAL.password}`;
+        const pct = [...Buffer.from(pair)]
+          .map((b) => `%${b.toString(16).padStart(2, "0")}`)
+          .join("");
+        res.writeHead(200, { "content-type": "text/plain" });
+        res.end(`next=${pct}`);
+      } else if (repo === "stream.git") {
+        res.writeHead(200, { "content-type": "application/x-git-upload-pack-result" });
+        const chunk = Buffer.alloc(64 * 1024, 0x61);
+        const pump = () => {
+          while (streamed < 400 * 1024 * 1024 && !res.destroyed) {
+            streamed += chunk.length;
+            if (!res.write(chunk)) {
+              res.once("drain", pump);
+              return;
+            }
+          }
+          res.end();
+        };
+        pump();
       } else if (repo === "big.git") {
         res.writeHead(200, { "content-type": "application/x-git-upload-pack-result" });
         res.end(Buffer.alloc(2_000_000, 0x61));
@@ -155,7 +202,7 @@ describe("git smart-HTTP through the egress proxy (KOBE-763)", () => {
       {
         outcome: "allowed",
         domain: GIT_HOST,
-        git: { repository: "ACME/app", service: "upload-pack" },
+        git: { repository: "acme/app", service: "upload-pack" },
       },
     ]);
     expect(harness.events).toEqual([]);
@@ -419,5 +466,116 @@ describe("git smart-HTTP through the egress proxy (KOBE-763)", () => {
     );
     expect(res.status).toBe(200);
     expect(seen[0]?.path).toBe("/forgejo/acme/app.git/info/refs?service=git-upload-pack");
+  });
+
+  describe("security review fixes", () => {
+    it("M1: asks for identity, never relays an encoded body, so a gzip echo cannot leak", async () => {
+      const harness = await start();
+      const asked = await viaProxy(rpc("acme", "gzip", "git-upload-pack"), {
+        method: "POST",
+        headers: {
+          "content-type": "application/x-git-upload-pack-request",
+          "accept-encoding": "gzip, deflate, br, zstd",
+        },
+        body: "0000",
+      });
+      expect(seen.at(-1)?.headers["accept-encoding"]).toBe("identity");
+      expect(asked.status).toBe(200);
+      expect(asked.body).toBe("plain answer");
+      const forced = await viaProxy(rpc("acme", "forcegzip", "git-upload-pack"), {
+        method: "POST",
+        headers: { "content-type": "application/x-git-upload-pack-request" },
+        body: "0000",
+      });
+      expect(forced.status).toBe(502);
+      expect(forced.headers["content-encoding"]).toBeUndefined();
+      expect(forced.body).toContain("encoded body");
+      expect(harness.audit.at(-1)).toMatchObject({ outcome: "failed", reason: "encoded_response" });
+    });
+
+    it("M1: cuts base64 (any alignment) and percent-encoded echoes of the credential", async () => {
+      const harness = await start();
+      for (const repo of ["reflect64", "reflectpct"]) {
+        const res = await viaProxy(rpc("acme", repo, "git-upload-pack"), {
+          method: "POST",
+          headers: { "content-type": "application/x-git-upload-pack-request" },
+          body: "0000",
+        });
+        expect(res.body, repo).not.toContain("data=");
+        expect(res.body, repo).not.toContain("next=");
+        expect(harness.audit.at(-1), repo).toMatchObject({ reason: "secret_reflected" });
+      }
+    });
+
+    it("M2: a sandbox that stops reading stops the upstream, even while throttled", async () => {
+      // A limiter that always asks for a pause (what happens after the burst is spent).
+      const throttled = new (class extends BandwidthLimiter {
+        override take(): number {
+          return 2;
+        }
+      })(1);
+      const harness = await start({
+        bandwidth: throttled,
+        settings: { maxResponseBytes: 1_000_000_000, timeoutMs: 60_000 },
+      });
+      streamed = 0;
+      const socket = connect({ host: "127.0.0.1", port: harness.port }, () => {
+        socket.write(
+          `POST ${rpc("acme", "stream", "git-upload-pack")} HTTP/1.1\r\nHost: ${GIT_HOST}\r\n` +
+            `Proxy-Authorization: ${proxyAuthorization()}\r\nContent-Length: 4\r\n\r\n0000`,
+        );
+        socket.pause();
+      });
+      await new Promise((r) => setTimeout(r, 2_500));
+      const first = streamed;
+      await new Promise((r) => setTimeout(r, 2_000));
+      const second = streamed;
+      // Held by back-pressure, not cut by the backstop (the exchange is still open, unaudited).
+      expect(harness.audit).toEqual([]);
+      socket.destroy();
+      // Bounded by socket buffers and the relay backstop, not growing with time.
+      expect(second).toBeLessThan(48 * 1024 * 1024);
+      expect(second - first).toBeLessThan(4 * 1024 * 1024);
+    }, 20_000);
+
+    it("L1: refuses an answer whose access does not fit the service", async () => {
+      await start({ decide: (q) => ({ ...allowFor(q), access: "read" }) });
+      const res = await viaProxy(refs("acme", "app", "git-receive-pack"));
+      expect(res.status).toBe(403);
+      expect(seen).toEqual([]);
+    });
+
+    it("L2: refuses a compressed push body (its refs could not be audited)", async () => {
+      const harness = await start();
+      const res = await viaProxy(rpc("acme", "app"), {
+        method: "POST",
+        headers: {
+          "content-type": "application/x-git-receive-pack-request",
+          "content-encoding": "gzip",
+        },
+        body: gzipSync(pushBody("refs/heads/main")),
+      });
+      expect(res.status).toBe(400);
+      expect(seen).toEqual([]);
+      expect(harness.events).toMatchObject([
+        { action: "egress.git_push", target: { outcome: "blocked", reason: "encoded_request" } },
+      ]);
+    });
+
+    it("L3: budgets distinct repositories per sandbox; cached ones are free", async () => {
+      const harness = await start({ lookups: { burst: 2, perSecond: 0.001 } });
+      expect((await viaProxy(refs("acme", "one"))).status).toBe(200);
+      expect((await viaProxy(refs("acme", "two"))).status).toBe(200);
+      expect((await viaProxy(refs("acme", "one"))).status).toBe(200);
+      const third = await viaProxy(refs("acme", "three"));
+      expect(third.status).toBe(429);
+      expect(harness.queries.map((q) => q.request.repository)).toEqual(["one", "two"]);
+    });
+
+    it("L6: audits the server's canonical spelling of the repository", async () => {
+      const harness = await start();
+      await viaProxy(refs("ACME", "app"));
+      expect(harness.audit.at(-1)).toMatchObject({ git: { repository: "acme/app" } });
+    });
   });
 });

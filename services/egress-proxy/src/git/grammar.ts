@@ -69,6 +69,11 @@ function isDotSegment(s: string): boolean {
 
 /** Classifies one absolute-form proxy request (method + raw request target). */
 export function matchGitRequest(method: string, target: string): GitMatch {
+  // Review L4: a backslash (anywhere) or an `@` in the authority could make this parser and the
+  // URL parser that reads the host disagree; refused outright, git-shaped or not.
+  if (target.includes("\\")) return { kind: "invalid", why: "backslashes are not allowed" };
+  const authority = /^http:\/\/([^/?#]*)/i.exec(target)?.[1] ?? "";
+  if (authority.includes("@")) return { kind: "invalid", why: "credentials in the URL" };
   const raw = rawPathOf(target);
   if (!raw) return { kind: "not_git" };
   const { path, query } = raw;

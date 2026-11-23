@@ -11,7 +11,7 @@ predates these keys still renders. Keep in sync with values.yaml.
   "auditFlushSeconds" 60
   "headerSecret" ""
   "upgrade" (dict "maxRequestBytes" 104857600 "maxResponseBytes" 2147483648 "timeoutSeconds" 600)
-  "git" (dict "internalKeySecret" "" "maxFetchRequestBytes" 67108864 "maxResponseBytes" 4294967296 "timeoutSeconds" 1800 "concurrentPerSandbox" 8 "requestBurst" 60 "requestsPerSecond" 2)
+  "git" (dict "internalKeySecret" "" "maxFetchRequestBytes" 67108864 "maxResponseBytes" 4294967296 "timeoutSeconds" 1800 "concurrentPerSandbox" 8 "requestBurst" 60 "requestsPerSecond" 2 "lookupsPerMinute" 30)
   "limits" (dict "connectionsPerSandbox" 64 "connections" 4096 "bandwidthBytesPerSecond" 20971520 "idleTimeoutSeconds" 300 "maxTunnelSeconds" 3600 "unauthenticatedPerSource" 16 "unauthenticated" 1024)
   "networkPolicy" (dict "restrictEgress" true "databasePeers" (list) "databasePort" 5432 "extraEgress" (list))
   "database" (dict "poolMax" 10) -}}
@@ -134,4 +134,6 @@ session-token public key only (never a private key, never the other audiences', 
   value: {{ int $e.git.requestBurst | quote }}
 - name: KOBE_EGRESS_GIT_REQUESTS_PER_SECOND
   value: {{ int $e.git.requestsPerSecond | quote }}
+- name: KOBE_EGRESS_GIT_LOOKUPS_PER_MINUTE
+  value: {{ int $e.git.lookupsPerMinute | quote }}
 {{- end -}}

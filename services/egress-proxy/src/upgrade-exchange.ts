@@ -10,6 +10,7 @@ import type { InjectedHeader } from "@kobe/db";
 import type { ConnectionReason } from "./connection-audit.js";
 import type { UpgradeSettings } from "./proxy-deps.js";
 import { downstreamHeaders, upstreamHeaders } from "./upgrade-headers.js";
+import { holdUntilReady, overBuffered, type FlowDestination, type FlowSource } from "./flow.js";
 import { reply } from "./upgrade-reply.js";
 import type { UpgradeAttempt, UpgradeContext } from "./upgrade-types.js";
 
@@ -120,7 +121,8 @@ interface Relay {
   failure: ConnectionReason | undefined;
   /** Ends the exchange: an error status while nothing was relayed yet, a cut connection after. */
   readonly fail: (reason: ConnectionReason) => void;
-  readonly throttle: (src: { pause(): void; resume(): void }, n: number) => void;
+  /** Pauses `src` until `dst` drained (if `flushed` is false) and the bandwidth delay passed. */
+  readonly forwarded: (src: FlowSource, dst: FlowDestination, flushed: boolean, n: number) => void;
 }
 
 /** The upgraded request itself, once TLS to the checked address is verified. */
@@ -183,15 +185,13 @@ export async function exchange(
         `Kobe egress: the request to ${host} failed (${reason}).`,
       );
     },
-    throttle: (src, n) => {
-      const delay = deps.bandwidth.take(identity.sandboxId, n);
-      if (delay <= 0) return;
-      src.pause();
-      const t = setTimeout(() => {
-        timers.delete(t);
-        src.resume();
-      }, delay);
-      timers.add(t);
+    // KOBE-763 review M2: resume only when the destination drained AND the throttle allows.
+    forwarded: (src, dst, flushed, n) => {
+      if (overBuffered(dst)) {
+        fail("buffer_limit");
+        return;
+      }
+      holdUntilReady(src, dst, flushed, deps.bandwidth.take(identity.sandboxId, n), timers);
     },
   };
   const { fail } = relay;
@@ -285,11 +285,7 @@ function relayResponse(relay: Relay, upstreamRes: IncomingMessage): void {
       fail("response_too_large");
       return;
     }
-    if (!res.write(chunk)) {
-      upstreamRes.pause();
-      res.once("drain", () => upstreamRes.resume());
-    }
-    relay.throttle(upstreamRes, chunk.length);
+    relay.forwarded(upstreamRes, res, res.write(chunk), chunk.length);
   });
   upstreamRes.once("end", () => res.end());
   upstreamRes.once("error", () => fail("upstream_unreachable"));
@@ -304,11 +300,7 @@ function pipeRequest(relay: Relay): void {
       fail("request_too_large");
       return;
     }
-    if (!outgoing.write(chunk)) {
-      req.pause();
-      outgoing.once("drain", () => req.resume());
-    }
-    relay.throttle(req, chunk.length);
+    relay.forwarded(req, outgoing, outgoing.write(chunk), chunk.length);
   });
   req.once("end", () => outgoing.end());
   req.once("error", () => fail("upstream_unreachable"));

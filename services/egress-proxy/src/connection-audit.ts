@@ -40,7 +40,13 @@ export type ConnectionReason =
   /** The git host answered with a redirect, which is never followed with the credential. */
   | "redirect_refused"
   /** A response carried the credential back: the exchange was cut. */
-  | "secret_reflected";
+  | "secret_reflected"
+  /** The git host answered with a Content-Encoding (never relayed: the scan needs plain bytes). */
+  | "encoded_response"
+  /** A push body with a Content-Encoding (git never compresses pushes; the audit reads its refs). */
+  | "encoded_request"
+  /** A relay direction held too many unsent bytes (the receiver stopped reading). */
+  | "buffer_limit";
 
 /** The repository (`org/repo`) and service of a git smart-HTTP request (KOBE-763). */
 export interface GitTraffic {

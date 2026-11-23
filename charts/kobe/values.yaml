@@ -518,6 +518,8 @@ egressProxy:
     concurrentPerSandbox: 8
     requestBurst: 60
     requestsPerSecond: 2
+    # Different repositories asked about per sandbox per minute (each may cost host API calls).
+    lookupsPerMinute: 30
   limits:
     # Concurrent tunnels per sandbox and in total (per proxy replica).
     connectionsPerSandbox: 64

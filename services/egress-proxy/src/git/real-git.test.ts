@@ -204,6 +204,38 @@ describe.skipIf(backend === undefined)(
       expect(failed).not.toContain(CREDENTIAL.password);
     });
 
+    it("clones and fetches a larger repository without HTTP compression (review M1)", async () => {
+      // ~16 MiB of text in 64 files on the host: the pack is zlib-compressed by git itself, so
+      // refusing Content-Encoding costs only the (small) ref advertisement and negotiation.
+      const bare = path.join(root, "repos", "acme", "big.git");
+      execFileSync("git", ["init", "--bare", "-q", "-b", "main", bare]);
+      const seed = path.join(root, "big-seed");
+      execFileSync("git", ["init", "-q", "-b", "main", seed]);
+      let raw = 0;
+      for (let i = 0; i < 64; i += 1) {
+        const text = Array.from(
+          { length: 4096 },
+          (_, n) => `line ${n} of file ${i}: ${"lorem ipsum ".repeat(5)}\n`,
+        ).join("");
+        raw += Buffer.byteLength(text);
+        writeFileSync(path.join(seed, `f${i}.txt`), text);
+      }
+      const ident = ["-c", "user.name=Seed", "-c", "user.email=seed@example.test"];
+      execFileSync("git", ["-C", seed, "add", "."]);
+      execFileSync("git", ["-C", seed, ...ident, "commit", "-q", "-m", "big"]);
+      execFileSync("git", ["-C", seed, "push", "-q", bare, "main"]);
+      const before = h.audit.length;
+      const work = path.join(root, "big-work");
+      await git(["clone", "-q", `http://${GIT_HOST}/acme/big.git`, work]);
+      await git(["fetch", "-q", "origin"], work);
+      expect(readFileSync(path.join(work, "f63.txt"), "utf8").length).toBeGreaterThan(100_000);
+      const down = h.audit.slice(before).reduce((n, r) => n + r.bytesDown, 0);
+      // Every exchange was plain (no Content-Encoding reached git), and the pack stayed small.
+      expect(h.audit.slice(before).every((r) => r.outcome === "allowed")).toBe(true);
+      expect(down).toBeLessThan(raw / 4);
+      process.stdout.write(`[KOBE-763] big clone: raw ${raw} B, relayed ${down} B\n`);
+    });
+
     it("gives a credential helper in the sandbox nothing", () => {
       const filled = spawnSync("git", ["credential", "fill"], {
         cwd: root,

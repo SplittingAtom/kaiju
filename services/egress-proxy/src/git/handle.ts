@@ -3,8 +3,8 @@ import { SYSTEM_ACTOR, type AuditEvent } from "@kobe/db";
 import type { ConnectionReason, GitTraffic } from "../connection-audit.js";
 import { reply } from "../upgrade-reply.js";
 import type { UpgradeAttempt, UpgradeContext } from "../upgrade-types.js";
-import type { GitDecision, GitDecisionQuery } from "./decisions.js";
-import type { GitRequest } from "./grammar.js";
+import type { GitAllow, GitDecision, GitDecisionQuery } from "./decisions.js";
+import { accessOf, type GitRequest } from "./grammar.js";
 import { relayGit } from "./relay.js";
 import type { GitTransportDeps } from "./types.js";
 import { CREDENTIAL_HEADERS, type PushedRef } from "./wire.js";
@@ -82,6 +82,19 @@ export async function handleGit(call: GitCall): Promise<GitHandled> {
     );
     return "handled";
   }
+  // Review L2: git never compresses a push body; one that is compressed would hide its refs
+  // from the push audit, so it is refused.
+  const encoding = String(call.req.headers["content-encoding"] ?? "")
+    .trim()
+    .toLowerCase();
+  if (request.service === "git-receive-pack" && encoding !== "" && encoding !== "identity") {
+    refuse(
+      "encoded_request",
+      400,
+      "Kobe egress: push bodies must not be compressed (git does not compress them).",
+    );
+    return "handled";
+  }
   const release = git.concurrency.tryAcquire(sandboxId);
   if (!release) {
     refuse(
@@ -136,6 +149,16 @@ async function decideAndRelay(
       host,
       request,
     };
+    // Review L3: a decision the cache does not hold costs host API calls (token connections);
+    // distinct repositories per sandbox are budgeted so a sandbox cannot spend the token's quota.
+    if (!git.decisions.has(query) && !git.lookups.take(identity.sandboxId)) {
+      refuse(
+        "rate_limited",
+        429,
+        "Kobe egress: too many different repositories asked for from this sandbox; retry in a minute.",
+      );
+      return "handled";
+    }
     decision = await git.decisions.get(query);
   } catch (err) {
     deps.logger.error({ err, team: identity.teamId }, "egress git policy unavailable");
@@ -166,6 +189,35 @@ async function decideAndRelay(
     return "handled";
   }
   const allow = decision;
+  // Review L1: the server's answer must be for this service (read for fetch, write for push).
+  if (allow.access !== accessOf(request.service)) {
+    refuse("git_refused", 403, "Kobe egress: git access could not be confirmed for this request.");
+    return "handled";
+  }
+  const canonical: UpgradeAttempt = {
+    ...attempt,
+    git: {
+      repository: `${allow.organization}/${allow.repository}`,
+      service: serviceOf(request),
+    },
+  };
+  return relayAllowed(call, canonical, allow, internal);
+}
+
+async function relayAllowed(
+  call: GitCall,
+  attempt: UpgradeAttempt,
+  allow: GitAllow,
+  internal: boolean,
+): Promise<GitHandled> {
+  const { ctx, git, host, request } = call;
+  const { deps } = ctx;
+  const { identity } = attempt;
+  const refuse = (reason: ConnectionReason, status: number, message: string) => {
+    ctx.finish(attempt, "blocked", reason);
+    recordPush(call, attempt, "blocked", reason, allow.connection_id);
+    reply(call.res, status, `Kobe egress: git request refused`, message);
+  };
   const declared = call.req.headers["content-length"];
   const length = declared === undefined ? undefined : Number(declared);
   const requestLimit =
@@ -272,7 +324,8 @@ function recordPush(
       sandboxId: identity.sandboxId,
       ...(connectionId === undefined ? {} : { connectionId }),
       domain: call.host,
-      repository: `${call.request.owner}/${call.request.repository}`,
+      // The server's canonical spelling once it allowed the request (review L6).
+      repository: attempt.git?.repository ?? `${call.request.owner}/${call.request.repository}`,
       outcome,
       ...(reason === undefined ? {} : { reason }),
       ...(details && details.refs.length > 0 ? { refs: details.refs.map((r) => ({ ...r })) } : {}),

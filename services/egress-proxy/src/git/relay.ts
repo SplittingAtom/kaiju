@@ -1,5 +1,6 @@
 import { request as httpRequest, type IncomingMessage, type ServerResponse } from "node:http";
 import type { ConnectionReason } from "../connection-audit.js";
+import { holdUntilReady, overBuffered, type FlowDestination, type FlowSource } from "../flow.js";
 import { connectVerified } from "../upgrade-exchange.js";
 import { reply } from "../upgrade-reply.js";
 import type { UpgradeAttempt, UpgradeContext } from "../upgrade-types.js";
@@ -12,6 +13,7 @@ import {
   credentialSecrets,
   gitDownstreamHeaders,
   gitUpstreamHeaders,
+  responseEncodingRefused,
 } from "./wire.js";
 
 /**
@@ -76,6 +78,8 @@ export async function relayGit(input: GitRelayInput): Promise<GitRelayResult> {
   const headers: [string, string][] = [
     ["Host", host],
     ...gitUpstreamHeaders(req.rawHeaders),
+    // Review M1: plain responses only, so the credential scan sees every byte.
+    ["Accept-Encoding", "identity"],
     ...(input.length === undefined
       ? []
       : [["Content-Length", String(input.length)] satisfies [string, string]]),
@@ -118,15 +122,14 @@ export async function relayGit(input: GitRelayInput): Promise<GitRelayResult> {
       message ?? `Kobe egress: the git request to ${host} failed (${reason}).`,
     );
   };
-  const throttle = (src: { pause(): void; resume(): void }, n: number) => {
-    const delay = deps.bandwidth.take(identity.sandboxId, n);
-    if (delay <= 0) return;
-    src.pause();
-    const t = setTimeout(() => {
-      timers.delete(t);
-      src.resume();
-    }, delay);
-    timers.add(t);
+  // Review M2: the source resumes only when the destination drained AND the throttle allows;
+  // a destination holding more than the backstop unsent is cut.
+  const forwarded = (src: FlowSource, dst: FlowDestination, flushed: boolean, n: number) => {
+    if (overBuffered(dst)) {
+      fail("buffer_limit");
+      return;
+    }
+    holdUntilReady(src, dst, flushed, deps.bandwidth.take(identity.sandboxId, n), timers);
   };
   const deadline = attempt.started + git.settings.timeoutMs;
   const overall = setTimeout(() => fail("upstream_timeout"), Math.max(0, deadline - Date.now()));
@@ -177,6 +180,14 @@ export async function relayGit(input: GitRelayInput): Promise<GitRelayResult> {
         );
         return;
       }
+      if (responseEncodingRefused(up.headers) !== undefined) {
+        up.destroy();
+        fail(
+          "encoded_response",
+          `Kobe egress: ${host} answered with an encoded body, which Kobe does not relay for git.`,
+        );
+        return;
+      }
       const declared = Number(up.headers["content-length"] ?? "0");
       if (Number.isFinite(declared) && declared > git.settings.maxResponseBytes) {
         up.destroy();
@@ -201,11 +212,7 @@ export async function relayGit(input: GitRelayInput): Promise<GitRelayResult> {
           fail("secret_reflected");
           return;
         }
-        if (!res.write(chunk)) {
-          up.pause();
-          res.once("drain", () => up.resume());
-        }
-        throttle(up, chunk.length);
+        forwarded(up, res, res.write(chunk), chunk.length);
       });
       up.once("end", () => res.end());
       up.once("error", () => fail("upstream_unreachable"));
@@ -222,11 +229,7 @@ export async function relayGit(input: GitRelayInput): Promise<GitRelayResult> {
       return;
     }
     commands?.push(chunk);
-    if (!outgoing.write(chunk)) {
-      req.pause();
-      outgoing.once("drain", () => req.resume());
-    }
-    throttle(req, chunk.length);
+    forwarded(req, outgoing, outgoing.write(chunk), chunk.length);
   });
   req.once("end", () => outgoing.end());
   req.once("error", () => fail("upstream_unreachable"));

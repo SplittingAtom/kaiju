@@ -133,6 +133,10 @@ const server = createEgressProxy({
             burst: config.git.requestBurst,
             perSecond: config.git.requestsPerSecond,
           }),
+          lookups: new RateBuckets({
+            burst: config.git.lookupsPerMinute,
+            perSecond: config.git.lookupsPerMinute / 60,
+          }),
           recordEvent: (event) => audit.recordEvent(event),
         },
       }

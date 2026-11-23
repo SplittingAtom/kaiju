@@ -110,6 +110,9 @@ export interface GitProxyOptions {
   readonly decide?: (q: GitDecisionQuery) => GitDecision | Promise<GitDecision>;
   readonly settings?: Partial<GitSettings>;
   readonly rate?: { burst: number; perSecond: number };
+  readonly lookups?: { burst: number; perSecond: number };
+  /** Replaces the bandwidth limiter (back-pressure tests). */
+  readonly bandwidth?: BandwidthLimiter;
   readonly dns?: Record<string, string[]>;
   readonly internalPattern?: boolean;
 }
@@ -146,7 +149,7 @@ export async function startGitProxy(options: GitProxyOptions): Promise<GitProxyH
     },
     addresses: withTestLoopback(),
     connections: new ConnectionLimits({ perSandbox: 16, total: 100 }),
-    bandwidth: new BandwidthLimiter(0),
+    bandwidth: options.bandwidth ?? new BandwidthLimiter(0),
     audit: { record: (r) => void audit.push(r) },
     blocked: { report: () => undefined },
     logger,
@@ -180,6 +183,7 @@ export async function startGitProxy(options: GitProxyOptions): Promise<GitProxyH
       },
       concurrency: new ConnectionLimits({ perSandbox: 4, total: 100 }),
       rate: new RateBuckets(options.rate ?? { burst: 1_000, perSecond: 1_000 }),
+      lookups: new RateBuckets(options.lookups ?? { burst: 1_000, perSecond: 1_000 }),
       recordEvent: (e) => void events.push(e),
     },
   };

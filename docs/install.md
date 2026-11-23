@@ -570,7 +570,11 @@ marked internal with [same-cluster hosts](#same-cluster-hosts-internal), or its 
 
 Limits (`egressProxy.git`, per sandbox and proxy replica): fetch negotiation bodies 64 MiB,
 responses (clone and fetch packs) 4 GiB, 30 minutes per request, 8 requests at once, 60 requests
-burst then 2 per second. The push limit is the connection's setting (default 1 GiB). Each fetch
+burst then 2 per second, 30 different repositories per minute (each decision not in the proxy's
+cache may cost the git host API calls against the connection's quota). The proxy asks hosts for
+uncompressed responses and refuses encoded ones (git packs are compressed by git itself, so this
+costs only the small ref advertisement); a git request may take up to `timeoutSeconds`, which also
+raises the proxy's request-body deadline for header-injected uploads. The push limit is the connection's setting (default 1 GiB). Each fetch
 and push is counted in `egress.connection` with its repository and service; each push also writes
 an `egress.git_push` row with the refs it named.
 

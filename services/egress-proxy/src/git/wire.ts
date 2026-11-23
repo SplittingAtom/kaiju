@@ -4,10 +4,13 @@
  * receive-pack command reader that names the pushed refs without buffering the pack.
  */
 
-/** Request headers passed upstream for git; the proxy sets Host, framing and Authorization. */
+/**
+ * Request headers passed upstream for git; the proxy sets Host, framing, Authorization and
+ * `Accept-Encoding: identity` (review M1: a compressed response could hide an echoed credential
+ * from the scan, so the sandbox's Accept-Encoding is never passed on).
+ */
 const UP_ALLOWED: ReadonlySet<string> = new Set([
   "accept",
-  "accept-encoding",
   "accept-language",
   "content-type",
   "content-encoding",
@@ -17,10 +20,12 @@ const UP_ALLOWED: ReadonlySet<string> = new Set([
   "user-agent",
 ]);
 
-/** Response headers relayed to the sandbox for git (never WWW-Authenticate, cookies, Location). */
+/**
+ * Response headers relayed to the sandbox for git (never WWW-Authenticate, cookies, Location;
+ * never Content-Encoding: an encoded response is refused before this, `responseEncodingRefused`).
+ */
 const DOWN_ALLOWED: ReadonlySet<string> = new Set([
   "content-type",
-  "content-encoding",
   "cache-control",
   "expires",
   "pragma",
@@ -63,10 +68,61 @@ export function gitDownstreamHeaders(
   return out;
 }
 
-/** The secret forms of a Basic credential: the password and the encoded `user:password`. */
+/** Base64 of `text` wherever it sits in a longer base64 stream: the three alignments' stable middle. */
+function base64Forms(text: string): string[] {
+  const bytes = Buffer.from(text);
+  const out = [bytes.toString("base64")];
+  for (const offset of [1, 2]) {
+    const encoded = Buffer.concat([Buffer.alloc(offset), bytes]).toString("base64");
+    // The first 4 characters mix in the padding bytes; the last 4 may hold padding: both dropped.
+    out.push(encoded.slice(4, Math.max(4, encoded.length - 4)));
+  }
+  // Also from offset 0 without the tail group (when more bytes follow in the stream).
+  out.push(out[0]?.slice(0, Math.max(0, (out[0]?.length ?? 0) - 4)) ?? "");
+  return out;
+}
+
+/** Percent-encoded forms (upper and lower case hex, and `+` for spaces is irrelevant to tokens). */
+function percentForms(text: string): string[] {
+  const upper = [...Buffer.from(text)]
+    .map((b) => `%${b.toString(16).toUpperCase().padStart(2, "0")}`)
+    .join("");
+  return [encodeURIComponent(text), upper, upper.toLowerCase()];
+}
+
+/**
+ * Every form of a Basic credential a response could echo (review M1): the password and the
+ * `user:password` pair, each raw, base64 (at any alignment in a longer base64 stream) and
+ * percent-encoded. Forms shorter than 8 characters are not matched (they would cut real packs).
+ */
 export function credentialSecrets(username: string, password: string): string[] {
-  const encoded = Buffer.from(`${username}:${password}`).toString("base64");
-  return [password, encoded].filter((s) => s.length >= 8);
+  const pair = `${username}:${password}`;
+  const forms = new Set<string>();
+  for (const text of [password, pair]) {
+    forms.add(text);
+    for (const f of base64Forms(text)) forms.add(f);
+    for (const f of percentForms(text)) forms.add(f);
+  }
+  return [...forms].filter((s) => s.length >= 8);
+}
+
+/**
+ * Why a response must not be relayed as it is (review M1): any Content-Encoding other than
+ * identity (the proxy asked for identity; the scan must see plain bytes), or a Transfer-Encoding
+ * other than chunked. Undefined when the response is plain.
+ */
+export function responseEncodingRefused(headers: {
+  readonly [name: string]: string | string[] | undefined;
+}): string | undefined {
+  const value = (name: string) => {
+    const v = headers[name];
+    return (Array.isArray(v) ? v.join(",") : (v ?? "")).trim().toLowerCase();
+  };
+  const ce = value("content-encoding");
+  if (ce !== "" && ce !== "identity") return "content-encoding";
+  const te = value("transfer-encoding");
+  if (te !== "" && te !== "chunked") return "transfer-encoding";
+  return undefined;
 }
 
 /**
