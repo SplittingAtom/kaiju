@@ -36,13 +36,14 @@ bridge runs a silent snippet in the kernel that reads the current token and sets
 friends (as the shell tool's BASH_ENV script does per command), so a rotated token is picked up.
 One execution runs at a time; `interrupt` sends SIGINT to the kernel.
 
-Variables (KOBE-803): `inspect` snapshots the user namespace without running a cell: an empty,
-silent execute request (no execution count, no history, no outputs, nothing in `Out` or `_`) whose
-user expression defines INSPECT_SOURCE in a fresh namespace (nothing is added to the user's) and
-returns the snapshot as JSON text. Only names, type names, short reprs and summaries leave the
-kernel. Each variable's description runs under a SIGALRM timer (`per_var_ms`) with every
-exception caught, so a `__repr__` that raises or loops costs that variable its repr, not the
-snapshot; the whole snapshot has a budget (`budget_ms`) and count and byte caps (`truncated`).
+Variables (KOBE-803, transport KOBE-816): `inspect` asks the kernel for a snapshot of the user
+namespace through an `inspect_request` (code: VARIABLES_MARKER and the caps as JSON), which the
+launcher answers from STATIC_SOURCE's `variables`: no execute, so no hooks, input transformers,
+formatters, history or execution count. Values are read only for exact built-in scalars, strings,
+bytes and containers (subclasses of built-in containers through the built-in's C methods),
+ranges and exact numpy/pandas objects; anything else shows its type only, and no member
+`__repr__`, `__str__`, `__len__` or `__iter__` runs. Count, byte and character caps and a time
+budget bound it (`truncated`).
 
 Completion (KOBE-808): IPython's completer and inspector are never used (their matchers evaluate
 member code). The launcher replaces the kernel's `do_complete` / `do_inspect` with calls into
@@ -109,6 +110,8 @@ _io.IOPubThread.__init__ = _no_pipe
 # pre/post_execute or run_cell events, no display formatters, no history, no `_`, no execution
 # count. IPython's own completer and inspector are never called. `async def`, so ipykernel warns
 # about nothing (a member's warnings hook would run).
+import json as _kobe_json
+_KOBE_VARIABLES = "@VARIABLES_MARKER@"
 _kobe_static = {"__name__": "kobe_static"}
 exec(@STATIC_SOURCE@, _kobe_static)
 from ipykernel import ipkernel as _ipk
@@ -118,7 +121,16 @@ async def _kobe_complete(self, code, cursor_pos):
     found = _kobe_static["complete"](code, pos, shell.user_ns, shell.user_ns_hidden)
     return {"status": "ok", "matches": [], "cursor_start": pos, "cursor_end": pos, "metadata": {"kobe": found}}
 async def _kobe_inspect(self, code, cursor_pos, detail_level=0, omit_sections=()):
-    found = _kobe_static["doc"](code, self.shell.user_ns)
+    shell = self.shell
+    if code.startswith(_KOBE_VARIABLES):
+        # KOBE-816: the variables snapshot, on this channel too (never a silent execute).
+        try:
+            limits = _kobe_json.loads(code[len(_KOBE_VARIABLES):])
+        except ValueError:
+            limits = {}
+        found = _kobe_static["variables"](limits, shell.user_ns, shell.user_ns_hidden, shell.execution_count - 1)
+    else:
+        found = _kobe_static["doc"](code, shell.user_ns)
     return {"status": "ok", "found": False, "data": {}, "metadata": {"kobe": found}}
 _ipk.IPythonKernel.do_complete = _kobe_complete
 _ipk.IPythonKernel.do_inspect = _kobe_inspect
@@ -127,250 +139,6 @@ kernelapp.launch_new_instance()
 """
 
 
-INSPECT_SOURCE = r'''
-import json as _json
-import reprlib as _reprlib
-import signal as _signal
-import sys as _sys
-import time as _time
-import types as _types
-
-IPYTHON_NAMES = frozenset(("In", "Out", "exit", "quit", "get_ipython"))
-FUNCTION_TYPES = (
-    _types.FunctionType,
-    _types.BuiltinFunctionType,
-    _types.MethodType,
-    _types.BuiltinMethodType,
-    _types.MethodWrapperType,
-    _types.WrapperDescriptorType,
-)
-SIZED_BASES = (str, bytes, bytearray, list, tuple, dict, set, frozenset, range)
-_qualname = type.__dict__["__qualname__"].__get__
-_module = type.__dict__["__module__"].__get__
-
-
-class _Timeout(BaseException):
-    pass
-
-
-def clean(text, limit):
-    text = str(text) if type(text) is str else ""
-    text = text.replace("\x00", "�").encode("utf-8", "replace").decode("utf-8")
-    return text if len(text) <= limit else text[: limit - 1] + "…"
-
-
-def kind_of(t):
-    if issubclass(t, _types.ModuleType):
-        return "module"
-    if issubclass(t, type):
-        return "class"
-    if issubclass(t, FUNCTION_TYPES):
-        return "function"
-    return None
-
-
-def type_names(t):
-    try:
-        name = _qualname(t)
-    except Exception:
-        name = "?"
-    try:
-        module = _module(t)
-    except Exception:
-        module = None
-    module = module.split(".")[0] if type(module) is str else None
-    return clean(name, 256) or "?", (None if module in (None, "builtins") else clean(module, 128))
-
-
-def library_type(module_name, attr):
-    mod = _sys.modules.get(module_name)
-    found = getattr(mod, attr, None) if mod is not None else None
-    return found if isinstance(found, type) else None
-
-
-class Snapshot:
-    def __init__(self, limits):
-        self.max_vars = int(limits.get("max_vars", 200))
-        self.max_bytes = int(limits.get("max_bytes", 65536))
-        self.repr_chars = int(limits.get("repr_chars", 200))
-        self.columns_max = int(limits.get("columns_max", 50))
-        self.per_s = float(limits.get("per_var_ms", 200)) / 1000
-        self.deadline = _time.monotonic() + float(limits.get("budget_ms", 2000)) / 1000
-        self.armed = False
-        self.alarm = False
-        self.ndarray = library_type("numpy", "ndarray")
-        self.frame = library_type("pandas", "DataFrame")
-        self.series = library_type("pandas", "Series")
-        self.short = _reprlib.Repr()
-        self.short.maxlevel = 2
-        self.short.maxstring = self.repr_chars
-        self.short.maxother = self.repr_chars
-        for name in ("maxlist", "maxtuple", "maxdict", "maxset", "maxfrozenset", "maxdeque", "maxarray"):
-            setattr(self.short, name, 8)
-
-    def _on_alarm(self, signum, frame):
-        if self.armed:
-            raise _Timeout()
-
-    def bounded(self, fn):
-        """("ok", value) | ("timeout", None) | ("raised", None); KeyboardInterrupt passes."""
-        try:
-            if self.alarm:
-                self.armed = True
-                _signal.setitimer(_signal.ITIMER_REAL, self.per_s)
-            try:
-                value = fn()
-            finally:
-                self.armed = False
-                if self.alarm:
-                    _signal.setitimer(_signal.ITIMER_REAL, 0)
-            return "ok", value
-        except _Timeout:
-            return "timeout", None
-        except KeyboardInterrupt:
-            raise
-        except BaseException:
-            return "raised", None
-
-    def describe(self, value, t):
-        """Summary fields and the repr; touches only built-in, numpy and pandas internals."""
-        out = {}
-        if self.frame is not None and issubclass(t, self.frame):
-            rows, cols = len(value.index), len(value.columns)
-            out["shape"] = [rows, cols]
-            out["columns_total"] = cols
-            out["columns"] = [
-                {"name": clean(str(c), 128), "dtype": clean(str(d), 128)}
-                for c, d in list(value.dtypes.items())[: self.columns_max]
-            ]
-            out["repr"] = "DataFrame: %d rows × %d columns" % (rows, cols)
-            return out
-        if self.series is not None and issubclass(t, self.series):
-            n = len(value)
-            out["len"] = n
-            out["shape"] = [n]
-            out["dtype"] = clean(str(value.dtype), 128)
-            out["repr"] = "Series: %d values (%s)" % (n, out["dtype"])
-            return out
-        if self.ndarray is not None and issubclass(t, self.ndarray):
-            out["shape"] = [int(d) for d in value.shape][:64]
-            out["dtype"] = clean(str(value.dtype), 128)
-            np = _sys.modules["numpy"]
-            out["repr"] = np.array2string(
-                value, threshold=8, edgeitems=2, max_line_width=self.repr_chars
-            ).replace("\n", " ")
-            return out
-        base = next((b for b in SIZED_BASES if issubclass(t, b)), None)
-        if base is None:
-            out["repr"] = repr(value)
-            return out
-        # Built-in containers, strings and bytes, subclasses included: the base type's own length
-        # and a bounded repr (reprlib's handlers, or a slice), never the object's full repr().
-        out["len"] = base.__len__(value)
-        out["repr"] = self.bounded_repr(value, base)
-        return out
-
-    def bounded_repr(self, value, base):
-        if base in (str, bytes, bytearray):
-            return repr(base.__getitem__(value, slice(0, self.repr_chars)))
-        handler = {
-            list: self.short.repr_list,
-            tuple: self.short.repr_tuple,
-            dict: self.short.repr_dict,
-            set: self.short.repr_set,
-            frozenset: self.short.repr_frozenset,
-        }.get(base)
-        return handler(value, self.short.maxlevel) if handler is not None else repr(value)
-
-    def variable(self, name, value, t):
-        type_name, module = type_names(t)
-        item = {"name": clean(name, 256), "type": type_name}
-        if module is not None:
-            item["module"] = module
-        verdict, described = self.bounded(lambda: self.describe(value, t))
-        if verdict != "ok":
-            item["repr"] = ""
-            item["repr_error"] = verdict
-            return item
-        for key in ("len", "shape", "dtype", "columns", "columns_total"):
-            if key in described:
-                item[key] = described[key]
-        item["repr"] = clean(described.get("repr", ""), self.repr_chars)
-        return item
-
-    def take(self, ns, hidden):
-        names = []
-        for name in list(ns.keys()):
-            if type(name) is not str or name.startswith("_") or name in IPYTHON_NAMES:
-                continue
-            if name in hidden and hidden.get(name) is ns.get(name):
-                continue
-            names.append(name)
-        names.sort()
-        variables, other, used, truncated = [], [], 0, False
-        for name in names:
-            if _time.monotonic() > self.deadline:
-                truncated = True
-                break
-            value = ns.get(name)
-            t = type(value)
-            kind = kind_of(t)
-            if kind is not None:
-                if len(other) >= self.max_vars:
-                    truncated = True
-                    continue
-                entry = {"name": clean(name, 256), "kind": kind}
-                size = len(_json.dumps(entry)) + 1
-                if used + size > self.max_bytes:
-                    truncated = True
-                    break
-                other.append(entry)
-                used += size
-                continue
-            if len(variables) >= self.max_vars:
-                truncated = True
-                continue
-            item = self.variable(name, value, t)
-            size = len(_json.dumps(item, ensure_ascii=False).encode("utf-8")) + 1
-            if used + size > self.max_bytes:
-                truncated = True
-                break
-            variables.append(item)
-            used += size
-        return {"variables": variables, "other": other, "truncated": truncated}
-
-    def run(self, ns, hidden):
-        previous = None
-        try:
-            # Per-variable alarms only when the kernel's main thread runs this and no timer of
-            # the user's is pending; otherwise the whole-snapshot budget still bounds it.
-            if hasattr(_signal, "setitimer") and _signal.getitimer(_signal.ITIMER_REAL)[0] == 0:
-                previous = _signal.signal(_signal.SIGALRM, self._on_alarm)
-                self.alarm = True
-        except (ValueError, OSError):
-            self.alarm = False
-        try:
-            return self.take(ns, hidden)
-        finally:
-            if self.alarm:
-                self.armed = False
-                _signal.setitimer(_signal.ITIMER_REAL, 0)
-                _signal.signal(_signal.SIGALRM, previous if previous is not None else _signal.SIG_DFL)
-
-
-def snapshot(limits, ns=None, hidden=None):
-    """JSON text of the snapshot. Inside the kernel, the IPython user namespace."""
-    if ns is None:
-        from IPython import get_ipython
-
-        shell = get_ipython()
-        ns = shell.user_ns
-        hidden = shell.user_ns_hidden
-    return _json.dumps(Snapshot(limits).run(ns, hidden or {}), ensure_ascii=True)
-'''
-
-# Evaluated as the silent request's user expression: INSPECT_SOURCE in a namespace of its own.
-INSPECT_EXPRESSION = "(lambda g: (exec(%s, g), g['snapshot'])[1])({'__name__': 'kobe_inspect'})(%s)"
 INSPECT_LIMIT_KEYS = ("max_vars", "max_bytes", "repr_chars", "columns_max", "per_var_ms", "budget_ms")
 
 COMPLETE_MATCHES_MAX = 100
@@ -1056,10 +824,298 @@ def complete(code, cursor, ns=None, hidden=None):
     except BaseException:
         result = {"error": "raised"}
     return _json.dumps(result, ensure_ascii=True)
+
+# ---- Variables snapshot (KOBE-803, transport KOBE-816). No member code runs: values are shown
+# only for exact built-in scalars, strings, bytes and containers (elements by the same rule, a
+# bounded depth and count; a subclass of a built-in container is read through the built-in's own
+# C methods), ranges, and exact numpy arrays and pandas frames and series (library code on library
+# objects: numeric array values, shapes, lengths, dtypes and plain column labels). Anything else
+# shows its type name only (`repr_error: "not_read"`): its repr, str, len or iteration is never
+# called. Bounded by count, bytes, characters and a time budget checked between variables.
+_VAR_FUNCTION_TYPES = (
+    _types.FunctionType,
+    _types.BuiltinFunctionType,
+    _types.MethodType,
+    _types.BuiltinMethodType,
+    _types.MethodWrapperType,
+    _types.WrapperDescriptorType,
+)
+_VAR_SCALARS = (int, float, complex, bool, type(None))
+_VAR_TEXT = (str, bytes, bytearray)
+_VAR_CONTAINERS = (list, tuple, dict, set, frozenset)
+_VAR_SIZED = _VAR_TEXT + _VAR_CONTAINERS + (range,)
+_VAR_ITEMS = 8
+_VAR_DEPTH = 2
+_VAR_INT_DIGITS = 200
+_TYPE_MODULE = type.__dict__["__module__"].__get__
+
+
+def _type_names(t):
+    try:
+        name = _qualname(t)
+    except Exception:
+        name = "?"
+    try:
+        module = _TYPE_MODULE(t)
+    except Exception:
+        module = None
+    module = module.split(".")[0] if type(module) is str else None
+    name = _clip(name, 256) or "?"
+    return name, (None if module in (None, "builtins") else _clip(module, 128))
+
+
+def _var_kind(t):
+    if issubclass(t, _types.ModuleType):
+        return "module"
+    if issubclass(t, type):
+        return "class"
+    if issubclass(t, _VAR_FUNCTION_TYPES):
+        return "function"
+    return None
+
+
+def _library(module, name):
+    m = _find(_sys_modules(), module, None)
+    if type(m) is not _types.ModuleType:
+        return None
+    t = _find(_module_dict(m), name, None)
+    return t if type(t) is type else None
+
+
+def _int_text(value):
+    # int.__repr__ is C; a huge int is summarised (its repr is quadratic and refused past 4300).
+    bits = int.bit_length(value)
+    if bits > _VAR_INT_DIGITS * 3.33:
+        return "<int of about %d digits>" % int(bits / 3.3219)
+    return int.__repr__(value)
+
+
+def _scalar_text(value, t):
+    if t is int or t is bool:
+        return _int_text(value) if t is int else bool.__repr__(value)
+    if t is type(None):
+        return "None"
+    return float.__repr__(value) if t is float else complex.__repr__(value)
+
+
+class _Render:
+    # A bounded text of a value by the rule above; `left` characters at most.
+    def __init__(self, limit):
+        self.left = limit
+
+    def put(self, parts, text):
+        parts.append(text)
+        self.left -= len(text)
+
+    def value(self, value, depth):
+        t = type(value)
+        if t in _VAR_SCALARS:
+            return _scalar_text(value, t)
+        if t is str:
+            return str.__repr__(str.__getitem__(value, slice(0, max(1, self.left))))
+        if t is bytes or t is bytearray:
+            return repr(bytes(t.__getitem__(value, slice(0, max(1, self.left)))))
+        if t is range:
+            return range.__repr__(value)
+        base = next((b for b in _VAR_CONTAINERS if t is b), None)
+        if base is None:
+            return "<%s>" % _type_names(t)[0]
+        return self.container(value, base, depth)
+
+    def container(self, value, base, depth):
+        n = base.__len__(value)
+        open_, close = {list: "[]", tuple: "()", dict: "{}", set: "{}", frozenset: "{}"}[base]
+        if base is frozenset:
+            open_, close = "frozenset({", "})"
+        if n == 0:
+            return {list: "[]", tuple: "()", dict: "{}", set: "set()", frozenset: "frozenset()"}[base]
+        if depth >= _VAR_DEPTH:
+            return open_ + "..." + close
+        parts = []
+        shown = 0
+        items = dict.items(value) if base is dict else base.__iter__(value)
+        for item in _it.islice(items, _VAR_ITEMS):
+            if self.left <= 0:
+                break
+            if shown:
+                self.put(parts, ", ")
+            if base is dict:
+                k, v = item
+                self.put(parts, self.value(k, depth + 1) + ": " + self.value(v, depth + 1))
+            else:
+                self.put(parts, self.value(item, depth + 1))
+            shown += 1
+        if shown < n:
+            parts.append(", ..." if parts else "...")
+        trailing = "," if base is tuple and n == 1 else ""
+        return open_ + "".join(parts) + trailing + close
+
+
+class _Snapshot:
+    def __init__(self, limits):
+        get = lambda k, d: int(limits.get(k, d)) if type(limits.get(k, d)) is int else d
+        self.max_vars = get("max_vars", 200)
+        self.max_bytes = get("max_bytes", 65536)
+        self.repr_chars = get("repr_chars", 200)
+        self.columns_max = get("columns_max", 50)
+        self.deadline = _time.monotonic() + get("budget_ms", 2000) / 1000
+        self.ndarray = _library("numpy", "ndarray")
+        self.frame = _library("pandas", "DataFrame")
+        self.series = _library("pandas", "Series")
+
+    def text(self, value):
+        return _clip_keep(_Render(self.repr_chars).value(value, 0), self.repr_chars)
+
+    def library_text(self, value):
+        # A label or dtype of a library object: plain values by the rule, else the type name.
+        t = type(value)
+        if t in _VAR_SCALARS or t is str:
+            return _clip_keep(_Render(128).value(value, 1) if t is not str else value, 128)
+        module = _type_names(t)[1]
+        if module in ("numpy", "pandas"):
+            return _clip_keep(str(value), 128)
+        return "<%s>" % _type_names(t)[0]
+
+    def describe(self, value, t):
+        out = {}
+        if t in _VAR_SCALARS or t in _VAR_TEXT or t in _VAR_CONTAINERS or t is range:
+            if t in _VAR_SIZED:
+                out["len"] = t.__len__(value)
+            out["repr"] = self.text(value)
+            return out
+        if self.frame is not None and t is self.frame:
+            columns = value.columns
+            rows, cols = len(value.index), len(columns)
+            labels = list(_it.islice(iter(columns), self.columns_max))
+            plain = all(type(c) in _VAR_SCALARS or type(c) is str for c in labels)
+            dtypes = list(_it.islice(value.dtypes.items(), self.columns_max)) if plain else []
+            out["shape"] = [rows, cols]
+            out["columns_total"] = cols
+            out["columns"] = [
+                {"name": self.library_text(c), "dtype": self.library_text(d)} for c, d in dtypes
+            ] if plain else [{"name": self.library_text(c), "dtype": "?"} for c in labels]
+            out["repr"] = "DataFrame: %d rows × %d columns" % (rows, cols)
+            return out
+        if self.series is not None and t is self.series:
+            n = len(value)
+            out["len"], out["shape"] = n, [n]
+            out["dtype"] = self.library_text(value.dtype)
+            out["repr"] = "Series: %d values (%s)" % (n, out["dtype"])
+            return out
+        if self.ndarray is not None and t is self.ndarray:
+            out["shape"] = [int(d) for d in value.shape][:64]
+            dtype = value.dtype
+            out["dtype"] = self.library_text(dtype)
+            if getattr(dtype, "kind", None) in tuple("biufc"):
+                np = _find(_sys_modules(), "numpy", None)
+                out["repr"] = np.array2string(
+                    value, threshold=8, edgeitems=2, max_line_width=self.repr_chars
+                ).replace("\n", " ")
+            else:
+                out["repr"] = ""
+                out["repr_error"] = "not_read"
+            return out
+        base = next((b for b in _VAR_SIZED if issubclass(t, b)), None)
+        if base is not None:
+            # A subclass of a built-in container or string: the built-in's own length and items
+            # (its C methods), never the subclass's repr, len or iteration.
+            out["len"] = base.__len__(value)
+            if base in _VAR_TEXT:
+                out["repr"] = _clip_keep(repr(base(base.__getitem__(value, slice(0, self.repr_chars)))), self.repr_chars)
+            elif base is range:
+                out["repr"] = ""
+                out["repr_error"] = "not_read"
+            else:
+                out["repr"] = _clip_keep(_Render(self.repr_chars).container(value, base, 0), self.repr_chars)
+            return out
+        out["repr"] = ""
+        out["repr_error"] = "not_read"
+        return out
+
+    def variable(self, name, value, t):
+        type_name, module = _type_names(t)
+        item = {"name": _clip_keep(name, 256), "type": type_name}
+        if module is not None:
+            item["module"] = module
+        try:
+            described = self.describe(value, t)
+        except KeyboardInterrupt:
+            raise
+        except Exception:
+            # Library code failed (a broken frame): no value, never a member's code.
+            return {**item, "repr": "", "repr_error": "raised"}
+        for key in ("len", "shape", "dtype", "columns", "columns_total", "repr_error"):
+            if key in described:
+                item[key] = described[key]
+        item["repr"] = _clip_keep(described.get("repr", ""), self.repr_chars)
+        return item
+
+    def take(self, ns, hidden):
+        entries = []
+        for name, value in _it.islice(ns.items(), 50_000):
+            if type(name) is not str or name.startswith("_") or name in _IPYTHON_NAMES:
+                continue
+            if type(hidden) is dict and _find(hidden, name, _Stop) is value:
+                continue
+            entries.append((name, value))
+        entries.sort(key=lambda e: e[0])
+        variables, other, used, truncated = [], [], 0, False
+        for name, value in entries:
+            if _time.monotonic() > self.deadline:
+                truncated = True
+                break
+            t = type(value)
+            kind = _var_kind(t)
+            if kind is not None:
+                if len(other) >= self.max_vars:
+                    truncated = True
+                    continue
+                entry = {"name": _clip_keep(name, 256), "kind": kind}
+                size = len(_json.dumps(entry)) + 1
+                if used + size > self.max_bytes:
+                    truncated = True
+                    break
+                other.append(entry)
+                used += size
+                continue
+            if len(variables) >= self.max_vars:
+                truncated = True
+                continue
+            item = self.variable(name, value, t)
+            size = len(_json.dumps(item, ensure_ascii=False).encode("utf-8")) + 1
+            if used + size > self.max_bytes:
+                truncated = True
+                break
+            variables.append(item)
+            used += size
+        return {"variables": variables, "other": other, "truncated": truncated}
+
+
+def _clip_keep(text, limit):
+    # Like _clip but keeps surrounding spaces and empty text (a repr is shown as it is).
+    if type(text) is not str:
+        return ""
+    text = text.replace("\x00", "�").encode("utf-8", "replace").decode("utf-8")
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def variables(limits, ns, hidden=None, execution_count=None):
+    # JSON text of the snapshot of `ns` (the kernel's user namespace).
+    try:
+        snap = _Snapshot(limits if type(limits) is dict else {}).take(ns, hidden or {})
+    except KeyboardInterrupt:
+        return _json.dumps({"error": "interrupted"})
+    snap["execution_count"] = execution_count if type(execution_count) is int else None
+    return _json.dumps(snap, ensure_ascii=True)
 '''
 
 # The kernel answers completion and docs from STATIC_SOURCE (the launcher above runs it).
-LAUNCHER = LAUNCHER.replace("@STATIC_SOURCE@", repr(STATIC_SOURCE))
+# An inspect_request whose code starts with this asks for the variables snapshot (KOBE-816); a
+# dotted name never does (the server checks names).
+VARIABLES_MARKER = "\x01kobe-variables "
+LAUNCHER = LAUNCHER.replace("@STATIC_SOURCE@", repr(STATIC_SOURCE)).replace(
+    '"@VARIABLES_MARKER@"', repr(VARIABLES_MARKER)
+)
 ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 
 
@@ -1266,16 +1322,11 @@ class Bridge:
         return True
 
     def inspect(self, inspect_id, limits):
+        """KOBE-803/816: the variables snapshot, as an inspect_request the kernel answers from
+        STATIC_SOURCE (no execute: no hooks, transformers, formatters, history or count)."""
         safe = {k: int(v) for k, v in limits.items() if k in INSPECT_LIMIT_KEYS and type(v) is int and 0 < v < 10**7}
-        expression = INSPECT_EXPRESSION % (repr(INSPECT_SOURCE), repr(safe))
-        msg_id = self.kc.execute(
-            "",
-            silent=True,
-            store_history=False,
-            user_expressions={"kobe": expression},
-            allow_stdin=False,
-            stop_on_error=False,
-        )
+        code = VARIABLES_MARKER + json.dumps(safe)
+        msg_id = self.kc.inspect(code, len(code), detail_level=0)
         while True:
             try:
                 reply = self.kc.get_shell_msg(timeout=0.5)
@@ -1287,20 +1338,20 @@ class Bridge:
             if reply.get("parent_header", {}).get("msg_id") == msg_id:
                 break
         content = reply.get("content", {})
-        result = (content.get("user_expressions") or {}).get("kobe") or {}
-        if content.get("status") != "ok" or result.get("status") != "ok":
-            name = result.get("ename") or content.get("ename") or "error"
-            emit({"ev": "inspected", "id": inspect_id, "error": str(name)[:200]})
-            return True
+        meta = content.get("metadata")
+        text = meta.get("kobe") if isinstance(meta, dict) else None
         try:
-            snap = json.loads(ast.literal_eval(result["data"]["text/plain"]))
+            if content.get("status") != "ok" or type(text) is not str:
+                raise ValueError("failed")
+            snap = json.loads(text)
             if not isinstance(snap, dict):
                 raise ValueError("not an object")
         except Exception:  # noqa: BLE001 - reported as unreadable
             emit({"ev": "inspected", "id": inspect_id, "error": "unreadable"})
             return True
-        count = content.get("execution_count")
-        snap["execution_count"] = count if type(count) is int else None
+        if "error" in snap:
+            emit({"ev": "inspected", "id": inspect_id, "error": str(snap["error"])[:200]})
+            return True
         emit({"ev": "inspected", "id": inspect_id, "snapshot": snap})
         return True
 
