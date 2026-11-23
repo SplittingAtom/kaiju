@@ -94,6 +94,29 @@
 - **R2-L4** upload-pack 403 → `credential_forbidden`; a pack over the object cap is
   `repository_too_large` with detail `objects`.
 
+## Review round 3 — what changed
+
+- **R3-M1** one shared set of Repo limits (`services/server/src/git/repo-limits.ts`: 500 files,
+  50 MiB per file, 512 MiB at the tip of the default branch), used by the mirror and by Convert to
+  repo, which now refuses a project whose current files exceed them (422 `too_large_to_mirror`,
+  with a message naming the limit; the 2 GiB history ceiling stays). A Repo that grows past them
+  on the host shows `mirror.too_large: true` and a plain message ("too large to mirror … Kobe keeps
+  showing the last mirror"). Tests: conversion of a project with 539 MiB of current files refused (the database caps a project at 500 files, so the total is the reachable limit); view flag and message.
+- **R3-L1** `server.tmpSizeLimit` default 6Gi → 8Gi: conversion 4 GiB + mirror 2 × (768 MiB + one
+  50 MiB object) ≈ 1.6 GiB + 2.4 GiB for other temporary files; chart comment, schema description,
+  `docs/install.md` and the chart test updated.
+- **R3-L2** every replica removes stale mirror work folders at start (older than this process and
+  than a lease), not only the job-lock holder; the conversion sweep already runs on every replica
+  (no lock). The waiting-delta list appends in place (round-2 cosmetic note).
+
+### Owner to confirm (numbers chosen by the coordinator, 2026-11-23)
+
+- Repo content limit **512 MiB** of files at the default branch's tip (with 500 files, 50 MiB per
+  file: Kobe's project limits), shared by the mirror and Convert to repo.
+- **768 MiB** per refresh: on disk (pack plus objects) and inflated in all.
+- **20,000** objects per fetched pack; pack download **128 MiB**.
+- `server.tmpSizeLimit` default **8Gi**.
+
 ## Docs
 
 - `docs/guide/admin/git-organizations.md`: new section "Repos: the mirror, read-only Repos,

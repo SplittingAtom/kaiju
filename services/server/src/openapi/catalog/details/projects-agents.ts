@@ -71,7 +71,7 @@ const ProjectMember = named("ProjectMember", projectMemberSchema);
 
 const Conversion = named("GitConversionStarted", gitConversionStartedSchema);
 const conversionRefusals =
-  "A refused start names its reason (`code`, `message`, and `path`/`paths`, `seq`, `checkouts`, `limit_bytes`/`size_bytes` where they apply): 409 `already_repo`, `conversion_in_progress`, `archived`, `legal_hold`, `unsaved_checkouts`, `connection_read_only`; 403 `git_disabled`, `host_not_allowed`, `existing_repository_admin_only` (only Workspace admins choose an existing repository); 404 `connection_not_found`; 422 `cannot_create_repositories`, `internal_not_offered`, `invalid_repository_name`, `file_rejected_by_host`, `file_too_large`, `project_too_large`; 503 `git_unavailable`.";
+  "A refused start names its reason (`code`, `message`, and `path`/`paths`, `seq`, `checkouts`, `limit_bytes`/`size_bytes` where they apply): 409 `already_repo`, `conversion_in_progress`, `archived`, `legal_hold`, `unsaved_checkouts`, `connection_read_only`; 403 `git_disabled`, `host_not_allowed`, `existing_repository_admin_only` (only Workspace admins choose an existing repository); 404 `connection_not_found`; 422 `cannot_create_repositories`, `internal_not_offered`, `invalid_repository_name`, `file_rejected_by_host`, `file_too_large`, `project_too_large`, `too_large_to_mirror` (the current files are more than a Repo's mirror can hold); 503 `git_unavailable`.";
 
 export const projectsDetails: Readonly<Record<string, CatalogDetail>> = {
   "get /v1/projects/{id}/repo-conversion": {

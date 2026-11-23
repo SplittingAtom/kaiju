@@ -8,6 +8,7 @@ import {
   GIT_MIRROR_DIR_NAME,
   GIT_MIRROR_GONE_RECHECK_MS,
   GIT_MIRROR_INTERVAL_MS,
+  GIT_MIRROR_LEASE_MS,
   GIT_MIRROR_PER_TEAM,
   GIT_MIRROR_SLOTS,
   GIT_MIRROR_SWEEP_MS,
@@ -146,6 +147,14 @@ export class GitMirrorJob {
   }
 
   start(): void {
+    // Review R3-L2: every replica (not only the one holding the job lock) removes the work
+    // folders a refresh left when an earlier process died: an emptyDir survives a container
+    // restart. Only folders older than this process and than a lease.
+    fireAndLog(
+      this.deps.log,
+      "git mirror stale work folder cleanup",
+      removeStaleWorkDirs(Math.min(PROCESS_STARTED_AT, Date.now() - GIT_MIRROR_LEASE_MS)),
+    );
     const run = () => {
       if (this.running) return;
       this.running = true;

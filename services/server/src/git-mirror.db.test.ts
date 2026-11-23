@@ -10,6 +10,7 @@ import { GIT_MIRROR_GONE_CONFIRMATIONS } from "./git/mirror/limits.js";
 import { refreshRepository, type MirrorDeps } from "./git/mirror/refresh.js";
 import { claimRefresh } from "./git/mirror/store.js";
 import { projectWriteBlock } from "./projects/repo-state.js";
+import { writeCommit, type TreeFile } from "./projects/tree.js";
 import {
   forgejo,
   fx,
@@ -341,10 +342,53 @@ describe("refreshes back off and never block reads (ac-2)", () => {
     commitOnHost(git.root, hostName(c), many, "Too many");
     expect(await refreshRepository(deps(), c.w.team, c.repositoryId)).toBe("failed");
     expect((await repoRow(c)).mirror_error).toBe("too_many_files");
+    // R3-M1: the member sees plainly that it is too large to mirror and the last mirror is kept.
+    const view = await repoView(c.w.member, c.projectId);
+    expect(view.mirror.too_large).toBe(true);
+    expect(view.mirror.error?.message).toMatch(/too large to mirror.*last mirror/);
     expect(Object.keys(await files(c.w.owner, c.projectId)).sort()).toEqual([
       "README.md",
       "notes.txt",
     ]);
+  });
+});
+
+describe("Convert to repo refuses what the mirror could never show (R3-M1)", () => {
+  it("refuses a project whose current files are more than a Repo's mirror holds", async () => {
+    const w = await world();
+    const p = await project(w, [{ by: w.owner, message: "Start", files: { "a.txt": "a" } }]);
+    // Eleven files of 49 MiB each as recorded (539 MiB): the refusal is decided from the
+    // project's records before any content is read. (The database itself keeps a project at
+    // 500 files and Kobe at 50 MiB per file, so the total is the limit that can be reached.)
+    const tree = new Map<string, TreeFile>();
+    for (let i = 0; i < 11; i += 1) {
+      tree.set(`big/${i}.bin`, {
+        path: `big/${i}.bin`,
+        sha256: String(i).padStart(64, "0"),
+        blobRef: `kobe/teams/${w.team}/projects/${p.id}/blobs/${String(i).padStart(64, "0")}`,
+        size: 49 * 1024 * 1024,
+        mime: "application/octet-stream",
+        executable: false,
+      });
+    }
+    await withTeam(fx.db, w.team, (tx) =>
+      writeCommit(tx, {
+        teamId: w.team,
+        projectId: p.id,
+        tree,
+        author: { userId: w.owner.id, kind: "user" },
+        message: "Big",
+      }),
+    );
+    hostRepo(p.slug);
+    const res = await start(w.owner, p.id, { connection_id: w.connectionId });
+    expect([res.status, res.json.code]).toEqual([422, "too_large_to_mirror"]);
+    expect(res.json).toMatchObject({
+      limit_bytes: 512 * 1024 * 1024,
+      size_bytes: 11 * 49 * 1024 * 1024,
+    });
+    expect(res.json.message).toContain("539 MiB");
+    expect(await kind(w.team, p.id)).toBe("project");
   });
 });
 

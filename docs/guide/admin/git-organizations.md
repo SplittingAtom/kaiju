@@ -215,9 +215,12 @@ connection's 3,000 git reads an hour, the budget agents' git tools share; when i
 refresh waits for the next hour. The panel shows when the mirror was last refreshed and, after a
 failure, what went wrong. Kobe retries a failed refresh after 5 minutes, then waits twice as long
 after each further failure, up to 6 hours (or until the host's rate limit resets); the mirror
-stays as it was in the meantime. A mirror follows Kobe's project limits: at most 500 files of at
-most 50 MiB each, 512 MiB in all; Kobe checks every file's size before reading it, and downloads at
-most 128 MiB per refresh. A repository beyond them keeps its last mirror and shows the reason. Symlinks and submodules are left out. Kobe's history settings for projects don't apply to
+stays as it was in the meantime. A mirror can hold at most 500 files of at most 50 MiB each, 512 MiB in all, at the tip of the
+default branch; Kobe checks every file's size before reading it, and downloads at most 128 MiB per
+refresh. Convert to repo refuses a project whose current files are already beyond that ("too
+large to mirror"). If a repository grows past it on the host, the Repo says it is too large to
+mirror and keeps showing its last mirror; nothing changes on the host, and the mirror resumes
+once the repository is back within the limits. Symlinks and submodules are left out. Kobe's history settings for projects don't apply to
 a Repo: its history is on the host.
 
 A repository renamed or transferred on the host is followed: Kobe knows it by the host's id. When

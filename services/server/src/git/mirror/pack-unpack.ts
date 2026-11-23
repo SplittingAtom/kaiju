@@ -388,7 +388,9 @@ export async function unpackPack(
       const base = e.baseAt !== undefined ? written.get(e.baseAt) : byOid.get(e.baseOid ?? "");
       if (!base) {
         const key = keyOf(e);
-        waiting.set(key, [...(waiting.get(key) ?? []), { at: objAt, entry: e }]);
+        const list = waiting.get(key) ?? [];
+        list.push({ at: objAt, entry: e });
+        waiting.set(key, list);
         waitingCount += 1;
         return;
       }

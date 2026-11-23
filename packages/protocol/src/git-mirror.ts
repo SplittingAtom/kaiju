@@ -79,6 +79,11 @@ export const gitRepoMirrorSchema = z.strictObject({
   next_attempt_at: timestampSchema.nullable(),
   failures: z.number().int().nonnegative(),
   error: z.strictObject({ code: z.enum(GIT_MIRROR_FAILURES), message: z.string() }).nullable(),
+  /**
+   * The repository grew past what a mirror can hold (500 files, 50 MiB per file, 512 MiB in all):
+   * the panel shows the last mirror, plainly marked as such, until the repository shrinks.
+   */
+  too_large: z.boolean(),
 });
 export type GitRepoMirror = z.infer<typeof gitRepoMirrorSchema>;
 

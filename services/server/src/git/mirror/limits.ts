@@ -1,4 +1,8 @@
-import { PROJECT_FILE_MAX_BYTES, PROJECT_FILES_MAX } from "@kobe/protocol";
+import {
+  GIT_REPO_MAX_CONTENT_BYTES,
+  GIT_REPO_MAX_FILE_BYTES,
+  GIT_REPO_MAX_FILES,
+} from "../repo-limits.js";
 import type { RateLimitRule } from "../../rate-limit.js";
 
 /**
@@ -59,17 +63,18 @@ export const GIT_MIRROR_MAX_INFLATED_BYTES = 768 * 1024 * 1024;
 /**
  * Bytes one refresh may put on disk: the pack plus every object written loose (review R2-M1).
  * Two refreshes at once (1.5 GiB) and a conversion (about 4 GiB) stay inside the server's /tmp
- * limit (`server.tmpSizeLimit`, 6 GiB).
+ * limit (`server.tmpSizeLimit`, 8 GiB by default).
  */
 export const GIT_MIRROR_MAX_DISK_BYTES = 768 * 1024 * 1024;
 /** Most objects in one fetched pack: 25 commits of a project of at most 500 files need far fewer. */
 export const GIT_MIRROR_MAX_OBJECTS = 20_000;
-/** A Repo's mirrored files follow Kobe's project limits: at most this many files... */
-export const GIT_MIRROR_MAX_FILES = PROJECT_FILES_MAX;
-/** ...of at most this size each... */
-export const GIT_MIRROR_MAX_FILE_BYTES = PROJECT_FILE_MAX_BYTES;
-/** ...and at most this much content in all (review R2-M1: within the per-refresh disk budget). */
-export const GIT_MIRROR_MAX_BYTES = 512 * 1024 * 1024;
+/**
+ * A Repo's mirrored files: the shared Repo limits (`git/repo-limits.ts`, also checked by Convert
+ * to repo, review R3-M1), within the per-refresh disk budget.
+ */
+export const GIT_MIRROR_MAX_FILES = GIT_REPO_MAX_FILES;
+export const GIT_MIRROR_MAX_FILE_BYTES = GIT_REPO_MAX_FILE_BYTES;
+export const GIT_MIRROR_MAX_BYTES = GIT_REPO_MAX_CONTENT_BYTES;
 /** Free space a refresh needs in its work folder beyond the pack and its objects. */
 export const GIT_MIRROR_DISK_MARGIN_BYTES = 64 * 1024 * 1024;
 

@@ -10,7 +10,7 @@ import type { RateLimitRule } from "../../rate-limit.js";
  * Most distinct file content (bytes, all commits carried) one conversion pushes: the smaller of
  * this and the connection's push limit (G11, default 1 GiB). The ceiling is tied to the work
  * folder (coordinator's number, 2026-11-23, pending the owner): the loose objects (at most this,
- * compressed) plus one batch's pack (at most this) fit the server's /tmp `sizeLimit` (6 GiB,
+ * compressed) plus one batch's pack (at most this) fit the server's /tmp `sizeLimit` (8 GiB,
  * `charts/kobe/values.yaml` `server.tmpSizeLimit`) with room for its other temporary files.
  * Packed data is never larger than the content it packs, so this bounds the packed size too.
  */

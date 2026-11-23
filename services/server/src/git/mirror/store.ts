@@ -312,9 +312,12 @@ export const MIRROR_FAILURE_MESSAGES: Readonly<Record<GitMirrorFailure, string>>
   host_rate_limited: "The git host is rate limiting Kobe; Kobe tries again after its reset time.",
   host_unreachable: "The git host could not be reached; Kobe tries again later.",
   branch_missing: "The repository's default branch is not on the host.",
-  too_many_files: "The repository has more files than a Kobe project can hold.",
-  file_too_large: "The repository holds a file larger than a Kobe project file may be.",
-  repository_too_large: "The repository's files are larger in all than a mirror may hold.",
+  too_many_files:
+    "The repository is too large to mirror: it has more than 500 files. Kobe keeps showing the last mirror; the repository itself is unchanged on the host.",
+  file_too_large:
+    "The repository is too large to mirror: it holds a file over 50 MiB. Kobe keeps showing the last mirror; the repository itself is unchanged on the host.",
+  repository_too_large:
+    "The repository is too large to mirror: its files, or its recent history, are more than a mirror can hold (512 MiB of files). Kobe keeps showing the last mirror; the repository itself is unchanged on the host.",
   unsupported_path: "The repository holds a file whose path Kobe's projects cannot hold.",
   fetch_failed: "Kobe could not read the repository from the host; it tries again later.",
   server_capacity: "The server has no room to read the repository now; Kobe tries again later.",

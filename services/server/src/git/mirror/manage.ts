@@ -73,6 +73,13 @@ type RepoRow = {
   refreshing: boolean;
 };
 
+/** The failures that mean "too large to mirror" (review R3-M1). */
+const TOO_LARGE: ReadonlySet<string> = new Set([
+  "too_many_files",
+  "file_too_large",
+  "repository_too_large",
+]);
+
 const iso = (d: Date | string | null) => (d === null ? null : new Date(d).toISOString());
 
 async function repoOf(tx: KobeTx, teamId: string, projectId: string): Promise<RepoRow | undefined> {
@@ -127,6 +134,7 @@ async function viewOf(
       // The claim's provisional `interrupted` is not a failure while that refresh runs.
       error:
         row.refreshing && row.mirror_error === "interrupted" ? null : failureView(row.mirror_error),
+      too_large: TOO_LARGE.has(row.mirror_error ?? ""),
     },
     commits: commits.rows.map((c) => ({
       sha: c.sha,
