@@ -69,10 +69,12 @@ enters your sandbox. With **Read** your sandbox can fetch (clone and pull) there
 write** it can also push, if your role is Contributor or above (and, for a Repo, you are an editor
 or owner of its project).
 
-Agents also get **git host tools** for these organizations, run by Kobe's server: reading
+Agents also get **git host tools** for these organizations from Kobe's built-in **git** connector
+(listed under **+** → **Connectors**, always on, apart from the Kobe connector), run by Kobe's
+server: reading
 repositories, branches, files, pull requests and issues (at **Read**), and creating branches,
 repositories, pull requests, issues and comments (at **Read and write**, with the same role rules as
-pushing). Creating a repository, opening a pull request, commenting and creating an issue ask you
+pushing). A repository that is a Repo is readable only with a role on its project. Creating a repository, opening a pull request, commenting and creating an issue ask you
 first; see [Git changes](internet-and-approvals/approvals.md#git-changes). The full list is in
 [Working with git repositories](for-agents/working-with-git.md). See also
 [Git organizations](admin/git-organizations.md).

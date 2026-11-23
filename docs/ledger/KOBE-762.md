@@ -24,7 +24,7 @@ Tools: reads `git_list_connections` (not in the spec's table: the agent needs th
 
 ## Decisions
 
-- **Mechanism: the built-in Kobe connector**, not a new gated frame or a second built-in row. It is
+- **Mechanism** (superseded by M3 below: now the built-in git connector): the built-in Kobe connector, not a new gated frame. It is
   the existing pattern for server-run tools reached over MCP (KOBE-619): the MCP proxy routes it to
   the server, `decideMcpCall` runs the engine under every active run of the sandbox (KOBE-777/800),
   verifies and consumes the signed approval, writes `mcp.tool_call`; the sandbox's `policy.check`
@@ -80,10 +80,42 @@ untrusted fences, refusal codes), `admin/git-organizations.md` (agent column per
 - Branch protection reads (G14) and the Git section's Repositories/Activity lists (GIT-10/GIT-13).
 - No new route, so no OpenAPI entry.
 
+## Security review fixes (review-g103, 2026-11-22)
+
+- **M1**: `git.write.attempted` is committed under the member's git write lock before the host is
+  asked to act; a repeat whose last record is an attempt answers `outcome_unknown` (check the
+  host) and never acts; a certain refusal (`git.write.failed`, any host error but
+  `host_unreachable`/`unexpected`) may be retried. Host values are sanitised/truncated
+  (`safeHostId`, repository, number, https URL) so an odd value never drops the row. Audit events,
+  no table.
+- **M2**: per-connection budgets (the coordinator's numbers): 3,000 reads and 300 writes an hour
+  per connection, all members together, in front of the adapter; `git_connection_budget` with the
+  window end as retry time (member limits now report their window end too). Server
+  `hitRateLimit` (no `@kobe/db` limiter on this branch).
+- **M3** (owner decision): the git tools are the built-in **git** connector (`builtin = 'git'`,
+  id `6b6f6265-0000-4000-8000-000000000002`, name `kobe-git`, seeded at start; migration
+  `0250_git_builtin_connector` widens the two CHECKs), served by `/internal/v1/mcp/git/{list,calls}`
+  (`git-tools/mcp-service.ts`, same `decideMcpCall` path) and routed by the MCP proxy. The Kobe
+  MCP switch and the Kobe connector's thread toggle no longer reach them; the Git switch and
+  connections are the ceiling. Conversation picker: its own always-on row (`builtin.kind = "git"`).
+  Site settings hint, admin-from-a-conversation table, Site admin page say so. Policy: exemption and
+  guard keyed on the git connector id; Kobe admin limits no longer count git calls. Agent tool
+  editors list no git tools (globs still apply), unchanged.
+- **M4** (owner decision): reading a Kobe Repo (matched by host id and last-seen name under any
+  connection, `repoReadRules`/`repoReadable` in `git/transport.ts`) needs project `view`, in the
+  tools (specific reads resolve the id first when the host has Repos; listings filter) and in the
+  transport's fetch decision; refused exactly as missing. **Note:** since KOBE-587 every Workspace
+  member is an implicit reader of every project, so today this refuses nobody; it holds if
+  project visibility returns. Tested with a stubbed permission (unit), fail-closed and allowed
+  paths (DB, incl. rename and reconnect for transport).
+- **Lows**: guide wording for create_branch in unattended runs (+ test); retries per run;
+  `outcome_unknown`; file content verbatim inside the fence (`fenceGitFile`), metadata still
+  sanitised; a public repository is reported as public, with a warning, and logged.
+- Not done: L3 (footer name may change between card and post), L4 (names unfenced, bounded), L6
+  (index for `callDigest`), L8 (file cap vs result cap).
+
 ## Open questions (for the coordinator)
 
-- Kobe MCP switch **off** hides git tools too (see Decisions). Decouple if Chris wants them
-  independent of that switch.
 - Opus security review (ticket) not run here.
 
 ## Evidence

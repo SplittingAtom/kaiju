@@ -118,12 +118,19 @@ Agents act on the host's API through tools Kobe runs on its server (the list is 
 [Working with git repositories](../for-agents/working-with-git.md)). Kobe decides every call
 under the Workspace's policy:
 
-- Reads and creating a branch run without asking. Creating a repository, opening a pull request,
-  commenting and creating an issue ask the member first, on a card that names the host,
-  organization and repository and shows exactly what will be posted. Change these defaults with
-  policy rules, as for any tool: an ask or deny rule on `mcp__kobe__git_create_branch`, for
-  example. In scheduled runs and auto mode a call that would ask is refused unless a Workspace
-  allow rule lists it.
+- Reads and creating a branch need no approval while the member is present. Creating a
+  repository, opening a pull request, commenting and creating an issue ask the member first, on a
+  card that names the host, organization and repository and shows exactly what will be posted.
+  In scheduled runs and auto mode only reads run: creating a branch and the other changes are
+  refused there unless a Workspace allow rule lists them. Change the defaults with policy rules,
+  as for any tool: an ask or deny rule on `mcp__kobe_git__git_create_branch`, for example. A
+  Workspace allow rule does not remove the member's approval in a conversation (only the member's
+  own remembered approval does), so "always allow pull requests in `acme/docs`" is the member's
+  choice, not the admin's.
+- The tools come from Kobe's built-in **git** connector, separate from the Kobe connector: the
+  Site's **Kobe connector** setting and turning the Kobe connector off in a conversation do not
+  affect them. Their ceiling is the Site's **Git connections** switch and allowed hosts, then
+  each connection's access level and agents.
 - New repositories are private, or internal where the connection's repository default is
   internal; never public. A name prefix in **Settings** is required of every new name.
 - Pull requests, issues and comments end with a line naming the member and linking the
@@ -132,9 +139,18 @@ under the Workspace's policy:
   conversation running in the member's sandbox uses one of them.
 - Nothing destructive is offered: no deleting or archiving repositories, merging, visibility or
   settings changes, members, secrets or webhooks.
-- Each member may make 300 reads per 10 minutes and 30 changes per hour. Every change is recorded
+- A repository that is a Kobe Repo is readable (by the tools and by git in sandboxes) only for
+  members with a role on its project; for others it behaves as if it did not exist. Converting a
+  project to a Repo never widens who can read it. Other repositories of the organization stay
+  readable by every member at **Read**.
+- Each member may make 300 reads per 10 minutes and 30 changes per hour, and all agents together
+  3,000 reads and 300 changes an hour per connection, well under GitHub's 5,000 requests an hour
+  for a token (the host's own limit is shared with git in sandboxes and health checks). A change
+  whose answer from the host was lost is never sent again automatically: the agent is told to
+  check the host. Every change is recorded
   in the audit log (`git.repository.created`, `git.branch.created`, `git.pull_request.opened`,
-  `git.issue.created`, `git.comment.created`) with the member, conversation, agent, connection,
+  `git.issue.created`, `git.comment.created`, plus `git.write.attempted` before and
+  `git.write.failed` when the host refused) with the member, conversation, agent, connection,
   repository and the host's link, never the text posted. Repositories agents create are recorded
   in the Workspace's list.
 

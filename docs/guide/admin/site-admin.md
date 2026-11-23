@@ -199,7 +199,8 @@ read a person's portable preferences either; reading them needs its own break-gl
   memories: choose a provider your
   organization may send that to (the in-cluster model keeps it in your cluster). See
   [Search by meaning](../memory.md#search-by-meaning). The **Kobe connector** setting is **Off**, **Docs only** (the
-  default) or **Docs and admin tools**; see below. **Kobe admin limits** set how many admin reads
+  default) or **Docs and admin tools**; see below. It does not affect agents' git host tools,
+  which follow **Git connections**. **Kobe admin limits** set how many admin reads
   per minute (default 60) and admin changes per hour (default 30) one person's agents may make,
   1 to 10,000 each; they apply to the next call, and every change is audited. **Git
   connections**: whether Workspaces may connect git organizations (on by default; off stops every

@@ -89,8 +89,11 @@ conversation. For a new repository it shows the visibility (private, or internal
 The exact input is below.
 
 - Once posted, the text is on the git host, outside Kobe: Kobe cannot take it back.
-- Creating a branch and reading do not ask, unless your team's policy says so.
-- These cards are never part of **Approve all waiting**. You can remember them like other tools.
+- Creating a branch and reading do not ask, unless your team's policy says so (in scheduled runs
+  and auto mode creating a branch is refused unless your team allow-lists it).
+- These cards are never part of **Approve all waiting**. You can remember them like other tools;
+  prefer remembering exactly this input, since a broader one also allows other repositories and
+  texts.
 
 See [Git organizations](../admin/git-organizations.md).
 
