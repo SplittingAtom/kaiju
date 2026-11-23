@@ -329,6 +329,9 @@ describe("the ? sheet and tooltips list them (ac-2)", { timeout: 30_000 }, () =>
     const editorKeys = within(sheet).getByRole("list", { name: "Code editor keys" });
     expect(editorKeys.textContent).toContain("Find next");
     expect(editorKeys.textContent).toContain("Go to line");
+    // KOBE-805: run and save from the editor.
+    expect(editorKeys.textContent).toContain("Save the file");
+    expect(editorKeys.textContent).toContain("Run the Python file, or only the selected lines");
     // KOBE-395: Learn from this chat in its own Memory section.
     const memory = within(sheet).getByRole("list", { name: "Memory shortcuts" });
     expect(memory.textContent).toContain("Learn from this chat");

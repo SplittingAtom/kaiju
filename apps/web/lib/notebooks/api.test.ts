@@ -57,6 +57,62 @@ describe("notebook api (KOBE-465)", () => {
     expect(res).toMatchObject({ ok: false, error: { code: "thread_busy", status: 409 } });
   });
 
+  it("asks for the kernel's variables, kept or refreshed, camelized (KOBE-804)", async () => {
+    const { calls, fetchFn } = stub(200, {
+      status: "ok",
+      taken_at: "2026-11-22T10:00:00Z",
+      execution_count: 3,
+      truncated: false,
+      variables: [
+        { name: "df", type: "DataFrame", repr: "", columns_total: 2, repr_error: "raised" },
+      ],
+      other: [],
+    });
+    const api = createNotebookApi("t1", fetchFn);
+    const res = await api.variables("th", false);
+    expect(res).toMatchObject({
+      ok: true,
+      data: {
+        status: "ok",
+        takenAt: "2026-11-22T10:00:00Z",
+        executionCount: 3,
+        variables: [{ name: "df", columnsTotal: 2, reprError: "raised" }],
+      },
+    });
+    await api.variables("th", true);
+    expect(calls.map((c) => [c.url, c.init.method, String(c.init.body)])).toEqual([
+      ["/v1/threads/th/notebook/variables", "POST", "{}"],
+      ["/v1/threads/th/notebook/variables", "POST", '{"refresh":true}'],
+    ]);
+  });
+
+  it("reads a file's past runs and one run's outputs in the wire's casing (KOBE-804)", async () => {
+    const exec = "00000000-0000-4000-8000-000000000001";
+    const entry = {
+      run_id: exec,
+      run_ended: true,
+      started_at: "2026-11-22T10:00:00Z",
+      started: { exec_id: exec, origin: "user", path: "a b.py" },
+      finished: null,
+    };
+    const list = stub(200, { executions: [entry] });
+    const api = createNotebookApi("t1", list.fetchFn);
+    expect(await api.history("th", "a b.py")).toMatchObject({ ok: true, data: [entry] });
+    expect(must(list.calls[0]).url).toBe("/v1/threads/th/notebook/executions?path=a+b.py");
+    expect(new Headers(must(list.calls[0]).init.headers).get("x-kobe-team")).toBe("t1");
+    const out = stub(200, { outputs: [{ output_type: "stream", name: "stdout", text: "x" }] });
+    expect(await createNotebookApi("t1", out.fetchFn).outputs("th", exec)).toMatchObject({
+      ok: true,
+      data: [{ output_type: "stream", name: "stdout", text: "x" }],
+    });
+    expect(must(out.calls[0]).url).toBe(`/v1/threads/th/notebook/executions/${exec}/outputs`);
+    const bad = stub(200, { executions: [{ nope: 1 }] });
+    expect(await createNotebookApi("t1", bad.fetchFn).history("th", "a.py")).toMatchObject({
+      ok: false,
+      error: { code: "malformed_response" },
+    });
+  });
+
   it("names the output frame route with the team", () => {
     expect(outputFrameUrl("t 1")).toBe("/v1/workspace/output-frame?team=t+1");
   });
