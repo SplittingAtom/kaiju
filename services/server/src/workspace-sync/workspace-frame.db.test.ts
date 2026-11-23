@@ -9,11 +9,7 @@ import { WORKSPACE_FRAME_MAX_BYTES } from "../routes/workspace-frame.js";
 import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
 import { MemoryObjects } from "../testing/memory-objects.js";
 import { TestBrowser } from "../testing/browser.js";
-import {
-  createWorkspaceSync,
-  workspaceBlobKey,
-  type WorkspaceSync,
-} from "./index.js";
+import { createWorkspaceSync, workspaceBlobKey, type WorkspaceSync } from "./index.js";
 
 /**
  * The workspace HTML frame (KOBE-268) against a real Postgres: the caller's own synced HTML file

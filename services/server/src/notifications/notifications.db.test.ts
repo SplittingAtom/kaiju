@@ -5,10 +5,7 @@ import {
   markNotificationsReadResponseSchema,
 } from "@kobe/protocol";
 import { withTeam } from "@kobe/db";
-import {
-  NOTIFICATION_EMAIL_MAX_ATTEMPTS,
-  deliverNotificationEmails,
-} from "./email.js";
+import { NOTIFICATION_EMAIL_MAX_ATTEMPTS, deliverNotificationEmails } from "./email.js";
 import { notifyScheduledRunEndInTx } from "./record.js";
 import { endRunInTx } from "../sandbox-wire/run-state.js";
 import type { RunEnd } from "../sandbox-wire/types.js";

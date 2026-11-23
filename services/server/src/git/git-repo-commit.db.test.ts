@@ -8,11 +8,7 @@ import { applyMirror } from "./mirror/apply.js";
 import { mirrorDeps } from "./mirror/deps.js";
 import { refreshRepository } from "./mirror/refresh.js";
 import { claimRefresh } from "./mirror/store.js";
-import {
-  commitToRepo,
-  GIT_REPO_COMMIT_RATE,
-  type RepoCommitDeps,
-} from "./repo-commit/commit.js";
+import { commitToRepo, GIT_REPO_COMMIT_RATE, type RepoCommitDeps } from "./repo-commit/commit.js";
 import { repoCommitWiring } from "./repo-commit/wiring.js";
 import { headOf, loadTree } from "../projects/tree.js";
 import { checkRateLimit } from "../rate-limit.js";

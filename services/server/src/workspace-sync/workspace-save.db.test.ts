@@ -7,11 +7,7 @@ import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-st
 import { MemoryObjects } from "../testing/memory-objects.js";
 import { RawBody, TestBrowser } from "../testing/browser.js";
 import { currentEntry } from "./store.js";
-import {
-  createWorkspaceSync,
-  workspaceBlobKey,
-  type WorkspaceSync,
-} from "./index.js";
+import { createWorkspaceSync, workspaceBlobKey, type WorkspaceSync } from "./index.js";
 
 /**
  * KOBE-462 (spec FE4/FE5): `PUT /v1/workspace/file` against a real Postgres: the version check,

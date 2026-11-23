@@ -2,11 +2,7 @@ import { randomUUID } from "node:crypto";
 import pino from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { runWithAuditContext } from "../audit/context.js";
-import {
-  createSandboxLifecycle,
-  type LifecycleProvider,
-  type SandboxLifecycle,
-} from "./index.js";
+import { createSandboxLifecycle, type LifecycleProvider, type SandboxLifecycle } from "./index.js";
 import { withTeam } from "@kobe/db";
 import { recordFlushProof, type ReclaimSettings } from "./reclaim.js";
 import { lockWorkspace, reserveUpload, saveState } from "../workspace-sync/store.js";

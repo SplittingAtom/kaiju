@@ -1,10 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { BREAK_GLASS_GRANT_SETTING, sql, withTeam } from "@kobe/db";
-import {
-  assembleLearningInput,
-  type LearningInputOptions,
-} from "./learn/pass-input/assemble.js";
+import { assembleLearningInput, type LearningInputOptions } from "./learn/pass-input/assemble.js";
 import { extractorMessages } from "./learn/prompt/index.js";
 import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
 

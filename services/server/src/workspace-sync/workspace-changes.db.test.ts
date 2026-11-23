@@ -9,11 +9,7 @@ import { MemoryObjects } from "../testing/memory-objects.js";
 import { RawBody, TestBrowser } from "../testing/browser.js";
 import { SseReader } from "../testing/sse.js";
 import { commitChanges, currentEntry, recordBlob } from "./store.js";
-import {
-  createWorkspaceSync,
-  workspaceBlobKey,
-  type WorkspaceSync,
-} from "./index.js";
+import { createWorkspaceSync, workspaceBlobKey, type WorkspaceSync } from "./index.js";
 
 /**
  * KOBE-496: `GET /v1/workspace/changes` against a real Postgres. A change reaches the member's own

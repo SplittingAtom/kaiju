@@ -1,10 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import {
-  threadActivityListSchema,
-  threadPageSchema,
-  threadSummarySchema,
-} from "./schemas.js";
+import { threadActivityListSchema, threadPageSchema, threadSummarySchema } from "./schemas.js";
 import { RunFixture } from "../testing/run-fixture.js";
 import type { Person } from "../testing/event-stream-fixture.js";
 

@@ -14,11 +14,7 @@ import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-st
 import { MemoryObjects } from "../testing/memory-objects.js";
 import { RawBody, TestBrowser } from "../testing/browser.js";
 import { movesSince } from "./move-journal.js";
-import {
-  createWorkspaceSync,
-  workspaceBlobKey,
-  type WorkspaceSync,
-} from "./index.js";
+import { createWorkspaceSync, workspaceBlobKey, type WorkspaceSync } from "./index.js";
 
 /**
  * KOBE-304 review: the move API's limits and edges against a real Postgres (the main cases are in

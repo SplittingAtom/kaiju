@@ -13,11 +13,7 @@ import { SseReader } from "../testing/sse.js";
 import { OPERATION_LIMITS } from "../operation-limits.js";
 import { expectRateLimited, fillLimit } from "../testing/operation-limits.js";
 import { commitChanges, currentEntry, recordBlob } from "./store.js";
-import {
-  createWorkspaceSync,
-  workspaceBlobKey,
-  type WorkspaceSync,
-} from "./index.js";
+import { createWorkspaceSync, workspaceBlobKey, type WorkspaceSync } from "./index.js";
 
 /**
  * KOBE-599 against a real Postgres and the real sandbox wire: Refresh asks the member's own live

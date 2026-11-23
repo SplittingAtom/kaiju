@@ -4,7 +4,12 @@ import { CAPABILITY_SKILL_DRAFTS, type PolicyEngine } from "@kobe/protocol";
 import { withTeam } from "@kobe/db";
 import { EventStreamFixture, must, type Person } from "../../testing/event-stream-fixture.js";
 import { RawBody } from "../../testing/browser.js";
-import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../../testing/fake-sandbox.js";
+import {
+  FakeSandbox,
+  FakeSandboxAuth,
+  isFake,
+  sandboxListener,
+} from "../../testing/fake-sandbox.js";
 import { MemoryObjects } from "../../testing/memory-objects.js";
 import { createWorkspaceSync, workspaceBlobKey } from "../../workspace-sync/index.js";
 

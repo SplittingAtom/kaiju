@@ -3,13 +3,7 @@ import { loadEvalCaseFile, loadGatewayPrincipal } from "@kobe/db";
 import { verifySessionToken } from "@kobe/session-token";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { EvalRunner } from "./eval/service.js";
-import {
-  createEval,
-  finishEval,
-  getEval,
-  markRunning,
-  readEvalSettings,
-} from "./eval/store.js";
+import { createEval, finishEval, getEval, markRunning, readEvalSettings } from "./eval/store.js";
 import type { SandboxSettings } from "../sandbox/config.js";
 import type { KubeObject } from "../sandbox/manifests.js";
 import { createFakeKube, type FakeKube } from "../testing/fake-kube.js";
