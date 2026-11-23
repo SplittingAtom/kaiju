@@ -31,6 +31,10 @@ export const IDENTITY_EVENT_DOCS = {
       "`method` (password, totp, backup_code, passkey, invitation, sso), `mfa?` (SSO: the claim value that proved MFA, e.g. `acrs:c1`)",
     when: "A session is created",
   },
+  "auth.sign_in.throttled": {
+    fields: "`userId`, `until`",
+    when: "An account passed 10 failed password or second-factor attempts in 15 minutes (all addresses together) and gets one attempt a minute until `until`; once per window (actor null; KOBE-812)",
+  },
   "auth.sign_in.two_factor_required": {
     fields: "`method`",
     when: "Password accepted, TOTP still outstanding (aggregated)",

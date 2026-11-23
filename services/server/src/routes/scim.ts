@@ -79,8 +79,13 @@ export function scimRoutes(deps: ServerDeps): Hono<ScimEnv> {
     const token = bearerOf(c.req.header("authorization"));
     const caller = SLUG.test(slug) ? await authenticateScim(db, slug, token) : undefined;
     if (!caller) {
-      const ip = currentAuditContext()?.ip ?? "unknown";
-      const allowed = await hitRateLimit(db, `scim-auth-fail:${ip}`, {
+      // No trustworthy client address (KOBE-812): counted per provider slug instead of in one
+      // bucket for every caller, and reported (log + Site console). A valid token never meets
+      // this limit, so the identity provider's own traffic is never refused by it.
+      const ip = currentAuditContext()?.ip ?? null;
+      if (ip === null) deps.clientIps.unknown("scim");
+      const bucket = ip ?? `no-ip:${SLUG.test(slug) ? slug : "-"}`;
+      const allowed = await hitRateLimit(db, `scim-auth-fail:${bucket}`, {
         windowMs: 60_000,
         max: SCIM_AUTH_FAILURES_PER_MINUTE,
       });

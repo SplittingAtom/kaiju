@@ -162,6 +162,7 @@ events say `scope: "site"`; rows recorded before say `scope: "install"` and keep
 | `auth.session.revoked` | site | `which` (one, others, all) | The user revokes sessions |
 | `auth.sign_in.failed` | site | `method`, `reason` (error code), `userId?` | First failed sign-in step per key and window (aggregated); `userId` only if the email names an account |
 | `auth.sign_in.succeeded` | site | `method` (password, totp, backup_code, passkey, invitation, sso), `mfa?` (SSO: the claim value that proved MFA, e.g. `acrs:c1`) | A session is created |
+| `auth.sign_in.throttled` | site | `userId`, `until` | An account passed 10 failed password or second-factor attempts in 15 minutes (all addresses together) and gets one attempt a minute until `until`; once per window (actor null; KOBE-812) |
 | `auth.sign_in.two_factor_required` | site | `method` | Password accepted, TOTP still outstanding (aggregated) |
 | `auth.sign_out` | site | — | Sign-out |
 | `auth.two_factor.backup_codes_regenerated` | site | — | New backup codes |

@@ -58,6 +58,9 @@
  *   `notebook_inspect` (`CAPABILITY_NOTEBOOK_INSPECT`, notebook-variables.ts, KOBE-803): the
  *   command `notebook.inspect` (a silent variables snapshot) and `notebook.execute`'s
  *   `with_timing` / `with_variables`; never sent to agents without it.
+ *   `notebook_complete` (`CAPABILITY_NOTEBOOK_COMPLETE`, notebook-completion.ts, KOBE-808):
+ *   `notebook.inspect` with `op: "complete"` or `op: "doc"` (the code editor's kernel completion);
+ *   never sent to agents without it.
  *   `web_search` (retired by KOBE-606, legacy-web-search-frames.ts): an agent from before KOBE-606
  *   may still send `web_search.query`; the server answers `web_search.result` unavailable.
  *   `mcp` ({@link CAPABILITY_MCP}, mcp-config.ts, KOBE-111): `run.start.mcp`, the run's effective

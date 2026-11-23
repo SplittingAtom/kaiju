@@ -288,6 +288,26 @@ describe("JIT and linked sign-in", () => {
     expect((await again.browser.get("/v1/me")).json.user.email).toBe(user.preferred_username);
   });
 
+  it("KOBE-812: an SSO sign-in clears the account's sign-in throttle", async () => {
+    const user = entraUser();
+    await signInVia(entra, "corp", user);
+    const email = String(user.preferred_username);
+    let ip = 0;
+    const guess = () =>
+      h
+        .browser()
+        .request(
+          "POST",
+          "/api/auth/sign-in/email",
+          { email, password: "not the password at all" },
+          { "x-forwarded-for": `198.19.7.${ip++}` },
+        );
+    for (let i = 0; i < 10; i++) expect((await guess()).status).toBe(401);
+    expect((await guess()).status).toBe(429);
+    await signInVia(entra, "corp", user);
+    expect((await guess()).status).toBe(401);
+  });
+
   it("KOBE-775: a first sign-in racing another of the same identity continues as linked", async () => {
     const user = entraUser();
     const email = String(user.preferred_username);

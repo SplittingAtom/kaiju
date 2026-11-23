@@ -1,15 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { performance } from "node:perf_hooks";
-import type {
-  NotebookExecuteResult,
-  NotebookKernelResponse,
-  NotebookOutput,
-  NotebookStartResult,
-  NotebookTiming,
-  NotebookVariablesResult,
-  NotebookVariablesSnapshot,
+import {
+  NOTEBOOK_COMPLETE_TIMEOUT_MS,
+  type NotebookExecuteResult,
+  type NotebookKernelResponse,
+  type NotebookOutput,
+  type NotebookStartResult,
+  type NotebookTiming,
+  type NotebookVariablesResult,
+  type NotebookVariablesSnapshot,
 } from "@kobe/protocol";
-import type { NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
+import type { NotebookCompletionFrame, NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
+import { askKernel, BRIDGE_MARGIN_MS, COMPLETION_UNAVAILABLE } from "./completion.js";
 import { fail, ok, type CommandOutcome } from "../threads/outcome.js";
 import { OUTPUT_LIMITS, OutputLimiter, type OutputLimits } from "./outputs.js";
 import { KernelSession, type BridgeLauncher } from "./session.js";
@@ -146,6 +148,32 @@ export class KernelManager {
     return ok(this.#status(busy ? "busy" : "idle"));
   }
 
+  /**
+   * `notebook.inspect` with `show` (KOBE-816): that one variable, its value not withheld; always
+   * a fresh read (never the kept snapshot, which it does not replace), never during a run.
+   */
+  async show(threadId: string, name: string, timeoutMs: number): Promise<CommandOutcome> {
+    const kernel = this.#kernels.get(threadId);
+    if (this.#closed || kernel === undefined || !kernel.session.alive) {
+      return ok({ status: "no_kernel" });
+    }
+    if (kernel.queued > 0 || kernel.session.busy || kernel.session.inspecting) {
+      return ok({ status: "busy" });
+    }
+    kernel.queued += 1;
+    const snap = kernel.tail.then(() => this.#inspectNow(kernel, timeoutMs, false, name));
+    kernel.tail = snap.catch(() => undefined);
+    try {
+      return ok(await snap);
+    } catch (error) {
+      this.#o.log(`variable show failed: ${(error as Error).message}`, threadId);
+      return ok(UNAVAILABLE);
+    } finally {
+      kernel.queued -= 1;
+      this.#touch(kernel);
+    }
+  }
+
   /** `notebook.inspect` (KOBE-803): the thread kernel's variables, never starting a kernel. */
   async inspect(threadId: string, timeoutMs: number, refresh = false): Promise<CommandOutcome> {
     const paused = this.#autoPaused.has(threadId);
@@ -177,6 +205,36 @@ export class KernelManager {
     } finally {
       kernel.queued -= 1;
       this.#touch(kernel);
+    }
+  }
+
+  /**
+   * `notebook.inspect` with `op: "complete"` / `"doc"` (KOBE-808): the editor's kernel completion.
+   * Never starts a kernel (`no_kernel`) and never waits: while code runs or waits, a snapshot is
+   * taken or another request is in the kernel, the answer is `busy`; past the frame's timeout it
+   * is `unavailable`. A request is not use: it never keeps the kernel from idling out (typing
+   * in the editor must not keep a kernel, or the sandbox, alive; review L2).
+   */
+  async complete(frame: NotebookCompletionFrame): Promise<CommandOutcome> {
+    const kernel = this.#kernels.get(frame.thread_id);
+    if (this.#closed || kernel === undefined || !kernel.session.alive) {
+      return ok({ status: "no_kernel" });
+    }
+    const s = kernel.session;
+    if (kernel.queued > 0 || s.busy || s.inspecting) return ok({ status: "busy" });
+    // Another request is in the kernel (a second tab, signature help beside completion): wait
+    // for it (each is short and bounded) instead of answering "code is running" (review L4).
+    if (s.completing) {
+      await s.completed((frame.timeout_ms ?? NOTEBOOK_COMPLETE_TIMEOUT_MS) + BRIDGE_MARGIN_MS + 50);
+      if (!s.alive) return ok({ status: "no_kernel" });
+      if (kernel.queued > 0 || s.busy || s.inspecting) return ok({ status: "busy" });
+      if (s.completing) return ok(COMPLETION_UNAVAILABLE);
+    }
+    try {
+      return ok(await askKernel(s, frame, (m) => this.#o.log(m, frame.thread_id)));
+    } catch {
+      // Another waiter got there first.
+      return ok(COMPLETION_UNAVAILABLE);
     }
   }
 
@@ -367,10 +425,11 @@ export class KernelManager {
     kernel: Kernel,
     timeoutMs: number,
     auto: boolean,
+    show?: string,
   ): Promise<NotebookVariablesResult> {
     if (!kernel.session.alive) return { status: "no_kernel" };
     const takenAt = new Date();
-    const pending = kernel.session.inspect(randomUUID(), INSPECT_LIMITS);
+    const pending = kernel.session.inspect(randomUUID(), INSPECT_LIMITS, show);
     kernel.inspection = pending.then(() => undefined);
     let timer: NodeJS.Timeout | undefined;
     const late = new Promise<undefined>((resolve) => {
@@ -390,6 +449,8 @@ export class KernelManager {
     }
     const result = snapshotResult(got, takenAt, log);
     if (result.status !== "ok") return result;
+    // A Show answer (one variable, unmasked) is never kept.
+    if (show !== undefined) return { ...result, stale: false };
     kernel.kept = result;
     kernel.keptCurrent = true;
     return { ...result, stale: false };

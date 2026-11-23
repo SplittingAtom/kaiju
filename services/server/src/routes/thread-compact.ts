@@ -11,6 +11,7 @@ import { RunError } from "../runs/errors.js";
 import { uuidSchema } from "../threads/schemas.js";
 import { actorOf } from "../authz/actor.js";
 import { invalidRequest, param, parseBody } from "../http/request.js";
+import { OPERATION_LIMITS, admitOperation, rateLimited } from "../operation-limits.js";
 
 /**
  * `POST /v1/threads/{id}/compact` (KOBE-213, CE15; contract KOBE-212): the owner compacts an idle
@@ -29,6 +30,10 @@ export function threadCompactRoutes(deps: ServerDeps): Hono<{ Variables: TeamVar
     const id = param(c, "id", uuidSchema);
     const body = await parseBody(c, compactThreadRequestSchema);
     if (!id.success || !body) return invalidRequest(c, "Give an optional one-line focus, or {}.");
+    // KOBE-813: per member; Pi's own automatic compaction never comes here.
+    const limit = OPERATION_LIMITS.compact;
+    const verdict = await admitOperation(deps.database.db, limit, c.get("user").id);
+    if (!verdict.allowed) return rateLimited(c, limit, verdict);
     try {
       const result = await deps.runs.compact(actorOf(c), id.data, body.focus);
       return c.json(result);

@@ -4,7 +4,6 @@ import {
   gitRepositories,
   openGitCredential,
   readGitConnectionSealedCredential,
-  sql,
   withTeam,
   type Envelope,
   type GitConnectionRecord,
@@ -25,7 +24,7 @@ import type { InstallationTokenCache } from "../git-hosts/github/app-auth.js";
 import type { GitHostNet } from "../git-hosts/http.js";
 import { withAdvisoryLockRetry } from "../kobe-mcp/limits.js";
 import { logger } from "../logger.js";
-import { hitRateLimit } from "../rate-limit.js";
+import { checkRateLimit } from "../rate-limit.js";
 import {
   decideGitAccess,
   loadGitToolFacts,
@@ -76,14 +75,6 @@ const CONNECTION_WRITE_RULE = {
   max: GIT_CONNECTION_WRITES_PER_HOUR,
 } as const;
 
-/** When the window of a refused limit `key` ends (falls back to a whole window from now). */
-async function windowEnd(db: KobeDb, key: string, windowMs: number): Promise<Date> {
-  const res = await db.execute<{ window_start: string | number }>(
-    sql`SELECT window_start FROM kobe_rate_limits WHERE key = ${`kobe:${key}`}`,
-  );
-  const start = Number(res.rows[0]?.window_start ?? Number.NaN);
-  return new Date(Number.isFinite(start) ? start + windowMs : Date.now() + windowMs);
-}
 
 export interface GitToolsDeps {
   readonly db: KobeDb;
@@ -139,13 +130,14 @@ export async function runGitTool(
     const { principal } = ctx;
     const rule = tool.access === "write" ? WRITE_RULE : READ_RULE;
     const key = `git-tools:${tool.access}:${principal.teamId}:${principal.userId}`;
-    if (!(await hitRateLimit(deps.db, key, rule))) {
+    const member = await checkRateLimit(deps.db, key, rule);
+    if (!member.allowed) {
       return toolError(
         "git_rate_limited",
         tool.access === "write"
           ? `Too many git changes in the last hour (at most ${GIT_TOOL_WRITES_PER_HOUR} per member).`
           : `Too many git reads in the last 10 minutes (at most ${GIT_TOOL_READS_PER_10_MIN} per member).`,
-        await windowEnd(deps.db, key, rule.windowMs),
+        new Date(Date.now() + member.retryAfterSeconds * 1000),
       );
     }
     const facts = await loadGitToolFacts(deps.db, principal);
@@ -154,11 +146,12 @@ export async function runGitTool(
     if (!decided.ok) return toolError(decided.code, decided.message);
     const budget = tool.access === "write" ? CONNECTION_WRITE_RULE : CONNECTION_READ_RULE;
     const budgetKey = `git-tools:connection:${tool.access}:${decided.connection.id}`;
-    if (!(await hitRateLimit(deps.db, budgetKey, budget))) {
+    const shared = await checkRateLimit(deps.db, budgetKey, budget);
+    if (!shared.allowed) {
       return toolError(
         "git_connection_budget",
         `The Workspace's agents used this connection's hourly budget for git ${tool.access === "write" ? "changes" : "reads"} (${budget.max} an hour, shared by every member).`,
-        await windowEnd(deps.db, budgetKey, budget.windowMs),
+        new Date(Date.now() + shared.retryAfterSeconds * 1000),
       );
     }
     const adapter = await openAdapter(deps, principal, facts.settings, decided.connection);

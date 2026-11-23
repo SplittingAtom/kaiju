@@ -12,6 +12,7 @@ import {
 } from "../sso/scim-tokens.js";
 import { idSchema } from "../teams/schemas.js";
 import { param } from "../http/request.js";
+import { OPERATION_LIMITS, admitOperation, rateLimited } from "../operation-limits.js";
 
 const notFound = (c: Context, what = "single sign-on provider") =>
   c.json({ code: "not_found", message: `No such ${what}.` }, 404);
@@ -44,6 +45,15 @@ export function siteScimTokenRoutes(deps: ServerDeps): Hono<{ Variables: AuthVar
   });
   app.use(requireSitePermission("site.users.manage"));
 
+  /** KOBE-813: creating and rotating share one limit per Site admin. */
+  async function creationRefusal(
+    c: Context<{ Variables: AuthVariables }>,
+  ): Promise<Response | undefined> {
+    const limit = OPERATION_LIMITS.scimTokenCreate;
+    const verdict = await admitOperation(db, limit, c.get("user").id);
+    return verdict.allowed ? undefined : rateLimited(c, limit, verdict);
+  }
+
   async function providerOf(c: Context) {
     const id = param(c, "id", idSchema);
     return id.success ? getProvider(deps.sso.providers, id.data) : undefined;
@@ -61,6 +71,8 @@ export function siteScimTokenRoutes(deps: ServerDeps): Hono<{ Variables: AuthVar
   app.post("/providers/:id/scim/tokens", async (c) => {
     const provider = await providerOf(c);
     if (!provider) return notFound(c);
+    const limited = await creationRefusal(c);
+    if (limited) return limited;
     const created = await createScimToken(db, provider.id, c.get("user").id);
     if (!created.ok) return created.failure === "not_found" ? notFound(c) : tooMany(c);
     return c.json(
@@ -82,6 +94,8 @@ export function siteScimTokenRoutes(deps: ServerDeps): Hono<{ Variables: AuthVar
       (t) => t.id === tokenId && t.revokedAt === null,
     );
     if (!live) return notFound(c, "live SCIM token");
+    const limited = await creationRefusal(c);
+    if (limited) return limited;
     const created = await createScimToken(db, provider.id, c.get("user").id);
     if (!created.ok) return created.failure === "not_found" ? notFound(c) : tooMany(c);
     return c.json(

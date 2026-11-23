@@ -9,6 +9,7 @@ import {
 import { SERVER_CALL_LIMITS, type ServerCallTokenPurpose } from "@kobe/protocol";
 import { randomUUID } from "node:crypto";
 import { TtlCache } from "./cache.js";
+import { MemoryMemberRate, type MemberRate, type MemberRateTake } from "./member-rate.js";
 import { MemoryReservations } from "./reservations-memory.js";
 import { MEMBER_SHARE, type Cost, type ReservationStore } from "./reservations.js";
 import { chargedOutput } from "./usage/charge.js";
@@ -48,8 +49,10 @@ import type { CallContext, CallGate, GateDecision } from "./seams.js";
  *   reservation on the team's eval spend and the other eval calls' reservations: 402
  *   `budget_exhausted` "Your team's monthly eval cap is used up." Other calls never see it.
  * - More requests than the member's per-minute rate (the site's, or the team's lower one): 429
- *   `rate_limited` with Retry-After. A token bucket per member per shim replica; Bifrost's
- *   virtual-key rate limit is the site-wide backstop.
+ *   `rate_limited` with Retry-After. Counted in a {@link MemberRate}: in production a fixed
+ *   one-minute window in Postgres shared by every replica (KOBE-810), one upsert per request;
+ *   when it cannot be read the call is refused (503 `rate_limit_unavailable`, fail closed).
+ *   Bifrost's virtual-key rate limit stays as the backstop.
  */
 export interface BudgetStore {
   load(teamId: string, userId: string): Promise<MemberBudgetState>;
@@ -147,14 +150,9 @@ export function budgetBelowCallMessage(line: BudgetLine): string {
   return `This request's input is larger than ${name.charAt(0).toLowerCase()}${name.slice(1)} in total. Ask an admin to raise the budget, or start a new conversation with less context.`;
 }
 
-interface Bucket {
-  tokens: number;
-  at: number;
-}
-
 export class BudgetGate implements CallGate {
   private readonly states: TtlCache<MemberBudgetState>;
-  private readonly buckets = new Map<string, Bucket>();
+  private readonly rate: MemberRate;
   private readonly reservations: ReservationStore;
   private readonly onError: (err: unknown) => void;
   private readonly settleHoldMs: number;
@@ -170,6 +168,8 @@ export class BudgetGate implements CallGate {
       readonly maxEntries?: number;
       /** Where reservations live; default: this process's memory (tests, no shared state). */
       readonly reservations?: ReservationStore;
+      /** Where the per-minute rate is counted; default: this process's memory (tests). */
+      readonly rate?: MemberRate;
       /**
        * How long a settled reservation keeps counting. Default 0 (ended at once), as production
        * runs: the database check reads the spend itself (KOBE-286), so a written call counts
@@ -185,6 +185,7 @@ export class BudgetGate implements CallGate {
   ) {
     this.now = options.now ?? Date.now;
     this.reservations = options.reservations ?? new MemoryReservations();
+    this.rate = options.rate ?? new MemoryMemberRate(this.now);
     this.onError = options.onError ?? (() => undefined);
     this.settleHoldMs = options.settleHoldMs ?? 0;
     this.heartbeatMs = options.heartbeatMs;
@@ -236,14 +237,28 @@ export class BudgetGate implements CallGate {
         message: budgetBelowCallMessage(below),
       };
     }
-    const wait = this.take(key, state.requestsPerMinute);
-    if (wait > 0) {
+    let rate: MemberRateTake;
+    try {
+      // Once per model request (not per stream chunk), shared by every replica (KOBE-810).
+      rate = await this.rate.take(key, state.requestsPerMinute);
+    } catch (err) {
+      // Fail closed: without the count the admin's per-minute rate cannot be held.
+      this.onError(err);
+      return {
+        ok: false,
+        status: 503,
+        code: "rate_limit_unavailable",
+        message: "The request-rate check is unavailable; retry shortly.",
+        retryAfterSeconds: 2,
+      };
+    }
+    if (!rate.ok) {
       return {
         ok: false,
         status: 429,
         code: "rate_limited",
         message: "Too many model requests for this user; slow down.",
-        retryAfterSeconds: wait,
+        retryAfterSeconds: rate.retryAfterSeconds,
       };
     }
     if (state.lines.length === 0) return { ok: true };
@@ -265,7 +280,7 @@ export class BudgetGate implements CallGate {
     } catch (err) {
       // Fail closed: without the reservations an overspend cannot be ruled out.
       this.onError(err);
-      this.giveBack(key);
+      rate.giveBack();
       return {
         ok: false,
         status: 503,
@@ -275,7 +290,7 @@ export class BudgetGate implements CallGate {
       };
     }
     if (!verdict.ok) {
-      this.giveBack(key);
+      rate.giveBack();
       const l = state.lines[verdict.line] ?? state.lines[0];
       // KOBE-443 review H1: a line full only of calls in flight (its spend is still below the
       // limit) frees up as they end: overlapping calls wait and retry (KOBE-259), never a final
@@ -382,31 +397,6 @@ export class BudgetGate implements CallGate {
   settle(teamId: string, callIds: readonly string[]): void {
     const hold = this.settleHoldMs > 0 ? this.settleHoldMs : undefined;
     this.reservations.end(teamId, callIds, hold).catch(this.onError);
-  }
-
-  private giveBack(key: string): void {
-    const b = this.buckets.get(key);
-    if (b) this.buckets.set(key, { ...b, tokens: b.tokens + 1 });
-  }
-
-  /** Takes one request from the member's bucket; 0 when allowed, else seconds until one is. */
-  private take(key: string, perMinute: number): number {
-    const t = this.now();
-    const refill = perMinute / 60_000;
-    const b = this.buckets.get(key) ?? { tokens: perMinute, at: t };
-    const tokens = Math.min(perMinute, b.tokens + (t - b.at) * refill);
-    // Bounded: drop the least recently used member (re-inserting keeps Map order = recency).
-    this.buckets.delete(key);
-    if (this.buckets.size >= 10_000) {
-      const oldest = this.buckets.keys().next().value;
-      if (oldest !== undefined) this.buckets.delete(oldest);
-    }
-    if (tokens < 1) {
-      this.buckets.set(key, { tokens, at: t });
-      return Math.max(1, Math.ceil((1 - tokens) / refill / 1000));
-    }
-    this.buckets.set(key, { tokens: tokens - 1, at: t });
-    return 0;
   }
 
   invalidateTeam(teamId: string): void {

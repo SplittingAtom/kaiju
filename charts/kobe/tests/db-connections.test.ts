@@ -54,8 +54,8 @@ describe("Postgres connection budget (KOBE-736)", () => {
     expect(value(server, "KOBE_DB_POOL_MAX")).toBe("10");
     expect(value(server, "KOBE_DB_STREAM_POOL_MAX")).toBe("4");
     expect(value(server, "KOBE_DB_BUDGET_SERVER_REPLICAS")).toBe("2");
-    // scheduler 1 x (10 + 1) + model gateway 2 x (10 + 1) + egress proxy 1 x (10 + 1)
-    expect(value(server, "KOBE_DB_BUDGET_PEER_CONNECTIONS")).toBe("44");
+    // scheduler 1 x (10 + 1) + model gateway 2 x (10 + 1 + 2 rate limiter) + egress proxy 1 x (10 + 1)
+    expect(value(server, "KOBE_DB_BUDGET_PEER_CONNECTIONS")).toBe("48");
     for (const name of ["kobe-scheduler", "kobe-model-gateway", "kobe-egress-proxy"]) {
       expect(value(env(ms, name), "KOBE_DB_POOL_MAX"), name).toBe("10");
     }
@@ -70,6 +70,7 @@ describe("Postgres connection budget (KOBE-736)", () => {
       "scheduler.database.poolMax": "4",
       "modelGateway.replicas": "3",
       "modelGateway.database.poolMax": "5",
+      "modelGateway.database.ratePoolMax": "3",
       "egressProxy.replicas": "2",
       "egressProxy.database.poolMax": "8",
     });
@@ -77,8 +78,9 @@ describe("Postgres connection budget (KOBE-736)", () => {
     expect(value(server, "KOBE_DB_POOL_MAX")).toBe("20");
     expect(value(server, "KOBE_DB_STREAM_POOL_MAX")).toBe("6");
     expect(value(server, "KOBE_DB_BUDGET_SERVER_REPLICAS")).toBe("3");
-    // 1 x (4 + 1) + 3 x (5 + 1) + 2 x (8 + 1)
-    expect(value(server, "KOBE_DB_BUDGET_PEER_CONNECTIONS")).toBe("41");
+    // 1 x (4 + 1) + 3 x (5 + 1 + 3 rate limiter) + 2 x (8 + 1)
+    expect(value(server, "KOBE_DB_BUDGET_PEER_CONNECTIONS")).toBe("50");
+    expect(value(env(ms, "kobe-model-gateway"), "KOBE_MODEL_GATEWAY_RATE_POOL_MAX")).toBe("3");
     expect(value(env(ms, "kobe-model-gateway"), "KOBE_DB_POOL_MAX")).toBe("5");
     expect(value(env(ms, "kobe-egress-proxy"), "KOBE_DB_POOL_MAX")).toBe("8");
   });

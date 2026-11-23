@@ -44,12 +44,18 @@ describe("Users", () => {
   // The providers list decides whether the Single sign-on action shows (404 while SSO is off).
   const userCalls = (calls: Parameters<typeof summary>[0]) =>
     summary(calls).filter((c) => c !== "GET /v1/site/sso/providers");
+  // The sign-in protection notices (KOBE-812) load with the page; here nothing is throttled
+  // (their cases are in site/users-page.test.tsx).
+  const PROTECTION = "GET /v1/site/users/sign-in-protection";
+  const stubUsers = (routes: Parameters<typeof stubApi>[0]) =>
+    stubApi({ [PROTECTION]: [200, { throttled: [], unknownClientIp: null }], ...routes });
+  const LOADED = ["GET /v1/site/users", PROTECTION];
 
   it("lists users and offers only the deactivations the server allows an Admin", async () => {
-    const calls = stubApi({ "GET /v1/site/users": [200, USERS] });
+    const calls = stubUsers({ "GET /v1/site/users": [200, USERS] });
     renderSite(<UsersPage />, "admin");
     await screen.findByRole("table");
-    expect(userCalls(calls)).toEqual(["GET /v1/site/users"]);
+    expect(userCalls(calls)).toEqual(LOADED);
     expect(screen.getByRole("button", { name: "Deactivate Bob" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Reactivate Gus" })).toBeTruthy();
     // Not yourself, not the Owner, and (as an Admin) not another Admin.
@@ -59,7 +65,7 @@ describe("Users", () => {
   });
 
   it("lets the Owner act on Admins", async () => {
-    stubApi({
+    stubUsers({
       "GET /v1/site/users": [
         200,
         { users: [user(ME.id, ME.name, "owner"), user("u-admin", "Abe", "admin")] },
@@ -70,7 +76,7 @@ describe("Users", () => {
   });
 
   it("deactivates, reports orphaned teams and failed steps, and reloads", async () => {
-    const calls = stubApi({
+    const calls = stubUsers({
       "GET /v1/site/users": [200, USERS],
       "POST /v1/site/users/u-bob/deactivate": [
         200,
@@ -85,7 +91,7 @@ describe("Users", () => {
     renderSite(<UsersPage />);
     const deactivate = await screen.findByRole("button", { name: "Deactivate Bob" });
     await userEvent.click(deactivate);
-    expect(userCalls(calls)).toEqual(["GET /v1/site/users"]);
+    expect(userCalls(calls)).toEqual(LOADED);
     const asked = await answerConfirm("Deactivate Bob?", "Deactivate");
     expect(asked).toMatch(/Every session ends now/);
     const status = await screen.findByText(/Bob is deactivated/);
@@ -93,7 +99,7 @@ describe("Users", () => {
     expect(status.textContent).toMatch(/sandboxes/);
     await waitFor(() =>
       expect(userCalls(calls)).toEqual([
-        "GET /v1/site/users",
+        ...LOADED,
         "POST /v1/site/users/u-bob/deactivate",
         "GET /v1/site/users",
       ]),
@@ -103,17 +109,17 @@ describe("Users", () => {
   });
 
   it("does nothing when the confirmation is declined, and returns focus to the button", async () => {
-    const calls = stubApi({ "GET /v1/site/users": [200, USERS] });
+    const calls = stubUsers({ "GET /v1/site/users": [200, USERS] });
     renderSite(<UsersPage />);
     const button = await screen.findByRole("button", { name: "Deactivate Bob" });
     await userEvent.click(button);
     await answerConfirm("Deactivate Bob?", "Cancel");
-    expect(userCalls(calls)).toEqual(["GET /v1/site/users"]);
+    expect(userCalls(calls)).toEqual(LOADED);
     await waitFor(() => expect(document.activeElement).toBe(button));
   });
 
   it("offers Purge memories only for deactivated users, needs the typed email and reports what is left (KOBE-386)", async () => {
-    const calls = stubApi({
+    const calls = stubUsers({
       "GET /v1/site/users": [200, USERS],
       "POST /v1/site/users/u-gone/portable-memory/purge": [
         200,
@@ -125,7 +131,7 @@ describe("Users", () => {
     expect(screen.queryByRole("button", { name: "Purge memories Bob" })).toBeNull();
     await userEvent.click(purge);
     await answerConfirm("Purge Gus's personal memories?", "Cancel");
-    expect(userCalls(calls)).toEqual(["GET /v1/site/users"]);
+    expect(userCalls(calls)).toEqual(LOADED);
     await userEvent.click(purge);
     const dialog = await screen.findByRole("alertdialog", {
       name: "Purge Gus's personal memories?",
@@ -146,7 +152,7 @@ describe("Users", () => {
   });
 
   it("asks before reactivating", async () => {
-    const calls = stubApi({
+    const calls = stubUsers({
       "GET /v1/site/users": [200, USERS],
       "POST /v1/site/users/u-gone/reactivate": [200, { user_id: "u-gone", deactivated: false }],
     });
@@ -154,7 +160,7 @@ describe("Users", () => {
     const reactivate = await screen.findByRole("button", { name: "Reactivate Gus" });
     await userEvent.click(reactivate);
     await answerConfirm("Reactivate Gus?", "Cancel");
-    expect(userCalls(calls)).toEqual(["GET /v1/site/users"]);
+    expect(userCalls(calls)).toEqual(LOADED);
     await userEvent.click(reactivate);
     expect(await answerConfirm("Reactivate Gus?", "Reactivate")).toMatch(/sign in again/);
     await screen.findByText("Gus can sign in again.");
@@ -162,7 +168,7 @@ describe("Users", () => {
   });
 
   it("renders a 403 from the API as the answer, whatever the UI showed", async () => {
-    stubApi({ "GET /v1/site/users": forbidden });
+    stubUsers({ "GET /v1/site/users": forbidden });
     renderSite(<UsersPage />);
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toMatch(/don't have permission/);
@@ -171,7 +177,7 @@ describe("Users", () => {
   });
 
   it("shows the server's refusal of a change", async () => {
-    stubApi({
+    stubUsers({
       "GET /v1/site/users": [200, USERS],
       "POST /v1/site/users/u-bob/deactivate": [
         404,
@@ -212,7 +218,7 @@ describe("Users", () => {
       ],
       expectations: [],
     };
-    const calls = stubApi({
+    const calls = stubUsers({
       "GET /v1/site/users": [200, USERS],
       "GET /v1/site/sso/providers": [200, { providers: [provider] }],
       "GET /v1/site/sso/users/u-bob/links": [200, links],

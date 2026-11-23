@@ -131,7 +131,12 @@ export function runsOpenApiPaths(): Record<string, Record<string, unknown>> {
               "`invalid_mention` (a `mentions` path is outside `/workspace`, holds invisible, " +
               "format or shell characters, or is not a file in the workspace).",
           ),
-          "429": json("Error", "`budget_exhausted`: no new runs at 100 % of a budget (D30)."),
+          "429": json(
+            "Error",
+            "`budget_exhausted`: no new runs at 100 % of a budget (D30); or `rate_limited`: more " +
+              "than 60 messages and Retries per member per minute, across conversations " +
+              "(`Retry-After` in seconds; scheduled runs never count).",
+          ),
           "503": json(
             "Error",
             "`isolation_unavailable`: agents are disabled (D4); or `storage_unavailable`.",
@@ -277,7 +282,11 @@ export function runsOpenApiPaths(): Record<string, Record<string, unknown>> {
           "201": json("SubmitMessageResult", "The retry run."),
           "404": runNotFound,
           "409": conflict("`invalid_transition` (not interrupted / not the latest), or"),
-          "429": json("Error", "`budget_exhausted`."),
+          "429": json(
+            "Error",
+            "`budget_exhausted`; or `rate_limited`: Retry shares the member's limit of 60 runs a " +
+              "minute with messages (`Retry-After` in seconds).",
+          ),
           "503": json("Error", "`isolation_unavailable`."),
           ...COMMON,
         },

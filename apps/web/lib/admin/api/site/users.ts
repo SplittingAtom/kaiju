@@ -32,6 +32,18 @@ export async function listUsers(): Promise<ApiResult<readonly SiteUser[]>> {
   return res.ok ? { ...res, data: res.data.users } : res;
 }
 
+/** Sign-in protection (KOBE-812): throttled accounts and unknown client address sightings. */
+export interface SignInProtection {
+  /** Accounts past 10 failed attempts in 15 minutes: one attempt a minute until `until`. */
+  readonly throttled: readonly { readonly userId: string; readonly until: string }[];
+  /** Since when (last day) requests arrived without a trusted client address; null: none. */
+  readonly unknownClientIp: { readonly since: string } | null;
+}
+
+export function getSignInProtection(): Promise<ApiResult<SignInProtection>> {
+  return apiRequest("/v1/site/users/sign-in-protection");
+}
+
 export function setUserActive(
   userId: string,
   active: boolean,

@@ -1,5 +1,6 @@
 import { Hono, type Context } from "hono";
 import {
+  notebookCompletionBodySchema,
   notebookPathSchema,
   notebookRunBodySchema,
   notebookVariablesBodySchema,
@@ -23,9 +24,13 @@ type Ctx = Context<{ Variables: TeamVariables }>;
  * - `POST /v1/threads/{id}/notebook/interrupt` and `.../restart`: 200 {status};
  * - `POST /v1/threads/{id}/notebook/start` (KOBE-477): 202 {status: "waking", retry_after_ms} while
  *   the sandbox wakes, then 200 {status: "idle" | "busy"} once the kernel is up (no code runs).
- * - `POST /v1/threads/{id}/notebook/variables` {refresh?} (KOBE-803): 200 a snapshot of the
+ * - `POST /v1/threads/{id}/notebook/variables` {refresh?, show?} (KOBE-803; show: KOBE-816, one
+ *   variable not withheld): 200 a snapshot of the
  *   kernel's variables (`stale` when kept from before code that ran since), or {status: "busy" |
  *   "no_kernel" | "unavailable"}; never wakes the sandbox, stores nothing.
+ * - `POST /v1/threads/{id}/notebook/complete` {op: "complete", code, cursor} | {op: "doc", name}
+ *   (KOBE-808): 200 the kernel's completions or a name's documentation, or {status: "busy" |
+ *   "no_kernel" | "asleep" | "unsupported" | "unavailable"}; never wakes the sandbox, stores nothing.
  * - `GET /v1/threads/{id}/notebook/executions?path=` (KOBE-804): the `.py` file's last 50
  *   executions from the stored run events, newest first, without outputs; and
  *   `GET .../notebook/executions/{exec_id}/outputs`: one execution's outputs. Nothing new stored.
@@ -65,10 +70,27 @@ export function threadNotebookRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
     // The body is optional ({refresh?}); a missing or empty body is no refresh.
     const body = notebookVariablesBodySchema.safeParse(await readJson(c, {}));
     if (!id.success) return invalidRequest(c, "Unknown conversation.");
-    if (!body.success) return invalidRequest(c, 'Send an empty body or {"refresh": true}.');
+    if (!body.success) {
+      return invalidRequest(c, 'Send an empty body, {"refresh": true} or {"show": "<name>"}.');
+    }
     const refresh = body.data.refresh === true;
     return answer(c, async () =>
-      c.json(await deps.runs.notebookVariables(actorOf(c), id.data, refresh)),
+      c.json(await deps.runs.notebookVariables(actorOf(c), id.data, refresh, body.data.show)),
+    );
+  });
+
+  // KOBE-808: the code editor's kernel completion; never waking the sandbox, rate limited.
+  app.post("/:id/notebook/complete", async (c) => {
+    const id = param(c, "id", uuidSchema);
+    const body = await parseBody(c, notebookCompletionBodySchema);
+    if (!id.success || !body) {
+      return invalidRequest(
+        c,
+        'Send {"op": "complete", "code", "cursor"} or {"op": "doc", "name"} for a conversation.',
+      );
+    }
+    return answer(c, async () =>
+      c.json(await deps.runs.notebookComplete(actorOf(c), id.data, body)),
     );
   });
 
@@ -109,6 +131,9 @@ async function answer(c: Ctx, fn: () => Promise<Response>): Promise<Response> {
     return await fn();
   } catch (err) {
     if (err instanceof NotebookRunError) {
+      if (err.retryAfterSeconds !== undefined) {
+        c.header("Retry-After", String(err.retryAfterSeconds));
+      }
       return c.json(
         { code: err.code, message: err.message },
         NOTEBOOK_ERROR_STATUS[err.code] as 400,

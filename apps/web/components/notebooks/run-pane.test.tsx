@@ -281,6 +281,62 @@ describe("the Log after a reload (review M2, L1)", () => {
   });
 });
 
+describe("Variables withheld by the sandbox (KOBE-816)", () => {
+  it("a credential-like value is not on the page until Show asks the sandbox for it", async () => {
+    const { kernel } = await renderPython();
+    kernel.variableAnswers.push(
+      ok({
+        ...SNAPSHOT,
+        variables: [
+          { name: "API_KEY", type: "str", repr: "", hidden: "name" },
+          {
+            name: "env",
+            type: "dict",
+            len: 2,
+            repr: "{'PATH': '/bin', 'AWS_SECRET_ACCESS_KEY': <hidden>}",
+            hidden: "keys",
+          },
+        ],
+      }),
+    );
+    kernel.variableAnswers.push(
+      ok({ ...SNAPSHOT, variables: [{ name: "API_KEY", type: "str", repr: "'sk-live'", len: 7 }] }),
+    );
+    kernel.variableAnswers.push(
+      ok({
+        ...SNAPSHOT,
+        variables: [
+          {
+            name: "env",
+            type: "dict",
+            len: 2,
+            repr: "{'PATH': '/bin', 'AWS_SECRET_ACCESS_KEY': 'abc'}",
+          },
+        ],
+      }),
+    );
+    const user = await openPane();
+    await user.click(tab(/^Variables/u));
+    const table = await within(panel("variables")).findByRole("table", { name: "Variables" });
+    const row = (name: string) =>
+      table.querySelector<HTMLElement>(`[data-kobe-variable="${name}"]`) as HTMLElement;
+    expect(row("API_KEY").textContent).toContain("Hidden");
+    expect(document.body.textContent).not.toContain("sk-live");
+    await user.click(
+      within(row("API_KEY")).getByRole("button", { name: "Show the value of API_KEY" }),
+    );
+    expect(kernel.variableCalls).toEqual([false, "show:API_KEY"]);
+    await waitFor(() => expect(row("API_KEY").textContent).toContain("sk-live"));
+    // A dict shows, with the values under credential-like keys withheld until asked.
+    expect(row("env").textContent).toContain("<hidden>");
+    await user.click(
+      within(row("env")).getByRole("button", { name: "Show the hidden values in env" }),
+    );
+    expect(kernel.variableCalls).toEqual([false, "show:API_KEY", "show:env"]);
+    await waitFor(() => expect(row("env").textContent).toContain("'abc'"));
+  });
+});
+
 describe("Variables (ac-3, ac-4)", () => {
   it("shows name, type and value with summaries, as text; hides credential-like values", async () => {
     const { kernel } = await renderPython();

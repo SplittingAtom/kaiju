@@ -79,8 +79,12 @@ const RESOURCES = [{ uri: "ui://cat/explorer", mimeType: MIME, text: TEMPLATE, m
 const logged: string[] = [];
 
 // Every case starts from a full burst (2026-10-31, CI flake): the member's 30 app-call tokens
-// refill at 5 per second, so a fast run of the earlier cases left alice none for a later one.
-beforeEach(() => appCallDepsFor(h.deps).limiter.reset());
+// refill at 5 per second (in Postgres since KOBE-810), so a fast run of the earlier cases left
+// alice none for a later one.
+beforeEach(async () => {
+  const { limiter } = appCallDepsFor(h.deps);
+  for (const id of [rootId, aliceId, bobId]) if (id) await limiter.reset(id);
+});
 
 beforeAll(async () => {
   for (const level of ["info", "warn", "error", "debug"] as const) {

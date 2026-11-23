@@ -6,7 +6,8 @@
  * summary for containers, arrays and DataFrames); sortable and filterable by name; a row expands to
  * the longer repr and a DataFrame's columns. Every value is text: React escapes it, and control and
  * direction characters are shown as escapes. Credential-like names and environment mappings show
- * their value only after Show.
+ * their value only after Show. KOBE-816: the sandbox itself withholds those values (`hidden`), and
+ * values under credential-like keys of a dict; Show asks for that one variable.
  */
 import { ChevronRightIcon, RefreshCwIcon } from "lucide-react";
 import { useId } from "react";
@@ -100,6 +101,16 @@ function ValueCell({
       <span className="truncate font-mono" data-kobe-var-value={v.name}>
         {reprText(v, ROW_REPR_CHARS)}
       </span>
+      {v.hidden === "keys" && (
+        <button
+          type="button"
+          className="hover:bg-muted self-start rounded-md border px-1.5 text-xs"
+          aria-label={`Show the hidden values in ${v.name}`}
+          onClick={onShow}
+        >
+          Show hidden values
+        </button>
+      )}
     </span>
   );
 }
@@ -128,15 +139,21 @@ function Row({
   v,
   view,
   onView,
+  onShow,
   detailsId,
 }: {
   readonly v: Variable;
   readonly view: VariablesView;
   onView(next: VariablesView): void;
+  /** KOBE-816: ask the sandbox for a value it withheld. */
+  onShow(name: string): void;
   readonly detailsId: string;
 }) {
   const open = view.expanded.includes(v.name);
-  const hidden = isSensitive(v) && !view.shown.includes(v.name);
+  // Withheld by the sandbox (KOBE-816; no value here until Show asks for it), or credential-like
+  // by name from an older agent (the value is here; shown after Show).
+  const withheld = v.hidden === "name";
+  const hidden = withheld || (isSensitive(v) && !view.shown.includes(v.name));
   return (
     <>
       <tr className="border-b align-top" data-kobe-variable={v.name}>
@@ -162,7 +179,10 @@ function Row({
           <ValueCell
             v={v}
             hidden={hidden}
-            onShow={() => onView({ ...view, shown: [...view.shown, v.name] })}
+            onShow={() => {
+              onView({ ...view, shown: [...view.shown, v.name] });
+              if (v.hidden !== undefined) onShow(v.name);
+            }}
           />
         </td>
       </tr>
@@ -212,7 +232,11 @@ export function VariablesPanel({
   view,
   onView,
 }: {
-  readonly state: VariablesState & { readonly allowed: boolean; refresh(): void };
+  readonly state: VariablesState & {
+    readonly allowed: boolean;
+    refresh(): void;
+    show?(name: string): void | Promise<void>;
+  };
   readonly busy: boolean;
   readonly view: VariablesView;
   onView(next: VariablesView): void;
@@ -274,7 +298,14 @@ export function VariablesPanel({
         </thead>
         <tbody>
           {rows.map((v, i) => (
-            <Row key={v.name} v={v} view={view} onView={onView} detailsId={`${id}-d${i}`} />
+            <Row
+              key={v.name}
+              v={v}
+              view={view}
+              onView={onView}
+              onShow={(name) => void state.show?.(name)}
+              detailsId={`${id}-d${i}`}
+            />
           ))}
         </tbody>
       </table>

@@ -288,6 +288,23 @@ export const sitePeopleDetails: Readonly<Record<string, CatalogDetail>> = {
       }),
     ),
   },
+  "get /v1/site/users/sign-in-protection": {
+    response: untyped(
+      "SiteSignInProtection",
+      obj({
+        throttled: {
+          ...arr(obj({ userId: uuid, until: dateTime })),
+          description:
+            "Accounts past 10 failed sign-in attempts in 15 minutes: one attempt a minute until `until`.",
+        },
+        unknownClientIp: {
+          ...nullable(obj({ since: dateTime })),
+          description:
+            "Since when (in the last day) requests arrived without a client IP Kobe can trust; null when none did.",
+        },
+      }),
+    ),
+  },
   "post /v1/site/users/{userId}/deactivate": {
     body: named("SiteUserExpectedStateBody", expectedStateSchema),
     bodyOptional: true,
@@ -477,7 +494,7 @@ export const sitePeopleDetails: Readonly<Record<string, CatalogDetail>> = {
     body: null,
     status: 201,
     response: untyped("ScimTokenCreated", obj(scimTokenCreated(false))),
-    errors: ["404", "409"],
+    errors: ["404", "409", "429"],
   },
   "post /v1/site/sso/providers/{id}/scim/tokens/{tokenId}/revoke": {
     body: null,
@@ -489,7 +506,7 @@ export const sitePeopleDetails: Readonly<Record<string, CatalogDetail>> = {
     status: 201,
     response: untyped("ScimTokenRotated", obj(scimTokenCreated(true))),
     responseDescription: "A new token; the one it `replaces` keeps working until revoked.",
-    errors: ["404", "409"],
+    errors: ["404", "409", "429"],
   },
   "post /v1/site/sso/providers/{id}/test": {
     body: null,

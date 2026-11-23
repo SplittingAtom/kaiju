@@ -93,6 +93,12 @@ describe("site resources call the right routes", () => {
   it.each([
     ["listUsers", () => users.listUsers(), "GET /v1/site/users", { users: [] }],
     [
+      "getSignInProtection",
+      () => users.getSignInProtection(),
+      "GET /v1/site/users/sign-in-protection",
+      { throttled: [], unknownClientIp: null },
+    ],
+    [
       "deactivate",
       () => users.setUserActive("u 2", false),
       "POST /v1/site/users/u%202/deactivate",
