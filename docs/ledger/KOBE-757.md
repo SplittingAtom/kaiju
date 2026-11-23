@@ -8,7 +8,7 @@
 ## What ships
 
 - **Tables** (area `packages/db/src/tenancy/git.ts`, schema `packages/db/src/schema/git.ts`,
-  migrations `0248_git_connections` + `0250_git_capabilities` generated (db:rebase folds them into one) and `0249_git_rls` custom; renumbered on landing):
+  migrations `0248_git_connections_git_capabilities` (generated) and `0249_git_rls` (custom), regenerated on `group-89-merge-hotspots`):
   - `git_connections`: provider, canonical https base URL, organization (unique per base URL,
     ignoring case: G2), display name, credential kind, `credential_sealed` + `credential_key_id`,
     token hint, GitHub App ID / installation ID in clear (G5), access level (off/read/read_write,
