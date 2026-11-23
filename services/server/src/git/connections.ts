@@ -67,8 +67,17 @@ export interface GitConnectionDeps {
   readonly tokenCache?: InstallationTokenCache;
 }
 
+/** Read on use, not when the routes are built (building the app touches no secrets or networks). */
 export function gitConnectionDeps(deps: ServerDeps): GitConnectionDeps {
-  return { db: deps.database.db, envelope: deps.envelope, net: deps.gitHostNet };
+  return {
+    db: deps.database.db,
+    get envelope() {
+      return deps.envelope;
+    },
+    get net() {
+      return deps.gitHostNet;
+    },
+  };
 }
 
 /** Calls that reach an admin-chosen host (test, connect, replace, check), per member. */

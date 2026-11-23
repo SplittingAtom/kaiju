@@ -34,7 +34,8 @@ const answer = <T>(c: Ctx, outcome: Outcome<T>, ok: (value: T) => Response): Res
  */
 export function projectRepoRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }> {
   const app = new Hono<{ Variables: TeamVariables }>();
-  const conversion = conversionDeps(deps);
+  // Read per request: building the app must not touch the envelope or the blob store.
+  const conversion = () => conversionDeps(deps);
   // Scoped to this module's paths (review: not every /v1/projects route mounted after it).
   const guards = [
     requireTeam(deps),
@@ -50,7 +51,7 @@ export function projectRepoRoutes(deps: ServerDeps): Hono<{ Variables: TeamVaria
   }
   const viewer = (c: Ctx) => ({ teamId: c.get("team").id, userId: c.get("user").id });
   const kick = (teamId: string, id: string) =>
-    fireAndLog(logger, "git conversion", runThenDrain(conversion, teamId, id), {
+    fireAndLog(logger, "git conversion", runThenDrain(conversion(), teamId, id), {
       team_id: teamId,
       conversion_id: id,
     });
@@ -58,7 +59,7 @@ export function projectRepoRoutes(deps: ServerDeps): Hono<{ Variables: TeamVaria
   app.get("/:id/repo-conversion", async (c) => {
     const id = param(c, "id", z.uuid());
     if (!id.success) return notFound(c);
-    const out = await readProjectConversion(conversion, viewer(c), id.data);
+    const out = await readProjectConversion(conversion(), viewer(c), id.data);
     return answer(c, out, (value) => c.json({ conversion: value }));
   });
 
@@ -72,7 +73,7 @@ export function projectRepoRoutes(deps: ServerDeps): Hono<{ Variables: TeamVaria
         "Send connection_id, and optionally repository_name, visibility (private or internal), carry_history and use_existing.",
       );
     }
-    const out = await startConversion(conversion, viewer(c), id.data, body);
+    const out = await startConversion(conversion(), viewer(c), id.data, body);
     if (out.ok) kick(c.get("team").id, out.value.id);
     return answer(c, out, (value) => c.json({ conversion: value }, 202));
   });
@@ -80,7 +81,7 @@ export function projectRepoRoutes(deps: ServerDeps): Hono<{ Variables: TeamVaria
   app.post("/:id/repo-conversion/retry", async (c) => {
     const id = param(c, "id", z.uuid());
     if (!id.success) return notFound(c);
-    const out = await retryConversion(conversion, viewer(c), id.data);
+    const out = await retryConversion(conversion(), viewer(c), id.data);
     if (out.ok) kick(c.get("team").id, out.value.id);
     return answer(c, out, (value) => c.json({ conversion: value }, 202));
   });
@@ -88,7 +89,7 @@ export function projectRepoRoutes(deps: ServerDeps): Hono<{ Variables: TeamVaria
   app.post("/:id/repo-conversion/abandon", async (c) => {
     const id = param(c, "id", z.uuid());
     if (!id.success) return notFound(c);
-    const out = await abandonConversion(conversion, viewer(c), id.data);
+    const out = await abandonConversion(conversion(), viewer(c), id.data);
     return answer(c, out, (value) => c.json(value));
   });
 
