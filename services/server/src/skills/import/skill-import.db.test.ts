@@ -9,17 +9,17 @@ import { strToU8, zipSync } from "fflate";
 import type { HttpClient } from "isomorphic-git";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { provenanceSchema } from "@kobe/protocol";
-import { mirrorHttpClient } from "./skills/mirror/http-client.js";
-import { RawBody, type TestBrowser } from "./testing/browser.js";
+import { mirrorHttpClient } from "../mirror/http-client.js";
+import { RawBody, type TestBrowser } from "../../testing/browser.js";
 import {
   selfSignedCert,
   startConnectProxy,
   startGitServer,
   type GitServer,
-} from "./testing/git-http-server.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { CASES, GOLDEN, manifest, promoteTeamVersion } from "./testing/registry-fixtures.js";
+} from "../../testing/git-http-server.js";
+import { openHarness, type Harness } from "../../testing/harness.js";
+import { MemoryObjects } from "../../testing/memory-objects.js";
+import { CASES, GOLDEN, manifest, promoteTeamVersion } from "../../testing/registry-fixtures.js";
 
 /**
  * KOBE-344 (SK30, U37): governed import. Only the Site's allowlist (default none, hosts or
