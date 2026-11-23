@@ -4,12 +4,12 @@ import pino from "pino";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { runTraceId } from "@kobe/protocol";
 import type { ScoreSink, TraceScore } from "@kobe/telemetry";
-import { FeedbackScores } from "./feedback/scores.js";
-import type { GalleryDefinition } from "./gallery/definitions.js";
-import { seedGalleryAgents } from "./gallery/seed.js";
-import { runRetentionPass } from "./retention/index.js";
-import { RunFixture, type RunWorld } from "./testing/run-fixture.js";
-import type { Person } from "./testing/event-stream-fixture.js";
+import { FeedbackScores } from "./scores.js";
+import type { GalleryDefinition } from "../gallery/definitions.js";
+import { seedGalleryAgents } from "../gallery/seed.js";
+import { runRetentionPass } from "../retention/index.js";
+import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
+import type { Person } from "../testing/event-stream-fixture.js";
 
 /**
  * KOBE-275: answer feedback through the API. Members rate answers they can see (the owner and
