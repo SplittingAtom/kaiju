@@ -69,6 +69,12 @@ export interface ProjectCommitConnection {
 }
 
 const TOOL = "commit_project";
+/**
+ * Review M2 (KOBE-767): a commit to a Repo sends the project's files to an external git host, so
+ * it is its own approval subject: rules that allow `commit_project` (written when it only touched
+ * Kobe's copy) never cover it, and every one asks a person, with where it pushes on the card.
+ */
+export const REPO_COMMIT_TOOL = "commit_repo";
 
 type Reply =
   { ok: true; outcome: ProjectCommitOutcome } | { ok: false; code: string; message: string };
@@ -162,8 +168,67 @@ export function replyOf(result: CommitResult, repoCommits = true): Reply {
     case "repo_unavailable":
     case "repo_push_rejected":
       return failed(result.error, result.detail ?? REPO_REFUSAL_MESSAGES[result.error]);
+    case "rate_limited":
+      return failed("rate_limited", result.detail ?? "Too many commits to Repos. Try again later.");
   }
 }
+
+/** Where an agent's commit to this project would go on the git host, when it is a Repo. */
+async function repoTarget(
+  c: ProjectCommitConnection,
+  projectId: string,
+): Promise<string | undefined> {
+  const { teamId } = c.target;
+  return withTeam(c.deps.commit.db, teamId, async (tx) => {
+    const res = await tx.execute<{
+      base_url: string;
+      full_name: string;
+      default_branch: string;
+      direct_commits: boolean | null;
+    }>(sql`
+      SELECT g.base_url, g.full_name, g.default_branch, k.direct_commits
+        FROM projects p
+        JOIN git_repositories g ON g.team_id = p.team_id AND g.project_id = p.id
+        LEFT JOIN git_connections k ON k.team_id = g.team_id AND k.id = g.connection_id
+       WHERE p.team_id = ${teamId} AND p.id = ${projectId} AND p.kind = 'repo'`);
+    const r = res.rows[0];
+    if (!r) return undefined;
+    const host = r.base_url.replace(/^https:\/\//, "");
+    return r.direct_commits === true
+      ? `${host}/${r.full_name}: straight to ${r.default_branch} (a pull request if the host protects it)`
+      : `${host}/${r.full_name}: a branch with a pull request into ${r.default_branch}`;
+  });
+}
+
+/**
+ * Who decides an agent's commit (review M2): an ordinary project's commit goes ahead on a rule
+ * that allowed `commit_project`, else asks; a Repo's commit always asks, as `commit_repo`.
+ */
+export function commitSubject(
+  pushesTo: string | undefined,
+  ruleAllowed: boolean,
+): { readonly tool: string; readonly ask: boolean } {
+  if (pushesTo !== undefined) return { tool: REPO_COMMIT_TOOL, ask: true };
+  return { tool: TOOL, ask: !ruleAllowed };
+}
+
+const repoApprovalDecision = (
+  pushesTo: string,
+): Extract<PolicyDecision, { effect: "require_approval" }> => ({
+  effect: "require_approval",
+  expires_at: new Date(Date.now() + APPROVAL_TTL_MS).toISOString(),
+  risk: "write",
+  reasons: [
+    {
+      code: "risk_write",
+      stage: "risk_class",
+      message: `commit_repo sends the project's changed files to the git host: ${pushesTo}.`.slice(
+        0,
+        500,
+      ),
+    },
+  ],
+});
 
 const approvalDecision = (): Extract<PolicyDecision, { effect: "require_approval" }> => ({
   effect: "require_approval",
@@ -359,11 +424,15 @@ async function run(
     answer(replyOf(preview, repoCommits));
     return;
   }
+  const pushesTo = repo === undefined ? undefined : await repoTarget(c, g.projectId);
+  const subject = commitSubject(pushesTo, c.ruleAllowed(frame));
+  const tool = subject.tool;
   const input = {
     project_id: g.projectId,
     base_seq: preview.baseSeq,
     message: frame.input.message,
     diff_sha256: preview.diffHash,
+    ...(pushesTo === undefined ? {} : { pushes_to: pushesTo }),
   };
   const commit = () =>
     commitProject(deps.commit, repo, {
@@ -384,7 +453,8 @@ async function run(
         toolCallId: frame.tool_call_id,
       },
     });
-  if (c.ruleAllowed(frame)) {
+  // M2: a rule never lets a commit reach an external git host without a person's approval.
+  if (!subject.ask) {
     // A policy rule allowed commit_project outright (remembered or team rule): no approval.
     answer(replyOf(await commit(), repoCommits));
     return;
@@ -397,9 +467,9 @@ async function run(
       runId: frame.run_id,
       threadId: frame.thread_id,
       toolCallId: frame.tool_call_id,
-      tool: TOOL,
+      tool,
       input,
-      decision: approvalDecision(),
+      decision: pushesTo === undefined ? approvalDecision() : repoApprovalDecision(pushesTo),
       signal: c.signal,
     },
     () => answer({ ok: true, outcome: { status: "pending_approval" } }),
@@ -408,7 +478,7 @@ async function run(
     answer(failed("not_allowed", outcome.message));
     return;
   }
-  if (!(await approvalHolds(deps.verifier, call, TOOL, input))) {
+  if (!(await approvalHolds(deps.verifier, call, tool, input))) {
     answer(failed("not_allowed", "This commit was not approved."));
     return;
   }

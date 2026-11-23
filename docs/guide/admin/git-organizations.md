@@ -198,13 +198,18 @@ with the connection's credential:
   default branch, Kobe opens a pull request instead and says so. Turning the setting on or off is
   recorded as `git.connection.updated` (field `direct_commits`).
 
-If the default branch moved on the host since Kobe's copy, a direct commit is refused ("moved on
-the git host") and nothing on the host is overwritten: the member presses **Update** once Kobe's
-copy has caught up, then commits again. Kobe never force-pushes. A commit needs the connection at
-**Read and write**, the Contributor role or above and editor or owner of the project; each is
-recorded as `git.repo.committed` (or `git.repo.commit_failed` when the host refused it), with the
-pull request's number and link but never the message, file names or branch name. Members may
-commit to Repos 60 times an hour.
+Kobe builds each commit on the host's current branch and checks every file it changes: if
+someone changed the same file on the host since the member's copy, the commit is refused ("changed
+on the git host") and nothing on the host is overwritten; the member presses **Update**, then
+commits again. Changes to other files on the host are kept. Kobe never force-pushes. A commit needs
+the connection at **Read and write**, the Contributor role or above and editor or owner of the
+project; an agent's commit also needs the connection to allow that agent (when it is limited to
+chosen agents) and the member's approval each time (`commit_repo`: the card names the host,
+repository and branch; rules that allow `commit_project` do not cover it, and it cannot be
+remembered). Kobe records `git.repo.commit_attempted` before each push and `git.repo.committed`
+after it, with the pull request's number and link but never the message, file names or branch
+name; `git.repo.commit_failed` when Kobe or the host refused the commit. Members may commit to
+Repos 60 times an hour (more answers "Too many commits to Repos" with when to try again).
 
 This setting governs Kobe's own commit flow only. Agents pushing with git in their sandbox push to
 whatever branch the host allows them: protect the default branch on the host (require a pull

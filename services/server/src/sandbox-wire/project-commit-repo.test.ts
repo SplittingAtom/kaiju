@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { projectCommitOutcomeSchema } from "@kobe/protocol";
-import { replyOf } from "./project-commit.js";
+import { commitSubject, REPO_COMMIT_TOOL, replyOf } from "./project-commit.js";
 
 /** KOBE-767: the agent's `commit_project` on a Repo, for new and older agents. */
 describe("commit_project answers on a Repo", () => {
@@ -57,5 +57,17 @@ describe("commit_project answers on a Repo", () => {
       code: "repo_push_rejected",
       message: "The git host refused the push.",
     });
+  });
+});
+
+describe("who decides an agent's commit (review M2)", () => {
+  it("a Repo's commit always asks, as its own subject; a rule covers only Kobe's own commits", () => {
+    expect(commitSubject("git.acme.test/acme/app: a branch", true)).toEqual({
+      tool: REPO_COMMIT_TOOL,
+      ask: true,
+    });
+    expect(REPO_COMMIT_TOOL).toBe("commit_repo");
+    expect(commitSubject(undefined, true)).toEqual({ tool: "commit_project", ask: false });
+    expect(commitSubject(undefined, false)).toEqual({ tool: "commit_project", ask: true });
   });
 });

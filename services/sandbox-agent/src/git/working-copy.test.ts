@@ -24,10 +24,11 @@ const repo: RunGitRepo = {
 const line = (...f: string[]) => `noise\nKOBE-REPO-STATUS\t${f.join("\t")}\n`;
 
 describe("Repo working copy (KOBE-767)", () => {
-  it("keeps only repos/<x>/.git out of the sync", () => {
-    expect(isRepoGitPath("repos/app/.git")).toBe(true);
-    expect(isRepoGitPath("repos/app/.git/objects/aa/bb")).toBe(true);
-    for (const p of ["repos/app/src/.git", "work/app/.git", ".git", "repos/.git", "repos/app/a"]) {
+  it("keeps the whole repos/ area out of the sync (review M4)", () => {
+    for (const p of ["repos", "repos/app/.git", "repos/app/.git/objects/aa/bb", "repos/app/a"]) {
+      expect(isRepoGitPath(p), p).toBe(true);
+    }
+    for (const p of ["work/app/.git", ".git", "reposx/a", "my/repos/a", "repo"]) {
       expect(isRepoGitPath(p), p).toBe(false);
     }
   });

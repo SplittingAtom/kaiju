@@ -64,6 +64,13 @@ export async function editTree(
   base: string,
   edits: ReadonlyMap<string, FileEdit>,
   io: TreeEditIo,
+  /**
+   * Review H1, the three-way check: path → the blob id Kobe's base had there (null: the path was
+   * not in the base). The host's entry must still be that (or already exactly the new content),
+   * else someone else changed the same file and {@link TreeMismatch} is thrown: never an
+   * overwrite of another person's change.
+   */
+  expected?: ReadonlyMap<string, string | null>,
 ): Promise<{ readonly tree: string; readonly reads: number }> {
   let reads = 0;
   const read = async (sha: string) => {
@@ -78,6 +85,13 @@ export async function editTree(
       const existing = entries.get(name);
       if (existing?.type === "tree" || existing?.type === "commit") {
         throw new TreeMismatch(`${prefix}${name}`);
+      }
+      const path = `${prefix}${name}`;
+      if (expected?.has(path)) {
+        const want = expected.get(path) ?? null;
+        const same = edit === null ? existing === undefined : existing?.sha === edit.blob;
+        const unchanged = want === null ? existing === undefined : existing?.sha === want;
+        if (!same && !unchanged) throw new TreeMismatch(path);
       }
       if (edit === null) entries.delete(name);
       else {

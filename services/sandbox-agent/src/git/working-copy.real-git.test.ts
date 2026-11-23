@@ -173,7 +173,7 @@ describe.skipIf(backend === undefined || !existsSync(TIMEOUT_BIN))(
     });
 
     const status = (r: RunGitRepo, timeoutMs = 30_000) =>
-      workingCopyStatus(toolCommandRunner({ env, cwd: workspace }), workspace, r, {
+      workingCopyStatus(toolCommandRunner({ env, cwd: workspace, sameUid: true }), workspace, r, {
         fetch: true,
         timeoutMs,
       });
@@ -223,6 +223,16 @@ describe.skipIf(backend === undefined || !existsSync(TIMEOUT_BIN))(
       expect(s).toMatchObject({ branch: "main", upstream: "origin/main", ahead: 0, dirty: true });
       expect(readFileSync(path.join(dir, "README.md"), "utf8")).toBe("hello, edited\n");
       expect(git(dir, "status", "--porcelain")).toContain("README.md");
+    });
+
+    it("points a working copy whose origin is not the Repo back at it (review L4)", async () => {
+      const dir = path.join(workspace, "repos", "app");
+      git(dir, "remote", "set-url", "origin", "https://github.com/acme/other.git");
+      const s = await status(repo("app"));
+      expect(s.fetched).toBe(true);
+      expect(git(dir, "config", "--get", "remote.origin.url")).toBe(
+        "https://github.com/acme/app.git",
+      );
     });
 
     it("tolerates an empty repository on the host", async () => {

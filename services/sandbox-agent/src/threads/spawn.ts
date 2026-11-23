@@ -228,6 +228,7 @@ export async function spawnPi(
         identity === undefined || identities === undefined
           ? undefined
           : { identities, identity, partner: exec !== undefined },
+      sameUid: identities === undefined,
     };
     if (launch.systemPrompt !== undefined) {
       promptFile = new SystemPromptFile(

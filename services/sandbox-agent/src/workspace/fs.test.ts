@@ -161,7 +161,7 @@ describe("workspace fs helpers", () => {
 });
 
 describe("Repo working copies in the scan (KOBE-767)", () => {
-  it("leaves out repos/<x>/.git and nothing else", async () => {
+  it("leaves out the whole repos/ area and nothing else (review M4)", async () => {
     const root = await dir();
     for (const rel of [
       "repos/app/.git/HEAD",
@@ -174,10 +174,6 @@ describe("Repo working copies in the scan (KOBE-767)", () => {
       await writeFile(path.join(root, rel), "x");
     }
     const scan = await scanWorkspace(root, { skipDirs: new Set(), maxFiles: 100 });
-    expect([...scan.files.keys()].sort()).toEqual([
-      "repos/app/README.md",
-      "repos/app/sub/.git/HEAD",
-      "work/.git/HEAD",
-    ]);
+    expect([...scan.files.keys()].sort()).toEqual(["work/.git/HEAD"]);
   });
 });

@@ -59,6 +59,7 @@ export const SITE_VIEW_TARGET_KEYS: ReadonlySet<string> = new Set([
   // previous mirror commit a refresh dropped (an id, like `commitId`).
   "previousRepositoryId",
   "prunedCommitId",
+  "sweptCommits",
   // KOBE-733 sandbox.volume_proof: whether the shutdown proof was accepted.
   "accepted",
   // KOBE-733 sandbox.volume_reclaimed: the configured dormancy period.

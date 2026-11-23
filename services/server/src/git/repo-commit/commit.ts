@@ -12,7 +12,12 @@ import {
 import type { AuditVia } from "@kobe/db";
 import { recordAudit } from "../../audit/record.js";
 import type { BlobStore } from "../../retention/blobs.js";
-import { GitHostError, type GitHostAdapter, type GitRepository } from "../../git-hosts/adapter.js";
+import {
+  assertBranch,
+  GitHostError,
+  type GitHostAdapter,
+  type GitRepository,
+} from "../../git-hosts/adapter.js";
 import { gitHostAdapter, type GitAdapterInput } from "../../git-hosts/factory.js";
 import { gitWireSession } from "../../git-hosts/git-wire.js";
 import type { GitHostNet } from "../../git-hosts/http.js";
@@ -26,12 +31,13 @@ import {
   type CommitResult,
   type Plan,
 } from "../../projects/commits.js";
+import { loadTree, type Tree } from "../../projects/tree.js";
 import { checkRateLimit, type RateLimitRule } from "../../rate-limit.js";
 import { hostReason, readRemote } from "../conversion/push.js";
 import { parseReportStatus, writeReceivePack } from "../conversion/pack.js";
 import { gitattributesRefusal, isGitattributes, pathRefusal } from "../conversion/paths.js";
 import { buildRunGitContext, gitCommitEmailMode } from "../sandbox-git.js";
-import { commitContent, writeLoose } from "./objects.js";
+import { commitContent, gitObjectId, writeLoose } from "./objects.js";
 import { pullRequestBody, pullRequestBranch, pullRequestTitle } from "./naming.js";
 import { loadRepoCommitFacts, saveBranch, type BranchRow, type RepoCommitFacts } from "./store.js";
 import { editTree, TreeMismatch, type FileEdit } from "./tree-edit.js";
@@ -46,21 +52,27 @@ import { editTree, TreeMismatch, type FileEdit } from "./tree-edit.js";
  *     rights on the project (planned), the Site's decision for the host, the repository private
  *     (or internal where the connection allows it), not archived, still the recorded one (by id);
  *  2. a git commit: the changed files' blobs (read from Kobe's storage, checked against their
- *     SHA-256), the folders on their paths read from the host's tree of the commit Kobe's copy
- *     stands on (`mirror_head_sha`) and written again, and a commit authored as the member (their
- *     Kobe email or the Workspace's no-reply form, GQ10) with "<name> via Kobe" as committer;
+ *     SHA-256), the folders on their paths read from the host's tree of the default branch's head
+ *     now (or of the open pull request's base) and written again, each changed path checked
+ *     three-way against Kobe's base (review H1: the host's version must still be the base's, so
+ *     another person's change to the same file is refused as `repo_moved`, never overwritten), and
+ *     a commit authored as the member (their Kobe email or the Workspace's no-reply form, GQ10)
+ *     with "<name> via Kobe" as committer;
  *  3. a push, always a compare-and-swap, never forced, over the guarded smart-HTTP client with a
  *     credential minted for this repository (G8: it never leaves the server):
  *     - by default (GQ11) to a branch of its own, and a pull request into the default branch is
  *       opened; while that pull request is open and the working copy has the same base, the next
  *       commit is added to the same branch (`git_commit_branches`);
- *     - when the connection allows direct commits, to the default branch from Kobe's head. If the
- *       branch moved on the host the push is refused and the member is told to Update
- *       (`repo_moved`; Kobe's copy is refreshed, KOBE-766); if the host refuses it otherwise (a
- *       protected branch), a pull request is opened instead (`fallback`). Kobe's copy then takes
- *       the same commit (`repoMirror`), so the member's checkout moves on as with any commit.
+ *     - when the connection allows direct commits, to the default branch from its head. If the
+ *       branch moved between the read and the push, the push is refused and the member is told
+ *       to Update (`repo_moved`; Kobe's copy is refreshed, KOBE-766); if the host refuses it
+ *       otherwise (a protected branch), a pull request is opened instead (`fallback`). When Kobe's
+ *       copy stood exactly on that head, it takes the same commit (`repoMirror`), so the member's
+ *       checkout moves on as with any commit; otherwise the mirror refresh brings it in.
  *
- * Audited `git.repo.committed` / `git.repo.commit_failed`. Nothing here logs or returns the
+ * `git.repo.commit_attempted` is written before the push and `git.repo.committed` right after it,
+ * before anything else (review M3): a push that landed is answered as a success even when a later
+ * Kobe write fails. Refusals are `git.repo.commit_failed`. Nothing here logs or returns the
  * credential; host text reaches the member only as receive-pack's short reason (`hostReason`).
  */
 export interface RepoCommitDeps {
@@ -70,9 +82,18 @@ export interface RepoCommitDeps {
   readonly publicUrl: string;
   /** Tests: a fake adapter. */
   readonly adapterFor?: (input: GitAdapterInput) => GitHostAdapter;
-  /** Kobe's copy of the Repo is refreshed from the host (KOBE-766), when wired. */
-  readonly refreshMirror?: (teamId: string, projectId: string) => Promise<unknown>;
+  /**
+   * Refreshes Kobe's copy of the Repo from the host now (KOBE-766 `kickMirrorRefresh`; never
+   * throws, runs in the background), so `repo_moved` and Update do not wait for the timer.
+   */
+  readonly refreshMirror?: (teamId: string, repositoryId: string) => void;
+  /** Asks the mirror job for a refresh soon (after a pull request push: the commit list). */
+  readonly requestMirror?: (teamId: string, repositoryId: string) => Promise<unknown>;
   readonly now?: () => Date;
+  /** Tests: between the plan and the first read of the host (review H1's race). */
+  readonly afterPlan?: () => Promise<void>;
+  /** Tests: after a successful push, before Kobe's records are written (review M3). */
+  readonly afterPush?: () => Promise<void>;
 }
 
 export interface RepoCommitRequest extends Omit<CommitRequest, "repoMirror"> {
@@ -135,44 +156,50 @@ interface Context {
   readonly req: RepoCommitRequest;
   readonly plan: Plan;
   readonly facts: RepoCommitFacts;
+  /** Kobe's base tree of the checkout (the three-way check's base). */
+  readonly base: Tree;
   readonly connection: GitConnectionRecord;
   readonly adapter: GitHostAdapter;
   readonly repo: GitRepository;
-  readonly baseSha: string;
+  readonly defaultBranch: string;
   readonly gitdir: string;
 }
 
 async function run(deps: RepoCommitDeps, req: RepoCommitRequest): Promise<CommitResult> {
   const { db } = deps.commit;
   const { teamId, userId } = req.owner;
-  const planned = await withTeam(db, teamId, (tx) =>
-    planCommit(tx, deps.commit, req, { repo: true }),
-  );
-  if (!("files" in planned)) return planned;
-  const plan = planned;
-  const facts = await withTeam(db, teamId, (tx) =>
-    loadRepoCommitFacts(tx, teamId, userId, req.projectId),
-  );
+  // Review H1: the plan, the repository row (locked FOR SHARE) and Kobe's base tree in one
+  // transaction, so they describe one state.
+  const prepared = await withTeam(db, teamId, async (tx) => {
+    const plan = await planCommit(tx, deps.commit, req, { repo: true });
+    if (!("files" in plan)) return { result: plan };
+    const facts = await loadRepoCommitFacts(tx, teamId, userId, req.projectId, req.via?.runId);
+    const base = await loadTree(tx, teamId, plan.checkout.baseCommitId);
+    return { plan, facts, base };
+  });
+  if ("result" in prepared) return prepared.result;
+  const { plan, facts, base } = prepared;
   if (!facts) return refused("repo_unavailable", "This Repo has no repository record.");
-  const connection = rightsOf(facts);
-  const baseSha = facts.repo.mirrorHeadSha;
-  if (baseSha === null || !/^[0-9a-f]{40}$/.test(baseSha)) {
-    return refused("repo_unavailable", "Kobe has no copy of the repository's default branch yet.");
-  }
-  const verdict = await checkRateLimit(db, `git-repo-commits:${userId}`, GIT_REPO_COMMIT_RATE);
-  if (!verdict.allowed) {
-    return refused(
-      "repo_unavailable",
-      `Too many commits to Repos. Try again in ${verdict.retryAfterSeconds} seconds.`,
-    );
-  }
+  const connection = rightsOf(facts, req);
+  await deps.afterPlan?.();
   const adapter = await adapterOf(deps, teamId, facts, connection);
   const repo = await recorded(adapter, facts, connection);
   const root = path.join(os.tmpdir(), GIT_REPO_COMMIT_DIR_NAME);
   await mkdir(root, { recursive: true, mode: 0o700 });
   const gitdir = await mkdtemp(path.join(root, "run-"));
   try {
-    const ctx: Context = { deps, req, plan, facts, connection, adapter, repo, baseSha, gitdir };
+    const ctx: Context = {
+      deps,
+      req,
+      plan,
+      facts,
+      base,
+      connection,
+      adapter,
+      repo,
+      defaultBranch: branchOf(repo, facts),
+      gitdir,
+    };
     return await commitAndPush(ctx);
   } catch (err) {
     if (err instanceof Stop) {
@@ -190,8 +217,21 @@ async function run(deps: RepoCommitDeps, req: RepoCommitRequest): Promise<Commit
   }
 }
 
+/** Review L1: the host's default branch only when it is a name Kobe sends; else the recorded one. */
+function branchOf(repo: GitRepository, facts: RepoCommitFacts): string {
+  const host = repo.defaultBranch;
+  if (host !== null) {
+    try {
+      return assertBranch(host);
+    } catch {
+      // fall through to the recorded name
+    }
+  }
+  return assertBranch(facts.repo.defaultBranch);
+}
+
 /** G12 and the connection's state, from the facts; the connection when the commit may go on. */
-function rightsOf(facts: RepoCommitFacts): GitConnectionRecord {
+function rightsOf(facts: RepoCommitFacts, req: RepoCommitRequest): GitConnectionRecord {
   if (facts.role === null) throw stop("not_found");
   if (facts.role === "member") {
     throw stop(
@@ -214,6 +254,17 @@ function rightsOf(facts: RepoCommitFacts): GitConnectionRecord {
       "repo_unavailable",
       `The git connection "${c.displayName}" is not at Read and write, so commits can't reach the host.`,
     );
+  }
+  // Review M1 (GQ8): an agent's commit honours the connection's chosen agents, as the git host
+  // tools do. The Commit dialog has no agent, so the list does not apply to it.
+  if (req.via !== undefined && c.agentIds !== null) {
+    const agent = facts.runAgentId ?? null;
+    if (agent === null || !c.agentIds.includes(agent)) {
+      throw stop(
+        "repo_unavailable",
+        `The git connection "${c.displayName}" is limited to chosen agents, and this conversation's agent is not one of them.`,
+      );
+    }
   }
   return c;
 }
@@ -284,18 +335,31 @@ async function recorded(
   return repo;
 }
 
-/** The blobs of the changed files, written loose; path → edit. */
-async function blobs(ctx: Context): Promise<Map<string, FileEdit>> {
+/**
+ * The blobs of the changed files, written loose (path → edit), and the three-way check's base
+ * (path → the blob id of Kobe's base version, null for an added file).
+ */
+async function blobs(ctx: Context): Promise<Changes> {
   const store = ctx.deps.commit.blobs;
   if (!store) throw stop("storage_failed");
   const copied = new Map(ctx.plan.copies.map((c) => [c.sha256, c.source]));
   const edits = new Map<string, FileEdit>();
+  const expected = new Map<string, string | null>();
   for (const change of ctx.plan.changes) {
     const problem = pathRefusal(change.path);
     if (problem !== undefined && change.change !== "deleted") {
       throw stop("invalid_path", `The git host would refuse this name: ${problem}.`, {
         path: change.path,
       });
+    }
+    const before = ctx.base.get(change.path);
+    if (before === undefined) expected.set(change.path, null);
+    else {
+      const old = await readObject(store, before.blobRef, before.size).catch(() => null);
+      if (old === null || createHash("sha256").update(old).digest("hex") !== before.sha256) {
+        throw stop("storage_failed", undefined, { path: change.path });
+      }
+      expected.set(change.path, gitObjectId("blob", old));
     }
     if (change.change === "deleted") {
       edits.set(change.path, null);
@@ -319,7 +383,12 @@ async function blobs(ctx: Context): Promise<Map<string, FileEdit>> {
       executable: file.executable,
     });
   }
-  return edits;
+  return { edits, expected };
+}
+
+interface Changes {
+  readonly edits: ReadonlyMap<string, FileEdit>;
+  readonly expected: ReadonlyMap<string, string | null>;
 }
 
 /** An object's bytes, at most `size` of them (more is a mismatch, refused). */
@@ -346,31 +415,38 @@ interface Built {
   readonly objects: readonly string[];
 }
 
-async function buildTree(ctx: Context): Promise<Built> {
-  const edits = await blobs(ctx);
+/** The changes applied to the tree of commit `onto` on the host, checked three-way (H1). */
+async function buildTree(ctx: Context, changes: Changes, onto: string): Promise<Built> {
   const objects = new Set<string>();
-  for (const e of edits.values()) if (e !== null) objects.add(e.blob);
+  for (const e of changes.edits.values()) if (e !== null) objects.add(e.blob);
   try {
-    const { tree } = await editTree(ctx.baseSha, edits, {
-      read: async (sha) => (await ctx.adapter.readTree(ctx.repo.name, sha)).entries,
-      write: async (content) => {
-        const oid = await writeLoose(ctx.gitdir, "tree", content);
-        objects.add(oid);
-        return oid;
+    const { tree } = await editTree(
+      onto,
+      changes.edits,
+      {
+        read: async (sha) => (await ctx.adapter.readTree(ctx.repo.name, sha)).entries,
+        write: async (content) => {
+          const oid = await writeLoose(ctx.gitdir, "tree", content);
+          objects.add(oid);
+          return oid;
+        },
       },
-    });
+      changes.expected,
+    );
     return { tree, objects: [...objects] };
   } catch (err) {
     if (err instanceof TreeMismatch) {
+      ctx.deps.refreshMirror?.(ctx.req.owner.teamId, ctx.facts.repo.id);
       throw stop(
         "repo_moved",
-        `The repository on the host differs from Kobe's copy (${err.path}). Kobe refreshes its copy; Update, then commit again.`,
+        `${err.path} changed on the git host since your copy. Kobe refreshes its copy; Update, then commit again.`,
       );
     }
     if (err instanceof GitHostError && err.code === "not_found") {
+      ctx.deps.refreshMirror?.(ctx.req.owner.teamId, ctx.facts.repo.id);
       throw stop(
         "repo_moved",
-        "The commit Kobe's copy stands on is no longer on the host. Kobe refreshes its copy; Update, then commit again.",
+        "The commit your copy stands on is no longer on the host. Kobe refreshes its copy; Update, then commit again.",
       );
     }
     throw err;
@@ -491,53 +567,110 @@ async function remoteHead(ctx: Context, branch: string): Promise<string | null> 
 }
 
 async function commitAndPush(ctx: Context): Promise<CommitResult> {
-  const built = await buildTree(ctx);
   const checkoutBase = ctx.plan.checkout.baseCommitId;
   if (checkoutBase === null) throw stop("repo_unavailable", "Kobe has no copy of the Repo yet.");
-  if (ctx.connection.directCommits) {
-    const direct = await directCommit(ctx, built);
-    if (direct !== "fallback") return direct;
-    return pullRequestCommit(ctx, built, checkoutBase, true);
+  const changes = await blobs(ctx);
+  const head = await remoteHead(ctx, ctx.defaultBranch);
+  if (head === null || !/^[0-9a-f]{40}$/.test(head)) {
+    throw stop(
+      "repo_unavailable",
+      `The repository has no ${ctx.defaultBranch} branch on the host.`,
+    );
   }
-  return pullRequestCommit(ctx, built, checkoutBase, false);
+  // Review L2: counted only for a commit that is going to the host.
+  const verdict = await checkRateLimit(
+    ctx.deps.commit.db,
+    `git-repo-commits:${ctx.req.owner.userId}`,
+    GIT_REPO_COMMIT_RATE,
+  );
+  if (!verdict.allowed) {
+    return {
+      status: "refused",
+      error: "rate_limited",
+      detail: `Too many commits to Repos. Try again in ${verdict.retryAfterSeconds} seconds.`,
+      retryAfterSeconds: verdict.retryAfterSeconds,
+    };
+  }
+  if (ctx.connection.directCommits) {
+    const direct = await directCommit(ctx, changes, head);
+    if (direct !== "fallback") return direct;
+    return pullRequestCommit(ctx, changes, head, checkoutBase, true);
+  }
+  return pullRequestCommit(ctx, changes, head, checkoutBase, false);
 }
 
-/** Straight to the default branch, from Kobe's head; `fallback` when the host refuses it so. */
-async function directCommit(ctx: Context, built: Built): Promise<CommitResult | "fallback"> {
-  const branch = ctx.repo.defaultBranch ?? ctx.facts.repo.defaultBranch;
-  const commit = await writeCommitObject(ctx, built.tree, ctx.baseSha);
-  const outcome = await push(ctx, branch, ctx.baseSha, commit, built.objects);
+/**
+ * After a push the host took: `git.repo.committed` first (retried), then Kobe's own records, each
+ * failure logged and never turned into an error answer (review M3).
+ */
+async function settle(ctx: Context, what: Committed, then: () => Promise<void>): Promise<void> {
+  let recorded = false;
+  for (let attempt = 0; attempt < 3 && !recorded; attempt += 1) {
+    try {
+      await audited(ctx, what);
+      recorded = true;
+    } catch (err) {
+      if (attempt === 2) {
+        ctx.deps.commit.log.error(
+          { err, project_id: ctx.req.projectId, commit_sha: what.commitSha },
+          "git.repo.committed could not be recorded for a push the host took",
+        );
+      }
+    }
+  }
+  try {
+    await ctx.deps.afterPush?.();
+    await then();
+  } catch (err) {
+    ctx.deps.commit.log.error(
+      { err, project_id: ctx.req.projectId, commit_sha: what.commitSha },
+      "a commit to a Repo landed on the host but Kobe's records were not all written",
+    );
+  }
+}
+
+/** Straight to the default branch from its head; `fallback` when the host refuses it so. */
+async function directCommit(
+  ctx: Context,
+  changes: Changes,
+  head: string,
+): Promise<CommitResult | "fallback"> {
+  const branch = ctx.defaultBranch;
+  const built = await buildTree(ctx, changes, head);
+  const commit = await writeCommitObject(ctx, built.tree, head);
+  await attempted(ctx, "direct", commit);
+  const outcome = await push(ctx, branch, head, commit, built.objects);
   if (!outcome.ok) {
-    if (outcome.stale || (await remoteHead(ctx, branch)) !== ctx.baseSha) {
-      void ctx.deps
-        .refreshMirror?.(ctx.req.owner.teamId, ctx.req.projectId)
-        ?.catch(() => undefined);
+    if (outcome.stale || (await remoteHead(ctx, branch)) !== head) {
+      ctx.deps.refreshMirror?.(ctx.req.owner.teamId, ctx.facts.repo.id);
       throw stop(
         "repo_moved",
-        `${branch} moved on the git host since Kobe's copy. Kobe refreshes its copy; Update, then commit again.`,
+        `${branch} moved on the git host while committing. Kobe refreshes its copy; Update, then commit again.`,
       );
     }
     return "fallback";
   }
-  // Kobe's copy takes the same commit: the member's checkout moves on as with any commit.
-  const mirrored = await commitWorkingCopy(ctx.deps.commit, {
-    owner: ctx.req.owner,
-    projectId: ctx.req.projectId,
-    message: ctx.req.message,
-    author: ctx.req.author,
-    expect: { baseSeq: ctx.plan.checkout.baseSeq, diffHash: ctx.plan.hash },
-    repoMirror: { repositoryId: ctx.facts.repo.id, baseSha: ctx.baseSha, headSha: commit },
+  let kobe: { readonly seq: number; readonly commitId: string } | undefined;
+  // Kobe's copy takes the same commit only when it stood exactly on the head pushed onto: the
+  // checkout's base is the copy of `mirror_head_sha` and that is the host's head (review H1).
+  const inSync =
+    ctx.facts.repo.mirrorHeadSha === head &&
+    ctx.facts.repo.mirrorCommitId !== null &&
+    ctx.facts.repo.mirrorCommitId === ctx.plan.checkout.baseCommitId;
+  await settle(ctx, { mode: "direct", commitSha: commit, fallback: false }, async () => {
+    if (!inSync) return;
+    const mirrored = await commitWorkingCopy(ctx.deps.commit, {
+      owner: ctx.req.owner,
+      projectId: ctx.req.projectId,
+      message: ctx.req.message,
+      author: ctx.req.author,
+      expect: { baseSeq: ctx.plan.checkout.baseSeq, diffHash: ctx.plan.hash },
+      repoMirror: { repositoryId: ctx.facts.repo.id, baseSha: head, headSha: commit },
+    });
+    if (mirrored.status === "committed") kobe = mirrored;
   });
-  const kobe = mirrored.status === "committed" ? mirrored : undefined;
-  if (!kobe) {
-    void ctx.deps.refreshMirror?.(ctx.req.owner.teamId, ctx.req.projectId)?.catch(() => undefined);
-  }
-  await audited(ctx, {
-    mode: "direct",
-    commitSha: commit,
-    fallback: false,
-    ...(kobe ? { kobeCommitId: kobe.commitId } : {}),
-  });
+  // The mirror catches up either way: its commit list, or Kobe's copy when it was not written.
+  ctx.deps.refreshMirror?.(ctx.req.owner.teamId, ctx.facts.repo.id);
   return {
     status: "pushed",
     branch,
@@ -550,12 +683,7 @@ async function directCommit(ctx: Context, built: Built): Promise<CommitResult | 
 /** The member's open pull request from this working copy, when the next commit can join it. */
 async function openBranch(ctx: Context, checkoutBase: string): Promise<BranchRow | undefined> {
   const row = ctx.facts.branch;
-  if (
-    !row ||
-    row.repositoryId !== ctx.facts.repo.id ||
-    row.baseCommitId !== checkoutBase ||
-    row.baseSha !== ctx.baseSha
-  ) {
+  if (!row || row.repositoryId !== ctx.facts.repo.id || row.baseCommitId !== checkoutBase) {
     return undefined;
   }
   try {
@@ -569,25 +697,29 @@ async function openBranch(ctx: Context, checkoutBase: string): Promise<BranchRow
 
 async function pullRequestCommit(
   ctx: Context,
-  built: Built,
+  changes: Changes,
+  head: string,
   checkoutBase: string,
   fallback: boolean,
 ): Promise<CommitResult> {
   const open = await openBranch(ctx, checkoutBase);
   if (open) {
+    // The open pull request's commits build on its own base, checked against Kobe's base.
+    const built = await buildTree(ctx, changes, open.baseSha);
     if (open.treeSha === built.tree) return { status: "nothing_to_commit" };
     const commit = await writeCommitObject(ctx, built.tree, open.headSha);
+    await attempted(ctx, "pull_request", commit);
     const outcome = await push(ctx, open.branch, open.headSha, commit, built.objects);
     if (outcome.ok) {
-      await record(ctx, { ...open, headSha: commit, treeSha: built.tree });
-      await audited(ctx, {
+      const what: Committed = {
         mode: "pull_request",
         commitSha: commit,
         number: open.pullNumber,
         url: open.pullUrl,
         opened: false,
         fallback,
-      });
+      };
+      await settle(ctx, what, () => record(ctx, { ...open, headSha: commit, treeSha: built.tree }));
       return {
         status: "pull_request",
         branch: open.branch,
@@ -602,11 +734,12 @@ async function pullRequestCommit(
     if (!moved) throw rejected(outcome.reason);
     // Someone moved the pull request's branch on the host: a new branch, never an overwrite.
   }
-  const commit = await writeCommitObject(ctx, built.tree, ctx.baseSha);
+  const built = await buildTree(ctx, changes, head);
+  const commit = await writeCommitObject(ctx, built.tree, head);
   const branch = pullRequestBranch(ctx.facts.user.name, ctx.req.message, commit);
+  await attempted(ctx, "pull_request", commit);
   const outcome = await push(ctx, branch, null, commit, built.objects);
   if (!outcome.ok) throw rejected(outcome.reason);
-  const base = ctx.repo.defaultBranch ?? ctx.facts.repo.defaultBranch;
   let created;
   try {
     created = await ctx.adapter.openPullRequest({
@@ -619,7 +752,7 @@ async function pullRequestCommit(
         threadId: ctx.req.via?.threadId,
       }),
       head: branch,
-      base,
+      base: ctx.defaultBranch,
     });
   } catch (err) {
     if (err instanceof GitHostError) {
@@ -638,33 +771,60 @@ async function pullRequestCommit(
     );
   }
   const url = /^https?:\/\//.test(created.webUrl) ? created.webUrl : "";
-  await record(ctx, {
-    repositoryId: ctx.facts.repo.id,
-    baseCommitId: checkoutBase,
-    baseSha: ctx.baseSha,
-    branch,
-    headSha: commit,
-    treeSha: built.tree,
-    pullNumber: number,
-    pullUrl: url,
-  });
-  await audited(ctx, {
+  const what: Committed = {
     mode: "pull_request",
     commitSha: commit,
     number,
     url,
     opened: true,
     fallback,
-  });
-  return {
-    status: "pull_request",
-    branch,
-    commitSha: commit,
-    number,
-    url,
-    opened: true,
-    fallback,
   };
+  await settle(ctx, what, () =>
+    record(ctx, {
+      repositoryId: ctx.facts.repo.id,
+      baseCommitId: checkoutBase,
+      baseSha: head,
+      branch,
+      headSha: commit,
+      treeSha: built.tree,
+      pullNumber: number,
+      pullUrl: url,
+    }),
+  );
+  return { status: "pull_request", branch, commitSha: commit, number, url, opened: true, fallback };
+}
+
+/** `git.repo.commit_attempted`, written before the push (review M3: the intent is on record). */
+async function attempted(
+  ctx: Context,
+  mode: "pull_request" | "direct",
+  commitSha: string,
+): Promise<void> {
+  const { teamId, userId } = ctx.req.owner;
+  await withTeam(ctx.deps.commit.db, teamId, (tx) =>
+    recordAudit(tx, {
+      action: "git.repo.commit_attempted",
+      actor: { kind: "user", id: userId },
+      teamId,
+      target: {
+        projectId: ctx.req.projectId,
+        repositoryId: ctx.facts.repo.id,
+        connectionId: ctx.connection.id,
+        mode,
+        commitSha,
+      },
+      ...(ctx.req.via ? { via: ctx.req.via } : {}),
+    }),
+  );
+}
+
+interface Committed {
+  readonly mode: "pull_request" | "direct";
+  readonly commitSha: string;
+  readonly number?: number;
+  readonly url?: string;
+  readonly opened?: boolean;
+  readonly fallback: boolean;
 }
 
 const rejected = (reason: string | null): Stop =>
@@ -678,20 +838,15 @@ async function record(ctx: Context, row: BranchRow): Promise<void> {
   await withTeam(ctx.deps.commit.db, teamId, (tx) =>
     saveBranch(tx, { teamId, projectId: ctx.req.projectId, userId }, row),
   );
+  // A pull request push leaves the default branch alone; the mirror's next pass is enough.
+  await ctx.deps
+    .requestMirror?.(teamId, ctx.facts.repo.id)
+    ?.catch((err: unknown) =>
+      ctx.deps.commit.log.warn({ err }, "git mirror refresh not requested"),
+    );
 }
 
-async function audited(
-  ctx: Context,
-  what: {
-    mode: "pull_request" | "direct";
-    commitSha: string;
-    number?: number;
-    url?: string;
-    opened?: boolean;
-    fallback: boolean;
-    kobeCommitId?: string;
-  },
-): Promise<void> {
+async function audited(ctx: Context, what: Committed): Promise<void> {
   const { teamId, userId } = ctx.req.owner;
   const { url, ...rest } = what;
   await withTeam(ctx.deps.commit.db, teamId, (tx) =>

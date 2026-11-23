@@ -22,6 +22,7 @@ import type { MirrorCommit } from "./fetch.js";
 import {
   recordSuccess,
   releaseLease,
+  requestMirrorRefresh,
   underLease,
   type MirrorLease,
   type MirrorRow,
@@ -45,7 +46,9 @@ export class MirrorHeld extends Error {
 
 export type ApplyOutcome =
   | { readonly kind: "applied"; readonly commitId: string | null; readonly changed: number }
-  | { readonly kind: "gone" };
+  | { readonly kind: "gone" }
+  /** KOBE-767: Kobe's commit flow moved the mirror head since this refresh started. */
+  | { readonly kind: "stale" };
 
 async function teamHeld(tx: KobeTx, teamId: string): Promise<boolean> {
   const res = await tx.execute<{ held: boolean }>(
@@ -54,23 +57,41 @@ async function teamHeld(tx: KobeTx, teamId: string): Promise<boolean> {
   return res.rows[0]?.held === true;
 }
 
-/** Drops the mirror's previous commit when nothing needs it any more. */
-async function prunePrevious(tx: KobeTx, row: MirrorRow, previous: string): Promise<string | null> {
+/**
+ * Drops mirror commits nothing needs any more (review L1, KOBE-767): every commit written into the
+ * Repo since it was converted (mirror commits, and direct commits from Kobe's commit flow; the
+ * previous mirror commit among them) that is neither the head nor the base of a working copy, so a
+ * commit a checkout kept alive goes once that checkout moved on or ended. Never while a legal hold
+ * covers the Workspace; never the project's history from before the conversion (kept as it was).
+ */
+async function prunePrevious(
+  tx: KobeTx,
+  row: MirrorRow,
+  previous: string | null,
+): Promise<{ readonly previous: string | null; readonly swept: number }> {
   await lockLegalHolds(tx);
-  if (await teamHeld(tx, row.teamId)) return null;
-  const refs = await tx.execute<{ key: string }>(sql`
-    SELECT DISTINCT blob_ref AS key FROM project_tree_entries
-     WHERE team_id = ${row.teamId} AND commit_id = ${previous}`);
-  const gone = await tx.execute<{ id: string }>(sql`
-    DELETE FROM project_commits c
-     WHERE c.team_id = ${row.teamId} AND c.project_id = ${row.projectId} AND c.id = ${previous}
+  if (await teamHeld(tx, row.teamId)) return { previous: null, swept: 0 };
+  const candidates = await tx.execute<{ id: string }>(sql`
+    SELECT c.id FROM project_commits c
+     WHERE c.team_id = ${row.teamId} AND c.project_id = ${row.projectId}
+       AND c.created_at > (SELECT max(g.finished_at) FROM git_conversions g
+                            WHERE g.team_id = c.team_id AND g.project_id = c.project_id
+                              AND g.status = 'completed')
        AND c.id IS DISTINCT FROM (SELECT head_commit_id FROM projects
                                    WHERE team_id = ${row.teamId} AND id = ${row.projectId})
        AND NOT EXISTS (SELECT 1 FROM project_checkouts k
                         WHERE k.team_id = c.team_id AND k.project_id = c.project_id
-                          AND k.base_commit_id = c.id)
+                          AND k.base_commit_id = c.id)`);
+  const ids = candidates.rows.map((r) => r.id);
+  if (ids.length === 0) return { previous: null, swept: 0 };
+  const refs = await tx.execute<{ key: string }>(sql`
+    SELECT DISTINCT blob_ref AS key FROM project_tree_entries
+     WHERE team_id = ${row.teamId} AND commit_id IN ${ids}`);
+  const gone = await tx.execute<{ id: string }>(sql`
+    DELETE FROM project_commits c
+     WHERE c.team_id = ${row.teamId} AND c.project_id = ${row.projectId} AND c.id IN ${ids}
      RETURNING id`);
-  if (gone.rows.length === 0) return null;
+  if (gone.rows.length === 0) return { previous: null, swept: 0 };
   const keys = refs.rows.map((r) => r.key);
   const still = await referencedKeys(tx, row.teamId, row.projectId, keys);
   await queueProjectBlobs(
@@ -81,7 +102,22 @@ async function prunePrevious(tx: KobeTx, row: MirrorRow, previous: string): Prom
     keys.filter((k) => !still.has(k)),
   );
   await refreshProjectStorage(tx, row.teamId, row.projectId);
-  return previous;
+  const dropped = new Set(gone.rows.map((r) => r.id));
+  const prev = previous !== null && dropped.has(previous) ? previous : null;
+  return { previous: prev, swept: dropped.size - (prev === null ? 0 : 1) };
+}
+
+/**
+ * The sweep of {@link prunePrevious} on its own, for a refresh that found the host unchanged
+ * (KOBE-767): under the project row lock, so it never races a commit or a checkout. Returns how
+ * many commits went.
+ */
+export async function sweepRepoCommits(tx: KobeTx, row: MirrorRow): Promise<number> {
+  const project = await tx.execute<{ kind: string }>(sql`
+    SELECT kind FROM projects WHERE team_id = ${row.teamId} AND id = ${row.projectId}
+       FOR UPDATE`);
+  if (project.rows[0]?.kind !== "repo") return 0;
+  return (await prunePrevious(tx, row, null)).swept;
 }
 
 async function replaceCommits(
@@ -128,10 +164,23 @@ export async function applyMirror(
         await releaseLease(tx, lease);
         return { kind: "gone" };
       }
+      // KOBE-767: a direct commit from Kobe's commit flow writes Kobe's copy and moves the mirror
+      // head under the same project row lock. A refresh that read the host before that commit
+      // must not write the older files back: it stops and asks for a fresh refresh.
+      const current = await tx.execute<{ mirror_head_sha: string | null }>(sql`
+        SELECT mirror_head_sha FROM git_repositories
+         WHERE team_id = ${lease.teamId} AND id = ${lease.id}`);
+      const now = current.rows[0]?.mirror_head_sha ?? null;
+      if (now !== row.mirrorHeadSha && now !== input.head) {
+        await releaseLease(tx, lease);
+        await requestMirrorRefresh(tx, lease.teamId, { repositoryId: lease.id });
+        return { kind: "stale" };
+      }
       const head = await headOf(tx, row.teamId, row.projectId);
       const changes = diffVersions(await loadTree(tx, row.teamId, head?.id ?? null), input.tree);
       let commitId: string | null = null;
       let pruned: string | null = null;
+      let swept = 0;
       if (changes.length > 0) {
         try {
           const written = await writeCommit(tx, {
@@ -148,10 +197,12 @@ export async function applyMirror(
           if (isLegalHoldViolation(err)) throw new MirrorHeld();
           throw err;
         }
-        if (row.mirrorCommitId !== null) {
-          pruned = await prunePrevious(tx, row, row.mirrorCommitId);
-        }
       }
+      ({ previous: pruned, swept } = await prunePrevious(
+        tx,
+        row,
+        commitId === null ? null : row.mirrorCommitId,
+      ));
       await replaceCommits(tx, row, input.commits);
       await recordSuccess(tx, lease, {
         headSha: input.head,
@@ -174,6 +225,8 @@ export async function applyMirror(
             skipped: input.skipped,
             // Review L1: the previous mirror commit this one replaced, when it was dropped.
             ...(pruned === null ? {} : { prunedCommitId: pruned }),
+            // KOBE-767: older commits no working copy needs any more, dropped with it.
+            ...(swept === 0 ? {} : { sweptCommits: swept }),
           },
         });
       }

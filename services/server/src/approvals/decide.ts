@@ -51,7 +51,8 @@ const STALE_CONNECTION_SECONDS = WIRE_DEFAULTS.staleConnectionMs / 1000;
  * against its approval, which it verifies and consumes itself.
  */
 export function isProjectWrite(tool: string, input: unknown): boolean {
-  if (tool === "commit_project") return true;
+  // KOBE-767 (review M2): an agent's commit to a Repo is approved as its own subject.
+  if (tool === "commit_project" || tool === "commit_repo") return true;
   return (
     tool === "remember" &&
     typeof input === "object" &&
@@ -82,6 +83,14 @@ export async function decideApproval(
     new ApprovalError("approval_not_found", 404, "No pending approval with that id.");
   const head = await withTeam(ctx.db, teamId, (tx) => loadApproval(tx, teamId, approvalId));
   if (head?.userId !== actor.user_id) throw notFound();
+  // KOBE-767 (review M2): a push to an external git host is approved each time, never remembered.
+  if (body.remember !== undefined && head.tool === "commit_repo") {
+    throw new ApprovalError(
+      "invalid_remember",
+      400,
+      "A commit to a Repo is approved each time; it can't be remembered.",
+    );
+  }
   // The server's own descriptor of the approved tool (KOBE-289): risk and source decide which
   // remember choices are allowed. Resolved outside the transaction (the registry reads on its own).
   const rememberTool =

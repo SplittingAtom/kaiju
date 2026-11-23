@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PROJECT_SLUG_MAX } from "../projects.js";
 import { SANDBOX_WIRE_VERSION } from "./connection.js";
 
 /**
@@ -65,7 +66,7 @@ export type RunGitRemote = z.infer<typeof runGitRemoteSchema>;
 export const REPO_WORKING_COPY_DIR = "repos";
 const slug = z
   .string()
-  .max(40)
+  .max(PROJECT_SLUG_MAX)
   .regex(/^[a-z0-9][a-z0-9-]*$/);
 /** `refs/heads/<name>` names Kobe sends or reads back (no `..`, no leading `-`, at most 255). */
 const branchName = z

@@ -52,6 +52,7 @@ export const PROJECT_COMMIT_ERROR_CODES = [
   "repo_moved", // 409 a Repo's default branch moved on the host since Kobe's copy: Update, then commit (KOBE-767)
   "repo_unavailable", // 409 a Repo's connection, host or repository cannot take the commit now (KOBE-767)
   "repo_push_rejected", // 409 the git host refused the push (hook, size, protection) (KOBE-767)
+  "rate_limited", // 429 too many commits to Repos; `retry_after_seconds` (KOBE-767)
 ] as const;
 export const projectCommitErrorCodeSchema = z.enum(PROJECT_COMMIT_ERROR_CODES);
 export type ProjectCommitErrorCode = z.infer<typeof projectCommitErrorCodeSchema>;

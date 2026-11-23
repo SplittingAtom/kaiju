@@ -134,11 +134,14 @@ conversation on a Repo:
   in the result, with its number and link; later commits from the same copy are added to that pull
   request while it is open). Only where a Workspace admin allows commits to the default branch, and
   the host does not protect it, does it go straight to the default branch (`pushed`). If the
-  result is `repo_moved`, the default branch changed on the host since Kobe's copy: ask the user
-  to Update the checkout, then commit again.
-- **The `.git` folder of the working copy is not synced** to the user's files: the files are, the
-  git history is not. Push the branches you want to keep. If the sandbox's disk is ever replaced,
-  Kobe clones again and keeps the files as uncommitted changes; commits you did not push are lost.
+  result is `repo_moved`, a file in the commit changed on the host since the user's copy: ask the
+  user to Update the checkout, then commit again. Each such commit asks the user to approve it
+  (`commit_repo`, naming the host, repository and branch); no rule allows it without asking.
+- **The working copy is not synced** to the user's files: everything under `/workspace/repos/`
+  lives only on the sandbox's disk (the Repo itself is the record). Push the branches you want to
+  keep. If the sandbox's disk is ever replaced, Kobe clones again; uncommitted changes and commits
+  you did not push are lost. Files you want the user to see belong in their files outside
+  `repos/`, or on the host.
 - Kobe reports the working copy's branch, how many commits it is ahead of and behind the host, and
   whether it has uncommitted changes, so the user sees it in their Files panel.
 

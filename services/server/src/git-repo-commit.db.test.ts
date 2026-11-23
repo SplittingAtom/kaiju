@@ -1,13 +1,28 @@
+import { randomUUID } from "node:crypto";
 import { chmodSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
+import { withTeam } from "@kobe/db";
 import { repoCommitInfoSchema } from "@kobe/protocol";
+import { applyMirror } from "./git/mirror/apply.js";
+import { mirrorDeps } from "./git/mirror/deps.js";
+import { refreshRepository } from "./git/mirror/refresh.js";
+import { claimRefresh } from "./git/mirror/store.js";
+import {
+  commitToRepo,
+  GIT_REPO_COMMIT_RATE,
+  type RepoCommitDeps,
+} from "./git/repo-commit/commit.js";
+import { repoCommitWiring } from "./git/repo-commit/wiring.js";
+import { headOf, loadTree } from "./projects/tree.js";
+import { checkRateLimit } from "./rate-limit.js";
 import { createApp } from "./app.js";
 import { RawBody, TestBrowser } from "./testing/browser.js";
 import { PUBLIC_URL, type Person } from "./testing/event-stream-fixture.js";
 import { createWorkspaceSync } from "./workspace-sync/index.js";
 import { loadRunGitContext } from "./git/sandbox-git.js";
 import { recordRepoStatus, runGitRepo } from "./git/working-copy.js";
+import { commitOnHost } from "./testing/git-host-commits.js";
 import {
   PREFIX,
   objects,
@@ -265,16 +280,14 @@ describe("direct commits and conflicts (ac-2)", () => {
     });
   });
 
-  it("refuses when the default branch moved on the host, and overwrites nothing", async () => {
+  it("refuses a file someone changed on the host, and overwrites nothing (H1)", async () => {
     const w = await world();
     const r = await repo(w);
     await as(w.admin, w.team).request("PATCH", `/v1/team/git/connections/${w.connectionId}`, {
       direct_commits: true,
     });
-    // Someone pushes to main on the host.
-    const tree = bare(r.full, ["rev-parse", "main^{tree}"]).trim();
-    const moved = bare(r.full, ["commit-tree", tree, "-p", "main", "-m", "On the host"]).trim();
-    bare(r.full, ["update-ref", "refs/heads/main", moved]);
+    // Someone changes README.md on the host.
+    const moved = commitOnHost(git.root, r.full, { "README.md": "# Theirs\n" }, "On the host");
     expect(
       (
         await save(
@@ -288,12 +301,41 @@ describe("direct commits and conflicts (ac-2)", () => {
     const res = await commit(as(w.owner, w.team), r.id, "Mine");
     expect(res.status, res.text).toBe(409);
     expect(res.json).toMatchObject({ code: "repo_moved" });
-    expect(res.json.message).toMatch(/Update, then commit again/);
+    expect(res.json.message).toMatch(
+      /README\.md changed on the git host.*Update, then commit again/,
+    );
     expect(bare(r.full, ["rev-parse", "main"]).trim()).toBe(moved);
+    expect(bare(r.full, ["show", "main:README.md"])).toBe("# Theirs\n");
     expect((await audits(w.team, "git.repo.commit_failed")).at(-1)).toMatchObject({
       mode: "direct",
       failure: "repo_moved",
     });
+  });
+
+  it("keeps another person's change to a different file and builds on it (H1)", async () => {
+    const w = await world();
+    const r = await repo(w);
+    await as(w.admin, w.team).request("PATCH", `/v1/team/git/connections/${w.connectionId}`, {
+      direct_commits: true,
+    });
+    const moved = commitOnHost(git.root, r.full, { "docs/a.md": "theirs\n" }, "On the host");
+    expect(
+      (
+        await save(
+          as(w.owner, w.team),
+          `${r.dir}/README.md`,
+          sha(Buffer.from("# Hi\n")),
+          "# Mine\n",
+        )
+      ).status,
+    ).toBe(200);
+    const res = await commit(as(w.owner, w.team), r.id, "Mine");
+    expect(res.status, res.text).toBe(200);
+    // Kobe's copy stood on an older head, so it is not written now: the mirror brings it in.
+    expect(res.json).toMatchObject({ status: "pushed", branch: "main", seq: null });
+    expect(bare(r.full, ["log", "-1", "--format=%P", "main"]).trim()).toBe(moved);
+    expect(bare(r.full, ["show", "main:docs/a.md"])).toBe("theirs\n");
+    expect(bare(r.full, ["show", "main:README.md"])).toBe("# Mine\n");
   });
 
   it("opens a pull request when the host refuses a commit to the default branch", async () => {
@@ -419,5 +461,310 @@ describe("a conversation on a Repo gets a git working copy (ac-3)", () => {
       (await as(w.member, w.team).request("GET", `/v1/projects/${r.id}/repo-status`)).json,
     );
     expect(theirs.repo?.working_copy).toBeNull();
+  });
+});
+
+/** The commit deps the REST route builds, for calling the commit flow with test hooks. */
+function repoDeps(extra: Partial<RepoCommitDeps> = {}): RepoCommitDeps {
+  const d = fx.replica(0).deps;
+  return {
+    ...repoCommitWiring(d),
+    commit: {
+      db: fx.db,
+      blobs: d.blobs,
+      mounts: d.projectMounts,
+      limits: { quotaDefaultBytes: 1e12, maxObjectsDefault: 1e6, maxFileBytes: 50 * 1024 * 1024 },
+      log: { warn: () => {}, error: () => {} },
+    },
+    ...extra,
+  };
+}
+
+async function waitIdle(team: string, projectId: string): Promise<void> {
+  for (let i = 0; i < 400; i += 1) {
+    const { rows } = await fx.admin.query<{ busy: boolean }>(
+      `SELECT mirror_lease_until IS NOT NULL AND mirror_lease_until > now() AS busy
+         FROM git_repositories WHERE team_id = $1 AND project_id = $2`,
+      [team, projectId],
+    );
+    if (rows[0]?.busy !== true) return;
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  throw new Error("the mirror refresh did not finish");
+}
+
+const directOn = (w: World) =>
+  as(w.admin, w.team).request("PATCH", `/v1/team/git/connections/${w.connectionId}`, {
+    direct_commits: true,
+  });
+
+describe("review fixes (H1, M1, M3, L2, L9)", () => {
+  it("a change on the host between the plan and the push is never overwritten (H1)", async () => {
+    const w = await world();
+    const r = await repo(w);
+    await directOn(w);
+    const ownerB = as(w.owner, w.team);
+    expect(
+      (await save(ownerB, `${r.dir}/README.md`, sha(Buffer.from("# Hi\n")), "# Mine\n")).status,
+    ).toBe(200);
+    const req = {
+      owner: { teamId: w.team, userId: w.owner.id },
+      projectId: r.id,
+      message: "Mine",
+      author: { userId: w.owner.id, kind: "user" as const },
+    };
+    // The same file changes on the host after Kobe planned the commit: refused, nothing written.
+    const same = await commitToRepo(
+      repoDeps({
+        afterPlan: async () => {
+          commitOnHost(git.root, r.full, { "README.md": "# Raced\n" }, "Race");
+        },
+      }),
+      req,
+    );
+    expect(same).toMatchObject({ status: "refused", error: "repo_moved" });
+    expect(bare(r.full, ["show", "main:README.md"])).toBe("# Raced\n");
+    // Another file changes instead (a fresh Repo): the commit builds on it and keeps it.
+    const w2 = await world();
+    const r2 = await repo(w2);
+    await directOn(w2);
+    expect(
+      (
+        await save(
+          as(w2.owner, w2.team),
+          `${r2.dir}/README.md`,
+          sha(Buffer.from("# Hi\n")),
+          "# Mine\n",
+        )
+      ).status,
+    ).toBe(200);
+    const other = await commitToRepo(
+      repoDeps({
+        afterPlan: async () => {
+          commitOnHost(git.root, r2.full, { "docs/a.md": "raced\n" }, "Race 2");
+        },
+      }),
+      {
+        ...req,
+        owner: { teamId: w2.team, userId: w2.owner.id },
+        author: { userId: w2.owner.id, kind: "user" as const },
+        projectId: r2.id,
+      },
+    );
+    expect(other).toMatchObject({ status: "pushed", seq: null });
+    expect(bare(r2.full, ["show", "main:docs/a.md"])).toBe("raced\n");
+    expect(bare(r2.full, ["show", "main:README.md"])).toBe("# Mine\n");
+  });
+
+  it("a push the host took is answered and audited even when a later write fails (M3)", async () => {
+    const w = await world();
+    const r = await repo(w);
+    const b = as(w.owner, w.team);
+    expect((await save(b, `${r.dir}/README.md`, sha(Buffer.from("# Hi\n")), "# M3\n")).status).toBe(
+      200,
+    );
+    const res = await commitToRepo(
+      repoDeps({
+        afterPush: () => Promise.reject(new Error("the database went away")),
+      }),
+      {
+        owner: { teamId: w.team, userId: w.owner.id },
+        projectId: r.id,
+        message: "Survives",
+        author: { userId: w.owner.id, kind: "user" },
+      },
+    );
+    expect(res).toMatchObject({ status: "pull_request", opened: true });
+    const attempted = await audits(w.team, "git.repo.commit_attempted");
+    const committed = await audits(w.team, "git.repo.committed");
+    expect(committed.at(-1)?.commitSha).toBe(attempted.at(-1)?.commitSha);
+    // The branch row was not written (the hook failed first): the next commit opens a new PR.
+    const { rows } = await fx.admin.query(
+      `SELECT 1 FROM git_commit_branches WHERE team_id = $1 AND project_id = $2`,
+      [w.team, r.id],
+    );
+    expect(rows).toHaveLength(0);
+  });
+
+  it("an agent's commit honours a connection limited to chosen agents (M1)", async () => {
+    const w = await world();
+    const r = await repo(w);
+    const made = await as(w.owner, w.team).request("POST", "/v1/threads", { project_id: r.id });
+    const threadId = made.json.thread_id as string;
+    const { rows } = await fx.admin.query<{ id: string }>(
+      `INSERT INTO runs (team_id, thread_id, trigger, status, started_at)
+       VALUES ($1, $2, 'user', 'running', now()) RETURNING id`,
+      [w.team, threadId],
+    );
+    const runId = must(rows[0]).id;
+    await fx.admin.query(
+      `UPDATE git_connections SET agent_ids = ARRAY[gen_random_uuid()] WHERE team_id = $1`,
+      [w.team],
+    );
+    expect(
+      (await save(as(w.owner, w.team), `${r.dir}/README.md`, sha(Buffer.from("# Hi\n")), "# A\n"))
+        .status,
+    ).toBe(200);
+    const res = await commitToRepo(repoDeps(), {
+      owner: { teamId: w.team, userId: w.owner.id },
+      projectId: r.id,
+      message: "By an agent",
+      author: { userId: w.owner.id, kind: "agent", threadId, runId },
+      via: { kind: "agent", threadId, runId, toolCallId: "call-1" },
+    });
+    expect(res).toMatchObject({ status: "refused", error: "repo_unavailable" });
+    expect(res.status === "refused" && res.detail).toMatch(/limited to chosen agents/);
+  });
+
+  it("answers 429 with Retry-After past the limit, counting only commits that go out (L2)", async () => {
+    const w = await world();
+    const r = await repo(w);
+    for (let i = 0; i < GIT_REPO_COMMIT_RATE.max; i += 1) {
+      await checkRateLimit(fx.db, `git-repo-commits:${w.owner.id}`, GIT_REPO_COMMIT_RATE);
+    }
+    const b = as(w.owner, w.team);
+    expect((await commit(b, r.id, "Nothing yet")).json).toEqual({ status: "nothing_to_commit" });
+    expect((await save(b, `${r.dir}/README.md`, sha(Buffer.from("# Hi\n")), "# L2\n")).status).toBe(
+      200,
+    );
+    const res = await commit(b, r.id, "Too many");
+    expect(res.status).toBe(429);
+    expect(res.json).toMatchObject({ code: "rate_limited" });
+    expect(Number(res.headers.get("retry-after"))).toBeGreaterThan(0);
+  });
+
+  it("a moved pull request branch gets a new branch, never an overwrite (L9)", async () => {
+    const w = await world();
+    const r = await repo(w);
+    const b = as(w.owner, w.team);
+    expect(
+      (await save(b, `${r.dir}/README.md`, sha(Buffer.from("# Hi\n")), "# One\n")).status,
+    ).toBe(200);
+    const first = await commit(b, r.id, "One");
+    const branch = first.json.branch as string;
+    const theirs = bare(r.full, [
+      "commit-tree",
+      bare(r.full, ["rev-parse", `${branch}^{tree}`]).trim(),
+      "-p",
+      branch,
+      "-m",
+      "Someone else",
+    ]).trim();
+    bare(r.full, ["update-ref", `refs/heads/${branch}`, theirs]);
+    expect(
+      (await save(b, `${r.dir}/README.md`, sha(Buffer.from("# One\n")), "# Two\n")).status,
+    ).toBe(200);
+    const second = await commit(b, r.id, "Two");
+    expect(second.json).toMatchObject({ status: "pull_request", opened: true, number: 2 });
+    expect(second.json.branch).not.toBe(branch);
+    expect(bare(r.full, ["rev-parse", branch]).trim()).toBe(theirs);
+  });
+
+  it("refuses a Contributor who is only a reader of the project, and other Workspaces' reads", async () => {
+    const w = await world();
+    const r = await repo(w);
+    const reader = w.member;
+    await fx.admin.query(
+      `UPDATE team_members SET role = 'contributor' WHERE team_id = $1 AND user_id = $2`,
+      [w.team, reader.id],
+    );
+    const res = await commit(as(reader, w.team), r.id, "Nope");
+    expect(res.status, res.text).toBe(403);
+    const outsider = await fx.person(`ro${randomUUID().slice(0, 8)}`);
+    const other = await fx.team(`other-${randomUUID().slice(0, 8)}`, outsider, []);
+    const read = await as(outsider, other).request("GET", `/v1/projects/${r.id}/repo-status`);
+    expect(read.status).toBe(404);
+  });
+});
+
+describe("the Repo mirror and Kobe's commit flow together (KOBE-766 wiring)", () => {
+  it("a refresh that read the host before a direct commit does not write it back", async () => {
+    const w = await world();
+    const r = await repo(w);
+    await directOn(w);
+    await waitIdle(w.team, r.id);
+    const { rows: repoRows } = await fx.admin.query<{ id: string }>(
+      `SELECT id FROM git_repositories WHERE team_id = $1 AND project_id = $2`,
+      [w.team, r.id],
+    );
+    const repositoryId = must(repoRows[0]).id;
+    // A refresh claims the Repo and reads the host (the old head and files)...
+    const owner = randomUUID();
+    const claimed = await claimRefresh(fx.db, w.team, repositoryId, owner);
+    if (claimed === "busy") throw new Error("busy");
+    const oldTree = await withTeam(fx.db, w.team, async (tx) => {
+      const head = await headOf(tx, w.team, r.id);
+      return loadTree(tx, w.team, head?.id ?? null);
+    });
+    // ...then a direct commit lands and Kobe's copy takes it...
+    expect(
+      (await save(as(w.owner, w.team), `${r.dir}/README.md`, sha(Buffer.from("# Hi\n")), "# New\n"))
+        .status,
+    ).toBe(200);
+    const res = await commit(as(w.owner, w.team), r.id, "Direct");
+    expect(res.json).toMatchObject({ status: "pushed", seq: 2 });
+    // ...and the stale refresh finishes: it stops instead of writing the old files back.
+    const applied = await applyMirror(fx.db, { teamId: w.team, id: repositoryId, owner }, claimed, {
+      head: must(claimed.mirrorHeadSha),
+      tree: oldTree,
+      commits: [],
+      skipped: 0,
+    });
+    expect(applied).toEqual({ kind: "stale" });
+    const { rows } = await fx.admin.query<{ head: string; seq: number }>(
+      `SELECT g.mirror_head_sha AS head, c.seq FROM git_repositories g
+         JOIN projects p ON p.team_id = g.team_id AND p.id = g.project_id
+         JOIN project_commits c ON c.team_id = p.team_id AND c.id = p.head_commit_id
+        WHERE g.team_id = $1 AND g.id = $2`,
+      [w.team, repositoryId],
+    );
+    expect(rows[0]).toEqual({ head: res.json.commit_sha, seq: 2 });
+  });
+
+  it("sweeps a mirror commit a checkout kept alive once the checkout moved on (review L1)", async () => {
+    const w = await world();
+    const r = await repo(w);
+    await waitIdle(w.team, r.id);
+    const { rows: repoRows } = await fx.admin.query<{ id: string }>(
+      `SELECT id FROM git_repositories WHERE team_id = $1 AND project_id = $2`,
+      [w.team, r.id],
+    );
+    const repositoryId = must(repoRows[0]).id;
+    const mdeps = mirrorDeps(fx.replica(0).deps);
+    const head = async () => {
+      const { rows } = await fx.admin.query<{ id: string }>(
+        `SELECT head_commit_id AS id FROM projects WHERE team_id = $1 AND id = $2`,
+        [w.team, r.id],
+      );
+      return must(rows[0]).id;
+    };
+    const exists = async (id: string) =>
+      (
+        await fx.admin.query(`SELECT 1 FROM project_commits WHERE team_id = $1 AND id = $2`, [
+          w.team,
+          id,
+        ])
+      ).rows.length === 1;
+    const converted = await head();
+    // The owner's checkout (from repo()) is based on the converted head: drop it first.
+    await as(w.owner, w.team).request("DELETE", `/v1/projects/${r.id}/checkout`);
+    commitOnHost(git.root, r.full, { "docs/b.md": "1\n" }, "One");
+    expect(await refreshRepository(mdeps, w.team, repositoryId)).toBe("refreshed");
+    const m1 = await head();
+    // A checkout keeps m1 alive through the next refresh...
+    expect(
+      (await as(w.owner, w.team).request("POST", `/v1/projects/${r.id}/checkout`, {})).status,
+    ).toBe(200);
+    commitOnHost(git.root, r.full, { "docs/b.md": "2\n" }, "Two");
+    expect(await refreshRepository(mdeps, w.team, repositoryId)).toBe("refreshed");
+    const m2 = await head();
+    expect(await exists(m1)).toBe(true);
+    // ...and once it is gone, the next pass (even an unchanged one) sweeps it.
+    await as(w.owner, w.team).request("DELETE", `/v1/projects/${r.id}/checkout`);
+    expect(await refreshRepository(mdeps, w.team, repositoryId)).toBe("unchanged");
+    expect(await exists(m1)).toBe(false);
+    expect(await exists(m2)).toBe(true);
+    // Kobe's history from before the conversion stays.
+    expect(await exists(converted)).toBe(true);
   });
 });

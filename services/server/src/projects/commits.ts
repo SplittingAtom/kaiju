@@ -81,7 +81,9 @@ export type CommitRefusal =
   /** KOBE-767: the Repo's connection, the host or the repository cannot take a commit now. */
   | "repo_unavailable"
   /** KOBE-767: the host refused the push (hook, size, protection). */
-  | "repo_push_rejected";
+  | "repo_push_rejected"
+  /** KOBE-767 (review L2): too many commits to Repos; `retryAfterSeconds` says when. */
+  | "rate_limited";
 
 export type CommitResult =
   | { readonly status: "committed"; readonly seq: number; readonly commitId: string }
@@ -113,6 +115,7 @@ export type CommitResult =
       readonly limit?: "bytes" | "objects";
       /** KOBE-767: why a Repo commit was refused, in words (never a credential or host body). */
       readonly detail?: string;
+      readonly retryAfterSeconds?: number;
     };
 
 export interface CommitRequest {
@@ -401,7 +404,8 @@ async function writeStep(
           // KOBE-767: the mirror head moves with Kobe's copy, only from the base it was pushed on.
           const moved = await sp.execute(sql`
             UPDATE git_repositories
-               SET mirror_head_sha = ${mirror.headSha}, mirror_refreshed_at = now(), updated_at = now()
+               SET mirror_head_sha = ${mirror.headSha}, mirror_commit_id = ${commit.commitId},
+                   mirror_refreshed_at = now(), updated_at = now()
              WHERE team_id = ${owner.teamId} AND id = ${mirror.repositoryId}
                AND project_id = ${projectId} AND mirror_head_sha = ${mirror.baseSha}`);
           if ((moved.rowCount ?? 0) !== 1) throw new MirrorMoved();

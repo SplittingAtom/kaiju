@@ -20,6 +20,11 @@ export function toolCommandRunner(tools: ToolCommand): ToolCommandRunner {
       let bin = TIMEOUT_BIN;
       let argv: readonly string[] = ["-k", String(KILL_AFTER_S), String(seconds), file, ...args];
       const runAs = tools.runAs;
+      // Review L5: never the agent's own uid over the tools' files, unless they are the same uid.
+      if (runAs === undefined && tools.sameUid !== true) {
+        resolve({ failed: "no tools identity" });
+        return;
+      }
       if (runAs !== undefined) {
         argv = runAs.partner
           ? runAs.identities.partnerCommand(runAs.identity, bin, argv, tools.env)

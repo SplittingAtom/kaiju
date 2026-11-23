@@ -188,6 +188,17 @@ export const GIT_EVENTS = {
     fallback: z.boolean(),
     kobeCommitId: id.optional(),
   }),
+  /**
+   * Written before the push of a commit to a Repo (review M3): what is about to reach the host,
+   * so a push whose outcome Kobe could not record is still on record by its commit id.
+   */
+  "git.repo.commit_attempted": event("team", {
+    projectId: id,
+    repositoryId: id,
+    connectionId: id,
+    mode: z.enum(["pull_request", "direct"]),
+    commitSha: gitSha,
+  }),
   /** The host refused a commit to a Repo (`failure`: `repo_moved`, `push_rejected`, ...); nothing changed. */
   "git.repo.commit_failed": event("team", {
     projectId: id,
@@ -294,6 +305,8 @@ export const GIT_EVENTS = {
     fileCount: count,
     skipped: count,
     prunedCommitId: id.optional(),
+    /** KOBE-767 (review L1): older commits written since the conversion that nothing needed. */
+    sweptCommits: count.optional(),
   }),
   /**
    * A refresh saw the repository change state on the host (system): `archived` or `deleted`

@@ -67,7 +67,7 @@ so the run need not be active). Agent: `src/git/working-copy.ts` (fixed bash scr
 args only, wrapped in `/usr/bin/timeout`: 120 s at start, 30 s at run end; strict parse of one
 status line), `src/threads/tool-command.ts` (runs as the tools' uid via the identities helper with
 the tools' env: egress BASH_ENV + token file, the thread's gitconfig), hooks in `thread.ts` /
-`manager.ts`; `repo.status` allowed after run end in `wire/client.ts`; sync skips `repos/<x>/.git`
+`manager.ts`; `repo.status` allowed after run end in `wire/client.ts`; sync skips `repos/` (review M4)
 (`workspace/fs.ts`, `sync.ts`, `sync/push.ts`); prompt text in `memory/project-context.ts`; git
 never runs as the agent's own uid over the tool-owned repository. Not tested: the agent-level
 `prepareRepo` → frame wiring and the tool-uid spawn path (the real-git test runs one uid).
@@ -78,8 +78,8 @@ never runs as the agent's own uid over the tool-owned repository. Not tested: th
   area is server-owned (read-only, evicts unknown files, relocks on checkout end); a `.git` there
   would need exceptions in the sync's security core. `projects/<slug>` stays Kobe's read-only copy
   of the default branch (readers, Commit dialog checkout); `repos/<slug>` is the git working copy.
-  Its `.git` is never synced (only `repos/<x>/.git`); a lost volume re-clones and keeps the files as
-  uncommitted changes, so unpushed local commits can be lost: the guide tells agents to push.
+  Since review M4 nothing under `repos/` is synced; a lost volume re-clones, so unpushed and
+  uncommitted work there can be lost: the guide and the run context tell agents to push.
 - **PR mode continues one pull request per member and working copy** while it is open (spec says
   "a new branch and a pull request"; a fresh PR per commit would repeat earlier changes, since a PR
   commit does not move the checkout base).
@@ -131,3 +131,66 @@ Guide: `admin/git-organizations.md` (Settings bullet, new "Commits to Repos"),
   a checkout is now `checkout_required`); web 4237; sandbox-agent 1284 (run it without
   `TMPDIR=~/tmp`: `runtime-dir.test.ts` depends on the default temp dir); typecheck, eslint,
   prettier, site wording, public hygiene.
+
+## Stacked on KOBE-766 (2026-11-23)
+
+- Merged `origin/group-107-git-10-mirror` (PR #696); migrations renumbered to `0255`/`0256` after
+  the mirror's `0253`/`0254` (`scripts/onto-main.sh`), audit table regenerated, conflicts kept both
+  sides (`writeCommit`'s flag is the mirror's `mirror`).
+- **Wiring** (`git/repo-commit/wiring.ts`): after a direct commit, a `repo_moved` or a file
+  conflict, `kickMirrorRefresh`; after a pull-request push, `requestMirrorRefresh` (the default
+  branch did not move). The conversion now records `mirror_commit_id` = the converted head, and a
+  direct commit sets it with `mirror_head_sha`, so `mirror_commit_id` always names the Kobe commit
+  that is the copy of `mirror_head_sha`.
+- **No clobbering:** both writers take the project row lock. A refresh re-reads `mirror_head_sha`
+  under it: moved since its claim (by a direct commit) and not what it fetched → it writes nothing,
+  releases and asks for a fresh refresh (`stale`); the unchanged path's `recordSuccess` only moves
+  the head from the one it started on (`fromHead`). Kobe's copy of a direct commit is written only
+  when `mirror_head_sha` is still the head it pushed onto. Test: "a refresh that read the host
+  before a direct commit does not write it back".
+- **Sweep (KOBE-766 review L1/R2-L3):** every refresh (changed or unchanged) drops the commits
+  written into the Repo since its conversion (mirror and direct-commit copies) that are neither
+  the head nor a checkout's base, unless a legal hold covers the Workspace; pre-conversion history
+  stays. Audited in `git.repo.mirror_updated` (`prunedCommitId`, new `sweptCommits`) when the
+  refresh wrote; a sweep on an unchanged refresh is not audited (no event fits; owner to confirm).
+  Test: "sweeps a mirror commit a checkout kept alive once the checkout moved on".
+- **Spawn as the tools' uid tested:** `threads/tool-command.test.ts` (a stand-in `kobe-runas`
+  records the uid: partner with the executor, Pi uid without; `timeout`, env, output cap, refusal).
+
+## Review g108 round 1 (2026-11-23)
+
+Owner to confirm (coordinator's direction):
+
+- **H1:** each commit is built on the host's current head of the default branch (or the open
+  pull request's own base) and every changed path is checked three-way: the host's blob must still
+  be Kobe's base version (or already the new content), else `repo_moved` and nothing is pushed;
+  the push stays compare-and-swap from that head. Plan, repository row (`FOR SHARE`) and base tree
+  are read in one transaction. Changes to other files on the host are kept. Tests: same file /
+  different file on the host, and the race between plan and push (`afterPlan` hook).
+- **M1:** an agent's commit (`via`) needs the connection to list the run's agent when it is limited
+  to chosen agents (as KOBE-762's tools); the dialog has no agent. Test.
+- **M2:** an agent's commit to a Repo is its own approval subject `commit_repo`: rules for
+  `commit_project` never cover it, it always asks (no remember: refused with a message), the input
+  and the card carry `pushes_to` (host, repository, pull request or branch). Ordinary projects are
+  unchanged. Unit test of the decision (`commitSubject`); no end-to-end agent test (below).
+- **M3:** `git.repo.commit_attempted` (commit id) before every push; after a push the host took,
+  `git.repo.committed` first (three tries), then Kobe's records; any later failure is logged at
+  error level and the answer stays a success. Test with a throwing write after the push.
+- **M4:** nothing under `/workspace/repos/` is synced (scan, single push, deletions): the working
+  copy is sandbox-local and re-clonable; quota, retention and legal hold are those of the project
+  and the host, untouched by it. Guide (members and agents) and the run context say unpushed and
+  uncommitted work there lives only on the sandbox's disk. A member's own `repos/` folder in My
+  files is no longer synced while a sandbox runs (guide says so).
+
+Lows: L1 fixed (`branchOf`: host name only if `assertBranch` passes). L2 fixed (429
+`rate_limited` + `Retry-After`; counted only when the commit goes to the host). L3 **not fixed**:
+a cross-replica lock needs a lease row or a held connection for minutes of host calls; the
+outcome of a race is an extra pull request (never an overwrite, H1/CAS), and after Update a new
+PR is opened by design (the old one may already be merged); the per-replica guard covers double
+clicks. L4 fixed (origin re-pointed from `remote.origin.url`; real-git test). L5 fixed (no
+identity and not the same uid → nothing runs; `sameUid` only without Pi identities; test). L6
+fixed (guide and audit doc say refused by Kobe or the host). L7 fixed (wired). L8 fixed
+(`PROJECT_SLUG_MAX`). L9 mostly fixed: H1 race, reader Contributor, rate limit, moved PR branch,
+other Workspace's repo-status, spawn path; **left:** an end-to-end agent `commit_project` on a Repo
+through the approval card (needs the agent fixture with a converted Repo; the decision and the
+reply mapping are unit-tested) and the agent-level `prepareRepo` → frame test.

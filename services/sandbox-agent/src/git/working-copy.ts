@@ -19,11 +19,15 @@ import {
  * egress proxy exactly as the agent's own `git clone` would, and git never runs as the agent's uid
  * over a repository the tools control (its config, hooks or fsmonitor would execute as the agent).
  *
- * Its `.git` is local state: the workspace sync neither pushes nor deletes `repos/<x>/.git`
- * ({@link isRepoGitPath}), so the member's files never carry git objects. A sandbox volume that was
- * lost comes back with the files and no `.git`: the script then re-initialises the folder, fetches
- * and resets to the default branch, keeping the files as uncommitted changes (unpushed commits are
- * lost; the guide says to push branches).
+ * The whole working copy is sandbox-local (review M4): the workspace sync neither pushes nor
+ * deletes anything under `repos/` ({@link isRepoGitPath}), so a Repo's files never become a copy in
+ * the member's own storage, outside the project's read rule, quota, retention and legal hold. It is
+ * re-clonable: a sandbox volume that was lost comes back without it and the script clones again;
+ * uncommitted and unpushed work there lives only on the sandbox's volume (the guide and the run
+ * context say so). A folder that exists without `.git` (files the agent wrote there before the
+ * clone) is initialised in place and reset to the default branch, keeping the files as
+ * uncommitted changes. An existing working copy whose `origin` is not the Repo's URL (a reused
+ * slug, a renamed repository) is pointed at it again before the fetch (review L4).
  */
 
 /** Time the start of a run waits for the working copy (a first clone may be large). */
@@ -35,10 +39,9 @@ export const REPO_SCRIPT_MAX_OUTPUT = 4096;
 const COUNT_MAX = 10_000;
 const MARK = "KOBE-REPO-STATUS";
 
-/** `repos/<x>/.git` or anything below it: a working copy's own git data, never synced. */
+/** `repos/` or anything below it: Repo working copies, sandbox-local, never synced (review M4). */
 export function isRepoGitPath(rel: string): boolean {
-  const parts = rel.split("/");
-  return parts.length >= 3 && parts[0] === REPO_WORKING_COPY_DIR && parts[2] === ".git";
+  return rel === REPO_WORKING_COPY_DIR || rel.startsWith(`${REPO_WORKING_COPY_DIR}/`);
 }
 
 /**
@@ -76,8 +79,14 @@ if [ ! -e "$dir/.git" ]; then
       note "init failed"
     fi
   fi
-elif [ "$dofetch" = 1 ]; then
-  g fetch --quiet origin || { note "fetch failed"; fetched=0; }
+else
+  cur=$(git -C "$dir" config --get remote.origin.url 2>/dev/null) || cur=""
+  if [ "$cur" != "$url" ]; then
+    g remote set-url origin "$url" || g remote add origin "$url" || note "origin not set"
+  fi
+  if [ "$dofetch" = 1 ]; then
+    g fetch --quiet origin || { note "fetch failed"; fetched=0; }
+  fi
 fi
 b=""; h=""; up=""; ahead=0; behind=0; dirty=0
 if [ -e "$dir/.git" ]; then

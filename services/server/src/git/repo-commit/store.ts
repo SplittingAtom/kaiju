@@ -23,6 +23,8 @@ export interface RepoRow {
   readonly defaultBranch: string;
   readonly hostState: string;
   readonly mirrorHeadSha: string | null;
+  /** The Kobe commit that is the copy of `mirrorHeadSha` (set by conversion, mirror, direct commits). */
+  readonly mirrorCommitId: string | null;
 }
 
 export interface BranchRow {
@@ -44,13 +46,20 @@ export interface RepoCommitFacts {
   readonly user: { readonly id: string; readonly name: string; readonly email: string };
   readonly teamSettings: unknown;
   readonly branch: BranchRow | undefined;
+  /** For an agent's commit: the run's agent (null: a run without an agent). */
+  readonly runAgentId?: string | null;
 }
 
+/**
+ * Read in the same transaction as the commit's plan (review H1), with the repository row locked
+ * `FOR SHARE`, so the mirror head and Kobe's head are one consistent snapshot.
+ */
 export async function loadRepoCommitFacts(
   tx: KobeTx,
   teamId: string,
   userId: string,
   projectId: string,
+  runId?: string,
 ): Promise<RepoCommitFacts | undefined> {
   const repos = await tx.execute<{
     id: string;
@@ -61,11 +70,13 @@ export async function loadRepoCommitFacts(
     default_branch: string;
     host_state: string;
     mirror_head_sha: string | null;
+    mirror_commit_id: string | null;
   }>(sql`
     SELECT id, connection_id, base_url, host_repo_id, full_name, default_branch, host_state,
-           mirror_head_sha
+           mirror_head_sha, mirror_commit_id
       FROM git_repositories
-     WHERE team_id = ${teamId} AND project_id = ${projectId}`);
+     WHERE team_id = ${teamId} AND project_id = ${projectId}
+       FOR SHARE`);
   const r = repos.rows[0];
   if (!r) return undefined;
   const people = await tx.execute<{
@@ -98,6 +109,14 @@ export async function loadRepoCommitFacts(
      WHERE team_id = ${teamId} AND project_id = ${projectId} AND user_id = ${userId}`);
   const b = branches.rows[0];
   const connectionId = r.connection_id;
+  let runAgentId: string | null | undefined;
+  if (runId !== undefined) {
+    const runs = await tx.execute<{ agent_id: string | null }>(sql`
+      SELECT t.agent_id FROM runs r
+        JOIN threads t ON t.team_id = r.team_id AND t.id = r.thread_id
+       WHERE r.team_id = ${teamId} AND r.id = ${runId} AND t.team_id = ${teamId}`);
+    runAgentId = runs.rows[0]?.agent_id ?? null;
+  }
   return {
     repo: {
       id: r.id,
@@ -108,6 +127,7 @@ export async function loadRepoCommitFacts(
       defaultBranch: r.default_branch,
       hostState: r.host_state,
       mirrorHeadSha: r.mirror_head_sha,
+      mirrorCommitId: r.mirror_commit_id,
     },
     connection:
       connectionId === null ? undefined : await readGitConnection(tx, teamId, connectionId),
@@ -118,6 +138,7 @@ export async function loadRepoCommitFacts(
     role: p.role,
     user: { id: p.id, name: p.name ?? "", email: p.email },
     teamSettings: p.settings,
+    ...(runAgentId === undefined ? {} : { runAgentId }),
     branch: b
       ? {
           repositoryId: b.repository_id,

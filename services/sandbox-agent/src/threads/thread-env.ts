@@ -155,6 +155,12 @@ export interface RuntimeOf {
 export interface ToolCommand {
   readonly env: Readonly<Record<string, string>>;
   readonly cwd: string;
+  /**
+   * True only without Pi identities (development, tests): the tools then run as the agent's own
+   * uid, so a program run as them crosses no boundary. Without it and without `runAs` nothing is
+   * run (review L5): git never runs as the agent over a repository the tools control.
+   */
+  readonly sameUid?: boolean;
   readonly runAs?:
     | {
         readonly identities: PiIdentities;
