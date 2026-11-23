@@ -2,15 +2,15 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { canonicalZip } from "@kobe/protocol";
 import { strToU8, unzipSync, zipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { validateZipBundle } from "./skills/bundle.js";
-import { KOBE_PACKAGES_DIR, readKobePackage, type KobePackage } from "./skills/kobe-packages.js";
-import { ensureObject, seedKobeSkills } from "./skills/kobe-seed.js";
-import { runWithAuditContext } from "./audit/context.js";
-import { resetToKobe } from "./skills/site-edit/kobe-detach.js";
-import { sha256Hex } from "./skills/storage.js";
-import { RawBody, type TestBrowser, type TestResponse } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
+import { validateZipBundle } from "../bundle.js";
+import { KOBE_PACKAGES_DIR, readKobePackage, type KobePackage } from "../kobe-packages.js";
+import { ensureObject, seedKobeSkills } from "../kobe-seed.js";
+import { runWithAuditContext } from "../../audit/context.js";
+import { resetToKobe } from "./kobe-detach.js";
+import { sha256Hex } from "../storage.js";
+import { RawBody, type TestBrowser, type TestResponse } from "../../testing/browser.js";
+import { openHarness, type Harness } from "../../testing/harness.js";
+import { MemoryObjects } from "../../testing/memory-objects.js";
 
 /**
  * KOBE-495: Site admins view and edit catalog skills and publish new versions made by the Site.
