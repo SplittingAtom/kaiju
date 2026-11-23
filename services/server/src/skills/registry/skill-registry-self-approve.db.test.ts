@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
+import type { TestBrowser } from "../../testing/browser.js";
+import { openHarness, type Harness } from "../../testing/harness.js";
+import { MemoryObjects } from "../../testing/memory-objects.js";
 import {
   authoritative,
   promoteTeamVersion,
   readyTeamVersion,
-} from "./testing/registry-fixtures.js";
+} from "../../testing/registry-fixtures.js";
 
 /**
  * KOBE-334 (SK22): a single-admin Site may approve its own submission, flagged, as with

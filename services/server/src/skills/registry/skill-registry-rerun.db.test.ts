@@ -3,12 +3,12 @@ import { strToU8, zipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { skillEvalScorecardSchema } from "@kobe/protocol";
 import { withTeam } from "@kobe/db";
-import { validateZipBundle } from "./skills/bundle.js";
-import { recordAuthoritativeScorecard } from "./skills/registry/authoritative.js";
-import { ensureObject } from "./skills/kobe-seed.js";
-import { sha256Hex } from "./skills/storage.js";
-import type { Person } from "./testing/event-stream-fixture.js";
-import { SkillEvalBench, skillMd } from "./testing/skill-eval-bench.js";
+import { validateZipBundle } from "../bundle.js";
+import { recordAuthoritativeScorecard } from "./authoritative.js";
+import { ensureObject } from "../kobe-seed.js";
+import { sha256Hex } from "../storage.js";
+import type { Person } from "../../testing/event-stream-fixture.js";
+import { SkillEvalBench, skillMd } from "../../testing/skill-eval-bench.js";
 
 /**
  * KOBE-335 (SK23, SK17, SK21): Re-run evals of a submitted Registry version runs a full eval in

@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { registryReady, requireRegistryTeam } from "./skills/registry/settings.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { registryReady, requireRegistryTeam } from "./settings.js";
+import type { TestBrowser } from "../../testing/browser.js";
+import { openHarness, type Harness } from "../../testing/harness.js";
 
 /**
  * KOBE-330 (SK20, SK21) and its review: the Registry settings. Site admins read the spec's defaults
