@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Hono } from "hono";
-import { createApp } from "./app.js";
-import type { ServerDeps } from "./deps.js";
-import type { IsolationGate } from "./isolation/gate.js";
-import { workspaceRoutes, type WorkspaceRoutesDeps } from "./workspace-sync/routes.js";
+import { createApp } from "../app.js";
+import type { ServerDeps } from "../deps.js";
+import type { IsolationGate } from "../isolation/gate.js";
+import { workspaceRoutes, type WorkspaceRoutesDeps } from "../workspace-sync/routes.js";
 
 // The HTTP surface as Hono's ordered route table (KOBE-729): every handler and middleware entry as
 // `METHOD path name`, in registration order (which is also Hono's matching order). Middleware
