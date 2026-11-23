@@ -5,7 +5,8 @@ import { type RunMcpServer } from "@kobe/protocol/sandbox-wire";
 import { allowedKobeTools, loadKobeAccess, loadKobeBuiltin } from "./access.js";
 import { KOBE_DOCS_TOOLS } from "./docs/index.js";
 import { allowListOffers } from "../policy/agent-allow.js";
-import { kobePinnedTool } from "./pinned.js";
+import { gitPinnable, kobePinnedTool } from "./pinned.js";
+import { gitToolsForRun } from "../git-tools/listing.js";
 
 /**
  * The built-in Kobe connector in a run's `run.start.mcp` (KOBE-619, spec §3, KA7):
@@ -16,7 +17,10 @@ import { kobePinnedTool } from "./pinned.js";
  *   only for a run a person can answer (not scheduled, not a skill eval or test chat), only the
  *   tools the person may use now (switches and permission).
  *
- * Both are filtered by the agent's tool globs, and nothing is attached while the site switch is
+ * - the **git host tools** (KOBE-762) while the Workspace has a git connection the run may use
+ *   (`git-tools/listing.ts`), whatever the agent's connector list (GQ8), scheduled runs included.
+ *
+ * All are filtered by the agent's tool globs, and nothing is attached while the site switch is
  * `off` or when the owner turned the connector off for the thread. Undefined: the run gets no Kobe
  * server. The MCP proxy's re-check decides every call again.
  */
@@ -31,6 +35,11 @@ export async function kobeRunServer(
     readonly frontmatter: AgentFrontmatter | undefined;
     /** Connector ids the owner turned off for the thread. */
     readonly off: ReadonlySet<string>;
+    /**
+     * The git host tools (KOBE-762): the run's agent (null: none) and whether the run may use the
+     * Workspace's git connections at all (not a skill eval, test chat or grantless run).
+     */
+    readonly git?: { readonly agentId: string | null; readonly eligible: boolean };
   },
 ): Promise<RunMcpServer | undefined> {
   const row = await loadKobeBuiltin(tx);
@@ -40,7 +49,18 @@ export async function kobeRunServer(
     !(globs?.deny?.some((g) => matchGlob(g, piName)) ?? false) &&
     allowListOffers(globs?.allow, (g) => matchGlob(g, piName));
   const admin = await adminTools(tx, row.name, run);
-  const tools = [...KOBE_DOCS_TOOLS, ...admin]
+  const git =
+    run.git === undefined
+      ? []
+      : (
+          await gitToolsForRun(tx, {
+            teamId: run.teamId,
+            userId: run.userId,
+            agentId: run.git.agentId,
+            eligible: run.git.eligible,
+          })
+        ).map(gitPinnable);
+  const tools = [...KOBE_DOCS_TOOLS, ...admin, ...git]
     .map((t) => kobePinnedTool(row.name, t))
     .filter((t) => allowedByAgent(t.pi_name))
     .map((t) => ({ name: t.name, pi_name: t.pi_name }));

@@ -7,6 +7,7 @@ import {
 import { SYSTEM_ACTOR, pgCodeOf, sql, withTeam, type KobeTx } from "@kobe/db";
 import { recordAudit } from "../audit/record.js";
 import { kobeAdminApprovalCard } from "../kobe-mcp/approval-card.js";
+import { kobeGitApprovalCard } from "../git-tools/card.js";
 import { isKobeAdminAsk } from "../policy/kobe-admin-guard.js";
 import { appendRunEventsInTx, withAppendTx, type NewRunEvent } from "../event-stream/append.js";
 import { applyTransition, lockRunRow, lockThreadRow } from "../runs/store.js";
@@ -275,6 +276,18 @@ export class ApprovalBrokerImpl implements ApprovalBroker {
       const admin = isKobeAdminAsk(req.decision.reasons)
         ? await kobeAdminApprovalCard(tx, teamId, req.tool, input)
         : undefined;
+      // KOBE-762: a git host write's card names host, organization, repository and the text.
+      const git =
+        admin === undefined
+          ? await kobeGitApprovalCard(tx, {
+              teamId,
+              userId: req.userId,
+              threadId: thread.id,
+              publicUrl: this.#ctx.publicUrl ?? "",
+              piName: req.tool,
+              input,
+            })
+          : undefined;
       const event: NewRunEvent = {
         type: "approval.requested",
         payload: {
@@ -286,6 +299,7 @@ export class ApprovalBrokerImpl implements ApprovalBroker {
           reasons: [...req.decision.reasons],
           expires_at: expiresAt.toISOString(),
           ...(admin === undefined ? {} : { admin }),
+          ...(git === undefined ? {} : { git }),
         },
       };
       if (run.status === "running") {

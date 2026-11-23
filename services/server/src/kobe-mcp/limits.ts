@@ -111,7 +111,19 @@ export async function withKobePersonLock<T>(
   userId: string,
   fn: () => Promise<T>,
 ): Promise<{ readonly ok: true; readonly value: T } | { readonly ok: false }> {
-  const key = `kobe_mcp.limit:${userId}`;
+  return withAdvisoryLockRetry(db, `kobe_mcp.limit:${userId}`, fn);
+}
+
+/**
+ * Runs `fn` while holding the transaction-level advisory lock `key` (try-and-retry, about 10 s;
+ * see {@link withKobePersonLock}). Also used by the git host tools' writes (KOBE-762), which hold
+ * the member's git write lock across the idempotency check, the host call and the audit row.
+ */
+export async function withAdvisoryLockRetry<T>(
+  db: KobeDb,
+  key: string,
+  fn: () => Promise<T>,
+): Promise<{ readonly ok: true; readonly value: T } | { readonly ok: false }> {
   for (let attempt = 0; attempt < LOCK_ATTEMPTS; attempt++) {
     const outcome = await db.transaction(async (tx) => {
       const res = await tx.execute<{ locked: boolean }>(

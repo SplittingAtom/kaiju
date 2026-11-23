@@ -31,6 +31,24 @@ import { kobeBuiltinName } from "../kobe-mcp/access.js";
 import { hiddenBuiltins } from "../policy/agent-allow.js";
 
 /** The skill facts of a test chat's run: its draft as the agent's only skill, nothing else. */
+/**
+ * Whether a run may use the Workspace's git connections (KOBE-762): not a skill eval or test chat,
+ * not a single-skill run and not a grantless run (they use none of the member's grants either).
+ */
+function gitEligible(input: {
+  readonly skillEval?: unknown;
+  readonly skillTest?: unknown;
+  readonly onlySkill?: unknown;
+  readonly noPersonalGrants?: unknown;
+}): boolean {
+  return (
+    input.skillEval === undefined &&
+    input.skillTest === undefined &&
+    input.onlySkill === undefined &&
+    input.noPersonalGrants === undefined
+  );
+}
+
 const onlySkillFacts = (ref: SkillRef): SkillFacts => ({
   agent: [ref],
   agentCatalog: [],
@@ -165,6 +183,7 @@ export const PINNED_AGENTS: RunAgentResolver = {
         answerable: false,
         frontmatter: undefined,
         off: await connectorsOffIn(tx, input.teamId, input.threadId),
+        git: { agentId: null, eligible: gitEligible(input) },
       });
       const config =
         kobe === undefined
@@ -248,6 +267,7 @@ export const PINNED_AGENTS: RunAgentResolver = {
         input.noPersonalGrants === undefined,
       frontmatter,
       off,
+      git: { agentId, eligible: gitEligible(input) },
     });
     const mcp = kobe === undefined ? teamMcp : { servers: [...teamMcp.servers, kobe] };
     const mcpServers = mcp.servers.map((s) => ({ name: s.name, connector_id: s.connector_id }));

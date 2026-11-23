@@ -7,6 +7,7 @@ import {
   GIT_PROVIDER_VALUES,
 } from "../../git/types.js";
 import { count, event, id, reasonCode, type AuditEventDef } from "./fragments.js";
+import { GIT_REPOSITORY_NAME_MAX, GIT_REPOSITORY_NAME_PATTERN } from "../../git/types.js";
 
 /** The connection's host name (`parseGitBaseUrl().host`): lowercase, no scheme, port or path. */
 const gitHost = z
@@ -35,6 +36,30 @@ const settingField = z.enum([
   "direct_commits",
   "agent_ids",
 ]);
+
+/**
+ * What every git host tool write records (KOBE-762, spec workspace-git §8): the connection, the
+ * agent of the named run (absent for a run without an agent), host and organization, the
+ * repository, the host's ids and number, the host's web link (same origin as the connection, as
+ * the adapters guarantee), and the call's idempotency key. The member is the actor; run, thread
+ * and tool call are in `viaAgent`. Never a title, body, branch name or credential.
+ */
+const repository = z
+  .string()
+  .min(1)
+  .max(GIT_REPOSITORY_NAME_MAX)
+  .regex(new RegExp(GIT_REPOSITORY_NAME_PATTERN));
+const hostId = z.string().regex(/^[A-Za-z0-9_=-]{1,64}$/);
+const webUrl = z.url({ protocol: /^https$/ }).max(2048);
+const toolWrite = {
+  connectionId: id,
+  agentId: id.optional(),
+  host: gitHost,
+  organization,
+  repository,
+  hostRepoId: hostId,
+  idempotencyKey: z.string().regex(/^[0-9a-f]{32}$/),
+};
 
 /** The commit author email choice (`teams.settings.git_commit_email`, KOBE-764). */
 const commitEmail = z.enum(["member", "noreply"]);
@@ -100,6 +125,38 @@ export const GIT_EVENTS = {
    * A Workspace admin changed the Workspace's git settings (KOBE-761): today the commit author
    * email of sandbox commits (G13, GQ10), member's Kobe email or the no-reply form.
    */
+  // ── Git host tool writes (KOBE-762, spec workspace-git G9, §8) ──
+  /** An agent created a branch in a repository of the connected organization (`git_create_branch`). */
+  "git.branch.created": event("team", toolWrite),
+  /** An agent commented on an issue or pull request (`git_comment`). */
+  "git.comment.created": event("team", {
+    ...toolWrite,
+    on: z.enum(["issue", "pull_request"]),
+    number: z.number().int().positive(),
+    hostId,
+    url: webUrl.optional(),
+  }),
+  /** An agent created an issue (`git_create_issue`). */
+  "git.issue.created": event("team", {
+    ...toolWrite,
+    number: z.number().int().positive().optional(),
+    hostId,
+    url: webUrl.optional(),
+  }),
+  /** An agent opened a pull request (`git_open_pull_request`). */
+  "git.pull_request.opened": event("team", {
+    ...toolWrite,
+    number: z.number().int().positive().optional(),
+    hostId,
+    url: webUrl.optional(),
+  }),
+  /** An agent created a repository (`git_create_repository`; G10: private or internal only). */
+  "git.repository.created": event("team", {
+    ...toolWrite,
+    hostId,
+    visibility: z.enum(["private", "internal"]),
+    url: webUrl.optional(),
+  }),
   "git.settings.updated": event("team", {
     setting: z.literal("commit_email"),
     value: commitEmail,

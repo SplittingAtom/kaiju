@@ -39,6 +39,8 @@ export interface ApprovalServiceOptions {
   readonly log?: Logger;
   /** The server's tool registry (default: built-in tools only; the server passes its own). */
   readonly registry?: ToolRegistry;
+  /** The deployment's public origin (git approval cards' conversation links, KOBE-762). */
+  readonly publicUrl?: string;
 }
 
 /**
@@ -68,6 +70,7 @@ export class ApprovalService {
       runMaxEvents: options.runMaxEvents ?? WIRE_DEFAULTS.runMaxEvents,
       throttle: new AuditThrottle(),
       registry: options.registry ?? createToolRegistry(),
+      ...(options.publicUrl === undefined ? {} : { publicUrl: options.publicUrl }),
     };
     this.#sweepMs = options.sweepMs ?? 30_000;
     this.broker = new ApprovalBrokerImpl(this.#ctx, { pollMs: options.pollMs ?? 2_000 });

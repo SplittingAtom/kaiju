@@ -352,6 +352,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   const toolRegistry = createToolRegistry(mcpCatalog);
   const approvals = new ApprovalService({
     registry: toolRegistry,
+    publicUrl: new URL(options.publicUrl).origin,
     ...(options.sandboxWire?.tuning?.runMaxEvents === undefined
       ? {}
       : { runMaxEvents: options.sandboxWire.tuning.runMaxEvents }),
@@ -535,9 +536,15 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     ...(options.mcp?.now ? { now: options.mcp.now } : {}),
     captureKey: captureKey(options.authSecret),
   });
+  // One git host net for the connection routes, the egress transport and the git tools (KOBE-762).
+  const gitHostNet: GitHostNet = {
+    policy: connectorUrlPolicy,
+    ...(options.gitHostRequest ? { request: options.gitHostRequest } : {}),
+  };
   const kobeMcp = createKobeMcpService({
     db: database.db,
     publicUrl: new URL(options.publicUrl).origin,
+    git: { envelope: options.envelope, net: gitHostNet },
     policy: policySources,
     runContext,
     approvals: approvalVerifierForMcp(database.db, approvals.verifier),
@@ -672,10 +679,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     mcp,
     kobeMcp,
     connectorUrlPolicy,
-    gitHostNet: {
-      policy: connectorUrlPolicy,
-      ...(options.gitHostRequest ? { request: options.gitHostRequest } : {}),
-    },
+    gitHostNet,
     connectorProbe: options.connectorProbe ?? NO_PROBE,
     appCaller: options.appCaller ?? NO_APP_CALLER,
     approvals,

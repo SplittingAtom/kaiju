@@ -149,11 +149,14 @@ function noPromptReason(ctx: Prepared): PolicyReason {
   const where =
     tool.scope === "sandbox"
       ? "runs inside your sandbox, bounded by the sandbox and egress policy"
-      : tool.name === "save_skill_draft"
-        ? "saves a private draft in your Workbench, which needs no approval"
-        : PROMPT_EXEMPT_KOBE_TOOLS.has(tool.name)
-          ? "writes a versioned artifact in this conversation, which needs no approval"
-          : "writes your personal memory, which needs no approval and can be undone";
+      : tool.scope === "external"
+        ? // The only external write exempt from the prompt: git_create_branch (KOBE-762, G9).
+          "creates a branch on the git host, which needs no approval by default"
+        : tool.name === "save_skill_draft"
+          ? "saves a private draft in your Workbench, which needs no approval"
+          : PROMPT_EXEMPT_KOBE_TOOLS.has(tool.name)
+            ? "writes a versioned artifact in this conversation, which needs no approval"
+            : "writes your personal memory, which needs no approval and can be undone";
   return { code: RISK_REASON[tool.risk], stage: "risk_class", message: `${tool.name} ${where}.` };
 }
 

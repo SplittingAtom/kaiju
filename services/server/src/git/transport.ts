@@ -170,7 +170,7 @@ async function readFacts(
  * reconnect leaves `connection_id` cleared, G20) and also on the last-seen name (a rename or a
  * stale id must not lose the rule). Both match sets apply: fail closed.
  */
-async function repoProjectRoles(
+export async function repoProjectRoles(
   db: KobeDb,
   principal: GitTransportPrincipal,
   baseUrl: string,

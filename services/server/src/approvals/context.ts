@@ -33,6 +33,8 @@ export interface ApprovalContext {
    * tool by the server's own descriptor (risk, open world, source), never by the stored row alone.
    */
   readonly registry: ToolRegistry;
+  /** The deployment's public origin: conversation links on git approval cards (KOBE-762). */
+  readonly publicUrl?: string;
 }
 
 /** An API-facing failure with its HTTP status and stable code. */

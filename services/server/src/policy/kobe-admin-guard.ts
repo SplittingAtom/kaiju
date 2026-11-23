@@ -8,6 +8,7 @@ import {
 } from "@kobe/protocol";
 import { KOBE_BUILTIN_CONNECTOR_ID } from "@kobe/db";
 import { isKobeDocsToolName } from "../kobe-mcp/docs/index.js";
+import { isGitToolName } from "../git-tools/catalog.js";
 
 /**
  * The Kobe admin guard (KOBE-619, spec kobe-admin-mcp §6, KA2), applied after the policy engine at
@@ -39,13 +40,25 @@ export function isKobeTool(tool: Pick<ToolDescriptor, "source" | "connector_id">
   return tool.source === "mcp" && tool.connector_id === KOBE_BUILTIN_CONNECTOR_ID;
 }
 
-/** A Kobe **admin** tool: a tool of the built-in connector other than the docs tools (KOBE-620). */
+/**
+ * A Kobe **admin** tool: a tool of the built-in connector other than the docs tools (KOBE-620) and
+ * the git host tools (KOBE-762), which the ordinary policy decides like any connector tool.
+ */
 export function isKobeAdminTool(
   tool: Pick<ToolDescriptor, "source" | "connector_id" | "name">,
 ): boolean {
   if (!isKobeTool(tool)) return false;
   const name = kobeToolName(tool.name);
-  return name === undefined || !isKobeDocsToolName(name);
+  return name === undefined || (!isKobeDocsToolName(name) && !isGitToolName(name));
+}
+
+/** A git host tool of the built-in connector (KOBE-762), by the server's own descriptor. */
+export function isKobeGitTool(
+  tool: Pick<ToolDescriptor, "source" | "connector_id" | "name">,
+): boolean {
+  if (!isKobeTool(tool)) return false;
+  const name = kobeToolName(tool.name);
+  return name !== undefined && isGitToolName(name);
 }
 
 /** The Kobe tool's catalog name (`team_members_set_role`) from its Pi name. */

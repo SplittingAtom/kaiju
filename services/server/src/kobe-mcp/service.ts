@@ -24,8 +24,13 @@ import {
   runKobeDocsTool,
 } from "./docs/index.js";
 import { executeKobeTool } from "./execute.js";
+import { decideGitAccess, loadGitToolFacts, namedRunAgent } from "../git-tools/access.js";
+import { gitToolByName } from "../git-tools/catalog.js";
+import { runGitTool, type GitToolsDeps } from "../git-tools/execute.js";
+import { GIT_NOT_ALLOWED_REASON } from "../git-tools/guard.js";
+import { offeredGitTools } from "../git-tools/listing.js";
 import { withKobePersonLock, withinKobeLimit } from "./limits.js";
-import { kobeConnector, kobePinnedTool } from "./pinned.js";
+import { gitPinnable, kobeConnector, kobePinnedTool } from "./pinned.js";
 import { KOBE_ADMIN_TOOLS, kobeToolByName } from "./tools/index.js";
 
 /**
@@ -79,6 +84,11 @@ export interface KobeMcpService {
 export type KobeMcpServiceOptions = Omit<McpDecideDeps, "loadConnector" | "refuse" | "guard"> & {
   /** The deployment's public origin (`KOBE_PUBLIC_URL`): the docs tools' links (KOBE-620). */
   readonly publicUrl: string;
+  /**
+   * The git host tools' credentials and network (KOBE-762); unset: they are offered nowhere and
+   * every call is refused.
+   */
+  readonly git?: Omit<GitToolsDeps, "db" | "publicUrl">;
 };
 
 /** The audit field grammar of tool call ids: other ids are replaced by the decision's own. */
@@ -131,9 +141,14 @@ export function createKobeMcpService(options: KobeMcpServiceOptions): KobeMcpSer
             ),
           )
         : [];
+      // KOBE-762: the git host tools while a connection this sandbox's runs may use exists.
+      const git =
+        options.git === undefined || principal.evalThreadId !== undefined
+          ? []
+          : offeredGitTools(await loadGitToolFacts(db, principal)).map(gitPinnable);
       return {
         connector: { id: row.id, name: row.name },
-        tools: [...KOBE_DOCS_TOOLS, ...admin].map((t) => {
+        tools: [...KOBE_DOCS_TOOLS, ...admin, ...git].map((t) => {
           const {
             status: _status,
             sha256: _sha,
@@ -151,13 +166,16 @@ export function createKobeMcpService(options: KobeMcpServiceOptions): KobeMcpSer
       if (!row) return { outcome: "unavailable" };
       const docs = kobeDocsToolByName(request.tool);
       const tool = docs === undefined ? kobeToolByName(request.tool) : undefined;
+      // KOBE-762: a git host tool (decided like any connector tool; its own access check below).
+      const git =
+        docs === undefined && tool === undefined ? gitToolByName(request.tool) : undefined;
       const deps = decideDeps(row);
       // The limit count and the decision's audit row under the person's lock (atomic limits).
-      // The docs tools (KOBE-620) count against no limit, so they never wait for the lock.
+      // The docs tools (KOBE-620) and the git tools (KOBE-762, own limits) never wait for it.
       const underLock = async <T>(
         f: () => Promise<T>,
       ): Promise<{ readonly ok: true; readonly value: T } | { readonly ok: false }> =>
-        docs === undefined
+        docs === undefined && git === undefined
           ? withKobePersonLock(db, principal.userId, f)
           : { ok: true as const, value: await f() };
       const locked = await underLock(() =>
@@ -169,6 +187,32 @@ export function createKobeMcpService(options: KobeMcpServiceOptions): KobeMcpSer
               const name = kobeToolName(pinned.pi_name);
               // The docs tools (KOBE-620): no team or user data, no permission, no admin limit.
               if (name !== undefined && isKobeDocsToolName(name)) return undefined;
+              // The git host tools (KOBE-762): input, connection, role, agents and Site, now.
+              const gitDef = name === undefined ? undefined : gitToolByName(name);
+              if (gitDef !== undefined) {
+                if (options.git === undefined) {
+                  return {
+                    code: GIT_NOT_ALLOWED_REASON,
+                    message: "Git tools are not available on this server.",
+                  };
+                }
+                const parsed = gitDef.input.safeParse(request.arguments ?? {});
+                if (!parsed.success) {
+                  return {
+                    code: "invalid_input",
+                    message: `The input of ${gitDef.name} is not valid.`,
+                  };
+                }
+                if (gitDef.name === "git_list_connections") return undefined;
+                const decided = decideGitAccess(
+                  gitDef,
+                  (parsed.data as { connection?: string }).connection,
+                  await loadGitToolFacts(db, principal),
+                );
+                return decided.ok
+                  ? undefined
+                  : { code: GIT_NOT_ALLOWED_REASON, message: decided.message };
+              }
               const def = name === undefined ? undefined : kobeToolByName(name);
               if (def === undefined) return { code: "unknown_tool", message: "Unknown Kobe tool." };
               // Checked before anyone is asked: an approval is only ever for a well-formed change.
@@ -218,7 +262,7 @@ export function createKobeMcpService(options: KobeMcpServiceOptions): KobeMcpSer
       }
       // Defence in depth: an allow names the run and thread it was decided for.
       if (
-        (tool === undefined && docs === undefined) ||
+        (tool === undefined && docs === undefined && git === undefined) ||
         decided.run_id === undefined ||
         request.threadId === undefined ||
         decided.tool.name !== request.tool ||
@@ -237,13 +281,33 @@ export function createKobeMcpService(options: KobeMcpServiceOptions): KobeMcpSer
           ? { outcome: "result", result: answered.result }
           : { outcome: "error", code: answered.code, message: answered.message };
       }
-      if (tool === undefined) {
-        return { outcome: "error", code: "failed", message: "Kobe could not run this tool." };
-      }
       const toolCallId =
         decided.tool_call_id !== undefined && PLAIN_ID.test(decided.tool_call_id)
           ? decided.tool_call_id
           : `kobe-${decided.run_id}`;
+      if (git !== undefined) {
+        if (options.git === undefined) {
+          return { outcome: "error", code: "unavailable", message: "Git tools are not available." };
+        }
+        const ran = await runGitTool(
+          { ...options.git, db, publicUrl: options.publicUrl },
+          {
+            principal,
+            runId: decided.run_id,
+            threadId: request.threadId,
+            toolCallId,
+            agentId: await namedRunAgent(db, principal.teamId, decided.run_id),
+          },
+          git,
+          request.arguments,
+        );
+        return ran.ok
+          ? { outcome: "result", result: { content: [{ type: "text", text: ran.text }] } }
+          : { outcome: "error", code: ran.code, message: ran.message };
+      }
+      if (tool === undefined) {
+        return { outcome: "error", code: "failed", message: "Kobe could not run this tool." };
+      }
       const executed = await executeKobeTool(
         api,
         {
