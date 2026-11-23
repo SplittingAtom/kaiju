@@ -101,6 +101,8 @@ describe("constants", () => {
       "checkout_required",
       "quota_exceeded",
       "read_only",
+      "project_is_repo",
+      "conversion_in_progress",
     ])
       expect(PROJECT_ERROR_CODES).toContain(c);
   });
