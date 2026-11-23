@@ -11,9 +11,13 @@ test("/fork runs the Fork action; an unknown /hello is sent as text", async ({ c
   await chat.ask("No tools. Reply with the single word ALPHA.");
 
   const actions = page.getByRole("listbox", { name: "Actions" });
+  // "/fo" also offers /folder (Save to folder, KOBE-536), listed first: Enter takes the first.
   await chat.composer.pressSequentially("/fo");
   await expect(actions).toBeVisible();
   await expect(chat.composer).toHaveAttribute("aria-expanded", "true");
+  await expect(actions.getByRole("option", { name: /^\/folder/ })).toBeVisible();
+  await chat.composer.pressSequentially("rk");
+  await expect(actions.getByRole("option")).toHaveCount(1);
   await expect(
     actions.getByRole("option", { name: /^\/fork, Fork to a new thread/ }),
   ).toBeVisible();

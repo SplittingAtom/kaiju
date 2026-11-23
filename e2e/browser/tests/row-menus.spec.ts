@@ -16,6 +16,8 @@ const THREAD_ITEMS = [
   "Regenerate with",
   "Pin",
   "Move to project",
+  // KOBE-536 (thread folders, TF8): file the thread in a team folder.
+  "Save to folder…",
   "Archive",
   "Share",
   // KOBE-322: start a skill from this conversation, or save a built one to the Workbench.

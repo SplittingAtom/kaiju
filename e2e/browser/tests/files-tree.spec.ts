@@ -76,10 +76,15 @@ test("Files tree: open, keys, icons, light and dark, rename, drag to move, Move 
     await expect(row("script.py")).toBeFocused();
     await expect(row("sales.csv")).toHaveAttribute("aria-level", "2");
 
-    // Refresh files sits in the tree's top row beside Upload (KOBE-461), the one in the section.
+    // Refresh files sits in the Workspace row at the panel's top (KOBE-461; moved there by the
+    // Workspaces panel, KOBE-581), the one in the section.
+    const workspaceRow = files
+      .getByRole("heading", { level: 4, name: /^Workspace/u })
+      .locator("..");
+    await expect(workspaceRow.getByRole("button", { name: "Refresh files" })).toBeVisible();
+    // Upload sits in My files' top row (the root drop target) and names the focused row's folder
+    // (script.py's, the test folder), not always the root.
     const top = files.locator('[data-kobe-drop-folder=""]');
-    await expect(top.getByRole("button", { name: "Refresh files" })).toBeVisible();
-    // Upload names the focused row's folder (script.py's, the test folder), not always the root.
     await expect(top.getByLabel(`Upload a file to ${dir}`, { exact: true })).toBeAttached();
     await expect(files.getByRole("button", { name: "Refresh files" })).toHaveCount(1);
 
@@ -124,6 +129,9 @@ test("Files tree: open, keys, icons, light and dark, rename, drag to move, Move 
     // A clash is refused, never overwritten.
     expect(await api(page, "POST", `${dir}/notes/sales.csv`, "other")).toBe(201);
     await files.getByRole("button", { name: "Refresh files" }).click();
+    // Refresh lists again asynchronously: wait for notes/sales.csv, or its row lands under the
+    // pointer mid-drag and the drag picks it up instead (a no-op drop into its own folder).
+    await expect(row("sales.csv")).toHaveCount(2);
     await row("sales.csv").last().dragTo(row("notes")); // the top one, not notes/sales.csv
     await expect(files.getByRole("alert")).toContainText("already there");
   } finally {
