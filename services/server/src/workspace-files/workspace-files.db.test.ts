@@ -8,26 +8,26 @@ import {
 } from "@kobe/protocol";
 import { type WorkspaceChange } from "@kobe/protocol/sandbox-wire";
 import { withTeam } from "@kobe/db";
-import { createApp } from "./app.js";
-import { SEARCH_RATE_LIMIT } from "./routes/workspace-files.js";
-import { searchFiles } from "./workspace-files/search.js";
+import { createApp } from "../app.js";
+import { SEARCH_RATE_LIMIT } from "../routes/workspace-files.js";
+import { searchFiles } from "./search.js";
 import {
   EventStreamFixture,
   PUBLIC_URL,
   must,
   type Person,
-} from "./testing/event-stream-fixture.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import { RawBody, TestBrowser } from "./testing/browser.js";
-import { commitChanges } from "./workspace-sync/store.js";
-import { OPERATION_LIMITS } from "./operation-limits.js";
-import { expectRateLimited, fillLimit } from "./testing/operation-limits.js";
+} from "../testing/event-stream-fixture.js";
+import { MemoryObjects } from "../testing/memory-objects.js";
+import { RawBody, TestBrowser } from "../testing/browser.js";
+import { commitChanges } from "../workspace-sync/store.js";
+import { OPERATION_LIMITS } from "../operation-limits.js";
+import { expectRateLimited, fillLimit } from "../testing/operation-limits.js";
 import {
   createWorkspaceSync,
   limitsQuota,
   workspaceBlobKey,
   type WorkspaceSync,
-} from "./workspace-sync/index.js";
+} from "../workspace-sync/index.js";
 
 /**
  * Workspace file browser API (KOBE-148) against a real Postgres: listing from the synced
