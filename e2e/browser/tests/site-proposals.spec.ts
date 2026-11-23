@@ -24,10 +24,10 @@ import { uniqueWords } from "./support/unique.js";
 const SECOND_USER = process.env["KOBE_USER2"];
 const SECOND_PW = process.env["KOBE_PW2"];
 /**
- * KOBE_USER3/KOBE_PW3 (optional, k3d's Gate 7): another Team admin of the workspace who confirms
- * at step 1. Nobody decides a proposal they confirmed, so on a site whose only Site curator is
- * KOBE_USER a second person must confirm; without it KOBE_USER confirms (another Site curator
- * must then decide).
+ * KOBE_USER3/KOBE_PW3 (k3d's Gate 7): another Team admin of the workspace who confirms at step 2.
+ * Nobody decides a proposal they confirmed (KOBE-666), and KOBE_USER decides on the Site at steps
+ * 3 and 5, so without a third member the run would stop at the disabled Site actions and leave a
+ * proposal only another Site curator can decide: the spec skips instead.
  */
 const THIRD_USER = process.env["KOBE_USER3"];
 const THIRD_PW = process.env["KOBE_PW3"];
@@ -191,6 +191,10 @@ test("a member's fact goes to the Site: propose, confirm, request changes, appro
   browser,
 }) => {
   test.skip(!SECOND_USER || !SECOND_PW, "KOBE_USER2 and KOBE_PW2 name a second member");
+  test.skip(
+    !THIRD_USER || !THIRD_PW,
+    "KOBE_USER3 and KOBE_PW3 name another Team admin: whoever confirms may not decide (KOBE-666)",
+  );
   test.setTimeout(15 * 60_000);
   const [first = "", second = ""] = uniqueWords().split(" ");
   const phrase = `${first} ${second}`;
@@ -199,8 +203,7 @@ test("a member's fact goes to the Site: propose, confirm, request changes, appro
 
   const member = await signInSecond(browser);
   const memberChat = new Chat(member);
-  const confirmer =
-    THIRD_USER && THIRD_PW ? await signInSecond(browser, THIRD_USER, THIRD_PW) : page;
+  const confirmer = await signInSecond(browser, THIRD_USER, THIRD_PW);
   let approved = false;
   try {
     // 1. member2: the fact in a conversation, Learn, Propose… › The Site.
@@ -231,7 +234,7 @@ test("a member's fact goes to the Site: propose, confirm, request changes, appro
     await expect(mine).toHaveCount(1, { timeout: SHELL_TIMEOUT_MS });
     await expect(mine).toContainText("A Team admin confirms it before it goes to the Site.");
 
-    // 2. the confirmer (KOBE_USER3, else the owner): To the Site lists it with the justification; Edit and confirm.
+    // 2. the confirmer (KOBE_USER3): To the Site lists it with the justification; Edit and confirm.
     const confirmed = `${proposed} (confirmed)`;
     let tab = await toTheSite(confirmer);
     let waiting = waitingCard(tab, first);
@@ -338,6 +341,6 @@ test("a member's fact goes to the Site: propose, confirm, request changes, appro
     }
     await memberChat.trashAll();
     await member.context().close();
-    if (confirmer !== page) await confirmer.context().close();
+    await confirmer.context().close();
   }
 });

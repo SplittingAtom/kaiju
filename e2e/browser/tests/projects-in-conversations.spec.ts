@@ -3,6 +3,7 @@ import { Chat, expect, filesSection, test } from "./support/chat.js";
 import { RUN_TIMEOUT_MS, SHELL_TIMEOUT_MS } from "./support/constants.js";
 import {
   deleteWorkspacePath,
+  FAKE_MODEL,
   pageApi,
   secondBrowser,
   toolTurn,
@@ -349,21 +350,34 @@ test("member2, a reader by default, sees every project and the proposal to chang
     await expect(rowOf(a.name)).toHaveAccessibleDescription(/reader/);
     await expect(rowOf(b.name)).toHaveAccessibleDescription(/Not in this conversation/);
 
-    // PE1: a reader's agent cannot propose a change; nothing is recorded, nothing commits.
+    // PE1: a reader's agent cannot propose a change; nothing is recorded, nothing commits. The
+    // run's context already tells a reader's agent the project is read-only
+    // (sandbox-agent memory/project-context.ts), so a model may decline instead of calling.
     const refusal = `You can read ${a.name} but not change it.`;
     const threadId = await otherChat.ask(PLAIN);
+    const propose = toolTurn("propose_file_edit", {
+      path: `/workspace/projects/${a.slug}/${NOTES}`,
+      content: NOTES_EDIT,
+      summary: `Reader edit ${stem}`,
+    });
     await otherChat.send(
-      toolTurn("propose_file_edit", {
-        path: `/workspace/projects/${a.slug}/${NOTES}`,
-        content: NOTES_EDIT,
-        summary: `Reader edit ${stem}`,
-      }),
+      FAKE_MODEL
+        ? propose
+        : `${propose} Call it even if you expect it to be refused: the refusal is what this checks.`,
     );
     await otherChat.waitForIdle();
-    // The tool's answer reaches the agent (and, in the tool call's details, the member).
-    expect
-      .soft(await other.getByText(refusal).count(), `the refusal "${refusal}" is on screen`)
-      .toBeGreaterThan(0);
+    const answer = otherChat.answers.last();
+    const called = answer.locator("[data-kobe-tool-badge]", { hasText: /^propose_file_edit$/ });
+    if ((await called.count()) > 0) {
+      // The tool's answer reaches the agent (and, in the tool call's details, the member).
+      expect
+        .soft(await other.getByText(refusal).count(), `the refusal "${refusal}" is on screen`)
+        .toBeGreaterThan(0);
+    } else {
+      // Declined from the context line: the answer says why.
+      test.info().annotations.push({ type: "PE1", description: "the agent declined to call" });
+      await expect(answer).toContainText(/read-only|can't|cannot|not change/i);
+    }
     expect(await proposals(other, threadId)).toEqual([]);
     await expect(other.locator(`[data-kobe-file-edit*="${a.slug}/${NOTES}"]`)).toHaveCount(0);
     expect(await commitMessages(other, a.id)).not.toContain(`Reader edit ${stem}`);
