@@ -34,6 +34,16 @@ async function fakeProc(others: readonly { pid: number; uid: number }[]): Promis
   return root;
 }
 
+/** Whether the fake server has seen the agent's wire close, within `withinMs`. */
+async function serverSawClose(withinMs = 2000): Promise<boolean> {
+  const end = Date.now() + withinMs;
+  while ((h?.server.closes ?? 0) === 0) {
+    if (Date.now() >= end) return false;
+    await new Promise((r) => setTimeout(r, 5));
+  }
+  return true;
+}
+
 async function proofAtShutdown(
   identities: { cleanupFailed: boolean } | undefined,
   procRoot: string,
@@ -48,12 +58,14 @@ async function proofAtShutdown(
       beforeRun: () => Promise.resolve(),
       runEnded: () => undefined,
       flush: () => Promise.resolve(),
-      prove: (proof) => {
+      prove: async (proof) => {
         offered = true;
         seen = proof;
         // KOBE-733: the wire is closed before the proof: a dying pod never keeps it open for it.
-        wireClosedFirst = (h?.server.closes ?? 0) > 0;
-        return Promise.resolve();
+        // The agent has already closed its end; the fake server sees the close a moment later
+        // (its socket's own close event), so wait for it here. Had the agent not closed the wire
+        // yet, nothing would close it while this proof is pending, and the wait would time out.
+        wireClosedFirst = await serverSawClose();
       },
     }),
   });

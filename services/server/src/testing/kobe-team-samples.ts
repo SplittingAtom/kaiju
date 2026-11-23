@@ -58,6 +58,7 @@ export const KOBE_TEAM_SAMPLES: Readonly<Record<string, unknown>> = {
   team_egress_disable: { domain: "example.com", from_enabled: true },
   team_egress_requests_list: {},
   team_egress_requests_decide: { request_id: ID, from_status: "pending", decision: "approve" },
+  team_git_connections_list: {},
   team_agents_list: {},
   team_agents_suspend: { agent_id: ID, from_suspended: false },
   team_agents_resume: { agent_id: ID, from_suspended: true },

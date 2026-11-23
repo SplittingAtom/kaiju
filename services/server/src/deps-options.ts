@@ -1,3 +1,4 @@
+import type { GitHostNet } from "./git-hosts/http.js";
 import type { SessionSigningKey } from "@kobe/session-token";
 import type { Envelope } from "@kobe/db";
 import type { ScoreSink } from "@kobe/telemetry";
@@ -89,6 +90,11 @@ export interface ServerDepsOptions {
   >;
   /** Where registered connectors may point (KOBE-100); default: https, port 443, public addresses. */
   readonly connectors?: Partial<ConnectorUrlPolicy>;
+  /**
+   * Workspace git (KOBE-760): the pinned request git host adapters send through, after the
+   * address policy passed (default the connectors' guarded client). Tests answer from a fake host.
+   */
+  readonly gitHostRequest?: GitHostNet["request"];
   /** Probes a registered connector's tools through the MCP proxy (KOBE-101); unset = cannot pin. */
   readonly connectorProbe?: ConnectorProbe;
   /** MCP Apps' own calls through the MCP proxy (KOBE-436); unset = every app call fails. */

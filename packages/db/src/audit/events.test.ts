@@ -57,6 +57,7 @@ describe("audit event taxonomy", () => {
       "audit",
       "auth",
       "egress",
+      "git",
       "governance",
       "identity",
       "mcp",

@@ -15,6 +15,10 @@ export interface SiteSettings {
   readonly kobeReadsPerMinute?: number;
   /** Per-person Kobe admin writes per hour (KOBE-814): 1-10000, default 30. Absent on older servers. */
   readonly kobeWritesPerHour?: number;
+  /** Workspace git (KOBE-757, spec G3): Git connections allowed on this Site (default true). */
+  readonly gitConnectionsEnabled?: boolean;
+  /** Hosts Workspaces may connect to (`github.com`, `*.example.com`); empty = any host. */
+  readonly gitAllowedHosts?: readonly string[];
 }
 
 /** Bounds and defaults of the Kobe admin limits (the server validates them again). */

@@ -59,6 +59,16 @@ when a site admin changes a connector's server address or how it signs in: add y
 in again. A sign-in you finish after the connector's address changed is refused (**Connect**
 again).
 
+## Git organizations
+
+The same page lists the git organizations your workspace is connected to (**Git organizations**):
+the host (GitHub, GitHub Enterprise Server, Gitea or Forgejo), the organization, the access level
+(**Read**, **Read and write**, or **Not in use**) and whether the connection works. Workspace admins
+set them up; there is nothing for you to do and no credential to add, and the credential never
+enters your sandbox. With **Read** your sandbox can fetch (clone and pull) there; with **Read and
+write** it can also push, if your role is Contributor or above (and, for a Repo, you are an editor
+or owner of its project). See [Git organizations](admin/git-organizations.md).
+
 ## Turn connectors on or off for a conversation
 
 In the composer, **+** → **Connectors** lists your connectors in this workspace. Each working one

@@ -56,6 +56,7 @@ routes (the pinning probe, KOBE-101, and app calls; their own port and key since
       name: {{ include "kobe.mcpInternalKeySecretName" . }}
       key: routes-key
       optional: true
+{{ include "kobe.serverEgressGitEnv" . }}
 {{- end -}}
 
 {{/*

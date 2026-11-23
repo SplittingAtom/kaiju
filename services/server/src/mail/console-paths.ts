@@ -17,6 +17,8 @@ export const CONSOLE_PATHS = {
   teamBreakGlass: `${TEAM_CONSOLE}/break-glass`,
   teamBudgets: `${TEAM_CONSOLE}/budgets`,
   teamEgress: `${TEAM_CONSOLE}/egress`,
+  /** The Git section (KOBE-761 builds the page; KOBE-760 links to it from expiry emails). */
+  teamGit: `${TEAM_CONSOLE}/git`,
   teamSkillReview: `${TEAM_CONSOLE}/skill-review`,
   teamSkills: `${TEAM_CONSOLE}/skills`,
   mySkills: "/me/skills",

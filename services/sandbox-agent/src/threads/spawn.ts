@@ -35,6 +35,7 @@ import { TOOL_HOME_ENV } from "../kobe-exec/protocol.js";
 import type { ExecRelay } from "../exec/relay.js";
 import { assertPaired, openRelay, preparePiPrivateDirs, prepareToolDir } from "./exec-wiring.js";
 import { EGRESS_TOKEN_FILE_NAME, EgressTokenFile, egressEnv } from "../egress/egress-wiring.js";
+import { GIT_CONFIG_FILE_NAME, GitConfigFile, gitConfigText, gitEnv } from "../git/git-config.js";
 import type { McpConfigState, RuntimeOf, ThreadEnv } from "./thread-env.js";
 
 /** What `Thread#spawn` gets back: the started Pi and the files the thread then watches. */
@@ -44,6 +45,8 @@ export interface SpawnedPi {
   readonly modelFile: ModelFile | undefined;
   readonly mcpConfig: McpConfigState | undefined;
   readonly egressFile: EgressTokenFile | undefined;
+  /** The process's git config (KOBE-764): safe defaults now, the run's identity at each run. */
+  readonly gitFile: GitConfigFile | undefined;
   readonly promptFile: SystemPromptFile | undefined;
   readonly memoryFile: MemoryContextFile | undefined;
   readonly contextFile: string | undefined;
@@ -94,6 +97,7 @@ export async function spawnPi(
   let modelFile: ModelFile | undefined;
   let mcpConfig: McpConfigState | undefined;
   let egressFile: EgressTokenFile | undefined;
+  let gitFile: GitConfigFile | undefined;
   let promptFile: SystemPromptFile | undefined;
   let memoryFile: MemoryContextFile | undefined;
   let contextFile: string | undefined;
@@ -192,6 +196,22 @@ export async function spawnPi(
       egressVars = egressEnv(egress, egressFile.path, threadId);
       if (exec === undefined) Object.assign(env, egressVars);
     }
+    // Git (KOBE-764): the tools' global config is this process's own file, never ~/.gitconfig;
+    // no credential helper, no prompt. Readable by the tools (next to the egress token), written
+    // only by the agent; `attachGit` rewrites it with the run's identity and remotes.
+    if (exec !== undefined && identity !== undefined && toolDir === undefined) {
+      toolDir = await prepareToolDir(runtimeDir, identity);
+    }
+    gitFile = new GitConfigFile(
+      path.join(toolDir ?? runtimeDir, GIT_CONFIG_FILE_NAME),
+      identity === undefined ? 0o600 : 0o640,
+    );
+    await gitFile.write(gitConfigText(undefined));
+    const gitVars = gitEnv(gitFile.path);
+    // Pi's environment is an allow-list that never names these; dropped here all the same.
+    delete env.GIT_ASKPASS;
+    delete env.SSH_ASKPASS;
+    if (exec === undefined) Object.assign(env, gitVars);
     if (launch.systemPrompt !== undefined) {
       promptFile = new SystemPromptFile(
         path.join(runtimeDir, SYSTEM_PROMPT_FILE_NAME),
@@ -234,7 +254,7 @@ export async function spawnPi(
           pi,
           wiring: exec,
           launchEnv: toolEnvBase,
-          egress: egressVars,
+          egress: { ...egressVars, ...gitVars },
           cwd: threadEnv.workspaceDir,
           runAs:
             identity === undefined || identities === undefined
@@ -268,6 +288,7 @@ export async function spawnPi(
     modelFile,
     mcpConfig,
     egressFile,
+    gitFile,
     promptFile,
     memoryFile,
     contextFile,

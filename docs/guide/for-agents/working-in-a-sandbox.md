@@ -20,6 +20,9 @@ tool list is more specific, that wins: it reflects this site's and this team's a
   delete or reorganise files they did not ask you to touch.
 - Python 3.12 (pandas, NumPy, DuckDB, PyArrow, Matplotlib, openpyxl, python-docx, ReportLab, pypdf)
   and Node 22 with npm are installed.
+- `git` is installed. Repositories in the Workspace's connected git organizations clone and push
+  with their normal `https://` URLs and no credential; see
+  [Working with git repositories](working-with-git.md).
 - The sandbox may sleep between messages. Running processes, the Python kernel and anything outside
   `/workspace` may be gone next time; files in `/workspace` are kept.
 - `$HOME` (`/home/kobe`) is limited to 1 GiB and `/tmp` to 2 GiB by default. Filling either stops
@@ -161,6 +164,7 @@ is impossible.
 ## Related
 
 - [Asking the user for access](asking-for-access.md)
+- [Working with git repositories](working-with-git.md)
 - [Concepts for agents](concepts.md)
 - [How AI agents should read these docs](reading-the-docs.md)
 - [Approvals](../internet-and-approvals/approvals.md)

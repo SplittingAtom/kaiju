@@ -12,6 +12,23 @@
 
 /** Metadata keys of Workspace events the Site audit view shows (no thread-derived ids or counts). */
 export const SITE_VIEW_TARGET_KEYS: ReadonlySet<string> = new Set([
+  // Workspace git (KOBE-760/761/763): which connection, host, organization and repository, the
+  // credential's kind (never the credential), levels, codes and counts; the commit email choice.
+  "connectionId",
+  "host",
+  "organization",
+  "repository",
+  "gitService",
+  "credentialKind",
+  "previousCredentialKind",
+  "accessLevel",
+  "previousAccessLevel",
+  "excessPermissions",
+  "repositories",
+  "stage",
+  "failure",
+  "setting",
+  "value",
   "access",
   // KOBE-733 sandbox.volume_proof: whether the shutdown proof was accepted.
   "accepted",
@@ -314,6 +331,10 @@ export const SITE_HIDDEN_TARGET_KEYS: ReadonlySet<string> = new Set([
   "parentId",
   "folders",
   "viaAgent",
+  // KOBE-763 egress.git_push: the branch and tag names a member pushed are their own labels for
+  // their work (like thread folder names); the Site sees that a push happened, not what it named.
+  "refs",
+  "refsTruncated",
 ]);
 
 /** Allowed keys an action still hides (a shared key name that carries thread-derived text there). */

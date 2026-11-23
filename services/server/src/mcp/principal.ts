@@ -19,6 +19,11 @@ export interface McpAuthDeps {
   /** The `kobe.mcp-proxy` session-token public key(s) (never another audience's). */
   readonly sessionVerifyKeys: SessionVerifyKeys;
   readonly liveness: SandboxLiveness;
+  /**
+   * The audience the keys belong to: `kobe.mcp-proxy` (default), or `kobe.egress-proxy` for the
+   * egress proxy's git decisions (KOBE-763), with that audience's keys.
+   */
+  readonly audience?: "kobe.mcp-proxy" | "kobe.egress-proxy";
 }
 
 export async function authenticateSandbox(
@@ -28,7 +33,7 @@ export async function authenticateSandbox(
   if (!token) return { ok: false, code: "unauthorized" };
   let claims;
   try {
-    claims = verifySessionToken(token, "kobe.mcp-proxy", deps.sessionVerifyKeys);
+    claims = verifySessionToken(token, deps.audience ?? "kobe.mcp-proxy", deps.sessionVerifyKeys);
   } catch {
     return { ok: false, code: "unauthorized" };
   }

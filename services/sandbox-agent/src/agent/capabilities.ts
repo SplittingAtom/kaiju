@@ -18,6 +18,7 @@ import {
   CAPABILITY_SYNC_CONFLICTS,
 } from "@kobe/protocol";
 import {
+  CAPABILITY_GIT,
   CAPABILITY_MCP,
   CAPABILITY_SKILL_BUNDLES,
   CAPABILITY_TRACE_SPANS,
@@ -154,6 +155,8 @@ export function helloCapabilities(deps: AgentDeps): string[] {
     // The latest model call's context for its owner (KOBE-470): read from Pi's capture or the
     // session file, so it needs nothing but the thread's files.
     CAPABILITY_THREAD_CONTEXT,
+    // Git identity and connected organizations in the tools' git config (KOBE-764).
+    CAPABILITY_GIT,
     // Skill eval fixtures in, workspace snapshot out (KOBE-325; sent only to eval sandboxes).
     ...(deps.skillEval === undefined ? [] : [CAPABILITY_SKILL_EVAL]),
   ];

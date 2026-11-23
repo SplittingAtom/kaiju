@@ -1,6 +1,43 @@
 import { z } from "zod";
 import { count, egressDomain, event, id, type AuditEventDef } from "./fragments.js";
 
+/** `org/repo` as the egress proxy's git grammar accepts it (KOBE-763). */
+const gitRepository = z
+  .string()
+  .max(201)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,99}\/[A-Za-z0-9._-]{1,100}$/);
+const gitService = z.enum(["upload-pack", "receive-pack"]);
+/** Reasons the egress proxy records for git requests (KOBE-763). */
+const GIT_PROXY_REASONS = [
+  "git_refused",
+  "credentials_in_request",
+  "rate_limited",
+  "upstream_auth",
+  "redirect_refused",
+  "secret_reflected",
+  // KOBE-763 review: compressed bodies are never relayed or forwarded for git; stalled receivers.
+  "encoded_response",
+  "encoded_request",
+  "buffer_limit",
+] as const;
+/** Codes of the server's git transport decision (services/server/src/git/transport.ts). */
+export const GIT_TRANSPORT_DENY_CODES = [
+  "outside_organization",
+  "connection_off",
+  "read_only",
+  "role_reader",
+  "project_reader",
+  "agents_restricted",
+  "eval_sandbox",
+  "site_refused",
+  "repository_unavailable",
+  "credential_forbidden",
+  "credential_rejected",
+  "credential_unavailable",
+  "host_unavailable",
+  "host_rate_limited",
+] as const;
+
 export const EGRESS_EVENTS = {
   // ── egress: ceiling (site), enablement (team), connections (team; KOBE-38, D28) ──
   "egress.ceiling.added": event("site", { domain: egressDomain }),
@@ -95,6 +132,50 @@ export const EGRESS_EVENTS = {
     from: z.iso.datetime(),
     to: z.iso.datetime(),
   }),
+  /**
+   * A push (git-receive-pack) through the egress proxy to a connected organization (KOBE-763, spec
+   * G11; actor: system): one row per push, allowed or refused. `refs` are read from the push's
+   * command list (never the pack); `connectionId` is set when the server matched a connection.
+   * Never a credential, URL query or body.
+   */
+  "egress.git_push": event("team", {
+    userId: id,
+    sandboxId: id,
+    connectionId: id.optional(),
+    domain: egressDomain,
+    repository: gitRepository,
+    outcome: z.enum(["allowed", "blocked", "failed"]),
+    reason: z
+      .enum([
+        ...GIT_TRANSPORT_DENY_CODES,
+        ...GIT_PROXY_REASONS,
+        "request_too_large",
+        "forbidden_address",
+        "not_in_ceiling",
+        "inactive_member",
+        "policy_unavailable",
+        "connection_limit",
+        "dns_failure",
+        "upstream_unreachable",
+        "upstream_tls",
+        "upstream_timeout",
+        "response_too_large",
+      ])
+      .optional(),
+    refs: z
+      .array(
+        z.strictObject({
+          ref: z.string().regex(/^refs\/[A-Za-z0-9._/@+-]{1,250}$/),
+          change: z.enum(["create", "update", "delete"]),
+        }),
+      )
+      .max(50)
+      .optional(),
+    refsTruncated: z.literal(true).optional(),
+    /** The host's HTTP status when the push reached it. */
+    status: z.number().int().min(100).max(599).optional(),
+    bytesUp: count,
+  }),
   "egress.connection": event("team", {
     userId: id,
     sandboxId: id,
@@ -121,10 +202,15 @@ export const EGRESS_EVENTS = {
         "upstream_timeout",
         "request_too_large",
         "response_too_large",
+        // KOBE-763 git smart-HTTP for connected organizations.
+        ...GIT_PROXY_REASONS,
       ])
       .optional(),
     /** Plain HTTP the proxy upgraded to HTTPS with the team's injected headers (KOBE-39). */
     upgraded: z.literal(true).optional(),
+    /** Git smart-HTTP to a connected organization (KOBE-763): the repository and service. */
+    repository: gitRepository.optional(),
+    gitService: gitService.optional(),
     /**
      * Set when the row collapses hosts beyond the sandbox's rate of distinct hosts (random-name
      * floods): `domain` is then absent and `connections` counts them all.

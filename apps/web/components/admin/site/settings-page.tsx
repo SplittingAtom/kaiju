@@ -24,11 +24,13 @@ import { useSiteAccess } from "../console-context";
 import { MutationStatus } from "../error-notice";
 import { ResourceView } from "../parts";
 import { useMutation, useResource } from "../use-resource";
+import { GitSiteForm } from "./git-site-form";
 import { MemorySwitchesSection } from "./memory-switches";
 
 /**
  * Site settings (`/v1/site/settings`): required two-factor authentication (D7), how long audit
- * events keep the client IP address and user agent (KOBE-17), and the Kobe MCP switch (KOBE-623).
+ * events keep the client IP address and user agent (KOBE-17), the Kobe MCP switch (KOBE-623) and
+ * Workspace git connections (KOBE-757, KOBE-761).
  */
 export function SettingsPage() {
   const { state, reload } = useResource(getSiteSettings);
@@ -48,6 +50,14 @@ export function SettingsPage() {
                 <KobeLimitsForm
                   reads={settings.kobeReadsPerMinute}
                   writes={settings.kobeWritesPerHour}
+                  onSaved={reload}
+                />
+              )}
+            {settings.gitConnectionsEnabled !== undefined &&
+              settings.gitAllowedHosts !== undefined && (
+                <GitSiteForm
+                  enabled={settings.gitConnectionsEnabled}
+                  hosts={settings.gitAllowedHosts}
                   onSaved={reload}
                 />
               )}

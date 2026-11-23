@@ -8,6 +8,13 @@ import { MyConnectorsPage } from "./my-connectors-page";
 const TEAM_CONNECTORS = "/v1/team/connectors";
 const GRANTS = "/v1/connector-grants";
 const MEMBER = { role: "member", permissions: ["team.chat"] } as const;
+/** The page's Git organizations section (KOBE-761) loads its own list. */
+const GIT = {
+  "GET /v1/team/git/connections": [
+    200,
+    { connections: [], site: { enabled: true }, limit: 5, envelope_configured: true },
+  ],
+} as const;
 const KEY = "sk-live-0123456789abcdef";
 const connector = (over: Record<string, unknown> = {}) => ({
   id: "c-1",
@@ -41,6 +48,7 @@ const card = (name: string) => within(screen.getByRole("article", { name }));
 describe("My connector keys (KOBE-105)", () => {
   it("lists only enabled, active api_key connectors", async () => {
     stubApi({
+      ...GIT,
       [`GET ${TEAM_CONNECTORS}`]: [
         200,
         {
@@ -64,6 +72,7 @@ describe("My connector keys (KOBE-105)", () => {
 
   it("adds a key, clears the field and shows only the hint", async () => {
     const calls = stubApi({
+      ...GIT,
       [`GET ${TEAM_CONNECTORS}`]: [200, { connectors: [connector()] }],
       [`GET ${GRANTS}`]: [
         [200, { grants: [] }],
@@ -86,6 +95,7 @@ describe("My connector keys (KOBE-105)", () => {
 
   it("replaces and removes a key", async () => {
     const calls = stubApi({
+      ...GIT,
       [`GET ${TEAM_CONNECTORS}`]: [200, { connectors: [connector()] }],
       [`GET ${GRANTS}`]: [
         [200, { grants: [grant] }],
@@ -116,6 +126,7 @@ describe("My connector keys (KOBE-105)", () => {
 
   it("checks the key length before sending and never echoes it on error", async () => {
     const calls = stubApi({
+      ...GIT,
       [`GET ${TEAM_CONNECTORS}`]: [200, { connectors: [connector()] }],
       [`GET ${GRANTS}`]: [200, { grants: [] }],
       [`PUT ${GRANTS}/c-1`]: [
@@ -138,6 +149,7 @@ describe("My connector keys (KOBE-105)", () => {
 
   it("says when no connector needs a key", async () => {
     stubApi({
+      ...GIT,
       [`GET ${TEAM_CONNECTORS}`]: [200, { connectors: [] }],
       [`GET ${GRANTS}`]: [200, { grants: [] }],
     });
@@ -149,6 +161,7 @@ describe("My connector keys (KOBE-105)", () => {
 describe("site-wide keys (KOBE-303)", () => {
   it("shows a connector whose key the organization provides, with nothing to enter", async () => {
     stubApi({
+      ...GIT,
       [`GET ${TEAM_CONNECTORS}`]: [
         200,
         {
@@ -172,6 +185,7 @@ describe("site-wide keys (KOBE-303)", () => {
 
   it("says the organization has not set its key yet while none is usable (KOBE-449)", async () => {
     stubApi({
+      ...GIT,
       [`GET ${TEAM_CONNECTORS}`]: [
         200,
         { connectors: [connector({ id: "c-9", name: "catalyst", credential_source: "site" })] },

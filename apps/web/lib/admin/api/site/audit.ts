@@ -17,6 +17,7 @@ export const AUDIT_CATEGORIES = [
   "audit",
   "auth",
   "egress",
+  "git",
   "governance",
   "identity",
   "mcp",

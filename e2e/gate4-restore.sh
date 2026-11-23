@@ -210,6 +210,7 @@ KEPT_SECRETS=(
   auth:auth.existingSecret envelope-key:envelope.keySecret model-keys:bifrost.keysSecret
   egress-headers:egressProxy.headerSecret sandbox-session-keys:sandbox.sessionKeysSecret
   mcp-proxy-internal:mcpProxy.internalKeySecret
+  egress-proxy-internal:egressProxy.git.internalKeySecret
 )
 chart_args() { # → the helm arguments every site installs with (after -n <namespace>)
   local extra=()

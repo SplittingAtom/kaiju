@@ -82,6 +82,18 @@ const configSchema = z.object({
     .string()
     .min(32, "KOBE_MCP_PROXY_INTERNAL_KEY must be at least 32 characters")
     .optional(),
+  // The key the egress proxy presents for git decisions (KOBE-763) on the internal listener.
+  // Unset: git smart-HTTP from sandboxes gets no credential.
+  KOBE_EGRESS_PROXY_INTERNAL_KEY: z
+    .string()
+    .transform((v) => (v === "" ? undefined : v))
+    .pipe(
+      z
+        .string()
+        .min(32, "KOBE_EGRESS_PROXY_INTERNAL_KEY must be at least 32 characters")
+        .optional(),
+    )
+    .optional(),
   // What the server presents to the MCP proxy's internal routes (probe, app calls; KOBE-693),
   // separate from the key above, which the proxy presents here. Empty or unset (an operator's
   // Secret without the second key): the key above serves both ways.
@@ -322,6 +334,8 @@ export interface Config {
   readonly internalPort: number;
   /** Shared with the MCP proxy; without it the internal listener is not started. */
   readonly mcpProxyInternalKey: string | undefined;
+  /** The egress proxy's key for git decisions on the internal listener (KOBE-763). */
+  readonly egressProxyInternalKey: string | undefined;
   /** What the server presents to the proxy's internal routes (KOBE-693); falls back to the above. */
   readonly mcpProxyRoutesKey: string | undefined;
   /** The MCP proxy's internal routes base URL, for the pinning probe (KOBE-101). */
@@ -387,6 +401,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     agentMaxVersions: base.data.KOBE_AGENT_MAX_VERSIONS,
     internalPort: base.data.KOBE_INTERNAL_PORT,
     mcpProxyInternalKey: base.data.KOBE_MCP_PROXY_INTERNAL_KEY,
+    egressProxyInternalKey: base.data.KOBE_EGRESS_PROXY_INTERNAL_KEY,
     mcpProxyRoutesKey: base.data.KOBE_MCP_PROXY_ROUTES_KEY ?? base.data.KOBE_MCP_PROXY_INTERNAL_KEY,
     mcpProxyUrl: base.data.KOBE_MCP_PROXY_URL,
     modelGatewayUrl:

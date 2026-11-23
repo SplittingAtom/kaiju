@@ -75,6 +75,9 @@ appendFileSync(
     toolTmp: process.env.KOBE_TOOL_TMPDIR ?? null,
     egressProxy: process.env.KOBE_EGRESS_PROXY ?? null,
     threadId: process.env.KOBE_THREAD_ID ?? null,
+    // KOBE-764: the tools' git config file and the prompt switch.
+    gitConfigGlobal: process.env.GIT_CONFIG_GLOBAL ?? null,
+    gitTerminalPrompt: process.env.GIT_TERMINAL_PROMPT ?? null,
     // KOBE-71: who this Pi runs as, and its HOME/TMPDIR.
     pid: process.pid,
     uid: process.getuid?.() ?? null,

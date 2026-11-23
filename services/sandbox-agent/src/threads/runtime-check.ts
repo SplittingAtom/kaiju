@@ -11,12 +11,15 @@ import type { MemoryContextFile } from "../memory/context-file.js";
 import { AGENT_SUBDIR, piModelsStoreText, unexpectedEntries } from "../models/runtime-dir.js";
 import type { SystemPromptFile } from "../pi/system-prompt-file.js";
 import type { EgressTokenFile } from "../egress/egress-wiring.js";
+import type { GitConfigFile } from "../git/git-config.js";
 import type { McpConfigState } from "./thread-env.js";
 
 /** The current Pi's files as the thread holds them now (read at each step, as they may change). */
 export interface RuntimeFiles {
   readonly modelFile: () => ModelFile | undefined;
   readonly egressFile: () => EgressTokenFile | undefined;
+  /** Optional for callers that predate KOBE-764. */
+  readonly gitFile?: () => GitConfigFile | undefined;
   readonly promptFile: () => SystemPromptFile | undefined;
   readonly memoryFile: () => MemoryContextFile | undefined;
   readonly mcpConfig: () => McpConfigState | undefined;
@@ -43,6 +46,10 @@ export async function verifyRuntime(
   }
   if (files.egressFile() !== undefined && !(await files.egressFile()?.verify())) {
     return "the egress token file is not what the agent wrote";
+  }
+  const gitFile = files.gitFile?.();
+  if (gitFile !== undefined && !(await gitFile.verify())) {
+    return "the git config file is not what the agent wrote";
   }
   if (files.promptFile() !== undefined && !(await files.promptFile()?.verify())) {
     return "the system prompt file is not what the agent wrote";

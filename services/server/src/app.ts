@@ -103,6 +103,7 @@ import { skillReachRoutes } from "./routes/skill-reach.js";
 import { meSkillEnablementRoutes } from "./routes/me-skill-enablements.js";
 import { teamAuditRoutes } from "./routes/team-audit.js";
 import { teamEgressRoutes } from "./routes/team-egress.js";
+import { teamGitRoutes } from "./routes/team-git.js";
 import { teamBreakGlassRoutes } from "./routes/team-break-glass.js";
 import { teamInvitesRoutes } from "./routes/team-invites.js";
 import { teamAppsRoutes } from "./routes/team-apps.js";
@@ -258,6 +259,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   api.route("/team/invites", teamInvitesRoutes(deps));
   api.route("/team/audit", teamAuditRoutes(deps));
   api.route("/team/egress", teamEgressRoutes(deps));
+  api.route("/team/git", teamGitRoutes(deps));
   api.route("/team/models", teamModelsRoutes(deps));
   api.route("/team/connectors", teamConnectorsRoutes(deps));
   api.route("/team/apps", teamAppsRoutes(deps));

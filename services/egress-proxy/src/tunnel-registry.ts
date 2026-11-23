@@ -15,6 +15,11 @@ export interface LiveTunnel {
   /** A site job's tunnel (KOBE-343): re-checked against the ceiling alone. */
   readonly site?: boolean;
   readonly host: string;
+  /**
+   * A git smart-HTTP relay (KOBE-763): allowed by the Workspace's git connection and the site
+   * ceiling (not the team's enablement), so re-checked against membership and the ceiling.
+   */
+  readonly git?: boolean;
   /** Connected to an internal target (EA4): closed once the host's pattern is no longer internal. */
   readonly internal?: boolean;
   close(reason: string): void;
@@ -82,7 +87,11 @@ export class TunnelRegistry {
           continue;
         }
         const member = await this.policy.isActiveMember(tunnel.teamId, tunnel.userId);
-        const decision = member ? await this.policy.decide(tunnel.teamId, tunnel.host) : undefined;
+        const decision = !member
+          ? undefined
+          : tunnel.git
+            ? await this.policy.decideSite(tunnel.host)
+            : await this.policy.decide(tunnel.teamId, tunnel.host);
         if (!decision || !stillAllowed(tunnel, decision)) {
           tunnel.close(member ? "revoked" : "inactive_member");
           closed += 1;

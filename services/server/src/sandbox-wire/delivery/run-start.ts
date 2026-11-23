@@ -1,4 +1,5 @@
 import {
+  CAPABILITY_GIT,
   CAPABILITY_MCP,
   type RunStartFrame,
   type ServerToSandboxFrame,
@@ -10,6 +11,7 @@ import {
   CAPABILITY_PROJECTS,
   CAPABILITY_SYNC_CONFLICTS,
 } from "@kobe/protocol";
+import { loadRunGitContext } from "../../git/sandbox-git.js";
 import { untoldNotes, type AgentNotes } from "../../sync-conflicts/store.js";
 import type { CommandRow } from "../commands.js";
 import type { DeliveryEnv } from "./env.js";
@@ -86,6 +88,14 @@ export async function prepareRunStart(
       hooks.conflictsCarried(notes.ids);
     }
   }
+  // Git identity and connected organizations (KOBE-764): only for agents that write the tools'
+  // git config, never for eval sandboxes (no member workspace, the same for every member).
+  const { git: _git, ...withoutGit } = out as RunStartFrame;
+  out = withoutGit as ServerToSandboxFrame;
+  if (!evalSandbox && host.hasCapability(CAPABILITY_GIT)) {
+    const git = await runGit(env);
+    if (git !== undefined) out = { ...out, git } as ServerToSandboxFrame;
+  }
   // Same for the per-session MCP config (KOBE-111): an agent without it has no connector tools.
   if (!host.hasCapability(CAPABILITY_MCP)) {
     const { mcp: _mcp, ...rest } = out as RunStartFrame;
@@ -110,5 +120,17 @@ async function runConflicts(env: DeliveryEnv, threadId: string): Promise<AgentNo
   } catch (err) {
     env.host.log.warn({ err }, "run.start.sync_conflicts could not be read; sent without it");
     return { ids: [], conflicts: [] };
+  }
+}
+
+/** `run.start.git`; a failed read means none (git keeps its safe defaults, no identity). */
+async function runGit(env: DeliveryEnv): Promise<RunStartFrame["git"]> {
+  const siteHost = env.ctx.gitSiteHost;
+  if (siteHost === undefined) return undefined;
+  try {
+    return await loadRunGitContext(env.ctx.db, env.host.target, siteHost);
+  } catch (err) {
+    env.host.log.warn({ err }, "run.start.git could not be read; sent without it");
+    return undefined;
   }
 }

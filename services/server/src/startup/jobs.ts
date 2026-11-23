@@ -23,6 +23,7 @@ import {
 import type { ServerDeps } from "../deps.js";
 import { EgressBlockedRelay } from "../egress/blocked-relay.js";
 import { resealTeamHeaders } from "../egress/header-store.js";
+import { GIT_HEALTH_LOCK, GitHealthJob, runGitHealthPass } from "../git/health-job.js";
 import { endSsoSessionsWhenOff, seedHelmProviders } from "../sso/providers.js";
 import { notifySsoRequiredOff } from "../sso/required-notify.js";
 import { EgressRequestSweeper, sweepEgressRequestNotifications } from "../egress/request-notify.js";
@@ -412,6 +413,26 @@ function siteJobs(o: ServerJobsOptions): ServerJob[] {
         });
         await afterPass();
       },
+    ),
+  );
+  // Workspace git connections (KOBE-760): health re-probes and token-expiry notices, one replica.
+  const gitHealthDeps = {
+    db,
+    envelope: deps.envelope,
+    net: deps.gitHostNet,
+    mailer: deps.mailer,
+    publicUrl: deps.publicUrl,
+    logger: o.logger,
+  };
+  const gitHealth = new GitHealthJob(gitHealthDeps, lockFor(o, GIT_HEALTH_LOCK, "git health"));
+  jobs.push(
+    job(
+      "git-health",
+      () => {
+        gitHealth.start();
+        return () => gitHealth.stop();
+      },
+      () => runGitHealthPass(gitHealthDeps),
     ),
   );
   // Header values sealed with a previous header secret are re-sealed with the current one.
