@@ -1,3 +1,4 @@
+import type { GitCapability, GitProvider } from "@kobe/db";
 import {
   assertBranch,
   assertNumber,
@@ -5,7 +6,6 @@ import {
   cursorPage,
   GitHostError,
   type GitAccess,
-  type GitCapability,
   type GitCommentInput,
   type GitCreated,
   type GitCreateIssueInput,
@@ -47,7 +47,7 @@ import {
  */
 export interface GiteaAdapterOptions {
   /** What the admin chose; `probe()` reports the product the host identifies as. */
-  readonly provider: "gitea" | "forgejo";
+  readonly provider: Exclude<GitProvider, "github">;
   /** e.g. `https://git.example.com` or `https://example.com/gitea` (a sub-path install). */
   readonly baseUrl: string;
   readonly organization: string;
@@ -68,7 +68,7 @@ export function createGiteaAdapter(options: GiteaAdapterOptions): GitHostAdapter
 }
 
 class GiteaAdapter implements GitHostAdapter {
-  readonly provider: "gitea" | "forgejo";
+  readonly provider: Exclude<GitProvider, "github">;
   readonly #o: GiteaAdapterOptions;
   readonly #apiRoot: string;
   readonly #webRoot: string;

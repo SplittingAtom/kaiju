@@ -99,19 +99,37 @@ export const GIT_REPO_NAME_PREFIX_PATTERN = "^[A-Za-z0-9._-]*$";
 /** A default branch name: a conservative subset of git's ref rules. */
 export const GIT_BRANCH_NAME_PATTERN = "^[A-Za-z0-9][A-Za-z0-9._/-]*$";
 
+/** A capability the credential may have (G4); `unknown` when the host cannot say without trying. */
+export const GIT_CAPABILITY_VALUES = ["yes", "no", "unknown"] as const;
+export type GitCapability = (typeof GIT_CAPABILITY_VALUES)[number];
+
 /**
- * What the credential may do on the host (G4), as the connection test found it. Stored on the
- * connection (`capabilities`) and shown in the Git section; `extra` names permissions beyond what
- * the connection needs (e.g. `delete_repo`, `admin:org`), which the console warns about.
+ * What the credential may do in the organization (G4), as a connection test (the adapters'
+ * `probe()`) found it. Stored on the connection (`git_connections.capabilities`, validated by
+ * `gitCapabilitiesSchema` on write and read) and shown in the Git section.
  */
 export interface GitCapabilities {
-  readonly createRepositories?: boolean;
-  readonly read?: boolean;
-  readonly write?: boolean;
-  readonly administer?: boolean;
-  /** Short permission names beyond what the connection needs. */
-  readonly extra?: readonly string[];
+  /** Create repositories in the organization. */
+  readonly create: GitCapability;
+  /** Read repositories' contents. */
+  readonly read: GitCapability;
+  /** Push and open pull requests, issues and comments. */
+  readonly write: GitCapability;
+  /** Administer repositories or the organization (more than Kobe needs). */
+  readonly admin: GitCapability;
 }
+
+/** Before the first test: nothing known. */
+export const GIT_CAPABILITIES_UNKNOWN: GitCapabilities = Object.freeze({
+  create: "unknown",
+  read: "unknown",
+  write: "unknown",
+  admin: "unknown",
+});
+
+/** Permissions beyond what the connection needs (G4), by the host's names; at most this many. */
+export const GIT_EXCESS_PERMISSIONS_MAX = 50;
+export const GIT_EXCESS_PERMISSION_MAX_LENGTH = 100;
 
 /**
  * A `git_connections` row without its sealed credential: what server code passes around and the
@@ -141,6 +159,8 @@ export interface GitConnectionRecord {
   /** GQ8: the agents that may use it; null = every agent in the Workspace. */
   readonly agentIds: readonly string[] | null;
   readonly capabilities: GitCapabilities;
+  /** Permissions the credential holds beyond what the connection needs (G4; the console warns). */
+  readonly excessPermissions: readonly string[];
   readonly lastCheckedAt: Date | null;
   readonly lastOkAt: Date | null;
   readonly lastError: string | null;
@@ -160,6 +180,8 @@ export interface GitRepositoryRecord {
   readonly id: string;
   /** Null once the connection was removed (G20: the Repo stays, read-only). */
   readonly connectionId: string | null;
+  /** The host's base URL (as the connection's): with `hostRepoId`, the repository's identity. */
+  readonly baseUrl: string;
   /** The host's own id (G20: Kobe follows it through renames and transfers). */
   readonly hostRepoId: string;
   /** `organization/repository` as last seen on the host. */

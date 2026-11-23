@@ -4,6 +4,11 @@ import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { createDb, type KobeDatabase } from "./client.js";
 import { Envelope } from "./envelope/envelope.js";
 import { openGitCredential, rewrapGitCredential, sealGitCredential } from "./git/credential.js";
+import {
+  readGitConnection,
+  readGitConnectionSealedCredential,
+  readGitConnections,
+} from "./git/records.js";
 import { readGitSiteSettings } from "./git/site-settings.js";
 import {
   gitConnections,
@@ -77,7 +82,8 @@ describe("git_connections", () => {
       pushLimitBytes: 1024 ** 3,
       directCommits: false,
       agentIds: null,
-      capabilities: {},
+      capabilities: { create: "unknown", read: "unknown", write: "unknown", admin: "unknown" },
+      excessPermissions: [],
     });
   });
 
@@ -121,6 +127,17 @@ describe("git_connections", () => {
     ],
     ["token with an app id", { githubAppId: 1 }],
     ["capabilities not an object", { capabilities: [] }],
+    [
+      "capabilities of the old boolean shape",
+      { capabilities: { create: true, read: "yes", write: "yes", admin: "no" } },
+    ],
+    [
+      "capabilities with an extra key",
+      { capabilities: { create: "yes", read: "yes", write: "yes", admin: "no", extra: "yes" } },
+    ],
+    ["capabilities missing a key", { capabilities: { create: "yes", read: "yes", write: "yes" } }],
+    ["a key id the sealed text does not name", { credentialKeyId: "other" }],
+    ["a null in the excess permissions", { excessPermissions: ["delete_repo", null] }],
   ])("refuses %s", async (_name, over) => {
     await expect(insertConnection(teamB, over)).rejects.toSatisfy(refused("23514"));
   });
@@ -158,6 +175,7 @@ describe("git_repositories", () => {
   const repo = (teamId: string, connectionId: string | null, projectId: string | null) => ({
     teamId,
     connectionId,
+    baseUrl: "https://github.com",
     hostRepoId: String(Math.floor(Math.random() * 1e9)),
     fullName: "acme/docs",
     projectId,
@@ -212,6 +230,55 @@ describe("git_repositories", () => {
     ).rejects.toSatisfy(refused("23503"));
   });
 
+  it("records one row per host repository, also after its connection went (L5)", async () => {
+    const conn = await insertConnection(teamA);
+    const first = { ...repo(teamA, conn.id, null), hostRepoId: "777" };
+    await withTeam(app.db, teamA, (tx) => tx.insert(gitRepositories).values(first));
+    await withTeam(app.db, teamA, (tx) =>
+      tx.delete(gitConnections).where(eq(gitConnections.id, conn.id)),
+    );
+    const again = await insertConnection(teamA);
+    await expect(
+      withTeam(app.db, teamA, (tx) =>
+        tx.insert(gitRepositories).values({ ...first, connectionId: again.id }),
+      ),
+    ).rejects.toSatisfy(refused("23505"));
+    // The same id on another host is another repository.
+    await withTeam(app.db, teamA, (tx) =>
+      tx
+        .insert(gitRepositories)
+        .values({ ...first, connectionId: null, baseUrl: "https://git.example.com" }),
+    );
+  });
+
+  it("goes with its Workspace along both cascade paths (L7)", async () => {
+    const team = randomUUID();
+    const owner = createDb(inject("ownerUrl"));
+    try {
+      await owner.db
+        .insert(teams)
+        .values({ id: team, slug: `gitd-${team.slice(0, 8)}`, name: "D" });
+      const conn = await insertConnection(team);
+      const projectId = await project(team);
+      await withTeam(app.db, team, (tx) =>
+        tx.insert(gitRepositories).values(repo(team, conn.id, projectId)),
+      );
+      await owner.db.delete(teams).where(eq(teams.id, team));
+      const left = await owner.db
+        .select({ id: gitRepositories.id })
+        .from(gitRepositories)
+        .where(eq(gitRepositories.teamId, team));
+      expect(left).toEqual([]);
+      const conns = await owner.db
+        .select({ id: gitConnections.id })
+        .from(gitConnections)
+        .where(eq(gitConnections.teamId, team));
+      expect(conns).toEqual([]);
+    } finally {
+      await owner.close();
+    }
+  });
+
   it("refuses an unknown project kind", async () => {
     await expect(
       withTeam(app.db, teamA, (tx) =>
@@ -259,6 +326,39 @@ describe("sealed git credential (G8)", () => {
     expect(openGitCredential(newOnly, ref, next.credentialSealed, "access_token").kind).toBe(
       "access_token",
     );
+  });
+});
+
+describe("reading connections (review M2)", () => {
+  it("returns records without the sealed credential; only the named reader returns it", async () => {
+    const conn = await insertConnection(teamB, {
+      capabilities: { create: "yes", read: "yes", write: "unknown", admin: "no" },
+      excessPermissions: ["delete_repo"],
+    });
+    const record = await withTeam(app.db, teamB, (tx) => readGitConnection(tx, teamB, conn.id));
+    expect(record).toMatchObject({
+      id: conn.id,
+      capabilities: { create: "yes", read: "yes", write: "unknown", admin: "no" },
+      excessPermissions: ["delete_repo"],
+    });
+    expect(Object.keys(record ?? {})).not.toContain("credentialSealed");
+    expect(Object.keys(record ?? {})).not.toContain("credentialKeyId");
+    expect(JSON.stringify(record)).not.toContain("e1.");
+    const all = await withTeam(app.db, teamB, (tx) => readGitConnections(tx, teamB));
+    expect(all.some((r) => r.id === conn.id)).toBe(true);
+    expect(JSON.stringify(all)).not.toContain("e1.");
+    // From another Workspace: nothing.
+    expect(await withTeam(app.db, teamA, (tx) => readGitConnection(tx, teamB, conn.id))).toBe(
+      undefined,
+    );
+    const sealed = await withTeam(app.db, teamB, (tx) =>
+      readGitConnectionSealedCredential(tx, teamB, conn.id),
+    );
+    expect(sealed).toEqual({
+      credentialKind: "access_token",
+      credentialSealed: "e1.kid.a.b.c.d.e.f",
+      credentialKeyId: "kid",
+    });
   });
 });
 

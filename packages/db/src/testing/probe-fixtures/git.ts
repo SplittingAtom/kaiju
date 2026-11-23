@@ -42,6 +42,7 @@ export const gitFixtures: Record<(typeof git.team)[number], ProbeFixture> = {
     await tx.insert(gitRepositories).values({
       teamId,
       connectionId,
+      baseUrl: "https://git.probe.test",
       hostRepoId: "42",
       fullName: `probe/${slug}`,
       projectId: project.id,

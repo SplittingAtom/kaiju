@@ -14,6 +14,7 @@ const KEY = "k".repeat(40);
 const ref = { teamId: "11111111-1111-4111-8111-111111111111", connectionId: "c-1" };
 const token = { kind: "access_token", token: "github_pat_11ABCDEFG0123456789" } as const;
 const PEM = "-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBAK\n-----END RSA PRIVATE KEY-----\n";
+const PKCS8 = "-----BEGIN PRIVATE KEY-----\nMIIBVQIBADAN\n-----END PRIVATE KEY-----\n";
 
 describe("git credential sealing (KOBE-757, G8)", () => {
   it("uses its own envelope kind, bound to the Workspace and connection", () => {
@@ -33,6 +34,9 @@ describe("git credential sealing (KOBE-757, G8)", () => {
     expect(sealed.credentialKeyId).toBe(env.currentKeyId);
     expect(openGitCredential(env, ref, sealed.credentialSealed, "access_token")).toEqual(token);
     const app = sealGitCredential(env, ref, { kind: "github_app", privateKey: PEM });
+    expect(() =>
+      sealGitCredential(env, ref, { kind: "github_app", privateKey: PKCS8 }),
+    ).not.toThrow();
     expect(openGitCredential(env, ref, app.credentialSealed, "github_app")).toEqual({
       kind: "github_app",
       privateKey: PEM,
@@ -83,6 +87,11 @@ describe("git credential sealing (KOBE-757, G8)", () => {
       { kind: "access_token", token: "has space" },
       { kind: "access_token", token: "" },
       { kind: "github_app", privateKey: "not a pem" },
+      {
+        kind: "github_app",
+        privateKey:
+          "-----BEGIN ENCRYPTED PRIVATE KEY-----\nMIIB\n-----END ENCRYPTED PRIVATE KEY-----\n",
+      },
       { kind: "access_token", token: "x", extra: 1 },
     ]) {
       expect(() => sealGitCredential(env, ref, bad as never)).toThrow(

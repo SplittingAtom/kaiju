@@ -14,6 +14,10 @@ import {
 } from "drizzle-orm/pg-core";
 import {
   GIT_ACCESS_LEVEL_VALUES,
+  GIT_CAPABILITIES_UNKNOWN,
+  GIT_CAPABILITY_VALUES,
+  GIT_EXCESS_PERMISSION_MAX_LENGTH,
+  GIT_EXCESS_PERMISSIONS_MAX,
   GIT_BASE_URL_MAX,
   GIT_BRANCH_NAME_MAX,
   GIT_BRANCH_NAME_PATTERN,
@@ -55,6 +59,8 @@ const inList = (column: unknown, values: readonly string[]) =>
   sql`${column} IN (${sql.raw(values.map((v) => `'${v}'`).join(", "))})`;
 const n = (value: number) => sql.raw(String(value));
 const re = (pattern: string) => sql.raw(`'${pattern}'`);
+/** A canonical base URL (`parseGitBaseUrl`): https, lowercase host, optional port and path. */
+const BASE_URL_SQL = "^https://[a-z0-9.-]+(:[0-9]{1,5})?(/[^?#[:space:]]*[^/?#[:space:]])?$";
 
 /**
  * A Workspace's connection to one organization on one git host (G1, G2). Up to
@@ -94,8 +100,13 @@ export const gitConnections = pgTable(
     directCommits: boolean().notNull().default(false),
     /** GQ8: the agents that may use the connection (no foreign key: team or personal agents). */
     agentIds: uuid().array(),
-    /** What the credential may do (G4), from the last connection test. */
-    capabilities: jsonb().$type<GitCapabilities>().notNull().default({}),
+    /** What the credential may do (G4), from the last connection test (`gitCapabilitiesSchema`). */
+    capabilities: jsonb().$type<GitCapabilities>().notNull().default(GIT_CAPABILITIES_UNKNOWN),
+    /** Permissions beyond what the connection needs (G4), by the host's names. */
+    excessPermissions: text()
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     lastCheckedAt: timestamp({ withTimezone: true }),
     lastOkAt: timestamp({ withTimezone: true }),
     /** Short machine code of the last failed check (never the host's message). */
@@ -123,7 +134,7 @@ export const gitConnections = pgTable(
     check("git_connections_provider", inList(t.provider, GIT_PROVIDER_VALUES)),
     check(
       "git_connections_base_url",
-      sql`char_length(${t.baseUrl}) <= ${n(GIT_BASE_URL_MAX)} AND ${t.baseUrl} ~ '^https://[a-z0-9.-]+(:[0-9]{1,5})?(/[^?#[:space:]]*[^/?#[:space:]])?$'`,
+      sql`char_length(${t.baseUrl}) <= ${n(GIT_BASE_URL_MAX)} AND ${t.baseUrl} ~ ${sql.raw(`'${BASE_URL_SQL}'`)}`,
     ),
     check(
       "git_connections_organization",
@@ -144,9 +155,10 @@ export const gitConnections = pgTable(
       "git_connections_credential_sealed",
       sql`${t.credentialSealed} ~ '^e1\\.[A-Za-z0-9_.-]+$' AND char_length(${t.credentialSealed}) <= ${n(GIT_CREDENTIAL_SEALED_MAX)}`,
     ),
+    // The key id repeats the one the envelope text names (`Envelope.keyIdOf`), so the two never drift.
     check(
       "git_connections_credential_key_id",
-      sql`char_length(${t.credentialKeyId}) BETWEEN 1 AND 64`,
+      sql`char_length(${t.credentialKeyId}) BETWEEN 1 AND 64 AND ${t.credentialKeyId} = split_part(${t.credentialSealed}, '.', 2)`,
     ),
     check(
       "git_connections_credential_hint",
@@ -170,7 +182,22 @@ export const gitConnections = pgTable(
       "git_connections_agent_ids",
       sql`${t.agentIds} IS NULL OR (array_ndims(${t.agentIds}) = 1 AND cardinality(${t.agentIds}) BETWEEN 1 AND ${n(GIT_CONNECTION_AGENTS_MAX)} AND array_position(${t.agentIds}, NULL) IS NULL)`,
     ),
-    check("git_connections_capabilities", sql`jsonb_typeof(${t.capabilities}) = 'object'`),
+    // Exactly the four tri-state fields of GitCapabilities (GIT_CAPABILITY_VALUES).
+    check(
+      "git_connections_capabilities",
+      sql`jsonb_typeof(${t.capabilities}) = 'object' AND ${t.capabilities} - ARRAY['create', 'read', 'write', 'admin'] = '{}'::jsonb AND ${sql.raw(
+        (["create", "read", "write", "admin"] as const)
+          .map(
+            (k) =>
+              `coalesce("capabilities" ->> '${k}', '') IN (${GIT_CAPABILITY_VALUES.map((v) => `'${v}'`).join(", ")})`,
+          )
+          .join(" AND "),
+      )}`,
+    ),
+    check(
+      "git_connections_excess_permissions",
+      sql`array_ndims(${t.excessPermissions}) IS DISTINCT FROM 2 AND cardinality(${t.excessPermissions}) <= ${n(GIT_EXCESS_PERMISSIONS_MAX)} AND array_position(${t.excessPermissions}, NULL) IS NULL AND char_length(array_to_string(${t.excessPermissions}, '')) <= ${n(GIT_EXCESS_PERMISSIONS_MAX * GIT_EXCESS_PERMISSION_MAX_LENGTH)}`,
+    ),
     check(
       "git_connections_last_error",
       sql`${t.lastError} IS NULL OR char_length(${t.lastError}) <= ${n(GIT_HEALTH_ERROR_MAX)}`,
@@ -196,6 +223,11 @@ export const gitRepositories = pgTable(
       .references(() => teams.id, { onDelete: "cascade" }),
     id: uuid().notNull().defaultRandom(),
     connectionId: uuid(),
+    /**
+     * The host's base URL (the connection's, canonical): with `host_repo_id` the repository's
+     * identity, kept when the connection goes (G20), so a reconnect finds the same row.
+     */
+    baseUrl: text().notNull(),
     /** The host's own id (G20: followed through renames and transfers). */
     hostRepoId: text().notNull(),
     /** `organization/repository` as last seen on the host. */
@@ -218,11 +250,17 @@ export const gitRepositories = pgTable(
   },
   (t) => [
     primaryKey({ columns: [t.teamId, t.id] }),
-    // One row per host repository per connection (nulls distinct: rows of removed connections).
-    uniqueIndex("git_repositories_host_unique").on(t.teamId, t.connectionId, t.hostRepoId),
+    // One row per host repository per Workspace, with or without its connection (L5, G20).
+    uniqueIndex("git_repositories_host_unique").on(t.teamId, t.baseUrl, t.hostRepoId),
+    // Covers the SQL-only key (team_id, connection_id) -> git_connections.
+    index("git_repositories_connection_idx").on(t.teamId, t.connectionId),
     // A project is at most one Repo (G15); also covers the project key.
     uniqueIndex("git_repositories_project_unique").on(t.teamId, t.projectId),
     index("git_repositories_created_by_idx").on(t.createdBy),
+    check(
+      "git_repositories_base_url",
+      sql`char_length(${t.baseUrl}) <= ${n(GIT_BASE_URL_MAX)} AND ${t.baseUrl} ~ ${sql.raw(`'${BASE_URL_SQL}'`)}`,
+    ),
     check(
       "git_repositories_host_repo_id",
       sql`char_length(${t.hostRepoId}) BETWEEN 1 AND 64 AND ${t.hostRepoId} ~ '^[A-Za-z0-9_=-]+$'`,

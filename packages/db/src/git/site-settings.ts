@@ -45,7 +45,9 @@ export const gitAllowedHostsSchema = z
   });
 
 function parseEnabled(value: string | undefined): boolean {
-  return value === undefined ? GIT_SITE_DEFAULTS.enabled : value !== "false";
+  // Default on only while no row exists; a stored value turns it on only when exactly "true"
+  // (anything else fails closed, as an unreadable host list does).
+  return value === undefined ? GIT_SITE_DEFAULTS.enabled : value === "true";
 }
 
 function parseHosts(value: string | undefined): readonly string[] {

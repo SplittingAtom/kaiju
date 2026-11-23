@@ -30,7 +30,7 @@ export async function storeGitSiteSettings(
     await store(tx, GIT_SITE_ENABLED_KEY, String(change.enabled));
     await recordAudit(tx, {
       action: "site.settings.updated",
-      target: { setting: "git_connections", value: change.enabled },
+      target: { setting: "git_connections", value: change.enabled, previous: current.enabled },
     });
   }
   if (change.allowedHosts !== undefined) {
@@ -39,7 +39,13 @@ export async function storeGitSiteSettings(
     await store(tx, GIT_SITE_ALLOWED_HOSTS_KEY, JSON.stringify(hosts));
     await recordAudit(tx, {
       action: "site.settings.updated",
-      target: { setting: "git_allowed_hosts", value: hosts.length, hosts },
+      target: {
+        setting: "git_allowed_hosts",
+        value: hosts.length,
+        hosts,
+        previous: current.allowedHosts.length,
+        previousHosts: [...current.allowedHosts],
+      },
     });
   }
 }

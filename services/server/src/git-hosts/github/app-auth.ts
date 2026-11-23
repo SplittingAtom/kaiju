@@ -1,4 +1,5 @@
 import { createHash, createPrivateKey, sign, type KeyObject } from "node:crypto";
+import type { GitCredentialKind } from "@kobe/db";
 import { GitHostError } from "../adapter.js";
 import { hostRequest, type GitHostNet } from "../http.js";
 import { githubError } from "./errors.js";
@@ -12,7 +13,7 @@ import { githubError } from "./errors.js";
  */
 
 export interface GitHubAppCredential {
-  readonly kind: "github_app";
+  readonly kind: Extract<GitCredentialKind, "github_app">;
   readonly appId: string;
   readonly installationId: string;
   /** PEM, as GitHub hands it out (PKCS#1 or PKCS#8). */

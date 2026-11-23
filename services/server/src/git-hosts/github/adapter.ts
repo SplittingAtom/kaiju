@@ -1,3 +1,4 @@
+import type { GitCredentialKind } from "@kobe/db";
 import {
   assertBranch,
   assertNumber,
@@ -59,7 +60,7 @@ import {
 
 /** A fine-grained personal access token (or a classic one, reported as excess). */
 export interface GitHubTokenCredential {
-  readonly kind: "token";
+  readonly kind: Extract<GitCredentialKind, "access_token">;
   readonly token: string;
 }
 
@@ -152,7 +153,7 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
     scope: InstallationScope,
   ): Promise<HostResponse> {
     preflight();
-    if (credential.kind === "token") return send(path, init, credential.token);
+    if (credential.kind === "access_token") return send(path, init, credential.token);
     const ctx = app as AppAuthContext;
     await verifyAppAccount(ctx);
     const first = await send(path, init, (await installationToken(ctx, scope)).token);
@@ -303,7 +304,7 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
 
     async probe() {
       preflight();
-      return credential.kind === "token"
+      return credential.kind === "access_token"
         ? probeToken(credential.token)
         : probeApp(app as AppAuthContext);
     },
@@ -373,7 +374,7 @@ export function createGitHubAdapter(options: GitHubAdapterOptions): GitHostAdapt
         throw new GitHostError("invalid_request", "Access must be read or write.");
       }
       preflight();
-      if (credential.kind === "token") {
+      if (credential.kind === "access_token") {
         return {
           username: GIT_USERNAME,
           password: credential.token,

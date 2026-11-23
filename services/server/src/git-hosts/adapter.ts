@@ -11,25 +11,17 @@
  * a message that never carries a credential, URL query or response body.
  */
 
-export type GitProvider = "github" | "gitea" | "forgejo";
+import type { GitCapabilities, GitCapability, GitCredentialKind, GitProvider } from "@kobe/db";
+
+/**
+ * The provider, credential kinds and capabilities are declared once, in `@kobe/db` (shared with
+ * the `git_connections` table, which stores probe capabilities as they are); re-exported here for
+ * the adapters' convenience.
+ */
+export type { GitCapabilities, GitCapability, GitCredentialKind, GitProvider };
 
 /** Read (fetch, read tools) or read and write (push, write tools). */
 export type GitAccess = "read" | "write";
-
-/** A capability the credential may have; "unknown" when the host cannot say without trying. */
-export type GitCapability = "yes" | "no" | "unknown";
-
-/** What the credential may do in the organization (G4). */
-export interface GitCapabilities {
-  /** Create repositories in the organization. */
-  readonly create: GitCapability;
-  /** Read repositories' contents. */
-  readonly read: GitCapability;
-  /** Push and open pull requests, issues and comments. */
-  readonly write: GitCapability;
-  /** Administer repositories or the organization (more than Kobe needs). */
-  readonly admin: GitCapability;
-}
 
 export interface GitOrganization {
   /** The host's stable id. */

@@ -32,12 +32,18 @@ export const gitCredentialSecretSchema = z.discriminatedUnion("kind", [
   }),
   z.strictObject({
     kind: z.literal("github_app"),
-    /** The App's PEM private key (G5); App ID and installation ID are stored in clear. */
+    /**
+     * The App's PEM private key (G5), PKCS#1 or PKCS#8, unencrypted (an `ENCRYPTED PRIVATE KEY`
+     * is refused: the server cannot use it). App ID and installation ID are stored in clear.
+     */
     privateKey: z
       .string()
       .min(1)
       .max(GIT_APP_PRIVATE_KEY_MAX)
-      .regex(/^-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]+-----END [A-Z ]*PRIVATE KEY-----\s*$/),
+      .regex(
+        /^-----BEGIN (RSA |EC )?PRIVATE KEY-----[\s\S]+-----END (RSA |EC )?PRIVATE KEY-----\s*$/,
+        "paste the App's private key as GitHub hands it out (an encrypted key cannot be used)",
+      ),
   }),
 ]);
 export type GitCredentialSecret = z.infer<typeof gitCredentialSecretSchema>;

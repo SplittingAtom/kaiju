@@ -1,10 +1,5 @@
-import {
-  GitHostError,
-  type GitCapabilities,
-  type GitCapability,
-  type GitOrganization,
-  type GitRepository,
-} from "../adapter.js";
+import type { GitCapabilities, GitCapability } from "@kobe/db";
+import { GitHostError, type GitOrganization, type GitRepository } from "../adapter.js";
 
 /**
  * GitHub's base URLs and JSON mapped to the adapter's types (KOBE-758).

@@ -21,7 +21,7 @@ export const PLATFORM_EVENTS = {
      * `kobe_reads_per_minute` / `kobe_writes_per_hour` (KOBE-814): the per-person Kobe admin limits, value 1-10000.
      * `git_connections` (KOBE-757, Workspace git G3): the Site switch, value true or false.
      * `git_allowed_hosts` (KOBE-757): the host limit, value the number of patterns (0 = any host),
-     * `hosts` the patterns themselves. */
+     * `hosts` the patterns themselves; `previous` / `previousHosts` the values before. */
     setting: z.enum([
       "require_two_factor",
       "audit_pii_retention_hours",
@@ -33,6 +33,9 @@ export const PLATFORM_EVENTS = {
     ]),
     value: z.union([z.boolean(), z.number().int().nonnegative(), label]),
     hosts: z.array(egressDomain).max(GIT_ALLOWED_HOSTS_MAX).optional(),
+    /** The value before the change (KOBE-757: git settings), and for the host list its patterns. */
+    previous: z.union([z.boolean(), z.number().int().nonnegative(), label]).optional(),
+    previousHosts: z.array(egressDomain).max(GIT_ALLOWED_HOSTS_MAX).optional(),
   }),
   /**
    * Site branding changed (KOBE-497, theming TH12): one event per setting. `value` is the new name,

@@ -47,6 +47,11 @@ describe("git Site ceiling (G3)", () => {
       enabled: false,
       allowedHosts: ["*.example.com", "github.com"],
     });
+    // The switch reads strictly: only "true" is on once a row exists.
+    for (const v of ["0", "off", "yes", "", "TRUE"]) {
+      expect(parseGitSiteSettings(new Map([[GIT_SITE_ENABLED_KEY, v]])).enabled, v).toBe(false);
+    }
+    expect(parseGitSiteSettings(new Map([[GIT_SITE_ENABLED_KEY, "true"]])).enabled).toBe(true);
     const broken = parseGitSiteSettings(new Map([[GIT_SITE_ALLOWED_HOSTS_KEY, "{"]]));
     expect(decideGitHost(broken, "https://github.com")).toMatchObject({
       ok: false,

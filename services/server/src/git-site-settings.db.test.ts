@@ -70,9 +70,15 @@ describe("Site settings: Workspace git ceiling (KOBE-757)", () => {
         AND target ->> 'setting' IN ('git_connections', 'git_allowed_hosts') ORDER BY seq`,
     );
     expect(rows.map((r) => r.target)).toEqual([
-      { setting: "git_connections", value: false },
-      { setting: "git_allowed_hosts", value: 2, hosts: ["*.example.com", "github.com"] },
-      { setting: "git_connections", value: true },
+      { setting: "git_connections", value: false, previous: true },
+      {
+        setting: "git_allowed_hosts",
+        value: 2,
+        hosts: ["*.example.com", "github.com"],
+        previous: 0,
+        previousHosts: [],
+      },
+      { setting: "git_connections", value: true, previous: false },
     ]);
   });
 });

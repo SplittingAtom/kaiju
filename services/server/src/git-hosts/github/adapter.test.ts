@@ -19,7 +19,7 @@ const APP: GitHubCredential = {
   installationId: FAKE_INST_ID,
   privateKeyPem: PRIVATE_PEM,
 };
-const PAT: GitHubCredential = { kind: "token", token: FAKE_PAT };
+const PAT: GitHubCredential = { kind: "access_token", token: FAKE_PAT };
 
 function contractFor(name: string, credential: GitHubCredential) {
   const fake = new FakeGithub(PUBLIC_PEM);
