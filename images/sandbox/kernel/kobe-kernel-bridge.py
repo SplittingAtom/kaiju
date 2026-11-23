@@ -5,7 +5,8 @@ docs/specs/notebooks.md NB10. The agent starts this program (root-owned, read-on
 under the kernel's own uid and talks to it over stdio only, one JSON object per line:
 
   agent -> bridge   {"op": "execute", "id": "<id>", "code": "<source>"}
-                    {"op": "inspect", "id": "<id>", "limits": {<caps, below>}}   (KOBE-803)
+                    {"op": "inspect", "id": "<id>", "limits": {<caps, below>},
+                     "show": "<name>"?}                          (KOBE-803; show: KOBE-816)
                     {"op": "complete", "id": "<id>", "code": "<source>", "cursor": <int>,
                      "timeout_ms": <int>}                                              (KOBE-808)
                     {"op": "doc", "id": "<id>", "name": "<dotted.name>", "timeout_ms": <int>}
@@ -125,10 +126,13 @@ async def _kobe_inspect(self, code, cursor_pos, detail_level=0, omit_sections=()
     if code.startswith(_KOBE_VARIABLES):
         # KOBE-816: the variables snapshot, on this channel too (never a silent execute).
         try:
-            limits = _kobe_json.loads(code[len(_KOBE_VARIABLES):])
+            asked = _kobe_json.loads(code[len(_KOBE_VARIABLES):])
         except ValueError:
-            limits = {}
-        found = _kobe_static["variables"](limits, shell.user_ns, shell.user_ns_hidden, shell.execution_count - 1)
+            asked = {}
+        asked = asked if type(asked) is dict else {}
+        found = _kobe_static["variables"](
+            asked.get("limits"), shell.user_ns, shell.user_ns_hidden, shell.execution_count - 1, asked.get("show")
+        )
     else:
         found = _kobe_static["doc"](code, shell.user_ns)
     return {"status": "ok", "found": False, "data": {}, "metadata": {"kobe": found}}
@@ -911,10 +915,22 @@ def _slot(t, name, value):
 
 
 def _plain_tz(tz):
-    # A tzinfo whose methods are library code: None, the exact datetime.timezone or ZoneInfo.
-    return tz is None or type(tz) is _library("datetime", "timezone") or type(tz) is _library(
-        "zoneinfo", "ZoneInfo"
-    )
+    # A tzinfo whose methods and repr are library code over plain fields: None, an exact
+    # datetime.timezone whose name is an exact str, or an exact ZoneInfo whose key is an exact
+    # str or None (both read through C, never the object's own methods).
+    if tz is None:
+        return True
+    timezone = _library("datetime", "timezone")
+    if type(tz) is timezone:
+        return type(timezone.tzname(tz, None)) is str
+    zoneinfo = _library("zoneinfo", "ZoneInfo")
+    if zoneinfo is not None and type(tz) is zoneinfo:
+        desc = _lookup(zoneinfo, "key", None)
+        if type(desc) not in _C_DESCRIPTORS:
+            return False
+        key = desc.__get__(tz, zoneinfo)
+        return key is None or type(key) is str
+    return False
 
 
 def _stdlib_text(value, t):
@@ -939,8 +955,10 @@ def _stdlib_text(value, t):
             (n for n in ("datetime", "date", "time", "timedelta", "timezone") if t is _library("datetime", n)),
             None,
         )
-        if kind in ("date", "timedelta", "timezone"):
+        if kind in ("date", "timedelta"):
             return t.__repr__(value)
+        if kind == "timezone":
+            return t.__repr__(value) if _plain_tz(value) else None
         if kind in ("datetime", "time"):
             # A member's tzinfo subclass would run its utcoffset/tzname/repr: type only then.
             tz = _lookup(t, "tzinfo", None).__get__(value, t)
@@ -970,21 +988,62 @@ def _stdlib_text(value, t):
     return None
 
 
+_PATH_SLOTS = (
+    "_raw_paths",
+    "_drv",
+    "_root",
+    "_tail_cached",
+    "_str",
+    "_str_normcase_cached",
+    "_parts_normcase_cached",
+    "_lines_cached",
+    "_hash",
+)
+
+
 def _path_text(value, t):
-    # pathlib's own repr (library code) only when its parts are exact strings.
-    try:
-        raw = _slot(t, "_raw_paths", value) if _lookup(t, "_raw_paths", None) is not None else None
-    except _Stop:
-        raw = None
-    if raw is not None and (type(raw) is not list or any(type(p) is not str for p in raw)):
+    # pathlib's own repr (library code) only when every field it may read is an exact str (or a
+    # list of them, or the cached int hash): a str subclass there would have its methods called.
+    for name in _PATH_SLOTS:
+        desc = _lookup(t, name, None)
+        if desc is None:
+            continue
+        if type(desc) is not _types.MemberDescriptorType:
+            return None
+        try:
+            field = desc.__get__(value, t)
+        except AttributeError:
+            continue
+        ft = type(field)
+        if ft is str or ft is int or field is None:
+            continue
+        if ft is list and all(type(p) is str for p in _it.islice(field, 1000)) and len(field) <= 1000:
+            continue
         return None
     return t.__repr__(value)
 
 
+# Credential-like names (the web's rule, here so their values never leave the kernel unasked):
+# a top-level variable named so is sent without its value, and inside a shown dict the value under
+# such a key is "<hidden>", until the member asks for that one variable (Show).
+_SECRET = _re.compile(
+    r"pass(word|wd)?|pwd|secret|token|(api|access|private|secret)_?key|^key$|_key$|credential"
+    r"|auth(?!or)|cookie|dsn|conn(ection)?_?str",
+    _re.IGNORECASE,
+)
+
+
+def _secret(name):
+    return type(name) is str and _SECRET.search(str.__getitem__(name, slice(0, 256))) is not None
+
+
 class _Render:
-    # A bounded text of a value by the rule above; `left` characters at most.
-    def __init__(self, limit):
+    # A bounded text of a value by the rule above; `left` characters at most. With `mask`, values
+    # under credential-like keys of dicts are "<hidden>" (`masked` then says so).
+    def __init__(self, limit, mask=False):
         self.left = limit
+        self.mask = mask
+        self.masked = False
 
     def put(self, parts, text):
         parts.append(text)
@@ -1025,7 +1084,12 @@ class _Render:
                 self.put(parts, ", ")
             if base is dict:
                 k, v = item
-                self.put(parts, self.value(k, depth + 1) + ": " + self.value(v, depth + 1))
+                if self.mask and _secret(k):
+                    self.masked = True
+                    shown_value = "<hidden>"
+                else:
+                    shown_value = self.value(v, depth + 1)
+                self.put(parts, self.value(k, depth + 1) + ": " + shown_value)
             else:
                 self.put(parts, self.value(item, depth + 1))
             shown += 1
@@ -1035,42 +1099,157 @@ class _Render:
         return open_ + "".join(parts) + trailing + close
 
 
+def _field(obj, name):
+    # An attribute read from the instance dict, else through a C-level descriptor of its type;
+    # _Stop otherwise (never the object's own __getattr__, property or method).
+    t = type(obj)
+    own = _own_dict(obj, t)
+    if own is not None:
+        found = _find(own, name, _Stop)
+        if found is not _Stop:
+            return found
+    desc = _lookup(t, name, None)
+    if type(desc) in _C_DESCRIPTORS:
+        return desc.__get__(obj, t)
+    raise _Stop(name)
+
+
+_PANDAS_INDEXES = (
+    "Index",
+    "DatetimeIndex",
+    "TimedeltaIndex",
+    "PeriodIndex",
+    "CategoricalIndex",
+    "IntervalIndex",
+)
+_PANDAS_DTYPES = (
+    "ArrowDtype", "BooleanDtype", "CategoricalDtype", "DatetimeTZDtype", "Float32Dtype",
+    "Float64Dtype", "Int16Dtype", "Int32Dtype", "Int64Dtype", "Int8Dtype", "IntervalDtype",
+    "PeriodDtype", "SparseDtype", "StringDtype", "UInt16Dtype", "UInt32Dtype", "UInt64Dtype",
+    "UInt8Dtype",
+)
+_ARRAY_ITEMS = 6
+
+
+def _module_classes(module, names):
+    m = _find(_sys_modules(), module, None)
+    if type(m) is not _types.ModuleType:
+        return ()
+    d = _module_dict(m)
+    return tuple(c for c in (_find(d, n, None) for n in names) if c is not None)
+
+
 class _Snapshot:
-    def __init__(self, limits):
+    def __init__(self, limits, show=None):
         get = lambda k, d: int(limits.get(k, d)) if type(limits.get(k, d)) is int else d
         self.max_vars = get("max_vars", 200)
         self.max_bytes = get("max_bytes", 65536)
         self.repr_chars = get("repr_chars", 200)
         self.columns_max = get("columns_max", 50)
         self.deadline = _time.monotonic() + get("budget_ms", 2000) / 1000
+        self.show = show
+        self.mask = show is None
+        # Library classes, compared by identity only (a `__module__` can be spoofed).
         self.ndarray = _library("numpy", "ndarray")
         self.frame = _library("pandas", "DataFrame")
         self.series = _library("pandas", "Series")
+        np_dtype = _module_classes("numpy", ("dtype",))
+        self.np_dtype_meta = type(np_dtype[0]) if np_dtype else None
+        self.pd_dtypes = _module_classes("pandas", _PANDAS_DTYPES)
+        self.pd_arrays = _module_classes("pandas.arrays", (
+            "ArrowExtensionArray", "ArrowStringArray", "BooleanArray", "Categorical",
+            "DatetimeArray", "FloatingArray", "IntegerArray", "IntervalArray",
+            "NumpyExtensionArray", "PeriodArray", "SparseArray", "StringArray", "TimedeltaArray",
+        ))
+        self.pd_indexes = _module_classes("pandas", _PANDAS_INDEXES)
+        self.pd_free_indexes = _module_classes("pandas", ("RangeIndex", "MultiIndex"))
 
-    def text(self, value):
-        return _clip_keep(_Render(self.repr_chars).value(value, 0), self.repr_chars)
+    def text(self, value, render=None):
+        render = render or _Render(self.repr_chars, self.mask)
+        return _clip_keep(render.value(value, 0), self.repr_chars)
 
     def library_text(self, value):
-        # A label or dtype of a library object: plain values by the rule, else the type name.
+        # A label or dtype of a library object: plain values by the rule; numpy's and pandas' own
+        # dtype objects (identified by class identity) by their library text; else the type name.
         t = type(value)
         if t in _VAR_SCALARS or t is str:
             return _clip_keep(_Render(128).value(value, 1) if t is not str else value, 128)
-        module = _type_names(t)[1]
-        if module in ("numpy", "pandas"):
+        if (self.np_dtype_meta is not None and type(t) is self.np_dtype_meta) or any(
+            t is c for c in self.pd_dtypes
+        ):
             return _clip_keep(str(value), 128)
         return "<%s>" % _type_names(t)[0]
 
+    def allowed_array(self, a):
+        t = type(a)
+        return (self.ndarray is not None and t is self.ndarray) or any(t is c for c in self.pd_arrays)
+
+    def allowed_index(self, index):
+        t = type(index)
+        if any(t is c for c in self.pd_free_indexes):
+            return True
+        if not any(t is c for c in self.pd_indexes):
+            return False
+        try:
+            return self.allowed_array(_field(index, "_data"))
+        except _Stop:
+            return False
+
+    def pandas_backed(self, obj):
+        # Every block's values and every axis are numpy arrays or pandas' own arrays and indexes
+        # (checked through dicts and C attributes only): no member ExtensionArray gets asked.
+        try:
+            mgr = _field(obj, "_mgr")
+            blocks, axes = _field(mgr, "blocks"), _field(mgr, "axes")
+        except _Stop:
+            return False
+        if type(blocks) not in (list, tuple) or type(axes) is not list or len(blocks) > 10_000:
+            return False
+        try:
+            if not all(self.allowed_array(_field(b, "values")) for b in blocks):
+                return False
+        except _Stop:
+            return False
+        return all(self.allowed_index(ax) for ax in axes[:4])
+
+    def array_text(self, a, depth):
+        # A preview of an exact numeric ndarray built here from `tolist()` of small slices (plain
+        # Python numbers rendered by the scalar rule): numpy's print options never apply.
+        nd = self.ndarray
+        shape = nd.__dict__["shape"].__get__(a)
+        if len(shape) == 0:
+            x = nd.tolist(a)
+            return _scalar_text(x, type(x)) if type(x) in _VAR_SCALARS else "?"
+        n = shape[0]
+        if len(shape) == 1:
+            head = nd.tolist(nd.__getitem__(a, slice(0, _ARRAY_ITEMS)))
+            parts = [_scalar_text(x, type(x)) if type(x) in _VAR_SCALARS else "?" for x in head]
+        elif depth >= 2:
+            return "[...]"
+        else:
+            parts = [self.array_text(nd.__getitem__(a, i), depth + 1) for i in range(min(n, 3))]
+        if n > len(parts):
+            parts.append("...")
+        return "[" + ", ".join(parts) + "]"
+
     def describe(self, value, t):
         out = {}
+        render = _Render(self.repr_chars, self.mask)
         if t in _VAR_SCALARS or t in _VAR_TEXT or t in _VAR_CONTAINERS or t is range:
             if t in _VAR_SIZED:
                 out["len"] = t.__len__(value)
-            out["repr"] = self.text(value)
+            out["repr"] = self.text(value, render)
+            out["masked"] = render.masked
             return out
         known = _stdlib_text(value, t)
         if known is not None:
             out["repr"] = _clip_keep(known, self.repr_chars)
             return out
+        if (self.frame is not None and t is self.frame) or (self.series is not None and t is self.series):
+            if not self.pandas_backed(value):
+                # Backed by an array type not pandas' or numpy's own (a member's ExtensionArray).
+                out["repr"], out["repr_error"] = "", "not_read"
+                return out
         if self.frame is not None and t is self.frame:
             columns = value.columns
             rows, cols = len(value.index), len(columns)
@@ -1091,14 +1270,12 @@ class _Snapshot:
             out["repr"] = "Series: %d values (%s)" % (n, out["dtype"])
             return out
         if self.ndarray is not None and t is self.ndarray:
-            out["shape"] = [int(d) for d in value.shape][:64]
-            dtype = value.dtype
+            out["shape"] = [int(d) for d in self.ndarray.__dict__["shape"].__get__(value)][:64]
+            dtype = self.ndarray.__dict__["dtype"].__get__(value)
             out["dtype"] = self.library_text(dtype)
-            if getattr(dtype, "kind", None) in tuple("biufc"):
-                np = _find(_sys_modules(), "numpy", None)
-                out["repr"] = np.array2string(
-                    value, threshold=8, edgeitems=2, max_line_width=self.repr_chars
-                ).replace("\n", " ")
+            kind = _field(dtype, "kind") if self.np_dtype_meta is not None and type(type(dtype)) is self.np_dtype_meta else None
+            if type(kind) is str and kind in "biufc" and len(kind) == 1:
+                out["repr"] = _clip_keep(self.array_text(value, 0), self.repr_chars)
             else:
                 out["repr"] = ""
                 out["repr_error"] = "not_read"
@@ -1114,7 +1291,8 @@ class _Snapshot:
                 out["repr"] = ""
                 out["repr_error"] = "not_read"
             else:
-                out["repr"] = _clip_keep(_Render(self.repr_chars).container(value, base, 0), self.repr_chars)
+                out["repr"] = _clip_keep(render.container(value, base, 0), self.repr_chars)
+                out["masked"] = render.masked
             return out
         out["repr"] = ""
         out["repr_error"] = "not_read"
@@ -1125,6 +1303,9 @@ class _Snapshot:
         item = {"name": _clip_keep(name, 256), "type": type_name}
         if module is not None:
             item["module"] = module
+        if self.mask and _secret(name):
+            # A credential-like name: no value leaves the kernel until the member asks (Show).
+            return {**item, "repr": "", "hidden": "name"}
         try:
             described = self.describe(value, t)
         except KeyboardInterrupt:
@@ -1136,6 +1317,8 @@ class _Snapshot:
             if key in described:
                 item[key] = described[key]
         item["repr"] = _clip_keep(described.get("repr", ""), self.repr_chars)
+        if described.get("masked"):
+            item["hidden"] = "keys"
         return item
 
     def take(self, ns, hidden):
@@ -1144,6 +1327,8 @@ class _Snapshot:
             if type(name) is not str or name.startswith("_") or name in _IPYTHON_NAMES:
                 continue
             if type(hidden) is dict and _find(hidden, name, _Stop) is value:
+                continue
+            if self.show is not None and name != self.show:
                 continue
             entries.append((name, value))
         entries.sort(key=lambda e: e[0])
@@ -1187,10 +1372,13 @@ def _clip_keep(text, limit):
     return text if len(text) <= limit else text[: limit - 1] + "…"
 
 
-def variables(limits, ns, hidden=None, execution_count=None):
-    # JSON text of the snapshot of `ns` (the kernel's user namespace).
+def variables(limits, ns, hidden=None, execution_count=None, show=None):
+    # JSON text of the snapshot of `ns` (the kernel's user namespace). With `show` (one variable's
+    # name, the member's Show), only that variable, its value unmasked.
+    limits = limits if type(limits) is dict else {}
+    show = show if type(show) is str and show.isidentifier() else None
     try:
-        snap = _Snapshot(limits if type(limits) is dict else {}).take(ns, hidden or {})
+        snap = _Snapshot(limits, show).take(ns, hidden or {})
     except KeyboardInterrupt:
         return _json.dumps({"error": "interrupted"})
     snap["execution_count"] = execution_count if type(execution_count) is int else None
@@ -1409,11 +1597,15 @@ class Bridge:
         emit({"ev": "done", "id": exec_id, "status": status, "execution_count": count})
         return True
 
-    def inspect(self, inspect_id, limits):
+    def inspect(self, inspect_id, limits, show=None):
         """KOBE-803/816: the variables snapshot, as an inspect_request the kernel answers from
-        STATIC_SOURCE (no execute: no hooks, transformers, formatters, history or count)."""
+        STATIC_SOURCE (no execute: no hooks, transformers, formatters, history or count). `show`:
+        one variable's name, its value unmasked (the member's Show)."""
         safe = {k: int(v) for k, v in limits.items() if k in INSPECT_LIMIT_KEYS and type(v) is int and 0 < v < 10**7}
-        code = VARIABLES_MARKER + json.dumps(safe)
+        asked = {"limits": safe}
+        if type(show) is str and show.isidentifier() and len(show) <= 256:
+            asked["show"] = show
+        code = VARIABLES_MARKER + json.dumps(asked)
         msg_id = self.kc.inspect(code, len(code), detail_level=0)
         while True:
             try:
@@ -1532,7 +1724,8 @@ class Bridge:
                 return
             if command.get("op") == "inspect":
                 limits = command.get("limits")
-                if not self.inspect(str(command.get("id", "")), limits if isinstance(limits, dict) else {}):
+                limits = limits if isinstance(limits, dict) else {}
+                if not self.inspect(str(command.get("id", "")), limits, command.get("show")):
                     return
                 continue
             if command.get("op") in ("complete", "doc"):

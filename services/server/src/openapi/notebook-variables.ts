@@ -45,7 +45,10 @@ export function notebookVariablesOpenApiPaths(): Record<string, Record<string, u
           "value (capped) and summaries for common types. The value is read without running the " +
           "member's code: only for exact built-in scalars, strings, bytes and containers, ranges " +
           "and numpy/pandas objects; for anything else it is empty with `repr_error`: " +
-          "`not_read` (`raised` when reading a library object failed) " +
+          "`not_read` (`raised` when reading a library object failed). Values of credential-like " +
+          "names are withheld in the workspace (`hidden`: `name`; inside a shown dict, values " +
+          "under credential-like keys read `<hidden>` with `hidden`: `keys`) until `show` names " +
+          "that one variable, which answers it alone, not withheld " +
           "(`len`; `shape` and `dtype` for numpy arrays; `shape`, `columns` and " +
           "`columns_total` for pandas DataFrames, never their data). Modules, functions and " +
           "classes are listed by name in `other`; names starting with `_` and IPython's own " +

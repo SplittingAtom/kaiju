@@ -24,7 +24,8 @@ type Ctx = Context<{ Variables: TeamVariables }>;
  * - `POST /v1/threads/{id}/notebook/interrupt` and `.../restart`: 200 {status};
  * - `POST /v1/threads/{id}/notebook/start` (KOBE-477): 202 {status: "waking", retry_after_ms} while
  *   the sandbox wakes, then 200 {status: "idle" | "busy"} once the kernel is up (no code runs).
- * - `POST /v1/threads/{id}/notebook/variables` {refresh?} (KOBE-803): 200 a snapshot of the
+ * - `POST /v1/threads/{id}/notebook/variables` {refresh?, show?} (KOBE-803; show: KOBE-816, one
+ *   variable not withheld): 200 a snapshot of the
  *   kernel's variables (`stale` when kept from before code that ran since), or {status: "busy" |
  *   "no_kernel" | "unavailable"}; never wakes the sandbox, stores nothing.
  * - `POST /v1/threads/{id}/notebook/complete` {op: "complete", code, cursor} | {op: "doc", name}
@@ -69,10 +70,12 @@ export function threadNotebookRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
     // The body is optional ({refresh?}); a missing or empty body is no refresh.
     const body = notebookVariablesBodySchema.safeParse(await readJson(c, {}));
     if (!id.success) return invalidRequest(c, "Unknown conversation.");
-    if (!body.success) return invalidRequest(c, 'Send an empty body or {"refresh": true}.');
+    if (!body.success) {
+      return invalidRequest(c, 'Send an empty body, {"refresh": true} or {"show": "<name>"}.');
+    }
     const refresh = body.data.refresh === true;
     return answer(c, async () =>
-      c.json(await deps.runs.notebookVariables(actorOf(c), id.data, refresh)),
+      c.json(await deps.runs.notebookVariables(actorOf(c), id.data, refresh, body.data.show)),
     );
   });
 

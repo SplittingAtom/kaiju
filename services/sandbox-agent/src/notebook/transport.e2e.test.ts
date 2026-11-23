@@ -30,7 +30,7 @@ describe.skipIf(PYTHON === undefined)(
       });
       expect(res.status, res.stderr).toBe(0);
       expect(res.stdout.trim()).toBe(
-        "ok 0 1 0 0 cell_hooks_fire my_value|method|alpha=,beta=|alpha= method(alpha, beta=1) vars=3,not_read",
+        "ok 0 1 0 0 cell_hooks_fire my_value|method|alpha=,beta=|alpha= method(alpha, beta=1) vars=3,not_read,[0.0, 1.0, 2.0],name,secret_absent,shown='sk-live-123'",
       );
     });
   },

@@ -26,6 +26,7 @@ def load_bridge(path):
 
 
 def fake_numpy():
+    """A stand-in numpy: the fields the snapshot reads, in the places numpy keeps them."""
     np = types.ModuleType("numpy")
 
     class dtype:
@@ -33,29 +34,64 @@ def fake_numpy():
             self.name = name
             self.kind = "f" if name.startswith("float") else "O"
 
-        __module__ = "numpy"
-
         def __str__(self):
             return self.name
 
     class ndarray:
-        def __init__(self, shape, kind):
-            self.shape = tuple(shape)
-            self.dtype = dtype(kind)
+        def __init__(self, shape, kind, fill=0.0):
+            self._shape = tuple(shape)
+            self._dtype = dtype(kind)
+            self._fill = fill
 
-    def array2string(a, threshold, edgeitems, max_line_width):
-        return "[[0. 0. ... 0.]\n ...]"
+        shape = property(lambda self: self._shape)
+        dtype = property(lambda self: self._dtype)
+
+        def __getitem__(self, key):
+            if isinstance(key, slice):
+                n = len(range(*key.indices(self._shape[0])))
+                return ndarray((n,) + self._shape[1:], self._dtype.name, self._fill)
+            return ndarray(self._shape[1:], self._dtype.name, self._fill)
+
+        def tolist(self):
+            def build(shape):
+                return self._fill if not shape else [build(shape[1:]) for _ in range(shape[0])]
+
+            return build(self._shape)
 
     def zeros(shape):
         return ndarray(shape, "float64")
 
-    np.ndarray, np.array2string, np.zeros = ndarray, array2string, zeros
+    np.ndarray, np.zeros, np.dtype = ndarray, zeros, dtype
     ndarray.__module__ = "numpy"
     return np
 
 
-def fake_pandas():
+def fake_pandas(np):
+    """A stand-in pandas with a block manager: blocks of arrays and index axes."""
     pd = types.ModuleType("pandas")
+
+    class Index:
+        def __init__(self, labels):
+            self._data = np.ndarray((len(labels),), "object")
+            self.labels = list(labels)
+
+        def __len__(self):
+            return len(self.labels)
+
+        def __iter__(self):
+            return iter(self.labels)
+
+    class RangeIndex(Index):
+        pass
+
+    class Block:
+        def __init__(self, values):
+            self.values = values
+
+    class Manager:
+        def __init__(self, blocks, axes):
+            self.blocks = blocks
+            self.axes = axes
 
     class Dtypes:
         def __init__(self, pairs):
@@ -65,20 +101,26 @@ def fake_pandas():
             return iter(self.pairs)
 
     class DataFrame:
-        def __init__(self, data):
-            self.columns = list(data)
-            self.index = list(range(len(next(iter(data.values())))))
+        def __init__(self, data, values=None):
+            rows = len(next(iter(data.values())))
+            self.columns = Index(list(data))
+            self.index = RangeIndex(range(rows))
             self.dtypes = Dtypes(
                 [(c, "int64" if all(isinstance(v, int) for v in vs) else "object") for c, vs in data.items()]
             )
+            block_values = values if values is not None else np.ndarray((len(data), rows), "object")
+            self._mgr = Manager([Block(block_values)], [self.columns, self.index])
 
         def __repr__(self):
             raise AssertionError("a DataFrame's data is never rendered")
 
     class Series:
-        def __init__(self, values):
+        def __init__(self, values, array=None):
             self.values = list(values)
             self.dtype = "int64"
+            index = RangeIndex(range(len(self.values)))
+            data = array if array is not None else np.ndarray((len(self.values),), "float64")
+            self._mgr = Manager([Block(data)], [index])
 
         def __len__(self):
             return len(self.values)
@@ -88,7 +130,7 @@ def fake_pandas():
 
     DataFrame.__module__ = "pandas.core.frame"
     Series.__module__ = "pandas.core.series"
-    pd.DataFrame, pd.Series = DataFrame, Series
+    pd.DataFrame, pd.Series, pd.Index, pd.RangeIndex = DataFrame, Series, Index, RangeIndex
     return pd
 
 
@@ -100,7 +142,7 @@ def libraries():
     try:
         import pandas as pd  # noqa: F401
     except ImportError:
-        sys.modules["pandas"] = fake_pandas()
+        sys.modules["pandas"] = fake_pandas(sys.modules["numpy"])
     return sys.modules["numpy"], sys.modules["pandas"]
 
 
@@ -319,6 +361,70 @@ def stdlib_values():
     }
 
 
+class MemberArray:
+    """A member-written ExtensionArray: pandas would ask its dtype and length."""
+
+    @property
+    def dtype(self):
+        RAN.append("ea_dtype")
+        return "member"
+
+    def __len__(self):
+        RAN.append("ea_len")
+        return 1
+
+
+class SpoofDtype:
+    """A member class claiming to be pandas'."""
+
+    __module__ = "pandas.core.dtypes"
+
+    def __str__(self):
+        RAN.append("spoof_str")
+        return "x"
+
+
+class RecStr(str):
+    def __repr__(self):
+        RAN.append("strsub_repr")
+        return "'x'"
+
+    def replace(self, *a):
+        RAN.append("strsub_replace")
+        return str.replace(self, *a)
+
+    def __str__(self):
+        RAN.append("strsub_str")
+        return "x"
+
+
+def embedded_values():
+    import datetime
+    import pathlib
+
+    named = datetime.timezone(datetime.timedelta(hours=1), RecStr("CET"))
+    path = pathlib.PurePosixPath("/x")
+    str(path)  # fills the cached slot
+    for klass in type(path).__mro__:
+        if "_str" in klass.__dict__:
+            klass.__dict__["_str"].__set__(path, RecStr("/x"))
+            break
+    values = {
+        "tz_named": named,
+        "when_named": datetime.datetime(2026, 1, 1, tzinfo=named),
+        "path_str": path,
+    }
+    try:
+        import zoneinfo
+
+        with open("/usr/share/zoneinfo/UTC", "rb") as f:
+            zone = zoneinfo.ZoneInfo.from_file(f, key=Recorder())
+        values["when_zone_odd"] = datetime.datetime(2026, 1, 1, tzinfo=zone)
+    except Exception:
+        pass
+    return values
+
+
 def scenario(name):
     np, pd = libraries()
     if name == "basic":
@@ -362,6 +468,22 @@ def scenario(name):
             "frame_of_objects": pd.DataFrame({"a": [1]}),
             "ok": 1,
         }, {}
+    if name == "secrets":
+        return {
+            "API_KEY": "sk-live-123",
+            "my_password": "hunter2",
+            "env": {"PATH": "/usr/bin", "AWS_SECRET_ACCESS_KEY": "abc", "nested": {"token": "t"}},
+            "plain": {"a": 1},
+            "count": 3,
+        }, {}
+    if name == "embedded":
+        return embedded_values(), {}
+    if name == "member_arrays":
+        return {
+            "ser_ea": pd.Series([1], array=MemberArray()),
+            "df_ea": pd.DataFrame({"a": [1]}, values=MemberArray()),
+            "spoof_in_list": [SpoofDtype()],
+        }, {}
     if name == "stdlib":
         return stdlib_values(), {}
     if name == "huge":
@@ -385,6 +507,7 @@ def scenario(name):
 def main():
     bridge = load_bridge(sys.argv[1])
     ns, hidden = scenario(sys.argv[2])
+    show = sys.argv[3] if len(sys.argv) > 3 else None
     limits = {"max_vars": 200, "max_bytes": 65536, "repr_chars": 200, "per_var_ms": 200, "budget_ms": 2000}
     if sys.argv[2] == "budget":
         limits["budget_ms"] = 0
@@ -393,7 +516,7 @@ def main():
     RAN.clear()  # building the namespace (dict keys) may have hashed; only the snapshot counts
     safe = {k: v for k, v in limits.items() if k in bridge.INSPECT_LIMIT_KEYS}
     started = time.monotonic()
-    text = g["variables"](safe, ns, hidden, 7)
+    text = g["variables"](safe, ns, hidden, 7, show)
     elapsed = time.monotonic() - started
     snap = json.loads(text)
     snap["elapsed_ms"] = int(elapsed * 1000)

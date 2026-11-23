@@ -80,6 +80,7 @@ export interface ServerRunOrchestrator extends RunOrchestrator {
     actor: ActorContext,
     threadId: string,
     refresh?: boolean,
+    show?: string,
   ): Promise<NotebookVariablesResult>;
   /**
    * The code editor's kernel completion or a name's documentation (KOBE-808): never wakes the

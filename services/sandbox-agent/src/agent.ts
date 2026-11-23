@@ -581,7 +581,15 @@ export class Agent {
     if (frame.type === "notebook.interrupt") return kernels.interrupt(frame.thread_id);
     // KOBE-808: the editor's kernel completion or a name's documentation; never starts a kernel.
     if (frame.type === "notebook.inspect" && "op" in frame) return kernels.complete(frame);
-    // KOBE-803: a silent variables snapshot; never starts a kernel.
+    // KOBE-816: Show: one variable, its value not withheld; never starts a kernel.
+    if (frame.type === "notebook.inspect" && frame.show !== undefined) {
+      return kernels.show(
+        frame.thread_id,
+        frame.show,
+        frame.timeout_ms ?? NOTEBOOK_INSPECT_TIMEOUT_MS,
+      );
+    }
+    // KOBE-803: a variables snapshot; never starts a kernel.
     if (frame.type === "notebook.inspect") {
       return kernels.inspect(
         frame.thread_id,

@@ -21,6 +21,11 @@ export interface Variable {
   readonly dtype?: string | undefined;
   readonly columns?: readonly { readonly name: string; readonly dtype: string }[] | undefined;
   readonly columnsTotal?: number | undefined;
+  /**
+   * KOBE-816: withheld in the sandbox: `name` (a credential-like name, no value sent) or `keys`
+   * (values under credential-like keys of a shown dict read `<hidden>`); Show asks for it.
+   */
+  readonly hidden?: string | undefined;
 }
 
 export interface OtherName {

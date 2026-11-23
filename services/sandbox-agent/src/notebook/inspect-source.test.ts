@@ -31,8 +31,8 @@ interface Snap {
   readonly user_names_after: string[];
 }
 
-function snap(scenario: string): Snap {
-  const res = spawnSync("python3", ["-I", HARNESS, BRIDGE, scenario], {
+function snap(scenario: string, show?: string): Snap {
+  const res = spawnSync("python3", ["-I", HARNESS, BRIDGE, scenario, ...(show ? [show] : [])], {
     encoding: "utf8",
     timeout: 60_000,
   });
@@ -132,6 +132,48 @@ describe.skipIf(!hasPython)("kernel variables snapshot (KOBE-803)", () => {
     }
   });
 
+  it("credential-like names and dict keys are withheld in the kernel; Show reads that one variable", () => {
+    const s = snap("secrets") as Snap & { ran: string[] };
+    const v = byName(s);
+    expect(v.get("API_KEY")).toEqual({ name: "API_KEY", type: "str", repr: "", hidden: "name" });
+    expect(v.get("my_password")).toEqual({
+      name: "my_password",
+      type: "str",
+      repr: "",
+      hidden: "name",
+    });
+    expect(JSON.stringify(s)).not.toContain("sk-live");
+    expect(JSON.stringify(s)).not.toContain("hunter2");
+    expect(v.get("env")).toMatchObject({
+      hidden: "keys",
+      repr: "{'PATH': '/usr/bin', 'AWS_SECRET_ACCESS_KEY': <hidden>, 'nested': {'token': <hidden>}}",
+    });
+    expect(v.get("plain")).not.toHaveProperty("hidden");
+    // Show: only that variable, not withheld.
+    const shown = snap("secrets", "API_KEY");
+    expect(shown.variables).toEqual([
+      { name: "API_KEY", type: "str", len: 11, repr: "'sk-live-123'" },
+    ]);
+    expect(snap("secrets", "env").variables[0]?.repr).toContain("'AWS_SECRET_ACCESS_KEY': 'abc'");
+    expect(snap("secrets", "missing").variables).toEqual([]);
+  });
+
+  it("standard-library values holding a member object stay type-only, zero calls", () => {
+    const s = snap("embedded") as Snap & { ran: string[] };
+    expect(s.ran).toEqual([]);
+    for (const item of s.variables) expect(item.repr_error, item.name as string).toBe("not_read");
+  });
+
+  it("pandas objects backed by a member's array, and spoofed dtypes, run nothing", () => {
+    const s = snap("member_arrays") as Snap & { ran: string[] };
+    expect(s.ran).toEqual([]);
+    const v = byName(s);
+    expect(v.get("ser_ea")).toMatchObject({ repr: "", repr_error: "not_read" });
+    expect(v.get("ser_ea")).not.toHaveProperty("len");
+    expect(v.get("df_ea")).toMatchObject({ repr: "", repr_error: "not_read" });
+    expect(v.get("spoof_in_list")?.repr).toBe("[<SpoofDtype>]");
+  });
+
   it("huge values are bounded: a few items, capped text, a summarised int", () => {
     const s = snap("huge");
     const v = byName(s);
@@ -149,7 +191,13 @@ describe.skipIf(!hasPython)("kernel variables snapshot (KOBE-803)", () => {
 
   it("summarizes numpy arrays and pandas frames and series without their data", () => {
     const v = byName(snap("data"));
-    expect(v.get("arr")).toMatchObject({ module: "numpy", shape: [3, 4], dtype: "float64" });
+    // The preview is built from tolist() of small slices: numpy's print options never apply.
+    expect(v.get("arr")).toMatchObject({
+      module: "numpy",
+      shape: [3, 4],
+      dtype: "float64",
+      repr: "[[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]",
+    });
     expect(v.get("df")).toMatchObject({
       module: "pandas",
       shape: [3, 2],

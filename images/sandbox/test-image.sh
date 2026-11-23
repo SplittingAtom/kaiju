@@ -400,7 +400,7 @@ check "kernel completion and docs run no member code and leave no trace (KOBE-80
 # execution hooks, input transformers, `str` formatter, warnings hook, autoreload or `__repr__` run,
 # and the execution count, history and Out stay put.
 check "kernel completion, docs and variables fire none of the execution machinery (KOBE-808, KOBE-816)" \
-  '^ok 0 1 0 0 cell_hooks_fire my_value\|method\|alpha=,beta=\|alpha= method\(alpha, beta=1\) vars=3,not_read$' \
+  '^ok 0 1 0 0 cell_hooks_fire my_value\|method\|alpha=,beta=\|alpha= method\(alpha, beta=1\) vars=3,not_read,\[0\.0, 1\.0, 2\.0\],name,secret_absent,shown='"'"'sk-live-123'"'"'$' \
   run_ws python3 -c "$(cat "$(dirname "$0")/kernel-transport-probe.py")" \
   /usr/local/bin/python3 /opt/kobe/kernel/kobe-kernel-bridge.py
 run_ws_line() { run_ws "$@" | tr '\n' ' ' | sed 's/ $//'; }
