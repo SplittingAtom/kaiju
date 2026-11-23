@@ -48,8 +48,12 @@ export const notebookTimingSchema = z.strictObject({
 export type NotebookTiming = z.infer<typeof notebookTimingSchema>;
 
 /**
- * One user variable. `repr` is a short, capped repr (empty when it failed: `repr_error` says
- * why). Summaries only for common types, never the data: `len` for built-in containers, strings
+ * One user variable. `repr` is a short, capped text of the value (empty when there is none:
+ * `repr_error` says why). KOBE-816: it is read without running the member's code, so only for
+ * exact built-in scalars, strings, bytes and containers (a subclass of a built-in container
+ * through the built-in's own methods), ranges and numpy/pandas objects; for anything else
+ * (`not_read`) only the type is given, never its `repr`. Summaries only for common types, never
+ * the data: `len` for built-in containers, strings
  * and bytes; `shape` and `dtype` for numpy arrays; `shape` (`[rows, columns]`), `columns` (first
  * {@link NOTEBOOK_COLUMNS_MAX} names and dtypes) and `columns_total` for a pandas DataFrame;
  * `shape`, `dtype` and `len` for a pandas Series.
@@ -61,8 +65,12 @@ export const notebookVariableSchema = z.strictObject({
   /** The type's top-level package (`numpy`, `pandas`, `__main__`); absent for built-ins. */
   module: short(128).optional(),
   repr: short(NOTEBOOK_REPR_MAX_CHARS),
-  /** The repr (or summary) raised, or took longer than {@link NOTEBOOK_REPR_TIMEOUT_MS}. */
-  repr_error: z.enum(["raised", "timeout"]).optional(),
+  /**
+   * `not_read` (KOBE-816): a type whose value would need the member's code to show (its own
+   * class, a subclass, another library's object); `raised`: reading a library object failed;
+   * `timeout`: from agents before KOBE-816 (a member's repr took too long).
+   */
+  repr_error: z.enum(["raised", "timeout", "not_read"]).optional(),
   len: z.number().int().nonnegative().optional(),
   shape: z.array(z.number().int().nonnegative()).max(64).optional(),
   dtype: short(128).optional(),

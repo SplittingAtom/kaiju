@@ -88,6 +88,10 @@ describe("variables snapshot contract (KOBE-803)", () => {
     expect(notebookVariableSchema.safeParse({ ...v, repr: `${v.repr}x` }).success).toBe(false);
     expect(notebookVariableSchema.safeParse({ ...v, repr: "a\u0000" }).success).toBe(false);
     expect(notebookVariableSchema.safeParse({ ...v, repr_error: "hung" }).success).toBe(false);
+    // KOBE-816: a value not read (it would need the member's code) says so.
+    expect(
+      notebookVariableSchema.safeParse({ ...v, repr: "", repr_error: "not_read" }).success,
+    ).toBe(true);
     const col = { name: "c", dtype: "int64" };
     expect(
       notebookVariableSchema.safeParse({
