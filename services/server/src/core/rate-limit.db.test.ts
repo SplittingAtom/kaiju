@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { claimResetLinkSend, releaseResetLinkClaim } from "./auth/reset-links.js";
-import { hitRateLimit, pruneExpiredRateLimits } from "./rate-limit.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { claimResetLinkSend, releaseResetLinkClaim } from "../auth/reset-links.js";
+import { hitRateLimit, pruneExpiredRateLimits } from "../rate-limit.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 // KOBE-809: Better Auth prunes its own `rate_limits` table of every row older than its longest
 // window (60 s), whatever the key, whenever one of its keys starts a new window. Kobe's longer

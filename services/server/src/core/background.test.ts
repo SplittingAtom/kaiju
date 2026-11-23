@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { BackgroundTasks } from "./background.js";
-import { logger } from "./logger.js";
+import { BackgroundTasks } from "../background.js";
+import { logger } from "../logger.js";
 
 /** A promise and the function that resolves it. */
 function deferred(): { promise: Promise<void>; resolve: () => void } {

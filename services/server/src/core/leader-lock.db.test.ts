@@ -1,8 +1,8 @@
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { SessionLeaderLock } from "./models/leader-lock.js";
-import type { ListenSession } from "./pg-listen.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { SessionLeaderLock } from "../models/leader-lock.js";
+import type { ListenSession } from "../pg-listen.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 // KOBE-704 review: a replica whose LISTEN connection went half-open keeps the leader lock on its
 // old backend; on its new connection it ends that backend (same role) and leads again.

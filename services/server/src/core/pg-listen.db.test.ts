@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { sql } from "@kobe/db";
-import { EgressBlockedRelay } from "./egress/blocked-relay.js";
-import { SkillEvalHub } from "./skills/evals/events.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { EgressBlockedRelay } from "../egress/blocked-relay.js";
+import { SkillEvalHub } from "../skills/evals/events.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 // KOBE-704 / STO-5: every listener of a server process shares one LISTEN connection.
 

@@ -7,11 +7,11 @@ import {
   admitWakeStart,
   wakeStartOver,
   type OperationLimit,
-} from "./operation-limits.js";
-import { CONTEXT_WAKE_RETRY_MS } from "./routes/thread-context.js";
-import { SchedulerRunner } from "./scheduler/runner.js";
-import { clearLimit, expectRateLimited, fillLimit } from "./testing/operation-limits.js";
-import { RunFixture, type RunWorld } from "./testing/run-fixture.js";
+} from "../operation-limits.js";
+import { CONTEXT_WAKE_RETRY_MS } from "../routes/thread-context.js";
+import { SchedulerRunner } from "../scheduler/runner.js";
+import { clearLimit, expectRateLimited, fillLimit } from "../testing/operation-limits.js";
+import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
 
 /**
  * KOBE-813: limits on operations that had none. Each limit lets `max` hits through in its window,

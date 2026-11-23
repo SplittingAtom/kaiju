@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadConfig } from "./config.js";
+import { loadConfig } from "../config.js";
 
 const REQUIRED = {
   KOBE_DATABASE_URL: "postgres://kobe_app:pw@db:5432/kobe",

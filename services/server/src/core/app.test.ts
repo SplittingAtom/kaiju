@@ -1,7 +1,7 @@
 import { InMemorySpanExporter, initTelemetry } from "@kobe/telemetry";
 import { describe, expect, it } from "vitest";
-import { createApp } from "./app.js";
-import { createSandboxApp, type SandboxRoutesDeps } from "./routes/sandbox.js";
+import { createApp } from "../app.js";
+import { createSandboxApp, type SandboxRoutesDeps } from "../routes/sandbox.js";
 
 describe("server health endpoints", () => {
   const app = createApp();

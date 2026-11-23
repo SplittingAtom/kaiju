@@ -1,8 +1,8 @@
 import { Writable } from "node:stream";
 import { pino } from "pino";
 import { describe, expect, it } from "vitest";
-import { serializeError } from "./log-safety.js";
-import { LOGGER_OPTIONS } from "./logger.js";
+import { serializeError } from "../log-safety.js";
+import { LOGGER_OPTIONS } from "../logger.js";
 
 /** A stand-in with drizzle's DrizzleQueryError shape (message embeds the query and params). */
 class DrizzleQueryError extends Error {

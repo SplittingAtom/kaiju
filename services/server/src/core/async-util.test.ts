@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireAndLog } from "./async-util.js";
+import { fireAndLog } from "../async-util.js";
 
 const flush = () => new Promise((r) => setImmediate(r));
 

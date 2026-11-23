@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { OPERATION_LIMITS, UNKNOWN_CLIENT } from "./operation-limits.js";
-import { openHarness, type Harness } from "./testing/harness.js";
-import { clearLimit, expectRateLimited, fillLimit } from "./testing/operation-limits.js";
+import { OPERATION_LIMITS, UNKNOWN_CLIENT } from "../operation-limits.js";
+import { openHarness, type Harness } from "../testing/harness.js";
+import { clearLimit, expectRateLimited, fillLimit } from "../testing/operation-limits.js";
 
 /**
  * KOBE-813 (ac-5): before setup is finished, the setup token can't be guessed at unlimited speed.

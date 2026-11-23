@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
-import { hstsValue, securityHeaders } from "./security-headers.js";
+import { hstsValue, securityHeaders } from "../security-headers.js";
 
 /** KOBE-695: HSTS on https installs, and nosniff + X-Frame-Options DENY unless a route frames. */
 function app(publicUrl: string | undefined, includeSubDomains = false): Hono {

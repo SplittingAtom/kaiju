@@ -6,7 +6,7 @@ import {
   type ListenClientOptions,
   type ListenConnection,
   type ListenSession,
-} from "./pg-listen.js";
+} from "../pg-listen.js";
 
 /**
  * A fake pg.Client: records queries, answers them per the test's `behaviour`, echoes the
