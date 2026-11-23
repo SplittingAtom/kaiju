@@ -67,10 +67,15 @@ export interface GitConnectionDeps {
   readonly tokenCache?: InstallationTokenCache;
 }
 
-/** Read on use, not when the routes are built (building the app touches no secrets or networks). */
+/**
+ * Read lazily: building the router touches no deps, so an app that serves other routes (thread
+ * reads from Postgres alone, `threads.db.test.ts`) never reaches the envelope or the host client.
+ */
 export function gitConnectionDeps(deps: ServerDeps): GitConnectionDeps {
   return {
-    db: deps.database.db,
+    get db() {
+      return deps.database.db;
+    },
     get envelope() {
       return deps.envelope;
     },
