@@ -1,13 +1,13 @@
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { createApp } from "./app.js";
-import { createServerDeps, type ServerDeps } from "./deps.js";
-import { waitForAppSessionsToClose } from "./testing/app-sessions.js";
-import { MemoryMailer } from "./testing/mailer.js";
-import { SoftwareAuthenticator } from "./testing/webauthn.js";
-import { totpFromUri } from "./testing/totp.js";
-import { fakeIsolation } from "./testing/isolation.js";
+import { createApp } from "../app.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { waitForAppSessionsToClose } from "../testing/app-sessions.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { SoftwareAuthenticator } from "../testing/webauthn.js";
+import { totpFromUri } from "../testing/totp.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 const PUBLIC_URL = "http://kobe.test";
 const SETUP_TOKEN = "setup-token-for-tests-0123456789";

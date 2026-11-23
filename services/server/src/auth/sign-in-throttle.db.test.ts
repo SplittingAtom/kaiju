@@ -1,15 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { createClientIpWatch } from "./auth/client-ip-watch.js";
+import { createClientIpWatch } from "./client-ip-watch.js";
 import {
   createSignInThrottle,
   SIGN_IN_THROTTLE,
   signInAccountKey,
   THROTTLED_MESSAGE,
-} from "./auth/sign-in-throttle.js";
-import { openHarness, PASSWORD, PUBLIC_URL, type Harness } from "./testing/harness.js";
-import type { TestBrowser, TestResponse } from "./testing/browser.js";
-import { totpFromUri } from "./testing/totp.js";
-import { SoftwareAuthenticator } from "./testing/webauthn.js";
+} from "./sign-in-throttle.js";
+import { openHarness, PASSWORD, PUBLIC_URL, type Harness } from "../testing/harness.js";
+import type { TestBrowser, TestResponse } from "../testing/browser.js";
+import { totpFromUri } from "../testing/totp.js";
+import { SoftwareAuthenticator } from "../testing/webauthn.js";
 
 /**
  * KOBE-812: failed password and second-factor attempts are counted per account across every
