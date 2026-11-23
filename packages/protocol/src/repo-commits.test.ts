@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isExcludedPath,
   CAPABILITY_REPO_COMMITS,
   PROJECT_COMMIT_ERROR_CODES,
   commitProjectResponseSchema,
@@ -77,7 +78,10 @@ describe("Repo working copy on the wire (KOBE-767)", () => {
   };
 
   it("carries the Repo in run.start.git, and an older agent's schema strips it", () => {
-    expect(REPO_WORKING_COPY_DIR).toBe("repos");
+    expect(REPO_WORKING_COPY_DIR).toBe(".kobe/repos");
+    // Review N2: inside the reserved area the sync and the server leave alone.
+    expect(isExcludedPath(`${REPO_WORKING_COPY_DIR}/app/README.md`)).toBe(true);
+    expect(isExcludedPath("repos/app/README.md")).toBe(false);
     const parsed = runGitContextSchema.parse({ ...base, repo });
     expect(parsed.repo?.clone_url).toBe(repo.clone_url);
     expect(

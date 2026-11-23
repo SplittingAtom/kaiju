@@ -29,7 +29,7 @@ export async function commitProject(
   repo: RepoCommitWiring | undefined,
   req: RepoCommitRequest,
 ): Promise<CommitResult> {
-  const { via: _via, ...plain } = req;
+  const { via: _via, approvedAs: _approvedAs, ...plain } = req;
   if (repo !== undefined) {
     const block = await withTeam(commit.db, req.owner.teamId, (tx) =>
       projectWriteBlock(tx, req.owner.teamId, req.projectId),

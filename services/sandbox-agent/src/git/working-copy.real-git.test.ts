@@ -14,7 +14,7 @@ import { workingCopyStatus } from "./working-copy.js";
 
 /**
  * KOBE-767 ac-3 with the real `git`: the agent's working-copy script, run as the tools run (the
- * egress BASH_ENV script, the thread's git config), makes `/workspace/repos/<slug>` a git working
+ * egress BASH_ENV script, the thread's git config), makes `/workspace/.kobe/repos/<slug>` a git working
  * copy of the Repo through a fake egress proxy serving `git http-backend`, and reports branch,
  * ahead/behind and changes.
  */
@@ -184,17 +184,20 @@ describe.skipIf(backend === undefined || !existsSync(TIMEOUT_BIN))(
       expect(s).toMatchObject({ branch: "main", upstream: "origin/main", ahead: 0, behind: 0 });
       expect(s).toMatchObject({ dirty: false, fetched: true });
       expect(s.head_sha).toBe(git(seed, "rev-parse", "HEAD"));
-      expect(readFileSync(path.join(workspace, "repos", "app", "README.md"), "utf8")).toBe(
+      expect(readFileSync(path.join(workspace, ".kobe", "repos", "app", "README.md"), "utf8")).toBe(
         "hello\n",
       );
       // The clone names the plain https URL; no token in its config.
-      const config = readFileSync(path.join(workspace, "repos", "app", ".git", "config"), "utf8");
+      const config = readFileSync(
+        path.join(workspace, ".kobe", "repos", "app", ".git", "config"),
+        "utf8",
+      );
       expect(config).toContain("https://github.com/acme/app.git");
       expect(config).not.toContain(TOKEN);
     });
 
     it("counts a local commit ahead and a host commit behind", async () => {
-      const dir = path.join(workspace, "repos", "app");
+      const dir = path.join(workspace, ".kobe", "repos", "app");
       writeFileSync(path.join(dir, "local.txt"), "mine\n");
       git(dir, "add", ".");
       git(dir, "commit", "-q", "-m", "local");
@@ -215,7 +218,7 @@ describe.skipIf(backend === undefined || !existsSync(TIMEOUT_BIN))(
     });
 
     it("turns a folder of files without .git into a working copy, keeping them as changes", async () => {
-      const dir = path.join(workspace, "repos", "restored");
+      const dir = path.join(workspace, ".kobe", "repos", "restored");
       mkdirSync(dir, { recursive: true });
       writeFileSync(path.join(dir, "README.md"), "hello, edited\n");
       const s = await status(repo("restored", "app"));
@@ -226,7 +229,7 @@ describe.skipIf(backend === undefined || !existsSync(TIMEOUT_BIN))(
     });
 
     it("points a working copy whose origin is not the Repo back at it (review L4)", async () => {
-      const dir = path.join(workspace, "repos", "app");
+      const dir = path.join(workspace, ".kobe", "repos", "app");
       git(dir, "remote", "set-url", "origin", "https://github.com/acme/other.git");
       const s = await status(repo("app"));
       expect(s.fetched).toBe(true);
@@ -238,7 +241,7 @@ describe.skipIf(backend === undefined || !existsSync(TIMEOUT_BIN))(
     it("tolerates an empty repository on the host", async () => {
       const s = await status(repo("empty"));
       expect(s).toMatchObject({ branch: "main", head_sha: null, ahead: 0, behind: 0 });
-      expect(existsSync(path.join(workspace, "repos", "empty", ".git"))).toBe(true);
+      expect(existsSync(path.join(workspace, ".kobe", "repos", "empty", ".git"))).toBe(true);
     });
 
     it("reports a failed fetch without failing", async () => {

@@ -611,12 +611,24 @@ describe("review fixes (H1, M1, M3, L2, L9)", () => {
       message: "By an agent",
       author: { userId: w.owner.id, kind: "agent", threadId, runId },
       via: { kind: "agent", threadId, runId, toolCallId: "call-1" },
+      approvedAs: "commit_repo",
     });
     expect(res).toMatchObject({ status: "refused", error: "repo_unavailable" });
     expect(res.status === "refused" && res.detail).toMatch(/limited to chosen agents/);
+    // Review R2-L1: an agent's commit approved for Kobe's own copy never pushes to the host.
+    const asKobe = await commitToRepo(repoDeps(), {
+      owner: { teamId: w.team, userId: w.owner.id },
+      projectId: r.id,
+      message: "By an agent",
+      author: { userId: w.owner.id, kind: "agent", threadId, runId },
+      via: { kind: "agent", threadId, runId, toolCallId: "call-2" },
+      approvedAs: "commit_project",
+    });
+    expect(asKobe).toMatchObject({ status: "refused", error: "repo_unavailable" });
+    expect(asKobe.status === "refused" && asKobe.detail).toMatch(/approved for Kobe's own copy/);
   });
 
-  it("answers 429 with Retry-After past the limit, counting only commits that go out (L2)", async () => {
+  it("answers 429 with Retry-After past the limit before any host call (L2, N1)", async () => {
     const w = await world();
     const r = await repo(w);
     for (let i = 0; i < GIT_REPO_COMMIT_RATE.max; i += 1) {
@@ -627,8 +639,13 @@ describe("review fixes (H1, M1, M3, L2, L9)", () => {
     expect((await save(b, `${r.dir}/README.md`, sha(Buffer.from("# Hi\n")), "# L2\n")).status).toBe(
       200,
     );
+    // Review N1: an over-limit member makes no host request at all.
+    const apiBefore = forgejo.apiHits().length;
+    const wireBefore = git.requests.length;
     const res = await commit(b, r.id, "Too many");
     expect(res.status).toBe(429);
+    expect(forgejo.apiHits().length).toBe(apiBefore);
+    expect(git.requests.length).toBe(wireBefore);
     expect(res.json).toMatchObject({ code: "rate_limited" });
     expect(Number(res.headers.get("retry-after"))).toBeGreaterThan(0);
   });

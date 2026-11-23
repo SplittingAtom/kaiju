@@ -9,7 +9,7 @@ import {
 
 /**
  * The conversation's Repo as a real git working copy (KOBE-767, spec workspace-git G18, G19). When
- * `run.start.git.repo` names one, the agent makes sure `/workspace/repos/<slug>` is a git working
+ * `run.start.git.repo` names one, the agent makes sure `/workspace/.kobe/repos/<slug>` is a git working
  * copy of it before the prompt, and reports its branch, ahead/behind and whether it has changes to
  * the server (`repo.status`) then and again when the run ends.
  *
@@ -19,9 +19,11 @@ import {
  * egress proxy exactly as the agent's own `git clone` would, and git never runs as the agent's uid
  * over a repository the tools control (its config, hooks or fsmonitor would execute as the agent).
  *
- * The whole working copy is sandbox-local (review M4): the workspace sync neither pushes nor
- * deletes anything under `repos/` ({@link isRepoGitPath}), so a Repo's files never become a copy in
- * the member's own storage, outside the project's read rule, quota, retention and legal hold. It is
+ * The working copy lives under the workspace's reserved `.kobe/` area (`REPO_WORKING_COPY_DIR`,
+ * review M4 and N2): the sync never pushes, pulls, restores or deletes anything there and the
+ * server never stores such a path, so a Repo's files never become a copy in the member's own
+ * storage (outside the project's read rule, quota, retention and legal hold), and nothing of the
+ * member's own files (a My files folder named `repos/` included) can land in it. It is
  * re-clonable: a sandbox volume that was lost comes back without it and the script clones again;
  * uncommitted and unpushed work there lives only on the sandbox's volume (the guide and the run
  * context say so). A folder that exists without `.git` (files the agent wrote there before the
@@ -38,11 +40,6 @@ export const REPO_STATUS_TIMEOUT_MS = 30_000;
 export const REPO_SCRIPT_MAX_OUTPUT = 4096;
 const COUNT_MAX = 10_000;
 const MARK = "KOBE-REPO-STATUS";
-
-/** `repos/` or anything below it: Repo working copies, sandbox-local, never synced (review M4). */
-export function isRepoGitPath(rel: string): boolean {
-  return rel === REPO_WORKING_COPY_DIR || rel.startsWith(`${REPO_WORKING_COPY_DIR}/`);
-}
 
 /**
  * Arguments: <dir> <clone url> <default branch> <fetch: 1|0>. Every git call's own output goes to
@@ -111,7 +108,7 @@ fi
 printf '${MARK}\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$b" "$h" "$up" "$ahead" "$behind" "$dirty" "$fetched" "$problem"
 `;
 
-/** The working copy's folder for a Repo (`<workspace>/repos/<slug>`). */
+/** The working copy's folder for a Repo (`<workspace>/.kobe/repos/<slug>`). */
 export function workingCopyDir(workspaceDir: string, repo: Pick<RunGitRepo, "slug">): string {
   return path.join(workspaceDir, REPO_WORKING_COPY_DIR, repo.slug);
 }

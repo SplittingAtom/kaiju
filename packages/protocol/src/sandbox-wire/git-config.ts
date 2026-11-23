@@ -62,8 +62,13 @@ const organization = z
 export const runGitRemoteSchema = z.object({ base_url: baseUrl, organization });
 export type RunGitRemote = z.infer<typeof runGitRemoteSchema>;
 
-/** `repos/<slug>`: where a conversation's Repo is checked out as a git working copy (KOBE-767). */
-export const REPO_WORKING_COPY_DIR = "repos";
+/**
+ * `.kobe/repos/<slug>`: where a conversation's Repo is checked out as a git working copy (KOBE-767).
+ * Under the workspace's reserved `.kobe/` area (`WORKSPACE_EXCLUDED_PREFIXES`), which the sync never
+ * pushes, pulls or restores and the server never stores, so it can never collide with a member's
+ * own files (review N2): a My files folder named `repos/` stays an ordinary synced folder.
+ */
+export const REPO_WORKING_COPY_DIR = ".kobe/repos";
 const slug = z
   .string()
   .max(PROJECT_SLUG_MAX)
@@ -79,7 +84,7 @@ const commitSha = z.string().regex(/^([0-9a-f]{40}|[0-9a-f]{64})$/);
 
 /**
  * The conversation's Repo (KOBE-767, spec workspace-git G18, G19): the agent keeps a real git
- * working copy of it at `/workspace/repos/<slug>`, cloned through the egress proxy like any
+ * working copy of it at `/workspace/.kobe/repos/<slug>`, cloned through the egress proxy like any
  * repository of a connected organization (G11; the clone URL is the host's ordinary https URL,
  * which the tools' git config routes to the proxy). Sent only when the thread is in a Repo whose
  * connection is among `remotes` and the member may converse in the project. `access`: whether the

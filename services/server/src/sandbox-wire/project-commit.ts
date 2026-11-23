@@ -181,22 +181,27 @@ async function repoTarget(
   const { teamId } = c.target;
   return withTeam(c.deps.commit.db, teamId, async (tx) => {
     const res = await tx.execute<{
-      base_url: string;
-      full_name: string;
-      default_branch: string;
+      base_url: string | null;
+      full_name: string | null;
+      default_branch: string | null;
       direct_commits: boolean | null;
     }>(sql`
       SELECT g.base_url, g.full_name, g.default_branch, k.direct_commits
         FROM projects p
-        JOIN git_repositories g ON g.team_id = p.team_id AND g.project_id = p.id
+        LEFT JOIN git_repositories g ON g.team_id = p.team_id AND g.project_id = p.id
         LEFT JOIN git_connections k ON k.team_id = g.team_id AND k.id = g.connection_id
        WHERE p.team_id = ${teamId} AND p.id = ${projectId} AND p.kind = 'repo'`);
     const r = res.rows[0];
     if (!r) return undefined;
+    // Review R2-L2: a Repo is decided by the project's kind alone; a missing record still asks.
+    if (r.base_url === null || r.full_name === null) {
+      return "the Repo's git host (its repository record is missing)";
+    }
     const host = r.base_url.replace(/^https:\/\//, "");
+    const branch = r.default_branch ?? "the default branch";
     return r.direct_commits === true
-      ? `${host}/${r.full_name}: straight to ${r.default_branch} (a pull request if the host protects it)`
-      : `${host}/${r.full_name}: a branch with a pull request into ${r.default_branch}`;
+      ? `${host}/${r.full_name}: straight to ${branch} (a pull request if the host protects it)`
+      : `${host}/${r.full_name}: a branch with a pull request into ${branch}`;
   });
 }
 
@@ -452,6 +457,7 @@ async function run(
         runId: frame.run_id,
         toolCallId: frame.tool_call_id,
       },
+      approvedAs: tool === REPO_COMMIT_TOOL ? "commit_repo" : "commit_project",
     });
   // M2: a rule never lets a commit reach an external git host without a person's approval.
   if (!subject.ask) {

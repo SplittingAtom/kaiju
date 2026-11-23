@@ -8,6 +8,7 @@ import {
   withTeam,
   type Envelope,
   type GitConnectionRecord,
+  type KobeDb,
 } from "@kobe/db";
 import type { AuditVia } from "@kobe/db";
 import { recordAudit } from "../../audit/record.js";
@@ -99,10 +100,23 @@ export interface RepoCommitDeps {
 export interface RepoCommitRequest extends Omit<CommitRequest, "repoMirror"> {
   /** An agent's commit: the conversation (named in the pull request) and the audit's `viaAgent`. */
   readonly via?: AuditVia;
+  /**
+   * An agent's commit: the subject its approval (or rule) was for. A push to a git host needs
+   * `commit_repo` (review R2-L1: a project that became a Repo after the call was decided is
+   * refused rather than pushed under a `commit_project` approval).
+   */
+  readonly approvedAs?: "commit_project" | "commit_repo";
 }
 
 /** Commits to Repos per member per hour (`git-repo-commits:<user>`; shared limiter). */
 export const GIT_REPO_COMMIT_RATE: RateLimitRule = { windowMs: 60 * 60_000, max: 60 };
+/**
+ * Attempts that may reach the host per member per hour (`git-repo-commit-attempts:<user>`, review
+ * N1): taken before the first host call, so no member can turn refused or repeated attempts into
+ * unbounded traffic on the Workspace's shared credential. Larger than the commit limit, because
+ * attempts that end without a push (nothing new, a conflict) count here only.
+ */
+export const GIT_REPO_COMMIT_ATTEMPT_RATE: RateLimitRule = { windowMs: 60 * 60_000, max: 300 };
 /** One push's request cap: the changed files of one commit (Kobe's file cap is 50 MiB each). */
 export const GIT_REPO_COMMIT_MAX_REQUEST_BYTES = 2 * 1024 * 1024 * 1024;
 /** One commit's deadline for all its exchanges with the host. */
@@ -180,7 +194,16 @@ async function run(deps: RepoCommitDeps, req: RepoCommitRequest): Promise<Commit
   if ("result" in prepared) return prepared.result;
   const { plan, facts, base } = prepared;
   if (!facts) return refused("repo_unavailable", "This Repo has no repository record.");
+  if (req.via !== undefined && req.approvedAs !== "commit_repo") {
+    return refused(
+      "repo_unavailable",
+      "This commit was approved for Kobe's own copy, and the project is a Repo now: commit again so the push to the git host can be approved.",
+    );
+  }
   const connection = rightsOf(facts, req);
+  // Review N1: the limits before any host call or credential mint.
+  const limited = await limitsBeforeHost(db, userId);
+  if (limited) return limited;
   await deps.afterPlan?.();
   const adapter = await adapterOf(deps, teamId, facts, connection);
   const repo = await recorded(adapter, facts, connection);
@@ -215,6 +238,50 @@ async function run(deps: RepoCommitDeps, req: RepoCommitRequest): Promise<Commit
   } finally {
     await rm(gitdir, { recursive: true, force: true }).catch(() => undefined);
   }
+}
+
+const rateLimited = (retryAfterSeconds: number): Refused => ({
+  status: "refused",
+  error: "rate_limited",
+  detail: `Too many commits to Repos. Try again in ${retryAfterSeconds} seconds.`,
+  retryAfterSeconds,
+});
+
+class PeekDone extends Error {}
+
+/** The limiter's verdict for one more hit, without taking it (the hit rolls back). */
+async function peekRateLimit(
+  db: KobeDb,
+  key: string,
+  rule: RateLimitRule,
+): Promise<{ readonly allowed: boolean; readonly retryAfterSeconds: number }> {
+  let verdict = { allowed: true, retryAfterSeconds: 1 };
+  try {
+    await db.transaction(async (tx) => {
+      verdict = await checkRateLimit(tx, key, rule, undefined, { prune: false });
+      throw new PeekDone();
+    });
+  } catch (err) {
+    if (!(err instanceof PeekDone)) throw err;
+  }
+  return verdict;
+}
+
+/**
+ * Review N1: before the host is asked anything, the member must be under the commit limit (looked
+ * at, not taken: L2, it is taken only when a commit goes out) and gets one attempt from the larger
+ * attempt bucket. An over-limit member makes no host request at all.
+ */
+async function limitsBeforeHost(db: KobeDb, userId: string): Promise<Refused | undefined> {
+  const commits = await peekRateLimit(db, `git-repo-commits:${userId}`, GIT_REPO_COMMIT_RATE);
+  if (!commits.allowed) return rateLimited(commits.retryAfterSeconds);
+  const attempts = await checkRateLimit(
+    db,
+    `git-repo-commit-attempts:${userId}`,
+    GIT_REPO_COMMIT_ATTEMPT_RATE,
+  );
+  if (!attempts.allowed) return rateLimited(attempts.retryAfterSeconds);
+  return undefined;
 }
 
 /** Review L1: the host's default branch only when it is a name Kobe sends; else the recorded one. */
@@ -583,14 +650,7 @@ async function commitAndPush(ctx: Context): Promise<CommitResult> {
     `git-repo-commits:${ctx.req.owner.userId}`,
     GIT_REPO_COMMIT_RATE,
   );
-  if (!verdict.allowed) {
-    return {
-      status: "refused",
-      error: "rate_limited",
-      detail: `Too many commits to Repos. Try again in ${verdict.retryAfterSeconds} seconds.`,
-      retryAfterSeconds: verdict.retryAfterSeconds,
-    };
-  }
+  if (!verdict.allowed) return rateLimited(verdict.retryAfterSeconds);
   if (ctx.connection.directCommits) {
     const direct = await directCommit(ctx, changes, head);
     if (direct !== "fallback") return direct;

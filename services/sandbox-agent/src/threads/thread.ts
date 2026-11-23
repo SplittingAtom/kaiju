@@ -6,6 +6,7 @@ import {
   type SyncConflict,
 } from "@kobe/protocol";
 import {
+  REPO_WORKING_COPY_DIR,
   type PiExtensionUiRequest,
   type PiExtensionUiResponse,
   type PiRpcResponse,
@@ -44,6 +45,9 @@ import {
   workingCopyStatus,
   type RepoStatus,
 } from "../git/working-copy.js";
+import { mkdir } from "node:fs/promises";
+import path from "node:path";
+import { shareOnVolume } from "../workspace/volume.js";
 import { toolCommandRunner } from "./tool-command.js";
 import { BranchSummaryState } from "./branch-summary-state.js";
 import { cancelDialog, routeUiRequest } from "./dialogs.js";
@@ -377,10 +381,24 @@ export class Thread {
     const pi = this.#pi;
     const tools = pi === undefined ? undefined : this.#runtimeDirs.get(pi)?.tools;
     if (tools === undefined) return Promise.resolve(failedStatus("the tools are not running"));
-    return workingCopyStatus(toolCommandRunner(tools), this.#env.workspaceDir, repo, {
-      fetch: true,
-      timeoutMs,
-    });
+    return this.#reposRoot(tools).then(() =>
+      workingCopyStatus(toolCommandRunner(tools), this.#env.workspaceDir, repo, {
+        fetch: true,
+        timeoutMs,
+      }),
+    );
+  }
+
+  /**
+   * `.kobe/repos` made by the agent (under the shared `.kobe/`, 2770 like the sessions folder) so
+   * the tools' uid can create its working copies there; never followed through a link.
+   */
+  async #reposRoot(tools: { readonly runAs?: unknown }): Promise<void> {
+    const dir = path.join(this.#env.workspaceDir, REPO_WORKING_COPY_DIR);
+    await mkdir(dir, { recursive: true, mode: 0o770 }).catch(() => undefined);
+    if (tools.runAs !== undefined) {
+      await shareOnVolume(this.#env.workspaceDir, dir, 0o2770).catch(() => undefined);
+    }
   }
 
   /** At a run's end: the working copy's state once more, sent only when git gave one. */

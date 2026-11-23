@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { isExcludedPath } from "@kobe/protocol";
 import type { RunGitRepo } from "@kobe/protocol/sandbox-wire";
 import {
   REPO_SCRIPT,
   failedStatus,
-  isRepoGitPath,
+  workingCopyDir,
   parseRepoStatus,
   repoScriptArgs,
   repoStatusFrame,
@@ -24,19 +25,16 @@ const repo: RunGitRepo = {
 const line = (...f: string[]) => `noise\nKOBE-REPO-STATUS\t${f.join("\t")}\n`;
 
 describe("Repo working copy (KOBE-767)", () => {
-  it("keeps the whole repos/ area out of the sync (review M4)", () => {
-    for (const p of ["repos", "repos/app/.git", "repos/app/.git/objects/aa/bb", "repos/app/a"]) {
-      expect(isRepoGitPath(p), p).toBe(true);
-    }
-    for (const p of ["work/app/.git", ".git", "reposx/a", "my/repos/a", "repo"]) {
-      expect(isRepoGitPath(p), p).toBe(false);
-    }
+  it("keeps the working copy in the reserved area the sync leaves alone (review N2)", () => {
+    expect(workingCopyDir("/workspace", repo)).toBe("/workspace/.kobe/repos/app");
+    expect(isExcludedPath(".kobe/repos/app/README.md")).toBe(true);
+    expect(isExcludedPath("repos/app/README.md")).toBe(false);
   });
 
   it("passes every value as a positional argument, never inside the script", () => {
     const args = repoScriptArgs("/workspace", repo, true);
     expect(args.slice(0, 2)).toEqual(["-c", REPO_SCRIPT]);
-    expect(args.slice(3)).toEqual(["/workspace/repos/app", repo.clone_url, "main", "1"]);
+    expect(args.slice(3)).toEqual(["/workspace/.kobe/repos/app", repo.clone_url, "main", "1"]);
     expect(REPO_SCRIPT).not.toContain("github");
     expect(repoScriptArgs("/workspace", repo, false).at(-1)).toBe("0");
   });
