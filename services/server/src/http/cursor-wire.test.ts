@@ -2,19 +2,19 @@ import { describe, expect, it } from "vitest";
 import {
   decodeCursor as decodeRoster,
   encodeCursor as encodeRoster,
-} from "./agents/roster-list.js";
-import { itemCursor } from "./memory/items/read.js";
+} from "../agents/roster-list.js";
+import { itemCursor } from "../memory/items/read.js";
 import {
   decodeCursor as decodeNotice,
   encodeCursor as encodeNotice,
-} from "./notifications/store.js";
-import { blockCursor, decodeBlockCursor } from "./skills/blocklist.js";
-import { decodeCursor as decodeReview, reviewCursor } from "./skills/review.js";
-import { decodeActivityCursor, encodeActivityCursor } from "./threads/cursor.js";
+} from "../notifications/store.js";
+import { blockCursor, decodeBlockCursor } from "../skills/blocklist.js";
+import { decodeCursor as decodeReview, reviewCursor } from "../skills/review.js";
+import { decodeActivityCursor, encodeActivityCursor } from "../threads/cursor.js";
 import {
   decodeCursor as decodeBrowse,
   encodeCursor as encodeBrowse,
-} from "./workspace-files/browse.js";
+} from "../workspace-files/browse.js";
 
 /**
  * KOBE-702: every list cursor moved to `makeCursorCodec`. Each token below was produced by the
