@@ -112,7 +112,7 @@ organization. Forgejo is a fork of Gitea and serves the same `/api/v1` API, so K
 adapter for both; the provider is recorded so labels, links and documentation are right, and the
 adapter reads `/api/v1/version` to refuse versions it has not been tested with. Token scopes:
 repository read/write, organization read (write only if agents may create repositories), user
-read. Codeberg and other hosted Forgejo instances work the same way.
+read, and issue write (Gitea keeps issues and comments under its own scope; found by KOBE-759). Codeberg and other hosted Forgejo instances work the same way.
 
 **G8. Where credentials live.** Sealed with their own envelope purpose (`git-hosts`); never
 returned by any API, never logged or audited, never sent to a sandbox, a browser or a model.
@@ -318,22 +318,22 @@ linked|unlinked`, `git.pull_request.opened`, `git.issue.created`, `git.comment.c
 
 ## 12. Decisions (Chris, 2026-11-21: all recommendations accepted)
 
-| Id   | Question                                                                                                            | Decision                                                                                                        |
-| ---- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| GQ1  | One connection per Workspace, or several?                                                                           | Several, up to 5 (G2).                                                                                          |
-| GQ2  | May agents push from the sandbox (G11), or only act through tools?                                                  | Both. Without push from the sandbox an agent cannot work in a repository the normal way.                        |
-| GQ3  | Which actions ask for approval by default?                                                                          | Create repository, open pull request, comment, create issue ask; reads, branches and pushes do not (G9).        |
-| GQ4  | After conversion, is the repository on the host the record, with Kobe mirroring its default branch (G17)?           | Yes. Two records of one project would drift; Kobe's commits stop for that project.                              |
-| GQ11 | A commit from Kobe's dialog to a Repo: pull request by default, or straight to the default branch (G18)?            | Pull request by default; direct commits a per-connection setting.                                               |
-| GQ12 | Carry the project's history into the repository on conversion (G16)?                                                | Yes by default, with a choice in the dialog.                                                                    |
-| GQ13 | Who may convert a project to a Repo?                                                                                | The project's owner and Workspace admins.                                                                       |
-| GQ14 | Should an existing repository in the organization be attachable as a Repo (import), in this spec?                   | Not in this spec; conversion only. It is the natural next step.                                                 |
-| GQ5  | Acting as the Workspace (app or bot) is the only mode; members never use their own git credentials?                 | Yes for this spec; per-member credentials are a later spec.                                                     |
-| GQ6  | GitHub Enterprise Server in scope alongside github.com?                                                             | Yes; it is the same adapter with a base URL.                                                                    |
-| GQ7  | Which minimum versions of Gitea and Forgejo?                                                                        | The versions current at build time and one major back; the adapter refuses older ones.                          |
-| GQ8  | Who may use a connection: every member's agents (readers read, contributors write), or only agents the admin picks? | Every member by role (G12), with an optional per-connection list of agents.                                     |
-| GQ9  | Order against the other queued work (review tickets, the rename to Kaiju, the sign-in page)?                        | Revised by Chris 2026-11-21: before the rename, after the review tickets. The rename then covers this code too. |
-| GQ10 | Should Kobe set the commit author to the member's real email, or a no-reply address?                                | The member's Kobe email, with a Workspace setting to use a no-reply form instead.                               |
+| Id   | Question                                                                                                            | Decision                                                                                                                    |
+| ---- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| GQ1  | One connection per Workspace, or several?                                                                           | Several, up to 5 (G2).                                                                                                      |
+| GQ2  | May agents push from the sandbox (G11), or only act through tools?                                                  | Both. Without push from the sandbox an agent cannot work in a repository the normal way.                                    |
+| GQ3  | Which actions ask for approval by default?                                                                          | Create repository, open pull request, comment, create issue ask; reads, branches and pushes do not (G9).                    |
+| GQ4  | After conversion, is the repository on the host the record, with Kobe mirroring its default branch (G17)?           | Yes. Two records of one project would drift; Kobe's commits stop for that project.                                          |
+| GQ11 | A commit from Kobe's dialog to a Repo: pull request by default, or straight to the default branch (G18)?            | Pull request by default; direct commits a per-connection setting.                                                           |
+| GQ12 | Carry the project's history into the repository on conversion (G16)?                                                | Yes by default, with a choice in the dialog.                                                                                |
+| GQ13 | Who may convert a project to a Repo?                                                                                | The project's owner and Workspace admins.                                                                                   |
+| GQ14 | Should an existing repository in the organization be attachable as a Repo (import), in this spec?                   | Not in this spec; conversion only. It is the natural next step.                                                             |
+| GQ5  | Acting as the Workspace (app or bot) is the only mode; members never use their own git credentials?                 | Yes for this spec; per-member credentials are a later spec.                                                                 |
+| GQ6  | GitHub Enterprise Server in scope alongside github.com?                                                             | Yes; it is the same adapter with a base URL.                                                                                |
+| GQ7  | Which minimum versions of Gitea and Forgejo?                                                                        | The versions current at build time and one major back; the adapter refuses older ones. Built: Gitea 1.26.0, Forgejo 15.0.0. |
+| GQ8  | Who may use a connection: every member's agents (readers read, contributors write), or only agents the admin picks? | Every member by role (G12), with an optional per-connection list of agents.                                                 |
+| GQ9  | Order against the other queued work (review tickets, the rename to Kaiju, the sign-in page)?                        | Revised by Chris 2026-11-21: before the rename, after the review tickets. The rename then covers this code too.             |
+| GQ10 | Should Kobe set the commit author to the member's real email, or a no-reply address?                                | The member's Kobe email, with a Workspace setting to use a no-reply form instead.                                           |
 
 ## 13. Phases and tickets
 

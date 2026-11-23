@@ -223,8 +223,11 @@ committer. Under **Commit author email** on the Git page, choose the address the
 
 - **Member's Kobe email** (the default): the email the member signs in with. Anyone who can read
   the repository on the host sees it.
-- **No-reply address**: `<short id>+<name>@users.noreply.<Site host>`, which receives no mail and
-  does not reveal the member's email. The page shows your own as an example.
+- **No-reply address**: `<short id>+<name slug>@users.noreply.<Site host>` (the first characters
+  of the member's id, a plus sign, their display name in lower-case letters, digits and hyphens,
+  then the Site's own host name), which receives no mail and does not reveal the member's email.
+  The page shows your own as an example. If the Site's address changes, new commits use the new
+  host and earlier ones keep the old.
 
 Commits pushed to the host keep the address in their history for good; a change applies to new
 commits only. Changes are recorded in the audit log (`git.settings.updated`).

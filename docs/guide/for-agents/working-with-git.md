@@ -160,7 +160,7 @@ credentials is refused.
 ## Who the commits are from
 
 Commits you make carry the user as author: their name and their Kobe email, or, if the Workspace
-chose that, a no-reply address of the form `<short id>+<name>@users.noreply.<this site's address>`. The committer is the user's name followed by "via Kobe". Do not change
+chose that, a no-reply address of the form `<short id>+<name slug>@users.noreply.<this site's host>`. The committer is the user's name followed by "via Kobe". Do not change
 `user.name`, `user.email` or the author of a commit. The global git config belongs to Kobe and is
 rewritten before every message: do not use `git config --global`. In a normal sandbox it fails with
 "could not lock config file", which is expected; where the sandbox runs without separate tool
