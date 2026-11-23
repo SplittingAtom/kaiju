@@ -1,6 +1,12 @@
 import { request as httpRequest, type IncomingMessage, type ServerResponse } from "node:http";
 import type { ConnectionReason } from "../connection-audit.js";
-import { holdUntilReady, overBuffered, type FlowDestination, type FlowSource } from "../flow.js";
+import {
+  MAX_BUFFERED_BYTES,
+  holdUntilReady,
+  overBuffered,
+  type FlowDestination,
+  type FlowSource,
+} from "../flow.js";
 import { connectVerified } from "../upgrade-exchange.js";
 import { reply } from "../upgrade-reply.js";
 import type { UpgradeAttempt, UpgradeContext } from "../upgrade-types.js";
@@ -10,6 +16,7 @@ import type { GitTransportDeps } from "./types.js";
 import {
   ReceivePackCommands,
   SecretScanner,
+  credentialPlain,
   credentialSecrets,
   gitDownstreamHeaders,
   gitUpstreamHeaders,
@@ -97,7 +104,7 @@ export async function relayGit(input: GitRelayInput): Promise<GitRelayResult> {
     request.service === "git-receive-pack" && request.endpoint === "rpc"
       ? new ReceivePackCommands()
       : undefined;
-  const scanner = new SecretScanner(secrets);
+  const scanner = new SecretScanner(secrets, credentialPlain(allow.username, allow.password));
   const timers = new Set<NodeJS.Timeout>();
   const state = {
     bytesUp: 0,
@@ -124,8 +131,15 @@ export async function relayGit(input: GitRelayInput): Promise<GitRelayResult> {
   };
   // Review M2: the source resumes only when the destination drained AND the throttle allows;
   // a destination holding more than the backstop unsent is cut.
-  const forwarded = (src: FlowSource, dst: FlowDestination, flushed: boolean, n: number) => {
-    if (overBuffered(dst)) {
+  const forwarded = (
+    src: FlowSource,
+    dst: FlowDestination,
+    flushed: boolean,
+    n: number,
+    held = 0,
+  ) => {
+    // The scanner's held tail counts toward the backstop too.
+    if (overBuffered(dst, MAX_BUFFERED_BYTES - held)) {
       fail("buffer_limit");
       return;
     }
@@ -207,14 +221,24 @@ export async function relayGit(input: GitRelayInput): Promise<GitRelayResult> {
           fail("response_too_large");
           return;
         }
-        if (scanner.push(chunk)) {
+        // Review R2-M1: forward only what the scan cleared; the tail waits for more bytes.
+        const step = scanner.push(chunk);
+        if (step.found) {
           up.destroy();
           fail("secret_reflected");
           return;
         }
-        forwarded(up, res, res.write(chunk), chunk.length);
+        const flushed = step.forward.length === 0 ? true : res.write(step.forward);
+        forwarded(up, res, flushed, chunk.length, scanner.held);
       });
-      up.once("end", () => res.end());
+      up.once("end", () => {
+        const step = scanner.end();
+        if (step.found) {
+          fail("secret_reflected");
+          return;
+        }
+        res.end(step.forward);
+      });
       up.once("error", () => fail("upstream_unreachable"));
     });
   });

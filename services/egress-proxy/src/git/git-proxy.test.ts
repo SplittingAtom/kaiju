@@ -84,6 +84,22 @@ beforeAll(async () => {
           .join("");
         res.writeHead(200, { "content-type": "text/plain" });
         res.end(`next=${pct}`);
+      } else if (repo === "split.git") {
+        // The echo arrives one byte per TLS record (review R2-M1).
+        res.writeHead(200, { "content-type": "text/plain" });
+        res.write("0008NAK\n".repeat(100));
+        const text = `secret=${CREDENTIAL.password}\n`;
+        let i = 0;
+        const next = () => {
+          if (i >= text.length || res.destroyed) {
+            res.end();
+            return;
+          }
+          res.write(text[i] as string);
+          i += 1;
+          setTimeout(next, 2);
+        };
+        next();
       } else if (repo === "stream.git") {
         res.writeHead(200, { "content-type": "application/x-git-upload-pack-result" });
         const chunk = Buffer.alloc(64 * 1024, 0x61);
@@ -505,6 +521,25 @@ describe("git smart-HTTP through the egress proxy (KOBE-763)", () => {
         expect(res.body, repo).not.toContain("next=");
         expect(harness.audit.at(-1), repo).toMatchObject({ reason: "secret_reflected" });
       }
+    });
+
+    it("R2-M1: a credential echoed one byte at a time never reaches the sandbox, not even a prefix", async () => {
+      const harness = await start();
+      const answer = await rawExchange(
+        harness.port,
+        [
+          `GET ${refs("acme", "split")} HTTP/1.1`,
+          `Host: ${GIT_HOST}`,
+          `Proxy-Authorization: ${proxyAuthorization()}`,
+          "",
+          "",
+        ].join("\r\n"),
+        5_000,
+      );
+      expect(answer).toMatch(/^HTTP\/1\.1 200/);
+      expect(answer).not.toContain("secret=");
+      expect(answer).not.toContain(CREDENTIAL.password.slice(0, 4));
+      expect(harness.audit.at(-1)).toMatchObject({ outcome: "failed", reason: "secret_reflected" });
     });
 
     it("M2: a sandbox that stops reading stops the upstream, even while throttled", async () => {

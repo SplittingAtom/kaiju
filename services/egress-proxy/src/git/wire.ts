@@ -125,27 +125,95 @@ export function responseEncodingRefused(headers: {
   return undefined;
 }
 
+/** The plain secrets (password and `user:password`), also looked for in percent-decoded text. */
+export function credentialPlain(username: string, password: string): string[] {
+  return [password, `${username}:${password}`];
+}
+
+/** `%XX` sequences decoded (any mix of encoded and raw bytes); other bytes unchanged. */
+function percentDecoded(window: Buffer): Buffer {
+  if (!window.includes(0x25)) return window;
+  const out = Buffer.allocUnsafe(window.length);
+  let n = 0;
+  const hex = (b: number | undefined) =>
+    b === undefined
+      ? -1
+      : b >= 48 && b <= 57
+        ? b - 48
+        : b >= 65 && b <= 70
+          ? b - 55
+          : b >= 97 && b <= 102
+            ? b - 87
+            : -1;
+  for (let i = 0; i < window.length; i += 1) {
+    const hi = window[i] === 0x25 ? hex(window[i + 1]) : -1;
+    const lo = hi >= 0 ? hex(window[i + 2]) : -1;
+    if (lo >= 0) {
+      out[n++] = hi * 16 + lo;
+      i += 2;
+    } else {
+      out[n++] = window[i] as number;
+    }
+  }
+  return out.subarray(0, n);
+}
+
+export interface ScanStep {
+  /** A secret appeared: cut the response, forward nothing more. */
+  readonly found: boolean;
+  /** Bytes now safe to forward (never any byte of a match). */
+  readonly forward: Buffer;
+}
+
 /**
- * Finds any of `secrets` in a stream of chunks, including across chunk boundaries (keeps the
- * last `longest - 1` bytes). Cost: one `indexOf` per secret per chunk.
+ * Finds any of `secrets` in a stream and says which bytes are safe to forward (review R2-M1):
+ * the last `longest needle - 1` bytes are held back until more data arrives or the stream ends,
+ * so a credential echoed in small pieces is cut before any byte of it reaches the sandbox. A
+ * needle that starts in the forwarded part would end inside the scanned window, so it is always
+ * seen first. `plain` secrets are also matched in a percent-decoded copy of the window (mixed
+ * `%XX` and raw characters); their encoded span is at most the percent form's length, which the
+ * caller includes in `secrets`, so the hold-back covers it. Memory: the held tail only.
  */
 export class SecretScanner {
   private readonly needles: readonly Buffer[];
+  private readonly plain: readonly Buffer[];
   private readonly keep: number;
   private tail: Buffer = Buffer.alloc(0);
 
-  constructor(secrets: readonly string[]) {
+  constructor(secrets: readonly string[], plain: readonly string[] = []) {
     this.needles = secrets.map((s) => Buffer.from(s));
+    this.plain = plain.filter((s) => s.length >= 8).map((s) => Buffer.from(s));
     this.keep = Math.max(0, ...this.needles.map((n) => n.length - 1));
   }
 
-  /** True when the stream (so far) contains a secret. */
-  push(chunk: Buffer): boolean {
-    if (this.needles.length === 0) return false;
+  /** Bytes held back right now (they count toward the relay's buffered-bytes ceiling). */
+  get held(): number {
+    return this.tail.length;
+  }
+
+  private found(window: Buffer): boolean {
+    if (this.needles.some((n) => window.includes(n))) return true;
+    if (this.plain.length === 0) return false;
+    const decoded = percentDecoded(window);
+    return decoded !== window && this.plain.some((n) => decoded.includes(n));
+  }
+
+  push(chunk: Buffer): ScanStep {
     const window = this.tail.length === 0 ? chunk : Buffer.concat([this.tail, chunk]);
-    const found = this.needles.some((n) => window.includes(n));
-    this.tail = Buffer.from(window.subarray(Math.max(0, window.length - this.keep)));
-    return found;
+    if (this.found(window)) {
+      this.tail = Buffer.alloc(0);
+      return { found: true, forward: Buffer.alloc(0) };
+    }
+    const cut = Math.max(0, window.length - this.keep);
+    this.tail = Buffer.from(window.subarray(cut));
+    return { found: false, forward: window.subarray(0, cut) };
+  }
+
+  /** The end of the stream: the held tail (already scanned with everything before it). */
+  end(): ScanStep {
+    const rest = this.tail;
+    this.tail = Buffer.alloc(0);
+    return { found: this.found(rest), forward: rest };
   }
 }
 
@@ -203,7 +271,13 @@ export class ReceivePackCommands {
   private command(line: string): void {
     const text = line.split("\0")[0]?.replace(/\n$/, "") ?? "";
     const [oldId = "", newId = "", ref = ""] = text.split(" ");
-    if (!OID.test(oldId) || !OID.test(newId) || !REF.test(ref)) return;
+    if (!OID.test(oldId) || !OID.test(newId)) return;
+    // A ref the audit cannot name (outside its pattern, e.g. non-ASCII) is flagged, not dropped
+    // silently (review round 2).
+    if (!REF.test(ref)) {
+      this.truncated = true;
+      return;
+    }
     if (this.refs.length >= MAX_AUDITED_REFS) {
       this.truncated = true;
       return;

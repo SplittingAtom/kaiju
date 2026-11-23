@@ -112,6 +112,22 @@
   authority are refused by the git grammar. **L5** documented in install.md. **L6** audit rows
   use the server's canonical `org/repo` once allowed.
 
+## Security review round 2 (2026-11-22)
+
+- **R2-M1 prefix leak.** `SecretScanner` now holds back the last (longest needle − 1) bytes until
+  more arrive or the stream ends and forwards only what it cleared; a match cuts the response
+  before any byte of it is forwarded (a needle starting in the forwarded part would end inside
+  the scanned window). The held tail (< 512 bytes) counts toward the 8 MiB backstop. Plain
+  secrets are also matched in a percent-decoded copy (mixed `%XX`/raw, round-2 low). Response
+  headers are allow-listed and checked whole; trailers are not relayed. Tests: 1-byte chunks for
+  every form, a two-chunk split at every offset, three-chunk and end-of-stream needles, a 50 MB
+  random stream hashed unchanged with a constant tail, and an e2e echo one byte per TLS record.
+- Round-2 lows: unnamed refs in a push now set `refsTruncated` (fixed). Accepted, not changed:
+  gzip fetch-negotiation bodies pass through compressed (refusing them breaks ordinary fetches;
+  inflation happens at the host); the push TOCTOU (a host admin swapping repository names within
+  the 30 s decision cache lets an un-narrowed token push to the swapped-in repository; App tokens
+  are minted for the resolved repository and refuse).
+
 ## For GIT-13 (guide pages) — what they must say
 
 - Workspace admin (Git section): pushes need Read and write + Contributor (+ editor on a Repo);
