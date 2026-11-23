@@ -82,7 +82,7 @@ export const GIT_CONVERSION_REFUSALS = [
   "file_too_large",
   /**
    * KOBE-766 review R3-M1: the project's current files are more than a Repo's mirror can hold
-   * (500 files, 50 MiB each, 512 MiB in all), so Kobe could never show the host's changes.
+   * (500 files, 50 MiB each, 256 MiB in all), so Kobe could never show the host's changes.
    */
   "too_large_to_mirror",
   "git_unavailable",

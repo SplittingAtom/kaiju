@@ -20,8 +20,8 @@
 
 ## Decisions (owner please confirm the starred ones)
 
-- \* **Mirror limits = Kobe's project limits**: at most 500 files of at most 50 MiB, 512 MiB in all,
-  pack ≤ 128 MiB. A repository beyond them is refused whole (`too_many_files`, …) and keeps its
+- \* **Mirror limits = Kobe's project limits**: at most 500 files of at most 50 MiB, 256 MiB in all,
+  pack ≤ 384 MiB. A repository beyond them is refused whole (`too_many_files`, …) and keeps its
   last mirror; no partial mirror. (Conversion only converts projects within these limits; a Repo
   that grows past 500 files on the host stops mirroring until it shrinks.)
 - \* **Mirror commits are authored by the repository record's creator** (the member who converted
@@ -82,7 +82,7 @@
 
 - **R2-M1** per-refresh disk budget (`GIT_MIRROR_MAX_DISK_BYTES` 768 MiB): the pack plus every
   loose object as stored, counted as each is written. Inflated cap lowered to 768 MiB, head
-  content cap to 512 MiB (\* owner to confirm: was 1 GiB). Two refreshes (1.5 GiB) plus a
+  content cap to 512 MiB (both lowered again in round 4). Two refreshes (1.5 GiB) plus a
   conversion (~4 GiB) fit `server.tmpSizeLimit` 6 GiB (chart comment updated; value unchanged).
   Test: a ~260 KiB pack of 40 one-byte delta variants of a 256 KiB random blob stops at the budget.
 - **R2-L1** delta data counts against the inflation total as it is inflated; deltas waiting for a
@@ -109,12 +109,30 @@
   than a lease), not only the job-lock holder; the conversion sweep already runs on every replica
   (no lock). The waiting-delta list appends in place (round-2 cosmetic note).
 
+## Review round 4 — what changed
+
+- **R4-M1** every mirror size is derived from the shared Repo limits (`mirrorFetchLimits` in
+  `git/repo-limits.ts`): pack cap = content + history margin (half the content, ≥ 16 MiB),
+  inflated cap the same, disk budget = pack + inflated + zlib overhead. To keep the chart's 8Gi
+  `/tmp` true for 2 refreshes plus a conversion, the content cap is now **256 MiB** (was 512 MiB):
+  pack 384 MiB, inflated 384 MiB, disk 816 MiB; 2 × (816 + 50) MiB + 4 GiB ≈ 5.7 GiB. Conversion
+  refuses beyond the same numbers. A pack over its cap (counted while it downloads) is
+  `repository_too_large`/`pack`; every size overflow (pack, disk, objects, inflated, content,
+  files, file size) is "too large to mirror" (`mirror.too_large`), checked again after 6 h (or on
+  Refresh), never `fetch_failed`. Tests: scaled limits (4 MiB content) in the db suite: a 3.9 MiB
+  incompressible head passes the conversion check and mirrors; adding 1 MiB is refused by the
+  conversion check and the refresh is `repository_too_large`, `too_large: true`, re-check ≥ 5 h;
+  real git: a 768 KiB random file over a 512 KiB pack cap → `repository_too_large`/`pack`; unit:
+  the derived caps and the /tmp arithmetic.
+- **R4-L1** (Low, optional) left as is: a converted Repo whose newest 25 commits carry more than
+  the history margin shows "too large to mirror" plainly and clears as those commits age.
+
 ### Owner to confirm (numbers chosen by the coordinator, 2026-11-23)
 
-- Repo content limit **512 MiB** of files at the default branch's tip (with 500 files, 50 MiB per
+- Repo content limit **256 MiB** of files at the default branch's tip (with 500 files, 50 MiB per
   file: Kobe's project limits), shared by the mirror and Convert to repo.
-- **768 MiB** per refresh: on disk (pack plus objects) and inflated in all.
-- **20,000** objects per fetched pack; pack download **128 MiB**.
+- Derived per refresh: pack **384 MiB**, inflated **384 MiB**, on disk **816 MiB**; **20,000**
+  objects per pack.
 - `server.tmpSizeLimit` default **8Gi**.
 
 ## Docs

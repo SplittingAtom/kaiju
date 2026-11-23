@@ -1,8 +1,4 @@
-import {
-  GIT_REPO_MAX_CONTENT_BYTES,
-  GIT_REPO_MAX_FILE_BYTES,
-  GIT_REPO_MAX_FILES,
-} from "../repo-limits.js";
+import { mirrorFetchLimits, type MirrorFetchLimits } from "../repo-limits.js";
 import type { RateLimitRule } from "../../rate-limit.js";
 
 /**
@@ -53,28 +49,24 @@ export const GIT_MIRROR_SLOTS = 2;
 /** Due Repos one pass takes per Workspace (oldest first). */
 export const GIT_MIRROR_PER_TEAM = 20;
 
-/** The pack one refresh may download, streamed to the work folder (never held in memory). */
-export const GIT_MIRROR_MAX_PACK_BYTES = 128 * 1024 * 1024;
 /**
- * Every object of a fetch together, inflated (the head's files plus the newest commits' trees,
- * commits and changed files): the head's content cap plus room for that history.
+ * The sizes of one refresh, all derived from the shared Repo limits (`git/repo-limits.ts`, also
+ * checked by Convert to repo; review R3-M1, R4-M1): with 256 MiB of content, a pack of at most
+ * 384 MiB (streamed to the work folder, never held in memory), 384 MiB inflated, 816 MiB on disk.
+ * Two refreshes at once (2 × (816 + one 50 MiB object) ≈ 1.7 GiB) and a conversion (about 4 GiB)
+ * stay inside the server's /tmp limit (`server.tmpSizeLimit`, 8 GiB by default).
  */
-export const GIT_MIRROR_MAX_INFLATED_BYTES = 768 * 1024 * 1024;
-/**
- * Bytes one refresh may put on disk: the pack plus every object written loose (review R2-M1).
- * Two refreshes at once (1.5 GiB) and a conversion (about 4 GiB) stay inside the server's /tmp
- * limit (`server.tmpSizeLimit`, 8 GiB by default).
- */
-export const GIT_MIRROR_MAX_DISK_BYTES = 768 * 1024 * 1024;
+export const GIT_MIRROR_LIMITS: MirrorFetchLimits = mirrorFetchLimits();
+export const GIT_MIRROR_MAX_PACK_BYTES = GIT_MIRROR_LIMITS.maxPackBytes;
+export const GIT_MIRROR_MAX_INFLATED_BYTES = GIT_MIRROR_LIMITS.maxInflatedBytes;
+export const GIT_MIRROR_MAX_DISK_BYTES = GIT_MIRROR_LIMITS.maxDiskBytes;
+export const GIT_MIRROR_MAX_FILES = GIT_MIRROR_LIMITS.maxFiles;
+export const GIT_MIRROR_MAX_FILE_BYTES = GIT_MIRROR_LIMITS.maxFileBytes;
+export const GIT_MIRROR_MAX_BYTES = GIT_MIRROR_LIMITS.maxContentBytes;
 /** Most objects in one fetched pack: 25 commits of a project of at most 500 files need far fewer. */
 export const GIT_MIRROR_MAX_OBJECTS = 20_000;
-/**
- * A Repo's mirrored files: the shared Repo limits (`git/repo-limits.ts`, also checked by Convert
- * to repo, review R3-M1), within the per-refresh disk budget.
- */
-export const GIT_MIRROR_MAX_FILES = GIT_REPO_MAX_FILES;
-export const GIT_MIRROR_MAX_FILE_BYTES = GIT_REPO_MAX_FILE_BYTES;
-export const GIT_MIRROR_MAX_BYTES = GIT_REPO_MAX_CONTENT_BYTES;
+/** A Repo too large to mirror is tried again this often (it may shrink; Refresh may try sooner). */
+export const GIT_MIRROR_TOO_LARGE_RECHECK_MS = 6 * 60 * 60_000;
 /** Free space a refresh needs in its work folder beyond the pack and its objects. */
 export const GIT_MIRROR_DISK_MARGIN_BYTES = 64 * 1024 * 1024;
 

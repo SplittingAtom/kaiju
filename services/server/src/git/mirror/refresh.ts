@@ -22,6 +22,7 @@ import { gitWireSession } from "../../git-hosts/git-wire.js";
 import type { GitHostNet } from "../../git-hosts/http.js";
 import { gitHostTarget, type GitHostTarget } from "../../git-hosts/target.js";
 import { GIT_CONNECTION_READS_PER_HOUR } from "../../git-tools/execute.js";
+import type { MirrorFetchLimits } from "../repo-limits.js";
 import { mimeForName } from "../../projects/import.js";
 import {
   projectBlobKey,
@@ -38,13 +39,9 @@ import {
   GIT_MIRROR_DEADLINE_MS,
   GIT_MIRROR_DIR_NAME,
   GIT_MIRROR_DISK_MARGIN_BYTES,
-  GIT_MIRROR_MAX_BYTES,
-  GIT_MIRROR_MAX_FILE_BYTES,
   GIT_MIRROR_GONE_CONFIRMATIONS,
-  GIT_MIRROR_MAX_FILES,
-  GIT_MIRROR_MAX_DISK_BYTES,
-  GIT_MIRROR_MAX_INFLATED_BYTES,
-  GIT_MIRROR_MAX_PACK_BYTES,
+  GIT_MIRROR_LIMITS,
+  GIT_MIRROR_TOO_LARGE_RECHECK_MS,
   GIT_MIRROR_RUN_MS,
   GIT_MIRROR_SLOTS,
   GIT_MIRROR_WORK_PREFIX,
@@ -91,6 +88,8 @@ export interface MirrorDeps {
   readonly adapterFor?: (input: GitAdapterInput) => GitHostAdapter;
   /** Tests: concurrent refreshes per replica. */
   readonly slots?: number;
+  /** Tests: scaled-down sizes (derived with `mirrorFetchLimits` from scaled Repo limits). */
+  readonly limits?: MirrorFetchLimits;
 }
 
 export type RefreshOutcome =
@@ -111,6 +110,12 @@ class MirrorDeferred extends Error {
     this.name = "MirrorDeferred";
   }
 }
+
+const TOO_LARGE: ReadonlySet<string> = new Set([
+  "too_many_files",
+  "file_too_large",
+  "repository_too_large",
+]);
 
 const CONNECTION_READ_RULE = { windowMs: 60 * 60_000, max: GIT_CONNECTION_READS_PER_HOUR } as const;
 
@@ -169,7 +174,12 @@ export function failureOf(
     nextAt: until && until > backoff ? until : backoff,
   });
   if (err instanceof MirrorStop) return at(err.code);
-  if (err instanceof MirrorError) return at(err.code);
+  if (err instanceof MirrorError) {
+    // Review R4-M1: too large is not transient; tried again slowly (it may shrink).
+    if (TOO_LARGE.has(err.code))
+      return at(err.code, new Date(now + GIT_MIRROR_TOO_LARGE_RECHECK_MS));
+    return at(err.code);
+  }
   if (err instanceof MirrorHeld) return at("legal_hold");
   if (err instanceof GitHostError) {
     switch (err.code) {
@@ -267,6 +277,7 @@ async function run(
 ): Promise<RefreshOutcome> {
   // Review M1: the whole run, local work included, ends well before the lease lapses.
   const deadlineAt = Date.now() + GIT_MIRROR_RUN_MS;
+  const limits = deps.limits ?? GIT_MIRROR_LIMITS;
   const budget = claimed.connectionId
     ? await checkRateLimit(
         deps.db,
@@ -342,7 +353,8 @@ async function run(
     repositoryUrl: repo.cloneUrl,
     credential: { username: credential.username, password: credential.password },
     maxRequestBytes: 1024 * 1024,
-    maxResponseBytes: GIT_MIRROR_MAX_PACK_BYTES,
+    // The pack's own cap (pack-unpack.ts) trips first and says "too large"; this is a backstop.
+    maxResponseBytes: limits.maxPackBytes + 1024 * 1024,
     deadlineAt: Math.min(Date.now() + GIT_MIRROR_DEADLINE_MS, deadlineAt),
   });
   const remote = await remoteHead(session.http, repo.cloneUrl, row.defaultBranch);
@@ -354,7 +366,7 @@ async function run(
     );
     return "unchanged";
   }
-  await assertRoom(workDir);
+  await assertRoom(workDir, limits.maxDiskBytes);
   const project = await projectSlug(deps.db, row);
   const fetched = await fetchBranch(
     session.http,
@@ -362,15 +374,16 @@ async function run(
     { ...remote, head },
     path.join(workDir, "repo"),
     {
-      maxFiles: GIT_MIRROR_MAX_FILES,
-      maxFileBytes: GIT_MIRROR_MAX_FILE_BYTES,
-      maxTotalBytes: GIT_MIRROR_MAX_INFLATED_BYTES,
-      maxDiskBytes: GIT_MIRROR_MAX_DISK_BYTES,
+      maxFiles: limits.maxFiles,
+      maxFileBytes: limits.maxFileBytes,
+      maxTotalBytes: limits.maxInflatedBytes,
+      maxDiskBytes: limits.maxDiskBytes,
+      maxPackBytes: limits.maxPackBytes,
       slug: project,
       deadlineAt,
     },
   );
-  const tree = await storeFiles(deps, deps.blobs, row, fetched, deadlineAt);
+  const tree = await storeFiles(deps, deps.blobs, row, fetched, deadlineAt, limits.maxContentBytes);
   const applied = await applyMirror(deps.db, lease, row, {
     head: fetched.head,
     tree,
@@ -391,12 +404,12 @@ async function projectSlug(db: KobeDb, row: MirrorRow): Promise<string> {
 }
 
 /** Refuses to fetch when the work folder's file system has no room for the largest pack. */
-async function assertRoom(dir: string): Promise<void> {
+async function assertRoom(dir: string, budget: number): Promise<void> {
   const fsStats = await statfs(dir).catch(() => undefined);
   const free = fsStats ? Number(fsStats.bavail) * Number(fsStats.bsize) : 0;
   // The refresh's disk budget (pack plus loose objects, enforced as they are written). On an
   // emptyDir this sees the node's file system; the budget itself keeps /tmp within its limit.
-  if (free < GIT_MIRROR_MAX_DISK_BYTES + GIT_MIRROR_DISK_MARGIN_BYTES) {
+  if (free < budget + GIT_MIRROR_DISK_MARGIN_BYTES) {
     throw new MirrorError("server_capacity");
   }
 }
@@ -423,6 +436,7 @@ async function storeFiles(
   row: MirrorRow,
   fetched: FetchedBranch,
   deadlineAt: number,
+  maxContentBytes: number,
 ): Promise<Tree> {
   const tooLong = () => {
     if (Date.now() > deadlineAt) {
@@ -435,8 +449,8 @@ async function storeFiles(
     tooLong();
     const bytes = await fetched.readBlob(f.oid);
     total += bytes.length;
-    if (total > GIT_MIRROR_MAX_BYTES) {
-      throw new MirrorError("repository_too_large", String(GIT_MIRROR_MAX_BYTES));
+    if (total > maxContentBytes) {
+      throw new MirrorError("repository_too_large", String(maxContentBytes));
     }
     const name = f.path.slice(f.path.lastIndexOf("/") + 1);
     hashed.push({

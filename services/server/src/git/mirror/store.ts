@@ -7,6 +7,11 @@ import {
 } from "@kobe/protocol";
 import { recordAudit } from "../../audit/record.js";
 import {
+  GIT_REPO_MAX_CONTENT_BYTES,
+  GIT_REPO_MAX_FILE_BYTES,
+  GIT_REPO_MAX_FILES,
+} from "../repo-limits.js";
+import {
   GIT_MIRROR_BACKOFF_BASE_MS,
   GIT_MIRROR_BACKOFF_MAX_MS,
   GIT_MIRROR_LEASE_MS,
@@ -299,6 +304,8 @@ export async function repoReadOnly(
 const isFailure = (code: string | null): code is GitMirrorFailure =>
   code !== null && (GIT_MIRROR_FAILURES as readonly string[]).includes(code);
 
+const mib = (n: number) => `${Math.floor(n / (1024 * 1024))} MiB`;
+
 export const MIRROR_FAILURE_MESSAGES: Readonly<Record<GitMirrorFailure, string>> = {
   connection_off: "The git connection is turned off; a Workspace admin can turn it back on.",
   host_not_allowed: "This Site no longer allows the repository's git host.",
@@ -312,12 +319,9 @@ export const MIRROR_FAILURE_MESSAGES: Readonly<Record<GitMirrorFailure, string>>
   host_rate_limited: "The git host is rate limiting Kobe; Kobe tries again after its reset time.",
   host_unreachable: "The git host could not be reached; Kobe tries again later.",
   branch_missing: "The repository's default branch is not on the host.",
-  too_many_files:
-    "The repository is too large to mirror: it has more than 500 files. Kobe keeps showing the last mirror; the repository itself is unchanged on the host.",
-  file_too_large:
-    "The repository is too large to mirror: it holds a file over 50 MiB. Kobe keeps showing the last mirror; the repository itself is unchanged on the host.",
-  repository_too_large:
-    "The repository is too large to mirror: its files, or its recent history, are more than a mirror can hold (512 MiB of files). Kobe keeps showing the last mirror; the repository itself is unchanged on the host.",
+  too_many_files: `The repository is too large to mirror: it has more than ${GIT_REPO_MAX_FILES} files. Kobe keeps showing the last mirror and checks again every few hours; the repository itself is unchanged on the host.`,
+  file_too_large: `The repository is too large to mirror: it holds a file over ${mib(GIT_REPO_MAX_FILE_BYTES)}. Kobe keeps showing the last mirror and checks again every few hours; the repository itself is unchanged on the host.`,
+  repository_too_large: `The repository is too large to mirror: its files, or its recent history, are more than a mirror can hold (${mib(GIT_REPO_MAX_CONTENT_BYTES)} of files). Kobe keeps showing the last mirror and checks again every few hours; the repository itself is unchanged on the host.`,
   unsupported_path: "The repository holds a file whose path Kobe's projects cannot hold.",
   fetch_failed: "Kobe could not read the repository from the host; it tries again later.",
   server_capacity: "The server has no room to read the repository now; Kobe tries again later.",

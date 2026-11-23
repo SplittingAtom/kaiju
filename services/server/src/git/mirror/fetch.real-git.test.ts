@@ -63,6 +63,7 @@ const caps = {
   maxFileBytes: 1024 * 1024,
   maxTotalBytes: 16 * 1024 * 1024,
   maxDiskBytes: 64 * 1024 * 1024,
+  maxPackBytes: 32 * 1024 * 1024,
   slug: "demo",
   deadlineAt: Date.now() + 10 * 60_000,
 };
@@ -159,6 +160,19 @@ describe("remoteHead and fetchBranch", () => {
     expect(err).toBeInstanceOf(MirrorError);
     expect(err).toMatchObject({ code: "file_too_large", detail: String(64 * 1024 * 1024) });
     expect(process.memoryUsage().arrayBuffers - before).toBeLessThan(16 * 1024 * 1024);
+  });
+
+  it("names a pack over its cap too large, not a transient failure (R4-M1)", async () => {
+    const name = fresh();
+    const { http, url } = client(name);
+    // Random bytes do not compress: the pack is about as large as the file.
+    commitOnHost(server.root, `acme/${name}`, { "photo.bin": randomBytes(768 * 1024) }, "Photo");
+    await expect(
+      fetchOf(http, url, "main", path.join(work, name), {
+        ...caps,
+        maxPackBytes: 512 * 1024,
+      }),
+    ).rejects.toMatchObject({ code: "repository_too_large", detail: "pack" });
   });
 
   it("reads a repacked (delta-compressed) repository", async () => {

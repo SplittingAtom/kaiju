@@ -28,6 +28,8 @@ export interface MirrorCaps {
   readonly maxTotalBytes: number;
   /** Bytes on disk: the pack plus the objects written loose. */
   readonly maxDiskBytes: number;
+  /** The pack downloaded. */
+  readonly maxPackBytes: number;
   /** Milliseconds since the epoch past which reading stops. */
   readonly deadlineAt: number;
   /** The project's slug: paths must still be valid once mounted under `projects/<slug>/`. */
@@ -139,6 +141,7 @@ export async function fetchBranch(
       remote.capabilities,
       GIT_MIRROR_LOG_MAX,
       packFile,
+      caps.maxPackBytes,
     );
     // Review H1: every object's size is checked before it is inflated (pack-unpack.ts).
     await unpackPack(packFile, packOffset, dir, {

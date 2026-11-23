@@ -10,6 +10,7 @@ import {
   GIT_REPO_MAX_CONTENT_BYTES,
   GIT_REPO_MAX_FILE_BYTES,
   GIT_REPO_MAX_FILES,
+  mirrorFetchLimits,
   repoContentRefusal,
 } from "../repo-limits.js";
 import { MirrorHeld } from "./apply.js";
@@ -20,6 +21,7 @@ import {
   GIT_MIRROR_MAX_BYTES,
   GIT_MIRROR_MAX_FILE_BYTES,
   GIT_MIRROR_MAX_FILES,
+  GIT_MIRROR_MAX_PACK_BYTES,
   mirrorBackoffMs,
 } from "./limits.js";
 import { failureOf } from "./refresh.js";
@@ -91,6 +93,25 @@ describe("Repo content limits shared with Convert to repo (review R3-M1)", () =>
     });
   });
 
+  it("derives the pack, inflation and disk caps from the content cap (R4-M1)", () => {
+    const l = mirrorFetchLimits();
+    expect(l.maxPackBytes).toBeGreaterThan(l.maxContentBytes);
+    expect(l.maxInflatedBytes).toBeGreaterThan(l.maxContentBytes);
+    expect(l.maxDiskBytes).toBeGreaterThanOrEqual(l.maxPackBytes + l.maxInflatedBytes);
+    // Two refreshes (each up to one 50 MiB object past its budget) and a 4 GiB conversion fit
+    // the chart's default 8Gi /tmp with room for other files.
+    const two = 2 * (l.maxDiskBytes + l.maxFileBytes);
+    expect(two + 4 * 1024 ** 3).toBeLessThan(6 * 1024 ** 3);
+    expect(GIT_MIRROR_MAX_PACK_BYTES).toBe(l.maxPackBytes);
+  });
+
+  it("too large to mirror is checked again slowly, not as a transient failure (R4-M1)", () => {
+    const now = 1_000_000;
+    for (const code of ["too_many_files", "file_too_large", "repository_too_large"] as const) {
+      expect(failureOf(new MirrorError(code), 0, now).nextAt.getTime() - now).toBe(6 * 60 * 60_000);
+    }
+  });
+
   it("the mirror uses the same numbers and the conversion refusal says why", () => {
     expect(GIT_MIRROR_MAX_BYTES).toBe(GIT_REPO_MAX_CONTENT_BYTES);
     expect(GIT_MIRROR_MAX_FILE_BYTES).toBe(GIT_REPO_MAX_FILE_BYTES);
@@ -101,9 +122,9 @@ describe("Repo content limits shared with Convert to repo (review R3-M1)", () =>
         code: "too_large_to_mirror",
         mirrorLimit: "bytes",
         limitBytes: GIT_REPO_MAX_CONTENT_BYTES,
-        sizeBytes: 700 * 1024 * 1024,
+        sizeBytes: 300 * 1024 * 1024,
       }),
-    ).toContain("700 MiB");
+    ).toContain("300 MiB");
     expect(MIRROR_FAILURE_MESSAGES.repository_too_large).toContain("too large to mirror");
   });
 });

@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { renameSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -7,6 +7,7 @@ import { gitRepoAnswerSchema, type GitRepoView } from "@kobe/protocol";
 import { mirrorDeps } from "./git/mirror/deps.js";
 import { dueRepositories } from "./git/mirror/job.js";
 import { GIT_MIRROR_GONE_CONFIRMATIONS } from "./git/mirror/limits.js";
+import { mirrorFetchLimits, repoContentRefusal } from "./git/repo-limits.js";
 import { refreshRepository, type MirrorDeps } from "./git/mirror/refresh.js";
 import { claimRefresh } from "./git/mirror/store.js";
 import { projectWriteBlock } from "./projects/repo-state.js";
@@ -357,11 +358,11 @@ describe("Convert to repo refuses what the mirror could never show (R3-M1)", () 
   it("refuses a project whose current files are more than a Repo's mirror holds", async () => {
     const w = await world();
     const p = await project(w, [{ by: w.owner, message: "Start", files: { "a.txt": "a" } }]);
-    // Eleven files of 49 MiB each as recorded (539 MiB): the refusal is decided from the
+    // Six files of 49 MiB each as recorded (294 MiB): the refusal is decided from the
     // project's records before any content is read. (The database itself keeps a project at
     // 500 files and Kobe at 50 MiB per file, so the total is the limit that can be reached.)
     const tree = new Map<string, TreeFile>();
-    for (let i = 0; i < 11; i += 1) {
+    for (let i = 0; i < 6; i += 1) {
       tree.set(`big/${i}.bin`, {
         path: `big/${i}.bin`,
         sha256: String(i).padStart(64, "0"),
@@ -384,11 +385,55 @@ describe("Convert to repo refuses what the mirror could never show (R3-M1)", () 
     const res = await start(w.owner, p.id, { connection_id: w.connectionId });
     expect([res.status, res.json.code]).toEqual([422, "too_large_to_mirror"]);
     expect(res.json).toMatchObject({
-      limit_bytes: 512 * 1024 * 1024,
-      size_bytes: 11 * 49 * 1024 * 1024,
+      limit_bytes: 256 * 1024 * 1024,
+      size_bytes: 6 * 49 * 1024 * 1024,
     });
-    expect(res.json.message).toContain("539 MiB");
+    expect(res.json.message).toContain("294 MiB");
     expect(await kind(w.team, p.id)).toBe("project");
+  });
+});
+
+describe("the Repo limits agree on both sides (R4-M1)", () => {
+  it("an incompressible project just under the content cap converts and mirrors; one over is too large on both", async () => {
+    const MiB = 1024 * 1024;
+    // Scaled down: 4 MiB of content; the pack, inflation and disk caps derived from it.
+    const repoLimits = { maxFiles: 500, maxFileBytes: 4 * MiB, maxContentBytes: 4 * MiB };
+    const limits = mirrorFetchLimits(repoLimits);
+    const scaled = (): MirrorDeps => ({ ...deps(), limits });
+    const c = await converted();
+    await idle(c);
+    const small = Buffer.byteLength("# Hi\n") + Buffer.byteLength("one\n");
+    const under = randomBytes(4 * MiB - 64 * 1024);
+    expect(
+      repoContentRefusal(
+        { files: 3, bytes: small + under.length, largest: under.length },
+        repoLimits,
+      ),
+    ).toBeUndefined();
+    commitOnHost(git.root, hostName(c), { "photo.bin": under }, "Photo");
+    expect(await refreshRepository(scaled(), c.w.team, c.repositoryId)).toBe("refreshed");
+    expect(Object.keys(await files(c.w.owner, c.projectId))).toContain("photo.bin");
+
+    const extra = randomBytes(MiB);
+    expect(
+      repoContentRefusal(
+        { files: 4, bytes: small + under.length + extra.length, largest: under.length },
+        repoLimits,
+      )?.limit,
+    ).toBe("bytes");
+    commitOnHost(git.root, hostName(c), { "photo2.bin": extra }, "Another photo");
+    const t0 = Date.now();
+    expect(await refreshRepository(scaled(), c.w.team, c.repositoryId)).toBe("failed");
+    const row = await repoRow(c);
+    expect(row.mirror_error).toBe("repository_too_large");
+    // Not transient: checked again slowly.
+    expect(must(row.mirror_next_at).getTime() - t0).toBeGreaterThan(5 * 60 * 60_000);
+    const view = await repoView(c.w.member, c.projectId);
+    expect([view.mirror.too_large, view.mirror.error?.code]).toEqual([
+      true,
+      "repository_too_large",
+    ]);
+    expect(Object.keys(await files(c.w.owner, c.projectId))).not.toContain("photo2.bin");
   });
 });
 

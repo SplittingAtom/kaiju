@@ -74,6 +74,7 @@ export async function downloadPack(
   advertised: readonly string[],
   depth: number,
   file: string,
+  maxPackBytes: number,
 ): Promise<{ readonly packOffset: number; readonly shallows: readonly string[] }> {
   const caps = wantedCapabilities(advertised);
   const deepen = caps.includes("shallow");
@@ -101,8 +102,13 @@ export async function downloadPack(
   if (res.statusCode >= 500) throw new GitHostError("host_unreachable", "Not answering.");
   if (res.statusCode !== 200) throw new MirrorError("fetch_failed");
   const out = fs.createWriteStream(file, { mode: 0o600 });
+  let received = 0;
   try {
     for await (const chunk of res.body ?? []) {
+      received += chunk.length;
+      // Review R4-M1: a pack beyond the cap is a repository too large to mirror, not a transient
+      // failure (the cap is derived from the Repo limits, so content within them always fits).
+      if (received > maxPackBytes) throw new MirrorError("repository_too_large", "pack");
       if (!out.write(chunk)) await new Promise<void>((r) => out.once("drain", () => r()));
     }
   } finally {
