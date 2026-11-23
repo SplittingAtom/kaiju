@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createInternalApp } from "./routes/internal.js";
-import { approvalKeyring } from "./approvals/index.js";
-import { EventStreamFixture } from "./testing/event-stream-fixture.js";
+import { createInternalApp } from "../routes/internal.js";
+import { approvalKeyring } from "../approvals/index.js";
+import { EventStreamFixture } from "../testing/event-stream-fixture.js";
 import {
   INTERNAL_KEY,
   enableConnector,
@@ -11,7 +11,7 @@ import {
   piName,
   registerConnector,
   MCP_VERIFY_KEYS,
-} from "./testing/mcp-fixtures.js";
+} from "../testing/mcp-fixtures.js";
 
 /**
  * KOBE-106: the server side of the MCP proxy's team-exposure enforcement. Whatever the sandbox

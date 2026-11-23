@@ -3,19 +3,19 @@ import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { PinnedTool } from "@kobe/db";
 import { canonicalJson, type JsonObject } from "@kobe/protocol";
-import { approvalKeyring } from "./approvals/index.js";
-import { DENY_UNVERIFIED_APPROVALS } from "./mcp/approvals.js";
-import { applyDrift } from "./connectors/drift.js";
-import { buildSnapshot } from "./connectors/pin.js";
-import { createDbMcpCatalog } from "./mcp/catalog.js";
-import { MAX_ACTIVE_RUNS_PER_SANDBOX } from "./mcp/run-context.js";
-import { createMcpService } from "./mcp/service.js";
-import { createToolRegistry } from "./policy/registry.js";
-import { createDbRuleSource, createDbSettingsSource } from "./policy/rule-store.js";
-import { createDbRunContextSource } from "./sandbox-wire/index.js";
-import { createInternalApp } from "./routes/internal.js";
-import { createRateLimiter } from "./sandbox/rate-limit.js";
-import { EventStreamFixture, must, type Person } from "./testing/event-stream-fixture.js";
+import { approvalKeyring } from "../approvals/index.js";
+import { DENY_UNVERIFIED_APPROVALS } from "./approvals.js";
+import { applyDrift } from "../connectors/drift.js";
+import { buildSnapshot } from "../connectors/pin.js";
+import { createDbMcpCatalog } from "./catalog.js";
+import { MAX_ACTIVE_RUNS_PER_SANDBOX } from "./run-context.js";
+import { createMcpService } from "./service.js";
+import { createToolRegistry } from "../policy/registry.js";
+import { createDbRuleSource, createDbSettingsSource } from "../policy/rule-store.js";
+import { createDbRunContextSource } from "../sandbox-wire/index.js";
+import { createInternalApp } from "../routes/internal.js";
+import { createRateLimiter } from "../sandbox/rate-limit.js";
+import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
 import {
   INTERNAL_KEY,
   allowApproval,
@@ -27,7 +27,7 @@ import {
   pinnedTool,
   registerConnector,
   MCP_VERIFY_KEYS,
-} from "./testing/mcp-fixtures.js";
+} from "../testing/mcp-fixtures.js";
 
 /**
  * The MCP proxy's policy re-check on the server (KOBE-58) against a real Postgres: sandbox

@@ -14,9 +14,9 @@ import {
   createUpstreamClient,
   type UpstreamClient,
 } from "@kobe/mcp-proxy";
-import { approvalKeyring } from "./approvals/index.js";
-import { createInternalApp } from "./routes/internal.js";
-import { EventStreamFixture, type Person } from "./testing/event-stream-fixture.js";
+import { approvalKeyring } from "../approvals/index.js";
+import { createInternalApp } from "../routes/internal.js";
+import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
 import {
   INTERNAL_KEY,
   allowApproval,
@@ -26,7 +26,7 @@ import {
   piName,
   registerConnector,
   MCP_VERIFY_KEYS,
-} from "./testing/mcp-fixtures.js";
+} from "../testing/mcp-fixtures.js";
 
 /**
  * Gate 2 end to end across the process boundary (KOBE-58 + KOBE-37): "a sandbox with a tampered
