@@ -90,11 +90,15 @@ describe("Kobe's own prune of expired rate-limit rows (KOBE-809)", () => {
     const db = h.deps.database.db;
     const now = Date.now();
     const hour = { windowMs: 60 * 60_000, max: 5 };
-    // Three windows that ended, one still running.
-    for (const k of ["a", "b", "c"]) {
-      await hitRateLimit(db, `prune:old:${k}`, { windowMs: 60_000, max: 5 }, now - TWO_MINUTES);
-    }
+    // One window still running, then three that ended (written directly: a hit's own prune runs
+    // on the database clock and would take them at once).
     await hitRateLimit(db, "prune:live", hour, now - TWO_MINUTES);
+    for (const k of ["a", "b", "c"]) {
+      await h.admin.query(
+        `INSERT INTO kobe_rate_limits (key, count, window_start, expires_at) VALUES ($1, 1, $2, $3)`,
+        [`kobe:prune:old:${k}`, now - TWO_MINUTES, now - TWO_MINUTES + 60_000],
+      );
+    }
     expect(await keysLike("kobe:prune:old:")).toHaveLength(3);
 
     // A hit inside a running window prunes nothing.

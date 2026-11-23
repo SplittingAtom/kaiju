@@ -77,7 +77,10 @@ afterAll(async () => {
 
 describe("the counter (ac-1)", () => {
   it("allows 10 failures, then one attempt a minute until the 15-minute window passes", async () => {
-    let t = 1_000_000;
+    // From the real time on: a prune runs on the database clock (KOBE-810), so rows dated in the
+    // distant past would be pruned by any other limit's new window.
+    const start = Date.now();
+    let t = start;
     const throttle = createSignInThrottle({ db: h.deps.database.db, now: () => t });
     const account = "unit-counter";
     for (let i = 1; i <= failures; i++) {
@@ -94,7 +97,7 @@ describe("the counter (ac-1)", () => {
     if (slot.allowed) await throttle.failed(account, slot);
     expect((await throttle.begin(account)).allowed).toBe(false);
     // The window passed: a fresh start, not a lockout.
-    t = 1_000_000 + windowMs + 1;
+    t = start + windowMs + 1;
     expect((await throttle.begin(account)).allowed).toBe(true);
   });
 
@@ -109,7 +112,7 @@ describe("the counter (ac-1)", () => {
   });
 
   it("gives the minute's slot back with a refunded attempt (review M2)", async () => {
-    let t = 5_000_000;
+    let t = Date.now();
     const throttle = createSignInThrottle({ db: h.deps.database.db, now: () => t });
     const account = "unit-slot-refund";
     for (let i = 0; i < failures; i++) {

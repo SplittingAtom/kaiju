@@ -120,6 +120,14 @@ Brought onto `group-89-merge-hotspots` (KOBE-815 layout: `openapi.json` untracke
   same clock; so its timings and tests are unchanged. `client-ip-watch.ts` likewise passes its
   time. The `auth.sign_in.throttled` row moved to `audit/events/identity.doc.ts`, table
   regenerated.
+- **Combined review M1:** a prune that a hit triggers always runs on the database clock, even
+  when the hit was given a time (the sign-in throttle's own clock, tests); only a direct
+  `pruneExpiredRateLimits(db, now)` takes a clock. Test: "a hit given a time far ahead does not
+  prune another limit's live row" (fails before). Tests that dated rows in the distant past
+  (throttle counter tests at t = 1,000,000, the KOBE-809 prune test's setup) now start from the
+  real time or insert the expired rows directly; the throttle's behaviour is unchanged.
+  `fillLimit` seeds with the database clock; `auth.ts` line references in docs/rate-limits.md
+  corrected.
 - `docs/rate-limits.md`: one document; the gaps the three tickets closed are gone (in-memory
   limits multiply, bucket-map clear, comment drift; "no rate limit found on" by KOBE-813;
   "sign-in is limited only per IP" by KOBE-812).

@@ -7,20 +7,23 @@ interface Queryable {
 }
 
 /**
- * Fills `subject`'s bucket of `limit` to its maximum in a window that starts now (superuser
- * connection), so the next hit is refused without sending `max` real requests (KOBE-813).
+ * Fills `subject`'s bucket of `limit` to its maximum in a window that starts now (the database
+ * clock; superuser connection), so the next hit is refused without sending `max` real requests (KOBE-813).
  */
 export async function fillLimit(
   admin: Queryable,
   limit: OperationLimit,
   subject: string,
-  now = Date.now(),
+  now?: number,
 ): Promise<void> {
+  // The database clock unless a time is given, like the limiter itself (KOBE-810).
   await admin.query(
-    `INSERT INTO kobe_rate_limits (key, count, window_start, expires_at) VALUES ($1, $2, $3, $4)
+    `WITH n AS (SELECT coalesce($3::bigint, (extract(epoch from clock_timestamp()) * 1000)::bigint) AS t)
+     INSERT INTO kobe_rate_limits (key, count, window_start, expires_at)
+     SELECT $1, $2, n.t, n.t + $4::bigint FROM n
      ON CONFLICT (key) DO UPDATE SET count = EXCLUDED.count, window_start = EXCLUDED.window_start,
        expires_at = EXCLUDED.expires_at`,
-    [`kobe:${limit.bucket}:${subject}`, limit.max, now, now + limit.windowMs],
+    [`kobe:${limit.bucket}:${subject}`, limit.max, now ?? null, limit.windowMs],
   );
 }
 

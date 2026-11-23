@@ -16,9 +16,10 @@ import type { KobeDb } from "./client.js";
  *   has passed is a full bucket, so the same prune (`expires_at < now`) removes it without changing
  *   anything.
  *
- * **Clock:** unless a caller injects `now` (tests), every function reads the time from the
- * database (`clock_timestamp()`) inside its statement, so replicas whose clocks disagree still
- * share one window or bucket, and no replica prunes a row early (KOBE-810).
+ * **Clock:** unless a caller injects `now` (tests, the sign-in throttle), every function reads the
+ * time from the database (`clock_timestamp()`) inside its statement, and a prune that a hit
+ * triggers always does, so replicas whose clocks disagree still share one window or bucket and no
+ * caller prunes another limit's row early (KOBE-810).
  *
  * Every function takes the pool or an open transaction ({@link RateLimitDb}); inside a
  * transaction pass `prune: false`, so the hit commits or rolls back with it and no prune runs in it.
@@ -103,7 +104,8 @@ export async function takeRateLimit(
   const now = Number(row.now_ms);
   const windowStart = Number(row.window_start);
   if (row.count === 1 && options.prune !== false) {
-    await pruneExpiredRateLimits(db, options.now, RATE_LIMIT_PRUNE_BATCH, options.onPruneError);
+    // Always the database clock, whatever time the hit was given: no caller prunes early.
+    await pruneExpiredRateLimits(db, undefined, RATE_LIMIT_PRUNE_BATCH, options.onPruneError);
   }
   return {
     allowed: row.count <= rule.max,
@@ -188,7 +190,8 @@ export async function takeRateBucket(
   if (row.count === 1) {
     // The bucket was full before this request (no row, or its TAT had passed).
     if (tat === now + t && options.prune !== false) {
-      await pruneExpiredRateLimits(db, options.now, RATE_LIMIT_PRUNE_BATCH, options.onPruneError);
+      // Always the database clock, whatever time the hit was given: no caller prunes early.
+      await pruneExpiredRateLimits(db, undefined, RATE_LIMIT_PRUNE_BATCH, options.onPruneError);
     }
     return { allowed: true, retryAfterMs: 0 };
   }

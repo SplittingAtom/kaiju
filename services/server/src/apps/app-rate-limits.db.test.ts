@@ -20,7 +20,8 @@ import { APP_CALL_RATE } from "./call-deps.js";
 let database: TestDatabase;
 let replicaA: KobeDatabase;
 let replicaB: KobeDatabase;
-const clock = { t: Date.now() };
+/** The test clock, ahead of real time: a prune runs on the database clock and must not reach it. */
+const clock = { t: Date.now() + 600_000 };
 
 beforeAll(async () => {
   database = await createTestDatabase(testServerUrl());
@@ -161,6 +162,18 @@ describe("the limiter in @kobe/db (KOBE-810)", () => {
       })
       .catch(() => undefined);
     expect((await takeRateLimit(replicaA.db, key, rule)).count).toBe(1);
+  });
+
+  it("a hit given a time far ahead does not prune another limit's live row", async () => {
+    const live = `live:${randomUUID()}`;
+    const rule = { windowMs: 60_000, max: 1 };
+    expect((await takeRateLimit(replicaA.db, live, rule)).count).toBe(1);
+    // A new window at a clock an hour ahead (as a caller with its own clock): its prune uses
+    // the database clock, so the live row stays.
+    await takeRateLimit(replicaB.db, `ahead:${randomUUID()}`, rule, {
+      now: Date.now() + 3_600_000,
+    });
+    expect((await takeRateLimit(replicaA.db, live, rule)).count).toBe(2);
   });
 
   it("the fixed window reports the time left in it", async () => {
