@@ -17,6 +17,7 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { openAgentTemp } from "../atomic-file.js";
+import { isRepoGitPath } from "../git/working-copy.js";
 import type { Readable } from "node:stream";
 import {
   PROJECT_WORKSPACE_DIR,
@@ -126,7 +127,8 @@ export function toLocalStamped(stat: BigIntStats): LocalFile {
 
 /**
  * Regular files under `root` (or only under its folder `from`), skipping excluded areas
- * (`.kobe/`), directories named in `skipDirs` (anywhere), symlinks, special files and temp files.
+ * (`.kobe/`), directories named in `skipDirs` (anywhere), a Repo working copy's `repos/<x>/.git`
+ * (KOBE-767), symlinks, special files and temp files.
  * Stops after `maxFiles`.
  */
 export async function scanWorkspace(
@@ -154,6 +156,8 @@ export async function scanWorkspace(
       const child = rel === "" ? entry.name : `${rel}/${entry.name}`;
       if (isExcludedPath(child) || entry.name.startsWith(TEMP_PREFIX)) continue;
       if (entry.isDirectory() && options.skipDirs.has(entry.name)) continue;
+      // A Repo working copy's own git data (KOBE-767) stays local.
+      if (isRepoGitPath(child)) continue;
       if (workspacePathIssue(child) !== undefined) {
         skipped += 1;
         continue;

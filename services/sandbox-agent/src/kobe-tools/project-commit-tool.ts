@@ -41,7 +41,7 @@ export function commitProjectTool(transport: ToolsTransport): ToolDefinitionLike
     name: TOOL_COMMIT_PROJECT,
     label: "Commit project",
     description:
-      "Commit your changes to the conversation's project: every file you changed under /workspace/projects/<project> (the user's checked-out working copy) becomes the project's next version, with this message. A person may have to approve it first.",
+      "Commit your changes to the conversation's project: every file you changed under /workspace/projects/<project> (the user's checked-out working copy) becomes the project's next version, with this message. On a Repo (a project kept in a git repository) the commit goes to the git host: by default to a branch with a pull request, or straight to the default branch where the Workspace allows it. A person may have to approve it first.",
     promptSnippet: "Commit the checked-out project working copy with a message",
     promptGuidelines: [
       "Use commit_project once the project's files are in a good state and the user wants the change kept; edit files under /workspace/projects/<project> first, then commit with a one-line message.",
@@ -62,6 +62,16 @@ export function commitOutcomeText(outcome: ProjectCommitOutcome): string {
       return "Nothing to commit: the working copy matches the project's latest version.";
     case "pending_approval":
       return "Awaiting approval: the commit is made as soon as a person approves it. Do not commit again meanwhile.";
+    case "pull_request": {
+      const link = outcome.url === "" ? "" : ` (${outcome.url})`;
+      return outcome.opened
+        ? `Committed to the Repo on branch ${outcome.branch} and opened pull request #${outcome.number}${link}. Someone merges it on the git host; Kobe's copy follows after that.`
+        : `Committed to the Repo: added to the open pull request #${outcome.number}${link} on branch ${outcome.branch}.`;
+    }
+    case "pushed":
+      return outcome.seq === null
+        ? `Committed to the Repo and pushed straight to ${outcome.branch}. Kobe's copy follows at its next refresh.`
+        : `Committed to the Repo and pushed straight to ${outcome.branch} (Kobe's copy is #${outcome.seq}).`;
   }
 }
 

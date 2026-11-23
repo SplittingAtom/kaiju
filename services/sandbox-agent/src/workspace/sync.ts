@@ -1,5 +1,6 @@
 import { isExcludedPath } from "@kobe/protocol";
 import { type RunStartFrame } from "@kobe/protocol/sandbox-wire";
+import { isRepoGitPath } from "../git/working-copy.js";
 import { MoveReplay } from "./moves.js";
 import { NO_CHECKOUTS, statLocal, type Checkouts } from "./fs.js";
 import { pull } from "./sync/pull.js";
@@ -382,7 +383,11 @@ export class WorkspaceSync {
    */
   async pushPath(rel: string): Promise<PushedFile> {
     if (!this.enabled) throw new PushPathError("workspace sync is not available");
-    if (isExcludedPath(rel) || rel.split("/").some((part) => this.#s.o.skipDirs.has(part))) {
+    if (
+      isExcludedPath(rel) ||
+      isRepoGitPath(rel) ||
+      rel.split("/").some((part) => this.#s.o.skipDirs.has(part))
+    ) {
       throw new PushPathError(`${rel} is not part of the synced workspace`);
     }
     await Promise.race([

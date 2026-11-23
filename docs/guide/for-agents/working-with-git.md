@@ -1,6 +1,6 @@
 ---
 title: Working with git repositories
-summary: How an AI agent in a Kobe sandbox clones, commits and pushes to the Workspace's connected git organizations, the git host tools (repositories, branches, files, pull requests, issues, comments) and which ask the user, why no credential is needed or available, and what each refusal means.
+summary: How an AI agent in a Kobe sandbox clones, commits and pushes to the Workspace's connected git organizations, works in a Repo's git working copy, the git host tools (repositories, branches, files, pull requests, issues, comments) and which ask the user, why no credential is needed or available, and what each refusal means.
 section: For agents
 order: 5
 audience: agent
@@ -108,6 +108,33 @@ Errors carry a code. Do not retry a refusal unless it says when.
 | `outcome_unknown`                             | An earlier attempt of exactly this call in this reply got no answer from the host. Check the repository on the host for what it would have created and tell the user; do not repeat the call. |
 | `credential_rejected`, `credential_forbidden` | The Workspace's credential no longer works or lacks a permission. Tell the user; a Workspace admin fixes it.                                                                                  |
 | `site_refused`                                | The Site no longer allows this host.                                                                                                                                                          |
+
+## Conversations on a Repo
+
+A Repo is a Kobe project whose record is a repository in a connected organization. In a
+conversation on a Repo:
+
+- **Your working copy is `/workspace/repos/<project>`.** Kobe makes it a git working copy of the
+  Repo before each message (cloned through Kobe's egress proxy like any repository; its `origin`
+  is the Repo's normal `https://` URL) and fetches it again. Work there: create a branch, commit,
+  push it with `git push -u origin <branch>`, then open the pull request with
+  `git_open_pull_request`.
+- **`/workspace/projects/<project>` is Kobe's read-only copy** of the Repo's default branch. Read
+  it, but do not edit it there unless the user checked the project out.
+- **Readers.** If the user is not an editor of the project (or the connection is at **Read**), you
+  can fetch and read the working copy but not push.
+- **`commit_project` on a Repo.** When the user has the project checked out, `commit_project`
+  commits their copy to the host: by default to a new branch with a pull request (`pull_request`
+  in the result, with its number and link; later commits from the same copy are added to that pull
+  request while it is open). Only where a Workspace admin allows commits to the default branch, and
+  the host does not protect it, does it go straight to the default branch (`pushed`). If the
+  result is `repo_moved`, the default branch changed on the host since Kobe's copy: ask the user
+  to Update the checkout, then commit again.
+- **The `.git` folder of the working copy is not synced** to the user's files: the files are, the
+  git history is not. Push the branches you want to keep. If the sandbox's disk is ever replaced,
+  Kobe clones again and keeps the files as uncommitted changes; commits you did not push are lost.
+- Kobe reports the working copy's branch, how many commits it is ahead of and behind the host, and
+  whether it has uncommitted changes, so the user sees it in their Files panel.
 
 ## Credentials: there are none, and you must not ask
 

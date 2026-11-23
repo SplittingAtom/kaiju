@@ -210,6 +210,9 @@ export class Agent {
           this.#tools.notebooks.failThread(threadId, reason);
           this.#tools.memory.failThread(threadId, reason);
         },
+        repoStatus: (frame) => {
+          this.#wire.send(frame);
+        },
         diagnostic: (threadId, message) => logger.debug({ thread_id: threadId }, message),
         warning: (threadId, message) => logger.warn({ thread_id: threadId }, message),
       },
