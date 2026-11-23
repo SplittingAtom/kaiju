@@ -30,6 +30,13 @@ export const SITE_VIEW_TARGET_KEYS: ReadonlySet<string> = new Set([
   "setting",
   "value",
   "access",
+  // KOBE-762 git tool writes: the host's ids, number and link of what an agent created (the
+  // link names the repository and number only; titles and bodies are never recorded).
+  "hostRepoId",
+  "hostId",
+  "number",
+  "url",
+  "on",
   // KOBE-733 sandbox.volume_proof: whether the shutdown proof was accepted.
   "accepted",
   // KOBE-733 sandbox.volume_reclaimed: the configured dormancy period.
@@ -335,6 +342,8 @@ export const SITE_HIDDEN_TARGET_KEYS: ReadonlySet<string> = new Set([
   // their work (like thread folder names); the Site sees that a push happened, not what it named.
   "refs",
   "refsTruncated",
+  // KOBE-762: a hash of the run and the tool input, so a retried git write acts once.
+  "idempotencyKey",
 ]);
 
 /** Allowed keys an action still hides (a shared key name that carries thread-derived text there). */

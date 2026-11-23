@@ -67,7 +67,15 @@ the host (GitHub, GitHub Enterprise Server, Gitea or Forgejo), the organization,
 set them up; there is nothing for you to do and no credential to add, and the credential never
 enters your sandbox. With **Read** your sandbox can fetch (clone and pull) there; with **Read and
 write** it can also push, if your role is Contributor or above (and, for a Repo, you are an editor
-or owner of its project). See [Git organizations](admin/git-organizations.md).
+or owner of its project).
+
+Agents also get **git host tools** for these organizations, run by Kobe's server: reading
+repositories, branches, files, pull requests and issues (at **Read**), and creating branches,
+repositories, pull requests, issues and comments (at **Read and write**, with the same role rules as
+pushing). Creating a repository, opening a pull request, commenting and creating an issue ask you
+first; see [Git changes](internet-and-approvals/approvals.md#git-changes). The full list is in
+[Working with git repositories](for-agents/working-with-git.md). See also
+[Git organizations](admin/git-organizations.md).
 
 ## Turn connectors on or off for a conversation
 

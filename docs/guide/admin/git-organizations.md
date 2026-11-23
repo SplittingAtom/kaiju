@@ -1,6 +1,6 @@
 ---
 title: Git organizations
-summary: How Workspace admins connect a Workspace to an organization on GitHub, GitHub Enterprise Server, Gitea or Forgejo with a GitHub App or an access token, the exact permissions and scopes to choose, testing, access levels for git in sandboxes, repository defaults, the commit author email, health, token expiry, replacing and disconnecting, what members see, and the Site admin's switch and allowed hosts.
+summary: How Workspace admins connect a Workspace to an organization on GitHub, GitHub Enterprise Server, Gitea or Forgejo with a GitHub App or an access token, the exact permissions and scopes to choose, testing, access levels for git in sandboxes and agents' git host tools (which ask for approval), repository defaults, the commit author email, health, token expiry, replacing and disconnecting, what members see, and the Site admin's switch and allowed hosts.
 section: Team admin
 order: 3
 audience: admin
@@ -97,11 +97,11 @@ Each connection has an access level, which decides what git in members' sandboxe
 organization's repositories. The credential stays on the server: the egress proxy adds it to each
 git request and checks the request first.
 
-| Level              | Git in sandboxes                                                                                                    |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| **Off**            | Nothing: the connection is kept but unused.                                                                         |
-| **Read**           | Any member's sandbox may fetch (clone and pull).                                                                    |
-| **Read and write** | Also push, when the member has the Contributor role or above and, for a Repo, is an editor or owner of its project. |
+| Level              | Git in sandboxes                                                                                                    | Agents' git host tools                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Off**            | Nothing: the connection is kept but unused.                                                                         | None.                                                                                                        |
+| **Read**           | Any member's sandbox may fetch (clone and pull).                                                                    | Read repositories, branches, files, pull requests and issues.                                                |
+| **Read and write** | Also push, when the member has the Contributor role or above and, for a Repo, is an editor or owner of its project. | Also create branches, repositories, pull requests, issues and comments, with the same role rules as pushing. |
 
 A member who may push can push to any branch the host allows: protect important branches on the
 git host (branch protection rules or rulesets).
@@ -110,8 +110,33 @@ The test checks the credential against the level you choose (at **Read and write
 to write), and you change the level later in **Settings**. Git reaches only the connected
 organization: a request for another organization on the same host is refused. The host must be in
 the Site's egress ceiling (a server on a private network through an internal entry). A renamed
-repository's old address is not followed: use its current name. Agent tools that act on the
-host's API (creating repositories, opening pull requests) arrive with later updates.
+repository's old address is not followed: use its current name.
+
+### Agents' git host tools
+
+Agents act on the host's API through tools Kobe runs on its server (the list is in
+[Working with git repositories](../for-agents/working-with-git.md)). Kobe decides every call
+under the Workspace's policy:
+
+- Reads and creating a branch run without asking. Creating a repository, opening a pull request,
+  commenting and creating an issue ask the member first, on a card that names the host,
+  organization and repository and shows exactly what will be posted. Change these defaults with
+  policy rules, as for any tool: an ask or deny rule on `mcp__kobe__git_create_branch`, for
+  example. In scheduled runs and auto mode a call that would ask is refused unless a Workspace
+  allow rule lists it.
+- New repositories are private, or internal where the connection's repository default is
+  internal; never public. A name prefix in **Settings** is required of every new name.
+- Pull requests, issues and comments end with a line naming the member and linking the
+  conversation. On the host they appear as the App's bot or the token's owner.
+- A connection limited to chosen agents is usable by those agents only, and only while every
+  conversation running in the member's sandbox uses one of them.
+- Nothing destructive is offered: no deleting or archiving repositories, merging, visibility or
+  settings changes, members, secrets or webhooks.
+- Each member may make 300 reads per 10 minutes and 30 changes per hour. Every change is recorded
+  in the audit log (`git.repository.created`, `git.branch.created`, `git.pull_request.opened`,
+  `git.issue.created`, `git.comment.created`) with the member, conversation, agent, connection,
+  repository and the host's link, never the text posted. Repositories agents create are recorded
+  in the Workspace's list.
 
 ## Settings
 
