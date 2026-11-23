@@ -148,8 +148,9 @@ describe("converting a project with history (ac-1, ac-3)", () => {
     const commit = await w.owner.browser.request("POST", `/v1/projects/${p.id}/commit`, {
       message: "more",
     });
+    // KOBE-767: Kobe's commit flow goes to the host now; it needs a checkout like any commit.
     expect(commit.status).toBe(409);
-    expect(commit.json.code).toBe("project_is_repo");
+    expect(commit.json.code).toBe("checkout_required");
     const fileId = files.json.files[0].id as string;
     const del = await w.owner.browser.request("DELETE", `/v1/projects/${p.id}/files/${fileId}`);
     expect(del.status).toBe(409);
