@@ -84,6 +84,11 @@ export const gitConnectionMemberViewSchema = z.strictObject({
   display_name: z.string(),
   access_level: accessLevel,
   status: z.enum(GIT_CONNECTION_HEALTH),
+  /**
+   * KOBE-768: the prefix new repositories' names get (the Convert to repo dialog shows the name
+   * with it, G16). Absent on older answers.
+   */
+  repo_name_prefix: z.string().optional(),
 });
 export type GitConnectionMemberView = z.infer<typeof gitConnectionMemberViewSchema>;
 

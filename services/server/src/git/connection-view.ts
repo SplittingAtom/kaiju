@@ -82,5 +82,7 @@ export function memberConnectionView(c: GitConnectionRecord): GitConnectionMembe
     display_name: c.displayName,
     access_level: c.accessLevel,
     status: healthStatus(c),
+    // KOBE-768: the Convert to repo dialog shows the new repository's name with it (G16).
+    repo_name_prefix: c.repoNamePrefix,
   };
 }

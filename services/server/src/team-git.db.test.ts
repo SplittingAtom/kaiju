@@ -444,6 +444,20 @@ describe("who may call what", () => {
       expect(list.status).toBe(200);
       expect(list.json.connections).toHaveLength(1);
       gitConnectionMemberViewSchema.parse(list.json.connections[0]);
+      // KOBE-768: the Convert to repo dialog shows the name prefix; nothing of the credential.
+      expect(Object.keys(list.json.connections[0]).sort()).toEqual(
+        [
+          "access_level",
+          "base_url",
+          "display_name",
+          "id",
+          "organization",
+          "provider",
+          "repo_name_prefix",
+          "status",
+        ].sort(),
+      );
+      expect(typeof list.json.connections[0].repo_name_prefix).toBe("string");
       expect(list.json.site).toEqual({ enabled: true });
       const one = await call(p, "GET", `${BASE}/${id}`);
       gitConnectionMemberViewSchema.parse(one.json.connection);

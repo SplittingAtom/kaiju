@@ -4,6 +4,7 @@ import {
   asc,
   count,
   eq,
+  gitConversions,
   inArray,
   isLegalHoldViolation,
   isNotNull,
@@ -77,6 +78,19 @@ export async function toProject(
     .select({ n: count() })
     .from(projectFiles)
     .where(and(eq(projectFiles.teamId, teamId), eq(projectFiles.projectId, row.id)));
+  // KOBE-768: a running or failed conversion holds the project's writes (at most one, a partial
+  // unique index); the Files panel says so on the project's row.
+  const [held] = await tx
+    .select({ status: gitConversions.status })
+    .from(gitConversions)
+    .where(
+      and(
+        eq(gitConversions.teamId, teamId),
+        eq(gitConversions.projectId, row.id),
+        inArray(gitConversions.status, ["running", "failed"]),
+      ),
+    )
+    .limit(1);
   return {
     id: row.id,
     team_id: row.teamId,
@@ -96,6 +110,8 @@ export async function toProject(
     created_at: row.createdAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
     archived_at: row.archivedAt?.toISOString() ?? null,
+    kind: row.kind,
+    repo_conversion: held?.status === "running" || held?.status === "failed" ? held.status : null,
   };
 }
 

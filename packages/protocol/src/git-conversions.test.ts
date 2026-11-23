@@ -62,3 +62,25 @@ describe("git conversions contract", () => {
     ).toBe(".git/config");
   });
 });
+
+describe("KOBE-768: a member's view of a connection", () => {
+  it("may carry the repository name prefix, and nothing about the credential", async () => {
+    const { gitConnectionMemberViewSchema } = await import("./git-connections.js");
+    const view = {
+      id: "6f2f7d8e-1c1a-4f4e-9d5e-3b2a1c0d9e8f",
+      provider: "github",
+      base_url: "https://github.com",
+      organization: "acme",
+      display_name: "Acme",
+      access_level: "read_write",
+      status: "ok",
+    };
+    expect(gitConnectionMemberViewSchema.safeParse(view).success).toBe(true);
+    expect(
+      gitConnectionMemberViewSchema.safeParse({ ...view, repo_name_prefix: "kobe-" }).success,
+    ).toBe(true);
+    expect(gitConnectionMemberViewSchema.safeParse({ ...view, credential: {} }).success).toBe(
+      false,
+    );
+  });
+});
