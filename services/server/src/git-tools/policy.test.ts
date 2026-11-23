@@ -101,6 +101,10 @@ describe("default decisions (GQ3, G9)", () => {
     expect(decide("git_open_pull_request", PR, { mode: "auto" }).effect).toBe("deny");
     expect(decide("git_open_pull_request", PR, { kind: "schedule" }).effect).toBe("deny");
     expect(decide("git_list_repositories", {}, { kind: "schedule" }).effect).toBe("allow");
+    // L1: creating a branch does not ask, but unattended runs still need an allow rule for it.
+    const branch = { connection: CONN, repository: "docs", name: "x", from: "main" };
+    expect(decide("git_create_branch", branch, { kind: "schedule" }).effect).toBe("deny");
+    expect(decide("git_create_branch", branch, { mode: "auto" }).effect).toBe("deny");
     const listed = decide("git_open_pull_request", PR, {
       kind: "schedule",
       rules: [rule("team", "allow", "git_open_pull_request")],

@@ -56,3 +56,12 @@ export function fenceGitContent(nonce: string, text: string): string {
 export function plainHostText(text: string, max = 300): string {
   return sanitizeUntrusted(text).replace(/\s+/g, " ").trim().slice(0, max);
 }
+
+/**
+ * A file's text from the git host, fenced but otherwise verbatim (review g103 L5): an agent may
+ * write it back, so nothing is folded or rewritten. The per-answer nonce alone keeps the file from
+ * closing the fence.
+ */
+export function fenceGitFile(nonce: string, text: string): string {
+  return `${GIT_MARKER_BEGIN} ${nonce}>>>\n${text}\n${GIT_MARKER_END} ${nonce}>>>`;
+}

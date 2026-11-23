@@ -11,6 +11,7 @@ import {
 import { KOBE_RESULT_MAX_BYTES } from "../kobe-mcp/catalog.js";
 import {
   fenceGitContent,
+  fenceGitFile,
   gitContentNotice,
   newNonce,
   plainHostText,
@@ -160,7 +161,8 @@ export function readResult(
               sha: f.sha,
               binary: f.binary,
               truncated: f.truncated,
-              ...(f.binary ? {} : { content: fence(f.content) }),
+              // L5: file text verbatim inside the fence (only metadata is sanitised).
+              ...(f.binary ? {} : { content: fenceGitFile(nonce, f.content) }),
             };
       return done({ ...conn, repository: data.repository, ref: data.ref, ...body, ...notice });
     }

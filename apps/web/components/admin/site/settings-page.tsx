@@ -173,7 +173,7 @@ function AuditPrivacyForm({
 }
 
 const KOBE_MCP_HINTS: Readonly<Record<KobeMcpMode, string>> = {
-  off: "No Kobe connector: agents get neither the docs tools nor admin tools.",
+  off: "No Kobe connector: agents get neither the docs tools nor admin tools. Agents' git tools are not affected: they follow Git connections.",
   docs: "Agents can read the Kobe user guide. No admin tools in any team.",
   admin:
     "Each team admin may also turn on admin tools for their team. Agents then act as the person in the conversation, within that person's own permissions, and every change asks that person first.",

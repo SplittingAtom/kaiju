@@ -13,7 +13,7 @@ import {
   type KobeDb,
 } from "@kobe/db";
 import { gitAdapterFor } from "../git/adapters.js";
-import { repoProjectRoles, repoRefusal } from "../git/transport.js";
+import { repoProjectRoles, repoReadRules, repoReadable, repoRefusal } from "../git/transport.js";
 import { GitHostError, type GitHostAdapter } from "../git-hosts/adapter.js";
 import type { InstallationTokenCache } from "../git-hosts/github/app-auth.js";
 import type { GitHostNet } from "../git-hosts/http.js";
@@ -158,7 +158,15 @@ export async function runGitTool(
     const adapter = await openAdapter(deps, principal, facts.settings, decided.connection);
     if (!adapter.ok) return adapter;
     if (tool.access === "read") {
-      return await readTool(tool, input, decided.connection, adapter.adapter);
+      return await readTool(
+        deps,
+        principal,
+        facts,
+        tool,
+        input,
+        decided.connection,
+        adapter.adapter,
+      );
     }
     const locked = await withAdvisoryLockRetry(
       deps.db,
@@ -225,23 +233,42 @@ async function openAdapter(
 }
 
 async function readTool(
+  deps: GitToolsDeps,
+  principal: GitToolPrincipal,
+  facts: GitToolFacts,
   tool: GitToolDef,
   input: GitToolInput,
   connection: GitConnectionRecord,
   adapter: GitHostAdapter,
 ): Promise<GitExecution> {
   const repo = input.repository ?? "";
+  // M4 (owner decision 2026-11-22): a Kobe Repo is read only with a role on its project; it is
+  // left out of listings and refused exactly as a missing repository (no existence oracle).
+  const rules = await repoReadRules(deps.db, principal, connection.baseUrl);
+  const readable = (r: { id: string; fullName: string }) =>
+    facts.role !== null && repoReadable(facts.role, rules, r);
+  try {
+    if (rules.length > 0 && tool.name !== "git_list_repositories") {
+      if (!readable(await adapter.getRepository({ name: repo }))) {
+        return hostError(new GitHostError("not_found", "Not found."));
+      }
+    }
+  } catch (err) {
+    return hostError(err);
+  }
   const page = {
     cursor: input.cursor ?? null,
     ...(input.per_page ? { perPage: input.per_page } : {}),
   };
   try {
     switch (tool.name) {
-      case "git_list_repositories":
+      case "git_list_repositories": {
+        const listed = await adapter.listRepositories(page);
         return readResult(connection, {
           kind: "repositories",
-          page: await adapter.listRepositories(page),
+          page: { ...listed, items: listed.items.filter(readable) },
         });
+      }
       case "git_get_repository":
         return readResult(connection, {
           kind: "repository",

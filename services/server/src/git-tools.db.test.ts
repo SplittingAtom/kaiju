@@ -726,6 +726,46 @@ describe("the git tools follow the Git switch, never the Kobe connector's (M3)",
   });
 });
 
+describe("Kobe Repos are read with a role on their project (M4)", () => {
+  async function repoFor(w: World, connection: string, hostRepoId: string, fullName: string) {
+    const project = randomUUID();
+    await h.fx.admin.query(
+      `INSERT INTO projects (team_id, id, slug, name, kind, created_by)
+       VALUES ($1, $2, $3, 'Docs', 'repo', $4)`,
+      [w.team, project, `docs-${project.slice(0, 6)}`, w.admin.id],
+    );
+    await h.fx.admin.query(
+      `INSERT INTO git_repositories (team_id, connection_id, base_url, host_repo_id, full_name,
+         project_id, origin, created_by)
+       SELECT $1, id, base_url, $3, $4, $5, 'conversion', $6 FROM git_connections WHERE id = $2`,
+      [w.team, connection, hostRepoId, fullName, project, w.admin.id],
+    );
+  }
+
+  it("reads and lists a Repo for a member with a role on its project", async () => {
+    const w = await world();
+    const id = await connect(w, "github");
+    // Matched by name here (the id is the fake's); rename and reconnect: transport tests.
+    await repoFor(w, id, "1", `${github.organization}/docs`);
+    const s = await h.sandboxFor(w.team, w.reader);
+    const listed = JSON.parse((await call(s, "git_list_repositories", {})).text);
+    expect(listed.repositories.map((r: { name: string }) => r.name)).toEqual(["docs"]);
+    const file = await call(s, "git_read_file", { repository: "docs", path: "README.md" });
+    expect(file.isError, file.text).toBeUndefined();
+  });
+
+  it("refuses a name the host cannot resolve while Repos exist, exactly as a missing one", async () => {
+    const w = await world();
+    const id = await connect(w, "github");
+    await repoFor(w, id, "999999", `${github.organization}/gone`);
+    const s = await h.sandboxFor(w.team, w.reader);
+    const gone = await call(s, "git_read_file", { repository: "gone", path: "README.md" });
+    const missing = await call(s, "git_read_file", { repository: "never", path: "README.md" });
+    expect(gone.isError).toBe(true);
+    expect(gone.text).toBe(missing.text);
+  });
+});
+
 describe("the record", () => {
   it("never holds a credential, and the audit chain verifies", async () => {
     expect(seen.join("\n")).not.toContain(FAKE_PAT);

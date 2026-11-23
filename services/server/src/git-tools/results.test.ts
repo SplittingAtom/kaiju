@@ -149,3 +149,25 @@ describe("audit values (M1)", () => {
     expect(safeHostId("a".repeat(100))).toHaveLength(64);
   });
 });
+
+describe("file content (L5)", () => {
+  it("is returned verbatim inside the fence", () => {
+    const text = "<<<<<<< HEAD\nﬁ fullwidth Ａ\n=======\n>>>>>>> b\n";
+    const out = readResult(connection, {
+      kind: "file",
+      repository: "docs",
+      ref: null,
+      file: {
+        kind: "file",
+        path: "a.txt",
+        size: 1,
+        sha: "x",
+        binary: false,
+        truncated: false,
+        content: text,
+      },
+    });
+    const json = JSON.parse(out.ok ? out.text : "{}") as { content: string };
+    expect(json.content).toContain(`>>>\n${text}\n<<<END UNTRUSTED GIT CONTENT`);
+  });
+});
