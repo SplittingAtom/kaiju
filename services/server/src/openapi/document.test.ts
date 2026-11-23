@@ -1,5 +1,3 @@
-import { readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { ServerDeps } from "../deps.js";
 import { approvalRoutes } from "../routes/approvals.js";
@@ -48,9 +46,9 @@ import { egressRequestRoutes } from "../routes/egress-requests.js";
 import { siteEgressRoutes } from "../routes/site-egress.js";
 import { siteSsoRoutes } from "../routes/site-sso.js";
 
-// Regenerate after changing routes or schemas:
-//   UPDATE_OPENAPI=1 pnpm --filter @kobe/server exec vitest run src/openapi && pnpm format
-const FILE = fileURLToPath(new URL("../../openapi.json", import.meta.url));
+// The JSON file is generated, not committed (KOBE-815): `pnpm --filter @kobe/server openapi`
+// writes it from the build, and CI keeps it as an artifact. Route changes show in review through
+// the route-inventory snapshot (src/__snapshots__/route-inventory.app.txt).
 
 interface JsonSchemaNode {
   readonly required?: readonly string[];
@@ -78,9 +76,9 @@ function mountedOperations(prefix: string, router: { routes: { method: string; p
 describe("OpenAPI document (KOBE-34 ac-1)", () => {
   const doc = openApiDocument();
 
-  it("matches the committed openapi.json", () => {
-    if (process.env.UPDATE_OPENAPI) writeFileSync(FILE, `${JSON.stringify(doc, null, 2)}\n`);
-    expect(JSON.parse(readFileSync(FILE, "utf8"))).toEqual(doc);
+  it("survives the JSON round trip the generated openapi.json takes, and is deterministic", () => {
+    expect(JSON.parse(JSON.stringify(doc))).toStrictEqual(doc);
+    expect(JSON.stringify(openApiDocument())).toBe(JSON.stringify(doc));
   });
 
   // The middleware isn't run here; only the route tables are read.
