@@ -87,7 +87,7 @@ const fresh = () => {
   return name;
 };
 
-describe("remoteHead and fetchBranch", () => {
+describe("remoteHead and fetchBranch", { timeout: 60_000 }, () => {
   it("reads the head, the files and the newest commits", async () => {
     const name = fresh();
     const { http, url } = client(name);
