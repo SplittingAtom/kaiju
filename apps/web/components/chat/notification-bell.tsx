@@ -7,6 +7,8 @@ import {
   type NotificationsApi,
 } from "../../lib/notifications/api";
 import {
+  gitNotificationLink,
+  notificationDetail,
   notificationLabel,
   notificationTitle,
   type ScheduleWhen,
@@ -83,6 +85,7 @@ function NotificationItem({
   onOpen,
   onOpenSkill,
   onOpenLink,
+  onOpenFiles,
   onMarkRead,
 }: {
   readonly note: KobeNotification;
@@ -91,11 +94,14 @@ function NotificationItem({
   readonly onOpen: (() => void) | null;
   readonly onOpenSkill: ((href: string) => void) | null;
   readonly onOpenLink: (href: string) => void;
+  /** A conversion notice's project in the Files panel (KOBE-819); none without a rail. */
+  readonly onOpenFiles: (() => void) | null;
   readonly onMarkRead: () => void;
 }) {
   const skillHref = n.skillId ? catalogHref(n.skillId) : null;
-  const memoryLink = memoryNotificationLink(n, viewer);
+  const memoryLink = memoryNotificationLink(n, viewer) ?? gitNotificationLink(n);
   const title = notificationTitle(n);
+  const detail = notificationDetail(n);
   const unread = n.readAt === null;
   return (
     <li className={unread ? styles.noteUnread : styles.note}>
@@ -103,10 +109,16 @@ function NotificationItem({
         {title}
         {unread && <span className={styles.visuallyHidden}> (unread)</span>}
       </p>
+      {detail && <p className={styles.hint}>{detail}</p>}
       <p className={styles.hint}>
         {label} · <DateTime value={n.createdAt} />
       </p>
       <p className={styles.noteActions}>
+        {onOpenFiles && (
+          <button type="button" onClick={onOpenFiles}>
+            Show in Files<span className={styles.visuallyHidden}> for {title}</span>
+          </button>
+        )}
         {skillHref && onOpenSkill && (
           <button type="button" onClick={() => onOpenSkill(skillHref)}>
             Open in the catalog<span className={styles.visuallyHidden}> for {title}</span>
@@ -144,6 +156,7 @@ function NotificationPanel({
   onOpenThread,
   onOpenSkill,
   onOpenLink,
+  onOpenFiles,
 }: {
   readonly id: string;
   readonly open: boolean;
@@ -156,6 +169,7 @@ function NotificationPanel({
   readonly onOpenThread: (threadId: string) => void;
   readonly onOpenSkill: (href: string) => void;
   readonly onOpenLink: (href: string) => void;
+  readonly onOpenFiles: ((projectId: string) => void) | undefined;
 }) {
   const schedules = useResource(() => createSchedulesApi(teamId, fetchFn).list());
   // Until the caller's schedules are known (or if they fail), labels stay neutral.
@@ -184,6 +198,14 @@ function NotificationPanel({
     if (n.readAt === null) await list.markRead([n.notificationId]);
     onOpenLink(href);
   };
+  const openFiles = async (n: KobeNotification, projectId: string, open: (id: string) => void) => {
+    if (n.readAt === null) await list.markRead([n.notificationId]);
+    open(projectId);
+  };
+  const filesOf = (n: KobeNotification): (() => void) | null =>
+    onOpenFiles && n.kind.startsWith("git.conversion.") && n.projectId
+      ? () => void openFiles(n, n.projectId as string, onOpenFiles)
+      : null;
   return (
     <section
       id={id}
@@ -210,7 +232,7 @@ function NotificationPanel({
       {state.status === "ready" && state.items.length === 0 && (
         <p className={styles.hint}>
           {list.unreadOnly ? "No unread notifications." : "No notifications yet."} Scheduled runs
-          report here when they end, and memory reviews when they need you.
+          and Repo conversions report here when they end, and memory reviews when they need you.
         </p>
       )}
       {state.status === "ready" && state.items.length > 0 && (
@@ -224,6 +246,7 @@ function NotificationPanel({
               onOpen={n.threadId === null ? null : () => void openThread(n, n.threadId as string)}
               onOpenSkill={(href) => void openSkill(n, href)}
               onOpenLink={(href) => void openLink(n, href)}
+              onOpenFiles={filesOf(n)}
               onMarkRead={() => void list.markRead([n.notificationId])}
             />
           ))}
@@ -243,7 +266,8 @@ function NotificationPanel({
 /**
  * The notification bell in the app header (spec D32, KOBE-181): unread badge, and a list of the
  * caller's notifications in the active team, each linking to its Scheduled thread, catalog skill
- * or, for memory (KOBE-645), where the person decides.
+ * or, for memory (KOBE-645), where the person decides; a Repo conversion shows the Files panel
+ * and a git token expiry opens the Git section (KOBE-819).
  * Notifications carry ids and outcomes only (KOBE-176), never prompt or message text.
  */
 export function NotificationBell({
@@ -252,6 +276,7 @@ export function NotificationBell({
   onOpenThread,
   onOpenSkill = (href) => window.location.assign(href),
   onOpenLink = (href) => window.location.assign(href),
+  onOpenFiles,
   pollMs = POLL_MS,
 }: {
   readonly teamId: string;
@@ -261,6 +286,11 @@ export function NotificationBell({
   readonly onOpenSkill?: (href: string) => void;
   /** A memory notification's deep link (KOBE-645); a full navigation by default. */
   readonly onOpenLink?: (href: string) => void;
+  /**
+   * A Repo conversion notice's project (KOBE-819): shows the Files panel, where its Repo row and
+   * Convert to repo… are. Without it (no workspace rail) the notice has no such button.
+   */
+  readonly onOpenFiles?: ((projectId: string) => void) | undefined;
   readonly pollMs?: number;
 }) {
   const api = useMemo(() => createNotificationsApi(teamId, fetchFn), [teamId, fetchFn]);
@@ -307,6 +337,14 @@ export function NotificationBell({
             setOpen(false);
             onOpenLink(href);
           }}
+          onOpenFiles={
+            onOpenFiles
+              ? (projectId) => {
+                  setOpen(false);
+                  onOpenFiles(projectId);
+                }
+              : undefined
+          }
         />
       )}
     </div>

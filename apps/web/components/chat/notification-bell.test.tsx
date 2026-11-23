@@ -441,3 +441,92 @@ describe("a memory notification (KOBE-645)", () => {
     await waitFor(() => expect(onOpenLink).toHaveBeenCalledWith(`${path}?site_proposal=${P}`));
   });
 });
+
+describe("a git notification (KOBE-819)", () => {
+  const C = "00000000-0000-4000-8000-00000000e001";
+  const P = "00000000-0000-4000-8000-00000000e002";
+  const G = "00000000-0000-4000-8000-00000000e003";
+  const git = { schedule_id: null, thread_id: null, run_id: null };
+
+  it("tells the requester a conversion failed, with the reason, and opens the Files panel", async () => {
+    stubApi({
+      [COUNT]: [200, page([], 1)],
+      [ALL]: [
+        200,
+        page(
+          [
+            note(N1, {
+              ...git,
+              kind: "git.conversion.failed",
+              git_conversion_id: C,
+              project_id: P,
+              project_name: "Sales analysis",
+              git_repository: "acme/sales-analysis",
+              git_failure: "host_unreachable",
+              git_failure_message: "The git host could not be reached. Retry shortly.",
+            }),
+          ],
+          1,
+        ),
+      ],
+      [MINE]: [200, schedules],
+      [READ]: [200, { updated: 1, unread_count: 0 }],
+    });
+    const onOpenFiles = vi.fn();
+    render(
+      <IconActionProvider>
+        <NotificationBell teamId="t-1" onOpenThread={vi.fn()} onOpenFiles={onOpenFiles} />
+      </IconActionProvider>,
+    );
+    await userEvent.click(await bell());
+    const panel = await screen.findByRole("region", { name: "Notifications" });
+    expect(
+      await within(panel).findByText("Converting Sales analysis to a Repo failed"),
+    ).toBeTruthy();
+    expect(
+      within(panel).getByText("The git host could not be reached. Retry shortly."),
+    ).toBeTruthy();
+    expect(within(panel).getByText(/Repo acme\/sales-analysis ·/)).toBeTruthy();
+    expect(within(panel).queryByRole("button", { name: /Open conversation/ })).toBeNull();
+    await userEvent.click(within(panel).getByRole("button", { name: /Show in Files/ }));
+    await waitFor(() => expect(onOpenFiles).toHaveBeenCalledWith(P));
+  });
+
+  it("tells an admin a token is nearing expiry and links to the Git section", async () => {
+    stubApi({
+      [COUNT]: [200, page([], 1)],
+      [ALL]: [
+        200,
+        page(
+          [
+            note(N1, {
+              ...git,
+              kind: "git.connection.token_expiring",
+              git_connection_id: G,
+              git_connection_name: "Acme on GitHub",
+              git_expires_at: "2026-10-20T00:00:00Z",
+            }),
+          ],
+          1,
+        ),
+      ],
+      [MINE]: [200, schedules],
+      [READ]: [200, { updated: 1, unread_count: 0 }],
+    });
+    const onOpenLink = vi.fn();
+    render(
+      <IconActionProvider>
+        <NotificationBell teamId="t-1" onOpenThread={vi.fn()} onOpenLink={onOpenLink} />
+      </IconActionProvider>,
+    );
+    await userEvent.click(await bell());
+    const panel = await screen.findByRole("region", { name: "Notifications" });
+    expect(
+      await within(panel).findByText(
+        "The credential of the git connection Acme on GitHub expires on 2026-10-20",
+      ),
+    ).toBeTruthy();
+    await userEvent.click(within(panel).getByRole("button", { name: /Open the Git section/ }));
+    await waitFor(() => expect(onOpenLink).toHaveBeenCalledWith("/admin/team/git"));
+  });
+});
