@@ -194,3 +194,13 @@ fixed (guide and audit doc say refused by Kobe or the host). L7 fixed (wired). L
 other Workspace's repo-status, spawn path; **left:** an end-to-end agent `commit_project` on a Repo
 through the approval card (needs the agent fixture with a converted Repo; the decision and the
 reply mapping are unit-tested) and the agent-level `prepareRepo` → frame test.
+
+**Sweep boundary (2026-11-23):** new nullable `git_repositories.linked_at` (migration `0257`, set by
+the conversion and by relink); the sweep keeps every commit from before it, so KOBE-766's relink
+promise (an earlier repository's last mirror stays) holds; rows from before fall back to the
+conversion's `finished_at`.
+
+**Suites after review round 1:** protocol 1368; db unit 1105, DB 2175; server unit 4567, test:db
+3725 (one unrelated `memory-review.db.test.ts` case failed once in the full run and passes alone,
+twice); web 4237; sandbox-agent 1485 (1289 run); typecheck, lint, format:check, site wording,
+public hygiene; gate2 scan regexes match nothing this branch added.
