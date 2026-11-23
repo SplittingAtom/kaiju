@@ -139,9 +139,11 @@ under the Workspace's policy:
   conversation running in the member's sandbox uses one of them.
 - Nothing destructive is offered: no deleting or archiving repositories, merging, visibility or
   settings changes, members, secrets or webhooks.
-- A repository that is a Kobe Repo is readable (by the tools and by git in sandboxes) only for
-  members with a role on its project; for others it behaves as if it did not exist. Converting a
-  project to a Repo never widens who can read it. Other repositories of the organization stay
+- Reading a repository that is a Kobe Repo (with the tools or git in sandboxes) follows its
+  project's read rule. Every Workspace member is currently a reader of every project, so today
+  this refuses no member; it takes effect wherever a project's readers are restricted, and then
+  the Repo behaves for others as if it did not exist. Converting a project to a Repo never widens
+  who can read it. Other repositories of the organization stay
   readable by every member at **Read**.
 - Each member may make 300 reads per 10 minutes and 30 changes per hour, and all agents together
   3,000 reads and 300 changes an hour per connection, well under GitHub's 5,000 requests an hour

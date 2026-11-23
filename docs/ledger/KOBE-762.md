@@ -104,9 +104,9 @@ untrusted fences, refusal codes), `admin/git-organizations.md` (agent column per
 - **M4** (owner decision): reading a Kobe Repo (matched by host id and last-seen name under any
   connection, `repoReadRules`/`repoReadable` in `git/transport.ts`) needs project `view`, in the
   tools (specific reads resolve the id first when the host has Repos; listings filter) and in the
-  transport's fetch decision; refused exactly as missing. **Note:** since KOBE-587 every Workspace
-  member is an implicit reader of every project, so today this refuses nobody; it holds if
-  project visibility returns. Tested with a stubbed permission (unit), fail-closed and allowed
+  transport's fetch decision; refused exactly as missing. Reading a Repo follows the project's
+  read rule; since KOBE-587 every Workspace member is an implicit reader of every project, so
+  today this refuses no member — it takes effect wherever a project's readers are restricted. Tested with a stubbed permission (unit), fail-closed and allowed
   paths (DB, incl. rename and reconnect for transport).
 - **Lows**: guide wording for create_branch in unattended runs (+ test); retries per run;
   `outcome_unknown`; file content verbatim inside the fence (`fenceGitFile`), metadata still
