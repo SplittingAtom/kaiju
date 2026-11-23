@@ -21,6 +21,10 @@ const teamB = randomUUID();
 const userId = randomUUID();
 const SHA = "a".repeat(40);
 const refused = (code: string) => (e: unknown) => pgCodeOf(e) === code;
+const must = <T>(v: T | undefined): T => {
+  if (v === undefined) throw new Error("expected a row");
+  return v;
+};
 
 async function repo(teamId: string) {
   return withTeam(app.db, teamId, async (tx) => {
@@ -47,16 +51,16 @@ async function repo(teamId: string) {
       .insert(gitRepositories)
       .values({
         teamId,
-        connectionId: c!.id,
+        connectionId: must(c).id,
         baseUrl: "https://git.acme.test",
         hostRepoId: randomUUID().slice(0, 8),
         fullName: `acme/${slug}`,
-        projectId: p!.id,
+        projectId: must(p).id,
         origin: "conversion",
         createdBy: userId,
       })
       .returning();
-    return { projectId: p!.id, repositoryId: r!.id };
+    return { projectId: must(p).id, repositoryId: must(r).id };
   });
 }
 
