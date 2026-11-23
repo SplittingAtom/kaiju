@@ -163,6 +163,36 @@ export const GIT_EVENTS = {
     hostId,
     url: webUrl.optional(),
   }),
+  // ── Committing to a Repo from Kobe's commit flow (KOBE-767, spec workspace-git G18, GQ11):
+  // ids, the mode and the host's numbers; never the message, paths or the branch name ──
+  /**
+   * The member's commit (from the Commit dialog, or an agent's `commit_project`: run and tool call
+   * in `viaAgent`) became a git commit on the host: pushed to a branch with a pull request opened
+   * (`opened`) or added to the member's open one, or pushed straight to the default branch
+   * (`direct`, when the connection allows it). `fallback`: direct commits were allowed but the host
+   * refused one to the default branch, so a pull request was opened instead.
+   */
+  "git.repo.committed": event("team", {
+    projectId: id,
+    repositoryId: id,
+    connectionId: id,
+    hostRepoId,
+    mode: z.enum(["pull_request", "direct"]),
+    commitSha: gitSha,
+    number: z.number().int().positive().optional(),
+    url: webUrl.optional(),
+    opened: z.boolean().optional(),
+    fallback: z.boolean(),
+    kobeCommitId: id.optional(),
+  }),
+  /** The host refused a commit to a Repo (`failure`: `repo_moved`, `push_rejected`, ...); nothing changed. */
+  "git.repo.commit_failed": event("team", {
+    projectId: id,
+    repositoryId: id,
+    connectionId: id,
+    mode: z.enum(["pull_request", "direct"]),
+    failure: reasonCode,
+  }),
   /** An agent created a repository (`git_create_repository`; G10: private or internal only). */
   "git.repository.created": event("team", {
     ...toolWrite,

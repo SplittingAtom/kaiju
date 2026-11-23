@@ -76,6 +76,16 @@ export const GIT_EVENT_DOCS = {
       "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `number?`, `hostId`, `url?`",
     when: "An agent opened a pull request with `git_open_pull_request` (KOBE-762). Never the title, text or branch names",
   },
+  "git.repo.commit_failed": {
+    fields:
+      "`projectId`, `repositoryId`, `connectionId`, `mode` (`pull_request`, `direct`), `failure`",
+    when: "The git host refused a commit to a Repo from Kobe's commit flow (the default branch moved, a hook or size limit, the repository gone); nothing changed (KOBE-767)",
+  },
+  "git.repo.committed": {
+    fields:
+      "`projectId`, `repositoryId`, `connectionId`, `hostRepoId`, `mode` (`pull_request`, `direct`), `commitSha`, `number?`, `url?`, `opened?`, `fallback`, `kobeCommitId?`",
+    when: "A member's commit to a Repo (Commit dialog, or an agent's `commit_project` with run and tool call in `viaAgent`) became a git commit on the host: a branch with a pull request opened or added to, or straight to the default branch where the connection allows it (`fallback`: the host protected it, so a pull request was opened) (KOBE-767). Never the message, paths or branch name",
+  },
   "git.repository.created": {
     fields:
       "`connectionId`, `agentId?`, `host`, `organization`, `repository`, `hostRepoId`, `callDigest`, `hostId`, `visibility` (`private`, `internal`, `public` if the host made it so), `url?`",
