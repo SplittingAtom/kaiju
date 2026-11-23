@@ -91,6 +91,9 @@ export function toRepository(json: unknown, webBase: string, organization: strin
     // GitHub has no "empty" flag; a repository without commits reports size 0.
     empty: r.size === 0,
     description: descriptionOf(r.description),
+    ...(typeof r.size === "number" && Number.isSafeInteger(r.size) && r.size >= 0
+      ? { sizeKb: r.size }
+      : {}),
     webUrl: safeWebUrl(r.html_url, webBase),
     cloneUrl: cloneUrlFor(webBase, organization, name),
   };

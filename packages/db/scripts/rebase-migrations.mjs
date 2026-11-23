@@ -87,7 +87,9 @@ function stash(base) {
     readJson(JOURNAL, mergeBase).entries,
   );
   if (own.length === 0) {
-    console.log(`db:rebase: no branch-only migrations; a plain \`git merge ${base}\` is enough`);
+    console.log(
+      `db:rebase: no branch-only migrations to regenerate; merging ${base} is all this step needs (scripts/onto-main.sh does that next, then regenerates the audit table)`,
+    );
     return null;
   }
   const ownNames = new Set(own.map((e) => nameOf(e.tag)));

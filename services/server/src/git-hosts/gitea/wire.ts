@@ -94,6 +94,8 @@ const repository = z.object({
   empty: z.boolean().optional(),
   archived: z.boolean().optional(),
   description: z.string().nullish(),
+  /** In KiB (KOBE-818). */
+  size: z.number().int().nonnegative().optional(),
   html_url: url,
   // `clone_url` is not read: the clone URL is built from the base URL (review M2).
   permissions: z
@@ -142,6 +144,7 @@ export function asRepository(
         typeof r.description === "string" && r.description !== ""
           ? r.description.slice(0, 512)
           : null,
+      ...(r.size === undefined ? {} : { sizeKb: r.size }),
       webUrl: safeWebUrl(r.html_url, webRoot),
       cloneUrl: cloneUrlFor(webRoot, organization, r.name),
     },

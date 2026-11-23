@@ -81,8 +81,10 @@ the stacked branch's own and be re-created. `db:rebase` refuses when one of the 
 migrations is already on the base under another number with the same name and SQL.
 
 **A branch from before KOBE-815** has no `scripts/onto-main.sh` and still adds audit rows to the
-old hand-written table. Run the script from a checkout of main (it works on the branch you call
-it from) or merge main first:
+old hand-written table. The script is not on that branch, so call it by path from a checkout of
+main (at or after KOBE-815) while your shell stands in the old branch's worktree: it acts on the
+worktree it is run in (the branch there, not main's checkout), using the main checkout's copy of
+the script file only. Or merge main into the branch first:
 
 ```bash
 cd ../Kobe-wt<N>                          # the old branch, clean working tree

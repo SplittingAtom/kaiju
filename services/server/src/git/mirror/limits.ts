@@ -67,6 +67,24 @@ export const GIT_MIRROR_MAX_BYTES = GIT_MIRROR_LIMITS.maxContentBytes;
 export const GIT_MIRROR_MAX_OBJECTS = 20_000;
 /** A Repo too large to mirror is tried again this often (it may shrink; Refresh may try sooner). */
 export const GIT_MIRROR_TOO_LARGE_RECHECK_MS = 6 * 60 * 60_000;
+/** The failures that mean "too large to mirror" (review R3-M1). */
+export const GIT_MIRROR_TOO_LARGE_CODES: ReadonlySet<string> = new Set([
+  "too_many_files",
+  "file_too_large",
+  "repository_too_large",
+]);
+/**
+ * A Repo already too large to mirror is not fetched again while the host reports a repository
+ * size above this many times the pack cap (KOBE-818). The size is an untrusted hint of the whole
+ * repository with its history, not of the default branch's tip, so the margin is wide: a Repo
+ * only a little over the pack cap is still fetched and judged by what it sends.
+ */
+export const GIT_MIRROR_SIZE_HINT_MARGIN = 4;
+/**
+ * Manual Refresh on a Repo that is too large to mirror: once an hour per Repo (all members share
+ * it), since each try is a host call and a fetch up to the pack cap (`git-mirror-refresh-large:<repo>`).
+ */
+export const GIT_MIRROR_TOO_LARGE_REFRESH_RATE: RateLimitRule = { windowMs: 60 * 60_000, max: 1 };
 /** Free space a refresh needs in its work folder beyond the pack and its objects. */
 export const GIT_MIRROR_DISK_MARGIN_BYTES = 64 * 1024 * 1024;
 
