@@ -55,23 +55,30 @@ on the next run, including when the agent runs the file.
 
 ## Code completion from the kernel
 
-In a `.py` file's editor, completion also asks the conversation's kernel, so it can suggest
-variables, attributes, DataFrame columns and module members that exist right now (see [Code
-completion](file-editor.md#code-completion)). Kobe uses the kernel's own completer with the
-parts that touch your objects replaced by plain reads, so asking runs none of your code. The text
-before the cursor is followed only through names, plain constants, attributes stored in a class or
-instance dictionary, and items of dicts, lists, tuples and DataFrames picked by a plain key (a
-string, a number, or a tuple of those). It stops, and you get only the editor's own suggestions,
-at a property, a `functools.cached_property` or any other descriptor, a call, a class with a
-custom metaclass, or any other key. Attribute names come from the class and instance
-dictionaries; dictionary keys from plain dicts, DataFrames (pandas lists the columns) and NumPy
-record arrays. Your `__dir__`, `__getattr__`, `_ipython_key_completions_`, a key's `__hash__` and
-`__eq__`, and completers you registered with IPython's `complete_object` are not called.
-Completion never interrupts running code, and does not start while a timer of yours
-(`signal.setitimer`) is pending. Docs come from signatures and docstrings read the same way: no
-repr and no getter runs, a class with a custom metaclass is not looked into, and a default value
-that is not a plain number or string shows as `…`. Nothing about it is saved, and it does not
-count as using your sandbox: typing in the editor never keeps it awake.
+In a `.py` file's editor, completion also asks the conversation's kernel (see [Code
+completion](file-editor.md#code-completion)). It offers:
+
+- names your runs (or the agent's) created, such as variables, functions, classes and imports;
+- after a dot, the attributes stored on a module, class or object, read from their dictionaries;
+- inside `d['` or `d[`, the keys of a plain dict (strings, numbers);
+- inside a call such as `f(`, the keyword arguments of a plain Python function, class or built-in
+  (`name=`);
+- DataFrame column names after `df.` or `df['`, only when pandas stores the labels as Python
+  objects (not with pandas' default PyArrow string storage).
+
+Kobe does not use IPython's completer: a small resolver reads your namespace and the dictionaries
+of modules, classes and objects, and never calls anything. It stops, and you get only the
+editor's own suggestions, at a property, a `functools.cached_property` or any other descriptor, a
+class with a custom metaclass, an object that defines `__getattribute__`, a call, or a module
+attribute only `__getattr__` would supply. Its tests check that none of your getters, descriptors,
+`__getattr__`, `__getattribute__`, `__class__`, `__dir__`, `__signature__`, metaclass hooks, key
+`__hash__`/`__eq__` or registered completers run. Very large containers are only partly read: at
+most 10,000 entries are looked at and 200 suggestions returned, within a fifth of a second, so a
+huge dict may show only some of its keys. Completion does not start while a timer of yours
+(`signal.setitimer`) is pending, and it never interrupts running code. Docs come from signatures
+and docstrings read the same way (no repr, no getter; a default value that is not a plain number
+or string shows as `…`). Nothing about it is saved, and it does not count as using your sandbox:
+typing in the editor does not keep it awake.
 
 Kernel completion only works while the kernel runs and is idle. A note under the editor, next to
 the line and column, says when it is off and why: the kernel is not started (press **Start** or run

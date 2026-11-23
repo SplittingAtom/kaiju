@@ -17,37 +17,39 @@
   `notebook_complete`, never an eval sandbox) → agent `KernelManager.complete`
   (`services/sandbox-agent/src/notebook/completion.ts`) → bridge ops `complete` / `doc`
   (`images/sandbox/kernel/kobe-kernel-bridge.py`). Contract: `packages/protocol/src/notebook-completion.ts`.
-- **Evaluation safety (the choice; security review rounds 1 and 2).** `complete` is Jupyter
-  `complete_request` with jedi off (`KERNEL_ARGS`; jedi's interpreter mode ran a property getter).
-  IPython's `limited` policy still ran member code (round 2: `cached_property` computed and
-  stored, custom descriptors, metaclass `__getattribute__`, key `__hash__`/`__eq__`), and round 1's
-  0.5 s SIGALRM then cut a member getter mid-way (a lock stayed held; with a member timer pending
-  the kernel hung). Now the launcher's `COMPLETER_GUARD` replaces every completer part that
-  touches member objects, so nothing of the member's runs and nothing is ever interrupted:
-  `guarded_eval` (used only by the completer) → a static evaluator: names (namespace dicts, then
-  builtins), plain constants, attributes from type/instance dicts (plain values, functions,
-  static/class methods, C-level getset/member descriptors; refused: properties, `cached_property`
-  unless already cached in the instance dict, any other descriptor, data descriptors before the
-  instance dict, classes whose metaclass is not exactly `type`, types defining
-  `__getattribute__`, missing names), items of exact dict (keys compared only with keys of the
-  same exact plain type; ≤100 000 entries), list/tuple (int) and DataFrame (str column found by
-  scanning `columns`) by plain immutable keys; calls and operators refused. `dir2` → static dir
-  (exact pandas DataFrame/Series keep `dir()`); keys only from exact dict (str/bytes), DataFrame,
-  ndarray; `complete_object` never consulted (registered completers don't run; `register` still
-  works). No in-kernel alarm: the bridge's deadline discards a late answer; `do_complete` and
-  `doc` refuse while a member `ITIMER_REAL` is pending. Guard failure → the kernel completes
-  nothing. **What still runs in `complete`:** IPython's own completer code, and pandas'
-  `dir()`/`columns`/`__getitem__` and numpy `dtype.names` for exact library types. Tested:
-  `guard-harness.py` (lock-holding `cached_property`: lock never taken, nothing cached;
-  descriptors; metaclass `__getattribute__`; `__getattribute__`; hashing keys; object hooks;
-  registered completer; pending timer) and the `test-image.sh` real-kernel check (zero hits; the
-  round-1 bridge fails it). The reviewer's five probe scripts also give zero hits. **`doc`:** the
-  editor sends a checked dotted name only; `DOC_SOURCE` resolves it from dicts only (no
-  `inspect.getattr_static`, whose `entry.__dict__` ran a metaclass `__getattribute__`; classes
-  whose metaclass is not `type` are not looked into; descriptors returned raw), classifies by
-  `type(obj)`, builds signatures from `__code__`/`__defaults__` (defaults other than plain
-  numbers/strings shown `…`, no annotations), reads docstrings through built-in types'
-  descriptors. Hostile objects record zero calls (`completion-source.test.ts`).
+- **Evaluation safety (the choice; security review rounds 1-3).** IPython's completer is not
+  used at all (round 3: after patching its evaluator, dir, key lister and generics, its
+  keyword-argument matcher still `eval`ed the callee; a 10 M-entry dict blocked the kernel). The
+  launcher turns `complete_request` into an empty answer and jedi is irrelevant. Both `complete`
+  and `doc` run `STATIC_SOURCE` in a silent request's user expression (no execution count, no
+  `Out`; the code and the name enter only as string literals). The resolver tokenises the text
+  before the cursor itself (last 300 characters; open-call scan ≤ 2 000): a chain of names,
+  `.attr`, `['str']`/`[int]` (≤ 10 steps) resolved through namespace dicts, module dicts, class
+  dicts along `type.__mro__` and the instance dict via the C-level `__dict__` descriptor; it
+  stops at properties, `cached_property` (unless already cached in the instance dict), any other
+  descriptor, data descriptors, classes whose metaclass is not exactly `type`, types defining
+  `__getattribute__`, names only a module `__getattr__` would give, tuple keys, and dict keys of
+  another exact type (keys are compared only with keys of the same exact plain type). It offers
+  names from the user namespace (not `_`-prefixed or IPython's), attribute names from those
+  dicts, keys of exact `dict` (str/int/float/bool), DataFrame column labels only through a
+  non-executing path (`_mgr` → C getset `axes` → the Index's numpy object array; PyArrow-backed
+  labels are not offered), and `name=` keyword arguments from plain functions' code objects, a
+  plain class's `__init__`/`__new__` and built-ins' `__text_signature__`. Caps: 10 000 entries
+  examined (`itertools.islice`), 200 returned (the bridge then keeps 100), 200 ms budget checked
+  between steps. Not while a member `ITIMER_REAL` is pending (`error: "timer"`); nothing is
+  interrupted. **Tested:** `completion-source.test.ts` runs every probe of rounds 1-3 (hooks,
+  `__class__` property, `__getattribute__`, metaclass `__getattr__`/`__getattribute__`, lazy
+  proxy, lock-holding `cached_property`, property, descriptors, hashing keys, tuple keys with a
+  member element, module `__getattr__`, `__signature__` property, the keyword path on all of
+  them): zero calls, lock never taken, nothing cached; a 10 M-entry dict answers in ~15 ms and the
+  next request is immediate; usefulness (namespace names, module members, instance attributes,
+  dict keys, kwargs from functions/classes/built-ins). The `test-image.sh` real-kernel check
+  covers the same plus DataFrame columns, the pending timer and a run right after the big dict;
+  the round-1 and round-2 bridges fail it. The reviewer's seven probe scripts give zero calls.
+  **Accepted (review R3-L3):** a namespace or dict holding a `str` subclass key with a colliding
+  hash can have its `__eq__` called by a lookup; contrived. `doc` uses the same dict-only reads,
+  classifies by `type(obj)`, builds signatures from `__code__`/`__defaults__` (defaults other than
+  plain numbers/strings shown `…`, no annotations).
 - **Accepted (review L7):** the user expressions (`DOC_EXPRESSION`, like 803's snapshot) call
   `exec` resolved in the member's namespace; a member who rebinds `exec` runs their own code on
   hover. Self-inflicted in their own kernel; shared with KOBE-803.

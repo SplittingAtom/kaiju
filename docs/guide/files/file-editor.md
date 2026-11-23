@@ -111,8 +111,8 @@ JavaScript and TypeScript files get their keywords and snippets. Read-only views
 anything.
 
 For a `.py` file, the conversation's running Python kernel adds what it knows: variables set by
-earlier runs (yours or the agent's), attributes of live objects, DataFrame column names and the
-members of imported modules. Those suggestions are marked "kernel" and come first. The kernel also
+earlier runs (yours or the agent's), attributes stored on live objects and imported modules, keys
+of plain dicts and keyword arguments inside a call. Those suggestions are marked "kernel" and come first. The kernel also
 shows a function's signature above the call while you type its arguments, and a docstring when you
 hover over a name or press **Ctrl+Shift+Space**. See [Notebooks and Python](notebooks.md#code-completion-from-the-kernel).
 

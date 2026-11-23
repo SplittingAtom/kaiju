@@ -136,9 +136,10 @@ export const threadsDetails: Readonly<Record<string, CatalogDetail>> = {
     responseDescription:
       "The code editor's kernel completion (KOBE-808). `op: complete`: the matches at `cursor` " +
       "(code points into `code`) and the span they replace; `op: doc`: the signature and " +
-      "docstring of a dotted name. Neither calls the member's functions, property getters or " +
-      "object hooks (IPython's completer with jedi off, limited evaluation and a static dir; " +
-      "names resolved statically, never a repr), and neither counts as sandbox activity. It " +
+      "docstring of a dotted name. Both come from a static resolver in the sandbox that reads " +
+      "namespace, module, class and instance dicts only (no calls, properties, descriptors or " +
+      "object hooks, never a repr), bounded by caps and a time budget; neither counts as " +
+      "sandbox activity. It " +
       "never wakes the sandbox or starts a kernel, and never waits for running code: `asleep`, " +
       "`no_kernel`, `busy`, `unsupported` (an older sandbox agent) and `unavailable` (no answer " +
       "within about a second) are answers too. Nothing is stored. Matches and docs are " +

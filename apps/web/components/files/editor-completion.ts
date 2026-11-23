@@ -73,6 +73,7 @@ const KIND: Readonly<Record<string, string>> = {
   attribute: "property",
   property: "property",
   "dict key": "property",
+  param: "variable",
   module: "namespace",
   class: "class",
   keyword: "keyword",

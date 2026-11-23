@@ -44,15 +44,15 @@ kernel. Each variable's description runs under a SIGALRM timer (`per_var_ms`) wi
 exception caught, so a `__repr__` that raises or loops costs that variable its repr, not the
 snapshot; the whole snapshot has a budget (`budget_ms`) and count and byte caps (`truncated`).
 
-Completion (KOBE-808): `complete` is Jupyter's `complete_request` on the shell channel (no
-execution count, no history). The kernel starts with IPython's completer set to jedi off
-(KERNEL_ARGS: jedi's interpreter mode runs property getters on live objects) and the launcher's
-COMPLETER_GUARD replaces every part of the completer that touches member objects with static
-reads (see there). `doc` never sends the member's code at all: the agent sends a dotted name the
-server checked, and DOC_SOURCE (a silent request's user expression, like `inspect`) resolves it
-from dicts only and reads the signature and docstring, never a repr. Neither interrupts anything
-or runs while a member's timer is pending. Both answer within `timeout_ms` or `error: "timeout"`;
-a late reply is skipped by its message id.
+Completion (KOBE-808): IPython's completer is never used (its matchers evaluate member code; the
+launcher turns `complete_request` into an empty answer). `complete` and `doc` run STATIC_SOURCE in
+a silent request's user expression (like `inspect`: no execution count, no history, nothing in
+`Out`): a resolver that reads only namespace, module, class and instance dicts (through C-level
+descriptors taken from built-in types), never calls, never invokes a descriptor, a property, a
+metaclass or a member's hook, and is bounded by caps and a 200 ms budget checked between steps.
+The member's code is passed only as a string literal; `doc` gets a dotted name the server
+checked. Neither runs while a member's timer is pending. Both answer within `timeout_ms` or
+`error: "timeout"`; a late reply is skipped by its message id.
 """
 
 import ast
@@ -103,261 +103,17 @@ _init = _io.IOPubThread.__init__
 def _no_pipe(self, socket, pipe=False, session=False):
     _init(self, socket, pipe=False, session=session)
 _io.IOPubThread.__init__ = _no_pipe
-@COMPLETER_GUARD@
+# KOBE-808: IPython's own completer is never used (its matchers evaluate member code); kernel
+# completion is the bridge's static resolver (STATIC_SOURCE). A complete_request answers nothing.
+from ipykernel import ipkernel as _ipk
+def _no_complete(self, code, cursor_pos):
+    pos = len(code) if cursor_pos is None else cursor_pos
+    return {"status": "ok", "matches": [], "cursor_start": pos, "cursor_end": pos, "metadata": {}}
+_ipk.IPythonKernel.do_complete = _no_complete
 from ipykernel import kernelapp
 kernelapp.launch_new_instance()
 """
 
-# KOBE-808 (security review rounds 1 and 2): IPython's completer, even with limited evaluation,
-# runs member code: an object's completion hooks (`__dir__`, `_ipython_key_completions_`, a
-# `__getattr__` canary), `__class__` reads, custom descriptors and `functools.cached_property`,
-# metaclass hooks, and the `__hash__`/`__eq__` of dictionary keys. In the kernel, before it
-# starts, the guard replaces the parts that touch member objects:
-# - expression evaluation (`guarded_eval`, used only by the completer) by a static evaluator:
-#   names, plain constants, attributes read from the type's and instance's dicts (only plain
-#   values, functions, static/class methods and C-level descriptors; never a property, another
-#   descriptor, a class with a metaclass other than `type`, or a type with its own
-#   `__getattribute__`), and items of exact dicts, lists, tuples and pandas DataFrames by keys of
-#   plain immutable built-in types (dict keys compared only with keys of the same exact type);
-#   anything else gives no kernel completions;
-# - attribute names from a static dir (a pandas DataFrame or Series keeps its real dir: columns);
-# - dictionary keys only from exact dicts (str/bytes keys), DataFrames and numpy arrays;
-# - generics (`complete_object`): never consulted, so completers a member registered don't run.
-# No signal or exception is ever injected into running code; the bridge's deadline discards a late
-# answer. A completion is not started while a timer of the member's is pending (its handler would
-# run inside it). If any of this fails to apply, the kernel completes nothing.
-COMPLETER_GUARD = r"""
-def _kobe_guard_completer():
-    import signal, sys, types
-    from ipykernel import ipkernel
-    plain_complete = ipkernel.IPythonKernel.do_complete
-
-    def empty(code, cursor_pos):
-        pos = len(code) if cursor_pos is None else cursor_pos
-        return {"status": "ok", "matches": [], "cursor_start": pos, "cursor_end": pos, "metadata": {}}
-
-    try:
-        import ast
-        import IPython.core.completer as completer
-        import IPython.core.guarded_eval as guarded
-        import IPython.utils.generics as generics
-
-        mro_of = type.__dict__["__mro__"].__get__
-        dict_of = type.__dict__["__dict__"].__get__
-        module_dict = types.ModuleType.__dict__["__dict__"].__get__
-        static_func = staticmethod.__dict__["__func__"].__get__
-        class_func = classmethod.__dict__["__func__"].__get__
-        c_level = (types.GetSetDescriptorType, types.MemberDescriptorType)
-        c_methods = (
-            types.BuiltinFunctionType,
-            types.MethodDescriptorType,
-            types.WrapperDescriptorType,
-            types.ClassMethodDescriptorType,
-        )
-        plain = (str, bytes, int, float, complex, bool, type(None))
-        Rejected = guarded.GuardRejection
-        builtins_dict = module_dict(sys.modules["builtins"])
-        missing = object()
-
-        def library_type(module, name):
-            m = sys.modules.get(module)
-            if type(m) is not types.ModuleType:
-                return None
-            t = module_dict(m).get(name)
-            return t if type(t) is type else None
-
-        def lookup(t, name):
-            for klass in mro_of(t):
-                d = dict_of(klass)
-                if name in d:
-                    return d[name]
-            return missing
-
-        def defines(t, name):
-            # Whether a class in t's MRO other than object defines `name` (read statically).
-            return any(klass is not object and name in dict_of(klass) for klass in mro_of(t))
-
-        def instance_dict(obj, t):
-            d = lookup(t, "__dict__")
-            if type(d) in c_level:
-                try:
-                    own = d.__get__(obj, t)
-                except Exception:
-                    return None
-                return own if type(own) is dict else None
-            return None
-
-        def plain_key(key):
-            if type(key) is tuple:
-                return all(plain_key(k) for k in key)
-            return type(key) in plain
-
-        def static_attr(obj, name):
-            t = type(obj)
-            if issubclass(t, types.ModuleType):
-                value = module_dict(obj).get(name, missing)
-                if value is missing:
-                    raise Rejected(name)
-                return value
-            if issubclass(t, type):
-                # A class: only of the plain metaclass (no metaclass hooks).
-                if t is not type:
-                    raise Rejected("metaclass")
-                meta = dict_of(type).get(name, missing)
-                if type(meta) in c_level:
-                    return meta.__get__(obj, t)
-                value = lookup(obj, name)
-                if value is missing:
-                    raise Rejected(name)
-                return class_value(value)
-            if defines(t, "__getattribute__"):
-                raise Rejected("__getattribute__")
-            found = lookup(t, name)
-            if found is not missing and type(found) in c_level:
-                return found.__get__(obj, t)
-            vt = type(found)
-            data = found is not missing and (defines(vt, "__set__") or defines(vt, "__delete__"))
-            if found is not missing and data:
-                raise Rejected("data descriptor")
-            own = instance_dict(obj, t)
-            if own is not None and name in own:
-                return own[name]
-            if found is missing:
-                raise Rejected(name)
-            return class_value(found)
-
-        def class_value(value):
-            vt = type(value)
-            if vt is types.FunctionType or vt in c_methods:
-                return value
-            if vt is staticmethod:
-                return static_func(value)
-            if vt is classmethod:
-                return class_func(value)
-            if defines(vt, "__get__"):
-                # A property, cached_property or any other descriptor: its getter would run.
-                raise Rejected("descriptor")
-            return value
-
-        def static_item(container, key):
-            if not plain_key(key):
-                raise Rejected("key")
-            t = type(container)
-            if t is dict:
-                if len(container) > 100_000:
-                    raise Rejected("large")
-                kt = type(key)
-                for k, v in container.items():
-                    if type(k) is kt and k == key:
-                        return v
-                raise Rejected("no key")
-            if t in (list, tuple) and type(key) is int:
-                return container[key]
-            if t is library_type("pandas", "DataFrame") and type(key) is str:
-                for column in container.columns:
-                    if type(column) is str and column == key:
-                        return container[column]
-                raise Rejected("no column")
-            raise Rejected("container")
-
-        def static_eval(code, context):
-            if context.in_subscript:
-                # The keys typed before the cursor in a tuple subscript: plain constants only.
-                try:
-                    tree = ast.parse("(" + code + ",)", mode="eval") if code else None
-                    return () if tree is None else tuple(constant(e) for e in tree.body.elts)
-                except Exception:
-                    return ()
-            tree = ast.parse(code, mode="exec")
-            if len(tree.body) != 1 or type(tree.body[0]) is not ast.Expr:
-                raise Rejected("statements")
-            return evaluate(tree.body[0].value, context)
-
-        def constant(node):
-            if type(node) is ast.Constant and type(node.value) in plain:
-                return node.value
-            if type(node) is ast.Tuple:
-                return tuple(constant(e) for e in node.elts)
-            raise Rejected("constant")
-
-        def evaluate(node, context):
-            nt = type(node)
-            if nt in (ast.Constant, ast.Tuple):
-                return constant(node)
-            if nt is ast.Name:
-                for ns in (context.locals, context.globals, builtins_dict):
-                    if type(ns) is dict and node.id in ns:
-                        return ns[node.id]
-                raise NameError(node.id)
-            if nt is ast.Attribute:
-                return static_attr(evaluate(node.value, context), node.attr)
-            if nt is ast.Subscript:
-                return static_item(evaluate(node.value, context), constant(node.slice))
-            raise Rejected(nt.__name__)
-
-        def static_dir(obj):
-            t = type(obj)
-            if any(t is library_type("pandas", n) for n in ("DataFrame", "Series")):
-                return sorted(w for w in dir(obj) if type(w) is str)
-            classes = list(mro_of(t))
-            if issubclass(t, type):
-                classes = list(mro_of(obj)) + classes
-            words = set()
-            for klass in classes:
-                words.update(k for k in dict_of(klass) if type(k) is str)
-            if issubclass(t, types.ModuleType):
-                words.update(k for k in module_dict(obj) if type(k) is str)
-            else:
-                own = instance_dict(obj, t)
-                if own is not None:
-                    words.update(k for k in own if type(k) is str)
-            return sorted(words)
-
-        def safe_keys(obj):
-            t = type(obj)
-            if t is dict:
-                return [k for k in obj if type(k) in (str, bytes)]
-            if t is library_type("pandas", "DataFrame"):
-                return [c for c in obj.columns if type(c) in plain]
-            if t is library_type("numpy", "ndarray"):
-                return list(obj.dtype.names or [])
-            return []
-
-        dispatching = generics.complete_object
-
-        def complete_object(obj, prev_completions):
-            # Never consulted while completing (a registered completer is member code).
-            return prev_completions
-
-        # Still a singledispatch function to the member (register, dispatch, registry).
-        for attr in ("register", "dispatch", "registry", "__doc__", "__wrapped__"):
-            if hasattr(dispatching, attr):
-                setattr(complete_object, attr, getattr(dispatching, attr))
-
-        guarded.guarded_eval = static_eval
-        completer.dir2 = static_dir
-        completer.IPCompleter._get_keys = staticmethod(safe_keys)
-        generics.complete_object = complete_object
-    except Exception:
-        ipkernel.IPythonKernel.do_complete = lambda self, code, cursor_pos: empty(code, cursor_pos)
-        return
-
-    def do_complete(self, code, cursor_pos):
-        # Not while a timer of the member's is pending: its handler would run inside completion.
-        try:
-            if signal.getitimer(signal.ITIMER_REAL)[0] > 0:
-                return empty(code, cursor_pos)
-        except (ValueError, OSError, AttributeError):
-            pass
-        return plain_complete(self, code, cursor_pos)
-
-    ipkernel.IPythonKernel.do_complete = do_complete
-
-
-_kobe_guard_completer()
-del _kobe_guard_completer
-"""
-LAUNCHER = LAUNCHER.replace("@COMPLETER_GUARD@", COMPLETER_GUARD)
 
 INSPECT_SOURCE = r'''
 import json as _json
@@ -605,9 +361,6 @@ def snapshot(limits, ns=None, hidden=None):
 INSPECT_EXPRESSION = "(lambda g: (exec(%s, g), g['snapshot'])[1])({'__name__': 'kobe_inspect'})(%s)"
 INSPECT_LIMIT_KEYS = ("max_vars", "max_bytes", "repr_chars", "columns_max", "per_var_ms", "budget_ms")
 
-# KOBE-808: IPython's completer without jedi (whose interpreter mode runs property getters) and
-# with its default limited evaluation stated, so a profile can't loosen it.
-KERNEL_ARGS = ["--IPCompleter.use_jedi=False", "--IPCompleter.evaluation=limited"]
 COMPLETE_MATCHES_MAX = 100
 COMPLETE_MATCH_MAX_CHARS = 200
 COMPLETE_TYPE_MAX_CHARS = 32
@@ -618,7 +371,7 @@ DOC_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*){0,15}")
 # through the user namespace (then builtins) and the type, class and instance dicts only (a
 # descriptor is returned, never invoked; a class with a metaclass other than `type` is not looked
 # into); only signatures and docstrings are read, never a repr.
-DOC_SOURCE = r'''
+STATIC_SOURCE = r'''
 import builtins as _builtins
 import inspect as _inspect
 import json as _json
@@ -694,7 +447,7 @@ def _attr(parent, name, missing):
         if type(d) in _C_DESCRIPTORS:
             own = d.__get__(parent, t)
             if type(own) is dict:
-                for k, v in own.items():
+                for k, v in _it.islice(own.items(), EXAMINE_MAX):
                     if type(k) is str and k == name:
                         return v, False
     # A plain function found through an instance is a method: its first parameter is bound.
@@ -864,10 +617,430 @@ def doc(name, ns=None):
     except BaseException:
         result = {"error": "raised"}
     return _json.dumps(result, ensure_ascii=True)
+
+# ---- Completion (KOBE-808). Bounded everywhere: at most EXAMINE_MAX dict entries examined in
+# all, RETURN_MAX matches, CHAIN_MAX steps, TAIL_MAX characters before the cursor, and a wall-clock
+# budget checked between steps (what was found so far is returned when it runs out).
+import itertools as _it
+import re as _re
+import time as _time
+
+EXAMINE_MAX = 10_000
+RETURN_MAX = 200
+CHAIN_MAX = 10
+TAIL_MAX = 300
+PAREN_SCAN_MAX = 2_000
+BUDGET_S = 0.2
+_IPYTHON_NAMES = frozenset(("In", "Out", "exit", "quit", "get_ipython"))
+_STR_KEY = r"'[^'\\\[\]\n]*'|" + r'"[^"\\\[\]\n]*"'
+_CHAIN = r"[A-Za-z_]\w*(?:\.[A-Za-z_]\w*|\[(?:" + _STR_KEY + r"|-?\d+)\])*"
+_STEP = _re.compile(r"([A-Za-z_]\w*)|\.([A-Za-z_]\w*)|\[(?:'([^'\\\[\]\n]*)'|" + r'"([^"\\\[\]\n]*)"' + r"|(-?\d+))\]")
+_KEY_AT_END = _re.compile("(" + _CHAIN + r")\[(['" + '"' + r"]?)([^'" + '"' + r"\\\[\]\n]*)$")
+_ATTR_AT_END = _re.compile("(" + _CHAIN + r")\.(\w*)$")
+_NAME_AT_END = _re.compile(r"([A-Za-z_]\w*)$")
+_CALLEE_AT_END = _re.compile("(" + _CHAIN + r")\s*$")
+_ARG_AT_END = _re.compile(r"[(,]\s*([A-Za-z_]\w*|)$")
+
+
+class _Stop(Exception):
+    pass
+
+
+class _Budget:
+    def __init__(self):
+        self.deadline = _time.monotonic() + BUDGET_S
+        self.examined = 0
+
+    def ok(self):
+        return self.examined < EXAMINE_MAX and _time.monotonic() < self.deadline
+
+    def take(self, iterable):
+        # At most what is left of the cap, and stops when the time is up.
+        for item in _it.islice(iterable, max(0, EXAMINE_MAX - self.examined)):
+            self.examined += 1
+            if self.examined % 256 == 0 and _time.monotonic() >= self.deadline:
+                return
+            yield item
+
+
+def _is_plain(value):
+    t = type(value)
+    if t is tuple:
+        return len(value) <= 8 and all(_is_plain(v) for v in value)
+    return t in _PLAIN
+
+
+def _own_dict(obj, t):
+    d = _lookup(t, "__dict__", None)
+    if type(d) in _C_DESCRIPTORS:
+        own = d.__get__(obj, t)
+        if type(own) is dict:
+            return own
+    return None
+
+
+def _str_get(d, name, budget):
+    # A str-keyed lookup comparing only exact str keys (never a member key's __eq__).
+    for k, v in budget.take(d.items()):
+        if type(k) is str and k == name:
+            return v
+    raise _Stop(name)
+
+
+def _class_value(value):
+    vt = type(value)
+    if vt is _types.FunctionType or vt in _C_ROUTINES:
+        return value
+    if vt is staticmethod:
+        return _static_func(value)
+    if vt is classmethod:
+        return _class_func(value)
+    if _defines(vt, "__get__"):
+        # A property, cached_property or any other descriptor: its getter would run.
+        raise _Stop("descriptor")
+    return value
+
+
+def _static_attr(obj, name, budget):
+    # (value, bound): only plain values, functions, static/class methods and C-level descriptors.
+    t = type(obj)
+    if issubclass(t, _types.ModuleType):
+        return _str_get(_module_dict(obj), name, budget), False
+    if issubclass(t, type):
+        if t is not type:
+            raise _Stop("metaclass")
+        for klass in _mro(obj):
+            d = _dict_of(klass)
+            if name in d:
+                return _class_value(d[name]), False
+        raise _Stop(name)
+    if _defines(t, "__getattribute__"):
+        raise _Stop("__getattribute__")
+    found = _lookup(t, name, _Stop)
+    if found is not _Stop and type(found) in _C_DESCRIPTORS:
+        return found.__get__(obj, t), False
+    vt = type(found)
+    if found is not _Stop and (_defines(vt, "__set__") or _defines(vt, "__delete__")):
+        raise _Stop("data descriptor")
+    own = _own_dict(obj, t)
+    if own is not None:
+        for k, v in budget.take(own.items()):
+            if type(k) is str and k == name:
+                return v, False
+    if found is _Stop:
+        raise _Stop(name)
+    return _class_value(found), type(found) is _types.FunctionType
+
+
+def _static_item(obj, key, budget):
+    t = type(obj)
+    if t is dict:
+        kt = type(key)
+        for k, v in budget.take(obj.items()):
+            # Same exact type, and plain (a tuple's members are compared too): no member __eq__.
+            if type(k) is kt and _is_plain(k) and k == key:
+                return v
+        raise _Stop("key")
+    if (t is list or t is tuple) and type(key) is int and -len(obj) <= key < len(obj):
+        return obj[key]
+    raise _Stop("container")
+
+
+def _resolve_chain(text, ns, budget):
+    # (value, bound) of a chain like `a.b['k'][0].c`, or _Stop.
+    steps = list(_it.islice(_STEP.finditer(text), CHAIN_MAX + 2))
+    if not steps or len(steps) > CHAIN_MAX + 1 or steps[0].group(1) is None:
+        raise _Stop("chain")
+    first = steps[0].group(1)
+    if type(ns) is dict and first in ns:
+        obj = ns[first]
+    elif first in _builtins.__dict__:
+        obj = _builtins.__dict__[first]
+    else:
+        raise _Stop(first)
+    bound = False
+    for step in steps[1:]:
+        if not budget.ok():
+            raise _Stop("budget")
+        attr, s1, s2, num = step.group(2), step.group(3), step.group(4), step.group(5)
+        if attr is not None:
+            obj, bound = _static_attr(obj, attr, budget)
+        else:
+            key = s1 if s1 is not None else s2 if s2 is not None else int(num)
+            obj, bound = _static_item(obj, key, budget), False
+    return obj, bound
+
+
+def _kind(value, name_kind):
+    t = type(value)
+    if t is _types.FunctionType or t in _C_ROUTINES or t in (staticmethod, classmethod):
+        return "function"
+    if issubclass(t, type):
+        return "class"
+    if issubclass(t, _types.ModuleType):
+        return "module"
+    if t is property or _defines(t, "__get__"):
+        return "property"
+    return name_kind
+
+
+def _wanted(name, prefix):
+    return (
+        type(name) is str
+        and name.startswith(prefix)
+        and (prefix.startswith("_") or not name.startswith("_"))
+        and len(name) <= 200
+    )
+
+
+def _names(dicts, prefix, kind, budget, skip=frozenset()):
+    found = {}
+    for d in dicts:
+        for k, v in budget.take(d.items()):
+            if k not in found and _wanted(k, prefix) and k not in skip:
+                found[k] = _kind(v, kind)
+                if len(found) >= RETURN_MAX:
+                    return found
+        if not budget.ok():
+            break
+    return found
+
+
+def _pandas_frame():
+    m = _sys_modules().get("pandas")
+    if type(m) is not _types.ModuleType:
+        return None
+    t = _module_dict(m).get("DataFrame")
+    return t if type(t) is type else None
+
+
+def _sys_modules():
+    import sys
+
+    return sys.modules
+
+
+def _c_attr_of(obj, name):
+    # A C-level getset/member attribute of obj (found in its type's dicts), else _Stop.
+    t = type(obj)
+    found = _lookup(t, name, None)
+    if type(found) in _C_DESCRIPTORS:
+        return found.__get__(obj, t)
+    raise _Stop(name)
+
+
+def _frame_columns(frame, budget):
+    # A DataFrame's column labels without running pandas: _mgr (instance dict) -> axes (C
+    # getset) -> the columns Index's _data, when it is a numpy object array (or a StringArray over
+    # one). Labels stored any other way (pyarrow strings) are not offered.
+    np = _sys_modules().get("numpy")
+    if type(np) is not _types.ModuleType:
+        return []
+    ndarray = _module_dict(np).get("ndarray")
+    own = _own_dict(frame, type(frame))
+    mgr = own.get("_mgr") if own is not None else None
+    axes = _c_attr_of(mgr, "axes") if mgr is not None else None
+    if type(axes) is not list or not axes:
+        return []
+    index_dict = _own_dict(axes[0], type(axes[0]))
+    data = index_dict.get("_data") if index_dict is not None else None
+    if type(data) is not ndarray:
+        data_dict = _own_dict(data, type(data)) if data is not None else None
+        data = data_dict.get("_ndarray") if data_dict is not None else None
+    if type(data) is not ndarray or _c_attr_of(data, "ndim") != 1:
+        return []
+    return [c for c in budget.take(iter(data)) if type(c) is str]
+
+
+def _attributes(obj, prefix, budget):
+    t = type(obj)
+    if issubclass(t, _types.ModuleType):
+        return _names([_module_dict(obj)], prefix, "attribute", budget)
+    if issubclass(t, type):
+        if t is not type:
+            return {}
+        return _names([_dict_of(k) for k in _mro(obj)], prefix, "attribute", budget)
+    dicts = []
+    own = _own_dict(obj, t)
+    if own is not None:
+        dicts.append(own)
+    dicts.extend(_dict_of(k) for k in _mro(t))
+    found = _names(dicts, prefix, "attribute", budget)
+    if t is _pandas_frame() and len(found) < RETURN_MAX:
+        for column in _frame_columns(obj, budget):
+            if column.isidentifier() and _wanted(column, prefix):
+                found.setdefault(column, "attribute")
+    return found
+
+
+def _keys(obj, prefix, quoted, budget):
+    t = type(obj)
+    if t is dict:
+        keys = [k for k in budget.take(iter(obj)) if type(k) in (str, int, float, bool)]
+    elif t is _pandas_frame():
+        keys = _frame_columns(obj, budget)
+    else:
+        return {}
+    found = {}
+    for k in keys:
+        if quoted:
+            text = k if type(k) is str else None
+        else:
+            text = repr(k)
+        if text is not None and text.startswith(prefix) and len(text) <= 200:
+            found.setdefault(text, "dict key")
+            if len(found) >= RETURN_MAX:
+                break
+    return found
+
+
+def _parameters(value, bound):
+    # Keyword-capable parameter names, statically: a function's code object, a plain class's
+    # __init__/__new__, or a built-in's text signature. Nothing else is asked.
+    t = type(value)
+    if t is _types.FunctionType:
+        code = _func_code(value)
+        names = list(code.co_varnames[: code.co_argcount + code.co_kwonlyargcount])
+        posonly = code.co_posonlyargcount
+        skip = posonly + (1 if bound and code.co_argcount > posonly and posonly == 0 else 0)
+        return names[skip:]
+    if t is type:
+        for klass in _mro(value):
+            if klass is object:
+                break
+            d = _dict_of(klass)
+            init, new = d.get("__init__"), d.get("__new__")
+            if type(init) is _types.FunctionType:
+                return _parameters(init, True)
+            if type(new) is staticmethod and type(_static_func(new)) is _types.FunctionType:
+                return _parameters(_static_func(new), True)
+            if init is not None or new is not None:
+                break
+        return _text_parameters(_type_text_signature(value))
+    if t in _C_ROUTINES:
+        return _text_parameters(_c_attr(value, "__text_signature__"))
+    return []
+
+
+def _text_parameters(text):
+    if type(text) is not str or not text.startswith("(") or not text.endswith(")"):
+        return []
+    params = [p.strip() for p in text[1:-1].split(",") if p.strip()]
+    if "/" in params:
+        params = params[params.index("/") + 1 :]
+    names = []
+    for p in params:
+        name = p.split("=", 1)[0].strip()
+        if name and not name.startswith(("$", "*")) and name.isidentifier():
+            names.append(name)
+    return names
+
+
+def _open_call(tail):
+    # Index of the innermost unclosed "(" in tail (strings not parsed), or -1.
+    depth = 0
+    for i in range(len(tail) - 1, max(-1, len(tail) - 1 - PAREN_SCAN_MAX), -1):
+        ch = tail[i]
+        if ch in ")]}":
+            depth += 1
+        elif ch in "([{":
+            if depth == 0:
+                return i if ch == "(" else -1
+            depth -= 1
+    return -1
+
+
+def _chain_before(text, end):
+    # The chain ending at `end`, if it starts where a chain may start (not after . ) ] or a name).
+    window_start = max(0, end - TAIL_MAX)
+    m = _CALLEE_AT_END.search(text, window_start, end)
+    if m is None:
+        return None
+    start = m.start(1)
+    if start > 0 and (text[start - 1] in ".)]'\"" or text[start - 1].isalnum() or text[start - 1] == "_"):
+        return None
+    return m.group(1)
+
+
+def _complete(head, ns, hidden):
+    budget = _Budget()
+    matches = {}
+    start = len(head)
+    key = _KEY_AT_END.search(head, max(0, len(head) - TAIL_MAX))
+    attr = _ATTR_AT_END.search(head, max(0, len(head) - TAIL_MAX))
+    if key is not None and _chain_before(head, key.start(2) - 1) == key.group(1):
+        try:
+            obj, _ = _resolve_chain(key.group(1), ns, budget)
+            matches = _keys(obj, key.group(3), key.group(2) != "", budget)
+        except _Stop:
+            matches = {}
+        start = len(head) - len(key.group(3))
+    elif attr is not None and _chain_before(head, attr.start(2) - 1) == attr.group(1):
+        try:
+            obj, _ = _resolve_chain(attr.group(1), ns, budget)
+            matches = _attributes(obj, attr.group(2), budget)
+        except _Stop:
+            matches = {}
+        start = len(head) - len(attr.group(2))
+    else:
+        arg = _ARG_AT_END.search(head, max(0, len(head) - TAIL_MAX))
+        name = _NAME_AT_END.search(head, max(0, len(head) - TAIL_MAX))
+        prefix = name.group(1) if name is not None else ""
+        if name is not None and name.start(1) > 0:
+            before = head[name.start(1) - 1]
+            if before.isalnum() or before in "._":
+                prefix = None
+        start = len(head) - len(prefix or "")
+        tail = head[max(0, len(head) - PAREN_SCAN_MAX) :]
+        call = _open_call(tail)
+        if arg is not None and call >= 0 and prefix is not None:
+            callee = _chain_before(tail, call)
+            if callee is not None:
+                try:
+                    value, bound = _resolve_chain(callee, ns, budget)
+                    for p in _parameters(value, bound):
+                        if p.startswith(prefix):
+                            matches.setdefault(p + "=", "param")
+                except _Stop:
+                    pass
+        if prefix:
+            skip = _IPYTHON_NAMES | frozenset(k for k in budget.take(hidden) if type(k) is str)
+            for k, v in _names([ns], prefix, "variable", budget, skip).items():
+                matches.setdefault(k, v)
+    ordered = sorted(matches.items(), key=lambda kv: (kv[1] != "param", kv[0].lower()))
+    return {
+        "matches": [{"text": k, "type": v} for k, v in ordered[:RETURN_MAX]],
+        "cursor_start": start,
+    }
+
+
+def complete(code, cursor, ns=None, hidden=None):
+    # JSON text of the completions at `cursor` (code points into `code`). Inside the kernel, the
+    # IPython user namespace. Runs nothing of the member's; not while a member's timer is pending.
+    if hasattr(_signal, "getitimer") and _signal.getitimer(_signal.ITIMER_REAL)[0] > 0:
+        return _json.dumps({"error": "timer"})
+    if ns is None:
+        from IPython import get_ipython
+
+        shell = get_ipython()
+        ns, hidden = shell.user_ns, shell.user_ns_hidden
+    if type(code) is not str or type(cursor) is not int or not 0 <= cursor <= len(code):
+        return _json.dumps({"error": "invalid"})
+    try:
+        result = _complete(code[:cursor], ns, hidden if type(hidden) is dict else {})
+    except KeyboardInterrupt:
+        raise
+    except BaseException:
+        result = {"error": "raised"}
+    return _json.dumps(result, ensure_ascii=True)
 '''
 
-# Evaluated as the silent request's user expression: DOC_SOURCE in a namespace of its own.
-DOC_EXPRESSION = "(lambda g: (exec(%s, g), g['doc'])[1])({'__name__': 'kobe_doc'})(%s)"
+# Evaluated as the silent request's user expressions: STATIC_SOURCE in a namespace of its own; the
+# member's code and the name only ever enter as string literals (repr).
+DOC_EXPRESSION = "(lambda g: (exec(%s, g), g['doc'])[1])({'__name__': 'kobe_static'})(%s)"
+COMPLETE_EXPRESSION = (
+    "(lambda g: (exec(%s, g), g['complete'])[1])({'__name__': 'kobe_static'})(%s, %d)"
+)
 ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 
 
@@ -878,42 +1051,30 @@ def short_text(value, limit):
     return value[:limit] if value else None
 
 
-def completion_result(content, code, cursor):
-    """The wire's `complete` answer from a `complete_reply`: capped, plain text, deduplicated."""
-    if content.get("status") != "ok":
+def completion_from(data, cursor):
+    """The wire's `complete` answer from STATIC_SOURCE's: capped, plain text, deduplicated."""
+    start = data.get("cursor_start")
+    if type(start) is not int or not 0 <= start <= cursor:
         return None
-    start, end = content.get("cursor_start"), content.get("cursor_end")
-    if type(start) is not int or type(end) is not int or not 0 <= start <= end <= len(code):
-        start = end = cursor
-    raw = content.get("matches")
-    raw = raw if isinstance(raw, list) else []
-    types = {}
-    meta = content.get("metadata")
-    experimental = meta.get("_jupyter_types_experimental") if isinstance(meta, dict) else None
-    for item in experimental if isinstance(experimental, list) else []:
-        if isinstance(item, dict) and type(item.get("text")) is str and type(item.get("type")) is str:
-            kind = item["type"].strip("<>")
-            if kind and kind != "unknown":
-                types.setdefault(item["text"], kind[:COMPLETE_TYPE_MAX_CHARS])
-    texts = [m for m in raw if type(m) is str and m and "\x00" not in m and len(m) <= COMPLETE_MATCH_MAX_CHARS]
-    # IPython's attribute matches carry the dot (".alpha" from the dot on): from after it instead.
-    if texts and start < end and code[start] == "." and all(m.startswith(".") for m in texts):
-        texts = [m[1:] for m in texts if len(m) > 1]
-        types = {k[1:]: v for k, v in types.items() if k.startswith(".")}
-        start += 1
+    raw = data.get("matches")
     seen = set()
     matches = []
-    for text in texts:
+    for item in raw if isinstance(raw, list) else []:
+        text = item.get("text") if isinstance(item, dict) else None
+        if type(text) is not str or not text or "\x00" in text or len(text) > COMPLETE_MATCH_MAX_CHARS:
+            continue
         if text in seen:
             continue
         seen.add(text)
         match = {"text": text}
-        if text in types:
-            match["type"] = types[text]
+        kind = item.get("type")
+        if type(kind) is str and 0 < len(kind) <= COMPLETE_TYPE_MAX_CHARS:
+            match["type"] = kind
         matches.append(match)
         if len(matches) >= COMPLETE_MATCHES_MAX:
             break
-    return {"status": "ok", "op": "complete", "matches": matches, "cursor_start": start, "cursor_end": end}
+    return {"status": "ok", "op": "complete", "matches": matches, "cursor_start": start, "cursor_end": cursor}
+
 
 _write_lock = threading.Lock()
 
@@ -965,7 +1126,7 @@ def write_kernel_spec(private, data_dir):
     spec_dir = os.path.join(data_dir, "kernels", KERNEL_NAME)
     os.makedirs(spec_dir, mode=0o700, exist_ok=True)
     spec = {
-        "argv": [sys.executable, launcher, *KERNEL_ARGS, "-f", "{connection_file}"],
+        "argv": [sys.executable, launcher, "-f", "{connection_file}"],
         "display_name": "Python 3 (Kobe)",
         "language": "python",
     }
@@ -1140,32 +1301,8 @@ class Bridge:
             if reply.get("parent_header", {}).get("msg_id") == msg_id:
                 return reply
 
-    def complete(self, command):
-        """KOBE-808: completions at the cursor (Jupyter complete_request); never runs code."""
-        cid = str(command.get("id", ""))
-        code, cursor = command.get("code"), command.get("cursor")
-        if type(code) is not str or type(cursor) is not int or not 0 <= cursor <= len(code):
-            emit({"ev": "completed", "id": cid, "error": "invalid"})
-            return True
-        reply = self.shell_reply(self.kc.complete(code, cursor), timeout_of(command))
-        if reply is False:
-            emit({"ev": "died"})
-            return False
-        result = None if reply is None else completion_result(reply.get("content", {}), code, cursor)
-        if result is None:
-            emit({"ev": "completed", "id": cid, "error": "timeout" if reply is None else "failed"})
-        else:
-            emit({"ev": "completed", "id": cid, "result": result})
-        return True
-
-    def doc(self, command):
-        """KOBE-808: a dotted name's signature and docstring (DOC_SOURCE), silently."""
-        cid = str(command.get("id", ""))
-        name = command.get("name")
-        if type(name) is not str or len(name) > 256 or not DOC_NAME.fullmatch(name):
-            emit({"ev": "completed", "id": cid, "error": "invalid"})
-            return True
-        expression = DOC_EXPRESSION % (repr(DOC_SOURCE), repr(name))
+    def static_call(self, expression, command):
+        """Runs a STATIC_SOURCE expression silently: (data, None) | (None, error) | False (died)."""
         msg_id = self.kc.execute(
             "",
             silent=True,
@@ -1176,21 +1313,56 @@ class Bridge:
         )
         reply = self.shell_reply(msg_id, timeout_of(command))
         if reply is False:
-            emit({"ev": "died"})
             return False
         if reply is None:
-            emit({"ev": "completed", "id": cid, "error": "timeout"})
-            return True
+            return None, "timeout"
         content = reply.get("content", {})
         found = (content.get("user_expressions") or {}).get("kobe") or {}
         try:
             if content.get("status") != "ok" or found.get("status") != "ok":
                 raise ValueError("failed")
             data = json.loads(ast.literal_eval(found["data"]["text/plain"]))
-            if not isinstance(data, dict) or "error" in data:
+            if not isinstance(data, dict):
                 raise ValueError("failed")
         except Exception:  # noqa: BLE001 - reported as failed
-            emit({"ev": "completed", "id": cid, "error": "failed"})
+            return None, "failed"
+        if "error" in data:
+            return None, str(data["error"])[:50]
+        return data, None
+
+    def complete(self, command):
+        """KOBE-808: completions at the cursor from STATIC_SOURCE (IPython's completer is unused)."""
+        cid = str(command.get("id", ""))
+        code, cursor = command.get("code"), command.get("cursor")
+        if type(code) is not str or type(cursor) is not int or not 0 <= cursor <= len(code):
+            emit({"ev": "completed", "id": cid, "error": "invalid"})
+            return True
+        got = self.static_call(COMPLETE_EXPRESSION % (repr(STATIC_SOURCE), repr(code), cursor), command)
+        if got is False:
+            emit({"ev": "died"})
+            return False
+        data, error = got
+        result = None if data is None else completion_from(data, cursor)
+        if result is None:
+            emit({"ev": "completed", "id": cid, "error": error or "failed"})
+        else:
+            emit({"ev": "completed", "id": cid, "result": result})
+        return True
+
+    def doc(self, command):
+        """KOBE-808: a dotted name's signature and docstring (STATIC_SOURCE), silently."""
+        cid = str(command.get("id", ""))
+        name = command.get("name")
+        if type(name) is not str or len(name) > 256 or not DOC_NAME.fullmatch(name):
+            emit({"ev": "completed", "id": cid, "error": "invalid"})
+            return True
+        got = self.static_call(DOC_EXPRESSION % (repr(STATIC_SOURCE), repr(name)), command)
+        if got is False:
+            emit({"ev": "died"})
+            return False
+        data, error = got
+        if data is None:
+            emit({"ev": "completed", "id": cid, "error": error})
             return True
         result = {"status": "ok", "op": "doc", "found": data.get("found") is True}
         for key, limit in (("signature", 1000), ("doc", 8000), ("type", 256)):

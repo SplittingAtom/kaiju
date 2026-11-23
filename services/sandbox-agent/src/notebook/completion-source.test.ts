@@ -14,7 +14,6 @@ const BRIDGE = fileURLToPath(
   new URL("../../../../images/sandbox/kernel/kobe-kernel-bridge.py", import.meta.url),
 );
 const HARNESS = fileURLToPath(new URL("./testing/completion-harness.py", import.meta.url));
-const GUARD = fileURLToPath(new URL("./testing/guard-harness.py", import.meta.url));
 const hasPython = spawnSync("python3", ["--version"]).status === 0;
 
 function harness(scenario: string): Record<string, unknown> | null {
@@ -106,94 +105,168 @@ describe.skipIf(!hasPython)("kernel documentation lookup (KOBE-808)", () => {
   });
 });
 
-describe.skipIf(!hasPython)("kernel completion answers (KOBE-808)", () => {
-  const valid = (r: unknown) =>
-    expect(notebookCompletionResultSchema.safeParse(r).success).toBe(true);
+/** The bridge's static completer on the hostile namespace; `codes` completed at their end. */
+function completeAll(...codes: string[]) {
+  const res = spawnSync("python3", ["-I", HARNESS, BRIDGE, "complete", ...codes], {
+    encoding: "utf8",
+    timeout: 60_000,
+  });
+  if (res.status !== 0) throw new Error(`harness failed: ${res.stderr}`);
+  return JSON.parse(res.stdout) as {
+    results: Record<string, { texts?: string[]; cursor_start?: number; error?: string }>;
+    ran: string[];
+    lock_locked: boolean;
+    cached: boolean;
+  };
+}
 
-  it("attribute matches start after the dot, deduplicated, with the kernel's types", () => {
-    const r = harness("complete-dot");
-    expect(r).toEqual({
-      status: "ok",
-      op: "complete",
-      matches: [{ text: "align", type: "attribute" }, { text: "all" }, { text: "alpha" }],
-      cursor_start: 3,
-      cursor_end: 5,
-    });
-    valid(r);
+/**
+ * Review round 3: kernel completion is the bridge's own static resolver (IPython's completer is
+ * never called). Every probe of the three review rounds records zero calls into member code.
+ */
+describe.skipIf(!hasPython)("kernel completion: nothing of the member's runs (KOBE-808)", () => {
+  const PROBES = [
+    // round 1: hooks, __class__, properties
+    "h.",
+    "h.prop.",
+    "hooks.",
+    "hooks['",
+    "hooks[",
+    "lz.",
+    "lz[",
+    "ga.",
+    "WM.",
+    "proxy.",
+    // round 2: cached_property (lock-holding), descriptors, metaclass hooks, hashing keys
+    "lzy.cp.",
+    "lzy.p.",
+    "hd.d.",
+    "HD.d.",
+    "WMG.",
+    "WMG.x.",
+    "dd[1].",
+    "dd['alpha'].",
+    // round 3: the keyword-argument path (an open call)
+    "lzy.p.m(",
+    "lzy.cp.m(",
+    "lz(",
+    "proxy.m(",
+    "ga.method(",
+    "hd.d.bit_length(",
+    "sp(",
+    "WM(",
+    "WMG(",
+    "dd2[(1, 1)].",
+    "lazy_mod.nope.",
+    "lazy_mod.",
+  ];
+  let r: ReturnType<typeof completeAll>;
+  beforeAll(() => {
+    r = completeAll(...PROBES);
   });
 
-  it("caps the count and drops overlong or NUL matches", () => {
-    const r = harness("complete-many") as { matches: { text: string }[] };
-    expect(r.matches).toHaveLength(NOTEBOOK_COMPLETE_MATCHES_MAX);
-    expect(r.matches.some((m) => m.text.startsWith("y") || m.text.includes("\u0000"))).toBe(false);
-    valid(r);
+  it("records zero calls: no getter, descriptor, hook, hash, eq or call; no lock, no cache", () => {
+    expect(r.ran).toEqual([]);
+    expect(r.lock_locked).toBe(false);
+    expect(r.cached).toBe(false);
+    for (const code of PROBES) expect(r.results[code]?.error, code).toBeUndefined();
   });
 
-  it("an error reply is no answer; a cursor span outside the code falls back to the cursor", () => {
-    expect(harness("complete-error")).toBeNull();
-    expect(harness("complete-bad-cursor")).toMatchObject({ cursor_start: 2, cursor_end: 2 });
+  it("stops at what it would have to run: no kernel matches there", () => {
+    for (const code of [
+      "h.prop.",
+      "lzy.cp.",
+      "lzy.p.",
+      "hd.d.",
+      "HD.d.",
+      "WMG.",
+      "WMG.x.",
+      "lzy.p.m(",
+      "lzy.cp.m(",
+      "proxy.m(",
+      "ga.method(",
+      "sp(",
+      "WM(",
+      "lazy_mod.nope.",
+      "hooks['",
+    ]) {
+      expect(r.results[code]?.texts, code).toEqual([]);
+    }
+    // A module's own dict only (its __getattr__ is never asked).
+    expect(r.results["lazy_mod."]?.texts).toEqual(["real"]);
   });
 });
 
-/**
- * Review round 2: the kernel launcher's completer guard (COMPLETER_GUARD) on stand-in IPython
- * modules. Typing completion evaluates the expression before the cursor statically: no getter,
- * descriptor, `cached_property`, metaclass hook, key hash/eq, object hook or registered completer
- * of the member's runs; nothing is interrupted; nothing starts while a member's timer is pending.
- */
-describe.skipIf(!hasPython)("the kernel's completer guard (KOBE-808 review)", () => {
-  const run = () => {
-    const res = spawnSync("python3", ["-I", GUARD, BRIDGE], { encoding: "utf8", timeout: 60_000 });
-    if (res.status !== 0) throw new Error(`guard harness failed: ${res.stderr}`);
-    return JSON.parse(res.stdout) as Record<string, unknown>;
-  };
-  let r: Record<string, unknown> = {};
+describe.skipIf(!hasPython)("kernel completion: what it offers (KOBE-808)", () => {
+  let r: ReturnType<typeof completeAll>;
   beforeAll(() => {
-    r = run();
+    r = completeAll(
+      "my_v",
+      "json.du",
+      "keywords(",
+      "keywords(1, c",
+      "sized.",
+      "Sized(",
+      "sized.method(",
+      "dd['",
+      "dd[",
+      "sorted(x, ",
+      "dd[1].",
+      "sized.own['k'][0].bit_l",
+      "hid",
+      "lz.method(",
+    );
+  });
+  const texts = (code: string) => r.results[code]?.texts;
+
+  it("names set by runs, module members and a plain instance's attributes", () => {
+    expect(texts("my_v")).toEqual(["my_value"]);
+    expect(texts("json.du")).toEqual(["dump", "dumps"]);
+    expect(texts("sized.")).toEqual(["attr", "method", "own"]);
+    expect(texts("dd[1].")).toEqual(["attr", "method", "own"]);
+    expect(texts("sized.own['k'][0].bit_l")).toEqual(["bit_length"]);
+    // IPython's own names stay out.
+    expect(texts("hid")).toEqual([]);
   });
 
-  it("runs nothing of the member's: the lock is never taken, nothing is cached", () => {
-    expect(r.ran).toEqual([]);
-    expect(r.lock_locked).toBe(false);
-    expect(r.cached_stored).toBe(false);
+  it("keyword arguments from code objects and built-in text signatures", () => {
+    expect(texts("keywords(")).toEqual(["a=", "b=", "c="]);
+    expect(texts("keywords(1, c")).toEqual(["c="]);
+    expect(texts("Sized(")).toEqual(["colour=", "size="]);
+    expect(texts("sized.method(")).toEqual(["q="]);
+    expect(texts("sorted(x, ")).toEqual(["key=", "reverse="]);
+    expect(texts("lz.method(")).toEqual(["a="]);
   });
 
-  it("refuses properties, cached_property, descriptors, metaclass hooks and calls", () => {
-    expect(r.evaluated).toEqual({
-      "slow.locked": "rejected:GuardRejection",
-      "slow.lazy": "rejected:GuardRejection",
-      "slow.prop": "rejected:GuardRejection",
-      "slow.method": "ok:function",
-      "hd.nd": "rejected:GuardRejection",
-      "hd.dd": "rejected:GuardRejection",
-      "HD.nd": "rejected:GuardRejection",
-      "WM.x": "rejected:GuardRejection",
-      "wm.x": "ok:int",
-      "ga.x": "rejected:GuardRejection",
-      "d[1]": "ok:Plain",
-      "d['a']['b']": "ok:int",
-      "d[(1, 2)]": "rejected:GuardRejection",
-      "hooks.zz": "rejected:GuardRejection",
-      "plain.own['k'][0]": "ok:type",
-      "plain.attr": "ok:int",
-      "Plain.attr": "ok:int",
-      "json.dumps": "ok:function",
-      len: "ok:builtin_function_or_method",
-      "slow.method()": "rejected:GuardRejection",
-      "plain + 1": "rejected:GuardRejection",
+  it("keys of a plain dict, quoted or not, with the span they replace", () => {
+    expect(texts("dd['")).toEqual(["alpha", "beta"]);
+    expect(r.results["dd['"]?.cursor_start).toBe(4);
+    expect(texts("dd[")).toEqual(["'alpha'", "'beta'", "1"]);
+  });
+
+  it("a 10-million-entry dict: answered within the budget, the next request at once", () => {
+    const res = spawnSync("python3", ["-I", HARNESS, BRIDGE, "big"], {
+      encoding: "utf8",
+      timeout: 120_000,
     });
-    expect(r.subscript).toEqual(["a", 1]);
+    if (res.status !== 0) throw new Error(`harness failed: ${res.stderr}`);
+    const big = JSON.parse(res.stdout) as {
+      big: { texts: string[]; elapsed_ms: number };
+      then: { texts: string[]; elapsed_ms: number };
+    };
+    expect(big.big.texts).toHaveLength(200);
+    expect(big.big.elapsed_ms).toBeLessThan(300);
+    expect(big.then).toMatchObject({ texts: ["k"] });
+    expect(big.then.elapsed_ms).toBeLessThan(100);
   });
 
-  it("lists attributes and keys statically; a registered completer is never consulted", () => {
-    expect(r.dirs).toEqual({ hooks: false, plain_own: true, wm: true });
-    expect(r.keys).toEqual({ hooks: [], dict: ["a"] });
-    expect(r.generic).toEqual(["x"]);
-  });
-
-  it("completes normally, but not while a timer of the member's is pending", () => {
-    expect(r.plain_answer).toEqual(["real"]);
-    expect(r.with_timer).toEqual([]);
-    expect(r.real_completions).toEqual(["pla"]);
+  it("the bridge caps and cleans the answer", () => {
+    const many = Array.from({ length: 300 }, (_, i) => ({ text: `x${i}`, type: "variable" }));
+    const capped = harness(
+      `from:${JSON.stringify([{ matches: [...many, { text: "bad\u0000" }, { text: "y".repeat(300) }], cursor_start: 0 }, 1])}`,
+    ) as { matches: unknown[] };
+    expect(capped.matches).toHaveLength(NOTEBOOK_COMPLETE_MATCHES_MAX);
+    expect(notebookCompletionResultSchema.safeParse(capped).success).toBe(true);
+    expect(harness(`from:${JSON.stringify([{ matches: [], cursor_start: 5 }, 1])}`)).toBeNull();
   });
 });

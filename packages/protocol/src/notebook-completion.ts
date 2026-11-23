@@ -9,9 +9,10 @@ import { codePointLength } from "./semantic-memory/fields.js";
  * {@link CAPABILITY_NOTEBOOK_COMPLETE}: the server sends these `notebook.inspect` frames only to
  * agents that announced it; an older agent gives the editor its built-in completion only.
  *
- * Neither request runs the member's code. `complete` uses IPython's own completer with jedi off
- * and its default `limited` evaluation (no property getters, no calls, no imports); `doc` resolves
- * a dotted name with `inspect.getattr_static` and reads signatures and docstrings, never a repr.
+ * Both are answered by the sandbox's own static resolver (never IPython's completer): it reads
+ * namespace, module, class and instance dicts only, never calls, never invokes a property or other
+ * descriptor, and is bounded (caps and a time budget); `doc` reads signatures and docstrings,
+ * never a repr.
  * Neither starts a kernel, wakes a sandbox or waits for running code. Nothing is stored: no run
  * event, no audit, and the code is never logged.
  */
