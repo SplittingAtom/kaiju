@@ -1,5 +1,5 @@
 {
-  "id": "88f989ed-fbe5-4192-be7d-20276f6cceb1",
+  "id": "c130bcc7-d489-4860-beb3-3f75189af5f6",
   "prevId": "64665dee-03ad-4521-a0c3-d7aa874c05e4",
   "version": "7",
   "dialect": "postgresql",
@@ -6490,7 +6490,7 @@
         },
         "connectors_builtin_url": {
           "name": "connectors_builtin_url",
-          "value": "(\"connectors\".\"builtin\" IS NULL AND \"connectors\".\"url\" NOT IN ('http://kobe-server.internal/internal/v1/mcp/kobe', 'http://kobe-server.internal/internal/v1/mcp/git')) OR (\"connectors\".\"builtin\" = 'kobe' AND \"connectors\".\"url\" = 'http://kobe-server.internal/internal/v1/mcp/kobe') OR (\"connectors\".\"builtin\" = 'git' AND \"connectors\".\"url\" = 'http://kobe-server.internal/internal/v1/mcp/git')"
+          "value": "CASE WHEN \"connectors\".\"builtin\" IS NULL THEN \"connectors\".\"url\" NOT IN ('http://kobe-server.internal/internal/v1/mcp/kobe', 'http://kobe-server.internal/internal/v1/mcp/git') WHEN \"connectors\".\"builtin\" = 'kobe' THEN \"connectors\".\"url\" = 'http://kobe-server.internal/internal/v1/mcp/kobe' WHEN \"connectors\".\"builtin\" = 'git' THEN \"connectors\".\"url\" = 'http://kobe-server.internal/internal/v1/mcp/git' ELSE false END"
         },
         "connectors_oauth_client": {
           "name": "connectors_oauth_client",

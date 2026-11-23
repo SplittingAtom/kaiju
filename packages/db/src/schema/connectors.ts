@@ -219,7 +219,7 @@ export const connectors = pgTable(
     // Only a built-in carries an internal URL, each its own, and a built-in carries nothing else.
     check(
       "connectors_builtin_url",
-      sql`(${t.builtin} IS NULL AND ${t.url} NOT IN ('${sql.raw(KOBE_BUILTIN_CONNECTOR_URL)}', '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}')) OR (${t.builtin} = 'kobe' AND ${t.url} = '${sql.raw(KOBE_BUILTIN_CONNECTOR_URL)}') OR (${t.builtin} = 'git' AND ${t.url} = '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}')`,
+      sql`CASE WHEN ${t.builtin} IS NULL THEN ${t.url} NOT IN ('${sql.raw(KOBE_BUILTIN_CONNECTOR_URL)}', '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}') WHEN ${t.builtin} = 'kobe' THEN ${t.url} = '${sql.raw(KOBE_BUILTIN_CONNECTOR_URL)}' WHEN ${t.builtin} = 'git' THEN ${t.url} = '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}' ELSE false END`,
     ),
     check(
       "connectors_oauth_client",
