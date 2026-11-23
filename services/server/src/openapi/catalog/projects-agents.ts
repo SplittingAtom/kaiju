@@ -56,6 +56,30 @@ export const projectsAgentsAreas: readonly CatalogArea[] = [
         "List projects whose only owner left the workspace",
         "Team admins.",
       ],
+      [
+        "get",
+        "/v1/projects/{id}/repo-conversion",
+        "Read the project's latest Convert to repo attempt",
+        "Every member who views the project. `conversion` null when there was none.",
+      ],
+      [
+        "post",
+        "/v1/projects/{id}/repo-conversion",
+        "Convert a project to a Repo on a connected git organization",
+        "The project's owner and Workspace admins; the connection at Read and write. One-way. Answers 202: the attempt runs as a job (create the repository, push the history, mark the project a Repo); read it until `completed` or `failed`. Rate limited.",
+      ],
+      [
+        "post",
+        "/v1/projects/{id}/repo-conversion/retry",
+        "Retry a failed Convert to repo attempt",
+        "The project's owner and Workspace admins. Resumes at the failed step; answers 202. Rate limited.",
+      ],
+      [
+        "post",
+        "/v1/projects/{id}/repo-conversion/abandon",
+        "Abandon a failed Convert to repo attempt",
+        "The project's owner and Workspace admins. The project stays an ordinary project; a repository created for the attempt stays on the host (`left_on_host`).",
+      ],
     ],
   },
   {

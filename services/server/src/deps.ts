@@ -552,6 +552,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
   const gitHostNet: GitHostNet = {
     policy: connectorUrlPolicy,
     ...(options.gitHostRequest ? { request: options.gitHostRequest } : {}),
+    ...(options.gitWireSend ? { wire: options.gitWireSend } : {}),
   };
   const kobeMcp = createKobeMcpService({
     db: database.db,

@@ -62,3 +62,4 @@ export * from "./theme/index.js";
 export * from "./kobe-mcp.js";
 export * from "./git-connections.js";
 export * from "./git-tools.js";
+export * from "./git-conversions.js";

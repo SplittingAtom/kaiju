@@ -25,6 +25,7 @@ interface Repo {
   visibility: "private" | "internal" | "public";
   default_branch: string;
   size: number;
+  description: string | null;
 }
 
 interface IssuedToken {
@@ -161,6 +162,7 @@ export class FakeGithub implements GitHostContractFake {
       visibility: "private",
       default_branch: "main",
       size: 10,
+      description: null,
     };
     this.repos.set(repo.id, repo);
     this.branches.set(repo.id, new Map([["main", "a".repeat(40)]]));
@@ -219,6 +221,7 @@ export class FakeGithub implements GitHostContractFake {
       default_branch: r.default_branch,
       archived: false,
       size: r.size,
+      description: r.description,
       html_url: this.options.hostileHtmlUrl ?? `${this.base}/${full}`,
       clone_url: this.options.hostileCloneUrl ?? `${this.base}/${full}.git`,
       permissions: {
@@ -580,6 +583,7 @@ export class FakeGithub implements GitHostContractFake {
         this.createdRepositories.push({ name, private: body.private, visibility: body.visibility });
         const repo = this.addRepo(login, name);
         repo.size = 0;
+        repo.description = typeof body.description === "string" ? body.description : null;
         return reply(201, this.repoJson(repo));
       }
       const mine = [...this.repos.values()].filter((r) => r.owner === login);
@@ -633,6 +637,7 @@ export class FakeGithub implements GitHostContractFake {
       this.createdRepositories.push({ name, private: body.private, visibility: body.visibility });
       const repo = this.addRepo(this.organization, name);
       repo.size = 0;
+      repo.description = typeof body.description === "string" ? body.description : null;
       if (body.visibility === "internal") repo.visibility = "internal";
       const json = this.repoJson(repo);
       return reply(201, o.createdOwner ? { ...json, owner: { login: o.createdOwner } } : json);

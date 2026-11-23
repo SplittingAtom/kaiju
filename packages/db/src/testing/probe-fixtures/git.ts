@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { KobeTx } from "../../client.js";
-import { gitConnections, gitRepositories, projects, users } from "../../schema/index.js";
+import {
+  gitConnections,
+  gitConversions,
+  gitRepositories,
+  projects,
+  users,
+} from "../../schema/index.js";
 import type { git } from "../../tenancy/git.js";
 import type { ProbeFixture } from "./types.js";
 
@@ -48,6 +54,28 @@ export const gitFixtures: Record<(typeof git.team)[number], ProbeFixture> = {
       projectId: project.id,
       origin: "conversion",
       createdBy: userId,
+    });
+  },
+  git_conversions: async (tx, teamId) => {
+    const { connectionId, userId } = await insertConnection(tx, teamId);
+    const slug = `probe-${randomUUID().slice(0, 8)}`;
+    const [project] = await tx
+      .insert(projects)
+      .values({ teamId, slug, name: "Probe conversion", createdBy: userId })
+      .returning({ id: projects.id });
+    if (!project) throw new Error("probe: project insert returned nothing");
+    await tx.insert(gitConversions).values({
+      teamId,
+      projectId: project.id,
+      connectionId,
+      requestedBy: userId,
+      provider: "forgejo",
+      baseUrl: "https://git.probe.test",
+      organization: "probe",
+      repositoryName: slug,
+      visibility: "private",
+      carryHistory: true,
+      defaultBranch: "main",
     });
   },
 };

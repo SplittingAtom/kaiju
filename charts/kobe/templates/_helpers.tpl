@@ -363,7 +363,12 @@ spec:
             {{- end }}
       volumes:
         - name: tmp
+          {{- if .values.tmpSizeLimit }}
+          emptyDir:
+            sizeLimit: {{ .values.tmpSizeLimit | quote }}
+          {{- else }}
           emptyDir: {}
+          {{- end }}
         {{- with .extraVolumes }}
         {{- . | nindent 8 }}
         {{- end }}

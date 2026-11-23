@@ -12,6 +12,7 @@ import {
 import { readGitSiteSettings } from "./git/site-settings.js";
 import {
   gitConnections,
+  gitConversions,
   gitRepositories,
   projects,
   siteSettings,
@@ -291,6 +292,125 @@ describe("git_repositories", () => {
         }),
       ),
     ).rejects.toSatisfy(refused("23514"));
+  });
+});
+
+describe("git_conversions (KOBE-765)", () => {
+  async function newProject(teamId: string) {
+    const slug = `c-${randomUUID().slice(0, 8)}`;
+    const [p] = await withTeam(app.db, teamId, (tx) =>
+      tx
+        .insert(projects)
+        .values({ teamId, slug, name: "To convert", createdBy: userId })
+        .returning({ id: projects.id }),
+    );
+    if (!p) throw new Error("insert returned nothing");
+    return p.id;
+  }
+  const attempt = (
+    teamId: string,
+    projectId: string,
+    over: Partial<typeof gitConversions.$inferInsert> = {},
+  ) => ({
+    teamId,
+    projectId,
+    requestedBy: userId,
+    provider: "forgejo" as const,
+    baseUrl: "https://git.example.test",
+    organization: "acme",
+    repositoryName: "docs",
+    visibility: "private" as const,
+    carryHistory: true,
+    defaultBranch: "main",
+    ...over,
+  });
+
+  it("holds a project with one running or failed attempt at a time; finished ones are history", async () => {
+    const projectId = await newProject(teamA);
+    const [first] = await withTeam(app.db, teamA, (tx) =>
+      tx.insert(gitConversions).values(attempt(teamA, projectId)).returning(),
+    );
+    expect(first).toMatchObject({
+      status: "running",
+      step: "create",
+      attempts: 0,
+      commitsPushed: 0,
+    });
+    await expect(
+      withTeam(app.db, teamA, (tx) => tx.insert(gitConversions).values(attempt(teamA, projectId))),
+    ).rejects.toSatisfy(refused("23505"));
+    await withTeam(app.db, teamA, (tx) =>
+      tx
+        .update(gitConversions)
+        .set({ status: "abandoned", finishedAt: new Date() })
+        .where(eq(gitConversions.id, first?.id ?? "")),
+    );
+    await withTeam(app.db, teamA, (tx) =>
+      tx.insert(gitConversions).values(attempt(teamA, projectId)),
+    );
+    // Invisible elsewhere; never points into another Workspace.
+    expect(await withTeam(app.db, teamB, (tx) => tx.select().from(gitConversions))).toEqual([]);
+    await expect(
+      withTeam(app.db, teamB, (tx) => tx.insert(gitConversions).values(attempt(teamB, projectId))),
+    ).rejects.toSatisfy(refused("23503"));
+  });
+
+  it("checks its shape: a completed attempt is done and names the host's repository", async () => {
+    const projectId = await newProject(teamA);
+    for (const over of [
+      { repositoryName: "evil.git" },
+      { visibility: "public" as never },
+      { status: "completed" as const, finishedAt: new Date() },
+      { status: "abandoned" as const },
+      { lastError: "Not A Code" },
+      { headSha: "xyz" },
+    ]) {
+      await expect(
+        withTeam(app.db, teamA, (tx) =>
+          tx.insert(gitConversions).values(attempt(teamA, projectId, over)),
+        ),
+      ).rejects.toSatisfy(refused("23514"));
+    }
+    await withTeam(app.db, teamA, (tx) =>
+      tx.insert(gitConversions).values(
+        attempt(teamA, projectId, {
+          status: "completed",
+          step: "done",
+          hostRepoId: "42",
+          finishedAt: new Date(),
+        }),
+      ),
+    );
+  });
+
+  it("keeps the attempt when its connection goes, and goes with its project", async () => {
+    const conn = await insertConnection(teamA);
+    const projectId = await newProject(teamA);
+    const [row] = await withTeam(app.db, teamA, (tx) =>
+      tx
+        .insert(gitConversions)
+        .values(attempt(teamA, projectId, { connectionId: conn.id, status: "failed" }))
+        .returning(),
+    );
+    await withTeam(app.db, teamA, (tx) =>
+      tx.delete(gitConnections).where(eq(gitConnections.id, conn.id)),
+    );
+    const [kept] = await withTeam(app.db, teamA, (tx) =>
+      tx
+        .select()
+        .from(gitConversions)
+        .where(eq(gitConversions.id, row?.id ?? "")),
+    );
+    expect(kept).toMatchObject({ connectionId: null, baseUrl: "https://git.example.test" });
+    await withTeam(app.db, teamA, (tx) => tx.delete(projects).where(eq(projects.id, projectId)));
+    expect(
+      await withTeam(app.db, teamA, (tx) =>
+        tx
+          .select()
+          .from(gitConversions)
+          .where(eq(gitConversions.id, row?.id ?? "")),
+      ),
+    ).toEqual([]);
   });
 });
 

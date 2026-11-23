@@ -58,6 +58,11 @@ export function ownerLogin(json: unknown): string | null {
   return str(owner?.login);
 }
 
+/** A host's repository description, kept only as bounded text (KOBE-765). */
+export function descriptionOf(raw: unknown): string | null {
+  return typeof raw === "string" && raw !== "" ? raw.slice(0, 512) : null;
+}
+
 /**
  * A repository answer of the connected organization (the caller confined it). `webUrl` only on the
  * connection's web origin; `cloneUrl` built from the base URL, never from the answer (review M2).
@@ -85,6 +90,7 @@ export function toRepository(json: unknown, webBase: string, organization: strin
     archived: r.archived === true,
     // GitHub has no "empty" flag; a repository without commits reports size 0.
     empty: r.size === 0,
+    description: descriptionOf(r.description),
     webUrl: safeWebUrl(r.html_url, webBase),
     cloneUrl: cloneUrlFor(webBase, organization, name),
   };

@@ -9,6 +9,7 @@ import {
 } from "@kobe/protocol";
 import { recordAudit } from "../audit/record.js";
 import { recordLinks } from "../thread-file-links/record.js";
+import { projectWriteBlock, ProjectWriteBlocked } from "./repo-state.js";
 
 /**
  * A project's history as data (KOBE-579, Workspaces CM1): commits with a full snapshot tree each
@@ -285,6 +286,7 @@ export interface WrittenCommit {
  * rewritten to it, the storage counters, and the queued deletion of any key it now references
  * cleared (a pre-copy reservation, {@link reserveKeys}). Audits `project.committed` unless
  * `audit` is false (a revert audits its own event). The caller holds the project row lock.
+ * Throws {@link ProjectWriteBlocked} for a Repo or a project being converted (KOBE-765, G17).
  */
 export async function writeCommit(
   tx: KobeTx,
@@ -298,6 +300,8 @@ export async function writeCommit(
   },
 ): Promise<WrittenCommit> {
   const { teamId, projectId, tree, author } = input;
+  const block = await projectWriteBlock(tx, teamId, projectId);
+  if (block !== null) throw new ProjectWriteBlocked(block);
   const head = await headOf(tx, teamId, projectId);
   const before = await loadTree(tx, teamId, head?.id ?? null);
   const changes = diffVersions(before, tree);

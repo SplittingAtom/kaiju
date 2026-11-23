@@ -95,6 +95,8 @@ export interface ServerDepsOptions {
    * address policy passed (default the connectors' guarded client). Tests answer from a fake host.
    */
   readonly gitHostRequest?: GitHostNet["request"];
+  /** Convert to repo (KOBE-765): git smart-HTTP after the checks (tests answer from a git server). */
+  readonly gitWireSend?: GitHostNet["wire"];
   /** Probes a registered connector's tools through the MCP proxy (KOBE-101); unset = cannot pin. */
   readonly connectorProbe?: ConnectorProbe;
   /** MCP Apps' own calls through the MCP proxy (KOBE-436); unset = every app call fails. */

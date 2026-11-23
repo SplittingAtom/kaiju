@@ -13,6 +13,7 @@ import { queueProjectBlobs, referencedKeys, refreshProjectStorage } from "../pro
  * queued for the blob deleter (`retention_blob_deletions`, after its grace period), which checks
  * again that no workspace row names them. Each project that lost history is audited
  * `project.history_pruned` with the counts (system actor). The current files never change.
+ * A Repo, and a project with a conversion running or failed, is left alone (KOBE-765).
  */
 
 export interface HistoryPruneCounts {
@@ -78,6 +79,12 @@ async function pruneProject(
     SELECT c.id, c.seq, p.created_by FROM projects p
       JOIN project_commits c ON c.team_id = p.team_id AND c.id = p.head_commit_id
      WHERE p.team_id = ${teamId} AND p.id = ${projectId}
+       -- KOBE-765: a Repo keeps its Kobe history as it was (G17: the host's history is the
+       -- record, so Kobe's cap no longer applies), and a conversion's history never moves.
+       AND p.kind = 'project'
+       AND NOT EXISTS (SELECT 1 FROM git_conversions g
+                        WHERE g.team_id = p.team_id AND g.project_id = p.id
+                          AND g.status IN ('running', 'failed'))
        FOR UPDATE OF p`);
   const h = head.rows[0];
   if (!h) return NO_HISTORY_PRUNE;

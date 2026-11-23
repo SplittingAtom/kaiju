@@ -7,6 +7,10 @@ import { loadAccess, type ProjectAccess } from "../../projects/access.js";
 import { type CommitDeps, type CommitResult } from "../../projects/commits.js";
 import { type ProposalResult } from "../../projects/from-proposal.js";
 import { logger } from "../../logger.js";
+import {
+  PROJECT_WRITE_BLOCK_CODES,
+  PROJECT_WRITE_BLOCK_MESSAGES,
+} from "../../projects/repo-state.js";
 import { DEFAULT_TEAM_MAX_OBJECTS, DEFAULT_UPLOAD_SETTINGS } from "../../uploads/settings.js";
 import type { WorkspaceSync } from "../../workspace-sync/service.js";
 import { param } from "../../http/request.js";
@@ -93,6 +97,14 @@ export function refusal(c: Ctx, r: Extract<CommitResult, { status: "refused" }>)
       return fail(c, 503, "busy", "Your working copy changed while committing. Try again.");
     case "storage_failed":
       return noStorage(c);
+    case "repo":
+    case "converting":
+      return fail(
+        c,
+        409,
+        PROJECT_WRITE_BLOCK_CODES[r.error],
+        PROJECT_WRITE_BLOCK_MESSAGES[r.error],
+      );
   }
 }
 
@@ -133,6 +145,8 @@ export function proposalAnswer(c: Ctx, result: ProposalResult): Response {
       return refusal(c, { status: "refused", error: "quota_exceeded", limit: result.limit });
     case "refused":
       return refusal(c, { status: "refused", error: result.error });
+    case "blocked":
+      return refusal(c, { status: "refused", error: result.block });
   }
 }
 

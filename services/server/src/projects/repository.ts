@@ -34,6 +34,7 @@ import { queueProjectBlobs } from "./tree.js";
 import { recordAudit } from "../audit/record.js";
 import { decide, type ProjectAccess, type ProjectRow } from "./access.js";
 import { deriveSlug, slugCandidates } from "./slug.js";
+import { projectWriteBlock } from "./repo-state.js";
 
 export type ProjectFailure =
   | "slug_taken"
@@ -47,7 +48,9 @@ export type ProjectFailure =
   | "in_use"
   | "uncommitted_work"
   | "legal_hold"
-  | "user_deactivated";
+  | "user_deactivated"
+  /** KOBE-765 review L3: a conversion to a Repo is running or failed; abandon it first. */
+  | "conversion_in_progress";
 
 export type Outcome<T> =
   | { readonly ok: true; readonly value: T }
@@ -250,6 +253,12 @@ export async function updateProject(
   if (body.default_agent_id && !(await validAgent(tx, viewer, body.default_agent_id))) {
     return fail("invalid_agent");
   }
+  if (
+    body.archived === true &&
+    (await projectWriteBlock(tx, viewer.teamId, access.project.id)) === "converting"
+  ) {
+    return fail("conversion_in_progress");
+  }
   const [row] = await tx
     .update(projects)
     .set({
@@ -282,6 +291,10 @@ export async function deleteProject(
   /** Working copies with uncommitted changes the caller agreed to discard (KOBE-780). */
   confirmedUncommitted = 0,
 ): Promise<Outcome<null>> {
+  // A running or failed conversion holds the project (review L3): abandon it first.
+  if ((await projectWriteBlock(tx, viewer.teamId, projectId)) === "converting") {
+    return fail("conversion_in_progress");
+  }
   const [t] = await tx
     .select({ n: count() })
     .from(threads)

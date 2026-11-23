@@ -47,6 +47,8 @@ export const PROJECT_COMMIT_ERROR_CODES = [
   "proposal_not_found", // 404 no such proposal in that thread (or its run was compacted)
   "proposal_stale", // 409 the file changed in the project after the agent proposed the edit
   "proposal_not_allowed", // 409 the proposal can no longer be accepted (see its reason)
+  "project_is_repo", // 409 a Repo takes no Kobe commits or file changes (KOBE-765, G17)
+  "conversion_in_progress", // 409 the project is being converted to a Repo (KOBE-765)
 ] as const;
 export const projectCommitErrorCodeSchema = z.enum(PROJECT_COMMIT_ERROR_CODES);
 export type ProjectCommitErrorCode = z.infer<typeof projectCommitErrorCodeSchema>;

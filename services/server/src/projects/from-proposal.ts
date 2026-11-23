@@ -26,6 +26,7 @@ import {
   type Tree,
   type TreeFile,
 } from "./tree.js";
+import { projectWriteBlock, ProjectWriteBlocked, type ProjectWriteBlock } from "./repo-state.js";
 
 /**
  * Accept commits an agent's proposal (KOBE-591, projects-in-conversations PE4-PE6). The thread's
@@ -68,7 +69,9 @@ export type ProposalResult =
       readonly status: "refused";
       readonly error: "too_many_files" | "file_too_large" | "invalid_path" | "storage_failed";
     }
-  | { readonly status: "quota_exceeded"; readonly limit: "bytes" | "objects" };
+  | { readonly status: "quota_exceeded"; readonly limit: "bytes" | "objects" }
+  /** KOBE-765: the project is a Repo or being converted to one. */
+  | { readonly status: "blocked"; readonly block: ProjectWriteBlock };
 
 interface Plan {
   readonly runId: string;
@@ -179,6 +182,8 @@ async function inspect(
   if (t.project_id !== req.projectId) return { status: "not_allowed", reason: "moved" };
   if (!access.can.edit) return { status: "not_allowed", reason: "no_edit_access" };
   if (access.project.archivedAt !== null) return { status: "not_allowed", reason: "archived" };
+  const block = await projectWriteBlock(tx, teamId, req.projectId);
+  if (block !== null) return { status: "blocked", block };
   const head = await headOf(tx, teamId, req.projectId);
   const tree = await loadTree(tx, teamId, head?.id ?? null);
   const current = tree.get(rel);
@@ -268,6 +273,7 @@ async function write(
       return { status: "committed", seq: written.seq, commitId: written.commitId };
     } catch (err) {
       if (err instanceof OverLimit) return { status: "quota_exceeded", limit: err.limit };
+      if (err instanceof ProjectWriteBlocked) return { status: "blocked", block: err.block };
       throw err;
     }
   });

@@ -26,6 +26,8 @@ interface Repo {
   empty: boolean;
   defaultBranch: string;
   issues: number;
+  description: string;
+  private: boolean;
   /** Branch → commit SHA. */
   branches: Map<string, string>;
   /** Path → text. */
@@ -143,6 +145,18 @@ export class FakeGitea implements GitHostContractFake {
     return String(this.addRepo(owner, name, false).id);
   }
 
+  /** Changes a repository of the organization as a host admin would (Convert to repo tests). */
+  editRepository(
+    name: string,
+    change: { private?: boolean; description?: string; defaultBranch?: string },
+  ): void {
+    const repo = this.repos.get(`${this.organization}/${name}`);
+    if (!repo) throw new Error(`fake gitea: no repository ${name}`);
+    if (change.private !== undefined) repo.private = change.private;
+    if (change.description !== undefined) repo.description = change.description;
+    if (change.defaultBranch !== undefined) repo.defaultBranch = change.defaultBranch;
+  }
+
   apiHits(): readonly { method: string; path: string; authorization: string | undefined }[] {
     return this.hits;
   }
@@ -155,6 +169,8 @@ export class FakeGitea implements GitHostContractFake {
       empty,
       defaultBranch: "main",
       issues: 0,
+      description: "",
+      private: true,
       branches: new Map(empty ? [] : [["main", "c".repeat(40)]]),
       files: new Map(empty ? [] : [["README.md", "# Hello\n"]]),
       items: [],
@@ -171,9 +187,10 @@ export class FakeGitea implements GitHostContractFake {
       full_name: full,
       owner: { id: 7, login: r.owner },
       default_branch: r.defaultBranch,
-      private: true,
+      private: r.private,
       empty: r.empty,
       archived: false,
+      description: r.description,
       html_url: `${this.baseUrl}/${full}`,
       clone_url: `${this.baseUrl}/${full}.git`,
       permissions: { admin: this.isOrgOwner, push: this.canWrite, pull: true },
@@ -328,7 +345,9 @@ export class FakeGitea implements GitHostContractFake {
       return this.send(res, 409, { message: "The repository with the same name already exists." });
     }
     if (b.private !== true) return this.send(res, 422, { message: "fake wants private" });
-    return this.send(res, 201, this.repoJson(this.addRepo(this.organization, name, true)));
+    const repo = this.addRepo(this.organization, name, true);
+    repo.description = typeof b.description === "string" ? b.description : "";
+    return this.send(res, 201, this.repoJson(repo));
   }
 
   private async repoRoute(

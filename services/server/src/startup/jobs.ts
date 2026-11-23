@@ -24,6 +24,8 @@ import type { ServerDeps } from "../deps.js";
 import { EgressBlockedRelay } from "../egress/blocked-relay.js";
 import { resealTeamHeaders } from "../egress/header-store.js";
 import { GIT_HEALTH_LOCK, GitHealthJob, runGitHealthPass } from "../git/health-job.js";
+import { conversionDeps } from "../git/conversion/deps.js";
+import { GitConversionSweep, sweepGitConversions } from "../git/conversion/job.js";
 import { endSsoSessionsWhenOff, seedHelmProviders } from "../sso/providers.js";
 import { notifySsoRequiredOff } from "../sso/required-notify.js";
 import { EgressRequestSweeper, sweepEgressRequestNotifications } from "../egress/request-notify.js";
@@ -450,6 +452,19 @@ function siteJobs(o: ServerJobsOptions): ServerJob[] {
         return () => gitHealth.stop();
       },
       () => runGitHealthPass(gitHealthDeps),
+    ),
+  );
+  // Convert to repo (KOBE-765): attempts a restarted or crashed replica left running resume here.
+  const conversions = { ...conversionDeps(deps), log: o.logger };
+  const conversionSweep = new GitConversionSweep(conversions);
+  jobs.push(
+    job(
+      "git-conversion-resume",
+      () => {
+        conversionSweep.start();
+        return () => conversionSweep.stop();
+      },
+      () => sweepGitConversions(conversions),
     ),
   );
   // Header values sealed with a previous header secret are re-sealed with the current one.
