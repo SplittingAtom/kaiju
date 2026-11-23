@@ -175,6 +175,7 @@ describe("skills at run start", () => {
       "trace_spans",
       "session_renew",
       "thread_context",
+      "git",
     ]);
     await h.close();
     h = await startHarness();
@@ -183,6 +184,7 @@ describe("skills at run start", () => {
       "trace_spans",
       "session_renew",
       "thread_context",
+      "git",
     ]);
   });
 
@@ -207,6 +209,7 @@ describe("former built-in skills", () => {
       "trace_spans",
       "session_renew",
       "thread_context",
+      "git",
     ]);
     await h.close();
     await rm(dir, { recursive: true, force: true });

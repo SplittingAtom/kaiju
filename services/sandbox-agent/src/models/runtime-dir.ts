@@ -4,6 +4,7 @@ import path from "node:path";
 import { isTempOf } from "../atomic-file.js";
 import { GUARDED_CONFIG } from "./agent-config.js";
 import { EGRESS_TOKEN_FILE_NAME, isEgressTemp } from "../egress/egress-wiring.js";
+import { GIT_CONFIG_FILE_NAME, isGitConfigTemp } from "../git/git-config.js";
 import { MEMORY_FILE_NAME, isMemoryTemp } from "../memory/context-file.js";
 import { SYSTEM_PROMPT_FILE_NAME } from "../pi/system-prompt-file.js";
 import type { PiIdentities } from "../pi/identities.js";
@@ -77,7 +78,9 @@ export async function unexpectedEntries(
       name === SYSTEM_PROMPT_FILE_NAME ||
       name === MEMORY_FILE_NAME ||
       isMemoryTemp(name) ||
-      isEgressTemp(name)
+      isEgressTemp(name) ||
+      name === GIT_CONFIG_FILE_NAME ||
+      isGitConfigTemp(name)
     ) {
       if (kind !== "file" && kind !== "missing") found.push(`${name} (${kind})`);
     } else {
