@@ -4,15 +4,15 @@ import type { AddressInfo } from "node:net";
 import { serve, type ServerType } from "@hono/node-server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { KobeEvent } from "@kobe/protocol";
-import { appendRunEvents } from "./event-stream/append.js";
-import { createRunEventHub } from "./event-stream/hub.js";
+import { appendRunEvents } from "./append.js";
+import { createRunEventHub } from "./hub.js";
 import {
   EventStreamFixture,
   delta,
   must,
   range,
   type Person,
-} from "./testing/event-stream-fixture.js";
+} from "../testing/event-stream-fixture.js";
 
 const fx = new EventStreamFixture();
 let server: ServerType;

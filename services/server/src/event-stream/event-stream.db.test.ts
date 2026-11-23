@@ -9,17 +9,17 @@ import {
   MAX_EVENT_PAYLOAD_BYTES,
   appendRunEvents,
   appendRunEventsInTx,
-} from "./event-stream/append.js";
-import { createRunEventBatcher } from "./event-stream/batcher.js";
-import { RUN_EVENTS_CHANNEL } from "./event-stream/notify.js";
-import { SseReader } from "./testing/sse.js";
+} from "./append.js";
+import { createRunEventBatcher } from "./batcher.js";
+import { RUN_EVENTS_CHANNEL } from "./notify.js";
+import { SseReader } from "../testing/sse.js";
 import {
   EventStreamFixture,
   delta,
   range,
   seededRandom,
   type Person,
-} from "./testing/event-stream-fixture.js";
+} from "../testing/event-stream-fixture.js";
 
 // Replica 0 and 1: keep-alive far away, so live delivery below proves the NOTIFY path.
 // Replica 2: fast timers for revocation and per-user caps.
