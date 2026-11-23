@@ -82,6 +82,8 @@ export interface SandboxWireOptions {
   readonly skillDrafts?: SkillDraftTool;
   /** Notebook files (KOBE-464): `run_python` reads cells and saves outputs through them. */
   readonly notebooks?: NotebookFiles;
+  /** The Site's host for the git no-reply commit email (KOBE-764); absent: no `run.start.git`. */
+  readonly gitSiteHost?: string;
   readonly tuning?: Partial<WireTuning>;
   /** The model-gateway Ed25519 signing key (KOBE-118/521); unset: `run.start` carries no run token. */
   readonly runTokenKey?: SessionSigningKey;
@@ -347,6 +349,7 @@ export function createSandboxWire(options: SandboxWireOptions): SandboxWire {
     },
     ...(options.skillDrafts ? { skillDrafts: options.skillDrafts } : {}),
     ...(options.notebooks ? { notebooks: options.notebooks } : {}),
+    ...(options.gitSiteHost ? { gitSiteHost: options.gitSiteHost } : {}),
     ui: options.ui ?? CANCEL_DIALOGS,
     hooks,
     get liveness() {

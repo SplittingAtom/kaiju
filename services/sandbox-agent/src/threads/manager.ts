@@ -191,6 +191,8 @@ export class ThreadManager {
           this.#options.fileEditTools ? frame.viewing : undefined,
           frame.sync_conflicts,
         );
+        // Git identity and connected organizations (KOBE-764): the tools' git config.
+        await thread.attachGit(frame.git);
       } catch (error) {
         endOwn();
         return fail("pi_unavailable", `model file not written: ${(error as Error).message}`);

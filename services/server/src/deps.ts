@@ -478,6 +478,7 @@ export function createServerDeps(options: ServerDepsOptions): ServerDeps {
     projectMounts,
     skillDrafts: skillDraftTool,
     notebooks: notebookFiles,
+    gitSiteHost: new URL(options.publicUrl).hostname,
     hooks: {
       async onRunEnded(event) {
         if (event.status === "completed") serverCalls.afterRunCompleted(event);

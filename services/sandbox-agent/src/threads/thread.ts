@@ -9,6 +9,7 @@ import {
   type PiExtensionUiRequest,
   type PiExtensionUiResponse,
   type PiRpcResponse,
+  type RunGitContext,
 } from "@kobe/protocol/sandbox-wire";
 import { PolicyChannel } from "../policy/channel.js";
 import { ToolsChannel } from "../tools/channel.js";
@@ -33,6 +34,7 @@ import { MCP_TOKEN_FILE, mcpTokenFileText, writeAgentFile } from "../mcp/pi-mcp-
 import type { ModelFile } from "../models/model-file.js";
 import type { RunModel } from "../models/types.js";
 import type { EgressTokenFile } from "../egress/egress-wiring.js";
+import { gitConfigText, type GitConfigFile } from "../git/git-config.js";
 import { BranchSummaryState } from "./branch-summary-state.js";
 import { cancelDialog, routeUiRequest } from "./dialogs.js";
 import { reclaimRuntime } from "./reclaim.js";
@@ -84,6 +86,8 @@ export class Thread {
   #mcpConfig: McpConfigState | undefined;
   /** The current Pi's egress token file (undefined without egress wiring). */
   #egressFile: EgressTokenFile | undefined;
+  /** The current Pi's git config file (KOBE-764). */
+  #gitFile: GitConfigFile | undefined;
   #promptFile: SystemPromptFile | undefined;
   #memoryFile: MemoryContextFile | undefined;
   /** Where the current Pi's kobe-models records its latest model call (KOBE-470). */
@@ -194,7 +198,8 @@ export class Thread {
       diagnostic: (threadId, message) => this.#hooks.diagnostic(threadId, message),
       closing: this.#closing,
     });
-    const { pi, modelFile, mcpConfig, egressFile, promptFile, memoryFile, contextFile } = spawned;
+    const { pi, modelFile, mcpConfig, egressFile, gitFile, promptFile, memoryFile, contextFile } =
+      spawned;
     this.#runtimeDirs.set(pi, spawned.runtime);
     const control = pi.control;
     let channel: PolicyChannel | undefined;
@@ -224,6 +229,7 @@ export class Thread {
     this.#modelFile = modelFile;
     this.#mcpConfig = mcpConfig;
     this.#egressFile = egressFile;
+    this.#gitFile = gitFile;
     this.#promptFile = promptFile;
     this.#memoryFile = memoryFile;
     this.#contextFile = contextFile;
@@ -286,6 +292,7 @@ export class Thread {
     return verifyRuntime(pi === undefined ? undefined : this.#runtimeDirs.get(pi)?.dir, {
       modelFile: () => this.#modelFile,
       egressFile: () => this.#egressFile,
+      gitFile: () => this.#gitFile,
       promptFile: () => this.#promptFile,
       memoryFile: () => this.#memoryFile,
       mcpConfig: () => this.#mcpConfig,
@@ -330,6 +337,15 @@ export class Thread {
       .catch((error: unknown) =>
         this.#warn(`model file not updated with the trace context: ${(error as Error).message}`),
       );
+  }
+
+  /**
+   * The run's git identity and connected organizations (KOBE-764): the tools' git config is
+   * rewritten before the prompt, so the next git command uses them. Without a context (an older
+   * server, an eval sandbox) git keeps the safe defaults and refuses to commit without identity.
+   */
+  async attachGit(git: RunGitContext | undefined): Promise<void> {
+    await this.#gitFile?.write(gitConfigText(git));
   }
 
   /**
@@ -662,6 +678,7 @@ export class Thread {
     this.#modelFile = undefined;
     this.#mcpConfig = undefined;
     this.#egressFile = undefined;
+    this.#gitFile = undefined;
     this.#promptFile = undefined;
     this.#memoryFile = undefined;
     this.#contextFile = undefined;

@@ -10,6 +10,7 @@ export * from "./project-frames.js";
 export * from "./legacy-web-search-frames.js";
 export * from "./trace-frames.js";
 export * from "./mcp-config.js";
+export * from "./git-config.js";
 export * from "./eval-frames.js";
 export * from "./skill-draft-frames.js";
 export * from "./file-edit-frames.js";
