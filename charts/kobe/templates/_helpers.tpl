@@ -152,8 +152,8 @@ securityContext:
 {{/*
 Postgres connection budget (KOBE-736). The server's pool sizes, its replica count and the full
 pools of every other component that connects (scheduler, model gateway, egress proxy: replicas x
-(pool + 1 LISTEN connection); the model gateway also holds the member rate limiter's own pool of 2,
-KOBE-810), so the server can warn at start when the total nears
+(pool + 1 LISTEN connection); the model gateway also holds the member rate limiter's own pool,
+`modelGateway.database.ratePoolMax`, KOBE-810), so the server can warn at start when the total nears
 max_connections. An estimate: rollout surge pods, the migrate Job and `kobe backup` come on top.
 */}}
 {{- define "kobe.serverDbEnv" -}}
@@ -161,7 +161,7 @@ max_connections. An estimate: rollout surge pods, the migrate Job and `kobe back
 {{- $sched := .Values.scheduler -}}
 {{- $g := include "kobe.modelGatewayValues" . | fromJson -}}
 {{- $e := include "kobe.egressProxyValues" . | fromJson -}}
-{{- $peers := add (mul (int $sched.replicas) (add1 (int $sched.database.poolMax))) (mul (int $g.replicas) (add 3 (int $g.database.poolMax))) (mul (int (default 1 $e.replicas)) (add1 (int $e.database.poolMax))) -}}
+{{- $peers := add (mul (int $sched.replicas) (add1 (int $sched.database.poolMax))) (mul (int $g.replicas) (add1 (add (int $g.database.poolMax) (int $g.database.ratePoolMax)))) (mul (int (default 1 $e.replicas)) (add1 (int $e.database.poolMax))) -}}
 - name: KOBE_DB_POOL_MAX
   value: {{ int $s.poolMax | quote }}
 - name: KOBE_DB_STREAM_POOL_MAX

@@ -528,9 +528,11 @@ egressProxy:
 modelGateway:
   # Two replicas: one shim restarting or busy does not cut every team off from models.
   replicas: 2
-  # Query pool per pod (KOBE-736), plus one LISTEN connection.
+  # Query pool per pod (KOBE-736), plus one LISTEN connection. `ratePoolMax`: the member rate
+  # limiter's own pool per pod (KOBE-810; 2 s acquire and statement timeouts).
   database:
     poolMax: 10
+    ratePoolMax: 2
   # PodDisruptionBudget and soft topology spread while replicas > 1 (see server, KOBE-515).
   podDisruptionBudget:
     enabled: true

@@ -13,22 +13,27 @@ Every value below was read from code; `path:line` points at the definition or th
 
 There is no Redis. Kobe uses five kinds of limiter:
 
-- **Postgres fixed window (`takeRateLimit` / `hitRateLimit`, `packages/db/src/rate-limit.ts:57`,
+- **Postgres fixed window (`takeRateLimit` / `hitRateLimit`, `packages/db/src/rate-limit.ts:75`,
   used by the server through `services/server/src/rate-limit.ts`).** One atomic upsert on the
   `kobe_rate_limits` table per hit, key prefixed `kobe:`. The window starts at the first hit and
   resets when a hit arrives after `windowMs`. All server replicas share the counter. Kobe's limits
   use their own table, separate from the sign-in library's. Each row records when its window
   ends; a hit that starts a new window deletes up to 100 expired rows (`pruneExpiredRateLimits`),
   so the table holds about the live windows only. None of these 429s sends `Retry-After`, except
-  SCIM's.
-- **Postgres refilling bucket (`takeRateBucket`, `packages/db/src/rate-limit.ts:125`, KOBE-810).**
-  The same table and one atomic upsert per request, as GCRA: the row stores the bucket's
-  theoretical arrival time (in `window_start` and `expires_at`; `count` is 1 when the last request
-  was admitted, 0 when refused). It behaves exactly like an in-memory token bucket of `burst`
-  refilled at `perSecond`: refused requests are not charged, and a refusal knows when one request
-  is available again. It is shared by every replica of the server and the model gateway (both
-  connect as the app role); a full bucket's row is pruned like an expired window. Used by the
-  member per-minute model rate and the two MCP App limits.
+  SCIM's. Time comes from the database clock inside the statement (KOBE-810), so server replicas
+  whose clocks disagree still share one window and none prunes a row early.
+- **Postgres refilling bucket (`takeRateBucket`, `packages/db/src/rate-limit.ts:156`, KOBE-810).**
+  The same table and one atomic statement per request, as GCRA: the row stores the bucket's
+  theoretical arrival time (`window_start` in microseconds, `expires_at` the same instant in ms;
+  `count` is 1 when the last request was admitted, 0 when refused). It behaves like an in-memory
+  token bucket of `burst` refilled at `perSecond`: refused requests are not charged, and a refusal
+  knows when one request is available again. The refill interval is rounded up to a whole
+  microsecond, so the sustained rate is at most 0.02 % below the setting (at 10,000 a minute).
+  Time comes from the database clock inside the statement, so replicas with skewed clocks share
+  one bucket. It is shared by every replica of the server and the model gateway (both connect as
+  the app role); a full bucket's row is pruned like an expired window, in the background (at most
+  every 10 s per replica and limit), never on the request. Used by the member per-minute model
+  rate and the two MCP App limits.
 - **Better Auth's own limiter** for `/api/auth/*`, configured in
   `services/server/src/auth/auth.ts:168` with `storage: "database"`. It uses its own
   `rate_limits` table, keyed by client IP and path. It answers 429
@@ -156,7 +161,8 @@ Gemini `reason`). Spending budgets (402 `budget_exhausted` etc.) are a separate 
 request (about 2.3 ms on the LAN), so a Postgres outage now stops model calls for every Workspace.
 Before, a Workspace without budget lines kept working through a short outage on cached state;
 Workspaces with budgets already needed the database for the reservation. The gateway runs the
-rate check on its own pool of 2 connections per replica with a 2 s acquire timeout and a 2 s
+rate check on its own pool (2 connections per replica by default: `KOBE_MODEL_GATEWAY_RATE_POOL_MAX`,
+Helm `modelGateway.database.ratePoolMax`) with a 2 s acquire timeout and a 2 s
 statement timeout, so a slow or saturated database refuses a request within about 2 s, not after
 the main pool's 10 s acquire timeout (deliberate there: reservations and principal loads may wait
 through a short spike). The refusal is 503 `rate_limit_unavailable` with `Retry-After: 2`. The
@@ -352,6 +358,7 @@ No server-side rate constant is exposed as an env var or Helm value.
 | `KOBE_MODEL_GATEWAY_MAX_CALLS_PER_SANDBOX` / `KOBE_MODEL_GATEWAY_MAX_CALLS`           | env (Helm `modelGateway.limits.callsPerSandbox` / `calls`)                   | 16 / 1024                                          | concurrent model calls                                        |
 | `KOBE_MODEL_GATEWAY_INFLIGHT_BYTES_PER_SANDBOX` / `KOBE_MODEL_GATEWAY_INFLIGHT_BYTES` | env (Helm `modelGateway.limits.inflightBytesPerSandbox` / `inflightBytes`)   | 32 MiB / 128 MiB                                   | request bytes in memory                                       |
 | `KOBE_MODEL_GATEWAY_BUDGET_CACHE_TTL_MS`                                              | env                                                                          | 1000                                               | how quickly a changed per-minute value reaches the gateway    |
+| `KOBE_MODEL_GATEWAY_RATE_POOL_MAX`                                                    | env (Helm `modelGateway.database.ratePoolMax`)                               | 2 (1–50)                                           | connections per gateway replica for the member rate check     |
 | `user_requests_per_minute` (Site budget)                                              | Site setting (`PUT /v1/site/budget`)                                         | 60 (1–10,000)                                      | model requests per member per minute                          |
 | `user_requests_per_minute` (Workspace budget)                                         | Workspace setting (`PUT /v1/team/budgets/team`)                              | unset (inherits the Site value; may only lower it) | same, per Workspace                                           |
 | `KOBE_MCP_REQUEST_BURST` / `KOBE_MCP_REQUESTS_PER_SECOND`                             | env (Helm `mcpProxy.limits.requestBurst` / `requestsPerSecond`)              | 60 / 10                                            | MCP requests per sandbox                                      |

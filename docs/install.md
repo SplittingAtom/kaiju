@@ -1243,13 +1243,13 @@ Every Kobe pod that uses the database holds up to a fixed number of connections 
 open lazily, so a quiet install uses far fewer; size Postgres for the full pools, because peaks
 and rollouts fill them.
 
-| Component     | Per pod (chart value)                                                                                        | Default pods | Default total |
-| ------------- | ------------------------------------------------------------------------------------------------------------ | ------------ | ------------- |
-| server        | query pool `server.database.poolMax` (10) + event-stream pool `server.database.streamPoolMax` (4) + 1 LISTEN | 2            | 30            |
-| scheduler     | `scheduler.database.poolMax` (10) + 1 LISTEN                                                                 | 1            | 11            |
-| model gateway | `modelGateway.database.poolMax` (10) + 1 LISTEN + 2 for the member rate limiter (fixed)                      | 2            | 26            |
-| egress proxy  | `egressProxy.database.poolMax` (10) + 1 LISTEN                                                               | 1            | 11            |
-| **total**     | connections = replicas x (pool + stream pool + listener), summed over components                             |              | **78**        |
+| Component     | Per pod (chart value)                                                                                         | Default pods | Default total |
+| ------------- | ------------------------------------------------------------------------------------------------------------- | ------------ | ------------- |
+| server        | query pool `server.database.poolMax` (10) + event-stream pool `server.database.streamPoolMax` (4) + 1 LISTEN  | 2            | 30            |
+| scheduler     | `scheduler.database.poolMax` (10) + 1 LISTEN                                                                  | 1            | 11            |
+| model gateway | `modelGateway.database.poolMax` (10) + 1 LISTEN + member rate limiter `modelGateway.database.ratePoolMax` (2) | 2            | 26            |
+| egress proxy  | `egressProxy.database.poolMax` (10) + 1 LISTEN                                                                | 1            | 11            |
+| **total**     | connections = replicas x (pool + stream pool + listener), summed over components                              |              | **78**        |
 
 On top of that: a rollout starts one extra pod per Deployment before the old one stops (server
 +15, model gateway +13, scheduler and egress proxy +11 each at the defaults), the migration Job

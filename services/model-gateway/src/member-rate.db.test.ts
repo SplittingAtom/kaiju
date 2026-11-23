@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { performance } from "node:perf_hooks";
 import { createDb, pruneExpiredRateLimits, type KobeDatabase } from "@kobe/db";
-import { afterAll, describe, expect, inject, it } from "vitest";
+import { afterAll, describe, expect, inject, it, vi } from "vitest";
 import { BudgetGate } from "./budget-gate.js";
 import { DbMemberRate, MEMBER_RATE_DB } from "./member-rate.js";
 import type { CallContext } from "./seams.js";
@@ -19,16 +19,16 @@ const clock = { t: Date.now() };
 
 function replica(
   rpm: number,
-  options: { url?: string; now?: () => number; random?: () => number } = {},
+  options: { url?: string; now?: () => number; random?: () => number; dbClock?: boolean } = {},
 ): BudgetGate {
-  const database = createDb(options.url ?? inject("appUrl"), MEMBER_RATE_DB);
+  const database = createDb(options.url ?? inject("appUrl"), { ...MEMBER_RATE_DB, max: 2 });
   pools.push(database);
   return new BudgetGate(
     { load: async () => ({ lines: [], requestsPerMinute: rpm }), prices: async () => new Map() },
     {
       ttlMs: 600_000,
       rate: new DbMemberRate(database.db, {
-        now: options.now ?? (() => clock.t),
+        ...(options.dbClock ? {} : { now: options.now ?? (() => clock.t) }),
         random: options.random ?? (() => 0),
       }),
     },
@@ -99,6 +99,39 @@ describe("member per-minute model rate across gateway replicas (KOBE-810)", () =
     expect((await plain.admit(call(member))).ok).toBe(false);
   });
 
+  it("pods whose clocks are 5 minutes apart share one bucket (the database clock counts)", async () => {
+    const [ahead, behind] = [replica(6, { dbClock: true }), replica(6, { dbClock: true })];
+    const real = Date.now.bind(Date);
+    /** Runs `fn` as a pod whose clock is `skewMs` off. */
+    const skewed = async <T>(skewMs: number, fn: () => Promise<T>): Promise<T> => {
+      const spy = vi.spyOn(Date, "now").mockImplementation(() => real() + skewMs);
+      try {
+        return await fn();
+      } finally {
+        spy.mockRestore();
+      }
+    };
+    const member = randomUUID();
+    const decisions = [];
+    for (let i = 0; i < 12; i += 1) {
+      decisions.push(
+        await (i % 2 === 0
+          ? skewed(300_000, () => ahead.admit(call(member)))
+          : skewed(0, () => behind.admit(call(member)))),
+      );
+    }
+    expect(decisions.filter((d) => d.ok)).toHaveLength(6);
+    for (const d of decisions.filter((x) => !x.ok)) {
+      // About 60/6 s, whichever pod answers: not 10 s plus the skew.
+      expect(d.ok === false && d.retryAfterSeconds).toBeLessThanOrEqual(11);
+    }
+    // The pod running ahead prunes with the database clock: the member's debt stays.
+    const pool = pools.at(-1);
+    if (!pool) throw new Error("no pool");
+    await skewed(300_000, () => pruneExpiredRateLimits(pool.db));
+    expect((await skewed(0, () => behind.admit(call(member)))).ok).toBe(false);
+  });
+
   it("refuses the call when Postgres cannot be reached (fail closed)", async () => {
     const dead = replica(60, { url: "postgres://kobe:x@127.0.0.1:1/none" });
     expect(await dead.admit(call(randomUUID()))).toMatchObject({
@@ -109,7 +142,7 @@ describe("member per-minute model rate across gateway replicas (KOBE-810)", () =
   });
 
   it("costs one upsert per model request (latency measured, with and without the prune)", async () => {
-    const real = replica(10_000, { now: () => Date.now() });
+    const real = replica(10_000, { dbClock: true });
     for (let i = 0; i < 10; i += 1) await real.admit(call(randomUUID())); // warm the pool
     const time = async (member: string) => {
       const t = performance.now();

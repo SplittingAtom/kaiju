@@ -1,5 +1,5 @@
 import {
-  pruneExpiredRateLimits,
+  backgroundPrune,
   returnRateBucketToken,
   takeRateBucket,
   type RateBucketRule,
@@ -24,8 +24,6 @@ export interface MemberRate {
 }
 
 const MINUTE_MS = 60_000;
-/** Expired rows are pruned at most this often per replica, off the model path. */
-const PRUNE_EVERY_MS = 10_000;
 
 /** A bucket of `perMinute` requests refilled at perMinute/60 per second: the old shim bucket. */
 export function memberRateRule(perMinute: number): RateBucketRule {
@@ -36,8 +34,9 @@ export function memberRateRule(perMinute: number): RateBucketRule {
  * The Postgres limiter's own connection settings in the gateway (KOBE-810): a small pool apart from
  * the gateway's main one, so a slow or saturated database refuses a model request within about
  * 2 s (acquire, then statement) instead of the main pool's 10 s acquire and 120 s statement limits.
+ * Its size is `KOBE_MODEL_GATEWAY_RATE_POOL_MAX` (chart `modelGateway.database.ratePoolMax`, 2).
  */
-export const MEMBER_RATE_DB = { max: 2, acquireTimeoutMs: 2_000, statementTimeoutMs: 2_000 };
+export const MEMBER_RATE_DB = { acquireTimeoutMs: 2_000, statementTimeoutMs: 2_000 };
 
 /**
  * Production (KOBE-810): the member's bucket in Postgres (`kobe_rate_limits`, key
@@ -48,10 +47,11 @@ export const MEMBER_RATE_DB = { max: 2, acquireTimeoutMs: 2_000, statementTimeou
  * member's throttled runs do not all retry at the same instant. Bifrost's per-key window stays as
  * the backstop. The prune of expired rows does not ride on the request (most members find their
  * bucket full again, which would add a DELETE to most calls): it runs in the background, at most
- * every 10 s per replica.
+ * every 10 s per replica. Time comes from the database clock (KOBE-810: replicas with skewed clocks
+ * still share one bucket), unless `now` is injected.
  */
 export class DbMemberRate implements MemberRate {
-  private lastPrune = 0;
+  private readonly prune: (now?: number) => void;
 
   constructor(
     private readonly db: RateLimitDb,
@@ -62,18 +62,22 @@ export class DbMemberRate implements MemberRate {
       /** A give-back or a prune of expired rows failed (logged; never fails the call). */
       readonly onError?: (err: unknown) => void;
     } = {},
-  ) {}
+  ) {
+    this.prune = backgroundPrune(db, {
+      ...(options.onError ? { onError: options.onError } : {}),
+    });
+  }
 
   async take(key: string, perMinute: number): Promise<MemberRateTake> {
     const onError = this.options.onError ?? (() => undefined);
     const rowKey = `model-rpm:${key}`;
     const rule = memberRateRule(perMinute);
-    const now = this.options.now?.() ?? Date.now();
-    const hit = await takeRateBucket(this.db, rowKey, rule, { now, prune: false });
-    if (now - this.lastPrune >= PRUNE_EVERY_MS) {
-      this.lastPrune = now;
-      void pruneExpiredRateLimits(this.db, now, undefined, onError);
-    }
+    const now = this.options.now?.();
+    const hit = await takeRateBucket(this.db, rowKey, rule, {
+      ...(now === undefined ? {} : { now }),
+      prune: false,
+    });
+    this.prune(now);
     if (!hit.allowed) {
       const jitter =
         (this.options.random ?? Math.random)() * Math.min(1_000, MINUTE_MS / perMinute);

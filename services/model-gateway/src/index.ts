@@ -53,6 +53,7 @@ const db = database.db;
 /** The member rate limiter's own small pool: fails within about 2 s (KOBE-810). */
 const rateDatabase = createDb(config.databaseUrl, {
   ...MEMBER_RATE_DB,
+  max: config.ratePoolMax,
   applicationName: "kobe-gateway-rate",
 });
 

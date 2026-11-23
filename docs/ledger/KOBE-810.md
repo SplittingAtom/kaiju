@@ -24,25 +24,40 @@ window_start` for the time left) and `hitRateLimit` (boolean); existing callers 
     `pruneExpiredRateLimits` (prune errors logged), re-exports `clearRateLimit`, `RateLimitDb`,
     `RateBucketRule`, and adds `sharedRateLimit(db, name, bucketRule, now?)` (`allow`, `reset(key)`).
     No server code is imported into the gateway.
-- **GCRA in the existing columns, no migration:** `window_start` and `expires_at` both hold the
-  theoretical arrival time (TAT, epoch ms; when the bucket is full again), `count` is 1 when the
-  last request was admitted and 0 when refused (how the single statement reports its verdict;
-  Postgres 17 has no `OLD` in `RETURNING`). With T = ceil(1000 / perSecond) ms: admit when
+- **GCRA in the existing columns, no migration:** `window_start` holds the theoretical arrival
+  time (TAT, epoch **µs**; when the bucket is full again), `expires_at` the same instant in ms
+  (rounded up, for the shared prune), `count` is 1 when the last request was admitted and 0 when
+  refused (how the single statement reports its verdict; Postgres 17 has no `OLD` in
+  `RETURNING`). With T = ceil(1e6 / perSecond) µs: admit when
   `max(TAT, now) + T - now <= burst * T`, then TAT = `max(TAT, now) + T`; a refusal leaves TAT
   alone (refused requests are not charged, which also fixes review L2's give-back) and its wait is
   `TAT + T - burst * T - now`. A row whose TAT has passed is a full bucket, so the general prune
   (`expires_at < now`) removes it without changing behaviour. Keys never share a prefix with
-  fixed-window ones. T rounds up (never more permissive): exact for the defaults (rpm 60 → 1 s,
-  app calls 200 ms, card opens 2 s).
+  fixed-window ones. T rounds up to a whole µs (never more permissive; at most 0.02 % stricter at
+  rpm 10,000, exact for the defaults: rpm 60 → 1 s, app calls 200 ms, card opens 2 s; review
+  R2-L1). The statement is `WITH n AS (SELECT now) , up AS (INSERT … SELECT … FROM n ON CONFLICT
+DO UPDATE …) SELECT … FROM up, n`: the insert's own values carry "now" into the conflict branch
+  (`EXCLUDED.window_start` = now + T), still one round trip.
+- **Database clock (review R2-M1):** unless a caller injects `now` (tests), the bucket, the fixed
+  window and the prune read `clock_timestamp()` inside their statement. Before, each pod's clock
+  counted: under GCRA a pod running s ahead shrank the others' burst by s/T, past ~60 s locked a
+  member out on the other pods with a Retry-After of about s, and its prune deleted rows still
+  owing tokens. The fixed window had the same exposure in a milder form (a pod ahead restarted
+  windows early, a pod behind extended them, Retry-After off by the skew, early prunes), and the
+  change there was small and safe for every caller (none of the 45 server call sites passes a
+  time; the server wrapper's `now` became optional), so it is applied there too. Not changed: the
+  password-reset resend claims (`auth/reset-links.ts`, its own SQL, a 5-minute guard written with
+  the pod's time; a skew only shifts when a second email is allowed). Noted follow-up if wanted.
 - **Gateway database access:** the gateway already connects as the shared app role (chart helper
   `kobe.databaseEnv`), which has all privileges on `kobe_rate_limits`
   (`packages/db/src/tenancy/identity.ts`). **No grant.** The rate check runs on its own pool
-  (`MEMBER_RATE_DB`: 2 connections, 2 s acquire, 2 s `statement_timeout`, application name
-  `kobe-gateway-rate`), so a slow or saturated database fails fast. The main pool's 10 s acquire
+  (`MEMBER_RATE_DB`: 2 s acquire, 2 s `statement_timeout`, application name `kobe-gateway-rate`;
+  size `KOBE_MODEL_GATEWAY_RATE_POOL_MAX`, Helm `modelGateway.database.ratePoolMax`, default 2,
+  1–50, review R2-L3), so a slow or saturated database fails fast. The main pool's 10 s acquire
   timeout (`createDb` default, all services) is deliberate and kept: reservations and principal
-  loads may wait through a short spike. The chart's connection budget counts the 2 extra per
-  gateway replica (`_helpers.tpl`, `charts/kobe/tests/db-connections.test.ts` 44 → 48,
-  `docs/install.md`).
+  loads may wait through a short spike. The chart's connection budget counts the rate pool per
+  gateway replica from the value (`_helpers.tpl`; `charts/kobe/tests/db-connections.test.ts`
+  44 → 48 at the defaults, a configured `ratePoolMax` followed; `docs/install.md`).
 - **Member per-minute model rate** (`services/model-gateway/src/member-rate.ts`): `DbMemberRate`,
   key `kobe:model-rpm:<team>:<user>` (same team+user key as the old bucket), the old bucket's
   numbers (burst = the effective `requests_per_minute`, refilled at value/60 per second). One
@@ -73,8 +88,11 @@ window_start` for the time left) and `hitRateLimit` (boolean); existing callers 
   an advisory lock, so it is Site-wide. So 47 limits stay in memory by design, plus the gateway's
   `jti` replay set (documented per replica, owner's Q5 default).
 - Comment drift fixed: `apps/call-deps.ts` no longer says launches share the app-call limit.
-- Not done (review L1, low): `now` is still the calling pod's clock; skew between nodes shifts a
-  bucket's refill by the skew. Option for later: the database clock when `now` is not injected.
+- **Prunes off the request (review R2-L4):** `backgroundPrune` in `@kobe/db` starts at most one
+  prune per 10 s per limiter instance; the gateway's member rate and the server's two MCP App
+  buckets use it. Fixed-window callers keep the inline prune on a new window (KOBE-809).
+- `returnRateBucketToken`'s comment now says it does not clamp (a past TAT is a full bucket,
+  review R2-L2).
 - Not done (split Q3): a Helm NOTES warning when mcp-proxy or egress-proxy run more than one
   replica; their limits are documented per replica. Left for the coordinator to file if wanted.
 
@@ -89,18 +107,19 @@ after this branch:
    already exported from here (re-exported from `@kobe/db`); `pruneExpiredRateLimits` already
    accepts a transaction.
 2. Re-add `checkRateLimit` and `RateLimitVerdict` as a wrapper, same signature, so none of its
-   callers change:
+   callers change (but where a caller such as `admitOperation` forwards a `now` that defaults to
+   `Date.now()`, make that default `undefined` too, or it brings back the pod clock):
 
    ```ts
    export async function checkRateLimit(
      db: RateLimitDb,
      key: string,
      rule: RateLimitRule,
-     now = Date.now(),
+     now?: number, // undefined: the database clock (KOBE-810); g91's `= Date.now()` must go
      options: { readonly prune?: boolean } = {},
    ): Promise<RateLimitVerdict> {
      const hit = await takeRateLimit(db, key, rule, {
-       now,
+       ...(now === undefined ? {} : { now }),
        onPruneError: logPruneError,
        ...(options.prune === undefined ? {} : { prune: options.prune }),
      });
@@ -146,12 +165,17 @@ after this branch:
   the two-replica test admits 12. Gate unit tests (`budget-gate.test.ts`): fail closed, give-back.
 - ac-3: `services/model-gateway/src/limits.test.ts` (idle buckets dropped, a spent active bucket
   kept; LRU when none idle).
-- ac-4: measured in `member-rate.db.test.ts` (warm pool, dev Postgres over the LAN, 200 samples
-  each): steady **p50 2.28 ms, p95 3.15 ms**; a member's first request into a full bucket
-  **p50 2.21 ms, p95 2.95 ms** (the prune is no longer on the path); the background prune of
-  100 expired rows **p50 2.26 ms, p95 2.90 ms**, at most every 10 s per replica. Before moving
+- ac-4: measured in `member-rate.db.test.ts` (warm pool, database clock, dev Postgres over the
+  LAN, 200 samples each): steady **p50 1.69 ms, p95 2.73 ms**; a member's first request into a
+  full bucket **p50 1.62 ms, p95 2.05 ms** (the prune is not on the path); the background prune of
+  100 expired rows **p50 1.80 ms, p95 2.09 ms**, at most every 10 s per replica. Before moving
   the prune off the path, the first request with the awaited prune measured p50 7.31 ms,
   p95 14.48 ms (machine under load). Against model calls of seconds, not measurable.
+- Clock skew: "pods whose clocks are 5 minutes apart share one bucket" (gateway,
+  `member-rate.db.test.ts`: 6 of 12 admitted, Retry-After ≤ 11 s, the pod ahead's prune keeps the
+  debt) and "replicas whose clocks are 5 minutes apart" (server, `app-rate-limits.db.test.ts`:
+  card-open bucket and fixed window). Run on pod clocks, the gateway case gives Retry-After 260 s
+  and both server cases fail.
 - Server: `services/server/src/apps/app-rate-limits.db.test.ts` (app calls: burst 30, one more
   after 200 ms, 5 more after 1 s; card opens: burst 5, one more after 2 s; both across two limiter
   instances on two pools; per-key reset; DB unreachable; bucket refusal wait and no charge;

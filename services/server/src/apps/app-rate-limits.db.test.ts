@@ -7,8 +7,8 @@ import {
   type KobeDatabase,
 } from "@kobe/db";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { sharedRateLimit, type RateBucketRule } from "../rate-limit.js";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { hitRateLimit, sharedRateLimit, type RateBucketRule } from "../rate-limit.js";
 import { APP_LAUNCH_RATE } from "./app-cards.js";
 import { APP_CALL_RATE } from "./call-deps.js";
 
@@ -86,6 +86,48 @@ describe("MCP App limits across server replicas (KOBE-810)", () => {
     } finally {
       await dead.close();
     }
+  });
+});
+
+describe("replicas whose clocks are 5 minutes apart (KOBE-810)", () => {
+  const real = Date.now.bind(Date);
+  /** Runs `fn` as a pod whose clock is `skewMs` off. */
+  const skewed = async <T>(skewMs: number, fn: () => Promise<T>): Promise<T> => {
+    const spy = vi.spyOn(Date, "now").mockImplementation(() => real() + skewMs);
+    try {
+      return await fn();
+    } finally {
+      spy.mockRestore();
+    }
+  };
+
+  it("share one bucket: the database clock counts, not the pods'", async () => {
+    const ahead = sharedRateLimit(replicaA.db, "app-launch", APP_LAUNCH_RATE);
+    const behind = sharedRateLimit(replicaB.db, "app-launch", APP_LAUNCH_RATE);
+    const user = randomUUID();
+    const answers = [];
+    for (let i = 0; i < 8; i += 1) {
+      answers.push(
+        await (i % 2 === 0
+          ? skewed(300_000, () => ahead.allow(user))
+          : skewed(0, () => behind.allow(user))),
+      );
+    }
+    // On the pods' clocks the pod behind would refuse everything after the pod ahead's first.
+    expect(answers).toEqual([true, true, true, true, true, false, false, false]);
+  });
+
+  it("share one fixed window too", async () => {
+    const key = `skew:${randomUUID()}`;
+    const rule = { windowMs: 60_000, max: 3 };
+    const answers = [];
+    for (let i = 0; i < 6; i += 1) {
+      answers.push(
+        await skewed(i % 2 === 0 ? -300_000 : 300_000, () => hitRateLimit(replicaA.db, key, rule)),
+      );
+    }
+    // On the pods' clocks the pod ahead would restart the window and admit a fourth.
+    expect(answers).toEqual([true, true, true, false, false, false]);
   });
 });
 
