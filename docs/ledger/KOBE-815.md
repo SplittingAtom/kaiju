@@ -96,6 +96,15 @@ Then:
 - **Lows** `agent.roster.resumed` wording; the OpenAPI artifact steps run after the tests with
   `continue-on-error`; pre-KOBE-815 branches documented (above).
 
+## Landing catch-up (after #684, #685)
+
+`scripts/onto-main.sh` merged origin/main (no branch migrations; main's at 0247), dropped the
+restored `openapi.json`, stopped on `docs/audit-log.md`. Main's 410 table rows were diffed
+programmatically against the `.doc.ts` rows: one row changed on main (`skill.rescan.suspended`,
+`reason`) and was carried into `skills.doc.ts`; the re-run regenerated the table. Generated table
+410 rows vs main's 410, same actions; cells identical except this branch's two intended
+rewordings (`agent.roster.resumed`, `egress.ceiling.internal_changed`).
+
 ## Evidence
 
 Scripts used (scratchpad, not committed) built throwaway branches in a temporary worktree;
