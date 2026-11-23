@@ -75,6 +75,13 @@ export const notebookVariableSchema = z.strictObject({
   repr_error: z
     .union([z.enum(["raised", "timeout", "not_read"]), z.string().regex(/^[a-z_]{1,32}$/)])
     .optional(),
+  /**
+   * KOBE-816: the value was withheld in the sandbox: `name` (a credential-like name: no value at
+   * all) or `keys` (inside a shown dict, values under credential-like keys read `<hidden>`). The
+   * member's Show asks for that one variable (`show`). Any other short lowercase code from a newer
+   * agent is accepted (treated as withheld).
+   */
+  hidden: z.union([z.enum(["name", "keys"]), z.string().regex(/^[a-z_]{1,32}$/)]).optional(),
   len: z.number().int().nonnegative().optional(),
   shape: z.array(z.number().int().nonnegative()).max(64).optional(),
   dtype: short(128).optional(),
@@ -153,8 +160,20 @@ export type NotebookVariablesResult = z.infer<typeof notebookVariablesResultSche
  * snapshot when the kernel is idle; without it the agent may answer with the one it keeps when
  * nothing ran since. While code runs the kept snapshot comes back `stale` (or `busy` without one).
  */
+/** A top-level variable's name, as Show names it (KOBE-816). */
+export const notebookVariableNameSchema = z
+  .string()
+  .min(1)
+  .max(256)
+  .regex(/^[A-Za-z_][A-Za-z0-9_]*$/, "a Python variable name");
+
 export const notebookVariablesBodySchema = z.strictObject({
   refresh: z.boolean().optional(),
+  /**
+   * KOBE-816: Show: only this variable, its value not withheld (a fresh read; never the kept
+   * snapshot). The answer's `variables` holds it alone (or nothing when it no longer exists).
+   */
+  show: notebookVariableNameSchema.optional(),
 });
 export type NotebookVariablesBody = z.infer<typeof notebookVariablesBodySchema>;
 

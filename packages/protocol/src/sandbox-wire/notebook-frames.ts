@@ -9,7 +9,10 @@ import {
   notebookRunFailFields,
   notebookRunOkFields,
 } from "../notebooks.js";
-import { NOTEBOOK_INSPECT_TIMEOUT_MAX_MS } from "../notebook-variables.js";
+import {
+  NOTEBOOK_INSPECT_TIMEOUT_MAX_MS,
+  notebookVariableNameSchema,
+} from "../notebook-variables.js";
 import {
   NOTEBOOK_COMPLETE_TIMEOUT_MAX_MS,
   notebookCompleteFields,
@@ -84,6 +87,8 @@ export const notebookInspectVariablesFrameSchema = frame("notebook.inspect", {
   thread_id: uuidSchema,
   refresh: z.literal(true).optional(),
   timeout_ms: z.number().int().min(500).max(NOTEBOOK_INSPECT_TIMEOUT_MAX_MS).optional(),
+  /** KOBE-816: Show: this one variable, its value not withheld (only from a newer agent's hint). */
+  show: notebookVariableNameSchema.optional(),
 });
 
 const completionTimeout = z
