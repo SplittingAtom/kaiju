@@ -194,3 +194,14 @@ export const event = <const S extends AuditScope, T extends z.ZodRawShape>(scope
 
 /** The shape every audit event definition has: where it appears and its strict target. */
 export type AuditEventDef = { readonly scope: AuditScope; readonly target: z.ZodType };
+
+/**
+ * An event's row in the docs/audit-log.md taxonomy table (KOBE-815), kept per area in
+ * `events/<area>.doc.ts` and rendered by `pnpm --filter @kobe/db audit:doc`. Markdown on one line.
+ */
+export interface AuditEventDoc {
+  /** The target fields, with values or meanings where they help; empty for none (shown as "—"). */
+  readonly fields: string;
+  /** When the event is recorded (and by whom, when not the signed-in user). */
+  readonly when: string;
+}

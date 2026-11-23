@@ -39,8 +39,9 @@ import {
 } from "./team-default-agent.js";
 
 /**
- * The server's OpenAPI 3.1 document, committed as `services/server/openapi.json` and checked for
- * drift by `document.test.ts`. Areas add their paths and schemas here (one line each). It covers
+ * The server's OpenAPI 3.1 document, written to `services/server/openapi.json` by
+ * `pnpm --filter @kobe/server openapi` (generated, not committed; CI keeps it as the `openapi`
+ * artifact, KOBE-815) and checked by `document.test.ts`. Areas add their paths and schemas here (one line each). It covers
  * every route of the member and admin API on the user-facing listener (`coverage.test.ts`, KOBE-727):
  * fully described areas here, the rest at summary level from `catalog/`; what is left out on
  * purpose is in `undocumented-allowlist.ts`.
