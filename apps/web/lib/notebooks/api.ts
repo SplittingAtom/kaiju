@@ -4,12 +4,18 @@
  * restart. The
  * thread's owner only; the server decides everything.
  */
-import type {
-  NotebookCompletionBody,
-  NotebookKernelResponse,
-  NotebookRunBody,
+import {
+  type NotebookCompletionBody,
+  notebookExecOutputsResponseSchema,
+  notebookHistoryResponseSchema,
+  type NotebookHistoryEntry,
+  type NotebookKernelResponse,
+  type NotebookOutput,
+  type NotebookRunBody,
 } from "@kobe/protocol";
-import { apiRequest, type ApiResult } from "../api/client";
+import type { z } from "zod";
+import { apiRequest, apiTextFile, type ApiError, type ApiResult } from "../api/client";
+import type { VariablesResult } from "./variables";
 
 export interface NotebookRunStarted {
   readonly runId: string;
@@ -53,12 +59,50 @@ export interface NotebookApi {
     body: NotebookCompletionBody,
     signal?: AbortSignal,
   ): Promise<ApiResult<KernelCompletionAnswer>>;
+  /**
+   * `POST .../notebook/variables` (KOBE-803): the kernel's variables, live from the sandbox and
+   * never stored; `refresh` asks for a fresh snapshot instead of the one kept after the last run.
+   */
+  variables(threadId: string, refresh: boolean): Promise<ApiResult<VariablesResult>>;
+  /**
+   * `GET .../notebook/executions?path=` (KOBE-804): the `.py` file's last 50 runs from the
+   * stored run events, newest first, without outputs. Kept in the server's wire casing (the
+   * store reads protocol payloads).
+   */
+  history(threadId: string, path: string): Promise<ApiResult<readonly NotebookHistoryEntry[]>>;
+  /** `GET .../notebook/executions/{exec_id}/outputs` (KOBE-804): one past run's outputs. */
+  outputs(threadId: string, execId: string): Promise<ApiResult<readonly NotebookOutput[]>>;
 }
 
 const enc = encodeURIComponent;
 
+/** What the server sent is not what the contract says. */
+const MALFORMED: ApiError = {
+  status: 502,
+  code: "malformed_response",
+  message: "The server sent an answer Kobe could not read.",
+};
+
 export function createNotebookApi(teamId: string, fetchFn?: typeof fetch): NotebookApi {
   const opts = { teamId, fetchFn, method: "POST" as const };
+  /**
+   * A GET whose body keeps the server's casing (protocol payloads and notebook outputs, which
+   * `apiRequest` would camelize), checked against its schema.
+   */
+  async function readJson<T>(path: string, schema: z.ZodType<T>): Promise<ApiResult<T>> {
+    const res = await apiTextFile(path, { teamId, fetchFn });
+    if (!res.ok) return res;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(res.data.text);
+    } catch {
+      return { ok: false, error: MALFORMED };
+    }
+    const checked = schema.safeParse(parsed);
+    return checked.success
+      ? { ok: true, status: res.status, data: checked.data }
+      : { ok: false, error: MALFORMED };
+  }
   return {
     run: (threadId, body) =>
       apiRequest(`/v1/threads/${enc(threadId)}/notebook/run`, { ...opts, json: body }),
@@ -68,6 +112,26 @@ export function createNotebookApi(teamId: string, fetchFn?: typeof fetch): Noteb
       apiRequest(`/v1/threads/${enc(threadId)}/notebook/${op}`, { ...opts, json: {} }),
     complete: (threadId, body, signal) =>
       apiRequest(`/v1/threads/${enc(threadId)}/notebook/complete`, { ...opts, json: body, signal }),
+    variables: (threadId, refresh) =>
+      apiRequest(`/v1/threads/${enc(threadId)}/notebook/variables`, {
+        ...opts,
+        json: refresh ? { refresh: true } : {},
+      }),
+    history: async (threadId, path) => {
+      const q = new URLSearchParams({ path }).toString();
+      const res = await readJson(
+        `/v1/threads/${enc(threadId)}/notebook/executions?${q}`,
+        notebookHistoryResponseSchema,
+      );
+      return res.ok ? { ...res, data: res.data.executions } : res;
+    },
+    outputs: async (threadId, execId) => {
+      const res = await readJson(
+        `/v1/threads/${enc(threadId)}/notebook/executions/${enc(execId)}/outputs`,
+        notebookExecOutputsResponseSchema,
+      );
+      return res.ok ? { ...res, data: res.data.outputs } : res;
+    },
   };
 }
 

@@ -38,6 +38,7 @@ import { EditorToolbar, ModeSwitch, type ToolbarAction } from "./editor-toolbar"
 import { ProposalReview } from "./proposal-review";
 import { SaveAsForm } from "./save-as";
 import { SplitPane } from "./split-pane";
+import type { SelectedLines } from "./code-editor";
 import { BUTTON, EditorFallback, TextModeBody, type TextMode } from "./text-modes";
 
 export { BUTTON, EditorFallback };
@@ -83,7 +84,22 @@ export function confirmDiscard(drafts: EditDraftStore, path: string): boolean {
 export interface EditorOutput {
   readonly label: string;
   readonly node: ReactNode;
+  /** In the pane's header instead of its label (the run pane's tabs, KOBE-804). */
+  readonly header?: ReactNode;
   onClose(): void;
+}
+
+/**
+ * What a runnable file's controls get from the editor (KOBE-805): save before running, and the
+ * lines selected in Raw for Run selection.
+ */
+export interface EditorRunContext {
+  /** Saves unsaved changes (if any); true once the saved file holds what is on screen. */
+  saveFirst(): Promise<boolean>;
+  /** The selected lines in Raw; null without a selection or in Rendered. */
+  readonly selection: SelectedLines | null;
+  /** Unsaved changes on screen. */
+  readonly dirty: boolean;
 }
 
 /** Save As's toolbar action (KOBE-615): folds into More when the toolbar is narrow. */
@@ -140,8 +156,16 @@ export interface FileEditorProps {
   readonly onOpenPath?: ((path: string) => void) | undefined;
   /** The member opened this file: Raw may take the cursor when it opens (KOBE-802). */
   readonly takeFocus?: boolean | undefined;
-  /** More toolbar actions after Save and Save As (a `.py` file's Run and kernel controls). */
-  readonly actions?: readonly ToolbarAction[] | undefined;
+  /**
+   * More toolbar actions after Save and Save As (a `.py` file's Run and kernel controls); a
+   * function gets the run context (KOBE-805).
+   */
+  readonly actions?:
+    readonly ToolbarAction[] | ((ctx: EditorRunContext) => readonly ToolbarAction[]) | undefined;
+  /** Shift+Enter / Mod+Enter in Raw (KOBE-805): run the selection, or all of the file. */
+  readonly onRunKey?: ((ctx: EditorRunContext, scope: "all" | "selection") => void) | undefined;
+  /** Go to this line in Raw each time `seq` changes (an error's line, KOBE-804). */
+  readonly reveal?: { readonly line: number; readonly seq: number } | undefined;
   /** At the toolbar's end (the kernel's state). */
   readonly status?: ReactNode;
   /** Under the toolbar (the kernel's notices). */
@@ -162,6 +186,12 @@ export function FileEditor(props: FileEditorProps) {
   // The cursor goes into the editor only when the file opened in Raw by itself (KOBE-802).
   const [openedRaw] = useState(props.takeFocus === true && mode === "raw");
   const [savingAs, setSavingAs] = useState(false);
+  const [selection, setSelection] = useState<SelectedLines | null>(null);
+  // Going to a line shows the code in Raw.
+  const revealSeq = props.reveal?.seq;
+  useEffect(() => {
+    if (revealSeq !== undefined) setMode("raw");
+  }, [revealSeq]);
   const [savedAs, setSavedAs] = useState<string | null>(null);
   const { state, save, reset } = useSave(props.api, path, (saved, version) => {
     // Keystrokes typed while the save was in flight stay unsaved, now based on the new version.
@@ -202,18 +232,26 @@ export function FileEditor(props: FileEditorProps) {
     if (props.onOpenPath) props.onOpenPath(to);
     else setSavedAs(to);
   };
+  const canSave = blocked === undefined && draft !== undefined && base !== undefined;
+  const saveNow = () => {
+    if (canSave && state.status !== "saving") void save(base, current);
+  };
+  const runContext: EditorRunContext = {
+    saveFirst: async () => {
+      if (draft === undefined) return true;
+      // Never a second save of the same version while one is in flight (review M1).
+      if (!canSave || state.status === "saving") return false;
+      return (await save(base, current)) === "saved";
+    },
+    selection: mode === "raw" ? selection : null,
+    dirty: draft !== undefined,
+  };
+  const extra = typeof props.actions === "function" ? props.actions(runContext) : props.actions;
+  const onRunKey = props.onRunKey;
   const actions: ToolbarAction[] = [
-    ...(blocked === undefined
-      ? [
-          saveAction(
-            state,
-            draft !== undefined && base !== undefined,
-            () => base !== undefined && void save(base, current),
-          ),
-        ]
-      : []),
+    ...(blocked === undefined ? [saveAction(state, canSave, saveNow)] : []),
     saveAsAction(() => setSavingAs(true)),
-    ...(props.actions ?? []),
+    ...(extra ?? []),
   ];
   const updated =
     props.outside?.kind === "updated" && props.outside.sha256 === sha256 && draft === undefined;
@@ -241,6 +279,13 @@ export function FileEditor(props: FileEditorProps) {
           autoFocus={openedRaw}
           onChange={edit}
           kernel={props.kernelCompletion}
+          keys={{
+            // Mod+S never opens the browser's Save page in the editor (KOBE-805).
+            onSave: saveNow,
+            onSelectionLines: setSelection,
+            ...(onRunKey ? { onRun: (scope) => onRunKey(runContext, scope) } : {}),
+            ...(props.reveal ? { reveal: props.reveal } : {}),
+          }}
         />
       </div>
     );
@@ -315,12 +360,15 @@ export function FileEditor(props: FileEditorProps) {
       )}
       {outside.error && <ErrorNotice error={outside.error} />}
       {props.notices}
-      {props.output ? (
+      {props.output !== undefined ? (
+        // A runnable file always renders the split, so opening its output keeps the editor (and
+        // its cursor and undo history) in place.
         <SplitPane
           top={body}
-          bottom={props.output.node}
-          bottomLabel={props.output.label}
-          onClose={props.output.onClose}
+          bottom={props.output?.node ?? null}
+          bottomLabel={props.output?.label ?? ""}
+          header={props.output?.header}
+          onClose={props.output?.onClose ?? (() => {})}
         />
       ) : (
         body

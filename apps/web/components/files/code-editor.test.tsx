@@ -93,8 +93,78 @@ describe("CodeEditor notebook cell mode (KOBE-465)", () => {
   });
 });
 
+/** KOBE-805: Mod+Enter and Shift+Enter run, Mod+S saves; KOBE-804: go to an error's line. */
+describe("CodeEditor run and save keys (KOBE-805)", () => {
+  it("Mod+Enter runs all, Shift+Enter runs the selection when there is one, Mod+S saves", () => {
+    const scopes: string[] = [];
+    let saves = 0;
+    const lines: unknown[] = [];
+    const { container } = render(
+      <CodeEditor
+        value={"a = 1\nb = 2\nc = 3\n"}
+        language="python"
+        label="Edit a"
+        onRun={(scope) => scopes.push(scope)}
+        onSave={() => saves++}
+        onSelectionLines={(l) => lines.push(l)}
+      />,
+    );
+    const view = viewIn(container);
+    press(view, "Enter", { ctrlKey: true });
+    press(view, "Enter", { shiftKey: true });
+    // Lines 2 and 3 selected (from line 2's start to the start of line 4: line 4 is left out).
+    act(() => view.dispatch({ selection: { anchor: 6, head: 18 } }));
+    expect(lines.at(-1)).toEqual({ start: 2, end: 3 });
+    press(view, "Enter", { shiftKey: true });
+    expect(scopes).toEqual(["all", "all", "selection"]);
+    press(view, "s", { ctrlKey: true });
+    expect(saves).toBe(1);
+    expect(view.state.doc.toString()).toBe("a = 1\nb = 2\nc = 3\n");
+    act(() => view.dispatch({ selection: { anchor: 2 } }));
+    expect(lines.at(-1)).toBeNull();
+  });
+
+  it("without handlers, the keys do what CodeMirror does", () => {
+    const { container } = render(<CodeEditor value="a" language={null} label="Edit a" />);
+    const view = viewIn(container);
+    act(() => view.dispatch({ selection: { anchor: 1 } }));
+    press(view, "Enter", { shiftKey: true });
+    expect(view.state.doc.toString()).not.toBe("a");
+  });
+
+  it("reveal moves the cursor to the start of the line, each time its seq changes", () => {
+    const { container, rerender } = render(
+      <CodeEditor value={"a\nbb\nccc\n"} language={null} label="Edit a" />,
+    );
+    const view = viewIn(container);
+    rerender(
+      <CodeEditor
+        value={"a\nbb\nccc\n"}
+        language={null}
+        label="Edit a"
+        reveal={{ line: 3, seq: 1 }}
+      />,
+    );
+    expect(view.state.selection.main.head).toBe(5);
+    act(() => view.dispatch({ selection: { anchor: 0 } }));
+    rerender(
+      <CodeEditor
+        value={"a\nbb\nccc\n"}
+        language={null}
+        label="Edit a"
+        reveal={{ line: 99, seq: 2 }}
+      />,
+    );
+    expect(view.state.selection.main.head).toBe(view.state.doc.line(view.state.doc.lines).from);
+  });
+});
+
 /** KOBE-806: find, replace, go to line, wrap toggle and cursor position. */
-function press(view: EditorView, key: string, mods: { ctrlKey?: boolean; altKey?: boolean } = {}) {
+function press(
+  view: EditorView,
+  key: string,
+  mods: { ctrlKey?: boolean; altKey?: boolean; shiftKey?: boolean } = {},
+) {
   const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...mods });
   return act(() => void runScopeHandlers(view, event, "editor"));
 }

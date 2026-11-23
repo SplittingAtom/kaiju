@@ -12,6 +12,14 @@ import {
   auditCategoryNames,
   isAuditAction,
 } from "./events.js";
+import {
+  AUDIT_EVENT_DOC_AREAS,
+  AUDIT_EVENT_DOCS,
+  AUDIT_TABLE_END,
+  compareNames,
+  renderAuditEventTable,
+  withAuditEventTable,
+} from "./event-docs.js";
 import { AUDIT_VIA_AGENT_KEY } from "./write.js";
 
 /** Field names that suggest content or credentials; the allowlist must never contain them. */
@@ -373,6 +381,51 @@ describe("audit event taxonomy", () => {
   it("is documented: docs/audit-log.md lists every action", () => {
     const doc = readFileSync(new URL("../../../../docs/audit-log.md", import.meta.url), "utf8");
     expect(AUDIT_ACTIONS.filter((a) => !doc.includes(`\`${a}\``))).toEqual([]);
+  });
+});
+
+describe("audit event docs (KOBE-815)", () => {
+  const page = () =>
+    readFileSync(new URL("../../../../docs/audit-log.md", import.meta.url), "utf8");
+
+  it("docs/audit-log.md has the generated table (else: pnpm --filter @kobe/db audit:doc)", () => {
+    expect(withAuditEventTable(page()) === page()).toBe(true);
+  });
+
+  it("every action has exactly one row, and every row an action", () => {
+    expect(Object.keys(AUDIT_EVENT_DOCS).sort(compareNames)).toEqual(
+      [...AUDIT_ACTIONS].sort(compareNames),
+    );
+    const names = AUDIT_EVENT_DOC_AREAS.flatMap((area) => Object.keys(area));
+    expect(names.length).toBe(new Set(names).size);
+    expect(names.length).toBe(AUDIT_ACTIONS.length);
+  });
+
+  it("each area keeps its rows in name order, so parallel additions land on different lines", () => {
+    for (const area of AUDIT_EVENT_DOC_AREAS) {
+      const names = Object.keys(area);
+      expect(names).toEqual([...names].sort(compareNames));
+    }
+  });
+
+  it("renders one unpadded row per action, sorted, inside a prettier-ignore range", () => {
+    const table = renderAuditEventTable();
+    const rows = table.split("\n").filter((l) => l.startsWith("| `"));
+    expect(rows.length).toBe(AUDIT_ACTIONS.length);
+    const names = rows.map((r) => r.slice(3, r.indexOf("`", 3)));
+    expect(names).toEqual([...names].sort(compareNames));
+    expect(rows.every((r) => !r.includes("  "))).toBe(true);
+    expect(table).toContain("<!-- prettier-ignore-start -->");
+    expect(table.endsWith(AUDIT_TABLE_END)).toBe(true);
+  });
+
+  it("replaces only the block between the markers, conflict leftovers inside it included", () => {
+    const stale = `# Page\n\nbefore\n\n<!-- audit-events:start -->\n<<<<<<< ours\n| x |\n=======\n| y |\n>>>>>>> theirs\n${AUDIT_TABLE_END}\n\nafter\n`;
+    const fresh = withAuditEventTable(stale);
+    expect(fresh.startsWith("# Page\n\nbefore\n\n<!-- audit-events:start")).toBe(true);
+    expect(fresh.endsWith(`${AUDIT_TABLE_END}\n\nafter\n`)).toBe(true);
+    expect(fresh).not.toMatch(/^(<<<<<<<|=======|>>>>>>>)/m);
+    expect(() => withAuditEventTable("no markers")).toThrow(/marker/);
   });
 });
 

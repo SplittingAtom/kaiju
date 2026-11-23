@@ -62,12 +62,40 @@ export interface CodeEditorProps {
   onCurrent?(current: number | null): void;
   /** A notebook cell (KOBE-465): as tall as its text, not the file editor's full column. */
   readonly compact?: boolean | undefined;
-  /** Shift+Enter runs (a notebook cell, KOBE-465) instead of inserting a line. */
-  readonly onRun?: (() => void) | undefined;
+  /**
+   * Shift+Enter runs (a notebook cell, KOBE-465; a `.py` file, KOBE-805) instead of inserting a
+   * line, and so does Mod+Enter. Shift+Enter with lines selected asks for `"selection"`, Mod+Enter
+   * always for `"all"`.
+   */
+  readonly onRun?: ((scope: "all" | "selection") => void) | undefined;
+  /** Mod+S saves (KOBE-805) instead of the browser's Save page. */
+  readonly onSave?: (() => void) | undefined;
+  /** The lines the selection covers (1-based, inclusive), null when nothing is selected. */
+  readonly onSelectionLines?: ((lines: SelectedLines | null) => void) | undefined;
+  /** Moves the cursor to the start of `line` and shows it, each time `seq` changes (KOBE-804). */
+  readonly reveal?: { readonly line: number; readonly seq: number } | undefined;
   /** Put the cursor in the editor when it opens (never when read-only). */
   readonly autoFocus?: boolean | undefined;
   /** A `.py` file's kernel completion (KOBE-808); built-in completion needs nothing. */
   readonly kernel?: KernelCompleter | undefined;
+}
+
+export interface SelectedLines {
+  readonly start: number;
+  readonly end: number;
+}
+
+/**
+ * The lines a selection covers: a selection ending at the very start of a line (a whole-line
+ * drag) leaves that line out. Null when the main selection is empty.
+ */
+export function selectedLines(state: EditorState): SelectedLines | null {
+  const { from, to, empty } = state.selection.main;
+  if (empty) return null;
+  const start = state.doc.lineAt(from);
+  let end = state.doc.lineAt(to);
+  if (to === end.from && end.number > start.number) end = state.doc.line(end.number - 1);
+  return { start: start.number, end: end.number };
 }
 
 /** What the review row does to the change at the cursor (KOBE-615). */
@@ -331,13 +359,32 @@ export default function CodeEditor({
   onCurrent,
   compact = false,
   onRun,
+  onSave,
+  onSelectionLines,
+  reveal,
   autoFocus = false,
   kernel,
 }: CodeEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<EditorView | null>(null);
-  const callbacks = useRef({ onChange, onChunks, onRun, onReview, onCurrent });
-  callbacks.current = { onChange, onChunks, onRun, onReview, onCurrent };
+  const callbacks = useRef({
+    onChange,
+    onChunks,
+    onRun,
+    onSave,
+    onSelectionLines,
+    onReview,
+    onCurrent,
+  });
+  callbacks.current = {
+    onChange,
+    onChunks,
+    onRun,
+    onSave,
+    onSelectionLines,
+    onReview,
+    onCurrent,
+  };
   const valueRef = useRef(value);
   valueRef.current = value;
   const autoFocusRef = useRef(autoFocus);
@@ -394,11 +441,37 @@ export default function CodeEditor({
           Prec.highest(
             keymap.of([
               {
+                // A held run key repeats: run once, and let the repeats do nothing (review M1).
+                any: (_v, e) =>
+                  e.repeat &&
+                  e.key === "Enter" &&
+                  (e.shiftKey || e.ctrlKey || e.metaKey) &&
+                  callbacks.current.onRun !== undefined,
+              },
+              {
                 key: "Shift-Enter",
+                run: (v) => {
+                  const run = callbacks.current.onRun;
+                  if (!run) return false;
+                  run(selectedLines(v.state) === null ? "all" : "selection");
+                  return true;
+                },
+              },
+              {
+                key: "Mod-Enter",
                 run: () => {
                   const run = callbacks.current.onRun;
                   if (!run) return false;
-                  run();
+                  run("all");
+                  return true;
+                },
+              },
+              {
+                key: "Mod-s",
+                run: () => {
+                  const save = callbacks.current.onSave;
+                  if (!save) return false;
+                  save();
                   return true;
                 },
               },
@@ -422,6 +495,9 @@ export default function CodeEditor({
               }),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) callbacks.current.onChange?.(update.state.doc.toString());
+            if (update.selectionSet || update.docChanged) {
+              callbacks.current.onSelectionLines?.(selectedLines(update.state));
+            }
             if (update.docChanged || update.selectionSet) {
               const head = update.state.selection.main.head;
               const line = update.state.doc.lineAt(head);
@@ -471,6 +547,22 @@ export default function CodeEditor({
       ],
     });
   }, [view, readOnly, kernel]);
+
+  // Go to a line (the Log tab's "Go to line", KOBE-804): the cursor at its start, scrolled in.
+  const revealSeq = reveal?.seq;
+  const revealLine = reveal?.line;
+  useEffect(() => {
+    if (!view || revealSeq === undefined || revealLine === undefined) return;
+    const doc = view.state.doc;
+    const line = doc.line(Math.min(Math.max(1, revealLine), doc.lines));
+    view.dispatch({
+      selection: { anchor: line.from },
+      effects: EditorView.scrollIntoView(line.from, { y: "center" }),
+    });
+    // After this update has been drawn: focusing writes the selection to the page.
+    const frame = requestAnimationFrame(() => view.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [view, revealSeq, revealLine]);
 
   // A new value from outside (a reload, a discarded draft) replaces the document; the value the
   // member's own typing produced comes back equal and changes nothing.

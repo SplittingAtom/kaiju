@@ -1,9 +1,11 @@
 import { Hono, type Context } from "hono";
 import {
   notebookCompletionBodySchema,
+  notebookPathSchema,
   notebookRunBodySchema,
   notebookVariablesBodySchema,
 } from "@kobe/protocol";
+import { execOutputs, fileHistory } from "../notebooks/history.js";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { NOTEBOOK_ERROR_STATUS, NotebookRunError } from "../notebooks/user-run.js";
@@ -28,6 +30,9 @@ type Ctx = Context<{ Variables: TeamVariables }>;
  * - `POST /v1/threads/{id}/notebook/complete` {op: "complete", code, cursor} | {op: "doc", name}
  *   (KOBE-808): 200 the kernel's completions or a name's documentation, or {status: "busy" |
  *   "no_kernel" | "asleep" | "unsupported" | "unavailable"}; never wakes the sandbox, stores nothing.
+ * - `GET /v1/threads/{id}/notebook/executions?path=` (KOBE-804): the `.py` file's last 50
+ *   executions from the stored run events, newest first, without outputs; and
+ *   `GET .../notebook/executions/{exec_id}/outputs`: one execution's outputs. Nothing new stored.
  * The thread's owner only (the kernel is in their sandbox); a shared reader is 403 `read_only`,
  * another member's or team's thread 404. Eval threads are refused like every other write.
  */
@@ -83,6 +88,27 @@ export function threadNotebookRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
     }
     return answer(c, async () =>
       c.json(await deps.runs.notebookComplete(actorOf(c), id.data, body)),
+    );
+  });
+
+  // KOBE-804: the run pane's Log survives a reload (stored run events, bounded).
+  app.get("/:id/notebook/executions", async (c) => {
+    const id = param(c, "id", uuidSchema);
+    const path = notebookPathSchema.safeParse(c.req.query("path"));
+    if (!id.success || !path.success || !path.data.endsWith(".py")) {
+      return invalidRequest(c, "Name a .py file with ?path=.");
+    }
+    return answer(c, async () =>
+      c.json(await fileHistory(deps.database.db, actorOf(c), id.data, path.data)),
+    );
+  });
+
+  app.get("/:id/notebook/executions/:execId/outputs", async (c) => {
+    const id = param(c, "id", uuidSchema);
+    const execId = param(c, "execId", uuidSchema);
+    if (!id.success || !execId.success) return invalidRequest(c, "Unknown execution.");
+    return answer(c, async () =>
+      c.json(await execOutputs(deps.database.db, actorOf(c), id.data, execId.data)),
     );
   });
 

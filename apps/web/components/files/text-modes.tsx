@@ -9,6 +9,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { editorLanguage } from "../../lib/files/editor";
 import type { FilePreview } from "../../lib/files/preview";
 import type { KernelCompleter } from "../../lib/notebooks/kernel-completer";
+import type { CodeEditorProps } from "./code-editor";
 import { TextView } from "./text-view";
 
 export const CodeEditor = lazy(() => import("./code-editor"));
@@ -62,6 +63,7 @@ export function TextModeBody({
   onChange,
   autoFocus = false,
   kernel,
+  keys,
 }: {
   readonly mode: TextMode;
   readonly text: string;
@@ -74,6 +76,8 @@ export function TextModeBody({
   readonly autoFocus?: boolean;
   /** Raw: a `.py` file's kernel completion (KOBE-808). */
   readonly kernel?: KernelCompleter | undefined;
+  /** Raw: run and save keys, the selection's lines, go to a line (the file editor, KOBE-805). */
+  readonly keys?: Pick<CodeEditorProps, "onRun" | "onSave" | "onSelectionLines" | "reveal">;
 }) {
   if (mode === "rendered") return <TextView text={text} preview={preview} />;
   return (
@@ -85,6 +89,7 @@ export function TextModeBody({
         readOnly={readOnly || onChange === undefined}
         autoFocus={autoFocus}
         kernel={kernel}
+        {...keys}
         {...(onChange ? { onChange } : {})}
       />
     </Suspense>

@@ -49,10 +49,13 @@ export const COMPOSER_KEYS: readonly { readonly keys: string; readonly name: str
 ];
 
 /**
- * Keys of the code editor (KOBE-806, CodeMirror's search keymap; KOBE-808, its completion keymap)
- * the `?` sheet also names.
+ * Keys of the code editor (KOBE-806, CodeMirror's search keymap; KOBE-805 run and save; KOBE-808,
+ * its completion keymap) the `?` sheet also names.
  */
 export const EDITOR_KEYS: readonly { readonly keys: string; readonly name: string }[] = [
+  { keys: "Mod+S", name: "Save the file" },
+  { keys: "Shift+Enter", name: "Run the Python file, or only the selected lines" },
+  { keys: "Mod+Enter", name: "Run the whole Python file (a notebook cell: run it)" },
   { keys: "Mod+F", name: "Find (with Replace in the same panel)" },
   { keys: "Mod+G", name: "Find next" },
   { keys: "Shift+Mod+G", name: "Find previous" },

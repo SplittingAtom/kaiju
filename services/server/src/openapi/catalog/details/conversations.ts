@@ -13,6 +13,8 @@ import {
   listSchedulesResponseSchema,
   notebookCompletionBodySchema,
   notebookCompletionResultSchema,
+  notebookExecOutputsResponseSchema,
+  notebookHistoryResponseSchema,
   notebookKernelResponseSchema,
   notebookRunBodySchema,
   notebookRunResponseSchema,
@@ -145,6 +147,19 @@ export const threadsDetails: Readonly<Record<string, CatalogDetail>> = {
       "within about a second) are answers too. Nothing is stored. Matches and docs are " +
       "untrusted: show them as plain text.",
     errors: ["404", "409", "429", "503"],
+  },
+  "get /v1/threads/{id}/notebook/executions": {
+    query: {
+      path: { type: "string", description: "The `.py` file, relative to `/workspace`." },
+    },
+    requiredQuery: ["path"],
+    response: named("NotebookHistoryResponse", notebookHistoryResponseSchema),
+    responseDescription: "The file's last 50 executions, newest first, without outputs.",
+    errors: ["400", "403", "404"],
+  },
+  "get /v1/threads/{id}/notebook/executions/{execId}/outputs": {
+    response: named("NotebookExecOutputsResponse", notebookExecOutputsResponseSchema),
+    errors: ["400", "403", "404"],
   },
   "post /v1/threads/{id}/notebook/interrupt": {
     body: null,
