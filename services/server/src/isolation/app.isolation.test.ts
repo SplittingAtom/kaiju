@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createApp } from "./app.js";
-import { createIsolationGate } from "./isolation/gate.js";
-import type { RuntimeClassLike } from "./isolation/runtime-class.js";
+import { createApp } from "../app.js";
+import { createIsolationGate } from "./gate.js";
+import type { RuntimeClassLike } from "./runtime-class.js";
 
 const gateWith = (list: () => Promise<readonly RuntimeClassLike[]>) =>
   createIsolationGate({ runtimeClassName: "gvisor", listRuntimeClasses: list });
