@@ -9,7 +9,7 @@ import {
   type WireTraceContext,
   threadCompactFrameSchema,
 } from "@kobe/protocol/sandbox-wire";
-import { parseTraceparent, runTraceId } from "@kobe/protocol";
+import { CAPABILITY_NOTEBOOK_INSPECT, parseTraceparent, runTraceId } from "@kobe/protocol";
 import type { CommandRow } from "../commands.js";
 import { isSummaryCommand } from "../types.js";
 import type { Claimed } from "./claim.js";
@@ -114,4 +114,32 @@ function withoutTrace<F extends RunStartFrame | ThreadCompactFrame | ThreadBranc
 ): Omit<F, "trace"> {
   const { trace: _trace, ...rest } = frame;
   return rest;
+}
+
+/**
+ * KOBE-803: `notebook.execute` asks for timing and a variables snapshot (`with_timing`,
+ * `with_variables`) only of agents with `notebook_inspect`; an older agent's strict decoder would
+ * refuse the frame, so the asks are dropped for it and it simply reports neither.
+ */
+export function withNotebookAsks(
+  frame: ServerToSandboxFrame,
+  hasCapability: (name: string) => boolean,
+): ServerToSandboxFrame {
+  if (frame.type !== "notebook.execute" || hasCapability(CAPABILITY_NOTEBOOK_INSPECT)) return frame;
+  const { with_timing: _timing, with_variables: _variables, ...rest } = frame;
+  return rest;
+}
+
+/**
+ * KOBE-803: a stored `notebook.execute` is always a member's run: the delivering replica asks a
+ * capable agent for its timing and to keep a variables snapshot after it. Added here, never stored
+ * on the row, so an older replica (rolling deploy) can still deliver rows a newer one queued.
+ */
+export function withMemberRunAsks(
+  frame: ServerToSandboxFrame,
+  hasCapability: (name: string) => boolean,
+): ServerToSandboxFrame {
+  if (frame.type !== "notebook.execute") return frame;
+  if (!hasCapability(CAPABILITY_NOTEBOOK_INSPECT)) return withNotebookAsks(frame, hasCapability);
+  return { ...frame, with_timing: true, with_variables: true };
 }

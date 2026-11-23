@@ -5,6 +5,7 @@ import {
   CAPABILITY_THREAD_CONTEXT,
 } from "@kobe/protocol/sandbox-wire";
 import {
+  CAPABILITY_NOTEBOOK_INSPECT,
   CAPABILITY_NOTEBOOK_START,
   CAPABILITY_NOTEBOOKS,
   CAPABILITY_RUN_TOKEN,
@@ -26,6 +27,7 @@ const NOTEBOOK_COMMANDS: ReadonlySet<SandboxCommandKind> = new Set([
   "notebook.execute",
   "notebook.interrupt",
   "notebook.restart",
+  "notebook.inspect",
 ]);
 
 export const failure = (code: string, message: string): CommandOutcome => ({
@@ -92,6 +94,10 @@ function kernelOrEvalRefusal(env: DeliveryEnv, row: CommandRow): DeliveryRefusal
       COMMAND_FAILURES.kernelStartUnsupported,
       "this sandbox can't start a kernel alone",
     );
+  }
+  // A variables snapshot (KOBE-803) only to an agent that takes one: an older one can't read it.
+  if (row.kind === "notebook.inspect" && !host.hasCapability(CAPABILITY_NOTEBOOK_INSPECT)) {
+    return refuse(COMMAND_FAILURES.inspectUnsupported, "this sandbox takes no variable snapshots");
   }
   // The context viewer (KOBE-470): the member's own sandbox only, and only an agent that knows it.
   if (

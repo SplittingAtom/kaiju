@@ -12,7 +12,14 @@ import { markTold } from "../sync-conflicts/store.js";
 import { completeCommand, pendingCommands, type CommandRow } from "./commands.js";
 import type { WireContext } from "./context.js";
 import { claimDelivery, type Claimed } from "./delivery/claim.js";
-import { frameFor, traceContext, wireFrame, type DeliverableFrame } from "./delivery/frames.js";
+import {
+  frameFor,
+  traceContext,
+  wireFrame,
+  withMemberRunAsks,
+  withNotebookAsks,
+  type DeliverableFrame,
+} from "./delivery/frames.js";
 import type { MemoryRecord } from "./delivery/memory-plan.js";
 import { deliveryRefusal, failure } from "./delivery/preflight.js";
 import { prepareRunStart } from "./delivery/run-start.js";
@@ -161,11 +168,15 @@ export class CommandDelivery {
     frame: Extract<ServerToSandboxFrame, { type: "notebook.execute" }>,
     timeoutMs: number,
   ): Promise<CommandOutcome> {
-    return this.#internal(frame, timeoutMs, {
-      runId: frame.run_id,
-      threadId: frame.thread_id,
-      execId: frame.exec_id,
-    });
+    return this.#internal(
+      withNotebookAsks(frame, (c) => this.#host.hasCapability(c)),
+      timeoutMs,
+      {
+        runId: frame.run_id,
+        threadId: frame.thread_id,
+        execId: frame.exec_id,
+      },
+    );
   }
 
   /** The issued command a `command.result` answers; "answered" for a duplicate result. */
@@ -492,7 +503,9 @@ export class CommandDelivery {
     });
     this.#ctx.metrics.commandsDelivered += 1;
     // Not sent (closed meanwhile): the row stays delivered; the next hello reconciles it.
-    const wire = wireFrame(row, frame, claimed, traced, starts);
+    const wire = withMemberRunAsks(wireFrame(row, frame, claimed, traced, starts), (c) =>
+      this.#host.hasCapability(c),
+    );
     const out =
       row.kind === "run.start"
         ? await prepareRunStart(this.#env, row, frame as RunStartFrame, wire, {

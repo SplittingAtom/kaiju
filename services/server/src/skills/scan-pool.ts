@@ -111,12 +111,27 @@ function blockedScan(rule: string, excerpt: string): ScanResult {
   };
 }
 
+/** The rules of a scan that didn't finish (out of time, or its worker out of memory or crashed). */
+export const SCAN_INCOMPLETE_RULE = "scan-incomplete";
+export const SCAN_RESOURCES_EXCEEDED_RULE = "scan-resources-exceeded";
+const INCOMPLETE_RULES: ReadonlySet<string> = new Set([
+  SCAN_INCOMPLETE_RULE,
+  SCAN_RESOURCES_EXCEEDED_RULE,
+]);
+
 /** The scan ran out of time. */
 export const incompleteScan = () =>
-  blockedScan("scan-incomplete", "The scan did not finish in time.");
+  blockedScan(SCAN_INCOMPLETE_RULE, "The scan did not finish in time.");
 /** The scan's worker ran out of memory or crashed. */
 export const resourcesExceededScan = () =>
-  blockedScan("scan-resources-exceeded", "The scan needed more memory than a scan may use.");
+  blockedScan(SCAN_RESOURCES_EXCEEDED_RULE, "The scan needed more memory than a scan may use.");
+
+/**
+ * Whether a scan's Block says only that it didn't finish, not what the files hold (P2-11): every
+ * caller treats it as "try again", and a stored version keeps it as unscanned, never as Block.
+ */
+export const scanIncomplete = (scan: Pick<ScanResult, "findings">): boolean =>
+  scan.findings.some((f) => INCOMPLETE_RULES.has(f.rule));
 
 type Reply = { ok: true; result: ScanResult } | { ok: false; message: string };
 

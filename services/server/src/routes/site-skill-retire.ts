@@ -15,6 +15,7 @@ import { emailRetirement, notifyRetirement } from "../skills/registry/retire-not
 import { semverSchema } from "../skills/semver.js";
 import { logger } from "../logger.js";
 import { invalidRequest, notFound, param, parseBody } from "../http/request.js";
+import type { MirrorKick } from "./site-skill-mirror.js";
 
 const idSchema = z.uuid();
 const actSchema = z.enum(["deprecate", "undeprecate", "withdraw", "revoke", "unrevoke"]);
@@ -41,7 +42,10 @@ const ERRORS = {
  * The act commits, then the in-app notices are written (one transaction per team, under its
  * RLS) and the emails go out in the background.
  */
-export function siteSkillRetireRoutes(deps: ServerDeps): Hono<{ Variables: AuthVariables }> {
+export function siteSkillRetireRoutes(
+  deps: ServerDeps,
+  mirror?: MirrorKick,
+): Hono<{ Variables: AuthVariables }> {
   const app = new Hono<{ Variables: AuthVariables }>();
   const db = deps.database.db;
   const actor = (c: Ctx) => ({ userId: c.get("user").id, siteRole: c.get("siteRole") });
@@ -95,6 +99,8 @@ export function siteSkillRetireRoutes(deps: ServerDeps): Hono<{ Variables: AuthV
       actor: actor(c),
       note: body.note,
     });
+    // The git mirror (KOBE-343) drops a withdrawn or revoked version from catalog.json (P2-10).
+    if (r.ok && act.data !== "deprecate" && act.data !== "undeprecate") mirror?.kick();
     return answer(c, r);
   });
 

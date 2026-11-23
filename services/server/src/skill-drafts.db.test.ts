@@ -439,6 +439,25 @@ describe("save version (ac-2)", () => {
       expect((await save(author, d.id, wrong, d.rev)).status, JSON.stringify(wrong)).toBe(400);
   });
 
+  it("reads the draft under its row lock: a co-editor's write in flight makes the save stale (P2-36)", async () => {
+    const d = await draftWith(author, "locked-save");
+    // A writer (a co-editor's file write) holds the draft row's lock and bumps the revision.
+    await h.admin.query("BEGIN");
+    try {
+      await h.admin.query(`SELECT 1 FROM skill_drafts WHERE id = $1 FOR UPDATE`, [d.id]);
+      const pending = save(author, d.id, personal, d.rev);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await h.admin.query(`UPDATE skill_drafts SET rev = rev + 1 WHERE id = $1`, [d.id]);
+      await h.admin.query("COMMIT");
+      const res = await pending;
+      expect(res.status, JSON.stringify(res.json)).toBe(409);
+      expect(res.json.code).toBe("stale_revision");
+    } catch (err) {
+      await h.admin.query("ROLLBACK");
+      throw err;
+    }
+  });
+
   it("saves the author's own draft to personal, recorded in the team's audit log", async () => {
     const d = await draftWith(author, "plain-personal");
     const res = await save(author, d.id, personal, d.rev);

@@ -290,8 +290,8 @@ export const SKILLS_EVENT_DOCS = {
     when: "A Site admin changed the Registry settings (KOBE-330, SK20, SK21); never URLs or rule values",
   },
   "skill.rescan.suspended": {
-    fields: "`skillId`, `slug`, `version`, `scope` (team, personal), `ruleSetVersion`",
-    when: "A rescan on a scanner rule-set change turned a version Block and suspended it pending review (KOBE-313, SK32)",
+    fields: "`skillId`, `slug`, `version`, `scope` (team, personal), `ruleSetVersion`, `reason`?",
+    when: "A rescan on a scanner rule-set change turned a version Block and suspended it pending review (KOBE-313, SK32); `reason: rescan_incomplete` when the rescan kept not finishing past the configured period (KOBE-781)",
   },
   "skill.reset_to_kobe": {
     fields: "`skillId`, `name`, `fromSemver`, `shippedSemver`",

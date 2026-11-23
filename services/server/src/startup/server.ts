@@ -261,6 +261,7 @@ function serverJobsOptions(
       sweeps: config.retentionSweeps,
     },
     connectorRefreshSeconds: config.connectorRefreshSeconds,
+    skillRescanIncompleteSuspendHours: config.skillRescanIncompleteSuspendHours,
     models:
       settings.models && settings.bifrostAdmin
         ? { config: settings.models, admin: settings.bifrostAdmin }
@@ -399,6 +400,7 @@ export async function startServer(
   const app: AppOptions = {
     isolation: isolation.gate,
     hstsIncludeSubDomains: config.auth?.hstsIncludeSubDomains ?? false,
+    ingressRateLimit: config.auth?.ingressRateLimit ?? "unknown",
     ...(skills.evalRunner ? { evals: skills.evalRunner } : {}),
     ...(skills.externalScan ? { externalScan: skills.externalScan } : {}),
     ...(skills.skillMirror ? { skillMirror: skills.skillMirror } : {}),

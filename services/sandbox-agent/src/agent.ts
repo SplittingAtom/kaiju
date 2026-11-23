@@ -9,6 +9,7 @@ import {
   type ThreadBranchSummaryFrame,
   type ThreadCompactFrame,
 } from "@kobe/protocol/sandbox-wire";
+import { NOTEBOOK_INSPECT_TIMEOUT_MS } from "@kobe/protocol";
 import type { PiExit, PiRecord } from "./pi/pi-process.js";
 import { PolicyBroker } from "./policy/broker.js";
 import { ConflictReporter } from "./workspace/conflict-reporter.js";
@@ -58,6 +59,7 @@ const COMMAND_FRAMES = new Set([
   "notebook.execute",
   "notebook.interrupt",
   "notebook.restart",
+  "notebook.inspect",
   "thread.context",
 ]);
 const DRAIN_ON_FATAL_MS = 5000;
@@ -530,6 +532,7 @@ export class Agent {
       case "notebook.execute":
       case "notebook.interrupt":
       case "notebook.restart":
+      case "notebook.inspect":
         return this.#kernelCommand(frame);
       case "thread.context":
         return this.#threads.context(frame);
@@ -570,12 +573,20 @@ export class Agent {
   async #kernelCommand(
     frame: Extract<
       ServerToSandboxFrame,
-      { type: "notebook.execute" | "notebook.interrupt" | "notebook.restart" }
+      { type: "notebook.execute" | "notebook.interrupt" | "notebook.restart" | "notebook.inspect" }
     >,
   ): Promise<CommandOutcome> {
     const kernels = this.#deps.kernels;
     if (kernels === undefined) return fail("unknown_type", "this agent runs no kernels");
     if (frame.type === "notebook.interrupt") return kernels.interrupt(frame.thread_id);
+    // KOBE-803: a silent variables snapshot; never starts a kernel.
+    if (frame.type === "notebook.inspect") {
+      return kernels.inspect(
+        frame.thread_id,
+        frame.timeout_ms ?? NOTEBOOK_INSPECT_TIMEOUT_MS,
+        frame.refresh === true,
+      );
+    }
     if (frame.type === "notebook.restart") {
       // KOBE-477: `op: "start"` starts the kernel (nothing runs); otherwise it is a restart.
       return frame.op === "start"

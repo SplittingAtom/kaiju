@@ -6,6 +6,7 @@ import type {
   NotebookRunBody,
   NotebookRunResponse,
   NotebookStartResponse,
+  NotebookVariablesResult,
   RunOrchestrator,
   RunSnapshot,
   SubmitMessageCommand,
@@ -69,6 +70,15 @@ export interface ServerRunOrchestrator extends RunOrchestrator {
    * answers the kernel's state. Throws `NotebookRunError` or `RunError`.
    */
   notebookStart(actor: ActorContext, threadId: string): Promise<NotebookStartResponse>;
+  /**
+   * A fresh snapshot of the thread kernel's variables (KOBE-803): never wakes the sandbox or
+   * starts a kernel (`no_kernel`). Throws `NotebookRunError` or `RunError`.
+   */
+  notebookVariables(
+    actor: ActorContext,
+    threadId: string,
+    refresh?: boolean,
+  ): Promise<NotebookVariablesResult>;
   /** KOBE-24 `RunLifecycleHooks.onRunEnded`: the wire ended a run; advance its thread's queue. */
   onRunEnded(event: { teamId: string; runId: string; threadId: string }): Promise<void>;
   /** KOBE-180: the system cancels a deactivated or removed owner's in-flight scheduled runs. */

@@ -174,6 +174,14 @@ const configSchema = z.object({
       "KOBE_TEAM_RECONCILE_SECONDS must be 0 or between 30 and 86400",
     )
     .default(300),
+  // Hours a skill version's rescan under a new scanner rule set may keep not finishing before the
+  // version is suspended (review g79); 0 = never.
+  KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS: z.coerce
+    .number({ error: "KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS must be a number" })
+    .int("KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS must be an integer")
+    .min(0, "KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS must be 0 or more")
+    .max(8760, "KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS must be at most 8760")
+    .default(24),
   // Seconds between re-probes of every pinned connector for tool drift (KOBE-102); 0 = never.
   KOBE_CONNECTOR_REFRESH_SECONDS: z.coerce
     .number({ error: "KOBE_CONNECTOR_REFRESH_SECONDS must be a number" })
@@ -207,6 +215,10 @@ const configSchema = z.object({
     .max(900, "KOBE_SESSION_TOKEN_TTL_SECONDS must be between 10 and 900")
     .default(900),
 });
+
+/** Who limits requests per client at the ingress (KOBE-811). */
+export const INGRESS_RATE_LIMIT_SOURCES = ["chart", "external", "none", "unknown"] as const;
+export type IngressRateLimitSource = (typeof INGRESS_RATE_LIMIT_SOURCES)[number];
 
 /** Auth settings: required by the API server only (the scheduler never sees these secrets). */
 const authSchema = z.object({
@@ -245,6 +257,14 @@ const authSchema = z.object({
     .enum(["true", "false"], { error: "KOBE_HSTS_INCLUDE_SUBDOMAINS must be true or false" })
     .default("false")
     .transform((v) => v === "true"),
+  // Who limits requests per client at the ingress (KOBE-811, chart `ingress.rateLimit`): the
+  // chart's Traefik middleware, the operator's own edge, nobody, or unknown (no chart-managed
+  // Ingress). Only shown in the Site console's health view.
+  KOBE_INGRESS_RATE_LIMIT: z
+    .enum(INGRESS_RATE_LIMIT_SOURCES, {
+      error: "KOBE_INGRESS_RATE_LIMIT must be chart, external, none or unknown",
+    })
+    .default("unknown"),
 });
 
 export interface AuthConfig {
@@ -256,6 +276,8 @@ export interface AuthConfig {
   readonly approvalKey?: string;
   /** Add `includeSubDomains` to the HSTS header (KOBE-695). */
   readonly hstsIncludeSubDomains: boolean;
+  /** Who limits requests at the ingress (KOBE-811), for the Site console's health view. */
+  readonly ingressRateLimit: IngressRateLimitSource;
 }
 
 /** A connection pool size, 1..`max` (KOBE-736). */
@@ -316,6 +338,8 @@ export interface Config {
   readonly teamReconcileSeconds: number;
   /** Seconds between connector drift refreshes; 0 = off (KOBE-102). */
   readonly connectorRefreshSeconds: number;
+  /** Hours of unfinished rescans before a skill version is suspended; 0 = never (review g79). */
+  readonly skillRescanIncompleteSuspendHours: number;
   /** Sandbox session token lifetime in seconds (900 unless an e2e install shortens it). */
   readonly sessionTokenTtlSeconds: number;
   /** Output limit and context window of models without their own (KOBE-259, chart values). */
@@ -379,6 +403,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
     },
     teamReconcileSeconds: base.data.KOBE_TEAM_RECONCILE_SECONDS,
     connectorRefreshSeconds: base.data.KOBE_CONNECTOR_REFRESH_SECONDS,
+    skillRescanIncompleteSuspendHours: base.data.KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS,
     sessionTokenTtlSeconds: base.data.KOBE_SESSION_TOKEN_TTL_SECONDS,
     modelTokenDefaults: tokenDefaults.data,
     scheduler: {
@@ -402,6 +427,7 @@ export function loadConfig(env: Readonly<Record<string, string | undefined>>): C
       setupToken: auth.data.KOBE_SETUP_TOKEN,
       trustedProxies: auth.data.KOBE_TRUSTED_PROXIES,
       hstsIncludeSubDomains: auth.data.KOBE_HSTS_INCLUDE_SUBDOMAINS,
+      ingressRateLimit: auth.data.KOBE_INGRESS_RATE_LIMIT,
       ...(auth.data.KOBE_APPROVAL_KEY ? { approvalKey: auth.data.KOBE_APPROVAL_KEY } : {}),
     },
     smtp: smtp.data,

@@ -42,6 +42,10 @@ export interface StoredFinding {
 
 export const skillReviewScope = ["team", "personal"] as const;
 
+/** Why a rescan suspended a version (KOBE-781 review). */
+export const SKILL_SUSPENDED_REASONS = ["rescan_block", "rescan_incomplete"] as const;
+export type SkillSuspendedReason = (typeof SKILL_SUSPENDED_REASONS)[number];
+
 /** Site-wide: the scan of a personal skill version, made with the (immutable) version. */
 export const personalSkillScans = pgTable(
   "personal_skill_scans",
@@ -65,10 +69,31 @@ export const personalSkillScans = pgTable(
     suspendedAt: timestamp({ withTimezone: true }),
     /** The suspension's emails went out (the outbox: null while `suspended_at` is set = to send). */
     suspensionNotifiedAt: timestamp({ withTimezone: true }),
+    /**
+     * Why it is suspended (KOBE-781 review): `rescan_block` (a rescan turned it Block) or
+     * `rescan_incomplete` (its rescan kept not finishing; lifted by itself once one passes). Null
+     * when not suspended, or suspended before KOBE-781 (never lifted by itself).
+     */
+    suspendedReason: text().$type<SkillSuspendedReason>(),
+    /**
+     * When a rescan of this row under `rescan_incomplete_rule_set` first didn't finish (KOBE-781
+     * review): the period before an unfinished rescan suspends it counts from here. Cleared when a
+     * rescan of the row completes; a newer rule set starts it again.
+     */
+    rescanIncompleteSince: timestamp({ withTimezone: true }),
+    rescanIncompleteRuleSet: integer(),
   },
   (t) => [
     primaryKey({ columns: [t.skillId, t.version] }),
     index("personal_skill_scans_rule_set_idx").on(t.ruleSet),
+    check(
+      "personal_skill_scans_suspended_reason",
+      sql`${t.suspendedReason} IS NULL OR ${t.suspendedReason} IN ('rescan_block', 'rescan_incomplete')`,
+    ),
+    check(
+      "personal_skill_scans_rescan_incomplete",
+      sql`(${t.rescanIncompleteSince} IS NULL) = (${t.rescanIncompleteRuleSet} IS NULL)`,
+    ),
     foreignKey({
       name: "personal_skill_scans_version_fk",
       columns: [t.skillId, t.version],
@@ -95,7 +120,7 @@ export const teamSkillReviews = pgTable(
     slug: text().notNull(),
     contentHash: text().notNull(),
     status: skillReviewStatus().notNull().default("pending"),
-    /** Existing versions are backfilled unscanned; the queue scans them when first listed. */
+    /** Backfilled versions, and uploads whose scan didn't finish: the late scan job scans them. */
     unscanned: boolean().notNull().default(false),
     /** The scanner reported at least one finding: such a version always needs a review. */
     flagged: boolean().notNull(),
@@ -115,6 +140,19 @@ export const teamSkillReviews = pgTable(
     suspendedAt: timestamp({ withTimezone: true }),
     /** The suspension's emails went out (the outbox: null while `suspended_at` is set = to send). */
     suspensionNotifiedAt: timestamp({ withTimezone: true }),
+    /**
+     * Why it is suspended (KOBE-781 review): `rescan_block` (a rescan turned it Block) or
+     * `rescan_incomplete` (its rescan kept not finishing; lifted by itself once one passes). Null
+     * when not suspended, or suspended before KOBE-781 (never lifted by itself).
+     */
+    suspendedReason: text().$type<SkillSuspendedReason>(),
+    /**
+     * When a rescan of this row under `rescan_incomplete_rule_set` first didn't finish (KOBE-781
+     * review): the period before an unfinished rescan suspends it counts from here. Cleared when a
+     * rescan of the row completes; a newer rule set starts it again.
+     */
+    rescanIncompleteSince: timestamp({ withTimezone: true }),
+    rescanIncompleteRuleSet: integer(),
     // Users are deactivated, never deleted (NO ACTION).
     reviewedBy: uuid().references(() => users.id),
     reviewedAt: timestamp({ withTimezone: true }),
@@ -136,6 +174,14 @@ export const teamSkillReviews = pgTable(
       sql`jsonb_typeof(${t.findings}) = 'array' AND jsonb_typeof(${t.scripts}) = 'array' AND jsonb_typeof(${t.skipped}) = 'array'`,
     ),
     check("team_skill_reviews_note", sql`char_length(${t.reviewNote}) <= 2000`),
+    check(
+      "team_skill_reviews_suspended_reason",
+      sql`${t.suspendedReason} IS NULL OR ${t.suspendedReason} IN ('rescan_block', 'rescan_incomplete')`,
+    ),
+    check(
+      "team_skill_reviews_rescan_incomplete",
+      sql`(${t.rescanIncompleteSince} IS NULL) = (${t.rescanIncompleteRuleSet} IS NULL)`,
+    ),
   ],
 );
 

@@ -54,7 +54,14 @@ export interface RescanDeps {
   /** The rule set to rescan to (tests); defaults to the scanner's. */
   readonly ruleSet?: number;
   readonly ruleSetVersion?: string;
+  /**
+   * How long a version's rescan under a new rule set may keep not finishing before it is suspended
+   * (review g79, chart `server.skillRescanIncompleteSuspendHours`); 0: never. Default 24 h.
+   */
+  readonly incompleteSuspendAfterMs?: number;
 }
+
+export const RESCAN_INCOMPLETE_SUSPEND_DEFAULT_MS = 24 * 3600_000;
 
 export interface RescanReport {
   readonly ruleSet: number;
@@ -65,6 +72,8 @@ export interface RescanReport {
   readonly scanned: number;
   readonly suspended: number;
   readonly failed: number;
+  /** Rescans that didn't finish this pass (retried; not failures, review g79). */
+  readonly unfinished: number;
   readonly status: "running" | "done" | "failed";
 }
 
@@ -126,6 +135,7 @@ async function runPass(
       scanned: 0,
       suspended: 0,
       failed: 0,
+      unfinished: 0,
       status: "done",
     };
   }
@@ -136,15 +146,17 @@ async function runPass(
     ruleSet,
     ruleSetVersion,
     cache: new ScanCache(),
+    incompleteSuspendAfterMs: deps.incompleteSuspendAfterMs ?? RESCAN_INCOMPLETE_SUSPEND_DEFAULT_MS,
   };
   const notify =
     deps.mailer && deps.publicUrl ? { db, mailer: deps.mailer, publicUrl: deps.publicUrl } : null;
-  const totals = { scanned: 0, suspended: 0, failed: 0 };
+  const totals = { scanned: 0, suspended: 0, failed: 0, unfinished: 0 };
   const batchDone = async (tally: Tally, teamId?: string) => {
     await flush(db, run.id, tally);
     totals.scanned += tally.scanned;
     totals.suspended += tally.suspended.length;
     totals.failed += tally.failed;
+    totals.unfinished += tally.unfinished;
     if (notify) await (teamId ? sendPendingTeam(notify, teamId) : sendPendingPersonal(notify));
   };
 
@@ -173,7 +185,7 @@ async function runPass(
       .set({ status, finishedAt: status === "running" ? null : new Date(), failed: totals.failed })
       .where(eq(skillRescanRuns.id, run.id));
   }
-  if (totals.scanned > 0 || totals.failed > 0)
+  if (totals.scanned > 0 || totals.failed > 0 || totals.unfinished > 0)
     deps.log.info({ ruleSet, ...totals, status }, "skills: rescan pass finished");
   return { ruleSet, ruleSetVersion, ran: true, ...totals, status };
 }

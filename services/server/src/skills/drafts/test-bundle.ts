@@ -10,7 +10,7 @@ import { isBlocked } from "../blocklist.js";
 import { validateZipBundle } from "../bundle.js";
 import { SKILL_LIMITS } from "../limits.js";
 import { scanCanonicalZip } from "../review.js";
-import { ScanBusyError } from "../scan-pool.js";
+import { ScanBusyError, scanIncomplete } from "../scan-pool.js";
 import { DRAFT_LIMITS, SKILL_MD_PATH } from "./files.js";
 import { readAllFiles, visibleDraft, type DraftRecord } from "./records.js";
 import { GATE_MESSAGES, testGate, type TestGate } from "./test-gates.js";
@@ -144,8 +144,6 @@ export type PrepareResult =
       readonly message: string;
     };
 
-const INCOMPLETE = new Set(["scan-incomplete", "scan-resources-exceeded"]);
-
 /** The Block findings, as one line the member can act on. */
 function blockMessage(scan: ScanResult): string {
   const rules = [
@@ -199,7 +197,7 @@ export async function prepareDraftTest(
       message: "Skill scans are busy right now. Send again in a few seconds.",
     };
   }
-  if (scan.findings.some((f) => INCOMPLETE.has(f.rule)))
+  if (scanIncomplete(scan))
     return {
       ok: false,
       error: "scan_incomplete",

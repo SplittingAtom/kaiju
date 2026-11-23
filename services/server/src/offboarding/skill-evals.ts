@@ -1,6 +1,6 @@
 import { sql, withTeam } from "@kobe/db";
 import { logger } from "../logger.js";
-import { notifyEval } from "../skills/evals/store.js";
+import { notifyEval, settleClosedExecutions } from "../skills/evals/store.js";
 import type { OffboardingContext, TeamIdentity } from "./types.js";
 
 /**
@@ -20,7 +20,10 @@ export async function offboardSkillEvals(
              updated_at = now()
        WHERE team_id = ${team.id} AND started_by = ${userId} AND status IN ('queued', 'running')
       RETURNING id`);
-    for (const r of runs.rows) await notifyEval(tx, team.id, r.id);
+    for (const r of runs.rows) {
+      await settleClosedExecutions(tx, team.id, r.id);
+      await notifyEval(tx, team.id, r.id);
+    }
     const live = await tx.execute<{ thread_id: string }>(sql`
       SELECT c.thread_id FROM sandbox_eval_connections c
        WHERE c.team_id = ${team.id} AND c.user_id = ${userId}

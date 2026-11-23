@@ -141,6 +141,19 @@ describe("loadConfig", () => {
     );
   });
 
+  it("suspends unfinished skill rescans after 24 h by default, 0 for never (KOBE-781 review)", () => {
+    const hours = (v?: string) =>
+      loadConfig({
+        ...REQUIRED,
+        ...(v === undefined ? {} : { KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS: v }),
+      }).skillRescanIncompleteSuspendHours;
+    expect(hours()).toBe(24);
+    expect(hours("0")).toBe(0);
+    expect(hours("72")).toBe(72);
+    for (const bad of ["-1", "8761", "1.5"])
+      expect(() => hours(bad)).toThrow(/KOBE_SKILL_RESCAN_INCOMPLETE_SUSPEND_HOURS/);
+  });
+
   it("reads the internal listener settings for the MCP proxy (KOBE-58)", () => {
     expect(loadConfig(REQUIRED)).toMatchObject({
       internalPort: 8082,
@@ -242,6 +255,18 @@ describe("loadConfig", () => {
     ).toBe(true);
     expect(() => loadConfig({ ...REQUIRED, KOBE_HSTS_INCLUDE_SUBDOMAINS: "yes" })).toThrow(
       /KOBE_HSTS_INCLUDE_SUBDOMAINS must be true or false/,
+    );
+  });
+
+  it("reads who limits requests at the ingress, unknown by default (KOBE-811)", () => {
+    expect(loadConfig(REQUIRED).auth?.ingressRateLimit).toBe("unknown");
+    for (const v of ["chart", "external", "none", "unknown"] as const) {
+      expect(loadConfig({ ...REQUIRED, KOBE_INGRESS_RATE_LIMIT: v }).auth?.ingressRateLimit).toBe(
+        v,
+      );
+    }
+    expect(() => loadConfig({ ...REQUIRED, KOBE_INGRESS_RATE_LIMIT: "on" })).toThrow(
+      /KOBE_INGRESS_RATE_LIMIT must be chart, external, none or unknown/,
     );
   });
 
