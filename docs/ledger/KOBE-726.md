@@ -2,7 +2,7 @@
 
 <!-- Keep under ~150 lines: decisions and links to evidence, not pasted logs. -->
 
-- **Status:** in progress
+- **Status:** done on the branch (not pushed)
 - **Branch / worktree:** `group-113-test-folders` in `../Kobe-g113` (stacked on `group-112-typed-lint`
   and `group-111-small-followups`; merge only, never rebase or squash)
 - **Depends on:** none
@@ -127,3 +127,19 @@ Decisions).
 
 No change: test files are not visible to members, admins or in-sandbox agents, and `docs/guide/`
 names no test path.
+
+## Open questions (for Chris or the coordinator)
+
+- Grouping the ~50 flat sources in `services/server/src/skills/` (69 files outside `skills/`
+  import them) is left for a separate ticket if wanted; this one moves tests only.
+
+## Evidence (acceptance criteria → test or command output)
+
+- **ac-1:** `ls services/server/src/*.test.ts` finds nothing; `git diff -M --summary` shows 299
+  renames (297 tests + 2 route-inventory snapshots).
+- **ac-2** (vitest json totals, before → after): `test` 336 files / 4571 tests (8 skipped) →
+  336 / 4571 (8 skipped); `test:db` 299 files / 3730 tests → 299 / 3730, all passed.
+  `@kobe/db` test 30 / 1105 and test:db 136 / 2176 passed. Shards (simulated with vitest's
+  SHA-1 ordering and the baseline file times): 150/149 files before and after; summed file
+  time 808 s / 934 s before, 980 s / 763 s after (a similar spread, the other way round).
+- build, typecheck, lint (server), format:check, `check-site-wording`, `check-public-hygiene`: ok.
