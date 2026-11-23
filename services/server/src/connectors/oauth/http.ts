@@ -24,17 +24,21 @@ export class OauthError extends Error {
 
 /** A 3xx answer: never followed (a hop could point at an address nobody checked). */
 export class RedirectRefusedError extends OauthError {
-  constructor() {
+  /**
+   * The refused hop's `Location`, for a caller that re-checks it itself (git hosts follow a hop on
+   * their own API origin only, KOBE-758); never part of the message.
+   */
+  readonly location: string | undefined;
+  constructor(location?: string) {
     super("oauth_unreachable");
     this.name = "RedirectRefusedError";
+    this.location = location;
   }
 }
 
 export interface OauthIo {
   readonly policy: ConnectorUrlPolicy;
   readonly timeoutMs: number;
-  /** Body cap for {@link rawRequest}; default {@link MAX_BODY_BYTES} (git host APIs, KOBE-759). */
-  readonly maxBodyBytes?: number;
 }
 
 export const MAX_BODY_BYTES = 256 * 1024;
@@ -82,17 +86,23 @@ export interface RawResponse {
 /**
  * One request over a connection pinned to an address the policy approved (see
  * {@link pinnedLookup}); redirects are refused ({@link RedirectRefusedError}), time and size are
- * capped (`text` undefined when the body is larger than `io.maxBodyBytes`, default
+ * capped (`text` undefined when the body is larger than `init.maxBytes`, default
  * {@link MAX_BODY_BYTES}). The caller checks
  * the URL itself first (`checkConnectorUrl`). Also used by SSO discovery (KOBE-626).
  */
 export function rawRequest(
   url: URL,
   io: OauthIo,
-  init: { method: string; headers: Record<string, string>; body?: string },
+  init: {
+    method: string;
+    headers: Record<string, string>;
+    body?: string;
+    /** Body cap; default {@link MAX_BODY_BYTES}. */
+    maxBytes?: number;
+  },
 ): Promise<RawResponse> {
+  const maxBytes = init.maxBytes ?? MAX_BODY_BYTES;
   const transport = url.protocol === "https:" ? https : http;
-  const maxBody = io.maxBodyBytes ?? MAX_BODY_BYTES;
   return new Promise((resolve, reject) => {
     const req = transport.request(
       url,
@@ -106,15 +116,16 @@ export function rawRequest(
         const status = res.statusCode ?? 0;
         // Redirects are never followed: a hop could point at an address nobody checked.
         if (status >= 300 && status < 400) {
+          const location = res.headers.location;
           res.destroy();
-          reject(new RedirectRefusedError());
+          reject(new RedirectRefusedError(typeof location === "string" ? location : undefined));
           return;
         }
         const chunks: Buffer[] = [];
         let size = 0;
         res.on("data", (chunk: Buffer) => {
           size += chunk.length;
-          if (size > maxBody) {
+          if (size > maxBytes) {
             res.destroy();
             resolve({ status, headers: res.headers, text: undefined });
             return;

@@ -1,25 +1,22 @@
 import { z } from "zod";
-import { GitHostError } from "../provider-errors.js";
-import type {
-  GitComment,
-  GitIssue,
-  GitOrganization,
-  GitPullRequest,
-  GitRepository,
-} from "../provider.js";
+import {
+  GitHostError,
+  type GitCreated,
+  type GitOrganization,
+  type GitRepository,
+} from "../adapter.js";
 
 /**
- * Gitea/Forgejo `/api/v1` answers, validated (never trusted) and mapped to the neutral shapes.
- * Only the fields Kobe reads are checked; anything else the host adds is ignored.
+ * Gitea/Forgejo `/api/v1` answers, validated (never trusted) and mapped to the shared shapes
+ * (KOBE-759). Only the fields Kobe reads are checked; anything else the host adds is ignored.
  */
 
 const id = z.union([z.number().int(), z.string().max(64)]).transform(String);
-const text = z.string().max(4096);
 const url = z.string().max(2048);
 
 function parse<T>(schema: z.ZodType<T>, json: unknown): T {
   const out = schema.safeParse(json);
-  if (!out.success) throw new GitHostError("unexpected");
+  if (!out.success) throw new GitHostError("unexpected", "The git host gave an unexpected answer.");
   return out.data;
 }
 
@@ -42,17 +39,18 @@ export function asOrganization(json: unknown, webRoot: string): GitOrganization 
       // `username` is the org's name on every supported version; `name` is the older alias.
       username: z.string().max(255).optional(),
       name: z.string().max(255).optional(),
-      full_name: text.optional(),
+      full_name: z.string().max(4096).optional(),
     }),
     json,
   );
-  const name = o.username ?? o.name;
-  if (!name) throw new GitHostError("unexpected");
+  const login = o.username ?? o.name;
+  if (!login) throw new GitHostError("unexpected", "The git host gave an unexpected answer.");
   return {
     id: o.id,
-    name,
-    displayName: o.full_name || name,
-    webUrl: `${webRoot}/${encodeURIComponent(name)}`,
+    login,
+    name: o.full_name ? o.full_name : null,
+    kind: "organization",
+    webUrl: `${webRoot}/${encodeURIComponent(login)}`,
   };
 }
 
@@ -101,57 +99,41 @@ const repository = z.object({
     .optional(),
 });
 
-export function asRepository(json: unknown): { owner: string; value: GitRepository } {
+export interface GiteaRepository {
+  readonly owner: string;
+  readonly value: GitRepository;
+  /** What the token's account may do there (pull, push). */
+  readonly canRead: boolean;
+  readonly canWrite: boolean;
+}
+
+export function asRepository(json: unknown): GiteaRepository {
   const r = parse(repository, json);
+  const empty = r.empty === true;
   return {
     owner: r.owner.login,
+    canRead: r.permissions?.pull === true,
+    canWrite: r.permissions?.push === true,
     value: {
       id: r.id,
       name: r.name,
       fullName: r.full_name,
-      defaultBranch: r.default_branch || "main",
-      private: r.private,
-      empty: r.empty === true,
+      // Gitea and Forgejo have no internal repositories.
+      visibility: r.private ? "private" : "public",
+      // An empty repository reports its configured default branch, but has none yet.
+      defaultBranch: empty ? null : r.default_branch || null,
       archived: r.archived === true,
+      empty,
       webUrl: r.html_url,
       cloneUrl: r.clone_url,
-      permissions: {
-        read: r.permissions?.pull === true,
-        write: r.permissions?.push === true,
-        admin: r.permissions?.admin === true,
-      },
     },
   };
 }
 
-export function asPullRequest(json: unknown): GitPullRequest {
-  const p = parse(
-    z.object({
-      number: z.number().int().positive(),
-      title: text,
-      html_url: url,
-      state: z.string().max(32),
-      merged: z.boolean().optional(),
-    }),
+export function asCreated(json: unknown, withNumber: boolean): GitCreated {
+  const c = parse(
+    z.object({ id, number: z.number().int().positive().optional(), html_url: url }),
     json,
   );
-  return {
-    number: p.number,
-    title: p.title,
-    webUrl: p.html_url,
-    state: p.merged === true ? "merged" : p.state === "closed" ? "closed" : "open",
-  };
-}
-
-export function asIssue(json: unknown): GitIssue {
-  const i = parse(
-    z.object({ number: z.number().int().positive(), title: text, html_url: url }),
-    json,
-  );
-  return { number: i.number, title: i.title, webUrl: i.html_url };
-}
-
-export function asComment(json: unknown): GitComment {
-  const c = parse(z.object({ id, html_url: url }), json);
-  return { id: c.id, webUrl: c.html_url };
+  return { id: c.id, number: withNumber ? (c.number ?? null) : null, webUrl: c.html_url };
 }
