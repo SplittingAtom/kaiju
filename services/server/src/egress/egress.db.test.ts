@@ -12,13 +12,13 @@ import {
   threads,
   withTeam,
 } from "@kobe/db";
-import { runWithAuditContext } from "./audit/context.js";
-import { EgressBlockedRelay, relayBlockedEvents } from "./egress/blocked-relay.js";
-import { createTeamWithAdmin, removeMember } from "./teams/members.js";
-import { deactivateUser } from "./users/deactivation.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { must } from "./testing/event-stream-fixture.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { runWithAuditContext } from "../audit/context.js";
+import { EgressBlockedRelay, relayBlockedEvents } from "./blocked-relay.js";
+import { createTeamWithAdmin, removeMember } from "../teams/members.js";
+import { deactivateUser } from "../users/deactivation.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { must } from "../testing/event-stream-fixture.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /** KOBE-38: egress ceiling and team enablement APIs, audit, change hints, egress.blocked relay. */
 let h: Harness;

@@ -8,13 +8,13 @@ import {
   threads,
   withTeam,
 } from "@kobe/db";
-import { runWithAuditContext } from "./audit/context.js";
-import { resealTeamHeaders } from "./egress/header-store.js";
-import { sweepEgressRequestNotifications } from "./egress/request-notify.js";
-import { MAX_REQUESTS_PER_HOUR } from "./egress/request-store.js";
-import { createTeamWithAdmin } from "./teams/members.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { runWithAuditContext } from "../audit/context.js";
+import { resealTeamHeaders } from "./header-store.js";
+import { sweepEgressRequestNotifications } from "./request-notify.js";
+import { MAX_REQUESTS_PER_HOUR } from "./request-store.js";
+import { createTeamWithAdmin } from "../teams/members.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-39: request access (member asks, team admin approves or denies, everyone notified, audited,

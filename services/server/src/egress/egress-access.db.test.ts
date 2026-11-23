@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { teamMembers, withTeam } from "@kobe/db";
-import { runWithAuditContext } from "./audit/context.js";
-import { createTeamWithAdmin } from "./teams/members.js";
-import type { TestBrowser } from "./testing/browser.js";
-import { openHarness, type Harness } from "./testing/harness.js";
+import { runWithAuditContext } from "../audit/context.js";
+import { createTeamWithAdmin } from "../teams/members.js";
+import type { TestBrowser } from "../testing/browser.js";
+import { openHarness, type Harness } from "../testing/harness.js";
 
 /**
  * KOBE-602 (egress access from the conversation, EA1-EA4): requests for hosts outside the ceiling
