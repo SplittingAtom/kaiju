@@ -1,12 +1,12 @@
 import pg from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { createApp } from "./app.js";
-import { sweepBreakGlass } from "./break-glass/sweeper.js";
-import { createServerDeps, type ServerDeps } from "./deps.js";
-import { TestBrowser } from "./testing/browser.js";
-import { MemoryMailer } from "./testing/mailer.js";
-import { fakeIsolation } from "./testing/isolation.js";
+import { createApp } from "../app.js";
+import { sweepBreakGlass } from "../break-glass/sweeper.js";
+import { createServerDeps, type ServerDeps } from "../deps.js";
+import { TestBrowser } from "../testing/browser.js";
+import { MemoryMailer } from "../testing/mailer.js";
+import { fakeIsolation } from "../testing/isolation.js";
 
 // KOBE-648 (SM28; amends D10): Site-level break-glass on one person's portable memories, end to
 // end: request, two-person approval, notifications per the break-glass rule, reads refused without
