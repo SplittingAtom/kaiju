@@ -1,249 +1,37 @@
-import { createHash, randomUUID } from "node:crypto";
-import http from "node:http";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
-import { GIT_SITE_ENABLED_KEY, loadEnvelope, withTeam, type Envelope } from "@kobe/db";
-import { gitConversionViewSchema, type GitConversionView } from "@kobe/protocol";
-import { rawRequest } from "./connectors/oauth/http.js";
-import { conversionDeps } from "./git/conversion/deps.js";
+import { randomUUID } from "node:crypto";
+import { describe, expect, it } from "vitest";
+import { GIT_SITE_ENABLED_KEY } from "@kobe/db";
 import { sweepGitConversions } from "./git/conversion/job.js";
 import { runConversion, type ConversionDeps } from "./git/conversion/runner.js";
 import { LeaseLost } from "./git/conversion/store.js";
-import { GitHostError } from "./git-hosts/adapter.js";
-import type { GitWireSend } from "./git-hosts/git-wire.js";
-import { projectBlobKey, writeCommit, type TreeFile } from "./projects/tree.js";
-import { EventStreamFixture, type Person } from "./testing/event-stream-fixture.js";
-import { FakeGitea } from "./testing/fake-gitea.js";
-import { startGitServer, type GitServer } from "./testing/git-http-server.js";
-import { MemoryObjects } from "./testing/memory-objects.js";
-import type { MemoryMailer } from "./testing/mailer.js";
+import {
+  audit,
+  bare,
+  deps,
+  forgejo,
+  fx,
+  hostRepo,
+  kind,
+  mailer,
+  must,
+  placeHold,
+  project,
+  setWireHook,
+  settled,
+  start,
+  unreachable,
+  until,
+  world,
+} from "./testing/git-conversion-fixture.js";
 
 /**
- * KOBE-765 (GIT-9, spec workspace-git G15-G17, GQ12, GQ13) end to end on a real Postgres: a
- * Forgejo fake answers the API, a real `git http-backend` (with `receive.fsckObjects`) receives
- * the pushes. ac-1: a project with history converts and the host has the same commits with
- * authors and messages; ac-2: refusals name the reason, a crash mid-push resumes, a crash between
- * the host's create and the record adopts only the repository the attempt created, a failure
- * leaves the project an ordinary project with retry and abandon; ac-3: `git.project.converted`.
+ * KOBE-765 (GIT-9, spec workspace-git G15-G17, GQ12, GQ13) end to end on a real Postgres
+ * (`testing/git-conversion-fixture.ts`). ac-1: a project with history converts and the host has
+ * the same commits with authors and messages; ac-2: refusals name the reason, a crash mid-push
+ * resumes, a crash between the host's create and the record adopts only the repository the
+ * attempt created, a failure leaves the project an ordinary project with retry and abandon;
+ * ac-3: `git.project.converted`.
  */
-const must = <T>(v: T | undefined | null): T => {
-  if (v === undefined || v === null) throw new Error("expected a value");
-  return v;
-};
-const short = () => randomUUID().slice(0, 8);
-const sha = (b: Buffer) => createHash("sha256").update(b).digest("hex");
-const PREFIX = "kobe/";
-
-const fx = new EventStreamFixture();
-const forgejo = new FakeGitea("forgejo");
-const objects = new MemoryObjects();
-let git: GitServer;
-let gitPort: number;
-let envelope: Envelope;
-/** Wire hooks for one test: runs before each smart-HTTP exchange is sent. */
-let wireHook: ((url: URL, method: string) => void) | undefined;
-
-/** Smart-HTTP after the checks: to the local git server (the fake host's name stays in the URL). */
-const wire: GitWireSend = (exchange) => {
-  wireHook?.(exchange.url, exchange.method);
-  return new Promise((resolve, reject) => {
-    const req = http.request(
-      {
-        host: "127.0.0.1",
-        port: gitPort,
-        method: exchange.method,
-        path: `${exchange.url.pathname}${exchange.url.search}`,
-        headers: {
-          ...exchange.headers,
-          "content-length": String(exchange.body.reduce((n, c) => n + c.length, 0)),
-        },
-      },
-      (res) => {
-        const headers: Record<string, string> = {};
-        for (const [k, v] of Object.entries(res.headers)) if (typeof v === "string") headers[k] = v;
-        resolve({
-          status: res.statusCode ?? 0,
-          statusMessage: res.statusMessage ?? "",
-          headers,
-          body: res[Symbol.asyncIterator]() as AsyncIterableIterator<Uint8Array>,
-        });
-      },
-    );
-    req.on("error", reject);
-    for (const c of exchange.body) req.write(c);
-    req.end();
-  });
-};
-
-beforeAll(async () => {
-  await forgejo.start();
-  git = await startGitServer({
-    credentials: { username: forgejo.login, token: "fake-gitea-token-0123456789abcdef" },
-  });
-  gitPort = Number(new URL(git.origin).port);
-  envelope = must(loadEnvelope({ KOBE_ENVELOPE_KEY: "c".repeat(48) }));
-  await fx.setup([{}], () => ({
-    envelope,
-    blobs: { objects, prefix: PREFIX },
-    gitHostRequest: (url, io, init) =>
-      rawRequest(new URL(url.href.replace(/^https:/, "http:")), io, init),
-    gitWireSend: wire,
-    connectors: {
-      allowHttp: false,
-      allowedPorts: [forgejo.port],
-      allowedInternalCidrs: [],
-      addresses: withTestLoopback(),
-      resolve: () => Promise.resolve(["127.0.0.1"]),
-    },
-  }));
-}, 120_000);
-
-afterAll(async () => {
-  await fx.teardown();
-  await forgejo.close();
-  await git.close();
-});
-
-beforeEach(async () => {
-  forgejo.reset();
-  wireHook = undefined;
-  await fx.admin.query(`DELETE FROM site_settings WHERE key = $1`, [GIT_SITE_ENABLED_KEY]);
-});
-
-const unreachable = () =>
-  new GitHostError("host_unreachable", "The git host could not be reached.");
-const deps = (): ConversionDeps => ({ ...conversionDeps(fx.replica(0).deps), batchBytes: 1 });
-const mailer = () => fx.replica(0).deps.mailer as MemoryMailer;
-
-interface World {
-  readonly team: string;
-  readonly admin: Person;
-  readonly owner: Person;
-  readonly member: Person;
-  readonly connectionId: string;
-}
-
-async function world(level: "read" | "read_write" = "read_write"): Promise<World> {
-  const admin = await fx.person(`ca${short()}`);
-  const owner = await fx.person(`co${short()}`);
-  const member = await fx.person(`cm${short()}`);
-  const team = await fx.team(`conv-${short()}`, admin, [owner, member]);
-  await fx.admin.query(
-    `UPDATE team_members SET role = 'contributor' WHERE team_id = $1 AND user_id = $2`,
-    [team, owner.id],
-  );
-  const res = await admin.browser.request("POST", "/v1/team/git/connections", {
-    provider: "forgejo",
-    base_url: forgejo.baseUrl.replace(/^http:/, "https:"),
-    organization: "acme",
-    credential: { kind: "access_token", token: "fake-gitea-token-0123456789abcdef" },
-    access_level: level,
-  });
-  expect(res.status, res.text).toBe(201);
-  return { team, admin, owner, member, connectionId: res.json.connection.id as string };
-}
-
-/** A project owned by `owner` with commits written as Kobe writes them (blobs in the store). */
-async function project(
-  w: World,
-  commits: readonly { by: Person; message: string; files: Record<string, string> }[],
-): Promise<{ id: string; slug: string }> {
-  const slug = `p-${short()}`;
-  const res = await w.owner.browser.request("POST", "/v1/projects", {
-    name: `Project ${slug}`,
-    slug,
-  });
-  expect(res.status, res.text).toBe(201);
-  const id = res.json.id as string;
-  for (const c of commits) {
-    const tree = new Map<string, TreeFile>();
-    for (const [path, content] of Object.entries(c.files)) {
-      const bytes = Buffer.from(content);
-      const digest = sha(bytes);
-      const key = projectBlobKey(PREFIX, w.team, id, digest);
-      objects.objects.set(key, bytes);
-      tree.set(path, {
-        path,
-        sha256: digest,
-        blobRef: key,
-        size: bytes.length,
-        mime: "text/plain",
-        executable: path.endsWith(".sh"),
-      });
-    }
-    await withTeam(fx.db, w.team, (tx) =>
-      writeCommit(tx, {
-        teamId: w.team,
-        projectId: id,
-        tree,
-        author: { userId: c.by.id, kind: "user" },
-        message: c.message,
-      }),
-    );
-  }
-  return { id, slug };
-}
-
-const start = (p: Person, projectId: string, body: Record<string, unknown>) =>
-  p.browser.request("POST", `/v1/projects/${projectId}/repo-conversion`, body);
-
-async function until(check: () => boolean): Promise<void> {
-  for (let i = 0; i < 200 && !check(); i += 1) await new Promise((r) => setTimeout(r, 25));
-  expect(check()).toBe(true);
-}
-
-async function settled(p: Person, projectId: string): Promise<GitConversionView> {
-  for (let i = 0; i < 200; i += 1) {
-    const res = await p.browser.request("GET", `/v1/projects/${projectId}/repo-conversion`);
-    expect(res.status, res.text).toBe(200);
-    const view = gitConversionViewSchema.parse(res.json.conversion);
-    if (view.status !== "running") return view;
-    await new Promise((r) => setTimeout(r, 50));
-  }
-  throw new Error("the conversion did not settle");
-}
-
-const bare = (repo: string, args: string[]) => git.git(repo, args, { bare: true });
-function hostRepo(name: string) {
-  git.repo(`acme/${name}`);
-  bare(`acme/${name}`, ["config", "receive.fsckObjects", "true"]);
-}
-
-async function audit(team: string) {
-  const { rows } = await fx.admin.query<{ action: string; target: Record<string, unknown> }>(
-    `SELECT action, target FROM audit_log WHERE team_id = $1 AND action LIKE 'git.project.%' ORDER BY seq`,
-    [team],
-  );
-  return rows;
-}
-
-/** An active hold on one member of the team (any hold in the team holds its projects). */
-async function placeHold(teamId: string, userId: string): Promise<string> {
-  const placer = await fx.person(`hp${short()}`);
-  const approver = await fx.person(`ha${short()}`);
-  for (const p of [placer, approver]) {
-    await fx.admin.query(`INSERT INTO site_roles (user_id, role) VALUES ($1, 'admin')`, [p.id]);
-  }
-  const { rows } = await fx.admin.query<{ id: string }>(
-    `INSERT INTO legal_holds (team_id, user_id, reason, placed_by) VALUES ($1, $2, 'matter', $3) RETURNING id`,
-    [teamId, userId, placer.id],
-  );
-  const id = must(rows[0]).id;
-  await fx.admin.query(`UPDATE legal_holds SET status = 'active', approved_by = $2 WHERE id = $1`, [
-    id,
-    approver.id,
-  ]);
-  return id;
-}
-
-async function kind(team: string, projectId: string): Promise<string> {
-  const { rows } = await fx.admin.query<{ kind: string }>(
-    `SELECT kind FROM projects WHERE team_id = $1 AND id = $2`,
-    [team, projectId],
-  );
-  return must(rows[0]).kind;
-}
-
 describe("converting a project with history (ac-1, ac-3)", () => {
   it("writes every commit with its author and message, then marks the project a Repo", async () => {
     const w = await world();
@@ -463,13 +251,13 @@ describe("crashes and failures (ac-2)", () => {
     );
     if (!started.ok) throw new Error(JSON.stringify(started.body));
     let pushes = 0;
-    wireHook = (url, method) => {
+    setWireHook((url, method) => {
       if (method === "POST" && url.pathname.endsWith("/git-receive-pack")) {
         pushes += 1;
         // The replica dies while sending the second batch.
         if (pushes === 2) throw new LeaseLost();
       }
-    };
+    });
     expect(await runConversion(deps(), w.team, started.value.id)).toBe("lost");
     const repo = `acme/${p.slug}`;
     expect(bare(repo, ["rev-list", "--count", "main"]).trim()).toBe("1");
@@ -479,7 +267,7 @@ describe("crashes and failures (ac-2)", () => {
     });
     expect(commit.json.code).toBe("conversion_in_progress");
     // The lease lapses; another replica's sweep picks it up and finishes it.
-    wireHook = undefined;
+    setWireHook(undefined);
     await fx.admin.query(
       `UPDATE git_conversions SET lease_until = now() - interval '1 second' WHERE id = $1`,
       [started.value.id],
@@ -555,9 +343,9 @@ describe("crashes and failures (ac-2)", () => {
     const p = await project(w, [{ by: w.owner, message: "one", files: { "a.txt": "1" } }]);
     hostRepo(p.slug);
     // The host stops answering at the push.
-    wireHook = (url) => {
+    setWireHook((url) => {
       if (url.pathname.includes("/info/refs")) throw unreachable();
-    };
+    });
     const res = await start(w.owner, p.id, { connection_id: w.connectionId });
     expect(res.status).toBe(202);
     const failed = await settled(w.owner, p.id);
@@ -578,7 +366,7 @@ describe("crashes and failures (ac-2)", () => {
       target: { step: "push", repositoryCreated: true },
     });
     // Retry resumes at the push and completes.
-    wireHook = undefined;
+    setWireHook(undefined);
     const retry = await w.owner.browser.request(
       "POST",
       `/v1/projects/${p.id}/repo-conversion/retry`,
@@ -590,9 +378,9 @@ describe("crashes and failures (ac-2)", () => {
     // Abandoning another failed attempt reports the repository it leaves on the host.
     const q = await project(w, [{ by: w.owner, message: "one", files: { "c.txt": "1" } }]);
     hostRepo(q.slug);
-    wireHook = (url) => {
+    setWireHook((url) => {
       if (url.pathname.includes("/info/refs")) throw unreachable();
-    };
+    });
     await start(w.owner, q.id, { connection_id: w.connectionId });
     await settled(w.owner, q.id);
     const ab = await w.owner.browser.request(
@@ -606,7 +394,7 @@ describe("crashes and failures (ac-2)", () => {
     );
     expect(kept).toEqual([{ project_id: null, origin: "conversion" }]);
     // The project takes commits again: a new attempt may start.
-    wireHook = undefined;
+    setWireHook(undefined);
     hostRepo(`${q.slug}-2`);
     const fresh = await start(w.owner, q.id, {
       connection_id: w.connectionId,

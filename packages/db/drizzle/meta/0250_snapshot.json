@@ -1,5 +1,5 @@
 {
-  "id": "08c41c45-de24-4905-ac8a-912a498e0231",
+  "id": "4b4c7354-2d18-4286-b7f5-11c770b8dcea",
   "prevId": "64665dee-03ad-4521-a0c3-d7aa874c05e4",
   "version": "7",
   "dialect": "postgresql",
@@ -29066,6 +29066,32 @@
           "primaryKey": false,
           "notNull": false
         },
+        "claimed_at": {
+          "name": "claimed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "progress_at": {
+          "name": "progress_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resumes": {
+          "name": "resumes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "stalls": {
+          "name": "stalls",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
         "finished_by": {
           "name": "finished_by",
           "type": "uuid",
@@ -29348,7 +29374,7 @@
         },
         "git_conversions_counts": {
           "name": "git_conversions_counts",
-          "value": "\"git_conversions\".\"attempts\" >= 0 AND \"git_conversions\".\"commits_pushed\" >= 0 AND (\"git_conversions\".\"commits_total\" IS NULL OR \"git_conversions\".\"commits_pushed\" <= \"git_conversions\".\"commits_total\")"
+          "value": "\"git_conversions\".\"attempts\" >= 0 AND \"git_conversions\".\"resumes\" >= 0 AND \"git_conversions\".\"stalls\" >= 0 AND \"git_conversions\".\"commits_pushed\" >= 0 AND (\"git_conversions\".\"commits_total\" IS NULL OR \"git_conversions\".\"commits_pushed\" <= \"git_conversions\".\"commits_total\")"
         },
         "git_conversions_error": {
           "name": "git_conversions_error",

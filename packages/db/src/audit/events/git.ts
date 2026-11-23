@@ -127,8 +127,9 @@ export const GIT_EVENTS = {
     useExisting: z.boolean(),
   }),
   /**
-   * The history is on the host and the project is now a Repo, linked to `repositoryId` (system:
-   * the job finished it; `actor` stays the person who asked).
+   * The history is on the host and the project is now a Repo, linked to `repositoryId`. Recorded
+   * by the job with the system actor; the person who asked is the actor of the attempt's
+   * `git.project.conversion_requested`.
    */
   "git.project.converted": event("team", {
     ...conversionRef,

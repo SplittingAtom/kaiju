@@ -17,7 +17,7 @@ export const GIT_CONVERSION_MAX_BYTES = 2 * 1024 * 1024 * 1024;
  * packfile (isomorphic-git builds packs in memory), so a single commit larger than this is refused
  * before anything starts (`commit_too_large`), naming the commit.
  */
-export const GIT_CONVERSION_MAX_PUSH_BYTES = 256 * 1024 * 1024;
+export const GIT_CONVERSION_MAX_PUSH_BYTES = 128 * 1024 * 1024;
 
 /** Commits are pushed in batches of about this much new content, oldest first. */
 export const GIT_CONVERSION_BATCH_BYTES = 32 * 1024 * 1024;
@@ -32,10 +32,27 @@ export const GIT_CONVERSION_HEARTBEAT_MS = 30_000;
 /** How often a replica looks for running conversions nobody holds (a restart, a crash). */
 export const GIT_CONVERSION_SWEEP_MS = 2 * 60_000;
 
-/** The local work directories (under the server's temp dir); the sweep removes stale ones. */
-export const GIT_CONVERSION_WORK_PREFIX = "kobe-git-conversion-";
-/** A work directory older than this belongs to a run that died with its process. */
-export const GIT_CONVERSION_WORK_STALE_MS = 6 * 60 * 60_000;
+/**
+ * Where conversions build their objects: a dedicated folder under the server's temp dir (the
+ * chart's /tmp emptyDir), one subfolder per run, removed when the run ends; at start-up and on
+ * every sweep the folders of runs that died with an earlier process are removed. With one
+ * conversion per replica and the size limits above, a replica holds at most about one project's
+ * content there (≤ 2 GiB); a run checks for room first (`server_capacity`).
+ */
+export const GIT_CONVERSION_DIR_NAME = "kobe-git-conversions";
+export const GIT_CONVERSION_WORK_PREFIX = "run-";
+/** Free space a run needs beyond its project's content. */
+export const GIT_CONVERSION_DISK_MARGIN_BYTES = 64 * 1024 * 1024;
+
+/** Conversions one replica runs at once (review M3); the rest wait for the sweep. */
+export const GIT_CONVERSION_SLOTS = 1;
+/**
+ * The poison guard (review M3): the sweep fails an attempt (`interrupted`) instead of claiming it
+ * again when the last claims ended with the replica gone and no progress this many times in a row,
+ * or after this many automatic resumes in all. A person's retry resets both.
+ */
+export const GIT_CONVERSION_MAX_STALLS = 2;
+export const GIT_CONVERSION_MAX_RESUMES = 5;
 
 /** One step's deadline for all its exchanges with the host. */
 export const GIT_CONVERSION_STEP_DEADLINE_MS = 30 * 60_000;

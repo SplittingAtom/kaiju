@@ -6,7 +6,7 @@ import { fireAndLog } from "../async-util.js";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { conversionDeps } from "../git/conversion/deps.js";
-import { runConversion } from "../git/conversion/runner.js";
+import { runThenDrain } from "../git/conversion/job.js";
 import {
   abandonConversion,
   readProjectConversion,
@@ -35,18 +35,22 @@ const answer = <T>(c: Ctx, outcome: Outcome<T>, ok: (value: T) => Response): Res
 export function projectRepoRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }> {
   const app = new Hono<{ Variables: TeamVariables }>();
   const conversion = conversionDeps(deps);
-  app.use(requireTeam(deps));
-  app.use(requireTeamPermission("team.read"));
-  app.use(
+  // Scoped to this module's paths (review: not every /v1/projects route mounted after it).
+  const guards = [
+    requireTeam(deps),
+    requireTeamPermission("team.read"),
     bodyLimit({
       maxSize: 16 * 1024,
       onError: (c) =>
         c.json({ code: "too_large", message: "The request body is over 16 KiB." }, 413),
     }),
-  );
+  ] as const;
+  for (const path of ["/:id/repo-conversion", "/:id/repo-conversion/*"]) {
+    for (const guard of guards) app.use(path, guard);
+  }
   const viewer = (c: Ctx) => ({ teamId: c.get("team").id, userId: c.get("user").id });
   const kick = (teamId: string, id: string) =>
-    fireAndLog(logger, "git conversion", runConversion(conversion, teamId, id), {
+    fireAndLog(logger, "git conversion", runThenDrain(conversion, teamId, id), {
       team_id: teamId,
       conversion_id: id,
     });

@@ -46,6 +46,11 @@ export const ERRORS = {
     "invalid_input",
     "That account is deactivated; make an active member the owner.",
   ],
+  conversion_in_progress: [
+    409,
+    "conversion_in_progress",
+    "The project has a conversion to a Repo that is running or failed: wait for it, or abandon it first.",
+  ],
 } as const satisfies Record<ProjectFailure, readonly [number, string, string]>;
 
 export function failure(c: Context, error: ProjectFailure, detail?: string) {

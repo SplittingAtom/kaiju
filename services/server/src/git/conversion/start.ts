@@ -16,7 +16,7 @@ import type {
 } from "@kobe/protocol";
 import { recordAudit } from "../../audit/record.js";
 import { assertRepositoryName } from "../../git-hosts/adapter.js";
-import { loadAccess } from "../../projects/access.js";
+import { loadAccess, teamRoleFor } from "../../projects/access.js";
 import { projectCheckouts } from "../../projects/checkouts.js";
 import { hitRateLimit } from "../../rate-limit.js";
 import {
@@ -25,6 +25,7 @@ import {
   GIT_CONVERSION_RATE,
   GIT_HOST_MAX_FILE_BYTES,
 } from "./limits.js";
+import { pathRefusal } from "./paths.js";
 import { buildConversionPlan } from "./plan.js";
 import { refusalMessage, REFUSAL_STATUS, type StartRefusal } from "./refusals.js";
 import type { ConversionDeps } from "./runner.js";
@@ -53,7 +54,9 @@ const refuse = (r: StartRefusal, conversion?: ConversionRow): Outcome<never> => 
     ...(r.path === undefined ? {} : { path: r.path }),
     ...(r.seq === undefined ? {} : { seq: r.seq }),
     ...(r.checkouts === undefined ? {} : { checkouts: r.checkouts }),
+    ...(r.paths === undefined ? {} : { paths: r.paths }),
     ...(r.limitBytes === undefined ? {} : { limit_bytes: r.limitBytes }),
+    ...(r.sizeBytes === undefined ? {} : { size_bytes: r.sizeBytes }),
     ...(conversion ? { conversion: conversionView(conversion) } : {}),
   },
 });
@@ -74,17 +77,7 @@ const RATE_LIMITED = plain(
   "Too many conversion attempts. Try again in an hour.",
 );
 
-/** HFS and NTFS spell `.git` in ways git's fsck still refuses (`hasDotgit`). */
-const IGNORABLE = new RegExp("[\\u200c-\\u200f\\u202a-\\u202e\\u206a-\\u206f\\ufeff]", "gu");
-const DOTGIT_SQL = String.raw`(^|/)(\.git[. ]*|git~1)(/|$)`;
-
-/** Whether a host's fsck would refuse a path (a `.git` folder or file in any spelling). */
-export function hostRejectsPath(path: string): boolean {
-  return path
-    .split("/")
-    .map((p) => p.replace(IGNORABLE, "").toLowerCase())
-    .some((p) => p === "git~1" || /^\.git[. ]*$/.test(p));
-}
+export { hostRejectsPath } from "./paths.js";
 
 /** The repository name the dialog proposes: the connection's prefix + the project's slug (G16). */
 export function defaultRepositoryName(prefix: string, slug: string): string {
@@ -98,30 +91,41 @@ async function underHold(tx: KobeTx, teamId: string): Promise<boolean> {
   return res.rows[0]?.held === true;
 }
 
-/** A file the host would reject, among the files the conversion carries. */
-async function rejectedFile(
+/** Most offending paths a refusal lists. */
+const REJECTED_LISTED = 20;
+
+/**
+ * Every file the host would reject (review M1: git's fsck rules, `paths.ts`, and the host's file
+ * size), across every tree the conversion carries, with the first commit that has it.
+ */
+async function rejectedFiles(
   tx: KobeTx,
   teamId: string,
   projectId: string,
   history: boolean,
   maxFile: number | undefined,
-): Promise<string | undefined> {
-  const tooBig = maxFile === undefined ? sql`false` : sql`size_bytes > ${maxFile}`;
-  const clean = sql`regexp_replace(lower(path), ${IGNORABLE.source}, '', 'g')`;
-  const res = history
-    ? await tx.execute<{ path: string }>(sql`
-        SELECT e.path FROM project_tree_entries e
-          JOIN project_commits c ON c.team_id = e.team_id AND c.id = e.commit_id
-         WHERE e.team_id = ${teamId} AND c.project_id = ${projectId}
-           AND (regexp_replace(lower(e.path), ${IGNORABLE.source}, '', 'g') ~ ${DOTGIT_SQL}
-                OR ${maxFile === undefined ? sql`false` : sql`e.size_bytes > ${maxFile}`})
-         LIMIT 1`)
-    : await tx.execute<{ path: string }>(sql`
-        SELECT path FROM project_files
-         WHERE team_id = ${teamId} AND project_id = ${projectId}
-           AND (${clean} ~ ${DOTGIT_SQL} OR ${tooBig})
-         LIMIT 1`);
-  return res.rows[0]?.path;
+): Promise<{ path: string; seq: number | null }[]> {
+  const rows = history
+    ? (
+        await tx.execute<{ path: string; seq: number; size: string }>(sql`
+          SELECT e.path, min(c.seq) AS seq, max(e.size_bytes) AS size FROM project_tree_entries e
+            JOIN project_commits c ON c.team_id = e.team_id AND c.id = e.commit_id
+           WHERE e.team_id = ${teamId} AND c.project_id = ${projectId}
+           GROUP BY e.path ORDER BY min(c.seq), e.path`)
+      ).rows
+    : (
+        await tx.execute<{ path: string; seq: null; size: string }>(sql`
+          SELECT path, NULL AS seq, size_bytes AS size FROM project_files
+           WHERE team_id = ${teamId} AND project_id = ${projectId} ORDER BY path`)
+      ).rows;
+  const out: { path: string; seq: number | null }[] = [];
+  for (const r of rows) {
+    const tooBig = maxFile !== undefined && Number(r.size) > maxFile;
+    if (!tooBig && pathRefusal(r.path) === undefined) continue;
+    out.push({ path: r.path, seq: r.seq === null ? null : Number(r.seq) });
+    if (out.length === REJECTED_LISTED) break;
+  }
+  return out;
 }
 
 /** New content per git commit (bytes no earlier commit had), oldest first. */
@@ -169,24 +173,25 @@ async function check(
     (c) => c.changed_files > 0,
   ).length;
   if (checkouts > 0) return { code: "unsaved_checkouts", checkouts };
-  const path = await rejectedFile(
+  const rejected = await rejectedFiles(
     tx,
     teamId,
     projectId,
     history,
     GIT_HOST_MAX_FILE_BYTES[connection.provider],
   );
-  if (path !== undefined) return { code: "file_rejected_by_host", path };
+  const first = rejected[0];
+  if (first) return { code: "file_rejected_by_host", path: first.path, paths: rejected };
   const sizes = await contentPerCommit(tx, teamId, projectId, history);
   const limit = Math.min(GIT_CONVERSION_MAX_BYTES, connection.pushLimitBytes);
-  if (sizes.reduce((n, s) => n + s.bytes, 0) > limit) {
-    return { code: "project_too_large", limitBytes: limit };
-  }
+  const total = sizes.reduce((n, s) => n + s.bytes, 0);
+  if (total > limit) return { code: "project_too_large", limitBytes: limit, sizeBytes: total };
   const big = sizes.find((s) => s.bytes > GIT_CONVERSION_MAX_PUSH_BYTES);
   if (big) {
     return {
       code: "commit_too_large",
       limitBytes: GIT_CONVERSION_MAX_PUSH_BYTES,
+      sizeBytes: big.bytes,
       ...(big.seq === null ? {} : { seq: big.seq }),
     };
   }
@@ -246,6 +251,10 @@ export async function startConversion(
     if (visibility === undefined) return refuse({ code: "internal_not_offered" });
     const history = body.carry_history ?? true;
     const useExisting = body.use_existing ?? false;
+    // G16: only a Workspace admin chooses an existing repository; owners create a new one.
+    if (useExisting && (await teamRoleFor(tx, viewer.teamId, viewer.userId)) !== "team_admin") {
+      return refuse({ code: "existing_repository_admin_only" });
+    }
     const refusal = await check(tx, {
       teamId: viewer.teamId,
       projectId,
@@ -357,6 +366,10 @@ export async function retryConversion(
         lastErrorDetail: null,
         leaseOwner: null,
         leaseUntil: null,
+        // A person's retry starts the poison guard afresh (review M3).
+        claimedAt: null,
+        stalls: 0,
+        resumes: 0,
         updatedAt: new Date(),
       })
       .where(sql`${gitConversions.teamId} = ${viewer.teamId} AND ${gitConversions.id} = ${row.id}`)

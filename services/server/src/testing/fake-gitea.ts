@@ -27,6 +27,7 @@ interface Repo {
   defaultBranch: string;
   issues: number;
   description: string;
+  private: boolean;
 }
 
 const ALL_SCOPES = [
@@ -126,6 +127,18 @@ export class FakeGitea implements GitHostContractFake {
     return String(this.addRepo(owner, name, false).id);
   }
 
+  /** Changes a repository of the organization as a host admin would (Convert to repo tests). */
+  editRepository(
+    name: string,
+    change: { private?: boolean; description?: string; defaultBranch?: string },
+  ): void {
+    const repo = this.repos.get(`${this.organization}/${name}`);
+    if (!repo) throw new Error(`fake gitea: no repository ${name}`);
+    if (change.private !== undefined) repo.private = change.private;
+    if (change.description !== undefined) repo.description = change.description;
+    if (change.defaultBranch !== undefined) repo.defaultBranch = change.defaultBranch;
+  }
+
   apiHits(): readonly { method: string; path: string; authorization: string | undefined }[] {
     return this.hits;
   }
@@ -139,6 +152,7 @@ export class FakeGitea implements GitHostContractFake {
       defaultBranch: "main",
       issues: 0,
       description: "",
+      private: true,
     };
     this.repos.set(`${owner}/${name}`, repo);
     return repo;
@@ -152,7 +166,7 @@ export class FakeGitea implements GitHostContractFake {
       full_name: full,
       owner: { id: 7, login: r.owner },
       default_branch: r.defaultBranch,
-      private: true,
+      private: r.private,
       empty: r.empty,
       archived: false,
       description: r.description,

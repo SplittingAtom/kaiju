@@ -22,8 +22,9 @@ import {
  * authored by the member who converts at the time they asked.
  *
  * Emails follow the Workspace's commit email setting (GQ10, KOBE-764: the member's Kobe email, or
- * the no-reply form). A member who left (deactivated) keeps their name with the no-reply form of
- * the address, never their mailbox; a member Kobe no longer knows becomes "Former member".
+ * the no-reply form). A member who left (no longer in the Workspace, or deactivated) keeps their
+ * name with the no-reply form of the address whatever the setting, never their mailbox (review
+ * L1: the owner's privacy default); a member Kobe no longer knows becomes "Former member".
  */
 export interface PlanIdentity {
   readonly name: string;
@@ -77,7 +78,8 @@ export interface PlanUser {
   readonly id: string;
   readonly name: string;
   readonly email: string;
-  readonly deactivated: boolean;
+  /** No longer in the Workspace, or deactivated. */
+  readonly left: boolean;
 }
 
 /** The author and committer of a member's commits (pure). */
@@ -87,7 +89,7 @@ export function conversionIdentity(
   mode: GitCommitEmailMode,
   siteHost: string,
 ): { author: PlanIdentity; committer: PlanIdentity } {
-  if (user === undefined || user.deactivated) {
+  if (user === undefined || user.left) {
     const name = user === undefined ? FORMER_MEMBER : user.name;
     const clean = gitAuthorName(name, 200 - GIT_COMMITTER_SUFFIX.length);
     const email = gitNoReplyEmail({ id: userId, name: clean }, siteHost);
@@ -151,17 +153,14 @@ export async function buildConversionPlan(
       ).rows
     : [];
   const userIds = [...new Set([input.requestedBy, ...commits.map((c) => c.author_user_id)])];
-  const users = await tx.execute<{
-    id: string;
-    name: string;
-    email: string;
-    deactivated_at: Date | null;
-  }>(sql`SELECT id, name, email, deactivated_at FROM users WHERE id IN ${userIds}`);
+  const users = await tx.execute<{ id: string; name: string; email: string; left: boolean }>(sql`
+    SELECT u.id, u.name, u.email,
+           (u.deactivated_at IS NOT NULL OR NOT EXISTS (
+              SELECT 1 FROM team_members tm WHERE tm.team_id = ${teamId} AND tm.user_id = u.id))
+             AS left
+      FROM users u WHERE u.id IN ${userIds}`);
   const byId = new Map(
-    users.rows.map((u) => [
-      u.id,
-      { id: u.id, name: u.name, email: u.email, deactivated: u.deactivated_at !== null },
-    ]),
+    users.rows.map((u) => [u.id, { id: u.id, name: u.name, email: u.email, left: u.left }]),
   );
   const who = (id: string) => conversionIdentity(byId.get(id), id, mode, input.siteHost);
   if (commits.length > 0) {

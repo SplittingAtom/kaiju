@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import git, { type TreeEntry } from "isomorphic-git";
 import type { GitConversionFailure } from "@kobe/protocol";
+import { componentRefusal, gitattributesRefusal, isGitattributes } from "./paths.js";
 import type { ConversionPlan, PlanIdentity } from "./plan.js";
 
 /**
@@ -66,6 +67,12 @@ const emptyDir = (): Dir => ({ dirs: new Map(), files: new Map() });
 
 function place(root: Dir, path: string, oid: string, executable: boolean): void {
   const parts = path.split("/");
+  // The host's fsck rules (review M1): checked again on the objects actually built.
+  for (const part of parts) {
+    const why = componentRefusal(part);
+    if (why !== undefined)
+      throw new ConversionStepError("file_rejected_by_host", `${path}: ${why}`);
+  }
   const name = parts.pop() as string;
   let node = root;
   for (const part of parts) {
@@ -114,6 +121,7 @@ export async function buildHistory(
   onCommit?: (index: number) => Promise<void> | void,
 ): Promise<BuiltHistory> {
   const blobs = new Map<string, string>();
+  const checkedAttrs = new Set<string>();
   const commits: string[] = [];
   const newBytes: number[] = [];
   let parent: string | null = null;
@@ -121,16 +129,26 @@ export async function buildHistory(
     const root = emptyDir();
     let added = 0;
     for (const file of await source.loadTree(entry.kobeCommitId)) {
+      const attrs = isGitattributes(file.path.split("/").at(-1) ?? "");
       let oid = blobs.get(file.sha256);
-      if (oid === undefined) {
+      if (oid === undefined || (attrs && !checkedAttrs.has(file.sha256))) {
         const bytes = await source.readFile(file);
         const digest = createHash("sha256").update(bytes).digest("hex");
         if (digest !== file.sha256 || bytes.length !== file.size) {
           throw new ConversionStepError("content_missing", file.path);
         }
-        oid = await git.writeBlob({ fs, gitdir, blob: bytes });
-        blobs.set(file.sha256, oid);
-        added += file.size;
+        if (attrs) {
+          const bad = gitattributesRefusal(bytes);
+          if (bad !== undefined) {
+            throw new ConversionStepError("file_rejected_by_host", `${file.path}: ${bad}`);
+          }
+          checkedAttrs.add(file.sha256);
+        }
+        if (oid === undefined) {
+          oid = await git.writeBlob({ fs, gitdir, blob: bytes });
+          blobs.set(file.sha256, oid);
+          added += file.size;
+        }
       }
       place(root, file.path, oid, file.executable);
     }

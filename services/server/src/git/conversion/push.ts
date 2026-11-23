@@ -89,13 +89,34 @@ export async function pushHistory(input: {
       throw pushFailure(err);
     }
     const status = result.refs?.[ref];
-    if (!result.ok || (status && !status.ok)) throw new ConversionStepError("push_rejected");
+    if (!result.ok || (status && !status.ok)) {
+      throw new ConversionStepError("push_rejected", hostReason(status?.error ?? result.error));
+    }
     from = end;
     await input.onPushed(end);
   }
 }
 
-/** A transport or host failure as a step failure (never the host's text). */
+/**
+ * The host's short reason for a refused push (receive-pack's `unpack`/`ng` status, e.g.
+ * "pre-receive hook declined" or an fsck message), kept as one printable line of at most 200
+ * characters so the requester sees why (review M1). It never carries Kobe's credential: the host
+ * answers about the pack, and the credential travels only in a request header.
+ */
+export function hostReason(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const line = Array.from(raw)
+    .map((c) => {
+      const code = c.codePointAt(0) ?? 0;
+      return code < 0x20 || code === 0x7f ? " " : c;
+    })
+    .join("")
+    .replace(/\s+/g, " ")
+    .trim();
+  return line === "" ? null : line.slice(0, 200);
+}
+
+/** A transport or host failure as a step failure (the host's text only as a short reason). */
 export function pushFailure(err: unknown): unknown {
   if (err instanceof ConversionStepError) return err;
   if (err instanceof GitHostError) return err;
@@ -109,8 +130,10 @@ export function pushFailure(err: unknown): unknown {
     if (status === 413) return new ConversionStepError("push_rejected");
     return new ConversionStepError("host_unreachable");
   }
-  if (err instanceof Errors.GitPushError || err instanceof Errors.UnknownTransportError) {
-    return new ConversionStepError("push_rejected");
+  if (err instanceof Errors.GitPushError) {
+    const result = (err.data as { result?: { error?: unknown } } | undefined)?.result;
+    return new ConversionStepError("push_rejected", hostReason(result?.error ?? err.message));
   }
+  if (err instanceof Errors.UnknownTransportError) return new ConversionStepError("push_rejected");
   return err;
 }

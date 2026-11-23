@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, statfs } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
@@ -26,7 +26,10 @@ import type { Mailer } from "../../mail/mailer.js";
 import type { BlobStore } from "../../retention/blobs.js";
 import {
   GIT_CONVERSION_BATCH_BYTES,
+  GIT_CONVERSION_DIR_NAME,
+  GIT_CONVERSION_DISK_MARGIN_BYTES,
   GIT_CONVERSION_HEARTBEAT_MS,
+  GIT_CONVERSION_SLOTS,
   GIT_CONVERSION_MAX_REQUEST_BYTES,
   GIT_CONVERSION_STEP_DEADLINE_MS,
   GIT_CONVERSION_WORK_PREFIX,
@@ -76,6 +79,8 @@ export interface ConversionDeps {
   /** Tests: a fake adapter. */
   readonly adapterFor?: (input: GitAdapterInput) => GitHostAdapter;
   readonly batchBytes?: number;
+  /** Conversions this replica runs at once (default {@link GIT_CONVERSION_SLOTS}). */
+  readonly slots?: number;
   readonly heartbeatMs?: number;
   /** Tests: called before each step (a crash between steps). */
   readonly beforeStep?: (row: ConversionRow) => Promise<void> | void;
@@ -97,9 +102,38 @@ export async function runConversion(
   teamId: string,
   id: string,
 ): Promise<"completed" | "failed" | "busy" | "lost"> {
+  // Review M3: a replica runs at most GIT_CONVERSION_SLOTS conversions; the rest stay unclaimed
+  // for the resume sweep (of this or another replica).
+  if (running >= (deps.slots ?? GIT_CONVERSION_SLOTS)) return "busy";
+  running += 1;
+  try {
+    return await claimAndRun(deps, teamId, id);
+  } finally {
+    running -= 1;
+  }
+}
+
+let running = 0;
+
+/** Conversions this process runs now (tests). */
+export const runningConversions = (): number => running;
+
+async function claimAndRun(
+  deps: ConversionDeps,
+  teamId: string,
+  id: string,
+): Promise<"completed" | "failed" | "busy" | "lost"> {
   const owner = randomUUID();
-  let row = await claimConversion(deps.db, teamId, id, owner);
-  if (!row) return "busy";
+  const claim = await claimConversion(deps.db, teamId, id, owner);
+  if (claim.kind === "busy") return "busy";
+  if (claim.kind === "gave_up") {
+    deps.log.error({ conversion_id: id }, "git conversion stopped after interrupted runs");
+    await notifyConversion(deps, claim.row).catch((err: unknown) =>
+      deps.log.warn({ err, conversion_id: id }, "git conversion email not sent"),
+    );
+    return "failed";
+  }
+  let row = claim.row;
   const lease: Lease = { teamId, id, owner };
   let lost = false;
   const beat = setInterval(() => {
@@ -111,15 +145,21 @@ export async function runConversion(
   beat.unref();
   let workDir: string | undefined;
   try {
-    workDir = await mkdtemp(path.join(tmpdir(), GIT_CONVERSION_WORK_PREFIX));
+    const root = conversionWorkRoot();
+    await mkdir(root, { recursive: true, mode: 0o700 });
+    workDir = await mkdtemp(path.join(root, GIT_CONVERSION_WORK_PREFIX));
     const ctx = await context(deps, lease, row, workDir);
     let built: { built: BuiltHistory; http: HttpClient; repo: GitRepository } | undefined;
+    const local =
+      row.step === "create" || row.step === "push" ? await buildLocal(ctx, row) : undefined;
     while (row.step !== "done") {
       if (lost) throw new LeaseLost();
       await deps.beforeStep?.(row);
       if (row.step === "create") row = await createStep(ctx, row);
-      else if (row.step === "push") ({ row, built } = await pushStep(ctx, row));
-      else row = await finishStep(ctx, row, built);
+      else if (row.step === "push") {
+        if (!local) throw new ConversionStepError("internal_error", "no local history");
+        ({ row, built } = await pushStep(ctx, row, local));
+      } else row = await finishStep(ctx, row, built);
     }
     await notifyConversion(deps, row).catch((err: unknown) =>
       deps.log.warn({ err, conversion_id: id }, "git conversion email not sent"),
@@ -198,11 +238,47 @@ async function context(
 const isMine = (repo: GitRepository, row: ConversionRow) =>
   (repo.description ?? "").includes(conversionMarker(row.id));
 
+/**
+ * Review H1: private project history never goes to a repository more visible than the attempt
+ * asked for. Private always passes; internal only when the attempt asked for internal and the
+ * connection still allows it; anything else (public) stops the attempt with `repository_public`.
+ * Checked on the repository the host created, on one adopted or chosen, in every read of the
+ * recorded repository, before every push batch and before the finish.
+ */
+export function assertVisibility(
+  repo: Pick<GitRepository, "visibility" | "fullName">,
+  asked: "private" | "internal",
+  connectionAllows: "private" | "internal",
+): void {
+  if (repo.visibility === "private") return;
+  if (repo.visibility === "internal" && asked === "internal" && connectionAllows === "internal") {
+    return;
+  }
+  throw new ConversionStepError("repository_public", repo.fullName);
+}
+
+const checkVisible = (ctx: Context, row: ConversionRow, repo: GitRepository): GitRepository => {
+  assertVisibility(repo, row.visibility, ctx.connection.repoVisibility);
+  return repo;
+};
+
+/**
+ * A smart-HTTP client for the repository with a fresh credential and a fresh Site decision (review
+ * L2: the Site switch and host list are read again for every client, i.e. before every batch).
+ */
 async function wireFor(ctx: Context, repo: GitRepository): Promise<HttpClient> {
+  let target: GitHostTarget;
+  try {
+    target = gitHostTarget(await readGitSiteSettings(ctx.deps.db), ctx.connection.baseUrl, {
+      allowHttp: ctx.deps.net.policy.allowHttp,
+    });
+  } catch {
+    throw new ConversionStepError("connection_unavailable");
+  }
   const credential = await ctx.adapter.repositoryCredential(repo.name, "write");
   return gitWireClient({
     net: ctx.deps.net,
-    target: ctx.target,
+    target,
     repositoryUrl: repo.cloneUrl,
     credential: { username: credential.username, password: credential.password },
     maxRequestBytes: GIT_CONVERSION_MAX_REQUEST_BYTES,
@@ -233,11 +309,22 @@ async function createStep(ctx: Context, row: ConversionRow): Promise<ConversionR
   const name = row.repositoryName;
   let repo: GitRepository | undefined;
   if (row.useExisting) {
+    // The adapter confines lookups to the connection's organization (a repository elsewhere is
+    // "not found").
     repo = await lookup(ctx, name);
     if (!repo) throw new ConversionStepError("repository_gone", name);
-    if (repo.visibility === "public") throw new ConversionStepError("repository_public", name);
+    checkVisible(ctx, row, repo);
+    // Review M2: another Workspace's Repo is invisible under RLS; a repository with any Kobe
+    // conversion mark may be one, so it is refused.
+    if ((repo.description ?? "").includes(conversionMarker(""))) {
+      throw new ConversionStepError("repository_in_use", name);
+    }
     if (repo.archived || !(await isEmpty(ctx, repo))) {
       throw new ConversionStepError("repository_not_empty", name);
+    }
+    // Review L6: a chosen repository's default branch must be the one Kobe pushes.
+    if (repo.defaultBranch !== null && repo.defaultBranch !== ctx.plan.branch) {
+      throw new ConversionStepError("default_branch_mismatch", repo.defaultBranch);
     }
   } else {
     if (row.createAttemptedAt !== null) {
@@ -245,6 +332,7 @@ async function createStep(ctx: Context, row: ConversionRow): Promise<ConversionR
       const found = await lookup(ctx, name);
       if (found) {
         if (!isMine(found, row)) throw new ConversionStepError("repository_exists", name);
+        checkVisible(ctx, row, found);
         if (!(await isEmpty(ctx, found)))
           throw new ConversionStepError("repository_not_empty", name);
         repo = found;
@@ -266,7 +354,10 @@ async function createStep(ctx: Context, row: ConversionRow): Promise<ConversionR
       }
     }
   }
-  return recordRepository(ctx, row, repo);
+  // Recorded first (the host made it), then checked: a public one is never pushed to.
+  const recorded = await recordRepository(ctx, row, repo);
+  checkVisible(ctx, recorded, repo);
+  return recorded;
 }
 
 /** Records the host's id and the repository row, and moves on to the push, in one transaction. */
@@ -314,28 +405,21 @@ async function recordedRepository(ctx: Context, row: ConversionRow): Promise<Git
     throw err;
   }
   if (repo.archived) throw new ConversionStepError("push_rejected", repo.fullName);
-  return repo;
+  return checkVisible(ctx, row, repo);
 }
 
 /** Step 2: build the history and push what the host does not have yet. */
 async function pushStep(
   ctx: Context,
   row: ConversionRow,
+  local: LocalHistory,
 ): Promise<{
   row: ConversionRow;
   built: { built: BuiltHistory; http: HttpClient; repo: GitRepository };
 }> {
   const { deps, lease, plan } = ctx;
-  if (!deps.blobs) throw new ConversionStepError("content_missing");
+  const { gitdir, built } = local;
   const repo = await recordedRepository(ctx, row);
-  const gitdir = path.join(ctx.workDir, "repo.git");
-  await rm(gitdir, { recursive: true, force: true });
-  await initRepository(gitdir, plan.branch);
-  const built = await buildHistory(
-    gitdir,
-    plan,
-    historySource(deps.db, deps.blobs, lease.teamId, row.projectId),
-  );
   const head = built.commits.at(-1) as string;
   if (row.headSha !== null && row.headSha !== head) {
     // The plan is frozen and objects are deterministic: a different head means something changed.
@@ -350,7 +434,10 @@ async function pushStep(
   await pushHistory({
     gitdir,
     http: async () => {
-      // A fresh credential per batch: an installation token lives an hour (cached by the adapter).
+      // Before every batch (review H1): the repository is still the one recorded and no more
+      // visible than asked. Then a fresh credential (an installation token lives an hour; cached
+      // by the adapter) and a fresh Site decision.
+      await recordedRepository(ctx, row);
       http = await wireFor(ctx, repo);
       return http;
     },
@@ -368,6 +455,59 @@ async function pushStep(
     commitsPushed: built.commits.length,
   });
   return { row: current, built: { built, http, repo } };
+}
+
+/** The dedicated folder conversions work in (review M3). */
+export function conversionWorkRoot(): string {
+  return path.join(tmpdir(), GIT_CONVERSION_DIR_NAME);
+}
+
+/** Distinct content the project's carried trees hold, in bytes (what the work folder needs). */
+async function projectBytes(db: KobeDb, teamId: string, projectId: string): Promise<number> {
+  const res = await withTeam(db, teamId, (tx) =>
+    tx.execute<{ bytes: string | null }>(sql`
+      SELECT sum(size_bytes) AS bytes FROM (
+        SELECT DISTINCT ON (e.sha256) e.sha256, e.size_bytes FROM project_tree_entries e
+          JOIN project_commits c ON c.team_id = e.team_id AND c.id = e.commit_id
+         WHERE e.team_id = ${teamId} AND c.project_id = ${projectId}
+         ORDER BY e.sha256) f`),
+  );
+  return Number(res.rows[0]?.bytes ?? 0);
+}
+
+/** Refuses to start building when the folder's file system has no room (`server_capacity`). */
+async function assertRoom(dir: string, bytes: number): Promise<void> {
+  const fsStats = await statfs(dir).catch(() => undefined);
+  if (!fsStats) return;
+  const free = Number(fsStats.bavail) * Number(fsStats.bsize);
+  if (free < bytes + GIT_CONVERSION_DISK_MARGIN_BYTES) {
+    throw new ConversionStepError("server_capacity", `${Math.ceil(bytes / 1048576)} MiB needed`);
+  }
+}
+
+interface LocalHistory {
+  readonly gitdir: string;
+  readonly built: BuiltHistory;
+}
+
+/**
+ * Builds the whole history locally before anything is created or pushed (review M1): a file the
+ * host refuses, or one Kobe's storage cannot give back, stops the attempt while the host has
+ * nothing. Needs room on disk for the project's content (review M3).
+ */
+async function buildLocal(ctx: Context, row: ConversionRow): Promise<LocalHistory> {
+  const { deps, lease, plan } = ctx;
+  if (!deps.blobs) throw new ConversionStepError("content_missing");
+  await assertRoom(ctx.workDir, await projectBytes(deps.db, lease.teamId, row.projectId));
+  const gitdir = path.join(ctx.workDir, "repo.git");
+  await rm(gitdir, { recursive: true, force: true });
+  await initRepository(gitdir, plan.branch);
+  const built = await buildHistory(
+    gitdir,
+    plan,
+    historySource(deps.db, deps.blobs, lease.teamId, row.projectId),
+  );
+  return { gitdir, built };
 }
 
 const rethrow = (err: unknown): never => {
@@ -393,17 +533,21 @@ async function finishStep(
     throw new ConversionStepError("repository_changed", repo.fullName);
   }
   // The host's view after the push (GitHub makes the first pushed branch the default).
-  const fresh = await ctx.adapter.getRepository({ id: repo.id });
+  const fresh = checkVisible(ctx, row, await ctx.adapter.getRepository({ id: repo.id }));
   if (fresh.defaultBranch !== null && fresh.defaultBranch !== plan.branch) {
     throw new ConversionStepError("default_branch_mismatch", fresh.defaultBranch);
   }
   return withTeam(deps.db, lease.teamId, async (tx) => {
-    const project = await tx.execute<{ kind: string; head_commit_id: string | null }>(sql`
-      SELECT kind, head_commit_id FROM projects
+    const project = await tx.execute<{
+      kind: string;
+      head_commit_id: string | null;
+      archived_at: Date | null;
+    }>(sql`
+      SELECT kind, head_commit_id, archived_at FROM projects
        WHERE team_id = ${lease.teamId} AND id = ${row.projectId} FOR UPDATE`);
     const p = project.rows[0];
     if (!p) throw new LeaseLost();
-    if (p.kind !== "project" || p.head_commit_id !== plan.headCommitId) {
+    if (p.kind !== "project" || p.head_commit_id !== plan.headCommitId || p.archived_at !== null) {
       throw new ConversionStepError("project_changed");
     }
     await tx.execute(sql`

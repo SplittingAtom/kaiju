@@ -1,13 +1,11 @@
 import { readdir, rm, stat } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import { scanTeams, sql } from "@kobe/db";
-import {
-  GIT_CONVERSION_SWEEP_MS,
-  GIT_CONVERSION_WORK_PREFIX,
-  GIT_CONVERSION_WORK_STALE_MS,
-} from "./limits.js";
-import { runConversion, type ConversionDeps } from "./runner.js";
+import { GIT_CONVERSION_SWEEP_MS, GIT_CONVERSION_WORK_PREFIX } from "./limits.js";
+import { conversionWorkRoot, runConversion, type ConversionDeps } from "./runner.js";
+
+/** Work folders older than this process belong to runs that died with an earlier one. */
+const PROCESS_STARTED_AT = Date.now() - performance.now();
 
 /**
  * The resume sweep of Convert to repo (KOBE-765): a start runs its attempt at once on the replica
@@ -18,7 +16,7 @@ import { runConversion, type ConversionDeps } from "./runner.js";
  * transactions.
  */
 export async function sweepGitConversions(deps: ConversionDeps): Promise<number> {
-  await removeStaleWorkDirs(Date.now() - GIT_CONVERSION_WORK_STALE_MS);
+  await removeStaleWorkDirs(PROCESS_STARTED_AT);
   const due = (
     await scanTeams(deps.db, "git conversion sweep", async (tx, team) => {
       const res = await tx.execute<{ id: string }>(sql`
@@ -38,7 +36,10 @@ export async function sweepGitConversions(deps: ConversionDeps): Promise<number>
 }
 
 /** Work directories a run left when its process died (a container restart keeps the emptyDir). */
-export async function removeStaleWorkDirs(before: number, dir = tmpdir()): Promise<number> {
+export async function removeStaleWorkDirs(
+  before: number,
+  dir = conversionWorkRoot(),
+): Promise<number> {
   let removed = 0;
   const names = await readdir(dir).catch(() => [] as string[]);
   for (const name of names) {
@@ -50,6 +51,19 @@ export async function removeStaleWorkDirs(before: number, dir = tmpdir()): Promi
     removed += 1;
   }
   return removed;
+}
+
+/**
+ * The route's run: this attempt now (or, when this replica is busy, left for the sweep), then
+ * whatever else waits, so a queued attempt starts as soon as a slot frees.
+ */
+export async function runThenDrain(
+  deps: ConversionDeps,
+  teamId: string,
+  id: string,
+): Promise<void> {
+  const outcome = await runConversion(deps, teamId, id);
+  if (outcome !== "busy") await sweepGitConversions(deps);
 }
 
 /** The periodic sweep: at start and every {@link GIT_CONVERSION_SWEEP_MS}. */

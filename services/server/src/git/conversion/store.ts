@@ -1,10 +1,25 @@
-import { and, desc, eq, gitConversions, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import {
+  SYSTEM_ACTOR,
+  and,
+  desc,
+  eq,
+  gitConversions,
+  sql,
+  withTeam,
+  type KobeDb,
+  type KobeTx,
+} from "@kobe/db";
 import {
   GIT_CONVERSION_FAILURES,
   type GitConversionFailure,
   type GitConversionView,
 } from "@kobe/protocol";
-import { GIT_CONVERSION_LEASE_MS } from "./limits.js";
+import { recordAudit } from "../../audit/record.js";
+import {
+  GIT_CONVERSION_LEASE_MS,
+  GIT_CONVERSION_MAX_RESUMES,
+  GIT_CONVERSION_MAX_STALLS,
+} from "./limits.js";
 import { FAILURE_MESSAGES } from "./refusals.js";
 
 /**
@@ -110,25 +125,30 @@ export async function activeConversion(
   return row;
 }
 
+export type Claim =
+  | { readonly kind: "claimed"; readonly row: ConversionRow }
+  | { readonly kind: "busy" }
+  /** The poison guard stopped it: now `failed` (`interrupted`), audited. */
+  | { readonly kind: "gave_up"; readonly row: ConversionRow };
+
 /**
- * Claims a running attempt nobody holds (no lease, or a lapsed one) and counts the attempt.
- * Returns the row, or undefined when another replica holds it or it is no longer running.
+ * Claims a running attempt nobody holds (no lease, or a lapsed one) and counts the attempt. A
+ * claim after an earlier one (`claimed_at` set) is a resume: the earlier run's replica went away
+ * without finishing. When that run made no progress after its claim it counts as a stall; after
+ * {@link GIT_CONVERSION_MAX_STALLS} stalls in a row, or {@link GIT_CONVERSION_MAX_RESUMES} resumes,
+ * the attempt is failed (`interrupted`) instead, so one conversion that kills its replica cannot
+ * go on to the next (review M3). A person's retry resets the counters.
  */
 export async function claimConversion(
   db: KobeDb,
   teamId: string,
   id: string,
   owner: string,
-): Promise<ConversionRow | undefined> {
-  return withTeam(db, teamId, async (tx) => {
-    const [row] = await tx
-      .update(gitConversions)
-      .set({
-        leaseOwner: owner,
-        leaseUntil: sql`now() + make_interval(secs => ${GIT_CONVERSION_LEASE_MS / 1000})`,
-        attempts: sql`${gitConversions.attempts} + 1`,
-        updatedAt: sql`now()`,
-      })
+): Promise<Claim> {
+  return withTeam(db, teamId, async (tx): Promise<Claim> => {
+    const [current] = await tx
+      .select()
+      .from(gitConversions)
       .where(
         and(
           eq(gitConversions.teamId, teamId),
@@ -137,8 +157,60 @@ export async function claimConversion(
           sql`(${gitConversions.leaseUntil} IS NULL OR ${gitConversions.leaseUntil} < now())`,
         ),
       )
+      .for("update", { skipLocked: true });
+    if (!current) return { kind: "busy" };
+    const claimedAt = current.claimedAt;
+    const resumed = claimedAt !== null;
+    const stalled =
+      claimedAt !== null && (current.progressAt === null || current.progressAt < claimedAt);
+    const stalls = stalled ? current.stalls + 1 : 0;
+    const resumes = resumed ? current.resumes + 1 : current.resumes;
+    const key = and(eq(gitConversions.teamId, teamId), eq(gitConversions.id, id));
+    if (stalls >= GIT_CONVERSION_MAX_STALLS || resumes > GIT_CONVERSION_MAX_RESUMES) {
+      const [failed] = await tx
+        .update(gitConversions)
+        .set({
+          status: "failed",
+          lastError: "interrupted",
+          lastErrorDetail: `${stalls >= GIT_CONVERSION_MAX_STALLS ? stalls : resumes} interrupted runs`,
+          stalls,
+          resumes,
+          leaseOwner: null,
+          leaseUntil: null,
+          updatedAt: sql`now()`,
+        })
+        .where(key)
+        .returning();
+      if (!failed) return { kind: "busy" };
+      await recordAudit(tx, {
+        action: "git.project.conversion_failed",
+        actor: SYSTEM_ACTOR,
+        teamId,
+        target: {
+          conversionId: id,
+          projectId: failed.projectId,
+          step: failed.step,
+          failure: "interrupted",
+          attempts: failed.attempts,
+          repositoryCreated: failed.hostRepoId !== null && !failed.useExisting,
+        },
+      });
+      return { kind: "gave_up", row: failed };
+    }
+    const [row] = await tx
+      .update(gitConversions)
+      .set({
+        leaseOwner: owner,
+        leaseUntil: sql`now() + make_interval(secs => ${GIT_CONVERSION_LEASE_MS / 1000})`,
+        claimedAt: sql`now()`,
+        attempts: sql`${gitConversions.attempts} + 1`,
+        stalls,
+        resumes,
+        updatedAt: sql`now()`,
+      })
+      .where(key)
       .returning();
-    return row;
+    return row ? { kind: "claimed", row } : { kind: "busy" };
   });
 }
 
@@ -180,7 +252,8 @@ export async function updateHeld(
 ): Promise<ConversionRow> {
   const [row] = await tx
     .update(gitConversions)
-    .set({ ...changes, updatedAt: sql`now()` })
+    // Every write of a run moves it forward (the poison guard reads `progress_at`).
+    .set({ ...changes, progressAt: sql`now()`, updatedAt: sql`now()` })
     .where(held(lease))
     .returning();
   if (!row) throw new LeaseLost();

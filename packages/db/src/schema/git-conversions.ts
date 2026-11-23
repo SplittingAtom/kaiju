@@ -92,6 +92,16 @@ export const gitConversions = pgTable(
     /** The replica working on it and until when (renewed while it works). */
     leaseOwner: text(),
     leaseUntil: timestamp({ withTimezone: true }),
+    /** When a replica last claimed it, and when a run last moved it forward (a step, a batch). */
+    claimedAt: timestamp({ withTimezone: true }),
+    progressAt: timestamp({ withTimezone: true }),
+    /**
+     * Automatic resumes since a person last started or retried it, and how many claims in a row
+     * ended with the replica gone and no progress (the poison guard: the sweep fails the attempt
+     * instead of claiming it again, so one conversion cannot take down replica after replica).
+     */
+    resumes: integer().notNull().default(0),
+    stalls: integer().notNull().default(0),
     finishedBy: uuid().references(() => users.id),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -147,7 +157,7 @@ export const gitConversions = pgTable(
     ),
     check(
       "git_conversions_counts",
-      sql`${t.attempts} >= 0 AND ${t.commitsPushed} >= 0 AND (${t.commitsTotal} IS NULL OR ${t.commitsPushed} <= ${t.commitsTotal})`,
+      sql`${t.attempts} >= 0 AND ${t.resumes} >= 0 AND ${t.stalls} >= 0 AND ${t.commitsPushed} >= 0 AND (${t.commitsTotal} IS NULL OR ${t.commitsPushed} <= ${t.commitsTotal})`,
     ),
     check(
       "git_conversions_error",

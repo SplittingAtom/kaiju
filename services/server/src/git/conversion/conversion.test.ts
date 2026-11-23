@@ -34,8 +34,13 @@ describe("value lists", () => {
       "a/.git/x",
     );
     expect(
-      refusalMessage({ code: "commit_too_large", seq: 7, limitBytes: 256 * 1024 * 1024 }),
-    ).toContain("#7 adds more than one push may carry (256 MiB)");
+      refusalMessage({
+        code: "commit_too_large",
+        seq: 7,
+        limitBytes: 128 * 1024 * 1024,
+        sizeBytes: 200 * 1024 * 1024,
+      }),
+    ).toContain("#7 adds 200 MiB, more than one push may carry (128 MiB)");
     expect(refusalMessage({ code: "unsaved_checkouts", checkouts: 2 })).toContain(
       "2 working copies",
     );
@@ -67,7 +72,7 @@ describe("authorship (G13, GQ10)", () => {
     id: "8a1b0c2d-0000-4000-8000-000000000001",
     name: "Ada",
     email: "ada@x.test",
-    deactivated: false,
+    left: false,
   };
   it("an active member: their Kobe email, or the no-reply form when the Workspace says so", () => {
     expect(conversionIdentity(ada, ada.id, "member", "kobe.test")).toEqual({
@@ -78,7 +83,7 @@ describe("authorship (G13, GQ10)", () => {
     expect(noreply.author.email).toMatch(/^[0-9a-f]{10}\+ada@users\.noreply\.kobe\.test$/);
   });
   it("a member who left keeps the name, never the mailbox; an unknown one is a former member", () => {
-    const left = conversionIdentity({ ...ada, deactivated: true }, ada.id, "member", "kobe.test");
+    const left = conversionIdentity({ ...ada, left: true }, ada.id, "member", "kobe.test");
     expect(left.author.name).toBe("Ada");
     expect(left.author.email).not.toContain("ada@x.test");
     expect(left.committer.name).toBe("Ada via Kobe");
@@ -199,16 +204,46 @@ describe("stale work directories", () => {
     const { removeStaleWorkDirs } = await import("./job.js");
     const root = await mkdtemp(path.join(tmpdir(), "kobe-stale-test-"));
     try {
-      await mkdir(path.join(root, "kobe-git-conversion-old"));
-      await mkdir(path.join(root, "kobe-git-conversion-new"));
+      await mkdir(path.join(root, "run-old"));
+      await mkdir(path.join(root, "run-new"));
       await mkdir(path.join(root, "other-old"));
       const old = new Date(Date.now() - 7 * 3600_000);
-      await utimes(path.join(root, "kobe-git-conversion-old"), old, old);
+      await utimes(path.join(root, "run-old"), old, old);
       await utimes(path.join(root, "other-old"), old, old);
       expect(await removeStaleWorkDirs(Date.now() - 6 * 3600_000, root)).toBe(1);
-      expect((await readdir(root)).sort()).toEqual(["kobe-git-conversion-new", "other-old"]);
+      expect((await readdir(root)).sort()).toEqual(["other-old", "run-new"]);
     } finally {
       await rm(root, { recursive: true, force: true });
     }
+  });
+});
+
+describe("visibility before every push (review H1)", () => {
+  it("private always; internal only when asked and still allowed; public never", async () => {
+    const { assertVisibility } = await import("./runner.js");
+    const repo = (visibility: "private" | "internal" | "public") => ({
+      visibility,
+      fullName: "a/b",
+    });
+    expect(() => assertVisibility(repo("private"), "private", "private")).not.toThrow();
+    expect(() => assertVisibility(repo("internal"), "internal", "internal")).not.toThrow();
+    for (const [v, asked, allows] of [
+      ["public", "private", "private"],
+      ["public", "internal", "internal"],
+      ["internal", "private", "internal"],
+      ["internal", "internal", "private"],
+    ] as const) {
+      expect(() => assertVisibility(repo(v), asked, allows)).toThrow(
+        expect.objectContaining({ code: "repository_public" }),
+      );
+    }
+  });
+  it("keeps a host's push refusal as one short line", async () => {
+    const { hostReason } = await import("./push.js");
+    expect(hostReason("unpack error\n  hasDotgit: contains '.git'\u0007")).toBe(
+      "unpack error hasDotgit: contains '.git'",
+    );
+    expect(hostReason("x".repeat(500))?.length).toBe(200);
+    expect(hostReason(undefined)).toBeNull();
   });
 });
