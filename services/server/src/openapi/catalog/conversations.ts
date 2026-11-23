@@ -85,6 +85,18 @@ export const conversationsAreas: readonly CatalogArea[] = [
         "Owner only. Answers 202, or a refusal with its code.",
       ],
       [
+        "get",
+        "/v1/threads/{id}/notebook/executions",
+        "List a Python file's past runs in the conversation",
+        "Owner only. The last 50, newest first, from stored run events (7 days).",
+      ],
+      [
+        "get",
+        "/v1/threads/{id}/notebook/executions/{execId}/outputs",
+        "Read one past run's outputs",
+        "Owner only.",
+      ],
+      [
         "post",
         "/v1/threads/{id}/notebook/interrupt",
         "Interrupt the conversation's notebook kernel",

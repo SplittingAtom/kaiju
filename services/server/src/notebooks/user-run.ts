@@ -26,9 +26,11 @@ import {
   sourceProblemMessage,
   startedPayload,
   type Execution,
+  type ResolvedSource,
   type SourceProblem,
 } from "./execution.js";
 import type { NotebookFiles } from "./files.js";
+import { selectLines, type LineRange } from "./lines.js";
 import { OPERATION_LIMITS, admitOperation } from "../operation-limits.js";
 
 /**
@@ -122,6 +124,7 @@ export async function startNotebookRun(
       sourceProblemMessage(resolved.problem),
     );
   }
+  const source = sourceOfLines(resolved.source, body.lines);
   const execId = randomUUID();
   const runId = await host.threadTx(actor, async (tx, viewer) => {
     const thread = await lockOwnedThread(tx, viewer, threadId, "thread_not_found");
@@ -148,7 +151,7 @@ export async function startNotebookRun(
     await tx.execute(sql`
       UPDATE threads SET status = 'running', last_activity_at = now()
        WHERE team_id = ${actor.team_id} AND id = ${thread.id}`);
-    const execution = executionOf(owner, id, execId, resolved.source);
+    const execution = executionOf(owner, id, execId, source, body.lines);
     await appendRunEventsInTx(tx, actor.team_id, id, [
       {
         type: "run.started",
@@ -158,10 +161,23 @@ export async function startNotebookRun(
     ]);
     return id;
   });
-  const execution = executionOf(owner, runId, execId, resolved.source);
+  const execution = executionOf(owner, runId, execId, source, body.lines);
   const timeoutMs = (body.timeout_s ?? NOTEBOOK_TIMEOUT_DEFAULT_S) * 1000;
   host.track(runInBackground(host, files, execution, threadId, timeoutMs));
   return { run_id: runId, exec_id: execId };
+}
+
+/** Run selection (KOBE-805): only those lines of the saved `.py` file. */
+function sourceOfLines(source: ResolvedSource, lines: LineRange | undefined): ResolvedSource {
+  if (lines === undefined) return source;
+  const code = selectLines(source.code, lines);
+  if (code === null) {
+    throw new NotebookRunError(
+      "invalid_request",
+      "Those lines hold no code in the saved file: save, then select again.",
+    );
+  }
+  return { ...source, code };
 }
 
 function executionOf(
@@ -169,8 +185,16 @@ function executionOf(
   runId: string,
   execId: string,
   source: Execution["source"],
+  lines: LineRange | undefined,
 ): Execution {
-  return { owner, runId, execId, origin: "user", source };
+  return {
+    owner,
+    runId,
+    execId,
+    origin: "user",
+    source,
+    ...(lines === undefined ? {} : { lines }),
+  };
 }
 
 async function runInBackground(

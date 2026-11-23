@@ -1,11 +1,20 @@
 "use client";
 
-/** How an execution ended, in words (KOBE-465; statuses NB15, save errors NB11). */
+/**
+ * How an execution ended, in words (KOBE-465; statuses NB15, save errors NB11). KOBE-805: a run
+ * cut at the output cap or stopped at its time limit says so plainly, with what to do.
+ */
+import { NOTEBOOK_EXEC_OUTPUTS_MAX, NOTEBOOK_EXEC_OUTPUT_MAX_BYTES } from "@kobe/protocol";
 import type { Execution } from "../../lib/notebooks/executions";
+import { formatBytes } from "../../lib/files/format";
+
+export const TIMEOUT_NOTE =
+  "Stopped: it ran past its time limit. Make it faster, or run it in smaller parts (Run selection).";
+export const TRUNCATED_NOTE = `Some output was cut: a run keeps at most ${NOTEBOOK_EXEC_OUTPUTS_MAX} outputs and ${formatBytes(NOTEBOOK_EXEC_OUTPUT_MAX_BYTES)}. Print less, or write large results to a file and open that.`;
 
 const STATUS: Readonly<Record<string, string>> = {
   interrupted: "Interrupted.",
-  timeout: "Stopped: it ran past its time limit.",
+  timeout: TIMEOUT_NOTE,
   restarted: "Stopped: the kernel restarted.",
   failed: "The sandbox could not run this.",
 };
@@ -23,7 +32,7 @@ export function executionNote(exec: Execution, notebook: boolean): string | null
   const parts: string[] = [];
   const status = STATUS[end.status];
   if (status) parts.push(status);
-  if (end.truncated) parts.push("Some output was cut (too much to keep).");
+  if (end.truncated) parts.push(TRUNCATED_NOTE);
   if (notebook && end.saved === null && end.status !== "failed") {
     const why = end.saveError ? (SAVE_ERROR[end.saveError] ?? end.saveError) : null;
     parts.push(
