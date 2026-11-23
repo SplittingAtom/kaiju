@@ -12,6 +12,7 @@ import type { McpService } from "../mcp/service.js";
 import type { KobeMcpService } from "../kobe-mcp/service.js";
 import { createRateLimiter, type RateLimiter } from "../sandbox/rate-limit.js";
 import { invalidRequest, notFound, readJson } from "../http/request.js";
+import { createInternalGitRoutes, type InternalGitDeps } from "./internal-git.js";
 
 /**
  * The server's internal listener (port 8082): the MCP proxy's policy re-check (KOBE-58). Not on the
@@ -63,6 +64,8 @@ export interface InternalAppDeps {
   readonly decideLimiter?: RateLimiter;
   /** The built-in Kobe MCP server (KOBE-619); unset: its routes answer not available. */
   readonly kobe?: KobeMcpService;
+  /** The egress proxy's git decisions (KOBE-763), with its own key; unset: not mounted. */
+  readonly git?: InternalGitDeps;
 }
 
 const callBodySchema = z.strictObject({
@@ -262,5 +265,6 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
   });
 
   app.route("/internal/v1/mcp", mcp);
+  if (deps.git) app.route("/internal/v1/git", createInternalGitRoutes(deps.git));
   return app;
 }

@@ -21,6 +21,8 @@ import { PreAuthGate } from "./preauth-gate.js";
 import { TunnelRegistry } from "./tunnel-registry.js";
 import { createEgressProxy } from "./proxy.js";
 import { dnsResolver } from "./resolver.js";
+import { GitDecisionCache, serverDecider } from "./git/decisions.js";
+import { RateBuckets } from "./rate-buckets.js";
 
 /** Open tunnels get this long to finish on shutdown; stays under k8s' 30 s grace period. */
 const DRAIN_TIMEOUT_MS = 20_000;
@@ -42,6 +44,17 @@ const cache = new AllowlistCache(
   },
   { ttlMs: config.cacheTtlMs, degradedTtlMs: 5_000, memberTtlMs: 30_000, maxEntries: 10_000 },
 );
+// Git smart-HTTP for connected organizations (KOBE-763): the server decides and mints.
+const gitDecisions = config.git
+  ? new GitDecisionCache(
+      serverDecider({
+        serverUrl: config.git.serverUrl,
+        internalKey: config.git.internalKey,
+        timeoutMs: config.git.decisionTimeoutMs,
+      }),
+      { maxEntries: 2_000 },
+    )
+  : undefined;
 const tunnels = new TunnelRegistry(cache, logger);
 tunnels.start(config.recheckMs);
 const listener = new ChangeListener({
@@ -49,7 +62,11 @@ const listener = new ChangeListener({
   cache,
   logger,
   // Revocation reaches open tunnels: re-check the affected ones on every hint.
-  onChange: (scope) => void tunnels.recheck(scope),
+  onChange: (scope) => {
+    void tunnels.recheck(scope);
+    // Git decisions (KOBE-763) carry membership: any hint drops them (they live 30 s anyway).
+    gitDecisions?.clear();
+  },
 });
 listener.start();
 const audit = new ConnectionAudit({
@@ -99,6 +116,27 @@ const server = createEgressProxy({
   preauth,
   tunnels,
   ready: () => !draining,
+  ...(config.git && gitDecisions
+    ? {
+        git: {
+          decisions: gitDecisions,
+          settings: {
+            maxFetchRequestBytes: config.git.maxFetchRequestBytes,
+            maxResponseBytes: config.git.maxResponseBytes,
+            timeoutMs: config.git.timeoutMs,
+          },
+          concurrency: new ConnectionLimits({
+            perSandbox: config.git.concurrentPerSandbox,
+            total: config.maxConnections,
+          }),
+          rate: new RateBuckets({
+            burst: config.git.requestBurst,
+            perSecond: config.git.requestsPerSecond,
+          }),
+          recordEvent: (event) => audit.recordEvent(event),
+        },
+      }
+    : {}),
   ...(box
     ? {
         headers: {
@@ -120,6 +158,7 @@ server.listen(config.port, () => {
       allowedInternalCidrs: config.allowedInternalCidrs.length,
       internalTargets: config.internalTargets.length,
       headerInjection: box !== undefined,
+      git: config.git !== undefined,
     },
     "egress proxy listening",
   );
@@ -134,6 +173,7 @@ async function shutdown(signal: string): Promise<void> {
   await new Promise<void>((resolve) => server.close(() => resolve()));
   clearTimeout(force);
   tunnels.stop();
+  gitDecisions?.clear();
   await audit.stop();
   await blocked.drain();
   await listener.close();

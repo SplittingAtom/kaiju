@@ -775,6 +775,7 @@ describe("auth (KOBE-12)", () => {
       "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
       "bifrost.keysSecret": "my-model-keys",
       "mcpProxy.internalKeySecret": "my-mcp-key",
+      "egressProxy.git.internalKeySecret": "my-git-key",
       "egressProxy.headerSecret": "my-egress-headers",
       "envelope.keySecret": "my-envelope",
       "global.allowGeneratedSecretsOffline": "false",
@@ -794,6 +795,7 @@ describe("auth (KOBE-12)", () => {
         "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
         "bifrost.keysSecret": "my-model-keys",
         "mcpProxy.internalKeySecret": "my-mcp-key",
+        "egressProxy.git.internalKeySecret": "my-git-key",
         "egressProxy.headerSecret": "my-egress-headers",
         "envelope.keySecret": "my-envelope",
       }),
@@ -806,6 +808,7 @@ describe("auth (KOBE-12)", () => {
         "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
         "bifrost.keysSecret": "my-model-keys",
         "mcpProxy.internalKeySecret": "my-mcp-key",
+        "egressProxy.git.internalKeySecret": "my-git-key",
         "egressProxy.headerSecret": "my-egress-headers",
         "envelope.keySecret": "my-envelope",
         "postgres.mode": "cnpg",
@@ -817,6 +820,7 @@ describe("auth (KOBE-12)", () => {
         "auth.existingSecret": "my-auth",
         "bifrost.keysSecret": "my-model-keys",
         "mcpProxy.internalKeySecret": "my-mcp-key",
+        "egressProxy.git.internalKeySecret": "my-git-key",
         "egressProxy.headerSecret": "my-egress-headers",
         "envelope.keySecret": "my-envelope",
       }),
@@ -828,6 +832,7 @@ describe("auth (KOBE-12)", () => {
         "sandbox.sessionKeysSecret": "my-keys",
         "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
         "mcpProxy.internalKeySecret": "my-mcp-key",
+        "egressProxy.git.internalKeySecret": "my-git-key",
         "egressProxy.headerSecret": "my-egress-headers",
         "envelope.keySecret": "my-envelope",
       }),
@@ -839,6 +844,7 @@ describe("auth (KOBE-12)", () => {
         "sandbox.sessionKeysSecret": "my-keys",
         "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
         "bifrost.keysSecret": "my-model-keys",
+        "egressProxy.git.internalKeySecret": "my-git-key",
         "egressProxy.headerSecret": "my-egress-headers",
         "envelope.keySecret": "my-envelope",
       }),
@@ -851,6 +857,7 @@ describe("auth (KOBE-12)", () => {
         "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
         "bifrost.keysSecret": "my-model-keys",
         "mcpProxy.internalKeySecret": "my-mcp-key",
+        "egressProxy.git.internalKeySecret": "my-git-key",
         "envelope.keySecret": "my-envelope",
       }),
     ).toMatch(/egressProxy\.headerSecret/);
@@ -862,9 +869,22 @@ describe("auth (KOBE-12)", () => {
         "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
         "bifrost.keysSecret": "my-model-keys",
         "mcpProxy.internalKeySecret": "my-mcp-key",
+        "egressProxy.git.internalKeySecret": "my-git-key",
         "egressProxy.headerSecret": "my-egress-headers",
       }),
     ).toMatch(/envelope\.keySecret/);
+    expect(
+      renderError({
+        "global.allowGeneratedSecretsOffline": "false",
+        "auth.existingSecret": "my-auth",
+        "sandbox.sessionKeysSecret": "my-keys",
+        "sandbox.sessionVerifyKeysConfigMap": "my-verify-keys",
+        "bifrost.keysSecret": "my-model-keys",
+        "mcpProxy.internalKeySecret": "my-mcp-key",
+        "egressProxy.headerSecret": "my-egress-headers",
+        "envelope.keySecret": "my-envelope",
+      }),
+    ).toMatch(/egressProxy\.git\.internalKeySecret/);
   });
 });
 

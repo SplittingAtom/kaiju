@@ -11,6 +11,7 @@ predates these keys still renders. Keep in sync with values.yaml.
   "auditFlushSeconds" 60
   "headerSecret" ""
   "upgrade" (dict "maxRequestBytes" 104857600 "maxResponseBytes" 2147483648 "timeoutSeconds" 600)
+  "git" (dict "internalKeySecret" "" "maxFetchRequestBytes" 67108864 "maxResponseBytes" 4294967296 "timeoutSeconds" 1800 "concurrentPerSandbox" 8 "requestBurst" 60 "requestsPerSecond" 2)
   "limits" (dict "connectionsPerSandbox" 64 "connections" 4096 "bandwidthBytesPerSecond" 20971520 "idleTimeoutSeconds" 300 "maxTunnelSeconds" 3600 "unauthenticatedPerSource" 16 "unauthenticated" 1024)
   "networkPolicy" (dict "restrictEgress" true "databasePeers" (list) "databasePort" 5432 "extraEgress" (list))
   "database" (dict "poolMax" 10) -}}
@@ -50,6 +51,21 @@ predates these keys still renders. Keep in sync with values.yaml.
       name: {{ include "kobe.egressHeaderSecretName" . }}
       key: secret-previous
       optional: true
+{{- end -}}
+
+{{/* Secret holding the key the egress proxy presents for git decisions (KOBE-763): server and proxy only. */}}
+{{- define "kobe.egressInternalKeySecretName" -}}
+{{- $e := include "kobe.egressProxyValues" . | fromJson -}}
+{{- default (printf "%s-egress-proxy-internal" (include "kobe.fullname" .)) $e.git.internalKeySecret -}}
+{{- end -}}
+
+{{/* Server env: the key the egress proxy presents on the internal listener for git decisions (KOBE-763). */}}
+{{- define "kobe.serverEgressGitEnv" -}}
+- name: KOBE_EGRESS_PROXY_INTERNAL_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "kobe.egressInternalKeySecretName" . }}
+      key: key
 {{- end -}}
 
 {{/* Address ranges the proxy's own NetworkPolicy never sends to (internet rule `except`). */}}
@@ -98,4 +114,24 @@ session-token public key only (never a private key, never the other audiences', 
   value: {{ int64 $e.upgrade.maxResponseBytes | quote }}
 - name: KOBE_EGRESS_UPGRADE_TIMEOUT_MS
   value: {{ mul (int $e.upgrade.timeoutSeconds) 1000 | quote }}
+{{- /* Git smart-HTTP for connected organizations (KOBE-763): the server decides and mints. */}}
+- name: KOBE_EGRESS_SERVER_URL
+  value: {{ printf "http://%s-server:%s" (include "kobe.fullname" .) (include "kobe.serverInternalPort" .) | quote }}
+- name: KOBE_EGRESS_INTERNAL_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "kobe.egressInternalKeySecretName" . }}
+      key: key
+- name: KOBE_EGRESS_GIT_MAX_FETCH_REQUEST_BYTES
+  value: {{ int64 $e.git.maxFetchRequestBytes | quote }}
+- name: KOBE_EGRESS_GIT_MAX_RESPONSE_BYTES
+  value: {{ int64 $e.git.maxResponseBytes | quote }}
+- name: KOBE_EGRESS_GIT_TIMEOUT_MS
+  value: {{ mul (int $e.git.timeoutSeconds) 1000 | quote }}
+- name: KOBE_EGRESS_GIT_CONCURRENT_PER_SANDBOX
+  value: {{ int $e.git.concurrentPerSandbox | quote }}
+- name: KOBE_EGRESS_GIT_REQUEST_BURST
+  value: {{ int $e.git.requestBurst | quote }}
+- name: KOBE_EGRESS_GIT_REQUESTS_PER_SECOND
+  value: {{ int $e.git.requestsPerSecond | quote }}
 {{- end -}}

@@ -142,4 +142,77 @@ describe("ConnectionAudit", () => {
       connections: 2,
     });
   });
+
+  it("aggregates git traffic per repository and service, and writes pushes as they are (KOBE-763)", async () => {
+    const written: AuditEvent[] = [];
+    const audit = new ConnectionAudit({
+      write: async (events) => void written.push(...events),
+      logger,
+      flushMs: 60_000,
+    });
+    const git = { ...base, domain: "git.example.test", port: 80, upgraded: true };
+    audit.record({ ...git, git: { repository: "acme/app", service: "upload-pack" } });
+    audit.record({ ...git, git: { repository: "acme/app", service: "upload-pack" } });
+    audit.record({ ...git, git: { repository: "acme/app", service: "receive-pack" } });
+    audit.record({
+      ...git,
+      outcome: "blocked",
+      reason: "git_refused",
+      git: { repository: "other/app", service: "receive-pack" },
+    });
+    const push: AuditEvent = {
+      action: "egress.git_push",
+      actor: { kind: "system", id: null },
+      teamId: base.teamId,
+      target: {
+        userId: base.userId,
+        sandboxId: base.sandboxId,
+        domain: "git.example.test",
+        repository: "acme/app",
+        outcome: "allowed",
+        refs: [{ ref: "refs/heads/main", change: "update" }],
+        status: 200,
+        bytesUp: 42,
+      },
+    };
+    audit.recordEvent(push);
+    await audit.flush();
+    const rows = written.filter((e) => e.action === "egress.connection");
+    expect(rows).toHaveLength(3);
+    expect(rows[0]?.target).toMatchObject({
+      repository: "acme/app",
+      gitService: "upload-pack",
+      connections: 2,
+    });
+    for (const event of rows) {
+      expect(AUDIT_EVENTS["egress.connection"].target.safeParse(event.target).success).toBe(true);
+    }
+    const pushes = written.filter((e) => e.action === "egress.git_push");
+    expect(pushes).toEqual([push]);
+    expect(AUDIT_EVENTS["egress.git_push"].target.safeParse(push.target).success).toBe(true);
+  });
+
+  it("keeps a push event for the next flush when the write fails", async () => {
+    const write = vi.fn().mockRejectedValueOnce(new Error("down")).mockResolvedValue(undefined);
+    const audit = new ConnectionAudit({ write, logger, flushMs: 60_000 });
+    const push = {
+      action: "egress.git_push",
+      actor: { kind: "system", id: null },
+      teamId: base.teamId,
+      target: {
+        userId: base.userId,
+        sandboxId: base.sandboxId,
+        domain: "git.example.test",
+        repository: "acme/app",
+        outcome: "blocked",
+        reason: "read_only",
+        bytesUp: 0,
+      },
+    } as AuditEvent;
+    audit.recordEvent(push);
+    await audit.flush();
+    await audit.flush();
+    expect(write).toHaveBeenCalledTimes(2);
+    expect(write.mock.calls[1]?.[0]).toEqual([push]);
+  });
 });

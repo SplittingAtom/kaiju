@@ -54,9 +54,13 @@ export function createEgressProxy(deps: ProxyDeps): Server {
     maxHeaderSize: 8192,
     // Request heads must arrive within the pre-auth bound (headersTimeout below); an upgraded
     // plain-HTTP request's body is bounded by its own deadline (upgrade.ts), not this.
-    requestTimeout: deps.upgrade
-      ? deps.upgrade.timeoutMs + settings.connectTimeoutMs + settings.handshakeTimeoutMs
-      : settings.preAuthTimeoutMs,
+    // A git push's body (KOBE-763) is bounded by the git deadline the same way.
+    requestTimeout:
+      deps.upgrade || deps.git
+        ? Math.max(deps.upgrade?.timeoutMs ?? 0, deps.git?.settings.timeoutMs ?? 0) +
+          settings.connectTimeoutMs +
+          settings.handshakeTimeoutMs
+        : settings.preAuthTimeoutMs,
     // How often Node enforces headersTimeout/requestTimeout (default 30 s): slow-loris bound.
     connectionsCheckingInterval: Math.min(1_000, settings.preAuthTimeoutMs),
   });

@@ -89,6 +89,7 @@ describe("egress proxy Deployment", () => {
       ...vars,
       KOBE_DATABASE_URL: "postgres://x",
       KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY: PUBLIC_PEM,
+      KOBE_EGRESS_INTERNAL_KEY: "k".repeat(48),
     });
     expect(config.allowedPorts).toEqual([443]);
     expect(config.allowedInternalCidrs).toEqual([]);
@@ -203,6 +204,7 @@ describe("same-cluster hosts: clusterIngress (EA4, KOBE-603)", () => {
       ),
       KOBE_DATABASE_URL: "postgres://x",
       KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY: PUBLIC_PEM,
+      KOBE_EGRESS_INTERNAL_KEY: "k".repeat(48),
     });
 
   it("is off by default: no internal targets and no rule to any ingress pod", () => {
@@ -341,6 +343,7 @@ describe("header injection secret (KOBE-39)", () => {
       KOBE_DATABASE_URL: "postgres://x",
       KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY: PUBLIC_PEM,
       KOBE_EGRESS_HEADER_SECRET: "h".repeat(48),
+      KOBE_EGRESS_INTERNAL_KEY: "k".repeat(48),
     });
     expect(config.headerSecrets).toEqual(["h".repeat(48)]);
     expect(config.upgrade).toEqual({
@@ -348,5 +351,87 @@ describe("header injection secret (KOBE-39)", () => {
       maxResponseBytes: 2_147_483_648,
       timeoutMs: 600_000,
     });
+  });
+});
+
+describe("git smart-HTTP for connected organizations (KOBE-763)", () => {
+  const ms = render();
+  const envOf = (name: string): { name: string; value?: string; valueFrom?: any }[] =>
+    find(ms, "Deployment", name)?.spec.template.spec.containers[0].env ?? [];
+  const serverSelector = {
+    "app.kubernetes.io/name": "kobe",
+    "app.kubernetes.io/instance": "kobe",
+    "app.kubernetes.io/component": "server",
+  };
+
+  it("generates the egress proxy's internal key for the server and the egress proxy only", () => {
+    const secret = find(ms, "Secret", "kobe-egress-proxy-internal");
+    expect(secret?.metadata).toMatchObject({ annotations: { "helm.sh/resource-policy": "keep" } });
+    expect((secret?.stringData as Record<string, string>).key).toMatch(/^[A-Za-z0-9]{48}$/);
+    const ref = { secretKeyRef: { name: "kobe-egress-proxy-internal", key: "key" } };
+    expect(
+      envOf("kobe-egress-proxy").find((e) => e.name === "KOBE_EGRESS_INTERNAL_KEY")?.valueFrom,
+    ).toEqual(ref);
+    expect(
+      envOf("kobe-server").find((e) => e.name === "KOBE_EGRESS_PROXY_INTERNAL_KEY")?.valueFrom,
+    ).toEqual(ref);
+    for (const other of ["kobe-scheduler", "kobe-mcp-proxy", "kobe-model-gateway", "kobe-web"]) {
+      expect(JSON.stringify(envOf(other)), other).not.toContain("kobe-egress-proxy-internal");
+    }
+    expect(JSON.stringify(ms.filter((m) => m.kind === "ConfigMap"))).not.toContain(
+      "kobe-egress-proxy-internal",
+    );
+    const named = render({ "egressProxy.git.internalKeySecret": "my-git-key" });
+    expect(find(named, "Secret", "kobe-egress-proxy-internal")).toBeUndefined();
+  });
+
+  it("renders git limits and the server's internal address the proxy's config accepts", () => {
+    const vars = Object.fromEntries(
+      envOf("kobe-egress-proxy")
+        .filter((e) => e.value !== undefined)
+        .map((e) => [e.name, e.value]),
+    );
+    const config = loadConfig({
+      ...vars,
+      KOBE_DATABASE_URL: "postgres://x",
+      KOBE_SESSION_VERIFY_KEY_EGRESS_PROXY: PUBLIC_PEM,
+      KOBE_EGRESS_INTERNAL_KEY: "k".repeat(48),
+    });
+    expect(config.git).toMatchObject({
+      serverUrl: "http://kobe-server:8082",
+      maxFetchRequestBytes: 67_108_864,
+      maxResponseBytes: 4_294_967_296,
+      timeoutMs: 1_800_000,
+      concurrentPerSandbox: 8,
+      requestBurst: 60,
+      requestsPerSecond: 2,
+    });
+    const tuned = render({ "egressProxy.git.maxResponseBytes": "8589934592" });
+    const tunedVars = Object.fromEntries(
+      (find(tuned, "Deployment", "kobe-egress-proxy")?.spec.template.spec.containers[0].env ?? [])
+        .filter((e: { value?: string }) => e.value !== undefined)
+        .map((e: { name: string; value: string }) => [e.name, e.value]),
+    );
+    expect(tunedVars.KOBE_EGRESS_GIT_MAX_RESPONSE_BYTES).toBe("8589934592");
+  });
+
+  it("lets the egress proxy reach the server's internal port, and the server admit it there", () => {
+    const egress = policy(ms)?.egress ?? [];
+    expect(egress).toContainEqual({
+      to: [{ podSelector: { matchLabels: serverSelector } }],
+      ports: [{ protocol: "TCP", port: 8082 }],
+    });
+    const notFromSandboxes = find(ms, "NetworkPolicy", "kobe-not-from-sandboxes")?.spec;
+    const internal = notFromSandboxes?.ingress.find((r: any) =>
+      r.ports.some((p: any) => p.port === 8082),
+    );
+    expect(
+      internal.from.map((f: any) => f.podSelector.matchLabels["app.kubernetes.io/component"]),
+    ).toEqual(["mcp-proxy", "egress-proxy"]);
+  });
+
+  it("refuses unknown git values (schema)", () => {
+    expect(() => render({ "egressProxy.git.timeoutSeconds": "0" })).toThrow();
+    expect(() => render({ "egressProxy.git.bogus": "1" })).toThrow();
   });
 });

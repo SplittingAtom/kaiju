@@ -194,6 +194,20 @@ describe("loadConfig", () => {
     );
   });
 
+  it("reads the egress proxy's key for git decisions (KOBE-763)", () => {
+    expect(loadConfig(REQUIRED).egressProxyInternalKey).toBeUndefined();
+    expect(
+      loadConfig({ ...REQUIRED, KOBE_EGRESS_PROXY_INTERNAL_KEY: "" }).egressProxyInternalKey,
+    ).toBeUndefined();
+    const key = "e".repeat(32);
+    expect(
+      loadConfig({ ...REQUIRED, KOBE_EGRESS_PROXY_INTERNAL_KEY: key }).egressProxyInternalKey,
+    ).toBe(key);
+    expect(() => loadConfig({ ...REQUIRED, KOBE_EGRESS_PROXY_INTERNAL_KEY: "short" })).toThrow(
+      /KOBE_EGRESS_PROXY_INTERNAL_KEY/,
+    );
+  });
+
   it("reads the MCP proxy address for the pinning probe (KOBE-101)", () => {
     expect(loadConfig(REQUIRED).mcpProxyUrl).toBeUndefined();
     expect(

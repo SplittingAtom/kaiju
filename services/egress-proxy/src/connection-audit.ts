@@ -28,7 +28,25 @@ export type ConnectionReason =
   | "upstream_tls"
   | "upstream_timeout"
   | "request_too_large"
-  | "response_too_large";
+  | "response_too_large"
+  // KOBE-763 git smart-HTTP for connected organizations.
+  /** The server refused the git request (the push audit row names its code). */
+  | "git_refused"
+  /** The sandbox sent its own Authorization or Cookie with a git request. */
+  | "credentials_in_request"
+  | "rate_limited"
+  /** The git host refused the Workspace's credential (401/407 upstream). */
+  | "upstream_auth"
+  /** The git host answered with a redirect, which is never followed with the credential. */
+  | "redirect_refused"
+  /** A response carried the credential back: the exchange was cut. */
+  | "secret_reflected";
+
+/** The repository (`org/repo`) and service of a git smart-HTTP request (KOBE-763). */
+export interface GitTraffic {
+  readonly repository: string;
+  readonly service: "upload-pack" | "receive-pack";
+}
 
 export interface ConnectionRecord {
   readonly teamId: string;
@@ -44,6 +62,8 @@ export interface ConnectionRecord {
   readonly upgraded?: boolean;
   /** A server site job's connection (KOBE-343): audited site-wide, with no team or user. */
   readonly site?: "skill-mirror" | "skill-import";
+  /** Git smart-HTTP for a connected organization (KOBE-763): aggregated per repository. */
+  readonly git?: GitTraffic;
 }
 
 interface Aggregate {
@@ -98,10 +118,13 @@ const keyOf = (r: ConnectionRecord, aggregated: boolean): string =>
         r.outcome,
         r.reason ?? "",
         r.upgraded ? "upgraded" : "",
+        r.git ? `${r.git.service}:${r.git.repository}` : "",
       ].join("|");
 
 export class ConnectionAudit {
   private pending = new Map<string, Aggregate>();
+  /** Individual events (KOBE-763 pushes), written with the next flush. */
+  private events: AuditEvent[] = [];
   private timer: NodeJS.Timeout | undefined;
   private flushing: Promise<void> | undefined;
   private dropped = 0;
@@ -155,13 +178,28 @@ export class ConnectionAudit {
     if (this.pending.size >= this.maxKeys) void this.flush();
   }
 
+  /**
+   * One event written as it is (not aggregated): a git push (KOBE-763). Bounded like the
+   * aggregates: beyond `maxKeys` waiting events, new ones are dropped and counted.
+   */
+  recordEvent(event: AuditEvent): void {
+    if (this.events.length >= this.maxKeys) {
+      this.dropped += 1;
+      return;
+    }
+    this.events.push(event);
+    if (this.events.length >= this.maxKeys / 2) void this.flush();
+  }
+
   /** Writes everything pending; on failure the rows are kept for the next attempt. */
   flush(): Promise<void> {
     if (this.flushing) return this.flushing;
-    if (this.pending.size === 0) return Promise.resolve();
+    if (this.pending.size === 0 && this.events.length === 0) return Promise.resolve();
     const batch = this.pending;
+    const single = this.events;
     this.pending = new Map();
-    const events = [...batch.values()].map(toEvent);
+    this.events = [];
+    const events = [...[...batch.values()].map(toEvent), ...single];
     this.flushing = this.options
       .write(events)
       .catch((err: unknown) => {
@@ -169,6 +207,10 @@ export class ConnectionAudit {
           { err, rows: events.length },
           "egress connection audit could not be written; will retry",
         );
+        for (const event of single) {
+          if (this.events.length < this.maxKeys) this.events.push(event);
+          else this.dropped += 1;
+        }
         for (const [key, agg] of batch) {
           const newer = this.pending.get(key);
           if (newer) {
@@ -247,6 +289,9 @@ function toEvent(agg: Aggregate): AuditEvent {
       ...(agg.aggregated || r.reason === undefined ? {} : { reason: r.reason }),
       ...(agg.aggregated ? { aggregated: true as const } : {}),
       ...(!agg.aggregated && r.upgraded ? { upgraded: true as const } : {}),
+      ...(!agg.aggregated && r.git
+        ? { repository: r.git.repository, gitService: r.git.service }
+        : {}),
       connections: agg.connections,
       bytesUp: agg.bytesUp,
       bytesDown: agg.bytesDown,

@@ -96,6 +96,15 @@ function credentials(header: string): { user: string | undefined; token: string 
   return token ? { user: decoded.slice(0, colon), token } : undefined;
 }
 
+/**
+ * The token a request presented (Basic password or Bearer), for forwarding to the server, which
+ * verifies it itself (KOBE-763 git decisions). Call only after {@link authenticate} succeeded.
+ */
+export function presentedToken(header: string | string[] | undefined): string | undefined {
+  if (typeof header !== "string" || header.length > MAX_HEADER) return undefined;
+  return credentials(header)?.token;
+}
+
 export function authenticate(
   header: string | string[] | undefined,
   verify: TokenVerifier,

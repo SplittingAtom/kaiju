@@ -56,7 +56,7 @@ async function verifiedTls(
 }
 
 /** Connects to a checked address on 443 and verifies TLS for the host; answers a failure itself. */
-async function connectVerified(
+export async function connectVerified(
   ctx: UpgradeContext,
   res: ServerResponse,
   attempt: UpgradeAttempt,

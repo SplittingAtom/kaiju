@@ -503,6 +503,21 @@ egressProxy:
     maxRequestBytes: 104857600
     maxResponseBytes: 2147483648
     timeoutSeconds: 600
+  # Git smart-HTTP for a Workspace's connected organizations (KOBE-763): the proxy asks the
+  # server for a per-repository credential and adds it upstream; the sandbox never holds one. The
+  # git host must be in the site egress ceiling (a private address: marked internal, with
+  # clusterIngress or allowedInternalCidrs). The push limit is per connection (Git section).
+  git:
+    # Existing Secret (key `key`) the proxy presents to the server; empty: generated and kept.
+    internalKeySecret: ""
+    # Fetch negotiation bodies (wants and haves), responses (clone and fetch packs), whole exchange.
+    maxFetchRequestBytes: 67108864
+    maxResponseBytes: 4294967296
+    timeoutSeconds: 1800
+    # Per sandbox and proxy replica: git requests running at once, and requests (burst, per second).
+    concurrentPerSandbox: 8
+    requestBurst: 60
+    requestsPerSecond: 2
   limits:
     # Concurrent tunnels per sandbox and in total (per proxy replica).
     connectionsPerSandbox: 64
