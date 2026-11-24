@@ -52,7 +52,7 @@ SBX_WAIT="${KAIJU_GATE4_RESTORE_SANDBOX_WAIT:-240}"
 LLM_NS=kaiju-e2e-llm
 LLM="http://llm.$LLM_NS.svc.cluster.local"
 TEAM_SLUG=gate4-r
-TNS="kobe-team-$TEAM_SLUG"
+TNS="kaiju-team-$TEAM_SLUG"
 NONCE="$(date +%s)"
 failed=0
 

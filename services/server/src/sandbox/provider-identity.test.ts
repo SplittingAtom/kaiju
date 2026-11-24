@@ -18,7 +18,7 @@ describe("identifyBootstrapToken", () => {
     const review = (over: Partial<TokenReviewResult> = {}): TokenReviewResult => ({
       authenticated: true,
       audiences: [BOOTSTRAP_TOKEN_AUDIENCE],
-      username: `system:serviceaccount:${NS}:kobe-sandbox`,
+      username: `system:serviceaccount:${NS}:kaiju-sandbox`,
       extra: {
         "authentication.kubernetes.io/pod-name": [pod.metadata.name],
         "authentication.kubernetes.io/pod-uid": [pod.metadata.uid as string],
@@ -50,7 +50,7 @@ describe("identifyBootstrapToken", () => {
     ["unauthenticated", { authenticated: false }],
     ["another audience", { audiences: ["https://kubernetes.default.svc"] }],
     ["another ServiceAccount", { username: `system:serviceaccount:${NS}:default` }],
-    ["a non-team namespace", { username: "system:serviceaccount:kube-system:kobe-sandbox" }],
+    ["a non-team namespace", { username: "system:serviceaccount:kube-system:kaiju-sandbox" }],
     ["a token not bound to a pod", { extra: {} }],
   ])("rejects %s", async (_, over) => {
     const { kube, provider, review } = await withSandbox();

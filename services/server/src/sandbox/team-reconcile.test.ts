@@ -13,7 +13,7 @@ import { reconcileTeamNamespaces } from "./team-reconcile.js";
 import { createSandboxProvider } from "./provider.js";
 import { createPgReconcileLock } from "./reconcile-lock.js";
 
-const NS = "kobe-team-finance";
+const NS = "kaiju-team-finance";
 const {
   networkPolicy: NETWORK_POLICY,
   evalNetworkPolicy: EVAL_NETWORK_POLICY,
@@ -57,7 +57,7 @@ describe("reconcileTeams (KOBE-115)", () => {
 
   it("keeps the skill scan pods' deny-all policy in every team namespace (KOBE-341)", async () => {
     const { kube, provider } = await setup();
-    for (const ns of [NS, "kobe-team-marketing"]) {
+    for (const ns of [NS, "kaiju-team-marketing"]) {
       const scan = must(kube.peek(policyRef(SKILL_SCAN_NETWORK_POLICY, ns)));
       expect(scan.spec).toEqual({
         podSelector: { matchExpressions: [{ key: LABEL_SKILL_SCAN, operator: "Exists" }] },
@@ -108,7 +108,7 @@ describe("reconcileTeams (KOBE-115)", () => {
 
   it("keeps converging when a scoped quota is refused, and counts the namespace failed (PR #316)", async () => {
     const { kube, provider } = await setup();
-    for (const name of ["kobe-skill-eval-quota", "kobe-team-member-quota"])
+    for (const name of ["kaiju-skill-eval-quota", "kaiju-team-member-quota"])
       kube.failNext(
         "apply",
         "ResourceQuota",
@@ -129,7 +129,7 @@ describe("reconcileTeams (KOBE-115)", () => {
     seedCluster(kube);
     const gate = gateFor(kube);
     const provider = createSandboxProvider({ kube, isolation: gate, settings: SETTINGS });
-    for (const name of ["kobe-skill-eval-quota", "kobe-team-member-quota"])
+    for (const name of ["kaiju-skill-eval-quota", "kaiju-team-member-quota"])
       kube.failNext(
         "apply",
         "ResourceQuota",
@@ -145,7 +145,7 @@ describe("reconcileTeams (KOBE-115)", () => {
         kube.peek({
           apiVersion: "v1",
           kind: "ResourceQuota",
-          name: "kobe-team-quota",
+          name: "kaiju-team-quota",
           namespace: NS,
         }),
       ),
@@ -165,7 +165,7 @@ describe("reconcileTeams (KOBE-115)", () => {
       apiVersion: "v1",
       kind: "Namespace",
       metadata: {
-        name: "kobe-team-Bad_Slug",
+        name: "kaiju-team-Bad_Slug",
         labels: { "kobe.splittingatom.io/team-namespace": "true" },
       },
     });

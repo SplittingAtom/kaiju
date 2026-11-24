@@ -10,7 +10,7 @@ import { SETTINGS, gateFor, seedCluster } from "./sandbox-fixtures.js";
  * provider over it, and a few cluster helpers.
  */
 
-export const NS = "kobe-team-finance";
+export const NS = "kaiju-team-finance";
 
 export function setup(
   opts: {

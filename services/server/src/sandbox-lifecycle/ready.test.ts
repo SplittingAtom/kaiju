@@ -70,7 +70,7 @@ describe("ensureReady", () => {
   it("a full team volume quota (KOBE-733) fails with its own code and words", async () => {
     const full = {
       cause: "volume_quota",
-      detail: "quota kobe-team-member-quota: persistentvolumeclaims used 50 of 50",
+      detail: "quota kaiju-team-member-quota: persistentvolumeclaims used 50 of 50",
       definite: true,
     } as const;
     const r = run(async () => ({ ready: false, sandboxId: "sb-1", stall: full }));
@@ -80,7 +80,7 @@ describe("ensureReady", () => {
       message: WORKSPACE_QUOTA_MESSAGE,
     });
     expect(WORKSPACE_QUOTA_MESSAGE).toMatch(/team admin/);
-    expect(WORKSPACE_QUOTA_MESSAGE).not.toMatch(/kobe-team|50 of 50/);
+    expect(WORKSPACE_QUOTA_MESSAGE).not.toMatch(/kaiju-team|50 of 50/);
     expect(FAILURE_MESSAGES["workspace_quota_exhausted"]).toBe(WORKSPACE_QUOTA_MESSAGE);
     expect(r.onStalled).toHaveBeenCalledWith({ sandboxId: "sb-1", stall: full });
   });

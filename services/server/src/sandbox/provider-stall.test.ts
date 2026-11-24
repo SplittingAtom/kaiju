@@ -4,7 +4,7 @@ import { SETTINGS, TEAM, USER, gateFor, must, seedCluster } from "../testing/san
 import { createSandboxProvider, workspacePvcName } from "./provider.js";
 
 /** A woken sandbox that is slow or stuck (KOBE-192), against the fake cluster and a fake clock. */
-const NS = "kobe-team-finance";
+const NS = "kaiju-team-finance";
 const READY = { phase: "Running", conditions: [{ type: "Ready", status: "True" }] };
 const T0 = Date.parse("2026-10-09T10:00:00Z");
 
@@ -70,7 +70,7 @@ describe("awaitReady (KOBE-192)", () => {
       metadata: { name: "pulling", namespace: NS },
       involvedObject: { kind: "Pod", name: t.handle.sandboxName, uid: "x" },
       reason: "Pulling",
-      message: "Pulling image kobe-sandbox (1.5 GB)",
+      message: "Pulling image kaiju-sandbox (1.5 GB)",
       type: "Normal",
       lastTimestamp: new Date(T0).toISOString(),
     });

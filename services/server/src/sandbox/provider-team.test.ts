@@ -56,7 +56,7 @@ describe("ensureSandbox: team namespace (D11)", () => {
     await provider.ensureSandbox(TEAM, USER);
     // The members' quota plus the skill-eval share: 4 eval pods (KOBE-325).
     const gi = (n: number) => String(n * 2 ** 30);
-    expect(objectAt(kube, "ResourceQuota", "kobe-team-quota", NS)?.spec).toEqual({
+    expect(objectAt(kube, "ResourceQuota", "kaiju-team-quota", NS)?.spec).toEqual({
       hard: {
         ...SETTINGS.teamQuota,
         "requests.cpu": "22",
@@ -68,7 +68,7 @@ describe("ensureSandbox: team namespace (D11)", () => {
         ...(SETTINGS.teamQuota.pods ? { pods: String(Number(SETTINGS.teamQuota.pods) + 4) } : {}),
       },
     });
-    expect(objectAt(kube, "ResourceQuota", "kobe-skill-eval-quota", NS)?.spec).toEqual({
+    expect(objectAt(kube, "ResourceQuota", "kaiju-skill-eval-quota", NS)?.spec).toEqual({
       hard: {
         pods: "4",
         "requests.cpu": "2",
@@ -78,29 +78,29 @@ describe("ensureSandbox: team namespace (D11)", () => {
       },
       scopeSelector: {
         matchExpressions: [
-          { scopeName: "PriorityClass", operator: "In", values: ["kobe-skill-eval"] },
+          { scopeName: "PriorityClass", operator: "In", values: ["kaiju-skill-eval"] },
         ],
       },
     });
     // Members stay within teamQuota (pod count, CPU and memory only: the PriorityClass scope
     // allows nothing else, ephemeral storage included).
-    expect(objectAt(kube, "ResourceQuota", "kobe-team-member-quota", NS)?.spec).toEqual({
+    expect(objectAt(kube, "ResourceQuota", "kaiju-team-member-quota", NS)?.spec).toEqual({
       hard: Object.fromEntries(
         Object.entries(SETTINGS.teamQuota).filter(([k]) => POD_SCOPED_QUOTA_KEYS.has(k)),
       ),
       scopeSelector: {
         matchExpressions: [
-          { scopeName: "PriorityClass", operator: "NotIn", values: ["kobe-skill-eval"] },
+          { scopeName: "PriorityClass", operator: "NotIn", values: ["kaiju-skill-eval"] },
         ],
       },
     });
-    const evalTemplate = objectAt(kube, "SandboxTemplate", "kobe-skill-eval", NS);
+    const evalTemplate = objectAt(kube, "SandboxTemplate", "kaiju-skill-eval", NS);
     expect(evalTemplate?.spec).toMatchObject({
       podTemplate: {
         metadata: { labels: { "kobe.splittingatom.io/skill-eval": "true" } },
         spec: {
           runtimeClassName: "gvisor",
-          priorityClassName: "kobe-skill-eval",
+          priorityClassName: "kaiju-skill-eval",
           volumes: expect.arrayContaining([{ name: "workspace", emptyDir: { sizeLimit: "2Gi" } }]),
         },
       },
@@ -109,15 +109,15 @@ describe("ensureSandbox: team namespace (D11)", () => {
     expect(JSON.stringify(evalTemplate?.spec)).toContain(
       '{"name":"KAIJU_WORKSPACE_SYNC_INTERVAL_MS","value":"0"}',
     );
-    expect(objectAt(kube, "SandboxWarmPool", "kobe-skill-eval", NS)?.spec).toMatchObject({
+    expect(objectAt(kube, "SandboxWarmPool", "kaiju-skill-eval", NS)?.spec).toMatchObject({
       replicas: 0,
-      sandboxTemplateRef: { name: "kobe-skill-eval" },
+      sandboxTemplateRef: { name: "kaiju-skill-eval" },
     });
-    expect(objectAt(kube, "LimitRange", "kobe-sandbox-defaults", NS)).toBeDefined();
-    expect(objectAt(kube, "ServiceAccount", "kobe-sandbox", NS)).toMatchObject({
+    expect(objectAt(kube, "LimitRange", "kaiju-sandbox-defaults", NS)).toBeDefined();
+    expect(objectAt(kube, "ServiceAccount", "kaiju-sandbox", NS)).toMatchObject({
       automountServiceAccountToken: false,
     });
-    const template = objectAt(kube, "SandboxTemplate", "kobe-sandbox", NS);
+    const template = objectAt(kube, "SandboxTemplate", "kaiju-sandbox", NS);
     expect(template?.spec).toMatchObject({
       networkPolicyManagement: "Unmanaged",
       podTemplate: {
@@ -129,9 +129,9 @@ describe("ensureSandbox: team namespace (D11)", () => {
         },
       },
     });
-    expect(objectAt(kube, "SandboxWarmPool", "kobe-sandbox", NS)?.spec).toMatchObject({
+    expect(objectAt(kube, "SandboxWarmPool", "kaiju-sandbox", NS)?.spec).toMatchObject({
       replicas: 1,
-      sandboxTemplateRef: { name: "kobe-sandbox" },
+      sandboxTemplateRef: { name: "kaiju-sandbox" },
     });
   });
 
@@ -199,7 +199,7 @@ describe("ensureSandbox: team namespace (D11)", () => {
     await provider.ensureSandbox(TEAM, USER);
     await provider.ensureSandbox(TEAM, OTHER_USER);
     const quotaApplies = kube.calls.filter(
-      (c) => c.verb === "apply" && c.kind === "ResourceQuota" && c.name === "kobe-team-quota",
+      (c) => c.verb === "apply" && c.kind === "ResourceQuota" && c.name === "kaiju-team-quota",
     );
     expect(quotaApplies).toHaveLength(2);
   });
@@ -211,14 +211,14 @@ describe("ensureSandbox: team namespace (D11)", () => {
     await kube.delete({
       apiVersion: "networking.k8s.io/v1",
       kind: "NetworkPolicy",
-      name: "kobe-sandbox-isolation",
+      name: "kaiju-sandbox-isolation",
       namespace: NS,
     });
     await provider.ensureSandbox(TEAM, USER);
-    expect(objectAt(kube, "NetworkPolicy", "kobe-sandbox-isolation", NS)).toBeUndefined();
+    expect(objectAt(kube, "NetworkPolicy", "kaiju-sandbox-isolation", NS)).toBeUndefined();
     t += TEAM_RECONVERGE_MS;
     await provider.ensureSandbox(TEAM, USER);
-    expect(objectAt(kube, "NetworkPolicy", "kobe-sandbox-isolation", NS)).toBeDefined();
+    expect(objectAt(kube, "NetworkPolicy", "kaiju-sandbox-isolation", NS)).toBeDefined();
   });
 
   it("copies image pull Secrets into the team namespace for the kubelet", async () => {
@@ -235,9 +235,9 @@ describe("ensureSandbox: team namespace (D11)", () => {
     expect(objectAt(kube, "Secret", "ghcr-pull", NS)).toMatchObject({
       type: "kubernetes.io/dockerconfigjson",
       data: { ".dockerconfigjson": "e30=" },
-      metadata: { labels: { "app.kubernetes.io/managed-by": "kobe-server" } },
+      metadata: { labels: { "app.kubernetes.io/managed-by": "kaiju-server" } },
     });
-    const template = objectAt(kube, "SandboxTemplate", "kobe-sandbox", NS);
+    const template = objectAt(kube, "SandboxTemplate", "kaiju-sandbox", NS);
     expect(template?.spec).toMatchObject({
       podTemplate: { spec: { imagePullSecrets: [{ name: "ghcr-pull" }] } },
     });

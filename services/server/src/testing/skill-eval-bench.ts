@@ -107,7 +107,7 @@ export class FakeEvalProvider {
     this.sandboxes.set(spec.threadId, ws);
     return {
       sandboxId,
-      namespace: "kobe-team-x",
+      namespace: "kaiju-team-x",
       claimName: `e-${spec.threadId}`,
       sandboxName: "s",
       state: "running" as const,

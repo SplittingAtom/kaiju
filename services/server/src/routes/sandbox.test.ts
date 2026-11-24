@@ -14,13 +14,13 @@ const SANDBOX_ID = "4f9c2d5a-6b7e-4f90-8bc2-4d5e6f708192";
 const ASSIGNED: BootstrapIdentity = {
   state: "assigned",
   principal: { sandboxId: SANDBOX_ID, teamId: TEAM.id, userId: USER },
-  namespace: "kobe-team-finance",
+  namespace: "kaiju-team-finance",
   podName: "u-x",
 };
 
 const UNASSIGNED: BootstrapIdentity = {
   state: "unassigned",
-  namespace: "kobe-team-finance",
+  namespace: "kaiju-team-finance",
   podName: "w",
   podUid: "7d1e2f3a-4b5c-4d6e-8f70-8192a3b4c5d6",
   teamId: TEAM.id,
@@ -76,11 +76,11 @@ describe("POST /v1/sandbox/session", () => {
   it("refuses tokens that are not a live sandbox's, without detail", async () => {
     const res = await post(
       app(async () => {
-        throw new SandboxAuthError("pod kobe-team-x/y is gone");
+        throw new SandboxAuthError("pod kaiju-team-x/y is gone");
       }),
     );
     expect(res.status).toBe(401);
-    expect(JSON.stringify(await res.json())).not.toMatch(/kobe-team-x/);
+    expect(JSON.stringify(await res.json())).not.toMatch(/kaiju-team-x/);
   });
 
   it("returns isolation_runtime_missing (503) via toResponseBody()", async () => {

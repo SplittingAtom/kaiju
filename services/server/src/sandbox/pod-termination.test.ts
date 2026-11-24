@@ -5,7 +5,7 @@ import { podTermination } from "./pod-termination.js";
 const pod = (status: Record<string, unknown>): KubeObject => ({
   apiVersion: "v1",
   kind: "Pod",
-  metadata: { name: "u-1", namespace: "kobe-team-finance" },
+  metadata: { name: "u-1", namespace: "kaiju-team-finance" },
   status,
 });
 

@@ -15,7 +15,7 @@ const event = (
 ): KubeObject => ({
   apiVersion: "v1",
   kind: "Event",
-  metadata: { name: `${uid}.${reason}.${message.length}`, namespace: "kobe-team-a" },
+  metadata: { name: `${uid}.${reason}.${message.length}`, namespace: "kaiju-team-a" },
   involvedObject: { kind, name: kind === "Pod" ? "u-1" : "workspace-u-1", uid },
   reason,
   message,
@@ -26,13 +26,13 @@ const event = (
 const pod = (status: Record<string, unknown> = {}): KubeObject => ({
   apiVersion: "v1",
   kind: "Pod",
-  metadata: { name: "u-1", namespace: "kobe-team-a", uid: "pod-uid" },
+  metadata: { name: "u-1", namespace: "kaiju-team-a", uid: "pod-uid" },
   status,
 });
 const pvc = (phase: string): KubeObject => ({
   apiVersion: "v1",
   kind: "PersistentVolumeClaim",
-  metadata: { name: "workspace-u-1", namespace: "kobe-team-a", uid: "pvc-uid" },
+  metadata: { name: "workspace-u-1", namespace: "kaiju-team-a", uid: "pvc-uid" },
   status: { phase },
 });
 const podEv = (reason: string, message: string, extra: Record<string, unknown> = {}) =>
@@ -254,7 +254,7 @@ describe("classifyStall: a full team volume quota (KOBE-733)", () => {
   const quota = (hard: Record<string, string>, used: Record<string, string>): KubeObject => ({
     apiVersion: "v1",
     kind: "ResourceQuota",
-    metadata: { name: "kobe-team-member-quota", namespace: "kobe-team-a" },
+    metadata: { name: "kaiju-team-member-quota", namespace: "kaiju-team-a" },
     status: { hard, used },
   });
   const noVolume = (extra: { quota?: KubeObject; events?: KubeObject[] } = {}) =>
@@ -292,7 +292,7 @@ describe("classifyStall: a full team volume quota (KOBE-733)", () => {
         "Sandbox",
         "sandbox-uid",
         "FailedCreate",
-        'persistentvolumeclaims "workspace-u-1" is forbidden: exceeded quota: kobe-team-member-quota, requested: persistentvolumeclaims=1, used: persistentvolumeclaims=50, limited: persistentvolumeclaims=50',
+        'persistentvolumeclaims "workspace-u-1" is forbidden: exceeded quota: kaiju-team-member-quota, requested: persistentvolumeclaims=1, used: persistentvolumeclaims=50, limited: persistentvolumeclaims=50',
       ),
     };
     expect(noVolume({ events: [refused] })).toMatchObject({

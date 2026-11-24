@@ -55,10 +55,10 @@ apply`, or deleting the RuntimeClass later cannot run agents without isolation:
 
 Each user gets one sandbox per team (spec D11): an agent-sandbox `Sandbox` under
 `isolation.runtimeClassName`, with a persistent `/workspace` volume, in the team's namespace
-`kobe-team-<slug>`. The server creates and maintains these namespaces itself; nothing needs to be
+`kaiju-team-<slug>`. The server creates and maintains these namespaces itself; nothing needs to be
 created by hand. Every team namespace gets:
 
-- a **default-deny NetworkPolicy** (`kobe-sandbox-isolation`): no inbound connections at all;
+- a **default-deny NetworkPolicy** (`kaiju-sandbox-isolation`): no inbound connections at all;
   outbound only to the Kaiju server's **sandbox port** (8081, a separate listener with no user API),
   the model-gateway shim (models; `sandbox.modelGatewayAccess`, default on), the MCP proxy and the
   egress proxy — never Bifrost itself. Sandboxes get no DNS: Kaiju's services
@@ -79,7 +79,7 @@ created by hand. Every team namespace gets:
 - Pod Security Admission `baseline` (see below for why not `restricted`).
 
 The chart installs **ValidatingAdmissionPolicies** that hold whatever creates the pod (server,
-agent-sandbox controller, an operator): in `kobe-team-*` namespaces every pod must use
+agent-sandbox controller, an operator): in `kaiju-team-*` namespaces every pod must use
 `isolation.runtimeClassName` and that RuntimeClass must have a gVisor/Kata handler; pods may not
 mount Secrets, read Secrets into env, mount a Kubernetes API token, use host namespaces or
 `hostPath`; they must meet Pod Security `restricted` (non-root, seccomp `RuntimeDefault`/
@@ -89,7 +89,7 @@ escalation, so the image's `kaiju-runas` helper can run each Pi process and its 
 of their own, separate from the agent and from other threads (KOBE-71; the capabilities exist
 inside the gVisor/Kata sandbox kernel only). That is why the namespace label says `baseline`; and
 only the Kaiju server may add or change NetworkPolicies there. The server's own
-cluster-wide permissions (namespaces, RoleBindings) are confined to `kobe-team-*` by the same
+cluster-wide permissions (namespaces, RoleBindings) are confined to `kaiju-team-*` by the same
 mechanism. Sandboxes identify themselves to the server with a projected ServiceAccount token
 (audience `kobe.sandbox-bootstrap`, which the Kubernetes API itself rejects) and receive
 short-lived, audience-bound session tokens in return; no other credential enters a sandbox.
@@ -113,7 +113,7 @@ default; it changes nothing on clusters without Rancher.
 
 Private registries: the names in `global.imagePullSecrets` are copied into each team namespace for
 the kubelet (pods there cannot mount them). Alternatively configure registry credentials on the
-nodes (k3s `registries.yaml`). Kaiju assumes one site per cluster (`kobe-team-*` names are
+nodes (k3s `registries.yaml`). Kaiju assumes one site per cluster (`kaiju-team-*` names are
 cluster-wide).
 
 ### Session-token keys
@@ -255,7 +255,7 @@ which the provider, the identity check and the KOBE-733 wait assume is fixed per
 A legal hold does not block the rebuild: nothing in object storage is deleted, and the lost volume
 is unreachable anyway; the audit event records that a hold covered the member. Without S3 sync the
 rebuild is not offered (`rebuild_unavailable`) and a lost node loses those workspaces for good;
-delete the PVC by hand (`kubectl -n kobe-team-<slug> delete pvc workspace-u-<user-id>`) so the
+delete the PVC by hand (`kubectl -n kaiju-team-<slug> delete pvc workspace-u-<user-id>`) so the
 member gets an empty one.
 
 **What counts as lost.** Only hard evidence from the Kubernetes API, read with
@@ -290,8 +290,8 @@ StorageClass has `allowVolumeExpansion: true` (the chart's strict-local class ha
 raise each claim (expansion only: Kubernetes refuses to shrink a claim):
 
 ```bash
-kubectl -n kobe-team-<slug> get pvc -l app.kubernetes.io/managed-by=kobe-server
-kubectl -n kobe-team-<slug> patch pvc workspace-u-<user-id> \
+kubectl -n kaiju-team-<slug> get pvc -l app.kubernetes.io/managed-by=kaiju-server
+kubectl -n kaiju-team-<slug> patch pvc workspace-u-<user-id> \
   -p '{"spec":{"resources":{"requests":{"storage":"20Gi"}}}}'
 ```
 
@@ -342,7 +342,7 @@ the grace period), `unknown`; `detail` is the cluster's own event text
 followed by a suggested remedy. The server log has the same line (level error, "sandbox not ready:
 failing the wake"). The server never deletes a pod or volume for this: if a workspace that has
 never run is stuck on a volume that cannot attach, delete its PVC by hand
-(`kubectl -n kobe-team-<slug> delete pvc workspace-u-<user-id>`) after confirming it holds no data;
+(`kubectl -n kaiju-team-<slug> delete pvc workspace-u-<user-id>`) after confirming it holds no data;
 the next message starts a fresh sandbox. The server needs `list` on events in team namespaces
 (included in the chart role).
 
@@ -1181,7 +1181,7 @@ to restore a backup into: see [Backup and restore](#backup-and-restore)):
    catalog model with an alias (for example `fast`). See [Models](#models). Bifrost picks the
    configuration up within seconds.
 3. **Create a team.** Site console → **Teams**: a slug, a name and its team admin. The server
-   creates the team's namespace `kobe-team-<slug>` and its sandbox policies itself (by the first
+   creates the team's namespace `kaiju-team-<slug>` and its sandbox policies itself (by the first
    sandbox at the latest).
 4. **Enable the model for the team.** Team console → **Models**: enable it and make it the default.
    Invite members from **Members** (an email through SMTP).
@@ -1190,7 +1190,7 @@ to restore a backup into: see [Backup and restore](#backup-and-restore)):
 
 If the first chat fails with a model error, check that the team has a default model and that the
 gateway is in sync (site console **Models and providers**); if it waits for a sandbox, see
-[Sandboxes](#sandboxes) and `kubectl -n kobe-team-<slug> get pods,events`.
+[Sandboxes](#sandboxes) and `kubectl -n kaiju-team-<slug> get pods,events`.
 
 ### Object storage (S3)
 
@@ -2029,9 +2029,9 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   seed overwrites customized agents with its own definition when that definition is newer.
 - **Skill evals (KOBE-325, migrations `0143_skill_drafts_thread_skill_test_skill_evals_eval_judge_eval_cap` and `0146_skill_evals_rls`).** Members can run
   a skill's eval suite: each case runs in its own short-lived sandbox in the team namespace
-  (template and warm pool `kobe-skill-eval`, claims `e-<thread id>`, PriorityClass and quota
-  `kobe-skill-eval`), beside the member's own sandbox; members' pods keep `teamQuota`
-  (`kobe-team-member-quota`). What the migrations do: new tables and columns, a `slot` column and
+  (template and warm pool `kaiju-skill-eval`, claims `e-<thread id>`, PriorityClass and quota
+  `kaiju-skill-eval`), beside the member's own sandbox; members' pods keep `teamQuota`
+  (`kaiju-team-member-quota`). What the migrations do: new tables and columns, a `slot` column and
   checks on `sandbox_commands` / `sandbox_run_leases` (with a trigger that keeps every command and
   lease on its thread's own sandbox), hold triggers, and a re-validated `sandbox_commands` kind
   check (a full scan of that small table while the upgrade holds its lock). The previous release

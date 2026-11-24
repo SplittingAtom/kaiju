@@ -76,7 +76,7 @@ class FakeProvider implements LifecycleProvider {
       ...(replaced ? { replaced } : {}),
       handle: {
         sandboxId,
-        namespace: `kobe-team-${team.id.slice(0, 4)}`,
+        namespace: `kaiju-team-${team.id.slice(0, 4)}`,
         claimName: `u-${userId}`,
         sandboxName: `u-${userId}`,
         state: "running",

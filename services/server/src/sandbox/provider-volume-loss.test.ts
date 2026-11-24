@@ -7,7 +7,7 @@ import { createSandboxProvider, workspacePvcName } from "./provider.js";
 /**
  * A workspace volume lost with its node (KOBE-739): detection and the rebuild's Kubernetes half.
  */
-const NS = "kobe-team-finance";
+const NS = "kaiju-team-finance";
 const NOW = Date.parse("2026-11-21T12:00:00Z");
 const PVC = (name: string) => ({
   apiVersion: "v1",

@@ -100,7 +100,7 @@ describe("Publish with the gate on (KOBE-93)", () => {
       metadata: { namespace: string };
       spec: { activeDeadlineSeconds: number; template: { spec: Record<string, any> } };
     }[];
-    expect(job?.metadata.namespace).toBe("kobe-team-finance");
+    expect(job?.metadata.namespace).toBe("kaiju-team-finance");
     expect(job?.spec.activeDeadlineSeconds).toBe(600);
     expect(job?.spec.template.spec.runtimeClassName).toBe("gvisor");
     const env = Object.fromEntries(

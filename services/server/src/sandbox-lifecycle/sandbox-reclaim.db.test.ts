@@ -36,7 +36,7 @@ class Provider implements LifecycleProvider {
       resumed: existed,
       handle: {
         sandboxId,
-        namespace: `kobe-team-${team.id.slice(0, 4)}`,
+        namespace: `kaiju-team-${team.id.slice(0, 4)}`,
         claimName: `u-${userId}`,
         sandboxName: `u-${userId}`,
         state: "running",

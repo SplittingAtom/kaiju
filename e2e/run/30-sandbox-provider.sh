@@ -34,7 +34,7 @@ reconcile_summary() {
 reconcile_line=$(wait_for 120 '"converged":[1-9]' reconcile_summary)
 contains "team-namespace reconcile converges the team namespace (KOBE-126)" '"converged":[1-9]' "$reconcile_line"
 contains "team-namespace reconcile reports failed=0 (KOBE-126)" '"failed":0,' "$reconcile_line"
-np_spec() { $KUBECTL -n "$TEAM_NS" get networkpolicy kobe-sandbox-isolation -o jsonpath="$1"; }
+np_spec() { $KUBECTL -n "$TEAM_NS" get networkpolicy kaiju-sandbox-isolation -o jsonpath="$1"; }
 # Every pod but Orbit eval pods (KOBE-93) and external skill scan pods (KOBE-341), each of which has
 # its own, narrower policy below: an excluded label is only safe while its policy is in place.
 contains "team NetworkPolicy selects every pod but Orbit eval and skill scan pods (KOBE-93, KOBE-341)" \
@@ -42,25 +42,25 @@ contains "team NetworkPolicy selects every pod but Orbit eval and skill scan pod
 # Egress is governed and its rule list empty (an empty array or none): scan pods reach nothing.
 contains "skill scan NetworkPolicy selects only skill scan pods and allows no ingress and no egress (KOBE-341)" \
   '^\{"matchExpressions":\[\{"key":"kobe\.splittingatom\.io/skill-scan","operator":"Exists"\}\]\} \["Ingress","Egress"\] (\[\])? (\[\])?$' \
-  "$($KUBECTL -n "$TEAM_NS" get networkpolicy kobe-skill-scan -o jsonpath='{.spec.podSelector} {.spec.policyTypes} {.spec.ingress} {.spec.egress}')"
+  "$($KUBECTL -n "$TEAM_NS" get networkpolicy kaiju-skill-scan -o jsonpath='{.spec.podSelector} {.spec.policyTypes} {.spec.ingress} {.spec.egress}')"
 contains "eval NetworkPolicy selects only Orbit eval pods and allows no ingress (KOBE-93)" \
   '^\{"matchExpressions":\[\{"key":"kobe\.splittingatom\.io/orbit-eval","operator":"Exists"\}\]\} (\[\])?$' \
-  "$($KUBECTL -n "$TEAM_NS" get networkpolicy kobe-orbit-eval-isolation -o jsonpath='{.spec.podSelector} {.spec.ingress}')"
+  "$($KUBECTL -n "$TEAM_NS" get networkpolicy kaiju-orbit-eval-isolation -o jsonpath='{.spec.podSelector} {.spec.ingress}')"
 contains "eval NetworkPolicy allows egress to the model gateway only" '^model-gateway$' \
-  "$($KUBECTL -n "$TEAM_NS" get networkpolicy kobe-orbit-eval-isolation -o jsonpath='{.spec.egress[*].to[*].podSelector.matchLabels.app\.kubernetes\.io/component}')"
+  "$($KUBECTL -n "$TEAM_NS" get networkpolicy kaiju-orbit-eval-isolation -o jsonpath='{.spec.egress[*].to[*].podSelector.matchLabels.app\.kubernetes\.io/component}')"
 contains "team NetworkPolicy governs ingress and egress" '^\["Ingress","Egress"\]$' "$(np_spec '{.spec.policyTypes}')"
 contains "team NetworkPolicy allows no ingress at all" '^(\[\])?$' "$(np_spec '{.spec.ingress}')"
-contains "team namespace has only Kaiju's three NetworkPolicies (controller policy unmanaged)" '^kobe-orbit-eval-isolation kobe-sandbox-isolation kobe-skill-scan $' \
+contains "team namespace has only Kaiju's three NetworkPolicies (controller policy unmanaged)" '^kaiju-orbit-eval-isolation kaiju-sandbox-isolation kaiju-skill-scan $' \
   "$($KUBECTL -n "$TEAM_NS" get networkpolicy -o name | sed 's|.*/||' | sort | tr '\n' ' ')"
 # The team quota is the members' share plus the eval share (KOBE-325); members are held to theirs.
 contains "team ResourceQuota is in place (members' 20 CPU plus the eval share)" '^20[0-9]{3}m$' \
-  "$($KUBECTL -n "$TEAM_NS" get resourcequota kobe-team-quota -o jsonpath='{.spec.hard.requests\.cpu}')"
+  "$($KUBECTL -n "$TEAM_NS" get resourcequota kaiju-team-quota -o jsonpath='{.spec.hard.requests\.cpu}')"
 contains "member ResourceQuota holds members to the team's 20 CPU" '^20$' \
-  "$($KUBECTL -n "$TEAM_NS" get resourcequota kobe-team-member-quota -o jsonpath='{.spec.hard.requests\.cpu}')"
+  "$($KUBECTL -n "$TEAM_NS" get resourcequota kaiju-team-member-quota -o jsonpath='{.spec.hard.requests\.cpu}')"
 contains "eval ResourceQuota is in place" '^[0-9]+m?$' \
-  "$($KUBECTL -n "$TEAM_NS" get resourcequota kobe-skill-eval-quota -o jsonpath='{.spec.hard.requests\.cpu}')"
+  "$($KUBECTL -n "$TEAM_NS" get resourcequota kaiju-skill-eval-quota -o jsonpath='{.spec.hard.requests\.cpu}')"
 contains "team warm pool exists" '^1$' \
-  "$($KUBECTL -n "$TEAM_NS" get sandboxwarmpool kobe-sandbox -o jsonpath='{.spec.replicas}')"
+  "$($KUBECTL -n "$TEAM_NS" get sandboxwarmpool kaiju-sandbox -o jsonpath='{.spec.replicas}')"
 contains "sandbox pod is set to the gVisor RuntimeClass" '^gvisor$' \
   "$($KUBECTL -n "$TEAM_NS" get pod "${sandbox_pod:-none}" -o jsonpath='{.spec.runtimeClassName}' 2>&1)"
 expect "every pod in the team namespace (sandbox + warm pool) uses gVisor" '^gvisor$' \
@@ -107,7 +107,7 @@ contains "admission refuses SETUID on any container but the sandbox's own (KOBE-
 contains "admission refuses privilege escalation on any container but the sandbox's own (KOBE-71)" "only the sandbox container 'agent'" \
   "$(admission "{\"spec\":{\"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,$SEC_POD,\"containers\":[{\"name\":\"c\",\"image\":\"busybox:1.37\",\"securityContext\":{\"allowPrivilegeEscalation\":true,\"capabilities\":{\"drop\":[\"ALL\"]}}}]}}")"
 server_sa="system:serviceaccount:$NS:kaiju-server"
-contains "the server's ServiceAccount cannot create namespaces outside kobe-team-*" 'only manage kobe-team-\* namespaces' \
+contains "the server's ServiceAccount cannot create namespaces outside kaiju-team-*" 'only manage kaiju-team-\* namespaces' \
   "$($KUBECTL create namespace kaiju-e2e-evil --as="$server_sa" --dry-run=server 2>&1 || true)"
 contains "the server's ServiceAccount cannot read Secrets in team namespaces" 'forbidden' \
   "$($KUBECTL -n "$TEAM_NS" get secrets --as="$server_sa" 2>&1 || true)"
@@ -122,11 +122,11 @@ team_pod() { # namespace, name, shell command → a sandbox-like pod (gVisor, bo
   TEAM_PROBES+=("$2")
   PODS+=("-n $1 $2")
   $KUBECTL -n "$1" run "$2" --restart=Never --image=busybox:1.37 --overrides="{\"spec\":{
-    \"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,\"serviceAccountName\":\"kobe-sandbox\",$SEC_POD,
+    \"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,\"serviceAccountName\":\"kaiju-sandbox\",$SEC_POD,
     \"containers\":[{\"name\":\"$2\",\"image\":\"busybox:1.37\",\"command\":[\"sh\",\"-c\",\"$3\"],$SEC_CTR,
       \"resources\":{\"requests\":{\"cpu\":\"50m\",\"memory\":\"32Mi\"},\"limits\":{\"cpu\":\"200m\",\"memory\":\"64Mi\"}},
-      \"volumeMounts\":[{\"name\":\"kobe-bootstrap\",\"mountPath\":\"/var/run/secrets/kaiju\"}]}],
-    \"volumes\":[{\"name\":\"kobe-bootstrap\",\"projected\":{\"sources\":[{\"serviceAccountToken\":{
+      \"volumeMounts\":[{\"name\":\"kaiju-bootstrap\",\"mountPath\":\"/var/run/secrets/kaiju\"}]}],
+    \"volumes\":[{\"name\":\"kaiju-bootstrap\",\"projected\":{\"sources\":[{\"serviceAccountToken\":{
       \"audience\":\"kobe.sandbox-bootstrap\",\"expirationSeconds\":3600,\"path\":\"bootstrap-token\"}}]}}]}}" >/dev/null
 }
 team_probe() { # shell command → its output, run from a sandbox-like pod in the team namespace
@@ -149,7 +149,7 @@ start_listener() { # namespace → name of a running HTTP listener on 8080 there
 
 # A second team (its own namespace) with a listener: sandboxes of one team must not reach it.
 handle2=$( (ensure_sandbox 8e3f3c4d-2e5f-4a7b-8c1d-2e3f4a5b6c7d e2e2 || true) | tail -1)
-contains "a second team gets its own sandbox namespace" '^kobe-team-e2e2$' "$(json_field namespace "$handle2")"
+contains "a second team gets its own sandbox namespace" '^kaiju-team-e2e2$' "$(json_field namespace "$handle2")"
 other_listener=$(start_listener "$TEAM2_NS")
 other_ip=$($KUBECTL -n "$TEAM2_NS" get pod "$other_listener" -o jsonpath='{.status.podIP}' 2>/dev/null || true)
 

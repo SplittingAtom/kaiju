@@ -7,7 +7,7 @@
 # Runs after e2e/run.sh in CI (k3d) and against a real cluster's throwaway install:
 #   KAIJU_GATE1_NS=<release namespace> KAIJU_GATE1_RELEASE=<release> e2e/gate1.sh
 # Non-destructive outside what it creates: users gate1-*@gate1.test, teams gate1-a/gate1-b (their
-# kobe-team-* namespaces and sandboxes, created by the server) and its own pods. It signs sandbox
+# kaiju-team-* namespaces and sandboxes, created by the server) and its own pods. It signs sandbox
 # wire tokens with the site's keys, so it refuses anything but a k3d context unless
 # KAIJU_GATE1_CONTEXT names the context explicitly. Re-runnable: fixtures are reused.
 set -euo pipefail
@@ -91,7 +91,7 @@ else
   echo "     no model catalog on this site: runs end without a model answer ($(printf '%s\n' "$fx" | grep '^models_' | tr '\n' ' '))"
 fi
 team_id() { if [[ "$(team_of "$1")" == b ]]; then echo "$TEAM_B"; else echo "$TEAM_A"; fi; }
-team_ns() { echo "kobe-team-gate1-$(team_of "$1")"; }
+team_ns() { echo "kaiju-team-gate1-$(team_of "$1")"; }
 member_json() { # keys... → chat users JSON (with ids)
   local out="" k
   for k in "$@"; do
@@ -131,9 +131,9 @@ if [[ "$STEPS" == *" chat-real "* ]]; then
   contains "ten distinct sandboxes" '^10$' \
     "$(printf '%s\n' "$conns" | sed -n 's/.*sandbox=\([0-9a-f-]*\):.*/\1/p' | sort -u | grep -c .)"
   for t in a b; do
-    pods=$($KUBECTL -n "kobe-team-gate1-$t" get pods -l agents.x-k8s.io/claim-uid \
+    pods=$($KUBECTL -n "kaiju-team-gate1-$t" get pods -l agents.x-k8s.io/claim-uid \
       -o jsonpath='{range .items[*]}{.metadata.labels.agents\.x-k8s\.io/claim-uid}/{.spec.runtimeClassName}/{.status.phase}{"\n"}{end}' 2>&1)
-    contains "team $t: five user sandboxes run under gVisor in kobe-team-gate1-$t" '^5$' \
+    contains "team $t: five user sandboxes run under gVisor in kaiju-team-gate1-$t" '^5$' \
       "$(printf '%s\n' "$pods" | grep -E '/gvisor/Running$' | cut -d/ -f1 | grep -cFf <(printf '%s\n' "$conns" | sed -n 's/.*sandbox=\([0-9a-f-]*\):.*/\1/p'))"
   done
 fi
@@ -201,13 +201,13 @@ if [[ "$STEPS" == *" chat-stream "* ]]; then
   echo "==> concurrency with streamed answers, everyone refreshes mid-run"
   for k in $KEYS; do suspend "$k"; done
   if until_ok 180 all_closed 10; then ok "the real agents are down (claims live, identities free)"; else fail "the real agents are down"; fi
-  start_agent gate1-agent kobe-team-gate1-a true 40 100 a1 a2 a3 a4 a5
-  start_agent gate1-agent kobe-team-gate1-b true 40 100 b1 b2 b3 b4 b5
+  start_agent gate1-agent kaiju-team-gate1-a true 40 100 a1 a2 a3 a4 a5
+  start_agent gate1-agent kaiju-team-gate1-b true 40 100 b1 b2 b3 b4 b5
   for t in a b; do
-    if until_ok 240 agent_ready gate1-agent "kobe-team-gate1-$t" 5; then ok "team $t: five sandbox identities connected over the wire"
+    if until_ok 240 agent_ready gate1-agent "kaiju-team-gate1-$t" 5; then ok "team $t: five sandbox identities connected over the wire"
     else
       fail "team $t: five sandbox identities connected over the wire"
-      $KUBECTL -n "kobe-team-gate1-$t" logs gate1-agent 2>&1 | tail -10 | sed 's/^/     agent: /'
+      $KUBECTL -n "kaiju-team-gate1-$t" logs gate1-agent 2>&1 | tail -10 | sed 's/^/     agent: /'
     fi
   done
   stream=$(client "$(printf '{"mode":"chat","kind":"stream","words":40,"refresh":true,"refreshAfter":5,"base":"%s","nonce":"%s","users":%s}' "$BASE" "$NONCE" "$MEMBERS")")
@@ -219,7 +219,7 @@ if [[ "$STEPS" == *" chat-stream "* ]]; then
   done
   contains "nobody can open a teammate's or another team's run or thread (all 404)" '^cross_leaks=0$' "$stream"
   contains "every user tried every other user's run and thread (180 checks)" '^cross_checks=180$' "$stream"
-  for t in a b; do $KUBECTL -n "kobe-team-gate1-$t" delete pod gate1-agent --ignore-not-found --wait=false >/dev/null 2>&1 || true; done
+  for t in a b; do $KUBECTL -n "kaiju-team-gate1-$t" delete pod gate1-agent --ignore-not-found --wait=false >/dev/null 2>&1 || true; done
 fi
 
 # 3. The cross-team probe on this site's own data (the CI db job runs the full suite).
@@ -241,14 +241,14 @@ if [[ "$STEPS" == *" interrupt "* ]]; then
   victim_json=$(member_json "$VICTIM" | sed 's/^\[//; s/\]$//')
   suspend "$VICTIM"
   until_ok 180 all_closed 10 || true
-  start_agent gate1-victim kobe-team-gate1-b false 600 500 "$VICTIM"
-  if until_ok 240 agent_ready gate1-victim kobe-team-gate1-b 1; then ok "the victim's sandbox identity is connected"; else fail "the victim's sandbox identity is connected"; fi
+  start_agent gate1-victim kaiju-team-gate1-b false 600 500 "$VICTIM"
+  if until_ok 240 agent_ready gate1-victim kaiju-team-gate1-b 1; then ok "the victim's sandbox identity is connected"; else fail "the victim's sandbox identity is connected"; fi
   started=$(client "$(printf '{"mode":"interrupt-start","base":"%s","nonce":"%s","user":%s}' "$BASE" "$NONCE" "$victim_json")")
   printf '%s\n' "$started" | sed 's/^/     /'
   contains "a message starts a run at once" '^message=201:false$' "$started"
   contains "the partial answer is mirrored (root, prompt, answer)" '^entries_before=[^,]+,[^,]+,[^,]+$' "$started"
   contains "the run is running before the kill" '^status_before=running$' "$started"
-  $KUBECTL -n kobe-team-gate1-b delete pod gate1-victim --grace-period=1 --wait=true >/dev/null 2>&1 || true
+  $KUBECTL -n kaiju-team-gate1-b delete pod gate1-victim --grace-period=1 --wait=true >/dev/null 2>&1 || true
   retried=$(client "$(printf '{"mode":"interrupt-retry","base":"%s","user":%s,"threadId":"%s","runId":"%s","entriesBefore":"%s"}' \
     "$BASE" "$victim_json" "$(field thread "$started")" "$(field run "$started")" "$(field entries_before "$started")")")
   printf '%s\n' "$retried" | sed 's/^/     /'
@@ -278,10 +278,10 @@ if [[ "$STEPS" == *" cold "* ]]; then
   warm=$(client "$(printf '{"mode":"trial","trial":0,"base":"%s","nonce":"%s","user":%s}' "$BASE" "$NONCE" "$cold_json")")
   printf '     warm-up: %s\n' "$warm"
   thread=$(printf '%s' "$warm" | sed -n 's/.*"threadId":"\([0-9a-f-]*\)".*/\1/p' | head -1)
-  claim_uid=$($KUBECTL -n kobe-team-gate1-a get sandboxclaim "u-$cold_id" -o jsonpath='{.metadata.uid}' 2>/dev/null || true)
-  pod_gone() { [[ -z "$($KUBECTL -n kobe-team-gate1-a get pods -l "agents.x-k8s.io/claim-uid=${claim_uid:-none}" -o name 2>/dev/null)" ]]; }
-  cold_sbx=$($KUBECTL -n kobe-team-gate1-a get sandboxclaim "u-$cold_id" -o jsonpath='{.status.sandbox.name}' 2>/dev/null || true)
-  pvc_class=$($KUBECTL -n kobe-team-gate1-a get pvc -o jsonpath='{range .items[*]}{.metadata.name} {.spec.storageClassName}{"\n"}{end}' 2>/dev/null \
+  claim_uid=$($KUBECTL -n kaiju-team-gate1-a get sandboxclaim "u-$cold_id" -o jsonpath='{.metadata.uid}' 2>/dev/null || true)
+  pod_gone() { [[ -z "$($KUBECTL -n kaiju-team-gate1-a get pods -l "agents.x-k8s.io/claim-uid=${claim_uid:-none}" -o name 2>/dev/null)" ]]; }
+  cold_sbx=$($KUBECTL -n kaiju-team-gate1-a get sandboxclaim "u-$cold_id" -o jsonpath='{.status.sandbox.name}' 2>/dev/null || true)
+  pvc_class=$($KUBECTL -n kaiju-team-gate1-a get pvc -o jsonpath='{range .items[*]}{.metadata.name} {.spec.storageClassName}{"\n"}{end}' 2>/dev/null \
     | grep -E "${cold_sbx:-none}|$cold_id" | awk '{print $2}' | head -1 || true)
   echo "     workspace storage class: ${pvc_class:-unknown}"
   values=""

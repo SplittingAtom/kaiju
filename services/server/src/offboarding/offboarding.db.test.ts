@@ -473,7 +473,7 @@ describe("waking an offboarded sandbox (KOBE-25 seam)", () => {
         resumed: false,
         handle: {
           sandboxId: randomUUID(),
-          namespace: "kobe-team-finance",
+          namespace: "kaiju-team-finance",
           claimName: `u-${userId}`,
           sandboxName: `u-${userId}`,
           state: "running" as const,

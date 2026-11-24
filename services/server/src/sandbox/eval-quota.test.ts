@@ -4,7 +4,7 @@ import { POD_SCOPED_QUOTA_KEYS, evalQuotaHard, teamQuotaHard } from "./eval-quot
 import { SETTINGS } from "../testing/sandbox-fixtures.js";
 
 /**
- * PR #316 CI: the API server refused `kobe-skill-eval-quota` ("unsupported scope applied to
+ * PR #316 CI: the API server refused `kaiju-skill-eval-quota` ("unsupported scope applied to
  * resource"). A PriorityClass-scoped quota may only count pods, CPU and memory (checked against
  * k3s 1.34.6, 2026-10-19: ephemeral storage is refused too), so both scoped quotas are built
  * from those keys alone, whatever `teamQuota` and the pod resources hold.
@@ -41,8 +41,8 @@ describe("the scoped ResourceQuotas (KOBE-325, PR #316)", () => {
     it(`holds only keys the PriorityClass scope allows (${label})`, () => {
       expect([...POD_SCOPED_QUOTA_KEYS].sort()).toEqual([...ALLOWED].sort());
       for (const m of [
-        evalResourceQuotaManifest("kobe-team-x", settings),
-        memberResourceQuotaManifest("kobe-team-x", settings),
+        evalResourceQuotaManifest("kaiju-team-x", settings),
+        memberResourceQuotaManifest("kaiju-team-x", settings),
       ]) {
         const spec = m.spec as { hard: Record<string, string>; scopeSelector: unknown };
         expect(spec.scopeSelector).toBeDefined();

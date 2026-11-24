@@ -22,7 +22,7 @@
 # Runs after the gate1-prep install in CI (k3d, shard `gate3`) and against a real cluster's install:
 #   KAIJU_GATE3_NS=<release namespace> KAIJU_GATE3_RELEASE=<release> e2e/gate3.sh
 # Non-destructive outside what it creates: users gate3-*@gate3.test, team gate3-a (namespace
-# kobe-team-gate3-a and the sandbox the server makes for gate3-m1, whose pod and volume ac-5
+# kaiju-team-gate3-a and the sandbox the server makes for gate3-m1, whose pod and volume ac-5
 # deletes), its agents, skills, project, memory docs and threads, and one site blocklist entry for
 # a bundle only this run uploads (removed on exit). The memory switches of team gate3-a are turned
 # on. It reads the database as the app role, so it refuses anything but a k3d context unless
@@ -46,7 +46,7 @@ OWNER_PASSWORD="${KAIJU_GATE3_OWNER_PASSWORD:-e2e owner password}"
 # where this runs: on in CI, otherwise opt in (or run the printed command elsewhere).
 BROWSER="${KAIJU_GATE3_BROWSER:-$([[ "${CI:-}" == true ]] && echo 1 || echo 0)}"
 TEAM_SLUG=gate3-a
-TNS="kobe-team-$TEAM_SLUG"
+TNS="kaiju-team-$TEAM_SLUG"
 SERVER="deploy/$RELEASE-server"
 BASE="http://$RELEASE-server.$NS.svc.cluster.local"
 NONCE="$(date +%s)"

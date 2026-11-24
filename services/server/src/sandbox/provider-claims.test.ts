@@ -51,7 +51,7 @@ describe("ensureSandbox: one sandbox per (user, team) (D11)", () => {
     const { provider } = setup();
     const a = await provider.ensureSandbox(TEAM, USER);
     const b = await provider.ensureSandbox(OTHER_TEAM, USER);
-    expect([a.namespace, b.namespace]).toEqual(["kobe-team-finance", "kobe-team-marketing"]);
+    expect([a.namespace, b.namespace]).toEqual(["kaiju-team-finance", "kaiju-team-marketing"]);
     expect(b.sandboxId).not.toBe(a.sandboxId);
   });
 
