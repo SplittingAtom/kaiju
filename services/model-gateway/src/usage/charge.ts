@@ -1,4 +1,4 @@
-import { MODEL_OUTPUT_TOKENS_RANGE } from "@kobe/db";
+import { MODEL_OUTPUT_TOKENS_RANGE } from "@kaiju/db";
 
 /**
  * What a call is charged when the provider's usage report is missing (KOBE-43 review): a stream

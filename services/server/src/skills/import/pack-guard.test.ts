@@ -11,7 +11,7 @@ afterAll(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })))
 
 /** A pack of one commit holding `files`, made by the git CLI. */
 function packWith(files: Record<string, Buffer | string>): Buffer {
-  const dir = mkdtempSync(path.join(tmpdir(), "kobe-pack-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "kaiju-pack-"));
   dirs.push(dir);
   const run = (args: string[], input?: string) =>
     execFileSync("git", args, {

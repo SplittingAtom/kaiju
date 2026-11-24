@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { isRunTokenActive, recordRunToken, revokeRunTokens } from "./models/index.js";
 import { runs, sandboxRunLeases, teams, threads, users } from "./schema/index.js";
 import { withTeam } from "./with-team.js";
 
 /** KOBE-118: the run_tokens record and the gateway's stateful check. */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const teamA = randomUUID();
 const teamB = randomUUID();
 const userId = randomUUID();

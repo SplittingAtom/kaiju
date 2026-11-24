@@ -1,5 +1,5 @@
-import { sql, type KobeTx, makeCursorCodec } from "@kobe/db";
-import type { WorkspaceFileEntry } from "@kobe/protocol";
+import { sql, type KaijuTx, makeCursorCodec } from "@kaiju/db";
+import type { WorkspaceFileEntry } from "@kaiju/protocol";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import type { StoredEntry } from "../workspace-sync/store.js";
 import { areaOf, baseName, underPattern } from "./paths.js";
@@ -55,7 +55,7 @@ export interface ListOptions {
  * pages on (folder?, name): `after` skips everything up to and including that position.
  */
 export async function listFolder(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   folder: string,
   options: ListOptions = {},
@@ -140,7 +140,7 @@ export interface FolderFile {
 
 /** Live files at or under `path` (the file itself, or a folder's files), at most `limit`. */
 export async function liveFilesUnder(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   path: string,
   limit: number,
@@ -155,7 +155,7 @@ export async function liveFilesUnder(
 
 /** Whether a live file sits at `path`, under it, or at one of `ancestors` (an upload would clash). */
 export async function pathIsTaken(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   path: string,
   ancestors: readonly string[],

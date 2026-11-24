@@ -35,7 +35,7 @@ e2e/browser-results/
 # The Kaiju guide compiled from docs/guide (KOBE-616, packages/guide/scripts/generate-guide.mjs)
 packages/guide/src/generated/
 
-# The server's OpenAPI document, generated (KOBE-815): `pnpm --filter @kobe/server openapi`; CI
+# The server's OpenAPI document, generated (KOBE-815): `pnpm --filter @kaiju/server openapi`; CI
 # keeps it as the `openapi` artifact.
 services/server/openapi.json
 

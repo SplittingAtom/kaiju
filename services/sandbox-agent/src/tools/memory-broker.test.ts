@@ -1,12 +1,12 @@
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { MemoryResultFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { MemoryResultFrame } from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { MemoryBroker } from "./memory-broker.js";
 
 const THREAD = "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e";
 const RUN = "6c7d8e9f-0a1b-4c2d-9e3f-4a5b6c7d8e9f";
-type Put = Extract<KobeToolsRequest, { op: "memory.put" }>;
-type Read = Extract<KobeToolsRequest, { op: "memory.read" }>;
+type Put = Extract<KaijuToolsRequest, { op: "memory.put" }>;
+type Read = Extract<KaijuToolsRequest, { op: "memory.read" }>;
 const put = (id = "kt_1"): Put => ({
   id,
   op: "memory.put",
@@ -17,14 +17,14 @@ const read: Read = { id: "kt_2", op: "memory.read", tool_call_id: "call_r", inpu
 
 function setup(sendOk = true) {
   const sent: Record<string, unknown>[] = [];
-  const replies: KobeToolsResponse[] = [];
+  const replies: KaijuToolsResponse[] = [];
   const broker = new MemoryBroker({
     send: (frame) => {
       sent.push(frame as unknown as Record<string, unknown>);
       return sendOk;
     },
   });
-  return { broker, sent, replies, reply: (r: KobeToolsResponse) => replies.push(r) };
+  return { broker, sent, replies, reply: (r: KaijuToolsResponse) => replies.push(r) };
 }
 
 describe("MemoryBroker", () => {

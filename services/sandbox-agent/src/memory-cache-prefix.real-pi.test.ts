@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
+import type { SandboxToServerFrame } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import { PICKS_HEADER } from "./memory/semantic-context.js";
 import { sessionFilePath } from "./pi/session-files.js";

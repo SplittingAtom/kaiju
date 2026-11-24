@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import type { KobeDb, KobeTx } from "../client.js";
+import type { KaijuDb, KaijuTx } from "../client.js";
 import {
   DEFAULT_REQUESTS_PER_MINUTE,
   type BudgetPeriod,
@@ -162,7 +162,7 @@ const spendColumns = (starts: { month: string; day: string }) =>
 
 /** The site limits and the site's spend this month and today (any team context). */
 async function sitePart(
-  tx: KobeTx,
+  tx: KaijuTx,
   starts: { readonly month: string; readonly day: string },
 ): Promise<{ row: Row; rpm: number }> {
   const res = await tx.execute<Row>(sql`
@@ -181,7 +181,7 @@ async function sitePart(
  * Must run inside the team's transaction (`withTeam`).
  */
 export function loadTeamBudgetLines(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   now = new Date(),
 ): Promise<{
@@ -192,7 +192,7 @@ export function loadTeamBudgetLines(
 }
 
 async function budgetLines(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   member: string | undefined,
   now: Date,
@@ -259,7 +259,7 @@ function memberDefaults(r: Row): Row | undefined {
  * member's eval calls (inside `withTeam`).
  */
 export async function loadMemberBudgetState(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   now = new Date(),
@@ -274,7 +274,7 @@ export async function loadMemberBudgetState(
  * Inside the team's transaction.
  */
 export async function loadEvalCapLines(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   now = new Date(),
 ): Promise<BudgetLine[]> {
@@ -319,7 +319,7 @@ export interface ModelPrice {
  * absent (their calls reserve tokens only).
  */
 export async function loadGatewayPrices(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
 ): Promise<ReadonlyMap<string, ModelPrice>> {
   const res = await db.execute<Row>(sql`
     SELECT (CASE WHEN p.kind = 'openai_compatible' THEN 'kobe-' || p.id ELSE p.kind::text END)

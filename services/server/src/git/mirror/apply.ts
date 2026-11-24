@@ -4,9 +4,9 @@ import {
   lockLegalHolds,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import {
   diffVersions,
@@ -50,7 +50,7 @@ export type ApplyOutcome =
   /** KOBE-767: Kaiju's commit flow moved the mirror head since this refresh started. */
   | { readonly kind: "stale" };
 
-async function teamHeld(tx: KobeTx, teamId: string): Promise<boolean> {
+async function teamHeld(tx: KaijuTx, teamId: string): Promise<boolean> {
   const res = await tx.execute<{ held: boolean }>(
     sql`SELECT public.memory_legal_hold_covers(${teamId}, NULL) AS held`,
   );
@@ -67,7 +67,7 @@ async function teamHeld(tx: KobeTx, teamId: string): Promise<boolean> {
  * repository's last mirror (KOBE-766 review M3).
  */
 async function prunePrevious(
-  tx: KobeTx,
+  tx: KaijuTx,
   row: MirrorRow,
   previous: string | null,
 ): Promise<{ readonly previous: string | null; readonly swept: number }> {
@@ -117,7 +117,7 @@ async function prunePrevious(
  * (KOBE-767): under the project row lock, so it never races a commit or a checkout. Returns how
  * many commits went.
  */
-export async function sweepRepoCommits(tx: KobeTx, row: MirrorRow): Promise<number> {
+export async function sweepRepoCommits(tx: KaijuTx, row: MirrorRow): Promise<number> {
   const project = await tx.execute<{ kind: string }>(sql`
     SELECT kind FROM projects WHERE team_id = ${row.teamId} AND id = ${row.projectId}
        FOR UPDATE`);
@@ -126,7 +126,7 @@ export async function sweepRepoCommits(tx: KobeTx, row: MirrorRow): Promise<numb
 }
 
 async function replaceCommits(
-  tx: KobeTx,
+  tx: KaijuTx,
   row: MirrorRow,
   commits: readonly MirrorCommit[],
 ): Promise<void> {
@@ -146,7 +146,7 @@ async function replaceCommits(
 }
 
 export async function applyMirror(
-  db: KobeDb,
+  db: KaijuDb,
   lease: MirrorLease,
   row: MirrorRow,
   input: {

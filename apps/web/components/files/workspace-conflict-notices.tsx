@@ -8,7 +8,7 @@
 import { useCallback, useContext, useEffect, useState } from "react";
 import type { FilesApi } from "../../lib/files/api";
 import type { SyncConflictView } from "../../lib/files/sync-conflicts";
-import { ChatSessionContext } from "../chat/kobe-runtime";
+import { ChatSessionContext } from "../chat/kaiju-runtime";
 import { ConflictNotice } from "./sync-conflict-notice";
 
 const NONE: readonly SyncConflictView[] = [];
@@ -44,7 +44,7 @@ export function WorkspaceConflictNotices({
   );
   if (conflicts.length === 0) return null;
   return (
-    <div className="flex flex-col gap-2 px-2 pb-2" data-kobe-workspace-conflicts>
+    <div className="flex flex-col gap-2 px-2 pb-2" data-kaiju-workspace-conflicts>
       {conflicts.map((c) => (
         <ConflictNotice
           key={c.id}

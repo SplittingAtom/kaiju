@@ -17,7 +17,7 @@ const f = new RunFixture();
 const ANY = { "if-match": "*" };
 
 beforeAll(async () => {
-  await f.setup({ blobs: { objects, prefix: "kobe/" } });
+  await f.setup({ blobs: { objects, prefix: "kaiju/" } });
 });
 afterAll(async () => {
   await f.teardown();
@@ -182,7 +182,7 @@ describe("sandbox bundle download", () => {
   const routes = (authenticate: SandboxAuthenticator) =>
     skillSandboxRoutes({
       db: f.fx.db,
-      blobs: { objects, prefix: "kobe/" },
+      blobs: { objects, prefix: "kaiju/" },
       authenticate,
       log: { error() {}, warn() {} },
     });

@@ -3,7 +3,7 @@
  * following the spec's §5 matrix. The page renders `actions` as given; these fixtures stand in for
  * the server's decisions.
  */
-import type { AgentRosterActions, AgentRosterRow } from "@kobe/protocol";
+import type { AgentRosterActions, AgentRosterRow } from "@kaiju/protocol";
 import { ME, TEAM } from "../admin/testing";
 
 export const NO_ACTIONS: AgentRosterActions = {

@@ -5,10 +5,10 @@ import {
   sql,
   teamSkillSettings,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
-import type { TeamEvalCap } from "@kobe/protocol";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import type { TeamEvalCap } from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import { isModelEnabled } from "../models/team-store.js";
 
@@ -19,7 +19,7 @@ import { isModelEnabled } from "../models/team-store.js";
  */
 
 /** One writer of the team's skill switches at a time (the row may not exist yet). */
-async function lockSettings(tx: KobeTx, teamId: string): Promise<void> {
+async function lockSettings(tx: KaijuTx, teamId: string): Promise<void> {
   const key = `kobe.skills.settings:${teamId}`;
   await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`);
 }
@@ -29,7 +29,7 @@ export interface CatalogSwitches {
   readonly buildersMayInstall: boolean;
 }
 
-export async function readCatalogSwitches(tx: KobeTx, teamId: string): Promise<CatalogSwitches> {
+export async function readCatalogSwitches(tx: KaijuTx, teamId: string): Promise<CatalogSwitches> {
   const [row] = await tx
     .select({
       membersMayAdd: teamSkillSettings.membersMayAddCatalog,
@@ -41,7 +41,7 @@ export async function readCatalogSwitches(tx: KobeTx, teamId: string): Promise<C
 }
 
 /** "Builders may promote without confirmation" (KOBE-333, SK19): off unless a Team admin turns it on. */
-export async function readBuildersMayPromote(tx: KobeTx, teamId: string): Promise<boolean> {
+export async function readBuildersMayPromote(tx: KaijuTx, teamId: string): Promise<boolean> {
   const [row] = await tx
     .select({ on: teamSkillSettings.buildersMayPromote })
     .from(teamSkillSettings)
@@ -49,12 +49,12 @@ export async function readBuildersMayPromote(tx: KobeTx, teamId: string): Promis
   return row?.on ?? false;
 }
 
-export function getBuildersMayPromote(db: KobeDb, teamId: string): Promise<boolean> {
+export function getBuildersMayPromote(db: KaijuDb, teamId: string): Promise<boolean> {
   return withTeam(db, teamId, (tx) => readBuildersMayPromote(tx, teamId));
 }
 
 async function writeBuildersMayPromote(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   on: boolean,
@@ -74,7 +74,7 @@ async function writeBuildersMayPromote(
   });
 }
 
-export async function readPersonalSkillsDisabled(tx: KobeTx, teamId: string): Promise<boolean> {
+export async function readPersonalSkillsDisabled(tx: KaijuTx, teamId: string): Promise<boolean> {
   const [row] = await tx
     .select({ disabled: teamSkillSettings.personalSkillsDisabled })
     .from(teamSkillSettings)
@@ -82,13 +82,13 @@ export async function readPersonalSkillsDisabled(tx: KobeTx, teamId: string): Pr
   return row?.disabled ?? false;
 }
 
-export function getPersonalSkillsDisabled(db: KobeDb, teamId: string): Promise<boolean> {
+export function getPersonalSkillsDisabled(db: KaijuDb, teamId: string): Promise<boolean> {
   return withTeam(db, teamId, (tx) => readPersonalSkillsDisabled(tx, teamId));
 }
 
 /** Sets the switch and audits a real change; returns the value in force. */
 export function setPersonalSkillsDisabled(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   disabled: boolean,
@@ -97,7 +97,7 @@ export function setPersonalSkillsDisabled(
 }
 
 async function writePersonalSkillsDisabled(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   disabled: boolean,
@@ -119,7 +119,7 @@ async function writePersonalSkillsDisabled(
   return disabled;
 }
 
-export function getCatalogSwitches(db: KobeDb, teamId: string): Promise<CatalogSwitches> {
+export function getCatalogSwitches(db: KaijuDb, teamId: string): Promise<CatalogSwitches> {
   return withTeam(db, teamId, (tx) => readCatalogSwitches(tx, teamId));
 }
 
@@ -129,7 +129,7 @@ export function getCatalogSwitches(db: KobeDb, teamId: string): Promise<CatalogS
  * at its default, off).
  */
 export function setCatalogSwitches(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   change: Partial<CatalogSwitches>,
@@ -138,7 +138,7 @@ export function setCatalogSwitches(
 }
 
 async function writeCatalogSwitches(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   change: Partial<CatalogSwitches>,
@@ -174,7 +174,7 @@ async function writeCatalogSwitches(
  * it; null otherwise (the team default judges then). Used when the Site's judge is not enabled in
  * the team.
  */
-export async function readEvalJudgeAlias(tx: KobeTx, teamId: string): Promise<string | null> {
+export async function readEvalJudgeAlias(tx: KaijuTx, teamId: string): Promise<string | null> {
   const [row] = await tx
     .select({ alias: teamSkillSettings.evalJudgeAlias })
     .from(teamSkillSettings)
@@ -183,7 +183,7 @@ export async function readEvalJudgeAlias(tx: KobeTx, teamId: string): Promise<st
   return alias !== null && (await isModelEnabled(tx, teamId, alias)) ? alias : null;
 }
 
-export function getEvalJudgeAlias(db: KobeDb, teamId: string): Promise<string | null> {
+export function getEvalJudgeAlias(db: KaijuDb, teamId: string): Promise<string | null> {
   return withTeam(db, teamId, (tx) => readEvalJudgeAlias(tx, teamId));
 }
 
@@ -192,7 +192,7 @@ export function getEvalJudgeAlias(db: KobeDb, teamId: string): Promise<string | 
  * it (null: the team default). Refuses a model the team has not enabled; audits a real change.
  */
 export function setEvalJudgeAlias(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   alias: string | null,
@@ -201,7 +201,7 @@ export function setEvalJudgeAlias(
 }
 
 async function writeEvalJudgeAlias(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   alias: string | null,
@@ -228,7 +228,7 @@ async function writeEvalJudgeAlias(
  * The team eval cap (KOBE-327, SK18): monthly dollars or tokens, or null (none, the default).
  * Enforced per eval call through `kobe_reserve_budget`; new evals are refused once it is used up.
  */
-export async function readEvalCap(tx: KobeTx, teamId: string): Promise<TeamEvalCap> {
+export async function readEvalCap(tx: KaijuTx, teamId: string): Promise<TeamEvalCap> {
   const [row] = await tx
     .select({ usd: teamSkillSettings.evalCapUsd, tokens: teamSkillSettings.evalCapTokens })
     .from(teamSkillSettings)
@@ -238,14 +238,14 @@ export async function readEvalCap(tx: KobeTx, teamId: string): Promise<TeamEvalC
   return null;
 }
 
-export function getEvalCap(db: KobeDb, teamId: string): Promise<TeamEvalCap> {
+export function getEvalCap(db: KaijuDb, teamId: string): Promise<TeamEvalCap> {
   return withTeam(db, teamId, (tx) => readEvalCap(tx, teamId));
 }
 
 const sameCap = (a: TeamEvalCap, b: TeamEvalCap) => JSON.stringify(a) === JSON.stringify(b);
 
 export async function writeEvalCap(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   cap: TeamEvalCap,
@@ -281,7 +281,7 @@ export interface TeamSkillSettingsChange {
  * goes first; a model the team hasn't enabled refuses the request before anything is written.
  */
 export function setTeamSkillSettings(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   change: TeamSkillSettingsChange,
@@ -304,7 +304,7 @@ export function setTeamSkillSettings(
 
 /** Sets or removes the team eval cap in its own transaction (`PUT /v1/team/budgets/eval-cap`). */
 export function setEvalCap(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   cap: TeamEvalCap,

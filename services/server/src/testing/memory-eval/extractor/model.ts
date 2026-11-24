@@ -6,7 +6,7 @@ import {
   parseMemoryExtractorOutput,
   serverCallOutputCapFor,
   type ServerCallRequest,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { Attempt } from "./score.js";
 
 /**

@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
-import { ARTIFACT_CONTENT_MAX_BYTES, projectFileSchema } from "@kobe/protocol";
+import { withTeam } from "@kaiju/db";
+import { ARTIFACT_CONTENT_MAX_BYTES, projectFileSchema } from "@kaiju/protocol";
 import { createApp } from "../app.js";
 import {
   EventStreamFixture,
@@ -24,7 +24,7 @@ import { listLive } from "../workspace-sync/store.js";
 const fx = new EventStreamFixture();
 const objects = new MemoryObjects();
 const silent = { error: () => {}, warn: () => {}, info: () => {} };
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const LIMITS = { maxFileBytes: 1024 * 1024, maxWorkspaceBytes: 4 * 1024 * 1024, maxFiles: 50 };
 let sync: WorkspaceSync;
 let app: ReturnType<typeof createApp>;
@@ -150,7 +150,7 @@ const fromArtifact = (
 });
 
 async function uploadToWorkspace(b: TestBrowser, name: string, data: string) {
-  const boundary = `----kobe${randomBytes(6).toString("hex")}`;
+  const boundary = `----kaiju${randomBytes(6).toString("hex")}`;
   const bytes = Buffer.from(
     `--${boundary}\r\nContent-Disposition: form-data; name="path"\r\n\r\nnotes\r\n` +
       `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\n` +

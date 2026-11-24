@@ -17,7 +17,7 @@ import {
   promoteFolderRequestSchema,
   revertProjectRequestSchema,
   updateCheckoutResponseSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { storageSettingsSchema } from "../projects/storage.js";
 
 /**

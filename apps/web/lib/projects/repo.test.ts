@@ -66,8 +66,8 @@ const conversion = (over: Partial<RepoConversion> = {}): RepoConversion => ({
   provider: "github",
   baseUrl: "https://github.com",
   organization: "acme",
-  repositoryName: "kobe-q4",
-  fullName: "acme/kobe-q4",
+  repositoryName: "kaiju-q4",
+  fullName: "acme/kaiju-q4",
   visibility: "private",
   carryHistory: true,
   useExisting: false,
@@ -193,11 +193,11 @@ describe("mirror state", () => {
 
 describe("Convert to repo", () => {
   it("proposes the prefix and the slug", () => {
-    expect(proposedRepoName("kobe-", "q4-launch")).toBe("kobe-q4-launch");
+    expect(proposedRepoName("kaiju-", "q4-launch")).toBe("kaiju-q4-launch");
     expect(proposedRepoName(undefined, "q4-launch")).toBe("q4-launch");
   });
   it("checks the name like the server", () => {
-    expect(repoNameProblem("kobe-q4")).toBeNull();
+    expect(repoNameProblem("kaiju-q4")).toBeNull();
     expect(repoNameProblem("")).toMatch(/Enter/);
     expect(repoNameProblem("a b")).toMatch(/letters, digits/);
     expect(repoNameProblem("a".repeat(101))).toMatch(/100/);

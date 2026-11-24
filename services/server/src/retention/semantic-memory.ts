@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, lockLegalHolds, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { SYSTEM_ACTOR, lockLegalHolds, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -51,7 +51,7 @@ const NOT_HELD = sql`NOT public.memory_legal_hold_covers(i.team_id, i.owner_user
  * held items (the 0222 trigger would refuse them with KH001). Call after the hold lock.
  */
 export async function scrubEvidenceInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadIds?: readonly string[],
 ): Promise<number> {
@@ -74,7 +74,7 @@ export async function scrubEvidenceInTx(
 }
 
 /** Archived or superseded items unchanged since before `cutoff` that nothing supersedes into. */
-async function itemBatch(tx: KobeTx, teamId: string, cutoff: Date): Promise<SemanticPurgeCounts> {
+async function itemBatch(tx: KaijuTx, teamId: string, cutoff: Date): Promise<SemanticPurgeCounts> {
   const at = cutoff.toISOString();
   const versions = await tx.execute<{ n: number }>(sql`
     WITH doomed AS (
@@ -98,7 +98,7 @@ async function itemBatch(tx: KobeTx, teamId: string, cutoff: Date): Promise<Sema
 
 /** Non-current versions replaced before `cutoff` that no run used. */
 async function versionBatch(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   cutoff: Date,
 ): Promise<SemanticPurgeCounts> {
@@ -121,7 +121,7 @@ async function versionBatch(
 }
 
 async function audited(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   reason: "retention" | "offboarding",
   counts: SemanticPurgeCounts,
@@ -139,9 +139,9 @@ async function audited(
 
 /** One batch in its own team transaction, hold lock first; audited when it removed something. */
 function batch(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
-  one: (tx: KobeTx) => Promise<SemanticPurgeCounts>,
+  one: (tx: KaijuTx) => Promise<SemanticPurgeCounts>,
 ): Promise<SemanticPurgeCounts> {
   return withTeam(db, teamId, async (tx) => {
     await tx.execute(sql.raw(`SET LOCAL lock_timeout = '5s'`));
@@ -153,10 +153,10 @@ function batch(
 }
 
 async function repeat(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   stop: (() => boolean) | undefined,
-  one: (tx: KobeTx) => Promise<SemanticPurgeCounts>,
+  one: (tx: KaijuTx) => Promise<SemanticPurgeCounts>,
 ): Promise<SemanticPurgeCounts> {
   let total = NO_SEMANTIC_PURGE;
   for (let n = 0; n < 1000; n++) {
@@ -173,7 +173,7 @@ async function repeat(
  * evidence scrub runs). Called by the nightly retention pass for every team.
  */
 export async function purgeSemanticMemory(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   cutoff: Date | null,
   options: { readonly stop?: () => boolean } = {},
@@ -205,7 +205,7 @@ export const activeMember = (teamId: string, userId: string) => sql`EXISTS (
  * active member again (a return before the purge keeps their memories) or a hold covers them.
  */
 export async function purgeDepartedSemanticInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<SemanticPurgeCounts> {
@@ -230,7 +230,7 @@ export async function purgeDepartedSemanticInTx(
 
 /** Whether the member owns `user` items in the Workspace (offboarding keeps a record for them). */
 export async function ownsPersonalItems(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<boolean> {

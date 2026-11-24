@@ -9,7 +9,7 @@ import {
   skillDraftToolInputSchema,
   type JsonObject,
   type ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
  * Input checks for built-in tools before any rule is evaluated (review KOBE-35 HIGH 1).

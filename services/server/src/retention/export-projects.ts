@@ -1,5 +1,5 @@
-import { sql, withTeam, type KobeDb } from "@kobe/db";
-import type { ProjectCommit } from "@kobe/protocol";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
+import type { ProjectCommit } from "@kaiju/protocol";
 import { logger } from "../logger.js";
 import { viewableBy } from "../projects/access.js";
 import {
@@ -34,7 +34,7 @@ export interface ExportedProject {
 }
 
 export async function* readableProjectsForExport(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: { readonly teamId: string; readonly userId: string },
 ): AsyncGenerator<ExportedProject> {
   const owned = await withTeam(db, viewer.teamId, (tx) =>

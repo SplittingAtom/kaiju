@@ -13,9 +13,9 @@ import {
   sql,
   withTeam,
   type GitConnectionRecord,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import { readAppName } from "../branding/settings.js";
@@ -41,7 +41,7 @@ import { GIT_EXPIRY_NOTICE_DAYS } from "./connection-view.js";
  * connection's notices (`replaceGitCredential`).
  */
 export interface GitExpiryDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly mailer: Mailer;
   readonly publicUrl: string;
   readonly logger: Pick<Logger, "warn" | "error" | "info">;
@@ -89,7 +89,7 @@ interface Due {
 }
 
 /** Connections whose token lapses within the window and whose admins were not told yet. */
-function dueOf(db: KobeDb, before: Date): Promise<Due[][]> {
+function dueOf(db: KaijuDb, before: Date): Promise<Due[][]> {
   return scanTeams(db, "git expiry notices", async (tx, team) => {
     const ids = await tx
       .select({ id: gitConnections.id })
@@ -114,7 +114,7 @@ function dueOf(db: KobeDb, before: Date): Promise<Due[][]> {
 
 /** The admins' bell notices of one claim, in a savepoint (KOBE-819). */
 async function bellInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   c: GitConnectionRecord,
   expiresAt: Date,
   adminIds: readonly string[],
@@ -141,7 +141,7 @@ async function bellInTx(
 
 /** Claims one notice and records it; the admins' addresses, or undefined if already claimed. */
 function claim(
-  db: KobeDb,
+  db: KaijuDb,
   c: GitConnectionRecord,
   log: GitExpiryDeps["logger"],
 ): Promise<string[] | undefined> {

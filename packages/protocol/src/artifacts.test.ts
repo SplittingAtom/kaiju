@@ -7,8 +7,8 @@ import {
   artifactSummarySchema,
   artifactToolInputSchema,
   createArtifactInputSchema,
-  kobeToolsRequestSchema,
-  kobeToolsResponseSchema,
+  kaijuToolsRequestSchema,
+  kaijuToolsResponseSchema,
   updateArtifactInputSchema,
   CAPABILITY_ARTIFACTS,
   artifactFileExtension,
@@ -159,20 +159,20 @@ describe("kobe-tools channel", () => {
     input: create,
   };
   it("accepts requests and responses", () => {
-    expect(kobeToolsRequestSchema.safeParse(req).success).toBe(true);
+    expect(kaijuToolsRequestSchema.safeParse(req).success).toBe(true);
     expect(
-      kobeToolsRequestSchema.safeParse({
+      kaijuToolsRequestSchema.safeParse({
         ...req,
         tool: "update_artifact",
         input: { artifact_id: ID, content: "x" },
       }).success,
     ).toBe(true);
     expect(
-      kobeToolsResponseSchema.safeParse({ id: "k1", ok: true, artifact_id: ID, version: 1 })
+      kaijuToolsResponseSchema.safeParse({ id: "k1", ok: true, artifact_id: ID, version: 1 })
         .success,
     ).toBe(true);
     expect(
-      kobeToolsResponseSchema.safeParse({
+      kaijuToolsResponseSchema.safeParse({
         id: "k1",
         ok: false,
         error: { code: "too_large", message: "m" },
@@ -184,11 +184,11 @@ describe("kobe-tools channel", () => {
     ["mismatched input", { ...req, tool: "update_artifact" }],
     ["extra key", { ...req, x: 1 }],
   ])("rejects request: %s", (_n, r) => {
-    expect(kobeToolsRequestSchema.safeParse(r).success).toBe(false);
+    expect(kaijuToolsRequestSchema.safeParse(r).success).toBe(false);
   });
   it("rejects a response with both ok shapes mixed", () => {
     expect(
-      kobeToolsResponseSchema.safeParse({ id: "k1", ok: true, error: { code: "x", message: "m" } })
+      kaijuToolsResponseSchema.safeParse({ id: "k1", ok: true, error: { code: "x", message: "m" } })
         .success,
     ).toBe(false);
   });
@@ -225,10 +225,10 @@ describe("kobe-tools memory ops (KOBE-157)", () => {
       tool_call_id: "c1",
       input: { scope: "user", path: "a.md", content: "x" },
     };
-    expect(kobeToolsRequestSchema.safeParse(put).success).toBe(true);
-    expect(kobeToolsRequestSchema.safeParse({ ...put, tool: "remember" }).success).toBe(false);
+    expect(kaijuToolsRequestSchema.safeParse(put).success).toBe(true);
+    expect(kaijuToolsRequestSchema.safeParse({ ...put, tool: "remember" }).success).toBe(false);
     expect(
-      kobeToolsRequestSchema.safeParse({
+      kaijuToolsRequestSchema.safeParse({
         id: "kt_2",
         op: "memory.read",
         tool_call_id: "c2",
@@ -236,7 +236,7 @@ describe("kobe-tools memory ops (KOBE-157)", () => {
       }).success,
     ).toBe(true);
     expect(
-      kobeToolsResponseSchema.safeParse({
+      kaijuToolsResponseSchema.safeParse({
         id: "kt_1",
         ok: true,
         op: "put",
@@ -247,7 +247,7 @@ describe("kobe-tools memory ops (KOBE-157)", () => {
       }).success,
     ).toBe(true);
     expect(
-      kobeToolsResponseSchema.safeParse({
+      kaijuToolsResponseSchema.safeParse({
         id: "kt_2",
         ok: true,
         op: "read",

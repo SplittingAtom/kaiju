@@ -81,7 +81,7 @@ const connection = (over: Record<string, unknown> = {}) => ({
   display_name: "Acme on GitHub",
   access_level: "read_write",
   status: "ok",
-  repo_name_prefix: "kobe-",
+  repo_name_prefix: "kaiju-",
   ...over,
 });
 
@@ -134,7 +134,7 @@ afterEach(() => {
 function mount(pollMs?: number) {
   const { fetchFn, calls } = routedFetch(routes);
   render(
-    <div data-kobe-chat>
+    <div data-kaiju-chat>
       <IconActionProvider>
         <WorkspaceProjectsProvider teamId={TEAM} fetchFn={fetchFn} conversionPollMs={pollMs}>
           <FileBrowser
@@ -325,7 +325,7 @@ describe("Convert to repo… (ac-2, G16)", () => {
     await user.click(within(menu).getByRole("menuitem", { name: "Convert to repo…" }));
     const dialog = await screen.findByRole("dialog", { name: "Convert Budget plan to a repo" });
     const name = await within(dialog).findByLabelText("Repository name");
-    expect((name as HTMLInputElement).value).toBe("kobe-budget");
+    expect((name as HTMLInputElement).value).toBe("kaiju-budget");
     expect(
       within(dialog).getByText(/Git connection: Acme on GitHub \(github\.com \/ acme\)/),
     ).toBeTruthy();
@@ -339,7 +339,7 @@ describe("Convert to repo… (ac-2, G16)", () => {
       calls.find((c) => c.method === "POST" && c.url.endsWith("/repo-conversion"))?.body,
     ).toEqual({
       connection_id: "c-1",
-      repository_name: "kobe-budget",
+      repository_name: "kaiju-budget",
       carry_history: false,
     });
   });
@@ -390,7 +390,7 @@ describe("Convert to repo… (ac-2, G16)", () => {
       { repo: wireRepo({ project_id: "p-budget" }) },
     ];
     routes["GET /v1/projects/p-budget/repo-status"] = [200, repoStatus()];
-    const done = { status: "completed", step: "done", full_name: "acme/kobe-budget" };
+    const done = { status: "completed", step: "done", full_name: "acme/kaiju-budget" };
     routes["GET /v1/projects/p-budget/repo-conversion"] = [
       [200, { conversion: { status: "running", step: "push" } }],
       [500, { code: "server_error", message: "x" }],

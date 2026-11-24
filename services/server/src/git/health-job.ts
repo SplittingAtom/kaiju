@@ -4,8 +4,8 @@ import {
   scanTeams,
   type Envelope,
   type GitConnectionRecord,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import type { InstallationTokenCache } from "../git-hosts/github/app-auth.js";
 import type { GitHostNet } from "../git-hosts/http.js";
@@ -65,7 +65,7 @@ export class GitHostBackoff {
 }
 
 export interface GitHealthDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly envelope: Envelope | undefined;
   readonly net: GitHostNet;
   readonly mailer: Mailer;
@@ -87,7 +87,7 @@ export interface GitHealthPass {
 
 const hostOf = (c: GitConnectionRecord) => new URL(c.baseUrl).host.toLowerCase();
 
-async function dueConnections(db: KobeDb, before: number): Promise<GitConnectionRecord[]> {
+async function dueConnections(db: KaijuDb, before: number): Promise<GitConnectionRecord[]> {
   const perTeam = await scanTeams(db, "git health", async (tx, team) => {
     const due = (await readGitConnections(tx, team.id)).filter(
       (c) =>

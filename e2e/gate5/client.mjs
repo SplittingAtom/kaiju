@@ -56,7 +56,7 @@ async function g5Usage() {
     `${usage.status}:${(latest.input_tokens ?? 0) + (latest.cache_read_tokens ?? 0) + (latest.cache_write_tokens ?? 0)}`,
   );
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   try {
     const rows = await withTeam(database.db, config.user.teamId, (tx) =>
       tx.execute(sql`
@@ -91,7 +91,7 @@ async function g5Title() {
   // The lock is not in the API: read it from the thread's row (evidence only).
   const lockedOf = async () => {
     const database = await db();
-    const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+    const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
     try {
       const rows = await withTeam(database.db, config.user.teamId, (tx) =>
         tx.execute(sql`SELECT title_locked FROM threads
@@ -141,7 +141,7 @@ async function g5Share() {
   out("revoke", `${revoked.status}:${revoked.json.visibility ?? revoked.json.code ?? "-"}`);
   out("admin_after_revoke", code(await admin.call("GET", `/v1/threads/${t}`)));
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   try {
     const rows = await withTeam(database.db, config.author.teamId, (tx) =>
       tx.execute(sql`

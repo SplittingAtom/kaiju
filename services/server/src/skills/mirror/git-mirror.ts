@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import git, { Errors, type HttpClient, type TreeEntry } from "isomorphic-git";
-import { mirrorTagName, type PackageFiles } from "@kobe/protocol";
+import { mirrorTagName, type PackageFiles } from "@kaiju/protocol";
 import {
   CATALOG_JSON_PATH,
   readCatalogJson,

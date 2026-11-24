@@ -57,21 +57,22 @@ export function WorkspacePanel({
     () => () => {
       requestAnimationFrame(() => {
         const at = document.activeElement;
-        if (at === null || at === document.body) document.getElementById("kobe-chat-main")?.focus();
+        if (at === null || at === document.body)
+          document.getElementById("kaiju-chat-main")?.focus();
       });
     },
     [],
   );
   return (
     <>
-      <div className={styles.backdrop} aria-hidden="true" data-kobe-panel-backdrop="" />
+      <div className={styles.backdrop} aria-hidden="true" data-kaiju-panel-backdrop="" />
       <section
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        data-kobe-panel={panel.id}
+        data-kaiju-panel={panel.id}
         className={styles.panel}
       >
         <div className={styles.header}>

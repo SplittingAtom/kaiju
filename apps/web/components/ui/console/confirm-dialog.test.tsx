@@ -16,7 +16,7 @@ function Revoke() {
   const [confirm, dialog] = useConfirm();
   const [answer, setAnswer] = useState("none");
   return (
-    <div data-kobe-console="">
+    <div data-kaiju-console="">
       <button
         type="button"
         onClick={async () => {
@@ -48,7 +48,7 @@ function Purge() {
   const [confirm, dialog] = useConfirm();
   const [answer, setAnswer] = useState("none");
   return (
-    <div data-kobe-console="">
+    <div data-kaiju-console="">
       <button
         type="button"
         onClick={async () => {
@@ -91,7 +91,7 @@ describe("typed confirmation (KOBE-386)", () => {
 describe("useConfirm / ConfirmDialog", () => {
   it("asks in an alert dialog in the console root, described, with focus on Cancel", async () => {
     const dialog = await open();
-    expect(dialog.closest("[data-kobe-console]")).not.toBeNull();
+    expect(dialog.closest("[data-kaiju-console]")).not.toBeNull();
     const described = document.getElementById(dialog.getAttribute("aria-describedby") ?? "");
     expect(described?.textContent).toBe("The link stops working.");
     await waitFor(() =>
@@ -130,7 +130,7 @@ describe("focus and lifecycle (review S3, nits)", () => {
     const [confirm, dialog] = useConfirm();
     const [gone, setGone] = useState(false);
     return (
-      <div data-kobe-console="">
+      <div data-kaiju-console="">
         <main id="console-main" tabIndex={-1}>
           {!gone && (
             <button
@@ -166,7 +166,7 @@ describe("focus and lifecycle (review S3, nits)", () => {
     function Ask() {
       const [confirm, dialog] = useConfirm();
       return (
-        <div data-kobe-console="">
+        <div data-kaiju-console="">
           <button
             type="button"
             onClick={(e) =>
@@ -195,7 +195,7 @@ describe("focus and lifecycle (review S3, nits)", () => {
       const [confirm, dialog] = useConfirm();
       const [pending, setPending] = useState(false);
       return (
-        <div data-kobe-console="">
+        <div data-kaiju-console="">
           <main id="console-main" tabIndex={-1}>
             <button
               type="button"

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { patchScheduleBodySchema, type PatchScheduleBody } from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+import { patchScheduleBodySchema, type PatchScheduleBody } from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { type TeamVariables } from "../../authz/middleware.js";
 import { uuidSchema } from "../../threads/schemas.js";
 import {

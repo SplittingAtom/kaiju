@@ -6,7 +6,7 @@ import {
   type PolicyDecision,
   type RememberLimits,
   type ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   builtin,
   ENABLED_ALL,
@@ -36,7 +36,7 @@ import { DEFAULT_POLICY_SETTINGS } from "./settings.js";
 /** KOBE-289: every remember scope and admin limit, as the engine enforces them. */
 
 const OTHER = "99999999-9999-4999-8999-999999999999";
-const kobeWrite = builtin("share_file");
+const kaijuWrite = builtin("share_file");
 const bash = builtin("bash");
 /** A sandbox write (risk write): rememberable; `bash` is destructive and never is. */
 const write = builtin("write");
@@ -72,13 +72,13 @@ describe("thread- and run-bound rules", () => {
       remember_scope: "thread",
       thread_id: OTHER,
     });
-    expect(decide(kobeWrite, [own]).effect).toBe("allow");
-    expect(decide(kobeWrite, [own]).reasons[0]).toMatchObject({
+    expect(decide(kaijuWrite, [own]).effect).toBe("allow");
+    expect(decide(kaijuWrite, [own]).reasons[0]).toMatchObject({
       code: "user_allow_rule",
       rule_id: own.id,
       message: "Allowed by your rule (this conversation).",
     });
-    expect(decide(kobeWrite, [other]).effect).toBe("require_approval");
+    expect(decide(kaijuWrite, [other]).effect).toBe("require_approval");
   });
 
   it("a run rule allows calls in its run only", () => {
@@ -247,10 +247,10 @@ describe("only this exact action", () => {
   });
 
   it("pins every top-level argument of an MCP tool", () => {
-    const pattern = exactArgPattern(jira, { summary: "Fix *", project: "KOBE", labels: ["a"] });
+    const pattern = exactArgPattern(jira, { summary: "Fix *", project: "KAIJU", labels: ["a"] });
     expect(pattern).toEqual({
       "/labels": '["a"]',
-      "/project": "KOBE",
+      "/project": "KAIJU",
       "/summary": "Fix \\*",
     });
   });
@@ -283,33 +283,33 @@ describe("only this exact action matches on canonical JSON (KOBE-783, P2-23)", (
   const outcome = (r: PolicyRule, input: JsonObject) => decide(jira, [r], { input }).effect;
 
   it("a number never matches its string, nor an object or a list its JSON text", () => {
-    const n = exactRule({ project: "KOBE", limit: 5 });
-    expect(outcome(n, { project: "KOBE", limit: 5 })).toBe("allow");
-    expect(outcome(n, { project: "KOBE", limit: "5" })).toBe("require_approval");
-    const s = exactRule({ project: "KOBE", limit: "5" });
-    expect(outcome(s, { project: "KOBE", limit: "5" })).toBe("allow");
-    expect(outcome(s, { project: "KOBE", limit: 5 })).toBe("require_approval");
-    const o = exactRule({ project: "KOBE", fields: { a: 1 }, labels: ["x"] });
-    expect(outcome(o, { project: "KOBE", fields: '{"a":1}', labels: ["x"] })).toBe(
+    const n = exactRule({ project: "KAIJU", limit: 5 });
+    expect(outcome(n, { project: "KAIJU", limit: 5 })).toBe("allow");
+    expect(outcome(n, { project: "KAIJU", limit: "5" })).toBe("require_approval");
+    const s = exactRule({ project: "KAIJU", limit: "5" });
+    expect(outcome(s, { project: "KAIJU", limit: "5" })).toBe("allow");
+    expect(outcome(s, { project: "KAIJU", limit: 5 })).toBe("require_approval");
+    const o = exactRule({ project: "KAIJU", fields: { a: 1 }, labels: ["x"] });
+    expect(outcome(o, { project: "KAIJU", fields: '{"a":1}', labels: ["x"] })).toBe(
       "require_approval",
     );
-    expect(outcome(o, { project: "KOBE", fields: { a: 1 }, labels: '["x"]' })).toBe(
+    expect(outcome(o, { project: "KAIJU", fields: { a: 1 }, labels: '["x"]' })).toBe(
       "require_approval",
     );
-    const b = exactRule({ project: "KOBE", draft: true });
-    expect(outcome(b, { project: "KOBE", draft: "true" })).toBe("require_approval");
+    const b = exactRule({ project: "KAIJU", draft: true });
+    expect(outcome(b, { project: "KAIJU", draft: "true" })).toBe("require_approval");
   });
 
   it("key order and number spelling neither defeat nor widen it (the approval's canonical form)", () => {
-    const r = exactRule({ project: "KOBE", fields: { b: 2, a: 1 }, priority: 2 });
+    const r = exactRule({ project: "KAIJU", fields: { b: 2, a: 1 }, priority: 2 });
     const same = JSON.parse(
-      '{"priority":2.0,"fields":{"a":1,"b":2},"project":"KOBE"}',
+      '{"priority":2.0,"fields":{"a":1,"b":2},"project":"KAIJU"}',
     ) as JsonObject;
     expect(outcome(r, same)).toBe("allow");
-    expect(outcome(r, { project: "KOBE", fields: { a: 1, b: 2 }, priority: 3 })).toBe(
+    expect(outcome(r, { project: "KAIJU", fields: { a: 1, b: 2 }, priority: 3 })).toBe(
       "require_approval",
     );
-    expect(outcome(r, { project: "KOBE", fields: { a: 1, b: 2, c: 3 }, priority: 2 })).toBe(
+    expect(outcome(r, { project: "KAIJU", fields: { a: 1, b: 2, c: 3 }, priority: 2 })).toBe(
       "require_approval",
     );
   });
@@ -319,18 +319,18 @@ describe("only this exact action matches on canonical JSON (KOBE-783, P2-23)", (
     // (the member is asked again); plain text still matches a string, and nothing else.
     const legacy = rule("user", "allow", jira.name, {
       remember_scope: "forever",
-      arg_pattern: { "/project": "KOBE", "/limit": "5" },
+      arg_pattern: { "/project": "KAIJU", "/limit": "5" },
       exact_keys: true,
     });
-    expect(outcome(legacy, { project: "KOBE", limit: 5 })).toBe("require_approval");
-    expect(outcome(legacy, { project: "KOBE", limit: "5" })).toBe("require_approval");
+    expect(outcome(legacy, { project: "KAIJU", limit: 5 })).toBe("require_approval");
+    expect(outcome(legacy, { project: "KAIJU", limit: "5" })).toBe("require_approval");
     const text = rule("user", "allow", jira.name, {
       remember_scope: "forever",
-      arg_pattern: { "/project": "KOBE", "/summary": "Fix it" },
+      arg_pattern: { "/project": "KAIJU", "/summary": "Fix it" },
       exact_keys: true,
     });
-    expect(outcome(text, { project: "KOBE", summary: "Fix it" })).toBe("allow");
-    expect(outcome(text, { project: ["KOBE"], summary: "Fix it" })).toBe("require_approval");
+    expect(outcome(text, { project: "KAIJU", summary: "Fix it" })).toBe("allow");
+    expect(outcome(text, { project: ["KAIJU"], summary: "Fix it" })).toBe("require_approval");
   });
 });
 
@@ -375,7 +375,7 @@ describe("server-computed expiries", () => {
 });
 
 describe("review S3/S4: exact means exact", () => {
-  const pattern = { "/project": "KOBE", "/summary": "Fix" };
+  const pattern = { "/project": "KAIJU", "/summary": "Fix" };
   const exact = rule("user", "allow", "mcp__jira__create_issue", {
     remember_scope: "forever",
     arg_pattern: pattern,
@@ -383,17 +383,17 @@ describe("review S3/S4: exact means exact", () => {
   });
 
   it("an exact MCP rule matches the same arguments only: no extra, none missing", () => {
-    expect(decide(jira, [exact], { input: { project: "KOBE", summary: "Fix" } }).effect).toBe(
+    expect(decide(jira, [exact], { input: { project: "KAIJU", summary: "Fix" } }).effect).toBe(
       "allow",
     );
     expect(
-      decide(jira, [exact], { input: { project: "KOBE", summary: "Fix", body: "leak" } }).effect,
+      decide(jira, [exact], { input: { project: "KAIJU", summary: "Fix", body: "leak" } }).effect,
     ).toBe("require_approval");
-    expect(decide(jira, [exact], { input: { project: "KOBE" } }).effect).toBe("require_approval");
+    expect(decide(jira, [exact], { input: { project: "KAIJU" } }).effect).toBe("require_approval");
     // Without the key check (older rules) only the pinned pointers count.
     const loose = { ...exact, exact_keys: false };
     expect(
-      decide(jira, [loose], { input: { project: "KOBE", summary: "Fix", body: "x" } }).effect,
+      decide(jira, [loose], { input: { project: "KAIJU", summary: "Fix", body: "x" } }).effect,
     ).toBe("allow");
   });
 
@@ -424,15 +424,15 @@ describe("review S3/S4: exact means exact", () => {
       remember_scope: "forever",
       arg_pattern: pattern,
     });
-    const extra = { project: "KOBE", summary: "Fix", body: "leak" };
+    const extra = { project: "KAIJU", summary: "Fix", body: "leak" };
     expect(decide(jira, [old], { limits: only, input: extra }).effect).toBe("require_approval");
     expect(
-      decide(jira, [old], { limits: only, input: { project: "KOBE", summary: "Fix" } }).effect,
+      decide(jira, [old], { limits: only, input: { project: "KAIJU", summary: "Fix" } }).effect,
     ).toBe("require_approval");
     expect(rememberedRuleRefusal(old, jira, only, NOW)).toBe("not_exact");
     // The same rule made by KOBE-289 (key set pinned) counts, and still refuses extra arguments.
     expect(
-      decide(jira, [exact], { limits: only, input: { project: "KOBE", summary: "Fix" } }).effect,
+      decide(jira, [exact], { limits: only, input: { project: "KAIJU", summary: "Fix" } }).effect,
     ).toBe("allow");
     expect(decide(jira, [exact], { limits: only, input: extra }).effect).toBe("require_approval");
   });

@@ -8,8 +8,8 @@ import { fixtureUrl, prepareFixtures } from "./fixtures.js";
 let ws = "";
 let outside = "";
 beforeEach(async () => {
-  ws = await mkdtemp(path.join(tmpdir(), "kobe-eval-fix-"));
-  outside = await mkdtemp(path.join(tmpdir(), "kobe-eval-out-"));
+  ws = await mkdtemp(path.join(tmpdir(), "kaiju-eval-fix-"));
+  outside = await mkdtemp(path.join(tmpdir(), "kaiju-eval-out-"));
 });
 afterEach(async () => {
   await rm(ws, { recursive: true, force: true });

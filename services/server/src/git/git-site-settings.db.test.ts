@@ -4,14 +4,14 @@ import {
   GIT_SITE_ENABLED_KEY,
   decideGitHost,
   readGitSiteSettings,
-} from "@kobe/db";
-import { KobeMcpHarness } from "../testing/kobe-mcp-harness.js";
+} from "@kaiju/db";
+import { KaijuMcpHarness } from "../testing/kaiju-mcp-harness.js";
 
 /**
  * KOBE-757 (Workspace git G3): the Site switch and host limit through the Site settings API,
  * validated and audited on the server, and read back by the check every connection goes through.
  */
-const h = new KobeMcpHarness();
+const h = new KaijuMcpHarness();
 
 beforeAll(() => h.setup(), 120_000);
 afterAll(() => h.teardown());

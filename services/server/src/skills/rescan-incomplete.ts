@@ -1,4 +1,4 @@
-import { storedVerdict } from "@kobe/skill-scanner";
+import { storedVerdict } from "@kaiju/skill-scanner";
 import {
   SYSTEM_ACTOR,
   and,
@@ -6,8 +6,8 @@ import {
   personalSkillScans,
   teamSkillReviews,
   withTeam,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { isStale, type ReviewKey, type RowContext, type Tally } from "./rescan-rows.js";
 
@@ -53,7 +53,7 @@ const suspended = () => ({
 });
 
 async function audit(
-  tx: KobeTx,
+  tx: KaijuTx,
   ctx: RowContext,
   at: { skillId: string; slug: string; version: number },
   scope: "team" | "personal",

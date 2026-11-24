@@ -35,7 +35,7 @@ async function form(name: string, body: string, fields: Record<string, string>):
 }
 
 beforeAll(async () => {
-  h = await openHarness({ blobs: { objects, prefix: "kobe/" } });
+  h = await openHarness({ blobs: { objects, prefix: "kaiju/" } });
   const adminId = await h.createUser("admin@semver.test");
   const memberId = await h.createUser("member@semver.test");
   await h.admin.query(`INSERT INTO teams (id, slug, name) VALUES ($1, 'semver', 'Semver')`, [team]);

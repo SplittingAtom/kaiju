@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import {
   notifyMemory,
   registerMemoryReminder,
@@ -15,7 +15,7 @@ import {
  */
 
 export async function noticeCandidatesReady(
-  tx: KobeTx,
+  tx: KaijuTx,
   pass: { teamId: string; userId: string; threadId: string; passId: string },
   count: number,
 ): Promise<void> {
@@ -35,7 +35,11 @@ export async function noticeCandidatesReady(
 }
 
 /** Drops the pass's reminder once none of its candidates is open (decided or expired). */
-export async function settleWhenDecided(tx: KobeTx, teamId: string, passId: string): Promise<void> {
+export async function settleWhenDecided(
+  tx: KaijuTx,
+  teamId: string,
+  passId: string,
+): Promise<void> {
   const { rows } = await tx.execute(sql`
     SELECT 1 FROM memory_candidates
      WHERE team_id = ${teamId} AND pass_id = ${passId} AND state = 'open' AND expires_at > now()
@@ -45,7 +49,7 @@ export async function settleWhenDecided(tx: KobeTx, teamId: string, passId: stri
 
 /** The person saw the thread's candidates: its candidates_ready notices are read. */
 export async function markReviewSeen(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { teamId: string; userId: string; threadId: string },
 ): Promise<number> {
   const res = await tx.execute(sql`

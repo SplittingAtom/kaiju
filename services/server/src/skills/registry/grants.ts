@@ -1,4 +1,4 @@
-import type { SiteGrant } from "@kobe/protocol";
+import type { SiteGrant } from "@kaiju/protocol";
 import {
   and,
   asc,
@@ -9,9 +9,9 @@ import {
   teamMembers,
   users,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { removeMemberInTx } from "../../teams/members.js";
 import { reopenRetentionInTx } from "../../offboarding/reopen.js";
@@ -40,7 +40,7 @@ export interface GrantHolder {
   readonly deactivated: boolean;
 }
 
-export async function listGrants(db: KobeDb): Promise<GrantHolder[]> {
+export async function listGrants(db: KaijuDb): Promise<GrantHolder[]> {
   const rows = await db
     .select({
       userId: siteGrants.userId,
@@ -62,7 +62,7 @@ export async function listGrants(db: KobeDb): Promise<GrantHolder[]> {
 }
 
 /** The user's site grants; an inactive account's grants count for nothing. */
-export async function grantsOf(db: KobeDb, userId: string): Promise<SiteGrant[]> {
+export async function grantsOf(db: KaijuDb, userId: string): Promise<SiteGrant[]> {
   const rows = await db
     .select({ grant: siteGrants.grant })
     .from(siteGrants)
@@ -72,7 +72,7 @@ export async function grantsOf(db: KobeDb, userId: string): Promise<SiteGrant[]>
 }
 
 /** Every active Skill reviewer, for when the Registry team is created. */
-export async function reviewerIds(db: KobeDb | KobeTx): Promise<string[]> {
+export async function reviewerIds(db: KaijuDb | KaijuTx): Promise<string[]> {
   const rows = await db
     .select({ userId: siteGrants.userId })
     .from(siteGrants)
@@ -86,7 +86,7 @@ export async function reviewerIds(db: KobeDb | KobeTx): Promise<string[]> {
  * already a member keeps their own membership. Each addition is audited in the team's log.
  */
 export async function joinRegistryTeamInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userIds: readonly string[],
 ): Promise<void> {
@@ -112,7 +112,7 @@ export async function joinRegistryTeamInTx(
 }
 
 /** The Registry team under a share lock on the settings row, read inside the caller's transaction. */
-async function registryTeamIn(tx: KobeDb | KobeTx): Promise<string | null> {
+async function registryTeamIn(tx: KaijuDb | KaijuTx): Promise<string | null> {
   const res = await tx.execute<{ id: string | null }>(sql`
     SELECT registry_team_id AS id FROM site_skill_settings WHERE id = 1 FOR SHARE`);
   return res.rows[0]?.id ?? null;
@@ -124,12 +124,12 @@ async function registryTeamIn(tx: KobeDb | KobeTx): Promise<string | null> {
  * look and the lock, it looks again once.
  */
 async function inRegistryTx<T>(
-  db: KobeDb,
-  fn: (tx: KobeTx, team: string | null) => Promise<T>,
+  db: KaijuDb,
+  fn: (tx: KaijuTx, team: string | null) => Promise<T>,
 ): Promise<T> {
   for (let attempt = 0; ; attempt += 1) {
     const seen = await registryTeamIn(db);
-    const run = async (tx: KobeTx) => {
+    const run = async (tx: KaijuTx) => {
       const team = await registryTeamIn(tx);
       if (team !== seen) return { retry: true as const };
       return { retry: false as const, value: await fn(tx, team) };
@@ -145,7 +145,7 @@ async function inRegistryTx<T>(
 export type GrantRefusal = "user_not_found" | "user_deactivated" | "self_grant";
 
 /** Whether `userId` is the Site's only active admin (or Owner), under the admin-set lock. */
-async function onlyAdmin(tx: KobeTx, userId: string): Promise<boolean> {
+async function onlyAdmin(tx: KaijuTx, userId: string): Promise<boolean> {
   await tx.execute(sql`SELECT public.break_glass_lock_admin_set()`);
   const res = await tx.execute<{ admin: boolean; others: boolean }>(sql`
     SELECT public.break_glass_is_site_admin(${userId}) AS admin,
@@ -161,7 +161,7 @@ async function onlyAdmin(tx: KobeTx, userId: string): Promise<boolean> {
  * giver is the Site's only admin, decided under the admin-set lock and audited `selfGranted`.
  */
 export async function giveGrant(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   grant: SiteGrant,
   by: string,
@@ -197,7 +197,7 @@ export async function giveGrant(
 
 /** Takes the grant and, in the same transaction, the Registry membership it made. */
 export async function takeGrant(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   grant: SiteGrant,
 ): Promise<{ readonly changed: boolean; readonly removedFrom?: string }> {

@@ -14,7 +14,7 @@ import type { ThreadState } from "../../lib/chat/thread-state";
 import { useBindCommands } from "../shell/command-bindings";
 import { Button } from "../ui/button";
 import { chatPortalContainer } from "../ui/chat-portal";
-import { useChatSession, type KobeThreadExtras } from "./kobe-runtime";
+import { useChatSession, type KaijuThreadExtras } from "./kaiju-runtime";
 import { useThreadUsageRead } from "./message-footer";
 import { lastRun, pendingRunId, thinkingTokensLine } from "./session-reasoning";
 import {
@@ -90,7 +90,7 @@ const MEMORIES_TITLE = "Memories the latest run was given; the context viewer li
  * "Memories in context (n)" (KOBE-382): how many memories the thread's latest run was given, read
  * once when the dialog opens. Undefined (no row) for a shared reader; "—" until read or on failure.
  */
-function useMemoriesCount(extras: KobeThreadExtras, owner: boolean): string | undefined {
+function useMemoriesCount(extras: KaijuThreadExtras, owner: boolean): string | undefined {
   const [count, setCount] = useState<number | null>(null);
   const controller = extras.controller;
   useEffect(() => {
@@ -115,7 +115,7 @@ function SessionInfoDialog({
   extras,
   onOpenChange,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   readonly onOpenChange: (open: boolean) => void;
 }) {
   const { state } = extras;
@@ -164,11 +164,11 @@ function SessionInfoDialog({
   return (
     <Dialog.Root open onOpenChange={onOpenChange}>
       <Dialog.Portal container={chatPortalContainer()}>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kobe-portal />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kaiju-portal />
         <Dialog.Content
           className="bg-background text-foreground fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 gap-3 overflow-y-auto rounded-lg border p-5 shadow-lg"
           data-session-info
-          data-kobe-portal
+          data-kaiju-portal
         >
           <Dialog.Title className="m-0 text-base font-semibold">This conversation</Dialog.Title>
           <Dialog.Description className="text-muted-foreground m-0 text-sm">
@@ -225,7 +225,7 @@ export function SessionCommands({
   extras,
   threadId,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   readonly threadId: string;
 }) {
   const session = useChatSession();

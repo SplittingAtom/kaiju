@@ -4,7 +4,7 @@ import {
   type VerifiedIsolation,
 } from "../../isolation/gate.js";
 import type { SandboxSettings } from "../config.js";
-import { KOBE_ENDPOINTS } from "../constants.js";
+import { KAIJU_ENDPOINTS } from "../constants.js";
 import type { KubeClient, ObjectRef } from "../kube.js";
 import type { EndpointAddresses, KubeObject } from "../manifests.js";
 import { SandboxProvisioningError } from "./errors.js";
@@ -69,7 +69,7 @@ export function createProviderContext(options: SandboxProviderOptions): Provider
 
   const endpointAddresses = async (): Promise<EndpointAddresses> => {
     const entries = await Promise.all(
-      KOBE_ENDPOINTS.map(async (e) => {
+      KAIJU_ENDPOINTS.map(async (e) => {
         const name = settings.endpoints[e].service;
         const svc = await kube.get(ref("v1", "Service", name, settings.releaseNamespace));
         const ip = str(svc, "spec", "clusterIP");

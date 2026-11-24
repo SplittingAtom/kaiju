@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { loadEnvelope, type Envelope } from "@kobe/db";
+import { loadEnvelope, type Envelope } from "@kaiju/db";
 import { createApp } from "../app.js";
 import { logger } from "../logger.js";
 import { revealClientSecret, seedHelmProviders } from "./providers.js";

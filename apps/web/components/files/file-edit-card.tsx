@@ -15,7 +15,7 @@
 import { FilePenIcon } from "lucide-react";
 import { Switch as SwitchPrimitive } from "radix-ui";
 import { useEffect, useId, useState, useSyncExternalStore } from "react";
-import type { KobeEventPayload } from "@kobe/protocol";
+import type { KaijuEventPayload } from "@kaiju/protocol";
 import {
   proposalFromEvent,
   type AutoOpenOutcome,
@@ -24,7 +24,7 @@ import {
 import { fileName } from "../../lib/files/preview";
 import { useShellPreferences } from "../../lib/shell/preferences";
 import { useArtifactPanel } from "../chat/artifact-state";
-import { useChatSession, useKobeExtras } from "../chat/kobe-runtime";
+import { useChatSession, useKaijuExtras } from "../chat/kaiju-runtime";
 import styles from "../chat/chat.module.css";
 import { ProposalInlineReview } from "./proposal-inline-review";
 
@@ -40,11 +40,11 @@ type Recorded =
 /** The proposal from the live stream, else from the thread's list once the call is done. */
 function useProposal(
   toolCallId: string,
-  live: KobeEventPayload<"file.edit_proposed"> | undefined,
+  live: KaijuEventPayload<"file.edit_proposed"> | undefined,
   done: boolean,
 ): Recorded {
   const session = useChatSession();
-  const threadId = useKobeExtras()?.state.threadId ?? undefined;
+  const threadId = useKaijuExtras()?.state.threadId ?? undefined;
   const [listed, setListed] = useState<Recorded>({ status: "loading" });
   useEffect(() => {
     if (live !== undefined || !done || threadId === undefined) return;
@@ -133,7 +133,7 @@ function useAutoReview(
   const session = useChatSession();
   const store = session.autoOpenEdits;
   const panel = useArtifactPanel();
-  const request = useKobeExtras()?.state.fileEditRequest;
+  const request = useKaijuExtras()?.state.fileEditRequest;
   const key = request?.toolCallId === toolCallId ? `${request.runId}:${toolCallId}` : undefined;
   const [held, setHeld] = useState(() => key !== undefined && store.outcomeOf(key) === "held");
   useEffect(() => {
@@ -163,21 +163,21 @@ export function FileEditCard({
 }: {
   readonly toolCallId: string;
   /** The `file.edit_proposed` event of this call, while the run streams. */
-  readonly live: KobeEventPayload<"file.edit_proposed"> | undefined;
+  readonly live: KaijuEventPayload<"file.edit_proposed"> | undefined;
   readonly done: boolean;
   /** The call failed or was denied: no proposal was recorded. */
   readonly failed: boolean;
 }) {
   const session = useChatSession();
   const panel = useArtifactPanel();
-  const readOnly = useKobeExtras()?.state.summary?.readOnly === true;
+  const readOnly = useKaijuExtras()?.state.summary?.readOnly === true;
   const recorded = useProposal(toolCallId, live, done && !failed);
   const autoOpen = useAutoOpenEdits();
   const found = recorded.status === "found" ? recorded.proposal : undefined;
   const inline = isInline(found);
   const [reviewing, setReviewing] = useState(false);
   const projectName = useProjectName(found?.projectId);
-  const threadId = useKobeExtras()?.state.threadId ?? undefined;
+  const threadId = useKaijuExtras()?.state.threadId ?? undefined;
   const held = useAutoReview(
     toolCallId,
     inline ? undefined : found,
@@ -207,7 +207,7 @@ export function FileEditCard({
   const verb = proposal.isNew ? "Proposed new file" : "Proposed edit to";
   return (
     <>
-      <div className={`${styles.fileCard} kobe-panel`} data-kobe-file-edit={proposal.path}>
+      <div className={`${styles.fileCard} kaiju-panel`} data-kaiju-file-edit={proposal.path}>
         <FilePenIcon aria-hidden className="size-4" />
         <div className={styles.fileInfo}>
           <span className={styles.fileName} title={proposal.path}>

@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import type { StoredCandidate } from "./stored.js";
 
 /**
@@ -9,7 +9,7 @@ import type { StoredCandidate } from "./stored.js";
  * the quotes word for word when it ran (`learn/screen.ts`).
  */
 export async function quotesThePerson(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { teamId: string; threadId: string },
   c: StoredCandidate,
 ): Promise<boolean> {

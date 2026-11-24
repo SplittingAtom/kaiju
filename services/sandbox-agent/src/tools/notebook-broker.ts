@@ -1,5 +1,5 @@
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { NotebookRunFrame, NotebookRunResultFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { NotebookRunFrame, NotebookRunResultFrame } from "@kaiju/protocol/sandbox-wire";
 import { PushPathError, type PushedFile } from "../workspace/sync.js";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
@@ -16,7 +16,7 @@ import { resolveSharePath, SharePathError } from "./share-path.js";
 export const MAX_PENDING_RUNS = 16;
 export const MAX_PENDING_RUNS_PER_THREAD = 2;
 
-type RunRequest = Extract<KobeToolsRequest, { op: "notebook.run" }>;
+type RunRequest = Extract<KaijuToolsRequest, { op: "notebook.run" }>;
 
 export interface NotebookBrokerDeps {
   readonly root: string;
@@ -41,7 +41,7 @@ export class NotebookBroker {
     threadId: string,
     runId: string | undefined,
     request: RunRequest,
-    reply: (response: KobeToolsResponse) => void,
+    reply: (response: KaijuToolsResponse) => void,
   ): void {
     if (runId === undefined) {
       reply(toolsError(request.id, "not_allowed", "no active run on this thread"));

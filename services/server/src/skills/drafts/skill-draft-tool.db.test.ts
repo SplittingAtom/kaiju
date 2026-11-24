@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CAPABILITY_SKILL_DRAFTS, type PolicyEngine } from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+import { CAPABILITY_SKILL_DRAFTS, type PolicyEngine } from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { EventStreamFixture, must, type Person } from "../../testing/event-stream-fixture.js";
 import { RawBody } from "../../testing/browser.js";
 import {
@@ -23,7 +23,7 @@ import { createWorkspaceSync, workspaceBlobKey } from "../../workspace-sync/inde
 const fx = new EventStreamFixture();
 const auth = new FakeSandboxAuth();
 const objects = new MemoryObjects();
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const silent = { error: () => {}, warn: () => {}, info: () => {} };
 const LIMITS = { maxFileBytes: 1024 * 1024, maxWorkspaceBytes: 4 * 1024 * 1024, maxFiles: 50 };
 const sandboxes: FakeSandbox[] = [];

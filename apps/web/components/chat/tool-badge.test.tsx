@@ -1,18 +1,18 @@
 // @vitest-environment happy-dom
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { OUTCOME_TONE, TOOL_BADGE } from "./tool-call";
 import { openApp } from "./testing";
 
 /**
  * KOBE-374 ac-1: the tool's name on a tool-call step is a gold chip (app/theme.css
- * `--kobe-tool-badge*`, contrast in app/theme-css.test.ts); the KOBE-301 outcome colours stay on
+ * `--kaiju-tool-badge*`, contrast in app/theme-css.test.ts); the KOBE-301 outcome colours stay on
  * the status, and a skill's Read step keeps its "Read skill" label. happy-dom has no cascade, so
  * this pins the classes.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 afterEach(() => {
   cleanup();
@@ -22,7 +22,7 @@ afterEach(() => {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -69,7 +69,7 @@ describe("gold tool badges (KOBE-374 ac-1)", () => {
     await waitFor(() => expect(cards()).toHaveLength(3), { timeout: 4_000 });
     const [ls, skill, failed] = cards().map((c) => c as HTMLElement);
 
-    const badge = must(must(ls).querySelector("[data-kobe-tool-badge]"));
+    const badge = must(must(ls).querySelector("[data-kaiju-tool-badge]"));
     expect(badge.textContent).toBe("bash");
     for (const cls of ["bg-tool-badge-bg", "text-tool-badge", "border-tool-badge-border"]) {
       expect(badge.className).toContain(cls);
@@ -77,11 +77,11 @@ describe("gold tool badges (KOBE-374 ac-1)", () => {
     expect(TOOL_BADGE).toContain("text-tool-badge");
 
     // The outcome label is never gold: done stays the muted green, failed red (KOBE-301).
-    const done = must(must(ls).querySelector("[data-kobe-outcome-label]"));
+    const done = must(must(ls).querySelector("[data-kaiju-outcome-label]"));
     expect(done.className).toMatch(/done/);
     expect(done.className).not.toContain("tool-badge");
-    const error = must(must(failed).querySelector("[data-kobe-outcome-label]"));
-    expect(error.getAttribute("data-kobe-outcome-label")).toBe("error");
+    const error = must(must(failed).querySelector("[data-kaiju-outcome-label]"));
+    expect(error.getAttribute("data-kaiju-outcome-label")).toBe("error");
     expect(error.className).toMatch(/failed/);
     expect(error.className).not.toContain("tool-badge");
     expect(OUTCOME_TONE).toEqual({
@@ -97,7 +97,7 @@ describe("gold tool badges (KOBE-374 ac-1)", () => {
       expect(must(skill).getAttribute("aria-label")).toBe("Tool call read: skill tidy"),
     );
     const read = within(must(skill)).getByText("Read skill");
-    expect(read.hasAttribute("data-kobe-tool-badge")).toBe(true);
+    expect(read.hasAttribute("data-kaiju-tool-badge")).toBe(true);
     expect(within(must(skill)).getByText("tidy")).toBeTruthy();
   });
 });

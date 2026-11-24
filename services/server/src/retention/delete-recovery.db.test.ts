@@ -26,11 +26,11 @@ function partialStore(): BlobStore {
         );
       }),
   });
-  return { objects, prefix: "kobe/", deleteTimeoutMs: 50 };
+  return { objects, prefix: "kaiju/", deleteTimeoutMs: 50 };
 }
 
 beforeAll(async () => {
-  h = await openHarness({ blobs: { objects: memory, prefix: "kobe/" } });
+  h = await openHarness({ blobs: { objects: memory, prefix: "kaiju/" } });
   user = await h.createUser("owner@recovery.test", "owner");
   team = (
     await runWithAuditContext(
@@ -47,7 +47,7 @@ beforeEach(async () => {
 describe("queue rows after a timed-out delete", () => {
   it("drops the rows of deleted keys, keeps the rest for the retry", async () => {
     const thread = randomUUID();
-    const keys = [1, 2].map((i) => `kobe/teams/${team}/threads/${thread}/entries/${i}`);
+    const keys = [1, 2].map((i) => `kaiju/teams/${team}/threads/${thread}/entries/${i}`);
     for (const key of keys) {
       await h.admin.query(
         `INSERT INTO retention_blob_deletions (team_id, thread_id, key, owner_user_id) VALUES ($1, $2, $3, $4)`,

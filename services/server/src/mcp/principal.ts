@@ -1,5 +1,5 @@
-import { verifySessionToken, type SessionVerifyKeys } from "@kobe/session-token";
-import { eq, getMembership, users, type KobeDb } from "@kobe/db";
+import { verifySessionToken, type SessionVerifyKeys } from "@kaiju/session-token";
+import { eq, getMembership, users, type KaijuDb } from "@kaiju/db";
 import type { SandboxLiveness } from "../sandbox-wire/types.js";
 import type { McpPrincipal } from "./decide.js";
 
@@ -15,7 +15,7 @@ export type McpAuthResult =
   | { readonly ok: false; readonly code: "unauthorized" | "not_live" | "not_allowed" };
 
 export interface McpAuthDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** The `kobe.mcp-proxy` session-token public key(s) (never another audience's). */
   readonly sessionVerifyKeys: SessionVerifyKeys;
   readonly liveness: SandboxLiveness;

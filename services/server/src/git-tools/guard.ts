@@ -1,14 +1,14 @@
-import type { PolicyDecision, ToolDescriptor } from "@kobe/protocol";
-import type { KobeDb } from "@kobe/db";
-import { GIT_BUILTIN_CONNECTOR_ID } from "@kobe/db";
-import { kobeToolName } from "../policy/kobe-admin-guard.js";
+import type { PolicyDecision, ToolDescriptor } from "@kaiju/protocol";
+import type { KaijuDb } from "@kaiju/db";
+import { GIT_BUILTIN_CONNECTOR_ID } from "@kaiju/db";
+import { kaijuToolName } from "../policy/kaiju-admin-guard.js";
 import { decideGitAccess, loadGitToolFacts, type GitToolPrincipal } from "./access.js";
 import { gitToolByName } from "./catalog.js";
 
 /**
  * The person-and-connection half of a git host tool decision (KOBE-762), applied after the policy
  * engine at the sandbox's `policy.check` (the MCP proxy's re-check makes the same check in
- * `kobe-mcp/service.ts`): a malformed call, or one the connection, the member's role, the agents
+ * `kaiju-mcp/service.ts`): a malformed call, or one the connection, the member's role, the agents
  * of the sandbox's runs or the Site refuse, is denied before anyone is asked to approve it. An
  * engine deny stands; an allow or an ask otherwise passes unchanged (policy decides those).
  */
@@ -19,19 +19,19 @@ export function isGitBuiltinTool(
   tool: Pick<ToolDescriptor, "source" | "connector_id" | "name">,
 ): boolean {
   if (tool.source !== "mcp" || tool.connector_id !== GIT_BUILTIN_CONNECTOR_ID) return false;
-  const name = kobeToolName(tool.name);
+  const name = kaijuToolName(tool.name);
   return name !== undefined && gitToolByName(name) !== undefined;
 }
 
 export async function guardGitToolCall(
-  db: KobeDb,
+  db: KaijuDb,
   principal: GitToolPrincipal,
   decision: PolicyDecision,
   tool: ToolDescriptor,
   input: unknown,
 ): Promise<PolicyDecision> {
   if (!isGitBuiltinTool(tool) || decision.effect === "deny") return decision;
-  const name = kobeToolName(tool.name);
+  const name = kaijuToolName(tool.name);
   const def = name === undefined ? undefined : gitToolByName(name);
   const refuse = (code: "invalid_input" | typeof GIT_NOT_ALLOWED_REASON, message: string) => ({
     effect: "deny" as const,

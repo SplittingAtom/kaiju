@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { APPROVAL_MODES, BUILTIN_TOOLS, type ToolDescriptor } from "@kobe/protocol";
+import { APPROVAL_MODES, BUILTIN_TOOLS, type ToolDescriptor } from "@kaiju/protocol";
 import {
   builtin,
   ENABLED_ALL,

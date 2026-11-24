@@ -1,4 +1,4 @@
-import { PROJECT_SLUG_MAX } from "@kobe/protocol";
+import { PROJECT_SLUG_MAX } from "@kaiju/protocol";
 
 /** A mount-folder slug from a project name: lowercase, digits, hyphens; never empty. */
 export function deriveSlug(name: string): string {

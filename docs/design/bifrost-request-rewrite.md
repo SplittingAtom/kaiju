@@ -54,7 +54,7 @@ they differ). v2.5.1 decodes the same way.
 Bodies were produced by the gateway's own functions (`make-cases.mjs` calls `applyThinking` and
 `withStreamUsage` from the built package) from Pi-style input that carried Pi's own reasoning
 fields (`thinking` budget 16,000, `reasoning_effort`/`reasoning.effort` `xhigh`,
-`reasoning.summary` `auto`). Kaiju's levels are `off`, `low`, `medium`, `high` (`@kobe/protocol`
+`reasoning.summary` `auto`). Kaiju's levels are `off`, `low`, `medium`, `high` (`@kaiju/protocol`
 `THINKING_LEVELS`; there is no `minimal`, `xhigh` or `max` level). Every case streamed except where
 noted. On every route Bifrost strips the `<provider>/` prefix from `model`, drops `stream: false`
 (omitempty) and re-serialises the body (key order changes). Below, "same" means the field went

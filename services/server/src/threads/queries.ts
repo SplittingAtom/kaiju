@@ -9,14 +9,14 @@ import {
   sql,
   threadEntries,
   threads,
-  type KobeTx,
+  type KaijuTx,
   type RunStatus,
-} from "@kobe/db";
+} from "@kaiju/db";
 import type { ActivityCursor } from "./cursor.js";
 import { TRASH_RETENTION_DAYS, type ThreadEntry, type ThreadSummary } from "./schemas.js";
 import type { AgentPin, PinError } from "../agents/versions.js";
 import { visibilityOf } from "./share.js";
-import type { ThinkingLevel, ThreadFolderFilter } from "@kobe/protocol";
+import type { ThinkingLevel, ThreadFolderFilter } from "@kaiju/protocol";
 import { trimLargeOutput } from "./entry-output.js";
 import { canViewProject, maskedProject, sharerNames, viewableProjects } from "./projects-view.js";
 
@@ -71,8 +71,8 @@ export const TRASH_INTERVAL = sql.raw(`interval '${TRASH_RETENTION_DAYS} days'`)
  */
 export const THREAD_LOCK_TIMEOUT = "2s";
 
-/** Postgres lock_not_available (`lock_timeout` expired); the shared reader in `@kobe/db`. */
-export { isLockTimeout } from "@kobe/db";
+/** Postgres lock_not_available (`lock_timeout` expired); the shared reader in `@kaiju/db`. */
+export { isLockTimeout } from "@kaiju/db";
 const DAY_MS = 86_400_000;
 
 type TimeColumn =
@@ -213,7 +213,7 @@ const LISTABLE = sql`${threads.deletedAt} IS NULL AND NOT ${threads.isTest} AND 
  * the folder's Pinned list shows them), on `threads_folder_idx`. Folders with none are absent.
  */
 export async function folderThreadCounts(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
 ): Promise<ReadonlyMap<string, number>> {
   const rows = await tx
@@ -262,7 +262,7 @@ function sharedWith(viewer: Viewer): SQL {
  * an entry of the fork itself. One hop: provenance is never walked further.
  */
 export async function summarize(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   rows: readonly SummaryRow[],
 ): Promise<ThreadSummary[]> {
@@ -295,7 +295,7 @@ export async function summarize(
  * (KOBE-37). One query on the partial `approvals_pending_idx`, team-scoped like every read here.
  */
 export async function awaitingViewer(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   rows: readonly { readonly id: string }[],
 ): Promise<ReadonlySet<string>> {
@@ -327,7 +327,7 @@ export function ownOrganization<T extends ThreadSummary>(summary: T, viewer: Vie
 
 /** {@link summarize} for one row. */
 export async function summarizeOne(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   row: SummaryRow,
 ): Promise<ThreadSummary> {
@@ -347,7 +347,7 @@ export interface Page<T> {
 }
 
 async function toPage(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   rows: readonly (SummaryRow & { position: string })[],
   limit: number,
@@ -367,7 +367,7 @@ async function toPage(
  * or shared if the viewer is a project member), pinned and archived ones included. Never Trash.
  */
 export async function listThreads(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   options: {
     projectId?: string | undefined;
@@ -418,7 +418,7 @@ export async function listThreads(
  * `threads_owner_archived_idx`). A thread is in at most one: archiving unpins it.
  */
 export async function listOwnOrganized(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   options: {
     which: "pinned" | "archived";
@@ -461,7 +461,7 @@ export async function listOwnOrganized(
  * and `threads_project_activity_idx`). Read-only for the viewer; never test threads or Trash.
  */
 export async function listSharedWithMe(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   options: { cursor: ActivityCursor | null; limit: number },
 ): Promise<Page<ThreadSummary>> {
@@ -484,7 +484,7 @@ export async function listSharedWithMe(
 
 /** The viewer's Trash, most recently deleted first; only threads still restorable. */
 export async function listTrash(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   options: { cursor: ActivityCursor | null; limit: number },
 ): Promise<Page<ThreadSummary>> {
@@ -512,7 +512,7 @@ export async function listTrash(
  * `FOR NO KEY UPDATE`, as `lockThreadRow` (KOBE-266: `FOR UPDATE` deadlocked with foreign-key checks).
  */
 export async function findThread(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   options: { lock?: boolean } = {},
@@ -532,7 +532,7 @@ export async function findThread(
  * (the same predicate, no lock). Ids the viewer may not read are simply absent.
  */
 export async function findThreads(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   ids: readonly string[],
 ): Promise<Map<string, SummaryRow>> {
@@ -545,7 +545,7 @@ export async function findThreads(
 }
 
 export async function hasRunIn(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   threadId: string,
   statuses: readonly RunStatus[],
@@ -566,7 +566,7 @@ export async function hasRunIn(
 
 /** One page of the thread's entries in append order (`seq`), after `afterSeq`. */
 export async function listEntries(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   threadId: string,
   afterSeq: number,

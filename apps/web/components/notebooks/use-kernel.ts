@@ -8,7 +8,7 @@
  * reach the same store through the thread's own stream.
  */
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { NotebookRunBody } from "@kobe/protocol";
+import type { NotebookRunBody } from "@kaiju/protocol";
 import type { ApiError } from "../../lib/api/client";
 import type { ChatApi } from "../../lib/chat/api";
 import { openRunStream, type EventSourceFactory, type RunStream } from "../../lib/chat/stream";

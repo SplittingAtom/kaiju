@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { isExcludedPath } from "@kobe/protocol";
-import type { RunGitRepo } from "@kobe/protocol/sandbox-wire";
+import { isExcludedPath } from "@kaiju/protocol";
+import type { RunGitRepo } from "@kaiju/protocol/sandbox-wire";
 import {
   REPO_SCRIPT,
   failedStatus,
@@ -11,7 +11,7 @@ import {
   workingCopyStatus,
   type ToolCommandRunner,
 } from "./working-copy.js";
-import { repoStatusFrameSchema } from "@kobe/protocol/sandbox-wire";
+import { repoStatusFrameSchema } from "@kaiju/protocol/sandbox-wire";
 
 const ID = "11111111-1111-4111-8111-111111111111";
 const SHA = "b".repeat(40);
@@ -22,7 +22,7 @@ const repo: RunGitRepo = {
   default_branch: "main",
   access: "write",
 };
-const line = (...f: string[]) => `noise\nKOBE-REPO-STATUS\t${f.join("\t")}\n`;
+const line = (...f: string[]) => `noise\nKAIJU-REPO-STATUS\t${f.join("\t")}\n`;
 
 describe("Repo working copy (KOBE-767)", () => {
   it("keeps the working copy in the reserved area the sync leaves alone (review N2)", () => {
@@ -53,7 +53,7 @@ describe("Repo working copy (KOBE-767)", () => {
     const odd = parseRepoStatus(line("", "nope", "", "99999", "x", "0", "0", "fetch failed"));
     expect(odd).toMatchObject({ branch: null, head_sha: null, ahead: 10_000, behind: 0 });
     expect(odd?.problem).toBe("fetch failed");
-    expect(parseRepoStatus("KOBE-REPO-STATUS\ttoo\tfew\n")).toBeUndefined();
+    expect(parseRepoStatus("KAIJU-REPO-STATUS\ttoo\tfew\n")).toBeUndefined();
     expect(parseRepoStatus("nothing here")).toBeUndefined();
     expect(parseRepoStatus(line("a", "b", "c", "1", "1", "1", "1", "x".repeat(5000)))).toBe(
       undefined,

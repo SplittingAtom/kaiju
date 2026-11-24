@@ -42,7 +42,7 @@ export function GitConnectionsReadOnly({ data }: { readonly data: GitConnections
             <li
               key={c.id}
               aria-label={c.displayName}
-              className="kobe-panel box-border flex flex-wrap items-center gap-2 rounded-lg border border-console-border bg-console-bg p-3"
+              className="kaiju-panel box-border flex flex-wrap items-center gap-2 rounded-lg border border-console-border bg-console-bg p-3"
             >
               <GitBranchIcon aria-hidden className="size-4 shrink-0 text-console-muted" />
               <span className="font-medium">{c.displayName}</span>

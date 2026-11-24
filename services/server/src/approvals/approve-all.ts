@@ -3,12 +3,12 @@ import {
   type ActorContext,
   type ApproveAllBody,
   type ToolDescriptor,
-} from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { withAppendTx } from "../event-stream/append.js";
 import { readTeamRememberLimits } from "../policy/remember-limits-store.js";
 import { isViewedFileAsk } from "../policy/viewed-file-guard.js";
-import { isKobeAdminAsk } from "../policy/kobe-admin-guard.js";
+import { isKaijuAdminAsk } from "../policy/kaiju-admin-guard.js";
 import { lockRunRow, lockThreadRow } from "../runs/store.js";
 import { ApprovalError, type ApprovalContext } from "./context.js";
 import { allowRowInTx, askerConnected, isProjectWrite } from "./decide.js";
@@ -32,7 +32,7 @@ export function batchable(
     // KOBE-493: a write to the file the member is viewing is decided on its own.
     !isViewedFileAsk(row.reasons) &&
     // KOBE-619: a Kaiju admin change is approved on its own, every time.
-    !isKobeAdminAsk(row.reasons) &&
+    !isKaijuAdminAsk(row.reasons) &&
     !isProjectWrite(row.tool, parseCanonicalInput(row)) &&
     tool !== undefined &&
     tool.name === row.tool &&

@@ -6,8 +6,8 @@ import {
   type FeedbackReason,
   type FeedbackReasonCounts,
   type FeedbackWindowDays,
-} from "@kobe/protocol";
-import { sql, withTeam, type AgentScope, type KobeDb } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, withTeam, type AgentScope, type KaijuDb } from "@kaiju/db";
 
 /**
  * Per-version answer feedback totals of one agent in one team (KOBE-275), for its owners and the
@@ -82,7 +82,7 @@ type Rows = {
 };
 
 async function readRows(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   callerId: string,
   agent: FeedbackAgent,
@@ -128,7 +128,7 @@ function reasonsOf(rows: Rows, version: number | null): FeedbackReasonCounts | n
 }
 
 export async function agentFeedbackTotals(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   callerId: string,
   agent: FeedbackAgent,

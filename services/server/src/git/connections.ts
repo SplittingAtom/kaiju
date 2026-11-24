@@ -16,8 +16,8 @@ import {
   type GitProvider,
   type GitSealedCredentialRow,
   type GitSiteSettings,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import type { ServerDeps } from "../deps.js";
 import { GitHostError, type GitHostProbe } from "../git-hosts/adapter.js";
@@ -61,7 +61,7 @@ import { adminConnectionView } from "./connection-view.js";
  * here logs or audits credential material, and every message is fixed text.
  */
 export interface GitConnectionDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly envelope: Envelope | undefined;
   readonly net: GitHostNet;
   readonly tokenCache?: InstallationTokenCache;

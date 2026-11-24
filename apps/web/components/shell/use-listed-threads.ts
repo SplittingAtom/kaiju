@@ -3,7 +3,7 @@
 import { useAuiState } from "@assistant-ui/react";
 import { useMemo } from "react";
 import { placementCustom, type ListedThread } from "../../lib/chat/thread-groups";
-import { useChatSession } from "../chat/kobe-runtime";
+import { useChatSession } from "../chat/kaiju-runtime";
 
 /**
  * assistant-ui's listed threads (not Trash) with their placement (`custom`), for the rail's groups

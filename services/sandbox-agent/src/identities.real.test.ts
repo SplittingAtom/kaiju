@@ -16,7 +16,7 @@ import { existsSync } from "node:fs";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { openAgentTemp, writeFileAtomic } from "./atomic-file.js";
 import { writeAgentFile } from "./mcp/pi-mcp-config.js";
-import { preparePiPrivateDirs } from "./threads/exec-wiring.js";
+import { PI_PRIVATE_PREFIX, preparePiPrivateDirs } from "./threads/exec-wiring.js";
 import type { ModelTokenSource } from "./models/types.js";
 import { loadPiIdentities, PI_UID_MIN, PiIdentities } from "./pi/identities.js";
 import { EXECUTOR_ENTRY } from "./testing/real-pi.js";
@@ -85,9 +85,9 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
     umask = process.umask(0o077);
     identities = await loadPiIdentities(HELPER as string, 2);
     // The scripted Pi must be readable by the identities (the checkout may not be).
-    scratch = await mkdtemp(path.join(tmpdir(), "kobe-identities-"));
+    scratch = await mkdtemp(path.join(tmpdir(), "kaiju-identities-"));
     // Runtime dirs on another filesystem than the workspace (as /tmp and the PVC are in a pod).
-    shm = await mkdtemp(path.join("/dev/shm", "kobe-identities-"));
+    shm = await mkdtemp(path.join("/dev/shm", "kaiju-identities-"));
     piBin = path.join(scratch, "fake-pi.mjs");
     await copyFile(FAKE_PI, piBin);
     await chmod(scratch, 0o755);
@@ -160,7 +160,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
       (f) =>
         f.type === "pi.event" &&
         f.run_id === runId &&
-        (f.event as { type?: string }).type === "kobe_test_shell",
+        (f.event as { type?: string }).type === "kaiju_test_shell",
     );
     await settled(runId);
     return (event as unknown as { event: { code: number; stdout: string; stderr: string } }).event;
@@ -197,7 +197,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
     ok(await h.server.command(runStart("say:a", { config: { model: MODEL } })));
     const pi = await launch(THREAD);
     const root = path.dirname(pi.home);
-    expect(root.startsWith(path.join(shm, "kobe-pi-"))).toBe(true);
+    expect(root.startsWith(path.join(shm, PI_PRIVATE_PREFIX))).toBe(true);
     expect(pi.tmpdir).toBe(path.join(root, "tmp"));
     const modes = async (dir: string) => {
       const info = await stat(dir);
@@ -221,7 +221,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
     ok(await h.server.command(runStart("say:a", { config: { model: MODEL } })));
     const pi = await launch(THREAD);
     const root = path.dirname(pi.home);
-    expect(root.startsWith(path.join(shm, "kobe-pi-"))).toBe(true);
+    expect(root.startsWith(path.join(shm, PI_PRIVATE_PREFIX))).toBe(true);
     expect(pi.home).not.toBe(path.join(h.dir, "home"));
     expect(pi.tmpdir).toBe(path.join(root, "tmp"));
     const me = process.getuid?.() ?? 0;
@@ -300,7 +300,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
     expect(read.stderr).toMatch(/Permission denied/);
   });
 
-  it("MCP files (KOBE-244): Pi's identity reads mcp.json and the token (owner kobe, Pi's group, 0440); another thread's identity cannot", async () => {
+  it("MCP files (KOBE-244): Pi's identity reads mcp.json and the token (owner kaiju, Pi's group, 0440); another thread's identity cannot", async () => {
     const mcp = {
       servers: [
         {
@@ -449,7 +449,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
     await writeFile(path.join(h.workspace, "shared/f"), "agent\n");
   });
 
-  it("KOBE-235: a tool squatting a kobe-pi-<name> directory in the sticky scratch volume cannot stop a Pi from starting (retry, fresh name; the squat stays the tool's)", async () => {
+  it("KOBE-235: a tool squatting a kaiju-pi-<name> directory in the sticky scratch volume cannot stop a Pi from starting (retry, fresh name; the squat stays the tool's)", async () => {
     await twoThreads();
     const scratchDir = path.join(shm, "scratch");
     await mkdir(scratchDir);
@@ -457,20 +457,20 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
     const squat = await tool(
       THREAD,
       "8c9d0e1f-2a3b-4c4d-8e5f-6a7b8c9d0e1f",
-      `mkdir ${scratchDir}/kobe-pi-squatted && touch ${scratchDir}/kobe-pi-squatted/mine`,
+      `mkdir ${scratchDir}/kaiju-pi-squatted && touch ${scratchDir}/kaiju-pi-squatted/mine`,
     );
     expect(squat.code).toBe(0);
-    const names = ["kobe-pi-squatted", "kobe-pi-fresh"];
+    const names = ["kaiju-pi-squatted", "kaiju-pi-fresh"];
     const pi = await launch(THREAD);
     const dirs = await preparePiPrivateDirs(
       scratchDir,
       { uid: pi.uid, gid: pi.gid },
-      { partner: false, newName: () => names.shift() ?? "kobe-pi-extra" },
+      { partner: false, newName: () => names.shift() ?? "kaiju-pi-extra" },
     );
-    expect(dirs.root).toBe(path.join(scratchDir, "kobe-pi-fresh"));
-    const mine = await stat(path.join(scratchDir, "kobe-pi-squatted"));
+    expect(dirs.root).toBe(path.join(scratchDir, "kaiju-pi-fresh"));
+    const mine = await stat(path.join(scratchDir, "kaiju-pi-squatted"));
     expect(mine.uid).toBe(pi.uid);
-    expect(await readdir(path.join(scratchDir, "kobe-pi-squatted"))).toEqual(["mine"]);
+    expect(await readdir(path.join(scratchDir, "kaiju-pi-squatted"))).toEqual(["mine"]);
     expect((await stat(dirs.root)).uid).toBe(process.getuid?.());
   });
 
@@ -508,7 +508,7 @@ describe.runIf(HELPER !== undefined)("Pi identities with the real helper (KOBE-7
     await start({ KOBE_PI_IDLE_MS: "200" });
     ok(await h.server.command(runStart("orphan", { config: { model: MODEL } })));
     const orphan = await h.server.waitFor(
-      (f) => f.type === "pi.event" && (f.event as { type?: string }).type === "kobe_test_orphan",
+      (f) => f.type === "pi.event" && (f.event as { type?: string }).type === "kaiju_test_orphan",
     );
     const pid = (orphan as unknown as { event: { pid: number } }).event.pid;
     const first = await launch(THREAD);

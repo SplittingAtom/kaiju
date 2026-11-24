@@ -1,4 +1,4 @@
-import { PRESET_IDS, type ThemeSettings } from "@kobe/protocol";
+import { PRESET_IDS, type ThemeSettings } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { BRANDING_CSS_ALLOWED, brandingCss } from "./branding-css";
 import { PRESETS, RADIUS_SCALES } from "./presets";
@@ -56,47 +56,47 @@ describe("previewCss", () => {
         expect(got.get(token), `${scheme} ${token}`).toBe(source.get(token));
       }
       expect(got.get("color-scheme")).toBe(scheme);
-      expect(got.get("--kobe-radius-md")).toBe(THEME_LIGHT.get("--kobe-radius-md"));
+      expect(got.get("--kaiju-radius-md")).toBe(THEME_LIGHT.get("--kaiju-radius-md"));
     }
   });
 
   it("redeclares the accent aliases so they follow the preview's brand tokens", () => {
     for (const scheme of ["light", "dark"] as const) {
       const got = resolve(previewCss({ preset: "default" }), scheme);
-      expect(got.get("--admin-accent")).toBe("var(--kobe-brand-link)");
-      expect(got.get("--kobe-status-accent")).toBe("var(--kobe-brand-primary)");
-      expect(got.get("--kobe-status-accent-fg")).toBe("var(--kobe-brand-primary-fg)");
+      expect(got.get("--admin-accent")).toBe("var(--kaiju-brand-link)");
+      expect(got.get("--kaiju-status-accent")).toBe("var(--kaiju-brand-primary)");
+      expect(got.get("--kaiju-status-accent-fg")).toBe("var(--kaiju-brand-primary-fg)");
     }
   });
 
   it.each(PRESET_IDS)("shows preset %s in its light and its dark values", (id) => {
     const css = previewCss({ preset: id });
-    expect(resolve(css, "light").get("--kobe-console-bg")).toBe(
-      PRESETS[id].light["--kobe-console-bg"],
+    expect(resolve(css, "light").get("--kaiju-console-bg")).toBe(
+      PRESETS[id].light["--kaiju-console-bg"],
     );
-    expect(resolve(css, "dark").get("--kobe-console-bg")).toBe(
-      PRESETS[id].dark["--kobe-console-bg"],
+    expect(resolve(css, "dark").get("--kaiju-console-bg")).toBe(
+      PRESETS[id].dark["--kaiju-console-bg"],
     );
-    expect(resolve(css, "dark").get("--kobe-brand-primary")).toBe(
-      PRESETS[id].dark["--kobe-brand-primary"],
+    expect(resolve(css, "dark").get("--kaiju-brand-primary")).toBe(
+      PRESETS[id].dark["--kaiju-brand-primary"],
     );
   });
 
   it("applies a custom accent's corners and typeface to the dark root too", () => {
     const dark = resolve(previewCss(CUSTOM), "dark");
-    expect(dark.get("--kobe-radius-md")).toBe(RADIUS_SCALES.round["--kobe-radius-md"]);
-    expect(dark.get("--kobe-font-sans")).toContain("serif");
-    expect(dark.get("--kobe-console-bg")).toBe(THEME_DARK.get("--kobe-console-bg"));
+    expect(dark.get("--kaiju-radius-md")).toBe(RADIUS_SCALES.round["--kaiju-radius-md"]);
+    expect(dark.get("--kaiju-font-sans")).toContain("serif");
+    expect(dark.get("--kaiju-console-bg")).toBe(THEME_DARK.get("--kaiju-console-bg"));
   });
 
   /** KOBE-555 (ac-2): the Appearance preview shows Catalyst's faces in both roots. */
   it("shows the catalyst faces in the light and dark previews; the default keeps system stacks", () => {
     for (const scheme of ["light", "dark"] as const) {
       const catalyst = resolve(previewCss({ preset: "catalyst" }), scheme);
-      expect(catalyst.get("--kobe-font-sans")).toMatch(/^var\(--kobe-face-outfit/);
-      expect(catalyst.get("--kobe-font-mono")).toMatch(/^var\(--kobe-face-jetbrains-mono/);
+      expect(catalyst.get("--kaiju-font-sans")).toMatch(/^var\(--kaiju-face-outfit/);
+      expect(catalyst.get("--kaiju-font-mono")).toMatch(/^var\(--kaiju-face-jetbrains-mono/);
       const plain = resolve(previewCss({ preset: "default" }), scheme);
-      expect(plain.get("--kobe-font-mono")).toBe(THEME_LIGHT.get("--kobe-font-mono"));
+      expect(plain.get("--kaiju-font-mono")).toBe(THEME_LIGHT.get("--kaiju-font-mono"));
     }
   });
 
@@ -104,10 +104,10 @@ describe("previewCss", () => {
     const rulesOf = rules(previewCss({ preset: "plum" }));
     const swatch = (scheme: string) =>
       new Map(
-        rulesOf.filter(([s]) => s === `[data-kobe-swatch="${scheme}"]`).flatMap(([, d]) => d),
+        rulesOf.filter(([s]) => s === `[data-kaiju-swatch="${scheme}"]`).flatMap(([, d]) => d),
       );
-    expect(swatch("light").get("--kobe-console-bg")).toBe(THEME_LIGHT.get("--kobe-console-bg"));
-    expect(swatch("dark").get("--kobe-console-bg")).toBe(THEME_DARK.get("--kobe-console-bg"));
+    expect(swatch("light").get("--kaiju-console-bg")).toBe(THEME_LIGHT.get("--kaiju-console-bg"));
+    expect(swatch("dark").get("--kaiju-console-bg")).toBe(THEME_DARK.get("--kaiju-console-bg"));
   });
 
   it("is token declarations only, in the branding allow-list", () => {

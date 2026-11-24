@@ -1,4 +1,4 @@
-import type { PinnedTool, ProposedTool } from "@kobe/db";
+import type { PinnedTool, ProposedTool } from "@kaiju/db";
 import { snapshotHash, toolHash } from "./pin.js";
 
 /**

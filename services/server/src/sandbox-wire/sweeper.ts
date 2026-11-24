@@ -1,4 +1,4 @@
-import { sql, teams, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, teams, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { Logger } from "pino";
 import { withAppendTx } from "../event-stream/append.js";
 import type { SandboxBus } from "./bus.js";
@@ -51,7 +51,7 @@ interface LostRun {
   readonly slot: string;
 }
 
-async function lostRuns(tx: KobeTx, teamId: string, tuning: WireTuning): Promise<LostRun[]> {
+async function lostRuns(tx: KaijuTx, teamId: string, tuning: WireTuning): Promise<LostRun[]> {
   const res = await tx.execute<{
     run_id: string;
     user_id: string;
@@ -81,7 +81,7 @@ async function lostRuns(tx: KobeTx, teamId: string, tuning: WireTuning): Promise
  * then does not list it.
  */
 async function interruptIfStillGone(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   run: LostRun,
   tuning: WireTuning,
@@ -105,7 +105,7 @@ async function interruptIfStillGone(
   });
 }
 
-async function expireCommands(tx: KobeTx, bus: SandboxBus, teamId: string): Promise<number> {
+async function expireCommands(tx: KaijuTx, bus: SandboxBus, teamId: string): Promise<number> {
   // Commands past their deadline: failed for their requester, then forgotten.
   const timedOut = await tx.execute<{ id: string }>(sql`
     UPDATE sandbox_commands
@@ -135,7 +135,7 @@ async function expireCommands(tx: KobeTx, bus: SandboxBus, teamId: string): Prom
  * A failing team is logged and skipped, never blocks the others.
  */
 export async function sweepOnce(
-  db: KobeDb,
+  db: KaijuDb,
   bus: SandboxBus,
   tuning: WireTuning,
   log: Logger,

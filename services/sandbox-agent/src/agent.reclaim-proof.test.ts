@@ -20,7 +20,7 @@ afterEach(async () => {
 
 /** A fake /proc: the agent (this process, so its parent chain), plus `others`. */
 async function fakeProc(others: readonly { pid: number; uid: number }[]): Promise<string> {
-  const root = await mkdtemp(path.join(tmpdir(), "kobe-proc-"));
+  const root = await mkdtemp(path.join(tmpdir(), "kaiju-proc-"));
   dirs.push(root);
   const uid = process.getuid?.() ?? 1000;
   const rows = [{ pid: process.pid, ppid: 0, uid }, ...others.map((o) => ({ ...o, ppid: 1 }))];

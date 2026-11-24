@@ -59,7 +59,7 @@ test("the palette runs an action and opens a thread; ? lists twelve shortcuts", 
   await page.keyboard.press("?");
   const sheet = page.getByRole("dialog", { name: "Keyboard shortcuts" });
   await expect(sheet).toBeVisible();
-  await expect(sheet.locator("[data-kobe-shortcut]")).toHaveCount(12);
+  await expect(sheet.locator("[data-kaiju-shortcut]")).toHaveCount(12);
   await page.keyboard.press("Escape");
   await expect(sheet).toBeHidden();
   expect(await styleViolations(page)).toEqual([]);

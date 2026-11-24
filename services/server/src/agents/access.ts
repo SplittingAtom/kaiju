@@ -1,4 +1,4 @@
-import type { TeamRole } from "@kobe/db";
+import type { TeamRole } from "@kaiju/db";
 import { teamRoleAllows } from "../authz/permissions.js";
 
 /**

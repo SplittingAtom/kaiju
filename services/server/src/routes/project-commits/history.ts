@@ -1,6 +1,6 @@
 import { Readable } from "node:stream";
 import { Hono } from "hono";
-import { revertProjectRequestSchema, workspacePathSchema } from "@kobe/protocol";
+import { revertProjectRequestSchema, workspacePathSchema } from "@kaiju/protocol";
 import { type TeamVariables } from "../../authz/middleware.js";
 import { revertTo } from "../../projects/commits.js";
 import { fileAt, headZip, servable } from "../../projects/history.js";

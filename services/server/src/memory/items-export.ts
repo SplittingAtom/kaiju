@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { locate, type Location } from "./items/location.js";
 import { quoteFoundIn } from "./quote-normalise.js";
 
@@ -155,7 +155,7 @@ export function quotesOf(
 }
 
 async function itemPage(
-  tx: KobeTx,
+  tx: KaijuTx,
   loc: Location,
   after: string | null,
 ): Promise<readonly ItemRow[]> {
@@ -178,7 +178,7 @@ async function itemPage(
 
 /** The person's versions of these items after `(item, version)`, at most {@link VERSION_BATCH}. */
 async function versionBatch(
-  tx: KobeTx,
+  tx: KaijuTx,
   loc: Location,
   ids: readonly string[],
   after: { readonly item: string; readonly version: number } | null,
@@ -203,7 +203,7 @@ async function versionBatch(
 
 /** How many versions of these items someone else wrote, per item. */
 async function otherAuthors(
-  tx: KobeTx,
+  tx: KaijuTx,
   loc: Location,
   ids: readonly string[],
 ): Promise<Map<string, number>> {
@@ -218,7 +218,7 @@ async function otherAuthors(
 
 /** Of these threads, the ones the person owns in this Workspace. */
 export async function ownThreads(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   threadIds: readonly string[],
 ): Promise<Set<string>> {
@@ -240,7 +240,7 @@ export async function ownThreads(
  * person's own copied messages are dropped too, the safe side). Keyed `thread_id/entry_id`.
  */
 export async function ownMessages(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   cited: readonly { threadId: string; entryId: string }[],
 ): Promise<Map<string, string>> {
@@ -274,7 +274,7 @@ export async function ownMessages(
 
 /** One batch of version rows as exported versions, provenance and quotes checked. */
 async function exportVersions(
-  tx: KobeTx,
+  tx: KaijuTx,
   loc: Location,
   viewer: Viewer,
   rows: readonly VersionRow[],
@@ -349,7 +349,7 @@ function toItem(
  * each item is yielded once its last version is read, so at most one batch is held besides it.
  */
 async function* pageItems(
-  db: KobeDb,
+  db: KaijuDb,
   loc: Location,
   viewer: Viewer,
   items: readonly ItemRow[],
@@ -390,7 +390,7 @@ async function* pageItems(
  * then their portable items (site-wide rows, confined to the owner by the location's filter).
  */
 export async function* semanticMemoryForExport(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: Viewer,
 ): AsyncGenerator<ExportedItem[]> {
   for (const scope of ["user", "portable"] as const) {
@@ -415,7 +415,7 @@ export async function* semanticMemoryForExport(
 }
 
 /** How many items the export holds (for its audit), in the caller's team transaction. */
-export async function countSemanticMemoryForExport(tx: KobeTx, viewer: Viewer): Promise<number> {
+export async function countSemanticMemoryForExport(tx: KaijuTx, viewer: Viewer): Promise<number> {
   let total = 0;
   for (const scope of ["user", "portable"] as const) {
     const loc = locate(scope, viewer.teamId, viewer.userId);

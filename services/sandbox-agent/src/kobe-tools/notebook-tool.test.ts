@@ -5,11 +5,11 @@ import {
   NOTEBOOK_TIMEOUT_DEFAULT_S,
   NOTEBOOK_TIMEOUT_MAX_S,
   RUN_PYTHON_TOOL,
-  kobeToolsResponseSchema,
+  kaijuToolsResponseSchema,
   runPythonInputSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ToolsOutcome } from "./client.js";
-import { notebooksEnabled, registerKobeTools } from "./extension.js";
+import { notebooksEnabled, registerKaijuTools } from "./extension.js";
 import { parseNotebookReply, runPythonTool } from "./notebook-tool.js";
 import * as P from "./protocol.js";
 import type { ToolsTransport } from "./tools.js";
@@ -44,7 +44,7 @@ describe("run_python (KOBE-464)", () => {
     expect(P.NOTEBOOK_TIMEOUT_DEFAULT_S).toBe(NOTEBOOK_TIMEOUT_DEFAULT_S);
     expect(P.NOTEBOOK_TIMEOUT_MAX_S).toBe(NOTEBOOK_TIMEOUT_MAX_S);
     expect(CAPABILITY_NOTEBOOKS).toBe("notebooks");
-    expect(kobeToolsResponseSchema.safeParse({ id: "kt_1", ...RAN }).success).toBe(true);
+    expect(kaijuToolsResponseSchema.safeParse({ id: "kt_1", ...RAN }).success).toBe(true);
   });
 
   it("sends notebook.run with a deadline past the cell's own, and summarizes", async () => {
@@ -106,7 +106,7 @@ describe("run_python (KOBE-464)", () => {
     expect(env[P.TOOLS_NOTEBOOKS_ENV]).toBeUndefined();
     const names = (notebooks: boolean) => {
       const tools: string[] = [];
-      registerKobeTools({ registerTool: (tool) => tools.push(tool.name) }, transport(RAN).t, {
+      registerKaijuTools({ registerTool: (tool) => tools.push(tool.name) }, transport(RAN).t, {
         notebooks,
       });
       return tools;

@@ -24,7 +24,7 @@ import {
   eventTrigger,
   useConfirm,
 } from "../../ui/console";
-import type { ThinkingLevel } from "@kobe/protocol";
+import type { ThinkingLevel } from "@kaiju/protocol";
 import { useTeamAccess } from "../console-context";
 import { MutationStatus } from "../error-notice";
 import { ResourceView } from "../parts";

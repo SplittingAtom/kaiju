@@ -5,9 +5,9 @@ import {
   CAPABILITY_NOTEBOOKS,
   notebookRunResponseSchema,
   type PolicyEngine,
-} from "@kobe/protocol";
-import { type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
-import { withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { type ServerToSandboxFrame } from "@kaiju/protocol/sandbox-wire";
+import { withTeam } from "@kaiju/db";
 import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 import { MemoryObjects } from "../testing/memory-objects.js";

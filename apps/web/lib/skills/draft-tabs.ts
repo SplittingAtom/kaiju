@@ -55,6 +55,6 @@ export function showDraftTabInAddress(tab: DraftTab): void {
     window.history.replaceState(window.history.state, "", url);
   } catch (err) {
     // An address that can't be rewritten only loses the link to the tab; the page still works.
-    console.warn("[kobe] the draft tab could not be put in the address", err);
+    console.warn("[kaiju] the draft tab could not be put in the address", err);
   }
 }

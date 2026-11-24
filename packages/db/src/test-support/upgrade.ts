@@ -66,7 +66,7 @@ export async function assertAllMigrationsApplied(ownerUrl: string, folder: strin
  * contains `marker`: the schema of the release before that migration. The caller removes it.
  */
 export function migrationsBefore(marker: string): string {
-  const dir = mkdtempSync(join(tmpdir(), "kobe-migrations-"));
+  const dir = mkdtempSync(join(tmpdir(), "kaiju-migrations-"));
   cpSync(DEFAULT_MIGRATIONS_FOLDER, dir, { recursive: true });
   const journalPath = join(dir, "meta", "_journal.json");
   const journal = JSON.parse(readFileSync(journalPath, "utf8")) as { entries: JournalEntry[] };

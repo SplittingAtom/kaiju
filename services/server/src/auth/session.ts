@@ -9,12 +9,16 @@ import {
   sql,
   ssoProviders,
   users,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import type { SiteRole } from "../authz/permissions.js";
 import type { ServerDeps } from "../deps.js";
-import { DELEGATED_SESSION_PREFIX, delegationOf, type Delegation } from "../kobe-mcp/delegation.js";
-import { delegationBacking } from "../kobe-mcp/delegation-live.js";
+import {
+  DELEGATED_SESSION_PREFIX,
+  delegationOf,
+  type Delegation,
+} from "../kaiju-mcp/delegation.js";
+import { delegationBacking } from "../kaiju-mcp/delegation-live.js";
 import { storedSettingInForce } from "../sso/required.js";
 import { hasLocalPassword } from "./reset-links.js";
 
@@ -53,7 +57,7 @@ export async function readRequireTwoFactor(deps: ServerDeps): Promise<boolean> {
 }
 
 /** The site's `require_2fa` setting, for code that has only the database (the SSO plugin). */
-export async function readRequireTwoFactorIn(db: KobeDb): Promise<boolean> {
+export async function readRequireTwoFactorIn(db: KaijuDb): Promise<boolean> {
   const [row] = await db
     .select({ value: siteSettings.value })
     .from(siteSettings)
@@ -97,7 +101,7 @@ function twoFactorRefusal(canEnrol: boolean): SessionOutcome {
 /**
  * A Kaiju MCP admin tool's in-process call (KOBE-619, KA1): the person of the run, re-read here
  * exactly like a session's user (deactivation, site role, the site's 2FA requirement). Only the
- * executor can mint one (`kobe-mcp/delegation.ts`); nothing on the wire can.
+ * executor can mint one (`kaiju-mcp/delegation.ts`); nothing on the wire can.
  */
 async function delegatedSession(deps: ServerDeps, delegation: Delegation): Promise<SessionOutcome> {
   const db = deps.database.db;

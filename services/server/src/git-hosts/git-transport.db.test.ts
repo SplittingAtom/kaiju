@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { loadEnvelope, sealGitCredential, type Envelope } from "@kobe/db";
-import { generateSessionKeyPair, signSessionToken } from "@kobe/session-token";
+import { loadEnvelope, sealGitCredential, type Envelope } from "@kaiju/db";
+import { generateSessionKeyPair, signSessionToken } from "@kaiju/session-token";
 import type { GitAccess, GitHostAdapter } from "./adapter.js";
 import { GitHostError } from "./adapter.js";
 import type { GitAdapterInput } from "./factory.js";

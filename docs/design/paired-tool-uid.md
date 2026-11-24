@@ -50,7 +50,7 @@ insufficient on its own once `requireRunToken` is on, so it matters mostly durin
 
 ### A. Paired uid through the existing helper (Pi execs a tool helper)
 
-Idea from the KOBE-71 follow-up: `settings.json` `shellPath` points at `kobe-toolrun`, a
+Idea from the KOBE-71 follow-up: `settings.json` `shellPath` points at `kaiju-toolrun`, a
 file-capability helper that Pi's group may execute and that switches `P -> T`.
 
 - Blocker 1 (KOBE-71, confirmed): a file-capability binary gains nothing under `no_new_privs`, and

@@ -1,6 +1,6 @@
-import { provenanceSchema } from "@kobe/protocol";
-import { skillPackageHashes } from "@kobe/protocol/node";
-import { sql, withTeam, type KobeDb } from "@kobe/db";
+import { provenanceSchema } from "@kaiju/protocol";
+import { skillPackageHashes } from "@kaiju/protocol/node";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
 import { recordAuditAfter } from "../audit/record.js";
 import type { BlobStore } from "../retention/blobs.js";
 import { blockedAmong } from "./blocklist.js";
@@ -35,7 +35,7 @@ type Row = {
 };
 
 export async function exportCatalogVersion(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore | null,
   which: { readonly id: string } | { readonly skillId: string; readonly semver: string },
   format: ExportFormat,

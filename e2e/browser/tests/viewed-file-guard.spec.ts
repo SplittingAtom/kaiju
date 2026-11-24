@@ -67,7 +67,7 @@ test("viewed file: the agent's write to the open file is refused or becomes a pr
     const tree = files.getByRole("tree", { name: "My files" });
     await tree.getByRole("treeitem", { name: dir, exact: true }).click();
     await tree.getByRole("treeitem", { name: "notes.md", exact: true }).click();
-    await expect(page.locator(`[data-kobe-viewing-chip="${path}"]`)).toBeVisible();
+    await expect(page.locator(`[data-kaiju-viewing-chip="${path}"]`)).toBeVisible();
 
     await chat.send(writeTurn(path));
     await chat.threadId();
@@ -76,7 +76,7 @@ test("viewed file: the agent's write to the open file is refused or becomes a pr
     // Never written directly.
     expect((await workspace(page, "read", path)).text).toBe(BASE);
 
-    const proposal = page.locator(`[data-kobe-file-edit="${path}"]`);
+    const proposal = page.locator(`[data-kaiju-file-edit="${path}"]`);
     // The write's card says why it was refused (reason viewed_file).
     const refusal = page
       .getByText("Not written: you're viewing this file")

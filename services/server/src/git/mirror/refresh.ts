@@ -12,9 +12,9 @@ import {
   withTeam,
   type Envelope,
   type GitConnectionRecord,
-  type KobeDb,
-} from "@kobe/db";
-import type { GitMirrorFailure } from "@kobe/protocol";
+  type KaijuDb,
+} from "@kaiju/db";
+import type { GitMirrorFailure } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { GitHostError, type GitHostAdapter } from "../../git-hosts/adapter.js";
 import { gitHostAdapter, type GitAdapterInput } from "../../git-hosts/factory.js";
@@ -81,7 +81,7 @@ import {
  * hours, or until the host's rate-limit reset). Reads never wait for a refresh.
  */
 export interface MirrorDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly envelope: Envelope | undefined;
   readonly net: GitHostNet;
   readonly blobs: BlobStore | undefined;
@@ -405,7 +405,7 @@ async function run(
   return applied.kind === "gone" ? "gone" : "refreshed";
 }
 
-async function projectSlug(db: KobeDb, row: MirrorRow): Promise<string> {
+async function projectSlug(db: KaijuDb, row: MirrorRow): Promise<string> {
   const res = await withTeam(db, row.teamId, (tx) =>
     tx.execute<{ slug: string }>(sql`
       SELECT slug FROM projects WHERE team_id = ${row.teamId} AND id = ${row.projectId}`),

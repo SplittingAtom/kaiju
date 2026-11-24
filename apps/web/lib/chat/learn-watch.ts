@@ -1,4 +1,4 @@
-import { MEMORY_PASS_MAX_MS } from "@kobe/protocol";
+import { MEMORY_PASS_MAX_MS } from "@kaiju/protocol";
 import type { LearnState } from "./learn-api";
 
 /**

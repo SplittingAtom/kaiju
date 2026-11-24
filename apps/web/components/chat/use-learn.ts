@@ -1,11 +1,11 @@
 "use client";
 
-import type { LearnMode } from "@kobe/protocol";
+import type { LearnMode } from "@kaiju/protocol";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getLearnState, learnBlocker, startLearn, type LearnState } from "../../lib/chat/learn-api";
 import { LEARN_TIMEOUT_MESSAGE, learnStep, type LearnWatch } from "../../lib/chat/learn-watch";
 import { announcePassCompleted } from "../memory/review/arrival";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 
 /** How often a running pass is checked on. */
 export const LEARN_POLL_MS = 2_000;

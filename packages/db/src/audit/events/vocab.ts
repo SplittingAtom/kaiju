@@ -45,7 +45,7 @@ export const SIGN_IN_METHODS = [
 ] as const;
 
 /**
- * `memory.pass.failed.reason`: @kobe/protocol `MEMORY_PASS_FAILURE_CODES` (the server's contract
+ * `memory.pass.failed.reason`: @kaiju/protocol `MEMORY_PASS_FAILURE_CODES` (the server's contract
  * test keeps them equal) plus `interrupted` for a pass the stale-pass sweep failed.
  */
 export const MEMORY_PASS_AUDIT_FAILURE_CODES = [

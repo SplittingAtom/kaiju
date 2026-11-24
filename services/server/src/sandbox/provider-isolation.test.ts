@@ -1,4 +1,4 @@
-import { AUDIT_EVENTS } from "@kobe/db";
+import { AUDIT_EVENTS } from "@kaiju/db";
 import { describe, expect, it } from "vitest";
 import { IsolationRuntimeMissingError } from "../isolation/gate.js";
 import { OTHER_TEAM, SETTINGS, TEAM, USER, must } from "../testing/sandbox-fixtures.js";

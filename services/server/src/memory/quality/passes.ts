@@ -1,4 +1,4 @@
-import { scanTeams, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { scanTeams, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { notAllowed } from "../items/errors.js";
 import { curates, type MemoryWho } from "../items/who.js";
 
@@ -57,7 +57,7 @@ const FIELDS = Object.keys(EMPTY) as (keyof PassSignals)[];
  * the `(team_id, pass_id, ord)` unique index, and edited saves from the audit log's
  * `memory.candidate.accepted` events of those passes (ids and flags only; no text).
  */
-async function teamSignals(tx: KobeDb | KobeTx, teamId: string): Promise<PassSignals> {
+async function teamSignals(tx: KaijuDb | KaijuTx, teamId: string): Promise<PassSignals> {
   const { rows } = await tx.execute<PassSignals>(sql`
     WITH p AS (
       SELECT id, status FROM memory_learning_passes
@@ -86,7 +86,7 @@ async function teamSignals(tx: KobeDb | KobeTx, teamId: string): Promise<PassSig
 
 /** The active Workspace's pass signals (KOBE-411): Workspace curators only. */
 export async function workspacePassSignals(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
 ): Promise<WorkspacePassSignalsResponse> {
   if (!curates(who, "team") || who.teamId === null)
@@ -101,7 +101,7 @@ export async function workspacePassSignals(
  * numbers and Workspace names only, never a statement, thread or person.
  */
 export async function sitePassSignals(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
 ): Promise<SitePassSignalsResponse> {
   if (!curates(who, "site"))

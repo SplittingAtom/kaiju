@@ -1,4 +1,4 @@
-import type { BreakGlassNotificationEvent } from "@kobe/db";
+import type { BreakGlassNotificationEvent } from "@kaiju/db";
 import type { ServerDeps } from "../deps.js";
 import type { MailMessage } from "../mail/mailer.js";
 import { oneLine } from "../mail/messages.js";

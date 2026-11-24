@@ -6,17 +6,17 @@ import { useModalLayer } from "./use-modal-layer";
 
 /**
  * A modal drawer or sheet closes on a press outside it, but not on a press in content portalled
- * out of it: Radix popovers, and the chat's dialogs (`data-kobe-portal`, KOBE-281), which mount in
+ * out of it: Radix popovers, and the chat's dialogs (`data-kaiju-portal`, KOBE-281), which mount in
  * the chat root next to the layer.
  */
 function Layer({ onClose }: { readonly onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useModalLayer(ref, true, onClose, { modal: true, escape: true });
   return (
-    <div data-kobe-chat>
+    <div data-kaiju-chat>
       <div ref={ref} tabIndex={-1} data-testid="layer" />
       <p data-testid="outside">outside</p>
-      <div role="dialog" data-kobe-portal data-testid="dialog">
+      <div role="dialog" data-kaiju-portal data-testid="dialog">
         <input data-testid="dialog-input" />
       </div>
     </div>
@@ -48,13 +48,13 @@ function LateLayer() {
   const [ready, setReady] = useState(false);
   useModalLayer(ref, true, () => {}, { modal: true, escape: true });
   return (
-    <div data-kobe-chat>
+    <div data-kaiju-chat>
       <button type="button" data-testid="ready" onClick={() => setReady(true)}>
         ready
       </button>
       {ready ? <main data-testid="late">chat</main> : <p data-testid="loading">Loading</p>}
       <div ref={ref} tabIndex={-1} data-testid="layer" />
-      {ready && <div data-kobe-portal data-testid="portal" />}
+      {ready && <div data-kaiju-portal data-testid="portal" />}
     </div>
   );
 }

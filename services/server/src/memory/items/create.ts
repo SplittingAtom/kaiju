@@ -1,5 +1,5 @@
-import { sql, type KobeDb } from "@kobe/db";
-import type { CreateSemanticMemoryItem, SemanticMemoryItemDetail } from "@kobe/protocol";
+import { sql, type KaijuDb } from "@kaiju/db";
+import type { CreateSemanticMemoryItem, SemanticMemoryItemDetail } from "@kaiju/protocol";
 import type { ServerAuditEvent } from "../../audit/record.js";
 import {
   assertExpected,
@@ -34,7 +34,7 @@ import { assertEnabled, assertMayWrite, type MemoryWho } from "./who.js";
  * Policy budget, the near-duplicate check, then the item and its version 1 in one transaction.
  */
 export function createItem(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   body: CreateSemanticMemoryItem,
 ): Promise<SemanticMemoryItemDetail> {

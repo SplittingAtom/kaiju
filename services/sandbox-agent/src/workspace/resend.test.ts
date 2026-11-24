@@ -42,7 +42,7 @@ async function chmodTree(dir: string): Promise<void> {
 }
 
 async function started(): Promise<{ root: string; sync: WorkspaceSync }> {
-  const root = await mkdtemp(path.join(tmpdir(), "kobe-resend-"));
+  const root = await mkdtemp(path.join(tmpdir(), "kaiju-resend-"));
   roots.push(root);
   const sync = new WorkspaceSync({
     root,

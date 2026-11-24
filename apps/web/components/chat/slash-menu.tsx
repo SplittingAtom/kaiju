@@ -202,7 +202,7 @@ export function SlashMenu({ input }: { readonly input: RefObject<HTMLTextAreaEle
           }
         </ComposerPrimitive.TriggerPopoverItems>
       </ComposerPrimitive.TriggerPopover>
-      <span role="status" className="sr-only" data-kobe-slash-status>
+      <span role="status" className="sr-only" data-kaiju-slash-status>
         {said.text}
         {said.n % 2 === 1 ? " " : ""}
       </span>

@@ -1,4 +1,4 @@
-import type { LearnMode, LearnRefusalCode } from "@kobe/protocol";
+import type { LearnMode, LearnRefusalCode } from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../api/client";
 
 /**

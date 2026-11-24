@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { strToU8, zipSync } from "fflate";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { validateZipBundle } from "./bundle.js";
-import { ensureObject } from "./kobe-seed.js";
+import { ensureObject } from "./kaiju-seed.js";
 import { ExternalScanRunner, markNoRunner } from "./registry/external-scan.js";
 import { SCAN_MARKER, externalScannerOn } from "./registry/external-scan-result.js";
 import { reviewDetail } from "./registry/review-detail.js";
@@ -21,7 +21,7 @@ import { SETTINGS, gateFor, seedCluster } from "../testing/sandbox-fixtures.js";
  * scanner's output line are simulated; everything else is real.
  */
 const objects = new MemoryObjects();
-const blobs = { objects, prefix: "kobe/" };
+const blobs = { objects, prefix: "kaiju/" };
 let h: Harness;
 let kube: FakeKube;
 const registryTeam = randomUUID();

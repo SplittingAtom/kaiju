@@ -5,8 +5,8 @@ import {
   loadTeamEgress,
   loadTeamEgressHeaders,
   openHeaders,
-} from "@kobe/db";
-import { initTelemetry, loadTelemetryConfig } from "@kobe/telemetry";
+} from "@kaiju/db";
+import { initTelemetry, loadTelemetryConfig } from "@kaiju/telemetry";
 import { AddressPolicy } from "./address-policy.js";
 import { AllowlistCache } from "./allowlist.js";
 import { egressTokenVerifier, siteTokenVerifier } from "./auth.js";
@@ -31,7 +31,7 @@ const config = loadConfig(process.env);
 const telemetry = initTelemetry(loadTelemetryConfig(process.env, "egress-proxy"));
 const database = createDb(config.databaseUrl, {
   max: config.dbPoolMax,
-  applicationName: "kobe-egress-proxy",
+  applicationName: "kaiju-egress-proxy",
 });
 const db = database.db;
 

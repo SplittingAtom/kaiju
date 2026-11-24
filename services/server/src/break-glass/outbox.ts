@@ -10,9 +10,9 @@ import {
   withTeam,
   type BreakGlassNotificationEvent,
   type BreakGlassRecipientRole,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
@@ -48,7 +48,7 @@ export interface QueuedCounts {
 }
 
 /** Team admins of the grant's team. Sets the team context on `tx`: call at most once per transaction. */
-async function activeTeamAdmins(tx: KobeTx, teamId: string): Promise<{ id: string }[]> {
+async function activeTeamAdmins(tx: KaijuTx, teamId: string): Promise<{ id: string }[]> {
   return withTeam(tx, teamId, (inner) =>
     inner
       .select({ id: users.id })
@@ -64,7 +64,7 @@ async function activeTeamAdmins(tx: KobeTx, teamId: string): Promise<{ id: strin
   );
 }
 
-async function isActiveUser(tx: KobeTx, id: string): Promise<boolean> {
+async function isActiveUser(tx: KaijuTx, id: string): Promise<boolean> {
   const [row] = await tx
     .select({ id: users.id })
     .from(users)
@@ -78,7 +78,7 @@ export function reachesTeam(event: BreakGlassNotificationEvent, wasActive: boole
 }
 
 export async function recipientsFor(
-  tx: KobeTx,
+  tx: KaijuTx,
   grant: GrantRow,
   event: BreakGlassNotificationEvent,
   options: { actorId: string | null; wasActive: boolean },
@@ -113,7 +113,7 @@ export async function recipientsFor(
 
 /** Queues the event's notifications in `tx` (the grant's own transaction) and counts them. */
 export async function enqueueNotifications(
-  tx: KobeTx,
+  tx: KaijuTx,
   grant: GrantRow,
   event: BreakGlassNotificationEvent,
   options: { actorId: string | null; wasActive?: boolean },
@@ -157,7 +157,7 @@ type Claimed = {
   attempts: number;
 };
 
-async function claim(db: KobeDb, grantId?: string): Promise<Claimed[]> {
+async function claim(db: KaijuDb, grantId?: string): Promise<Claimed[]> {
   const result = await db.execute<Claimed>(sql`
     UPDATE ${breakGlassNotifications} SET attempts = attempts + 1,
       next_attempt_at = now() + ${LEASE}::interval
@@ -172,7 +172,7 @@ async function claim(db: KobeDb, grantId?: string): Promise<Claimed[]> {
 }
 
 async function settle(
-  db: KobeDb,
+  db: KaijuDb,
   row: Claimed,
   outcome: { sent: true } | { sent: false; status: "skipped" | "retry"; error: string },
   teamId: string | undefined,

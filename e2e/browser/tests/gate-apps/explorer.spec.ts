@@ -86,7 +86,7 @@ async function theApp(page: Page): Promise<App> {
 /** The app's frame inside the conversation (the card's), by its host-drawn title. */
 function frameOf(page: Page, app: App): FrameLocator {
   return page
-    .locator('[data-kobe-scroll="messages"]')
+    .locator('[data-kaiju-scroll="messages"]')
     .frameLocator(`iframe[title="${app.title} (app from ${app.connectorName})"]`)
     .first();
 }
@@ -160,7 +160,7 @@ test("in the conversation: the app renders, calls once, gives a chip, inserts wi
   const posted = seen.posts().length;
   await frame.getByRole("button", { name: USE_LABEL }).click();
   await expect(chat.composer).toHaveValue(USE_TEXT);
-  await expect(page.locator("[data-kobe-app-insert-from]")).toBeVisible();
+  await expect(page.locator("[data-kaiju-app-insert-from]")).toBeVisible();
   await page.waitForTimeout(1_000);
   expect(seen.posts().length).toBe(posted);
 
@@ -182,7 +182,7 @@ test("in the conversation: the app renders, calls once, gives a chip, inserts wi
   // its end; the member scrolls up to the card, which loads as it comes near.
   const beforeReload = seen.calls();
   await page.reload();
-  const card = page.locator("[data-kobe-app-card]").first();
+  const card = page.locator("[data-kaiju-app-card]").first();
   await expect(card).toBeAttached({ timeout: RUN_TIMEOUT_MS });
   await card.scrollIntoViewIfNeeded();
   await expect(
@@ -232,7 +232,9 @@ test("from the rail: a click inserts an app card with no run; the next run sees 
   const app = await theApp(page);
   await launchFromPlusMenu(page, app);
   const threadId = await chat.threadId();
-  await expect(page.locator("[data-kobe-app-card-entry]")).toBeVisible({ timeout: RUN_TIMEOUT_MS });
+  await expect(page.locator("[data-kaiju-app-card-entry]")).toBeVisible({
+    timeout: RUN_TIMEOUT_MS,
+  });
   await expect(
     frameOf(page, app).getByRole(ITEM_ROLE, { name: PATH[0] ?? "", exact: true }),
   ).toBeVisible({
@@ -276,7 +278,9 @@ test("from the rail with no thread open: the new thread has the default agent an
   expect(preset, "the server marks the new-conversation agent").toBeDefined();
   await launchFromPlusMenu(page, app);
   const threadId = await chat.threadId();
-  await expect(page.locator("[data-kobe-app-card-entry]")).toBeVisible({ timeout: RUN_TIMEOUT_MS });
+  await expect(page.locator("[data-kaiju-app-card-entry]")).toBeVisible({
+    timeout: RUN_TIMEOUT_MS,
+  });
   // ac-1: the thread pinned the agent a new conversation gets, and the composer names it.
   const thread = await pageApi<{ agent_id?: string | null }>(
     page,
@@ -343,7 +347,9 @@ test("from the rail during a run: the launch waits as a chip and goes in after t
   await expect(chip).toBeVisible();
   await chat.waitForIdle();
   await expect(chip).toHaveCount(0);
-  await expect(page.locator("[data-kobe-app-card-entry]")).toBeVisible({ timeout: RUN_TIMEOUT_MS });
+  await expect(page.locator("[data-kaiju-app-card-entry]")).toBeVisible({
+    timeout: RUN_TIMEOUT_MS,
+  });
 });
 
 test("no credential reaches the browser or the frame", async ({ chat, page }) => {

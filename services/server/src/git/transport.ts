@@ -12,10 +12,10 @@ import {
   withTeam,
   type Envelope,
   type GitConnectionRecord,
-  type KobeDb,
+  type KaijuDb,
   type TeamRole,
-} from "@kobe/db";
-import { projectPermissions } from "@kobe/protocol";
+} from "@kaiju/db";
+import { projectPermissions } from "@kaiju/protocol";
 import { GitHostError, type GitHostAdapter } from "../git-hosts/adapter.js";
 import { gitHostAdapter, type GitAdapterInput } from "../git-hosts/factory.js";
 import type { GitHostNet } from "../git-hosts/http.js";
@@ -102,7 +102,7 @@ export type GitTransportAnswer =
     };
 
 export interface GitTransportDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** Opens the sealed credential; unset (no envelope key): every request is refused. */
   readonly envelope: Envelope | undefined;
   readonly net: GitHostNet;
@@ -140,7 +140,7 @@ interface Facts {
 }
 
 async function readFacts(
-  db: KobeDb,
+  db: KaijuDb,
   principal: GitTransportPrincipal,
   request: GitTransportRequest,
 ): Promise<Facts> {
@@ -173,7 +173,7 @@ async function readFacts(
  * stale id must not lose the rule). Both match sets apply: fail closed.
  */
 export async function repoProjectRoles(
-  db: KobeDb,
+  db: KaijuDb,
   principal: GitTransportPrincipal,
   baseUrl: string,
   hostRepoId: string,
@@ -218,7 +218,7 @@ export interface RepoReadRule {
 
 /** Whether any repository on `baseUrl` is a Kaiju Repo in the member's Workspace (no cap). */
 export async function hostHasRepos(
-  db: KobeDb,
+  db: KaijuDb,
   principal: Pick<GitTransportPrincipal, "teamId">,
   baseUrl: string,
 ): Promise<boolean> {
@@ -240,7 +240,7 @@ export async function hostHasRepos(
  * Repos (review g103 R2-L1).
  */
 export async function repoReadRules(
-  db: KobeDb,
+  db: KaijuDb,
   principal: Pick<GitTransportPrincipal, "teamId" | "userId">,
   baseUrl: string,
   repos: readonly { readonly id: string; readonly fullName: string }[],

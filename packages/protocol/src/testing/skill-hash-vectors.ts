@@ -10,7 +10,7 @@ export interface SkillHashVector {
   readonly name: string;
   readonly files: ReadonlyMap<string, Uint8Array>;
   /** Hash options: a package Kaiju assembled may carry its own `provenance.json`. */
-  readonly options?: { readonly kobeProvenance: true };
+  readonly options?: { readonly kaijuProvenance: true };
   readonly runtimeHash: string;
   readonly packageHash: string;
 }
@@ -56,14 +56,14 @@ export const SKILL_HASH_VECTORS: readonly SkillHashVector[] = [
   {
     name: "the same payload as a full package (evals/, kobe.skill.yaml, provenance.json)",
     files: new Map([...PAYLOAD, ...PACKAGE_EXTRAS, PROVENANCE]),
-    options: { kobeProvenance: true },
+    options: { kaijuProvenance: true },
     runtimeHash: PAYLOAD_RUNTIME,
     packageHash: "918647c1b383b9f4c2b191b1f84774829dd8b9a9685b27a470974f00a62a8d37",
   },
   {
     name: "the full package with a different provenance.json (neither hash moves)",
     files: new Map([...PAYLOAD, ...PACKAGE_EXTRAS, ["provenance.json", utf8("{}")]]),
-    options: { kobeProvenance: true },
+    options: { kaijuProvenance: true },
     runtimeHash: PAYLOAD_RUNTIME,
     packageHash: "918647c1b383b9f4c2b191b1f84774829dd8b9a9685b27a470974f00a62a8d37",
   },

@@ -3,7 +3,7 @@ import type { AuthVariables } from "../../auth/session.js";
 import { logger } from "../../logger.js";
 import { hitRateLimit } from "../../rate-limit.js";
 import { DRAFT_PREVIEW_RATE } from "../../skills/drafts/files.js";
-import { compareWithKobe, resetToKobe } from "../../skills/site-edit/kobe-detach.js";
+import { compareWithKaiju, resetToKaiju } from "../../skills/site-edit/kaiju-detach.js";
 import { notifyMaintainers } from "../../skills/site-edit/site-notify.js";
 import { previewSiteDraft, suggestSiteBump } from "../../skills/site-edit/site-preview.js";
 import { publishSiteDraft } from "../../skills/site-edit/site-publish.js";
@@ -13,7 +13,7 @@ import { error, publishSchema, ifMatch, type Ctx, type CatalogEditKit } from "./
 /** Scan preview, suggested bump and publish of the site draft; a Kaiju skill's compare and reset. */
 export function catalogPublishRoutes(kit: CatalogEditKit): Hono<{ Variables: AuthVariables }> {
   const app = new Hono<{ Variables: AuthVariables }>();
-  const { db, blobsOr, unavailable, kobeDeps, failure, skillId } = kit;
+  const { db, blobsOr, unavailable, kaijuDeps, failure, skillId } = kit;
 
   const previewAllowed = (c: Ctx) =>
     hitRateLimit(db, `skill-draft-preview:${c.get("user").id}`, DRAFT_PREVIEW_RATE);
@@ -77,10 +77,10 @@ export function catalogPublishRoutes(kit: CatalogEditKit): Hono<{ Variables: Aut
 
   app.get("/:skillId/kobe/compare", async (c) => {
     const id = skillId(c);
-    const k = kobeDeps();
+    const k = kaijuDeps();
     if (!k) return unavailable(c);
     if (!id) return error(c, 404, "not_found", "No such catalog skill.");
-    const r = await compareWithKobe(k, id);
+    const r = await compareWithKaiju(k, id);
     if (r.ok) return c.json(r.compare);
     switch (r.code) {
       case "not_found":
@@ -96,10 +96,10 @@ export function catalogPublishRoutes(kit: CatalogEditKit): Hono<{ Variables: Aut
 
   app.post("/:skillId/kobe/reset", async (c) => {
     const id = skillId(c);
-    const k = kobeDeps();
+    const k = kaijuDeps();
     if (!k) return unavailable(c);
     if (!id) return error(c, 404, "not_found", "No such catalog skill.");
-    const r = await resetToKobe(k, id, c.get("user").id);
+    const r = await resetToKaiju(k, id, c.get("user").id);
     if (r.ok) return c.json({ shippedSemver: r.shippedSemver, seed: r.seed });
     switch (r.code) {
       case "forbidden":

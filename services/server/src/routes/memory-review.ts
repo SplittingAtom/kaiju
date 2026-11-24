@@ -1,6 +1,6 @@
 import { Hono, type Context } from "hono";
 import { z } from "zod";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import type { TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import {

@@ -477,25 +477,25 @@ describe("foreign keys to conversation tables are indexed (KOBE-735)", () => {
     try {
       await client.query("BEGIN");
       await client.query(
-        `CREATE TABLE kobe735_probe (team_id uuid NOT NULL, thread_id uuid NOT NULL,
+        `CREATE TABLE kaiju735_probe (team_id uuid NOT NULL, thread_id uuid NOT NULL,
            run_id uuid, FOREIGN KEY (team_id, thread_id) REFERENCES threads (team_id, id),
            FOREIGN KEY (team_id, run_id) REFERENCES runs (team_id, id))`,
       );
-      expect((await uncovered(client)).filter((n) => n.startsWith("kobe735_probe"))).toEqual([
-        "kobe735_probe.kobe735_probe_team_id_run_id_fkey",
-        "kobe735_probe.kobe735_probe_team_id_thread_id_fkey",
+      expect((await uncovered(client)).filter((n) => n.startsWith("kaiju735_probe"))).toEqual([
+        "kaiju735_probe.kaiju735_probe_team_id_run_id_fkey",
+        "kaiju735_probe.kaiju735_probe_team_id_thread_id_fkey",
       ]);
-      await client.query(`CREATE INDEX ON kobe735_probe (thread_id, team_id)`);
+      await client.query(`CREATE INDEX ON kaiju735_probe (thread_id, team_id)`);
       // A partial index on another column's IS NOT NULL does not serve the run key's check.
-      await client.query(`ALTER TABLE kobe735_probe ADD COLUMN note text`);
-      await client.query(`CREATE INDEX ON kobe735_probe (team_id, run_id) WHERE note IS NOT NULL`);
-      expect((await uncovered(client)).filter((n) => n.startsWith("kobe735_probe"))).toEqual([
-        "kobe735_probe.kobe735_probe_team_id_run_id_fkey",
+      await client.query(`ALTER TABLE kaiju735_probe ADD COLUMN note text`);
+      await client.query(`CREATE INDEX ON kaiju735_probe (team_id, run_id) WHERE note IS NOT NULL`);
+      expect((await uncovered(client)).filter((n) => n.startsWith("kaiju735_probe"))).toEqual([
+        "kaiju735_probe.kaiju735_probe_team_id_run_id_fkey",
       ]);
       await client.query(
-        `CREATE INDEX ON kobe735_probe (team_id, run_id) WHERE run_id IS NOT NULL`,
+        `CREATE INDEX ON kaiju735_probe (team_id, run_id) WHERE run_id IS NOT NULL`,
       );
-      expect((await uncovered(client)).filter((n) => n.startsWith("kobe735_probe"))).toEqual([]);
+      expect((await uncovered(client)).filter((n) => n.startsWith("kaiju735_probe"))).toEqual([]);
     } finally {
       await client.query("ROLLBACK");
       client.release();

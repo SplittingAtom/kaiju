@@ -5,8 +5,8 @@
  * `suggestion`, `site_proposal` (the object id) and `review` (a learning pass's candidates); the
  * pages that build those views (KOBE-396, KOBE-397, KOBE-403, KOBE-652) honour them.
  */
-import type { NotificationKind } from "@kobe/protocol";
-import type { KobeNotification } from "./api";
+import type { NotificationKind } from "@kaiju/protocol";
+import type { KaijuNotification } from "./api";
 import { UNKNOWN_VIEWER, type MemoryViewer } from "./memory-viewer";
 
 /** Where each memory surface lives. Site memory's console section arrives with KOBE-385/403. */
@@ -102,7 +102,7 @@ function linkOf(
  * (KOBE-404); unknown, they open My memory.
  */
 export function memoryNotificationLink(
-  n: KobeNotification,
+  n: KaijuNotification,
   viewer: MemoryViewer = UNKNOWN_VIEWER,
 ): MemoryLink | null {
   if (n.kind === "memory.review.candidates_ready")
@@ -159,7 +159,7 @@ const REMINDER: Partial<Record<NotificationKind, string>> = {
 };
 
 /** The headline of a memory kind; null for other kinds. */
-export function memoryNotificationTitle(n: KobeNotification): string | null {
+export function memoryNotificationTitle(n: KaijuNotification): string | null {
   const who = (fallback: string) => n.actorName ?? fallback;
   switch (n.kind) {
     case "memory.scope.near_full":
@@ -212,7 +212,7 @@ export function memoryNotificationTitle(n: KobeNotification): string | null {
 }
 
 /** What a memory notification is about (the line under the headline). */
-export function memoryNotificationLabel(n: KobeNotification): string {
+export function memoryNotificationLabel(n: KaijuNotification): string {
   const kind = n.kind === "memory.review.reminder" ? (n.relatedKind ?? n.kind) : n.kind;
   if (kind.startsWith("memory.suggestion.")) return "Project notes";
   if (kind.startsWith("memory.site_proposal.") || n.memoryScope === "site") return "Site memory";

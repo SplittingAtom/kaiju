@@ -1,4 +1,4 @@
-import { withTeam, type KobeDb } from "@kobe/db";
+import { withTeam, type KaijuDb } from "@kaiju/db";
 import { readRunMemoryPlan } from "../../agents/run-memory.js";
 import { SELECT_LANES } from "../items/select.js";
 import { parseRunMemoryState, runMemoryStateQuery, type RunMemoryStateRow } from "../switches.js";
@@ -67,7 +67,7 @@ export class PendingQueries {
  * The same rules as delivery's (`buildRunSemantic`), read when the message is accepted.
  */
 export async function runWantsVectors(
-  db: KobeDb,
+  db: KaijuDb,
   run: { readonly teamId: string; readonly runId: string },
 ): Promise<boolean> {
   return withTeam(db, run.teamId, async (tx) => {

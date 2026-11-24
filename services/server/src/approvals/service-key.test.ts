@@ -1,4 +1,4 @@
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import { describe, expect, it, vi } from "vitest";
 import { createApp } from "../app.js";
@@ -10,7 +10,7 @@ import { ApprovalService } from "./service.js";
  * KOBE_APPROVAL_KEY nor logs an error about it; the server process still does both.
  */
 
-const db = {} as KobeDb;
+const db = {} as KaijuDb;
 const logger = () =>
   ({ error: vi.fn() }) as unknown as Logger & { error: ReturnType<typeof vi.fn> };
 

@@ -1,8 +1,8 @@
 import path from "node:path";
-import { KOBE_TOOLS_FD } from "@kobe/protocol";
-import { type PiThreadConfig, type RunMcpContext } from "@kobe/protocol/sandbox-wire";
+import { KOBE_TOOLS_FD } from "@kaiju/protocol";
+import { type PiThreadConfig, type RunMcpContext } from "@kaiju/protocol/sandbox-wire";
 import { EXEC_FD, EXEC_FD_ENV } from "../kobe-exec/protocol.js";
-import { KOBE_PROVIDER_ID } from "../kobe-models/protocol.js";
+import { KAIJU_PROVIDER_ID } from "../kobe-models/protocol.js";
 import type { RunModel } from "../models/types.js";
 
 /**
@@ -184,7 +184,7 @@ export function buildPiLaunch(input: PiLaunchInput): PiLaunch {
   // Not in the key (below): the model file carries the run's model to a running Pi.
   const keyArgs = [...args];
   if (models !== undefined && input.model != null) {
-    args.push("--model", `${KOBE_PROVIDER_ID}/${input.model.gatewayModel}`);
+    args.push("--model", `${KAIJU_PROVIDER_ID}/${input.model.gatewayModel}`);
   }
   // Seam (not wired here): mcp_servers → KOBE-62. The system prompt is wired at spawn (see
   // `PiLaunch.systemPrompt`). Both change `key`, so a thread restarts Pi when its config changes.

@@ -8,9 +8,9 @@ import {
   sql,
   threadBranchLabels,
   threadEntries,
-  type KobeTx,
-} from "@kobe/db";
-import { BRANCH_LABELS_MAX, type ThreadBranchesResponse } from "@kobe/protocol";
+  type KaijuTx,
+} from "@kaiju/db";
+import { BRANCH_LABELS_MAX, type ThreadBranchesResponse } from "@kaiju/protocol";
 import { findThread, lockForChange, type ThreadError, type Viewer } from "./repository.js";
 
 /**
@@ -31,7 +31,7 @@ export type BranchesResult =
 
 /** The thread's labels and remembered-rule runs; the thread is already known readable. */
 async function readBranchesOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<ThreadBranchesResponse> {
@@ -67,7 +67,7 @@ async function readBranchesOf(
 
 /** `GET /v1/threads/{id}/branches` (CT2): for whoever may read the thread; null = 404. */
 export async function readBranches(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   threadId: string,
 ): Promise<ThreadBranchesResponse | null> {
@@ -82,7 +82,7 @@ export async function readBranches(
  * threads (CT19). Idempotent; touches neither `last_activity_at` nor the audit log.
  */
 export async function setLabel(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   threadId: string,
   entryId: string,
@@ -153,7 +153,7 @@ export async function setLabel(
  * the fork's transaction after its entries; the fork's owner becomes their author.
  */
 export async function copyLabels(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   sourceThreadId: string,
   forkThreadId: string,

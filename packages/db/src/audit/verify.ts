@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
-import type { KobeDb } from "../client.js";
+import type { KaijuDb } from "../client.js";
 
 /** prev_hash of the first row (seq 1). */
 export const AUDIT_GENESIS_HASH = "0".repeat(64);
@@ -129,7 +129,7 @@ function sealMatches(row: ChainRow, seal: string, throughSeq: number): boolean {
  * SQL twin: `audit_log_chain_problem()`.
  */
 export async function verifyAuditChain(
-  db: KobeDb,
+  db: KaijuDb,
   options: VerifyOptions = {},
 ): Promise<AuditChainReport> {
   const batchSize = options.batchSize ?? 1000;

@@ -1,12 +1,12 @@
 import type { ReadableStream as WebReadableStream } from "node:stream/web";
 import { Readable } from "node:stream";
 import { Hono } from "hono";
-import { isLegalHoldViolation, withTeam } from "@kobe/db";
+import { isLegalHoldViolation, withTeam } from "@kaiju/db";
 import {
   importProjectFileRequestSchema,
   PROJECT_FILE_MAX_BYTES,
   projectFileUploadFieldsSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { type TeamVariables } from "../../authz/middleware.js";
 import { loadAccess } from "../../projects/access.js";
 import { importProjectFile, type ImportRefusal } from "../../projects/import.js";

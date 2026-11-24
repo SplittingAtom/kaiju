@@ -18,7 +18,7 @@ import { organizedMessage } from "../../lib/chat/organize";
 import { placementOf, type ThreadGroup } from "../../lib/chat/thread-groups";
 import { ErrorNotice } from "../admin/error-notice";
 import { useArtifactPanel } from "../chat/artifact-state";
-import { useChatSession } from "../chat/kobe-runtime";
+import { useChatSession } from "../chat/kaiju-runtime";
 import { filedMessage } from "../chat/save-to-folder-menu";
 import { RailAnnounce } from "../chat/use-organize-menu";
 import { useFolderReads, useThreadFolders } from "../chat/use-thread-folders";
@@ -174,7 +174,7 @@ export function ThreadsPanelContent({
   const chooseOnClick = (e: MouseEvent) => {
     if (!(e.target instanceof Element) || e.defaultPrevented) return;
     if (e.target.closest(`.${chat.threadTrigger}`) === null) return;
-    const threadId = e.target.closest("[data-kobe-thread]")?.getAttribute("data-kobe-thread");
+    const threadId = e.target.closest("[data-kaiju-thread]")?.getAttribute("data-kaiju-thread");
     if (threadId) queueMicrotask(() => onChosen(threadId));
   };
 
@@ -201,7 +201,7 @@ export function ThreadsPanelContent({
                   ? "grid min-w-0 grid-cols-[220px_1px_minmax(0,1fr)] gap-3"
                   : "flex flex-col gap-2"
             }
-            data-kobe-threads-body={threeRails ? "three-rails" : wide ? "two-rails" : "dropdown"}
+            data-kaiju-threads-body={threeRails ? "three-rails" : wide ? "two-rails" : "dropdown"}
           >
             <FolderColumn
               wide={wide}
@@ -222,7 +222,7 @@ export function ThreadsPanelContent({
             <div
               ref={threadsRef}
               className={threeRails ? "min-h-0 min-w-48 overflow-y-auto" : "min-w-0"}
-              data-kobe-thread-column=""
+              data-kaiju-thread-column=""
               onClick={chooseOnClick}
             >
               {listError && <ErrorNotice error={listError} />}
@@ -248,7 +248,7 @@ export function ThreadsPanelContent({
                   onMove={moveByDrop}
                 />
               )}
-              <p role="status" className="sr-only" data-kobe-rail-status="">
+              <p role="status" className="sr-only" data-kaiju-rail-status="">
                 {announcement}
               </p>
             </div>

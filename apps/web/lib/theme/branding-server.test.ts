@@ -1,4 +1,4 @@
-import type { SiteBranding } from "@kobe/protocol";
+import type { SiteBranding } from "@kaiju/protocol";
 import { describe, expect, it, vi } from "vitest";
 import {
   BRANDING_CACHE_MS,

@@ -8,9 +8,9 @@ import {
   withTeam,
   type GitConnectionRecord,
   type GitSiteSettings,
-  type KobeDb,
+  type KaijuDb,
   type TeamRole,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { gitHostTarget } from "../git-hosts/target.js";
 import type { GitToolDef } from "./catalog.js";
 
@@ -72,7 +72,7 @@ const deny = (code: GitDenyCode, message: string): GitAccessDecision => ({
 });
 
 export async function loadGitToolFacts(
-  db: KobeDb,
+  db: KaijuDb,
   principal: GitToolPrincipal,
 ): Promise<GitToolFacts> {
   const settings = await readGitSiteSettings(db);
@@ -206,7 +206,7 @@ export function decideGitAccess(
 
 /** The agent of the run a call was decided for (audit only). */
 export async function namedRunAgent(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   runId: string,
 ): Promise<string | null> {

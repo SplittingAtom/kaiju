@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, realpath, rm, symlink, truncate, writeFile, link } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { FILE_SHARE_MAX_BYTES } from "@kobe/protocol";
+import { FILE_SHARE_MAX_BYTES } from "@kaiju/protocol";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveSharePath, SharePathError } from "./share-path.js";
 
@@ -10,7 +10,7 @@ let root: string;
 let outside: string;
 
 beforeEach(async () => {
-  base = await realpath(await mkdtemp(path.join(tmpdir(), "kobe-share-")));
+  base = await realpath(await mkdtemp(path.join(tmpdir(), "kaiju-share-")));
   root = path.join(base, "workspace");
   outside = path.join(base, "outside");
   await mkdir(path.join(root, "out"), { recursive: true });

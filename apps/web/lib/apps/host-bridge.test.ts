@@ -81,7 +81,7 @@ describe("source and origin (spec T4, ac-2)", () => {
     const other = { postMessage: vi.fn() } as unknown as Window;
     t.send(rpc(1, "tools/call", { name: "t" }), { source: other });
     t.send(rpc(2, "tools/call", { name: "t" }), { source: null });
-    t.send(rpc(3, "tools/call", { name: "t" }), { origin: "https://kobe.example" });
+    t.send(rpc(3, "tools/call", { name: "t" }), { origin: "https://kaiju.example" });
     t.send(rpc(4, "tools/call", { name: "t" }), { source: window });
     await t.flush();
     expect(t.replies()).toEqual([]);

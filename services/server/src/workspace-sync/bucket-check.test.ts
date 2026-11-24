@@ -56,9 +56,9 @@ describe("bucketLifecycleWarning (KOBE-738)", () => {
     expect(await bucketLifecycleWarning(store("Enabled", [expiry()]), "b", "")).toBeUndefined();
     expect(
       await bucketLifecycleWarning(
-        store("Enabled", [expiry({ Filter: { Prefix: "kobe/" } })]),
+        store("Enabled", [expiry({ Filter: { Prefix: "kaiju/" } })]),
         "b",
-        "kobe/",
+        "kaiju/",
       ),
     ).toBeUndefined();
   });
@@ -66,12 +66,12 @@ describe("bucketLifecycleWarning (KOBE-738)", () => {
   it("logs a skipped check at debug with the bucket and the error name only", async () => {
     const lines: unknown[] = [];
     const secret = Object.assign(new Error("key AKIA-secret refused"), { name: "AccessDenied" });
-    await bucketLifecycleWarning(store("Enabled", secret), "kobe-bucket", "", (f, m) =>
+    await bucketLifecycleWarning(store("Enabled", secret), "kaiju-bucket", "", (f, m) =>
       lines.push([f, m]),
     );
     expect(lines).toEqual([
       [
-        { bucket: "kobe-bucket", call: "GetBucketLifecycleConfiguration", error: "AccessDenied" },
+        { bucket: "kaiju-bucket", call: "GetBucketLifecycleConfiguration", error: "AccessDenied" },
         "bucket lifecycle check skipped",
       ],
     ]);
@@ -90,16 +90,16 @@ describe("bucketLifecycleWarning (KOBE-738)", () => {
 
 describe("expiresNoncurrentVersions", () => {
   it("needs an enabled rule with noncurrent days covering every object under the prefix", () => {
-    expect(expiresNoncurrentVersions([expiry()], "kobe/")).toBe(true);
+    expect(expiresNoncurrentVersions([expiry()], "kaiju/")).toBe(true);
     expect(expiresNoncurrentVersions([expiry({ Filter: undefined, Prefix: "" })], "")).toBe(true);
     expect(expiresNoncurrentVersions([expiry({ Status: "Disabled" })], "")).toBe(false);
     expect(
       expiresNoncurrentVersions([expiry({ NoncurrentVersionExpiration: undefined })], ""),
     ).toBe(false);
-    expect(expiresNoncurrentVersions([expiry({ Filter: { Prefix: "other/" } })], "kobe/")).toBe(
+    expect(expiresNoncurrentVersions([expiry({ Filter: { Prefix: "other/" } })], "kaiju/")).toBe(
       false,
     );
-    expect(expiresNoncurrentVersions([expiry({ Filter: { Prefix: "kobe/" } })], "")).toBe(false);
+    expect(expiresNoncurrentVersions([expiry({ Filter: { Prefix: "kaiju/" } })], "")).toBe(false);
     expect(
       expiresNoncurrentVersions([expiry({ Filter: { Tag: { Key: "k", Value: "v" } } })], ""),
     ).toBe(false);

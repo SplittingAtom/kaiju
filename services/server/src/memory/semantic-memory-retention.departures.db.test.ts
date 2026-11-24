@@ -144,7 +144,7 @@ describe("a second departure (review H1)", () => {
       `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'member')`,
       [team, ids.bob],
     );
-    const { withTeam } = await import("@kobe/db");
+    const { withTeam } = await import("@kaiju/db");
     const { reopenRetentionInTx } = await import("../offboarding/reopen.js");
     await withTeam(h.deps.database.db, team, (tx) => reopenRetentionInTx(tx, team, [ids.bob]));
     expect(await retainDays(ids.bob)).toBeNull();

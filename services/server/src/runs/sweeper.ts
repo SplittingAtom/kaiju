@@ -1,4 +1,4 @@
-import { readBudgetStopScope, sql, teams, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { readBudgetStopScope, sql, teams, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { Logger } from "pino";
 
 /** A `running` run with no lease and no start (`run.start`, `thread.compact`) in flight. */
@@ -51,7 +51,7 @@ export interface SweepTuning {
 
 const secs = (ms: number) => ms / 1000;
 
-async function lostStarts(tx: KobeTx, teamId: string, deadlineMs: number): Promise<LostStart[]> {
+async function lostStarts(tx: KaijuTx, teamId: string, deadlineMs: number): Promise<LostStart[]> {
   const res = await tx.execute<{ id: string; thread_id: string; age_ms: string | number }>(sql`
     SELECT r.id, r.thread_id, extract(epoch FROM now() - r.started_at) * 1000 AS age_ms
       FROM runs r
@@ -77,7 +77,7 @@ async function lostStarts(tx: KobeTx, teamId: string, deadlineMs: number): Promi
  * Pi is told to abort, so the thread is never held by one.
  */
 async function staleCompactions(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   deadlineMs: number,
 ): Promise<StaleCompaction[]> {
@@ -101,7 +101,7 @@ async function staleCompactions(
   }));
 }
 
-async function pendingStops(tx: KobeTx, teamId: string, resendMs: number): Promise<PendingStop[]> {
+async function pendingStops(tx: KaijuTx, teamId: string, resendMs: number): Promise<PendingStop[]> {
   const res = await tx.execute<{
     id: string;
     thread_id: string;
@@ -129,7 +129,7 @@ async function pendingStops(tx: KobeTx, teamId: string, resendMs: number): Promi
   }));
 }
 
-async function stalledThreads(tx: KobeTx, teamId: string, stallMs: number) {
+async function stalledThreads(tx: KaijuTx, teamId: string, stallMs: number) {
   const res = await tx.execute<{ thread_id: string }>(sql`
     SELECT DISTINCT q.thread_id FROM runs q
       JOIN threads t ON t.team_id = q.team_id AND t.id = q.thread_id
@@ -160,7 +160,7 @@ async function stalledThreads(tx: KobeTx, teamId: string, stallMs: number) {
  * (team tables are only readable inside withTeam); a failing team is logged and skipped.
  */
 export async function sweepRuns(
-  db: KobeDb,
+  db: KaijuDb,
   tuning: SweepTuning,
   log: Logger,
 ): Promise<RunSweepResult> {

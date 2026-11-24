@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
+import type { SandboxToServerFrame } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import { CONFLICTS_HEADER } from "./memory/conflict-context.js";
 import type { WorkspaceHooks } from "./agent.js";

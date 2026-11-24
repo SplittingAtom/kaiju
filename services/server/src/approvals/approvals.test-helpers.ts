@@ -1,8 +1,8 @@
 // Shared setup for the approvals.*.db.test.ts files (split from approvals.db.test.ts, KOBE-725).
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, expect } from "vitest";
-import { type ToolDescriptor } from "@kobe/protocol";
-import { createDb, type KobeDatabase } from "@kobe/db";
+import { type ToolDescriptor } from "@kaiju/protocol";
+import { createDb, type KaijuDatabase } from "@kaiju/db";
 import { approvalKeyring } from "./index.js";
 import { createPolicyEngine } from "../policy/engine.js";
 import { createToolRegistry } from "../policy/registry.js";
@@ -22,7 +22,7 @@ export const fx = new EventStreamFixture();
 export const auth = new FakeSandboxAuth();
 export const listeners: Awaited<ReturnType<typeof sandboxListener>>[] = [];
 export const sandboxes: FakeSandbox[] = [];
-export const extraDbs: KobeDatabase[] = [];
+export const extraDbs: KaijuDatabase[] = [];
 /** A small run event cap so the cap test reaches it (every other test stays far below). */
 export const RUN_MAX_EVENTS = 40;
 export const KEY = approvalKeyring("approval-key-for-tests-".padEnd(48, "k"));
@@ -136,16 +136,18 @@ export async function decide(p: Person, approvalId: string, body: object, replic
   // The decision arrives on the other replica than the one holding the sandbox (bus hint).
   const headers = {
     cookie: [...p.browser.cookies].map(([k, v]) => `${k}=${v}`).join("; "),
-    origin: "http://kobe.test",
+    origin: "http://kaiju.test",
     "content-type": "application/json",
     "x-forwarded-for": p.browser.ip,
     ...(p.browser.team ? { "x-kobe-team": p.browser.team } : {}),
   };
-  const res = await fx.replica(replica).app.request(`http://kobe.test/v1/approvals/${approvalId}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
+  const res = await fx
+    .replica(replica)
+    .app.request(`http://kaiju.test/v1/approvals/${approvalId}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
   return { status: res.status, json: (await res.json()) as Record<string, unknown> };
 }
 

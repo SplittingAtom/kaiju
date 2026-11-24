@@ -21,7 +21,7 @@ import { teams } from "./teams.js";
 // Tool rules (spec D6, D29, §5.4). The spec's single `tool_rules(team_id?, scope, …)` is split in
 // two so every team row sits behind team RLS: site rules (the policy floor) are site-wide;
 // team and user rules are a team table. `arg_pattern` is `{ "<JSON Pointer>": "<glob>" }`
-// (`argPatternSchema` in @kobe/protocol), never a regular expression; the server validates it.
+// (`argPatternSchema` in @kaiju/protocol), never a regular expression; the server validates it.
 
 /** deny | ask | allow. Site rules use deny and ask only; user rules use allow only. */
 export const toolRuleEffect = pgEnum("tool_rule_effect", ["deny", "ask", "allow"]);
@@ -31,7 +31,7 @@ export type ToolRuleEffect = (typeof toolRuleEffect.enumValues)[number];
 export const toolRuleScope = pgEnum("tool_rule_scope", ["team", "user"]);
 
 /**
- * How long and where a user's remember-rule holds (KOBE-289; `REMEMBER_SCOPES` in @kobe/protocol):
+ * How long and where a user's remember-rule holds (KOBE-289; `REMEMBER_SCOPES` in @kaiju/protocol):
  * `thread` and `run` name their thread or run; the engine checks the call's ids against them.
  */
 export const REMEMBER_SCOPE_VALUES = ["thread", "today", "run", "day", "month", "forever"] as const;

@@ -1,5 +1,5 @@
-import { SERVER_CALL_EPILOGUE_MAX_MS } from "@kobe/protocol";
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { SERVER_CALL_EPILOGUE_MAX_MS } from "@kaiju/protocol";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { encodeWorkspaceAccessHint, RUN_EVENTS_CHANNEL, WORKSPACE_HINT_PREFIX } from "./notify.js";
 
 /**
@@ -18,7 +18,7 @@ const OPEN_AFTER_END_MS = SERVER_CALL_EPILOGUE_MAX_MS + 60_000;
  * a change that rolled back. Ids only (`notify.ts`).
  */
 export async function notifyThreadAccess(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<void> {
@@ -36,7 +36,7 @@ export async function notifyThreadAccess(
  * deactivated): their open workspace change streams recheck the viewer now, not within 30 s.
  * Sent after the change committed. Ids only (`notify.ts`).
  */
-export async function notifyWorkspaceAccess(db: KobeDb, userId: string): Promise<void> {
+export async function notifyWorkspaceAccess(db: KaijuDb, userId: string): Promise<void> {
   await db.execute(
     sql`SELECT pg_notify(${RUN_EVENTS_CHANNEL}, ${encodeWorkspaceAccessHint(userId)})`,
   );
@@ -49,7 +49,7 @@ export async function notifyWorkspaceAccess(db: KobeDb, userId: string): Promise
  * workspace hint per member: ids only, never the team (`notify.ts`); each stream re-reads under its
  * own session's team, so a member of several teams learns nothing of the others.
  */
-export async function notifyTeamWorkspaces(tx: KobeTx, teamId: string): Promise<void> {
+export async function notifyTeamWorkspaces(tx: KaijuTx, teamId: string): Promise<void> {
   await tx.execute(sql`
     SELECT pg_notify(${RUN_EVENTS_CHANNEL}, ${WORKSPACE_HINT_PREFIX} || m.user_id::text)
       FROM team_members m

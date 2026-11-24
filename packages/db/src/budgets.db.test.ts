@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import {
   exhaustedLine,
   loadMemberBudgetState,
@@ -25,7 +25,7 @@ import {
 import { withTeam } from "./with-team.js";
 
 /** KOBE-42: budgets, the daily spend counters kept by the run_usage trigger, budget state. */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const teamA = randomUUID();
 const teamB = randomUUID();
 const alice = randomUUID();

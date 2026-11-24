@@ -36,7 +36,7 @@ describe("ensureSandbox: team namespace (D11)", () => {
     expect(bindings[0]).toMatchObject({
       metadata: { namespace: NS },
       roleRef: { kind: "ClusterRole", name: SETTINGS.managerClusterRole },
-      subjects: [{ kind: "ServiceAccount", name: "kobe-server", namespace: "kobe" }],
+      subjects: [{ kind: "ServiceAccount", name: "kobe-server", namespace: "kaiju" }],
     });
   });
 
@@ -227,7 +227,7 @@ describe("ensureSandbox: team namespace (D11)", () => {
     kube.seed({
       apiVersion: "v1",
       kind: "Secret",
-      metadata: { name: "ghcr-pull", namespace: "kobe", labels: { other: "x" } },
+      metadata: { name: "ghcr-pull", namespace: "kaiju", labels: { other: "x" } },
       type: "kubernetes.io/dockerconfigjson",
       data: { ".dockerconfigjson": "e30=" },
     });
@@ -250,7 +250,7 @@ describe("ensureSandbox: team namespace (D11)", () => {
     kube.seed({
       apiVersion: "v1",
       kind: "Service",
-      metadata: { name: "kobe-bifrost", namespace: "kobe" },
+      metadata: { name: "kobe-bifrost", namespace: "kaiju" },
       spec: { clusterIP: "None" },
     });
     await expect(provider.ensureSandbox(TEAM, USER)).rejects.toThrow(/no ClusterIP/);

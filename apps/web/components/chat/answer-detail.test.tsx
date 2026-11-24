@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { PREFERENCES_PATH } from "../../lib/shell/preferences";
 import { must } from "../../lib/testing/must";
 import { openApp, pressModShift } from "./testing";
@@ -12,13 +12,13 @@ import { openApp, pressModShift } from "./testing";
  * closes only that answer's reasoning and tool cards; Mod+Shift+D (and the palette) still toggle
  * every block, and a block set by hand keeps its state until a toggle changes (useDisclosure).
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push({ alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true });
   vi.stubGlobal("fetch", fake.fetch);
 });
@@ -112,7 +112,7 @@ describe("Show details per answer (KOBE-418 ac-3)", { timeout: 30_000 }, () => {
     openApp(fake, t);
     const answer = await answerOf("Part two.");
     const marker = await waitFor(() =>
-      must(answer.querySelector<HTMLElement>('[data-kobe-marker="compaction"]')),
+      must(answer.querySelector<HTMLElement>('[data-kaiju-marker="compaction"]')),
     );
     expect(marker).toBeTruthy();
     await userEvent.setup().click(toggleOf(answer));

@@ -3,8 +3,8 @@ import {
   MEMORY_INDEX_FILE,
   semanticMemoryStatementSchema,
   type SemanticMemoryIssue,
-} from "@kobe/protocol";
-import { withTeam, type KobeDb } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam, type KaijuDb } from "@kaiju/db";
 import type { ApprovalKeyring } from "../../approvals/keys.js";
 import { recordAudit } from "../../audit/record.js";
 import type { BlobStore } from "../../retention/blobs.js";
@@ -48,7 +48,7 @@ import { decideCandidate, lockCandidate, type CandidateRow } from "./stored.js";
  */
 
 export interface NotesDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore | undefined;
   readonly keys: ApprovalKeyring | undefined;
 }

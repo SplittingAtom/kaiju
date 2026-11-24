@@ -44,22 +44,22 @@ describe("the app role cannot run trigger code of its own", () => {
 
   it("refuses the temp-table / nested-trigger attack at its first step", async () => {
     // 42501: insufficient privilege.
-    expect(await code(app.query("CREATE TEMP TABLE kobe_attack (x int)"))).toBe("42501");
+    expect(await code(app.query("CREATE TEMP TABLE kaiju_attack (x int)"))).toBe("42501");
     expect(
       await code(
-        app.query(`CREATE FUNCTION pg_temp.kobe_attack() RETURNS trigger LANGUAGE plpgsql AS
+        app.query(`CREATE FUNCTION pg_temp.kaiju_attack() RETURNS trigger LANGUAGE plpgsql AS
           $$ BEGIN UPDATE run_usage SET input_tokens = 0; RETURN NULL; END $$`),
       ),
     ).toBe("42501");
     expect(
       await code(
-        app.query(`CREATE FUNCTION public.kobe_attack() RETURNS trigger LANGUAGE plpgsql AS
+        app.query(`CREATE FUNCTION public.kaiju_attack() RETURNS trigger LANGUAGE plpgsql AS
           $$ BEGIN UPDATE run_usage SET input_tokens = 0; RETURN NULL; END $$`),
       ),
     ).toBe("42501");
     expect(
       await code(
-        app.query(`CREATE TRIGGER kobe_attack AFTER INSERT ON run_usage
+        app.query(`CREATE TRIGGER kaiju_attack AFTER INSERT ON run_usage
           FOR EACH STATEMENT EXECUTE FUNCTION kobe_run_usage_append_only()`),
       ),
     ).toBe("42501");

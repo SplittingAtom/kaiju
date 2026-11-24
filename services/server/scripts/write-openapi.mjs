@@ -2,7 +2,7 @@
 // Writes the server's OpenAPI 3.1 document (src/openapi/document.ts) as JSON (KOBE-815). The file
 // is generated, not committed: CI builds it on every push and keeps it as the `openapi` artifact.
 // Reads the built package, so build first:
-//   pnpm --filter @kobe/server build && pnpm --filter @kobe/server openapi [out]
+//   pnpm --filter @kaiju/server build && pnpm --filter @kaiju/server openapi [out]
 // Default out: services/server/openapi.json (gitignored).
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";

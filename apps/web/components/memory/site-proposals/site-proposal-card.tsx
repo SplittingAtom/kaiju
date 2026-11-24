@@ -1,6 +1,6 @@
 "use client";
 
-import { SEMANTIC_MEMORY_KINDS } from "@kobe/protocol";
+import { SEMANTIC_MEMORY_KINDS } from "@kaiju/protocol";
 import { useId, useState } from "react";
 import type { ItemKind } from "../../../lib/memory/items-api";
 import {

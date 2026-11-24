@@ -1,6 +1,6 @@
 "use client";
 
-import type { AgentRosterRow, AgentRosterSchedule } from "@kobe/protocol";
+import type { AgentRosterRow, AgentRosterSchedule } from "@kaiju/protocol";
 import type { GalleryScore } from "../../lib/admin/api/agents";
 import { scoreLabel } from "../../lib/admin/orbit-score";
 import { formatTokens } from "../../lib/admin/usage-format";

@@ -1,4 +1,4 @@
-import { setTeamDefaultAgentRequestSchema, teamDefaultAgentSchema } from "@kobe/protocol";
+import { setTeamDefaultAgentRequestSchema, teamDefaultAgentSchema } from "@kaiju/protocol";
 import { z } from "zod";
 
 /**

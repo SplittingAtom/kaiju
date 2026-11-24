@@ -5,8 +5,8 @@ import {
   semanticMemoryOverridesSchema,
   semanticMemoryStatementSchema,
   type SemanticMemoryItemDetail,
-} from "@kobe/protocol";
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { snapshotPortableHolds } from "../../legal-hold/portable-hold.js";
 import { afterCommit, openOp, type Op } from "../items/context.js";
@@ -78,9 +78,9 @@ export interface SavedCandidate {
  * Site curators go out (`afterCommit`).
  */
 async function inReview<T>(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
-  fn: (tx: KobeTx, ops: OpsFor) => Promise<T>,
+  fn: (tx: KaijuTx, ops: OpsFor) => Promise<T>,
 ): Promise<T> {
   const teamId = workspaceOf(who);
   // Read before the transaction: an update of a portable memory may prune versions (review M1).
@@ -101,7 +101,7 @@ type OpsFor = (scope: ReviewScope) => Promise<Op>;
 
 /** Saves one locked candidate through the item store; returns the item and the decision. */
 async function saveLocked(
-  tx: KobeTx,
+  tx: KaijuTx,
   ops: OpsFor,
   who: MemoryWho,
   row: CandidateRow,
@@ -204,7 +204,7 @@ async function saveLocked(
  * look. A candidate stored without a base (before KOBE-779) acts on the current version.
  */
 async function targetVersion(
-  tx: KobeTx,
+  tx: KaijuTx,
   op: Op,
   targetId: string,
   base: number | undefined,
@@ -222,7 +222,7 @@ export const TARGET_MOVED_MESSAGE =
   "The memory this candidate changes was changed since Kaiju suggested this. Look at the changes again, then save or dismiss.";
 
 export function saveCandidate(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   candidateId: string,
   body: SaveCandidate,
@@ -241,7 +241,7 @@ export function saveCandidate(
 
 /** Dismiss: closed, and later passes over the thread don't offer the statement again. */
 export function dismissCandidate(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   candidateId: string,
 ): Promise<{ readonly candidate_id: string }> {
@@ -274,7 +274,7 @@ const sqlDismissal = (teamId: string, threadId: string, userId: string, hash: st
  * person handles it on its card and tries again. One Undo takes the whole batch back.
  */
 export function saveAllMine(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   candidateIds: readonly string[],
 ): Promise<{ readonly saved: readonly SavedCandidate[] }> {
@@ -303,7 +303,7 @@ export function saveAllMine(
  * since (409 `memory_version_conflict`) or the save replaced another memory (that stays as saved).
  */
 export function undoSaves(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   candidateIds: readonly string[],
 ): Promise<{ readonly reopened: readonly string[] }> {

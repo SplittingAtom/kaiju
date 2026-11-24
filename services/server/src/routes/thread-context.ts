@@ -1,5 +1,5 @@
 import { Hono, type Context } from "hono";
-import { sql, withTeam } from "@kobe/db";
+import { sql, withTeam } from "@kaiju/db";
 import {
   THREAD_CONTEXT_ERROR_HTTP_STATUS,
   threadContextError,
@@ -8,12 +8,12 @@ import {
   type ThreadContextMemories,
   type ThreadContextErrorCode,
   type ThreadContextWaking,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   THREAD_CONTEXT_MAX_BYTES,
   threadContextCommandResultSchema,
-} from "@kobe/protocol/sandbox-wire";
-import { sealedReplyKeyPair } from "@kobe/protocol/node";
+} from "@kaiju/protocol/sandbox-wire";
+import { sealedReplyKeyPair } from "@kaiju/protocol/node";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";

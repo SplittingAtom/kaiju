@@ -2,8 +2,8 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { renameSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
-import { gitRepoAnswerSchema, type GitRepoView } from "@kobe/protocol";
+import { withTeam } from "@kaiju/db";
+import { gitRepoAnswerSchema, type GitRepoView } from "@kaiju/protocol";
 import { mirrorDeps } from "./mirror/deps.js";
 import { dueRepositories } from "./mirror/job.js";
 import { GIT_MIRROR_GONE_CONFIRMATIONS } from "./mirror/limits.js";
@@ -366,7 +366,7 @@ describe("Convert to repo refuses what the mirror could never show (R3-M1)", () 
       tree.set(`big/${i}.bin`, {
         path: `big/${i}.bin`,
         sha256: String(i).padStart(64, "0"),
-        blobRef: `kobe/teams/${w.team}/projects/${p.id}/blobs/${String(i).padStart(64, "0")}`,
+        blobRef: `kaiju/teams/${w.team}/projects/${p.id}/blobs/${String(i).padStart(64, "0")}`,
         size: 49 * 1024 * 1024,
         mime: "application/octet-stream",
         executable: false,

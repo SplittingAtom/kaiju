@@ -23,7 +23,7 @@ import { z } from "zod";
  *   `thread.compact.trace` hand the sandbox a `traceparent` naming the command span. The sandbox's
  *   spans come back as `trace.spans` frames (sandbox-wire/trace-frames.ts); the server exports them
  *   under the run's trace id (frames carry none) with **remapped span ids**: exported id =
- *   `mapSandboxSpanId` (`@kobe/protocol/node`) = the first 64 bits of
+ *   `mapSandboxSpanId` (`@kaiju/protocol/node`) = the first 64 bits of
  *   HMAC-SHA256(`k_trace`, run id ‖ 0x00 ‖ sandbox span id), `k_trace` = HKDF-SHA256 of the
  *   trace-span secret (`KOBE_TRACE_SPAN_KEY`, shared by server and model gateway; since KOBE-521 a
  *   pseudonymisation key only, from which no credential derives) with info
@@ -58,7 +58,7 @@ export const TRACE_USER_ID_ATTRIBUTE = "user.id";
 export const RUN_ROOT_SPAN_NAME = "kobe.run";
 /** On the `kobe.run` root: sandbox spans dropped (agent buffer plus every server-side drop). */
 export const TRACE_DROPPED_ATTRIBUTE = "kobe.trace.sandbox_spans_dropped";
-/** HKDF info of `k_trace`, the key that remaps sandbox span ids (`@kobe/protocol/node`). */
+/** HKDF info of `k_trace`, the key that remaps sandbox span ids (`@kaiju/protocol/node`). */
 export const TRACE_SPAN_KDF_INFO = "kobe/trace-span/v1";
 export const TRACE_SPAN_KEY_BYTES = 32;
 /** Shortest trace-span secret (`KOBE_TRACE_SPAN_KEY`) `k_trace` is derived from. */

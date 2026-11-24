@@ -1,6 +1,6 @@
-import { canonicalZip, PROVENANCE_API_VERSION } from "@kobe/protocol";
-import type { ScanResult } from "@kobe/skill-scanner";
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { canonicalZip, PROVENANCE_API_VERSION } from "@kaiju/protocol";
+import type { ScanResult } from "@kaiju/skill-scanner";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import type { BlobStore } from "../../retention/blobs.js";
 import { validateZipBundle, type ValidBundle } from "../bundle.js";
@@ -8,14 +8,14 @@ import { queueDefaultSync } from "../default-sync.js";
 import { defaultTargets, lockDefaultSet, majorOf } from "../default-target.js";
 import { DRAFT_LIMITS, SKILL_MD_PATH } from "../drafts/files.js";
 import { withSavedNumber } from "../drafts/manifest-sync.js";
-import { ensureObject, scanDocument } from "../kobe-seed.js";
+import { ensureObject, scanDocument } from "../kaiju-seed.js";
 import { SKILL_LIMITS } from "../limits.js";
 import { scanCanonicalZip } from "../review.js";
 import { SCAN_RETRY_AFTER_SECONDS, ScanBusyError } from "../scan-pool.js";
 import { compareSemver } from "../semver.js";
 import { sha256Hex } from "../storage.js";
 import { newestSemver, versionRows } from "./catalog-view.js";
-import { detachInTx } from "./kobe-detach.js";
+import { detachInTx } from "./kaiju-detach.js";
 import {
   allDraftFiles,
   asSiteAdmin,
@@ -172,7 +172,7 @@ function provenance(
 }
 
 /** The team of the skill's newest published maintainer version (the publishing team), if any. */
-async function publishingTeam(tx: KobeTx, skillId: string): Promise<string | null> {
+async function publishingTeam(tx: KaijuTx, skillId: string): Promise<string | null> {
   const { rows } = await tx.execute<{ team_id: string | null }>(sql`
     SELECT source ->> 'teamId' AS team_id FROM registry_versions
      WHERE skill_id = ${skillId} AND publisher = 'maintainer'
@@ -185,7 +185,7 @@ async function publishingTeam(tx: KobeTx, skillId: string): Promise<string | nul
 /** A Default `add` when the version is in the major Default installs follow (fills teams). */
 /** The admin asked for it (as a tag change does): installs name them, never Kaiju. */
 async function applyDefault(
-  tx: KobeTx,
+  tx: KaijuTx,
   skillId: string,
   version: { readonly id: string; readonly semver: string },
   userId: string,
@@ -206,7 +206,7 @@ export const PUBLISHED_STATES: readonly string[] = [
 ];
 
 export async function publishSiteDraft(
-  deps: { readonly db: KobeDb; readonly blobs: BlobStore },
+  deps: { readonly db: KaijuDb; readonly blobs: BlobStore },
   userId: string,
   skillId: string,
   request: PublishRequest,

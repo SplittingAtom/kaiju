@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { recordSpan } from "@kobe/telemetry";
+import { recordSpan } from "@kaiju/telemetry";
 import { z } from "zod";
 import type { AuthVariables } from "../auth/session.js";
 import { createRateLimiter, type RateLimiter } from "../sandbox/rate-limit.js";

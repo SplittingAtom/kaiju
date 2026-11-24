@@ -2,7 +2,7 @@
 
 import { AppWindowIcon } from "lucide-react";
 import { textReason } from "../../lib/apps/app-results";
-import { useKobeExtras } from "../chat/kobe-runtime";
+import { useKaijuExtras } from "../chat/kaiju-runtime";
 import { isReadOnlyThread } from "../chat/project-bar";
 import { INLINE_HEIGHT } from "./app-frame";
 import { useThreadApps } from "./thread-apps";
@@ -17,14 +17,14 @@ import { AppPlaceholder, LiveApp } from "./tool-card-app";
  */
 export function AppCardPart({ data }: { readonly data: { entryId: string; tool: string } }) {
   const apps = useThreadApps();
-  const readOnly = isReadOnlyThread(useKobeExtras());
+  const readOnly = isReadOnlyThread(useKaijuExtras());
   const view = apps?.byEntry.get(data.entryId);
   const title = view?.app?.title ?? view?.tool ?? data.tool;
   const who = readOnly ? "The owner opened" : "You opened";
   return (
     <section
       className="border-border overflow-hidden rounded-lg border"
-      data-kobe-app-card-entry={data.entryId}
+      data-kaiju-app-card-entry={data.entryId}
       aria-label={`${title} app`}
     >
       <header className="text-muted-foreground flex items-center gap-2 px-3 py-2 text-xs">
@@ -39,7 +39,7 @@ export function AppCardPart({ data }: { readonly data: { entryId: string; tool: 
       ) : view.view !== "app" ? (
         <p
           className="text-muted-foreground border-t px-3 py-2 text-xs"
-          data-kobe-app-text={view.reason}
+          data-kaiju-app-text={view.reason}
         >
           {textReason(view)}
         </p>

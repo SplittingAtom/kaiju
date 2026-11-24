@@ -1,4 +1,4 @@
-import type { AuditEntry, TeamAuditEntry } from "@kobe/db";
+import type { AuditEntry, TeamAuditEntry } from "@kaiju/db";
 
 /** Which view an export reads: the site log (all fields) or a team's view (no IP or chain). */
 export type ExportScope = "site" | "team";

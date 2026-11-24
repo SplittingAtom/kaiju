@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { z } from "zod";
 import { uuidSchema } from "../threads/schemas.js";
 import { RunError } from "./errors.js";
@@ -43,7 +43,7 @@ interface QueuedRow {
  * key (its unique index is partial), so the lock doesn't block foreign-key checks on those runs.
  */
 export async function reorderQueuedRuns(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   runIds: readonly string[],
@@ -69,7 +69,7 @@ export async function reorderQueuedRuns(
 
 /** `queue_pos` = base + 1, base + 2, … in `order`: one UPDATE, ordinals from `unnest`. */
 async function writePositions(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   order: readonly string[],
   base: number,
@@ -86,7 +86,7 @@ async function writePositions(
 
 /** Queued user messages, retries excluded (a paused queue still lets a Retry start, D14). */
 export async function queuedMessageCount(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<number> {

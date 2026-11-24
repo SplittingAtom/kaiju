@@ -4,11 +4,11 @@ import { useState } from "react";
 import { isBusy } from "../../lib/chat/thread-state";
 import { SHARED_HINT, sharedBy, visibilityOf } from "../../lib/chat/share";
 import { AgentChips } from "./agent-chips";
-import { useChatSession, type KobeThreadExtras } from "./kobe-runtime";
+import { useChatSession, type KaijuThreadExtras } from "./kaiju-runtime";
 import styles from "./chat.module.css";
 
 /** True for a thread shared to you by someone else (KOBE-163): read it, fork it, nothing more. */
-export function isReadOnlyThread(extras: KobeThreadExtras | null | undefined): boolean {
+export function isReadOnlyThread(extras: KaijuThreadExtras | null | undefined): boolean {
   return extras?.state.summary?.readOnly === true;
 }
 
@@ -23,7 +23,7 @@ export function ProjectBar({
   extras,
   onOpenThread,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   readonly onOpenThread?: ((threadId: string) => void) | undefined;
 }) {
   const session = useChatSession();

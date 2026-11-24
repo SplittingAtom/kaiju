@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx, type TeamRole } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx, type TeamRole } from "@kaiju/db";
 import {
   skillEvalRunSchema,
   withoutSkillEvalCosts,
@@ -6,7 +6,7 @@ import {
   type SkillEvalRun,
   type SkillEvalRunView,
   type SkillEvalSubject,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { teamRoleAllows } from "../../authz/permissions.js";
 import { visibleDraft } from "../drafts/records.js";
 
@@ -75,7 +75,7 @@ export function viewFor(who: EvalViewer, run: SkillEvalRun): SkillEvalRunView {
 }
 
 /** Its starter, and whoever can see its subject (a draft shared with them, a team version). */
-async function mayRead(tx: KobeTx, who: EvalViewer, r: RunRow): Promise<boolean> {
+async function mayRead(tx: KaijuTx, who: EvalViewer, r: RunRow): Promise<boolean> {
   if (r.started_by === who.userId) return true;
   if (r.subject_kind === "team") return true;
   if (r.subject_kind === "draft")
@@ -88,7 +88,7 @@ async function mayRead(tx: KobeTx, who: EvalViewer, r: RunRow): Promise<boolean>
  * and the viewer's current role in the team; null when any of that is gone.
  */
 export async function evalStreamAccess(
-  db: KobeDb,
+  db: KaijuDb,
   who: { readonly teamId: string; readonly userId: string; readonly sessionId: string },
 ): Promise<TeamRole | null> {
   // In the team's transaction: team_members is a team table (RLS), as in the thread stream's read.
@@ -109,7 +109,7 @@ export const mayCancel = (who: EvalViewer, run: SkillEvalRunView): boolean =>
   run.startedBy === who.userId || teamRoleAllows(who.role, "team.skills.review");
 
 export async function readEvalRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: EvalViewer,
   id: string,
 ): Promise<SkillEvalRunView | null> {
@@ -122,7 +122,7 @@ export async function readEvalRun(
 
 /** A subject's eval history, newest first (KOBE-328 shows it). */
 export async function listEvalRuns(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: EvalViewer,
   subject: { readonly kind: "draft" | "team" | "personal"; readonly id: string },
   limit = 50,
@@ -144,7 +144,7 @@ export interface DoneExecution {
 
 /** The executions done so far, in finishing order. */
 export async function doneExecutions(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   evalRunId: string,
 ): Promise<DoneExecution[]> {

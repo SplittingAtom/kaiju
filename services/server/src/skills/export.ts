@@ -7,7 +7,7 @@ import {
   deterministicZip,
   runtimeFiles,
   type SkillProvenance,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { SKILL_LIMITS } from "./limits.js";
 import { readZipEntries, type ZipEntry } from "./zip-entries.js";
 

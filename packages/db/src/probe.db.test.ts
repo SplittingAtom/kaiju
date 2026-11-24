@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { quoteIdent } from "./roles.js";
 import { teams, threads } from "./schema/index.js";
 import { TEAM_TABLES } from "./tenancy.js";
@@ -17,8 +17,8 @@ import { BREAK_GLASS_ACTOR_SETTING, BREAK_GLASS_GRANT_SETTING } from "./settings
  */
 const teamA = randomUUID();
 const teamB = randomUUID();
-let app: KobeDatabase;
-let single: KobeDatabase;
+let app: KaijuDatabase;
+let single: KaijuDatabase;
 
 beforeAll(async () => {
   const owner = createDb(inject("ownerUrl"));

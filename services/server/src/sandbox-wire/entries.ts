@@ -1,10 +1,10 @@
-import { APP_CARD_ENTRY_PREFIX, jsonValueSchema, parseEventPayload } from "@kobe/protocol";
+import { APP_CARD_ENTRY_PREFIX, jsonValueSchema, parseEventPayload } from "@kaiju/protocol";
 import {
   piGetEntriesDataSchema,
   type PiGetEntriesData,
   type PiSessionEntry,
-} from "@kobe/protocol/sandbox-wire";
-import { sql, threadEntries, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol/sandbox-wire";
+import { sql, threadEntries, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { NewRunEvent } from "../event-stream/append.js";
 import { SKIPPED_ENTRY_TYPE } from "../policy/skipped-summary.js";
 import { ENTRY_EVENT_PAYLOAD_MAX_BYTES, RESTORE_PART_MAX_BYTES } from "./constants.js";
@@ -111,7 +111,7 @@ export function parseGetEntries(data: unknown): PiGetEntriesData | undefined {
  * (KOBE-440): Pi gets it only at the next run start.
  */
 export async function lastMirroredEntryId(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<string | undefined> {
@@ -128,7 +128,7 @@ export async function lastMirroredEntryId(
  * nothing to restore into Pi: a Pi that no longer knows the mirrored cursor is adopted instead.
  */
 export async function threadHasConversation(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<boolean> {
@@ -147,7 +147,7 @@ const CHUNK = 100;
  * first (KOBE-29 lock order: thread before run). Must run inside the thread's team transaction.
  */
 export async function mirrorEntriesInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   data: PiGetEntriesData,
@@ -286,7 +286,7 @@ const RESTORE_PAGE_ROWS = 16;
  * had them, and as the last entry one would become the session's resume point. The last part has `final: true` (an empty thread yields one empty final part).
  */
 export async function* restoreParts(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   threadId: string,
 ): AsyncGenerator<{ entries: PiSessionEntry[]; final: boolean }> {

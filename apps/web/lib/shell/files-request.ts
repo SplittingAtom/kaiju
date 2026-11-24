@@ -8,7 +8,7 @@ export interface ShowFilesRequest {
   readonly projectId: string;
 }
 
-export const SHOW_FILES_EVENT = "kobe:show-files";
+export const SHOW_FILES_EVENT = "kaiju:show-files";
 
 export function requestShowFiles(request: ShowFilesRequest): void {
   window.dispatchEvent(new CustomEvent<ShowFilesRequest>(SHOW_FILES_EVENT, { detail: request }));

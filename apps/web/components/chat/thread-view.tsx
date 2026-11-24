@@ -18,7 +18,7 @@ import { ComposerDictationProvider } from "./composer-steer";
 import { DraftProjectControl } from "./draft-project-control";
 import { ProjectBar } from "./project-bar";
 import { OpenThreadContext } from "./fork-dialog";
-import { useKobeExtras, type KobeThreadExtras } from "./kobe-runtime";
+import { useKaijuExtras, type KaijuThreadExtras } from "./kaiju-runtime";
 import { LineageStrip } from "./lineage-strip";
 import { ContinueProvider } from "./continue-from";
 import { TreeBranchBar, TreeButton } from "./tree-entry-points";
@@ -163,7 +163,7 @@ function MessagesAndComposer({
   welcome,
   inShell,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   readonly welcome: boolean;
   /** The chat shell shows the context gauge under the composer; the builder's test pane not. */
   readonly inShell: boolean;
@@ -197,9 +197,9 @@ function MessagesAndComposer({
           scrollToBottomOnInitialize={false}
           scrollToBottomOnThreadSwitch={false}
           role="region"
-          aria-labelledby="kobe-thread-title"
-          data-kobe-scroll="messages"
-          data-kobe-follow={follow}
+          aria-labelledby="kaiju-thread-title"
+          data-kaiju-scroll="messages"
+          data-kaiju-follow={follow}
           onFocusCapture={(e) => remember(e.target)}
           onPointerOverCapture={(e) => remember(e.target)}
           className="flex min-h-0 flex-1 flex-col overflow-x-auto overflow-y-auto overscroll-contain scroll-smooth [overflow-anchor:auto] motion-reduce:scroll-auto"
@@ -233,9 +233,9 @@ function MessagesAndComposer({
         </ThreadPrimitive.Viewport>
         {follow === "unpinned" && hasMessages && <JumpToLatest key={state.threadId ?? ""} />}
       </div>
-      <div data-kobe-composer className={cn("bg-card shrink-0", welcome && "flex-1")}>
+      <div data-kaiju-composer className={cn("bg-card shrink-0", welcome && "flex-1")}>
         <div
-          data-kobe-composer-column
+          data-kaiju-composer-column
           className="mx-auto flex w-full max-w-(--thread-max-width) flex-col gap-3 px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] md:pb-6"
         >
           {/* Long notices scroll on their own, so they never push the composer away. */}
@@ -247,7 +247,7 @@ function MessagesAndComposer({
           <FollowupChips extras={extras} />
           <ComposerDictationProvider>
             {/* The overlay sheet at 768–820 px ends above this box (KOBE-269, chat-global.css). */}
-            <div className="flex flex-col" data-kobe-composer-box>
+            <div className="flex flex-col" data-kaiju-composer-box>
               <SteeringPanel extras={extras} />
               <Composer extras={extras} footer={inShell ? <ComposerGauge /> : undefined} />
             </div>
@@ -290,7 +290,7 @@ function ThreadViewBody({
   readonly onOpenThread?: ((threadId: string) => void) | undefined;
   readonly inShell?: boolean;
 }) {
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const isEmpty = useAuiState((s) => s.thread.messages.length === 0);
   if (!extras) return null;
   const { state } = extras;
@@ -299,7 +299,7 @@ function ThreadViewBody({
 
   return (
     <ThreadPrimitive.Root
-      data-kobe-thread-root
+      data-kaiju-thread-root
       className="bg-card @container flex min-h-0 flex-1 flex-col overflow-hidden"
       style={COMPOSER_VARS}
     >

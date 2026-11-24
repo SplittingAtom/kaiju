@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { EditorView } from "@codemirror/view";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { tabsKey } from "../../lib/chat/artifact-tabs";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { sha256Hex } from "../../lib/files/editor";
 import { must } from "../../lib/testing/must";
 import { composer, openApp } from "../chat/testing";
@@ -16,7 +16,7 @@ import { AUTO_OPEN_HELD_NOTE, AUTO_OPEN_LABEL, autoOpenDecision } from "./file-e
  * once, without taking focus from the composer and never over unsaved changes; replayed or
  * reloaded proposals never open by themselves; off, nothing opens (today's behaviour).
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const enc = (s: string) => new TextEncoder().encode(s);
 const BASE = "alpha\nbeta\n";
 const PROPOSED = "alpha\nBETA\n";
@@ -29,7 +29,7 @@ beforeAll(async () => {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 afterEach(() => {

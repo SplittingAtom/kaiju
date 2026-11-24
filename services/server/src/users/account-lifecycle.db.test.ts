@@ -206,7 +206,7 @@ describe("password reset (ac-3)", () => {
 });
 
 describe("deactivation (ac-4)", () => {
-  const authenticator = new SoftwareAuthenticator("kobe.test", PUBLIC_URL);
+  const authenticator = new SoftwareAuthenticator("kaiju.test", PUBLIC_URL);
   let umaTotp = "";
   let team = "";
 

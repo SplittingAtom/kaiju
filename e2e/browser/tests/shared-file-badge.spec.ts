@@ -111,12 +111,12 @@ test("another tab's save: badge with Reload when clean, the choices with a draft
     expect(await workspace(other, { op: "save", path, content: `${BASE}from tab two\n` })).toBe(
       200,
     );
-    const badge = tab.locator("[data-kobe-changed-badge]");
+    const badge = tab.locator("[data-kaiju-changed-badge]");
     await expect(badge).toHaveText(new RegExp(BADGE.replace(/\./g, "\\.")), {
       timeout: BADGE_TIMEOUT_MS,
     });
     // Inside the always-mounted live region (announced by screen readers).
-    await expect(tab.locator("[data-kobe-changes-status]")).toHaveAttribute("role", "status");
+    await expect(tab.locator("[data-kaiju-changes-status]")).toHaveAttribute("role", "status");
     await expect(editor).not.toContainText("from tab two");
     await badge.getByRole("button", { name: "Reload notes.md" }).click();
     await expect(editor).toContainText("from tab two");
@@ -167,13 +167,13 @@ test("two members, same path: only the member whose file changed gets the badge"
     const ownerOther = await page.context().newPage();
     await ownerOther.goto("/");
     expect(await workspace(ownerOther, { op: "save", path, content: `${BASE}owner\n` })).toBe(200);
-    await expect(owner.tab.locator("[data-kobe-changed-badge]")).toBeVisible({
+    await expect(owner.tab.locator("[data-kaiju-changed-badge]")).toBeVisible({
       timeout: BADGE_TIMEOUT_MS,
     });
     await ownerOther.close();
     // The second member's tab of the same path (their own file) hears nothing of it.
     await second.waitForTimeout(3_000);
-    await expect(member.tab.locator("[data-kobe-changed-badge]")).toHaveCount(0);
+    await expect(member.tab.locator("[data-kaiju-changed-badge]")).toHaveCount(0);
     await expect(member.editor).not.toContainText("owner");
 
     // Their own other tab's save does badge theirs: the stream was live all along.
@@ -182,7 +182,7 @@ test("two members, same path: only the member whose file changed gets the badge"
     expect(await workspace(memberOther, { op: "save", path, content: `${BASE}member\n` })).toBe(
       200,
     );
-    await expect(member.tab.locator("[data-kobe-changed-badge]")).toBeVisible({
+    await expect(member.tab.locator("[data-kaiju-changed-badge]")).toBeVisible({
       timeout: BADGE_TIMEOUT_MS,
     });
     await memberOther.close();

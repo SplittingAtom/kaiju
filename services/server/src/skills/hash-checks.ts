@@ -7,12 +7,12 @@ import {
   teams,
   teamSkillVersions,
   withTeam,
-  type KobeDatabase,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
-import { checkPackagePaths, MANIFEST_PATH } from "@kobe/protocol";
-import { runtimeHash } from "@kobe/protocol/node";
+  type KaijuDatabase,
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import { checkPackagePaths, MANIFEST_PATH } from "@kaiju/protocol";
+import { runtimeHash } from "@kaiju/protocol/node";
 import type { Logger } from "pino";
 import type { BlobStore } from "../retention/blobs.js";
 import { readVerified } from "./blob-read.js";
@@ -34,7 +34,7 @@ import { parseSkillMd } from "./skill-md.js";
  * joins the runtime hash's group, so blocking the hash of a downloaded package blocks the skill.
  */
 export async function recordUploadHashes(
-  tx: KobeTx,
+  tx: KaijuTx,
   hashes: { readonly runtimeHash: string; readonly packageHash: string },
 ): Promise<void> {
   const rows = [{ storedHash: hashes.runtimeHash, runtimeHash: hashes.runtimeHash }];
@@ -48,7 +48,7 @@ export async function recordUploadHashes(
  * aliased to that. One query; a hash nobody checked yet is a group of one.
  */
 export async function hashGroups(
-  tx: KobeTx,
+  tx: KaijuTx,
   hashes: readonly string[],
 ): Promise<Map<string, string[]>> {
   const unique = [...new Set(hashes)];
@@ -73,7 +73,7 @@ export type HashOutcome =
   | { readonly runtimeHash: null; readonly problems: readonly string[] };
 
 /** The recorded outcome for a stored hash; null when it has not been checked yet. */
-export async function hashOutcome(tx: KobeTx, hash: string): Promise<HashOutcome | null> {
+export async function hashOutcome(tx: KaijuTx, hash: string): Promise<HashOutcome | null> {
   const [row] = await tx
     .select({ problems: skillHashChecks.problems, runtime: skillHashChecks.runtimeHash })
     .from(skillHashChecks)
@@ -90,7 +90,7 @@ export async function hashOutcome(tx: KobeTx, hash: string): Promise<HashOutcome
  * so an unchecked hash is never treated as clean.
  */
 export async function checkStoredZip(
-  db: KobeDb,
+  db: KaijuDb,
   hash: string,
   zip: Uint8Array,
 ): Promise<HashOutcome> {
@@ -118,7 +118,7 @@ interface Stored {
 }
 
 /** Every distinct stored hash not checked yet, with one key holding its bytes. */
-async function unchecked(db: KobeDb): Promise<Stored[]> {
+async function unchecked(db: KaijuDb): Promise<Stored[]> {
   const found = new Map<string, Stored>();
   const add = (rows: readonly { hash: string; key: string; size: number }[]) => {
     for (const r of rows) if (!found.has(r.hash)) found.set(r.hash, r);
@@ -182,7 +182,7 @@ export function classifyStoredZip(hash: string, zip: Uint8Array): HashOutcome {
  * upgrade, or after a rollback) or was unreadable. Rows and bytes are never rewritten.
  */
 export async function recomputeSkillHashes(deps: {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore;
   readonly log: Pick<Logger, "info" | "warn" | "error">;
 }): Promise<RecomputeReport> {
@@ -226,7 +226,7 @@ const RECOMPUTE_LOCK = "kobe.skills.hash_recompute";
  * another replica holds it.
  */
 export async function recomputeOnce(deps: {
-  readonly database: KobeDatabase;
+  readonly database: KaijuDatabase;
   readonly blobs: BlobStore;
   readonly log: Pick<Logger, "info" | "warn" | "error">;
 }): Promise<RecomputeReport | null> {
@@ -263,7 +263,7 @@ export const RECOMPUTE_EVERY_MS = 10 * 60_000;
  * replica. Returns a stop function. Failures are logged; the next tick retries.
  */
 export function startSkillHashRecompute(deps: {
-  readonly database: KobeDatabase;
+  readonly database: KaijuDatabase;
   readonly blobs: BlobStore;
   readonly log: Pick<Logger, "info" | "warn" | "error">;
   readonly everyMs?: number;

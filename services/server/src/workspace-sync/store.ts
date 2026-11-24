@@ -1,11 +1,11 @@
-import { isExcludedPath, isServerOwnedPath, workspacePathIssue } from "@kobe/protocol";
+import { isExcludedPath, isServerOwnedPath, workspacePathIssue } from "@kaiju/protocol";
 import {
   type WorkspaceChange,
   type WorkspaceChangeResult,
   type WorkspaceEntry,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { clearFlushProof } from "../sandbox-lifecycle/reclaim.js";
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { encodeWorkspaceHint, RUN_EVENTS_CHANNEL } from "../event-stream/notify.js";
 import { checkoutOf, checkoutSlugs } from "./checkouts.js";
 import { workspaceBlobKey, type WorkspaceOwner } from "./keys.js";
@@ -75,7 +75,7 @@ export interface SyncState {
 }
 
 /** The workspace's `workspace_sync` row, created if missing, locked for this transaction. */
-export async function lockWorkspace(tx: KobeTx, owner: WorkspaceOwner): Promise<SyncState> {
+export async function lockWorkspace(tx: KaijuTx, owner: WorkspaceOwner): Promise<SyncState> {
   await tx.execute(sql`
     INSERT INTO workspace_sync (team_id, user_id) VALUES (${owner.teamId}, ${owner.userId})
     ON CONFLICT (team_id, user_id) DO NOTHING`);
@@ -106,7 +106,7 @@ export async function lockWorkspace(tx: KobeTx, owner: WorkspaceOwner): Promise<
  * nothing new wakes nobody. Ids only (`event-stream/notify.ts`).
  */
 export async function saveState(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   s: SyncState,
   push: boolean,
@@ -140,7 +140,7 @@ export type ManifestPage =
 
 /** Entries with `rev > since`, in revision order (tombstones included; unlocked read). */
 export async function manifestPage(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   since: number,
   limit: number,
@@ -170,7 +170,7 @@ export async function manifestPage(
 
 /** The current row of a path (live or tombstone), if any. */
 export async function currentEntry(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   path: string,
 ): Promise<StoredEntry | undefined> {
@@ -183,7 +183,7 @@ export async function currentEntry(
 
 /** The current rows (live or tombstone) of these paths; paths with no row are left out. */
 export async function currentEntries(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   paths: readonly string[],
 ): Promise<StoredEntry[]> {
@@ -200,7 +200,7 @@ export async function currentEntries(
  * KOBE-475, so a push that names lost content uploads it again).
  */
 export async function missingBlobs(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   hashes: readonly string[],
 ): Promise<string[]> {
@@ -216,7 +216,7 @@ export async function missingBlobs(
 export type BlobState = "absent" | "held" | "deleting";
 
 export async function blobState(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   sha256: string,
 ): Promise<BlobState> {
@@ -241,7 +241,7 @@ export interface UploadLimits {
  * distinct blobs stays within live files + `maxUncommittedBlobs`. Pair with {@link finishUpload}.
  */
 export async function reserveUpload(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   size: number,
   limits: UploadLimits,
@@ -267,7 +267,7 @@ export async function reserveUpload(
  * workspace's blob totals. Runs whether the upload succeeded or not.
  */
 export async function finishUpload(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   size: number,
   added: boolean,
@@ -287,7 +287,7 @@ export async function finishUpload(
  * `deleting` (a collection of that content is in progress: upload again later).
  */
 export async function recordBlob(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   sha256: string,
   size: number,
@@ -302,7 +302,7 @@ export async function recordBlob(
 }
 
 /** A commit may point a path only at content that is stored (not collected, not lost). */
-async function blobSize(tx: KobeTx, owner: WorkspaceOwner, sha256: string) {
+async function blobSize(tx: KaijuTx, owner: WorkspaceOwner, sha256: string) {
   const res = await tx.execute<{ size: string }>(sql`
     SELECT size FROM workspace_blobs
      WHERE team_id = ${owner.teamId} AND user_id = ${owner.userId} AND sha256 = ${sha256}
@@ -320,7 +320,7 @@ interface WriteFields {
 }
 
 async function writeRow(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   path: string,
   rev: number,
@@ -371,7 +371,7 @@ const COMPACT_BATCH = 1000;
  * pullers whose `since` is older resync from 0. Under the workspace lock.
  */
 async function compactTombstones(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   state: SyncState,
   count: number,
@@ -397,7 +397,7 @@ async function compactTombstones(
  * a compaction did (rows deleted, horizon moved) — callers must keep it even when `ok` is false.
  */
 async function roomForRow(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   state: SyncState,
   maxRows: number,
@@ -410,7 +410,7 @@ async function roomForRow(
  * tombstones as are missing. Like {@link roomForRow}, callers keep the returned state.
  */
 export async function roomForRows(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   state: SyncState,
   extra: number,
@@ -430,7 +430,7 @@ export async function roomForRows(
  * behind a Discard sees the checkout gone and is refused.
  */
 export async function commitChanges(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   changes: readonly WorkspaceChange[],
   ctx: CommitContext,
@@ -594,7 +594,7 @@ export interface ServerFile {
  * owns the object at `blobKey`, checks its own limits and records its audit event in `tx`.
  */
 export async function putServerFile(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   file: ServerFile,
   options: { readonly prefix: string; readonly area: ServerWriteArea; readonly maxRows?: number },
@@ -666,7 +666,7 @@ export function countedBytes(row: {
 
 /** A server-side delete (KOBE-54 file browser, KOBE-57 project file removal). */
 export async function deleteServerFile(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   path: string,
 ): Promise<StoredEntry | undefined> {
@@ -700,7 +700,7 @@ export async function deleteServerFile(
 
 /** Live entries under a directory prefix (KOBE-54's "last synced listing"; unlocked read). */
 export async function listLive(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   dirPrefix: string,
   limit: number,
@@ -715,7 +715,7 @@ export async function listLive(
 }
 
 export async function recordRestore(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   durationMs: number,
 ): Promise<void> {

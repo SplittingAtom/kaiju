@@ -11,10 +11,10 @@ import {
   withTeam,
   type ConnectorAuthKind,
   type ConnectorCredentialSource,
-  type KobeDb,
+  type KaijuDb,
   type PinnedTool,
   type UiResourcePlacement,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { usableSiteKeyIds } from "../connectors/site-key.js";
 import { servedTemplate } from "../connectors/template-store.js";
 import { appVisible } from "../connectors/visibility.js";
@@ -79,7 +79,7 @@ export const viewOf = (app: MemberApp): MemberAppView => ({
 });
 
 async function enabledConnectors(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
 ): Promise<{ rows: MemberAppConnector[]; grants: GrantFact[] }> {
@@ -123,7 +123,7 @@ async function enabledConnectors(
 }
 
 /** Connectors whose site-wide key is usable now (the proxy's own check, KOBE-303). */
-function liveSiteKeys(db: KobeDb, rows: readonly MemberAppConnector[]): Promise<Set<string>> {
+function liveSiteKeys(db: KaijuDb, rows: readonly MemberAppConnector[]): Promise<Set<string>> {
   return usableSiteKeyIds(
     db,
     rows.filter((r) => r.credentialSource === "site").map((r) => r.id),
@@ -182,7 +182,7 @@ const titled = (t: PinnedTool): boolean =>
 
 /** The `<title>`s of these templates, reading only the head of the ones not seen before. */
 async function templateTitles(
-  db: KobeDb,
+  db: KaijuDb,
   wanted: readonly { connectorId: string; uri: string; sha256: string }[],
 ): Promise<ReadonlyMap<string, string | undefined>> {
   const missing = wanted.filter((w) => !titleCache.has(w.sha256));
@@ -206,7 +206,7 @@ async function templateTitles(
 }
 
 /** The apps of `callable` connectors: pinned, approved templates with an opening tool. */
-async function appsOf(db: KobeDb, callable: readonly MemberAppConnector[]): Promise<MemberApp[]> {
+async function appsOf(db: KaijuDb, callable: readonly MemberAppConnector[]): Promise<MemberApp[]> {
   if (callable.length === 0) return [];
   const templates = await db
     .select({
@@ -249,7 +249,11 @@ async function appsOf(db: KobeDb, callable: readonly MemberAppConnector[]): Prom
 }
 
 /** Every app live for the member in the team (MA8), with its connector (no template bytes). */
-export async function memberApps(db: KobeDb, teamId: string, userId: string): Promise<MemberApp[]> {
+export async function memberApps(
+  db: KaijuDb,
+  teamId: string,
+  userId: string,
+): Promise<MemberApp[]> {
   const { rows, grants } = await enabledConnectors(db, teamId, userId);
   const siteKeys = await liveSiteKeys(db, rows);
   return appsOf(
@@ -271,7 +275,7 @@ export interface MissingKeyApp {
  * (KOBE-303) is not the member's to fix, so it gives no hint.
  */
 export async function missingKeyApps(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
 ): Promise<MissingKeyApp[]> {
@@ -291,7 +295,7 @@ export async function missingKeyApps(
 
 /** One app by id, live for the member, or undefined. */
 export async function memberApp(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   appId: string,
@@ -300,7 +304,7 @@ export async function memberApp(
 }
 
 /** The approved bytes of a member's app (only `/template` reads them; review LOW-3). */
-export async function memberAppHtml(db: KobeDb, app: MemberApp): Promise<string | undefined> {
+export async function memberAppHtml(db: KaijuDb, app: MemberApp): Promise<string | undefined> {
   return (await servedTemplate(db, app.connector.id, app.uri))?.html;
 }
 
@@ -310,10 +314,10 @@ export async function memberAppHtml(db: KobeDb, app: MemberApp): Promise<string 
  * rate-limited path asks at most once a minute per member.
  */
 const APP_ID_TTL_MS = 60_000;
-const appIdCache = new WeakMap<KobeDb, { at: number; ids: Map<string, string> }>();
+const appIdCache = new WeakMap<KaijuDb, { at: number; ids: Map<string, string> }>();
 
 /** The connector an app id names, site-wide (for auditing a refusal), or undefined. */
-export async function appConnectorOf(db: KobeDb, appId: string): Promise<string | undefined> {
+export async function appConnectorOf(db: KaijuDb, appId: string): Promise<string | undefined> {
   const cached = appIdCache.get(db);
   const age = cached ? Date.now() - cached.at : Infinity;
   if (cached && age < APP_ID_TTL_MS && cached.ids.has(appId)) return cached.ids.get(appId);

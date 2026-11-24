@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import type { MemoryStewardList } from "@kobe/protocol";
+import type { MemoryStewardList } from "@kaiju/protocol";
 import type { AuthVariables } from "../auth/session.js";
 import {
   requireSitePermission,

@@ -1,4 +1,4 @@
-import type { NotebookOutput } from "@kobe/protocol";
+import type { NotebookOutput } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { execErrorOf } from "./run-log.js";
 

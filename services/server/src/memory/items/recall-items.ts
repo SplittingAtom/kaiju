@@ -1,5 +1,5 @@
 import { presentedActorKind } from "./actor-kind.js";
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import {
   type MemoryShownItem,
   type RunSemanticMemoryItem,
@@ -7,7 +7,7 @@ import {
   type SemanticMemoryKind,
   type SemanticMemoryScope,
   type SemanticMemoryStatus,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { readRunMemoryPlan } from "../../agents/run-memory.js";
 import type { QueryEmbedInput, QueryVector } from "../embeddings/service.js";
 import { parseRunMemoryState, runMemoryStateQuery, type RunMemoryStateRow } from "../switches.js";
@@ -55,7 +55,7 @@ interface KeywordRecall {
 
 /** The plan, the switches and the keyword rows, in the run's team transaction. */
 async function readKeywordRecall(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: RecallWho,
   query: string,
 ): Promise<KeywordRecall | undefined> {
@@ -77,7 +77,7 @@ async function readKeywordRecall(
  * statement fails.
  */
 async function recallVectorRows(
-  db: KobeDb,
+  db: KaijuDb,
   who: RecallWho & { readonly threadId: string },
   query: string,
   lanes: readonly SelectLane[],
@@ -98,7 +98,7 @@ async function recallVectorRows(
  * hybrid leg when it can run, ranked by {@link rankRecall}. Throws only if the keyword read does.
  */
 export async function recallItems(
-  db: KobeDb,
+  db: KaijuDb,
   who: RecallWho & { readonly threadId: string },
   query: string,
   embedder?: RecallEmbedder,
@@ -127,7 +127,7 @@ interface ShownRow extends Record<string, unknown> {
 
 /** Where `id` came from in this run: its records first, then an earlier recall answer. */
 async function sourceOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: RecallWho,
   id: string,
   recalled: (id: string) => SemanticMemoryScope | undefined,
@@ -149,7 +149,7 @@ async function sourceOf(
  * switch (Policy: the Site master) must still be on.
  */
 export async function showItem(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: RecallWho,
   id: string,
   recalled: (id: string) => SemanticMemoryScope | undefined,

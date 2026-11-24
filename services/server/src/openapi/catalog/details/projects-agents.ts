@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { connectorExposure, SCHEDULE_PAUSED_BY } from "@kobe/db";
+import { connectorExposure, SCHEDULE_PAUSED_BY } from "@kaiju/db";
 import {
   addProjectMemberRequestSchema,
   createProjectRequestSchema,
@@ -23,7 +23,7 @@ import {
   gitRepoAnswerSchema,
   gitRepoDetachedSchema,
   gitRepoRelinkBodySchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { inventoryQuerySchema } from "../../../agents/inventory.js";
 import { runnableQuerySchema } from "../../../agents/runnable.js";
 import {
@@ -59,7 +59,7 @@ import {
 
 /**
  * Request and response schemas of the Projects, Agents and Site: gallery catalog areas
- * (KOBE-771). Projects come from the `@kobe/protocol` contracts (`projects.ts`,
+ * (KOBE-771). Projects come from the `@kaiju/protocol` contracts (`projects.ts`,
  * `project-commits.ts`); agent bodies from `agents/schemas.ts` and the agent-file frontmatter
  * schema; agent answers are built by `agents/http.ts` without a schema (`agent-shapes.ts`).
  */

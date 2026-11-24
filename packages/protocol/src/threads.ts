@@ -437,7 +437,7 @@ export type ThreadCardBranches = z.infer<typeof threadCardBranchesSchema>;
 /**
  * The run kind of a branch summary (CT11): Pi summarises the branch left and appends a
  * `branch_summary` entry under `to_entry_id`. Like a compaction it is a run under the thread lock,
- * never queued. `RUN_KINDS` (`@kobe/db`, with its CHECK constraint) gains it in KOBE-548.
+ * never queued. `RUN_KINDS` (`@kaiju/db`, with its CHECK constraint) gains it in KOBE-548.
  */
 export const RUN_KIND_BRANCH_SUMMARY = "branch_summary";
 

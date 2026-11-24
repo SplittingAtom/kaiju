@@ -4,8 +4,8 @@ import {
   type PolicyReasonCode,
   type RiskClass,
   type SkippedAction,
-} from "@kobe/protocol";
-import { sql, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
 
 /**
  * Skipped actions of scheduled runs (D32, KOBE-178): a call the policy denied instead of asking,
@@ -31,7 +31,7 @@ export interface SkippedActionInput {
 }
 
 /** Records the denied call if its run is a scheduled run; idempotent per tool call. */
-export async function recordSkippedActionInTx(tx: KobeTx, a: SkippedActionInput): Promise<void> {
+export async function recordSkippedActionInTx(tx: KaijuTx, a: SkippedActionInput): Promise<void> {
   await tx.execute(sql`
     INSERT INTO run_skipped_actions (team_id, run_id, tool_call_id, tool, risk_class, reason)
     SELECT r.team_id, r.id, ${a.toolCallId.slice(0, 200)}, ${a.tool.slice(0, 200)},
@@ -52,7 +52,7 @@ export interface SkippedReport {
 
 /** What a scheduled run skipped, oldest first. */
 export async function loadSkippedReport(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
 ): Promise<SkippedReport> {

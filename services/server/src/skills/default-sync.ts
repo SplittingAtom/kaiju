@@ -7,10 +7,10 @@ import {
   skillDefaultSyncs,
   sql,
   type DefaultSyncKind,
-  type KobeDatabase,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDatabase,
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import type { Mailer } from "../mail/mailer.js";
@@ -33,7 +33,7 @@ import { lockDefaultSet, type TargetVersion } from "./default-target.js";
 const SYNC_LEASE = "kobe.skills.default-sync";
 
 export interface DefaultSyncDeps {
-  readonly database: KobeDatabase;
+  readonly database: KaijuDatabase;
   readonly log: Pick<Logger, "info" | "warn" | "error">;
   readonly mailer?: Mailer;
   readonly publicUrl?: string;
@@ -54,7 +54,7 @@ export interface QueueDefaultSync {
  * Queues a job in the caller's transaction. It takes the exclusive Default-set lock first (held
  * until commit), so the `seq` drawn at insert follows the order the tag changes commit.
  */
-export async function queueDefaultSync(tx: KobeTx, job: QueueDefaultSync): Promise<string> {
+export async function queueDefaultSync(tx: KaijuTx, job: QueueDefaultSync): Promise<string> {
   await lockDefaultSet(tx, "exclusive");
   const [row] = await tx
     .insert(skillDefaultSyncs)
@@ -98,7 +98,7 @@ async function recordFailure(deps: DefaultSyncDeps, job: Job, err: unknown): Pro
     deps.log.warn({ err, jobId: job.id, attempts, code }, "skills: Default sync failed; retrying");
     return;
   }
-  await db.transaction(async (tx: KobeTx) => {
+  await db.transaction(async (tx: KaijuTx) => {
     const [parked] = await tx
       .update(skillDefaultSyncs)
       .set({
@@ -133,7 +133,7 @@ async function recordFailure(deps: DefaultSyncDeps, job: Job, err: unknown): Pro
 
 /** Runs every job that is due, oldest first. Stops when the lease turns out to be lost. */
 async function drain(deps: DefaultSyncDeps): Promise<number> {
-  const db: KobeDb = deps.database.db;
+  const db: KaijuDb = deps.database.db;
   const run = { db, log: deps.log, mailer: deps.mailer, publicUrl: deps.publicUrl };
   let ran = 0;
   for (let [job] = await nextJob(db); job; [job] = await nextJob(db)) {

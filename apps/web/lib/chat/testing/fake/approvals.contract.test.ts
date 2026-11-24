@@ -1,17 +1,17 @@
 import {
   approvalStatusSchema,
   approveAllBodySchema,
-  kobeEventSchema,
+  kaijuEventSchema,
   rememberScopeSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
-import { FakeKobe } from "../fake-kobe";
+import { FakeKaiju } from "../fake-kaiju";
 import { call } from "./contract";
 
 const A1 = "00000000-0000-4000-8000-0000000000a1";
 const A2 = "00000000-0000-4000-8000-0000000000a2";
 
-async function waiting(fake: FakeKobe) {
+async function waiting(fake: FakeKaiju) {
   const threadId = fake.addThread("T");
   const sent = await call(fake, "POST", `/v1/threads/${threadId}/messages`, { content: "Go" });
   const runId = (sent.body as { run_id: string }).run_id;
@@ -34,7 +34,7 @@ async function waiting(fake: FakeKobe) {
 
 describe("fake approvals area: answers parse with the protocol (KOBE-717)", () => {
   it("asks, offers remembering and resolves through events the protocol accepts", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const runId = await waiting(fake);
     const view = (await call(fake, "GET", `/v1/approvals/${A1}`)).body as { status: unknown };
     expect(approvalStatusSchema.safeParse(view.status).success).toBe(true);
@@ -48,7 +48,7 @@ describe("fake approvals area: answers parse with the protocol (KOBE-717)", () =
     expect(approveAllBodySchema.safeParse(body).error?.issues ?? []).toEqual([]);
     expect((await call(fake, "POST", "/v1/approvals/approve-all", body)).status).toBe(200);
     for (const event of fake.run(runId).events) {
-      expect(kobeEventSchema.safeParse(event).error?.issues ?? [], event.type).toEqual([]);
+      expect(kaijuEventSchema.safeParse(event).error?.issues ?? [], event.type).toEqual([]);
     }
   });
 

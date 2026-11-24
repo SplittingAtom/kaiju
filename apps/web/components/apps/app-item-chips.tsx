@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { kindLabel } from "../../lib/apps/app-items";
-import { useChatSession } from "../chat/kobe-runtime";
+import { useChatSession } from "../chat/kaiju-runtime";
 
 /** The icon per `io.kobe/item-kind` (KOBE-490); anything else is generic. */
 const ICONS: Readonly<Record<string, LucideIcon>> = {
@@ -52,7 +52,7 @@ export function ItemChipBody({ kind, name }: { readonly kind: string; readonly n
     <>
       <Icon
         aria-hidden
-        data-kobe-item-icon={knownIcon(kind) ? kind : "generic"}
+        data-kaiju-item-icon={knownIcon(kind) ? kind : "generic"}
         className="size-3 shrink-0"
       />
       <span className="sr-only">{kindLabel(kind)} </span>
@@ -87,7 +87,7 @@ export function AppItemChips({ draft }: { readonly draft: string }) {
             const from = item.from === "" ? "" : `, from ${item.from}`;
             const label = `${kindLabel(item.kind)} ${item.name}${from}; remove`;
             return (
-              <li key={item.uri} data-kobe-app-item={item.kind} className={CHIP}>
+              <li key={item.uri} data-kaiju-app-item={item.kind} className={CHIP}>
                 <ItemChipBody kind={item.kind} name={item.name} />
                 <button
                   type="button"
@@ -126,7 +126,7 @@ export function SentItemChips({
   return (
     <ul aria-label="Referenced items" className="m-0 mt-1 flex list-none flex-wrap gap-1 p-0">
       {references.map((r) => (
-        <li key={`${r.kind}:${r.name}`} data-kobe-sent-item={r.kind} className={CHIP}>
+        <li key={`${r.kind}:${r.name}`} data-kaiju-sent-item={r.kind} className={CHIP}>
           <ItemChipBody kind={r.kind} name={r.name} />
         </li>
       ))}

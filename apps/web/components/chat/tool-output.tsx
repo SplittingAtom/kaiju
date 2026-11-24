@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "../../lib/utils";
-import { useKobeExtras } from "./kobe-runtime";
+import { useKaijuExtras } from "./kaiju-runtime";
 
 /**
  * A tool output read in full (KOBE-208): the entry list trims one over 64 KB to a preview, and an
@@ -23,7 +23,7 @@ export function useFullOutput(
   entryId: string | undefined,
   open: boolean,
 ): { readonly output: FullOutput; retry(): void } {
-  const controller = useKobeExtras()?.controller;
+  const controller = useKaijuExtras()?.controller;
   const [output, setOutput] = useState<FullOutput>({ status: "idle" });
   const status = output.status;
   useEffect(() => {

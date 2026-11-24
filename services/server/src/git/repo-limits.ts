@@ -1,4 +1,4 @@
-import { PROJECT_FILE_MAX_BYTES, PROJECT_FILES_MAX } from "@kobe/protocol";
+import { PROJECT_FILE_MAX_BYTES, PROJECT_FILES_MAX } from "@kaiju/protocol";
 
 /**
  * What a Repo's mirror can hold (KOBE-766, spec workspace-git G17): the files at the tip of the

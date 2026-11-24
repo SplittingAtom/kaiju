@@ -2,7 +2,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../../../lib/chat/testing/fake-kaiju";
 import { must } from "../../../../lib/testing/must";
 import { forbidNativeConfirm, TEAM, ME, renderTeam, stubApi } from "../../testing";
 import { AgentBuilderPage } from "./agent-builder-page";
@@ -45,7 +45,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function openPane(fake: FakeKobe) {
+function openPane(fake: FakeKaiju) {
   let n = 0;
   return render(
     <AgentTestPane
@@ -61,7 +61,7 @@ function openPane(fake: FakeKobe) {
 
 describe("builder test pane (KOBE-85)", () => {
   it("ac-1: the first message creates a test thread on the agent's draft", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     openPane(fake);
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText("Message"), "Hello draft{Enter}");
@@ -76,7 +76,7 @@ describe("builder test pane (KOBE-85)", () => {
   });
 
   it("clears the test threads of this agent and starts a fresh conversation", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     openPane(fake);
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText("Message"), "one{Enter}");

@@ -1,4 +1,4 @@
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import {
   commitWorkingCopy,
   previewCommit,

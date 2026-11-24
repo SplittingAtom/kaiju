@@ -22,9 +22,9 @@ import {
   users,
   virtualKeyContext,
   withTeam,
-  type KobeDatabase,
-} from "@kobe/db";
-import { generateSessionKeyPair, signSessionToken, verifySessionToken } from "@kobe/session-token";
+  type KaijuDatabase,
+} from "@kaiju/db";
+import { generateSessionKeyPair, signSessionToken, verifySessionToken } from "@kaiju/session-token";
 import pino from "pino";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { BudgetGate } from "./budget-gate.js";
@@ -59,7 +59,7 @@ const ALLOWED_CALLS = 10;
 /** 10.5 calls: the 11th is admitted (spend + holds are still below the limit) and may overshoot. */
 const LIMIT = Math.round(ALLOWED_CALLS * CALL_TOKENS + CALL_TOKENS / 2);
 
-let owner: KobeDatabase;
+let owner: KaijuDatabase;
 let bifrost: Server;
 let upstreamCalls = 0;
 

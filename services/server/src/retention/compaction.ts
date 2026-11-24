@@ -4,9 +4,9 @@ import {
   lockLegalHolds,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { COMPACTION_DAYS } from "./periods.js";
 
 /**
@@ -26,10 +26,10 @@ export interface CompactionCounts {
 
 /** One batch: up to `limit` runs, in the team's transaction; `record` audits it (last write). */
 export async function compactBatchInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   limit: number,
-  record: (tx: KobeTx, counts: CompactionCounts) => Promise<void>,
+  record: (tx: KaijuTx, counts: CompactionCounts) => Promise<void>,
 ): Promise<CompactionCounts & { readonly more: boolean }> {
   // Before the hold lock: a pending hold approval must not make a purge wait without bound.
   await tx.execute(sql.raw(`SET LOCAL lock_timeout = '5s'`));
@@ -69,9 +69,9 @@ export async function compactBatchInTx(
 
 /** Compacts the team's due runs batch by batch (each its own transaction) until none is left. */
 export async function compactRunEvents(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
-  record: (tx: KobeTx, counts: CompactionCounts) => Promise<void>,
+  record: (tx: KaijuTx, counts: CompactionCounts) => Promise<void>,
   options: {
     readonly limit?: number;
     readonly maxBatches?: number;

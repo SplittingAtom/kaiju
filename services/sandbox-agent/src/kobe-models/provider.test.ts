@@ -13,10 +13,10 @@ import {
   DEFAULT_CONTEXT_WINDOW,
   DEFAULT_MAX_OUTPUT_TOKENS,
   RETRY_BUDGET_MS,
-  createKobeProvider,
-  kobeModel,
+  createKaijuProvider,
+  kaijuModel,
 } from "./provider.js";
-import { KOBE_MODEL_ERROR_PREFIX, type ModelFileModel, type ModelFileState } from "./protocol.js";
+import { KAIJU_MODEL_ERROR_PREFIX, type ModelFileModel, type ModelFileState } from "./protocol.js";
 
 /**
  * The retry wrapper against a scripted API adapter (pi-ai is Pi's at runtime; here a stand-in with
@@ -147,12 +147,12 @@ function setup(
   script: Step[],
   states: ModelFileState[] = [state()],
   runToken?: (runId: string) => string | undefined,
-  onCallEnded?: Parameters<typeof createKobeProvider>[0]["onCallEnded"],
+  onCallEnded?: Parameters<typeof createKaijuProvider>[0]["onCallEnded"],
 ) {
   const calls: StreamOptions[] = [];
   const sleeps: number[] = [];
   let clock = 0;
-  const provider = createKobeProvider({
+  const provider = createKaijuProvider({
     pi,
     initial: states[0] as ModelFileState,
     ...(runToken ? { runToken } : {}),
@@ -174,7 +174,7 @@ function setup(
   return { provider, model, calls, sleeps };
 }
 
-describe("kobe provider", () => {
+describe("kaiju provider", () => {
   it("tells the context capture once per call, after it ended, with the context it was given (KOBE-470)", async () => {
     const ended: { context: unknown; result: AssistantMessage; options: unknown }[] = [];
     const { provider, model } = setup(
@@ -193,7 +193,7 @@ describe("kobe provider", () => {
   });
 
   it("describes the run's model under the kobe provider with the gateway base URL", () => {
-    const model = kobeModel("http://gw", state().model as ModelFileModel);
+    const model = kaijuModel("http://gw", state().model as ModelFileModel);
     expect(model).toMatchObject({
       id: "openai/gpt-fake",
       provider: "kobe",
@@ -202,7 +202,7 @@ describe("kobe provider", () => {
       reasoning: false,
     });
     expect(
-      kobeModel("http://gw", { gateway_model: "anthropic/c", api: "anthropic-messages" }),
+      kaijuModel("http://gw", { gateway_model: "anthropic/c", api: "anthropic-messages" }),
     ).toMatchObject({ baseUrl: "http://gw/anthropic", reasoning: true });
     expect(setup([], [state({ model: null })]).provider.getModels()).toEqual([]);
     const { provider } = setup([]);
@@ -212,10 +212,10 @@ describe("kobe provider", () => {
   it("takes the output limit and context window from the model file, else the old defaults (KOBE-259)", () => {
     const base = { gateway_model: "ollama/glm-5.3", api: "openai-completions" } as const;
     expect(
-      kobeModel("http://gw", { ...base, max_output_tokens: 65_536, context_window: 200_000 }),
+      kaijuModel("http://gw", { ...base, max_output_tokens: 65_536, context_window: 200_000 }),
     ).toMatchObject({ maxTokens: 65_536, contextWindow: 200_000 });
     // An older server sends no limits: what every model had before.
-    expect(kobeModel("http://gw", base)).toMatchObject({
+    expect(kaijuModel("http://gw", base)).toMatchObject({
       maxTokens: DEFAULT_MAX_OUTPUT_TOKENS,
       contextWindow: DEFAULT_CONTEXT_WINDOW,
     });
@@ -296,7 +296,7 @@ describe("kobe provider", () => {
     expect(sleeps[0]).toBe(1000);
     expect(result.stopReason).toBe("error");
     expect(result.errorMessage).toMatch(
-      new RegExp(`^${KOBE_MODEL_ERROR_PREFIX}model_unavailable: `),
+      new RegExp(`^${KAIJU_MODEL_ERROR_PREFIX}model_unavailable: `),
     );
     expect(events.at(-1)).toMatchObject({ type: "error", reason: "error" });
   });
@@ -307,7 +307,7 @@ describe("kobe provider", () => {
     expect(calls).toHaveLength(1);
     expect(sleeps).toEqual([]);
     expect(result.errorMessage).toBe(
-      `${KOBE_MODEL_ERROR_PREFIX}model_not_enabled: gave up after 1 attempt`,
+      `${KAIJU_MODEL_ERROR_PREFIX}model_not_enabled: gave up after 1 attempt`,
     );
   });
 
@@ -356,7 +356,7 @@ describe("kobe provider", () => {
       },
       streamSimple: () => new FakeStream(),
     };
-    const provider = createKobeProvider({
+    const provider = createKaijuProvider({
       pi,
       initial: state(),
       readState: async () => state(),
@@ -370,7 +370,7 @@ describe("kobe provider", () => {
     const { result, events } = await collect(provider.stream(model, {}));
     expect(events.map((e) => e.type)).toEqual(["text_delta", "error"]);
     expect(result.errorMessage).toBe(
-      `${KOBE_MODEL_ERROR_PREFIX}model_error: the stream ended with an error`,
+      `${KAIJU_MODEL_ERROR_PREFIX}model_error: the stream ended with an error`,
     );
     expect(JSON.stringify(events)).not.toContain("upstream text");
   });
@@ -378,7 +378,7 @@ describe("kobe provider", () => {
   it("stops retrying when the run is aborted while waiting", async () => {
     const controller = new AbortController();
     const calls: StreamOptions[] = [];
-    const provider = createKobeProvider({
+    const provider = createKaijuProvider({
       pi,
       initial: state(),
       readState: async () => state(),
@@ -398,7 +398,7 @@ describe("kobe provider", () => {
 
   it("reports model_error when the model file cannot be read", async () => {
     const calls: StreamOptions[] = [];
-    const provider = createKobeProvider({
+    const provider = createKaijuProvider({
       pi,
       initial: state(),
       readState: async () => {
@@ -427,7 +427,7 @@ describe("kobe provider", () => {
         throw new Error("adapter exploded");
       },
     };
-    const provider = createKobeProvider({
+    const provider = createKaijuProvider({
       pi,
       initial: state(),
       readState: async () => state(),

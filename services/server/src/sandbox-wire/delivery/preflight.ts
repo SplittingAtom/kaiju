@@ -3,7 +3,7 @@ import {
   CAPABILITY_SKILL_BUNDLES,
   CAPABILITY_SKILL_EVAL,
   CAPABILITY_THREAD_CONTEXT,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import {
   CAPABILITY_NOTEBOOK_COMPLETE,
   CAPABILITY_NOTEBOOK_INSPECT,
@@ -12,8 +12,8 @@ import {
   CAPABILITY_RUN_TOKEN,
   CAPABILITY_THREAD_BRANCH_SUMMARY,
   CAPABILITY_THREAD_COMPACT,
-} from "@kobe/protocol";
-import type { SandboxCommandKind } from "@kobe/db";
+} from "@kaiju/protocol";
+import type { SandboxCommandKind } from "@kaiju/db";
 import type { CommandRow } from "../commands.js";
 import { COMMAND_FAILURES, type CommandOutcome } from "../types.js";
 import type { DeliveryEnv } from "./env.js";

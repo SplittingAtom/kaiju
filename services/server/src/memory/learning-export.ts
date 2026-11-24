@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { ownMessages, ownThreads, quotesOf, type ExportedQuote } from "./items-export.js";
 import { quoteFoundIn } from "./quote-normalise.js";
 
@@ -31,7 +31,7 @@ const num = (v: unknown): number | null => (typeof v === "number" ? v : null);
 
 /** Quotes of the person's own messages, per (thread, evidence) pair, checked in one batch. */
 async function ownQuotes(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   rows: readonly { threadId: string | null; evidence: unknown }[],
 ): Promise<{ owned: Set<string>; quotes: (r: (typeof rows)[number]) => ExportedQuote[] }> {
@@ -61,7 +61,7 @@ async function ownQuotes(
 const cursor = (after: string | null, column: string) =>
   after === null ? sql`` : sql`AND ${sql.raw(column)} > ${after}`;
 
-async function passes(tx: KobeTx, v: Viewer, after: string | null): Promise<Row[]> {
+async function passes(tx: KaijuTx, v: Viewer, after: string | null): Promise<Row[]> {
   const { rows } = await tx.execute<{
     id: string;
     thread_id: string;
@@ -96,7 +96,7 @@ async function passes(tx: KobeTx, v: Viewer, after: string | null): Promise<Row[
   }));
 }
 
-async function candidates(tx: KobeTx, v: Viewer, after: string | null): Promise<Row[]> {
+async function candidates(tx: KaijuTx, v: Viewer, after: string | null): Promise<Row[]> {
   const { rows } = await tx.execute<{
     id: string;
     pass_id: string;
@@ -138,7 +138,7 @@ async function candidates(tx: KobeTx, v: Viewer, after: string | null): Promise<
 }
 
 /** Dismissals and watermarks are keyed by thread (and hash): the page cursor is their text key. */
-async function dismissals(tx: KobeTx, v: Viewer, after: string | null): Promise<Row[]> {
+async function dismissals(tx: KaijuTx, v: Viewer, after: string | null): Promise<Row[]> {
   const { rows } = await tx.execute<{
     k: string;
     thread_id: string;
@@ -163,7 +163,7 @@ async function dismissals(tx: KobeTx, v: Viewer, after: string | null): Promise<
   }));
 }
 
-async function watermarks(tx: KobeTx, v: Viewer, after: string | null): Promise<Row[]> {
+async function watermarks(tx: KaijuTx, v: Viewer, after: string | null): Promise<Row[]> {
   const { rows } = await tx.execute<{ k: string; entry_id: string; updated_at: Timestamp }>(sql`
     SELECT thread_id::text AS k, entry_id, updated_at
       FROM memory_learning_watermarks
@@ -182,7 +182,7 @@ async function watermarks(tx: KobeTx, v: Viewer, after: string | null): Promise<
   );
 }
 
-async function proposals(tx: KobeTx, v: Viewer, after: string | null): Promise<Row[]> {
+async function proposals(tx: KaijuTx, v: Viewer, after: string | null): Promise<Row[]> {
   const { rows } = await tx.execute<{
     id: string;
     statement: string;
@@ -213,7 +213,7 @@ async function proposals(tx: KobeTx, v: Viewer, after: string | null): Promise<R
   }));
 }
 
-async function suggestions(tx: KobeTx, v: Viewer, after: string | null): Promise<Row[]> {
+async function suggestions(tx: KaijuTx, v: Viewer, after: string | null): Promise<Row[]> {
   const { rows } = await tx.execute<{
     id: string;
     project_id: string;
@@ -256,7 +256,7 @@ async function suggestions(tx: KobeTx, v: Viewer, after: string | null): Promise
 /** Sections of `memory-learning.json`, in order. Dismissal/watermark `id`s are page keys only. */
 const SECTIONS: readonly {
   readonly name: string;
-  readonly page: (tx: KobeTx, v: Viewer, after: string | null) => Promise<Row[]>;
+  readonly page: (tx: KaijuTx, v: Viewer, after: string | null) => Promise<Row[]>;
   readonly keyOnly?: boolean;
 }[] = [
   { name: "passes", page: passes },
@@ -268,7 +268,7 @@ const SECTIONS: readonly {
 ];
 
 /** `memory-learning.json` as text chunks, one page at a time. */
-export async function* learningExportJson(db: KobeDb, viewer: Viewer): AsyncGenerator<string> {
+export async function* learningExportJson(db: KaijuDb, viewer: Viewer): AsyncGenerator<string> {
   yield "{";
   for (const [i, section] of SECTIONS.entries()) {
     yield `${i === 0 ? "" : ","}\n  "${section.name}": [`;

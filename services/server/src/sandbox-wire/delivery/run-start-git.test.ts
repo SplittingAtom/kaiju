@@ -4,7 +4,7 @@ import {
   type RunGitContext,
   type RunStartFrame,
   type ServerToSandboxFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CommandRow } from "../commands.js";
 import type { DeliveryEnv } from "./env.js";
@@ -34,7 +34,7 @@ function env(
   return {
     ctx: {
       db: {},
-      ...(opts.siteHost === null ? {} : { gitSiteHost: opts.siteHost ?? "kobe.acme.test" }),
+      ...(opts.siteHost === null ? {} : { gitSiteHost: opts.siteHost ?? "kaiju.acme.test" }),
     },
     host: {
       target: { teamId: randomUUID(), userId: randomUUID(), evalThreadId: opts.evalThreadId },
@@ -67,7 +67,7 @@ describe("run.start.git delivery (KOBE-764)", () => {
     load.mockResolvedValue(GIT);
     const e = env([CAPABILITY_GIT]);
     expect((await prepare(e)).git).toEqual(GIT);
-    expect(load).toHaveBeenCalledWith(e.ctx.db, e.host.target, "kobe.acme.test");
+    expect(load).toHaveBeenCalledWith(e.ctx.db, e.host.target, "kaiju.acme.test");
   });
 
   it("leaves it out for an older agent, an eval sandbox, or without the Site's host", async () => {

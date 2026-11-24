@@ -404,7 +404,7 @@ describe("run token delivery (KOBE-118)", () => {
   };
   const answerOf = async () => {
     const frame = await h.server.waitFor(
-      (f) => f.type === "pi.event" && f.event.type === "kobe_test_run_token_answer",
+      (f) => f.type === "pi.event" && f.event.type === "kaiju_test_run_token_answer",
     );
     return (frame as unknown as { event: { answer: Record<string, unknown> } }).event.answer;
   };

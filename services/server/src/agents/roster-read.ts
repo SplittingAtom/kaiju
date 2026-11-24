@@ -1,5 +1,5 @@
-import type { AgentFrontmatter } from "@kobe/agent-file";
-import { and, eq, ne, siteAgents, withTeam, type KobeDb } from "@kobe/db";
+import type { AgentFrontmatter } from "@kaiju/agent-file";
+import { and, eq, ne, siteAgents, withTeam, type KaijuDb } from "@kaiju/db";
 import { teamRoleAllows } from "../authz/permissions.js";
 import type { AgentAccess, AgentActor } from "./access.js";
 import { resolvedVersion, siteEntry, teamEntry, type RosterEntryRecord } from "./roster.js";
@@ -44,7 +44,7 @@ const lends = (e: RosterEntryRecord | null): e is RosterEntryRecord =>
 export type RosterReadFrom = "team" | "site";
 
 export async function rosterDefinitionRead(
-  db: KobeDb,
+  db: KaijuDb,
   caller: AgentActor & { readonly teamId: string },
   agentId: string,
   from: RosterReadFrom = "team",

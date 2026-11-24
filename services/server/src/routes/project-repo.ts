@@ -1,7 +1,7 @@
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
-import { gitConversionStartBodySchema } from "@kobe/protocol";
+import { gitConversionStartBodySchema } from "@kaiju/protocol";
 import { fireAndLog } from "../async-util.js";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";

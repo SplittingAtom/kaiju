@@ -2,17 +2,17 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import type { UploadOutcome, UploadRequest, UploadTransport } from "../../lib/chat/uploads";
 import { chatRequests, composer, openApp } from "./testing";
 
 /** Attachment follow-ups (KOBE-194): chips after a reload, and a failed send to a new thread. */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 let created: string[];
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   created = [];
   vi.stubGlobal("fetch", fake.fetch);
   Object.assign(URL, {

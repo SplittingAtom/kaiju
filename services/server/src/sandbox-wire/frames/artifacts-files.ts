@@ -1,5 +1,5 @@
-import { type ArtifactPutFrame, type FileShareFrame } from "@kobe/protocol/sandbox-wire";
-import { CAPABILITY_ARTIFACTS, CAPABILITY_FILES } from "@kobe/protocol";
+import { type ArtifactPutFrame, type FileShareFrame } from "@kaiju/protocol/sandbox-wire";
+import { CAPABILITY_ARTIFACTS, CAPABILITY_FILES } from "@kaiju/protocol";
 import { putArtifact } from "../../artifacts/put.js";
 import { shareFile } from "../../files/share.js";
 import type { WireContext } from "../context.js";

@@ -3,16 +3,16 @@ import {
   jsonByteLength,
   parseEventPayload,
   toolInputSchema,
-  type KobeEventType,
+  type KaijuEventType,
   type RiskClass,
   type ToolRegistry,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
-  parseKobeModelError,
+  parseKaijuModelError,
   parseTranslatedPiEvent,
   type ModelRunErrorCode,
   type PiTranslatedEvent,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import type { NewRunEvent } from "../event-stream/append.js";
 import { TOOL_INPUT_MAX_BYTES, TOOL_PREVIEW_MAX_CHARS } from "./constants.js";
 
@@ -43,7 +43,7 @@ export type RunFailureCode = ModelRunErrorCode | "model_output_limit";
  *
  * Session entries are never taken from the event stream: Pi emits `entry_appended` only for
  * extension entries, so persisted entries (with their ids) come from `get_entries` (entries.ts).
- * Pi output is untrusted: every produced event passes its `@kobe/protocol` schema or is dropped.
+ * Pi output is untrusted: every produced event passes its `@kaiju/protocol` schema or is dropped.
  */
 export interface Translation {
   readonly events: readonly NewRunEvent[];
@@ -54,7 +54,7 @@ export interface Translation {
   /**
    * With `settled`: the run's last assistant message ended with `stopReason: "error"` (KOBE-41):
    * the model call failed for good (Pi's own retries included), so the run fails with this code —
-   * kobe-models' (`parseKobeModelError`) or `model_error` for any other error text, which is
+   * kobe-models' (`parseKaijuModelError`) or `model_error` for any other error text, which is
    * untrusted and never shown. `model_output_limit` when it stopped at the output limit.
    */
   readonly failure?: RunFailureCode;
@@ -106,7 +106,7 @@ export function toolResultPreview(result: unknown): { preview: string; truncated
 
 /** A translated event that was not produced: its type and why (never its content). */
 export interface DroppedEvent {
-  readonly type: KobeEventType;
+  readonly type: KaijuEventType;
   readonly reason: "payload_too_large" | "invalid_payload";
   /** UTF-8 JSON size, for `payload_too_large`. */
   readonly bytes?: number;
@@ -128,7 +128,7 @@ export function createRunTranslator(options: {
   let lastStop: RunFailureCode | undefined;
   const completed: string[] = [];
 
-  const checked = (type: KobeEventType, payload: unknown): NewRunEvent | undefined => {
+  const checked = (type: KaijuEventType, payload: unknown): NewRunEvent | undefined => {
     try {
       return { type, payload: parseEventPayload(type, payload) };
     } catch (err) {
@@ -184,7 +184,7 @@ export function createRunTranslator(options: {
           const message = event.message as { stopReason?: unknown; errorMessage?: unknown };
           lastStop =
             message.stopReason === "error"
-              ? (parseKobeModelError(message.errorMessage) ?? "model_error")
+              ? (parseKaijuModelError(message.errorMessage) ?? "model_error")
               : message.stopReason === "length"
                 ? "model_output_limit"
                 : undefined;

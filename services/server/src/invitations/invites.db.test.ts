@@ -68,7 +68,7 @@ describe("site invitations (ac-1)", () => {
     expect(JSON.stringify(res.json)).not.toMatch(/token/i);
     const [mail] = h.mailer.to("nina@inv.test");
     expect(mail?.subject).toBe("admin invited you to Kaiju");
-    expect(mail?.text).toMatch(/http:\/\/kobe\.test\/invite#token=[A-Za-z0-9_-]{43}\n/);
+    expect(mail?.text).toMatch(/http:\/\/kaiju\.test\/invite#token=[A-Za-z0-9_-]{43}\n/);
     const token = h.mailer.lastToken("nina@inv.test");
     const { rows } = await h.admin.query(`SELECT * FROM invitations WHERE email = 'nina@inv.test'`);
     expect(rows).toHaveLength(1);

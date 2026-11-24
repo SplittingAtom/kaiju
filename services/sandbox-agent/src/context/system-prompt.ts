@@ -1,4 +1,4 @@
-import type { ContextSectionKind } from "@kobe/protocol";
+import type { ContextSectionKind } from "@kaiju/protocol";
 import { MEMORY_HEADER } from "../memory/context.js";
 import { PROJECT_HEADER } from "../memory/project-context.js";
 import { VIEWING_HEADER } from "../memory/viewing-context.js";
@@ -30,7 +30,7 @@ export interface RawSection {
 }
 
 /** The per-run parts kobe-tools appended to the prompt, as the agent last wrote them. */
-export interface KobePromptParts {
+export interface KaijuPromptParts {
   readonly memory: string;
   readonly project: string;
   readonly viewing: string;
@@ -107,7 +107,7 @@ function section(name: string, text: string): RawSection {
 type TextPart = "memory" | "project" | "viewing" | "conflicts" | "known" | "picks" | "held";
 
 /** kobe-tools' parts in the order it appends them (kobe-tools/memory-hooks.ts, KOBE-383). */
-const KOBE_SECTIONS: readonly {
+const KAIJU_SECTIONS: readonly {
   readonly part: TextPart;
   readonly header: string;
   readonly kind: ContextSectionKind;
@@ -152,7 +152,7 @@ const KOBE_SECTIONS: readonly {
   },
 ];
 
-function partSections(s: (typeof KOBE_SECTIONS)[number], parts: KobePromptParts): RawSection[] {
+function partSections(s: (typeof KAIJU_SECTIONS)[number], parts: KaijuPromptParts): RawSection[] {
   const text = parts[s.part] ?? "";
   const own = s.sections === undefined ? undefined : parts[s.sections];
   // Lane sections only when they still add up to the part (joined by "\n", semantic-context.ts).
@@ -163,9 +163,9 @@ function partSections(s: (typeof KOBE_SECTIONS)[number], parts: KobePromptParts)
 }
 
 /** A forced prompt: Pi's rendered prompt, then kobe-tools' parts (each after a blank line). */
-export function splitForcedPrompt(text: string, parts: KobePromptParts | undefined): RawSection[] {
+export function splitForcedPrompt(text: string, parts: KaijuPromptParts | undefined): RawSection[] {
   if (parts !== undefined) {
-    const present = KOBE_SECTIONS.filter((s) => (parts[s.part] ?? "") !== "");
+    const present = KAIJU_SECTIONS.filter((s) => (parts[s.part] ?? "") !== "");
     const suffix = present.map((s) => `\n\n${parts[s.part] ?? ""}`).join("");
     if (present.length > 0 && text.endsWith(suffix)) {
       return [
@@ -177,7 +177,7 @@ export function splitForcedPrompt(text: string, parts: KobePromptParts | undefin
   // The run's parts changed since (or are unknown): find them by their headers, in their order.
   const found: { start: number; kind: ContextSectionKind; label: string }[] = [];
   let from = 0;
-  for (const s of KOBE_SECTIONS) {
+  for (const s of KAIJU_SECTIONS) {
     const hits = headerForms(s.header)
       .map((h) => text.indexOf(`\n\n${h}\n`, from))
       .filter((i) => i >= 0);

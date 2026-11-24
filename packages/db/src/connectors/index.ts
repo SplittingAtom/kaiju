@@ -21,10 +21,10 @@ export {
   type UiResourceMeta,
 } from "./ui-resources.js";
 export {
-  KOBE_BUILTIN_NAMES,
-  readKobeMcpMode,
-  seedKobeBuiltinConnector,
+  KAIJU_BUILTIN_NAMES,
+  readKaijuMcpMode,
+  seedKaijuBuiltinConnector,
   seedGitBuiltinConnector,
   GIT_BUILTIN_NAMES,
-  type KobeBuiltinSeed,
+  type KaijuBuiltinSeed,
 } from "./builtin.js";

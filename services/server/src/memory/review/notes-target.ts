@@ -2,8 +2,8 @@ import {
   MEMORY_INDEX_FILE,
   MEMORY_INDEX_MAX_LINES,
   type SemanticMemoryIssue,
-} from "@kobe/protocol";
-import { sql, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
 import type { BlobStore } from "../../retention/blobs.js";
 import { projectMemoryAccess, type ProjectMemoryAccess } from "../access.js";
 import { scanMemoryText } from "../checks.js";
@@ -35,7 +35,7 @@ export interface ThreadProject {
 
 /** The thread's project and the caller's access to its memory; null: none or not visible. */
 export async function threadProject(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { teamId: string; userId: string; threadId: string },
 ): Promise<ThreadProject | null> {
   const { rows } = await tx.execute<{ project_id: string | null }>(sql`
@@ -53,7 +53,7 @@ export interface IndexState {
 }
 
 export async function readIndex(
-  tx: KobeTx,
+  tx: KaijuTx,
   blobs: BlobStore,
   teamId: string,
   projectId: string,
@@ -68,7 +68,7 @@ export async function readIndex(
 
 /** Why the action can't run now (null: it can), for the card. */
 export async function unavailableReason(
-  tx: KobeTx,
+  tx: KaijuTx,
   blobs: BlobStore | undefined,
   teamId: string,
   project: ThreadProject,
@@ -118,7 +118,7 @@ export function scanSharedLine(statement: string): readonly SemanticMemoryIssue[
 
 /** Every check at click, then the exact change. Throws the refusal the person sees. */
 export async function planChange(
-  tx: KobeTx,
+  tx: KaijuTx,
   blobs: BlobStore,
   ids: { teamId: string; userId: string; threadId: string },
   statement: string,

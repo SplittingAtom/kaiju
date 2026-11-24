@@ -10,10 +10,10 @@
    must stay identical (app/theme-css.test.ts); other stylesheets only read these tokens. */
 
 /* Cascade layers, declared once before any other stylesheet (the root layout loads this file
-   first): Tailwind's (app/tailwind.css). `kobe-legacy` held the consoles' CSS modules between the
+   first): Tailwind's (app/tailwind.css). `kaiju-legacy` held the consoles' CSS modules between the
    base rules and the utilities (KOBE-294); it is empty since KOBE-296 and stays declared so the
    order every page compiles to does not change. */
-@layer properties, theme, base, kobe-legacy, components, utilities;
+@layer properties, theme, base, kaiju-legacy, components, utilities;
 
 :root {
   color-scheme: light dark;
@@ -37,17 +37,17 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   /* The chat's focus ring stays neutral grey (the catalogue's default preset keeps today's values,
-     docs/theming.md §4.2); a theme points it at --kobe-brand-focus. */
+     docs/theming.md §4.2); a theme points it at --kaiju-brand-focus. */
   --ring: oklch(0.708 0 0);
 
   /* Brand (KOBE-498, docs/theming.md §4.1): the one coloured fill, its hover and its text, links
      and focus outlines. The accents below read them; a theme sets these, not the aliases. The
      hover is today's `bg-status-accent/90` (Tailwind's color-mix), so nothing changes on screen. */
-  --kobe-brand-primary: #2449c7;
-  --kobe-brand-primary-hover: color-mix(in oklab, var(--kobe-brand-primary) 90%, transparent);
-  --kobe-brand-primary-fg: #ffffff;
-  --kobe-brand-link: #2449c7;
-  --kobe-brand-focus: #2449c7;
+  --kaiju-brand-primary: #2449c7;
+  --kaiju-brand-primary-hover: color-mix(in oklab, var(--kaiju-brand-primary) 90%, transparent);
+  --kaiju-brand-primary-fg: #ffffff;
+  --kaiju-brand-link: #2449c7;
+  --kaiju-brand-focus: #2449c7;
 
   /* The --admin-* neutrals (legacy aliases, moved here from the chat root in KOBE-498): the rail,
      the shell and shared notices read them; they follow the shadcn tokens above. --admin-hover is
@@ -62,176 +62,176 @@
   /* Shared accents: links, focus rings, errors, warnings. The chat (chat.module.css) and the
      consoles (the console-* colours in app/tailwind.css) read them under these names; only the
      neutrals differ. */
-  --admin-accent: var(--kobe-brand-link);
+  --admin-accent: var(--kaiju-brand-link);
   --admin-danger: #a4161a;
   --admin-danger-bg: #fdecec;
   --admin-warn-bg: #fff4d6;
 
   /* The admin consoles' and My area's neutrals (the console-* colours in app/tailwind.css). */
-  --kobe-console-fg: #1b1b1f;
-  --kobe-console-muted: #5b5b66;
-  --kobe-console-bg: #ffffff;
-  --kobe-console-panel: #f4f4f6;
-  --kobe-console-border: #d9d9df;
+  --kaiju-console-fg: #1b1b1f;
+  --kaiju-console-muted: #5b5b66;
+  --kaiju-console-bg: #ffffff;
+  --kaiju-console-panel: #f4f4f6;
+  --kaiju-console-border: #d9d9df;
   /* Form-control boundaries (KOBE-294): 3:1 or more on the page and the panel (WCAG 1.4.11);
-     --kobe-console-border is for decorative dividers only. */
-  --kobe-console-control-border: #80808c;
+     --kaiju-console-border is for decorative dividers only. */
+  --kaiju-console-control-border: #80808c;
   /* The backdrop behind a console dialog. */
-  --kobe-console-overlay: rgb(0 0 0 / 50%);
+  --kaiju-console-overlay: rgb(0 0 0 / 50%);
 
   /* Status colours (KOBE-301), one set for every activity cue: running = green, needs you
      (approval, interrupted) = amber, failed or denied = red, done = muted green, idle or Trash =
      grey, plus the accent pill of a count. Each colour is a text/icon colour that keeps WCAG AA
      (4.5:1) on the page, the rail panel, cards and its own `-bg` tint in both themes
      (app/theme-css.test.ts); colour never carries meaning alone (a label or icon stays). CSS
-     modules read them as var(--kobe-status-*), Tailwind as text-status-* / bg-status-*-bg
+     modules read them as var(--kaiju-status-*), Tailwind as text-status-* / bg-status-*-bg
      (app/tailwind.css). The accent is the one blue fill (console primary buttons, accent badges,
      count pills): its -fg is white in both themes with AA on it and on its hover (KOBE-479). */
-  --kobe-status-running: #166534;
-  --kobe-status-running-bg: #dcfce7;
-  --kobe-status-attention: #a14b05;
-  --kobe-status-attention-bg: #fef3c7;
-  --kobe-status-failed: #b91c1c;
-  --kobe-status-failed-bg: #fee2e2;
-  --kobe-status-done: #3f7a55;
-  --kobe-status-idle: #5c5c5c;
-  --kobe-status-accent: var(--kobe-brand-primary);
-  --kobe-status-accent-fg: var(--kobe-brand-primary-fg);
+  --kaiju-status-running: #166534;
+  --kaiju-status-running-bg: #dcfce7;
+  --kaiju-status-attention: #a14b05;
+  --kaiju-status-attention-bg: #fef3c7;
+  --kaiju-status-failed: #b91c1c;
+  --kaiju-status-failed-bg: #fee2e2;
+  --kaiju-status-done: #3f7a55;
+  --kaiju-status-idle: #5c5c5c;
+  --kaiju-status-accent: var(--kaiju-brand-primary);
+  --kaiju-status-accent-fg: var(--kaiju-brand-primary-fg);
   /* A call to action that commits nothing by itself (the proposed-edit card's Review, Chris
      2026-10-23): green with white text, the same in both themes (AA for white on both). */
-  --kobe-confirm: #15803d;
-  --kobe-confirm-hover: #166534;
-  --kobe-confirm-fg: #ffffff;
+  --kaiju-confirm: #15803d;
+  --kaiju-confirm-hover: #166534;
+  --kaiju-confirm-fg: #ffffff;
 
   /* Tool identity (KOBE-374): the gold name chip on tool-call steps (components/chat/tool-call.tsx),
      apart from the outcome colours above, which stay on the step's status. The text keeps WCAG AA
      (4.5:1) on its tint and on cards in both themes (app/theme-css.test.ts); the border is
      decoration. */
-  --kobe-tool-badge: #6b4e00;
-  --kobe-tool-badge-bg: #fbf0c4;
-  --kobe-tool-badge-border: #b8860b;
+  --kaiju-tool-badge: #6b4e00;
+  --kaiju-tool-badge-bg: #fbf0c4;
+  --kaiju-tool-badge-border: #b8860b;
   /* The file editor's Proposed edit bubble (KOBE-615): a gold border and halo around the pill.
      Decoration only (the bubble's text keeps the card's colours); fixed like the tool badge. */
-  --kobe-glow-gold: rgb(212 160 23 / 55%);
-  --kobe-glow-gold-border: #b8860b;
+  --kaiju-glow-gold: rgb(212 160 23 / 55%);
+  --kaiju-glow-gold-border: #b8860b;
 
   /* The composer panel's focus outline (KOBE-374, components/chat/composer.module.css): 3:1 or more
      (WCAG 1.4.11) on the page, the muted panel and cards in both themes. Today's neutral, not
-     --kobe-brand-focus (docs/theming.md §4.1), so the default look stays; a theme may point it
+     --kaiju-brand-focus (docs/theming.md §4.1), so the default look stays; a theme may point it
      there. */
-  --kobe-composer-focus: #52525b;
+  --kaiju-composer-focus: #52525b;
 
   /* The Conversation tree's lanes (CT7, KOBE-545; docs/theming.md §4.3): lane 1 is the path on
      screen in the accent's link colour, lanes 2-8 distinct hues at 3:1 or more on the page and
      panels. Presets set their own (lib/theme/presets.ts). */
-  --kobe-lane-1: var(--kobe-brand-link);
-  --kobe-lane-2: #926e02;
-  --kobe-lane-3: #b54877;
-  --kobe-lane-4: #048872;
-  --kobe-lane-5: #9057b4;
-  --kobe-lane-6: #548508;
-  --kobe-lane-7: #ba4f23;
-  --kobe-lane-8: #03819e;
+  --kaiju-lane-1: var(--kaiju-brand-link);
+  --kaiju-lane-2: #926e02;
+  --kaiju-lane-3: #b54877;
+  --kaiju-lane-4: #048872;
+  --kaiju-lane-5: #9057b4;
+  --kaiju-lane-6: #548508;
+  --kaiju-lane-7: #ba4f23;
+  --kaiju-lane-8: #03819e;
 
   /* The context gauge (components/shell/context-gauge.module.css), from the status colours. */
-  --kobe-gauge-ok: var(--kobe-status-done);
-  --kobe-gauge-warn: var(--kobe-status-attention);
-  --kobe-gauge-full: var(--kobe-status-failed);
+  --kaiju-gauge-ok: var(--kaiju-status-done);
+  --kaiju-gauge-warn: var(--kaiju-status-attention);
+  --kaiju-gauge-full: var(--kaiju-status-failed);
 
   /* The Files panel's active project (KOBE-590, FP2): the green dot before its name. The done
      green, which every preset and scheme sets and which keeps 3:1 on the rail (--muted) and the
      page (app/theme-css.test.ts). */
-  --kobe-active-dot: var(--kobe-status-done);
+  --kaiju-active-dot: var(--kaiju-status-done);
 
   /* The file editor's inline diff (KOBE-463, components/files/code-editor.tsx): added text on
      green, deleted on red (struck through, so colour never carries it alone), from the status
      colours so both themes follow; text and marks keep AA on the tints (app/theme-css.test.ts). */
-  --kobe-diff-added: var(--kobe-status-running);
-  --kobe-diff-added-bg: var(--kobe-status-running-bg);
-  --kobe-diff-deleted: var(--kobe-status-failed);
-  --kobe-diff-deleted-bg: var(--kobe-status-failed-bg);
+  --kaiju-diff-added: var(--kaiju-status-running);
+  --kaiju-diff-added-bg: var(--kaiju-status-running-bg);
+  --kaiju-diff-deleted: var(--kaiju-status-failed);
+  --kaiju-diff-deleted-bg: var(--kaiju-status-failed-bg);
 
   /* The context viewer's kinds (KOBE-471, components/shell/context-viewer.module.css): Okabe-Ito
      and Tol hues, distinguishable with the common colour-vision deficiencies; each kind also has
      a pattern and a legend label, so colour never carries it alone. */
-  --kobe-ctx-system-prompt: #332288;
-  --kobe-ctx-agent-instructions: #882255;
-  --kobe-ctx-skills: #cc79a7;
-  --kobe-ctx-memory: #56b4e9;
-  --kobe-ctx-viewing-file: #44aa99;
-  --kobe-ctx-tool-definitions: #999933;
-  --kobe-ctx-user: #0072b2;
-  --kobe-ctx-assistant: #009e73;
-  --kobe-ctx-tools: #e69f00;
-  --kobe-ctx-compaction: #d55e00;
-  --kobe-ctx-other: #7a7a7a;
+  --kaiju-ctx-system-prompt: #332288;
+  --kaiju-ctx-agent-instructions: #882255;
+  --kaiju-ctx-skills: #cc79a7;
+  --kaiju-ctx-memory: #56b4e9;
+  --kaiju-ctx-viewing-file: #44aa99;
+  --kaiju-ctx-tool-definitions: #999933;
+  --kaiju-ctx-user: #0072b2;
+  --kaiju-ctx-assistant: #009e73;
+  --kaiju-ctx-tools: #e69f00;
+  --kaiju-ctx-compaction: #d55e00;
+  --kaiju-ctx-other: #7a7a7a;
 
   /* Context viewer patterns (KOBE-471): the stripes and dots laid over a kind's colour. */
-  --kobe-ctx-pattern-stripe: rgb(255 255 255 / 45%);
-  --kobe-ctx-pattern-dot: rgb(255 255 255 / 55%);
+  --kaiju-ctx-pattern-stripe: rgb(255 255 255 / 45%);
+  --kaiju-ctx-pattern-dot: rgb(255 255 255 / 55%);
 
   /* Typography (KOBE-498, docs/theming.md §5): the chat root and Tailwind's font-sans read the sans
      stack; the chat's code, the file editor, the context viewer and font-mono the mono stack. */
   /* Tailwind 4.3's own sans stack (the consoles' font since KOBE-294), now the chat's too: on a Linux
      browser without it, `system-ui` resolved to another face and every console screenshot changed. */
-  --kobe-font-sans:
+  --kaiju-font-sans:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial,
     sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --kobe-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --kobe-brand-wordmark-size: 1.125rem;
-  --kobe-brand-wordmark-weight: 600;
+  --kaiju-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --kaiju-brand-wordmark-size: 1.125rem;
+  --kaiju-brand-wordmark-weight: 600;
 
   /* Corners (KOBE-498, docs/theming.md §6): Tailwind's rounded-sm..xl read them (app/tailwind.css),
      with Tailwind's default radii; CSS modules read them too. The pill is for the modules' pill
      shapes; circles keep Tailwind's rounded-full. */
-  --kobe-radius-sm: 0.25rem;
-  --kobe-radius-md: 0.375rem;
-  --kobe-radius-lg: 0.5rem;
-  --kobe-radius-xl: 0.75rem;
-  --kobe-radius-pill: 9999px;
+  --kaiju-radius-sm: 0.25rem;
+  --kaiju-radius-md: 0.375rem;
+  --kaiju-radius-lg: 0.5rem;
+  --kaiju-radius-xl: 0.75rem;
+  --kaiju-radius-pill: 9999px;
 
   /* Shadows and the drawer's scrim (KOBE-498, docs/theming.md §7): today's values, the same in
      both themes (the dark schemes inherit them). A preset may set the three shadows (KOBE-550:
      the Catalyst preset makes them glow); the scrim stays fixed. */
-  --kobe-shadow-pop: 0 4px 16px rgb(0 0 0 / 15%);
-  --kobe-shadow-drawer: 0 8px 24px rgb(0 0 0 / 12%);
-  --kobe-shadow-panel: 0 1.5rem 4rem rgb(0 0 0 / 25%);
-  --kobe-scrim: rgb(0 0 0 / 40%);
+  --kaiju-shadow-pop: 0 4px 16px rgb(0 0 0 / 15%);
+  --kaiju-shadow-drawer: 0 8px 24px rgb(0 0 0 / 12%);
+  --kaiju-shadow-panel: 0 1.5rem 4rem rgb(0 0 0 / 25%);
+  --kaiju-scrim: rgb(0 0 0 / 40%);
 
   /* The glow (KOBE-550, docs/theming.md §7, after the Catalyst query tool): a card-like surface
-     (`kobe-panel` in app/chat-global.css and app/admin/admin-global.css) lights up on hover, its
+     (`kaiju-panel` in app/chat-global.css and app/admin/admin-global.css) lights up on hover, its
      border toward the brand and a soft halo outside it in the brand's colour. The glow colour is
      the brand primary at 28% (Catalyst's own alpha), so every preset and a custom accent glow in
      their own colour; a preset may set it outright. The composer glows on focus
      (components/chat/composer.module.css). One value for both schemes: the brand already differs. */
-  --kobe-glow-color: color-mix(in oklab, var(--kobe-brand-primary) 28%, transparent);
-  --kobe-glow-panel: 0 0 20px var(--kobe-glow-color);
-  --kobe-panel-border-hover: color-mix(in oklab, var(--kobe-brand-primary) 35%, var(--border));
+  --kaiju-glow-color: color-mix(in oklab, var(--kaiju-brand-primary) 28%, transparent);
+  --kaiju-glow-panel: 0 0 20px var(--kaiju-glow-color);
+  --kaiju-panel-border-hover: color-mix(in oklab, var(--kaiju-brand-primary) 35%, var(--border));
 
   /* An ambient wash behind the page (KOBE-550): a `background-image` the page roots paint over
      their background (the chat root, the console root). `none` by default; the Catalyst preset's
      dark scheme breathes two faint radial gradients of its accent. */
-  --kobe-page-ambient: none;
+  --kaiju-page-ambient: none;
 
   /* The file viewers (KOBE-801, KOBE-807, components/files/viewer.module.css): one dark surround
      in both themes so white PDF pages and transparent images stand out, the page and its shadow,
      find highlights, PDF link hover, and the checkerboard behind transparent images. */
-  --kobe-viewer-surround: oklch(0.32 0.005 260);
-  --kobe-viewer-surround-fg: oklch(0.95 0 0);
-  --kobe-viewer-page: #ffffff;
-  --kobe-viewer-page-fg: oklch(0.45 0 0);
-  --kobe-viewer-page-shadow: 0 1px 4px rgb(0 0 0 / 45%);
-  --kobe-viewer-selection: rgb(0 0 255 / 25%);
-  --kobe-viewer-match: rgb(180 0 170 / 25%);
-  --kobe-viewer-match-current: rgb(0 100 0 / 35%);
-  --kobe-viewer-link: rgb(0 90 255 / 15%);
-  --kobe-viewer-link-outline: rgb(0 90 255 / 60%);
-  --kobe-viewer-check-light: #ffffff;
-  --kobe-viewer-check-dark: #d4d4d4;
+  --kaiju-viewer-surround: oklch(0.32 0.005 260);
+  --kaiju-viewer-surround-fg: oklch(0.95 0 0);
+  --kaiju-viewer-page: #ffffff;
+  --kaiju-viewer-page-fg: oklch(0.45 0 0);
+  --kaiju-viewer-page-shadow: 0 1px 4px rgb(0 0 0 / 45%);
+  --kaiju-viewer-selection: rgb(0 0 255 / 25%);
+  --kaiju-viewer-match: rgb(180 0 170 / 25%);
+  --kaiju-viewer-match-current: rgb(0 100 0 / 35%);
+  --kaiju-viewer-link: rgb(0 90 255 / 15%);
+  --kaiju-viewer-link-outline: rgb(0 90 255 / 60%);
+  --kaiju-viewer-check-light: #ffffff;
+  --kaiju-viewer-check-dark: #d4d4d4;
 
   /* `display` for content shown in one theme only (the toggle's icon). */
-  --kobe-when-light: block;
-  --kobe-when-dark: none;
+  --kaiju-when-light: block;
+  --kaiju-when-dark: none;
 }
 
 :root[data-theme="light"] {
@@ -258,54 +258,54 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
-  --kobe-brand-primary: #4263eb;
-  --kobe-brand-primary-fg: #ffffff;
-  --kobe-brand-link: #8fa8ff;
-  --kobe-brand-focus: #8fa8ff;
+  --kaiju-brand-primary: #4263eb;
+  --kaiju-brand-primary-fg: #ffffff;
+  --kaiju-brand-link: #8fa8ff;
+  --kaiju-brand-focus: #8fa8ff;
   --admin-danger: #ff8a8a;
   --admin-danger-bg: #3a1c1e;
   --admin-warn-bg: #3a3218;
-  --kobe-console-fg: #ececf1;
-  --kobe-console-muted: #a5a5b2;
-  --kobe-console-bg: #16161a;
-  --kobe-console-panel: #202027;
-  --kobe-console-border: #3a3a45;
-  --kobe-console-control-border: #74747f;
-  --kobe-console-overlay: rgb(0 0 0 / 70%);
-  --kobe-status-running: #4ade80;
-  --kobe-status-running-bg: #052e16;
-  --kobe-status-attention: #fbbf24;
-  --kobe-status-attention-bg: #422006;
-  --kobe-status-failed: #f87171;
-  --kobe-status-failed-bg: #450a0a;
-  --kobe-status-done: #8fbf9f;
-  --kobe-status-idle: #a3a3a3;
-  --kobe-tool-badge: #f5cd5b;
-  --kobe-tool-badge-bg: #3b2f08;
-  --kobe-tool-badge-border: #c9a227;
-  --kobe-glow-gold: rgb(245 205 91 / 45%);
-  --kobe-glow-gold-border: #c9a227;
-  --kobe-composer-focus: #a1a1aa;
-  --kobe-lane-2: #cea608;
-  --kobe-lane-3: #f67fa5;
-  --kobe-lane-4: #0ec5af;
-  --kobe-lane-5: #cf8bea;
-  --kobe-lane-6: #7ec05b;
-  --kobe-lane-7: #f78953;
-  --kobe-lane-8: #0bbcee;
-  --kobe-ctx-system-prompt: #8c7ff0;
-  --kobe-ctx-agent-instructions: #d9739f;
-  --kobe-ctx-skills: #e0a3c8;
-  --kobe-ctx-memory: #7cc8f2;
-  --kobe-ctx-viewing-file: #5fc7b5;
-  --kobe-ctx-tool-definitions: #c4c45a;
-  --kobe-ctx-user: #3d9be0;
-  --kobe-ctx-assistant: #2fc495;
-  --kobe-ctx-tools: #f0b429;
-  --kobe-ctx-compaction: #f07a3a;
-  --kobe-ctx-other: #a3a3a3;
-  --kobe-when-light: none;
-  --kobe-when-dark: block;
+  --kaiju-console-fg: #ececf1;
+  --kaiju-console-muted: #a5a5b2;
+  --kaiju-console-bg: #16161a;
+  --kaiju-console-panel: #202027;
+  --kaiju-console-border: #3a3a45;
+  --kaiju-console-control-border: #74747f;
+  --kaiju-console-overlay: rgb(0 0 0 / 70%);
+  --kaiju-status-running: #4ade80;
+  --kaiju-status-running-bg: #052e16;
+  --kaiju-status-attention: #fbbf24;
+  --kaiju-status-attention-bg: #422006;
+  --kaiju-status-failed: #f87171;
+  --kaiju-status-failed-bg: #450a0a;
+  --kaiju-status-done: #8fbf9f;
+  --kaiju-status-idle: #a3a3a3;
+  --kaiju-tool-badge: #f5cd5b;
+  --kaiju-tool-badge-bg: #3b2f08;
+  --kaiju-tool-badge-border: #c9a227;
+  --kaiju-glow-gold: rgb(245 205 91 / 45%);
+  --kaiju-glow-gold-border: #c9a227;
+  --kaiju-composer-focus: #a1a1aa;
+  --kaiju-lane-2: #cea608;
+  --kaiju-lane-3: #f67fa5;
+  --kaiju-lane-4: #0ec5af;
+  --kaiju-lane-5: #cf8bea;
+  --kaiju-lane-6: #7ec05b;
+  --kaiju-lane-7: #f78953;
+  --kaiju-lane-8: #0bbcee;
+  --kaiju-ctx-system-prompt: #8c7ff0;
+  --kaiju-ctx-agent-instructions: #d9739f;
+  --kaiju-ctx-skills: #e0a3c8;
+  --kaiju-ctx-memory: #7cc8f2;
+  --kaiju-ctx-viewing-file: #5fc7b5;
+  --kaiju-ctx-tool-definitions: #c4c45a;
+  --kaiju-ctx-user: #3d9be0;
+  --kaiju-ctx-assistant: #2fc495;
+  --kaiju-ctx-tools: #f0b429;
+  --kaiju-ctx-compaction: #f07a3a;
+  --kaiju-ctx-other: #a3a3a3;
+  --kaiju-when-light: none;
+  --kaiju-when-dark: block;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -329,53 +329,53 @@
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.556 0 0);
-    --kobe-brand-primary: #4263eb;
-    --kobe-brand-primary-fg: #ffffff;
-    --kobe-brand-link: #8fa8ff;
-    --kobe-brand-focus: #8fa8ff;
+    --kaiju-brand-primary: #4263eb;
+    --kaiju-brand-primary-fg: #ffffff;
+    --kaiju-brand-link: #8fa8ff;
+    --kaiju-brand-focus: #8fa8ff;
     --admin-danger: #ff8a8a;
     --admin-danger-bg: #3a1c1e;
     --admin-warn-bg: #3a3218;
-    --kobe-console-fg: #ececf1;
-    --kobe-console-muted: #a5a5b2;
-    --kobe-console-bg: #16161a;
-    --kobe-console-panel: #202027;
-    --kobe-console-border: #3a3a45;
-    --kobe-console-control-border: #74747f;
-    --kobe-console-overlay: rgb(0 0 0 / 70%);
-    --kobe-status-running: #4ade80;
-    --kobe-status-running-bg: #052e16;
-    --kobe-status-attention: #fbbf24;
-    --kobe-status-attention-bg: #422006;
-    --kobe-status-failed: #f87171;
-    --kobe-status-failed-bg: #450a0a;
-    --kobe-status-done: #8fbf9f;
-    --kobe-status-idle: #a3a3a3;
-    --kobe-tool-badge: #f5cd5b;
-    --kobe-tool-badge-bg: #3b2f08;
-    --kobe-tool-badge-border: #c9a227;
-    --kobe-glow-gold: rgb(245 205 91 / 45%);
-    --kobe-glow-gold-border: #c9a227;
-    --kobe-composer-focus: #a1a1aa;
-    --kobe-lane-2: #cea608;
-    --kobe-lane-3: #f67fa5;
-    --kobe-lane-4: #0ec5af;
-    --kobe-lane-5: #cf8bea;
-    --kobe-lane-6: #7ec05b;
-    --kobe-lane-7: #f78953;
-    --kobe-lane-8: #0bbcee;
-    --kobe-ctx-system-prompt: #8c7ff0;
-    --kobe-ctx-agent-instructions: #d9739f;
-    --kobe-ctx-skills: #e0a3c8;
-    --kobe-ctx-memory: #7cc8f2;
-    --kobe-ctx-viewing-file: #5fc7b5;
-    --kobe-ctx-tool-definitions: #c4c45a;
-    --kobe-ctx-user: #3d9be0;
-    --kobe-ctx-assistant: #2fc495;
-    --kobe-ctx-tools: #f0b429;
-    --kobe-ctx-compaction: #f07a3a;
-    --kobe-ctx-other: #a3a3a3;
-    --kobe-when-light: none;
-    --kobe-when-dark: block;
+    --kaiju-console-fg: #ececf1;
+    --kaiju-console-muted: #a5a5b2;
+    --kaiju-console-bg: #16161a;
+    --kaiju-console-panel: #202027;
+    --kaiju-console-border: #3a3a45;
+    --kaiju-console-control-border: #74747f;
+    --kaiju-console-overlay: rgb(0 0 0 / 70%);
+    --kaiju-status-running: #4ade80;
+    --kaiju-status-running-bg: #052e16;
+    --kaiju-status-attention: #fbbf24;
+    --kaiju-status-attention-bg: #422006;
+    --kaiju-status-failed: #f87171;
+    --kaiju-status-failed-bg: #450a0a;
+    --kaiju-status-done: #8fbf9f;
+    --kaiju-status-idle: #a3a3a3;
+    --kaiju-tool-badge: #f5cd5b;
+    --kaiju-tool-badge-bg: #3b2f08;
+    --kaiju-tool-badge-border: #c9a227;
+    --kaiju-glow-gold: rgb(245 205 91 / 45%);
+    --kaiju-glow-gold-border: #c9a227;
+    --kaiju-composer-focus: #a1a1aa;
+    --kaiju-lane-2: #cea608;
+    --kaiju-lane-3: #f67fa5;
+    --kaiju-lane-4: #0ec5af;
+    --kaiju-lane-5: #cf8bea;
+    --kaiju-lane-6: #7ec05b;
+    --kaiju-lane-7: #f78953;
+    --kaiju-lane-8: #0bbcee;
+    --kaiju-ctx-system-prompt: #8c7ff0;
+    --kaiju-ctx-agent-instructions: #d9739f;
+    --kaiju-ctx-skills: #e0a3c8;
+    --kaiju-ctx-memory: #7cc8f2;
+    --kaiju-ctx-viewing-file: #5fc7b5;
+    --kaiju-ctx-tool-definitions: #c4c45a;
+    --kaiju-ctx-user: #3d9be0;
+    --kaiju-ctx-assistant: #2fc495;
+    --kaiju-ctx-tools: #f0b429;
+    --kaiju-ctx-compaction: #f07a3a;
+    --kaiju-ctx-other: #a3a3a3;
+    --kaiju-when-light: none;
+    --kaiju-when-dark: block;
   }
 }

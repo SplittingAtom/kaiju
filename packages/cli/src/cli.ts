@@ -9,7 +9,7 @@ import { s3Lister } from "./s3.js";
 import { allowLocalSignIn } from "./sso-break-glass.js";
 
 const log = (message: string): void => {
-  process.stderr.write(`kobe: ${message}\n`);
+  process.stderr.write(`kaiju: ${message}\n`);
 };
 
 async function listRestricted(databaseUrl: string, json: boolean): Promise<void> {

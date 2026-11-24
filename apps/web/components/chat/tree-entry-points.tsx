@@ -5,7 +5,7 @@ import { headOf, isBrowsing } from "../../lib/chat/head";
 import { junctionCount, projectTree } from "../../lib/chat/tree-nodes";
 import { FILES_LEFT_NOTE, filesLeftBehind } from "../../lib/chat/tree-panel";
 import { BranchBar } from "./branch-bar";
-import type { KobeThreadExtras } from "./kobe-runtime";
+import type { KaijuThreadExtras } from "./kaiju-runtime";
 import { useTreeData } from "./tree-context";
 import styles from "./chat.module.css";
 
@@ -16,7 +16,7 @@ const BUTTON =
  * The header's "⑂ Tree" (CT12): opens the Conversation tree; its badge is the junction count, or
  * the fork count when there are no junctions. Not on a draft (no thread yet).
  */
-export function TreeButton({ extras }: { readonly extras: KobeThreadExtras }) {
+export function TreeButton({ extras }: { readonly extras: KaijuThreadExtras }) {
   const data = useTreeData();
   const { entries } = extras.state;
   const junctions = useMemo(() => junctionCount(entries), [entries]);
@@ -33,7 +33,7 @@ export function TreeButton({ extras }: { readonly extras: KobeThreadExtras }) {
       type="button"
       className={BUTTON}
       aria-label={badge > 0 ? `Conversation tree, ${what}` : "Conversation tree"}
-      data-kobe-tree-button=""
+      data-kaiju-tree-button=""
       onClick={open}
     >
       <span aria-hidden>⑂</span> Tree
@@ -55,7 +55,7 @@ export function TreeLink({ children }: { readonly children: ReactNode }) {
       type="button"
       className="hover:text-foreground underline-offset-2 hover:underline"
       onClick={open}
-      data-kobe-tree-link=""
+      data-kaiju-tree-link=""
     >
       {children}
     </button>
@@ -63,7 +63,7 @@ export function TreeLink({ children }: { readonly children: ReactNode }) {
 }
 
 /** CT3's bar with the way to the tree, and CT6's files line when the leaf's branch changed files. */
-export function TreeBranchBar({ extras }: { readonly extras: KobeThreadExtras }) {
+export function TreeBranchBar({ extras }: { readonly extras: KaijuThreadExtras }) {
   const data = useTreeData();
   const { state } = extras;
   const browsing = isBrowsing(state);

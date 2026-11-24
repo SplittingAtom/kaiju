@@ -7,8 +7,8 @@ describe("publicOrigin", () => {
     new Request("http://0.0.0.0:8080/llms.txt", { headers });
 
   it("prefers the configured public URL", () => {
-    expect(publicOrigin(req({ host: "evil.example" }), "https://kobe.example.com")).toBe(
-      "https://kobe.example.com",
+    expect(publicOrigin(req({ host: "evil.example" }), "https://kaiju.example.com")).toBe(
+      "https://kaiju.example.com",
     );
   });
   it("uses the forwarded host and proto, then Host", () => {

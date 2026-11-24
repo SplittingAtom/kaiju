@@ -112,7 +112,7 @@ _io.IOPubThread.__init__ = _no_pipe
 # count. IPython's own completer and inspector are never called. `async def`, so ipykernel warns
 # about nothing (a member's warnings hook would run).
 import json as _kobe_json
-_KOBE_VARIABLES = "@VARIABLES_MARKER@"
+_KAIJU_VARIABLES = "@VARIABLES_MARKER@"
 _kobe_static = {"__name__": "kobe_static"}
 exec(@STATIC_SOURCE@, _kobe_static)
 from ipykernel import ipkernel as _ipk
@@ -123,10 +123,10 @@ async def _kobe_complete(self, code, cursor_pos):
     return {"status": "ok", "matches": [], "cursor_start": pos, "cursor_end": pos, "metadata": {"kobe": found}}
 async def _kobe_inspect(self, code, cursor_pos, detail_level=0, omit_sections=()):
     shell = self.shell
-    if code.startswith(_KOBE_VARIABLES):
+    if code.startswith(_KAIJU_VARIABLES):
         # KOBE-816: the variables snapshot, on this channel too (never a silent execute).
         try:
-            asked = _kobe_json.loads(code[len(_KOBE_VARIABLES):])
+            asked = _kobe_json.loads(code[len(_KAIJU_VARIABLES):])
         except ValueError:
             asked = {}
         asked = asked if type(asked) is dict else {}

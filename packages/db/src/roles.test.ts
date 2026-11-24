@@ -7,7 +7,7 @@ describe("quoteIdent", () => {
   });
 
   it("rejects names that are not simple identifiers", () => {
-    expect(() => quoteIdent('kobe"; DROP TABLE teams; --')).toThrow(/role/i);
+    expect(() => quoteIdent('kaiju"; DROP TABLE teams; --')).toThrow(/role/i);
     expect(() => quoteIdent("")).toThrow(/role/i);
     expect(() => quoteIdent("a".repeat(64))).toThrow(/role/i);
   });

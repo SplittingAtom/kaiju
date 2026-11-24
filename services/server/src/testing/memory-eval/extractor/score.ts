@@ -1,4 +1,4 @@
-import { parseMemoryExtractorOutput } from "@kobe/protocol";
+import { parseMemoryExtractorOutput } from "@kaiju/protocol";
 import { screenExtractorOutput, type CandidateDestination } from "../../../memory/learn/screen.js";
 import { selectCandidates } from "../../../memory/learn/validate.js";
 import type { CaseCategory, EvalCase, ExpectedCandidate, MatchPattern } from "./cases.js";

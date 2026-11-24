@@ -177,7 +177,7 @@ describe.skipIf(!PI_AVAILABLE)("real Pi 1.0.0 in RPC mode (no model credentials)
   }, 60_000);
 
   it("registers exactly the materialized skills through --skill (KOBE-82), none otherwise", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "kobe-real-skills-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "kaiju-real-skills-"));
     try {
       const zip = goodBundle();
       const ref = { name: "demo", sha256: sha256(zip), size: zip.length };

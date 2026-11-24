@@ -7,9 +7,9 @@ import {
   sql,
   threadFolders,
   threads,
-  type KobeTx,
-} from "@kobe/db";
-import { THREAD_FOLDERS_MAX, type ThreadFolder, type ThreadFolderErrorCode } from "@kobe/protocol";
+  type KaijuTx,
+} from "@kaiju/db";
+import { THREAD_FOLDERS_MAX, type ThreadFolder, type ThreadFolderErrorCode } from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import type { RateLimitRule } from "../rate-limit.js";
 import { folderThreadCounts, type Viewer } from "./repository.js";
@@ -50,7 +50,7 @@ export function folderErrorOf(err: unknown): FolderError | undefined {
  * Serializes the team's folder changes: the same transaction-level advisory lock the tree trigger
  * takes, so the folder count (THREAD_FOLDERS_MAX) and a delete's subtree are read stable.
  */
-async function lockTree(tx: KobeTx, teamId: string): Promise<void> {
+async function lockTree(tx: KaijuTx, teamId: string): Promise<void> {
   await tx.execute(
     sql`SELECT pg_advisory_xact_lock(hashtextextended(${`kobe.thread_folders:${teamId}`}, 0))`,
   );
@@ -82,7 +82,7 @@ const toFolder = (row: FolderRow, threadCount: number): ThreadFolder => ({
 });
 
 /** Every folder of the team (at most 500), with the viewer's own count of each (TF4, TF5). */
-export async function listFolders(tx: KobeTx, viewer: Viewer): Promise<ThreadFolder[]> {
+export async function listFolders(tx: KaijuTx, viewer: Viewer): Promise<ThreadFolder[]> {
   const rows = await tx
     .select(folderColumns)
     .from(threadFolders)
@@ -98,7 +98,7 @@ export async function listFolders(tx: KobeTx, viewer: Viewer): Promise<ThreadFol
 }
 
 async function findFolder(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   id: string,
   lock: "update" | "key share",
@@ -113,7 +113,7 @@ async function findFolder(
 
 /** A new folder, at the top level or under `parentId` (TF4). */
 export async function createFolder(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   input: { readonly name: string; readonly parentId: string | null },
 ): Promise<FolderResult<ThreadFolder>> {
@@ -149,7 +149,7 @@ export async function createFolder(
 
 /** Rename, move (`parentId: null` = top level) or reorder a folder (TF4). */
 export async function updateFolder(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   change: {
@@ -208,7 +208,7 @@ export async function updateFolder(
  * (they go back to their owners' Current). Audited with what it took along.
  */
 export async function deleteFolder(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
 ): Promise<FolderResult<null>> {
@@ -247,7 +247,7 @@ export async function deleteFolder(
 }
 
 /** Whether the folder exists in the team, holding it against deletion until commit. */
-export async function holdFolder(tx: KobeTx, teamId: string, folderId: string): Promise<boolean> {
+export async function holdFolder(tx: KaijuTx, teamId: string, folderId: string): Promise<boolean> {
   const [row] = await tx
     .select({ id: threadFolders.id })
     .from(threadFolders)

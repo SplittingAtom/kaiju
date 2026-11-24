@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { withTeam } from "./with-team.js";
 
 /**
@@ -20,7 +20,7 @@ const LIVE = `SELECT DISTINCT thread_id FROM runs
    AND status IN ('queued', 'running', 'waiting_approval')`;
 
 const admin = new pg.Client({ connectionString: inject("adminUrl") });
-let app: KobeDatabase;
+let app: KaijuDatabase;
 let team = "";
 
 interface PlanNode {
@@ -122,14 +122,14 @@ describe("runs_schedule_live_idx (KOBE-252)", () => {
       )) as unknown as { rows: { "QUERY PLAN": PlanNode[] }[] };
       // A prepared statement (as drizzle's parameters can end up) plans without the values.
       await tx.execute(sql`SET LOCAL plan_cache_mode = force_generic_plan`);
-      await tx.execute(sql.raw(`PREPARE kobe_252_live(uuid) AS ${LIVE}`));
+      await tx.execute(sql.raw(`PREPARE kaiju_252_live(uuid) AS ${LIVE}`));
       try {
         const generic = (await tx.execute(
-          sql.raw(`EXPLAIN (FORMAT JSON) EXECUTE kobe_252_live('${team}')`),
+          sql.raw(`EXPLAIN (FORMAT JSON) EXECUTE kaiju_252_live('${team}')`),
         )) as unknown as { rows: { "QUERY PLAN": PlanNode[] }[] };
         return [literal, generic].map((r) => r.rows[0]?.["QUERY PLAN"][0] as unknown as PlanNode);
       } finally {
-        await tx.execute(sql`DEALLOCATE kobe_252_live`);
+        await tx.execute(sql`DEALLOCATE kaiju_252_live`);
       }
     });
     for (const plan of plans) {

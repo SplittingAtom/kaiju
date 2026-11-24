@@ -3,7 +3,7 @@
 import { useId } from "react";
 import { isThreadRunning, type ThreadState } from "../../lib/chat/thread-state";
 import { Button } from "../ui/button";
-import type { KobeThreadExtras } from "./kobe-runtime";
+import type { KaijuThreadExtras } from "./kaiju-runtime";
 
 /** What the header offers a thread pinned to an older agent version (D19, U8, KOBE-420). */
 export interface AgentVersionOffer {
@@ -41,7 +41,7 @@ export function agentVersionOffer(state: ThreadState): AgentVersionOffer | undef
 
 /** After a switch the offer (and its focused button) goes: the composer is where the member goes next. */
 function focusComposer(root: ParentNode): void {
-  root.querySelector<HTMLTextAreaElement>("[data-kobe-composer] textarea")?.focus();
+  root.querySelector<HTMLTextAreaElement>("[data-kaiju-composer] textarea")?.focus();
 }
 
 /**
@@ -51,7 +51,7 @@ function focusComposer(root: ParentNode): void {
  * While Switch waits (a run is active) it stays focusable, says why in its description and does
  * nothing.
  */
-export function AgentVersionBadge({ extras }: { readonly extras: KobeThreadExtras }) {
+export function AgentVersionBadge({ extras }: { readonly extras: KaijuThreadExtras }) {
   const reasonId = useId();
   const offer = agentVersionOffer(extras.state);
   if (!offer) return null;
@@ -60,14 +60,14 @@ export function AgentVersionBadge({ extras }: { readonly extras: KobeThreadExtra
   const onSwitch = async (event: React.MouseEvent<HTMLButtonElement>) => {
     if (blocker !== undefined || !controller) return;
     // Found before the await: the button is gone (detached) once the switch is done.
-    const root = event.currentTarget.closest("[data-kobe-thread-root]") ?? document;
+    const root = event.currentTarget.closest("[data-kaiju-thread-root]") ?? document;
     if (await controller.switchAgentVersion()) focusComposer(root);
   };
   return (
     <span
       role="group"
       aria-label={`${agentName} v${current} available. This thread uses v${pinned}.`}
-      data-kobe-agent-version={current}
+      data-kaiju-agent-version={current}
       className="inline-flex items-center gap-1.5"
     >
       <span className="border-border text-muted-foreground inline-flex items-center rounded-full border px-2 text-xs leading-5">

@@ -3,10 +3,10 @@ import { SoftwareAuthenticator } from "../testing/webauthn.js";
 import { isUserVerified } from "./webauthn-flags.js";
 
 describe("isUserVerified", () => {
-  const a = new SoftwareAuthenticator("kobe.test", "http://kobe.test");
+  const a = new SoftwareAuthenticator("kaiju.test", "http://kaiju.test");
   const reg = a.register({
     challenge: "c",
-    rp: { name: "Kaiju", id: "kobe.test" },
+    rp: { name: "Kaiju", id: "kaiju.test" },
     user: { id: "u", name: "u" },
   });
 

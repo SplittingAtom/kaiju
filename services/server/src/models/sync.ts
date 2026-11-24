@@ -19,9 +19,9 @@ import {
   users,
   virtualKeyContext,
   withTeam,
-  type KobeDb,
+  type KaijuDb,
   type SecretBox,
-} from "@kobe/db";
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import { createListenClient, type ListenClient, type ListenSession } from "../pg-listen.js";
 import type { BifrostAdmin } from "./bifrost-admin.js";
@@ -42,7 +42,7 @@ import { SessionLeaderLock } from "./leader-lock.js";
 export const MODELS_SYNC_LOCK_KEY = 0x6b6f_6265_0040;
 
 export interface ModelGatewaySyncOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /**
    * The process's shared LISTEN connection (KOBE-704), which also holds the leader lock; never
    * closed here.
@@ -172,7 +172,7 @@ export class ModelGatewaySync {
         throw new Error("model gateway sync: no LISTEN connection");
       listen = this.owned = createListenClient({
         connectionString: this.options.connectionString,
-        applicationName: "kobe-model-sync",
+        applicationName: "kaiju-model-sync",
       });
     }
     this.unlisten = listen.subscribe(MODELS_CHANNEL, {

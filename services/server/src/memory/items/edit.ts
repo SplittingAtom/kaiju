@@ -1,4 +1,4 @@
-import { sql, type KobeDb } from "@kobe/db";
+import { sql, type KaijuDb } from "@kaiju/db";
 import type {
   PatchSemanticMemoryItem,
   PinSemanticMemoryItem,
@@ -7,7 +7,7 @@ import type {
   SemanticMemoryItemAction,
   SemanticMemoryItemDetail,
   SemanticMemoryScope,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ServerAuditEvent } from "../../audit/record.js";
 import { siteMemoryHeld } from "../../legal-hold/site-memory-hold.js";
 import {
@@ -115,7 +115,7 @@ async function appendStatement(
  * audited at the current version. A change of tags alone scans the tags for secrets.
  */
 export function patchItem(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   scope: Scope,
   id: string,
@@ -234,7 +234,7 @@ function changedUnderHold(row: ItemRow, after: HeldMetadata, version: number): S
 
 /** Undo (KOBE-378): a new version copying an earlier one; the earlier one stays. */
 export function revertItem(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   scope: Scope,
   id: string,
@@ -279,7 +279,7 @@ export async function revertItemIn(
 
 /** Archive (never deletes; versions stay). Archiving also unpins. Archiving twice is a no-op. */
 export function archiveItem(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   scope: Scope,
   id: string,
@@ -316,7 +316,7 @@ export async function archiveItemIn(
  * the save checks like a new save (warnings and Policy conflicts need the body's `overrides`).
  */
 export function restoreItem(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   scope: Scope,
   id: string,
@@ -359,7 +359,7 @@ export function restoreItem(
 
 /** Pin or unpin: at most 10 pinned active items per scope; Policy is never pinned. */
 export function pinItem(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   scope: Scope,
   id: string,

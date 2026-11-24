@@ -1,4 +1,4 @@
-import { asc, sql, teams, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { asc, sql, teams, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { logger } from "../logger.js";
 import { MEMORY_REMINDER_DAYS, notifyMemoryAll, siteProposalsFrozen } from "./memory.js";
 
@@ -54,7 +54,7 @@ const idList = (ids: readonly string[]) =>
     sql`, `,
   );
 
-async function openProposals(db: KobeDb): Promise<Open[]> {
+async function openProposals(db: KaijuDb): Promise<Open[]> {
   const { rows } = await db.execute<{ id: string; from_team_id: string; proposer_id: string }>(sql`
     SELECT id, from_team_id, proposer_id FROM site_memory_proposals
      WHERE state = 'awaiting_site' AND expires_at > now()
@@ -63,7 +63,7 @@ async function openProposals(db: KobeDb): Promise<Open[]> {
 }
 
 /** Active Site admins (and the owner) and Site memory stewards. */
-async function curators(db: KobeDb): Promise<string[]> {
+async function curators(db: KaijuDb): Promise<string[]> {
   const { rows } = await db.execute<{ user_id: string }>(sql`
     SELECT r.user_id FROM site_roles r JOIN users u ON u.id = r.user_id AND u.deactivated_at IS NULL
     UNION
@@ -74,7 +74,7 @@ async function curators(db: KobeDb): Promise<string[]> {
 }
 
 /** One read-only look at every Workspace, each under its own RLS. */
-async function scan(db: KobeDb, open: readonly Open[], people: readonly string[]): Promise<Scan> {
+async function scan(db: KaijuDb, open: readonly Open[], people: readonly string[]): Promise<Scan> {
   const out: Scan = { memberships: new Map(), relayed: new Set() };
   const all = await db.select({ id: teams.id }).from(teams).orderBy(asc(teams.id));
   const site = open.map((p) => p.id);
@@ -104,7 +104,7 @@ async function scan(db: KobeDb, open: readonly Open[], people: readonly string[]
 
 /** The Workspace the curator last made active if they still belong to it, else their first. */
 async function homeOf(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   teamIds: readonly string[],
 ): Promise<string | undefined> {
@@ -117,7 +117,7 @@ async function homeOf(
 
 /** Inserts the round's reminder row; true when it is new (then the notice is owed). */
 async function claimRound(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   proposalId: string,
   userId: string,
@@ -141,7 +141,7 @@ async function claimRound(
  * Relays every open Site proposal awaiting the Site to the curators outside its Workspace. Returns
  * what it did (zero while a Site-wide hold is in force).
  */
-export async function relaySiteProposals(db: KobeDb): Promise<RelayCounts> {
+export async function relaySiteProposals(db: KaijuDb): Promise<RelayCounts> {
   if (await siteProposalsFrozen(db)) return { relayed: 0 };
   const open = await openProposals(db);
   if (open.length === 0) return { relayed: 0 };

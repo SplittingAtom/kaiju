@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { TeamModels } from "../../lib/admin/api/team/models";
 import type { ThreadState } from "../../lib/chat/thread-state";
-import { useChatSession, useKobeExtras } from "./kobe-runtime";
+import { useChatSession, useKaijuExtras } from "./kaiju-runtime";
 
 export type TeamModelsLoad =
   | { readonly status: "loading" }
@@ -59,7 +59,7 @@ const TeamModelsContext = createContext<TeamModelsLoad>({ status: "loading" });
  * the context gauge and every answer's "Regenerate with…" menu, KOBE-217, share this read).
  */
 export function TeamModelsProvider({ children }: { readonly children: ReactNode }) {
-  const loaded = useTeamModels(useKobeExtras()?.state);
+  const loaded = useTeamModels(useKaijuExtras()?.state);
   return <TeamModelsContext.Provider value={loaded}>{children}</TeamModelsContext.Provider>;
 }
 

@@ -17,13 +17,13 @@ export const FILES_TOGGLE = /^(Files panel|Files and apps)$/;
  * the same element either way.
  */
 export function filesSection(page: Page): Locator {
-  return page.locator("#kobe-rail-files");
+  return page.locator("#kaiju-rail-files");
 }
 
 /** The chat's address parameter for the open thread (`/?thread=<id>`). */
 const THREAD_PARAM = "thread";
 /** The workspace rail's element id (apps/web rail-resize.tsx). */
-const RAIL_ID = "kobe-workspace-rail";
+const RAIL_ID = "kaiju-workspace-rail";
 /** The active team, recorded by the chat in local storage; the API wants it as a header. */
 const TEAM_KEY = "kobe.lastTeamId";
 const TEAM_HEADER = "x-kobe-team";
@@ -32,7 +32,7 @@ const TRASH_SETTLE_MS = 60_000;
 const TRASH_RETRY_MS = 2_000;
 
 /**
- * One conversation in the chat, driven through roles, labels and `data-kobe-*` attributes. Every
+ * One conversation in the chat, driven through roles, labels and `data-kaiju-*` attributes. Every
  * thread it sees is moved to Trash when the test ends (`chat` fixture), so a run leaves the
  * deployment's thread list as it was.
  */
@@ -46,11 +46,11 @@ export class Chat {
   }
 
   get steering(): Locator {
-    return this.page.locator("[data-kobe-steering]");
+    return this.page.locator("[data-kaiju-steering]");
   }
 
   get list(): Locator {
-    return this.page.locator('[data-kobe-scroll="messages"]');
+    return this.page.locator('[data-kaiju-scroll="messages"]');
   }
 
   get userMessages(): Locator {

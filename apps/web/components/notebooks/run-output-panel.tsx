@@ -64,9 +64,9 @@ export function RunOutputPanel({
   if (exec === undefined) return <p className="text-muted-foreground text-xs">{OUTPUT_EMPTY}</p>;
   if (cleared) return <p className="text-muted-foreground text-xs">{CLEARED_NOTE}</p>;
   return (
-    <div className="flex flex-col gap-1" data-kobe-run-output={path}>
+    <div className="flex flex-col gap-1" data-kaiju-run-output={path}>
       <div className="flex flex-wrap items-center gap-1 text-xs">
-        <span className="text-muted-foreground me-auto tabular-nums" data-kobe-run-summary="">
+        <span className="text-muted-foreground me-auto tabular-nums" data-kaiju-run-summary="">
           {latest ? summary(exec) : `Earlier run: ${summary(exec)}`}
         </span>
         {!latest && (

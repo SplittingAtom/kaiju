@@ -15,13 +15,13 @@ test("U23: a renamed thread keeps its name through later runs (auto-titling stop
 }) => {
   await chat.open();
   const id = await chat.ask("No tools. Reply with the single word TITLED.");
-  const header = page.locator("header").filter({ has: page.locator("#kobe-thread-title") });
+  const header = page.locator("header").filter({ has: page.locator("#kaiju-thread-title") });
   const name = `G5 renamed ${Date.now().toString(36)}`;
   await header.getByRole("button", { name: /^Rename / }).click();
   const field = page.getByRole("textbox", { name: "Conversation name", exact: true });
   await field.fill(name);
   await field.press("Enter");
-  await expect(page.locator("#kobe-thread-title")).toHaveText(name);
+  await expect(page.locator("#kaiju-thread-title")).toHaveText(name);
   await chat.ask("No tools. Reply with the single word AGAIN.");
   await chat.ask("No tools. Reply with the single word THIRD.");
   // The post-run title call had two chances; the member's name stays, on the server too.
@@ -33,7 +33,7 @@ test("U23: a renamed thread keeps its name through later runs (auto-titling stop
   );
   expect(thread.json.title).toBe(name);
   await page.reload();
-  await expect(page.locator("#kobe-thread-title")).toHaveText(name, { timeout: RUN_TIMEOUT_MS });
+  await expect(page.locator("#kaiju-thread-title")).toHaveText(name, { timeout: RUN_TIMEOUT_MS });
 });
 
 test("U23: the palette finds a workspace file and opens it", async ({ chat, page }) => {

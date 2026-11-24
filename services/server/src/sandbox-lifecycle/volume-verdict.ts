@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import type { SandboxTarget } from "../sandbox-wire/types.js";
 import type { ImmediateLossReason, NodeDownReason, VolumeHealth } from "../sandbox/volume-loss.js";
 
@@ -44,7 +44,7 @@ const toDate = (v: Date | string): Date => new Date(v);
 
 /** Records the observation on the member's sandbox row (inside `withTeam`) and judges it. */
 export async function observeVolume(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: SandboxTarget,
   health: VolumeHealth,
   graceMinutes: number,

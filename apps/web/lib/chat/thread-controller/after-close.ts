@@ -2,7 +2,7 @@
  * What a thread controller does when a run's stream signals or ends (pure planners, KOBE-716):
  * state in, the next action out. `ThreadController` carries the action out (timers, reads).
  */
-import { isTerminalRunStatus } from "@kobe/protocol";
+import { isTerminalRunStatus } from "@kaiju/protocol";
 import type { ApiError, ApiResult } from "../../api/client";
 import type { StreamSignal } from "../stream";
 import { isThreadRunning, type ThreadState } from "../thread-state";

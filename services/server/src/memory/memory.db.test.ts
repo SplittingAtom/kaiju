@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { strFromU8, unzipSync } from "fflate";
 import { exportZip } from "../retention/export.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { memoryDocDetailSchema, memoryListResponseSchema, undoMemoryAction } from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+import { memoryDocDetailSchema, memoryListResponseSchema, undoMemoryAction } from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";
 import { TestBrowser } from "../testing/browser.js";
 import { MemoryObjects } from "../testing/memory-objects.js";
@@ -17,7 +17,7 @@ import { memoryBlobKey } from "./keys.js";
  */
 const fx = new EventStreamFixture();
 const objects = new MemoryObjects();
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const blobs = { objects, prefix: PREFIX };
 
 beforeAll(async () => {

@@ -20,8 +20,8 @@ import {
   type SubmitMessageCommand,
   type SubmitMessageResult,
   type UpdateQueuedBody,
-} from "@kobe/protocol";
-import { sql, withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, withTeam } from "@kaiju/db";
 import { notebookKernel, startNotebookRun, type NotebookRunHost } from "../notebooks/user-run.js";
 import { startKernel, WakeRefusals } from "../notebooks/kernel-start.js";
 import { notebookVariables } from "../notebooks/variables.js";
@@ -89,7 +89,7 @@ const WIRE_END_CAUSES = {
 } as const;
 
 /**
- * The run orchestrator (KOBE-30; contract `RunOrchestrator`, `@kobe/protocol`). Postgres is the
+ * The run orchestrator (KOBE-30; contract `RunOrchestrator`, `@kaiju/protocol`). Postgres is the
  * only shared state, so every replica can serve every call: the thread row lock is the per-thread
  * mutex (D17), every status change commits with its `run.*` event, and the sandbox is reached
  * through the KOBE-24 router (which finds the replica holding the sandbox's socket). The wire ends

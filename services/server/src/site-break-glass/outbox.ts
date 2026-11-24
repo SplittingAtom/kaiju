@@ -8,9 +8,9 @@ import {
   users,
   type BreakGlassNotificationEvent,
   type BreakGlassRecipientRole,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { activeSiteAdmins } from "../break-glass/store.js";
 import { reachesTeam, NOTIFY_MAX_ATTEMPTS, type Recipient } from "../break-glass/outbox.js";
@@ -34,7 +34,7 @@ export interface SiteQueuedCounts {
   readonly recipients: number;
 }
 
-async function isActiveUser(tx: KobeTx, id: string): Promise<boolean> {
+async function isActiveUser(tx: KaijuTx, id: string): Promise<boolean> {
   const [row] = await tx
     .select({ id: users.id })
     .from(users)
@@ -43,7 +43,7 @@ async function isActiveUser(tx: KobeTx, id: string): Promise<boolean> {
 }
 
 export async function siteRecipientsFor(
-  tx: KobeTx,
+  tx: KaijuTx,
   grant: SiteGrantRow,
   event: BreakGlassNotificationEvent,
   options: { actorId: string | null; wasActive: boolean },
@@ -75,7 +75,7 @@ export async function siteRecipientsFor(
 }
 
 export async function enqueueSiteNotifications(
-  tx: KobeTx,
+  tx: KaijuTx,
   grant: SiteGrantRow,
   event: BreakGlassNotificationEvent,
   options: { actorId: string | null; wasActive?: boolean },
@@ -113,7 +113,7 @@ type Claimed = {
   attempts: number;
 };
 
-async function claim(db: KobeDb, grantId?: string): Promise<Claimed[]> {
+async function claim(db: KaijuDb, grantId?: string): Promise<Claimed[]> {
   const result = await db.execute<Claimed>(sql`
     UPDATE ${siteBreakGlassNotifications} SET attempts = attempts + 1,
       next_attempt_at = now() + ${LEASE}::interval
@@ -129,7 +129,7 @@ async function claim(db: KobeDb, grantId?: string): Promise<Claimed[]> {
 
 type Outcome = { sent: true } | { sent: false; status: "skipped" | "retry"; error: string };
 
-async function settle(db: KobeDb, row: Claimed, outcome: Outcome): Promise<void> {
+async function settle(db: KaijuDb, row: Claimed, outcome: Outcome): Promise<void> {
   const where = eq(siteBreakGlassNotifications.id, row.id);
   if (outcome.sent) {
     await db

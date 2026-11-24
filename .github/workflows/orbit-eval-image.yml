@@ -51,7 +51,7 @@ jobs:
       - uses: ./.github/actions/setup-kobe
       - name: License audit of bundled Python packages
         run: |
-          pnpm --filter @kobe/license-check build
+          pnpm --filter @kaiju/license-check build
           images/sandbox/collect-licenses.sh kobe-orbit-eval:ci > "$RUNNER_TEMP/orbit-eval-licenses.json"
           LICENSE_REPORT="$RUNNER_TEMP/orbit-eval-licenses.json" \
           LICENSE_EXCEPTIONS="$PWD/images/orbit-eval/license-exceptions.json" \

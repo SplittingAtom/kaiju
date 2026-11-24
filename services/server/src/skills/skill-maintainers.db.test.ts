@@ -13,7 +13,7 @@ import { openHarness, type Harness } from "../testing/harness.js";
 let h: Harness;
 const ids = { admin: "", alice: "", bob: "", carol: "", pending: "" };
 const as = {} as Record<"admin" | "alice" | "bob", TestBrowser>;
-const skill = { checker: "", fresh: "", kobe: "" };
+const skill = { checker: "", fresh: "", kaiju: "" };
 
 const skillRow = async (name: string, publisher = "maintainer") =>
   (
@@ -31,7 +31,7 @@ beforeAll(async () => {
   await h.admin.query(`UPDATE users SET name = initcap(split_part(email, '@', 1))`);
   skill.checker = await skillRow("invoice-checker");
   skill.fresh = await skillRow("fresh-skill");
-  skill.kobe = await skillRow("pdf", "kobe");
+  skill.kaiju = await skillRow("pdf", "kobe");
   await h.admin.query(`INSERT INTO registry_maintainers (skill_id, user_id) VALUES ($1, $2)`, [
     skill.checker,
     ids.alice,
@@ -134,7 +134,7 @@ describe("maintainers (ac-2)", () => {
     expect(reassigned.json.maintainers.map((m: { userId: string }) => m.userId)).toEqual([
       ids.carol,
     ]);
-    expect((await as.admin.post(M(skill.kobe), { userId: ids.bob })).status).toBe(403);
+    expect((await as.admin.post(M(skill.kaiju), { userId: ids.bob })).status).toBe(403);
     expect(
       (await audit("skill.maintainer.added")).map((a) => [a.actor_id, a.target.userId]),
     ).toEqual([[ids.alice, ids.bob]]);

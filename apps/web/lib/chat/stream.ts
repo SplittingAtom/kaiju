@@ -16,13 +16,13 @@
  */
 import {
   EPILOGUE_EVENT_TYPES,
-  KOBE_EVENT_TYPES,
+  KAIJU_EVENT_TYPES,
   SERVER_CALL_EPILOGUE_MAX_MS,
   isTerminalEventType,
-  kobeEventSchema,
-  type KobeEvent,
-  type KobeEventType,
-} from "@kobe/protocol";
+  kaijuEventSchema,
+  type KaijuEvent,
+  type KaijuEventType,
+} from "@kaiju/protocol";
 import { noteUnknownInput } from "../build/build-watcher";
 import "../security/zod-jitless";
 import { runEventsUrl } from "./api";
@@ -53,7 +53,7 @@ export type StreamSignal =
 
 export interface RunStreamHandlers {
   /** Events in seq order, never one at or below a seq already delivered. */
-  readonly onEvents: (events: readonly KobeEvent[]) => void;
+  readonly onEvents: (events: readonly KaijuEvent[]) => void;
   readonly onSignal: (signal: StreamSignal) => void;
   /**
    * An event this client doesn't know reached the stream (KOBE-487): default, ask whether the web
@@ -84,10 +84,10 @@ export function openRunStream(
 ): RunStream {
   let lastSeq = startingAfter;
   let closed = false;
-  let buffer: KobeEvent[] = [];
+  let buffer: KaijuEvent[] = [];
   let timer: ReturnType<typeof setTimeout> | undefined;
   /** Epilogue events still expected after `run.completed`; undefined before it. */
-  let awaiting: Set<KobeEventType> | undefined;
+  let awaiting: Set<KaijuEventType> | undefined;
   let epilogueTimer: ReturnType<typeof setTimeout> | undefined;
   const source = factory(runEventsUrl(runId, startingAfter));
   const onUnknown = handlers.onUnknown ?? noteUnknownInput;
@@ -118,7 +118,7 @@ export function openRunStream(
     } catch {
       return; // not a Kaiju event; the seq cursor is unchanged
     }
-    const result = kobeEventSchema.safeParse(parsed);
+    const result = kaijuEventSchema.safeParse(parsed);
     if (!result.success) {
       if (isNewerEvent(parsed, runId, lastSeq)) onUnknown();
       return;
@@ -127,7 +127,7 @@ export function openRunStream(
     const event = result.data;
     // A skipped seq is an event the browser dropped: a type this client never subscribed to.
     // Seqs never legitimately skip (checked for KOBE-487): the `run_events` trigger assigns them
-    // gapless per run (protocol `events.ts` KobeEvent, `sse.ts` resume: "none is skipped"); the
+    // gapless per run (protocol `events.ts` KaijuEvent, `sse.ts` resume: "none is skipped"); the
     // server sends every row after the cursor in order with no per-viewer filter (visibility is
     // per run, server `event-stream/stream.ts` + `read.ts` PAGE_SQL); compaction deletes a whole
     // run's events and answers 410 (`retention/compaction.ts`); epilogue events take the next seqs.
@@ -156,7 +156,7 @@ export function openRunStream(
     timer ??= setTimeout(flush, FLUSH_MS);
   };
 
-  for (const type of KOBE_EVENT_TYPES) source.addEventListener(type, onMessage);
+  for (const type of KAIJU_EVENT_TYPES) source.addEventListener(type, onMessage);
   source.onopen = () => {
     if (!closed) handlers.onSignal({ kind: "open" });
   };

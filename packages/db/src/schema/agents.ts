@@ -24,7 +24,7 @@ import { teams } from "./teams.js";
 //   - personal agents (follow the user site-wide, D6/D9) and gallery agents (site-wide,
 //     admin-curated, read-only to teams) live in the site-wide `site_agents`.
 // Each row is the agent's editable draft: `frontmatter` (the file's YAML as JSON, validated by
-// @kobe/agent-file) and `prompt` (the body). Publish (KOBE-46) copies the draft into an immutable
+// @kaiju/agent-file) and `prompt` (the body). Publish (KOBE-46) copies the draft into an immutable
 // numbered version with a frozen tool manifest (`team_agent_versions` / `site_agent_versions`)
 // and points `current_version` at it (a foreign key, so it always names an existing version).
 // Versions are immutable in the database (a trigger refuses UPDATE and direct DELETE) and threads
@@ -41,7 +41,7 @@ export type AgentStatus = (typeof agentStatus.enumValues)[number];
 export const siteAgentScope = pgEnum("site_agent_scope", ["personal", "gallery"]);
 export type SiteAgentScope = (typeof siteAgentScope.enumValues)[number];
 
-/** Mirrors `agentSlugSchema` in @kobe/agent-file. */
+/** Mirrors `agentSlugSchema` in @kaiju/agent-file. */
 const SLUG_FORMAT = "^[a-z0-9]([a-z0-9-]{0,46}[a-z0-9])?$";
 /** Mirrors AGENT_FILE_LIMITS.promptBytes; the server validates first, this is the backstop. */
 const PROMPT_MAX_BYTES = 100 * 1024;

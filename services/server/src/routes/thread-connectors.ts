@@ -1,6 +1,6 @@
 import { Hono, type Context } from "hono";
 import { z } from "zod";
-import { and, eq, isNull, threads, withTeam } from "@kobe/db";
+import { and, eq, isNull, threads, withTeam } from "@kaiju/db";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import {
   PROBLEM_TEXT,

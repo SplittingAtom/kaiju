@@ -11,7 +11,7 @@
 # (the same install, then e2e/gate3.sh with its browser checks in Playwright's Chromium) and
 # `gate4` (the same install, then the Gate 4 checks no earlier gate makes, e2e/gate4/stories.sh) and
 # `executor` (KOBE-168: the `suite` sections with the paired tool uid on, plus e2e/executor/) and
-# `restore` (KOBE-233: a timed clean install, `kobe backup`, a new k3d cluster, `kobe restore`;
+# `restore` (KOBE-233: a timed clean install, `kaiju backup`, a new k3d cluster, `kaiju restore`;
 # e2e/gate4-restore.sh) and `gate5-a`/`gate5-b` (KOBE-227: Gate 5's U17-U24 in Chromium,
 # e2e/gate5.sh) and `gate7-a`/`gate7-b` (KOBE-675: Gate 7's U39-U54, e2e/gate7.sh) and `gate-sso` (KOBE-633: OIDC sign-in against a mock Entra ID and Entra's SCIM
 # requests, offline; e2e/gate-sso.sh). The gate shards keep their output; the `stories` job then gives one
@@ -242,11 +242,11 @@ jobs:
           # pnpm only for the restore shard; it installs the CLI's packages alone below.
           pnpm: ${{ matrix.shard == 'restore' }}
           install-args: ""
-      - name: The kobe CLI
+      - name: The kaiju CLI
         if: matrix.shard == 'restore'
         run: |
-          pnpm install --frozen-lockfile --filter '@kobe/cli...'
-          pnpm --filter '@kobe/cli...' run build
+          pnpm install --frozen-lockfile --filter '@kaiju/cli...'
+          pnpm --filter '@kaiju/cli...' run build
       - name: PostgreSQL 17 client tools
         if: matrix.shard == 'restore'
         uses: ./.github/actions/pg17-client
@@ -364,7 +364,7 @@ jobs:
             # don't make, against a fake OAuth MCP server and the Orbit test model (docs/gates/gate-4.md).
             gate4) KOBE_E2E_SHARD=gate1-prep e2e/run.sh && e2e/gate4/stories.sh 2>&1 | tee "${logs}/gate4.log" ;;
             # KOBE-233 (U16's backup half, docs/gates/gate-4.md): its own clean install, timed to the
-            # first assistant token; kobe backup; this cluster deleted and a new one created; kobe restore.
+            # first assistant token; kaiju backup; this cluster deleted and a new one created; kaiju restore.
             restore) e2e/gate4-restore.sh 2>&1 | tee "${logs}/restore.log" ;;
             # Gate 5 (KOBE-227, v1.1): U17-U24 in Chromium (e2e/browser) plus API checks, in two
             # halves on their own clusters to keep each shard short (docs/gates/gate-5.md).

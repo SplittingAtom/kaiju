@@ -1,4 +1,4 @@
-import { SERVER_CALL_LIMITS, type ServerCallRequest } from "@kobe/protocol";
+import { SERVER_CALL_LIMITS, type ServerCallRequest } from "@kaiju/protocol";
 
 /**
  * The prompt that asks a model to draft a version's `kobe.skill.yaml` (KOBE-564). The model sees

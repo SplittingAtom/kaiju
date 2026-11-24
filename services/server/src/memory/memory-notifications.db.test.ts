@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { listNotificationsResponseSchema } from "@kobe/protocol";
-import { sql, withTeam } from "@kobe/db";
+import { listNotificationsResponseSchema } from "@kaiju/protocol";
+import { sql, withTeam } from "@kaiju/db";
 import pino from "pino";
 import {
   MEMORY_DIGEST_AFTER,
@@ -421,7 +421,7 @@ describe("reminders (ac-2)", () => {
     await register(good.team, randomUUID(), [good.bob.id]);
     await due(bad.team);
     await due(good.team);
-    const fn = `kobe_test_fail_${randomUUID().replaceAll("-", "")}`;
+    const fn = `kaiju_test_fail_${randomUUID().replaceAll("-", "")}`;
     await fx.admin.query(
       `CREATE FUNCTION ${fn}() RETURNS trigger LANGUAGE plpgsql AS $f$
        BEGIN IF NEW.team_id = '${bad.team}'::uuid THEN RAISE EXCEPTION 'boom'; END IF; RETURN NEW; END $f$`,

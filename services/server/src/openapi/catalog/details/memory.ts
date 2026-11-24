@@ -2,7 +2,7 @@ import {
   MEMORY_PROPOSAL_STATE_VALUES,
   MEMORY_SUGGESTION_STATE_VALUES,
   SITE_MEMORY_PROPOSAL_STATE_VALUES,
-} from "@kobe/db";
+} from "@kaiju/db";
 import {
   MEMORY_CANDIDATE_OPERATIONS,
   MEMORY_CANDIDATE_SOURCES,
@@ -13,7 +13,7 @@ import {
   memoryListResponseSchema,
   memoryPutRequestSchema,
   memoryRestoreRequestSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { z } from "zod";
 import { LEARN_UNAVAILABLE_REASONS } from "../../../memory/learning-model.js";
 import {

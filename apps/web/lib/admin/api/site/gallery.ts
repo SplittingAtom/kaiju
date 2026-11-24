@@ -1,5 +1,5 @@
 /** Site console: gallery agents (`/v1/site`, site.gallery.manage). Responses arrive camelized. */
-import type { AgentMemorySetting } from "@kobe/protocol";
+import type { AgentMemorySetting } from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../../../api/client";
 import { revisionTag, type AgentSummary } from "../agents";
 import type { AgentDetail, DefinitionBody } from "../team/agent-builder";

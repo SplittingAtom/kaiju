@@ -1,7 +1,7 @@
 import { constants as FS } from "node:fs";
 import { open } from "node:fs/promises";
 import path from "node:path";
-import type { RunMcpContext } from "@kobe/protocol/sandbox-wire";
+import type { RunMcpContext } from "@kaiju/protocol/sandbox-wire";
 import { writeFileAtomic } from "../atomic-file.js";
 import type { ModelTokenSource } from "../models/types.js";
 

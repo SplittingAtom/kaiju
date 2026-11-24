@@ -49,7 +49,7 @@ export function Reasoning({ text, status, timing }: ReasoningMessagePartProps) {
         </>
       }
     >
-      <div data-kobe-arrive={arriving ? "running" : undefined}>
+      <div data-kaiju-arrive={arriving ? "running" : undefined}>
         <p className="border-border m-0 ms-2 mt-1 border-s-2 ps-3 whitespace-pre-wrap">
           <ArrivingWords text={text} />
         </p>

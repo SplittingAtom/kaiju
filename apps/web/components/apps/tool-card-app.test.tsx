@@ -2,7 +2,7 @@
 // @vitest-environment-options {"settings":{"disableIframePageLoading":true,"handleDisabledFileLoadingAsSuccess":true},"width":1280,"height":800}
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import userEvent from "@testing-library/user-event";
 import { composer, openApp, streaming } from "../chat/testing";
@@ -13,7 +13,7 @@ import { composer, openApp, streaming } from "../chat/testing";
  * at most 3 frames are live per thread ("Show app" retires the least recent), and Expand moves
  * the app into the artifact column ("Opened in the side column").
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 /** The options each IntersectionObserver was made with (KOBE-445). */
 let observed: (IntersectionObserverInit | undefined)[];
 
@@ -25,7 +25,7 @@ afterEach(() => {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   observed = [];
   vi.stubGlobal("fetch", fake.fetch);
   // happy-dom never lays out: every card is in view.
@@ -136,7 +136,7 @@ describe("apps in tool cards (KOBE-438)", () => {
     await waitFor(
       () => {
         expect(frames()).toHaveLength(3);
-        expect(document.querySelector('[data-kobe-app-card="ref-tc4"] iframe')).not.toBeNull();
+        expect(document.querySelector('[data-kaiju-app-card="ref-tc4"] iframe')).not.toBeNull();
       },
       { timeout: 4_000 },
     );
@@ -152,7 +152,7 @@ describe("apps in tool cards (KOBE-438)", () => {
     for (const id of ids) fake.appResultBodies.set(`ref-${id}`, { id });
     openApp(fake, t);
     await waitFor(() => expect(frames()).toHaveLength(3), { timeout: 4_000 });
-    const first = must(document.querySelector('[data-kobe-app-card="ref-tc1"]')) as HTMLElement;
+    const first = must(document.querySelector('[data-kaiju-app-card="ref-tc1"]')) as HTMLElement;
     fireEvent.click(within(first).getByRole("button", { name: "Expand" }));
     await within(first).findByText("Opened in the side column");
     // Two inline frames and the column's: still three, and the fourth card still waits.
@@ -168,7 +168,7 @@ describe("apps in tool cards (KOBE-438)", () => {
     await waitFor(() => expect(frames()).toHaveLength(1), { timeout: 4_000 });
     fireEvent.click(screen.getByRole("button", { name: "Expand" }));
     await screen.findByText("Opened in the side column");
-    const card = must(document.querySelector('[data-kobe-app-card="ref-tc1"]')) as HTMLElement;
+    const card = must(document.querySelector('[data-kaiju-app-card="ref-tc1"]')) as HTMLElement;
     await waitFor(() => expect(within(card).queryByTitle(/app from Catalyst/)).toBeNull(), {
       timeout: 4_000,
     });
@@ -185,7 +185,7 @@ describe("apps in tool cards (KOBE-438)", () => {
     fake.appResultBodies.set("ref-tc1", { id: "tc1" });
     openApp(fake, t);
     const card = await waitFor(
-      () => must(document.querySelector('[data-kobe-app-card="ref-tc1"]')) as HTMLElement,
+      () => must(document.querySelector('[data-kaiju-app-card="ref-tc1"]')) as HTMLElement,
       { timeout: 4_000 },
     );
     await within(card).findByText("Opened in the side column", {}, { timeout: 4_000 });
@@ -278,7 +278,7 @@ describe("apps in tool cards (KOBE-438)", () => {
     fake.appResultBodies.set("ref-tc1", { id: "tc1" });
     openApp(fake, t);
     await waitFor(() => expect(frames()).toHaveLength(1), { timeout: 4_000 });
-    const scroller = document.querySelector('[data-kobe-scroll="messages"]');
+    const scroller = document.querySelector('[data-kaiju-scroll="messages"]');
     expect(scroller).not.toBeNull();
     // The cards' observers: one viewport (near) and three (within).
     const cards = observed.filter(

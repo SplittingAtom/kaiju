@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { chatRequests, composer, openApp, streaming } from "../chat/testing";
@@ -14,7 +14,7 @@ import { chatRequests, composer, openApp, streaming } from "../chat/testing";
  * starts a thread; during a run it waits as a removable chip; an app missing only the member's
  * key shows "Add your key".
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 afterEach(() => {
   cleanup();
@@ -25,7 +25,7 @@ afterEach(() => {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   vi.stubGlobal(
     "IntersectionObserver",
@@ -86,7 +86,7 @@ describe("app cards in the conversation (KOBE-440)", () => {
     const t = answered();
     fake.addAppCard(t, APP);
     openApp(fake, t);
-    const card = await waitFor(() => must(document.querySelector("[data-kobe-app-card-entry]")), {
+    const card = await waitFor(() => must(document.querySelector("[data-kaiju-app-card-entry]")), {
       timeout: 4_000,
     });
     await waitFor(() =>

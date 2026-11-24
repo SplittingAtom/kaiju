@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateSessionKeyPair, signSessionToken } from "@kobe/session-token";
+import { generateSessionKeyPair, signSessionToken } from "@kaiju/session-token";
 import {
   EXPIRED_TOKEN_MAX_AGE_SECONDS,
   bearerToken,

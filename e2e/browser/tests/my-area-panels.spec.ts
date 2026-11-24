@@ -43,7 +43,7 @@ async function openFrom(page: Page, opener: Opener): Promise<void> {
   await page.getByRole("link", { name: opener.menu }).click();
 }
 
-const panels = (page: Page) => page.locator("[data-kobe-panel]");
+const panels = (page: Page) => page.locator("[data-kaiju-panel]");
 const slug = (path: string) => path.split("/").pop() ?? path;
 
 test.describe("My area pages as panels over the workspace (KOBE-424, KOBE-452)", () => {
@@ -56,7 +56,7 @@ test.describe("My area pages as panels over the workspace (KOBE-424, KOBE-452)",
       const panel = page.getByRole("dialog", { name });
       await expect(panel).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
       // The page loaded (access read, no error notice).
-      await expect(panel.locator("[data-kobe-console]").first()).toBeVisible({
+      await expect(panel.locator("[data-kaiju-console]").first()).toBeVisible({
         timeout: SHELL_TIMEOUT_MS,
       });
       await expect(panel.getByText(/^(Loading|Checking your access)…$/)).toHaveCount(0, {
@@ -65,10 +65,10 @@ test.describe("My area pages as panels over the workspace (KOBE-424, KOBE-452)",
       await expect(panel.getByRole("alert")).toHaveCount(0);
       expect(new URL(page.url()).pathname).toBe(path);
       // The workspace stays mounted underneath, out of reach while the panel is open.
-      await expect(page.locator("[data-kobe-chat] main#kobe-chat-main")).toHaveCount(1);
+      await expect(page.locator("[data-kaiju-chat] main#kaiju-chat-main")).toHaveCount(1);
       // Out of reach means inert (useModalLayer), not hidden: Playwright ignores `inert`, so the
       // composer stays "visible" to it and the check is on the attribute.
-      await expect(page.locator("[data-kobe-chat] [inert] #kobe-composer")).toHaveCount(1);
+      await expect(page.locator("[data-kaiju-chat] [inert] #kaiju-composer")).toHaveCount(1);
       await shoot(page, `panel-${slug(path)}-1280`, page.locator("body"));
 
       await panel.getByRole("button", { name: `Close ${name}` }).click();
@@ -124,9 +124,9 @@ test.describe("My area pages as panels over the workspace (KOBE-424, KOBE-452)",
     await expect(page.getByRole("dialog", { name: "My memory" })).toBeVisible({
       timeout: SHELL_TIMEOUT_MS,
     });
-    const portal = page.locator("body > [data-kobe-console-portal]");
+    const portal = page.locator("body > [data-kaiju-console-portal]");
     await expect(portal).toHaveCount(1);
-    expect(await portal.evaluate((el) => el.closest("[data-kobe-chat]") === null)).toBe(true);
+    expect(await portal.evaluate((el) => el.closest("[data-kaiju-chat]") === null)).toBe(true);
   });
 
   test("an address from before (?area=memory) opens the panel over its thread", async ({

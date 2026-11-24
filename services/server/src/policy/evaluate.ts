@@ -6,7 +6,7 @@ import {
   type PolicyReason,
   type RiskClass,
   type ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   checkAgentTools,
   checkAvailable,
@@ -15,7 +15,7 @@ import {
 } from "./gates.js";
 import { allowedByRuleMessage, rememberedRuleAllowed, scopeOf } from "./remember-limits.js";
 import { matchingRules, type PolicyRule, type PolicyRuleSet } from "./rules.js";
-import { PROMPT_EXEMPT_KOBE_TOOLS, riskClassPrompts, type PolicySettings } from "./settings.js";
+import { PROMPT_EXEMPT_KAIJU_TOOLS, riskClassPrompts, type PolicySettings } from "./settings.js";
 import { prepareInput } from "./tool-inputs.js";
 
 /**
@@ -154,7 +154,7 @@ function noPromptReason(ctx: Prepared): PolicyReason {
           "creates a branch on the git host, which needs no approval by default"
         : tool.name === "save_skill_draft"
           ? "saves a private draft in your Workbench, which needs no approval"
-          : PROMPT_EXEMPT_KOBE_TOOLS.has(tool.name)
+          : PROMPT_EXEMPT_KAIJU_TOOLS.has(tool.name)
             ? "writes a versioned artifact in this conversation, which needs no approval"
             : "writes your personal memory, which needs no approval and can be undone";
   return { code: RISK_REASON[tool.risk], stage: "risk_class", message: `${tool.name} ${where}.` };

@@ -32,16 +32,16 @@ import {
   users,
   virtualKeyContext,
   withTeam,
-  type KobeDatabase,
-} from "@kobe/db";
-import { RUN_TOKEN_HEADER, SERVER_CALL_AUDIENCE, SERVER_CALL_TOKEN_HEADER } from "@kobe/protocol";
+  type KaijuDatabase,
+} from "@kaiju/db";
+import { RUN_TOKEN_HEADER, SERVER_CALL_AUDIENCE, SERVER_CALL_TOKEN_HEADER } from "@kaiju/protocol";
 import {
   generateSessionKeyPair,
   signRunToken,
   signServerCallToken,
   signSessionToken,
   verifySessionToken,
-} from "@kobe/session-token";
+} from "@kaiju/session-token";
 import pino from "pino";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { createModelGateway } from "./gateway.js";
@@ -64,7 +64,7 @@ const other = randomUUID();
 const user = randomUUID();
 const sandboxId = randomUUID();
 const VK = `sk-bf-${randomUUID()}`;
-let app: KobeDatabase;
+let app: KaijuDatabase;
 let bifrost: Server;
 let shim: Server;
 let base = "";

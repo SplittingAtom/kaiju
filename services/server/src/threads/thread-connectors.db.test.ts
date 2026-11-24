@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { loadEnvelope, withTeam } from "@kobe/db";
+import { loadEnvelope, withTeam } from "@kaiju/db";
 import { createMcpService } from "../mcp/service.js";
 import { createDbRunContextSource } from "../sandbox-wire/policy-check.js";
 import { must } from "../testing/event-stream-fixture.js";

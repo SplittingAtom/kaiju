@@ -1,5 +1,5 @@
 /** The projection's types and message ids (KOBE-716: out of `lib/chat/tree.ts`). */
-import type { ItemReference } from "@kobe/protocol";
+import type { ItemReference } from "@kaiju/protocol";
 import type { ThreadMessageLike } from "@assistant-ui/react";
 import type { SentFile } from "../attachments";
 import type { ParsedEntry } from "../entries";
@@ -7,7 +7,7 @@ import type { EntryMarker } from "../markers";
 import type { LiveRun } from "../live";
 import type { ThreadEntry } from "../types";
 
-export type KobeMessageMeta =
+export type KaijuMessageMeta =
   | {
       readonly kind: "user";
       /** The entry id; undefined for a prompt Pi hasn't committed yet. */
@@ -123,10 +123,10 @@ export const PREFIX_EMPTY = "empty:";
 /** The note of a version whose run ended before Pi saved its message (a root edit, KOBE-214). */
 export const EMPTY_VERSION_NOTE =
   "This version has no messages: its run ended before the agent saved the message.";
-export const PART_MARKER = "data-kobe-marker";
+export const PART_MARKER = "data-kaiju-marker";
 
 export function messageMeta(message: {
   readonly metadata?: { readonly custom?: unknown } | undefined;
 }) {
-  return message.metadata?.custom as KobeMessageMeta | undefined;
+  return message.metadata?.custom as KaijuMessageMeta | undefined;
 }

@@ -1,4 +1,4 @@
-import { CONFLICT_COPY_PATTERN, PROJECT_WORKSPACE_DIR, workspacePathIssue } from "@kobe/protocol";
+import { CONFLICT_COPY_PATTERN, PROJECT_WORKSPACE_DIR, workspacePathIssue } from "@kaiju/protocol";
 
 /**
  * The path rules every write of a project's files shares (KOBE-780): upload, Add to project, a

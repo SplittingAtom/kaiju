@@ -1,12 +1,12 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { canonicalZip } from "@kobe/protocol";
+import { canonicalZip } from "@kaiju/protocol";
 import { strToU8, unzipSync, zipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { validateZipBundle } from "../bundle.js";
-import { KOBE_PACKAGES_DIR, readKobePackage, type KobePackage } from "../kobe-packages.js";
-import { ensureObject, seedKobeSkills } from "../kobe-seed.js";
+import { KAIJU_PACKAGES_DIR, readKaijuPackage, type KaijuPackage } from "../kaiju-packages.js";
+import { ensureObject, seedKaijuSkills } from "../kaiju-seed.js";
 import { runWithAuditContext } from "../../audit/context.js";
-import { resetToKobe } from "./kobe-detach.js";
+import { resetToKaiju } from "./kaiju-detach.js";
 import { sha256Hex } from "../storage.js";
 import { RawBody, type TestBrowser, type TestResponse } from "../../testing/browser.js";
 import { openHarness, type Harness } from "../../testing/harness.js";
@@ -21,7 +21,7 @@ import { MemoryObjects } from "../../testing/memory-objects.js";
  * recording the shipped version, Compare and Reset to Kaiju, and the retired/blocklisted guards.
  */
 const objects = new MemoryObjects();
-const blobs = { objects, prefix: "kobe/" };
+const blobs = { objects, prefix: "kaiju/" };
 const team = randomUUID();
 let h: Harness;
 const ids = { admin: "", other: "", maintainer: "", member: "" };
@@ -95,7 +95,7 @@ async function maintainerSkill(
 }
 
 /** `p` re-numbered `semver` (its files otherwise the same, SKILL.md with a new line). */
-function shippedAs(p: KobePackage, semver: string): KobePackage {
+function shippedAs(p: KaijuPackage, semver: string): KaijuPackage {
   const files = new Map(Object.entries(unzipSync(p.bundle.packageZip ?? p.bundle.zip)));
   const yaml = new TextDecoder().decode(files.get("kobe.skill.yaml"));
   files.set("kobe.skill.yaml", strToU8(yaml.replace(/^version: .*$/m, `version: ${semver}`)));
@@ -322,11 +322,11 @@ describe("guards", () => {
 });
 
 describe("Kaiju-shipped skills (ac-4)", () => {
-  let pdf: KobePackage;
+  let pdf: KaijuPackage;
   let pdfId = "";
   beforeAll(async () => {
-    pdf = await readKobePackage(KOBE_PACKAGES_DIR, "pdf");
-    const seeded = await seedKobeSkills({
+    pdf = await readKaijuPackage(KAIJU_PACKAGES_DIR, "pdf");
+    const seeded = await seedKaijuSkills({
       db: h.deps.database.db,
       blobs,
       log: quiet,
@@ -349,7 +349,7 @@ describe("Kaiju-shipped skills (ac-4)", () => {
     expect(after.json.kobe).toMatchObject({ detached: true, detachedFromVersion: pdf.semver });
     expect(await audits("skill.detached", pdfId)).toHaveLength(1);
     const newer = shippedAs(pdf, "1.1.0");
-    const seeded = await seedKobeSkills({
+    const seeded = await seedKaijuSkills({
       db: h.deps.database.db,
       blobs,
       log: quiet,
@@ -397,7 +397,7 @@ describe("Kaiju-shipped skills (ac-4)", () => {
     const reset = await runWithAuditContext(
       { actor: { kind: "user", id: ids.admin }, ip: null, userAgent: null },
       () =>
-        resetToKobe(
+        resetToKaiju(
           { db, blobs, log: quiet, packages: () => Promise.resolve([higher]) },
           pdfId,
           ids.admin,

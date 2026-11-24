@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, eq, sql, teams, withTeam } from "@kobe/db";
+import { SYSTEM_ACTOR, eq, sql, teams, withTeam } from "@kaiju/db";
 import { currentAuditContext } from "../audit/context.js";
 import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";

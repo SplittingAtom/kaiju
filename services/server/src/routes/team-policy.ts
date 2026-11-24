@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { parseRuleBody, ruleIdParam, ruleLimitReached, ruleNotFound } from "../policy/http.js";
-import { rememberLimitsSchema } from "@kobe/protocol";
+import { rememberLimitsSchema } from "@kaiju/protocol";
 import {
   readTeamRememberLimits,
   writeTeamRememberLimits,

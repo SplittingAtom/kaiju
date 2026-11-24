@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { WorkspaceFileChange } from "@kobe/protocol";
+import type { WorkspaceFileChange } from "@kaiju/protocol";
 import type { FilesApi } from "../../lib/files/api";
 import { EditDraftStore } from "../../lib/files/editor-state";
 import type { ChangeHint } from "../chat/use-file-change-hint";

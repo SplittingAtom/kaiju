@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { recordModelUsage, type ModelUsageRecord } from "./models/index.js";
 import { teams, users, type UsageKind } from "./schema/index.js";
 
@@ -15,7 +15,7 @@ import { teams, users, type UsageKind } from "./schema/index.js";
  * One connection, no timing: holds are taken at spend 0, part of the wave lands and settles, then
  * the next reservation must be refused.
  */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const SALT = "full-holds-salt";
 const CALL = 65;
 const LIMIT = 683;

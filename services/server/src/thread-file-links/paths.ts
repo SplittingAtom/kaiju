@@ -1,5 +1,5 @@
-import { PROJECT_WORKSPACE_DIR, workspaceToolPath } from "@kobe/protocol";
-import type { ThreadFileAccess } from "@kobe/db";
+import { PROJECT_WORKSPACE_DIR, workspaceToolPath } from "@kaiju/protocol";
+import type { ThreadFileAccess } from "@kaiju/db";
 import { canonicalPath, SANDBOX_CWD } from "../policy/tool-inputs.js";
 import { isInternalPath } from "../workspace-files/paths.js";
 

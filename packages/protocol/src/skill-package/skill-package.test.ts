@@ -10,7 +10,7 @@ import {
   checkPackagePaths,
   crc32,
   hashedPackageFiles,
-  kobeSkillManifestSchema,
+  kaijuSkillManifestSchema,
   MANIFEST_MAX_BYTES,
   MANIFEST_YAML_OPTIONS,
   manifestMismatches,
@@ -119,10 +119,12 @@ describe("package layout (KOBE-309)", () => {
       "Provenance.json",
       "skill.md",
     ])
-      expect(checkPackagePaths(["SKILL.md", path], { kobeProvenance: true }), path).toContainEqual({
-        path,
-        problem: "reserved_name_case",
-      });
+      expect(checkPackagePaths(["SKILL.md", path], { kaijuProvenance: true }), path).toContainEqual(
+        {
+          path,
+          problem: "reserved_name_case",
+        },
+      );
     expect(
       checkPackagePaths(["SKILL.md", "scripts/Evals/x", "references/KOBE.SKILL.YAML"]),
     ).toEqual([]);
@@ -135,7 +137,7 @@ describe("package layout (KOBE-309)", () => {
     expect(checkPackagePaths(["SKILL.md", "provenance.json"])).toEqual([
       { path: "provenance.json", problem: "provenance_not_allowed" },
     ]);
-    expect(checkPackagePaths(["SKILL.md", "provenance.json"], { kobeProvenance: true })).toEqual(
+    expect(checkPackagePaths(["SKILL.md", "provenance.json"], { kaijuProvenance: true })).toEqual(
       [],
     );
     const files = new Map([
@@ -143,7 +145,7 @@ describe("package layout (KOBE-309)", () => {
       ["provenance.json", utf8("{}")],
     ]);
     expect(() => runtimeHash(files)).toThrow(/provenance_not_allowed/);
-    expect(runtimeHash(files, { kobeProvenance: true })).toBe(
+    expect(runtimeHash(files, { kaijuProvenance: true })).toBe(
       runtimeHash(new Map([["SKILL.md", utf8("x")]])),
     );
   });
@@ -247,10 +249,10 @@ describe("golden hash vectors (KOBE-309 ac-3)", () => {
       ["SKILL.md", utf8("x")],
       ["provenance.json", utf8("{}")],
     ]);
-    expect(packageHash(files, { kobeProvenance: true })).toBe(
-      runtimeHash(files, { kobeProvenance: true }),
+    expect(packageHash(files, { kaijuProvenance: true })).toBe(
+      runtimeHash(files, { kaijuProvenance: true }),
     );
-    expect(runtimeZip(files, { kobeProvenance: true })).toEqual(
+    expect(runtimeZip(files, { kaijuProvenance: true })).toEqual(
       canonicalZip(new Map([["SKILL.md", utf8("x")]])),
     );
   });
@@ -312,7 +314,7 @@ describe("kobe.skill.yaml (KOBE-309 ac-1)", () => {
   for (const { file, text } of all) {
     if (file.startsWith("valid-")) {
       it(`accepts ${file}`, () => {
-        const parsed = kobeSkillManifestSchema.safeParse(parseManifestText(text));
+        const parsed = kaijuSkillManifestSchema.safeParse(parseManifestText(text));
         expect(parsed.error?.issues ?? []).toEqual([]);
       });
     } else if (file.startsWith("yaml-")) {
@@ -321,7 +323,7 @@ describe("kobe.skill.yaml (KOBE-309 ac-1)", () => {
       });
     } else {
       it(`refuses ${file} by the schema, at ${MANIFEST_REFUSALS[file]}`, () => {
-        const parsed = kobeSkillManifestSchema.safeParse(parseManifestText(text));
+        const parsed = kaijuSkillManifestSchema.safeParse(parseManifestText(text));
         expect(parsed.success).toBe(false);
         expect(parsed.error?.issues.map(issueAt)).toEqual([MANIFEST_REFUSALS[file]]);
       });
@@ -330,7 +332,7 @@ describe("kobe.skill.yaml (KOBE-309 ac-1)", () => {
 
   it("parses the spec's example into the expected value", () => {
     const text = all.find((f) => f.file === "valid-full.yaml")?.text ?? "";
-    expect(kobeSkillManifestSchema.parse(parseManifestText(text))).toEqual({
+    expect(kaijuSkillManifestSchema.parse(parseManifestText(text))).toEqual({
       apiVersion: "kobe.dev/skill/v1",
       name: "quarterly-report",
       version: "1.3.0",
@@ -351,7 +353,7 @@ describe("kobe.skill.yaml (KOBE-309 ac-1)", () => {
   });
 
   it("must name the SKILL.md name and the saved semver", () => {
-    const m = kobeSkillManifestSchema.parse({
+    const m = kaijuSkillManifestSchema.parse({
       apiVersion: "kobe.dev/skill/v1",
       name: "notes",
       version: "1.0.0",

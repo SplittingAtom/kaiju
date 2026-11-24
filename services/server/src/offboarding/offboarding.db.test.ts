@@ -2,8 +2,8 @@ import { createHash, randomUUID } from "node:crypto";
 import pg from "pg";
 import { unzipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
-import { sql, teamMembers, withTeam } from "@kobe/db";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
+import { sql, teamMembers, withTeam } from "@kaiju/db";
 import { createApp } from "../app.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
 import { createSandboxLifecycle } from "../sandbox-lifecycle/index.js";
@@ -21,9 +21,9 @@ import { fakeIsolation } from "../testing/isolation.js";
  * then a sweep deletes the volume and the workspace copy unless a legal hold covers the member
  * (ac-3). Every step is audited.
  */
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const WHO = ["owner", "tadmin", "bob", "carol", "dan", "erin", "frank", "gina"] as const;
 type Person = (typeof WHO)[number];
 

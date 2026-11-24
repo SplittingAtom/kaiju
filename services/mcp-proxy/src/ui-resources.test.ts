@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
 import { FakeUpstream } from "./testing/fake-upstream.js";
 import {
   MAX_UI_RESOURCES,

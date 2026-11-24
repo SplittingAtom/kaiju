@@ -1,4 +1,4 @@
-import { createDb, egressDomains, sql, type KobeDatabase } from "@kobe/db";
+import { createDb, egressDomains, sql, type KaijuDatabase } from "@kaiju/db";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { loadEgressCeilingWithInternal } from "./ceiling-store.js";
 
@@ -6,8 +6,8 @@ import { loadEgressCeilingWithInternal } from "./ceiling-store.js";
  * EA4 (KOBE-603): the ceiling is read with each pattern's internal flag. The column comes with
  * KOBE-602's migration; until then every pattern reads as not internal (fail closed).
  */
-let app: KobeDatabase;
-let owner: KobeDatabase;
+let app: KaijuDatabase;
+let owner: KaijuDatabase;
 const suffix = Math.random().toString(36).slice(2, 8);
 const INTERNAL = `*.apps-${suffix}.example.test`;
 const PLAIN = `plain-${suffix}.example.test`;

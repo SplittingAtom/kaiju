@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { RAIL_PANELS, RAIL_TABS, type RailPanels, type RailTab } from "@kobe/protocol";
+import { RAIL_PANELS, RAIL_TABS, type RailPanels, type RailTab } from "@kaiju/protocol";
 import { useStoredPreference, type LayoutPreferences } from "../../lib/shell/preferences";
 import { railDocked } from "../../lib/shell/layout";
 import { DEFAULT_RAIL_PANELS, shows, withPanel } from "../../lib/shell/rail-panels";

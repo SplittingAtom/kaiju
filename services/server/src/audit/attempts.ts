@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, type KobeDb } from "@kobe/db";
+import { SYSTEM_ACTOR, type KaijuDb } from "@kaiju/db";
 import { currentAuditContext } from "./context.js";
 import { recordAuditAfter } from "./record.js";
 
@@ -44,7 +44,7 @@ export class AuthAttemptAudit {
   private timer: ReturnType<typeof setInterval> | undefined;
 
   constructor(
-    private readonly db: KobeDb,
+    private readonly db: KaijuDb,
     private readonly options: { readonly windowMs?: number; readonly now?: () => number } = {},
   ) {}
 

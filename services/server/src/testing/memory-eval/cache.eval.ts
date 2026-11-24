@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync, writeSync } from "node:fs";
 import { dirname } from "node:path";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { SEMANTIC_MEMORY_PLACEMENTS, TERMINAL_EVENT_TYPES } from "@kobe/protocol";
+import { SEMANTIC_MEMORY_PLACEMENTS, TERMINAL_EVENT_TYPES } from "@kaiju/protocol";
 import { formatMemoryUse, memoryUse, parseExpectations } from "./memory-use.js";
 import { cacheShares, formatCacheShare, runUsageSchema } from "./score.js";
 
@@ -209,7 +209,7 @@ describe("memory cache-read replay (KOBE-387)", () => {
     } finally {
       await setPlacement(c, original);
     }
-    say("\nKOBE-658 placements (cache share all / turns 2-20 / memory use):");
+    say("\nKAIJU-658 placements (cache share all / turns 2-20 / memory use):");
     for (const r of reports) {
       const s = r as unknown as {
         placement: string;
@@ -275,7 +275,7 @@ async function replay(c: Client, labelText: string | null, out: string | undefin
     }
     const use = memoryUse(expectations, answers);
     const label = labelText ? ` (${labelText})` : "";
-    say(`\nKOBE-387 cache replay${label}: thread ${threadId}, ${runIds.length} turns`);
+    say(`\nKAIJU-387 cache replay${label}: thread ${threadId}, ${runIds.length} turns`);
     say(formatCacheShare("all turns", shares.all));
     say(formatCacheShare("turns 2-20", shares.afterFirst));
     say(formatMemoryUse(use));

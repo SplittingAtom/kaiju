@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { agentWarnings } from "@kobe/agent-file";
-import { AGENT_FORK_SCOPE_IGNORED } from "@kobe/protocol";
+import { agentWarnings } from "@kaiju/agent-file";
+import { AGENT_FORK_SCOPE_IGNORED } from "@kaiju/protocol";
 import { agentAccess, canForkAgent, forkBinding } from "../../agents/access.js";
 import {
   agentDetail,

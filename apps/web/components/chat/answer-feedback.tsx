@@ -21,11 +21,11 @@ import {
   type FeedbackReason,
   type ThreadFeedback,
 } from "../../lib/chat/feedback";
-import type { KobeMessageMeta } from "../../lib/chat/tree";
+import type { KaijuMessageMeta } from "../../lib/chat/tree";
 import { cn } from "../../lib/utils";
 import { IconAction } from "../shell/icon-action";
 import { Button } from "../ui/button";
-import { useKobeExtras } from "./kobe-runtime";
+import { useKaijuExtras } from "./kaiju-runtime";
 import { ShareCaseDialog } from "./share-case-dialog";
 
 /**
@@ -93,7 +93,7 @@ function withAnswer(
  * read when the thread opens and again when a run ends (a new answer to rate).
  */
 export function AnswerFeedbackProvider({ children }: { readonly children: ReactNode }) {
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const controller = extras?.controller;
   const threadId = extras?.state.threadId ?? null;
   const ended = extras?.state.live?.terminal ? extras.state.live.runId : null;
@@ -178,7 +178,7 @@ export function AnswerFeedbackScope({ children }: { readonly children: ReactNode
 
 /** This message's answer, its rating and the actions; null when it can't be rated. */
 function useAnswerFeedback() {
-  const meta = useAuiState((s) => s.message.metadata.custom as KobeMessageMeta | undefined);
+  const meta = useAuiState((s) => s.message.metadata.custom as KaijuMessageMeta | undefined);
   const context = useContext(FeedbackContext);
   const scope = useContext(ScopeContext);
   if (!context?.answers || !scope || meta?.kind !== "assistant" || meta.live) return null;
@@ -250,7 +250,7 @@ export function AnswerFeedbackButtons() {
 export function AnswerFeedbackDetails() {
   const found = useAnswerFeedback();
   const scope = useContext(ScopeContext);
-  const readOnly = useKobeExtras()?.state.summary?.readOnly === true;
+  const readOnly = useKaijuExtras()?.state.summary?.readOnly === true;
   if (scope?.error) {
     return (
       <p role="alert" className="text-destructive mx-2 mt-1 text-xs">
@@ -295,7 +295,7 @@ function ShareCaseRow({
   readonly caseId: string | null;
   readonly setCase: FeedbackContextValue["setCase"];
 }) {
-  const controller = useKobeExtras()?.controller;
+  const controller = useKaijuExtras()?.controller;
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

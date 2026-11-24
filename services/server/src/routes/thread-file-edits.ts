@@ -1,12 +1,12 @@
 import { Hono } from "hono";
-import { sql, withTeam } from "@kobe/db";
+import { sql, withTeam } from "@kaiju/db";
 import {
   FILE_EDIT_PROPOSALS_MAX,
   fileEditProposedPayloadSchema,
   type FileEditProposal,
   type FileEditProposalsResponse,
   type ThreadFilesResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { readAgentFiles } from "../threads/agent-files.js";

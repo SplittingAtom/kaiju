@@ -3,7 +3,7 @@ import {
   notebookInspectResultSchema,
   type ActorContext,
   type NotebookVariablesResult,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { hitRateLimit } from "../rate-limit.js";
 import { lockOwnedThread } from "../runs/access.js";
 import { COMMAND_FAILURES } from "../sandbox-wire/types.js";

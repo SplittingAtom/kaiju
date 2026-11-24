@@ -1,5 +1,5 @@
 import { Readable } from "node:stream";
-import { sql, withTeam, type KobeDb } from "@kobe/db";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import type { BlobStore } from "./blobs.js";
 import {
@@ -28,7 +28,7 @@ export type ThreadToExport = ThreadRow & { readonly entries: number };
  * starts; null when the viewer does not own such a thread in this team (nothing is recorded).
  */
 export async function recordThreadExport(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: ExportViewer,
   threadId: string,
 ): Promise<ThreadToExport | null> {
@@ -57,7 +57,7 @@ export function threadExportFileName(thread: ThreadToExport): string {
 }
 
 async function* transcript(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: ExportViewer,
   blobs: BlobStore | undefined,
   thread: ThreadToExport,
@@ -81,7 +81,7 @@ async function* transcript(
 
 /** The transcript as a web stream for a Response body. */
 export function threadExportBody(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: ExportViewer,
   blobs: BlobStore | undefined,
   thread: ThreadToExport,

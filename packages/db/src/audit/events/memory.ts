@@ -81,7 +81,7 @@ export const MEMORY_EVENTS = {
   // ── semantic memory items (v1.3, KOBE-377, SM28): ids, scopes, kinds, versions and counts, never
   // a statement, tag or evidence. Workspace items are team events; portable and Site items site
   // events (`any`). Candidate, proposal and suggestion actions are reserved for Phase B/C
-  // (`RESERVED_MEMORY_AUDIT_ACTIONS` in @kobe/protocol) and registered by their tickets; the
+  // (`RESERVED_MEMORY_AUDIT_ACTIONS` in @kaiju/protocol) and registered by their tickets; the
   // pass actions are registered below (KOBE-393).
   /**
    * An item was saved (its first version): by a person, or from an import. Names follow the

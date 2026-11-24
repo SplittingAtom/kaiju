@@ -1,11 +1,11 @@
 "use client";
 
 import { useAuiState } from "@assistant-ui/react";
-import type { ThreadEgressBlockedResponse } from "@kobe/protocol";
+import type { ThreadEgressBlockedResponse } from "@kaiju/protocol";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { blockedByPrompt, type BlockedNotice } from "../../lib/chat/egress-blocked";
-import type { KobeMessageMeta } from "../../lib/chat/tree";
-import { useKobeExtras } from "./kobe-runtime";
+import type { KaijuMessageMeta } from "../../lib/chat/tree";
+import { useKaijuExtras } from "./kaiju-runtime";
 import { NoticeSlot } from "./slots";
 
 const NONE: readonly BlockedNotice[] = [];
@@ -18,7 +18,7 @@ const BlockedContext = createContext<ReadonlyMap<string, readonly BlockedNotice[
  * the run notices (`run-notices.tsx`). A failed read keeps the last good one.
  */
 export function ThreadBlockedProvider({ children }: { readonly children: ReactNode }) {
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const controller = extras?.controller;
   const threadId = extras?.state.threadId ?? null;
   const live = extras?.state.live;
@@ -45,7 +45,7 @@ export function ThreadBlockedProvider({ children }: { readonly children: ReactNo
 
 /** This answer's blocked cards from runs that are no longer followed (closable, KOBE-468). */
 export function AnswerBlockedNotices() {
-  const meta = useAuiState((s) => s.message.metadata.custom as KobeMessageMeta | undefined);
+  const meta = useAuiState((s) => s.message.metadata.custom as KaijuMessageMeta | undefined);
   const byPrompt = useContext(BlockedContext);
   const prompt = meta?.kind === "assistant" ? meta.promptEntryId : undefined;
   const notices = prompt === undefined ? NONE : (byPrompt.get(prompt) ?? NONE);

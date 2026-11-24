@@ -3,7 +3,7 @@ import type { ListenSession } from "../pg-listen.js";
 import { SessionLeaderLock } from "./leader-lock.js";
 
 const KEY = 42;
-const HOLDER = { pid: 1234, started: "2026-11-21 10:00:00+00", app: "kobe-server-listen" };
+const HOLDER = { pid: 1234, started: "2026-11-21 10:00:00+00", app: "kaiju-server-listen" };
 
 /** A fake LISTEN session answering the lock's queries from `state`. */
 function fakeSession(state: {

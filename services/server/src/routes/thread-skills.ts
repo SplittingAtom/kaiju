@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { and, eq, isNull, threads, withTeam } from "@kobe/db";
+import { and, eq, isNull, threads, withTeam } from "@kaiju/db";
 import { resolveAgentPin } from "../agents/versions.js";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";

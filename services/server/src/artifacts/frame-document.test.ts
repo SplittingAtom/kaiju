@@ -10,7 +10,7 @@ const directives = new Map(
     return [name, values.join(" ")] as const;
   }),
 );
-const PUBLIC = "https://kobe.example";
+const PUBLIC = "https://kaiju.example";
 
 describe("FRAME_HEADERS CSP", () => {
   it("blocks WebRTC, child frames and workers, and keeps the opaque sandbox", () => {

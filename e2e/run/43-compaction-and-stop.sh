@@ -78,7 +78,7 @@ JS
     contains "the summary call is billed to the completed compaction run" '^[1-9][0-9]*$' "$(wait_for 30 '^[1-9]' compact_usage)"
 
     # KOBE-290: Stop before the first token on real Pi. The fake model holds back its answer to a
-    # `kobe-slow-start` prompt, so the run is stopped once Pi has the prompt (the server mirrors it
+    # `kaiju-slow-start` prompt, so the run is stopped once Pi has the prompt (the server mirrors it
     # when Pi announces it) and before any text. A reload then shows the prompt once.
     echo "==> Stop before the first token (KOBE-290)"
     read -r -d '' STOP_EARLY_JS <<'JS' || true
@@ -148,7 +148,7 @@ out("run", run.json.status + ":" + (run.json.user_entry_id === prompts[0]?.entry
 const markers = await call("GET", "/v1/threads/" + id + "/markers");
 out("marker", (markers.json.runs || []).map((r) => r.status + ":" + (r.user_entry_id === prompts[0]?.entry_id)).join(",") || "-");
 JS
-    stop_early_out=$($KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "$STOP_EARLY_JS" "$E2E_TEAM_ID" "kobe-slow-start stop me $RANDOM" 2>&1 || true)
+    stop_early_out=$($KUBECTL -n "$NS" exec deploy/kobe-server -c server -- node --input-type=module -e "$STOP_EARLY_JS" "$E2E_TEAM_ID" "kaiju-slow-start stop me $RANDOM" 2>&1 || true)
     printf '     stop early: %s\n' "$(tr '\n' ' ' <<<"$stop_early_out")"
     contains "KOBE-290: the prompt is mirrored once Pi has it, before any text" '^committed=true:0$' "$stop_early_out"
     contains "KOBE-290: Stop cancels the run before the first token" '^cancel=cancelled$' "$stop_early_out"
@@ -201,7 +201,7 @@ JS
       "PATCH /v1/site/models/catalog/fast {\"input_usd_per_mtok\":10000,\"output_usd_per_mtok\":10000}" \
       "PUT /v1/team/budgets/team {\"monthly_usd\":1000}")
     expect "the catalog model is priced and the team budget set" '^200 ' "$budget_setup"
-    budget_out=$(chat_run "kobe-tool-step budget-$RANDOM" 300000)
+    budget_out=$(chat_run "kaiju-tool-step budget-$RANDOM" 300000)
     printf '     chat (budget): %s\n' "$(printf '%s' "$budget_out" | grep -v '^text=' | tr '\n' ' ')"
     budget_run=$(printf '%s\n' "$budget_out" | sed -n 's/^run=//p')
     budget_run_sql="'${budget_run:-00000000-0000-4000-8000-000000000000}'"

@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { chatRequests, openApp, streaming } from "./testing";
 
@@ -12,11 +12,11 @@ import { chatRequests, openApp, streaming } from "./testing";
  * then regenerates as a sibling; Pi records the switch as a `model_change` entry before the new
  * prompt, so its marker shows above the new version.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push(
     {
       alias: "kimi",
@@ -79,14 +79,14 @@ async function answer(t: string, modelId: string, text: string) {
 
 /** The model markers shown, by their text. */
 const modelMarkers = () =>
-  [...document.querySelectorAll('[data-kobe-marker="model"]')].map((m) =>
+  [...document.querySelectorAll('[data-kaiju-marker="model"]')].map((m) =>
     (m.textContent ?? "").replace(/\s+/g, " ").trim(),
   );
 
 /** The model marker shown on the version on screen, and whether it sits above the prompt. */
 function markerAbovePrompt(model: string): boolean {
   const marker = must(
-    [...document.querySelectorAll('[data-kobe-marker="model"]')].find((m) =>
+    [...document.querySelectorAll('[data-kaiju-marker="model"]')].find((m) =>
       m.textContent?.includes(model),
     ),
   );
@@ -103,7 +103,7 @@ describe("Regenerate with another model (KOBE-217)", () => {
     await user.click(await trigger());
     const menu = await screen.findByRole("menu", { name: "Regenerate with…" });
     // Portalled into the chat root, where the theme tokens and the preflight slice apply (KOBE-282).
-    expect(menu.closest("[data-kobe-chat]")).not.toBeNull();
+    expect(menu.closest("[data-kaiju-chat]")).not.toBeNull();
     expect(
       within(menu)
         .getAllByRole("menuitem")

@@ -4,7 +4,7 @@ import { insertAt } from "../../lib/apps/app-context";
 import { useAui } from "@assistant-ui/react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { useInsertGate, type PendingInsert } from "./composer-steer";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 
 /** How long the composer flashes after an app put text in it. */
 const INSERT_FLASH_MS = 600;

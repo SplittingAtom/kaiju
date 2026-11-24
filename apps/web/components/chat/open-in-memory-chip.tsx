@@ -27,7 +27,7 @@ export function OpenInMemoryChip({
   const id = (args as { id?: unknown } | undefined)?.id;
   if (!done || failed || typeof id !== "string" || !isUuid(id)) return null;
   return (
-    <div className={`${styles.fileCard} kobe-panel`} data-kobe-memory-item={id}>
+    <div className={`${styles.fileCard} kaiju-panel`} data-kaiju-memory-item={id}>
       <BrainIcon aria-hidden className="size-4" />
       <div className={styles.fileInfo}>
         <span className={styles.fileName}>Saved memory</span>

@@ -10,7 +10,7 @@ import {
   agentRosterUpdateResponseSchema,
   assignAgentRequestSchema,
   updateAgentRosterEntryRequestSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { z } from "zod";
 
 /**

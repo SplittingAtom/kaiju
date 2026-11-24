@@ -39,14 +39,14 @@ async function processDir(root: string, piFiles: readonly string[] = [...PI_OWN_
 
 describe("runtime directory tripwire", () => {
   it("accepts what the agent and Pi write, including a writer temp file and Pi's lock", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runtime-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const runtime = await processDir(dir);
     await writeFile(path.join(runtime, `model.json.${"a".repeat(16)}.tmp`), "{}");
     expect(await unexpectedEntries(runtime)).toEqual([]);
   });
 
   it("accepts the egress token file and its writer's temp file (KOBE-39), as files only", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runtime-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const runtime = await processDir(dir);
     await writeFile(path.join(runtime, "egress-token"), "t\n", { mode: 0o600 });
     await writeFile(path.join(runtime, `egress-token.${"b".repeat(16)}.tmp`), "t\n");
@@ -57,7 +57,7 @@ describe("runtime directory tripwire", () => {
   });
 
   it("accepts kobe-models' context capture and its temp file in agent/ (KOBE-470), as files only", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runtime-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const runtime = await processDir(dir);
     await writeFile(path.join(runtime, "agent", "kobe-context.json"), "{}");
     await writeFile(path.join(runtime, "agent", `kobe-context.json.${"c".repeat(16)}.tmp`), "{}");
@@ -68,7 +68,7 @@ describe("runtime directory tripwire", () => {
   });
 
   it("reports anything else: Pi config a sibling could plant, or a stray top-level file", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runtime-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const runtime = await processDir(dir, ["auth.json"]);
     await writeFile(path.join(runtime, "agent", "SYSTEM.md"), "evil");
     await mkdir(path.join(runtime, "agent", "bin"));
@@ -84,7 +84,7 @@ describe("runtime directory tripwire", () => {
   });
 
   it("tolerates an expected entry vanishing between readdir and lstat (the writer's rename)", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runtime-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const runtime = await processDir(dir, ["auth.json"]);
     // readdir lists it, lstat finds it gone: a temp file renamed into place meanwhile.
     const temp = path.join(runtime, `model.json.${"b".repeat(16)}.tmp`);
@@ -97,7 +97,7 @@ describe("runtime directory tripwire", () => {
   });
 
   it("KOBE-235: the MCP writer's random temp files are expected in agent/ (only with MCP files), the old fixed .tmp name is not", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runtime-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const runtime = await processDir(dir, ["auth.json"]);
     const agent = path.join(runtime, "agent");
     await writeFile(path.join(agent, `mcp-token.${"c".repeat(16)}.tmp`), "t");
@@ -108,7 +108,7 @@ describe("runtime directory tripwire", () => {
   });
 
   it("checks kinds with lstat: symlinks, a file where Pi's lock dir belongs, a linked agent dir", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runtime-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const victim = path.join(dir, "victim");
     await writeFile(victim, "x");
     const runtime = await processDir(dir, ["models-store.json"]);
@@ -134,7 +134,7 @@ describe("runtime directory tripwire", () => {
   });
 
   it("reads Pi's catalog store as text, null when absent or not a regular file", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runtime-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const runtime = await processDir(dir, ["auth.json"]);
     expect(await piModelsStoreText(runtime)).toBeNull();
     await writeFile(
@@ -156,7 +156,7 @@ describe("runtime directory tripwire", () => {
   });
 
   it("sweeps stale per-process directories at start-up and keeps everything else", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runtime-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const root = path.join(dir, "kobe-pi");
     await mkdir(root);
     await processDir(root);
@@ -173,7 +173,7 @@ describe("runtime directory tripwire", () => {
 
 describe("runtime root and removal (KOBE-71)", () => {
   it("is the agent's own directory: 0711 under Pi identities (reach, never list), else 0700", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runtime-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const root = path.join(dir, "kobe-pi");
     await ensureRuntimeRoot(root, true);
     expect((await stat(root)).mode & 0o777).toBe(0o711);
@@ -182,7 +182,7 @@ describe("runtime root and removal (KOBE-71)", () => {
   });
 
   it("refuses a root that is not a real directory (planted link)", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runtime-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     await mkdir(path.join(dir, "elsewhere"));
     await symlink(path.join(dir, "elsewhere"), path.join(dir, "kobe-pi"));
     await expect(ensureRuntimeRoot(path.join(dir, "kobe-pi"), true)).rejects.toThrow(
@@ -191,7 +191,7 @@ describe("runtime root and removal (KOBE-71)", () => {
   });
 
   it("under Pi identities, refuses a root anyone can rename (a non-sticky shared parent)", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runtime-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const shared = path.join(dir, "shared");
     await mkdir(shared);
     await chmod(shared, 0o777);
@@ -207,7 +207,7 @@ describe("runtime root and removal (KOBE-71)", () => {
   });
 
   it("removes a runtime directory with everything in it", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-runtime-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-runtime-"));
     const runtime = await processDir(dir);
     await removeRuntimeDir(runtime);
     await expect(lstat(runtime)).rejects.toThrow();

@@ -2,7 +2,7 @@
 import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { composer, openApp, streaming, threadGroup } from "./testing";
 
@@ -14,7 +14,7 @@ import { composer, openApp, streaming, threadGroup } from "./testing";
 const VIEW = 500;
 let content = 2000;
 const tops = new WeakMap<Element, number>();
-const isList = (el: Element) => el instanceof HTMLElement && el.dataset.kobeScroll === "messages";
+const isList = (el: Element) => el instanceof HTMLElement && el.dataset.kaijuScroll === "messages";
 const maxTop = () => Math.max(0, content - VIEW);
 
 /** Resize observers fire when the test says the content grew. */
@@ -78,7 +78,7 @@ function restoreGeometry() {
   saved.clear();
 }
 
-const list = () => must(document.querySelector<HTMLElement>('[data-kobe-scroll="messages"]'));
+const list = () => must(document.querySelector<HTMLElement>('[data-kaiju-scroll="messages"]'));
 
 /** The member scrolls the message list: the wheel turn, then the scroll it causes. */
 function scrollTo(top: number) {
@@ -113,7 +113,7 @@ function shrink(px: number) {
 
 const pill = () => screen.queryByRole("button", { name: /^Jump to latest/ });
 
-let kobe: FakeKobe;
+let kaiju: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
@@ -121,8 +121,8 @@ beforeEach(() => {
   observers.clear();
   fakeGeometry();
   vi.stubGlobal("ResizeObserver", FakeResizeObserver);
-  kobe = new FakeKobe();
-  vi.stubGlobal("fetch", kobe.fetch);
+  kaiju = new FakeKaiju();
+  vi.stubGlobal("fetch", kaiju.fetch);
 });
 
 afterEach(() => {
@@ -132,14 +132,17 @@ afterEach(() => {
 });
 
 function threadWithHistory(title: string) {
-  const t = kobe.addThread(title);
-  const u1 = kobe.addEntry(t, null, { role: "user", content: `${title} question` });
-  kobe.addEntry(t, u1, { role: "assistant", content: [{ type: "text", text: `${title} answer` }] });
+  const t = kaiju.addThread(title);
+  const u1 = kaiju.addEntry(t, null, { role: "user", content: `${title} question` });
+  kaiju.addEntry(t, u1, {
+    role: "assistant",
+    content: [{ type: "text", text: `${title} answer` }],
+  });
   return t;
 }
 
 async function openAtBottom(t: string, title: string) {
-  openApp(kobe, t);
+  openApp(kaiju, t);
   expect(await screen.findByText(`${title} answer`)).toBeTruthy();
   await waitFor(() => expect(list().scrollTop).toBe(maxTop()));
 }
@@ -152,8 +155,8 @@ async function send(text: string) {
 
 async function startRun(t: string, text: string) {
   await send(text);
-  const run = must(await waitFor(() => must(kobe.activeRun(t))));
-  await streaming(kobe, run.run_id);
+  const run = must(await waitFor(() => must(kaiju.activeRun(t))));
+  await streaming(kaiju, run.run_id);
   return run.run_id;
 }
 
@@ -163,7 +166,7 @@ describe("following the stream (ac-5)", () => {
     await openAtBottom(t, "Sales");
     const runId = await startRun(t, "draw a chart");
 
-    act(() => kobe.agent.delta(runId, "m1", "Here is "));
+    act(() => kaiju.agent.delta(runId, "m1", "Here is "));
     grow(300);
     await waitFor(() => expect(list().scrollTop).toBe(maxTop()));
     grow(200);
@@ -196,7 +199,7 @@ describe("Jump to latest (ac-1)", () => {
     scrollTo(200);
     expect(await screen.findByRole("button", { name: "Jump to latest" })).toBeTruthy();
 
-    act(() => kobe.agent.delta(runId, "m1", "Here is the chart"));
+    act(() => kaiju.agent.delta(runId, "m1", "Here is the chart"));
     // Streaming words are spans (KOBE-207), so the text is split across elements.
     await waitFor(() => expect(list().textContent).toContain("Here is the chart"));
     grow(600);
@@ -217,7 +220,7 @@ describe("Jump to latest (ac-1)", () => {
     scrollTo(maxTop() - 10);
     expect(await screen.findByRole("button", { name: "Jump to latest" })).toBeTruthy();
     const held = list().scrollTop;
-    act(() => kobe.agent.delta(runId, "m1", "Here is the chart"));
+    act(() => kaiju.agent.delta(runId, "m1", "Here is the chart"));
     grow(400);
     grow(400);
     expect(list().scrollTop).toBe(held);
@@ -242,36 +245,36 @@ describe("a scroll up in the last frames of a stream (KOBE-288)", () => {
     const t = threadWithHistory("Sales");
     await openAtBottom(t, "Sales");
     const runId = await startRun(t, "draw a chart");
-    act(() => kobe.agent.delta(runId, "m1", "Here is the chart"));
+    act(() => kaiju.agent.delta(runId, "m1", "Here is the chart"));
     grow(300);
     // Sent while the run holds the thread: it queues (the panel shows it, the list doesn't).
     await send("and a table");
     await waitFor(() => expect(document.querySelectorAll("li[data-queued]")).toHaveLength(1));
     await waitFor(() => expect(list().scrollTop).toBe(maxTop()));
     scrollTo(200);
-    await waitFor(() => expect(list().dataset.kobeFollow).toBe("unpinned"));
+    await waitFor(() => expect(list().dataset.kaijuFollow).toBe("unpinned"));
 
     // The run ends and the queued one starts: its prompt joins the list (the message count
     // changes for the first time since the send).
     act(() => {
-      kobe.agent.commitPrompt(runId);
-      kobe.agent.commit(runId, { role: "assistant", content: [{ type: "text", text: "Done" }] });
-      kobe.agent.complete(runId);
+      kaiju.agent.commitPrompt(runId);
+      kaiju.agent.commit(runId, { role: "assistant", content: [{ type: "text", text: "Done" }] });
+      kaiju.agent.complete(runId);
     });
     expect(await screen.findByText("and a table")).toBeTruthy();
     await waitFor(() => expect(document.querySelectorAll("li[data-queued]")).toHaveLength(0));
-    expect(list().dataset.kobeFollow).toBe("unpinned");
+    expect(list().dataset.kaijuFollow).toBe("unpinned");
     expect(list().scrollTop).toBe(200);
   });
 
   it("a send that fails before it renders re-pins nothing later (a Retry starting)", async () => {
     const t = threadWithHistory("Sales");
     // An upload that never finishes holds the send back (it fails with "Wait for the files…").
-    openApp(kobe, t, () => new Promise(() => {}));
+    openApp(kaiju, t, () => new Promise(() => {}));
     expect(await screen.findByText("Sales answer")).toBeTruthy();
     await waitFor(() => expect(list().scrollTop).toBe(maxTop()));
     const runId = await startRun(t, "draw a chart");
-    act(() => kobe.agent.loseSandbox(runId));
+    act(() => kaiju.agent.loseSandbox(runId));
     const retry = await screen.findByRole("button", { name: "Retry from last entry" });
 
     // Not running, so the send waits for its message to render; it never does.
@@ -283,14 +286,14 @@ describe("a scroll up in the last frames of a stream (KOBE-288)", () => {
     expect((await screen.findAllByText(/Wait for the files to finish/)).length).toBeGreaterThan(0);
 
     scrollTo(200);
-    await waitFor(() => expect(list().dataset.kobeFollow).toBe("unpinned"));
+    await waitFor(() => expect(list().dataset.kaijuFollow).toBe("unpinned"));
     // Retry is not a send: its run's prompt joins the list without asking for the bottom.
     await user.click(retry);
-    await waitFor(() => expect(kobe.latestRun(t).retry_of_run_id).toBe(runId));
-    await streaming(kobe, kobe.latestRun(t).run_id);
-    act(() => kobe.agent.delta(kobe.latestRun(t).run_id, "m1", "Second attempt"));
+    await waitFor(() => expect(kaiju.latestRun(t).retry_of_run_id).toBe(runId));
+    await streaming(kaiju, kaiju.latestRun(t).run_id);
+    act(() => kaiju.agent.delta(kaiju.latestRun(t).run_id, "m1", "Second attempt"));
     await waitFor(() => expect(list().textContent).toContain("Second attempt"));
-    expect(list().dataset.kobeFollow).toBe("unpinned");
+    expect(list().dataset.kaijuFollow).toBe("unpinned");
     expect(list().scrollTop).toBe(200);
   });
 
@@ -298,19 +301,19 @@ describe("a scroll up in the last frames of a stream (KOBE-288)", () => {
     const t = threadWithHistory("Sales");
     await openAtBottom(t, "Sales");
     const runId = await startRun(t, "draw a chart");
-    act(() => kobe.agent.delta(runId, "m1", "Here is the chart"));
+    act(() => kaiju.agent.delta(runId, "m1", "Here is the chart"));
     grow(300);
     await waitFor(() => expect(list().scrollTop).toBe(maxTop()));
 
     scrollTo(maxTop() - 30);
-    await waitFor(() => expect(list().dataset.kobeFollow).toBe("unpinned"));
+    await waitFor(() => expect(list().dataset.kaijuFollow).toBe("unpinned"));
     act(() => {
-      kobe.agent.commit(runId, { role: "assistant", content: [{ type: "text", text: "Done" }] });
-      kobe.agent.complete(runId);
+      kaiju.agent.commit(runId, { role: "assistant", content: [{ type: "text", text: "Done" }] });
+      kaiju.agent.complete(runId);
       shrink(60);
     });
     await waitFor(() => expect(screen.getByRole("button", { name: "Send" })).toBeTruthy());
-    expect(list().dataset.kobeFollow).toBe("unpinned");
+    expect(list().dataset.kaijuFollow).toBe("unpinned");
     expect(pill()).toBeTruthy();
     const held = list().scrollTop;
     grow(400);
@@ -321,7 +324,7 @@ describe("a scroll up in the last frames of a stream (KOBE-288)", () => {
     const t = threadWithHistory("Sales");
     await openAtBottom(t, "Sales");
     const runId = await startRun(t, "draw a chart");
-    act(() => kobe.agent.delta(runId, "m1", "Here is the chart"));
+    act(() => kaiju.agent.delta(runId, "m1", "Here is the chart"));
     grow(300);
     await waitFor(() => expect(list().scrollTop).toBe(maxTop()));
 
@@ -335,9 +338,9 @@ describe("a scroll up in the last frames of a stream (KOBE-288)", () => {
       list().dispatchEvent(new Event("scroll"));
       for (const run of observers) run();
     });
-    act(() => kobe.agent.complete(runId));
+    act(() => kaiju.agent.complete(runId));
     await waitFor(() => expect(screen.getByRole("button", { name: "Send" })).toBeTruthy());
-    expect(list().dataset.kobeFollow).toBe("unpinned");
+    expect(list().dataset.kaijuFollow).toBe("unpinned");
     expect(pill()).toBeTruthy();
     const held = list().scrollTop;
     grow(400);
@@ -349,8 +352,8 @@ describe("a scroll up in the last frames of a stream (KOBE-288)", () => {
     await openAtBottom(t, "Sales");
     const runId = await startRun(t, "draw a chart");
     scrollTo(200);
-    await waitFor(() => expect(list().dataset.kobeFollow).toBe("unpinned"));
-    act(() => kobe.agent.delta(runId, "m1", "Here is the chart"));
+    await waitFor(() => expect(list().dataset.kaijuFollow).toBe("unpinned"));
+    act(() => kaiju.agent.delta(runId, "m1", "Here is the chart"));
     grow(300);
     expect(list().scrollTop).toBe(200);
 
@@ -360,7 +363,7 @@ describe("a scroll up in the last frames of a stream (KOBE-288)", () => {
       list().scrollTop = maxTop();
       list().dispatchEvent(new Event("scroll"));
     });
-    await waitFor(() => expect(list().dataset.kobeFollow).toBe("pinned"));
+    await waitFor(() => expect(list().dataset.kaijuFollow).toBe("pinned"));
     grow(200);
     await waitFor(() => expect(list().scrollTop).toBe(maxTop()));
   });
@@ -390,7 +393,7 @@ describe("scroll position per thread (ac-2)", () => {
   it("a restored position stays put while content grows", async () => {
     const a = threadWithHistory("Alpha");
     sessionStorage.setItem(`kobe.scroll:${a}`, "300");
-    openApp(kobe, a);
+    openApp(kaiju, a);
     expect(await screen.findByText("Alpha answer")).toBeTruthy();
     await waitFor(() => expect(list().scrollTop).toBe(300));
     grow(400);
@@ -412,8 +415,8 @@ describe("scroll position per thread (ac-2)", () => {
     // Beta's history waits until the test lets them through, so the switch can be caught midway.
     let release = () => {};
     const gate = new Promise<void>((resolve) => (release = resolve));
-    const serve = kobe.fetch;
-    Object.defineProperty(kobe, "fetch", {
+    const serve = kaiju.fetch;
+    Object.defineProperty(kaiju, "fetch", {
       value: async (input: string, init?: RequestInit) => {
         const url = String(input);
         if (url.includes(`/v1/threads/${b}?`) && url.includes("limit=500")) await gate;
@@ -450,7 +453,7 @@ describe("scroll position per thread (ac-2)", () => {
     await openAtBottom(a, "Alpha");
     const runId = await startRun(a, "draw a chart");
     scrollTo(200);
-    act(() => kobe.agent.delta(runId, "m1", "Here is the chart"));
+    act(() => kaiju.agent.delta(runId, "m1", "Here is the chart"));
     expect(
       await screen.findByRole("button", { name: "Jump to latest, 1 new message" }),
     ).toBeTruthy();
@@ -467,17 +470,17 @@ describe("arrival fade follows the pin (KOBE-207 ac-3)", () => {
     const t = threadWithHistory("Sales");
     await openAtBottom(t, "Sales");
     const runId = await startRun(t, "draw a chart");
-    expect(list().dataset.kobeFollow).toBe("pinned");
+    expect(list().dataset.kaijuFollow).toBe("pinned");
 
     scrollTo(200);
-    await waitFor(() => expect(list().dataset.kobeFollow).toBe("unpinned"));
-    act(() => kobe.agent.delta(runId, "m1", "Here"));
+    await waitFor(() => expect(list().dataset.kaijuFollow).toBe("unpinned"));
+    act(() => kaiju.agent.delta(runId, "m1", "Here"));
     await waitFor(() => expect(list().textContent).toContain("Here"));
-    act(() => kobe.agent.delta(runId, "m1", " is"));
+    act(() => kaiju.agent.delta(runId, "m1", " is"));
     // New words still mount as spans; the CSS gives them no tint while unpinned.
-    await waitFor(() => expect(list().querySelectorAll("[data-kobe-word]")).toHaveLength(1));
+    await waitFor(() => expect(list().querySelectorAll("[data-kaiju-word]")).toHaveLength(1));
 
     await userEvent.setup().click(must(pill()));
-    await waitFor(() => expect(list().dataset.kobeFollow).toBe("pinned"));
+    await waitFor(() => expect(list().dataset.kaijuFollow).toBe("pinned"));
   });
 });

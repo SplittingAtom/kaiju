@@ -1,5 +1,5 @@
-import { sql } from "@kobe/db";
-import type { SemanticMemoryStatus } from "@kobe/protocol";
+import { sql } from "@kaiju/db";
+import type { SemanticMemoryStatus } from "@kaiju/protocol";
 import type { Location } from "./location.js";
 
 /**

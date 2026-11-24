@@ -5,9 +5,9 @@ import {
   siteSettings,
   sql,
   teamMemorySettings,
-  type KobeTx,
-} from "@kobe/db";
-import type { MemoryScope } from "@kobe/protocol";
+  type KaijuTx,
+} from "@kaiju/db";
+import type { MemoryScope } from "@kaiju/protocol";
 import {
   MEMORY_SITE_SETTINGS_KEY,
   parseMemorySiteSettings,
@@ -85,7 +85,7 @@ export interface MemorySwitches {
   readonly teamAliasInvalid: boolean;
 }
 
-export async function readSiteSwitches(tx: KobeTx): Promise<SiteMemorySwitches> {
+export async function readSiteSwitches(tx: KaijuTx): Promise<SiteMemorySwitches> {
   const rows = await tx
     .select({ key: siteSettings.key, value: siteSettings.value })
     .from(siteSettings)
@@ -131,14 +131,14 @@ export function storedAliasInvalid(raw: unknown): boolean {
 }
 
 export async function readTeamSwitches(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
 ): Promise<WorkspaceMemorySwitches> {
   return (await readTeamState(tx, teamId)).switches;
 }
 
 async function readTeamState(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
 ): Promise<{ switches: WorkspaceMemorySwitches; aliasInvalid: boolean }> {
   const res = await tx.execute<{
@@ -216,7 +216,7 @@ export function parseRunMemoryState(row: RunMemoryStateRow | undefined): {
   };
 }
 
-export async function readSwitches(tx: KobeTx, teamId: string): Promise<MemorySwitches> {
+export async function readSwitches(tx: KaijuTx, teamId: string): Promise<MemorySwitches> {
   const site = await readSiteSwitches(tx);
   const { switches: team, aliasInvalid } = await readTeamState(tx, teamId);
   const memory = effectiveMemory(site, team);
@@ -225,7 +225,7 @@ export async function readSwitches(tx: KobeTx, teamId: string): Promise<MemorySw
 
 /** The single gate every Notes operation passes: is `scope` on for this team? */
 export async function scopeEnabled(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   scope: MemoryScope,
 ): Promise<boolean> {
@@ -243,7 +243,7 @@ const sameWorkspace = (a: WorkspaceMemorySwitches, b: WorkspaceMemorySwitches) =
  * state, read under the team's switch lock, changes nothing. Only the fields given are written.
  */
 export async function writeTeamSwitches(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   change: Change<WorkspaceMemorySwitches>,
@@ -292,12 +292,12 @@ export async function writeTeamSwitches(
 }
 
 /** One lock for every Site memory switch and setting write (review L1). */
-export async function lockSiteMemorySettings(tx: KobeTx): Promise<void> {
+export async function lockSiteMemorySettings(tx: KaijuTx): Promise<void> {
   await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended('kobe.memory-site', 0))`);
 }
 
 export async function writeSiteSwitches(
-  tx: KobeTx,
+  tx: KaijuTx,
   change: Change<SiteMemorySwitches>,
 ): Promise<{ readonly before: SiteMemorySwitches; readonly after: SiteMemorySwitches }> {
   const current = await readSiteSwitches(tx);

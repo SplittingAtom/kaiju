@@ -1,7 +1,7 @@
 import { hostname as osHostname } from "node:os";
 import net from "node:net";
 import tls from "node:tls";
-import type { AuditEntry } from "@kobe/db";
+import type { AuditEntry } from "@kaiju/db";
 import { DEFAULT_ENTERPRISE_NUMBER, type AuditForwardingConfig } from "./config.js";
 import type { AuditSink } from "./types.js";
 

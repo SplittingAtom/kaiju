@@ -530,7 +530,7 @@ export class FakeGithub implements GitHostContractFake {
       if (!inst[2] && method === "GET") {
         return this.send(res, 200, {
           id: Number(FAKE_INST_ID),
-          app_slug: "kobe-test-app",
+          app_slug: "kaiju-test-app",
           account: { login: o.installationAccount ?? this.organization, type: "Organization" },
           permissions,
           suspended_at: o.installationSuspended ? "2026-01-01T00:00:00Z" : null,

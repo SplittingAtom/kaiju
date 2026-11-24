@@ -1,14 +1,14 @@
 import { createHmac } from "node:crypto";
-import type { ApprovalToken } from "@kobe/protocol";
-import { signApproval, verifyApproval, type ApprovalKey } from "@kobe/protocol/node";
+import type { ApprovalToken } from "@kaiju/protocol";
+import { signApproval, verifyApproval, type ApprovalKey } from "@kaiju/protocol/node";
 import type { ApprovalKeyring } from "../../approvals/keys.js";
-import { MEMORY_INDEX_FILE } from "@kobe/protocol";
+import { MEMORY_INDEX_FILE } from "@kaiju/protocol";
 
 /**
  * The signed approval of a project Notes change from To review (KOBE-398; D24: a project memory
  * write needs a signed approval). The person asks to add a candidate; the server computes the
  * exact change (the line under `## Learned` and the `MEMORY.md` version it applies to) and signs
- * it with the site's approval key in the approval token format (`@kobe/protocol` approval.ts);
+ * it with the site's approval key in the approval token format (`@kaiju/protocol` approval.ts);
  * the person approves that change and the write verifies the token against the change it is
  * about to make, recomputed from the database. Any difference (the line, the base version, the
  * project, the person, the candidate) refuses the write.

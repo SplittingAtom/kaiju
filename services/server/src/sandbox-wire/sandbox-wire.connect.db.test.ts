@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { SANDBOX_CLOSE_CODES } from "@kobe/protocol/sandbox-wire";
+import { SANDBOX_CLOSE_CODES } from "@kaiju/protocol/sandbox-wire";
 import { FakeSandbox, isFake } from "../testing/fake-sandbox.js";
 import {
   fx,

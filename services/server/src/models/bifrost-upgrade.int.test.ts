@@ -51,7 +51,7 @@ async function startBifrost(bin: string, dir: string, port: number): Promise<Chi
     env: {
       ...process.env,
       BIFROST_ENCRYPTION_KEY: "integration-encryption-key-0001",
-      BIFROST_ADMIN_USERNAME: "kobe",
+      BIFROST_ADMIN_USERNAME: "kaiju",
       BIFROST_ADMIN_PASSWORD: PASSWORD,
     },
     stdio: "ignore",
@@ -135,7 +135,7 @@ describe.skipIf(!BIN || !PREVIOUS)("Bifrost upgrade on a kept store", () => {
     bifrost = await startBifrost(PREVIOUS ?? "", dir, oldPort);
     const oldAdmin = createHttpBifrostAdmin({
       baseUrl: `http://127.0.0.1:${oldPort}`,
-      username: "kobe",
+      username: "kaiju",
       password: PASSWORD,
     });
     const before = await reconcile(desired(2), oldAdmin, logger);
@@ -148,7 +148,7 @@ describe.skipIf(!BIN || !PREVIOUS)("Bifrost upgrade on a kept store", () => {
     const port = 19000 + Math.floor(Math.random() * 1000);
     const base = `http://127.0.0.1:${port}`;
     bifrost = await startBifrost(BIN ?? "", dir, port);
-    const admin = createHttpBifrostAdmin({ baseUrl: base, username: "kobe", password: PASSWORD });
+    const admin = createHttpBifrostAdmin({ baseUrl: base, username: "kaiju", password: PASSWORD });
     const sortById = <T extends { id: string }>(a: T[]) =>
       [...a].sort((x, y) => x.id.localeCompare(y.id));
     expect(sortById(await admin.listVirtualKeys())).toEqual(sortById(keysBefore));

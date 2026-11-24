@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { EditorView } from "@codemirror/view";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { tabsKey } from "../../lib/chat/artifact-tabs";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { composer, openApp } from "../chat/testing";
 import { changedBadgeText, changedWhen, UPDATED_NOTE } from "./outside-change-notice";
@@ -15,7 +15,7 @@ import { changedBadgeText, changedWhen, UPDATED_NOTE } from "./outside-change-no
  * KOBE-491's choices, naming who (ac-2). This thread's own agent still reloads silently (ac-3).
  * Read-only tabs get Reload only (ac-5). A dropped stream catches up by version (ac-6).
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const enc = (s: string) => new TextEncoder().encode(s);
 const PATH = "docs/notes.md";
 const ORIGINAL = "# Notes\n\nline two\nline three\n";
@@ -25,7 +25,7 @@ const BADGE_USER = "You changed this file in another tab or device just now.";
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 afterEach(() => {
@@ -79,10 +79,10 @@ describe("someone else's change to a clean tab (ac-1)", () => {
     await changeFrom({ kind: "user", name: "Owner" });
     const text = await badge();
     expect(text.textContent).toBe(BADGE_USER);
-    const region = must(text.closest("[data-kobe-changed-badge]"));
+    const region = must(text.closest("[data-kaiju-changed-badge]"));
     // Inside the always-mounted live region, so screen readers announce it.
     expect(region.parentElement?.getAttribute("role")).toBe("status");
-    expect(region.parentElement?.hasAttribute("data-kobe-changes-status")).toBe(true);
+    expect(region.parentElement?.hasAttribute("data-kaiju-changes-status")).toBe(true);
     expect(view.state.doc.toString()).toBe(ORIGINAL);
 
     await user.click(

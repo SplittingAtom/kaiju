@@ -30,7 +30,7 @@ export function arrivalFor(
   return screen.threadId === pass.threadId && !screen.panelOpen ? "open" : "wait";
 }
 
-const EVENT = "kobe:memory-pass-completed";
+const EVENT = "kaiju:memory-pass-completed";
 
 /** Tells the workspace a pass finished (the pass UI calls this on `memory.pass.completed`). */
 export function announcePassCompleted(pass: PassCompleted): void {

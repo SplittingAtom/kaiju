@@ -14,9 +14,9 @@ import {
   sql,
   teams,
   users,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { enqueueNotifications, type QueuedCounts } from "./outbox.js";
 import type { RequestGrantBody } from "./schemas.js";
@@ -26,7 +26,7 @@ import type { RequestGrantBody } from "./schemas.js";
  * expiry. Every change runs in one transaction with the grant row locked and its audit event as
  * the last write. The `break_glass_grants_guard` trigger re-checks the same rules in Postgres
  * (roles, two-person rule, window, transitions); the checks here exist to answer with clear errors.
- * Reading team content is not here: see `readWithBreakGlass()` in @kobe/db.
+ * Reading team content is not here: see `readWithBreakGlass()` in @kaiju/db.
  */
 
 export type GrantRow = typeof breakGlassGrants.$inferSelect;
@@ -88,7 +88,7 @@ function scopeTarget(grant: GrantRow) {
 
 /** Active site admins (Owner and Admins), optionally without one user. */
 export async function activeSiteAdmins(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   except?: string,
 ): Promise<{ id: string; name: string; email: string }[]> {
   return db
@@ -99,12 +99,12 @@ export async function activeSiteAdmins(
 }
 
 /** Whether `adminId` is the only active site admin, so D10 lets them approve their own request. */
-export async function isSoleSiteAdmin(db: KobeDb | KobeTx, adminId: string): Promise<boolean> {
+export async function isSoleSiteAdmin(db: KaijuDb | KaijuTx, adminId: string): Promise<boolean> {
   return (await activeSiteAdmins(db, adminId)).length === 0;
 }
 
 async function lockGrant(
-  tx: KobeTx,
+  tx: KaijuTx,
   id: string,
   lockTimeout = LOCK_TIMEOUT,
 ): Promise<GrantRow | undefined> {
@@ -124,7 +124,7 @@ function subjectError(grant: GrantRow, by: string, otherwise: GrantError): Grant
 }
 
 export async function requestGrant(
-  db: KobeDb,
+  db: KaijuDb,
   adminId: string,
   body: RequestGrantBody,
 ): Promise<GrantResult> {
@@ -183,7 +183,7 @@ export async function requestGrant(
  * requester only when no other active site admin exists (flagged `selfApproved`).
  */
 export async function approveGrant(
-  db: KobeDb,
+  db: KaijuDb,
   approverId: string,
   grantId: string,
 ): Promise<GrantResult> {
@@ -219,7 +219,7 @@ export async function approveGrant(
 }
 
 /** Denies a pending request; the requester withdraws instead (revoke). */
-export async function denyGrant(db: KobeDb, by: string, grantId: string): Promise<GrantResult> {
+export async function denyGrant(db: KaijuDb, by: string, grantId: string): Promise<GrantResult> {
   return db.transaction(async (tx): Promise<GrantResult> => {
     const current = await lockGrant(tx, grantId);
     if (!current) return { ok: false, error: "grant_not_found" };
@@ -253,7 +253,7 @@ const REVOKE_ATTEMPTS = 3;
  * outranks reads: it waits up to 30 s for locks (reads give up after 5 s) and retries a busy
  * audit chain, so a flood of reads can't keep a grant alive.
  */
-export async function revokeGrant(db: KobeDb, by: string, grantId: string): Promise<GrantResult> {
+export async function revokeGrant(db: KaijuDb, by: string, grantId: string): Promise<GrantResult> {
   for (let attempt = 1; ; attempt++) {
     try {
       return await revokeOnce(db, by, grantId);
@@ -263,7 +263,7 @@ export async function revokeGrant(db: KobeDb, by: string, grantId: string): Prom
   }
 }
 
-async function revokeOnce(db: KobeDb, by: string, grantId: string): Promise<GrantResult> {
+async function revokeOnce(db: KaijuDb, by: string, grantId: string): Promise<GrantResult> {
   return db.transaction(async (tx): Promise<GrantResult> => {
     const current = await lockGrant(tx, grantId, REVOKE_LOCK_TIMEOUT);
     if (!current) return { ok: false, error: "grant_not_found" };
@@ -292,7 +292,7 @@ async function revokeOnce(db: KobeDb, by: string, grantId: string): Promise<Gran
 const SWEEP_BATCH = 100;
 
 /** Expires one due grant in its own transaction (each needs its own team context), or none. */
-async function expireOne(db: KobeDb): Promise<GrantRow | null> {
+async function expireOne(db: KaijuDb): Promise<GrantRow | null> {
   return db.transaction(async (tx) => {
     const [due] = await tx
       .select({ id: breakGlassGrants.id, status: breakGlassGrants.status })
@@ -333,7 +333,7 @@ async function expireOne(db: KobeDb): Promise<GrantRow | null> {
  * actor), queuing their notifications. Access never waits for this: reads check `expires_at`
  * themselves. Safe on every replica at once: rows are claimed with SKIP LOCKED.
  */
-export async function expireDueGrants(db: KobeDb): Promise<GrantRow[]> {
+export async function expireDueGrants(db: KaijuDb): Promise<GrantRow[]> {
   const expired: GrantRow[] = [];
   for (let i = 0; i < SWEEP_BATCH; i++) {
     const row = await expireOne(db);
@@ -355,7 +355,7 @@ export interface GrantDetail {
 }
 
 /** Joins each grant's people and team (two queries, whatever the page size). */
-async function withDetails(db: KobeDb, rows: readonly GrantRow[]): Promise<GrantDetail[]> {
+async function withDetails(db: KaijuDb, rows: readonly GrantRow[]): Promise<GrantDetail[]> {
   if (rows.length === 0) return [];
   const userIds = [
     ...new Set(
@@ -398,7 +398,7 @@ async function withDetails(db: KobeDb, rows: readonly GrantRow[]): Promise<Grant
  * its subject, even when the subject is a site admin.
  */
 export async function listGrants(
-  db: KobeDb,
+  db: KaijuDb,
   viewerId: string,
   filter: { teamId?: string | undefined; limit?: number } = {},
 ): Promise<GrantDetail[]> {
@@ -423,7 +423,7 @@ function hiddenFrom(viewerId: string) {
 
 /** One grant; with `viewerId`, a legal hold about the viewer is not found. */
 export async function getGrant(
-  db: KobeDb,
+  db: KaijuDb,
   id: string,
   viewerId?: string,
 ): Promise<GrantDetail | undefined> {
@@ -436,7 +436,7 @@ export async function getGrant(
 
 /** Grants of one team that were approved at some point (they gave access), newest first. */
 export async function listTeamGrants(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   limit = 50,
 ): Promise<GrantDetail[]> {

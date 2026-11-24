@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { loadEnvelope } from "@kobe/db";
+import { loadEnvelope } from "@kaiju/db";
 import { driftNoticesFor } from "./drift-recipients.js";
 import { notifyDrift } from "./drift-notify.js";
 import type { ProbeResult } from "./probe.js";
@@ -320,7 +320,8 @@ describe("site admins are told about an auth_required skip (ac-3)", () => {
     await refreshAllConnectors(db(), h.deps.connectorProbe, quiet, { envelope: h.deps.envelope });
     expect((await row(id)).refresh_skipped).toBe("auth_required");
 
-    const sweep = () => notifyDrift({ db: db(), mailer: h.mailer, publicUrl: "https://kobe.test" });
+    const sweep = () =>
+      notifyDrift({ db: db(), mailer: h.mailer, publicUrl: "https://kaiju.test" });
     await sweep();
     const mail = h.mailer.to("root@probe.test").filter((m) => m.subject.includes("notify-a"));
     expect(mail).toHaveLength(1);
@@ -374,7 +375,7 @@ describe("site admins are told about an auth_required skip (ac-3)", () => {
       id,
     ]);
     await refresh(id);
-    await notifyDrift({ db: db(), mailer: h.mailer, publicUrl: "https://kobe.test" });
+    await notifyDrift({ db: db(), mailer: h.mailer, publicUrl: "https://kaiju.test" });
     const mail = h.mailer.to("root@probe.test").filter((m) => m.subject.includes("notify-site"));
     expect(mail).toHaveLength(1);
     expect(must(mail[0]).text).toMatch(/Set \(or re-enter\) its site-wide key/);

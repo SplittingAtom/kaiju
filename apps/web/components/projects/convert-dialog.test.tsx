@@ -24,8 +24,8 @@ const attempt = (over: Partial<RepoConversion> = {}): RepoConversion => ({
   provider: "github",
   baseUrl: "https://github.com",
   organization: "acme",
-  repositoryName: "kobe-q4",
-  fullName: "acme/kobe-q4",
+  repositoryName: "kaiju-q4",
+  fullName: "acme/kaiju-q4",
   visibility: "private",
   carryHistory: true,
   useExisting: false,
@@ -57,7 +57,7 @@ const member = (id: string, prefix: string, accessLevel = "read_write" as const)
 });
 
 const git = (over: Partial<GitConnections> = {}): GitConnections => ({
-  connections: [member("c1", "kobe-")],
+  connections: [member("c1", "kaiju-")],
   enabled: true,
   admin: false,
   ...over,
@@ -98,10 +98,10 @@ function mount(a: ReturnType<typeof api>, g: GitConnections | null = git()) {
 describe("the form", () => {
   it("chooses among connections and follows each one's prefix", async () => {
     const a = api();
-    const { dialog } = mount(a, git({ connections: [member("c1", "kobe-"), member("c2", "")] }));
+    const { dialog } = mount(a, git({ connections: [member("c1", "kaiju-"), member("c2", "")] }));
     const user = userEvent.setup();
     const name = (await within(dialog).findByLabelText("Repository name")) as HTMLInputElement;
-    expect(name.value).toBe("kobe-q4");
+    expect(name.value).toBe("kaiju-q4");
     await user.selectOptions(within(dialog).getByLabelText("Git connection"), "c2");
     expect(name.value).toBe("q4");
     expect(
@@ -187,7 +187,7 @@ describe("progress and end states", () => {
     expect(await within(dialog).findByText("Pushing commits: 1 of 3…")).toBeTruthy();
     expect(within(dialog).getByRole("progressbar")).toBeTruthy();
     expect(
-      await within(dialog).findByText(/The project is now a Repo: acme\/kobe-q4 on github\.com/),
+      await within(dialog).findByText(/The project is now a Repo: acme\/kaiju-q4 on github\.com/),
     ).toBeTruthy();
     await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(2));
   });
@@ -204,7 +204,7 @@ describe("progress and end states", () => {
       abandonConversion: vi.fn(async () =>
         ok({
           conversion: { ...failed, status: "abandoned" as const },
-          leftOnHost: { fullName: "acme/kobe-q4", baseUrl: "https://github.com" },
+          leftOnHost: { fullName: "acme/kaiju-q4", baseUrl: "https://github.com" },
         }),
       ),
     });
@@ -233,7 +233,7 @@ describe("progress and end states", () => {
       abandonConversion: vi.fn(async () =>
         ok({
           conversion: { ...failed, status: "abandoned" as const },
-          leftOnHost: { fullName: "acme/kobe-q4", baseUrl: "https://github.com" },
+          leftOnHost: { fullName: "acme/kaiju-q4", baseUrl: "https://github.com" },
         }),
       ),
     });
@@ -244,7 +244,7 @@ describe("progress and end states", () => {
     await user.click(within(dialog).getByRole("button", { name: "Abandon conversion" }));
     expect(
       await within(dialog).findByText(
-        "The conversion was abandoned. The repository acme/kobe-q4 stays on github.com: a Workspace admin can delete or reuse it.",
+        "The conversion was abandoned. The repository acme/kaiju-q4 stays on github.com: a Workspace admin can delete or reuse it.",
       ),
     ).toBeTruthy();
     expect(within(dialog).getByLabelText("Repository name")).toBeTruthy();
@@ -261,7 +261,7 @@ describe("progress and end states", () => {
 
 describe("review round 1", () => {
   it("says what the connection's visibility means (M2)", async () => {
-    const internal = { ...member("c1", "kobe-"), repoVisibility: "internal" as const };
+    const internal = { ...member("c1", "kaiju-"), repoVisibility: "internal" as const };
     const { dialog } = mount(api(), git({ connections: [internal] }));
     expect(
       await within(dialog).findByText(/^An internal repository in acme on github\.com: everyone/),

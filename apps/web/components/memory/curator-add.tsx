@@ -1,6 +1,6 @@
 "use client";
 
-import { SEMANTIC_MEMORY_SCOPE_LABELS } from "@kobe/protocol";
+import { SEMANTIC_MEMORY_SCOPE_LABELS } from "@kaiju/protocol";
 import { useState } from "react";
 import type { MemoryItem, MemoryItemsApi } from "../../lib/memory/items-api";
 import { Button, Card, Checkbox } from "../ui/console";

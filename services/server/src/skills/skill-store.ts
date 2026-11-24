@@ -1,8 +1,8 @@
 import type { Readable } from "node:stream";
 import { unzipSync } from "fflate";
 import { parse as parseYaml } from "yaml";
-import { MANIFEST_PATH, MANIFEST_YAML_OPTIONS } from "@kobe/protocol";
-import type { ScanResult } from "@kobe/skill-scanner";
+import { MANIFEST_PATH, MANIFEST_YAML_OPTIONS } from "@kaiju/protocol";
+import type { ScanResult } from "@kaiju/skill-scanner";
 import {
   and,
   desc,
@@ -12,10 +12,10 @@ import {
   personalSkillVersions,
   teamSkillVersions,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type SkillSource,
-} from "@kobe/db";
+} from "@kaiju/db";
 import type { BlobStore } from "../retention/blobs.js";
 import { openVerified, readVerified } from "./blob-read.js";
 import { checkStoredZip, hashOutcome } from "./hash-checks.js";
@@ -132,7 +132,7 @@ export type ExportedVersion =
 /** The only implementation: Postgres records, object-store bytes. */
 export class PostgresSkillStore implements SkillStore {
   constructor(
-    private readonly db: KobeDb,
+    private readonly db: KaijuDb,
     private readonly blobs: BlobStore,
   ) {}
 
@@ -291,7 +291,7 @@ export class PostgresSkillStore implements SkillStore {
     return { version, runtimeHash: outcome.runtimeHash, bytes };
   }
 
-  private inLocation<T>(location: SkillLocation, fn: (tx: KobeTx) => Promise<T>): Promise<T> {
+  private inLocation<T>(location: SkillLocation, fn: (tx: KaijuTx) => Promise<T>): Promise<T> {
     return location.scope === "team"
       ? withTeam(this.db, location.teamId, fn)
       : this.db.transaction(fn);
@@ -306,7 +306,7 @@ interface Candidate {
 
 /** Keys already holding these bytes in this location (deduplication by hash), newest first. */
 async function storedKeys(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: SkillLocation,
   contentHash: string,
   packageHash: string,
@@ -318,7 +318,7 @@ async function storedKeys(
 }
 
 /** Every distinct key in `location` that should hold the bytes of `hash`, newest first. */
-async function candidatesFor(tx: KobeTx, location: SkillLocation, hash: string) {
+async function candidatesFor(tx: KaijuTx, location: SkillLocation, hash: string) {
   return [
     ...(await runtimeCandidates(tx, location, hash)),
     ...(await packageCandidates(tx, location, hash)),
@@ -331,7 +331,7 @@ const distinct = (rows: readonly Candidate[]): Candidate[] => {
 };
 
 async function runtimeCandidates(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: SkillLocation,
   hash: string,
 ): Promise<Candidate[]> {
@@ -362,7 +362,7 @@ async function runtimeCandidates(
 }
 
 async function packageCandidates(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: SkillLocation,
   hash: string,
 ): Promise<Candidate[]> {

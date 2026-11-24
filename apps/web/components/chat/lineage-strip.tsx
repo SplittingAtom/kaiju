@@ -3,7 +3,7 @@
 import { CheckIcon, ChevronDownIcon, GitForkIcon } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { useContext, useState } from "react";
-import type { ThreadLineageResponse } from "@kobe/protocol";
+import type { ThreadLineageResponse } from "@kaiju/protocol";
 import { HIDDEN_SOURCE } from "../../lib/chat/fork";
 import {
   familyItems,
@@ -16,7 +16,7 @@ import { useLineage } from "../../lib/chat/use-lineage";
 import { chatPortalContainer } from "../ui/chat-portal";
 import { useTreeData } from "./tree-context";
 import { OpenThreadContext } from "./fork-dialog";
-import { ChatSessionContext, type KobeThreadExtras } from "./kobe-runtime";
+import { ChatSessionContext, type KaijuThreadExtras } from "./kaiju-runtime";
 
 const CONTENT =
   "bg-background text-foreground z-50 max-h-80 min-w-44 max-w-[min(28rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border p-1 shadow-md";
@@ -99,14 +99,14 @@ function FamilyChip({
   return (
     <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenu.Trigger asChild>
-        <button type="button" className={CHIP} data-kobe-lineage-chip>
+        <button type="button" className={CHIP} data-kaiju-lineage-chip>
           <GitForkIcon aria-hidden className="size-3.5 shrink-0" />
           <ChipLabel lineage={lineage} />
           <ChevronDownIcon aria-hidden className="size-3.5 shrink-0" />
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal container={chatPortalContainer()}>
-        <DropdownMenu.Content data-kobe-portal align="start" sideOffset={4} className={CONTENT}>
+        <DropdownMenu.Content data-kaiju-portal align="start" sideOffset={4} className={CONTENT}>
           {items.map((item, i) => {
             const indent = { paddingInlineStart: `${0.5 + item.depth * INDENT_REM}rem` };
             if (item.thread === null) {
@@ -165,7 +165,7 @@ export function LineageStripView({
  * reads the thread's family when it opens and on the TL4 triggers, opens threads in place
  * through `OpenThreadContext`, and shows nothing while there is nothing to show or a read failed.
  */
-export function LineageStrip({ extras }: { readonly extras: KobeThreadExtras }) {
+export function LineageStrip({ extras }: { readonly extras: KaijuThreadExtras }) {
   const session = useContext(ChatSessionContext);
   const onOpenThread = useContext(OpenThreadContext);
   // The Conversation tree's host reads the lineage once for both (KOBE-546); alone, its own read.

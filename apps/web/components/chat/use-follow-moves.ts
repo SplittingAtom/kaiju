@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import type { WorkspaceFileChange } from "@kobe/protocol";
+import type { WorkspaceFileChange } from "@kaiju/protocol";
 import type { ArtifactTabs } from "../../lib/chat/artifact-tabs";
 import { filePathOfTab } from "../../lib/files/preview";
 import type { WorkspaceChangeFeed } from "../../lib/files/remote-changes";

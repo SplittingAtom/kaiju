@@ -18,7 +18,7 @@ function stub(replies: Record<string, [number, unknown]>) {
   }) as typeof fetch;
   const admin = createHttpBifrostAdmin({
     baseUrl: "http://bifrost:8080/",
-    username: "kobe",
+    username: "kaiju",
     password: "x".repeat(32),
     fetch: fetchFn,
   });

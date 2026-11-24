@@ -4,7 +4,7 @@ import {
   notebookVariablesBodySchema,
   notebookVariablesResultSchema,
   type NotebookError,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
  * OpenAPI for `POST /v1/threads/{id}/notebook/variables` (KOBE-803, `routes/thread-notebooks.ts`,

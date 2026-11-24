@@ -1,4 +1,4 @@
-import { CONTEXT_OMITTED_MAX_ITEMS } from "@kobe/protocol";
+import { CONTEXT_OMITTED_MAX_ITEMS } from "@kaiju/protocol";
 import type { Omission } from "../resolver/resolve.js";
 
 /** Longest `context.omitted` item name (the protocol bound). */

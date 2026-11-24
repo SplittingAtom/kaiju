@@ -1,7 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { audit, type AuditRequestContext } from "../audit/write.js";
-import type { KobeDb, KobeTx } from "../client.js";
+import type { KaijuDb, KaijuTx } from "../client.js";
 import type { BreakGlassStatus } from "../schema/break-glass.js";
 import {
   portableMemoryItemVersions,
@@ -123,7 +123,7 @@ interface LockedGrant {
 }
 
 /** Step 1: the active grant for this admin, row-locked against concurrent revocation. */
-async function lockActiveGrant(tx: KobeTx, access: SiteBreakGlassAccess): Promise<LockedGrant> {
+async function lockActiveGrant(tx: KaijuTx, access: SiteBreakGlassAccess): Promise<LockedGrant> {
   const result = await tx.execute<{
     id: string;
     subject_user_id: string;
@@ -165,7 +165,7 @@ async function lockActiveGrant(tx: KobeTx, access: SiteBreakGlassAccess): Promis
  * Step 2: the person's Workspaces, each visited under its own team policy, then cleared. An accepted
  * exception to "only withTeam() sets the team" (KOBE-697, CLAUDE.md; team-setters.test.ts).
  */
-async function workspacesOf(tx: KobeTx, userId: string): Promise<string[]> {
+async function workspacesOf(tx: KaijuTx, userId: string): Promise<string[]> {
   const all = await tx.select({ id: teams.id }).from(teams).orderBy(asc(teams.id));
   const found: string[] = [];
   for (const team of all) {
@@ -194,7 +194,7 @@ const itemColumns = {
 };
 
 /** The subject's items joined to their current version; every query adds the owner filter. */
-function itemsQuery(tx: KobeTx, where: ReturnType<typeof and>) {
+function itemsQuery(tx: KaijuTx, where: ReturnType<typeof and>) {
   return tx
     .select(itemColumns)
     .from(portableMemoryItems)
@@ -209,7 +209,7 @@ function itemsQuery(tx: KobeTx, where: ReturnType<typeof and>) {
 }
 
 async function readItems(
-  tx: KobeTx,
+  tx: KaijuTx,
   grant: SiteBreakGlassGrantView,
   read: Extract<PortableBreakGlassRead, { kind: "items" }>,
 ): Promise<PortableBreakGlassResult> {
@@ -232,7 +232,7 @@ async function readItems(
 }
 
 async function readItem(
-  tx: KobeTx,
+  tx: KaijuTx,
   grant: SiteBreakGlassGrantView,
   itemId: string,
 ): Promise<PortableBreakGlassResult> {
@@ -268,7 +268,7 @@ async function readItem(
  * not the subject's, and `AuditBusyError` when the audit rows can't be written.
  */
 export async function readPortableWithSiteBreakGlass(
-  db: KobeDb,
+  db: KaijuDb,
   access: SiteBreakGlassAccess,
   read: PortableBreakGlassRead,
 ): Promise<PortableBreakGlassResult> {

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { runRootSpanId, runTraceId } from "@kobe/protocol";
-import { mapSandboxSpanId } from "@kobe/protocol/node";
-import { initTelemetry, InMemorySpanExporter, type Telemetry } from "@kobe/telemetry";
+import { runRootSpanId, runTraceId } from "@kaiju/protocol";
+import { mapSandboxSpanId } from "@kaiju/protocol/node";
+import { initTelemetry, InMemorySpanExporter, type Telemetry } from "@kaiju/telemetry";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   bearer,

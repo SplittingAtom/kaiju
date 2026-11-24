@@ -18,8 +18,8 @@ import {
   teams,
   users,
   withTeam,
-  type KobeDatabase,
-} from "@kobe/db";
+  type KaijuDatabase,
+} from "@kaiju/db";
 import pg from "pg";
 import { pino } from "pino";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
@@ -34,7 +34,7 @@ const logger = pino({ level: "silent" });
 const team = randomUUID();
 const user = randomUUID();
 const sandbox = randomUUID();
-let app: KobeDatabase;
+let app: KaijuDatabase;
 let cache: AllowlistCache;
 let listener: ChangeListener;
 const scopes: TunnelScope[] = [];

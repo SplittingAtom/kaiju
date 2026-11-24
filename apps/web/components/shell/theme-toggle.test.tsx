@@ -2,7 +2,7 @@
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { openApp } from "../chat/testing";
 import { IconActionProvider } from "./icon-action";
 import { ThemeToggle } from "./theme-toggle";
@@ -101,7 +101,7 @@ describe("theme toggle (KOBE-282)", () => {
   });
 
   it("sits in the utility bar's first row", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     vi.stubGlobal("fetch", fake.fetch);
     openApp(fake);
     const row = await screen.findByRole("banner");

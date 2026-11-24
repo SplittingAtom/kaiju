@@ -22,7 +22,7 @@ const CLAIMS: RunTokenClaims = {
   exp: NOW + 900,
   jti: "jti-0123456789abcdef",
 };
-// Signing and verification (Ed25519, KOBE-521) are tested in @kobe/session-token.
+// Signing and verification (Ed25519, KOBE-521) are tested in @kaiju/session-token.
 const GRANT = { token: "eyJhbGciOiJFZERTQSJ9.e30.sig", expires_at: "2026-10-01T00:00:00Z" };
 
 describe("run token format", () => {

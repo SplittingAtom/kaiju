@@ -5,7 +5,7 @@ import type { SCAN_VERDICTS } from "./skill-package/provenance.js";
 /**
  * The Site Skills Catalog contract (KOBE-311, spec SK5–SK8, SK22–SK25, SK31): the closed sets the
  * registry, installs and tags use, and the shapes the API and web share. The database enums of
- * `@kobe/db` (schema/registry.ts, schema/installs.ts) mirror these lists; a server test keeps the
+ * `@kaiju/db` (schema/registry.ts, schema/installs.ts) mirror these lists; a server test keeps the
  * two equal.
  */
 
@@ -48,7 +48,7 @@ export type RegistryPublisher = (typeof REGISTRY_PUBLISHERS)[number];
  * mirrors this list), and an agent naming one always gets the Kaiju skill, never a team or
  * personal skill of that name.
  */
-export const KOBE_SKILL_NAMES = [
+export const KAIJU_SKILL_NAMES = [
   "data-analysis",
   "charts",
   "docx",
@@ -58,10 +58,10 @@ export const KOBE_SKILL_NAMES = [
   "skill-creator",
   "kobe-guide",
 ] as const;
-export type KobeSkillName = (typeof KOBE_SKILL_NAMES)[number];
+export type KaijuSkillName = (typeof KAIJU_SKILL_NAMES)[number];
 
-export function isKobeSkillName(name: string): name is KobeSkillName {
-  return (KOBE_SKILL_NAMES as readonly string[]).includes(name);
+export function isKaijuSkillName(name: string): name is KaijuSkillName {
+  return (KAIJU_SKILL_NAMES as readonly string[]).includes(name);
 }
 export const REGISTRY_SKILL_STATUSES = [
   "active",
@@ -216,7 +216,7 @@ export const uninstallSkillSchema = z.strictObject({
 /**
  * Default sync jobs (KOBE-314, SK8): `add` puts a skill in every team, `remove` turns tag-made
  * installs into team installs and clears opt-outs, `move_major` moves untouched Default installs.
- * Mirrors `@kobe/db` schema/skill-default-syncs.ts.
+ * Mirrors `@kaiju/db` schema/skill-default-syncs.ts.
  */
 export const DEFAULT_SYNC_KINDS = ["add", "remove", "move_major"] as const;
 export type DefaultSyncKind = (typeof DEFAULT_SYNC_KINDS)[number];

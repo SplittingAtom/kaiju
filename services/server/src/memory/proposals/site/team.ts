@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../../../audit/record.js";
 import { notAllowed } from "../../items/errors.js";
 import type { MemoryWho } from "../../items/who.js";
@@ -21,7 +21,7 @@ import { workspaceView, type WorkspaceProposalView } from "./views.js";
 const ws = (teamId: string) => ({ side: "workspace", teamId }) as const;
 
 async function lockForWorkspace(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: MemoryWho,
   teamId: string,
   id: string,
@@ -33,7 +33,7 @@ async function lockForWorkspace(
 }
 
 export function confirmSiteProposal(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   id: string,
   body: ConfirmSiteProposal,
@@ -74,7 +74,7 @@ export function confirmSiteProposal(
 }
 
 export function endorseSiteProposal(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   id: string,
 ): Promise<{ readonly proposal: WorkspaceProposalView }> {
@@ -100,7 +100,7 @@ export function endorseSiteProposal(
 }
 
 export function withdrawSiteProposal(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   id: string,
 ): Promise<{ readonly proposal: WorkspaceProposalView }> {

@@ -1,4 +1,4 @@
-import { withTeam, type Envelope, type KobeDb } from "@kobe/db";
+import { withTeam, type Envelope, type KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import type { GitHostNet } from "../../git-hosts/http.js";
 import type { BlobStore } from "../../retention/blobs.js";
@@ -12,7 +12,7 @@ import type { RepoCommitWiring } from "./dispatch.js";
  * at once (`kickMirrorRefresh`); after a pull request push the mirror job is asked for a pass.
  */
 export function repoCommitWiring(deps: {
-  readonly database: { readonly db: KobeDb };
+  readonly database: { readonly db: KaijuDb };
   readonly envelope: Envelope | undefined;
   readonly gitHostNet: GitHostNet;
   readonly publicUrl: string;

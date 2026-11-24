@@ -1,5 +1,5 @@
-import { approvalModeSchema, type ApprovalMode } from "@kobe/protocol";
-import { eq, siteSettings, type KobeTx } from "@kobe/db";
+import { approvalModeSchema, type ApprovalMode } from "@kaiju/protocol";
+import { eq, siteSettings, type KaijuTx } from "@kaiju/db";
 
 /**
  * The site's minimum approval mode (spec D6 "policy floor: … minimum approval mode", D19
@@ -42,7 +42,7 @@ export function parseApprovalFloor(value: string | undefined): ApprovalMode {
 }
 
 /** Reads the site's approval floor in `tx`. */
-export async function readApprovalFloor(tx: KobeTx): Promise<ApprovalMode> {
+export async function readApprovalFloor(tx: KaijuTx): Promise<ApprovalMode> {
   const [row] = await tx
     .select({ value: siteSettings.value })
     .from(siteSettings)

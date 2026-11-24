@@ -3,7 +3,7 @@ import type { PLATFORM_EVENTS } from "./platform.js";
 
 /**
  * The docs/audit-log.md rows of the platform area's events (KOBE-815), in name order; the table is
- * generated from these (`pnpm --filter @kobe/db audit:doc`). Add an event's row here in name order.
+ * generated from these (`pnpm --filter @kaiju/db audit:doc`). Add an event's row here in name order.
  */
 export const PLATFORM_EVENT_DOCS = {
   "platform.isolation.changed": {
@@ -13,7 +13,7 @@ export const PLATFORM_EVENT_DOCS = {
   "platform.restore.completed": {
     fields:
       "`backupCreatedAt`, `tables`, `rows`, `operator`, `auditHeadSeq?`, `auditHeadHash?`, `replacedAuditHeadSeq?`, `replacedAuditHeadHash?`, `replacedAuditRows?`",
-    when: "`kobe restore` loaded and verified a backup (system, same transaction)",
+    when: "`kaiju restore` loaded and verified a backup (system, same transaction)",
   },
   "policy.dangerous_mode.applied": {
     fields:

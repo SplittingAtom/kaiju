@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { RAIL_PX } from "../../lib/shell/layout";
 import { PREFERENCES_PATH } from "../../lib/shell/preferences";
 import { RAIL_WIDTH_VAR } from "../../lib/shell/rail-width";
@@ -17,7 +17,7 @@ import { openApp } from "../chat/testing";
  * dragged width (280 px by default), the artifact column 360 px while open. The CSS rules
  * themselves are pinned in `layout-contract.test.tsx`; real widths are checked on gate1.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 const GRID_PX = DESKTOP_WIDTH;
 
@@ -62,7 +62,7 @@ function mockLayout() {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push({ alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true });
   vi.stubGlobal("fetch", fake.fetch);
   resizeWindow(DESKTOP_WIDTH);

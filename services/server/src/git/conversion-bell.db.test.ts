@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { notifyConversionEndInTx } from "./conversion/bell.js";
 import { sweepGitConversions } from "./conversion/job.js";
 import { runConversion } from "./conversion/runner.js";
@@ -119,7 +119,7 @@ describe("a conversion that finished (KOBE-819 ac-1)", () => {
     const p = await project(w, [{ by: w.owner, message: "one", files: { "a.txt": "1" } }]);
     hostRepo(p.slug);
     const id = await begin(w, p.id);
-    const fn = `kobe_test_refuse_${w.team.replaceAll("-", "")}`;
+    const fn = `kaiju_test_refuse_${w.team.replaceAll("-", "")}`;
     await fx.admin.query(`
       CREATE FUNCTION ${fn}() RETURNS trigger LANGUAGE plpgsql AS $$
         BEGIN RAISE EXCEPTION 'refused by the test'; END $$`);

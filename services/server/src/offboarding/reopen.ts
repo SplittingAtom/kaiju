@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 
 /**
  * KOBE-386 review H1: a person who rejoins a Workspace (or is reactivated while still a member)
@@ -10,7 +10,7 @@ import { sql, type KobeTx } from "@kobe/db";
  * Workspace's transaction that adds the membership (or under `withTeam`).
  */
 export async function reopenRetentionInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userIds: readonly string[],
 ): Promise<void> {
@@ -25,7 +25,7 @@ export async function reopenRetentionInTx(
 }
 
 /** Every reopenable row of the Workspace whose person is an active member (the sweep's backstop). */
-export async function reopenReturnedInTx(tx: KobeTx, teamId: string): Promise<number> {
+export async function reopenReturnedInTx(tx: KaijuTx, teamId: string): Promise<number> {
   const res = await tx.execute(sql`
     UPDATE sandboxes s SET retain_until = NULL
      WHERE s.team_id = ${teamId} AND s.state = 'destroyed' AND s.retain_until IS NOT NULL

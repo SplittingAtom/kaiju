@@ -1,10 +1,10 @@
-import type { EvalWorkspaceSnapshot } from "@kobe/protocol";
+import type { EvalWorkspaceSnapshot } from "@kaiju/protocol";
 import type {
   EvalPrepareFrame,
   EvalReadFrame,
   EvalReadResult,
   EvalSnapshotFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { createFixtureFetcher, prepareFixtures, type FixtureFetcher } from "./fixtures.js";
 import { readOutputs } from "./read.js";
 import { snapshotWorkspace } from "./snapshot.js";

@@ -121,7 +121,7 @@ With `reasoning_effort`, `anthropic_adaptive` or `anthropic_effort` it reads "<s
 and its tooltip says "Level <X> is a typical scale of about <N> tokens, not a limit" (N from
 `THINKING_EFFORT_BUDGETS`). At Off, or when the run's model is not in the list, it reads
 "<spent> at <Level>"; "—" only without a count or a level. No bar: the composer's Reasoning
-effort control no longer shows the spend (KOBE-574). Budgets per level live in `@kobe/protocol` thinking.ts; `thinkingBudget(control,
+effort control no longer shows the spend (KOBE-574). Budgets per level live in `@kaiju/protocol` thinking.ts; `thinkingBudget(control,
 level)` picks the right table (null for `none`), and the team models API carries each model's
 control in `thinking_in_team.control`.
 

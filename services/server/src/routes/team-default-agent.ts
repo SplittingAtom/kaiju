@@ -3,7 +3,7 @@ import {
   setTeamDefaultAgentRequestSchema,
   TEAM_DEFAULT_AGENT_ERROR_STATUS,
   type TeamDefaultAgentErrorCode,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { Context } from "hono";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";

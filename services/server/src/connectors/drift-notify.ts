@@ -6,8 +6,8 @@ import {
   isNull,
   parseToolsSnapshot,
   sql,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";
 import type { MailMessage, Mailer } from "../mail/mailer.js";
@@ -31,7 +31,7 @@ const MAX_AGE_HOURS = 24;
 const MAX_NAMES = 20;
 
 export interface DriftNotifyDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly mailer: Mailer;
   readonly publicUrl: string;
 }
@@ -230,7 +230,7 @@ const KINDS: Readonly<Record<string, DriftEvent["kind"]>> = {
   "mcp.connector.templates_skipped": "templates_skipped",
 };
 
-async function recentEvents(db: KobeDb): Promise<DriftEvent[]> {
+async function recentEvents(db: KaijuDb): Promise<DriftEvent[]> {
   const rows = await db.execute<{
     seq: string;
     action: string;
@@ -259,7 +259,7 @@ async function recentEvents(db: KobeDb): Promise<DriftEvent[]> {
 }
 
 /** Still has tools or templates awaiting re-approval (an approval or a removal ends the notice). */
-async function stillDrifted(db: KobeDb, connectorId: string): Promise<boolean> {
+async function stillDrifted(db: KaijuDb, connectorId: string): Promise<boolean> {
   const [row] = await db
     .select({ snapshot: connectors.toolsSnapshot })
     .from(connectors)
@@ -273,7 +273,7 @@ async function stillDrifted(db: KobeDb, connectorId: string): Promise<boolean> {
  * Still skipped for want of credentials (a good pass or a new URL ends the notice): the event with
  * the connector's credential source, or undefined when it is over.
  */
-async function stillSkipped(db: KobeDb, event: DriftEvent): Promise<DriftEvent | undefined> {
+async function stillSkipped(db: KaijuDb, event: DriftEvent): Promise<DriftEvent | undefined> {
   const [row] = await db
     .select({
       skipped: connectors.refreshSkipped,
@@ -289,7 +289,7 @@ async function stillSkipped(db: KobeDb, event: DriftEvent): Promise<DriftEvent |
 
 /** Templates still not checked, for the same reason (a checked pass ends the notice). */
 async function stillTemplatesSkipped(
-  db: KobeDb,
+  db: KaijuDb,
   event: DriftEvent,
 ): Promise<DriftEvent | undefined> {
   const [row] = await db
@@ -299,21 +299,21 @@ async function stillTemplatesSkipped(
   return row?.skipped !== null && row?.skipped === event.reason ? event : undefined;
 }
 
-const stillCurrent = async (db: KobeDb, event: DriftEvent): Promise<DriftEvent | undefined> => {
+const stillCurrent = async (db: KaijuDb, event: DriftEvent): Promise<DriftEvent | undefined> => {
   if (event.kind === "skipped") return stillSkipped(db, event);
   if (event.kind === "templates_skipped") return stillTemplatesSkipped(db, event);
   return (await stillDrifted(db, event.connectorId)) ? event : undefined;
 };
 
 /** Who hears about an event: a skip only concerns site admins, who can fix it. */
-const recipientsOf = async (db: KobeDb, event: DriftEvent) => {
+const recipientsOf = async (db: KaijuDb, event: DriftEvent) => {
   const all = await driftRecipients(db, event.connectorId);
   if (event.kind === "drift") return all;
   const admins = new Set((await siteAdminIds(db)).map((r) => r.userId));
   return all.filter((r) => admins.has(r.userId));
 };
 
-async function handled(db: KobeDb, seq: number): Promise<Set<string>> {
+async function handled(db: KaijuDb, seq: number): Promise<Set<string>> {
   const rows = await db.execute<{ recipient: string }>(sql`
     SELECT target->>'recipientId' AS recipient FROM audit_log
      WHERE action = 'mcp.connector.drift_notified' AND (target->>'driftSeq')::bigint = ${seq}`);
@@ -321,7 +321,7 @@ async function handled(db: KobeDb, seq: number): Promise<Set<string>> {
 }
 
 async function rateLimited(
-  db: KobeDb,
+  db: KaijuDb,
   connectorId: string,
   recipientId: string,
   windowMs: number,
@@ -338,7 +338,7 @@ async function rateLimited(
   return rows.rows.length > 0;
 }
 
-const record = (db: KobeDb, event: DriftEvent, recipient: DriftRecipient, emailed: boolean) =>
+const record = (db: KaijuDb, event: DriftEvent, recipient: DriftRecipient, emailed: boolean) =>
   db.transaction((tx) =>
     recordAudit(tx, {
       action: "mcp.connector.drift_notified",

@@ -1,5 +1,5 @@
-import type { AgentDefinition, AgentFrontmatter } from "@kobe/agent-file";
-import { AGENT_SLUG_MAX, isDangerousMode } from "@kobe/agent-file";
+import type { AgentDefinition, AgentFrontmatter } from "@kaiju/agent-file";
+import { AGENT_SLUG_MAX, isDangerousMode } from "@kaiju/agent-file";
 import {
   and,
   eq,
@@ -9,10 +9,10 @@ import {
   teamAgents,
   withTeam,
   type AgentStatus,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   pgCodeOf,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { z } from "zod";
 import { recordAudit } from "../audit/record.js";
 import type { AgentScope } from "./access.js";
@@ -86,7 +86,7 @@ export type Row = Omit<AgentRecord, "scope" | "frontmatter"> & {
 export const toRecord = (scope: AgentScope, row: Row): AgentRecord => ({
   ...row,
   scope,
-  // Written only after validation by @kobe/agent-file.
+  // Written only after validation by @kaiju/agent-file.
   frontmatter: row.frontmatter as AgentFrontmatter,
 });
 
@@ -112,13 +112,17 @@ export const auditTeam = (location: AgentLocation) =>
   location.scope === "team" ? location.teamId : null;
 
 /** Runs `fn` in the right transaction: team-scoped (RLS) for team agents, plain otherwise. */
-export function inLocation<T>(db: KobeDb, location: AgentLocation, fn: (tx: KobeTx) => Promise<T>) {
+export function inLocation<T>(
+  db: KaijuDb,
+  location: AgentLocation,
+  fn: (tx: KaijuTx) => Promise<T>,
+) {
   return location.scope === "team"
     ? withTeam(db, location.teamId, fn)
     : db.transaction((tx) => fn(tx));
 }
 
-export async function listAgents(db: KobeDb, location: AgentLocation): Promise<AgentRecord[]> {
+export async function listAgents(db: KaijuDb, location: AgentLocation): Promise<AgentRecord[]> {
   const rows: Row[] =
     location.scope === "team"
       ? await withTeam(db, location.teamId, (tx) => tx.select(TEAM).from(teamAgents))
@@ -136,7 +140,7 @@ export async function listAgents(db: KobeDb, location: AgentLocation): Promise<A
  * caller's own personal agents, or a gallery agent. Anything else is "not found" (no oracle).
  */
 export async function findVisibleAgent(
-  db: KobeDb,
+  db: KaijuDb,
   caller: { teamId: string; userId: string },
   id: string,
 ): Promise<AgentRecord | null> {
@@ -149,7 +153,7 @@ export async function findVisibleAgent(
 }
 
 export async function findAgent(
-  db: KobeDb,
+  db: KaijuDb,
   location: AgentLocation,
   id: string,
 ): Promise<AgentRecord | null> {
@@ -193,7 +197,7 @@ export interface NewAgent {
 }
 
 export async function createAgent(
-  db: KobeDb,
+  db: KaijuDb,
   location: AgentLocation,
   input: NewAgent,
 ): Promise<Result<AgentRecord, CreateError>> {
@@ -211,7 +215,7 @@ export async function createAgent(
  * the roster entry atomically). `tx` must be the location's transaction (`withTeam` for team agents).
  */
 export async function insertAgent(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: AgentLocation,
   input: NewAgent,
 ): Promise<Result<AgentRecord, CreateError>> {
@@ -267,7 +271,7 @@ export async function insertAgent(
 
 /** `agent.dangerous_mode.changed` (AC1) when a write turns Dangerous mode on or off. */
 async function auditDangerousChange(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: AgentLocation,
   row: { readonly id: string; readonly slug: string },
   wasDangerous: boolean,
@@ -294,7 +298,7 @@ function requireOwner(input: NewAgent): string {
 }
 
 async function takenSlugs(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: AgentLocation,
 ): Promise<{ slug: string; archivedAt: Date | null }[]> {
   return location.scope === "team"
@@ -310,14 +314,14 @@ async function takenSlugs(
  * client's If-Match); the revision then moves on by one.
  */
 export async function updateAgent(
-  db: KobeDb,
+  db: KaijuDb,
   location: AgentLocation,
   id: string,
   definition: AgentDefinition,
   expectedRevision?: number,
   source: Exclude<AgentSource, "fork" | "adopt"> = "json",
   /** Runs in the same transaction after a successful update (KOBE-494: the Customized mark). */
-  afterWrite?: (tx: KobeTx) => Promise<void>,
+  afterWrite?: (tx: KaijuTx) => Promise<void>,
 ): Promise<Result<AgentRecord, UpdateError>> {
   const set = {
     frontmatter: definition.frontmatter,
@@ -389,7 +393,7 @@ export async function updateAgent(
  * delete of one agent serialize on it. Null when it doesn't exist in `location`.
  */
 export async function lockAgent(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: AgentLocation,
   id: string,
 ): Promise<AgentRecord | null> {
@@ -406,7 +410,7 @@ export async function lockAgent(
 
 /** Suspends or reactivates an agent (inventory, D19); null when it doesn't exist. */
 export async function setAgentStatus(
-  db: KobeDb,
+  db: KaijuDb,
   location: AgentLocation,
   id: string,
   status: AgentStatus,

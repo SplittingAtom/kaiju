@@ -1,5 +1,5 @@
-import { virtualKeyContext, type GatewayPrincipal, type SecretBox } from "@kobe/db";
-import type { ThinkingPolicy } from "@kobe/protocol";
+import { virtualKeyContext, type GatewayPrincipal, type SecretBox } from "@kaiju/db";
+import type { ThinkingPolicy } from "@kaiju/protocol";
 import { TtlCache } from "./cache.js";
 import { thinkingPolicies } from "./thinking.js";
 

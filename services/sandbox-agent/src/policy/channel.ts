@@ -1,6 +1,6 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import type { Duplex } from "node:stream";
-import { idSchema, parseJsonStrict, toolInputSchema } from "@kobe/protocol";
+import { idSchema, parseJsonStrict, toolInputSchema } from "@kaiju/protocol";
 import { z } from "zod";
 import { LineSplitter, encodeJsonl } from "../jsonl.js";
 import {

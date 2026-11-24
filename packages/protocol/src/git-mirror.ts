@@ -12,7 +12,7 @@ import { GIT_CONNECTION_PROVIDERS } from "./git-connections.js";
  * shape here carries a credential.
  */
 
-/** The repository on the host as Kaiju last saw it (repeats `@kobe/db`'s host states). */
+/** The repository on the host as Kaiju last saw it (repeats `@kaiju/db`'s host states). */
 export const GIT_REPO_HOST_STATES = ["active", "archived", "deleted", "unreachable"] as const;
 export type GitRepoHostState = (typeof GIT_REPO_HOST_STATES)[number];
 

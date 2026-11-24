@@ -6,7 +6,7 @@ import {
   submitMessageBodySchema,
   updateQueuedBodySchema,
   type ActorContext,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { refuseEvalThreadWrites } from "./eval-thread-guard.js";

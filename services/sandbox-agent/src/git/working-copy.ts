@@ -5,7 +5,7 @@ import {
   repoStatusFrameSchema,
   type RepoStatusFrame,
   type RunGitRepo,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 
 /**
  * The conversation's Repo as a real git working copy (KOBE-767, spec workspace-git G18, G19). When
@@ -39,7 +39,7 @@ export const REPO_STATUS_TIMEOUT_MS = 30_000;
 /** The script prints one short line; anything beyond this is cut and the line refused. */
 export const REPO_SCRIPT_MAX_OUTPUT = 4096;
 const COUNT_MAX = 10_000;
-const MARK = "KOBE-REPO-STATUS";
+const MARK = "KAIJU-REPO-STATUS";
 
 /**
  * Arguments: <dir> <clone url> <default branch> <fetch: 1|0>. Every git call's own output goes to
@@ -113,7 +113,7 @@ export function workingCopyDir(workspaceDir: string, repo: Pick<RunGitRepo, "slu
   return path.join(workspaceDir, REPO_WORKING_COPY_DIR, repo.slug);
 }
 
-/** `bash -c <script> kobe-repo <dir> <url> <branch> <fetch>`: no value is ever in the script. */
+/** `bash -c <script> kaiju-repo <dir> <url> <branch> <fetch>`: no value is ever in the script. */
 export function repoScriptArgs(
   workspaceDir: string,
   repo: RunGitRepo,
@@ -122,7 +122,7 @@ export function repoScriptArgs(
   return [
     "-c",
     REPO_SCRIPT,
-    "kobe-repo",
+    "kaiju-repo",
     workingCopyDir(workspaceDir, repo),
     repo.clone_url,
     repo.default_branch,

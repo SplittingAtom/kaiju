@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { recordModelUsage, type ModelUsageRecord } from "./models/index.js";
 import { teams, users, type UsageKind } from "./schema/index.js";
 import { withTeam } from "./with-team.js";
@@ -12,7 +12,7 @@ import { withTeam } from "./with-team.js";
  * on that spend and the other eval calls' live reservations, atomically under the team lock, and
  * ordinary calls neither count against it nor are judged by it.
  */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const team = randomUUID();
 const alice = randomUUID();
 const bob = randomUUID();
@@ -137,9 +137,9 @@ describe("the team eval cap in kobe_reserve_budget (KOBE-327)", () => {
 
 describe("the team eval cap: concurrency, periods, shares, settle (KOBE-327 review L5)", () => {
   const t2 = randomUUID();
-  let other: KobeDatabase;
+  let other: KaijuDatabase;
   const reserveIn = async (
-    db: KobeDatabase,
+    db: KaijuDatabase,
     who: string,
     call: string,
     tokens: number,

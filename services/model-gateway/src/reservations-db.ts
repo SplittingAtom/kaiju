@@ -1,4 +1,4 @@
-import { sql, type KobeDb } from "@kobe/db";
+import { sql, type KaijuDb } from "@kaiju/db";
 import {
   MEMBER_SHARE,
   type ReservationStore,
@@ -16,7 +16,7 @@ import {
  */
 export class DbReservations implements ReservationStore {
   constructor(
-    private readonly db: KobeDb,
+    private readonly db: KaijuDb,
     /** `salt`: the per-site secret the functions hash team and member keys with. */
     private readonly options: { readonly ttlMs: number; readonly salt: string },
   ) {}

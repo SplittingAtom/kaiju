@@ -4,7 +4,7 @@ import type {
   PolicyInput,
   PolicyReason,
   ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { appliedUserRule } from "../policy/rule-applied.js";
 import type { ConnectorExposure } from "../policy/gates.js";
 import { DECISION_CONCURRENCY, distinctSiblings, mapLimited } from "./fan-out.js";

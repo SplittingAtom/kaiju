@@ -4,8 +4,8 @@ import {
   splitItemReferences,
   splitSkillRequest,
   type ItemReference,
-} from "@kobe/protocol";
-import { messageMeta, type KobeMessageMeta, type Projection } from "./types";
+} from "@kaiju/protocol";
+import { messageMeta, type KaijuMessageMeta, type Projection } from "./types";
 /**
  * Where a new version of the prompt `messageId` branches from (Edit, Regenerate): its entry's
  * parent. For the first prompt that is Pi's root settings entry, so the new version is a sibling
@@ -53,7 +53,7 @@ export function branchPoint(
 /** `branchPoint` for a message whose metadata is at hand (no lookup). */
 export function branchPointOfMeta(
   projection: Projection,
-  meta: KobeMessageMeta | undefined,
+  meta: KaijuMessageMeta | undefined,
 ): BranchPoint | undefined {
   if (meta?.kind !== "user" || meta.pending || meta.parentEntryId === null) return undefined;
   if (!projection.loaded.has(meta.parentEntryId)) return undefined;

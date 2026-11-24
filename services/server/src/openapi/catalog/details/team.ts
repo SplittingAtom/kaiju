@@ -3,22 +3,22 @@ import {
   BUDGET_SCOPES,
   BUDGET_UNITS,
   EGRESS_PRESETS,
-  KOBE_MCP_MODES,
-  KOBE_MCP_TEAM_LEVELS,
+  KAIJU_MCP_MODES,
+  KAIJU_MCP_TEAM_LEVELS,
   TEAM_ROLES,
   UI_RESOURCE_PLACEMENTS,
   auditActorKind,
   connectorExposure,
   pinnedToolSchema,
-} from "@kobe/db";
-import { teamEvalCapSchema } from "@kobe/protocol";
+} from "@kaiju/db";
+import { teamEvalCapSchema } from "@kaiju/protocol";
 import { z } from "zod";
 import { TEAM_PERMISSIONS } from "../../../authz/permissions.js";
 import { memberDeleteSchema, memberSchema, teamSchema } from "../../../routes/budgets.js";
 import { callSchema, frameQuerySchema } from "../../../routes/team-apps.js";
 import {
   bodySchema as enableConnectorBodySchema,
-  kobeLevelSchema,
+  kaijuLevelSchema,
 } from "../../../routes/team-connectors.js";
 import { decisionBodySchema, headersBodySchema } from "../../../routes/team-egress.js";
 import { memberRoleSchema } from "../../../teams/schemas.js";
@@ -215,14 +215,14 @@ const teamConnector = obj({
   tools: arr(teamConnectorTool),
 });
 
-const KobeTeamConnector = untyped(
-  "KobeTeamConnector",
+const KaijuTeamConnector = untyped(
+  "KaijuTeamConnector",
   obj({
     kobe: obj({
       connector_id: nullable(uuid),
       name: nullable(str),
-      mode: oneOfStrings(...KOBE_MCP_MODES),
-      level: oneOfStrings(...KOBE_MCP_TEAM_LEVELS),
+      mode: oneOfStrings(...KAIJU_MCP_MODES),
+      level: oneOfStrings(...KAIJU_MCP_TEAM_LEVELS),
       docs_tools: arr(str),
       admin_tools: arr(
         obj({ pi_name: str, title: str, scope: oneOfStrings("team", "site"), read_only: bool }),
@@ -406,10 +406,10 @@ export const teamDetails: Readonly<Record<string, CatalogDetail>> = {
     response: untyped("TeamConnectorEnvelope", obj({ connector: teamConnector })),
     errors: ["404", "409", "422"],
   },
-  "get /v1/team/connectors/kobe": { response: KobeTeamConnector },
+  "get /v1/team/connectors/kobe": { response: KaijuTeamConnector },
   "put /v1/team/connectors/kobe": {
-    body: named("SetKobeTeamLevelBody", kobeLevelSchema),
-    response: KobeTeamConnector,
+    body: named("SetKaijuTeamLevelBody", kaijuLevelSchema),
+    response: KaijuTeamConnector,
     errors: ["409"],
   },
 

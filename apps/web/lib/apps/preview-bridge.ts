@@ -31,7 +31,7 @@ export function stubBridgeReply(data: unknown): Record<string, unknown> | undefi
       id: request.id,
       result: {
         protocolVersion: "2026-01-26",
-        hostInfo: { name: "kobe-preview", version: "1" },
+        hostInfo: { name: "kaiju-preview", version: "1" },
         hostCapabilities: {},
         hostContext: { displayMode: "inline", availableDisplayModes: ["inline"] },
       },

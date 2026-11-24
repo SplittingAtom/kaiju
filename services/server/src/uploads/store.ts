@@ -5,8 +5,8 @@ import {
   type UploadError,
   type UploadErrorCode,
   type UploadResponse,
-} from "@kobe/protocol";
-import { files, sql, withTeam, type KobeDb, type KobeTx, pgCodeOf } from "@kobe/db";
+} from "@kaiju/protocol";
+import { files, sql, withTeam, type KaijuDb, type KaijuTx, pgCodeOf } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";
 import { threadKey, type BlobStore } from "../retention/blobs.js";
@@ -43,7 +43,7 @@ export type UploadScanner = (object: {
 }) => Promise<ScanOutcome>;
 
 export interface UploadDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore;
   readonly settings: UploadSettings;
   readonly scan?: UploadScanner;
@@ -240,7 +240,7 @@ async function commit(
   s: Stored,
 ): Promise<UploadResponse> {
   const { teamId, userId } = caller;
-  return withTeam(deps.db, teamId, async (tx: KobeTx) => {
+  return withTeam(deps.db, teamId, async (tx: KaijuTx) => {
     if (!(await teamStorageAllows(tx, teamId, deps.settings.defaultQuotaBytes, s.size))) {
       throw new QuotaError();
     }

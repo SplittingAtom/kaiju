@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { agentFrontmatterSchema } from "@kobe/agent-file";
-import { agentScope, agentStatus, ORBIT_EVAL_STATUSES } from "@kobe/db";
-import { AGENT_MEMORY_SETTINGS, agentTransferSchema } from "@kobe/protocol";
+import { agentFrontmatterSchema } from "@kaiju/agent-file";
+import { agentScope, agentStatus, ORBIT_EVAL_STATUSES } from "@kaiju/db";
+import { AGENT_MEMORY_SETTINGS, agentTransferSchema } from "@kaiju/protocol";
 import { toolManifestSchema } from "../../../agents/manifest.js";
 import { skillManifestSchema } from "../../../skills/frozen.js";
 import { jsonSchemaOf, untyped } from "../build.js";

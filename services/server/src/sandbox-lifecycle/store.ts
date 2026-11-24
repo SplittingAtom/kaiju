@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx, type SandboxState } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx, type SandboxState } from "@kaiju/db";
 import type { SandboxTarget } from "../sandbox-wire/types.js";
 import { TEAM_IDLE_MINUTES } from "./idle.js";
 
@@ -17,7 +17,7 @@ import { TEAM_IDLE_MINUTES } from "./idle.js";
  * old claim is being deleted, and the wake waits until the rebuild has reset the row.
  */
 export async function beginWake(
-  db: KobeDb,
+  db: KaijuDb,
   target: SandboxTarget,
 ): Promise<SandboxState | "rebuilding" | undefined> {
   return withTeam(db, target.teamId, async (tx) => {
@@ -41,7 +41,7 @@ export async function beginWake(
 }
 
 /** When the sandbox last became `running` (the wake's start; KOBE-525 cold-start timing). */
-export async function wakeStartedAt(db: KobeDb, target: SandboxTarget): Promise<Date | null> {
+export async function wakeStartedAt(db: KaijuDb, target: SandboxTarget): Promise<Date | null> {
   return withTeam(db, target.teamId, async (tx) => {
     const row = await tx.execute<{ state: SandboxState; state_changed_at: Date | string }>(sql`
       SELECT state, state_changed_at FROM sandboxes
@@ -56,7 +56,7 @@ export async function wakeStartedAt(db: KobeDb, target: SandboxTarget): Promise<
  * its volume's node is up: any "node down since" observation ends (KOBE-739).
  */
 export async function recordSandboxIdentity(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: SandboxTarget,
   sandboxId: string,
   pvc: string,
@@ -76,7 +76,7 @@ export interface IdleCandidate {
  * (unlocked read; each candidate is re-checked under its row lock by {@link lockIfIdle}).
  */
 export async function idleCandidates(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   idleMinutes: number,
   limit: number,
@@ -91,7 +91,7 @@ export async function idleCandidates(
 }
 
 /** A team's `teams.settings` idle-minutes value (raw; validated by `resolveIdleMinutes`). */
-export async function teamIdleSetting(db: KobeDb, teamId: string): Promise<unknown> {
+export async function teamIdleSetting(db: KaijuDb, teamId: string): Promise<unknown> {
   const res = await db.execute<{ v: unknown }>(sql`
     SELECT settings -> ${TEAM_IDLE_MINUTES} AS v FROM teams WHERE id = ${teamId}`);
   return res.rows[0]?.v ?? undefined;
@@ -110,7 +110,7 @@ export interface LockedSandbox {
  * another replica holds the row (SKIP LOCKED: it is deciding or waking right now).
  */
 export async function lockIfIdle(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: SandboxTarget,
   idleMinutes: number,
   force: boolean,
@@ -151,7 +151,7 @@ export async function lockIfIdle(
 
 /** The recorded claim no longer exists: clear it (until the next wake records the current one). */
 export async function forgetSandboxIdentity(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: SandboxTarget,
   sandboxId: string,
 ): Promise<void> {
@@ -167,7 +167,7 @@ export async function forgetSandboxIdentity(
  * (`recordFlushProof`), bound to the connection closed here, sets it.
  */
 export async function markHibernated(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: SandboxTarget,
 ): Promise<string | undefined> {
   await tx.execute(sql`

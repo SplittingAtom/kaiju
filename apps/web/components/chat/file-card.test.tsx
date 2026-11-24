@@ -2,11 +2,11 @@
 import { cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { composer, openApp, streaming } from "./testing";
 
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const create = vi.fn(() => "blob:x");
 const revoke = vi.fn();
 
@@ -17,7 +17,7 @@ beforeEach(() => {
   revoke.mockClear();
   Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke });
   vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 

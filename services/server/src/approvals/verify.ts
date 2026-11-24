@@ -1,5 +1,5 @@
-import { authorizeApprovedCall, type VerifyFailure } from "@kobe/protocol/node";
-import { SYSTEM_ACTOR, withTeam, type KobeDb } from "@kobe/db";
+import { authorizeApprovedCall, type VerifyFailure } from "@kaiju/protocol/node";
+import { SYSTEM_ACTOR, withTeam, type KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import type { ApprovalKeyring } from "./keys.js";
@@ -12,7 +12,7 @@ import { consumeApprovalInTx, loadApprovalForCall, loadApprovalRecord, tokenOf }
  *
  * The proxy never trusts the sandbox for an approval: it finds the approval itself by
  * (team, run, tool_call_id) — the token never leaves the server side — and runs both halves of
- * `@kobe/protocol` approval.ts against **the input it is about to forward**:
+ * `@kaiju/protocol` approval.ts against **the input it is about to forward**:
  * 1. stateless: token binding (team, run, tool_call_id, tool) equals the call, key known, token
  *    unexpired, HMAC over `canonicalJson(input)` matches (constant time);
  * 2. stateful: the row is `allowed`, its MAC equals the token's, the run is active, and the
@@ -48,7 +48,7 @@ export interface ApprovalVerifier {
 }
 
 export function createApprovalVerifier(options: {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly keys: ApprovalKeyring | undefined;
   readonly now?: () => Date;
   readonly log?: Logger;

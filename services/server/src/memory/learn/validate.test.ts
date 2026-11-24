@@ -4,7 +4,7 @@ import {
   parseMemoryExtractorOutput,
   type MemoryExtractorCandidate,
   type MemoryExtractorOutput,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { extractorPromptInputSchema, type ExtractorPromptInput } from "./prompt/input.js";
 import { screenExtractorOutput, type ScreenedCandidate } from "./screen.js";

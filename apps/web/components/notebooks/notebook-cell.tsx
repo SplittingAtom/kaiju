@@ -6,7 +6,7 @@
  * Move, delete and add buttons act on the notebook (`notebook-view.tsx`).
  */
 import { lazy, Suspense, useState } from "react";
-import type { NotebookOutput } from "@kobe/protocol";
+import type { NotebookOutput } from "@kaiju/protocol";
 import { cellText, cellType, type Cell, type CellType } from "../../lib/notebooks/ipynb";
 import type { Execution } from "../../lib/notebooks/executions";
 import { Markdown } from "../chat/markdown";
@@ -99,7 +99,7 @@ function CodeCell(props: CellProps) {
     <>
       <div className="flex items-start gap-2">
         <div className="flex w-12 shrink-0 flex-col items-end gap-1 pt-1">
-          <span className="text-muted-foreground font-mono text-xs" data-kobe-exec-count="">
+          <span className="text-muted-foreground font-mono text-xs" data-kaiju-exec-count="">
             {count}
           </span>
           {props.showRun !== false && (
@@ -182,7 +182,7 @@ export function NotebookCell(props: CellProps) {
   return (
     <section
       aria-label={`Cell ${props.number} (${label})`}
-      data-kobe-cell={typeof props.cell.id === "string" ? props.cell.id : ""}
+      data-kaiju-cell={typeof props.cell.id === "string" ? props.cell.id : ""}
       className="flex flex-col gap-1 rounded-md border p-2"
     >
       <CellActions {...props} label={label} />

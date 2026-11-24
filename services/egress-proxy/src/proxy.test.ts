@@ -7,11 +7,15 @@ import {
   type Server as NetServer,
   type Socket,
 } from "node:net";
-import { generateSessionKeyPair, signSessionToken, signSiteEgressToken } from "@kobe/session-token";
-import { InMemorySpanExporter, initTelemetry } from "@kobe/telemetry";
+import {
+  generateSessionKeyPair,
+  signSessionToken,
+  signSiteEgressToken,
+} from "@kaiju/session-token";
+import { InMemorySpanExporter, initTelemetry } from "@kaiju/telemetry";
 import { pino } from "pino";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
 import { AddressPolicy } from "./address-policy.js";
 import type { EgressDecision } from "./allowlist.js";
 import { egressTokenVerifier, siteTokenVerifier } from "./auth.js";
@@ -197,7 +201,7 @@ async function openConnect(target: string, auth?: string): Promise<Opened> {
   return { socket, head: buf };
 }
 
-const auth = () => basic("kobe", token());
+const auth = () => basic("kaiju", token());
 const status = (head: string) => head.split("\r\n")[0];
 const settle = () => new Promise((r) => setTimeout(r, 50));
 
@@ -633,7 +637,7 @@ describe("revocation of open tunnels", () => {
   it("closes a tunnel when the token that opened it expires, and at the maximum age", async () => {
     const tunnels = new TunnelRegistry(deps.policy, deps.logger);
     await start({ tunnels });
-    const short = await openTunnel(basic("kobe", token("kobe.egress-proxy", KEY, 2)));
+    const short = await openTunnel(basic("kaiju", token("kobe.egress-proxy", KEY, 2)));
     const t0 = Date.now();
     await once(short, "close");
     expect(Date.now() - t0).toBeLessThan(3_500);

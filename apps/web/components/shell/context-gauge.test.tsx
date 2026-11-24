@@ -2,7 +2,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { composer, openApp, streaming } from "../chat/testing";
 import { ContextGauge } from "./context-gauge";
@@ -14,11 +14,11 @@ import { IconActionProvider } from "./icon-action";
  * denominator: the
  * thread model's context window (KOBE-210).
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push(
     {
       alias: "kimi",
@@ -208,9 +208,9 @@ describe("under the composer (KOBE-418 ac-5)", () => {
     expect(document.querySelector("header")?.contains(gauge)).toBe(false);
     expect(row.contains(gauge)).toBe(true);
     // Below the composer's box, in the same column.
-    const box = must(document.querySelector("[data-kobe-composer-box]"));
+    const box = must(document.querySelector("[data-kaiju-composer-box]"));
     expect(box.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(row.closest("[data-kobe-composer]")).not.toBeNull();
+    expect(row.closest("[data-kaiju-composer]")).not.toBeNull();
     // The gauge is the row's last item, pushed to its end.
     const slot = must(row.querySelector<HTMLElement>("[data-composer-gauge]"));
     expect(slot.contains(gauge)).toBe(true);

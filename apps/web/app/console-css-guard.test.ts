@@ -37,13 +37,13 @@ function generated(node: ChildNode): boolean {
   if (node.type !== "atrule") return false;
   if (node.name === "layer") return ["theme", "utilities", "properties"].includes(node.params);
   if (node.name === "property") return node.params.startsWith("--tw-");
-  // Tailwind's and tw-animate's keyframes (spin, pulse, enter, exit, …); Kaiju's start with kobe-.
-  if (node.name === "keyframes") return !node.params.startsWith("kobe-");
+  // Tailwind's and tw-animate's keyframes (spin, pulse, enter, exit, …); Kaiju's start with kaiju-.
+  if (node.name === "keyframes") return !node.params.startsWith("kaiju-");
   return false;
 }
 
 /** How the chat's rules leave a console root (a My area page beside the thread) alone. */
-const LEFT_OUT = ":where(:not([data-kobe-console], [data-kobe-console] *))";
+const LEFT_OUT = ":where(:not([data-kaiju-console], [data-kaiju-console] *))";
 /** A selector on one line, without the formatter's spaces inside parentheses. */
 const flat = (s: string) => s.replace(/\s+/g, " ").replace(/\(\s+/g, "(").replace(/\s+\)/g, ")");
 
@@ -113,17 +113,17 @@ describe("Tailwind on the consoles (KOBE-294)", () => {
   it("every rule of the console stylesheet is scoped to the console root", () => {
     const sels = selectors(own(consoles));
     expect(sels.length).toBeGreaterThan(0);
-    expect(sels.filter((s) => !s.includes("[data-kobe-console]"))).toEqual([]);
+    expect(sels.filter((s) => !s.includes("[data-kaiju-console]"))).toEqual([]);
   });
 
   it("the chat stylesheet names the console root only to leave it out", () => {
     // A My area page beside the thread (KOBE-424) is a console root inside the chat root.
     const named = selectors(own(chat))
       .map(flat)
-      .filter((s) => s.includes("data-kobe-console"));
+      .filter((s) => s.includes("data-kaiju-console"));
     expect(named.length).toBeGreaterThan(0);
     for (const s of named) {
-      expect(s.replaceAll(LEFT_OUT, ""), s).not.toContain("data-kobe-console");
+      expect(s.replaceAll(LEFT_OUT, ""), s).not.toContain("data-kaiju-console");
     }
   });
 
@@ -132,7 +132,7 @@ describe("Tailwind on the consoles (KOBE-294)", () => {
     // The composer anchor names a chat-only element: nothing of a console page matches it.
     const scoped = selectors(base && base.type === "atrule" ? (base.nodes ?? []) : [])
       .map(flat)
-      .filter((s) => s.startsWith("[data-kobe-chat]") && !s.includes("[data-kobe-composer-box]"));
+      .filter((s) => s.startsWith("[data-kaiju-chat]") && !s.includes("[data-kaiju-composer-box]"));
     expect(scoped.length).toBeGreaterThan(5);
     expect(scoped.filter((s) => !s.includes(LEFT_OUT))).toEqual([]);
   });
@@ -155,20 +155,20 @@ describe("Tailwind on the consoles (KOBE-294)", () => {
 
   it("the console base rules for plain links and focus stay (content relies on them)", () => {
     const sels = selectors(own(consoles));
-    expect(sels).toContain("[data-kobe-console] a");
-    expect(sels).toContain("[data-kobe-console] :focus-visible");
+    expect(sels).toContain("[data-kaiju-console] a");
+    expect(sels).toContain("[data-kaiju-console] :focus-visible");
   });
 });
 
 describe("cascade layers (KOBE-294)", () => {
-  const ORDER = "@layer properties, theme, base, kobe-legacy, components, utilities;";
+  const ORDER = "@layer properties, theme, base, kaiju-legacy, components, utilities;";
 
   it("the root layout's stylesheet declares the order first, so it never depends on load order", () => {
-    // `kobe-legacy` held the consoles' CSS modules until KOBE-296 and is empty now; it stays
+    // `kaiju-legacy` held the consoles' CSS modules until KOBE-296 and is empty now; it stays
     // declared so the chat's compiled layer order (pinned above) does not change.
     expect(withoutComments(read("app/theme.css")).trimStart().startsWith(ORDER)).toBe(true);
     expect(withoutComments(read("app/tailwind.css"))).toContain(
-      "@layer theme, base, kobe-legacy, components, utilities;",
+      "@layer theme, base, kaiju-legacy, components, utilities;",
     );
   });
 });

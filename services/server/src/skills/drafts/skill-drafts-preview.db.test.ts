@@ -72,7 +72,7 @@ const saveVersion = async (
 };
 
 beforeAll(async () => {
-  h = await openHarness({ blobs: { objects, prefix: "kobe/" } });
+  h = await openHarness({ blobs: { objects, prefix: "kaiju/" } });
   const ids = await Promise.all(
     ["author", "builder", "member", "outsider"].map((n) => h.createUser(`${n}@preview.test`)),
   );

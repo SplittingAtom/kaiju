@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { notebookCompletionResultSchema } from "@kobe/protocol";
-import type { NotebookCompletionFrame, NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
+import { notebookCompletionResultSchema } from "@kaiju/protocol";
+import type { NotebookCompletionFrame, NotebookExecuteFrame } from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import { KernelManager } from "./manager.js";
 import { fakeLauncher } from "./testing/fake-bridge.js";

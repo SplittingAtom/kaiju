@@ -60,7 +60,7 @@ function Entry({
   return (
     <li
       className="flex flex-wrap items-center gap-x-2 border-b py-0.5"
-      data-kobe-log-entry={exec.execId}
+      data-kaiju-log-entry={exec.execId}
       data-status={exec.finished?.status ?? "running"}
     >
       <button

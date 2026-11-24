@@ -98,7 +98,7 @@ function ValueCell({
   return (
     <span className="flex min-w-0 flex-col">
       {summary !== "" && <span className="text-muted-foreground">{summary}</span>}
-      <span className="truncate font-mono" data-kobe-var-value={v.name}>
+      <span className="truncate font-mono" data-kaiju-var-value={v.name}>
         {reprText(v, ROW_REPR_CHARS)}
       </span>
       {v.hidden === "keys" && (
@@ -156,7 +156,7 @@ function Row({
   const hidden = withheld || (isSensitive(v) && !view.shown.includes(v.name));
   return (
     <>
-      <tr className="border-b align-top" data-kobe-variable={v.name}>
+      <tr className="border-b align-top" data-kaiju-variable={v.name}>
         <td className="py-0.5 pe-2">
           <button
             type="button"
@@ -220,7 +220,7 @@ function Status({
   }
   if (lines.length === 0) return null;
   return (
-    <p role="status" className="text-muted-foreground m-0 text-xs" data-kobe-variables-status="">
+    <p role="status" className="text-muted-foreground m-0 text-xs" data-kaiju-variables-status="">
       {lines.join(" ")}
     </p>
   );
@@ -313,7 +313,7 @@ export function VariablesPanel({
   }
   const others = snapshot?.other ?? [];
   return (
-    <div className="flex flex-col gap-1.5" data-kobe-variables="">
+    <div className="flex flex-col gap-1.5" data-kaiju-variables="">
       <div className="flex flex-wrap items-center gap-1">
         <input
           type="search"

@@ -8,7 +8,7 @@ import { createFileLinksApi, type FileLinksApi } from "../threads/file-links";
 
 /** One `app_context` part as sent (KOBE-439). */
 export type AppContextWire = ReturnType<typeof appContextBody>[number];
-import type { ItemReference, MessageViewing, ThinkingLevel } from "@kobe/protocol";
+import type { ItemReference, MessageViewing, ThinkingLevel } from "@kaiju/protocol";
 import type { SyncConflictView } from "../files/sync-conflicts";
 import type { FileEntry } from "../files/api";
 import { proposalExtras, type ProposalView } from "../files/editor-state";
@@ -23,7 +23,7 @@ import type {
   ThreadContextMemories,
   ThreadEgressBlockedResponse,
   ThreadLineageResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ArtifactDetailView, ArtifactSummaryView } from "./artifacts";
 import type { BudgetStatus } from "../admin/api/budgets";
 import type { RunUsage, ThreadUsage } from "../admin/api/usage";

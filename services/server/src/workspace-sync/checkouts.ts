@@ -1,6 +1,6 @@
-import { sql, type KobeTx } from "@kobe/db";
-import { PROJECT_WORKSPACE_DIR } from "@kobe/protocol";
-import { type WorkspaceCheckoutRef } from "@kobe/protocol/sandbox-wire";
+import { sql, type KaijuTx } from "@kaiju/db";
+import { PROJECT_WORKSPACE_DIR } from "@kaiju/protocol";
+import { type WorkspaceCheckoutRef } from "@kaiju/protocol/sandbox-wire";
 import type { WorkspaceOwner } from "./keys.js";
 
 /**
@@ -14,7 +14,7 @@ const AREA = `${PROJECT_WORKSPACE_DIR}/`;
 
 /** The caller's checkouts with the slug and the base's seq (the sync pull's `checkouts`). */
 export async function checkoutRefs(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
 ): Promise<WorkspaceCheckoutRef[]> {
   const res = await tx.execute<{ project_id: string; slug: string; seq: number | null }>(sql`
@@ -33,7 +33,7 @@ export async function checkoutRefs(
 
 /** The slugs of the caller's checkouts. */
 export async function checkoutSlugs(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
 ): Promise<ReadonlySet<string>> {
   return new Set((await checkoutRefs(tx, owner)).map((r) => r.slug));
@@ -55,7 +55,7 @@ export function checkoutOf(path: string, slugs: ReadonlySet<string>): string | u
  * write racing a Discard or a lost `edit` is refused instead of landing in a relocked folder.
  */
 export async function checkoutsHold(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   paths: readonly string[],
 ): Promise<boolean> {

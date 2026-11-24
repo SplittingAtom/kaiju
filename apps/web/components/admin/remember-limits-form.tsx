@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { REMEMBER_SCOPE_LABELS, REMEMBER_SCOPES, type RememberScope } from "@kobe/protocol";
+import { REMEMBER_SCOPE_LABELS, REMEMBER_SCOPES, type RememberScope } from "@kaiju/protocol";
 import type { ApiResult } from "../../lib/api/client";
 import type { RememberLimits } from "../../lib/admin/api/remember";
 import { Button, Checkbox, ChoiceGroup, Field, Select } from "../ui/console";

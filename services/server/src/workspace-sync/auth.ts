@@ -1,5 +1,5 @@
-import { eq, getMembership, users, type KobeDb } from "@kobe/db";
-import type { SessionTokenClaims } from "@kobe/protocol";
+import { eq, getMembership, users, type KaijuDb } from "@kaiju/db";
+import type { SessionTokenClaims } from "@kaiju/protocol";
 import type { SandboxLiveness, SessionTokenVerifier } from "../sandbox-wire/types.js";
 
 /**
@@ -34,7 +34,7 @@ export interface SandboxAuthenticator {
 export const AUTH_CACHE_MS = 5_000;
 
 export function createSandboxAuthenticator(options: {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly verify: SessionTokenVerifier;
   readonly liveness: SandboxLiveness;
   readonly cacheMs?: number;

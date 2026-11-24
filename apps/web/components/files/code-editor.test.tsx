@@ -83,7 +83,7 @@ describe("CodeEditor notebook cell mode (KOBE-465)", () => {
     );
     const view = viewIn(container);
     expect(view.state.facet(EditorView.cspNonce)).toBe(NONCE);
-    const host = must(container.querySelector("[data-kobe-code-editor]"));
+    const host = must(container.querySelector("[data-kaiju-code-editor]"));
     expect(host.className).not.toContain("min-h-80");
     view.contentDOM.dispatchEvent(
       new KeyboardEvent("keydown", { key: "Enter", shiftKey: true, bubbles: true }),
@@ -368,7 +368,7 @@ describe("CodeEditor completion (KOBE-808)", () => {
     );
     const view = viewIn(container);
     await ready(view);
-    const indicator = must(container.querySelector("[data-kobe-kernel-completion]"));
+    const indicator = must(container.querySelector("[data-kaiju-kernel-completion]"));
     expect(indicator.textContent).toBe("Kernel completion: on while the kernel runs");
     act(() => view.dispatch({ selection: { anchor: 3 } }));
     act(() => void startCompletion(view));
@@ -388,10 +388,10 @@ describe("CodeEditor completion (KOBE-808)", () => {
     await waitFor(() =>
       expect(indicator.textContent).toBe("Kernel completion off: your sandbox is asleep"),
     );
-    expect(indicator.getAttribute("data-kobe-kernel-completion")).toBe("asleep");
+    expect(indicator.getAttribute("data-kaiju-kernel-completion")).toBe("asleep");
     // The visible line never announces; screen readers hear the off reason once.
     expect(indicator.getAttribute("aria-live")).toBe("off");
-    const announce = must(container.querySelector("[data-kobe-kernel-announce]"));
+    const announce = must(container.querySelector("[data-kaiju-kernel-announce]"));
     expect(announce.getAttribute("aria-live")).toBe("polite");
     expect(announce.textContent).toBe("Kernel completion off: your sandbox is asleep");
   });
@@ -406,6 +406,6 @@ describe("CodeEditor completion (KOBE-808)", () => {
     );
     act(() => kernel.setRunning(true));
     act(() => kernel.setRunning(false));
-    expect(must(container.querySelector("[data-kobe-kernel-announce]")).textContent).toBe("");
+    expect(must(container.querySelector("[data-kaiju-kernel-announce]")).textContent).toBe("");
   });
 });

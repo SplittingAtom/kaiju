@@ -367,7 +367,7 @@ async function pendingOf(c, runId, timeoutMs = 120_000) {
 
 async function approvalRow(teamId, approvalId) {
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   try {
     const rows = await withTeam(database.db, teamId, (tx) =>
       tx.execute(sql`SELECT status, token_kid IS NOT NULL AND input_hmac IS NOT NULL AS signed,
@@ -439,7 +439,7 @@ async function u6() {
     const row = await approvalRow(config.user.teamId, b.approval_id);
     out("ttl_seconds", row.ttl ?? "-");
     const database = await db();
-    const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+    const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
     try {
       await withTeam(database.db, config.user.teamId, (tx) =>
         tx.execute(
@@ -511,7 +511,7 @@ async function u14() {
   out("schedule", `${made.status}:${sid ?? "-"}`);
   if (!sid) return;
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   const t = config.user.teamId;
   const one = async (q) => (await withTeam(database.db, t, (tx) => tx.execute(q))).rows[0] ?? {};
   try {

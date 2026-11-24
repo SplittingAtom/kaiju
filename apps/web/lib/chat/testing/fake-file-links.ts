@@ -1,5 +1,5 @@
 /**
- * Thread–file links for `FakeKobe` (KOBE-612, spec thread-file-map): `GET /v1/threads/file-links`,
+ * Thread–file links for `FakeKaiju` (KOBE-612, spec thread-file-map): `GET /v1/threads/file-links`,
  * `GET /v1/threads/{id}/file-links` and `GET /v1/workspace/file-threads` from one set of links a
  * test adds with `link`. Wire casing.
  * Reads are recorded (`linkReads`, `fileReads`) so tests can assert batching.

@@ -2,12 +2,12 @@
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import type { UploadOutcome, UploadRequest, UploadTransport } from "../../lib/chat/uploads";
 import { chatRequests, composer, crushedIconButtons, openApp } from "./testing";
 
 /** Composer attachments (KOBE-145): pick or drop, progress, remove, errors, file_ids on send. */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 let calls: { request: UploadRequest; finish: (o: UploadOutcome) => void }[];
 let n: number;
 
@@ -28,7 +28,7 @@ const okOutcome = (file: File): UploadOutcome => ({
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   calls = [];
   n = 0;
   vi.stubGlobal("fetch", fake.fetch);

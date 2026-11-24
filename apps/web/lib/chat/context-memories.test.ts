@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ThreadContextMemoryItem } from "@kobe/protocol";
+import type { ThreadContextMemoryItem } from "@kaiju/protocol";
 import { memoryLanes, readThreadContextMemories } from "./context-memories";
 
 const item = (

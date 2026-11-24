@@ -1,5 +1,5 @@
 import { and, asc, eq, gt, sql } from "drizzle-orm";
-import type { KobeDb } from "./client.js";
+import type { KaijuDb } from "./client.js";
 import type { TeamRole } from "./memberships.js";
 import { teamInvitations, users } from "./schema/index.js";
 import { scanTeams } from "./team-scan.js";
@@ -19,7 +19,7 @@ export interface PendingTeamInvitation {
  * team's RLS in turn (see scanTeams). The caller must pass the signed-in user's own, verified email.
  */
 export async function listTeamInvitationsFor(
-  db: KobeDb,
+  db: KaijuDb,
   email: string,
 ): Promise<PendingTeamInvitation[]> {
   const address = email.trim().toLowerCase();

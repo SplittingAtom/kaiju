@@ -1,4 +1,4 @@
-import type { ModelProviderKind, ThinkingLevelValue, modelCatalog } from "@kobe/db";
+import type { ModelProviderKind, ThinkingLevelValue, modelCatalog } from "@kaiju/db";
 import {
   THINKING_CONTROLS_WITHOUT_OFF,
   effectiveThinkingLevel,
@@ -15,11 +15,11 @@ import {
   type ThinkingControl,
   type ThinkingLevel,
   type ThinkingPolicy,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { z } from "zod";
 
 /**
- * Thinking settings on the server (KOBE-260; rules in `@kobe/protocol` thinking.ts): the site
+ * Thinking settings on the server (KOBE-260; rules in `@kaiju/protocol` thinking.ts): the site
  * catalog's per-model policy, a team's narrowing, and the level a run starts with.
  */
 

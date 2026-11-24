@@ -73,7 +73,7 @@ export * from "./site-break-glass.js";
 export * from "./semantic-memory-learning.js";
 export * from "./memory-project-suggestions.js";
 export * from "./site-memory-proposals.js";
-export * from "./kobe-rate-limits.js";
+export * from "./kaiju-rate-limits.js";
 export * from "./git.js";
 export * from "./git-conversions.js";
 export * from "./git-repo-work.js";

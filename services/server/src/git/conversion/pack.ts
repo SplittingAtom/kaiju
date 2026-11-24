@@ -89,7 +89,7 @@ export async function writeReceivePack(req: ReceivePackRequest): Promise<number>
     await write(chunk);
   };
   await write(
-    pktLine(`${req.oldOid ?? ZERO} ${req.newOid} ${req.ref}\0report-status agent=kobe\n`),
+    pktLine(`${req.oldOid ?? ZERO} ${req.newOid} ${req.ref}\0report-status agent=kaiju\n`),
   );
   await write(Buffer.from("0000"));
   const header = Buffer.alloc(12);

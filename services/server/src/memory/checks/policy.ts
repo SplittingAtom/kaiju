@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { lintViews } from "./text.js";
 
 /**
@@ -58,7 +58,7 @@ export function policyConflicts(
  * itself).
  */
 export async function readPolicyAndLexemes(
-  tx: KobeTx,
+  tx: KaijuTx,
   statement: string,
   except: readonly string[],
 ): Promise<{ readonly policies: PolicyEntry[]; readonly lexemes: string[] }> {
@@ -93,7 +93,7 @@ export async function readPolicyAndLexemes(
  * one query (`unnest … WITH ORDINALITY`), keyed by statement.
  */
 export async function readPolicyAndLexemesMany(
-  tx: KobeTx,
+  tx: KaijuTx,
   statements: readonly string[],
 ): Promise<{ readonly policies: PolicyEntry[]; readonly lexemes: Map<string, string[]> }> {
   const { policies } = await readPolicyAndLexemes(tx, "", []);

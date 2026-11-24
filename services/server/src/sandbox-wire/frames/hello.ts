@@ -1,7 +1,7 @@
-import { type HelloFrame } from "@kobe/protocol/sandbox-wire";
-import { withTeam } from "@kobe/db";
+import { type HelloFrame } from "@kaiju/protocol/sandbox-wire";
+import { withTeam } from "@kaiju/db";
 
-import { recordSpan, telemetryState } from "@kobe/telemetry";
+import { recordSpan, telemetryState } from "@kaiju/telemetry";
 import type { Logger } from "pino";
 import { wakeStartedAt } from "../../sandbox-lifecycle/store.js";
 import { agentHelloSpan } from "../../sandbox-lifecycle/timing.js";

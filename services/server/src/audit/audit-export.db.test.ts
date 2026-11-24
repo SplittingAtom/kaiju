@@ -2,7 +2,7 @@ import http from "node:http";
 import net from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
-import { SYSTEM_ACTOR, auditStandalone, type AuditEntry } from "@kobe/db";
+import { SYSTEM_ACTOR, auditStandalone, type AuditEntry } from "@kaiju/db";
 import { AUDIT_FORWARD_LOCK, AuditForwarder, backoffMs } from "./forward/forwarder.js";
 import { otlpSink } from "./forward/otlp.js";
 import { forwardingSecrets } from "./forward/redact.js";
@@ -91,7 +91,7 @@ describe("export", () => {
     expect(csv.status).toBe(200);
     expect(csv.headers.get("content-type")).toContain("text/csv");
     expect(csv.headers.get("content-disposition")).toMatch(
-      /^attachment; filename="kobe-audit-.*\.csv"$/,
+      /^attachment; filename="kaiju-audit-.*\.csv"$/,
     );
     expect(csv.text.split("\r\n")[0]).toBe(
       "seq,id,at,team_id,actor_kind,actor_id,actor_name,actor_email,action,target,ip,user_agent,prev_hash,hash",

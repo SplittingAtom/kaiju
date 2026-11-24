@@ -14,13 +14,13 @@ export interface ClientRegistration {
 export const CLIENT_METADATA_PATH = "/v1/oauth/client-metadata.json";
 export const CALLBACK_PATH = "/v1/connector-grants/oauth/callback";
 
-export interface KobeOrigin {
+export interface KaijuOrigin {
   readonly origin: string;
   readonly clientMetadataUrl: string;
   readonly redirectUri: string;
 }
 
-export function kobeOrigin(publicUrl: string): KobeOrigin {
+export function kaijuOrigin(publicUrl: string): KaijuOrigin {
   const origin = new URL(publicUrl).origin;
   return {
     origin,
@@ -30,12 +30,12 @@ export function kobeOrigin(publicUrl: string): KobeOrigin {
 }
 
 /** The Client ID Metadata Document (served publicly): a public client using PKCE. */
-export function clientMetadataDocument(kobe: KobeOrigin) {
+export function clientMetadataDocument(kaiju: KaijuOrigin) {
   return {
-    client_id: kobe.clientMetadataUrl,
+    client_id: kaiju.clientMetadataUrl,
     client_name: "Kaiju",
-    client_uri: kobe.origin,
-    redirect_uris: [kobe.redirectUri],
+    client_uri: kaiju.origin,
+    redirect_uris: [kaiju.redirectUri],
     grant_types: ["authorization_code", "refresh_token"],
     response_types: ["code"],
     token_endpoint_auth_method: "none",
@@ -52,16 +52,16 @@ const registrationSchema = z.object({
  * fetchable by the server); otherwise Dynamic Client Registration (RFC 7591), asking for a
  * confidential client when the server offers a secret-based method.
  */
-export const usesCimd = (info: AuthServerInfo, kobe: KobeOrigin): boolean =>
-  info.cimd && kobe.origin.startsWith("https://");
+export const usesCimd = (info: AuthServerInfo, kaiju: KaijuOrigin): boolean =>
+  info.cimd && kaiju.origin.startsWith("https://");
 
 export async function obtainClient(
   io: OauthIo,
   info: AuthServerInfo,
-  kobe: KobeOrigin,
+  kaiju: KaijuOrigin,
 ): Promise<ClientRegistration> {
-  if (usesCimd(info, kobe)) {
-    return { clientId: kobe.clientMetadataUrl, clientSecret: undefined };
+  if (usesCimd(info, kaiju)) {
+    return { clientId: kaiju.clientMetadataUrl, clientSecret: undefined };
   }
   if (!info.registrationEndpoint) throw new OauthError("oauth_unsupported");
   const confidential = info.tokenAuthMethods.includes("client_secret_basic");
@@ -73,8 +73,8 @@ export async function obtainClient(
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         client_name: "Kaiju",
-        client_uri: kobe.origin,
-        redirect_uris: [kobe.redirectUri],
+        client_uri: kaiju.origin,
+        redirect_uris: [kaiju.redirectUri],
         grant_types: ["authorization_code", "refresh_token"],
         response_types: ["code"],
         token_endpoint_auth_method: confidential ? "client_secret_basic" : "none",

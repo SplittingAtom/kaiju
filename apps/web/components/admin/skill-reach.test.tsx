@@ -50,7 +50,7 @@ const REACH = {
     agent("a-draft", "Drafted", { in_draft: true }),
     agent("a-solo", "Solo", { exclusive: true }),
     agent("a-locked", "Locked", { can_edit: false }),
-    agent("g-kobe", "Kobe", { scope: "gallery", can_edit: false }),
+    agent("g-kaiju", "Kobe", { scope: "gallery", can_edit: false }),
   ],
 };
 const OFFERED = {

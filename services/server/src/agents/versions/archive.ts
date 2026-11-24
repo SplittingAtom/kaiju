@@ -4,9 +4,9 @@ import {
   siteAgents,
   teamAgents,
   type AuditActor,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import {
   auditTeam,
@@ -34,7 +34,7 @@ export type Removed =
  * doesn't exist in `location`.
  */
 export async function deleteOrArchiveAgent(
-  db: KobeDb,
+  db: KaijuDb,
   location: AgentLocation,
   id: string,
   actor?: AuditActor,
@@ -68,7 +68,7 @@ export async function deleteOrArchiveAgent(
  * retiring gallery agents whose definition left the repo). Idempotent; null when it isn't there.
  */
 export async function archiveAgent(
-  db: KobeDb,
+  db: KaijuDb,
   location: AgentLocation,
   id: string,
   actor: AuditActor,
@@ -81,7 +81,7 @@ export async function archiveAgent(
 }
 
 async function archiveLocked(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: AgentLocation,
   agent: AgentRecord,
   actor: AuditActor | undefined,
@@ -100,7 +100,7 @@ async function archiveLocked(
 
 /** Brings an archived agent back (editable, publishable, pinnable). Null when it isn't there. */
 export async function unarchiveAgent(
-  db: KobeDb,
+  db: KaijuDb,
   location: AgentLocation,
   id: string,
 ): Promise<AgentRecord | null> {
@@ -119,7 +119,7 @@ export async function unarchiveAgent(
 }
 
 async function setArchived(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: AgentLocation,
   id: string,
   archivedAt: Date | null,

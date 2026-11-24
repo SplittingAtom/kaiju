@@ -2,7 +2,7 @@
 
 import { useCallback, useContext, useEffect, useState } from "react";
 import { MY_CONNECTOR_KEYS, listRailApps, type RailApps } from "../../lib/apps/app-cards";
-import { ChatSessionContext } from "../chat/kobe-runtime";
+import { ChatSessionContext } from "../chat/kaiju-runtime";
 import type { RailApi } from "./rail-state";
 import { RAIL_TAB_IDS } from "./rail-tabs";
 import { RailPickers } from "./rail-pickers";

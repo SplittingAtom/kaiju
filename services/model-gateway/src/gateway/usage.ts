@@ -1,5 +1,5 @@
-import type { ThinkingLevel } from "@kobe/protocol";
-import { contentAttributes, idAttributes, type Context, type RequestSpan } from "@kobe/telemetry";
+import type { ThinkingLevel } from "@kaiju/protocol";
+import { contentAttributes, idAttributes, type Context, type RequestSpan } from "@kaiju/telemetry";
 import type { CallContext } from "../seams.js";
 import type { UsageReading } from "../usage/meter.js";
 import type { GatewayOptions } from "./options.js";

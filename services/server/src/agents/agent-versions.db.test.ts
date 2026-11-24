@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { seedGalleryAgents } from "../gallery/seed.js";
 import { resolveAgentPin, resolvePinnedAgent } from "./versions.js";
 import { toolManifestSchema } from "./manifest.js";

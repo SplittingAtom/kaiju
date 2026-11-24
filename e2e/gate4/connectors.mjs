@@ -28,7 +28,7 @@ async function u7Setup() {
     exposure: "all",
   });
   out("team_enable", statusOf(enabled));
-  const { mcpServerSegment } = await import("/app/node_modules/@kobe/protocol/dist/index.js");
+  const { mcpServerSegment } = await import("/app/node_modules/@kaiju/protocol/dist/index.js");
   out("segment", mcpServerSegment(config.name));
   const tools = await owner.call("GET", `/v1/site/connectors/${connector.id}/tools`);
   out("tools", (tools.json.tools ?? []).map((t) => `${t.name}:${t.status}`).join(",") || "-");
@@ -91,7 +91,7 @@ async function u7Grant() {
  * never be in a sandbox. Printed base64 for the harness's scan (never shown).
  */
 async function u7Tokens() {
-  const kdb = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const kdb = await import("/app/node_modules/@kaiju/db/dist/index.js");
   const envelope = kdb.loadEnvelope(process.env, { info() {}, warn() {}, error() {} });
   const database = await db();
   let n = 0;

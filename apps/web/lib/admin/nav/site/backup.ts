@@ -7,7 +7,7 @@ export default defineSiteSection({
   group: "System",
   order: 30,
   minRole: "admin",
-  // `kobe backup`/`restore` are a CLI (KOBE-11); the page shows the last restore from the audit
+  // `kaiju backup`/`restore` are a CLI (KOBE-11); the page shows the last restore from the audit
   // log and the retention pause, plus the steps (KOBE-291).
   status: READY,
 });

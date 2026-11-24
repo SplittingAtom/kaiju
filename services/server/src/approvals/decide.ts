@@ -5,15 +5,15 @@ import {
   type ActorContext,
   type ApprovalResolutionBody,
   type ToolDescriptor,
-} from "@kobe/protocol";
-import { signApproval } from "@kobe/protocol/node";
-import { eq, sql, users, withTeam, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { signApproval } from "@kaiju/protocol/node";
+import { eq, sql, users, withTeam, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { insertUserAllowRule, type ApprovedCall } from "../policy/remember.js";
 import { readTeamRememberLimits } from "../policy/remember-limits-store.js";
 import { isViewedFileAsk, VIEWED_FILE_NOT_REMEMBERED } from "../policy/viewed-file-guard.js";
-import { isKobeAdminAsk, KOBE_ADMIN_NOT_REMEMBERED } from "../policy/kobe-admin-guard.js";
+import { isKaijuAdminAsk, KAIJU_ADMIN_NOT_REMEMBERED } from "../policy/kaiju-admin-guard.js";
 import { lockRunRow, lockThreadRow } from "../runs/store.js";
 import { notifyHintInTx } from "../sandbox-wire/bus.js";
 import { WIRE_DEFAULTS } from "../sandbox-wire/constants.js";
@@ -34,7 +34,7 @@ const STALE_CONNECTION_SECONDS = WIRE_DEFAULTS.staleConnectionMs / 1000;
  *   D8 gives no role the power to consent for someone else, and site admins can't read team
  *   content). Anyone else gets 404, as for a thread they can't see.
  * - **Allow** signs `HMAC(team, run, tool_call_id, tool, token expiry, canonical input)` with the
- *   site's approval key (`@kobe/protocol` approval.ts), over the canonical input stored when the
+ *   site's approval key (`@kaiju/protocol` approval.ts), over the canonical input stored when the
  *   approval was requested — the exact bytes the sandbox asked about. Built-in and kobe tools have
  *   no downstream verifier (the `policy.result` is the authorisation), so their approval is marked
  *   used at once; MCP approvals stay consumable once, by the MCP proxy (KOBE-58).
@@ -151,7 +151,7 @@ export async function decideApproval(
 
 /** The asking connection is still the sandbox's open, live one (`sandbox_connections`). */
 export async function askerConnected(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   connectionId: string,
@@ -170,8 +170,8 @@ function approvedCall(row: ApprovalRow, tool: ToolDescriptor | undefined): Appro
     throw new ApprovalError("remember_not_allowed", 403, VIEWED_FILE_NOT_REMEMBERED);
   }
   // KOBE-619: a Kaiju admin change is asked every time.
-  if (isKobeAdminAsk(row.reasons)) {
-    throw new ApprovalError("remember_not_allowed", 403, KOBE_ADMIN_NOT_REMEMBERED);
+  if (isKaijuAdminAsk(row.reasons)) {
+    throw new ApprovalError("remember_not_allowed", 403, KAIJU_ADMIN_NOT_REMEMBERED);
   }
   if (tool === undefined || tool.name !== row.tool) {
     throw new ApprovalError(
@@ -189,7 +189,7 @@ function approvedCall(row: ApprovalRow, tool: ToolDescriptor | undefined): Appro
 }
 
 /** The member's stored time zone (KOBE-289), for "until end of today"; null = UTC. */
-async function storedTimeZone(tx: KobeTx, userId: string): Promise<string | null> {
+async function storedTimeZone(tx: KaijuTx, userId: string): Promise<string | null> {
   const [row] = await tx
     .select({ timeZone: users.timeZone })
     .from(users)
@@ -198,7 +198,7 @@ async function storedTimeZone(tx: KobeTx, userId: string): Promise<string | null
 }
 
 async function remember(
-  tx: KobeTx,
+  tx: KaijuTx,
   actor: ActorContext,
   call: ApprovedCall,
   body: ApprovalResolutionBody,
@@ -256,7 +256,7 @@ async function remember(
  * locked thread, run and approval and checked it is pending, live and the caller's own.
  */
 export async function allowRowInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   keys: NonNullable<ApprovalContext["keys"]>,
   actor: ActorContext,
   row: ApprovalRow,
@@ -296,7 +296,7 @@ export async function allowRowInTx(
 
 /** `approval.resolved`, the broker's wake-up hint and `approval.decided`, for one decision. */
 async function resolvedInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   actor: ActorContext,
   row: ApprovalRow,
   decision: "allow" | "deny",

@@ -7,9 +7,9 @@ import {
   siteSettings,
   teams,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import type pg from "pg";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
@@ -20,7 +20,7 @@ import {
   pruneProjectHistory,
   type HistoryPruneCounts,
 } from "./project-history.js";
-import { PROJECT_HISTORY_MAX_COMMITS } from "@kobe/protocol";
+import { PROJECT_HISTORY_MAX_COMMITS } from "@kaiju/protocol";
 import { NO_ORPHANS, sweepOrphanObjects, type OrphanCounts } from "./orphans.js";
 import { expireOrphanUploads, type ExpiredUploads } from "../uploads/expire.js";
 import { DEFAULT_ORPHAN_HOURS } from "../uploads/settings.js";
@@ -176,7 +176,7 @@ export interface PassResult {
 }
 
 export interface PassDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** Object storage for released keys; without it they stay queued. */
   readonly blobs?: BlobStore | undefined;
   /** Hours before an upload without a thread is deleted (KOBE-143); default 24. */
@@ -194,7 +194,7 @@ type Reason = "retention" | "trash" | "offboarding";
 
 /** The `retention.purged` audit writer for one reason (counts only; last write of the batch). */
 export function purgeRecorder(teamId: string, reason: Reason, userId?: string) {
-  return async (tx: KobeTx, counts: PurgeBatchResult): Promise<void> => {
+  return async (tx: KaijuTx, counts: PurgeBatchResult): Promise<void> => {
     await recordAudit(tx, {
       action: "retention.purged",
       actor: SYSTEM_ACTOR,
@@ -214,7 +214,7 @@ export function purgeRecorder(teamId: string, reason: Reason, userId?: string) {
 }
 
 export function blobRecorder(teamId: string) {
-  return async (tx: KobeTx, counts: BlobDeletionCounts): Promise<void> => {
+  return async (tx: KaijuTx, counts: BlobDeletionCounts): Promise<void> => {
     await recordAudit(tx, {
       action: "retention.blobs_deleted",
       actor: SYSTEM_ACTOR,
@@ -225,7 +225,7 @@ export function blobRecorder(teamId: string) {
 }
 
 function compactionRecorder(teamId: string) {
-  return async (tx: KobeTx, counts: CompactionCounts): Promise<void> => {
+  return async (tx: KaijuTx, counts: CompactionCounts): Promise<void> => {
     await recordAudit(tx, {
       action: "retention.compacted",
       actor: SYSTEM_ACTOR,
@@ -254,7 +254,7 @@ function logOutcome(deps: PassDeps, teamId: string, step: string, outcome: Purge
 }
 
 /** The team's effective retention window in days (null: forever), read at the start of the step. */
-async function windowDays(db: KobeDb, teamId: string): Promise<number | null> {
+async function windowDays(db: KaijuDb, teamId: string): Promise<number | null> {
   return withTeam(
     db,
     teamId,
@@ -543,7 +543,7 @@ export function passDue(last: Date | null, now: Date, hourUtc: number): boolean 
   return since >= 20 * HOUR_MS && now.getUTCHours() === hourUtc;
 }
 
-async function readSetting(db: KobeDb, key: string): Promise<string | undefined> {
+async function readSetting(db: KaijuDb, key: string): Promise<string | undefined> {
   const [row] = await db
     .select({ value: siteSettings.value })
     .from(siteSettings)
@@ -551,7 +551,7 @@ async function readSetting(db: KobeDb, key: string): Promise<string | undefined>
   return row?.value;
 }
 
-async function writeSetting(db: KobeDb, key: string, value: string): Promise<void> {
+async function writeSetting(db: KaijuDb, key: string, value: string): Promise<void> {
   await db
     .insert(siteSettings)
     .values({ key, value })

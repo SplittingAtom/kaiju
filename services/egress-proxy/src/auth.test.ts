@@ -1,4 +1,8 @@
-import { generateSessionKeyPair, signSessionToken, signSiteEgressToken } from "@kobe/session-token";
+import {
+  generateSessionKeyPair,
+  signSessionToken,
+  signSiteEgressToken,
+} from "@kaiju/session-token";
 import { describe, expect, it } from "vitest";
 import { authenticate, egressTokenVerifier, siteTokenVerifier } from "./auth.js";
 
@@ -23,7 +27,7 @@ const THREAD = "9a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d";
 
 describe("authenticate", () => {
   it("accepts the egress token as Basic password or Bearer, and reads identity from it", () => {
-    for (const header of [basic("kobe", egressToken), `Bearer ${egressToken}`]) {
+    for (const header of [basic("kaiju", egressToken), `Bearer ${egressToken}`]) {
       expect(authenticate(header, verify)).toEqual({
         ok: true,
         identity: {
@@ -48,7 +52,7 @@ describe("authenticate", () => {
   it("refuses missing, malformed and invalid credentials", () => {
     expect(authenticate(undefined, verify)).toEqual({ ok: false, reason: "missing" });
     expect(authenticate("", verify)).toEqual({ ok: false, reason: "missing" });
-    for (const bad of ["Basic", "Basic !!!", basic("kobe", ""), "Digest x", ["a", "b"]]) {
+    for (const bad of ["Basic", "Basic !!!", basic("kaiju", ""), "Digest x", ["a", "b"]]) {
       expect(authenticate(bad, verify)).toEqual({ ok: false, reason: "malformed" });
     }
     expect(authenticate(`Bearer x${"a".repeat(9000)}`, verify)).toEqual({

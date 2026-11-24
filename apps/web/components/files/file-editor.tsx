@@ -267,7 +267,7 @@ export function FileEditor(props: FileEditorProps) {
       />
     ) : (
       <div
-        data-kobe-editor-body={mode}
+        data-kaiju-editor-body={mode}
         className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto"
       >
         <TextModeBody
@@ -290,7 +290,7 @@ export function FileEditor(props: FileEditorProps) {
       </div>
     );
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2" data-kobe-file-editor={path}>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2" data-kaiju-file-editor={path}>
       <EditorToolbar
         label={`${name} view`}
         leading={

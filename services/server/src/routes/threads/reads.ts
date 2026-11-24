@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { type TeamVariables } from "../../authz/middleware.js";
 import { pinnedVersionIsDangerous } from "../../policy/dangerous-mode.js";
 import { agentStatusOf, findPinnableAgent, latestPinnedVersion } from "../../agents/versions.js";
-import { KOBE_ADMIN_RESULT_HIDDEN } from "@kobe/protocol";
+import { KAIJU_ADMIN_RESULT_HIDDEN } from "@kaiju/protocol";
 import { readLineage } from "../../threads/lineage.js";
 import { findToolOutput, readOffloadedOutput } from "../../threads/entry-output.js";
 import { loadAdminResultGate } from "../../threads/admin-redaction.js";
@@ -130,7 +130,7 @@ export function threadReadRoutes(kit: ThreadKit): Hono<{ Variables: TeamVariable
       return c.json({
         entry_id: entryId.data,
         ...output,
-        text: KOBE_ADMIN_RESULT_HIDDEN,
+        text: KAIJU_ADMIN_RESULT_HIDDEN,
         truncated: false,
         admin_result_hidden: true,
       });

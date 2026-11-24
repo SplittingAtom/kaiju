@@ -1,5 +1,5 @@
-import { sql, type KobeTx } from "@kobe/db";
-import type { SemanticMemoryKind } from "@kobe/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
+import type { SemanticMemoryKind } from "@kaiju/protocol";
 import { MemoryItemError, inactive } from "../items/errors.js";
 import { storedCandidateSchema, type StoredCandidate } from "../review/stored.js";
 
@@ -91,7 +91,7 @@ const SELECT = sql`
 export const PROPOSALS_LIST_MAX = 50;
 
 /** The curators' queue: pending and unexpired, oldest first. */
-export async function pendingProposals(tx: KobeTx, teamId: string): Promise<ProposalRow[]> {
+export async function pendingProposals(tx: KaijuTx, teamId: string): Promise<ProposalRow[]> {
   const { rows } = await tx.execute<Raw>(sql`${SELECT}
     WHERE p.team_id = ${teamId} AND p.state = 'pending' AND p.expires_at > now()
     ORDER BY p.created_at ASC LIMIT ${PROPOSALS_LIST_MAX}`);
@@ -100,7 +100,7 @@ export async function pendingProposals(tx: KobeTx, teamId: string): Promise<Prop
 
 /** A member's own proposals, newest first. */
 export async function proposalsOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<ProposalRow[]> {
@@ -118,7 +118,7 @@ export const proposalNotFound = () =>
  * (409 `memory_item_inactive`); `any` returns it whatever its state.
  */
 export async function lockProposal(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   id: string,
   want: "pending" | "any" = "pending",

@@ -79,7 +79,7 @@ export function FileMapRail({
     <section
       ref={railRef}
       aria-label="Workspace files"
-      data-kobe-file-rail=""
+      data-kaiju-file-rail=""
       // Fills the rail's column (KOBE-614): the whole height and width, scrolling inside.
       className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 overflow-auto"
     >

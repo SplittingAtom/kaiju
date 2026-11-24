@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import {
   notifyMemory,
   registerMemoryReminder,
@@ -13,7 +13,7 @@ import {
  */
 
 /** The Workspace's curators: Team admins and memory stewards (KOBE-380). */
-export async function curatorsOf(tx: KobeTx, teamId: string): Promise<string[]> {
+export async function curatorsOf(tx: KaijuTx, teamId: string): Promise<string[]> {
   const { rows } = await tx.execute<{ user_id: string }>(sql`
     SELECT user_id FROM team_members WHERE team_id = ${teamId} AND role = 'team_admin'
     UNION
@@ -24,7 +24,7 @@ export async function curatorsOf(tx: KobeTx, teamId: string): Promise<string[]> 
 
 /** A proposal was made (or made again): curators are told and owed a reminder. Call last. */
 export async function noticeProposed(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   proposal: { id: string; proposerId: string },
 ): Promise<void> {
@@ -45,7 +45,7 @@ export type ProposalOutcome = "accepted" | "dismissed" | "changes_requested";
 
 /** A curator decided: no reminder is owed any more and the proposer hears. Call last. */
 export async function noticeDecided(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   proposal: { id: string; proposerId: string },
   outcome: ProposalOutcome,

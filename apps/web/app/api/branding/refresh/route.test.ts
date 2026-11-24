@@ -19,7 +19,7 @@ describe("web /api/branding/refresh (KOBE-501)", () => {
 
   it("accepts a matching Origin when the browser sends no Sec-Fetch-Site", async () => {
     const res = await POST(
-      request({ origin: "https://kobe.example.org", host: "kobe.example.org" }),
+      request({ origin: "https://kaiju.example.org", host: "kaiju.example.org" }),
     );
     expect(res.status).toBe(204);
   });
@@ -27,9 +27,9 @@ describe("web /api/branding/refresh (KOBE-501)", () => {
   it.each([
     [{ "sec-fetch-site": "cross-site" }],
     [{ "sec-fetch-site": "same-site" }],
-    [{ origin: "https://evil.example", host: "kobe.example.org" }],
-    [{ host: "kobe.example.org" }],
-    [{ origin: "null", host: "kobe.example.org" }],
+    [{ origin: "https://evil.example", host: "kaiju.example.org" }],
+    [{ host: "kaiju.example.org" }],
+    [{ origin: "null", host: "kaiju.example.org" }],
   ])("refuses anything else: 403 (%o)", async (headers) => {
     const res = await POST(request(headers));
     expect(res.status).toBe(403);

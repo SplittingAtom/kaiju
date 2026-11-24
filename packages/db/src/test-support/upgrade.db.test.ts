@@ -22,7 +22,7 @@ describe("out-of-order migration on an existing install", () => {
     dbs.push(db);
     if (saved) process.env.KOBE_TEST_BASE_MIGRATIONS = saved;
 
-    const dir = mkdtempSync(join(tmpdir(), "kobe-ooo-"));
+    const dir = mkdtempSync(join(tmpdir(), "kaiju-ooo-"));
     cpSync(DEFAULT_MIGRATIONS_FOLDER, dir, { recursive: true });
     const path = join(dir, "meta", "_journal.json");
     const journal = JSON.parse(readFileSync(path, "utf8")) as {

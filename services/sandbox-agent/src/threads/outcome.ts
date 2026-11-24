@@ -1,4 +1,4 @@
-import type { SandboxErrorCode } from "@kobe/protocol/sandbox-wire";
+import type { SandboxErrorCode } from "@kaiju/protocol/sandbox-wire";
 
 /** Result of one server command; becomes exactly one `command.result` frame. */
 export type CommandOutcome =

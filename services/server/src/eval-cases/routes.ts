@@ -7,8 +7,8 @@ import {
   reviewEvalCaseBodySchema,
   shareEvalCaseBodySchema,
   type EvalCaseErrorCode,
-} from "@kobe/protocol";
-import { withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import type { ResolvedAgent } from "../agents/version-routes.js";
@@ -50,7 +50,7 @@ const limit = () =>
 async function asViewer<T>(
   deps: ServerDeps,
   c: Ctx,
-  fn: (tx: KobeTx, viewer: Viewer) => Promise<T>,
+  fn: (tx: KaijuTx, viewer: Viewer) => Promise<T>,
 ): Promise<T> {
   const teamId = c.get("team").id;
   const userId = c.get("user").id;
@@ -128,7 +128,7 @@ export function mayReviewEvalCases(found: ResolvedAgent, userId: string): boolea
 }
 
 export interface AgentEvalCaseRouteOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** The agent named by `:id` if the caller may see it; null → 404 (as for version reads). */
   readonly resolve: (c: Context) => Promise<ResolvedAgent | null>;
   readonly teamId: (c: Context) => string;
@@ -150,7 +150,7 @@ export function mountAgentEvalCases<E extends { Variables: object }>(
     const scope = found.agent.scope === "personal" ? "personal" : "team";
     return { teamId: options.teamId(c), agentId: found.agent.id, scope };
   };
-  const inTeam = <T>(key: AgentKey, fn: (tx: KobeTx) => Promise<T>) =>
+  const inTeam = <T>(key: AgentKey, fn: (tx: KaijuTx) => Promise<T>) =>
     withTeam(options.db, key.teamId, fn);
 
   app.get("/:id/eval-cases", async (c) => {

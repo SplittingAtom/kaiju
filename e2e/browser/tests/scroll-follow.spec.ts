@@ -29,12 +29,12 @@ test("the message list follows the stream, holds when scrolled up, and Jump to l
 
   // The stream overflows the list, which scrolls on its own; the composer stays a fixed footer.
   await expect.poll(overflow, { timeout: RUN_TIMEOUT_MS, intervals: [500] }).toBeGreaterThan(400);
-  await expect(list.locator("[data-kobe-composer]")).toHaveCount(0);
-  await expect(page.locator("[data-kobe-composer]")).toBeInViewport();
+  await expect(list.locator("[data-kaiju-composer]")).toHaveCount(0);
+  await expect(page.locator("[data-kaiju-composer]")).toBeInViewport();
   expect(await pageOverflow()).toBeLessThanOrEqual(1);
 
   // Following: pinned to the bottom as the answer grows.
-  await expect(list).toHaveAttribute("data-kobe-follow", "pinned");
+  await expect(list).toHaveAttribute("data-kaiju-follow", "pinned");
   for (let sample = 0; sample < 3; sample += 1) {
     await expect.poll(gap, { timeout: 5_000 }).toBeLessThan(FOLLOW_SLACK_PX);
     await page.waitForTimeout(700);
@@ -48,7 +48,7 @@ test("the message list follows the stream, holds when scrolled up, and Jump to l
     await page.mouse.wheel(0, -40);
     await page.waitForTimeout(80);
   }
-  await expect(list).toHaveAttribute("data-kobe-follow", "unpinned");
+  await expect(list).toHaveAttribute("data-kaiju-follow", "unpinned");
   const jump = page.getByRole("button", { name: /^Jump to latest/ });
   await expect(jump).toBeVisible();
 
@@ -57,7 +57,7 @@ test("the message list follows the stream, holds when scrolled up, and Jump to l
   const stop = chat.steering.getByRole("button", { name: "Stop", exact: true });
   if (await stop.isVisible()) await stop.click();
   await chat.waitForIdle();
-  await expect(list).toHaveAttribute("data-kobe-follow", "unpinned");
+  await expect(list).toHaveAttribute("data-kaiju-follow", "unpinned");
   await expect(jump).toBeVisible();
   const heldAt = await list.evaluate((el) => el.scrollTop);
   await page.waitForTimeout(2_500);
@@ -65,12 +65,12 @@ test("the message list follows the stream, holds when scrolled up, and Jump to l
 
   // The pill returns to the bottom and follows again.
   await jump.click();
-  await expect(list).toHaveAttribute("data-kobe-follow", "pinned");
+  await expect(list).toHaveAttribute("data-kaiju-follow", "pinned");
   await expect.poll(gap, { timeout: 10_000 }).toBeLessThan(FOLLOW_SLACK_PX);
   await expect(jump).toBeHidden();
 
   // On a phone the page still never scrolls and the composer stays on screen.
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator("[data-kobe-composer]")).toBeInViewport();
+  await expect(page.locator("[data-kaiju-composer]")).toBeInViewport();
   expect(await pageOverflow()).toBeLessThanOrEqual(1);
 });

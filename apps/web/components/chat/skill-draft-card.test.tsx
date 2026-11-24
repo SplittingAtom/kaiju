@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { cleanup, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { NEW_DRAFT_NOTE } from "./skill-draft-card";
 import { openApp } from "./testing";
 
@@ -12,12 +12,12 @@ import { openApp } from "./testing";
  */
 const DRAFT = "8e9f0a1b-2c3d-4e4f-9a5b-6c7d8e9f0a1b";
 const FORGED = "11111111-2222-4333-8444-555555555555";
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 afterEach(() => {

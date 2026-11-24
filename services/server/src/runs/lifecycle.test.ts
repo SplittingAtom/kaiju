@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { RUN_ERROR_CODES, parseEventPayload, type KobeEventType } from "@kobe/protocol";
+import { RUN_ERROR_CODES, parseEventPayload, type KaijuEventType } from "@kaiju/protocol";
 import { RUN_ERROR_STATUS, RunError } from "./errors.js";
 import { budgetStoppedEvent, cancelledEvent, failedEvent } from "./lifecycle.js";
 
 const valid = (e: { type: string; payload: unknown }) =>
-  parseEventPayload(e.type as KobeEventType, e.payload);
+  parseEventPayload(e.type as KaijuEventType, e.payload);
 
 describe("orchestrator events", () => {
   it("writes run.* payloads that pass their protocol schemas", () => {

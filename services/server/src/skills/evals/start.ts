@@ -8,10 +8,10 @@ import {
   teamSkillVersions,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type TeamRole,
-} from "@kobe/db";
+} from "@kaiju/db";
 import {
   canonicalZip,
   EVAL_CASES_PATH,
@@ -23,9 +23,9 @@ import {
   type SkillEvalRunModel,
   type SkillEvalStarted,
   type SkillEvalSubject,
-} from "@kobe/protocol";
-import { parseSkillEvalSuite, type SkillEvalIssue } from "@kobe/protocol/skill-evals";
-import type { ScanResult } from "@kobe/skill-scanner";
+} from "@kaiju/protocol";
+import { parseSkillEvalSuite, type SkillEvalIssue } from "@kaiju/protocol/skill-evals";
+import type { ScanResult } from "@kaiju/skill-scanner";
 import { unzipSync } from "fflate";
 import { teamRoleAllows } from "../../authz/permissions.js";
 import { isModelEnabled } from "../../models/team-store.js";
@@ -96,7 +96,7 @@ const refuse = (
 ): { ok: false; refusal: StartRefusal } => ({ ok: false, refusal: { status, code, message } });
 
 async function loadPackage(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore,
   who: EvalStarter,
   subject: StartSubject,
@@ -136,7 +136,7 @@ async function loadPackage(
 
 /** A saved version's package zip (or its runtime zip when they are the same bytes). */
 async function versionRow(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: EvalStarter,
   subject: Extract<SkillEvalSubject, { kind: "version" }>,
 ): Promise<{ key: string; hash: string; size: number | null } | null> {
@@ -205,7 +205,7 @@ async function scanPackage(
 
 /** The suite's model if the team enabled it, else the team's default (SK17: never silent). */
 async function runModelFor(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   requested: string | undefined,
 ): Promise<SkillEvalRunModel | null> {
@@ -224,7 +224,7 @@ async function runModelFor(
  * judge checks again when it calls).
  */
 export async function judgeModelFor(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runModel: SkillEvalRunModel,
 ): Promise<SkillEvalJudgeModel> {
@@ -239,7 +239,7 @@ export async function judgeModelFor(
 
 /** The Site's judge when set and enabled in the team; null otherwise (a Registry re-run's only judge). */
 export async function siteJudgeFor(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
 ): Promise<SkillEvalJudgeModel | null> {
   const [site] = await tx.select({ alias: siteSkillSettings.judgeAlias }).from(siteSkillSettings);
@@ -253,7 +253,7 @@ const DUPLICATE =
 
 /** Whether the starter already has an open eval of the same subject revision and mode. */
 async function sameEvalOpen(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: EvalStarter,
   subject: { readonly kind: string; readonly id: string; readonly rev: number },
   mode: SkillEvalMode,
@@ -273,13 +273,13 @@ export const MAX_OPEN_EVALS_PER_MEMBER = 3;
 export const MAX_OPEN_EVALS_PER_TEAM = 20;
 
 /** The team's skill eval lock (the runner's claims take the same one). */
-export async function lockTeamEvals(tx: KobeTx, teamId: string): Promise<void> {
+export async function lockTeamEvals(tx: KaijuTx, teamId: string): Promise<void> {
   await tx.execute(
     sql`SELECT pg_advisory_xact_lock(hashtextextended(${`kobe.skill-eval:${teamId}`}, 0))`,
   );
 }
 
-async function openEvalsRefusal(tx: KobeTx, who: EvalStarter): Promise<string | null> {
+async function openEvalsRefusal(tx: KaijuTx, who: EvalStarter): Promise<string | null> {
   const res = await tx.execute<{ mine: number | string; team: number | string }>(sql`
     SELECT count(*) FILTER (WHERE started_by = ${who.userId}) AS mine, count(*) AS team
       FROM skill_eval_runs WHERE team_id = ${who.teamId} AND status IN ('queued', 'running')`);
@@ -293,7 +293,7 @@ async function openEvalsRefusal(tx: KobeTx, who: EvalStarter): Promise<string | 
 
 /** The subject's package, validated and gated, with its suite parsed (no scan yet). */
 async function prepareSubject(
-  deps: { readonly db: KobeDb; readonly blobs: BlobStore },
+  deps: { readonly db: KaijuDb; readonly blobs: BlobStore },
   who: EvalStarter,
   subject: StartSubject,
 ) {
@@ -339,7 +339,7 @@ async function prepareSubject(
 }
 
 /** A budget or the team eval cap that stops new evals, as a refusal (KOBE-327, D30, SK18). */
-async function budgetRefusal(db: KobeDb, who: EvalStarter) {
+async function budgetRefusal(db: KaijuDb, who: EvalStarter) {
   const block = await evalBudgetBlock(db, who.teamId, who.userId);
   return block ? refuse(409, block.code, block.message) : null;
 }
@@ -350,7 +350,7 @@ async function budgetRefusal(db: KobeDb, who: EvalStarter) {
  * whether a budget or the team eval cap would refuse the start (`blocked`).
  */
 export async function estimateSkillEval(
-  deps: { readonly db: KobeDb; readonly blobs: BlobStore },
+  deps: { readonly db: KaijuDb; readonly blobs: BlobStore },
   who: EvalStarter,
   subject: StartSubject,
   mode: SkillEvalMode,
@@ -391,7 +391,7 @@ export async function estimateSkillEval(
 }
 
 export async function startSkillEval(
-  deps: { readonly db: KobeDb; readonly blobs: BlobStore },
+  deps: { readonly db: KaijuDb; readonly blobs: BlobStore },
   who: EvalStarter,
   subject: StartSubject,
   mode: SkillEvalMode,

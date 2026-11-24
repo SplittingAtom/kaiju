@@ -2,7 +2,7 @@ import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
 /**
- * The Kaiju guide's build step (KOBE-616, in `@kobe/guide` since KOBE-620): `docs/guide/<slug>.md`
+ * The Kaiju guide's build step (KOBE-616, in `@kaiju/guide` since KOBE-620): `docs/guide/<slug>.md`
  * pages (YAML frontmatter, then Markdown) become typed pages that `scripts/generate-guide.mjs`
  * writes into the package as `src/generated/pages.ts`. Nothing is read from docs/guide at runtime.
  *

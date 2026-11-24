@@ -12,9 +12,9 @@
  */
 import { useEffect, useState } from "react";
 import { useAuiState } from "@assistant-ui/react";
-import { THREAD_FILE_WRITE_TOOLS, isExcludedPath, workspaceToolPath } from "@kobe/protocol";
+import { THREAD_FILE_WRITE_TOOLS, isExcludedPath, workspaceToolPath } from "@kaiju/protocol";
 import type { FileEntry } from "../../lib/files/api";
-import { kobeExtrasOf, useChatSession } from "./kobe-runtime";
+import { kaijuExtrasOf, useChatSession } from "./kaiju-runtime";
 
 const WRITE_TOOLS: readonly string[] = THREAD_FILE_WRITE_TOOLS;
 /** Waits before reading the list again while a written file is not listed yet (ms). */
@@ -26,10 +26,10 @@ const NO_FILES: readonly FileEntry[] = [];
  * agent-internal folders skipped). Also the open file tabs' change hint (KOBE-491).
  */
 export function liveWritePaths(
-  s: Parameters<typeof kobeExtrasOf>[0],
+  s: Parameters<typeof kaijuExtrasOf>[0],
   threadId: string | undefined,
 ): readonly string[] {
-  const extras = kobeExtrasOf(s);
+  const extras = kaijuExtrasOf(s);
   const live = extras?.state.live;
   if (!live || threadId === undefined || extras?.state.threadId !== threadId) return [];
   return Object.values(live.tools).flatMap((t) => {

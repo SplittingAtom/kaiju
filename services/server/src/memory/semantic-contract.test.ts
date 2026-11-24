@@ -16,7 +16,7 @@ import {
   SEMANTIC_MEMORY_TAGS_MAX as DB_TAGS_MAX,
   SITE_MEMORY_ACTOR_KIND_VALUES,
   siteGrant,
-} from "@kobe/db";
+} from "@kaiju/db";
 import {
   AGENT_MEMORY_SETTINGS,
   MEMORY_NOTIFICATION_KINDS,
@@ -32,7 +32,7 @@ import {
   SEMANTIC_MEMORY_TAG_MAX,
   SEMANTIC_MEMORY_TAGS_MAX,
   SITE_GRANTS,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /** KOBE-377: the semantic memory contract matches the KOBE-376 schema exactly. */
 describe("semantic memory contract matches the schema", () => {

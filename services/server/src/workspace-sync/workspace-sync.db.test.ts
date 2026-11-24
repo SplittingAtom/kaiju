@@ -6,8 +6,8 @@ import {
   decodeWorkspaceEntryHeader,
   type WorkspaceChange,
   type WorkspaceEntry,
-} from "@kobe/protocol/sandbox-wire";
-import { sql, withTeam } from "@kobe/db";
+} from "@kaiju/protocol/sandbox-wire";
+import { sql, withTeam } from "@kaiju/db";
 import { createSandboxApp } from "../routes/sandbox.js";
 import { moveFiles } from "./move.js";
 import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";

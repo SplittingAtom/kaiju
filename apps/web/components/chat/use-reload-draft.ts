@@ -3,7 +3,7 @@
 import { useAui } from "@assistant-ui/react";
 import { useEffect } from "react";
 import { stashDraftForReload, takeReloadDraft } from "../../lib/build/reload-draft";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 
 /**
  * The composer's text across the new-build banner's Reload (KOBE-487 ac-4): stashed as the page

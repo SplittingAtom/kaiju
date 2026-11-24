@@ -7,7 +7,7 @@
  * `shell.module.css` lays this out with media queries on the same numbers; `layoutAt` states the
  * same rules as arithmetic, so tests can check the table without a layout engine.
  */
-import { RAIL_WIDTH_BOUNDS } from "@kobe/protocol";
+import { RAIL_WIDTH_BOUNDS } from "@kaiju/protocol";
 import { ARTIFACT_FLOOR_PX, CONVERSATION_FLOOR_PX } from "../chat/artifact-tabs";
 
 /** Lower edge of each band, in CSS px. */
@@ -27,8 +27,8 @@ export const RAIL_PX = {
 
 /**
  * The columns are floating cards (KOBE-554, after Catalyst's query tool): a page gutter around the
- * grid and a gap between the cards, both 16 px at every band (`--kobe-shell-gutter`,
- * `--kobe-shell-gap` in shell.module.css). Layout, not theme tokens (docs/theming.md §9).
+ * grid and a gap between the cards, both 16 px at every band (`--kaiju-shell-gutter`,
+ * `--kaiju-shell-gap` in shell.module.css). Layout, not theme tokens (docs/theming.md §9).
  */
 export const SHELL_SPACING_PX = { gutter: 16, gap: 16 } as const;
 
@@ -125,7 +125,7 @@ export function layoutAt({
   // The grid's content box, then the gaps between the cards it holds.
   const content = width - 2 * SHELL_SPACING_PX.gutter;
   const gaps = band === "single" ? 0 : (column ? 2 : 1) * SHELL_SPACING_PX.gap;
-  // min(var(--kobe-rail-expanded-width, 280px), 100% - var(--kobe-rail-room))
+  // min(var(--kaiju-rail-expanded-width, 280px), 100% - var(--kaiju-rail-room))
   const expanded = Math.min(railWidth ?? RAIL_PX.expanded, maxRailWidth(content - gaps, column));
   const rail =
     band === "single" ? 0 : railDocked(band) && !railCollapsed ? expanded : RAIL_PX.collapsed;
@@ -133,7 +133,7 @@ export function layoutAt({
   if (!column) {
     return { band, rail, artifactMode, artifact: 0, conversation: space };
   }
-  // minmax(min(360px, room), min(var(--kobe-artifact-width), room)) minmax(400px, 1fr), where
+  // minmax(min(360px, room), min(var(--kaiju-artifact-width), room)) minmax(400px, 1fr), where
   // room = 100% - rail - gaps - 400px: the column yields to the conversation's floor when the
   // gutters leave less than both floors (820–871 px).
   const room = space - CONVERSATION_FLOOR_PX;

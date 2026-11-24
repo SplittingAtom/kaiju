@@ -28,7 +28,7 @@ test("U18: an artifact and a workspace file open beside the thread", async ({ ch
         content: "<!doctype html><html><body><p>beside</p></body></html>",
       }),
     );
-    await chat.threadId(); // create_artifact never asks (PROMPT_EXEMPT_KOBE_TOOLS)
+    await chat.threadId(); // create_artifact never asks (PROMPT_EXEMPT_KAIJU_TOOLS)
     await chat.waitForIdle();
     await expect(artifact.getByRole("tab").first()).toBeVisible({ timeout: RUN_TIMEOUT_MS });
     await expect(chat.composer).toBeInViewport();
@@ -63,7 +63,7 @@ test("U18: memory and the member's settings open over the thread and return to i
   await expect(memory).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
   expect(new URL(page.url()).pathname).toBe("/me/memory");
   await memory.getByRole("button", { name: "Close My memory" }).click();
-  await expect(page.locator("[data-kobe-panel]")).toHaveCount(0);
+  await expect(page.locator("[data-kaiju-panel]")).toHaveCount(0);
   expect(new URL(page.url()).searchParams.get("thread")).toBe(thread);
   await expect(chat.composer).toBeInViewport();
   await expect(chat.answers.last()).toBeInViewport();
@@ -74,7 +74,7 @@ test("U18: memory and the member's settings open over the thread and return to i
   await expect(approvals.getByRole("heading", { name: "Remembered approvals" })).toBeVisible();
   // Back closes it and returns to the thread; Forward opens it again.
   await page.goBack();
-  await expect(page.locator("[data-kobe-panel]")).toHaveCount(0);
+  await expect(page.locator("[data-kaiju-panel]")).toHaveCount(0);
   await expect(chat.composer).toBeVisible();
   expect(new URL(page.url()).searchParams.get("thread")).toBe(thread);
   await page.goForward();
@@ -108,7 +108,7 @@ test("U18: while scrolled up, the Jump pill counts the messages that arrive", as
   if (box === null) throw new Error("the message list has no box");
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   for (let step = 0; step < 6; step += 1) await page.mouse.wheel(0, -200);
-  await expect(list).toHaveAttribute("data-kobe-follow", "unpinned");
+  await expect(list).toHaveAttribute("data-kaiju-follow", "unpinned");
   const jump = page.getByRole("button", { name: /^Jump to latest/ });
   await expect(jump).toBeVisible();
   // The queued message and its answer arrive after the long answer: two new messages. The third
@@ -117,7 +117,7 @@ test("U18: while scrolled up, the Jump pill counts the messages that arrive", as
   await expect(arrived).toContainText("ARRIVED", { timeout: 2 * RUN_TIMEOUT_MS });
   await expect(arrived).not.toHaveAttribute("aria-busy", "true", { timeout: RUN_TIMEOUT_MS });
   await expect(jump).toHaveAccessibleName(/\b2 new messages\b/, { timeout: RUN_TIMEOUT_MS });
-  await expect(list).toHaveAttribute("data-kobe-follow", "unpinned");
+  await expect(list).toHaveAttribute("data-kaiju-follow", "unpinned");
 });
 
 test("U18: the composer is visible at every width", async ({ chat, page }) => {

@@ -65,7 +65,7 @@ export default async function RootLayout({ children }: { readonly children: Reac
     <html lang="en" className={FACE_CLASSES} data-theme={theme ?? undefined}>
       {css !== "" && (
         <head>
-          <style nonce={nonce} data-kobe-branding="">
+          <style nonce={nonce} data-kaiju-branding="">
             {css}
           </style>
         </head>

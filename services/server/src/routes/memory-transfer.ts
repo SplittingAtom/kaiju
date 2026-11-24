@@ -8,7 +8,7 @@ import {
   semanticMemoryImportCommitRequestSchema,
   semanticMemoryImportPreviewRequestSchema,
   utf8ByteLength,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { z } from "zod";
 import type { TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
@@ -111,7 +111,7 @@ export function memoryTransferRoutes(deps: ServerDeps): Hono<{ Variables: TeamVa
     return answer(c, q.data.scope, async (who) => {
       const doc = await exportItems(db, who, q.data);
       const day = doc.exported_at.slice(0, 10);
-      const name = `kobe-memories-${doc.scope}-${day}.${q.data.format}`;
+      const name = `kaiju-memories-${doc.scope}-${day}.${q.data.format}`;
       const headers = {
         "content-disposition": `attachment; filename="${name}"`,
         "cache-control": "no-store",

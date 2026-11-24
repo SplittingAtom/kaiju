@@ -6,9 +6,9 @@ import {
   sql,
   teams,
   users,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { activeSiteAdmins } from "../break-glass/store.js";
 import type { RequestHoldBody } from "./schemas.js";
@@ -19,7 +19,7 @@ import type { RequestHoldBody } from "./schemas.js";
  * self-approves, flagged). Every change runs in one transaction with the hold row locked and its
  * audit event as the last write. The `legal_holds_guard` trigger enforces the same rules in
  * Postgres; the checks here exist to answer with clear errors. Purge jobs consult holds through
- * `isUnderLegalHold()` / `legal_hold_covers()` in @kobe/db.
+ * `isUnderLegalHold()` / `legal_hold_covers()` in @kaiju/db.
  *
  * A hold is confidential: it is invisible to the held user (404 everywhere, even an install
  * admin), and its audit events carry neither the held user's id nor the reason.
@@ -54,7 +54,7 @@ const LOCK_TIMEOUT = "30s";
  * besides the held user (who can't approve), as the trigger decides (D10, flagged).
  */
 export async function mayApproveOwn(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   by: string,
   hold: Pick<HoldRow, "userId">,
 ): Promise<boolean> {
@@ -78,16 +78,16 @@ function holdRef(hold: HoldRow) {
  * Locks the hold for a change; a hold about `viewerId` is not found (the held user never learns
  * of it, nor decides it).
  */
-async function lockHold(tx: KobeTx, id: string, viewerId: string): Promise<HoldRow | undefined> {
+async function lockHold(tx: KaijuTx, id: string, viewerId: string): Promise<HoldRow | undefined> {
   await tx.execute(sql`SELECT set_config('lock_timeout', ${LOCK_TIMEOUT}, true)`);
   const [row] = await tx.select().from(legalHolds).where(eq(legalHolds.id, id)).for("update");
   return row && row.userId !== viewerId ? row : undefined;
 }
 
-type Change = (tx: KobeTx, current: HoldRow) => Promise<HoldResult>;
+type Change = (tx: KaijuTx, current: HoldRow) => Promise<HoldResult>;
 
 /** Runs `change` on the locked hold in one transaction (audit last, inside `change`). */
-function changeHold(db: KobeDb, by: string, id: string, change: Change): Promise<HoldResult> {
+function changeHold(db: KaijuDb, by: string, id: string, change: Change): Promise<HoldResult> {
   return db.transaction(async (tx): Promise<HoldResult> => {
     const current = await lockHold(tx, id, by);
     if (!current) return { ok: false, error: "hold_not_found" };
@@ -95,14 +95,14 @@ function changeHold(db: KobeDb, by: string, id: string, change: Change): Promise
   });
 }
 
-async function update(tx: KobeTx, id: string, set: Partial<HoldRow>): Promise<HoldRow> {
+async function update(tx: KaijuTx, id: string, set: Partial<HoldRow>): Promise<HoldRow> {
   const [row] = await tx.update(legalHolds).set(set).where(eq(legalHolds.id, id)).returning();
   if (!row) throw new Error("legal hold update returned no row");
   return row;
 }
 
 export async function requestHold(
-  db: KobeDb,
+  db: KaijuDb,
   adminId: string,
   body: RequestHoldBody,
 ): Promise<HoldResult> {
@@ -135,7 +135,7 @@ export async function requestHold(
 }
 
 /** Places a pending hold: a second site admin, or the requester on a single-admin site. */
-export function approveHold(db: KobeDb, by: string, id: string): Promise<HoldResult> {
+export function approveHold(db: KaijuDb, by: string, id: string): Promise<HoldResult> {
   return changeHold(db, by, id, async (tx, current) => {
     if (current.status !== "pending") return { ok: false, error: "not_pending" };
     if (current.placedBy === by && !(await mayApproveOwn(tx, by, current))) {
@@ -151,7 +151,7 @@ export function approveHold(db: KobeDb, by: string, id: string): Promise<HoldRes
 }
 
 /** Another site admin turns a pending hold down; the requester withdraws instead. */
-export function denyHold(db: KobeDb, by: string, id: string): Promise<HoldResult> {
+export function denyHold(db: KaijuDb, by: string, id: string): Promise<HoldResult> {
   return changeHold(db, by, id, async (tx, current) => {
     if (current.status !== "pending") return { ok: false, error: "not_pending" };
     if (current.placedBy === by) return { ok: false, error: "cannot_deny_own" };
@@ -161,7 +161,7 @@ export function denyHold(db: KobeDb, by: string, id: string): Promise<HoldResult
   });
 }
 
-export function withdrawHold(db: KobeDb, by: string, id: string): Promise<HoldResult> {
+export function withdrawHold(db: KaijuDb, by: string, id: string): Promise<HoldResult> {
   return changeHold(db, by, id, async (tx, current) => {
     if (current.status !== "pending") return { ok: false, error: "not_pending" };
     if (current.placedBy !== by) return { ok: false, error: "not_requester" };
@@ -176,7 +176,7 @@ export function withdrawHold(db: KobeDb, by: string, id: string): Promise<HoldRe
 
 /** Asks to end an active hold; it stays in force until a second site admin approves. */
 export function requestRelease(
-  db: KobeDb,
+  db: KaijuDb,
   by: string,
   id: string,
   reason: string,
@@ -198,7 +198,7 @@ export function requestRelease(
 }
 
 /** Ends the hold: purges of its data may resume. */
-export function approveRelease(db: KobeDb, by: string, id: string): Promise<HoldResult> {
+export function approveRelease(db: KaijuDb, by: string, id: string): Promise<HoldResult> {
   return changeHold(db, by, id, async (tx, current) => {
     if (current.status !== "active") return { ok: false, error: "not_active" };
     if (current.releaseRequestedBy === null) return { ok: false, error: "no_release_request" };
@@ -221,7 +221,7 @@ const CANCELLED_RELEASE = {
 } as const;
 
 /** Another site admin turns the release down; the hold stays in force. */
-export function denyRelease(db: KobeDb, by: string, id: string): Promise<HoldResult> {
+export function denyRelease(db: KaijuDb, by: string, id: string): Promise<HoldResult> {
   return changeHold(db, by, id, async (tx, current) => {
     if (current.status !== "active") return { ok: false, error: "not_active" };
     if (current.releaseRequestedBy === null) return { ok: false, error: "no_release_request" };
@@ -235,7 +235,7 @@ export function denyRelease(db: KobeDb, by: string, id: string): Promise<HoldRes
   });
 }
 
-export function withdrawRelease(db: KobeDb, by: string, id: string): Promise<HoldResult> {
+export function withdrawRelease(db: KaijuDb, by: string, id: string): Promise<HoldResult> {
   return changeHold(db, by, id, async (tx, current) => {
     if (current.status !== "active") return { ok: false, error: "not_active" };
     if (current.releaseRequestedBy === null) return { ok: false, error: "no_release_request" };
@@ -263,7 +263,7 @@ export interface HoldDetail {
 }
 
 /** Joins each hold's people and team (two queries, whatever the page size). */
-async function withDetails(db: KobeDb, rows: readonly HoldRow[]): Promise<HoldDetail[]> {
+async function withDetails(db: KaijuDb, rows: readonly HoldRow[]): Promise<HoldDetail[]> {
   if (rows.length === 0) return [];
   const userIds = [
     ...new Set(
@@ -314,7 +314,7 @@ async function withDetails(db: KobeDb, rows: readonly HoldRow[]): Promise<HoldDe
 const notAbout = (viewerId: string) => sql`${legalHolds.userId} IS DISTINCT FROM ${viewerId}::uuid`;
 
 /** Holds with their people and team, newest first (site view). */
-export async function listHolds(db: KobeDb, viewerId: string, limit = 200): Promise<HoldDetail[]> {
+export async function listHolds(db: KaijuDb, viewerId: string, limit = 200): Promise<HoldDetail[]> {
   const rows = await db
     .select()
     .from(legalHolds)
@@ -325,7 +325,7 @@ export async function listHolds(db: KobeDb, viewerId: string, limit = 200): Prom
 }
 
 export async function getHold(
-  db: KobeDb,
+  db: KaijuDb,
   id: string,
   viewerId: string,
 ): Promise<HoldDetail | undefined> {

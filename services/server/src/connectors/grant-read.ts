@@ -11,9 +11,9 @@ import {
   SYSTEM_ACTOR,
   type ConnectorGrantKind,
   type Envelope,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { parseOauthBundle } from "./oauth/bundle.js";
 import { sameUrl } from "./oauth/discovery.js";
@@ -47,7 +47,7 @@ export const grantKey = (s: Subject) =>
  * change, which holds the row for update while it drops the grants, then either runs first (and
  * this sees it removed) or waits until the grant is stored (and drops it) (KOBE-454).
  */
-export async function enabledConnector(tx: KobeTx, s: Subject, lock = false) {
+export async function enabledConnector(tx: KaijuTx, s: Subject, lock = false) {
   const query = tx
     .select({
       name: connectors.name,
@@ -108,7 +108,7 @@ export type GrantLookup =
  * connector's kind. Checked on every reveal, so a deactivation, removal, suspension or revoke
  * needs no sweep to take effect.
  */
-export async function loadGrant(tx: KobeTx, s: Subject): Promise<GrantLookup> {
+export async function loadGrant(tx: KaijuTx, s: Subject): Promise<GrantLookup> {
   const connector = await enabledConnector(tx, s);
   if (!connector || connector.authKind === "none") return "not_available";
   const [account] = await tx
@@ -135,7 +135,7 @@ export async function loadGrant(tx: KobeTx, s: Subject): Promise<GrantLookup> {
     : "not_connected";
 }
 
-export const readGrant = (db: KobeDb, s: Subject): Promise<GrantLookup> =>
+export const readGrant = (db: KaijuDb, s: Subject): Promise<GrantLookup> =>
   withTeam(db, s.teamId, (tx) => loadGrant(tx, s));
 
 export const needsRefresh = (row: GrantRow, now: Date): boolean =>
@@ -146,7 +146,7 @@ export const isExpired = (row: GrantRow, now: Date): boolean =>
   row.expiresAt !== null && row.expiresAt.getTime() <= now.getTime();
 
 export async function auditRefusal(
-  db: KobeDb,
+  db: KaijuDb,
   subject: Subject,
   name: string,
   reason: "resource_mismatch" | "user_inactive",
@@ -167,7 +167,7 @@ export async function auditRefusal(
 
 /** Opens the sealed material; the token was issued for one server and must not go elsewhere. */
 export async function openRow(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   subject: Subject,
   row: GrantRow,
@@ -193,7 +193,7 @@ export async function openRow(
 
 /** Serves the row's token when it is still valid; otherwise the grant is unavailable. */
 export const serveIfValid = (
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   subject: Subject,
   row: GrantRow,
@@ -203,7 +203,7 @@ export const serveIfValid = (
 
 /** A lookup that is not a usable grant row, as a reveal outcome (undefined for a row). */
 export async function refusal(
-  db: KobeDb,
+  db: KaijuDb,
   subject: Subject,
   row: GrantLookup,
 ): Promise<RevealOutcome | undefined> {

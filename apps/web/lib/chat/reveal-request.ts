@@ -8,7 +8,7 @@ export interface RevealRequest {
   readonly entryId: string;
 }
 
-export const REVEAL_REQUEST_EVENT = "kobe:reveal-entry";
+export const REVEAL_REQUEST_EVENT = "kaiju:reveal-entry";
 
 export function requestReveal(request: RevealRequest): void {
   window.dispatchEvent(new CustomEvent<RevealRequest>(REVEAL_REQUEST_EVENT, { detail: request }));

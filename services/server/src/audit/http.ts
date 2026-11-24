@@ -3,9 +3,9 @@ import {
   auditQuerySchema,
   type AuditPage,
   type AuditQuery,
-  type KobeDb,
+  type KaijuDb,
   type TeamAuditPage,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { withViaAgent } from "./via-agent.js";
 
 type Parsed = { ok: true; value: AuditQuery } | { ok: false; response: Response };
@@ -45,7 +45,7 @@ export function auditPageBody(page: AuditPage | TeamAuditPage) {
  * open that thread.
  */
 export async function auditPageBodyFor(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   page: AuditPage | TeamAuditPage,
 ) {

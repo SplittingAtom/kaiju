@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import type { NotebookOutput } from "@kobe/protocol";
+import type { NotebookOutput } from "@kaiju/protocol";
 import { must } from "../testing/must";
 import { IMAGE_MAX_BYTES, outputView, stripAnsi, terminalText } from "./outputs";
 

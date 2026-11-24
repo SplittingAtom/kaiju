@@ -1,5 +1,5 @@
 import { asc, sql } from "drizzle-orm";
-import type { KobeDb, KobeTx } from "./client.js";
+import type { KaijuDb, KaijuTx } from "./client.js";
 import { teams } from "./schema/index.js";
 import { TEAM_ID_SETTING } from "./settings.js";
 
@@ -19,9 +19,9 @@ export interface ScannedTeam {
  * accepted exception to "only withTeam() sets the team" (KOBE-697, CLAUDE.md; team-setters.test.ts).
  */
 export async function scanTeams<T>(
-  db: KobeDb,
+  db: KaijuDb,
   caller: string,
-  visit: (tx: KobeTx, team: ScannedTeam) => Promise<T | undefined>,
+  visit: (tx: KaijuTx, team: ScannedTeam) => Promise<T | undefined>,
 ): Promise<T[]> {
   return db.transaction(async (tx) => {
     const current = await tx.execute<{ team: string | null }>(

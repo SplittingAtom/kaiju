@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { withTeam } from "@kobe/db";
-import { syncConflictActionBodySchema, type ThreadSyncConflictsResponse } from "@kobe/protocol";
+import { withTeam } from "@kaiju/db";
+import { syncConflictActionBodySchema, type ThreadSyncConflictsResponse } from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import {

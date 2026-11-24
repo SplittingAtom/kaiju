@@ -175,17 +175,17 @@ export function nameAt(
 /** The documentation as plain text nodes: the signature, then the docstring. */
 export function docTooltipDom(doc: KernelDoc): HTMLElement {
   const dom = document.createElement("div");
-  dom.className = "cm-kobe-doc";
+  dom.className = "cm-kaiju-doc";
   dom.setAttribute("role", "tooltip");
   if (doc.signature !== undefined) {
     const sig = document.createElement("div");
-    sig.className = "cm-kobe-doc-signature";
+    sig.className = "cm-kaiju-doc-signature";
     sig.textContent = doc.signature;
     dom.append(sig);
   }
   if (doc.doc !== undefined) {
     const body = document.createElement("div");
-    body.className = "cm-kobe-doc-body";
+    body.className = "cm-kaiju-doc-body";
     body.textContent = doc.doc;
     dom.append(body);
   }
@@ -343,7 +343,7 @@ export const completionTheme = EditorView.theme({
     borderRadius: "0.375rem",
   },
   ".cm-tooltip.cm-tooltip-autocomplete > ul": {
-    fontFamily: "var(--kobe-font-mono)",
+    fontFamily: "var(--kaiju-font-mono)",
     maxHeight: "14rem",
   },
   ".cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected]": {
@@ -352,18 +352,18 @@ export const completionTheme = EditorView.theme({
   },
   ".cm-completionDetail": { color: "var(--muted-foreground)", fontStyle: "normal" },
   ".cm-completionMatchedText": { textDecoration: "none", fontWeight: "600" },
-  ".cm-kobe-doc": {
+  ".cm-kaiju-doc": {
     maxWidth: "36rem",
     maxHeight: "14rem",
     overflow: "auto",
     padding: "0.375rem 0.5rem",
     fontSize: "0.75rem",
   },
-  ".cm-kobe-doc-signature": {
+  ".cm-kaiju-doc-signature": {
     whiteSpace: "pre-wrap",
-    fontFamily: "var(--kobe-font-mono)",
+    fontFamily: "var(--kaiju-font-mono)",
   },
-  ".cm-kobe-doc-body": {
+  ".cm-kaiju-doc-body": {
     whiteSpace: "pre-wrap",
     color: "var(--muted-foreground)",
     marginTop: "0.25rem",

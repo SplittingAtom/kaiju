@@ -4,8 +4,8 @@ import {
   type ActorContext,
   type CompactThreadErrorCode,
   type CompactThreadResponse,
-} from "@kobe/protocol";
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
@@ -42,15 +42,15 @@ export class CompactionError extends Error {
 
 /** What the orchestrator lends a compaction. */
 export interface CompactionHost {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly router: SandboxRouter;
   readonly agents: RunAgentResolver;
   readonly modelTokenDefaults: ModelTokenDefaults;
   readonly log: Logger;
   /** A team transaction as `actor` with the thread lock timeout (busy → `thread_busy`). */
-  threadTx<T>(actor: ActorContext, fn: (tx: KobeTx, viewer: Viewer) => Promise<T>): Promise<T>;
+  threadTx<T>(actor: ActorContext, fn: (tx: KaijuTx, viewer: Viewer) => Promise<T>): Promise<T>;
   /** Account active, still a member, budget left (KOBE-13, KOBE-42). */
-  assertMayRun(tx: KobeTx, actor: ActorContext): Promise<void>;
+  assertMayRun(tx: KaijuTx, actor: ActorContext): Promise<void>;
   /** The run ended: advance the thread's queue (messages sent meanwhile wait behind it). */
   ended(teamId: string, runId: string, threadId: string): Promise<void>;
   /** Pi must abort the compaction (it may still be summarizing). */
@@ -133,7 +133,7 @@ export async function compactThread(
 
 async function startInTx(
   host: CompactionHost,
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   actor: ActorContext,
   threadId: string,
@@ -179,7 +179,7 @@ async function startInTx(
  */
 export async function compactionModel(
   host: CompactionHost,
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   thread: ThreadRow,
   runId: string,

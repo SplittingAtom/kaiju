@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { KobeEvent } from "@kobe/protocol";
+import type { KaijuEvent } from "@kaiju/protocol";
 import { newLiveRun } from "../live";
 import { initialThreadState, type ThreadState } from "../thread-state";
 import type { RunSnapshot, ThreadSummary } from "../types";
@@ -205,7 +205,7 @@ describe("history planners", () => {
         ts: "2026-01-01T00:00:00Z",
         type: "file.opened",
         payload: { tool_call_id: `c${seq}`, path },
-      }) as unknown as KobeEvent;
+      }) as unknown as KaijuEvent;
     const events = [opened(4, "a.md"), opened(6, "b.md")];
     expect(liveFileRequest("file.opened", "r1", 0, 5, events)).toEqual({
       runId: "r1",

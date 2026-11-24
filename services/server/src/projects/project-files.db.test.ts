@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { RawBody } from "../testing/browser.js";
 import type { Person } from "../testing/event-stream-fixture.js";
 import { MemoryObjects } from "../testing/memory-objects.js";
@@ -20,7 +20,7 @@ import { expectRateLimited, fillLimit } from "../testing/operation-limits.js";
  */
 const f = new RunFixture();
 const objects = new MemoryObjects();
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const silent = { error: () => {}, warn: () => {}, info: () => {} };
 
 let sync: ReturnType<typeof createWorkspaceSync>;
@@ -51,7 +51,7 @@ async function builder(team: string): Promise<Person> {
 }
 
 function multipart(fields: Record<string, string>, file: { name: string; data: string }) {
-  const boundary = `----kobe${randomBytes(6).toString("hex")}`;
+  const boundary = `----kaiju${randomBytes(6).toString("hex")}`;
   let body = "";
   for (const [k, v] of Object.entries(fields)) {
     body += `--${boundary}\r\nContent-Disposition: form-data; name="${k}"\r\n\r\n${v}\r\n`;

@@ -4,7 +4,7 @@ import {
   type RunProjectContext,
   type RunViewingContext,
   type SyncConflict,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   REPO_WORKING_COPY_DIR,
   type PiExtensionUiRequest,
@@ -12,7 +12,7 @@ import {
   type PiRpcResponse,
   type RunGitContext,
   type RunGitRepo,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { PolicyChannel } from "../policy/channel.js";
 import { ToolsChannel } from "../tools/channel.js";
 import type { MemoryContextFile } from "../memory/context-file.js";
@@ -30,7 +30,7 @@ import type {
   BranchSummaryOutcome,
   BranchSummaryRequest,
 } from "../kobe-models/branch-summary-protocol.js";
-import type { KobePromptParts } from "../context/system-prompt.js";
+import type { KaijuPromptParts } from "../context/system-prompt.js";
 import type { SystemPromptFile } from "../pi/system-prompt-file.js";
 import { MCP_TOKEN_FILE, mcpTokenFileText, writeAgentFile } from "../mcp/pi-mcp-config.js";
 import type { ModelFile } from "../models/model-file.js";
@@ -496,7 +496,7 @@ export class Thread {
     return this.#contextFile;
   }
 
-  get promptParts(): KobePromptParts | undefined {
+  get promptParts(): KaijuPromptParts | undefined {
     const written = this.#memoryFile?.written;
     return written === undefined
       ? undefined

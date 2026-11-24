@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { VIEWING_CONTENT_MAX_BYTES, type RunViewingContext } from "@kobe/protocol";
+import { VIEWING_CONTENT_MAX_BYTES, type RunViewingContext } from "@kaiju/protocol";
 import { neutralizeMemoryMarkers, sanitizeUntrusted } from "../kobe-tools/memory-fence.js";
 
 /**

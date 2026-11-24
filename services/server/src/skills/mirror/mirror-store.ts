@@ -2,8 +2,8 @@ import {
   registryVersionMirrorSchema,
   type RegistryVersionMirror,
   type SkillMirrorFailure,
-} from "@kobe/protocol";
-import { SYSTEM_ACTOR, sql, type KobeDb } from "@kobe/db";
+} from "@kaiju/protocol";
+import { SYSTEM_ACTOR, sql, type KaijuDb } from "@kaiju/db";
 import { blockedAmong } from "../blocklist.js";
 import { recordAudit } from "../../audit/record.js";
 
@@ -49,7 +49,7 @@ function parseMirror(v: unknown): RegistryVersionMirror | null {
  * A different `url` on a version means another remote: it is pending for this one.
  */
 export async function pendingMirrorVersions(
-  db: KobeDb,
+  db: KaijuDb,
   url: string,
   now: Date,
   limit: number,
@@ -90,7 +90,7 @@ export async function pendingMirrorVersions(
 }
 
 export async function recordMirrorSuccess(
-  db: KobeDb,
+  db: KaijuDb,
   v: PendingVersion,
   url: string,
   pushed: { commit: string; tag: string; tree: string; existing: boolean },
@@ -127,7 +127,7 @@ export async function recordMirrorSuccess(
 
 /** Records a failed attempt with its backoff; audits the first failure of a streak only. */
 export async function recordMirrorFailure(
-  db: KobeDb,
+  db: KaijuDb,
   v: PendingVersion,
   url: string,
   error: string,
@@ -160,7 +160,7 @@ export async function recordMirrorFailure(
 }
 
 /** Makes every failed version for `url` due now (a Site admin's Retry); returns how many. */
-export async function retryMirrorNow(db: KobeDb, url: string): Promise<number> {
+export async function retryMirrorNow(db: KaijuDb, url: string): Promise<number> {
   return db.transaction(async (tx) => {
     const res = await tx.execute<{ id: string }>(sql`
       UPDATE registry_versions v SET mirror = v.mirror - 'nextAttemptAt', updated_at = now()
@@ -186,7 +186,7 @@ export interface MirrorCounts {
 export const MIRROR_FAILURES_SHOWN = 20;
 
 /** The console's numbers for `url`: pushed, failed and still pending published versions. */
-export async function mirrorCounts(db: KobeDb, url: string | null): Promise<MirrorCounts> {
+export async function mirrorCounts(db: KaijuDb, url: string | null): Promise<MirrorCounts> {
   const counts = await db.execute<{
     published: number;
     pushed: number;
@@ -262,7 +262,11 @@ export interface WithdrawalPlan {
  * waits in `toCommit`. A commit and tag already pushed are kept in the record: they stay on the
  * remote, Kaiju never rewrites history. A version published and unblocked again is pending again.
  */
-export async function planWithdrawals(db: KobeDb, url: string, now: Date): Promise<WithdrawalPlan> {
+export async function planWithdrawals(
+  db: KaijuDb,
+  url: string,
+  now: Date,
+): Promise<WithdrawalPlan> {
   const res = await db.execute<{
     id: string;
     name: string;
@@ -300,7 +304,7 @@ export async function planWithdrawals(db: KobeDb, url: string, now: Date): Promi
 
 /** Records `withdrawn` for `url` on each version, keeping a pushed commit and tag. */
 export async function markWithdrawn(
-  db: KobeDb,
+  db: KaijuDb,
   url: string,
   versions: readonly Withdrawal[],
   now: Date,

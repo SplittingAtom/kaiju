@@ -1,9 +1,17 @@
 import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
-import type { SkillBundleRef } from "@kobe/protocol/sandbox-wire";
-import { canonicalZip, SkillPackageError } from "@kobe/protocol";
-import { and, eq, teamMembers, withTeam, type KobeDb, type KobeTx, type TeamRole } from "@kobe/db";
-import { RULE_SET, type ScanResult } from "@kobe/skill-scanner";
+import type { SkillBundleRef } from "@kaiju/protocol/sandbox-wire";
+import { canonicalZip, SkillPackageError } from "@kaiju/protocol";
+import {
+  and,
+  eq,
+  teamMembers,
+  withTeam,
+  type KaijuDb,
+  type KaijuTx,
+  type TeamRole,
+} from "@kaiju/db";
+import { RULE_SET, type ScanResult } from "@kaiju/skill-scanner";
 import type { BlobStore } from "../../retention/blobs.js";
 import type { SkillRef } from "../../resolver/resolve.js";
 import { isBlocked } from "../blocklist.js";
@@ -77,7 +85,7 @@ export interface DraftRuntime {
 
 /** The draft's files as a runtime bundle, through the upload's validation; or why not. */
 export async function draftRuntime(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   draftId: string,
 ): Promise<{ ok: true; value: DraftRuntime } | { ok: false; message: string }> {
@@ -118,7 +126,7 @@ export async function hasDraftBundle(blobs: BlobStore, key: string): Promise<boo
 
 /** The thread owner's role in the team, or null once they left it. */
 export async function memberRole(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<TeamRole | null> {
@@ -162,7 +170,7 @@ export const UNAVAILABLE_MESSAGE =
  * stored under its hash unless the scan Blocks. A bundle already stored is not scanned again.
  */
 export async function prepareDraftTest(
-  deps: { readonly db: KobeDb; readonly blobs: BlobStore },
+  deps: { readonly db: KaijuDb; readonly blobs: BlobStore },
   who: { readonly teamId: string; readonly userId: string; readonly role: TeamRole },
   draftId: string,
 ): Promise<PrepareResult> {
@@ -228,7 +236,7 @@ export type DraftSkillResult =
  * not blocklisted now, and that exact bundle must have been scanned and stored.
  */
 export async function draftSkillForRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   blobs: BlobStore | undefined,
   input: { readonly teamId: string; readonly ownerUserId: string; readonly draftId: string | null },
 ): Promise<DraftSkillResult> {

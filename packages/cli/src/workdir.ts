@@ -14,7 +14,7 @@ const SIGNAL_NUMBERS: Record<CleanupSignal, number> = { SIGHUP: 1, SIGINT: 2, SI
  * directory. Point KOBE_TMPDIR at a memory-backed volume so plaintext never reaches a disk.
  */
 export async function makePrivateWorkDir(base?: string): Promise<string> {
-  const dir = await mkdtemp(join(base ?? tmpdir(), "kobe-restore-"));
+  const dir = await mkdtemp(join(base ?? tmpdir(), "kaiju-restore-"));
   await chmod(dir, 0o700);
   return dir;
 }

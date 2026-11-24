@@ -1,6 +1,6 @@
 "use client";
 
-import { AGENT_FORK_NAME_MAX, type AgentRosterRow } from "@kobe/protocol";
+import { AGENT_FORK_NAME_MAX, type AgentRosterRow } from "@kaiju/protocol";
 import { useState } from "react";
 import { forkAgent } from "../../lib/agents/roster-api";
 import { forkBindingNotice } from "../../lib/agents/roster-labels";

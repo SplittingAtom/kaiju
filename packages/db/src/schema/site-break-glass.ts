@@ -31,7 +31,7 @@ import {
  * two-person rule, time box (≤ 24 h) and 24 h request deadline, enforced by the
  * `site_break_glass_grants_guard` trigger (migration `*_site_break_glass_guard.sql`). The subject
  * can never request, approve, deny or revoke a grant about themselves. Access is checked by the
- * portable break-glass read in `@kobe/db`, which locks an active grant for the requesting admin in
+ * portable break-glass read in `@kaiju/db`, which locks an active grant for the requesting admin in
  * the same transaction. Never deleted (no DELETE privilege): the record behind the
  * `governance.site_break_glass.*` audit events. Holds no content (ids and the requester's reason).
  */

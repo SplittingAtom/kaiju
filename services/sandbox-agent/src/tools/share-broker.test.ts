@@ -1,8 +1,8 @@
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { FileShareResultFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { FileShareResultFrame } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PushPathError, type PushedFile } from "../workspace/sync.js";
 import { FileShareBroker, MAX_PENDING_SHARES_PER_THREAD } from "./share-broker.js";
@@ -14,7 +14,7 @@ const SHA = "a".repeat(64);
 /** Under CI load a realpath and a push can take seconds; the tests allow more than that. */
 const SETTLE_MS = 15_000;
 
-type ShareRequest = Extract<KobeToolsRequest, { op: "file.share" }>;
+type ShareRequest = Extract<KaijuToolsRequest, { op: "file.share" }>;
 const request = (input: Record<string, unknown>, id = "kt_1"): ShareRequest => ({
   id,
   op: "file.share",
@@ -39,7 +39,7 @@ const okResult = (request_id: string): FileShareResultFrame => ({
 let base: string;
 let root: string;
 beforeEach(async () => {
-  base = await realpath(await mkdtemp(path.join(tmpdir(), "kobe-sharebroker-")));
+  base = await realpath(await mkdtemp(path.join(tmpdir(), "kaiju-sharebroker-")));
   root = path.join(base, "workspace");
   await mkdir(path.join(root, "out"), { recursive: true });
   await writeFile(path.join(root, "out", "report.csv"), "a,b\n1,2\n");
@@ -52,7 +52,7 @@ function setup(options: { sends?: boolean; push?: (rel: string) => Promise<Pushe
   const frames: Record<string, unknown>[] = [];
   const pushed: string[] = [];
   const order: string[] = [];
-  const replies: KobeToolsResponse[] = [];
+  const replies: KaijuToolsResponse[] = [];
   const broker = new FileShareBroker({
     root,
     send: (frame) => {
@@ -68,7 +68,7 @@ function setup(options: { sends?: boolean; push?: (rel: string) => Promise<Pushe
         return { path: rel, rev: 3, sha256: SHA, size: 8 };
       }),
   });
-  const reply = (r: KobeToolsResponse) => replies.push(r);
+  const reply = (r: KaijuToolsResponse) => replies.push(r);
   // Every request ends in exactly one frame sent or one reply: wait for that many (file I/O is
   // slow under load), not for a fixed time (KOBE-415); then drain what is already queued, so a
   // second frame or reply would still show.

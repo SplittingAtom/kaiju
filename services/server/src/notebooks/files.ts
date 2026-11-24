@@ -1,5 +1,5 @@
-import { withTeam, type KobeDb } from "@kobe/db";
-import { NOTEBOOK_FILE_MAX_BYTES, UPLOAD_DEFAULT_MAX_FILE_BYTES } from "@kobe/protocol";
+import { withTeam, type KaijuDb } from "@kaiju/db";
+import { NOTEBOOK_FILE_MAX_BYTES, UPLOAD_DEFAULT_MAX_FILE_BYTES } from "@kaiju/protocol";
 import { runWithAuditContext } from "../audit/context.js";
 import { isInternalPath } from "../workspace-files/paths.js";
 import { saveWorkspaceFile, type SaveResult } from "../workspace-files/save.js";
@@ -26,7 +26,7 @@ export interface NotebookFiles {
 const DECODER = new TextDecoder("utf-8", { fatal: true });
 
 export function createNotebookFiles(
-  db: KobeDb,
+  db: KaijuDb,
   options: { readonly teamQuotaDefaultBytes: number },
 ): NotebookFiles {
   let sync: WorkspaceSync | undefined;

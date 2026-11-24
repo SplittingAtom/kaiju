@@ -16,11 +16,11 @@
 }
 
 .logo.whenLight {
-  display: var(--kobe-when-light);
+  display: var(--kaiju-when-light);
 }
 
 .logo.whenDark {
-  display: var(--kobe-when-dark);
+  display: var(--kaiju-when-dark);
 }
 
 /* The themed logo (KOBE-562, components/shell/logo.tsx): the server's inline-safe SVG in
@@ -45,7 +45,7 @@
 
 :global(a):hover .themed,
 :global(a):focus-visible .themed {
-  color: var(--kobe-brand-primary);
+  color: var(--kaiju-brand-primary);
 }
 
 :global(a[aria-current]) .themed {

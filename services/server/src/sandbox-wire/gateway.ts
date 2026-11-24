@@ -1,12 +1,12 @@
 import type { IncomingMessage, Server } from "node:http";
 import type { Duplex } from "node:stream";
-import { type SessionTokenClaims } from "@kobe/protocol";
+import { type SessionTokenClaims } from "@kaiju/protocol";
 import {
   SANDBOX_MAX_FRAME_BYTES,
   SANDBOX_WS_PATH,
   SANDBOX_WS_SUBPROTOCOL,
-} from "@kobe/protocol/sandbox-wire";
-import { ROOT_CONTEXT, SpanKind, type Span, annotate, withSpan } from "@kobe/telemetry";
+} from "@kaiju/protocol/sandbox-wire";
+import { ROOT_CONTEXT, SpanKind, type Span, annotate, withSpan } from "@kaiju/telemetry";
 
 import type { Logger } from "pino";
 import type WebSocket from "ws";

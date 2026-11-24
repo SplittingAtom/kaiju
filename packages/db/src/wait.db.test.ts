@@ -6,7 +6,7 @@ import { waitForMigrations } from "./wait.js";
 
 /** A migrations folder whose newest journal entry is later than anything applied. */
 function futureJournal(): string {
-  const dir = mkdtempSync(join(tmpdir(), "kobe-journal-"));
+  const dir = mkdtempSync(join(tmpdir(), "kaiju-journal-"));
   mkdirSync(join(dir, "meta"));
   writeFileSync(
     join(dir, "meta", "_journal.json"),

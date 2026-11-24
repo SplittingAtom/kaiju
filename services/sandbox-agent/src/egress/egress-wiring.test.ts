@@ -22,7 +22,7 @@ const wiring = (): EgressWiring => ({
 
 let dir = "";
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), "kobe-egress-"));
+  dir = await mkdtemp(path.join(tmpdir(), "kaiju-egress-"));
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
 

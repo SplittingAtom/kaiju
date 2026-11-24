@@ -1,6 +1,6 @@
 import { createIsolationGate, type IsolationGate } from "../isolation/gate.js";
 import type { RuntimeClassLike } from "../isolation/runtime-class.js";
-import { generateSessionKeyPair, verifyKeysOf } from "@kobe/session-token";
+import { generateSessionKeyPair, verifyKeysOf } from "@kaiju/session-token";
 import type { SandboxSettings, SessionKeys, SessionVerifyKeySets } from "../sandbox/config.js";
 import type { TeamRef } from "../sandbox/manifests.js";
 import type { FakeKube } from "./fake-kube.js";
@@ -14,8 +14,8 @@ export const USER = "2d7a0b3e-4f5c-4d7e-8fa0-2b3c4d5e6f70";
 export const OTHER_USER = "3e8b1c4f-5a6d-4e8f-9ab1-3c4d5e6f7081";
 
 const podLabels = (component: string) => ({
-  "app.kubernetes.io/name": "kobe",
-  "app.kubernetes.io/instance": "kobe",
+  "app.kubernetes.io/name": "kaiju",
+  "app.kubernetes.io/instance": "kaiju",
   "app.kubernetes.io/component": component,
 });
 
@@ -23,9 +23,9 @@ export const SETTINGS: SandboxSettings = {
   image: "ghcr.io/splittingatom/kobe-sandbox:0.1.0",
   imagePullPolicy: "IfNotPresent",
   imagePullSecrets: [],
-  releaseNamespace: "kobe",
+  releaseNamespace: "kaiju",
   serverServiceAccount: "kobe-server",
-  managerClusterRole: "kobe-abc-sandbox-manager",
+  managerClusterRole: "kaiju-abc-sandbox-manager",
   endpoints: {
     server: {
       service: "kobe-server",
@@ -140,7 +140,7 @@ export function seedCluster(fake: FakeKube, handler = "runsc"): void {
     fake.seed({
       apiVersion: "v1",
       kind: "Service",
-      metadata: { name, namespace: "kobe" },
+      metadata: { name, namespace: "kaiju" },
       spec: { clusterIP: ip },
     });
   }

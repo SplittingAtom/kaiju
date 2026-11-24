@@ -40,7 +40,7 @@ STORY_TEXT=(
   "U13|Break-glass needs a second admin's approval, is read-only and time-boxed, notifies team admins, and every read is audited."
   "U14|Runs as me in auto mode; a write that would ask is skipped and reported; result appears in Scheduled with a notification."
   "U15|Threads list and search from Postgres instantly; next turn shows waking, Pi JSONL rebuilt, conversation continues; shared files and artifacts intact."
-  "U16|Chart refuses to run agents without gVisor; with it, first chat works; kobe backup/restore round-trips Postgres + S3."
+  "U16|Chart refuses to run agents without gVisor; with it, first chat works; kaiju backup/restore round-trips Postgres + S3."
 )
 PARTS=(
   "U1|gate4|U1:|"

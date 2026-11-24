@@ -1,5 +1,5 @@
 import { Hono, type Context } from "hono";
-import { listNotificationsQuerySchema, markNotificationsReadBodySchema } from "@kobe/protocol";
+import { listNotificationsQuerySchema, markNotificationsReadBodySchema } from "@kaiju/protocol";
 import { requireTeam, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { decodeCursor, listNotifications, markNotificationsRead } from "../notifications/store.js";

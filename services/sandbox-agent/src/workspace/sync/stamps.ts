@@ -54,9 +54,9 @@ export function racy(stamp: FileStamp, startNs: bigint | undefined): boolean {
   return stamp.ctimeNs >= edge || stamp.mtimeNs >= edge;
 }
 
-const KOBE_DIR = ".kobe";
+const KAIJU_DIR = ".kobe";
 /** The agent's own directory: `.kobe/` is shared with the Pi identities (sessions, 2770). */
-const STATE_DIR = `${KOBE_DIR}/agent`;
+const STATE_DIR = `${KAIJU_DIR}/agent`;
 const CLOCK_FILE = "workspace-clock";
 const STAMPS_FILE = "workspace-verified.json";
 /** A marker mtime further than this from the agent's clock is no trustworthy volume clock. */
@@ -77,12 +77,12 @@ function agentOwned(stat: { uid: number; mode: number }, mode: number): boolean 
  * owned by the agent's uid, so a swapped one is never trusted (its stamps count as absent).
  */
 async function stateDir(root: string, create: boolean): Promise<string | undefined> {
-  const parent = path.join(root, KOBE_DIR);
-  const kobe = await lstatIfExists(parent);
-  if (!kobe) {
+  const parent = path.join(root, KAIJU_DIR);
+  const kaiju = await lstatIfExists(parent);
+  if (!kaiju) {
     if (!create) return undefined;
     await mkdir(parent, { mode: 0o700 });
-  } else if (!kobe.isDirectory()) return undefined;
+  } else if (!kaiju.isDirectory()) return undefined;
   const dir = path.join(root, STATE_DIR);
   let found = await lstatIfExists(dir);
   if (!found && create) {

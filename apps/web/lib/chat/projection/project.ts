@@ -17,7 +17,7 @@ import { attachSummaries, overlayLive } from "./overlay";
 import {
   EMPTY_VERSION_NOTE,
   PREFIX_EMPTY,
-  type KobeMessageMeta,
+  type KaijuMessageMeta,
   type LiveOverlay,
   type Node,
   type ProjectedItem,
@@ -85,7 +85,7 @@ export function projectThread(
       const split = splitAttachedFiles(p?.kind === "user" ? p.text : "");
       const { text, skill, references } = withoutSkillLine(split.text);
       const { deps: markerDeps, ...markers } = markersOf(node);
-      const meta: KobeMessageMeta = {
+      const meta: KaijuMessageMeta = {
         kind: "user",
         entryId: first.entryId,
         parentEntryId: first.parentId,
@@ -119,7 +119,7 @@ export function projectThread(
           ? [[p.toolCallId, e.entryId] as const]
           : [];
       });
-      const meta: KobeMessageMeta = {
+      const meta: KaijuMessageMeta = {
         kind: "assistant",
         entryIds: node.entries.map((e) => e.entryId),
         live: false,
@@ -218,14 +218,14 @@ export function newestBelow(
 
 /** A version with nothing to show yet: the leaf is a root edit whose prompt Pi never saved. */
 function emptyVersion(id: string): ProjectedItem {
-  const meta: KobeMessageMeta = { kind: "assistant", entryIds: [], live: false };
+  const meta: KaijuMessageMeta = { kind: "assistant", entryIds: [], live: false };
   const note = { reason: "empty", message: EMPTY_VERSION_NOTE };
   return {
     parentId: null,
     message: {
       id,
       role: "assistant",
-      content: [{ type: "data-kobe-problem", data: note }],
+      content: [{ type: "data-kaiju-problem", data: note }],
       status: { type: "complete", reason: "stop" },
       metadata: { custom: meta },
     },

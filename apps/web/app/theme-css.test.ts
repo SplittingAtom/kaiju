@@ -85,10 +85,10 @@ describe("theme tokens (KOBE-282)", () => {
       "--input",
       "--admin-accent",
       "--admin-warn-bg",
-      "--kobe-console-bg",
-      "--kobe-gauge-ok",
-      "--kobe-when-light",
-      "--kobe-when-dark",
+      "--kaiju-console-bg",
+      "--kaiju-gauge-ok",
+      "--kaiju-when-light",
+      "--kaiju-when-dark",
     ])
       expect(lightNames).toContain(token);
   });
@@ -162,24 +162,27 @@ describe("status tokens (KOBE-301)", () => {
   ] as const) {
     it(`every status colour keeps AA (4.5:1) on every surface and on its tint (${name})`, () => {
       for (const status of TEXT) {
-        const fg = resolve(theme, `--kobe-status-${status}`);
+        const fg = resolve(theme, `--kaiju-status-${status}`);
         for (const surface of SURFACES) {
           expect(contrast(fg, resolve(theme, surface)), `${status} on ${surface}`).toBeGreaterThan(
             4.5,
           );
         }
-        if (theme.has(`--kobe-status-${status}-bg`)) {
-          const tint = resolve(theme, `--kobe-status-${status}-bg`);
+        if (theme.has(`--kaiju-status-${status}-bg`)) {
+          const tint = resolve(theme, `--kaiju-status-${status}-bg`);
           expect(contrast(fg, tint), `${status} on its tint`).toBeGreaterThan(4.5);
         }
       }
       // The approval card's amber border and icon sit on the warning background.
       expect(
-        contrast(resolve(theme, "--kobe-status-attention"), resolve(theme, "--admin-warn-bg")),
+        contrast(resolve(theme, "--kaiju-status-attention"), resolve(theme, "--admin-warn-bg")),
       ).toBeGreaterThan(4.5);
       // The count pill (notification bell): its text on the accent.
       expect(
-        contrast(resolve(theme, "--kobe-status-accent-fg"), resolve(theme, "--kobe-status-accent")),
+        contrast(
+          resolve(theme, "--kaiju-status-accent-fg"),
+          resolve(theme, "--kaiju-status-accent"),
+        ),
       ).toBeGreaterThan(4.5);
     });
   }
@@ -189,8 +192,8 @@ describe("status tokens (KOBE-301)", () => {
     ["dark", dark],
   ] as const) {
     it(`console form-control borders keep 3:1 on the page and the panel (${name}, KOBE-294)`, () => {
-      const border = resolve(theme, "--kobe-console-control-border");
-      for (const surface of ["--kobe-console-bg", "--kobe-console-panel"]) {
+      const border = resolve(theme, "--kaiju-console-control-border");
+      for (const surface of ["--kaiju-console-bg", "--kaiju-console-panel"]) {
         expect(contrast(border, resolve(theme, surface)), surface).toBeGreaterThanOrEqual(3);
       }
     });
@@ -201,34 +204,34 @@ describe("status tokens (KOBE-301)", () => {
     ["dark", dark],
   ] as const) {
     it(`white on the confirm button keeps AA, hovered too (${name})`, () => {
-      const fg = resolve(theme, "--kobe-confirm-fg");
-      for (const bg of ["--kobe-confirm", "--kobe-confirm-hover"]) {
+      const fg = resolve(theme, "--kaiju-confirm-fg");
+      for (const bg of ["--kaiju-confirm", "--kaiju-confirm-hover"]) {
         expect(contrast(fg, resolve(theme, bg)), bg).toBeGreaterThanOrEqual(4.5);
       }
     });
 
     it(`the gold tool badge keeps AA on its tint and on cards (${name}, KOBE-374)`, () => {
-      const gold = resolve(theme, "--kobe-tool-badge");
-      for (const surface of ["--kobe-tool-badge-bg", "--card", "--background"]) {
+      const gold = resolve(theme, "--kaiju-tool-badge");
+      for (const surface of ["--kaiju-tool-badge-bg", "--card", "--background"]) {
         expect(contrast(gold, resolve(theme, surface)), surface).toBeGreaterThanOrEqual(4.5);
       }
       // Gold is the tool's identity, not an outcome: it is none of the status colours.
       for (const status of ["running", "attention", "failed", "done"]) {
-        expect(gold).not.toBe(resolve(theme, `--kobe-status-${status}`));
+        expect(gold).not.toBe(resolve(theme, `--kaiju-status-${status}`));
       }
     });
 
     it(`the Files panel's active dot keeps 3:1 on the rail and the page (${name}, KOBE-590)`, () => {
       for (const surface of ["--muted", "--background"]) {
         expect(
-          contrast(resolve(theme, "--kobe-active-dot"), resolve(theme, surface)),
+          contrast(resolve(theme, "--kaiju-active-dot"), resolve(theme, surface)),
           surface,
         ).toBeGreaterThanOrEqual(3);
       }
     });
 
     it(`the composer's focus and running outlines keep 3:1 on the page, panels and cards (${name}, KOBE-374)`, () => {
-      for (const outline of ["--kobe-composer-focus", "--kobe-status-running"]) {
+      for (const outline of ["--kaiju-composer-focus", "--kaiju-status-running"]) {
         for (const surface of ["--background", "--muted", "--card"]) {
           expect(
             contrast(resolve(theme, outline), resolve(theme, surface)),
@@ -259,9 +262,9 @@ describe("status tokens (KOBE-301)", () => {
   ] as const) {
     it(`blue fills carry white text with AA, at rest and on hover (${name}, KOBE-479)`, () => {
       // The accent is the one blue fill (console primary button, accent badge, count pill).
-      expect(resolve(theme, "--kobe-status-accent-fg")).toBe("#ffffff");
-      const fill = resolve(theme, "--kobe-status-accent");
-      const page = ["--kobe-console-bg", "--kobe-console-panel", "--background", "--card"];
+      expect(resolve(theme, "--kaiju-status-accent-fg")).toBe("#ffffff");
+      const fill = resolve(theme, "--kaiju-status-accent");
+      const page = ["--kaiju-console-bg", "--kaiju-console-panel", "--background", "--card"];
       for (const fillOn of [fill, ...page.map((s) => over(fill, 0.9, resolve(theme, s)))]) {
         expect(contrast("#ffffff", fillOn), `white on ${fillOn}`).toBeGreaterThanOrEqual(4.5);
       }
@@ -278,25 +281,25 @@ describe("status tokens (KOBE-301)", () => {
   ] as const) {
     it(`the file editor's diff keeps text readable on green and red, and its marks AA (${name}, KOBE-463)`, () => {
       for (const kind of ["added", "deleted"] as const) {
-        const tint = resolve(theme, `--kobe-diff-${kind}-bg`);
+        const tint = resolve(theme, `--kaiju-diff-${kind}-bg`);
         expect(contrast(resolve(theme, "--foreground"), tint), `text on ${kind}`).toBeGreaterThan(
           4.5,
         );
         expect(
-          contrast(resolve(theme, `--kobe-diff-${kind}`), tint),
+          contrast(resolve(theme, `--kaiju-diff-${kind}`), tint),
           `${kind} mark`,
         ).toBeGreaterThan(4.5);
       }
-      expect(resolve(theme, "--kobe-diff-added")).toBe(resolve(theme, "--kobe-status-running"));
-      expect(resolve(theme, "--kobe-diff-deleted")).toBe(resolve(theme, "--kobe-status-failed"));
+      expect(resolve(theme, "--kaiju-diff-added")).toBe(resolve(theme, "--kaiju-status-running"));
+      expect(resolve(theme, "--kaiju-diff-deleted")).toBe(resolve(theme, "--kaiju-status-failed"));
     });
   }
 
   it("the gauges read the status colours, and both dark blocks set the same ones", () => {
-    expect(light.get("--kobe-gauge-warn")).toBe("var(--kobe-status-attention)");
-    expect(light.get("--kobe-gauge-full")).toBe("var(--kobe-status-failed)");
+    expect(light.get("--kaiju-gauge-warn")).toBe("var(--kaiju-status-attention)");
+    expect(light.get("--kaiju-gauge-full")).toBe("var(--kaiju-status-failed)");
     const css = read("components/shell/context-gauge.module.css");
-    expect(css).toContain("var(--kobe-gauge-full)");
+    expect(css).toContain("var(--kaiju-gauge-full)");
   });
 });
 
@@ -374,7 +377,7 @@ describe("tokenization guard (KOBE-498)", () => {
   });
 
   it("font families come from the tokens", () => {
-    const ok = /^(?:var\(--kobe-font-[\w-]+\)|inherit|initial|unset)$/;
+    const ok = /^(?:var\(--kaiju-font-[\w-]+\)|inherit|initial|unset)$/;
     expect(
       decls
         .filter((d) => d.name === "font-family")
@@ -384,7 +387,7 @@ describe("tokenization guard (KOBE-498)", () => {
     const tsFonts = ts.flatMap((f) =>
       [...readRaw(f).matchAll(/fontFamily\s*:\s*([^,}\n]+(?:,[^}\n]+)?)/g)]
         .map((m) => (m[1] as string).trim())
-        .filter((v) => !/^["'`]var\(--kobe-font-[\w-]+\)["'`]$/.test(v))
+        .filter((v) => !/^["'`]var\(--kaiju-font-[\w-]+\)["'`]$/.test(v))
         .map((v) => `${f}: ${v}`),
     );
     expect(tsFonts).toEqual([]);
@@ -417,7 +420,7 @@ describe("tokenization guard (KOBE-498)", () => {
   });
 
   it("corners come from the radius tokens", () => {
-    const ok = /^(?:var\(--kobe-radius-[\w-]+\)|0|50%|inherit)$/;
+    const ok = /^(?:var\(--kaiju-radius-[\w-]+\)|0|50%|inherit)$/;
     expect(
       decls
         .filter((d) => d.name === "border-radius")
@@ -440,7 +443,7 @@ describe("tokenization guard (KOBE-498)", () => {
   it("the guard itself catches what it should", () => {
     expect(COLOUR_LITERAL.test("0 4px 16px rgb(0 0 0 / 15%)")).toBe(true);
     expect(COLOUR_LITERAL.test("var(--admin-border, #d0d0d0)")).toBe(true);
-    expect(COLOUR_LITERAL.test("var(--kobe-shadow-pop)")).toBe(false);
+    expect(COLOUR_LITERAL.test("var(--kaiju-shadow-pop)")).toBe(false);
     expect(PALETTE.test('className="text-amber-700 dark:text-amber-400"')).toBe(true);
     expect(PALETTE.test('className="text-status-attention bg-muted"')).toBe(false);
     expect(COLOUR_LITERAL_TS('const c = "#c62828";')).toBe(true);
@@ -475,63 +478,63 @@ describe("design tokens (KOBE-498)", () => {
     return ref ? resolve(theme, ref[1] as string) : value;
   };
   const BRAND = [
-    "--kobe-brand-primary",
-    "--kobe-brand-primary-hover",
-    "--kobe-brand-primary-fg",
-    "--kobe-brand-link",
-    "--kobe-brand-focus",
+    "--kaiju-brand-primary",
+    "--kaiju-brand-primary-hover",
+    "--kaiju-brand-primary-fg",
+    "--kaiju-brand-link",
+    "--kaiju-brand-focus",
   ];
   /** Set per scheme: a light value on :root and a dark one in both dark blocks. */
-  const THEMED = BRAND.filter((t) => t !== "--kobe-brand-primary-hover");
+  const THEMED = BRAND.filter((t) => t !== "--kaiju-brand-primary-hover");
   /** One value for both schemes for now (dark inherits :root; T4's presets may set dark values). */
   const SHARED = [
-    "--kobe-shadow-pop",
-    "--kobe-shadow-drawer",
-    "--kobe-shadow-panel",
-    "--kobe-scrim",
+    "--kaiju-shadow-pop",
+    "--kaiju-shadow-drawer",
+    "--kaiju-shadow-panel",
+    "--kaiju-scrim",
   ];
   const FIXED = [
-    "--kobe-font-sans",
-    "--kobe-font-mono",
-    "--kobe-brand-wordmark-size",
-    "--kobe-brand-wordmark-weight",
-    "--kobe-radius-sm",
-    "--kobe-radius-md",
-    "--kobe-radius-lg",
-    "--kobe-radius-xl",
-    "--kobe-radius-pill",
+    "--kaiju-font-sans",
+    "--kaiju-font-mono",
+    "--kaiju-brand-wordmark-size",
+    "--kaiju-brand-wordmark-weight",
+    "--kaiju-radius-sm",
+    "--kaiju-radius-md",
+    "--kaiju-radius-lg",
+    "--kaiju-radius-xl",
+    "--kaiju-radius-pill",
   ];
 
   it("every T2 token has a light value, and the themed ones a dark value", () => {
     for (const token of [...BRAND, ...SHARED, ...FIXED]) expect(light.has(token), token).toBe(true);
     for (const token of THEMED) expect(chosenDark.has(token), token).toBe(true);
     for (const token of [...SHARED, ...FIXED]) expect(chosenDark.has(token), token).toBe(false);
-    expect(light.get("--kobe-brand-primary-hover")).toBe(
-      "color-mix(in oklab, var(--kobe-brand-primary) 90%, transparent)",
+    expect(light.get("--kaiju-brand-primary-hover")).toBe(
+      "color-mix(in oklab, var(--kaiju-brand-primary) 90%, transparent)",
     );
   });
 
   it("the existing accents read the brand layer and keep today's values", () => {
-    expect(light.get("--admin-accent")).toBe("var(--kobe-brand-link)");
-    expect(light.get("--kobe-status-accent")).toBe("var(--kobe-brand-primary)");
-    expect(light.get("--kobe-status-accent-fg")).toBe("var(--kobe-brand-primary-fg)");
-    for (const alias of ["--admin-accent", "--kobe-status-accent", "--kobe-status-accent-fg"])
+    expect(light.get("--admin-accent")).toBe("var(--kaiju-brand-link)");
+    expect(light.get("--kaiju-status-accent")).toBe("var(--kaiju-brand-primary)");
+    expect(light.get("--kaiju-status-accent-fg")).toBe("var(--kaiju-brand-primary-fg)");
+    for (const alias of ["--admin-accent", "--kaiju-status-accent", "--kaiju-status-accent-fg"])
       expect(chosenDark.has(alias), alias).toBe(false);
     // Today's colours (KOBE-479), so nothing on screen changes.
     const today = {
       light: {
         "--admin-accent": "#2449c7",
-        "--kobe-status-accent": "#2449c7",
-        "--kobe-status-accent-fg": "#ffffff",
+        "--kaiju-status-accent": "#2449c7",
+        "--kaiju-status-accent-fg": "#ffffff",
         "--ring": "oklch(0.708 0 0)",
-        "--kobe-composer-focus": "#52525b",
+        "--kaiju-composer-focus": "#52525b",
       },
       dark: {
         "--admin-accent": "#8fa8ff",
-        "--kobe-status-accent": "#4263eb",
-        "--kobe-status-accent-fg": "#ffffff",
+        "--kaiju-status-accent": "#4263eb",
+        "--kaiju-status-accent-fg": "#ffffff",
         "--ring": "oklch(0.556 0 0)",
-        "--kobe-composer-focus": "#a1a1aa",
+        "--kaiju-composer-focus": "#a1a1aa",
       },
     };
     for (const [token, value] of Object.entries(today.light))
@@ -546,30 +549,33 @@ describe("design tokens (KOBE-498)", () => {
   ] as const) {
     it(`brand links keep AA and focus 3:1 on the page and panels (${name})`, () => {
       for (const surface of [
-        "--kobe-console-bg",
-        "--kobe-console-panel",
+        "--kaiju-console-bg",
+        "--kaiju-console-panel",
         "--background",
         "--muted",
       ]) {
         const bg = resolve(theme, surface);
-        expect(contrast(resolve(theme, "--kobe-brand-link"), bg), surface).toBeGreaterThanOrEqual(
+        expect(contrast(resolve(theme, "--kaiju-brand-link"), bg), surface).toBeGreaterThanOrEqual(
           4.5,
         );
-        expect(contrast(resolve(theme, "--kobe-brand-focus"), bg), surface).toBeGreaterThanOrEqual(
+        expect(contrast(resolve(theme, "--kaiju-brand-focus"), bg), surface).toBeGreaterThanOrEqual(
           3,
         );
       }
       expect(
-        contrast(resolve(theme, "--kobe-brand-primary-fg"), resolve(theme, "--kobe-brand-primary")),
+        contrast(
+          resolve(theme, "--kaiju-brand-primary-fg"),
+          resolve(theme, "--kaiju-brand-primary"),
+        ),
       ).toBeGreaterThanOrEqual(4.5);
     });
   }
 
   it("corners reproduce Tailwind's default radii", () => {
-    expect(light.get("--kobe-radius-sm")).toBe("0.25rem");
-    expect(light.get("--kobe-radius-md")).toBe("0.375rem");
-    expect(light.get("--kobe-radius-lg")).toBe("0.5rem");
-    expect(light.get("--kobe-radius-xl")).toBe("0.75rem");
+    expect(light.get("--kaiju-radius-sm")).toBe("0.25rem");
+    expect(light.get("--kaiju-radius-md")).toBe("0.375rem");
+    expect(light.get("--kaiju-radius-lg")).toBe("0.5rem");
+    expect(light.get("--kaiju-radius-xl")).toBe("0.75rem");
   });
 
   it("the --admin-* neutrals are aliases on :root, no longer scoped to the chat root", () => {
@@ -589,24 +595,24 @@ describe("design tokens (KOBE-498)", () => {
   it("every brand, font and radius token is mapped in tailwind.css (circles keep rounded-full)", () => {
     const theme = block(read("app/tailwind.css"), "@theme inline");
     const tokens = [...light.keys()].filter(
-      (t) => /^--kobe-(?:brand-(?!wordmark)|font-|radius-)/.test(t) && t !== "--kobe-radius-pill",
+      (t) => /^--kaiju-(?:brand-(?!wordmark)|font-|radius-)/.test(t) && t !== "--kaiju-radius-pill",
     );
     expect(tokens.length).toBe(11);
     expect(theme).not.toMatch(/--radius-full\s*:/);
     for (const token of tokens) expect(theme, token).toContain(`var(${token})`);
-    expect(theme).toMatch(/--font-sans:\s*var\(--kobe-font-sans\)/);
-    expect(theme).toMatch(/--font-mono:\s*var\(--kobe-font-mono\)/);
+    expect(theme).toMatch(/--font-sans:\s*var\(--kaiju-font-sans\)/);
+    expect(theme).toMatch(/--font-mono:\s*var\(--kaiju-font-mono\)/);
     for (const size of ["sm", "md", "lg", "xl"])
-      expect(theme).toMatch(new RegExp(`--radius-${size}:\\s*var\\(--kobe-radius-${size}\\)`));
+      expect(theme).toMatch(new RegExp(`--radius-${size}:\\s*var\\(--kaiju-radius-${size}\\)`));
   });
 
   it("every focus outline reads the brand focus colour", () => {
     const admin = read("app/admin/admin-global.css");
-    expect(block(admin, "[data-kobe-console] :focus-visible")).toContain(
-      "outline: 3px solid var(--kobe-brand-focus)",
+    expect(block(admin, "[data-kaiju-console] :focus-visible")).toContain(
+      "outline: 3px solid var(--kaiju-brand-focus)",
     );
     expect(block(read("components/chat/chat.module.css"), ".app :focus-visible")).toContain(
-      "outline: 3px solid var(--kobe-brand-focus)",
+      "outline: 3px solid var(--kaiju-brand-focus)",
     );
   });
 
@@ -624,14 +630,14 @@ describe("design tokens (KOBE-498)", () => {
 
   it("the wordmark reads its type tokens", () => {
     const wordmark = block(read("components/shell/shell.module.css"), ".wordmark");
-    expect(wordmark).toContain("font-size: var(--kobe-brand-wordmark-size)");
-    expect(wordmark).toContain("font-weight: var(--kobe-brand-wordmark-weight)");
+    expect(wordmark).toContain("font-size: var(--kaiju-brand-wordmark-size)");
+    expect(wordmark).toContain("font-weight: var(--kaiju-brand-wordmark-weight)");
   });
 });
 
 /**
  * KOBE-550 (the Catalyst look): a panel glows on hover in every theme, in the brand's colour. The
- * glow colour, the panel glow and the hover border are tokens; the class `kobe-panel` on the
+ * glow colour, the panel glow and the hover border are tokens; the class `kaiju-panel` on the
  * card-like surfaces reads them through one rule per root (chat, consoles), guarded by
  * `(hover: hover)` and reduced motion; the composer glows on focus; a preset may paint an ambient
  * gradient on the page roots.
@@ -640,44 +646,44 @@ describe("panel glow (KOBE-550)", () => {
   const light = new Map(declarations(block(THEME, ":root")));
   const chosenDark = new Map(declarations(block(THEME, ':root[data-theme="dark"]')));
   const GLOW = [
-    "--kobe-glow-color",
-    "--kobe-glow-panel",
-    "--kobe-panel-border-hover",
-    "--kobe-page-ambient",
+    "--kaiju-glow-color",
+    "--kaiju-glow-panel",
+    "--kaiju-panel-border-hover",
+    "--kaiju-page-ambient",
   ];
 
   it("the glow reads the brand primary; the panel glow and the hover border read the glow", () => {
-    expect(light.get("--kobe-glow-color")).toBe(
-      "color-mix(in oklab, var(--kobe-brand-primary) 28%, transparent)",
+    expect(light.get("--kaiju-glow-color")).toBe(
+      "color-mix(in oklab, var(--kaiju-brand-primary) 28%, transparent)",
     );
-    expect(light.get("--kobe-glow-panel")).toBe("0 0 20px var(--kobe-glow-color)");
-    expect(light.get("--kobe-panel-border-hover")).toBe(
-      "color-mix(in oklab, var(--kobe-brand-primary) 35%, var(--border))",
+    expect(light.get("--kaiju-glow-panel")).toBe("0 0 20px var(--kaiju-glow-color)");
+    expect(light.get("--kaiju-panel-border-hover")).toBe(
+      "color-mix(in oklab, var(--kaiju-brand-primary) 35%, var(--border))",
     );
-    expect(light.get("--kobe-page-ambient")).toBe("none");
+    expect(light.get("--kaiju-page-ambient")).toBe("none");
     // One value for both schemes (the brand tokens already differ per scheme).
     for (const token of GLOW) expect(chosenDark.has(token), token).toBe(false);
   });
 
   it("the chat and the consoles glow a hovered panel through the tokens, hover and motion guarded", () => {
     for (const [path, root] of [
-      ["app/chat-global.css", "[data-kobe-chat]"],
-      ["app/admin/admin-global.css", "[data-kobe-console]"],
+      ["app/chat-global.css", "[data-kaiju-chat]"],
+      ["app/admin/admin-global.css", "[data-kaiju-console]"],
     ] as const) {
       const css = read(path);
       // One halo at a time (KOBE-554): a panel around the hovered one keeps its resting look.
-      const hover = block(css, `${root} .kobe-panel:hover:not(:has(.kobe-panel:hover))`);
-      expect(hover, path).toContain("box-shadow: var(--kobe-glow-panel)");
-      expect(hover, path).toContain("border-color: var(--kobe-panel-border-hover)");
-      expect(block(css, `${root} .kobe-panel`), path).toMatch(/transition:[^;]*box-shadow/);
+      const hover = block(css, `${root} .kaiju-panel:hover:not(:has(.kaiju-panel:hover))`);
+      expect(hover, path).toContain("box-shadow: var(--kaiju-glow-panel)");
+      expect(hover, path).toContain("border-color: var(--kaiju-panel-border-hover)");
+      expect(block(css, `${root} .kaiju-panel`), path).toMatch(/transition:[^;]*box-shadow/);
       expect(css, path).toMatch(/@media \(hover: hover\)/);
-      expect(css, path).not.toMatch(/\.kobe-panel:hover\s*\{/);
+      expect(css, path).not.toMatch(/\.kaiju-panel:hover\s*\{/);
       expect(css, path).toMatch(/@media \(prefers-reduced-motion: reduce\)/);
       // Forced colours drop the halo, so the hovered border takes a system colour (KOBE-554).
       expect(
         block(
           block(css, "@media (forced-colors: active)"),
-          `${root} .kobe-panel:hover:not(:has(.kobe-panel:hover))`,
+          `${root} .kaiju-panel:hover:not(:has(.kaiju-panel:hover))`,
         ),
         path,
       ).toContain("border-color: Highlight");
@@ -686,13 +692,13 @@ describe("panel glow (KOBE-550)", () => {
 
   it("the composer glows on focus, and the page roots paint the ambient", () => {
     expect(block(read("components/chat/composer.module.css"), ".panel:focus-within")).toContain(
-      "box-shadow: var(--kobe-glow-panel)",
+      "box-shadow: var(--kaiju-glow-panel)",
     );
     expect(block(read("components/chat/chat.module.css"), ".app")).toContain(
-      "background-image: var(--kobe-page-ambient)",
+      "background-image: var(--kaiju-page-ambient)",
     );
     expect(readRaw("components/ui/console/layout.tsx")).toContain(
-      "bg-[image:var(--kobe-page-ambient)]",
+      "bg-[image:var(--kaiju-page-ambient)]",
     );
   });
 
@@ -712,7 +718,7 @@ describe("panel glow (KOBE-550)", () => {
       "components/shell/shell-grid.tsx",
       "components/ui/console/layout.tsx",
     ]) {
-      expect(readRaw(path), path).toContain("kobe-panel");
+      expect(readRaw(path), path).toContain("kaiju-panel");
     }
   });
 });
@@ -732,11 +738,11 @@ describe("lane tokens (CT7, KOBE-545)", () => {
     const ref = /^var\((--[\w-]+)\)$/.exec(value);
     return ref ? resolve(theme, ref[1] as string) : value;
   };
-  const LANES = Array.from({ length: 8 }, (_, i) => `--kobe-lane-${i + 1}`);
+  const LANES = Array.from({ length: 8 }, (_, i) => `--kaiju-lane-${i + 1}`);
 
   it("lane 1 reads the accent's link colour; lanes 2-8 are set per scheme in both dark blocks", () => {
-    expect(light.get("--kobe-lane-1")).toBe("var(--kobe-brand-link)");
-    expect(chosenDark.has("--kobe-lane-1")).toBe(false);
+    expect(light.get("--kaiju-lane-1")).toBe("var(--kaiju-brand-link)");
+    expect(chosenDark.has("--kaiju-lane-1")).toBe(false);
     for (const lane of LANES.slice(1)) {
       expect(light.has(lane), lane).toBe(true);
       expect(chosenDark.get(lane), lane).toBeDefined();
@@ -752,7 +758,7 @@ describe("lane tokens (CT7, KOBE-545)", () => {
     it(`every lane is distinct and 3:1 on the page and panels (${name})`, () => {
       const colours = LANES.map((lane) => resolve(theme, lane));
       expect(new Set(colours).size).toBe(8);
-      for (const surface of ["--background", "--card", "--muted", "--kobe-console-bg"]) {
+      for (const surface of ["--background", "--card", "--muted", "--kaiju-console-bg"]) {
         const bg = resolve(theme, surface);
         for (const [i, c] of colours.entries()) {
           expect(contrast(c, bg), `lane ${i + 1} on ${surface}`).toBeGreaterThanOrEqual(3);

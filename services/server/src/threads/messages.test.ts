@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { withItemReferences, withSkillRequest } from "@kobe/protocol";
+import { withItemReferences, withSkillRequest } from "@kaiju/protocol";
 import { memberText } from "./messages.js";
 
 describe("memberText", () => {

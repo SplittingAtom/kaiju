@@ -3,7 +3,7 @@ import {
   type RunMemoryContext,
   type RunSemanticMemoryItem,
   type SemanticMemoryPlacement,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { memoryRunFileContent } from "../memory/context.js";
 import { memoryFileJson } from "../memory/context-file.js";
@@ -310,12 +310,12 @@ describe("memory placement through kobe-tools (KOBE-658 ac-2)", () => {
     handlers.get("before_agent_start")?.({ systemPrompt: "PI" } as never);
     const started = {
       role: "custom",
-      customType: "kobe.schedule",
+      customType: "kaiju.schedule",
       content: "go",
       timestamp: Date.now() + 5,
     };
     const out = handlers.get("context")?.({ messages: [started] } as never) as { messages: Msg[] };
-    expect(out.messages.map((m) => m.customType)).toEqual([MEMORY_PICKS_TYPE, "kobe.schedule"]);
+    expect(out.messages.map((m) => m.customType)).toEqual([MEMORY_PICKS_TYPE, "kaiju.schedule"]);
   });
 
   it("latest_user_strip: only the newest user message carries its block", () => {

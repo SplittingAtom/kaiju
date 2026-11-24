@@ -6,8 +6,8 @@ import {
   users,
   withTeam,
   type GitConnectionRecord,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import {
   GIT_IDENTITY_NAME_MAX,
   gitIdentitySchema,
@@ -15,8 +15,8 @@ import {
   runGitRemoteSchema,
   type RunGitContext,
   type RunGitRemote,
-} from "@kobe/protocol/sandbox-wire";
-import { GIT_COMMIT_EMAIL_MODES, type GitCommitEmailMode } from "@kobe/protocol";
+} from "@kaiju/protocol/sandbox-wire";
+import { GIT_COMMIT_EMAIL_MODES, type GitCommitEmailMode } from "@kaiju/protocol";
 import { reachableBase } from "./transport.js";
 
 /**
@@ -150,7 +150,7 @@ export function buildRunGitContext(input: RunGitInput): RunGitContext {
 
 /** The member's run git context, or undefined when the member is not found. */
 export async function loadRunGitContext(
-  db: KobeDb,
+  db: KaijuDb,
   target: { readonly teamId: string; readonly userId: string },
   siteHost: string,
 ): Promise<RunGitContext | undefined> {

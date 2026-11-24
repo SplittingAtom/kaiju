@@ -1,13 +1,13 @@
 import { constants } from "node:fs";
 import { open } from "node:fs/promises";
-import { CONTEXT_MISSING_PARTS, type ThreadContextResult } from "@kobe/protocol";
+import { CONTEXT_MISSING_PARTS, type ThreadContextResult } from "@kaiju/protocol";
 import {
   CONTEXT_CAPTURE_MAX_BYTES,
   CONTEXT_CAPTURE_VERSION,
   promptUsage,
 } from "../kobe-models/context-capture.js";
 import { finalizeContext } from "./finalize.js";
-import { contextMessages, sectionsOf, type KobePromptParts } from "./sections.js";
+import { contextMessages, sectionsOf, type KaijuPromptParts } from "./sections.js";
 import type { ReplayedCall } from "./session-replay.js";
 
 /**
@@ -77,7 +77,7 @@ export function parseCapture(text: string): ParsedCapture | undefined {
 
 export function fromCapture(
   capture: ParsedCapture,
-  parts: KobePromptParts | undefined,
+  parts: KaijuPromptParts | undefined,
   maxBytes: number,
 ): ThreadContextResult {
   return finalizeContext(

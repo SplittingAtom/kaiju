@@ -1,5 +1,5 @@
 import { chmod, lstat, readFile, rm, writeFile } from "node:fs/promises";
-import { SYSTEM_PROMPT_MAX_BYTES } from "@kobe/protocol";
+import { SYSTEM_PROMPT_MAX_BYTES } from "@kaiju/protocol";
 
 /**
  * The agent's system prompt as Pi 1.0.0 takes it (KOBE-123). Pi's `--append-system-prompt <text|file>`

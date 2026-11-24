@@ -8,13 +8,13 @@ import {
   uuidSchema,
   type ActorContext,
   type ToolDescriptor,
-} from "@kobe/protocol";
-import { eq, users, withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { eq, users, withTeam } from "@kaiju/db";
 import { threadLiveFor } from "../policy/live-rule.js";
 import { rememberRefusal } from "../policy/remember.js";
 import { readTeamRememberLimits } from "../policy/remember-limits-store.js";
 import { isViewedFileAsk, VIEWED_FILE_NOT_REMEMBERED } from "../policy/viewed-file-guard.js";
-import { isKobeAdminAsk, KOBE_ADMIN_NOT_REMEMBERED } from "../policy/kobe-admin-guard.js";
+import { isKaijuAdminAsk, KAIJU_ADMIN_NOT_REMEMBERED } from "../policy/kaiju-admin-guard.js";
 import {
   exactArgPattern,
   exactPinsAllArguments,
@@ -106,7 +106,7 @@ export async function rememberOptions(
   // KOBE-493: the guard asks again whatever is remembered, so remembering would be ignored.
   const blocked =
     (isViewedFileAsk(row.reasons) ? VIEWED_FILE_NOT_REMEMBERED : null) ??
-    (isKobeAdminAsk(row.reasons) ? KOBE_ADMIN_NOT_REMEMBERED : null) ??
+    (isKaijuAdminAsk(row.reasons) ? KAIJU_ADMIN_NOT_REMEMBERED : null) ??
     cannotRemember(tool) ??
     (pending ? null : "This approval is no longer waiting.");
   const choices =

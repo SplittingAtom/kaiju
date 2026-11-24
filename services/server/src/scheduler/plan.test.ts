@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ScheduleRecurrence } from "@kobe/protocol";
+import type { ScheduleRecurrence } from "@kaiju/protocol";
 import { planFire } from "./plan.js";
 
 const MIN = 60_000;

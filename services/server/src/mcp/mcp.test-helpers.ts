@@ -1,8 +1,8 @@
 // Shared setup for the mcp.*.db.test.ts files (split from mcp.db.test.ts, KOBE-725).
 import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll } from "vitest";
-import type { PinnedTool } from "@kobe/db";
-import { canonicalJson, type JsonObject } from "@kobe/protocol";
+import type { PinnedTool } from "@kaiju/db";
+import { canonicalJson, type JsonObject } from "@kaiju/protocol";
 import { approvalKeyring } from "../approvals/index.js";
 import type { createMcpService } from "./service.js";
 import { createInternalApp } from "../routes/internal.js";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SKILL_DRAFT_TOOL_MAX_BYTES, SKILL_DRAFT_TOOL_MAX_FILES } from "@kobe/protocol";
+import { SKILL_DRAFT_TOOL_MAX_BYTES, SKILL_DRAFT_TOOL_MAX_FILES } from "@kaiju/protocol";
 import { DRAFT_LIMITS } from "./files.js";
 
 describe("save_skill_draft limits (KOBE-442)", () => {

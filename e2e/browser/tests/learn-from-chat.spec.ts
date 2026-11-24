@@ -46,10 +46,10 @@ async function shoot(page: Page, name: string, target: Locator): Promise<void> {
 
 async function openMemory(page: Page): Promise<Locator> {
   await page.getByRole("button", { name: "Add to your message", exact: true }).click();
-  const menu = page.locator("[data-kobe-plus-menu]");
+  const menu = page.locator("[data-kaiju-plus-menu]");
   await expect(menu).toBeVisible();
   await menu.getByRole("menuitem", { name: /^Memory/ }).hover();
-  const sub = page.locator("[data-kobe-memory-menu]");
+  const sub = page.locator("[data-kaiju-memory-menu]");
   await expect(sub).toBeVisible();
   return sub;
 }
@@ -74,8 +74,8 @@ test("Learn from this chat in the + menu, /learn and the ? sheet", async ({ chat
     await page.keyboard.press("Escape");
   } else {
     await learn.click();
-    await expect(plus).toHaveAttribute("data-kobe-learn-state", "spinner");
-    const notice = page.locator("[data-kobe-learn-notice]");
+    await expect(plus).toHaveAttribute("data-kaiju-learn-state", "spinner");
+    const notice = page.locator("[data-kaiju-learn-notice]");
     await expect(notice).toContainText("Kaiju is learning from this chat");
     // The pass ends with the notice saying how it went (KOBE-661). When it found something, To
     // review opens by itself over the chat (KOBE-396): a modal panel, the chat inert behind it, so
@@ -94,10 +94,10 @@ test("Learn from this chat in the + menu, /learn and the ? sheet", async ({ chat
       await expect(page).toHaveURL(/\/me\/memory\?review=1/);
       await panel.getByRole("button", { name: "Close My memory", exact: true }).click();
       await expect(panel).toBeHidden();
-      await expect(plus).toHaveAttribute("data-kobe-learn-state", "count");
+      await expect(plus).toHaveAttribute("data-kaiju-learn-state", "count");
     } else {
       await expect(panel).toBeHidden();
-      await expect(plus).not.toHaveAttribute("data-kobe-learn-state", "spinner");
+      await expect(plus).not.toHaveAttribute("data-kaiju-learn-state", "spinner");
     }
   }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Gate 4, U16's backup half (KOBE-233): `kobe backup` → a fresh site → `kobe restore`, with the
+# Gate 4, U16's backup half (KOBE-233): `kaiju backup` → a fresh site → `kaiju restore`, with the
 # integrity checks, and the timed clean install (helm install → first assistant token).
 #
 #   install   a throwaway source site is installed as docs/install.md describes (chart, first-run
@@ -8,7 +8,7 @@
 #             memory doc, a project file and an API-key connector grant; its writers stop; `kobe
 #             backup` (docs/backup-restore.md, the operator CLI on this machine through a port-
 #             forward); the site is deleted; a fresh one is installed with the saved Secrets
-#             that hold key material (docs/backup-restore.md "Secrets"); `kobe restore`; then: every team table's row count matches the
+#             that hold key material (docs/backup-restore.md "Secrets"); `kaiju restore`; then: every team table's row count matches the
 #             source and the signed manifest, every object key the database references resolves,
 #             the audit chain verifies (and contains the source's head), the grant opens with the
 #             install's envelope key (and not with another), artifacts, files, the memory doc, the
@@ -49,7 +49,7 @@ OWNER_PASSWORD="${KOBE_GATE4_RESTORE_OWNER_PASSWORD:-gate4 restore owner passwor
 CLI="${KOBE_GATE4_RESTORE_CLI:-node packages/cli/dist/cli.js}"
 SETUP_BUDGET="${KOBE_GATE4_SETUP_BUDGET:-1200}" # spec §8: clean install → first chat ≤ 20 min
 SBX_WAIT="${KOBE_GATE4_RESTORE_SANDBOX_WAIT:-240}"
-LLM_NS=kobe-e2e-llm
+LLM_NS=kaiju-e2e-llm
 LLM="http://llm.$LLM_NS.svc.cluster.local"
 TEAM_SLUG=gate4-r
 TNS="kobe-team-$TEAM_SLUG"
@@ -166,7 +166,7 @@ if [[ "$TARGET" == namespace ]]; then
   [[ -n "$BASE_APP_URL" && -n "$BASE_MIGRATE_URL" ]] || { echo "no app-url/migrate-url in $DB_SECRET" >&2; exit 2; }
 fi
 [[ -f packages/cli/dist/cli.js || -n "${KOBE_GATE4_RESTORE_CLI:-}" ]] \
-  || { echo "the kobe CLI is not built: pnpm --filter @kobe/cli... build" >&2; exit 2; }
+  || { echo "the kaiju CLI is not built: pnpm --filter @kaiju/cli... build" >&2; exit 2; }
 
 # ---- a site: Postgres database, Secrets, the chart ---------------------------------------------------
 LLM_RULE=$(printf '[{"to":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"%s"}}}],"ports":[{"protocol":"TCP","port":8080}]}]' "$LLM_NS")
@@ -384,8 +384,8 @@ show "audit chain (source)" "$src_integrity"
 contains "the source's audit chain verifies" '^integrity=200:ok=true:' "$src_integrity"
 SRC_HEAD=$(field head "$src_integrity")
 
-# ---- restore: kobe backup ------------------------------------------------------------------------------
-echo "==> restore: the source's writers stop; kobe backup (Postgres + the object listing, encrypted and signed)"
+# ---- restore: kaiju backup ------------------------------------------------------------------------------
+echo "==> restore: the source's writers stop; kaiju backup (Postgres + the object listing, encrypted and signed)"
 SERVER_REPLICAS=$(replicas_of server)
 SCHEDULER_REPLICAS=$(replicas_of scheduler)
 umask 077
@@ -428,7 +428,7 @@ backup_out=$(env KOBE_BACKUP_KEY_FILE="$WORK/backup.key" \
   KOBE_BACKUP_DATABASE_URL="postgres://kobe_gate4_backup:$BACKUP_PW@127.0.0.1:$pg_port/$SRC_DB" \
   "${s3_env[@]}" $CLI backup --out "$BACKUP_DIR" 2>&1) || true
 sed 's/^/     /' <<<"$backup_out"
-contains "kobe backup writes an encrypted, signed backup" 'manifest fingerprint sha256:[0-9a-f]{64}' "$backup_out"
+contains "kaiju backup writes an encrypted, signed backup" 'manifest fingerprint sha256:[0-9a-f]{64}' "$backup_out"
 FINGERPRINT=$(sed -nE 's/.*manifest fingerprint (sha256:[0-9a-f]{64}).*/\1/p' <<<"$backup_out" | head -1)
 contains "...with its files (dump, object listing, manifest, signature)" '^database.dump.enc manifest.json manifest.json.sig objects.jsonl.enc $' \
   "$(ls "$BACKUP_DIR" 2>/dev/null | sort | tr '\n' ' ')"
@@ -505,8 +505,8 @@ if [[ "$TARGET" == k3d ]]; then
     "^objects=$(grep -c '^obj ' "$WORK/objects.lines" || true) bytes=[0-9]+ etag_mismatch=0\$" "$imported"
 fi
 
-# ---- restore: kobe restore ---------------------------------------------------------------------------------
-echo "==> restore: kobe restore into the fresh site (as the owner role, writers stopped)"
+# ---- restore: kaiju restore ---------------------------------------------------------------------------------
+echo "==> restore: kaiju restore into the fresh site (as the owner role, writers stopped)"
 writers 0
 until_ok 120 writers_gone || true
 port_forward "$DEPS_NS" deploy/pg 5432
@@ -526,8 +526,8 @@ kobe_restore() { # → the CLI's output (docs/backup-restore.md "Restore onto a 
 restore_out=$(kobe_restore)
 sed 's/^/     /' <<<"$restore_out"
 # The server's start seeds the gallery agents (with their audit events) and the jobs' bookkeeping;
-# the restore replaces those rows (KOBE-422, @kobe/db STARTUP_SEEDED_ROWS) and refuses anything else.
-contains "kobe restore accepts the freshly installed site once its writers are stopped (docs steps 2-4)" \
+# the restore replaces those rows (KOBE-422, @kaiju/db STARTUP_SEEDED_ROWS) and refuses anything else.
+contains "kaiju restore accepts the freshly installed site once its writers are stopped (docs steps 2-4)" \
   "restored backup ${FINGERPRINT:-none}" "$restore_out"
 if ! grep -q "restored backup ${FINGERPRINT:-none}" <<<"$restore_out"; then
   # Only after a FAIL above: the later checks still run against a real restore.
@@ -538,7 +538,7 @@ if ! grep -q "restored backup ${FINGERPRINT:-none}" <<<"$restore_out"; then
   sed 's/^/     /' <<<"$restore_out"
 fi
 stop_forwards
-contains "kobe restore loads the backup it was given (same fingerprint)" "restored backup ${FINGERPRINT:-none}" "$restore_out"
+contains "kaiju restore loads the backup it was given (same fingerprint)" "restored backup ${FINGERPRINT:-none}" "$restore_out"
 contains "...with every S3 object present and unchanged" 'S3 objects checked: [1-9][0-9]*, problems: 0' "$restore_out"
 contains "...the audit chain verified, containing the source's head (--expect-audit-head)" 'audit chain verified; head [0-9]+:[0-9a-f]{64}' "$restore_out"
 psql_super "$TGT_DB" "$TEAM_COUNTS_SQL" >"$WORK/counts-target"

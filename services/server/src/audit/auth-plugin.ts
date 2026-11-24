@@ -1,6 +1,6 @@
 import type { BetterAuthPlugin } from "better-auth";
 import { createAuthMiddleware, getSessionFromCtx, isAPIError } from "better-auth/api";
-import { eq, users, type KobeDb } from "@kobe/db";
+import { eq, users, type KaijuDb } from "@kaiju/db";
 import type { AuthAttemptAudit } from "./attempts.js";
 import { recordAuditAfter, type ServerAuditEvent } from "./record.js";
 
@@ -46,7 +46,7 @@ function reasonOf(returned: unknown): string {
 
 const user = (id: string | null) => ({ kind: "user" as const, id });
 
-async function userIdByEmail(db: KobeDb, email: unknown): Promise<string | null> {
+async function userIdByEmail(db: KaijuDb, email: unknown): Promise<string | null> {
   if (typeof email !== "string" || email.length > 254) return null;
   const [row] = await db
     .select({ id: users.id })
@@ -67,7 +67,7 @@ export function auditPlugin({
   db,
   attempts,
 }: {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** Aggregates unauthenticated attempts (failed sign-ins, 2FA challenges). */
   readonly attempts: AuthAttemptAudit;
 }) {

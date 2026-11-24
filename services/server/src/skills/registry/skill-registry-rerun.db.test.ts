@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { strToU8, zipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { skillEvalScorecardSchema } from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+import { skillEvalScorecardSchema } from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { validateZipBundle } from "../bundle.js";
 import { recordAuthoritativeScorecard } from "./authoritative.js";
-import { ensureObject } from "../kobe-seed.js";
+import { ensureObject } from "../kaiju-seed.js";
 import { sha256Hex } from "../storage.js";
 import type { Person } from "../../testing/event-stream-fixture.js";
 import { SkillEvalBench, skillMd } from "../../testing/skill-eval-bench.js";

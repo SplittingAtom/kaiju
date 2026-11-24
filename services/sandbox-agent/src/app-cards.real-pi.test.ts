@@ -4,8 +4,8 @@ import {
   appCardContent,
   appCardEntryId,
   type AppCardEntry,
-} from "@kobe/protocol";
-import { type SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol";
+import { type SandboxToServerFrame } from "@kaiju/protocol/sandbox-wire";
 import {
   FAUX_MODEL_EXTENSION,
   PI_AVAILABLE,

@@ -1,4 +1,4 @@
-import { BUILTIN_TOOLS } from "@kobe/protocol";
+import { BUILTIN_TOOLS } from "@kaiju/protocol";
 
 /**
  * Whether this build knows the tool (KOBE-487). The server runs only built-in tools and connector

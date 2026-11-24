@@ -20,7 +20,7 @@ const TENANT = randomUUID();
 const TENANT_B = randomUUID();
 const CLIENT_ID = randomUUID();
 const SECRET = "mock-client-secret";
-const REDIRECT = "http://kobe.test/api/auth/sso/callback/entra-mock";
+const REDIRECT = "http://kaiju.test/api/auth/sso/callback/entra-mock";
 const ISSUER = `https://login.microsoftonline.com/${TENANT}/v2.0`;
 const PROVIDER: ClaimsProvider = {
   kind: "entra",
@@ -109,7 +109,7 @@ async function idTokenOf(flow: Flow = {}) {
 }
 
 /** What Kaiju concludes from a token: signature against the JWKS, then its own claim checks. */
-async function kobeVerdict(token: string, nonce: string, provider = PROVIDER) {
+async function kaijuVerdict(token: string, nonce: string, provider = PROVIDER) {
   const header = jose.decodeProtectedHeader(token) as Record<string, unknown>;
   let signature = "ok";
   try {
@@ -166,7 +166,7 @@ describe("mock Entra: discovery and keys", () => {
 describe("mock Entra: the code flow", () => {
   it("issues an ID token Kaiju accepts, with Entra's claims", async () => {
     const { token, nonce } = await idTokenOf({ user: MEMBER });
-    const verdict = await kobeVerdict(token, nonce);
+    const verdict = await kaijuVerdict(token, nonce);
     expect(verdict.signature).toBe("ok");
     expect(verdict.check).toMatchObject({
       ok: true,
@@ -246,12 +246,12 @@ describe("mock Entra: MFA (acrs) as Conditional Access answers", () => {
 
   it("puts the requested context in acrs only for a person who passes MFA", async () => {
     const proving = await idTokenOf({ user: { ...MEMBER, mfa: true }, claims });
-    const yes = await kobeVerdict(proving.token, proving.nonce);
+    const yes = await kaijuVerdict(proving.token, proving.nonce);
     expect(yes.check.ok && yes.check.identity.acrs).toEqual(["c1"]);
     expect(yes.check.ok && mfaEvidence("entra", rule, yes.check.identity) !== null).toBe(true);
 
     const weak = await idTokenOf({ user: { ...MEMBER, mfa: false }, claims });
-    const no = await kobeVerdict(weak.token, weak.nonce);
+    const no = await kaijuVerdict(weak.token, weak.nonce);
     expect(no.check.ok && no.check.identity.acrs).toEqual([]);
     expect(no.check.ok && mfaEvidence("entra", rule, no.check.identity) !== null).toBe(false);
 
@@ -277,7 +277,7 @@ describe("mock Entra: groups and overage", () => {
   it("lists up to 200 groups and reports an overage beyond", async () => {
     const few = [randomUUID(), randomUUID()];
     const a = await idTokenOf({ user: { ...MEMBER, groups: few } });
-    const fine = await kobeVerdict(a.token, a.nonce, groupsProvider);
+    const fine = await kaijuVerdict(a.token, a.nonce, groupsProvider);
     expect(fine.check.ok && fine.check.identity.values).toEqual(few);
 
     const many = Array.from({ length: m.GROUPS_LIMIT + 1 }, () => randomUUID());
@@ -285,7 +285,7 @@ describe("mock Entra: groups and overage", () => {
     const claims = jose.decodeJwt(b.token);
     expect(claims.groups).toBeUndefined();
     expect(claims._claim_names).toEqual({ groups: "src1" });
-    const over = await kobeVerdict(b.token, b.nonce, groupsProvider);
+    const over = await kaijuVerdict(b.token, b.nonce, groupsProvider);
     expect(over.check.ok && over.check.identity.values).toBeNull();
 
     const c = await idTokenOf({ user: { ...MEMBER, groups: few }, mode: "overage" });
@@ -308,19 +308,19 @@ describe("mock Entra: bad-token modes are refused by Kaiju's checks", () => {
   ];
   it.each(cases)("%s fails Kaiju's %s check (%s)", async (mode, check, failure) => {
     const { token, nonce } = await idTokenOf({ user: MEMBER, mode });
-    const verdict = await kobeVerdict(token, nonce);
+    const verdict = await kaijuVerdict(token, nonce);
     expect(verdict.check).toMatchObject({ ok: false, check, failure });
   });
 
   it("alg none and HS256 also fail the signature; foreign_key fails only there", async () => {
     for (const mode of ["alg_none", "hs256", "foreign_key"]) {
       const { token, nonce } = await idTokenOf({ user: MEMBER, mode });
-      expect((await kobeVerdict(token, nonce)).signature, mode).not.toBe("ok");
+      expect((await kaijuVerdict(token, nonce)).signature, mode).not.toBe("ok");
     }
     const hs = await idTokenOf({ user: MEMBER, mode: "hs256" });
     await expect(jose.jwtVerify(hs.token, new TextEncoder().encode(SECRET))).resolves.toBeTruthy();
     const foreign = await idTokenOf({ user: MEMBER, mode: "foreign_key" });
-    expect((await kobeVerdict(foreign.token, foreign.nonce)).check.ok).toBe(true);
+    expect((await kaijuVerdict(foreign.token, foreign.nonce)).check.ok).toBe(true);
   });
 
   it("a code from one tenant is not redeemable at another", async () => {
@@ -375,7 +375,7 @@ describe("SCIM client: Entra's request shapes", () => {
   it("provisions: probe, match by userName, create, read back by externalId", async () => {
     const r = recorder();
     const scim = scimMod.scimClient({
-      base: "http://kobe.test/v1/scim/v2/x",
+      base: "http://kaiju.test/v1/scim/v2/x",
       token: "kobe_scim_t",
       fetchImpl: r.fetchImpl,
     });
@@ -467,7 +467,7 @@ describe("SCIM client: Entra's request shapes", () => {
 });
 
 describe("mock as a generic OIDC provider on gate1 (KOBE-634 browser spec)", () => {
-  const ORIGIN = "https://mock-idp.kobe-sso-mock.svc.cluster.local";
+  const ORIGIN = "https://mock-idp.kaiju-sso-mock.svc.cluster.local";
   const GENERIC: ClaimsProvider = {
     kind: "oidc",
     issuer: `${ORIGIN}/${TENANT}/v2.0`,
@@ -513,7 +513,7 @@ describe("mock as a generic OIDC provider on gate1 (KOBE-634 browser spec)", () 
       upn: "bo@sso-e2e.test",
       email: "bo@sso-e2e.test",
       name: "Bo",
-      roles: ["kobe.e2e.member"],
+      roles: ["kaiju.e2e.member"],
       amr: ["pwd", "mfa"],
       extra: { email_verified: true },
     };

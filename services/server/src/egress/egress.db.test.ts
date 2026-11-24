@@ -11,7 +11,7 @@ import {
   teamMembers,
   threads,
   withTeam,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { runWithAuditContext } from "../audit/context.js";
 import { EgressBlockedRelay, relayBlockedEvents } from "./blocked-relay.js";
 import { createTeamWithAdmin, removeMember } from "../teams/members.js";

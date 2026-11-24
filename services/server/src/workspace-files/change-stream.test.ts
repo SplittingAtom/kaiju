@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { WorkspaceFileChange } from "@kobe/protocol";
+import type { WorkspaceFileChange } from "@kaiju/protocol";
 import type { RunEventHub, WorkspaceHubSubscriber } from "../event-stream/hub.js";
 import { SseReader } from "../testing/sse.js";
 import { createWorkspaceChangeStream, type ChangeSource } from "./change-stream.js";

@@ -1,4 +1,4 @@
-import type { AgentDefinition } from "@kobe/agent-file";
+import type { AgentDefinition } from "@kaiju/agent-file";
 import {
   and,
   desc,
@@ -9,10 +9,10 @@ import {
   teamAgents,
   teamAgentVersions,
   type AgentScope,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
-import type { AgentMemorySetting } from "@kobe/protocol";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import type { AgentMemorySetting } from "@kaiju/protocol";
 import type { SkillLeftOut } from "../skill-freeze.js";
 import { skillManifestSchema, type SkillManifest } from "../../skills/frozen.js";
 import { toolManifestSchema, withSiteNames, type ToolManifest } from "../manifest.js";
@@ -146,7 +146,7 @@ export function toVersion(row: FullRow): AgentVersionRecord {
 
 /** Versions of an agent in `location`, newest first; null when the agent isn't there. */
 export async function listVersions(
-  db: KobeDb,
+  db: KaijuDb,
   location: AgentLocation,
   agentId: string,
   page: { before?: number | undefined; limit: number },
@@ -165,7 +165,7 @@ export async function listVersions(
 
 /** One version of an agent in `location`; null when either doesn't exist there. */
 export async function getVersion(
-  db: KobeDb,
+  db: KaijuDb,
   location: AgentLocation,
   agentId: string,
   version: number,
@@ -176,7 +176,7 @@ export async function getVersion(
   });
 }
 
-async function agentExists(tx: KobeTx, location: AgentLocation, id: string): Promise<boolean> {
+async function agentExists(tx: KaijuTx, location: AgentLocation, id: string): Promise<boolean> {
   const rows =
     location.scope === "team"
       ? await tx.select({ id: teamAgents.id }).from(teamAgents).where(eq(teamAgents.id, id))
@@ -189,7 +189,7 @@ async function agentExists(tx: KobeTx, location: AgentLocation, id: string): Pro
 
 /** A version row by number (callers have already confined the agent to its location). */
 export async function readVersion(
-  tx: KobeTx,
+  tx: KaijuTx,
   scope: AgentScope,
   agentId: string,
   version: number,
@@ -224,7 +224,7 @@ export const ref = (location: AgentLocation, agent: AgentRecord) => ({
  * {@link setAgentMemory}.
  */
 export async function currentMemory(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: Pick<AgentLocation, "scope">,
   agent: Pick<AgentRecord, "id" | "currentVersion">,
 ): Promise<AgentMemorySetting> {

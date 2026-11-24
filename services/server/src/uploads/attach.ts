@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { logger } from "../logger.js";
 import { RunError } from "../runs/errors.js";
 import { workspaceBlobKey, type WorkspaceOwner } from "../workspace-sync/keys.js";
@@ -56,7 +56,7 @@ export interface StagedFile extends InspectedFile {
 
 export interface AttachmentStager {
   inspect(
-    tx: KobeTx,
+    tx: KaijuTx,
     caller: AttachCaller,
     threadId: string,
     fileIds: readonly string[],
@@ -68,7 +68,7 @@ export interface AttachmentStager {
     files: readonly InspectedFile[],
   ): Promise<StagedFile[]>;
   commit(
-    tx: KobeTx,
+    tx: KaijuTx,
     owner: WorkspaceOwner,
     caller: AttachCaller,
     threadId: string,
@@ -94,7 +94,7 @@ type FileRow = {
 };
 
 export interface AttachmentStagerOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly sync: WorkspaceSync;
   readonly settings: UploadSettings;
 }
@@ -106,7 +106,7 @@ export function createAttachmentStager(options: AttachmentStagerOptions): Attach
   const { objects, prefix } = sync;
 
   async function inspect(
-    tx: KobeTx,
+    tx: KaijuTx,
     caller: AttachCaller,
     threadId: string,
     fileIds: readonly string[],
@@ -222,7 +222,7 @@ export function createAttachmentStager(options: AttachmentStagerOptions): Attach
   }
 
   async function commit(
-    tx: KobeTx,
+    tx: KaijuTx,
     owner: WorkspaceOwner,
     caller: AttachCaller,
     threadId: string,

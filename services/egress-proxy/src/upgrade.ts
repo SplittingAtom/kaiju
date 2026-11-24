@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { isIP } from "node:net";
-import { normalizeHost, type InjectedHeader } from "@kobe/db";
+import { normalizeHost, type InjectedHeader } from "@kaiju/db";
 import type { EgressDecision } from "./allowlist.js";
 import { authenticate, presentedToken } from "./auth.js";
 import { handleGit } from "./git/handle.js";

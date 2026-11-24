@@ -4,7 +4,7 @@ import {
   branchSummaryRequestSchema,
   branchSummaryResponseSchema,
   type BranchSummaryErrorCode,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
  * OpenAPI for `POST /v1/threads/{id}/branch-summary` (KOBE-548, CT11; `routes/thread-branch-summary.ts`),

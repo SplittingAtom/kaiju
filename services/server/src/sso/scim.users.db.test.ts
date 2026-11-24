@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { describe, expect, it } from "vitest";
-import { ssoIdentities } from "@kobe/db";
+import { ssoIdentities } from "@kaiju/db";
 import { PASSWORD, PUBLIC_URL } from "../testing/harness.js";
 import {
   SCIM,
@@ -405,7 +405,7 @@ describe("security review fixes (KOBE-sso-review1)", () => {
       };
       const upn = await make({ userName: `upn.${randomUUID()}@Contoso.com` });
       expect(upn.email_verified).toBe(true);
-      const outside = await make({ userName: `x.${randomUUID()}@kobe-victim.test` });
+      const outside = await make({ userName: `x.${randomUUID()}@kaiju-victim.test` });
       expect(outside.email_verified).toBe(false);
       const fromMail = await make({
         userName: `not-an-address-${randomUUID()}`,
@@ -417,7 +417,7 @@ describe("security review fixes (KOBE-sso-review1)", () => {
         "PATCH",
         `/contoso/Users/${upn.id}`,
         tokens.contoso,
-        patch("userName", `moved.${randomUUID()}@kobe-victim.test`),
+        patch("userName", `moved.${randomUUID()}@kaiju-victim.test`),
       );
       expect(moved.status).toBe(200);
       const after = await h.admin.query("SELECT email_verified FROM users WHERE id = $1", [upn.id]);

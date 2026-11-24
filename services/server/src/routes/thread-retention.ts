@@ -100,7 +100,7 @@ export function threadRetentionRoutes(deps: ServerDeps): Hono<{ Variables: TeamV
       headers: {
         ...DOWNLOAD_HEADERS,
         "content-type": "application/zip",
-        "content-disposition": `attachment; filename="kobe-${team.slug}-${day}.zip"`,
+        "content-disposition": `attachment; filename="kaiju-${team.slug}-${day}.zip"`,
       },
     });
   });

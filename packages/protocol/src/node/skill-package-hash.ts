@@ -16,7 +16,7 @@ import {
  *  - package hash: of everything but `provenance.json`.
  * Every function checks the whole file set first (`checkPackagePaths`, with `options`) and throws
  * `SkillPackageError` for an invalid package: a `provenance.json` is accepted only with
- * `{ kobeProvenance: true }` (a package Kaiju assembled), never in authored content.
+ * `{ kaijuProvenance: true }` (a package Kaiju assembled), never in authored content.
  */
 export interface SkillPackageHashes {
   readonly runtimeHash: string;

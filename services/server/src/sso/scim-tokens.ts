@@ -9,8 +9,8 @@ import {
   scimTokens,
   sql,
   ssoProviders,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -63,7 +63,7 @@ function viewOf(r: {
 }
 
 /** A provider's tokens, newest first (revoked ones included, for the record). */
-export async function listScimTokens(db: KobeDb, providerId: string): Promise<ScimTokenView[]> {
+export async function listScimTokens(db: KaijuDb, providerId: string): Promise<ScimTokenView[]> {
   const rows = await db
     .select(COLUMNS)
     .from(scimTokens)
@@ -81,7 +81,7 @@ export type CreateTokenOutcome =
  * live: revoke one first. The provider row is locked so two concurrent creates can't make three.
  */
 export async function createScimToken(
-  db: KobeDb,
+  db: KaijuDb,
   providerId: string,
   createdBy: string,
 ): Promise<CreateTokenOutcome> {
@@ -124,7 +124,7 @@ export type RevokeTokenOutcome =
 
 /** Revokes a token for good; the next request with it gets 401. */
 export async function revokeScimToken(
-  db: KobeDb,
+  db: KaijuDb,
   providerId: string,
   tokenId: string,
 ): Promise<RevokeTokenOutcome> {
@@ -182,7 +182,7 @@ const LAST_USED_RESOLUTION = sql`interval '1 minute'`;
  * since the read wins (no use is recorded for it). The row is written at most once a minute; when
  * nothing was written, the revocation is re-checked with a read instead.
  */
-async function markUsed(db: KobeDb, id: string): Promise<boolean> {
+async function markUsed(db: KaijuDb, id: string): Promise<boolean> {
   const live = and(eq(scimTokens.id, id), isNull(scimTokens.revokedAt));
   const used = await db
     .update(scimTokens)
@@ -208,7 +208,7 @@ async function markUsed(db: KobeDb, id: string): Promise<boolean> {
  * or a malformed one all fail the same way. Marks the token used.
  */
 export async function authenticateScim(
-  db: KobeDb,
+  db: KaijuDb,
   slug: string,
   token: string | undefined,
 ): Promise<ScimCaller | undefined> {

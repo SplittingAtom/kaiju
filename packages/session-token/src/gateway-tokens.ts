@@ -12,7 +12,7 @@ import {
   type ServerCallClaims,
   type VerifyRunTokenResult,
   type VerifyServerCallTokenResult,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { signJws, verifyJws } from "./jws.js";
 import type { SessionSigningKey, SessionVerifyKeys } from "./keys.js";
 
@@ -22,7 +22,7 @@ import type { SessionSigningKey, SessionVerifyKeys } from "./keys.js";
  * the server holds the private key, the gateway only the public key(s) (`kid` + rotation, as
  * KOBE-513), so a compromised gateway can verify these tokens but never mint one. The JWS `typ`
  * (`krt2`, `ksc2`; session tokens `JWT`) is signed, so no token kind verifies as another. Formats,
- * claims, size caps and skew rules are the contracts in `@kobe/protocol` (run-token.ts,
+ * claims, size caps and skew rules are the contracts in `@kaiju/protocol` (run-token.ts,
  * server-call.ts); the stateful checks (run still active, replay, member, budget) stay the
  * gateway's. Verification fails closed and never throws on bad input.
  */

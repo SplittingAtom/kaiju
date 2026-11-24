@@ -19,7 +19,7 @@
  * A file moved (the stream names `moved_to`, KOBE-516) is not read here: its tab follows it.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { WorkspaceChangeActor, WorkspaceFileChange } from "@kobe/protocol";
+import type { WorkspaceChangeActor, WorkspaceFileChange } from "@kaiju/protocol";
 import type { FilesApi } from "../../lib/files/api";
 import type { EditDraftStore } from "../../lib/files/editor-state";
 import { fileVersion, VersionWatch, type HintSource } from "../../lib/files/outside-change";

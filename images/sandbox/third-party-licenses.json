@@ -245,7 +245,7 @@
       ]
     },
     {
-      "name": "@kobe/protocol",
+      "name": "@kaiju/protocol",
       "versions": [
         "0.0.0"
       ],

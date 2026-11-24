@@ -7,9 +7,9 @@ import {
   modelProviders,
   siteSettings,
   sql,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import {
   SEMANTIC_MEMORY_PLACEMENT_DEFAULT,
   semanticMemoryPlacementSchema,
@@ -17,8 +17,8 @@ import {
   SEMANTIC_MEMORY_BLOCK_MAX_BYTES,
   SEMANTIC_MEMORY_BLOCK_MIN_BYTES,
   SEMANTIC_MEMORY_SCOPE_MAX_ITEMS,
-} from "@kobe/protocol";
-import { gatewayModelSchema } from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol";
+import { gatewayModelSchema } from "@kaiju/protocol/sandbox-wire";
 import { logger } from "../logger.js";
 
 /**
@@ -133,7 +133,7 @@ export function parseMemorySiteSettings(raw: string | null | undefined): MemoryS
   return out as MemorySiteSettings;
 }
 
-export async function readMemorySiteSettings(db: KobeDb | KobeTx): Promise<MemorySiteSettings> {
+export async function readMemorySiteSettings(db: KaijuDb | KaijuTx): Promise<MemorySiteSettings> {
   const [row] = await db
     .select({ value: siteSettings.value })
     .from(siteSettings)
@@ -150,7 +150,7 @@ export type MemorySiteModelSetting = (typeof MEMORY_SITE_MODEL_SETTINGS)[number]
 /** The gateway provider of a gateway model id (`kobe-local/nomic-embed-text` → `kobe-local`). */
 export const gatewayProviderOf = (model: string): string => model.slice(0, model.indexOf("/"));
 
-async function inCatalog(db: KobeDb | KobeTx, alias: string): Promise<boolean> {
+async function inCatalog(db: KaijuDb | KaijuTx, alias: string): Promise<boolean> {
   const [m] = await db
     .select({ alias: modelCatalog.alias })
     .from(modelCatalog)
@@ -159,7 +159,7 @@ async function inCatalog(db: KobeDb | KobeTx, alias: string): Promise<boolean> {
 }
 
 /** Whether `model` (`<gateway provider>/<model>`) is a chat model of the catalog (review L3). */
-async function isCatalogChatModel(db: KobeDb | KobeTx, model: string): Promise<boolean> {
+async function isCatalogChatModel(db: KaijuDb | KaijuTx, model: string): Promise<boolean> {
   const rows = await db
     .select({ id: modelProviders.id, kind: modelProviders.kind, model: modelCatalog.model })
     .from(modelCatalog)
@@ -174,7 +174,7 @@ async function isCatalogChatModel(db: KobeDb | KobeTx, model: string): Promise<b
  * settings.
  */
 export async function removedModelSettings(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   settings: MemorySiteSettings,
   providers: ReadonlySet<string>,
 ): Promise<MemorySiteModelSetting[]> {
@@ -220,7 +220,7 @@ export type SiteSettingsWrite =
 export const MEMORY_SETTINGS_CHANNEL = "kobe_memory_settings";
 
 export async function writeMemorySiteSettings(
-  tx: KobeTx,
+  tx: KaijuTx,
   change: { readonly [K in MemorySiteSettingName]?: MemorySiteSettings[K] | undefined },
   providers: ReadonlySet<string>,
 ): Promise<SiteSettingsWrite> {

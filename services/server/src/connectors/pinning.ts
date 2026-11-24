@@ -1,4 +1,4 @@
-import { and, connectors, eq, isNull, sql, type KobeDb, type UiResourceFailure } from "@kobe/db";
+import { and, connectors, eq, isNull, sql, type KaijuDb, type UiResourceFailure } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { buildSnapshot, type PinFailure } from "./pin.js";
 import type { ConnectorProbe, ProbeFailure } from "./probe.js";
@@ -26,7 +26,7 @@ export type PinOutcome =
     };
 
 export async function pinConnector(
-  db: KobeDb,
+  db: KaijuDb,
   prober: ConnectorProbe,
   connectorId: string,
   options: {

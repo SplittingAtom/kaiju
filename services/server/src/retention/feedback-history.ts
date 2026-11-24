@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, lockLegalHolds, sql, withTeam, type KobeDb } from "@kobe/db";
+import { SYSTEM_ACTOR, lockLegalHolds, sql, withTeam, type KaijuDb } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -18,7 +18,7 @@ export interface FeedbackHistoryCounts {
 }
 
 export async function purgeReleasedFeedbackHistory(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   options: { readonly stop?: () => boolean } = {},
 ): Promise<FeedbackHistoryCounts> {

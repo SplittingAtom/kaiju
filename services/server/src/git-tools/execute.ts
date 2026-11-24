@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { canonicalJson, projectPermissions } from "@kobe/protocol";
+import { canonicalJson, projectPermissions } from "@kaiju/protocol";
 import {
   gitRepositories,
   openGitCredential,
@@ -9,8 +9,8 @@ import {
   type GitConnectionRecord,
   type GitCredentialSecret,
   type GitSiteSettings,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { gitAdapterFor } from "../git/adapters.js";
 import {
   hostHasRepos,
@@ -22,7 +22,7 @@ import {
 import { GitHostError, type GitHostAdapter } from "../git-hosts/adapter.js";
 import type { InstallationTokenCache } from "../git-hosts/github/app-auth.js";
 import type { GitHostNet } from "../git-hosts/http.js";
-import { withAdvisoryLockRetry } from "../kobe-mcp/limits.js";
+import { withAdvisoryLockRetry } from "../kaiju-mcp/limits.js";
 import { logger } from "../logger.js";
 import { checkRateLimit } from "../rate-limit.js";
 import {
@@ -76,7 +76,7 @@ const CONNECTION_WRITE_RULE = {
 } as const;
 
 export interface GitToolsDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** Opens sealed credentials; unset (no envelope key): every host call is refused. */
   readonly envelope: Envelope | undefined;
   readonly net: GitHostNet;

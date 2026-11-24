@@ -11,31 +11,31 @@
 }
 
 .running {
-  color: var(--kobe-status-running);
+  color: var(--kaiju-status-running);
 }
 
 .attention {
-  color: var(--kobe-status-attention);
+  color: var(--kaiju-status-attention);
 }
 
 .failed {
-  color: var(--kobe-status-failed);
+  color: var(--kaiju-status-failed);
 }
 
 .done {
-  color: var(--kobe-status-done);
+  color: var(--kaiju-status-done);
 }
 
 .idle {
-  color: var(--kobe-status-idle);
+  color: var(--kaiju-status-idle);
 }
 
 /* A soft pulse while work is happening. */
 .pulse {
-  animation: kobe-status-pulse 2s ease-in-out infinite;
+  animation: kaiju-status-pulse 2s ease-in-out infinite;
 }
 
-@keyframes kobe-status-pulse {
+@keyframes kaiju-status-pulse {
   0%,
   100% {
     opacity: 1;
@@ -57,19 +57,19 @@
   font-size: 0.75rem;
   line-height: 1.25rem;
   border: 1px solid currentColor;
-  border-radius: var(--kobe-radius-pill);
+  border-radius: var(--kaiju-radius-pill);
 }
 
 .badge.running {
-  background: var(--kobe-status-running-bg);
+  background: var(--kaiju-status-running-bg);
 }
 
 .badge.attention {
-  background: var(--kobe-status-attention-bg);
+  background: var(--kaiju-status-attention-bg);
 }
 
 .badge.failed {
-  background: var(--kobe-status-failed-bg);
+  background: var(--kaiju-status-failed-bg);
 }
 
 .badge.idle {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LINEAGE_MAX_SIBLINGS, threadLineageResponseSchema } from "@kobe/protocol";
+import { LINEAGE_MAX_SIBLINGS, threadLineageResponseSchema } from "@kaiju/protocol";
 import { assembleLineage, capList, type LineageMember } from "./lineage.js";
 
 /** The pure half of the lineage read (KOBE-533): caps and assembly; the db test covers the SQL. */

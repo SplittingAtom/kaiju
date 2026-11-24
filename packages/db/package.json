@@ -1,5 +1,5 @@
 {
-  "name": "@kobe/db",
+  "name": "@kaiju/db",
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
@@ -22,7 +22,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:check": "drizzle-kit generate && if [ -n \"$(git status --porcelain -- drizzle)\" ]; then git status --porcelain -- drizzle; echo \"Schema changed without a committed migration: run pnpm --filter @kobe/db db:generate\" >&2; exit 1; fi",
+    "db:check": "drizzle-kit generate && if [ -n \"$(git status --porcelain -- drizzle)\" ]; then git status --porcelain -- drizzle; echo \"Schema changed without a committed migration: run pnpm --filter @kaiju/db db:generate\" >&2; exit 1; fi",
     "db:rebase": "node scripts/rebase-migrations.mjs",
     "audit:doc": "node scripts/audit-doc.mjs",
     "test:lanes": "node scripts/test-lanes.mjs"
@@ -35,8 +35,8 @@
     "zod": "^4.6.7"
   },
   "bin": {
-    "kobe-migrate": "./dist/cli/migrate.js",
-    "kobe-db-wait": "./dist/cli/wait.js"
+    "kaiju-migrate": "./dist/cli/migrate.js",
+    "kaiju-db-wait": "./dist/cli/wait.js"
   },
   "files": [
     "dist",

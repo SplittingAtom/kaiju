@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { EditorView } from "@codemirror/view";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { tabsKey } from "../../lib/chat/artifact-tabs";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { sha256Hex } from "../../lib/files/editor";
 import { must } from "../../lib/testing/must";
 import { openApp } from "../chat/testing";
@@ -15,7 +15,7 @@ import { CHANGED_AGAIN_NOTE } from "./save-as";
  * silently over a file that is there (Replace asks, at the version it finds), and opens the copy
  * in the tab. Read-only files offer Save As into My files but not Save.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const enc = (s: string) => new TextEncoder().encode(s);
 const dec = (b: Uint8Array | undefined) =>
   b === undefined ? undefined : new TextDecoder().decode(b);
@@ -23,7 +23,7 @@ const dec = (b: Uint8Array | undefined) =>
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 afterEach(() => {

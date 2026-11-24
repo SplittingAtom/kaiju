@@ -1,17 +1,17 @@
 import { rm } from "node:fs/promises";
-import { BLOB_REF_COLUMNS } from "@kobe/db";
+import { BLOB_REF_COLUMNS } from "@kaiju/db";
 import {
   createTestDatabase,
   migrationsBefore,
   testServerUrl,
   type TestDatabase,
-} from "@kobe/db/testing";
+} from "@kaiju/db/testing";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { existingColumns, referencedObjectKeys } from "./catalog.js";
 
 /**
- * `kobe backup` reads this release's blob-ref columns in the snapshot. A database one migration
+ * `kaiju backup` reads this release's blob-ref columns in the snapshot. A database one migration
  * level behind (backed up before the upgrade migrates it) lacks the tables added since, such as
  * KOBE-304's workspace_file_hold_history: the backup checks the columns that exist and must not
  * fail on the others. No pg_dump needed, so this runs wherever Postgres does.

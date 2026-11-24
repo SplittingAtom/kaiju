@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { strFromU8, unzipSync } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { semanticMemoryItemDetailSchema, type SemanticMemoryScope } from "@kobe/protocol";
+import { semanticMemoryItemDetailSchema, type SemanticMemoryScope } from "@kaiju/protocol";
 import type { TestBrowser } from "../testing/browser.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 import { VERSION_BATCH, type ExportedItem } from "./items-export.js";
@@ -37,9 +37,9 @@ const save = async (
 };
 
 async function download(b: TestBrowser, team: string) {
-  const res = await h.app.request(`http://kobe.test/v1/threads/export?team=${team}`, {
+  const res = await h.app.request(`http://kaiju.test/v1/threads/export?team=${team}`, {
     headers: {
-      origin: "http://kobe.test",
+      origin: "http://kaiju.test",
       "x-forwarded-for": b.ip,
       cookie: [...b.cookies].map(([k, v]) => `${k}=${v}`).join("; "),
     },

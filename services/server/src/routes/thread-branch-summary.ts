@@ -3,7 +3,7 @@ import {
   BRANCH_SUMMARY_ERROR_HTTP_STATUS,
   branchSummaryError,
   branchSummaryRequestSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { BranchSummaryError } from "../runs/branch-summary.js";

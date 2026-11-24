@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { SkillEvalScorecard } from "@kobe/protocol";
+import type { SkillEvalScorecard } from "@kaiju/protocol";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";

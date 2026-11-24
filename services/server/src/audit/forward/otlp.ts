@@ -1,4 +1,4 @@
-import type { AuditEntry } from "@kobe/db";
+import type { AuditEntry } from "@kaiju/db";
 import type { AuditForwardingConfig } from "./config.js";
 import type { AuditSink } from "./types.js";
 

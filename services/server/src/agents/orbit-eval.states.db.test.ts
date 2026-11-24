@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { loadEvalCaseFile, loadGatewayPrincipal } from "@kobe/db";
+import { loadEvalCaseFile, loadGatewayPrincipal } from "@kaiju/db";
 import { describe, expect, it } from "vitest";
 import { createEval, finishEval, getEval, markRunning, readEvalSettings } from "./eval/store.js";
 import {

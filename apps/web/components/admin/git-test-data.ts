@@ -1,13 +1,13 @@
 /**
  * Wire answers of `/v1/team/git/connections*` (snake_case, as the server sends them) for the Git
- * section's tests (KOBE-761). Typed against `@kobe/protocol`, so a shape change fails here.
+ * section's tests (KOBE-761). Typed against `@kaiju/protocol`, so a shape change fails here.
  */
 import type {
   GitConnectionAdminView,
   GitConnectionList,
   GitConnectionMemberView,
   GitTestReport,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 export const GIT_BASE = "/v1/team/git/connections";
 export const ID = "11111111-1111-4111-8111-111111111111";
@@ -110,7 +110,7 @@ export function report(over: Partial<GitTestReport> = {}): GitTestReport {
     provider: "github",
     organization: { login: "acme", name: "Acme Inc", kind: "organization" },
     host_version: null,
-    actor: { kind: "app", login: "kobe-acme[bot]" },
+    actor: { kind: "app", login: "kaiju-acme[bot]" },
     capabilities: { create: "yes", read: "yes", write: "yes", admin: "no" },
     excess_permissions: [],
     credential_expires_at: null,

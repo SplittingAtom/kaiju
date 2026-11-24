@@ -3,14 +3,14 @@ import {
   ARTIFACT_TITLE_MAX,
   ARTIFACT_TOOLS,
   KOBE_TOOLS_FD,
-  KOBE_TOOLS_TIMEOUT_MS,
+  KAIJU_TOOLS_TIMEOUT_MS,
   CAPABILITY_ARTIFACTS,
   CAPABILITY_FILES,
   FILE_SHARE_DESCRIPTION_MAX,
   FILE_SHARE_PATH_MAX,
   UPLOAD_FILE_NAME_MAX,
   shareFileInputSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { frameSizeProblem } from "./frame-size.js";
 import {
@@ -54,7 +54,7 @@ const tool = (t: ToolsTransport, name: string) => {
 describe("kobe-tools constants mirror the protocol", () => {
   it("matches packages/protocol artifacts.ts", () => {
     expect(TOOLS_FD).toBe(KOBE_TOOLS_FD);
-    expect(TOOLS_TIMEOUT_MS).toBe(KOBE_TOOLS_TIMEOUT_MS);
+    expect(TOOLS_TIMEOUT_MS).toBe(KAIJU_TOOLS_TIMEOUT_MS);
     expect(MAX_CONTENT_BYTES).toBe(ARTIFACT_CONTENT_MAX_BYTES);
     expect(MAX_TITLE_LENGTH).toBe(ARTIFACT_TITLE_MAX);
     expect(OP_ARTIFACT_PUT).toBe("artifact.put");

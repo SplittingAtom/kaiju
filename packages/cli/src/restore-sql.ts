@@ -1,4 +1,4 @@
-import { quoteIdent, startupSeed } from "@kobe/db";
+import { quoteIdent, startupSeed } from "@kaiju/db";
 import { isSeeded } from "./seeded.js";
 
 export interface MigrationRecord {
@@ -67,7 +67,7 @@ export function journalText(migrations: readonly MigrationRecord[]): string {
 }
 
 function doBlock(body: string): string {
-  return `DO $kobe$\n${body}\n$kobe$;`;
+  return `DO $kaiju$\n${body}\n$kaiju$;`;
 }
 
 /**
@@ -91,7 +91,7 @@ export function restorePrelude(plan: RestorePlan): string {
     "SET LOCAL lock_timeout = '10s';",
     // Excludes migration Jobs, backups and other restores for the whole transaction.
     doBlock(
-      `BEGIN\n  IF NOT pg_try_advisory_xact_lock(${lockKey}) THEN\n    RAISE EXCEPTION 'kobe restore: a migration, backup or restore is running; try again when it finishes';\n  END IF;\nEND`,
+      `BEGIN\n  IF NOT pg_try_advisory_xact_lock(${lockKey}) THEN\n    RAISE EXCEPTION 'kaiju restore: a migration, backup or restore is running; try again when it finishes';\n  END IF;\nEND`,
     ),
     plan.lockTables.length > 0
       ? `LOCK TABLE ${plan.lockTables.map(table).join(", ")} IN ACCESS EXCLUSIVE MODE;`
@@ -108,14 +108,14 @@ export function restorePrelude(plan: RestorePlan): string {
     ),
     "SET CONSTRAINTS ALL DEFERRED;",
     doBlock(
-      `BEGIN\n  IF (SELECT coalesce(string_agg(hash || ':' || created_at, ',' ORDER BY created_at, id), '') FROM drizzle.__drizzle_migrations) <> ${literal(journalText(plan.migrations))} THEN\n    RAISE EXCEPTION 'kobe restore: the database''s applied migrations do not match the backup; nothing was restored';\n  END IF;\nEND`,
+      `BEGIN\n  IF (SELECT coalesce(string_agg(hash || ':' || created_at, ',' ORDER BY created_at, id), '') FROM drizzle.__drizzle_migrations) <> ${literal(journalText(plan.migrations))} THEN\n    RAISE EXCEPTION 'kaiju restore: the database''s applied migrations do not match the backup; nothing was restored';\n  END IF;\nEND`,
     ),
     // After NO FORCE, so team rows are visible to this check (a FORCE'd table looks empty).
     doBlock(
-      `DECLARE found text := '';\nBEGIN\n${nonEmptyChecks}\n  IF found <> '' THEN\n    RAISE EXCEPTION 'kobe restore: the target already has data in:%; restore only into a freshly installed Kaiju. Nothing was restored', found;\n  END IF;\nEND`,
+      `DECLARE found text := '';\nBEGIN\n${nonEmptyChecks}\n  IF found <> '' THEN\n    RAISE EXCEPTION 'kaiju restore: the target already has data in:%; restore only into a freshly installed Kaiju. Nothing was restored', found;\n  END IF;\nEND`,
     ),
     // Rows a migration or the server's start seeded on the fresh target give way to the backup's
-    // (seeded.ts, @kobe/db startup-seeds.ts). Triggers are off, so audit_log's rows go too: the
+    // (seeded.ts, @kaiju/db startup-seeds.ts). Triggers are off, so audit_log's rows go too: the
     // restored chain is the backup's, and the restore's own event continues it.
     // The started target's own audit chain (only start-up events by now) is recorded before it
     // goes, for the restore's event: anchors it logged before the restore are explained.
@@ -150,7 +150,7 @@ function expectHeadCheck(head: ExpectedAuditHead): string {
         : `EXISTS (SELECT 1 FROM public.audit_log WHERE seq = ${seq} AND hash = ${literal(head.hash)})`;
   const want = head.exact ? "end at" : "contain";
   return `  IF NOT (${ok}) THEN
-    RAISE EXCEPTION 'kobe restore: the restored audit chain does not ${want} ${what} (${head.source.replace(/[^A-Za-z0-9 :-]/g, "")}); its head is %:%. Nothing was restored', head_seq, coalesce(head_hash, '(empty)');
+    RAISE EXCEPTION 'kaiju restore: the restored audit chain does not ${want} ${what} (${head.source.replace(/[^A-Za-z0-9 :-]/g, "")}); its head is %:%. Nothing was restored', head_seq, coalesce(head_hash, '(empty)');
   END IF;`;
 }
 
@@ -179,7 +179,7 @@ function auditRestore(audit: RestoreAudit): string {
       "  IF to_regclass('public.audit_log') IS NULL THEN RETURN; END IF;",
       "  SELECT * INTO c FROM public.audit_log_chain_problem();",
       "  IF c.problem IS NOT NULL THEN",
-      "    RAISE EXCEPTION 'kobe restore: the audit chain in the backup is broken at seq % (%); nothing was restored', c.problem_seq, c.problem;",
+      "    RAISE EXCEPTION 'kaiju restore: the audit chain in the backup is broken at seq % (%); nothing was restored', c.problem_seq, c.problem;",
       "  END IF;",
       "  head_seq := c.head_seq;",
       "  head_hash := c.head_hash;",
@@ -207,7 +207,7 @@ export function restorePostlude(plan: RestorePlan): string {
   const countChecks = plan.loadTables
     .map(
       (t) =>
-        `  SELECT count(*) INTO n FROM ${table(t.name)};\n  IF n <> ${Math.trunc(t.rows)} THEN RAISE EXCEPTION 'kobe restore: % has % rows, the backup has ${Math.trunc(t.rows)}; nothing was restored', ${literal(t.name)}, n; END IF;`,
+        `  SELECT count(*) INTO n FROM ${table(t.name)};\n  IF n <> ${Math.trunc(t.rows)} THEN RAISE EXCEPTION 'kaiju restore: % has % rows, the backup has ${Math.trunc(t.rows)}; nothing was restored', ${literal(t.name)}, n; END IF;`,
     )
     .join("\n");
   const enable = (t: UserTrigger): string =>

@@ -15,7 +15,7 @@
  *   Each one can be closed by the viewer (KOBE-468, `closable-notice.tsx`).
  */
 import { useContext } from "react";
-import type { KobeEventPayload } from "@kobe/protocol";
+import type { KaijuEventPayload } from "@kaiju/protocol";
 import type { RunNotice, ToolActivity } from "../../lib/chat/live";
 import { ApprovalCard } from "./approval-card";
 import { OpenArtifactButton } from "./artifact-panel";
@@ -24,12 +24,12 @@ import { FileCard } from "./file-card";
 import { ConnectedEgressNotice } from "./egress-notice";
 import { MemoryNotice } from "./memory-notice";
 import { OmissionNotice } from "./omission-notice";
-import { ChatSessionContext, useKobeExtras } from "./kobe-runtime";
+import { ChatSessionContext, useKaijuExtras } from "./kaiju-runtime";
 import styles from "./chat.module.css";
 
 export function ApprovalSlot({ tool }: { readonly tool: ToolActivity }) {
   const session = useContext(ChatSessionContext);
-  const readOnly = useKobeExtras()?.state.summary?.readOnly === true;
+  const readOnly = useKaijuExtras()?.state.summary?.readOnly === true;
   const requested = tool.approvalRequested;
   if (!requested) return null;
   return (
@@ -43,7 +43,8 @@ export function ApprovalSlot({ tool }: { readonly tool: ToolActivity }) {
   );
 }
 
-type ArtifactPayload = KobeEventPayload<"artifact.created"> | KobeEventPayload<"artifact.updated">;
+type ArtifactPayload =
+  KaijuEventPayload<"artifact.created"> | KaijuEventPayload<"artifact.updated">;
 
 export function ArtifactSlot({ artifact }: { readonly artifact: ArtifactPayload }) {
   const title = artifact.title?.trim() || "Untitled artifact";
@@ -111,7 +112,7 @@ export function EgressBlocked({
   blockedAt,
   closeId,
 }: {
-  readonly payload: KobeEventPayload<"egress.blocked">;
+  readonly payload: KaijuEventPayload<"egress.blocked">;
   /** The event's server time: a decision older than the block is not shown as its answer (KOBE-609). */
   readonly blockedAt?: string | undefined;
   /** The event's id: the viewer can close the notice (KOBE-468). */

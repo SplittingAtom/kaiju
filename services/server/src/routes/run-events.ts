@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { decideStreamOpen, epilogueOpen, resolveResumeCursor } from "@kobe/protocol";
+import { decideStreamOpen, epilogueOpen, resolveResumeCursor } from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import { teamRoleAllows } from "../authz/permissions.js";
 import type { ServerDeps } from "../deps.js";
 import { createRunEventStream, type StreamSource } from "../event-stream/stream.js";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { viewerProjectIds } from "../threads/references.js";
 import { canWatchThread } from "../event-stream/visibility.js";
 import { loadAdminResultGate, redactEvent } from "../threads/admin-redaction.js";

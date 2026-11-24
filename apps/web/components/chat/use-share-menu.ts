@@ -6,7 +6,7 @@ import { SHARE_LABELS, sharedMessage, visibilityOf } from "../../lib/chat/share"
 import type { ThreadState } from "../../lib/chat/thread-state";
 import type { ThreadVisibility } from "../../lib/chat/types";
 import type { MenuBindings, MenuChoice } from "../../lib/shell/menu";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 import { RailAnnounce } from "./use-organize-menu";
 
 /**

@@ -3,7 +3,7 @@ import {
   commitFromProposalRequestSchema,
   commitProjectRequestSchema,
   projectHistoryQuerySchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { type TeamVariables } from "../../authz/middleware.js";
 import { commitProject } from "../../git/repo-commit/dispatch.js";
 import { commitProposal } from "../../projects/from-proposal.js";

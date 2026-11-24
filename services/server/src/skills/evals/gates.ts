@@ -1,4 +1,11 @@
-import { and, eq, teamSkillReviews, teamSkillVersions, type KobeTx, type TeamRole } from "@kobe/db";
+import {
+  and,
+  eq,
+  teamSkillReviews,
+  teamSkillVersions,
+  type KaijuTx,
+  type TeamRole,
+} from "@kaiju/db";
 import { teamRoleAllows } from "../../authz/permissions.js";
 import { isBlocked } from "../blocklist.js";
 import { testGate, type TestGate } from "../drafts/test-gates.js";
@@ -16,7 +23,7 @@ export interface EvalGateWho {
  * uploader and holders of `team.skills.publish` or `team.skills.review`; nobody once rejected.
  */
 export async function teamVersionGate(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: EvalGateWho,
   skillId: string,
   seq: number,
@@ -72,7 +79,7 @@ export const EVAL_GATE_REFUSALS: Readonly<Record<EvalGateRefusal, readonly [403 
  * or personal version. A Registry version is the Registry team's own review (KOBE-335).
  */
 export async function evalSubjectGate(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: EvalGateWho,
   subject: { readonly kind: string; readonly id: string; readonly rev: number },
   runtimeHash: string,

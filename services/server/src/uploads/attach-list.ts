@@ -1,6 +1,6 @@
-import { UPLOAD_ATTACHMENT_ROOT } from "@kobe/protocol";
-import { type SandboxAttachment } from "@kobe/protocol/sandbox-wire";
-import { sql, type KobeTx } from "@kobe/db";
+import { UPLOAD_ATTACHMENT_ROOT } from "@kaiju/protocol";
+import { type SandboxAttachment } from "@kaiju/protocol/sandbox-wire";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { attachmentPaths } from "./attach-names.js";
 
 /** Image types the agent passes inline (its own list, `threads/attachments.ts`, must agree). */
@@ -19,7 +19,7 @@ type AttachedRow = {
   size_bytes: string | number;
 };
 
-async function attachedRows(tx: KobeTx, teamId: string, threadId: string): Promise<AttachedRow[]> {
+async function attachedRows(tx: KaijuTx, teamId: string, threadId: string): Promise<AttachedRow[]> {
   const res = await tx.execute<AttachedRow>(sql`
     SELECT f.id, f.run_id, f.name, f.mime_type, f.size_bytes
       FROM files f
@@ -41,7 +41,7 @@ async function attachedRows(tx: KobeTx, teamId: string, threadId: string): Promi
  * and an unmarked file is listed by path.
  */
 export async function listRunAttachments(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   runId: string,
@@ -69,7 +69,7 @@ export async function listRunAttachments(
 
 /** The workspace path (relative) of each file attached in a thread, by file id. */
 export async function threadAttachmentPaths(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<ReadonlyMap<string, string>> {

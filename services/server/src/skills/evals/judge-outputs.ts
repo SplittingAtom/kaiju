@@ -3,12 +3,12 @@ import {
   judgeOutputText,
   type EvalWorkspaceEntry,
   type SkillEvalJudgeOutput,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   EVAL_READ_MAX_FILES,
   EVAL_READ_MAX_TOTAL_BYTES,
   evalReadResultSchema,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import type { SandboxRouter, SandboxTarget } from "../../sandbox-wire/types.js";
 
 /**

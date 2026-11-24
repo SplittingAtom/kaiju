@@ -1,7 +1,7 @@
 /**
  * Thread and run shapes as the web client sees them: the Thread API (KOBE-34), search (KOBE-33)
  * and the run orchestrator (KOBE-30) answer in snake_case; `apiRequest` camelizes every response,
- * except entry `payload`s (Pi documents, kept verbatim). Run events keep the `@kobe/protocol`
+ * except entry `payload`s (Pi documents, kept verbatim). Run events keep the `@kaiju/protocol`
  * snake_case types: they arrive over SSE, not through `apiRequest`.
  */
 import type {
@@ -14,7 +14,7 @@ import type {
   RunStatus,
   ThinkingLevel,
   ThreadStatus,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /** `GET /v1/threads/{id}/card` (CE18, KOBE-219), camelized: the rail's hover card. */
 export interface ThreadCard {

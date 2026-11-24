@@ -114,10 +114,10 @@ describe("Agents page as a member (ac-1)", () => {
   it("views and forks a gallery agent from the Site tab", async () => {
     stubApi({ [ROSTER("site")]: [200, page("site", [GALLERY])] });
     renderTeam(<Page search="tab=site" />, MEMBER);
-    const kobe = await rowOf("Kobe");
-    expect(within(kobe).getByText("Kaiju gallery")).toBeTruthy();
+    const kaiju = await rowOf("Kobe");
+    expect(within(kaiju).getByText("Kaiju gallery")).toBeTruthy();
     expect(
-      within(kobe)
+      within(kaiju)
         .getByRole("link", { name: /View\s+Kobe/ })
         .getAttribute("href"),
     ).toBe("/agents/g-1");

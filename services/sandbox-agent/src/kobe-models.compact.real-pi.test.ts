@@ -1,8 +1,8 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startLocalGateway, type LocalGateway } from "@kobe/model-gateway/testing";
-import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
+import { startLocalGateway, type LocalGateway } from "@kaiju/model-gateway/testing";
+import type { SandboxToServerFrame } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ModelWiring } from "./models/types.js";
 import { RUN, RUN_2, THREAD, runStart, startHarness, type Harness } from "./testing/harness.js";

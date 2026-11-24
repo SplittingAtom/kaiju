@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { APPROVAL_MODES } from "@kobe/protocol";
+import { APPROVAL_MODES } from "@kaiju/protocol";
 import { run, read, jiraSearch } from "./evaluate.test-helpers.js";
 
 describe("evaluatePolicy: the agent's tools.deny in every mode (KOBE-481)", () => {

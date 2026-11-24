@@ -1,4 +1,4 @@
-import { sql, withTeam } from "@kobe/db";
+import { sql, withTeam } from "@kaiju/db";
 import { findThread } from "../../threads/repository.js";
 import { viewerProjectIds } from "../../threads/references.js";
 import type { DraftContext } from "./service.js";

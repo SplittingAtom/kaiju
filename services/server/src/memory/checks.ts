@@ -1,4 +1,4 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 import {
   SEMANTIC_MEMORY_JUSTIFICATION_MAX,
   SEMANTIC_MEMORY_NOTE_MAX,
@@ -8,7 +8,7 @@ import {
   type SemanticMemoryOverrides,
   type SemanticMemoryScope,
   type SemanticMemoryWarningCode,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ServerAuditEvent } from "../audit/record.js";
 import { lintInstructions } from "./checks/lint.js";
 import {
@@ -71,7 +71,7 @@ import type { EffectiveMemory } from "./switch-model.js";
 
 /** What the store needs to run the checks: the save's transaction, scope, switches and writer. */
 export interface MemoryCheckEnv {
-  readonly tx: KobeTx;
+  readonly tx: KaijuTx;
   readonly loc: Location;
   readonly memory: EffectiveMemory;
   readonly who: MemoryWho;

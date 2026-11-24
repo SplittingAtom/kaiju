@@ -1,5 +1,5 @@
 import type { Context, Hono } from "hono";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import { recordAuditAfter } from "../../audit/record.js";
 import { forbidden, notFound, publishError } from "../http.js";
 import { versionParamSchema } from "../schemas.js";
@@ -11,7 +11,7 @@ import { listOrbitModelOptions, resolveOrbitModel } from "./model.js";
 import { invalidRequest, param } from "../../http/request.js";
 
 export interface OrbitRouteOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** The agent named by `:id` if the caller may see it; null → 404 (as for version reads). */
   readonly resolve: (c: Context) => Promise<ResolvedAgent | null>;
   /** The active team: its enabled models resolve the agent's alias. */

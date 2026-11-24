@@ -2,7 +2,7 @@ import type {
   PiSessionHeader,
   RunStartFrame,
   ServerToSandboxFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import type { RunModel } from "../models/types.js";
 import type { SessionRestore } from "../pi/session-files.js";
 import type { SkillStore } from "../skills/store.js";

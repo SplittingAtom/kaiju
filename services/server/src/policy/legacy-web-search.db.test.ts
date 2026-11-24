@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { LEGACY_WEB_SEARCH_MESSAGE } from "@kobe/protocol/sandbox-wire";
+import { LEGACY_WEB_SEARCH_MESSAGE } from "@kaiju/protocol/sandbox-wire";
 import { EventStreamFixture } from "../testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 
@@ -58,7 +58,7 @@ describe("a legacy agent's web_search (KOBE-606)", () => {
     expect(started).toEqual({ ok: true });
 
     const ids = { run_id: runId, thread_id: threadId, tool_call_id: "c1", tool: "web_search" };
-    sb.send({ v: 1, type: "policy.check", request_id: "p1", ...ids, input: { query: "kobe" } });
+    sb.send({ v: 1, type: "policy.check", request_id: "p1", ...ids, input: { query: "kaiju" } });
     const decision = await sb.until(
       () => sb.frames("policy.result").find((r) => r.request_id === "p1"),
       3000,
@@ -66,7 +66,7 @@ describe("a legacy agent's web_search (KOBE-606)", () => {
     expect(decision.decision).toBe("deny");
 
     for (const request_id of ["s1", "s2"]) {
-      sb.send({ v: 1, type: "web_search.query", request_id, ...ids, input: { query: "kobe" } });
+      sb.send({ v: 1, type: "web_search.query", request_id, ...ids, input: { query: "kaiju" } });
       const answer = await sb.until(
         () => sb.frames("web_search.result").find((r) => r.request_id === request_id),
         3000,

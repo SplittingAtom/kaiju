@@ -1,5 +1,5 @@
 /**
- * Uploads from the composer (KOBE-145; contract in `@kobe/protocol` uploads.ts, KOBE-141):
+ * Uploads from the composer (KOBE-145; contract in `@kaiju/protocol` uploads.ts, KOBE-141):
  * `POST /v1/uploads` multipart, one file per request, progress from XHR. Limits are the site
  * defaults, used only for client-side pre-checks; the server's own limit (`limit_bytes` in the
  * error) is what a refusal reports.
@@ -10,7 +10,7 @@ import {
   UPLOAD_MAX_FILES_PER_MESSAGE,
   uploadErrorSchema,
   uploadResponseSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { TEAM_HEADER } from "../teams";
 
 export const MAX_FILE_BYTES = UPLOAD_DEFAULT_MAX_FILE_BYTES;

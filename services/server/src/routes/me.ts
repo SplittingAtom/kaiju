@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { eq, sql, users, pgCodeOf } from "@kobe/db";
+import { eq, sql, users, pgCodeOf } from "@kaiju/db";
 import {
   readUiPreferences,
   scheduleTimezoneSchema,
   uiPreferencesSchema,
   UI_PREFERENCES_MAX_BODY,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { z } from "zod";
 import type { AuthVariables } from "../auth/session.js";
 import type { ServerDeps } from "../deps.js";

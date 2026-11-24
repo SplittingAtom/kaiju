@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { announcement, chatRequests, composer, openApp, streaming } from "./testing";
 
@@ -12,13 +12,13 @@ import { announcement, chatRequests, composer, openApp, streaming } from "./test
  * the switch marker. A reader of a shared thread sees the badge without Switch; a thread on the
  * current version shows nothing.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const AGENT = "aaaaaaaa-0000-4000-8000-000000000001";
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -42,7 +42,7 @@ function pinned(pinnedTo: number, current: number | null, extra: object = {}) {
 
 const header = async () =>
   must((await screen.findByRole("heading", { level: 2, name: "Forecast" })).closest("header"));
-const offer = () => document.querySelector<HTMLElement>("[data-kobe-agent-version]");
+const offer = () => document.querySelector<HTMLElement>("[data-kaiju-agent-version]");
 const switches = () => chatRequests(fake, "POST").filter((r) => r.path.endsWith("/agent-version"));
 
 describe("the v<N> available badge (KOBE-420 ac-1)", () => {
@@ -171,7 +171,7 @@ describe("one-click Switch (KOBE-420 ac-2)", () => {
     });
     openApp(fake, t);
     const row = await waitFor(() =>
-      must(document.querySelector<HTMLElement>('[data-kobe-marker="agent"]')),
+      must(document.querySelector<HTMLElement>('[data-kaiju-marker="agent"]')),
     );
     expect(row.textContent?.replace(/\s+/g, " ").trim()).toBe("Switched to v3 · from v1");
     // Above the second prompt: after the first answer, before "Q4?".

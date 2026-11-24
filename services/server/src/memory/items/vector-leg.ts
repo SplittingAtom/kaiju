@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb } from "@kobe/db";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
 import { storedVectorModel } from "../embeddings/prefixes.js";
 import { vectorLiteral } from "../embeddings/vector-store.js";
 import type { QueryVector } from "../embeddings/service.js";
@@ -62,7 +62,7 @@ function laneVectorQuery(who: Who, lane: SelectLane, model: string, dims: number
 
 /** The nearest rows of every lane (`total` -1 marks them; `sim` is the cosine similarity). */
 export async function readVectorRows(
-  db: KobeDb,
+  db: KaijuDb,
   who: Who,
   query: QueryVector,
   timeoutMs: number = VECTOR_QUERY_TIMEOUT_MS,
@@ -88,7 +88,7 @@ export async function readVectorRows(
  * moved on, so the statement would only cost a connection.
  */
 export function startVectorLeg(
-  db: KobeDb,
+  db: KaijuDb,
   who: Who,
   queryVector: Promise<QueryVector | undefined>,
   deadlineMs = VECTOR_LEG_DEADLINE_MS,

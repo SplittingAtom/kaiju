@@ -5,14 +5,14 @@ import {
   GIT_PROVIDER_VALUES,
   GIT_REPO_VISIBILITY_VALUES,
   GIT_CAPABILITY_VALUES,
-} from "@kobe/db";
+} from "@kaiju/db";
 import {
   GIT_CONNECTION_ACCESS_LEVELS,
   GIT_CONNECTION_CAPABILITY_VALUES,
   GIT_CONNECTION_CREDENTIAL_KINDS,
   GIT_CONNECTION_PROVIDERS,
   GIT_CONNECTION_REPO_VISIBILITIES,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { GitHostError, type GitHostProbe } from "../git-hosts/adapter.js";
 import {
   gitConnectionCreateBodySchema,
@@ -176,7 +176,7 @@ describe("request schemas", () => {
     expect(gitConnectionUpdateBodySchema.safeParse({ access_level: "off" }).success).toBe(true);
   });
 
-  it("keeps the protocol's value lists equal to @kobe/db's", () => {
+  it("keeps the protocol's value lists equal to @kaiju/db's", () => {
     expect([...GIT_CONNECTION_PROVIDERS]).toEqual([...GIT_PROVIDER_VALUES]);
     expect([...GIT_CONNECTION_CREDENTIAL_KINDS]).toEqual([...GIT_CREDENTIAL_KIND_VALUES]);
     expect([...GIT_CONNECTION_ACCESS_LEVELS]).toEqual([...GIT_ACCESS_LEVEL_VALUES]);
@@ -199,12 +199,12 @@ describe("expiry email (G6)", () => {
       appName: "Kaiju",
       teamName: "Team1",
       connection,
-      consoleUrl: "http://kobe.test/admin/team/git",
+      consoleUrl: "http://kaiju.test/admin/team/git",
       now,
     });
     expect(m.subject).toContain("expires on 2026-12-01");
     expect(m.text).toContain("acme on github.com");
-    expect(m.text).toContain("http://kobe.test/admin/team/git");
+    expect(m.text).toContain("http://kaiju.test/admin/team/git");
     const lapsed = gitExpiryMessage({
       to: "a@example.com",
       appName: "Kaiju",

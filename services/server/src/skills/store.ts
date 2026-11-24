@@ -1,5 +1,5 @@
-import { isKobeSkillName } from "@kobe/protocol";
-import type { ScanResult } from "@kobe/skill-scanner";
+import { isKaijuSkillName } from "@kaiju/protocol";
+import type { ScanResult } from "@kaiju/skill-scanner";
 import {
   and,
   desc,
@@ -10,11 +10,11 @@ import {
   teamSkills,
   teamSkillVersions,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type SkillAccess,
   type SkillSource,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { MAX_LIVE_SKILLS, MAX_SKILL_VERSIONS } from "./limits.js";
 import { isBlocked } from "./blocklist.js";
@@ -130,7 +130,7 @@ export type UploadResult =
   | { readonly ok: false; readonly error: SemverError; readonly latest: string };
 type SemverError = "semver_not_increasing" | "semver_required";
 
-function inLocation<T>(db: KobeDb, location: SkillLocation, fn: (tx: KobeTx) => Promise<T>) {
+function inLocation<T>(db: KaijuDb, location: SkillLocation, fn: (tx: KaijuTx) => Promise<T>) {
   return location.scope === "team"
     ? withTeam(db, location.teamId, fn)
     : db.transaction((tx) => fn(tx));
@@ -166,7 +166,7 @@ function toRecord(
 
 /** Stores `input` as the next version of the skill named `input.slug`, creating the skill if new. */
 export function uploadSkillVersion(
-  db: KobeDb,
+  db: KaijuDb,
   location: SkillLocation,
   input: NewSkillVersion,
 ): Promise<UploadResult> {
@@ -185,7 +185,7 @@ export function uploadSkillVersion(
         return { ok: false, error: "unchanged" };
       if (existing.latestVersion >= MAX_SKILL_VERSIONS)
         return { ok: false, error: "version_limit" };
-    } else if (isKobeSkillName(input.slug)) {
+    } else if (isKaijuSkillName(input.slug)) {
       // Kaiju's own skills' names are reserved (KOBE-317, SK24, review S4): no new team or personal
       // skill takes one. One made before the upgrade keeps its name and its new versions.
       return { ok: false, error: "reserved_name" };
@@ -264,7 +264,7 @@ export function uploadSkillVersion(
 }
 
 async function findBySlug(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: SkillLocation,
   slug: string,
 ): Promise<SkillRecord | null> {
@@ -279,7 +279,7 @@ async function findBySlug(
 }
 
 /** Whether the team installed a catalog skill named `slug` (RLS: inside `withTeam`). */
-async function installedAs(tx: KobeTx, teamId: string, slug: string): Promise<boolean> {
+async function installedAs(tx: KaijuTx, teamId: string, slug: string): Promise<boolean> {
   const { rows } = await tx.execute(sql`
     SELECT 1 FROM team_skill_installs i JOIN registry_skills s ON s.id = i.skill_id
     WHERE i.team_id = ${teamId} AND s.name = ${slug}`);
@@ -287,7 +287,7 @@ async function installedAs(tx: KobeTx, teamId: string, slug: string): Promise<bo
 }
 
 /** Team skills with their latest version's semver (RLS: inside `withTeam`). */
-const selectTeamSkills = (tx: KobeTx) =>
+const selectTeamSkills = (tx: KaijuTx) =>
   tx
     .select({ skill: teamSkills, semver: teamSkillVersions.semver })
     .from(teamSkills)
@@ -301,7 +301,7 @@ const selectTeamSkills = (tx: KobeTx) =>
     );
 
 /** Personal skills with their latest version's semver; callers add the owner filter. */
-const selectPersonalSkills = (tx: KobeTx) =>
+const selectPersonalSkills = (tx: KaijuTx) =>
   tx
     .select({ skill: personalSkills, semver: personalSkillVersions.semver })
     .from(personalSkills)
@@ -313,7 +313,7 @@ const selectPersonalSkills = (tx: KobeTx) =>
       ),
     );
 
-async function countSkills(tx: KobeTx, location: SkillLocation): Promise<number> {
+async function countSkills(tx: KaijuTx, location: SkillLocation): Promise<number> {
   const rows =
     location.scope === "team"
       ? await tx.select({ id: teamSkills.id }).from(teamSkills)
@@ -325,7 +325,7 @@ async function countSkills(tx: KobeTx, location: SkillLocation): Promise<number>
 }
 
 async function insertSkill(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: SkillLocation,
   input: NewSkillVersion,
   semver: string,
@@ -346,7 +346,7 @@ async function insertSkill(
 }
 
 async function bumpSkill(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: SkillLocation,
   skill: SkillRecord,
   input: NewSkillVersion,
@@ -375,7 +375,7 @@ async function bumpSkill(
 }
 
 async function insertVersion(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: SkillLocation,
   skillId: string,
   version: number,
@@ -432,7 +432,7 @@ function toVersion(row: typeof personalSkillVersions.$inferSelect): SkillVersion
   };
 }
 
-export function listSkills(db: KobeDb, location: SkillLocation): Promise<SkillRecord[]> {
+export function listSkills(db: KaijuDb, location: SkillLocation): Promise<SkillRecord[]> {
   return inLocation(db, location, async (tx) => {
     const rows =
       location.scope === "team"
@@ -445,14 +445,14 @@ export function listSkills(db: KobeDb, location: SkillLocation): Promise<SkillRe
 }
 
 export function findSkill(
-  db: KobeDb,
+  db: KaijuDb,
   location: SkillLocation,
   id: string,
 ): Promise<SkillRecord | null> {
   return inLocation(db, location, (tx) => findById(tx, location, id));
 }
 
-async function findById(tx: KobeTx, location: SkillLocation, id: string) {
+async function findById(tx: KaijuTx, location: SkillLocation, id: string) {
   if (location.scope === "team") {
     const [row] = await selectTeamSkills(tx).where(eq(teamSkills.id, id));
     return row ? toRecord("team", row.skill, row.semver) : null;
@@ -465,7 +465,7 @@ async function findById(tx: KobeTx, location: SkillLocation, id: string) {
 
 /** Versions of a skill, newest (highest seq) first; empty if the caller can't see the skill. */
 export function listSkillVersions(
-  db: KobeDb,
+  db: KaijuDb,
   location: SkillLocation,
   skillId: string,
 ): Promise<SkillVersionRecord[]> {
@@ -489,7 +489,7 @@ export function listSkillVersions(
 
 /** A version by its number (seq) or its semver; null if absent or the caller can't see it. */
 export function getSkillVersion(
-  db: KobeDb,
+  db: KaijuDb,
   location: SkillLocation,
   skillId: string,
   version: number | string,
@@ -502,7 +502,7 @@ export function getSkillVersion(
 }
 
 async function versionBySemver(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: SkillLocation,
   skillId: string,
   semver: string,
@@ -526,7 +526,7 @@ async function versionBySemver(
 }
 
 async function versionOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   location: SkillLocation,
   skillId: string,
   version: number,

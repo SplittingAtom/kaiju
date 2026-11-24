@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { recordModelUsage, serverCallRunMatches, type UsageKind } from "@kobe/db";
+import { recordModelUsage, serverCallRunMatches, type UsageKind } from "@kaiju/db";
 import {
   SERVER_CALL_RESPONSE_FORMATS,
   SERVER_CALL_TOKEN_HEADER,
   type ServerCallClaims,
   type ServerCallRequest,
-} from "@kobe/protocol";
-import { generateSessionKeyPair, verifyServerCallToken } from "@kobe/session-token";
+} from "@kaiju/protocol";
+import { generateSessionKeyPair, verifyServerCallToken } from "@kaiju/session-token";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createServerCallClient } from "../../models/gateway-client.js";
 import { createSkillEvalJudge } from "./judge.js";

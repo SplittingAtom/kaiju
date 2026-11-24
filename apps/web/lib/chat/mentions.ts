@@ -14,7 +14,7 @@ import {
   mentionMarker,
   mentionPathIssue,
   sandboxPathOf,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { FileEntry } from "../files/api";
 import { mentionRefusal } from "./mention-insert";
 

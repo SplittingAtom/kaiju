@@ -73,10 +73,10 @@ async function signInSecond(
 /** The composer's + › Memory submenu (learn-from-chat.spec.ts). */
 async function openMemoryMenu(page: Page): Promise<Locator> {
   await page.getByRole("button", { name: "Add to your message", exact: true }).click();
-  const menu = page.locator("[data-kobe-plus-menu]");
+  const menu = page.locator("[data-kaiju-plus-menu]");
   await expect(menu).toBeVisible();
   await menu.getByRole("menuitem", { name: /^Memory/ }).hover();
-  const sub = page.locator("[data-kobe-memory-menu]");
+  const sub = page.locator("[data-kaiju-memory-menu]");
   await expect(sub).toBeVisible();
   return sub;
 }
@@ -97,17 +97,17 @@ async function learnCandidate(page: Page, threadId: string, word: string): Promi
   }
   await learn.click();
   const plus = page.getByRole("button", { name: "Add to your message", exact: true });
-  const notice = page.locator("[data-kobe-learn-notice]");
+  const notice = page.locator("[data-kaiju-learn-notice]");
   const panel = panelOf(page);
   // The pass starts (the + shows the spinner, or To review is already open), then ends:
   // candidates open To review by itself (KOBE-396, KOBE-661); otherwise the + settles.
   await expect(async () => {
     if (await panel.isVisible()) return;
-    expect(await plus.getAttribute("data-kobe-learn-state", { timeout: 1_000 })).toBe("spinner");
+    expect(await plus.getAttribute("data-kaiju-learn-state", { timeout: 1_000 })).toBe("spinner");
   }).toPass({ timeout: SHELL_TIMEOUT_MS });
   await expect(async () => {
     if (await panel.isVisible()) return;
-    expect(await plus.getAttribute("data-kobe-learn-state", { timeout: 1_000 })).not.toBe(
+    expect(await plus.getAttribute("data-kaiju-learn-state", { timeout: 1_000 })).not.toBe(
       "spinner",
     );
   }).toPass({ timeout: PASS_TIMEOUT_MS });

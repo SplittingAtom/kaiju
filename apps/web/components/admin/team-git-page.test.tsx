@@ -305,7 +305,7 @@ describe("Git section: per-connection actions (KOBE-761)", () => {
       await screen.findByRole("dialog", { name: "Settings for acme on GitHub" }),
     );
     await userEvent.click(dialog.getByRole("radio", { name: "Read" }));
-    await userEvent.type(dialog.getByRole("textbox", { name: /Name prefix/ }), "kobe-");
+    await userEvent.type(dialog.getByRole("textbox", { name: /Name prefix/ }), "kaiju-");
     const push = dialog.getByRole("spinbutton", { name: /Push size limit/ });
     await userEvent.clear(push);
     await userEvent.type(push, "2048");
@@ -324,7 +324,7 @@ describe("Git section: per-connection actions (KOBE-761)", () => {
     expect(JSON.parse(String(patch?.body))).toEqual({
       display_name: "acme on GitHub",
       repo_visibility: "private",
-      repo_name_prefix: "kobe-",
+      repo_name_prefix: "kaiju-",
       default_branch: "main",
       access_level: "read",
       push_limit_bytes: 2048 * 1024 * 1024,
@@ -403,7 +403,7 @@ describe("members' read-only view on My connectors (KOBE-761)", () => {
 
 describe("Commit author email (KOBE-761, G13, GQ10)", () => {
   const SETTINGS = "/v1/team/git/settings";
-  const EXAMPLE = "0123456789+ada@users.noreply.kobe.example";
+  const EXAMPLE = "0123456789+ada@users.noreply.kaiju.example";
 
   it("shows both choices with what ends up in git history and the admin's own no-reply example", async () => {
     stubApi({

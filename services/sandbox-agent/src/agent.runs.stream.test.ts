@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { parseTranslatedPiEvent } from "@kobe/protocol/sandbox-wire";
+import { parseTranslatedPiEvent } from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import {
   RUN,
@@ -47,7 +47,8 @@ describe("run.start → Pi prompt → pi.event stream", () => {
   });
 
   it("passes the agent's system prompt to Pi as an appended, agent-owned file (KOBE-123)", async () => {
-    const prompt = 'You are the marker agent. KOBE-PROMPT-MARKER:abc \u00e9 `$(rm -rf /)` "quoted"';
+    const prompt =
+      'You are the marker agent. KAIJU-PROMPT-MARKER:abc \u00e9 `$(rm -rf /)` "quoted"';
     h = await startHarness();
     await h.server.command(runStart("say:hi", { config: { system_prompt: prompt } }));
     const [launch] = await h.commandsLog();
@@ -56,7 +57,7 @@ describe("run.start → Pi prompt → pi.event stream", () => {
     expect(at).toBeGreaterThan(-1);
     expect(argv).not.toContain("--system-prompt"); // append: Pi's tool and skill prompt stays
     const file = argv[at + 1] as string;
-    expect(argv.join("\n")).not.toContain("KOBE-PROMPT-MARKER");
+    expect(argv.join("\n")).not.toContain("KAIJU-PROMPT-MARKER");
     expect(path.basename(file)).toBe("system-prompt.md");
     expect(launch?.appendSystemPromptText).toBe(prompt);
     expect((await stat(file)).mode & 0o777).toBe(0o600);
@@ -91,8 +92,8 @@ describe("run.start → Pi prompt → pi.event stream", () => {
     ]);
     expect(launch?.env).toContain("PI_CODING_AGENT_DIR");
     expect(launch?.env).not.toContain("SECRET_IN_AGENT_ENV");
-    const kobeVars = (launch?.env as string[]).filter((k) => k.startsWith("KOBE_"));
-    expect(kobeVars).toEqual(["KOBE_POLICY_FD", "KOBE_TOOL_HOME", "KOBE_TOOL_TMPDIR"]);
+    const kaijuVars = (launch?.env as string[]).filter((k) => k.startsWith("KOBE_"));
+    expect(kaijuVars).toEqual(["KOBE_POLICY_FD", "KOBE_TOOL_HOME", "KOBE_TOOL_TMPDIR"]);
     const prompts = (await h.commandsLog()).filter((c) => c.type === "prompt");
     expect(prompts).toEqual([{ type: "prompt", message: "say:hi", id: expect.any(String) }]);
   });
@@ -162,7 +163,7 @@ describe("run.start → Pi prompt → pi.event stream", () => {
 
   it("refuses attachments that reach outside the workspace through a symlink (KOBE-144)", async () => {
     h = await startHarness();
-    const outsideDir = await mkdtemp(path.join(tmpdir(), "kobe-outside-"));
+    const outsideDir = await mkdtemp(path.join(tmpdir(), "kaiju-outside-"));
     await writeFile(path.join(outsideDir, "secret.txt"), "secret");
     await mkdir(path.join(h.workspace, "uploads"), { recursive: true });
     await symlink(outsideDir, path.join(h.workspace, "uploads", "dir"));
@@ -179,7 +180,7 @@ describe("run.start → Pi prompt → pi.event stream", () => {
   });
 
   it("refuses a symlink planted after the pre-check, before the prompt (KOBE-144)", async () => {
-    const outsideDir = await mkdtemp(path.join(tmpdir(), "kobe-outside-"));
+    const outsideDir = await mkdtemp(path.join(tmpdir(), "kaiju-outside-"));
     await writeFile(path.join(outsideDir, "secret.png"), "secret");
     h = await startHarness({
       workspace: (dir) => ({

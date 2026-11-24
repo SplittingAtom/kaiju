@@ -1,5 +1,5 @@
-import { KOBE_MCP_MODES, TEAM_ROLES } from "@kobe/db";
-import { SITE_GRANTS, siteBrandingSchema } from "@kobe/protocol";
+import { KAIJU_MCP_MODES, TEAM_ROLES } from "@kaiju/db";
+import { SITE_GRANTS, siteBrandingSchema } from "@kaiju/protocol";
 import {
   createSchema as createSsoProviderSchema,
   patchSchema as patchSsoProviderSchema,
@@ -145,7 +145,7 @@ const SiteSettings = untyped(
   obj({
     requireTwoFactor: bool,
     auditPiiRetentionHours: int,
-    kobeMcpMode: oneOfStrings(...KOBE_MCP_MODES),
+    kobeMcpMode: oneOfStrings(...KAIJU_MCP_MODES),
     kobeReadsPerMinute: int,
     kobeWritesPerHour: int,
     gitConnectionsEnabled: bool,

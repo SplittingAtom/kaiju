@@ -13,7 +13,7 @@ import { messageSlug, pullRequestBody, pullRequestBranch, pullRequestTitle } fro
  * against the real git: object ids, tree order, the edited tree (`git ls-tree -r`), and a repository
  * holding the written objects passes `git fsck --strict`.
  */
-const root = mkdtempSync(path.join(tmpdir(), "kobe-repo-commit-test-"));
+const root = mkdtempSync(path.join(tmpdir(), "kaiju-repo-commit-test-"));
 const repo = path.join(root, "repo");
 const env = {
   PATH: process.env.PATH ?? "",

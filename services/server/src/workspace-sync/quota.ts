@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { teamStorageAllows } from "../uploads/quota.js";
 import type { WorkspaceOwner } from "./keys.js";
 
@@ -52,7 +52,7 @@ export type QuotaDecision =
       readonly limit: "workspace_bytes" | "workspace_files" | "workspace_file_size";
     };
 
-export type QuotaCheck = (tx: KobeTx, request: QuotaRequest) => Promise<QuotaDecision>;
+export type QuotaCheck = (tx: KaijuTx, request: QuotaRequest) => Promise<QuotaDecision>;
 
 /** The default check: the site's limits per workspace. */
 export function limitsQuota(limits: WorkspaceLimits): QuotaCheck {

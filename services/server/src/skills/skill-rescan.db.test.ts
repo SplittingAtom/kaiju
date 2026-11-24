@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { zipSync, strToU8 } from "fflate";
-import { RULE_SET, RULE_SET_VERSION } from "@kobe/skill-scanner";
-import { withTeam } from "@kobe/db";
+import { RULE_SET, RULE_SET_VERSION } from "@kaiju/skill-scanner";
+import { withTeam } from "@kaiju/db";
 import { logger } from "../logger.js";
 import { loadSkillFacts } from "../runs/resolver-input.js";
 import { rescanOnce } from "./rescan.js";
@@ -52,7 +52,7 @@ const rescan = (ruleSet: number) =>
     blobs: h.deps.blobs as NonNullable<typeof h.deps.blobs>,
     log: logger,
     mailer: h.mailer,
-    publicUrl: "https://kobe.test",
+    publicUrl: "https://kaiju.test",
     ruleSet,
     ruleSetVersion: `test-${ruleSet}`,
   });
@@ -69,7 +69,7 @@ async function facts(userId: string, names: string[]) {
 }
 
 beforeAll(async () => {
-  h = await openHarness({ blobs: { objects: new MemoryObjects(), prefix: "kobe/" } });
+  h = await openHarness({ blobs: { objects: new MemoryObjects(), prefix: "kaiju/" } });
   ids.admin = await h.createUser("admin@rescan.test");
   ids.builder = await h.createUser("builder@rescan.test");
   ids.member = await h.createUser("member@rescan.test");
@@ -325,7 +325,7 @@ describe("a rescan that can't finish (review g79)", () => {
       blobs: h.deps.blobs as NonNullable<typeof h.deps.blobs>,
       log: logger,
       mailer: h.mailer,
-      publicUrl: "https://kobe.test",
+      publicUrl: "https://kaiju.test",
       ruleSet,
       ruleSetVersion: `test-${ruleSet}`,
       incompleteSuspendAfterMs,

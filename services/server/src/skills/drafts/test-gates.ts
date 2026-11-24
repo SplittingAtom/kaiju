@@ -1,4 +1,4 @@
-import { and, eq, teamSkillReviews, type KobeTx, type TeamRole } from "@kobe/db";
+import { and, eq, teamSkillReviews, type KaijuTx, type TeamRole } from "@kaiju/db";
 import { teamRoleAllows } from "../../authz/permissions.js";
 import { readPersonalSkillsDisabled } from "../settings.js";
 
@@ -22,7 +22,7 @@ export const GATE_MESSAGES: Readonly<Record<TestGate, string>> = {
 };
 
 export async function testGate(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: { readonly teamId: string; readonly role: TeamRole },
   sha256: string,
 ): Promise<TestGate | null> {

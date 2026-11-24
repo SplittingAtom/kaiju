@@ -17,7 +17,7 @@ const BASE_WHEN = 1_900_000_000_000;
 const dirs: string[] = [];
 
 async function folder(files: readonly { tag: string; sql: string }[]): Promise<string> {
-  const dir = await mkdtemp(path.join(tmpdir(), "kobe-runner-"));
+  const dir = await mkdtemp(path.join(tmpdir(), "kaiju-runner-"));
   dirs.push(dir);
   await writeMigrations(dir, files);
   return dir;
@@ -270,7 +270,7 @@ describe("migration runner: lock holders and cancellation (KOBE-734)", () => {
     await admin.query(`SELECT pg_advisory_unlock($1)`, [MIGRATION_LOCK_KEY]);
     const busy = await admin.query(
       `SELECT 1 FROM pg_stat_activity WHERE datname = current_database()
-          AND application_name = 'kobe-migrate' AND state <> 'idle'`,
+          AND application_name = 'kaiju-migrate' AND state <> 'idle'`,
     );
     expect(busy.rows).toEqual([]);
     expect(await recorded()).toHaveLength(1);

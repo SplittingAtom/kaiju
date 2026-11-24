@@ -1,4 +1,4 @@
-import type { NotebookExecError, NotebookExecStatus, NotebookOutput } from "@kobe/protocol";
+import type { NotebookExecError, NotebookExecStatus, NotebookOutput } from "@kaiju/protocol";
 
 /**
  * The run log's error (KOBE-803, on `notebook.finished`): the exception's class name from the

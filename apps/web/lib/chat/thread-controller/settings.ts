@@ -2,7 +2,7 @@
  * The thread's settings for its next runs (model, agent and version, thinking level, sharing) and
  * Compact now: actions through the controller's port (KOBE-716).
  */
-import type { ItemReference, ThinkingLevel } from "@kobe/protocol";
+import type { ItemReference, ThinkingLevel } from "@kaiju/protocol";
 import type { ApiError, ApiResult } from "../../api/client";
 import type { CompactResult, ForkOptions } from "../api";
 import { SHARED_ANNOUNCEMENT } from "../share";

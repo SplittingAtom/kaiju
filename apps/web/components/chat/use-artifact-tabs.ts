@@ -45,11 +45,11 @@ export interface ArtifactTabsApi {
 }
 
 /** The shell's artifact column (`components/shell/shell-grid.tsx`). */
-const ARTIFACT_COLUMN_ID = "kobe-artifact-column";
+const ARTIFACT_COLUMN_ID = "kaiju-artifact-column";
 
 /** Where focus goes when the last tab closes and nothing that opened the column is left. */
 function focusConversation(): void {
-  document.getElementById("kobe-chat-main")?.focus();
+  document.getElementById("kaiju-chat-main")?.focus();
 }
 
 /**

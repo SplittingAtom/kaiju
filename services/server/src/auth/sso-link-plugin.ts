@@ -1,6 +1,6 @@
 import type { BetterAuthPlugin } from "better-auth";
 import { createAuthMiddleware, getSessionFromCtx, isAPIError } from "better-auth/api";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import { logger } from "../logger.js";
 import { LinkIntentBox, consumeLinkIntent } from "../sso/link-intent.js";
 import { linkByLocalProof } from "../sso/linking.js";
@@ -19,7 +19,7 @@ const LOCAL_SIGN_IN = new Set([
 const TWO_FACTOR_STEP = new Set(["/two-factor/verify-totp", "/two-factor/verify-backup-code"]);
 
 export interface SsoLinkPluginOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly publicOrigin: string;
   readonly secret: string;
   /** Kill switch: with SSO off an intent is discarded, never used. */

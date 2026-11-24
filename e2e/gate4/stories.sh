@@ -293,7 +293,7 @@ if want U5 && ((MODELS)); then
   hello m1
   if sbx_ready m1 "U5"; then
     long="$(bash_prompt "sleep 15; echo slept-$NONCE")"
-    slow="$(if ((FAKE)); then echo "kobe-slow-start gate4 $NONCE"; else echo "Write a 2000-word essay about rivers."; fi)"
+    slow="$(if ((FAKE)); then echo "kaiju-slow-start gate4 $NONCE"; else echo "Write a 2000-word essay about rivers."; fi)"
     u5=$(step u5 "\"user\":$U_M1,\"long\":$(json_str "$long"),\"queued\":\"gate4 queued $NONCE\",\"steer\":\"gate4 steered $NONCE\",\"slow\":$(json_str "$slow")")
     show "U5" "$u5"
     contains "U5: the first message starts a run" '^first=201:queued=false$' "$u5"
@@ -316,7 +316,7 @@ fi
 # ---- U6 --------------------------------------------------------------------------------------------
 if want U6 && ((MODELS)) && sbx_ready m1 "U6"; then
   echo "==> U6: the approval card, the signed approval, a remember-rule, the 1 h expiry"
-  # share_file asks in ask-on-write (a Kaiju write); create_artifact never does (PROMPT_EXEMPT_KOBE_TOOLS,
+  # share_file asks in ask-on-write (a Kaiju write); create_artifact never does (PROMPT_EXEMPT_KAIJU_TOOLS,
   # Chris 2026-10-06). The three files are made first with bash, which asks only by policy rule.
   marker="gate4-u6-$NONCE"
   share() { tool_prompt share_file "$(printf '{"path":"%s-%s.txt","description":"Gate 4 U6 %s"}' "$marker" "$1" "$1")"; }
@@ -500,7 +500,7 @@ fi
 if want U11 && ((MODELS)); then
   echo "==> U11: the 80 % warning; the dashboard by user, agent and model"
   hello m3
-  content="$(if ((FAKE)); then echo "kobe-tool-step gate4 $NONCE"; else echo "Write a short paragraph about budgets."; fi)"
+  content="$(if ((FAKE)); then echo "kaiju-tool-step gate4 $NONCE"; else echo "Write a short paragraph about budgets."; fi)"
   daily="${KOBE_GATE4_U11_DAILY_TOKENS:-1200000}" # the scripted tool step reports a 1,000,000-token prompt
   u11=$(step u11 "\"admin\":$U_GA,\"user\":$U_M3,\"dailyTokens\":$daily,\"content\":$(json_str "$content")")
   show "U11" "$u11"

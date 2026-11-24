@@ -1,6 +1,6 @@
 import { Readable } from "node:stream";
-import type { KobeDb } from "@kobe/db";
-import { sha256HexSchema } from "@kobe/protocol";
+import type { KaijuDb } from "@kaiju/db";
+import { sha256HexSchema } from "@kaiju/protocol";
 import { Hono } from "hono";
 import type { Logger } from "pino";
 import { createRateLimiter, type RateLimiter } from "../sandbox/rate-limit.js";
@@ -14,7 +14,7 @@ import { param } from "../http/request.js";
 export const SKILL_FETCH_RATE = { capacity: 200, refillPerSecond: 20 } as const;
 
 export interface SkillSandboxRoutesDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore;
   readonly authenticate: SandboxAuthenticator;
   readonly log: Pick<Logger, "error" | "warn">;

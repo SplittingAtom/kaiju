@@ -8,7 +8,7 @@
  *   projection already has.
  * Forks need no data: assistant-ui knows each message's branches (`markers.tsx`).
  */
-import type { ApprovalResolutionCause } from "@kobe/protocol";
+import type { ApprovalResolutionCause } from "@kaiju/protocol";
 import type { ParsedEntry } from "./entries";
 import type { Projection } from "./tree";
 import type { ThreadEntry } from "./types";

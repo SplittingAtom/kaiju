@@ -12,7 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { rememberLastThread } from "../../lib/shell/last-thread";
 import { FakeNavigation } from "../../lib/shell/testing/fake-navigation";
 import { must } from "../../lib/testing/must";
@@ -62,18 +62,18 @@ vi.mock("next/link", async () => {
  * `window.history`.
  */
 const WAIT = { timeout: 10_000 };
-let fake: FakeKobe;
+let fake: FakeKaiju;
 let nav: FakeNavigation;
 let detach: () => void;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamRole = "team_admin";
   const json = (body: unknown) => Response.json(body);
   vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit) => {
-    const path = new URL(String(input), "http://kobe.test").pathname;
+    const path = new URL(String(input), "http://kaiju.test").pathname;
     if (path === "/v1/me") {
       return json({
         user: { id: "u-1", name: "Ada", email: "ada@example.test", twoFactorEnabled: false },
@@ -127,7 +127,7 @@ function TestPage({ path }: { readonly path: string }) {
 
 function Section({ title, children }: { readonly title: string; readonly children?: ReactNode }) {
   return (
-    <div data-kobe-console="">
+    <div data-kaiju-console="">
       <main id="console-main">
         <h1>{title}</h1>
         {children}
@@ -228,7 +228,7 @@ async function openThread() {
 }
 
 const dialog = (name: string) => screen.findByRole("dialog", { name }, WAIT);
-const panelEl = () => document.querySelector<HTMLElement>("[data-kobe-panel]");
+const panelEl = () => document.querySelector<HTMLElement>("[data-kaiju-panel]");
 const teamConsoleLink = () =>
   screen.findByRole("link", { name: "Team console" }, WAIT) as Promise<HTMLAnchorElement>;
 
@@ -342,7 +342,7 @@ describe("the Docs panel (KOBE-616)", () => {
     await user.click(icon);
     const panel = await dialog("Docs");
     expect(panel.getAttribute("aria-modal")).toBe("true");
-    expect(panel.getAttribute("data-kobe-panel")).toBe("docs");
+    expect(panel.getAttribute("data-kaiju-panel")).toBe("docs");
     expect(window.location.pathname).toBe("/docs");
     expect(within(panel).getByRole("heading", { level: 1, name: "Kaiju guide" })).toBeTruthy();
     expect(input.closest("[inert]")).not.toBeNull();
@@ -358,7 +358,7 @@ describe("the Docs panel (KOBE-616)", () => {
     expect(markdown.getAttribute("href")).toBe("/docs/getting-started.md");
     expect(markdown.getAttribute("target")).toBe("_blank");
     const bodyLink = must(
-      panel.querySelector<HTMLAnchorElement>('[data-kobe-guide-body] a[href^="/docs/"]'),
+      panel.querySelector<HTMLAnchorElement>('[data-kaiju-guide-body] a[href^="/docs/"]'),
     );
     const target = must(bodyLink.getAttribute("href")).split("#")[0] as string;
     await user.click(bodyLink);
@@ -420,7 +420,7 @@ describe("addresses, Back and reload (KOBE-452 ac-2)", () => {
     // The workspace under it is the member's last thread in this tab, inert although it loaded
     // after the panel opened (review M1).
     const heading = await waitFor(
-      () => must(document.querySelector<HTMLElement>("#kobe-chat-main h2")),
+      () => must(document.querySelector<HTMLElement>("#kaiju-chat-main h2")),
       WAIT,
     );
     expect(heading.textContent).toBe("Forecast");
@@ -434,7 +434,7 @@ describe("addresses, Back and reload (KOBE-452 ac-2)", () => {
     expect(nav.entries()).toHaveLength(before);
     expect(`${window.location.pathname}${window.location.search}`).toBe(`/?thread=${t}`);
     // Nothing had focus: it goes to the conversation.
-    await waitFor(() => expect(document.activeElement?.id).toBe("kobe-chat-main"));
+    await waitFor(() => expect(document.activeElement?.id).toBe("kaiju-chat-main"));
   });
 
   it("a link without a remembered thread opens the panel over a new conversation", async () => {

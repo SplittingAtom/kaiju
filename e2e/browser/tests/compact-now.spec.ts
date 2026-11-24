@@ -48,7 +48,7 @@ test("Compact now folds the older turns into a summary marker", async ({ chat, p
   await dialog.getByRole("button", { name: "Compact now", exact: true }).click();
   await expect.poll(outcome, { timeout: COMPACT_TIMEOUT_MS, intervals: [2_000] }).toBe("closed");
 
-  const marker = page.locator('[data-kobe-marker="compaction"]');
+  const marker = page.locator('[data-kaiju-marker="compaction"]');
   await expect(marker).toBeVisible({ timeout: 30_000 });
   await expect(marker).toContainText("Context compacted");
   // The gauge is unknown again until the next model call.
@@ -60,7 +60,7 @@ test("Compact now folds the older turns into a summary marker", async ({ chat, p
   await expect(header).toHaveAttribute("aria-expanded", "true");
   await expect(
     marker
-      .locator("[data-kobe-summary]")
+      .locator("[data-kaiju-summary]")
       .or(marker.getByText("The summary is too large to show here.")),
   ).toBeVisible();
   // A click closes it and the next opens it again.

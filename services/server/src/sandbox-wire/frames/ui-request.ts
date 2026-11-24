@@ -1,4 +1,4 @@
-import { type SandboxToServerFrame, type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
+import { type SandboxToServerFrame, type ServerToSandboxFrame } from "@kaiju/protocol/sandbox-wire";
 import type { Logger } from "pino";
 import { remember } from "../connection-limits.js";
 import { UI_DEDUPE_MAX } from "../constants.js";

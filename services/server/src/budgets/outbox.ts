@@ -5,9 +5,9 @@ import {
   teams,
   users,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import type { Mailer, MailMessage } from "../mail/mailer.js";
 import { oneLine } from "../mail/messages.js";
@@ -111,7 +111,7 @@ const COUNT_DAYS_KEPT = 2;
  * The count table holds no team id and nothing from a Workspace (site-wide, KOBE-786).
  */
 export async function reserveBudgetEmailSlot(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   recipientId: string,
 ): Promise<string | null> {
   const { rows } = await db.execute<{ day: string }>(sql`
@@ -124,14 +124,14 @@ export async function reserveBudgetEmailSlot(
 }
 
 /** Gives back a slot taken by {@link reserveBudgetEmailSlot} whose send failed. */
-async function releaseBudgetEmailSlot(tx: KobeTx, recipientId: string, day: string) {
+async function releaseBudgetEmailSlot(tx: KaijuTx, recipientId: string, day: string) {
   await tx.execute(sql`
     UPDATE budget_email_daily_counts SET sent = sent - 1
      WHERE recipient_id = ${recipientId}::uuid AND day = ${day}::date AND sent > 0`);
 }
 
 /** Deletes per-person counts of days before yesterday (UTC); run by the retention pass. */
-export async function sweepBudgetEmailCounts(db: KobeDb): Promise<number> {
+export async function sweepBudgetEmailCounts(db: KaijuDb): Promise<number> {
   const { rowCount } = await db.execute(sql`
     DELETE FROM budget_email_daily_counts
      WHERE day < (now() AT TIME ZONE 'UTC')::date - ${COUNT_DAYS_KEPT - 1}::int`);
@@ -139,7 +139,7 @@ export async function sweepBudgetEmailCounts(db: KobeDb): Promise<number> {
 }
 
 interface DeliverOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly mailer: Mailer;
   readonly publicUrl: string;
   readonly logger: Logger;
@@ -162,9 +162,9 @@ export async function deliverBudgetEmails(options: DeliverOptions): Promise<numb
 
 async function deliverIn(options: DeliverOptions, teamId: string | null): Promise<number> {
   const { db, mailer, logger } = options;
-  const inContext = <T>(fn: (tx: KobeTx) => Promise<T>): Promise<T> =>
+  const inContext = <T>(fn: (tx: KaijuTx) => Promise<T>): Promise<T> =>
     teamId ? withTeam(db, teamId, fn) : db.transaction(fn);
-  type Settle = Parameters<ReturnType<KobeTx["update"]>["set"]>[0];
+  type Settle = Parameters<ReturnType<KaijuTx["update"]>["set"]>[0];
   const settle = (id: string, values: Settle, slot?: { recipient: string; day: string }) =>
     inContext(async (tx) => {
       if (slot) await releaseBudgetEmailSlot(tx, slot.recipient, slot.day);

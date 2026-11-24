@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { canonicalJson, type JsonObject } from "@kobe/protocol";
-import { parseToolsSnapshot, sql, type KobeTx } from "@kobe/db";
+import { canonicalJson, type JsonObject } from "@kaiju/protocol";
+import { parseToolsSnapshot, sql, type KaijuTx } from "@kaiju/db";
 
 /**
  * The canonical form of an MCP App tool's input against its pinned input schema (KOBE-441: the
@@ -96,7 +96,7 @@ export function appInputDigest(schema: Schema, input: Record<string, unknown>): 
 
 /** A pinned tool's input schema, from its connector's snapshot (undefined when not pinned). */
 export async function pinnedInputSchema(
-  tx: Pick<KobeTx, "execute">,
+  tx: Pick<KaijuTx, "execute">,
   connectorId: string,
   tool: string,
 ): Promise<Record<string, unknown> | undefined> {

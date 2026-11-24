@@ -1,4 +1,4 @@
-import { withTeam, type Envelope, type KobeDb } from "@kobe/db";
+import { withTeam, type Envelope, type KaijuDb } from "@kaiju/db";
 import { enabledConnector, storeGrant, type Subject } from "../grants.js";
 import { defaultExpiry } from "../grant-refresh.js";
 import {
@@ -7,7 +7,7 @@ import {
   obtainClient,
   usesCimd,
   type ClientRegistration,
-  type KobeOrigin,
+  type KaijuOrigin,
 } from "./client.js";
 import { serializeOauthBundle } from "./bundle.js";
 import { saveClient, storedClient } from "./client-store.js";
@@ -24,10 +24,10 @@ import { openState, sealState } from "./state.js";
  * tokens, the verifier nor the code is returned or logged.
  */
 export interface OauthFlowDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly envelope: Envelope;
   readonly io: OauthIo;
-  readonly kobe: KobeOrigin;
+  readonly kaiju: KaijuOrigin;
   readonly now: () => Date;
 }
 
@@ -35,7 +35,7 @@ export type StartOutcome =
   | { readonly ok: true; readonly authorizationUrl: string }
   | { readonly ok: false; readonly failure: "not_available" | "not_oauth" | OauthError["code"] };
 
-async function connectorFor(db: KobeDb, subject: Subject) {
+async function connectorFor(db: KaijuDb, subject: Subject) {
   return withTeam(db, subject.teamId, (tx) => enabledConnector(tx, subject));
 }
 
@@ -59,16 +59,16 @@ async function clientFor(
   connector: { readonly id: string; readonly url: string },
   info: AuthServerInfo,
 ): Promise<ClientRegistration> {
-  if (usesCimd(info, deps.kobe)) return obtainClient(deps.io, info, deps.kobe);
+  if (usesCimd(info, deps.kaiju)) return obtainClient(deps.io, info, deps.kaiju);
   const key = {
     connectorId: connector.id,
     url: connector.url,
     issuer: info.issuer,
-    redirectUri: deps.kobe.redirectUri,
+    redirectUri: deps.kaiju.redirectUri,
   };
   const kept = await storedClient(deps.db, deps.envelope, key);
   if (kept) return kept;
-  const registered = await obtainClient(deps.io, info, deps.kobe);
+  const registered = await obtainClient(deps.io, info, deps.kaiju);
   await saveClient(deps.db, deps.envelope, key, registered);
   return registered;
 }
@@ -122,7 +122,7 @@ export async function startFlow(
       authorizationUrl: authorizationUrl({
         info,
         client,
-        redirectUri: deps.kobe.redirectUri,
+        redirectUri: deps.kaiju.redirectUri,
         state,
         verifier,
         allowHttp: deps.io.policy.allowHttp,
@@ -188,7 +188,7 @@ export async function finishFlow(
       tokenEndpoint: payload.tokenEndpoint,
       resource: payload.resource,
       client: { clientId: payload.clientId, clientSecret: payload.clientSecret },
-      redirectUri: deps.kobe.redirectUri,
+      redirectUri: deps.kaiju.redirectUri,
       code: params.code,
       verifier: payload.verifier,
       now: deps.now(),

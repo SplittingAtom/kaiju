@@ -1,5 +1,5 @@
-import { serializeAgentFile, type AgentDefinition } from "@kobe/agent-file";
-import { and, eq, isNotNull, isNull, siteAgents, sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { serializeAgentFile, type AgentDefinition } from "@kaiju/agent-file";
+import { and, eq, isNotNull, isNull, siteAgents, sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { siteWhere } from "../agents/store.js";
 import { getVersion } from "../agents/versions.js";
 import { recordAudit } from "../audit/record.js";
@@ -69,12 +69,12 @@ function toState(row: StateRow): GalleryState {
 }
 
 /** Every gallery agent's state, by agent id. */
-export async function galleryStates(db: KobeDb): Promise<ReadonlyMap<string, GalleryState>> {
+export async function galleryStates(db: KaijuDb): Promise<ReadonlyMap<string, GalleryState>> {
   const rows = await db.select(STATE_COLUMNS).from(siteAgents).where(siteWhere(GALLERY));
   return new Map(rows.map((r) => [r.id, toState(r)]));
 }
 
-export async function galleryState(db: KobeDb, id: string): Promise<GalleryState | null> {
+export async function galleryState(db: KaijuDb, id: string): Promise<GalleryState | null> {
   const [row] = await db
     .select(STATE_COLUMNS)
     .from(siteAgents)
@@ -88,7 +88,7 @@ export async function galleryState(db: KobeDb, id: string): Promise<GalleryState
  * the seed (which locks the row too) never sees the edit without the mark. Agents not seeded from the repo
  * have nothing to detach from and stay unmarked.
  */
-export async function markCustomized(tx: KobeTx, id: string, userId: string): Promise<void> {
+export async function markCustomized(tx: KaijuTx, id: string, userId: string): Promise<void> {
   const [row] = await tx
     .update(siteAgents)
     .set({
@@ -118,7 +118,7 @@ export async function markCustomized(tx: KobeTx, id: string, userId: string): Pr
  * the draft with the repo's definition and publishes it (a new version; D19). False when the agent
  * is not customized (or not a gallery agent, or archived: archived agents stay as they are).
  */
-export async function clearCustomized(db: KobeDb, id: string): Promise<boolean> {
+export async function clearCustomized(db: KaijuDb, id: string): Promise<boolean> {
   return db.transaction(async (tx) => {
     const [before] = await tx
       .select({ from: siteAgents.customizedFromGeneration })
@@ -184,7 +184,11 @@ const side = (definition: AgentDefinition) => ({
 });
 
 /** Compare (KOBE-494): the repo's definition and the agent's current version, side by side. */
-export async function compareWithRepository(db: KobeDb, id: string, currentVersion: number | null) {
+export async function compareWithRepository(
+  db: KaijuDb,
+  id: string,
+  currentVersion: number | null,
+) {
   const state = await galleryState(db, id);
   if (!state) return null;
   const repo = state.key === null ? null : repositoryDefinition(state.key);

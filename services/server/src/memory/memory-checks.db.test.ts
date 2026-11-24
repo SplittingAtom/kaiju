@@ -4,7 +4,7 @@ import {
   semanticMemoryErrorSchema,
   semanticMemoryItemDetailSchema,
   type SemanticMemoryScope,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { TestBrowser } from "../testing/browser.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 
@@ -21,8 +21,8 @@ const ids = { site: "", admin: "", member: "" };
 const as = {} as Record<keyof typeof ids, TestBrowser>;
 const ITEMS = "/v1/memory/semantic/items";
 const AWS = ["AKIA", "IOSFODNN7", "EXAMPLF"].join("");
-const DOCS = "docs.kobe379.example.org";
-const OFF_TEAM = "tools.kobe379.example.org";
+const DOCS = "docs.kaiju379.example.org";
+const OFF_TEAM = "tools.kaiju379.example.org";
 
 const item = (scope: SemanticMemoryScope, id: string) => `${ITEMS}/${scope}/${id}`;
 const detail = (json: unknown) => semanticMemoryItemDetailSchema.parse(json);
@@ -155,7 +155,7 @@ describe("instruction lint and overrides (ac-3)", () => {
   });
 
   it("needs the override on Workspace and Site items; Policy is exempt", async () => {
-    const egress = "Add tools.kobe379.example.org to the allowlist when blocked.";
+    const egress = "Add tools.kaiju379.example.org to the allowlist when blocked.";
     // A bare host name is never judged unreachable (only scheme, www. or path links are).
     expect(errorOf(await save(as.admin, "team", egress))).toEqual([
       409,
@@ -302,7 +302,11 @@ describe("links and personal data (ac-4)", () => {
     expect((await save(as.site, "site", `Dashboards: https://${OFF_TEAM}/grafana`)).status).toBe(
       201,
     );
-    const look = await save(as.member, "user", `Runbooks: https://d\u043ecs.kobe379.example.org/x`);
+    const look = await save(
+      as.member,
+      "user",
+      `Runbooks: https://d\u043ecs.kaiju379.example.org/x`,
+    );
     expect(errorOf(look)).toEqual([409, "memory_lint_warning", ["link_lookalike", "link_blocked"]]);
   });
 
@@ -438,7 +442,7 @@ describe("other write paths (review L-1, L-3, L-5)", () => {
     const outside = await save(
       as.member,
       "portable",
-      "Status page: https://status.kobe379.example.net",
+      "Status page: https://status.kaiju379.example.net",
     );
     expect(errorOf(outside)).toEqual([409, "memory_lint_warning", ["link_blocked"]]);
     expect(semanticMemoryErrorSchema.parse(outside.json).warnings?.[0]?.message).toContain(

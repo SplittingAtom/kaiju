@@ -4,7 +4,7 @@ import {
   type LineageAncestor,
   type LineageRelative,
   type ThreadLineageResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /** A thread id the schema accepts: `tid(7)`. */
 export const tid = (n: number): string => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;

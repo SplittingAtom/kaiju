@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import type { KobeDb } from "./client.js";
+import type { KaijuDb } from "./client.js";
 import { teamMembers, teamRole } from "./schema/index.js";
 import { scanTeams } from "./team-scan.js";
 import { withTeam } from "./with-team.js";
@@ -30,7 +30,7 @@ export function parseUserId(fn: string, userId: string): string {
 
 /** The user's role in one team, read under that team's RLS; null when not a member. */
 export async function getMembership(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
 ): Promise<TeamRole | null> {
@@ -50,7 +50,7 @@ export async function getMembership(
  * setting `kobe.team_id` transaction-locally per team, so it never sees another user's rows and
  * needs no bypass. Cost is one query per team, fine for one organization's teams.
  */
-export async function listMemberships(db: KobeDb, userId: string): Promise<TeamMembership[]> {
+export async function listMemberships(db: KaijuDb, userId: string): Promise<TeamMembership[]> {
   const user = parseUserId("listMemberships", userId);
   return scanTeams(db, "listMemberships", async (tx, team) => {
     const [row] = await tx

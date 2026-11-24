@@ -1,5 +1,5 @@
 import { Hono, type Context } from "hono";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import { markNoRunner } from "../skills/registry/external-scan.js";
 import { z } from "zod";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
@@ -21,7 +21,7 @@ import {
   type ManifestDraftResult,
 } from "../skills/registry/promote-manifest.js";
 import { draftJson } from "./skill-drafts.js";
-import { LICENSE_PATTERN } from "@kobe/protocol";
+import { LICENSE_PATTERN } from "@kaiju/protocol";
 import { invalidRequest, notFound, param, parseBody } from "../http/request.js";
 
 type Ctx = Context<{ Variables: TeamVariables }>;
@@ -66,7 +66,7 @@ async function answer(
   c: Ctx,
   r: PromoteResult,
   scans: ExternalScanStarter | undefined,
-  db: KobeDb,
+  db: KaijuDb,
 ) {
   if (r.ok && r.kind === "submitted") {
     // The scan is queued with the submission when the Site has it on (review-341 M1); a server

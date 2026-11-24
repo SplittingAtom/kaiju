@@ -5,14 +5,14 @@ import { FOCUS_RING } from "./focus";
 /**
  * The sidebar and the page are floating cards with a 16 px gap and gutter (KOBE-554, after
  * Catalyst's query tool), like the chat's columns: the card colour, the console's border, the
- * panel radius, and `kobe-panel` so they glow on hover (app/admin/admin-global.css).
+ * panel radius, and `kaiju-panel` so they glow on hover (app/admin/admin-global.css).
  */
-const CARD = "kobe-panel box-border min-w-0 rounded-lg border border-console-border bg-card";
+const CARD = "kaiju-panel box-border min-w-0 rounded-lg border border-console-border bg-card";
 
 /**
  * The frame of the Site console, the Team console and the My area (KOBE-294): a skip link, a
  * header (brand and switcher at the start, who is signed in and the theme toggle at the end), the
- * optional section navigation and the page. `data-kobe-console` marks the root: the console
+ * optional section navigation and the page. `data-kaiju-console` marks the root: the console
  * stylesheet's scoped rules (app/admin/admin-global.css) and the console's portals hang off it.
  */
 export function ConsoleLayout({
@@ -39,9 +39,9 @@ export function ConsoleLayout({
 }) {
   return (
     <div
-      data-kobe-console=""
+      data-kaiju-console=""
       className={cn(
-        "bg-console-bg bg-[image:var(--kobe-page-ambient)] font-sans leading-normal text-console-fg",
+        "bg-console-bg bg-[image:var(--kaiju-page-ambient)] font-sans leading-normal text-console-fg",
         panel ? "min-h-full" : "min-h-screen",
       )}
     >

@@ -1,4 +1,4 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 import { findThread, type Viewer } from "../threads/repository.js";
 import { RunError } from "./errors.js";
 import { getRunRow, lockRunRow, lockThreadRow, type RunRow, type ThreadRow } from "./store.js";
@@ -8,7 +8,7 @@ import { getRunRow, lockRunRow, lockThreadRow, type RunRow, type ThreadRow } fro
  * everyone else the same 404) and refuses Trash. The thread row is the first lock taken.
  */
 export async function lockOwnedThread(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   threadId: string,
   notFound: "thread_not_found" | "run_not_found",
@@ -24,7 +24,7 @@ export async function lockOwnedThread(
 
 /** The run and its thread for a change by the thread's owner (thread locked, then the run). */
 export async function ownedRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   runId: string,
   lock: boolean,

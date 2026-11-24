@@ -6,8 +6,8 @@ import {
   createProjectRequestSchema,
   effectiveProjectRole,
   forkThreadRequestSchema,
-  kobeToolsRequestSchema,
-  kobeToolsResponseSchema,
+  kaijuToolsRequestSchema,
+  kaijuToolsResponseSchema,
   projectFileSchema,
   projectMountPath,
   projectPermissions,
@@ -264,7 +264,7 @@ describe("propose_project_file (removed in WS-7)", () => {
   it("the tool, its kobe-tools op and its frames no longer decode", () => {
     expect(CAPABILITY_PROJECTS).toBe("projects");
     expect(
-      kobeToolsRequestSchema.safeParse({
+      kaijuToolsRequestSchema.safeParse({
         id: "r",
         op: "project.file_propose",
         tool_call_id: "t",
@@ -273,7 +273,7 @@ describe("propose_project_file (removed in WS-7)", () => {
       }).success,
     ).toBe(false);
     expect(
-      kobeToolsResponseSchema.safeParse({
+      kaijuToolsResponseSchema.safeParse({
         id: "r",
         ok: true,
         op: "project_file_propose",

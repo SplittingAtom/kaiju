@@ -9,7 +9,7 @@ import { SEMVER_PATTERN, SKILL_NAME_PATTERN } from "./layout.js";
  *
  * Text rules: UTF-8, at most {@link MANIFEST_MAX_BYTES} bytes, one YAML 1.2 document whose root is
  * a mapping, duplicate keys and aliases refused (see {@link MANIFEST_YAML_OPTIONS}). The parsed
- * value must match {@link kobeSkillManifestSchema}: unknown keys are refused, so a new field
+ * value must match {@link kaijuSkillManifestSchema}: unknown keys are refused, so a new field
  * needs a new contract (and a new `apiVersion` if old readers must refuse it).
  */
 
@@ -55,7 +55,7 @@ const unique = <T extends z.ZodType<string>>(item: T, max: number) =>
 
 const packages = unique(z.string().regex(PACKAGE_SPEC_PATTERN), MAX_PACKAGES_PER_MANAGER);
 
-export const kobeSkillManifestSchema = z.strictObject({
+export const kaijuSkillManifestSchema = z.strictObject({
   apiVersion: z.literal(MANIFEST_API_VERSION),
   /** Must equal the SKILL.md frontmatter `name` ({@link manifestMismatches}). */
   name: z.string().regex(SKILL_NAME_PATTERN),
@@ -82,7 +82,7 @@ export const kobeSkillManifestSchema = z.strictObject({
   changelog: z.string().trim().min(1).max(CHANGELOG_MAX_CHARS).optional(),
 });
 
-export type KobeSkillManifest = z.infer<typeof kobeSkillManifestSchema>;
+export type KaijuSkillManifest = z.infer<typeof kaijuSkillManifestSchema>;
 
 export type ManifestMismatch = "name" | "version";
 
@@ -92,7 +92,7 @@ export type ManifestMismatch = "name" | "version";
  * agree; a package with mismatches is refused (the manifest never renames or renumbers).
  */
 export function manifestMismatches(
-  manifest: KobeSkillManifest,
+  manifest: KaijuSkillManifest,
   expected: { readonly name: string; readonly semver: string },
 ): ManifestMismatch[] {
   const out: ManifestMismatch[] = [];

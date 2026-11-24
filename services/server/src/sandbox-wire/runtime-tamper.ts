@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { SYSTEM_ACTOR, sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import { withAppendTx } from "../event-stream/append.js";
@@ -34,7 +34,7 @@ export interface RuntimeTamperReport {
  * transaction's other writes (it ends holding the audit chain lock).
  */
 export async function auditRuntimeTamperInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   report: RuntimeTamperReport,
 ): Promise<boolean> {
   const { teamId, runId } = report;
@@ -70,7 +70,7 @@ const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
  * original error is rethrown for the caller's handling.
  */
 export async function withTamperAudit<T>(
-  db: KobeDb,
+  db: KaijuDb,
   report: RuntimeTamperReport,
   log: Logger,
   endRun: () => Promise<T>,
@@ -84,7 +84,7 @@ export async function withTamperAudit<T>(
 }
 
 async function auditRuntimeTamperAlone(
-  db: KobeDb,
+  db: KaijuDb,
   report: RuntimeTamperReport,
   log: Logger,
 ): Promise<void> {

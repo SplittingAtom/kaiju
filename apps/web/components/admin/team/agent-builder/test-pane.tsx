@@ -9,7 +9,7 @@ import { ChatSession } from "../../../../lib/chat/session";
 import type { EventSourceFactory } from "../../../../lib/chat/stream";
 import { createThreadListAdapter } from "../../../../lib/chat/thread-list-adapter";
 import type { ApiError } from "../../../../lib/api/client";
-import { ChatSessionContext, useKobeRuntime } from "../../../chat/kobe-runtime";
+import { ChatSessionContext, useKaijuRuntime } from "../../../chat/kaiju-runtime";
 import { ThreadView } from "../../../chat/thread-view";
 import { IconActionProvider } from "../../../shell/icon-action";
 import { Button } from "../../../ui/console";
@@ -50,7 +50,7 @@ function TestConversation({
     const base = createThreadListAdapter(session, { onError });
     return { ...base, list: async () => ({ threads: [] }) };
   }, [session, onError]);
-  const runtime = useKobeRuntime({ session, adapter, threadId, onThreadIdChange: setThreadId });
+  const runtime = useKaijuRuntime({ session, adapter, threadId, onThreadIdChange: setThreadId });
   return (
     <ChatSessionContext.Provider value={session}>
       <AssistantRuntimeProvider runtime={runtime}>
@@ -101,7 +101,7 @@ export function AgentTestPane({
       </div>
       {error && <ErrorNotice error={error} />}
       <div
-        data-kobe-chat
+        data-kaiju-chat
         className="box-border flex h-[34rem] max-h-[80vh] flex-col overflow-hidden rounded-lg border border-console-border"
       >
         <TestConversation

@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { browserSpaced, chatRequests, composer, openApp, streaming } from "./testing";
@@ -12,11 +12,11 @@ import { browserSpaced, chatRequests, composer, openApp, streaming } from "./tes
  * Playwright; the bash e2e drives the API only), so the walk through all five states is this
  * component-level state machine test.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -25,7 +25,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const panel = () => must(document.querySelector<HTMLElement>("[data-kobe-steering]"));
+const panel = () => must(document.querySelector<HTMLElement>("[data-kaiju-steering]"));
 const mode = () => panel().dataset.state;
 const phase = () => panel().querySelector("[data-phase]")?.textContent;
 const queueRegion = () => within(panel()).getByRole("region", { name: "Queued messages" });
@@ -132,7 +132,7 @@ describe("the five states (ac-1)", () => {
     openApp(fake, t);
     await startRun(t);
     await waitFor(() => expect(mode()).toBe("active"));
-    const footer = must(document.querySelector("[data-kobe-composer]"));
+    const footer = must(document.querySelector("[data-kaiju-composer]"));
     expect(footer.contains(panel())).toBe(true);
     const input = await composer();
     expect(panel().compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

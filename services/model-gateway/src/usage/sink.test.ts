@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { ModelUsageRecord } from "@kobe/db";
+import type { ModelUsageRecord } from "@kaiju/db";
 import pino from "pino";
 import { describe, expect, it } from "vitest";
 import type { CallRecord } from "../seams.js";

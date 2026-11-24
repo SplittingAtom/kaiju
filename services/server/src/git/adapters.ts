@@ -1,4 +1,4 @@
-import type { GitCredentialSecret, GitProvider, GitSiteSettings } from "@kobe/db";
+import type { GitCredentialSecret, GitProvider, GitSiteSettings } from "@kaiju/db";
 import type { GitHostAdapter } from "../git-hosts/adapter.js";
 import { createGiteaAdapter } from "../git-hosts/gitea/adapter.js";
 import { createGitHubAdapter } from "../git-hosts/github/adapter.js";

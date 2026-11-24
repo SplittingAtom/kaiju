@@ -1,4 +1,4 @@
-import { InMemorySpanExporter, initTelemetry, withSpan } from "@kobe/telemetry";
+import { InMemorySpanExporter, initTelemetry, withSpan } from "@kaiju/telemetry";
 import { describe, expect, it } from "vitest";
 import { createPolicyServer } from "./server-client.js";
 

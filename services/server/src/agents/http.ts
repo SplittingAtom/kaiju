@@ -9,7 +9,7 @@ import {
   validateAgentDefinition,
   type AgentDefinition,
   type AgentFileIssue,
-} from "@kobe/agent-file";
+} from "@kaiju/agent-file";
 import type { AgentAccess } from "./access.js";
 import type { AgentRecord, CreateError } from "./store.js";
 import type { AgentVersionRecord, AgentVersionSummary, PublishError } from "./versions.js";

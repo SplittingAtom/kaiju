@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, isUnderLegalHold, lockLegalHolds, sql, withTeam } from "@kobe/db";
+import { SYSTEM_ACTOR, isUnderLegalHold, lockLegalHolds, sql, withTeam } from "@kaiju/db";
 import { currentAuditContext } from "../audit/context.js";
 import { recordAudit } from "../audit/record.js";
 import { auditTimeout } from "../retention/locks.js";

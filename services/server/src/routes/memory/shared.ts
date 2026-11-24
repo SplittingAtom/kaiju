@@ -1,6 +1,6 @@
 import type { Context } from "hono";
-import { type MemoryDocDetail, type MemoryDocSummary, type MemoryScope } from "@kobe/protocol";
-import { withTeam, type KobeTx } from "@kobe/db";
+import { type MemoryDocDetail, type MemoryDocSummary, type MemoryScope } from "@kaiju/protocol";
+import { withTeam, type KaijuTx } from "@kaiju/db";
 import { type TeamVariables } from "../../authz/middleware.js";
 import type { ServerDeps } from "../../deps.js";
 import { logger } from "../../logger.js";
@@ -72,7 +72,7 @@ export type MemoryKit = ReturnType<typeof memoryKit>;
 export function memoryKit(deps: ServerDeps) {
   const db = deps.database.db;
 
-  const run = async <T>(c: Ctx, fn: (tx: KobeTx, blobs: BlobStore) => Promise<Out<T>>) => {
+  const run = async <T>(c: Ctx, fn: (tx: KaijuTx, blobs: BlobStore) => Promise<Out<T>>) => {
     const blobs = deps.blobs;
     if (!blobs) return c.json(STORAGE, 503);
     try {
@@ -87,7 +87,7 @@ export function memoryKit(deps: ServerDeps) {
 
   /** Who the target belongs to, after the access and switch checks. */
   const resolveTarget = async (
-    tx: KobeTx,
+    tx: KaijuTx,
     c: Ctx,
     scope: MemoryScope,
     projectId: string | undefined,
@@ -114,7 +114,7 @@ export function memoryKit(deps: ServerDeps) {
 
   /** The doc if the caller may use it (own personal doc, project member) and its scope is on. */
   const resolveDoc = async (
-    tx: KobeTx,
+    tx: KaijuTx,
     c: Ctx,
     id: string,
     write = false,
@@ -137,7 +137,7 @@ export function memoryKit(deps: ServerDeps) {
     return { ok: true, value: doc };
   };
 
-  const detail = async (tx: KobeTx, blobs: BlobStore, teamId: string, id: string) => {
+  const detail = async (tx: KaijuTx, blobs: BlobStore, teamId: string, id: string) => {
     const doc = await findDoc(tx, teamId, id);
     const versions = await listVersions(tx, teamId, id);
     const current = versions.find((v) => v.version === doc?.currentVersion);

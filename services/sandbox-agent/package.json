@@ -1,5 +1,5 @@
 {
-  "name": "@kobe/sandbox-agent",
+  "name": "@kaiju/sandbox-agent",
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kobe/protocol": "workspace:*",
+    "@kaiju/protocol": "workspace:*",
     "pino": "^10.4.0",
     "ws": "^8.22.0",
     "zod": "^4.6.7"
@@ -27,7 +27,7 @@
     "dist"
   ],
   "devDependencies": {
-    "@kobe/model-gateway": "workspace:*",
+    "@kaiju/model-gateway": "workspace:*",
     "@types/ws": "^8.18.2"
   }
 }

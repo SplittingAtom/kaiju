@@ -1,4 +1,4 @@
-import { IGNORABLE } from "@kobe/skill-scanner";
+import { IGNORABLE } from "@kaiju/skill-scanner";
 import { normaliseQuote } from "../quote-normalise.js";
 
 /**

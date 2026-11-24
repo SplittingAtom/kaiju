@@ -16,7 +16,7 @@ import {
   RUN_END_CHECK_MS,
   WRITE_CHECK_MS,
 } from "../../lib/files/outside-change";
-import { kobeExtrasOf } from "./kobe-runtime";
+import { kaijuExtrasOf } from "./kaiju-runtime";
 import { liveWritePaths } from "./use-thread-files";
 
 export interface ChangeHint {
@@ -31,7 +31,7 @@ export interface ChangeHint {
 function useWritesOf(path: string, threadId: string | null): string {
   return useAuiState((s) => {
     const count = liveWritePaths(s, threadId ?? undefined).filter((p) => p === path).length;
-    return count === 0 ? "" : `${kobeExtrasOf(s)?.state.live?.runId ?? ""}:${count}`;
+    return count === 0 ? "" : `${kaijuExtrasOf(s)?.state.live?.runId ?? ""}:${count}`;
   });
 }
 
@@ -49,7 +49,7 @@ export function useFileChangeHint(path: string, threadId: string | null): Change
   }, [writes]);
 
   const running = useAuiState((s) => {
-    const extras = kobeExtrasOf(s);
+    const extras = kaijuExtrasOf(s);
     return extras !== undefined && isThreadRunning(extras.state);
   });
   const wasRunning = useRef(running);

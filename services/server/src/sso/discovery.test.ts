@@ -1,7 +1,7 @@
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
 import { validateDiscovery } from "./discovery.js";
 import { guardedFetch, SsoNetError, type SsoNet } from "./net.js";
 import { FakeIdp, resolver } from "./testing.js";

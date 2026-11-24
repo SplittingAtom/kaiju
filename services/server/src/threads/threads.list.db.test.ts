@@ -462,7 +462,7 @@ describe("history reads never wake sandboxes (ac-2)", () => {
     // orchestration, isolation, user management) throws if a read path touches it.
     // `agentLimits` is static configuration the agent routes read when mounted (KOBE-46);
     // `runAgents.pinnedModel` (KOBE-44) reads the agent's model pin in the read's transaction.
-    // `kobeMcp` (KOBE-619): `createApp` binds its router to it once, at construction.
+    // `kaijuMcp` (KOBE-619): `createApp` binds its router to it once, at construction.
     // `sso.settings` (KOBE-774): the session check reads the static settings (the kill switch,
     // Helm secrets) to see whether "Require single sign-on" is in force.
     const allowed = new Set<PropertyKey>([
@@ -471,7 +471,7 @@ describe("history reads never wake sandboxes (ac-2)", () => {
       "publicUrl",
       "agentLimits",
       "runAgents",
-      "kobeMcp",
+      "kaijuMcp",
       "sso",
     ]);
     // Of `sso`, only its static settings (not `net`, outbound IdP calls, or the provider store).

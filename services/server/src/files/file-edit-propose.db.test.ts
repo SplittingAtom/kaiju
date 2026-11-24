@@ -4,8 +4,8 @@ import {
   CAPABILITY_FILE_EDITS,
   fileEditProposalsResponseSchema,
   type PolicyEngine,
-} from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 import { MemoryObjects } from "../testing/memory-objects.js";

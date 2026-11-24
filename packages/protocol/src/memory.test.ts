@@ -11,8 +11,8 @@ import {
   memorySettingsSchema,
   MEMORY_RECALL_MAX_ITEMS,
   memoryToolInputSchema,
-  kobeToolsRequestSchema,
-  kobeToolsResponseSchema,
+  kaijuToolsRequestSchema,
+  kaijuToolsResponseSchema,
   SHOW_MEMORY_ITEM_TOOL,
   BUILTIN_TOOLS,
   showMemoryItemInputSchema,
@@ -356,9 +356,9 @@ describe("recall over items and show_memory_item (KOBE-399)", () => {
   it("memory.show request, frame and answer", () => {
     const req = { id: "k1", op: "memory.show", tool_call_id: "tc", input: { id: ID } };
     expect(memoryToolsRequestSchema.safeParse(req).success).toBe(true);
-    expect(kobeToolsRequestSchema.safeParse(req).success).toBe(true);
+    expect(kaijuToolsRequestSchema.safeParse(req).success).toBe(true);
     const shown = { ok: true, op: "show", item: { ...item, status: "archived" } };
-    expect(kobeToolsResponseSchema.safeParse({ id: "k1", ...shown }).success).toBe(true);
+    expect(kaijuToolsResponseSchema.safeParse({ id: "k1", ...shown }).success).toBe(true);
     const frame = {
       v: SANDBOX_WIRE_VERSION,
       type: "memory.show",

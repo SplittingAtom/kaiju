@@ -3,25 +3,25 @@
 import { ToolCardApp } from "../apps/tool-card-app";
 import { useAuiState, type ToolCallMessagePartProps } from "@assistant-ui/react";
 import { BanIcon, CheckIcon, CircleAlertIcon, ClockIcon, LoaderIcon } from "lucide-react";
-import { REMEMBER_SCOPE_LABELS } from "@kobe/protocol";
+import { REMEMBER_SCOPE_LABELS } from "@kaiju/protocol";
 import { useEffect, type ComponentType } from "react";
 import { noteUnknownInput } from "../../lib/build/build-watcher";
 import { isKnownToolName } from "../../lib/build/known-tools";
 import { formatDuration, inputSummary } from "../../lib/chat/history";
 import type { ToolActivity } from "../../lib/chat/live";
-import type { KobeMessageMeta } from "../../lib/chat/tree";
+import type { KaijuMessageMeta } from "../../lib/chat/tree";
 import { cn } from "../../lib/utils";
 import { toneClass, type StatusTone } from "../ui/status";
 import { ARTIFACT_TOOL_NAMES, artifactIdFromToolResult } from "../../lib/chat/artifacts";
 import { OpenArtifactButton } from "./artifact-panel";
 import { Disclosure, useDisclosure } from "./detail";
-import { useKobeExtras } from "./kobe-runtime";
+import { useKaijuExtras } from "./kaiju-runtime";
 import { FullOutputStatus, Output, PRE, useFullOutput, type FullOutput } from "./tool-output";
 import { useSkillOfToolCall } from "./skill-badge";
 import { ApprovalSlot, ArtifactSlot, EgressBlocked, FileSlot } from "./slots";
 import { SkillDraftCard } from "./skill-draft-card";
 import { SAVE_SKILL_DRAFT_TOOL } from "../../lib/skills/draft-tool-result";
-import { OPEN_FILE_TOOL, PROPOSE_FILE_EDIT_TOOL, SHOW_MEMORY_ITEM_TOOL } from "@kobe/protocol";
+import { OPEN_FILE_TOOL, PROPOSE_FILE_EDIT_TOOL, SHOW_MEMORY_ITEM_TOOL } from "@kaiju/protocol";
 import { FileEditCard } from "../files/file-edit-card";
 import { OpenFileCard } from "../files/open-file-card";
 import { OpenInMemoryChip } from "./open-in-memory-chip";
@@ -97,7 +97,7 @@ export const OUTCOME_TONE: Record<Outcome, StatusTone> = {
 };
 
 /**
- * The tool's name chip (KOBE-374): gold (app/theme.css `--kobe-tool-badge*`), so tool use is
+ * The tool's name chip (KOBE-374): gold (app/theme.css `--kaiju-tool-badge*`), so tool use is
  * recognisable at a glance; the outcome colours stay on the step's icon and label.
  */
 export const TOOL_BADGE =
@@ -118,7 +118,7 @@ function ReopenArtifact({ result }: { readonly result: unknown }) {
 /** The result entry of a call whose output the entry list trimmed (KOBE-208), if any. */
 function useFullOutputEntry(toolCallId: string): string | undefined {
   return useAuiState((s) => {
-    const meta = s.message.metadata.custom as KobeMessageMeta | undefined;
+    const meta = s.message.metadata.custom as KaijuMessageMeta | undefined;
     return meta?.kind === "assistant" ? meta.fullOutputs?.[toolCallId] : undefined;
   });
 }
@@ -147,7 +147,7 @@ function ToolCardHeader({
     <>
       <Icon
         aria-hidden
-        data-kobe-outcome={outcome}
+        data-kaiju-outcome={outcome}
         className={cn(
           "size-4 shrink-0",
           outcome === "running" && "animate-spin motion-reduce:animate-none",
@@ -156,20 +156,20 @@ function ToolCardHeader({
       />
       {skill === undefined ? (
         <>
-          <span data-kobe-tool-badge className={TOOL_BADGE}>
+          <span data-kaiju-tool-badge className={TOOL_BADGE}>
             {toolName}
           </span>
           {summary !== "" && <span className="min-w-0 truncate font-mono text-xs">{summary}</span>}
         </>
       ) : (
         <>
-          <span data-kobe-tool-badge className={cn(TOOL_BADGE, "font-sans")}>
+          <span data-kaiju-tool-badge className={cn(TOOL_BADGE, "font-sans")}>
             Read skill
           </span>
           <span className="text-foreground min-w-0 truncate font-mono text-xs">{skill}</span>
         </>
       )}
-      <span className={cn("ms-auto shrink-0", tone)} data-kobe-outcome-label={outcome}>
+      <span className={cn("ms-auto shrink-0", tone)} data-kaiju-outcome-label={outcome}>
         {label}
       </span>
       {took !== undefined && <span className="shrink-0 tabular-nums">{took}</span>}
@@ -302,7 +302,7 @@ function ToolCardSlots({
  * KOBE-37/55/54 (`slots.tsx`) and stay outside the collapsed part.
  */
 export function ToolCallCard(props: ToolCallMessagePartProps) {
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const activity = extras?.state.live?.tools[props.toolCallId] ?? NO_ACTIVITY;
   const { open, setOpen } = useDisclosure();
   const fullEntry = useFullOutputEntry(props.toolCallId);
@@ -320,7 +320,7 @@ export function ToolCallCard(props: ToolCallMessagePartProps) {
       : formatDuration(timing.completedAt - timing.startedAt);
   return (
     <section
-      className="kobe-panel border-border bg-card text-card-foreground my-1 w-full rounded-lg border text-sm whitespace-normal"
+      className="kaiju-panel border-border bg-card text-card-foreground my-1 w-full rounded-lg border text-sm whitespace-normal"
       aria-label={`Tool call ${props.toolName}${skill === undefined ? "" : `: skill ${skill}`}`}
     >
       <Disclosure

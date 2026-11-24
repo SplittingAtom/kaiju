@@ -7,7 +7,7 @@ import { foldersOf } from "../../lib/chat/folders-store";
 import { placementOf } from "../../lib/chat/thread-groups";
 import type { ThreadState } from "../../lib/chat/thread-state";
 import type { MenuBindings, MenuChoice } from "../../lib/shell/menu";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 import { RailAnnounce } from "./use-organize-menu";
 import { useThreadFolders } from "./use-thread-folders";
 

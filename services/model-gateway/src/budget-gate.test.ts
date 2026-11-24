@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { BudgetLine, MemberBudgetState } from "@kobe/db";
+import type { BudgetLine, MemberBudgetState } from "@kaiju/db";
 import { describe, expect, it, vi } from "vitest";
 import { BudgetGate } from "./budget-gate.js";
 import type { ReservationStore } from "./reservations.js";

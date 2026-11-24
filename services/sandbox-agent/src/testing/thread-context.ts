@@ -1,5 +1,5 @@
-import { threadContextResultSchema, type ThreadContextResult } from "@kobe/protocol";
-import { sealedReplyKeyPair } from "@kobe/protocol/node";
+import { threadContextResultSchema, type ThreadContextResult } from "@kaiju/protocol";
+import { sealedReplyKeyPair } from "@kaiju/protocol/node";
 import { expect } from "vitest";
 import type { FakeServer } from "./fake-server.js";
 

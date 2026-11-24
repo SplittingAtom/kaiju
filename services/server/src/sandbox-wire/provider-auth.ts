@@ -1,4 +1,4 @@
-import { eq, sql, teams, withTeam, type KobeDb } from "@kobe/db";
+import { eq, sql, teams, withTeam, type KaijuDb } from "@kaiju/db";
 import type { SandboxProvider } from "../sandbox/provider.js";
 import { verifySessionToken } from "../sandbox/session-token.js";
 import type { SessionVerifyKeySets } from "../sandbox/config.js";
@@ -27,7 +27,7 @@ export function sandboxWireVerifier(keys: SessionVerifyKeySets): SessionTokenVer
  */
 export function providerLiveness(
   provider: Pick<SandboxProvider, "isLive">,
-  db: KobeDb,
+  db: KaijuDb,
   cacheMs = LIVENESS_CACHE_MS,
 ): SandboxLiveness {
   const cache = new Map<string, number>();
@@ -67,7 +67,7 @@ export function providerLiveness(
  * member, its result row names it and is starting, running or collecting, and its eval run is open.
  */
 export async function evalExecutionLive(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   threadId: string,

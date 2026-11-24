@@ -1,6 +1,6 @@
-import { canonicalZip, checkPackagePaths } from "@kobe/protocol";
-import type { KobeDb } from "@kobe/db";
-import type { ScanResult } from "@kobe/skill-scanner";
+import { canonicalZip, checkPackagePaths } from "@kaiju/protocol";
+import type { KaijuDb } from "@kaiju/db";
+import type { ScanResult } from "@kaiju/skill-scanner";
 import type { BlobStore } from "../../retention/blobs.js";
 import { adviseBump, bumpSemver, type BumpKind } from "../drafts/bump.js";
 import { SKILL_MD_PATH } from "../drafts/files.js";
@@ -30,7 +30,7 @@ const CACHE_MAX = 32;
 const cache = new Map<string, ScanResult>();
 
 export async function previewSiteDraft(
-  db: KobeDb,
+  db: KaijuDb,
   skillId: string,
   userId: string,
   signal?: AbortSignal,
@@ -80,7 +80,7 @@ export interface SiteBump {
 }
 
 export async function suggestSiteBump(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore,
   skillId: string,
 ): Promise<SiteBump | null> {

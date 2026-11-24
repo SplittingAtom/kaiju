@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import type { Logger } from "pino";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import type { RateLimiter } from "../../sandbox/rate-limit.js";
 import type { SandboxAuthenticator, SandboxCaller } from "../auth.js";
 import type { ObjectStore } from "../object-store.js";
@@ -102,7 +102,7 @@ export function isTimeout(err: unknown): boolean {
 }
 
 export interface WorkspaceRoutesDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly objects: ObjectStore;
   readonly authenticate: SandboxAuthenticator;
   readonly prefix: string;

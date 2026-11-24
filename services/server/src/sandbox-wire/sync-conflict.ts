@@ -1,9 +1,9 @@
-import { syncConflictSchema, type SyncConflict } from "@kobe/protocol";
+import { syncConflictSchema, type SyncConflict } from "@kaiju/protocol";
 import {
   type ServerToSandboxFrame,
   type WorkspaceConflictFrame,
-} from "@kobe/protocol/sandbox-wire";
-import type { KobeDb } from "@kobe/db";
+} from "@kaiju/protocol/sandbox-wire";
+import type { KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import { isInternalPath, isReadOnlyPath } from "../workspace-files/paths.js";
 import { markTold, recordConflict, untoldNotes } from "../sync-conflicts/store.js";
@@ -17,7 +17,7 @@ import type { SandboxTarget } from "./types.js";
  * thread has a run active on this connection, its agent is told at once (`workspace.conflict_note`).
  */
 export interface SyncConflictConnection {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly target: SandboxTarget;
   readonly log: Pick<Logger, "error" | "warn" | "info">;
   readonly hasCapability: boolean;

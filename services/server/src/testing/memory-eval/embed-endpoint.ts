@@ -1,4 +1,4 @@
-import { embeddingsResponseSchema } from "@kobe/protocol";
+import { embeddingsResponseSchema } from "@kaiju/protocol";
 
 /**
  * The relevance harness's embedding endpoint (KOBE-409 ac-1): any OpenAI-compatible

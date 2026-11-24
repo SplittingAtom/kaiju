@@ -1,4 +1,4 @@
-import { getMembership, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { getMembership, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import type { BlobStore } from "../../retention/blobs.js";
 import { startSkillEval, type StartRefusal } from "../evals/start.js";
@@ -28,7 +28,7 @@ import { registryTeamFor } from "./settings.js";
  */
 
 export interface RerunDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore;
 }
 
@@ -62,7 +62,7 @@ export const NOT_REGISTRY_MEMBER = {
 } as const;
 
 /** The duties check for re-runs, in its own read transaction (it takes the admin-set lock). */
-async function mayWeigh(db: KobeDb, v: VersionRow, userId: string): Promise<Problem | null> {
+async function mayWeigh(db: KaijuDb, v: VersionRow, userId: string): Promise<Problem | null> {
   return db.transaction(async (tx) => (await dutiesProblem(tx, v, userId)).problem);
 }
 
@@ -102,7 +102,7 @@ export async function rerunEvals(
 
 /** Cancels one open re-run of the version (an eligible reviewer; the history keeps it). */
 export async function cancelRerun(
-  db: KobeDb,
+  db: KaijuDb,
   versionId: string,
   evalRunId: string,
   userId: string,
@@ -148,7 +148,7 @@ export async function cancelRerun(
  * decision's transaction when that runs in the Registry team's context (`tx` and its team).
  */
 export async function cancelOpenReruns(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   versionId: string,
 ): Promise<number> {
@@ -186,7 +186,7 @@ const num = (v: unknown): number | null => (typeof v === "number" ? v : null);
  * when completed, its pass rate and lift.
  */
 export async function rerunHistory(
-  db: KobeDb,
+  db: KaijuDb,
   v: Pick<VersionRow, "id" | "authoritativeScorecard">,
 ): Promise<RerunEntry[]> {
   const events = await db.execute<{

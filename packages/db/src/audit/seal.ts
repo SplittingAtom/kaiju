@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
-import type { KobeDb, KobeTx } from "../client.js";
+import type { KaijuDb, KaijuTx } from "../client.js";
 import {
   AUDIT_CHAIN_UPGRADED,
   AUDIT_GENESIS_HASH,
@@ -26,7 +26,7 @@ const digest = (text: string): string => createHash("sha256").update(text, "utf8
  * once, carrying the seal it recomputed over the verified v1 rows, so the row is the real seal for
  * every writer but a superuser (review N1); `audit_log_is_seal` also checks its shape.
  */
-async function sealedAlready(db: KobeDb | KobeTx): Promise<boolean> {
+async function sealedAlready(db: KaijuDb | KaijuTx): Promise<boolean> {
   const { rows } = await db.execute(
     sql`SELECT 1 FROM public.audit_log a
         WHERE a.action = ${AUDIT_CHAIN_UPGRADED} AND public.audit_log_is_seal(a) LIMIT 1`,
@@ -43,7 +43,7 @@ async function sealedAlready(db: KobeDb | KobeTx): Promise<boolean> {
  * (`audit_log_v1_erasable()`), once replicas of the previous release are gone. A broken v1 chain
  * is never sealed (docs/audit-log.md, "If the chain is broken").
  */
-export async function sealAuditV1(db: KobeDb, batchSize = 5000): Promise<AuditSealResult> {
+export async function sealAuditV1(db: KaijuDb, batchSize = 5000): Promise<AuditSealResult> {
   if (await sealedAlready(db)) return { status: "already_sealed" };
   let seal = AUDIT_GENESIS_HASH;
   let prev = AUDIT_GENESIS_HASH;

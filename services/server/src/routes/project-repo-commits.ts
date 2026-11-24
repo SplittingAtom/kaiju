@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { readGitConnection, sql, withTeam } from "@kobe/db";
-import type { RepoCommitInfo } from "@kobe/protocol";
+import { readGitConnection, sql, withTeam } from "@kaiju/db";
+import type { RepoCommitInfo } from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { readWorkingCopy } from "../git/working-copy.js";

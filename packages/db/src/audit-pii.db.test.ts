@@ -14,7 +14,7 @@ import {
   type AuditChainReport,
   type AuditEvent,
 } from "./audit/index.js";
-import { createDb, type KobeDb } from "./client.js";
+import { createDb, type KaijuDb } from "./client.js";
 import * as schema from "./schema/index.js";
 import { appendBackdatedAuditRow } from "./test-support/database.js";
 import { pgCodeOf } from "./pg-errors.js";
@@ -110,7 +110,7 @@ async function tampered(
     await client.query("BEGIN");
     await client.query("SET LOCAL session_replication_role = replica");
     await tamper(client);
-    const db = drizzle({ client, schema, casing: "snake_case" }) as unknown as KobeDb;
+    const db = drizzle({ client, schema, casing: "snake_case" }) as unknown as KaijuDb;
     const node = await verifyAuditChain(db);
     const { rows } = await client.query<SqlCheck>(
       `SELECT problem_seq::text, problem FROM audit_log_chain_problem()`,
@@ -326,7 +326,7 @@ describe("eraseExpiredAuditPii (the sweep's step)", () => {
     expect((await row(young)).ip).toBe(IP);
   });
 
-  it("pauses after a restore until the time kobe restore set", async () => {
+  it("pauses after a restore until the time kaiju restore set", async () => {
     const seq = await recordedAgo(40);
     await admin.query(
       `INSERT INTO site_settings (key, value) VALUES ('audit.pii_sweep_resume_at', $1)`,

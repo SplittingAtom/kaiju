@@ -1,6 +1,6 @@
 import { duplexPair } from "node:stream";
 import { describe, expect, it } from "vitest";
-import { connectTools, filesEnabled, registerKobeTools } from "./extension.js";
+import { connectTools, filesEnabled, registerKaijuTools } from "./extension.js";
 import type { ToolDefinitionLike } from "./tools.js";
 
 describe("connectTools", () => {
@@ -48,12 +48,12 @@ describe("connectTools", () => {
   });
 });
 
-describe("registerKobeTools", () => {
+describe("registerKaijuTools", () => {
   it("registers both artifact tools with Pi", () => {
     const [ours] = duplexPair();
     const transport = connectTools({ env: { KOBE_TOOLS_FD: "4" }, openChannel: () => ours });
     const names: string[] = [];
-    registerKobeTools({ registerTool: (t: ToolDefinitionLike) => names.push(t.name) }, transport);
+    registerKaijuTools({ registerTool: (t: ToolDefinitionLike) => names.push(t.name) }, transport);
     expect(names).toEqual(["create_artifact", "update_artifact"]);
     ours.destroy();
   });
@@ -62,7 +62,7 @@ describe("registerKobeTools", () => {
     const [ours] = duplexPair();
     const transport = connectTools({ env: { KOBE_TOOLS_FD: "4" }, openChannel: () => ours });
     const names: string[] = [];
-    registerKobeTools({ registerTool: (t: ToolDefinitionLike) => names.push(t.name) }, transport, {
+    registerKaijuTools({ registerTool: (t: ToolDefinitionLike) => names.push(t.name) }, transport, {
       files: true,
     });
     expect(names).toEqual(["create_artifact", "update_artifact", "share_file"]);
@@ -71,7 +71,7 @@ describe("registerKobeTools", () => {
 
   it("registers nothing without a transport", () => {
     const names: string[] = [];
-    registerKobeTools({ registerTool: (t: ToolDefinitionLike) => names.push(t.name) }, undefined);
+    registerKaijuTools({ registerTool: (t: ToolDefinitionLike) => names.push(t.name) }, undefined);
     expect(names).toEqual([]);
   });
 });

@@ -4,12 +4,12 @@ import {
   listMemberships,
   sql,
   withTeam,
-  type KobeDatabase,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDatabase,
+  type KaijuDb,
+  type KaijuTx,
   type RunSkillRef,
   type RunSkillUse,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { pickCatalogVersion, type CatalogVersion } from "../resolver/catalog-pins.js";
 
 /**
@@ -116,7 +116,7 @@ type Catalog = {
   readonly versions: ReadonlyMap<string, CatalogVersion[]>;
 };
 
-async function readCatalog(db: KobeDb): Promise<Catalog> {
+async function readCatalog(db: KaijuDb): Promise<Catalog> {
   const skills = await db.execute<{ id: string; name: string }>(
     sql`SELECT id, name FROM registry_skills`,
   );
@@ -175,7 +175,7 @@ export function userKey(salt: string, userId: string): string {
 
 /** One team's part, read inside its own RLS context. */
 async function teamPart(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   window: UsageWindow,
   catalog: Catalog,
@@ -239,7 +239,7 @@ async function teamPart(
 }
 
 export async function computeUsageSnapshot(
-  db: KobeDb,
+  db: KaijuDb,
   window: UsageWindow,
   now: Date,
 ): Promise<UsageSnapshot> {
@@ -332,7 +332,7 @@ export function fromPayload(
 
 const iso = (v: unknown) => new Date(v as string | Date).toISOString();
 
-async function storedRow(db: KobeDb, from: string | null): Promise<UsageSnapshot | null> {
+async function storedRow(db: KaijuDb, from: string | null): Promise<UsageSnapshot | null> {
   const r = await db.execute<{
     window_start: string;
     window_end: string;
@@ -357,7 +357,7 @@ async function storedRow(db: KobeDb, from: string | null): Promise<UsageSnapshot
  * windows older than the previous one purged. Returns whether this call stored it.
  */
 export async function ensureUsageSnapshot(
-  deps: { readonly db: KobeDb; readonly pool: KobeDatabase["pool"] },
+  deps: { readonly db: KaijuDb; readonly pool: KaijuDatabase["pool"] },
   now: Date = new Date(),
 ): Promise<boolean> {
   const window = closedWindow(now);
@@ -405,7 +405,7 @@ export async function ensureUsageSnapshot(
 let cache: { key: string; snapshot: UsageSnapshot; checkedAt: number } | null = null;
 const RECHECK_MS = 60_000;
 
-export async function usageSnapshot(db: KobeDb, now: Date = new Date()): Promise<UsageSnapshot> {
+export async function usageSnapshot(db: KaijuDb, now: Date = new Date()): Promise<UsageSnapshot> {
   const window = closedWindow(now);
   if (cache?.key === window.from) return cache.snapshot;
   if (cache && now.getTime() - cache.checkedAt < RECHECK_MS) return cache.snapshot;
@@ -432,7 +432,7 @@ export function forgetUsageSnapshot(): void {
  * Departures come from the team audit's `identity.member.removed` rows (audit rows are kept).
  */
 export async function viewerTeamsOf(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   since: string,
   activeTeamId?: string,
@@ -455,8 +455,8 @@ export const USAGE_CHECK_MS = 60 * 60_000;
  * replica has yet. A failure is logged and retried at the next check. Returns how to stop it.
  */
 export function startUsageSnapshots(deps: {
-  readonly db: KobeDb;
-  readonly pool: KobeDatabase["pool"];
+  readonly db: KaijuDb;
+  readonly pool: KaijuDatabase["pool"];
   readonly log: { error(obj: object, msg: string): void };
 }): () => Promise<unknown> {
   // The check in flight (never rejects): the stop function waits for it (KOBE-709).

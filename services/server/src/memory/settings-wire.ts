@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { MODEL_ALIAS_PATTERN } from "@kobe/db";
+import { MODEL_ALIAS_PATTERN } from "@kaiju/db";
 import { memorySiteSettingsFields, memorySiteSettingsSchema } from "./site-settings.js";
 import type { Change, SiteMemorySwitches, WorkspaceMemorySwitches } from "./switch-model.js";
 
 /**
  * Wire shapes of `/v1/memory/settings` (KOBE-381), shared by the route and the Kaiju admin MCP
  * tools `team_memory_get` / `team_memory_set`, so the two cannot drift (contract test in
- * `kobe-mcp/tools/team-memory.test.ts`). Server-local: the published protocol keeps the D24
+ * `kaiju-mcp/tools/team-memory.test.ts`). Server-local: the published protocol keeps the D24
  * `memorySettingsSchema` (the two Notes switches), which both levels still accept.
  */
 

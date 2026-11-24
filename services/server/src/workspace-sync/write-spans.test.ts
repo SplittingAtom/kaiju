@@ -1,4 +1,4 @@
-import { InMemorySpanExporter, SpanStatusCode, initTelemetry, withSpan } from "@kobe/telemetry";
+import { InMemorySpanExporter, SpanStatusCode, initTelemetry, withSpan } from "@kaiju/telemetry";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { WRITE_ATTR, WRITE_SPAN, lockWaitSpan, s3PutSpan, writeTxSpan } from "./write-spans.js";
 

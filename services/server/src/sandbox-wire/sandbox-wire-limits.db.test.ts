@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CAPABILITY_SESSION_RENEW, SANDBOX_CLOSE_CODES } from "@kobe/protocol/sandbox-wire";
+import { CAPABILITY_SESSION_RENEW, SANDBOX_CLOSE_CODES } from "@kaiju/protocol/sandbox-wire";
 import { EventStreamFixture, must } from "../testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 

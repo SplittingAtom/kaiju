@@ -20,10 +20,10 @@ function expectInert(markup: string): void {
   expect(markup).not.toMatch(/\son[a-z]+\s*=/i);
   expect(markup).not.toMatch(/\sstyle\s*=/i);
   expect(markup).not.toMatch(/\sclass\s*=/i);
-  expect(markup).not.toMatch(/(?:xlink:)?href="(?!#kobe-logo-)/);
-  expect(markup).not.toMatch(/url\(\s*['"]?(?!#kobe-logo-)/);
+  expect(markup).not.toMatch(/(?:xlink:)?href="(?!#kaiju-logo-)/);
+  expect(markup).not.toMatch(/url\(\s*['"]?(?!#kaiju-logo-)/);
   // Every id is prefixed, so nothing can collide with the page's ids.
-  for (const [, id] of markup.matchAll(/\sid="([^"]*)"/g)) expect(id).toMatch(/^kobe-logo-/);
+  for (const [, id] of markup.matchAll(/\sid="([^"]*)"/g)) expect(id).toMatch(/^kaiju-logo-/);
 }
 
 describe("themedLogoSvg (KOBE-562, inline-safe variant)", () => {
@@ -81,13 +81,13 @@ describe("themedLogoSvg (KOBE-562, inline-safe variant)", () => {
       ),
     );
     expectInert(markup);
-    expect(markup).toContain('<clipPath id="kobe-logo-main">');
-    expect(markup).toContain('<symbol id="kobe-logo-app-root" viewBox="0 0 1 1">');
-    expect(markup).toContain('clip-path="url(#kobe-logo-main)" mask="url(#kobe-logo-m)"');
+    expect(markup).toContain('<clipPath id="kaiju-logo-main">');
+    expect(markup).toContain('<symbol id="kaiju-logo-app-root" viewBox="0 0 1 1">');
+    expect(markup).toContain('clip-path="url(#kaiju-logo-main)" mask="url(#kaiju-logo-m)"');
     expect(markup).toContain(
-      '<use href="#kobe-logo-app-root"/><use href="#kobe-logo-app-root" x="1"/>',
+      '<use href="#kaiju-logo-app-root"/><use href="#kaiju-logo-app-root" x="1"/>',
     );
-    expect(markup).toContain('<mask id="kobe-logo-m">');
+    expect(markup).toContain('<mask id="kaiju-logo-m">');
   });
 
   it("drops ids and references it cannot prefix safely", () => {
@@ -154,7 +154,7 @@ describe("themedLogoSvg (KOBE-562, inline-safe variant)", () => {
     // §2.1 refuses it first; the builder also keeps href only in the #fragment form.
     expect(themedLogoSvg(doc('<use href="abc"/>')).ok).toBe(false);
     expect(inline(doc('<use href="#abc"/><use xlink:href=" #abc "/>'))).toContain(
-      '<use href="#kobe-logo-abc"/><use href="#kobe-logo-abc"/>',
+      '<use href="#kaiju-logo-abc"/><use href="#kaiju-logo-abc"/>',
     );
   });
 
@@ -198,7 +198,7 @@ describe("themedFaviconSvg (KOBE-562)", () => {
       ok: true,
       svg:
         `<svg ${NS} viewBox="0 0 10 10" fill="currentColor"><style>${FAVICON_SCHEME_STYLE}</style>` +
-        '<path id="kobe-favicon-p" d="M0 0h1v1z" fill="currentColor"/><use href="#kobe-favicon-p"/></svg>',
+        '<path id="kaiju-favicon-p" d="M0 0h1v1z" fill="currentColor"/><use href="#kaiju-favicon-p"/></svg>',
     });
     expect(FAVICON_SCHEME_STYLE).toBe(
       "svg{color:#1b1b1f}@media (prefers-color-scheme: dark){svg{color:#ffffff}}",

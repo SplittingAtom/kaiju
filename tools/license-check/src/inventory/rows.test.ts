@@ -155,7 +155,7 @@ describe("image reports", () => {
   const report = {
     MIT: [
       { name: "zeta", versions: ["2"], ecosystem: "npm", locations: ["/opt/pi"] },
-      { name: "@kobe/protocol", versions: ["0.0.0"], ecosystem: "npm", locations: ["/opt/pi"] },
+      { name: "@kaiju/protocol", versions: ["0.0.0"], ecosystem: "npm", locations: ["/opt/pi"] },
     ],
     "Apache-2.0": [
       { name: "pyarrow", versions: ["25"], ecosystem: "pypi", locations: ["python"], notice: "N" },

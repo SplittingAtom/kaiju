@@ -10,10 +10,10 @@ import {
   teams,
   users,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type TeamRole,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { auditRemovedGrants, deleteMemberGrantsInTx } from "../connectors/grant-departures.js";
 import { revokeWorkspaceStewardInTx } from "../memory/stewards.js";
@@ -98,7 +98,7 @@ const OK: MembershipResult = { ok: true };
 const fail = (error: MembershipError): MembershipResult => ({ ok: false, error });
 
 /** Members of one team (read under that team's RLS), sorted by name. */
-export async function listMembers(db: KobeDb, teamId: string): Promise<TeamMember[]> {
+export async function listMembers(db: KaijuDb, teamId: string): Promise<TeamMember[]> {
   const rows = await withTeam(db, teamId, (tx) =>
     tx
       .select({
@@ -148,7 +148,7 @@ export async function listMembers(db: KobeDb, teamId: string): Promise<TeamMembe
   });
 }
 
-export async function findTeam(db: KobeDb, teamId: string): Promise<TeamSummary | null> {
+export async function findTeam(db: KaijuDb, teamId: string): Promise<TeamSummary | null> {
   const [team] = await db
     .select({ id: teams.id, slug: teams.slug, name: teams.name })
     .from(teams)
@@ -157,7 +157,7 @@ export async function findTeam(db: KobeDb, teamId: string): Promise<TeamSummary 
 }
 
 export async function findUserId(
-  db: KobeDb,
+  db: KaijuDb,
   by: { readonly id: string } | { readonly email: string },
 ): Promise<string | null> {
   const where = "id" in by ? eq(users.id, by.id) : eq(users.email, by.email.toLowerCase());
@@ -170,7 +170,7 @@ export async function findUserId(
  * Only active (not deactivated) team admins count: a deactivated admin can't run the team.
  */
 export async function lockForChange(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<{
@@ -224,7 +224,7 @@ const losesLastActiveAdmin = (lock: Awaited<ReturnType<typeof lockForChange>>) =
 
 /** Changes a member's role; a team always keeps at least one team admin. */
 export async function setMemberRole(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   role: TeamRole,
@@ -247,7 +247,7 @@ export async function setMemberRole(
  * provider's change (`via.idp`) keeps the row managed and applies only to its own rows.
  */
 export async function setMemberRoleInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   role: TeamRole,
@@ -296,7 +296,7 @@ export async function setMemberRoleInTx(
  * in the same transaction; the route then cancels their in-flight scheduled runs here.
  */
 export async function removeMember(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   /** KOBE-621: remove only while the role is still this one (the approved before-state). */
@@ -316,7 +316,7 @@ export async function removeMember(
  * nothing else removes a provider-managed row (SSO10).
  */
 export async function removeMemberInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   via?: MemberChangeVia,
@@ -367,7 +367,7 @@ export async function removeMemberInTx(
  * the provider's mappings never change or remove it. The role stays as it is.
  */
 export async function takeOverMember(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   /** KOBE-638: a Site admin's Take over from the Site console. */
@@ -397,11 +397,11 @@ export async function takeOverMember(
  * with the team's installs of every Default skill.
  */
 export async function createTeamWithAdmin(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly slug: string; readonly name: string; readonly registry?: boolean },
   adminUserId: string,
   /** Runs in the new team's transaction (the Registry team's settings and reviewers, KOBE-330). */
-  then?: (tx: KobeTx, team: TeamSummary) => Promise<void>,
+  then?: (tx: KaijuTx, team: TeamSummary) => Promise<void>,
 ): Promise<TeamSummary> {
   return db.transaction(async (tx) => {
     const [team] = await tx

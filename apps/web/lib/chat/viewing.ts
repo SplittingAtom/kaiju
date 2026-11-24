@@ -4,7 +4,7 @@
  * sends it as `viewing: {path}`; the server adds a bounded copy to that run's context. Removing
  * the chip holds for that file until another one is viewed.
  */
-import type { MessageViewing } from "@kobe/protocol";
+import type { MessageViewing } from "@kaiju/protocol";
 
 /**
  * What a message says about the viewed file: the file open now (`{path}`), or for a regenerate

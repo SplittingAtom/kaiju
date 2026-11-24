@@ -13,7 +13,7 @@ import { NotebookExecStore } from "../notebooks/executions";
 import { createNotebookApi, type NotebookApi } from "../notebooks/api";
 import { DraftConnectorStore } from "./draft-connectors";
 import { AppCardSignal } from "../apps/app-cards";
-import type { ThinkingLevel } from "@kobe/protocol";
+import type { ThinkingLevel } from "@kaiju/protocol";
 import type { ApiResult } from "../api/client";
 import type { TeamModels } from "../admin/api/team/models";
 import type { ChatApi } from "./api";

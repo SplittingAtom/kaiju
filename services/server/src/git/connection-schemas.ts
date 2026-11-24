@@ -17,7 +17,7 @@ import {
   GIT_REPO_VISIBILITY_VALUES,
   gitCredentialSecretSchema,
   type GitCredentialSecret,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { z } from "zod";
 
 /**

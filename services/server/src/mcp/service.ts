@@ -1,4 +1,4 @@
-import { withTeam, type Envelope, type KobeDb, type PinnedTool } from "@kobe/db";
+import { withTeam, type Envelope, type KaijuDb, type PinnedTool } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";
 import { RefreshGate } from "../connectors/oauth/refresh-gate.js";
@@ -53,7 +53,7 @@ export interface McpService {
 }
 
 export interface McpServiceOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** The policy engine's inputs (rules, settings, registry with the MCP catalog, connector state). */
   readonly policy: PolicySources;
   readonly runContext: RunPolicyContextSource;
@@ -70,7 +70,7 @@ export interface McpServiceOptions {
 
 /** A `tools/list` for a connector the team has not enabled: audited, throttled like denied calls. */
 async function auditListRefused(
-  db: KobeDb,
+  db: KaijuDb,
   principal: McpPrincipal,
   connectorId: string,
   limiter: ReturnType<typeof createRateLimiter>,

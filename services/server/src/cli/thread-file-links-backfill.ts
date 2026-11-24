@@ -1,4 +1,4 @@
-import { createDb } from "@kobe/db";
+import { createDb } from "@kaiju/db";
 import { backfillThreadFileLinks } from "../thread-file-links/backfill.js";
 import { parseBackfillArgs } from "./thread-file-links-backfill-args.js";
 import { exitSoon } from "./replica.js";

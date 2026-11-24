@@ -30,7 +30,7 @@ import {
   type RailPanels,
   type RailTab,
   type UiPreferences,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { apiRequest } from "../api/client";
 import { ARTIFACT_FLOOR_PX, CONVERSATION_FLOOR_PX } from "../chat/artifact-tabs";
 
@@ -173,7 +173,7 @@ export function shellGrid(): HTMLElement | null {
 }
 
 type Log = (message: string, detail?: unknown) => void;
-const warn: Log = (message, detail) => console.warn(`[kobe] ${message}`, detail ?? "");
+const warn: Log = (message, detail) => console.warn(`[kaiju] ${message}`, detail ?? "");
 
 /** Reads the caller's preferences; on any failure logs it and returns none (the defaults). */
 export async function loadPreferences(

@@ -122,20 +122,20 @@ export function PlusFace({
       {face.mark === "spinner" && (
         <Loader2Icon
           aria-hidden
-          data-kobe-learn-mark="spinner"
+          data-kaiju-learn-mark="spinner"
           className="text-primary absolute -end-0.5 -top-0.5 size-3 animate-spin"
         />
       )}
       {face.mark === "count" && (
-        <span className={markStyles.count} data-kobe-learn-mark="count" aria-hidden="true">
+        <span className={markStyles.count} data-kaiju-learn-mark="count" aria-hidden="true">
           {(face.count ?? 0) > 99 ? "99+" : face.count}
         </span>
       )}
       {face.mark === "dot" && (
         <span
           className={pulse ? `${markStyles.dot} ${nudgeStyles.pulse}` : markStyles.dot}
-          data-kobe-learn-mark="dot"
-          data-kobe-learn-nudge={pulse ? "pulse" : undefined}
+          data-kaiju-learn-mark="dot"
+          data-kaiju-learn-nudge={pulse ? "pulse" : undefined}
           aria-hidden="true"
         />
       )}
@@ -230,7 +230,7 @@ export function MemorySubmenu({
     <DropdownMenu.Sub open={open} onOpenChange={setOpen}>
       <DropdownMenu.SubTrigger
         className={PLUS_ITEM}
-        data-kobe-plus="memory"
+        data-kaiju-plus="memory"
         aria-describedby={hint || waiting > 0 || running ? triggerId : undefined}
       >
         <BrainIcon aria-hidden className="size-4 shrink-0" />
@@ -243,16 +243,16 @@ export function MemorySubmenu({
       </DropdownMenu.SubTrigger>
       <DropdownMenu.Portal container={chatPortalContainer()}>
         <DropdownMenu.SubContent
-          data-kobe-portal
+          data-kaiju-portal
           aria-label="Memory"
-          data-kobe-memory-menu=""
+          data-kaiju-memory-menu=""
           sideOffset={4}
           className={PLUS_CONTENT}
         >
           <DropdownMenu.Item
             className={PLUS_ITEM}
             data-command="learn"
-            data-kobe-learn="new"
+            data-kaiju-learn="new"
             aria-disabled={newBlocker !== null || undefined}
             aria-describedby={newNote === null ? undefined : newId}
             onSelect={(e) => {
@@ -270,7 +270,7 @@ export function MemorySubmenu({
           </DropdownMenu.Item>
           <DropdownMenu.Item
             className={PLUS_ITEM}
-            data-kobe-learn="all"
+            data-kaiju-learn="all"
             aria-disabled={allBlocker !== null || undefined}
             aria-describedby={allNote === null ? undefined : allId}
             onSelect={(e) => {
@@ -285,7 +285,7 @@ export function MemorySubmenu({
           {waiting > 0 && (
             <DropdownMenu.Item
               className={PLUS_ITEM}
-              data-kobe-learn="review"
+              data-kaiju-learn="review"
               onSelect={() => navigate(TO_REVIEW_HREF)}
             >
               <InboxIcon aria-hidden className="size-4 shrink-0" />

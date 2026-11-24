@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb } from "@kobe/db";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
 import { treeEntrySql } from "../sandbox-wire/entries.js";
 import { OWN_THREADS, type EntryRow, type ExportViewer } from "./export.js";
 
@@ -93,7 +93,7 @@ export function branchOf(tree: ThreadTree, leaf: ShapeRow): ExportBranch | undef
   return { ids: ids.reverse(), from, first, firstShown };
 }
 
-async function shapePage(db: KobeDb, viewer: ExportViewer, threadId: string, after: number) {
+async function shapePage(db: KaijuDb, viewer: ExportViewer, threadId: string, after: number) {
   return withTeam(db, viewer.teamId, async (tx) => {
     const res = await tx.execute<ShapeRow>(sql`
       SELECT e.seq, e.entry_id, e.parent_id, e.type, ${treeEntrySql("e")} AS in_tree
@@ -108,7 +108,7 @@ async function shapePage(db: KobeDb, viewer: ExportViewer, threadId: string, aft
 
 /** Reads the thread's shape page by page and returns its main path and other leaves. */
 export async function threadTree(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: ExportViewer,
   threadId: string,
   leaf: string | null,
@@ -126,7 +126,7 @@ export async function threadTree(
 
 /** A branch's entries by key, a page at a time, in append order (owner re-checked per page). */
 export async function* branchEntries(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: ExportViewer,
   threadId: string,
   ids: readonly string[],
@@ -152,7 +152,7 @@ export async function* branchEntries(
 
 /** The thread's labels (CT9), for the metadata and the branch file names. */
 export async function threadLabels(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: ExportViewer,
   threadId: string,
 ): Promise<{ entry_id: string; label: string }[]> {
@@ -169,7 +169,7 @@ export async function threadLabels(
 
 /** The payload of one entry kept inline (null when offloaded or gone), for a file name. */
 export async function inlinePayload(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: ExportViewer,
   threadId: string,
   entryId: string,

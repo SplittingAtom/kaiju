@@ -2,16 +2,16 @@ import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import {
   GATEWAY_MODEL_PATTERN as PROTOCOL_GATEWAY_MODEL,
-  KOBE_MODEL_ERROR_PREFIX as PROTOCOL_PREFIX,
+  KAIJU_MODEL_ERROR_PREFIX as PROTOCOL_PREFIX,
   MODEL_LIMITS_MAX_TOKENS as PROTOCOL_MAX_TOKENS,
   MODEL_RUN_ERROR_CODES as PROTOCOL_CODES,
   PI_MODEL_APIS as PROTOCOL_APIS,
   piThreadConfigSchema,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import {
   GATEWAY_MODEL,
-  KOBE_MODEL_ERROR_PREFIX,
+  KAIJU_MODEL_ERROR_PREFIX,
   MODEL_LIMITS_MAX_TOKENS,
   MODEL_RUN_ERROR_CODES,
   PI_MODEL_APIS,
@@ -38,8 +38,8 @@ const parses = (text: string): boolean => {
 };
 
 describe("kobe-models protocol", () => {
-  it("pins its copies of the @kobe/protocol constants (the extension ships on its own)", () => {
-    expect(KOBE_MODEL_ERROR_PREFIX).toBe(PROTOCOL_PREFIX);
+  it("pins its copies of the @kaiju/protocol constants (the extension ships on its own)", () => {
+    expect(KAIJU_MODEL_ERROR_PREFIX).toBe(PROTOCOL_PREFIX);
     expect([...MODEL_RUN_ERROR_CODES]).toEqual([...PROTOCOL_CODES]);
     expect([...PI_MODEL_APIS]).toEqual([...PROTOCOL_APIS]);
     expect(MODEL_LIMITS_MAX_TOKENS).toBe(PROTOCOL_MAX_TOKENS);

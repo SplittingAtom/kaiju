@@ -1,5 +1,5 @@
-import { MEMORY_PASS_MAX_MS } from "@kobe/protocol";
-import { sql, type KobeTx } from "@kobe/db";
+import { MEMORY_PASS_MAX_MS } from "@kaiju/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { auditPassFailed } from "./audit.js";
 
 /**
@@ -30,7 +30,7 @@ export interface NewPass {
 }
 
 /** Inserts the pass as `running`; null when the thread already has an active pass. */
-export async function insertRunningPass(tx: KobeTx, p: NewPass): Promise<string | null> {
+export async function insertRunningPass(tx: KaijuTx, p: NewPass): Promise<string | null> {
   const res = await tx.execute<{ id: string }>(sql`
     INSERT INTO memory_learning_passes
       (team_id, thread_id, user_id, branch_leaf_entry_id, from_entry_id, model_alias,
@@ -48,14 +48,14 @@ export async function insertRunningPass(tx: KobeTx, p: NewPass): Promise<string 
  * {@link LEARN_PASSES_PER_DAY}. Taken after the thread's lock, before {@link passesToday}, and held
  * through the claim, so a second start counts the first one's row once it commits.
  */
-export async function lockPassStarts(tx: KobeTx, teamId: string, userId: string): Promise<void> {
+export async function lockPassStarts(tx: KaijuTx, teamId: string, userId: string): Promise<void> {
   await tx.execute(
     sql`SELECT pg_advisory_xact_lock(hashtextextended(${`kobe.memory-learn-starts:${teamId}:${userId}`}, 0))`,
   );
 }
 
 /** Passes the person started in this Workspace in the last 24 hours (any outcome). */
-export async function passesToday(tx: KobeTx, teamId: string, userId: string): Promise<number> {
+export async function passesToday(tx: KaijuTx, teamId: string, userId: string): Promise<number> {
   const res = await tx.execute<{ n: string | number }>(sql`
     SELECT count(*) AS n FROM memory_learning_passes
      WHERE team_id = ${teamId} AND user_id = ${userId}
@@ -68,7 +68,7 @@ export async function passesToday(tx: KobeTx, teamId: string, userId: string): P
  * with a `memory.pass.failed` audit row (code `interrupted`, the system's doing).
  */
 export async function failStalePasses(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId?: string,
 ): Promise<number> {
@@ -95,7 +95,7 @@ export async function failStalePasses(
  * the run's status, not that it is on the visible branch: that check is here). Null when none.
  */
 export async function leafPathRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   leaf: string,
@@ -128,7 +128,7 @@ export interface PassEnd {
 
 /** Completes a running pass at `toEntryId`; false when it is no longer running. */
 export async function completePass(
-  tx: KobeTx,
+  tx: KaijuTx,
   end: PassEnd & { readonly toEntryId: string },
 ): Promise<boolean> {
   const res = await tx.execute(sql`
@@ -141,7 +141,7 @@ export async function completePass(
 
 /** Fails a running pass with a short code and message (never model output). */
 export async function failPass(
-  tx: KobeTx,
+  tx: KaijuTx,
   end: PassEnd & { readonly error: string },
 ): Promise<boolean> {
   const res = await tx.execute(sql`
@@ -154,7 +154,7 @@ export async function failPass(
 
 /** The person's watermark in the thread moves to the leaf the pass learned (success only). */
 export async function moveWatermark(
-  tx: KobeTx,
+  tx: KaijuTx,
   w: { teamId: string; threadId: string; userId: string; entryId: string },
 ): Promise<void> {
   await tx.execute(sql`

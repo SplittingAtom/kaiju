@@ -1,4 +1,4 @@
-import { asc, desc, eq, sql, teamMembers, withTeam, type KobeDb } from "@kobe/db";
+import { asc, desc, eq, sql, teamMembers, withTeam, type KaijuDb } from "@kaiju/db";
 import type { VectorTable } from "./vector-store.js";
 
 /** Who pays for an embedding call: a member in one of their Workspaces. */
@@ -30,7 +30,7 @@ interface WorkspacePayer {
 
 /** The admin when a member, else the earliest Team admin, else the earliest member. */
 async function workspacePayer(
-  db: KobeDb,
+  db: KaijuDb,
   adminId: string,
   teamId: string,
 ): Promise<WorkspacePayer> {
@@ -61,7 +61,7 @@ async function workspacePayer(
  * paid by the admin in the Workspace they joined first, else by the first Workspace's payer.
  */
 export async function buildTargets(
-  db: KobeDb,
+  db: KaijuDb,
   admin: BuildAdmin,
   teamIds: readonly string[],
 ): Promise<Target[]> {

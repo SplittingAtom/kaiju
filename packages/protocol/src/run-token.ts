@@ -15,7 +15,7 @@ import { uuidSchema } from "./common.js";
  * ({@link RUN_TOKEN_HEADER}). `Authorization: Bearer <session token>` stays as it is.
  *
  * Format (KOBE-521): a compact JWS signed **EdDSA (Ed25519)** by the server with the
- * `kobe.model-gateway` session-token key pair (`@kobe/session-token`, KOBE-513): header exactly
+ * `kobe.model-gateway` session-token key pair (`@kaiju/session-token`, KOBE-513): header exactly
  * `{"alg":"EdDSA","typ":"krt2","kid":"<key id>"}` ({@link RUN_TOKEN_TYP}), payload the UTF-8 JSON
  * of {@link RunTokenClaims}. The `typ` is signed, so a session token (`typ` `JWT`) or a
  * server-call token (`ksc2`) under the same key never verifies as a run token, nor the reverse;

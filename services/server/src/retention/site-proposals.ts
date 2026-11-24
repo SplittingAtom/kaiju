@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, lockLegalHolds, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { SYSTEM_ACTOR, lockLegalHolds, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import {
   notifyMemoryAll,
@@ -34,7 +34,7 @@ export interface SiteProposalSweepCounts {
 
 export const NO_SITE_PROPOSAL_SWEEP: SiteProposalSweepCounts = { expired: 0, frozen: false };
 
-async function expireBatch(tx: KobeTx, teamId: string): Promise<number> {
+async function expireBatch(tx: KaijuTx, teamId: string): Promise<number> {
   const res = await tx.execute<{
     id: string;
     proposer_id: string;
@@ -82,7 +82,7 @@ async function expireBatch(tx: KobeTx, teamId: string): Promise<number> {
 
 /** The Workspace's Site proposals past their 30 days, in batches (each its own transaction). */
 export async function sweepSiteProposals(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   options: { readonly stop?: () => boolean } = {},
 ): Promise<SiteProposalSweepCounts> {

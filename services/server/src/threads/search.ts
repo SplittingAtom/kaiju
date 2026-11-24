@@ -2,9 +2,9 @@ import {
   THREAD_SEARCH_MAX_LIMIT,
   ThreadSearchError,
   searchThreads,
-  type KobeTx,
+  type KaijuTx,
   type ThreadSearchHit as SearchHit,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { visibilityOf } from "./share.js";
 import {
   canViewProject,
@@ -18,10 +18,10 @@ import {
 import type { ThreadSearchHit } from "./schemas.js";
 
 /**
- * Thread search (`GET /v1/threads?q=`, spec §6.1, D24), backed by `searchThreads` in `@kobe/db`
+ * Thread search (`GET /v1/threads?q=`, spec §6.1, D24), backed by `searchThreads` in `@kaiju/db`
  * (KOBE-33). Runs in the request's `withTeam` transaction as the session user, over the viewer's
  * own threads and threads shared to their projects (`viewer.projectIds`, empty until KOBE-57),
- * never Trash. The search has its own statement timeout inside a savepoint (`@kobe/db` default,
+ * never Trash. The search has its own statement timeout inside a savepoint (`@kaiju/db` default,
  * 3 s), so a timeout answers 503 without aborting the request's transaction.
  */
 
@@ -48,7 +48,7 @@ const FAILURES: Partial<Record<ThreadSearchError["code"], ThreadSearchFailure>> 
 };
 
 export async function searchThreadList(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   input: ThreadSearchInput,
 ): Promise<ThreadSearchResult> {

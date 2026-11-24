@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { viewableBy } from "../projects/access.js";
 
 /**
@@ -43,7 +43,7 @@ export function liveUserRule(now: Date) {
 
 /** Whether the member can still hold a "this conversation" rule in this thread (review R1). */
 export async function threadLiveFor(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   userId: string,

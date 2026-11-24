@@ -6,10 +6,10 @@ import {
   ssoAccessMappings,
   ssoProviders,
   teams,
-  type KobeDb,
+  type KaijuDb,
   type TeamRole,
   pgCodeOf,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { teamRoleSchema } from "../teams/schemas.js";
 import { MAX_IDP_VALUE_LENGTH } from "./access-plan.js";
@@ -75,7 +75,7 @@ export interface MappingProvider {
 
 /** Every provider (for the console's picker) and its mappings, optionally one provider's only. */
 export async function listSiteMappings(
-  db: KobeDb,
+  db: KaijuDb,
   providerId?: string,
 ): Promise<{ providers: MappingProvider[]; mappings: SiteMapping[] }> {
   const providers = await db
@@ -119,7 +119,7 @@ export interface TeamMapping {
 }
 
 /** The mappings that target one team (Team console, read-only). */
-export async function listTeamMappings(db: KobeDb, teamId: string): Promise<TeamMapping[]> {
+export async function listTeamMappings(db: KaijuDb, teamId: string): Promise<TeamMapping[]> {
   return db
     .select({
       id: ssoAccessMappings.id,
@@ -145,7 +145,7 @@ const UNIQUE_VIOLATION = "23505";
 
 /** Adds a mapping (audited `identity.sso.mapping.created`). */
 export async function createMapping(
-  db: KobeDb,
+  db: KaijuDb,
   providerId: string,
   input: z.infer<typeof createMappingSchema>,
   createdBy: string,
@@ -196,7 +196,7 @@ export async function createMapping(
 
 /** Deletes one of a provider's mappings (audited `identity.sso.mapping.deleted`). */
 export async function deleteMapping(
-  db: KobeDb,
+  db: KaijuDb,
   providerId: string,
   mappingId: string,
 ): Promise<boolean> {

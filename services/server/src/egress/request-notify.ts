@@ -12,8 +12,8 @@ import {
   withTeam,
   type EgressRequestEvent,
   type EgressRequestScope,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
 import type { MailMessage } from "../mail/mailer.js";
@@ -104,7 +104,7 @@ export function requestMessage(
   };
 }
 
-async function claim(db: KobeDb, teamId: string): Promise<Claimed[]> {
+async function claim(db: KaijuDb, teamId: string): Promise<Claimed[]> {
   return withTeam(db, teamId, async (tx) => {
     const result = await tx.execute<Claimed>(sql`
       UPDATE ${egressRequestNotifications} SET attempts = attempts + 1,
@@ -120,7 +120,7 @@ async function claim(db: KobeDb, teamId: string): Promise<Claimed[]> {
 }
 
 async function settle(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   row: Claimed,
   outcome: "sent" | "skipped" | "retry",
@@ -163,7 +163,7 @@ async function settle(
 }
 
 async function detailOf(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   requestId: string,
 ): Promise<Detail | undefined> {
@@ -186,7 +186,7 @@ async function detailOf(
 }
 
 async function stillEntitled(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   row: Claimed,
   scope: EgressRequestScope,

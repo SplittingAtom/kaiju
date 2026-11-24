@@ -18,7 +18,7 @@ describe("runMigrations role checks", () => {
 
   it("refuses an app role that is a member of the owner role", async () => {
     const suffix = testNameSuffix();
-    const sneaky = `kobe_sneaky_${suffix}`;
+    const sneaky = `kaiju_sneaky_${suffix}`;
     await admin.query(
       `CREATE ROLE ${sneaky} LOGIN NOSUPERUSER NOBYPASSRLS IN ROLE ${inject("ownerRole")}`,
     );
@@ -44,7 +44,7 @@ describe("runMigrations role checks", () => {
   });
 
   it("reports the notices migrations raise (upgrade notes in the Job log)", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "kobe-migrations-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "kaiju-migrations-"));
     try {
       await cp(DEFAULT_MIGRATIONS_FOLDER, dir, { recursive: true });
       const journalPath = path.join(dir, "meta", "_journal.json");
@@ -62,7 +62,7 @@ describe("runMigrations role checks", () => {
       await writeFile(journalPath, JSON.stringify(journal));
       await writeFile(
         path.join(dir, `${tag}.sql`),
-        "DO $$ BEGIN RAISE NOTICE 'kobe: probe notice'; END $$;",
+        "DO $$ BEGIN RAISE NOTICE 'kaiju: probe notice'; END $$;",
       );
       const notices: string[] = [];
       await runMigrations({
@@ -71,7 +71,7 @@ describe("runMigrations role checks", () => {
         migrationsFolder: dir,
         onNotice: (message) => notices.push(message),
       });
-      expect(notices).toContain("kobe: probe notice");
+      expect(notices).toContain("kaiju: probe notice");
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

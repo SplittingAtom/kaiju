@@ -26,7 +26,7 @@ export function QueuedAppCards() {
     apps.reload();
   };
   return (
-    <div className="flex flex-col gap-1" data-kobe-queued-apps>
+    <div className="flex flex-col gap-1" data-kaiju-queued-apps>
       <ul className="flex flex-wrap gap-1.5" aria-label="Apps waiting for the run">
         {apps.queued.map((view) => (
           <QueuedChip key={view.resultRef} view={view} onRemove={() => void remove(view)} />
@@ -108,7 +108,7 @@ export function DroppedAppNotice() {
     <div
       role="status"
       className="text-muted-foreground flex items-start gap-2 rounded-lg border px-3 py-2 text-sm"
-      data-kobe-dropped-apps
+      data-kaiju-dropped-apps
     >
       <p className="flex-1">
         Not added to the conversation: {names}. The app is no longer available to you here, or it

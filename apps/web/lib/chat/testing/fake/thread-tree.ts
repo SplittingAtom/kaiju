@@ -6,7 +6,7 @@ import {
   type BranchSummaryResponse,
   type CompactThreadResponse,
   type ThreadLineageResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { FakeCore } from "./core";
 import { error, json, NOW, type FakeThread, type Json } from "./state";
 

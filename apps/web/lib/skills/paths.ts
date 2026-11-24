@@ -1,4 +1,4 @@
-import { checkPackagePaths, type PackageProblemCode } from "@kobe/protocol";
+import { checkPackagePaths, type PackageProblemCode } from "@kaiju/protocol";
 
 /**
  * A new Workbench file's path, checked in the browser with the package contract's own validator

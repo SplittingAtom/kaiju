@@ -1,10 +1,10 @@
-import { sql, type KobeDb } from "@kobe/db";
+import { sql, type KaijuDb } from "@kaiju/db";
 import {
   SEMANTIC_MEMORY_EXPORT_FORMAT,
   type SemanticMemoryExportDocument,
   type SemanticMemoryExportItem,
   type SemanticMemoryExportQuery,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { audit, auditTeam, inStore } from "./context.js";
 import { notAllowed } from "./errors.js";
 import { itemColumns, type ItemRow } from "./rows.js";
@@ -18,7 +18,7 @@ import { assertEnabled, curates, type MemoryWho } from "./who.js";
  * (`memory.items.exported`, counts only). No authors, thread links or evidence leave.
  */
 export function exportItems(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   q: SemanticMemoryExportQuery,
 ): Promise<SemanticMemoryExportDocument> {

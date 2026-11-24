@@ -1,6 +1,6 @@
-import { isDangerousMode } from "@kobe/agent-file";
-import type { KobeDb, KobeTx } from "@kobe/db";
-import type { AgentMemorySetting } from "@kobe/protocol";
+import { isDangerousMode } from "@kaiju/agent-file";
+import type { KaijuDb, KaijuTx } from "@kaiju/db";
+import type { AgentMemorySetting } from "@kaiju/protocol";
 import { recordAudit } from "../../audit/record.js";
 import { auditTeam, inLocation, lockAgent, type AgentLocation, type Result } from "../store.js";
 import {
@@ -21,7 +21,7 @@ import { insertVersion } from "./publish.js";
  * rule). The draft is left alone. `unchanged` when the setting is already `memory`.
  */
 export async function setAgentMemory(
-  db: KobeDb,
+  db: KaijuDb,
   location: AgentLocation,
   id: string,
   input: {
@@ -34,7 +34,7 @@ export async function setAgentMemory(
     readonly mayUseDangerousMode: boolean;
     readonly limits?: VersionLimits;
     /** Runs in the same transaction after a successful change (KOBE-494). */
-    readonly afterWrite?: (tx: KobeTx) => Promise<void>;
+    readonly afterWrite?: (tx: KaijuTx) => Promise<void>;
   },
 ): Promise<Result<Published, PublishError>> {
   return inLocation(db, location, async (tx) => {

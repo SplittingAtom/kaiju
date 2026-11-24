@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { Envelope } from "./envelope/envelope.js";
 import { openGitCredential, rewrapGitCredential, sealGitCredential } from "./git/credential.js";
 import {
@@ -23,7 +23,7 @@ import { withTeam } from "./with-team.js";
 import { pgCodeOf } from "./pg-errors.js";
 
 /** KOBE-757 (Workspace git GIT-1): the connection and repository tables and the sealed credential. */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const teamA = randomUUID();
 const teamB = randomUUID();
 const userId = randomUUID();

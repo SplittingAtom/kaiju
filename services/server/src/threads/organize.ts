@@ -1,5 +1,5 @@
 import { endThreadRules } from "../policy/user-rules.js";
-import { and, eq, sql, threads, type KobeTx, type ThreadProjectMove } from "@kobe/db";
+import { and, eq, sql, threads, type KaijuTx, type ThreadProjectMove } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { notifyThreadAccess } from "../event-stream/access.js";
 import { canCreateInProject } from "./references.js";
@@ -39,7 +39,7 @@ import { staleMovedSuggestions } from "../memory/suggestions/rows.js";
 type Locked = { ok: true; thread: SummaryRow } | Extract<ThreadResult, { ok: false }>;
 
 async function lockOrganizable(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   lock: typeof lockForChange = lockForChange,
@@ -70,7 +70,7 @@ interface Organization {
 }
 
 async function save(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   set: Organization,
@@ -84,13 +84,13 @@ async function save(
   return { ok: true, thread: await summarizeOne(tx, viewer, row) };
 }
 
-const unchanged = async (tx: KobeTx, viewer: Viewer, row: SummaryRow): Promise<ThreadResult> => ({
+const unchanged = async (tx: KaijuTx, viewer: Viewer, row: SummaryRow): Promise<ThreadResult> => ({
   ok: true,
   thread: await summarizeOne(tx, viewer, row),
 });
 
 export async function setPinned(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   pinned: boolean,
@@ -105,7 +105,7 @@ export async function setPinned(
 }
 
 export async function setArchived(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   archived: boolean,
@@ -125,7 +125,7 @@ export async function setArchived(
 }
 
 export async function moveThread(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   projectId: string | null,
@@ -186,7 +186,7 @@ export async function moveThread(
  * and then nulls this thread like the others. Lock order: folders, then the thread.
  */
 export async function fileThread(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   folderId: string | null,

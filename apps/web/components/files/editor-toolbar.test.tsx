@@ -12,7 +12,7 @@ afterEach(cleanup);
 function Harness({ actions }: { readonly actions: readonly ToolbarAction[] }) {
   const [mode, setMode] = useState<TextMode>("rendered");
   return (
-    <div data-kobe-chat>
+    <div data-kaiju-chat>
       <EditorToolbar
         label="notes.md view"
         leading={<ModeSwitch mode={mode} onMode={setMode} />}

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { KobeNotification } from "./api";
+import type { KaijuNotification } from "./api";
 import { notificationDetail, notificationLabel, notificationTitle, scheduleLabel } from "./format";
 
-const base: KobeNotification = {
+const base: KaijuNotification = {
   notificationId: "n",
   kind: "schedule.run.succeeded",
   scheduleId: "s1",

@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 // @vitest-environment-options {"settings":{"disableIframePageLoading":true,"handleDisabledFileLoadingAsSuccess":true},"width":1280,"height":800}
-import { APP_CONTEXT_PREAMBLE } from "@kobe/protocol";
+import { APP_CONTEXT_PREAMBLE } from "@kaiju/protocol";
 import { act, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { INSERT_SETTLE_MS, settlesInsert } from "../chat/composer";
 import { BRIDGE_ATTACHED_ATTR } from "./app-frame";
@@ -15,7 +15,7 @@ import { chatRequests, composer, openApp, streaming } from "../chat/testing";
  * thread and is never sent; its `ui/update-model-context` is a visible, removable chip; only the
  * chips shown go with the member's send; a sent context shows in history as a chip.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 afterEach(() => {
   cleanup();
@@ -26,7 +26,7 @@ afterEach(() => {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   vi.stubGlobal(
     "IntersectionObserver",
@@ -103,7 +103,7 @@ async function appWindow() {
   return { send, replies };
 }
 
-const marker = () => document.querySelector("[data-kobe-app-insert-from]");
+const marker = () => document.querySelector("[data-kaiju-app-insert-from]");
 /** Lets React finish the work a key press or a click started (no fixed wait). */
 const flush = () => act(async () => {});
 
@@ -162,7 +162,7 @@ describe("ui/message and model context (KOBE-439)", () => {
     );
     // The insert is on screen (its marker too): it did not take the focus.
     await waitFor(() =>
-      expect(document.querySelector("[data-kobe-app-insert-from]")?.textContent).toContain(
+      expect(document.querySelector("[data-kaiju-app-insert-from]")?.textContent).toContain(
         "From Lakehouse Explorer",
       ),
     );

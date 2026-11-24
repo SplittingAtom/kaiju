@@ -1,4 +1,4 @@
-import { sql, type KobeDb } from "@kobe/db";
+import { sql, type KaijuDb } from "@kaiju/db";
 import type { IsolationGate } from "../../isolation/gate.js";
 import { logger } from "../../logger.js";
 import type { BlobStore } from "../../retention/blobs.js";
@@ -43,7 +43,7 @@ const OPEN_STATES = ["submitted", "in_review"];
 export const MAX_CONCURRENT_SCANS = 2;
 
 export interface ExternalScanOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore;
   readonly kube: KubeClient;
   readonly provider: Pick<SandboxProvider, "ensureTeam">;
@@ -311,7 +311,7 @@ const EMPTY: KubeObject = { apiVersion: "", kind: "", metadata: { name: "" } };
  * A submission made while the scanner is on but this server has no runner (no sandbox provider
  * or object storage, review M1): recorded `unavailable`, which the review treats as incomplete.
  */
-export async function markNoRunner(db: KobeDb, versionId: string): Promise<void> {
+export async function markNoRunner(db: KaijuDb, versionId: string): Promise<void> {
   await db.execute(sql`
     UPDATE registry_versions
        SET scan = jsonb_set(scan, '{external}', ${JSON.stringify({

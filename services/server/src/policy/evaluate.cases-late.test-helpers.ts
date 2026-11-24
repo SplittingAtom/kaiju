@@ -6,7 +6,7 @@ import {
   bash,
   read,
   write,
-  kobeWrite,
+  kaijuWrite,
   jiraCreate,
   jiraSearch,
   PROMPT_SANDBOX,
@@ -53,7 +53,7 @@ export const LATE_CASES: readonly Case[] = [
   },
   {
     name: "auto denies a Kaiju write that is not allow-listed",
-    tool: kobeWrite,
+    tool: kaijuWrite,
     options: { mode: "auto" },
     effect: "deny",
     codes: ["mode_auto_not_allowlisted", "risk_write"],
@@ -104,7 +104,7 @@ export const LATE_CASES: readonly Case[] = [
   },
   {
     name: "agent tools.allow never allow-lists in auto",
-    tool: kobeWrite,
+    tool: kaijuWrite,
     options: { mode: "auto", toolsAllow: ["share_file"] },
     effect: "deny",
     codes: ["mode_auto_not_allowlisted", "risk_write"],
@@ -128,7 +128,7 @@ export const LATE_CASES: readonly Case[] = [
   // KOBE-289: remembered approvals never apply to unattended runs (only team allow rules do).
   {
     name: "a remembered approval does not allow-list a write in auto mode",
-    tool: kobeWrite,
+    tool: kaijuWrite,
     options: { mode: "auto" },
     rules: [rule("user", "allow", "share_file")],
     effect: "deny",
@@ -154,7 +154,7 @@ export const LATE_CASES: readonly Case[] = [
     tool: jiraCreate,
     input: { project: "OPS" },
     rules: [
-      rule("user", "allow", "mcp__jira__create_issue", { arg_pattern: { "/project": "KOBE" } }),
+      rule("user", "allow", "mcp__jira__create_issue", { arg_pattern: { "/project": "KAIJU" } }),
     ],
     effect: "require_approval",
     codes: ["risk_write"],
@@ -170,9 +170,9 @@ export const LATE_CASES: readonly Case[] = [
   {
     name: "user allow with a matching arg pattern allows",
     tool: jiraCreate,
-    input: { project: "KOBE", summary: "x" },
+    input: { project: "KAIJU", summary: "x" },
     rules: [
-      rule("user", "allow", "mcp__jira__create_issue", { arg_pattern: { "/project": "KOBE" } }),
+      rule("user", "allow", "mcp__jira__create_issue", { arg_pattern: { "/project": "KAIJU" } }),
     ],
     effect: "allow",
     codes: ["user_allow_rule", "risk_write"],
@@ -197,14 +197,14 @@ export const LATE_CASES: readonly Case[] = [
   },
   {
     name: "expired user allow is ignored",
-    tool: kobeWrite,
+    tool: kaijuWrite,
     rules: [rule("user", "allow", "share_file", { expires_at: NOW.toISOString() })],
     effect: "require_approval",
     codes: ["risk_write"],
   },
   {
     name: "team allow does not lift an ask-on-write prompt",
-    tool: kobeWrite,
+    tool: kaijuWrite,
     rules: [rule("team", "allow", "share_file")],
     effect: "require_approval",
     codes: ["risk_write"],
@@ -219,7 +219,7 @@ export const LATE_CASES: readonly Case[] = [
   },
   {
     name: "team allow allow-lists a tool for auto mode",
-    tool: kobeWrite,
+    tool: kaijuWrite,
     options: { mode: "auto" },
     rules: [rule("team", "allow", "share_file")],
     effect: "allow",
@@ -235,7 +235,7 @@ export const LATE_CASES: readonly Case[] = [
   },
   {
     name: "a blanket allow rule is ignored (no bypass)",
-    tool: kobeWrite,
+    tool: kaijuWrite,
     options: { mode: "auto" },
     rules: [rule("user", "allow", "*"), rule("team", "allow", "create_*")],
     effect: "deny",
@@ -283,7 +283,7 @@ export const LATE_CASES: readonly Case[] = [
   },
   {
     name: "agent tools.allow never removes a prompt",
-    tool: kobeWrite,
+    tool: kaijuWrite,
     options: { toolsAllow: ["share_file"] },
     effect: "require_approval",
     codes: ["risk_write"],

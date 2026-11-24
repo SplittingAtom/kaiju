@@ -1,13 +1,13 @@
 import type { Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { isLockConflict, sql, withTeam, type KobeTx } from "@kobe/db";
+import { isLockConflict, sql, withTeam, type KaijuTx } from "@kaiju/db";
 import {
   isMemberDropPath,
   WORKSPACE_MOVE_MAX_FILES,
   workspaceMoveRequestSchema,
   type WorkspaceFileError,
   type WorkspaceMoveResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import type { TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
@@ -90,7 +90,7 @@ function refused(c: Ctx, outcome: Exclude<Outcome, { kind: "moved" }>, to: strin
 }
 
 /** Hints the replica holding the member's sandbox socket (if any) to send `workspace.moved`. */
-async function nudgeSandbox(tx: KobeTx, owner: { teamId: string; userId: string }) {
+async function nudgeSandbox(tx: KaijuTx, owner: { teamId: string; userId: string }) {
   const open = await tx.execute<{ connection_id: string }>(sql`
     SELECT connection_id FROM sandbox_connections
      WHERE team_id = ${owner.teamId} AND user_id = ${owner.userId} AND closed_at IS NULL`);

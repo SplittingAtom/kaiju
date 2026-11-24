@@ -1,4 +1,4 @@
-import { registrySettingsUpdateSchema, registryTeamCreateSchema } from "@kobe/protocol";
+import { registrySettingsUpdateSchema, registryTeamCreateSchema } from "@kaiju/protocol";
 import { Hono } from "hono";
 import type { AuthVariables } from "../auth/session.js";
 import { requireSitePermission, requireSkillReview } from "../authz/middleware.js";

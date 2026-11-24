@@ -101,8 +101,8 @@ export function useShownThreads(ref: { readonly current: HTMLElement | null }): 
       frame = null;
       const found = [
         ...new Set(
-          [...el.querySelectorAll<HTMLElement>("[data-kobe-thread]")].flatMap((li) => {
-            const id = li.dataset["kobeThread"];
+          [...el.querySelectorAll<HTMLElement>("[data-kaiju-thread]")].flatMap((li) => {
+            const id = li.dataset["kaijuThread"];
             return id ? [id] : [];
           }),
         ),
@@ -118,7 +118,7 @@ export function useShownThreads(ref: { readonly current: HTMLElement | null }): 
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["data-kobe-thread"],
+      attributeFilter: ["data-kaiju-thread"],
     });
     return () => {
       observer.disconnect();

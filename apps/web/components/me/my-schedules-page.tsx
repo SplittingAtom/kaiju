@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { MAX_ACTIVE_SCHEDULES_PER_USER } from "@kobe/protocol";
+import { MAX_ACTIVE_SCHEDULES_PER_USER } from "@kaiju/protocol";
 import {
   createSchedulesApi,
   type Schedule,

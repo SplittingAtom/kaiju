@@ -1,4 +1,4 @@
-import { putTeamSkillInstallSchema, uninstallSkillSchema } from "@kobe/protocol";
+import { putTeamSkillInstallSchema, uninstallSkillSchema } from "@kaiju/protocol";
 import { Hono, type Context } from "hono";
 import { z } from "zod";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";

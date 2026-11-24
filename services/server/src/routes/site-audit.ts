@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { listAuditEvents, verifyAuditChain } from "@kobe/db";
+import { listAuditEvents, verifyAuditChain } from "@kaiju/db";
 import { exportResponse, parseExportQuery } from "../audit/export/http.js";
 import { EXPORT_PAGE_SIZE } from "../audit/export/stream.js";
 import { readForwardingHealth } from "../audit/forward/state.js";

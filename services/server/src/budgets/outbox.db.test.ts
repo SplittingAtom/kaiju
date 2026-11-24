@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 import pino from "pino";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createDb, type KobeDatabase } from "@kobe/db";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createDb, type KaijuDatabase } from "@kaiju/db";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { runWithAuditContext } from "../audit/context.js";
 import { MemoryMailer } from "../testing/mailer.js";
 import {
@@ -23,7 +23,7 @@ import { setTeamBudget } from "./store.js";
 const CAP = BUDGET_EMAILS_PER_RECIPIENT_PER_DAY;
 const silent = pino({ level: "silent" });
 let database: TestDatabase;
-let replicas: KobeDatabase[];
+let replicas: KaijuDatabase[];
 let admin: pg.Client;
 
 beforeAll(async () => {
@@ -38,7 +38,7 @@ afterAll(async () => {
   await database?.drop();
 });
 
-const db = () => (replicas[0] as KobeDatabase).db;
+const db = () => (replicas[0] as KaijuDatabase).db;
 
 async function user(label: string): Promise<{ id: string; email: string }> {
   const email = `${label}-${randomUUID().slice(0, 8)}@budget-mail.test`;
@@ -104,8 +104,8 @@ async function statuses(recipient: string): Promise<Record<string, number>> {
   );
 }
 
-const deliver = (replica: KobeDatabase, mailer: MemoryMailer) =>
-  deliverBudgetEmails({ db: replica.db, mailer, publicUrl: "http://kobe.test", logger: silent });
+const deliver = (replica: KaijuDatabase, mailer: MemoryMailer) =>
+  deliverBudgetEmails({ db: replica.db, mailer, publicUrl: "http://kaiju.test", logger: silent });
 
 describe("budget email outbox (KOBE-786)", () => {
   it("a team's emails are claimed in its own pass even behind more than two batches of Site emails", async () => {
@@ -119,7 +119,7 @@ describe("budget email outbox (KOBE-786)", () => {
     const teamAdmin = await user("team-admin");
     await queue(await team(), [teamAdmin.id], 1);
     const mailer = new MemoryMailer();
-    await deliver(replicas[0] as KobeDatabase, mailer);
+    await deliver(replicas[0] as KaijuDatabase, mailer);
     expect(mailer.to(teamAdmin.email)).toHaveLength(1);
   });
 
@@ -149,7 +149,7 @@ describe("budget email outbox (KOBE-786)", () => {
     await queue(await team(), [who.id], 1);
     const mailer = new MemoryMailer();
     mailer.failNext = new Error("smtp down");
-    await deliver(replicas[0] as KobeDatabase, mailer);
+    await deliver(replicas[0] as KaijuDatabase, mailer);
     const { rows } = await admin.query<{ sent: number }>(
       `SELECT sent FROM budget_email_daily_counts WHERE recipient_id = $1`,
       [who.id],
@@ -160,7 +160,7 @@ describe("budget email outbox (KOBE-786)", () => {
   it("concurrent reservations never pass the cap", async () => {
     const who = await user("busy");
     const tries = Array.from({ length: CAP + 15 }, (_, i) =>
-      reserveBudgetEmailSlot((replicas[i % 2] as KobeDatabase).db, who.id),
+      reserveBudgetEmailSlot((replicas[i % 2] as KaijuDatabase).db, who.id),
     );
     const days = await Promise.all(tries);
     expect(days.filter((d) => d !== null)).toHaveLength(CAP);

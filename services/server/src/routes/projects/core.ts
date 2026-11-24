@@ -1,11 +1,11 @@
 import { Hono } from "hono";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import {
   createProjectRequestSchema,
   deleteProjectQuerySchema,
   listProjectsQuerySchema,
   updateProjectRequestSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { type TeamVariables } from "../../authz/middleware.js";
 import { decide } from "../../projects/access.js";
 import {

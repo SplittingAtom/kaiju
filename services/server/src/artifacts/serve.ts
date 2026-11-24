@@ -2,7 +2,7 @@ import {
   ARTIFACT_CONTENT_MAX_BYTES,
   artifactFileExtension,
   artifactFileStem,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { threadKey, type BlobStore } from "../retention/blobs.js";
 import { readCappedStream } from "../http/read-capped.js";
 

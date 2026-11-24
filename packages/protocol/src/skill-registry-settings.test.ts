@@ -55,7 +55,7 @@ describe("Registry settings (KOBE-330, SK20, SK21)", () => {
     expect(
       registryMirrorSchema.safeParse({
         enabled: true,
-        url: "https://git.example.org/kobe/catalog.git",
+        url: "https://git.example.org/kaiju/catalog.git",
       }).success,
     ).toBe(true);
     expect(

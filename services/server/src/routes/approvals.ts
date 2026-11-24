@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import { Hono } from "hono";
-import { approvalResolutionBodySchema, approveAllBodySchema } from "@kobe/protocol";
+import { approvalResolutionBodySchema, approveAllBodySchema } from "@kaiju/protocol";
 import { ApprovalError } from "../approvals/index.js";
 import { approvalListQuerySchema } from "../approvals/view.js";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";

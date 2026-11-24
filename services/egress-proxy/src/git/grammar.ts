@@ -40,7 +40,7 @@ const MAX_PATH = 1024;
 const MAX_PREFIX_SEGMENTS = 8;
 const SAFE_PATH = /^[A-Za-z0-9._\-/]+$/;
 const SEGMENT = /^[A-Za-z0-9._-]{1,100}$/;
-/** As `GIT_ORGANIZATION_PATTERN` in @kobe/db (the connection's organization). */
+/** As `GIT_ORGANIZATION_PATTERN` in @kaiju/db (the connection's organization). */
 const OWNER = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
 /** As `assertRepositoryName` on the server: one segment, never `.`/`..`, no trailing `.git`. */
 const REPOSITORY = /^[A-Za-z0-9._-]{1,100}$/;

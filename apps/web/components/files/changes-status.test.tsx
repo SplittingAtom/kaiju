@@ -29,7 +29,7 @@ function editor(props: Partial<Parameters<typeof FileEditor>[0]> = {}) {
 describe("file editor change status (KOBE-496)", () => {
   it("keeps an empty live region mounted, then fills it with the badge", async () => {
     const view = render(editor());
-    const region = document.querySelector("[data-kobe-changes-status]");
+    const region = document.querySelector("[data-kaiju-changes-status]");
     expect(region?.getAttribute("role")).toBe("status");
     expect(region?.textContent).toBe("");
     const reload = vi.fn();
@@ -46,7 +46,7 @@ describe("file editor change status (KOBE-496)", () => {
       ),
     );
     // The same element, now with the text: announced as a change of a live region.
-    expect(document.querySelector("[data-kobe-changes-status]")).toBe(region);
+    expect(document.querySelector("[data-kaiju-changes-status]")).toBe(region);
     expect(region?.textContent).toContain("The agent changed this file just now.");
     screen.getByRole("button", { name: "Reload notes.md" }).click();
     expect(reload).toHaveBeenCalledTimes(1);

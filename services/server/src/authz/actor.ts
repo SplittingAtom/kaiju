@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { ActorContext } from "@kobe/protocol";
+import type { ActorContext } from "@kaiju/protocol";
 import type { TeamVariables } from "./middleware.js";
 
 /** The verified caller (session + active team), never taken from the request body. */

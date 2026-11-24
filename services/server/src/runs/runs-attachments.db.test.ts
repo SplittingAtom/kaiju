@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { UPLOAD_ATTACHMENT_ROOT } from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+import { UPLOAD_ATTACHMENT_ROOT } from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { storageUsed } from "../uploads/quota.js";
 import type { Person } from "../testing/event-stream-fixture.js";
 import { RawBody } from "../testing/browser.js";
@@ -21,7 +21,7 @@ import { logger } from "../logger.js";
  */
 const f = new RunFixture();
 const objects = new MemoryObjects();
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const blobs = { objects, prefix: PREFIX };
 const settings: UploadSettings = {
   maxFileBytes: 1000,

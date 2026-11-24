@@ -1,4 +1,4 @@
-import type { AnswerFeedback, PutFeedbackBody, ThreadFeedback } from "@kobe/protocol";
+import type { AnswerFeedback, PutFeedbackBody, ThreadFeedback } from "@kaiju/protocol";
 import {
   ANSWER_FEEDBACK_MODEL_MAX_CHARS,
   agentEvalCases,
@@ -11,8 +11,8 @@ import {
   sql,
   threadEntries,
   type AgentScope,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuTx,
+} from "@kaiju/db";
 import { caseCutoff, liveCase } from "../eval-cases/visibility.js";
 import { findThread, type SummaryRow, type Viewer } from "../threads/repository.js";
 
@@ -88,7 +88,7 @@ type RunHead = {
 
 /** The ended message run `runId` on a thread the viewer may read and rate, or why not. */
 async function rateableRun(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   runId: string,
 ): Promise<FeedbackResult<{ run: RunHead; thread: SummaryRow }>> {
@@ -127,7 +127,7 @@ const NO_AGENT: AgentSnapshot = {
  * the model is then unknown). The scope is the thread's: a thread keeps its agent.
  */
 async function agentSnapshot(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   thread: SummaryRow,
@@ -171,7 +171,7 @@ async function agentSnapshot(
  * entry of the run's thread; a change without one keeps the stored entry.
  */
 export async function rateAnswer(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   runId: string,
   body: PutFeedbackBody,
@@ -227,7 +227,7 @@ export async function rateAnswer(
  * cleared rating's id, or null when there was none.
  */
 export async function clearRating(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   runId: string,
 ): Promise<string | null> {
@@ -249,7 +249,7 @@ export async function clearRating(
  * each. A thread in Trash or a test thread has none.
  */
 export async function threadFeedback(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   threadId: string,
 ): Promise<FeedbackResult<ThreadFeedback>> {

@@ -11,7 +11,7 @@ import {
   updateSiteRule,
   writePromptSandboxWrites,
 } from "../policy/rule-store.js";
-import { rememberLimitsSchema } from "@kobe/protocol";
+import { rememberLimitsSchema } from "@kaiju/protocol";
 import {
   readSiteRememberLimits,
   writeSiteRememberLimits,

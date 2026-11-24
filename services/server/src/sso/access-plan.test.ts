@@ -35,26 +35,26 @@ describe("normalizeIdpValues", () => {
 
 describe("desiredTeamRoles (§7 rule 1)", () => {
   const mappings = [
-    { claimValue: "kobe.fin.member", teamId: T1, role: "member" as const },
-    { claimValue: "kobe.fin.admin", teamId: T1, role: "team_admin" as const },
-    { claimValue: "kobe.fin.builder", teamId: T1, role: "contributor" as const },
-    { claimValue: "kobe.mkt.member", teamId: T2, role: "member" as const },
+    { claimValue: "kaiju.fin.member", teamId: T1, role: "member" as const },
+    { claimValue: "kaiju.fin.admin", teamId: T1, role: "team_admin" as const },
+    { claimValue: "kaiju.fin.builder", teamId: T1, role: "contributor" as const },
+    { claimValue: "kaiju.mkt.member", teamId: T2, role: "member" as const },
   ];
 
   it("takes the highest role among the matched mappings per team", () => {
     const d = desiredTeamRoles(mappings, [
-      "kobe.fin.member",
-      "kobe.fin.builder",
-      "kobe.mkt.member",
+      "kaiju.fin.member",
+      "kaiju.fin.builder",
+      "kaiju.mkt.member",
     ]);
     expect(Object.fromEntries(d)).toEqual({ [T1]: "contributor", [T2]: "member" });
-    expect(desiredTeamRoles(mappings, ["kobe.fin.admin", "kobe.fin.member"]).get(T1)).toBe(
+    expect(desiredTeamRoles(mappings, ["kaiju.fin.admin", "kaiju.fin.member"]).get(T1)).toBe(
       "team_admin",
     );
   });
 
   it("matches values exactly (case and whitespace matter)", () => {
-    expect(desiredTeamRoles(mappings, ["KOBE.FIN.ADMIN", " kobe.fin.admin"]).size).toBe(0);
+    expect(desiredTeamRoles(mappings, ["KAIJU.FIN.ADMIN", " kaiju.fin.admin"]).size).toBe(0);
   });
 
   it("is empty when no value matches (§7 rule 5)", () => {

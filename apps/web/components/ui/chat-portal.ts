@@ -1,9 +1,9 @@
 /**
  * Marks content portalled out of a drawer or sheet (Radix popovers, tooltips, and the chat's
- * dialogs with `data-kobe-portal`): a press or Escape there is not "outside" the layer
+ * dialogs with `data-kaiju-portal`): a press or Escape there is not "outside" the layer
  * (use-modal-layer.ts).
  */
-export const CHAT_PORTALLED = "[data-radix-popper-content-wrapper], [data-kobe-portal]";
+export const CHAT_PORTALLED = "[data-radix-popper-content-wrapper], [data-kaiju-portal]";
 
 /**
  * Where the chat's portals (tooltips, dialogs, menus) mount. The colour tokens are on `:root`
@@ -17,12 +17,12 @@ export const CHAT_PORTALLED = "[data-radix-popper-content-wrapper], [data-kobe-p
 export function chatPortalContainer(): HTMLElement | undefined {
   // Rendered on the server too (the bar's icon links, KOBE-197): no document there.
   if (typeof document === "undefined") return undefined;
-  return document.querySelector<HTMLElement>("[data-kobe-chat]") ?? consolePortalContainer();
+  return document.querySelector<HTMLElement>("[data-kaiju-chat]") ?? consolePortalContainer();
 }
 
 /**
  * Where the consoles' portals (confirm dialogs, KOBE-294) mount: the console root
- * (`[data-kobe-console]`, the console and My-area shells), so they take the console's font and
+ * (`[data-kaiju-console]`, the console and My-area shells), so they take the console's font and
  * colours and its scoped rules (app/admin/admin-global.css). The tokens are on `:root`, so both
  * themes resolve there; the shell has no transform, so fixed overlays still cover the viewport.
  */
@@ -30,7 +30,7 @@ export function consolePortalContainer(): HTMLElement | undefined {
   if (typeof document === "undefined") return undefined;
   return (
     document.querySelector<HTMLElement>(`[${CONSOLE_PORTAL}]`) ??
-    document.querySelector<HTMLElement>("[data-kobe-console]") ??
+    document.querySelector<HTMLElement>("[data-kaiju-console]") ??
     undefined
   );
 }
@@ -41,16 +41,16 @@ export function consolePortalContainer(): HTMLElement | undefined {
  * confirm dialog covers the whole window, panel included, with the console's scoped rules. Marked
  * as portalled content for the chat's modal layers (`CHAT_PORTALLED`). Created once, kept.
  */
-export const CONSOLE_PORTAL = "data-kobe-console-portal";
+export const CONSOLE_PORTAL = "data-kaiju-console-portal";
 
 export function ensureConsolePortal(): HTMLElement | undefined {
   if (typeof document === "undefined") return undefined;
   const found = document.querySelector<HTMLElement>(`[${CONSOLE_PORTAL}]`);
   if (found) return found;
   const root = document.createElement("div");
-  root.setAttribute("data-kobe-console", "");
+  root.setAttribute("data-kaiju-console", "");
   root.setAttribute(CONSOLE_PORTAL, "");
-  root.setAttribute("data-kobe-portal", "");
+  root.setAttribute("data-kaiju-portal", "");
   document.body.append(root);
   return root;
 }

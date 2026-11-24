@@ -7,7 +7,7 @@ import { consoleHref } from "../../lib/admin/nav/registry";
 import { Notice } from "../ui/console";
 
 /** Fired by the Isolation page after a re-check, with `detail` = the new state. */
-export const ISOLATION_EVENT = "kobe:isolation";
+export const ISOLATION_EVENT = "kaiju:isolation";
 
 /**
  * Spec D4: without a gVisor/Kata runtime "the admin console shows the fix". Site pages show

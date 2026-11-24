@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { sql, withTeam, type KobeDb, type KobeTx, type SandboxCommandKind } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx, type SandboxCommandKind } from "@kaiju/db";
 import type { SandboxBus } from "./bus.js";
 import { slotOf, targetForThread } from "./slots.js";
 import type { CommandOutcome, SandboxTarget } from "./types.js";
@@ -41,7 +41,7 @@ export interface LiveConnection {
  * `sandbox_eval_connections` (KOBE-325), never the member's row.
  */
 export async function liveConnection(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: SandboxTarget,
   staleMs: number,
 ): Promise<LiveConnection | undefined> {
@@ -70,7 +70,7 @@ export async function liveConnection(
  * `target.evalThreadId` naming another thread is refused.
  */
 export async function enqueueCommand(
-  db: KobeDb,
+  db: KaijuDb,
   bus: SandboxBus,
   input: {
     readonly target: SandboxTarget;
@@ -125,7 +125,7 @@ export async function enqueueCommand(
 
 /** Requester side: the result if there is one (and deletes the row: it carries content). */
 export async function takeResult(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   id: string,
 ): Promise<CommandOutcome | undefined> {
@@ -140,7 +140,7 @@ export async function takeResult(
 
 /** Requester side: gives up on a command still open (deadline passed), then takes its result. */
 export async function expireCommand(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   id: string,
 ): Promise<CommandOutcome> {
@@ -161,7 +161,7 @@ export async function expireCommand(
 
 /** Holder side: the oldest pending commands of a sandbox, in creation order. */
 export async function pendingCommands(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: SandboxTarget,
   limit: number,
 ): Promise<CommandRow[]> {
@@ -190,7 +190,7 @@ export async function pendingCommands(
 
 /** Holder side: claims a pending command for this connection; false if someone else did. */
 export async function markDelivered(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   id: string,
   connectionId: string,
@@ -207,7 +207,7 @@ export async function markDelivered(
  * must match the delivering connection: a result is only valid on the connection it was issued on.
  */
 export async function completeCommand(
-  tx: KobeTx,
+  tx: KaijuTx,
   bus: SandboxBus,
   teamId: string,
   id: string,
@@ -231,7 +231,7 @@ export async function completeCommand(
 
 /** Delivered commands of a sandbox whose connection is gone (reconciled at the next `hello`). */
 export async function orphanedDeliveries(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: SandboxTarget,
   currentConnectionId: string,
 ): Promise<{ id: string; kind: SandboxCommandKind; runId: string | null }[]> {

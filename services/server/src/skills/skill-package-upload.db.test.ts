@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { strToU8, unzipSync, zipSync, type Zippable } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
-import { packageHash, runtimeHash } from "@kobe/protocol/node";
+import { packageHash, runtimeHash } from "@kaiju/protocol/node";
 import { blockedAmong } from "./blocklist.js";
 import { RawBody, type TestBrowser } from "../testing/browser.js";
 import { openHarness, type Harness } from "../testing/harness.js";
@@ -33,7 +33,7 @@ const manifest = (version: string, name = "packaged") =>
   `apiVersion: kobe.dev/skill/v1\nname: ${name}\nversion: ${version}\nsummary: Packaged.\nchangelog: From the manifest.\n`;
 
 beforeAll(async () => {
-  h = await openHarness({ blobs: { objects, prefix: "kobe/" } });
+  h = await openHarness({ blobs: { objects, prefix: "kaiju/" } });
   const id = await h.createUser("pkg@skills.test");
   await h.admin.query(`INSERT INTO teams (id, slug, name) VALUES ($1, 'pkg', 'Pkg')`, [team]);
   await h.admin.query(

@@ -1,14 +1,14 @@
 "use client";
 
 import { ShieldAlertIcon } from "lucide-react";
-import type { KobeEventPayload } from "@kobe/protocol";
+import type { KaijuEventPayload } from "@kaiju/protocol";
 import { changeRows } from "../../lib/chat/admin-change";
 import { visible } from "../../lib/security/visible";
 import { cn } from "../../lib/utils";
 import { toneClass } from "../ui/status";
 import styles from "./chat.module.css";
 
-type Requested = KobeEventPayload<"approval.requested">;
+type Requested = KaijuEventPayload<"approval.requested">;
 
 const RISK_LABEL: Record<Requested["risk"], string> = {
   read: "Reads data",
@@ -86,7 +86,7 @@ export function AdminChange({
 }) {
   const rows = changeRows(input);
   return (
-    <div data-kobe-admin-change="">
+    <div data-kaiju-admin-change="">
       <p className={styles.who}>
         Scope: <strong>{visible(admin.scope_label)}</strong>
       </p>

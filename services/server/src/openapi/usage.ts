@@ -1,4 +1,4 @@
-import { thinkingLevelSchema } from "@kobe/protocol";
+import { thinkingLevelSchema } from "@kaiju/protocol";
 import { z } from "zod";
 
 /**

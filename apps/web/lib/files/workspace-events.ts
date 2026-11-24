@@ -8,7 +8,7 @@
  * drop or sleep). A stream the server ended or refused is opened again after a bounded backoff,
  * unless `probe` says the page's team is no longer the active one: then it stops.
  */
-import { WORKSPACE_EVENT_TYPES, workspaceEventSchema, type WorkspaceEvent } from "@kobe/protocol";
+import { WORKSPACE_EVENT_TYPES, workspaceEventSchema, type WorkspaceEvent } from "@kaiju/protocol";
 import "../security/zod-jitless";
 import {
   browserEventSource,

@@ -14,7 +14,7 @@ import {
   type ThreadActivityStore,
 } from "../../lib/chat/thread-activity";
 import { StatusDot } from "../ui/status";
-import { ChatSessionContext } from "./kobe-runtime";
+import { ChatSessionContext } from "./kaiju-runtime";
 import styles from "./chat.module.css";
 
 const EMPTY: ActivitySnapshot = { live: new Map(), polled: null, unread: new Set() };

@@ -1,4 +1,10 @@
-import { RUN_SKILL_USES_MAX, sql, type KobeTx, type RunSkillRef, type RunSkillUse } from "@kobe/db";
+import {
+  RUN_SKILL_USES_MAX,
+  sql,
+  type KaijuTx,
+  type RunSkillRef,
+  type RunSkillUse,
+} from "@kaiju/db";
 import { matchSkillRead, skillUsesFrom } from "./detect.js";
 
 /**
@@ -13,7 +19,7 @@ const MAX_LOOKUPS = 32;
 
 /** Records the skills a run was started with. `replace`: a recovery restart re-resolved them. */
 export async function recordRunSkillRefsInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   refs: readonly RunSkillRef[],
@@ -31,7 +37,7 @@ export async function recordRunSkillRefsInTx(
  * stored `tool.call` input. Each tool call counts once, at most {@link RUN_SKILL_USES_MAX} per run.
  */
 export async function recordSkillUsesInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   events: readonly { readonly type: string; readonly payload: unknown }[],
@@ -65,7 +71,7 @@ function isReadSuccess(e: { readonly type: string; readonly payload: unknown }):
 
 /** Uses among results whose `tool.call` is already in `run_events` (an earlier batch). */
 async function earlierCalls(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   toolCallIds: readonly string[],
@@ -145,7 +151,7 @@ export function skillUsageQuery(teamId: string, skill: UsageSkill) {
  * the team (RLS and an explicit team filter).
  */
 export async function skillUsageInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   skill: UsageSkill,
 ): Promise<SkillUsage> {
@@ -197,7 +203,7 @@ export function skillUpdatesOf(
 
 /** {@link skillUpdatesOf} for a run about to start, from the thread's earlier started runs. */
 export async function skillUpdatesInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   runId: string,

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { BRANDING_ASSET_MAX_BYTES, siteBrandingSchema } from "@kobe/protocol";
+import { BRANDING_ASSET_MAX_BYTES, siteBrandingSchema } from "@kaiju/protocol";
 import { REQUIRE_TWO_FACTOR } from "../auth/session.js";
 import { readAppName } from "./settings.js";
 import { brandingCache } from "./store.js";
@@ -31,7 +31,7 @@ function multipart(
   files: { name: string; data: Uint8Array; type?: string }[],
   fields: Record<string, string> = {},
 ) {
-  const boundary = "----kobebranding";
+  const boundary = "----kaijubranding";
   const parts: Buffer[] = [];
   for (const [k, v] of Object.entries(fields)) {
     parts.push(
@@ -445,7 +445,7 @@ describe("Logo takes the theme colour (KOBE-562)", () => {
     const markup = Buffer.from(served.bytes).toString();
     expect(sha(served.bytes)).toBe(inlineUrl.split("v=")[1]);
     expect(markup).not.toMatch(/style|#f00|body/);
-    expect(markup).toContain('<path id="kobe-logo-a" d="M0 0h10v10z" fill="currentColor"/>');
+    expect(markup).toContain('<path id="kaiju-logo-a" d="M0 0h10v10z" fill="currentColor"/>');
     // The upload itself is still served as uploaded.
     const raw = await as.anon.get(branding.logo.url);
     expect(Buffer.from(raw.bytes).equals(Buffer.from(hostile))).toBe(true);

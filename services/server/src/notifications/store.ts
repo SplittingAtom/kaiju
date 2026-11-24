@@ -9,8 +9,8 @@ import {
   type Notification,
   type NotificationKind,
   type SchedulePausedBy,
-} from "@kobe/protocol";
-import { sql, withTeam, type KobeDb, type KobeTx, makeCursorCodec } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, withTeam, type KaijuDb, type KaijuTx, makeCursorCodec } from "@kaiju/db";
 import { z } from "zod";
 import { FAILURE_MESSAGES } from "../git/conversion/refusals.js";
 
@@ -163,7 +163,7 @@ const mine = (v: Viewer) =>
       OR kind IN ('skill.member_add.blocked', 'skill.version.site_published')
       OR kind LIKE 'team.%' OR kind LIKE 'memory.%' OR kind LIKE 'git.%')`;
 
-async function unreadCount(tx: KobeTx, v: Viewer): Promise<number> {
+async function unreadCount(tx: KaijuTx, v: Viewer): Promise<number> {
   const res = await tx.execute<{ n: number }>(sql`
     SELECT count(*)::int AS n FROM notifications WHERE ${mine(v)} AND read_at IS NULL`);
   return res.rows[0]?.n ?? 0;
@@ -171,7 +171,7 @@ async function unreadCount(tx: KobeTx, v: Viewer): Promise<number> {
 
 /** Newest first; `cursor` must come from `decodeCursor` (null = first page). */
 export async function listNotifications(
-  db: KobeDb,
+  db: KaijuDb,
   v: Viewer,
   query: Omit<ListNotificationsQuery, "cursor">,
   cursor: Cursor | null,
@@ -223,7 +223,7 @@ export async function listNotifications(
 
 /** Marks the caller's listed (or all) notifications read; already-read ones are not counted. */
 export async function markNotificationsRead(
-  db: KobeDb,
+  db: KaijuDb,
   v: Viewer,
   body: MarkNotificationsReadBody,
 ): Promise<MarkNotificationsReadResponse> {

@@ -8,8 +8,8 @@ import {
   assignAgentRequestSchema,
   updateAgentRosterEntryRequestSchema,
   type AgentRosterErrorCode,
-} from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import type { RosterActor, RosterTarget, SiteRosterActor } from "../agents/access.js";
 import { entryView, teamEntry } from "../agents/roster.js";
 import { decodeCursor, listRoster } from "../agents/roster-list.js";

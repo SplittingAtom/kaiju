@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { composer, openApp, streaming } from "../chat/testing";
 
@@ -12,7 +12,7 @@ import { composer, openApp, streaming } from "../chat/testing";
  * (prose, reasoning, other tool cards) is behind a collapsed "Show response", in its original
  * order. Text cards, failed loads, approvals and problems render as before; Copy copies the text.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 afterEach(() => {
   cleanup();
@@ -22,7 +22,7 @@ afterEach(() => {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   // happy-dom never lays out: every card is in view.
   vi.stubGlobal(

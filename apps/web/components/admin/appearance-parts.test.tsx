@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { BRANDING_ASSET_CONTENT_TYPES, type SiteBranding } from "@kobe/protocol";
+import { BRANDING_ASSET_CONTENT_TYPES, type SiteBranding } from "@kaiju/protocol";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
@@ -196,7 +196,7 @@ describe("Appearance uploads", () => {
 
   it("takes only files on the drop zone", () => {
     render(<AssetField kind="logo" branding={BRANDING} onApplied={() => undefined} />);
-    const zone = must(document.querySelector('[data-kobe-drop="logo"]'));
+    const zone = must(document.querySelector('[data-kaiju-drop="logo"]'));
     fireEvent.dragOver(zone, { dataTransfer: { types: ["text/plain"], files: [] } });
     expect(zone.hasAttribute("data-dragging")).toBe(false);
     fireEvent.dragOver(zone, { dataTransfer: { types: ["Files"], files: [] } });
@@ -340,7 +340,7 @@ describe("Appearance preview", () => {
     script.nonce = "n0nce";
     document.head.append(script);
     render(<AppearancePreview branding={BRANDING} css={previewCss({ preset: "plum" })} />);
-    const style = must(document.querySelector("style[data-kobe-preview]"));
+    const style = must(document.querySelector("style[data-kaiju-preview]"));
     expect(style.textContent).toContain(brandingCss({ preset: "plum" }, "#preview-light"));
     expect(style.textContent).toContain(brandingCss({ preset: "plum" }, "#preview-dark"));
     expect(style.getAttribute("nonce")).toBe("n0nce");

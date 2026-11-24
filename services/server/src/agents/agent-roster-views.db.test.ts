@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { createApp } from "../app.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
 import { seedGalleryAgents } from "../gallery/seed.js";
-import { KOBE_GALLERY_KEY } from "../gallery/definitions.js";
-import { withTeam } from "@kobe/db";
+import { KAIJU_GALLERY_KEY } from "../gallery/definitions.js";
+import { withTeam } from "@kaiju/db";
 import { defaultNewThreadPin } from "./default-agent.js";
 import { waitForAppSessionsToClose } from "../testing/app-sessions.js";
 import { TestBrowser } from "../testing/browser.js";
@@ -19,7 +19,7 @@ import { fakeIsolation } from "../testing/isolation.js";
  * owner's Reach, `actions.adopt`, the fork's binding and lineage on rows, the picker's groups and
  * the team default agent. Own throwaway database.
  */
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 const ANY = { "if-match": "*" };
 
@@ -368,15 +368,15 @@ describe("Fork binding and lineage on rows (AR8, §6.7)", () => {
 });
 
 describe("Team default agent (§7.7) and picker groups (AR15)", () => {
-  let kobe = "";
+  let kaiju = "";
   let lent = "";
   let mine = "";
 
   beforeAll(async () => {
     const [seeded] = await seedGalleryAgents(deps.database.db, [
-      { key: KOBE_GALLERY_KEY, generation: 1, file: "---\nname: Kobe\n---\nYou are Kobe.\n" },
+      { key: KAIJU_GALLERY_KEY, generation: 1, file: "---\nname: Kobe\n---\nYou are Kobe.\n" },
     ]);
-    kobe = seeded?.agentId ?? "";
+    kaiju = seeded?.agentId ?? "";
     lent = await personal("bob", "Bob Default");
     expect((await assign("bob", lent, "team")).status).toBe(201);
     mine = await personal("carol", "Carol Private");
@@ -393,7 +393,7 @@ describe("Team default agent (§7.7) and picker groups (AR15)", () => {
     expect(read.json.agentId).toBeNull();
     const options = read.json.options as { agentId: string; group: string }[];
     expect(options).toContainEqual(expect.objectContaining({ agentId: lent, group: "team" }));
-    expect(options).toContainEqual(expect.objectContaining({ agentId: kobe, group: "site" }));
+    expect(options).toContainEqual(expect.objectContaining({ agentId: kaiju, group: "site" }));
     expect(options.some((o) => o.agentId === mine)).toBe(false);
 
     expect((await as.bob.put("/v1/team/default-agent", { agentId: lent })).status).toBe(403);
@@ -405,7 +405,7 @@ describe("Team default agent (§7.7) and picker groups (AR15)", () => {
   });
 
   it("new threads in that team use it; other teams and an unset team use the site default", async () => {
-    expect((await pinOf("carol", finance))?.agentId).toBe(kobe);
+    expect((await pinOf("carol", finance))?.agentId).toBe(kaiju);
     const set = await as.alice.put("/v1/team/default-agent", { agentId: lent });
     expect(set.status, JSON.stringify(set.json)).toBe(200);
     expect(set.json.agentId).toBe(lent);
@@ -417,7 +417,7 @@ describe("Team default agent (§7.7) and picker groups (AR15)", () => {
     expect(await audited("team.default_agent_changed")).toHaveLength(1);
 
     expect(await pinOf("carol", finance)).toMatchObject({ agentId: lent, agentVersion: 1 });
-    expect((await pinOf("dave", marketing))?.agentId).toBe(kobe);
+    expect((await pinOf("dave", marketing))?.agentId).toBe(kaiju);
     const runnable = await as.carol.get("/v1/agents/runnable?limit=200");
     const listed = runnable.json.agents as { id: string; default?: true; group: string }[];
     expect(listed.filter((a) => a.default).map((a) => a.id)).toEqual([lent]);
@@ -426,7 +426,7 @@ describe("Team default agent (§7.7) and picker groups (AR15)", () => {
     expect((await as.bob.delete(`/v1/agents/${lent}/assignments/team`)).status).toBe(200);
     const after = await as.carol.get("/v1/team/default-agent");
     expect(after.json).toMatchObject({ agentId: lent, unavailable: true });
-    expect((await pinOf("carol", finance))?.agentId).toBe(kobe);
+    expect((await pinOf("carol", finance))?.agentId).toBe(kaiju);
     expect((await assign("bob", lent, "team")).status).toBe(201);
 
     const cleared = await as.alice.put("/v1/team/default-agent", { agentId: null });
@@ -435,7 +435,7 @@ describe("Team default agent (§7.7) and picker groups (AR15)", () => {
       agentId: null,
       previousAgentId: lent,
     });
-    expect((await pinOf("carol", finance))?.agentId).toBe(kobe);
+    expect((await pinOf("carol", finance))?.agentId).toBe(kaiju);
   });
 
   it("falls back to the site default when the team default is suspended or archived", async () => {
@@ -453,7 +453,7 @@ describe("Team default agent (§7.7) and picker groups (AR15)", () => {
     const status = (s: string) =>
       as.alice.request("PUT", `/v1/agents/${owned}/status`, { status: s }, ANY);
     expect((await status("suspended")).status).toBe(200);
-    expect((await pinOf("carol", finance))?.agentId).toBe(kobe);
+    expect((await pinOf("carol", finance))?.agentId).toBe(kaiju);
     expect((await as.carol.get("/v1/team/default-agent")).json.unavailable).toBe(true);
     expect((await status("active")).status).toBe(200);
     expect((await pinOf("carol", finance))?.agentId).toBe(owned);
@@ -462,7 +462,7 @@ describe("Team default agent (§7.7) and picker groups (AR15)", () => {
     expect((await as.bob.request("DELETE", `/v1/agents/${owned}`, undefined, ANY)).status).toBe(
       200,
     );
-    expect((await pinOf("carol", finance))?.agentId).toBe(kobe);
+    expect((await pinOf("carol", finance))?.agentId).toBe(kaiju);
     expect((await as.carol.get("/v1/team/default-agent")).json.unavailable).toBe(true);
     expect((await as.alice.put("/v1/team/default-agent", { agentId: null })).status).toBe(200);
   });
@@ -488,6 +488,6 @@ describe("Team default agent (§7.7) and picker groups (AR15)", () => {
       (runnable.json.agents as { id: string; group: string }[]).find((a) => a.id === id)?.group;
     expect(group(mine)).toBe("personal");
     expect(group(lent)).toBe("team");
-    expect(group(kobe)).toBe("site");
+    expect(group(kaiju)).toBe("site");
   });
 });

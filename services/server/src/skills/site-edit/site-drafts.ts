@@ -1,8 +1,8 @@
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { BlobStore } from "../../retention/blobs.js";
 import { blockedAmong } from "../blocklist.js";
 import { DRAFT_LIMITS, SKILL_MD_PATH, draftContent, draftPathProblem } from "../drafts/files.js";
-import { detachInTx } from "./kobe-detach.js";
+import { detachInTx } from "./kaiju-detach.js";
 import { isSiteAdmin } from "./site-admin.js";
 import {
   RETIRED_STATUSES,
@@ -61,15 +61,15 @@ class Refused extends Error {
   }
 }
 
-async function requireAdmin(tx: KobeTx, userId: string): Promise<void> {
+async function requireAdmin(tx: KaijuTx, userId: string): Promise<void> {
   if (!(await isSiteAdmin(tx, userId))) throw new Refused({ error: "forbidden" });
 }
 
 /** Runs `fn` as a Site admin; a refusal thrown inside rolls back and comes back as a failure. */
 export async function asSiteAdmin<T>(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
-  fn: (tx: KobeTx) => Promise<T>,
+  fn: (tx: KaijuTx) => Promise<T>,
 ): Promise<SiteDraftOutcome<T>> {
   try {
     const value = await db.transaction(async (tx) => {
@@ -113,7 +113,7 @@ const DRAFT_COLUMNS = sql`d.id, d.skill_id, d.base_version_id, d.rev, d.size_byt
   d.updated_at, u.name AS updated_by`;
 
 export async function draftOf(
-  tx: KobeTx | KobeDb,
+  tx: KaijuTx | KaijuDb,
   skillId: string,
   lock = false,
 ): Promise<SiteDraftRecord | null> {
@@ -124,7 +124,7 @@ export async function draftOf(
   return r ? recordOf(r) : null;
 }
 
-export async function draftFiles(tx: KobeTx | KobeDb, draftId: string): Promise<SiteDraftFile[]> {
+export async function draftFiles(tx: KaijuTx | KaijuDb, draftId: string): Promise<SiteDraftFile[]> {
   const { rows } = await tx.execute<{
     path: string;
     size: number;
@@ -142,7 +142,7 @@ export async function draftFiles(tx: KobeTx | KobeDb, draftId: string): Promise<
 }
 
 export async function draftFile(
-  tx: KobeTx | KobeDb,
+  tx: KaijuTx | KaijuDb,
   draftId: string,
   path: string,
 ): Promise<{ bytes: Uint8Array; kind: "text" | "binary" } | null> {
@@ -157,7 +157,7 @@ export async function draftFile(
 }
 
 export async function allDraftFiles(
-  tx: KobeTx | KobeDb,
+  tx: KaijuTx | KaijuDb,
   draftId: string,
 ): Promise<Map<string, Uint8Array>> {
   const { rows } = await tx.execute<{
@@ -177,7 +177,7 @@ export async function allDraftFiles(
 }
 
 async function putFile(
-  tx: KobeTx,
+  tx: KaijuTx,
   draftId: string,
   path: string,
   bytes: Uint8Array,
@@ -195,7 +195,7 @@ async function putFile(
 }
 
 /** The next revision, its size and count recomputed from the files (same transaction). */
-async function bump(tx: KobeTx, draftId: string, userId: string): Promise<void> {
+async function bump(tx: KaijuTx, draftId: string, userId: string): Promise<void> {
   await tx.execute(sql`
     UPDATE site_skill_drafts d SET rev = d.rev + 1, updated_by = ${userId}, updated_at = now(),
       size_bytes = COALESCE((SELECT sum(size) FROM site_skill_draft_files f WHERE f.draft_id = d.id), 0),
@@ -205,7 +205,7 @@ async function bump(tx: KobeTx, draftId: string, userId: string): Promise<void> 
 
 /** Locks the skill row; refuses a retired one. */
 export async function lockedSkill(
-  tx: KobeTx,
+  tx: KaijuTx,
   skillId: string,
 ): Promise<{ name: string; publisher: "kobe" | "maintainer"; status: string }> {
   const { rows } = await tx.execute<{
@@ -223,7 +223,7 @@ export async function lockedSkill(
 }
 
 /** Any of the skill's versions' bytes on the blocklist: it can't be edited back in. */
-export async function refuseBlocklisted(tx: KobeTx, hashes: readonly string[]): Promise<void> {
+export async function refuseBlocklisted(tx: KaijuTx, hashes: readonly string[]): Promise<void> {
   if ((await blockedAmong(tx, hashes)).length > 0) refuse({ error: "blocklisted" });
 }
 
@@ -233,7 +233,7 @@ const READ_ONLY_PATHS = new Set(["provenance.json"]);
 const DRAFT_SOURCE_STATES: readonly string[] = ["approved", "deprecated", "withdrawn"];
 
 /** The version's state; `suspended` while a rescan's Block holds it. */
-async function versionState(db: KobeDb, versionId: string): Promise<string | null> {
+async function versionState(db: KaijuDb, versionId: string): Promise<string | null> {
   const { rows } = await db.execute<{ state: string }>(sql`
     SELECT CASE WHEN suspended_at IS NOT NULL THEN 'suspended' ELSE state::text END AS state
       FROM registry_versions WHERE id = ${versionId}`);
@@ -245,7 +245,7 @@ async function versionState(db: KobeDb, versionId: string): Promise<string | nul
  * one is answered `draft_exists` unless `replace`. A Kaiju skill is detached here.
  */
 export async function startSiteDraft(
-  deps: { readonly db: KobeDb; readonly blobs: BlobStore },
+  deps: { readonly db: KaijuDb; readonly blobs: BlobStore },
   userId: string,
   skillId: string,
   versionId: string,
@@ -313,7 +313,7 @@ export async function startSiteDraft(
 }
 
 /** The draft at `rev`, locked; a stale revision names who changed it. */
-async function lockedAt(tx: KobeTx, skillId: string, rev: number): Promise<SiteDraftRecord> {
+async function lockedAt(tx: KaijuTx, skillId: string, rev: number): Promise<SiteDraftRecord> {
   await lockedSkill(tx, skillId);
   const draft = await draftOf(tx, skillId, true);
   if (!draft) return refuse({ error: "not_found" });
@@ -324,7 +324,7 @@ async function lockedAt(tx: KobeTx, skillId: string, rev: number): Promise<SiteD
 
 /** Bytes a write of `path` may still take (checked again under the lock). */
 export async function writeRoom(
-  db: KobeDb,
+  db: KaijuDb,
   skillId: string,
   path: string,
 ): Promise<{ room: number; skillMd: boolean } | null> {
@@ -337,7 +337,7 @@ export async function writeRoom(
 }
 
 export function writeSiteDraftFile(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   skillId: string,
   rev: number,
@@ -375,7 +375,7 @@ export function writeSiteDraftFile(
 }
 
 export function deleteSiteDraftFile(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   skillId: string,
   rev: number,
@@ -396,7 +396,7 @@ export function deleteSiteDraftFile(
 
 /** Discards the draft (the skill stays detached until Reset to Kaiju). */
 export function discardSiteDraft(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   skillId: string,
 ): Promise<SiteDraftOutcome<{ discarded: true }>> {

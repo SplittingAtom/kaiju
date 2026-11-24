@@ -1,8 +1,14 @@
 /**
  * The guide's text routes' HTTP side (KOBE-616). The texts themselves (`llmsTxt`, `llmsFullTxt`,
- * `pageMarkdown`) come from `@kobe/guide` (KOBE-620), shared with the server's docs tools.
+ * `pageMarkdown`) come from `@kaiju/guide` (KOBE-620), shared with the server's docs tools.
  */
-export { llmsFullTxt, llmsTxt, pageMarkdown, pageMarkdownUrl, type LlmsContext } from "@kobe/guide";
+export {
+  llmsFullTxt,
+  llmsTxt,
+  pageMarkdown,
+  pageMarkdownUrl,
+  type LlmsContext,
+} from "@kaiju/guide";
 
 /** A weak ETag over the body (FNV-1a, 32 bit): the same text gets the same tag on every replica. */
 export function etagOf(body: string): string {

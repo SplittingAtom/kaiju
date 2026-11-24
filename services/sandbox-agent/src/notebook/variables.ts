@@ -7,7 +7,7 @@ import {
   NOTEBOOK_VARIABLES_MAX_BYTES,
   notebookVariablesSnapshotSchema,
   type NotebookVariablesResult,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { InspectLimits, InspectResult } from "./session.js";
 
 /**

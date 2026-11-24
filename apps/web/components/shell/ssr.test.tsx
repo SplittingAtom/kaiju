@@ -7,7 +7,7 @@ import { ChatApp } from "../chat/chat-app";
 describe("server render", () => {
   it("renders the shell without browser globals", () => {
     const html = renderToString(<ChatApp />);
-    expect(html).toContain("data-kobe-chat");
+    expect(html).toContain("data-kaiju-chat");
     expect(html).toContain('data-bar-row="1"');
     // One row since KOBE-418.
     expect(html).not.toContain('data-bar-row="2"');

@@ -1,4 +1,4 @@
-import { storedVerdict, type ScanResult } from "@kobe/skill-scanner";
+import { storedVerdict, type ScanResult } from "@kaiju/skill-scanner";
 import {
   SYSTEM_ACTOR,
   and,
@@ -11,9 +11,9 @@ import {
   teamSkillReviews,
   teamSkillVersions,
   withTeam,
-  type KobeDb,
+  type KaijuDb,
   type StoredFinding,
-} from "@kobe/db";
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import type { BlobStore } from "../retention/blobs.js";
@@ -32,7 +32,7 @@ import { storedScan } from "./review.js";
 export const BATCH = 50;
 
 export interface RowContext {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore;
   readonly log: Pick<Logger, "info" | "warn" | "error">;
   /** The rule set's ordinal and name. */
@@ -200,7 +200,7 @@ export interface ReviewKey {
 }
 
 /** The bundle and author of one review row's version (team table inside `withTeam`). */
-export async function versionOf(db: KobeDb, teamId: string, row: ReviewKey) {
+export async function versionOf(db: KaijuDb, teamId: string, row: ReviewKey) {
   if (row.scope === "team") {
     const [v] = await withTeam(db, teamId, (tx) =>
       tx

@@ -6,7 +6,7 @@ import {
   SEMANTIC_MEMORY_STATEMENT_MAX,
   SEMANTIC_MEMORY_TAGS_MAX,
   codePointLength,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ItemKind } from "../../lib/memory/items-api";
 import { Field, Select, TextInput, Textarea } from "../ui/console";
 

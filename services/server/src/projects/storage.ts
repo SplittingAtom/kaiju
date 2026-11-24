@@ -1,5 +1,5 @@
-import { sql, type KobeTx } from "@kobe/db";
-import { PROJECT_HISTORY_MAX_COMMITS } from "@kobe/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
+import { PROJECT_HISTORY_MAX_COMMITS } from "@kaiju/protocol";
 import { z } from "zod";
 import { recordAudit } from "../audit/record.js";
 import {
@@ -56,7 +56,7 @@ export interface TeamLimits {
  * {@link checkLimitsAfterWrite}, in the write's own transaction.
  */
 export async function overLimit(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   limits: TeamLimits,
   bytes: number,
@@ -89,7 +89,7 @@ export class OverLimit extends Error {
  * counters already hold the added bytes and objects. The caller rolls back on the throw.
  */
 export async function checkLimitsAfterWrite(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   limits: TeamLimits,
   added: { readonly bytes: number; readonly objects: number },
@@ -106,7 +106,7 @@ export async function checkLimitsAfterWrite(
 }
 
 /** The team's history rule (GV3); a malformed value counts as `all`. */
-export async function historyKeep(tx: KobeTx, teamId: string): Promise<HistoryKeep> {
+export async function historyKeep(tx: KaijuTx, teamId: string): Promise<HistoryKeep> {
   const res = await tx.execute<{ v: unknown }>(sql`
     SELECT settings -> ${HISTORY_KEEP_SETTING} AS v FROM teams WHERE id = ${teamId}`);
   const parsed = historyKeepSchema.safeParse(res.rows[0]?.v);
@@ -147,7 +147,7 @@ export interface StorageView {
 
 /** `GET /v1/team/storage` (team admins): totals, limits, settings, per scratchspace and project. */
 export async function storageView(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   limits: TeamLimits & { readonly historyMaxCommits: number },
 ): Promise<StorageView> {
@@ -217,7 +217,7 @@ const SETTINGS_OBJECT = sql`CASE WHEN jsonb_typeof(settings) = 'object' THEN set
 
 /** Writes the settings a team admin changed and audits the result (`project.storage_settings_changed`). */
 export async function writeStorageSettings(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   body: StorageSettings,

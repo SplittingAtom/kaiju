@@ -1,4 +1,4 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 import { localNamedSkills } from "../runs/resolver-input.js";
 import { blockedAmong } from "../skills/blocklist.js";
 import {
@@ -30,7 +30,7 @@ export interface Frozen {
 
 /** The manifest a publish of `names` in this team writes now (inside `withTeam`). */
 export async function freezeLocalSkills(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   names: readonly string[],
 ): Promise<Frozen> {
@@ -65,7 +65,7 @@ export interface SkillUpdate {
  * publish is listed with why it still can't load, or with the version that now can.
  */
 export async function skillUpdates(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   names: readonly string[],
   manifest: SkillManifest,

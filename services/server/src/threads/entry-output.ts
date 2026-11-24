@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import type { BlobStore } from "../retention/blobs.js";
 import { readOffloadedJson, type OffloadedFailure } from "./offloaded-body.js";
 
@@ -114,7 +114,7 @@ export type OutputLookup =
  * `cutText`'s, the same as everywhere else.
  */
 export async function findToolOutput(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   entryId: string,

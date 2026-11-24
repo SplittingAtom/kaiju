@@ -1,4 +1,4 @@
-import { ACCENT_PATTERN, deriveAccent, type FontStack, type ThemeSettings } from "@kobe/protocol";
+import { ACCENT_PATTERN, deriveAccent, type FontStack, type ThemeSettings } from "@kaiju/protocol";
 import {
   FONT_STACK_VALUES,
   MONO_STACK_VALUES,
@@ -43,10 +43,10 @@ function render(scope: string, light: Declarations, dark: Declarations): string 
   return `${rule(scope, light)}${darkBody}@media (prefers-color-scheme: dark) {\n${osDark}}\n`;
 }
 
-/** `--kobe-font-mono` only for a typeface that changes it (catalyst); else theme.css's stands. */
+/** `--kaiju-font-mono` only for a typeface that changes it (catalyst); else theme.css's stands. */
 function monoStack(font: FontStack): Declarations {
   const value = MONO_STACK_VALUES[font];
-  return value === undefined ? [] : [["--kobe-font-mono", value]];
+  return value === undefined ? [] : [["--kaiju-font-mono", value]];
 }
 
 function shape(theme: ThemeSettings): { light: Declarations; dark: Declarations } | null {
@@ -55,19 +55,19 @@ function shape(theme: ThemeSettings): { light: Declarations; dark: Declarations 
     if (!ACCENT_PATTERN.test(theme.accent)) return null;
     const d = deriveAccent(theme.accent);
     const scheme = (k: "light" | "dark"): Declarations => [
-      ["--kobe-brand-primary", d.primary[k]],
-      ["--kobe-brand-primary-hover", d.primaryHover[k]],
-      ["--kobe-brand-primary-fg", d.primaryFg[k]],
-      ["--kobe-brand-link", d.link[k]],
-      ["--kobe-brand-focus", d.focus[k]],
-      ["--ring", "var(--kobe-brand-focus)"],
-      ["--kobe-composer-focus", "var(--kobe-brand-focus)"],
+      ["--kaiju-brand-primary", d.primary[k]],
+      ["--kaiju-brand-primary-hover", d.primaryHover[k]],
+      ["--kaiju-brand-primary-fg", d.primaryFg[k]],
+      ["--kaiju-brand-link", d.link[k]],
+      ["--kaiju-brand-focus", d.focus[k]],
+      ["--ring", "var(--kaiju-brand-focus)"],
+      ["--kaiju-composer-focus", "var(--kaiju-brand-focus)"],
     ];
     return {
       light: [
         ...scheme("light"),
         ...RADIUS_TOKENS.map((t) => [t, RADIUS_SCALES[theme.corners][t]] as const),
-        ["--kobe-font-sans", FONT_STACK_VALUES[theme.font]],
+        ["--kaiju-font-sans", FONT_STACK_VALUES[theme.font]],
         ...monoStack(theme.font),
       ],
       dark: scheme("dark"),
@@ -79,7 +79,7 @@ function shape(theme: ThemeSettings): { light: Declarations; dark: Declarations 
     light: [
       ...PRESET_SCHEME_TOKENS.map((t) => [t, preset.light[t]] as const),
       ...RADIUS_TOKENS.map((t) => [t, RADIUS_SCALES[preset.corners][t]] as const),
-      ["--kobe-font-sans", FONT_STACK_VALUES[preset.font]],
+      ["--kaiju-font-sans", FONT_STACK_VALUES[preset.font]],
       ...monoStack(preset.font),
     ],
     dark: PRESET_SCHEME_TOKENS.map((t) => [t, preset.dark[t]] as const),

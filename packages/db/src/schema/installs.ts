@@ -21,7 +21,7 @@ import { teams } from "./teams.js";
 // What teams and members run from the Site Skills Catalog (KOBE-311, spec SK6–SK8, SK25). Team
 // tables: team_id NOT NULL, ENABLE + FORCE RLS with the canonical policy (custom migration). They
 // reference the site-wide catalog (no cascade from it: catalog rows are never deleted) and their
-// own team. The closed sets mirror `@kobe/protocol` skill-catalog.ts.
+// own team. The closed sets mirror `@kaiju/protocol` skill-catalog.ts.
 
 export const skillPinMode = pgEnum("skill_pin_mode", ["pinned", "within_major", "latest"]);
 export type SkillPinModeValue = (typeof skillPinMode.enumValues)[number];

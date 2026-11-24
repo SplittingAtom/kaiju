@@ -1,5 +1,5 @@
 import { Hono, type Context } from "hono";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { appResultViews, readAppResult } from "../apps/thread-results.js";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";

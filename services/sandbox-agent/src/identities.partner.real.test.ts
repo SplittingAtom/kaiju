@@ -96,7 +96,7 @@ describe.runIf(HELPER !== undefined)("paired partner uids with the real helper (
   beforeAll(async () => {
     umask = process.umask(0o077);
     identities = await loadPiIdentities(HELPER as string, 2);
-    scratch = await mkdtemp(path.join("/dev/shm", "kobe-partner-"));
+    scratch = await mkdtemp(path.join("/dev/shm", "kaiju-partner-"));
     await chmod(scratch, 0o755);
   });
   afterAll(async () => {

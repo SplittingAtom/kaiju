@@ -108,7 +108,7 @@ esac
 
 cd "$root"
 # The server's workspace dependencies are consumed from dist/ (turbo caches the build).
-pnpm turbo run build --filter '@kobe/server^...' --output-logs=errors-only >&2
+pnpm turbo run build --filter '@kaiju/server^...' --output-logs=errors-only >&2
 if [[ "$mode" != extractor ]]; then
   cd services/server
   exec pnpm exec vitest run -c vitest.eval.config.ts "src/testing/memory-eval/$file"

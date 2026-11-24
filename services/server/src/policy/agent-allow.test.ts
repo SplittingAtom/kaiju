@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUILTIN_TOOLS, builtinToolDescriptor, type ToolDescriptor } from "@kobe/protocol";
+import { BUILTIN_TOOLS, builtinToolDescriptor, type ToolDescriptor } from "@kaiju/protocol";
 import { allowListLimits, hiddenBuiltins, namesBuiltin } from "./agent-allow.js";
 import { checkAgentTools } from "./gates.js";
 

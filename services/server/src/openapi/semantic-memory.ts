@@ -22,10 +22,10 @@ import {
   restoreSemanticMemoryItemSchema,
   semanticMemoryItemDetailSchema,
   semanticMemoryListResponseSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
- * OpenAPI for semantic memory (v1.3, KOBE-377 contract; schemas in `@kobe/protocol`
+ * OpenAPI for semantic memory (v1.3, KOBE-377 contract; schemas in `@kaiju/protocol`
  * semantic-memory/). Under `/v1/memory/semantic/` so no Notes route (`/v1/memory/:id`) can answer
  * them. Documented before the routes exist: KOBE-378 mounts the item routes,
  * KOBE-384/385 import and export, KOBE-380 the steward routes. Wire scopes are

@@ -76,7 +76,7 @@ describe("context capture (KOBE-470)", () => {
   });
 
   it("writes the newest call atomically (0640) and skips summaries", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-ctx-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-ctx-"));
     const file = path.join(dir, "kobe-context.json");
     const recorder = new ContextRecorder(file, { now: () => NOW });
     recorder.record(MODEL, { messages: [{ role: "user", content: "one" }] }, undefined, answer(1));

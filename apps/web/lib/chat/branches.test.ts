@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 /** KOBE-545 (CT2): the `branches` read and its triggers. */
 import { act, renderHook, waitFor } from "@testing-library/react";
-import type { ThreadBranchesResponse } from "@kobe/protocol";
+import type { ThreadBranchesResponse } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { BRANCHES_REREAD_MS, EMPTY_BRANCHES, readThreadBranches } from "./branches";
 import { useBranches } from "./use-branches";
-import { FakeKobe } from "./testing/fake-kobe";
+import { FakeKaiju } from "./testing/fake-kaiju";
 
 const T = "0b0b0b0b-0000-4000-8000-000000000001";
 const OTHER = "0b0b0b0b-0000-4000-8000-000000000002";
@@ -44,7 +44,7 @@ describe("readThreadBranches", () => {
 
 describe("the fake's branches route", () => {
   it("answers what a test set, empty by default, 500 when failing", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const id = fake.addThread("Budget");
     expect(await readThreadBranches(id, fake.teamId, fake.fetch)).toEqual(EMPTY_BRANCHES);
     fake.branches.set(id, answer);

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import {
   gitConnections,
   gitConversions,
@@ -19,8 +19,8 @@ import { pgCodeOf } from "./pg-errors.js";
  * and removed with their conversion or connection (the foreign keys); team-isolated by RLS.
  */
 type NewNotification = typeof notifications.$inferInsert;
-let app: KobeDatabase;
-let owner: KobeDatabase;
+let app: KaijuDatabase;
+let owner: KaijuDatabase;
 const teamA = randomUUID();
 const teamB = randomUUID();
 const userId = randomUUID();

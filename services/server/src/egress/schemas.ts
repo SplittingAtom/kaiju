@@ -1,5 +1,5 @@
-import { EGRESS_PRESETS, MAX_HOST_LENGTH, parseDomainPattern } from "@kobe/db";
-import { EGRESS_BLOCKED_REASONS } from "@kobe/protocol";
+import { EGRESS_PRESETS, MAX_HOST_LENGTH, parseDomainPattern } from "@kaiju/db";
+import { EGRESS_BLOCKED_REASONS } from "@kaiju/protocol";
 import { z } from "zod";
 
 /** An admin-entered domain pattern, canonicalized (`PyPI.org` → `pypi.org`, IDNA → ASCII). */

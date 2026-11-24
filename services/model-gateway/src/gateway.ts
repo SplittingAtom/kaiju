@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import type { ServerCallClaims } from "@kobe/protocol";
-import { telemetryState, traceNodeRequest, type RequestSpan } from "@kobe/telemetry";
+import type { ServerCallClaims } from "@kaiju/protocol";
+import { telemetryState, traceNodeRequest, type RequestSpan } from "@kaiju/telemetry";
 import type { Resolution } from "./principals.js";
 import { resolveRunAttribution } from "./run-attribution.js";
 import { placeRequestSpan } from "./trace-placement.js";

@@ -1,5 +1,8 @@
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { FileEditProposeFrame, FileEditProposeResultFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type {
+  FileEditProposeFrame,
+  FileEditProposeResultFrame,
+} from "@kaiju/protocol/sandbox-wire";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
 
@@ -14,7 +17,7 @@ import { PendingRequests } from "./pending-requests.js";
 export const MAX_PENDING_PROPOSALS = 32;
 export const MAX_PENDING_PROPOSALS_PER_THREAD = 4;
 
-type ProposeRequest = Extract<KobeToolsRequest, { op: "file.edit_propose" }>;
+type ProposeRequest = Extract<KaijuToolsRequest, { op: "file.edit_propose" }>;
 
 export interface FileEditBrokerDeps {
   /** Send a frame now; false when the wire is not ready. */
@@ -37,7 +40,7 @@ export class FileEditBroker {
     threadId: string,
     runId: string | undefined,
     request: ProposeRequest,
-    reply: (response: KobeToolsResponse) => void,
+    reply: (response: KaijuToolsResponse) => void,
   ): void {
     if (runId === undefined) {
       reply(toolsError(request.id, "not_allowed", "no active run on this thread"));

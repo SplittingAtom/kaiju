@@ -3,7 +3,7 @@ import {
   provenanceSchema,
   skillImportOriginSchema,
   type SkillProvenance,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { externalScannerOn, queuedScan } from "./external-scan-result.js";
 import {
   and,
@@ -12,15 +12,15 @@ import {
   sql,
   teamSkillSettings,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type TeamRole,
   isUniqueViolation,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { teamRoleAllows } from "../../authz/permissions.js";
 import type { BlobStore } from "../../retention/blobs.js";
-import { ensureObject, scanDocument } from "../kobe-seed.js";
+import { ensureObject, scanDocument } from "../kaiju-seed.js";
 import type { SkillStore } from "../skill-store.js";
 import { submissionRight } from "./maintainers.js";
 import {
@@ -45,7 +45,7 @@ import {
  */
 
 export interface PromoteDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly store: SkillStore;
   readonly blobs: BlobStore;
 }
@@ -68,7 +68,7 @@ export type PromoteResult =
 const forbidden = (message: string) => ({ ok: false, code: "forbidden", message }) as const;
 
 /** The Builders-may-promote setting (SK19, default off). */
-async function buildersMayPromote(tx: KobeTx, teamId: string): Promise<boolean> {
+async function buildersMayPromote(tx: KaijuTx, teamId: string): Promise<boolean> {
   const [row] = await tx
     .select({ on: teamSkillSettings.buildersMayPromote })
     .from(teamSkillSettings)
@@ -153,7 +153,7 @@ export class SubmitRefusedError extends Error {
 }
 
 /** The request's row lock; throws {@link RequestClosedError} unless it is still pending. */
-async function lockOpenRequest(tx: KobeTx, teamId: string, id: string): Promise<void> {
+async function lockOpenRequest(tx: KaijuTx, teamId: string, id: string): Promise<void> {
   const res = await tx.execute<{ state: string }>(sql`
     SELECT state FROM skill_promotion_requests WHERE team_id = ${teamId} AND id = ${id} FOR UPDATE`);
   if (res.rows[0]?.state !== "pending") throw new RequestClosedError();
@@ -161,7 +161,7 @@ async function lockOpenRequest(tx: KobeTx, teamId: string, id: string): Promise<
 
 /** The catalog skill for the plan's name: the existing one, or a new one (maintainer-published). */
 async function catalogSkill(
-  tx: KobeTx,
+  tx: KaijuTx,
   plan: PromotionPlan,
 ): Promise<{ id: string; created: boolean }> {
   if (plan.catalogSkillId) return { id: plan.catalogSkillId, created: false };
@@ -367,7 +367,7 @@ export async function promote(
 }
 
 async function request(
-  db: KobeDb,
+  db: KaijuDb,
   plan: PromotionPlan,
   source: PromoteSource,
   userId: string,
@@ -418,7 +418,7 @@ export interface PendingRequest {
   readonly createdAt: string;
 }
 
-export async function pendingRequests(db: KobeDb, teamId: string): Promise<PendingRequest[]> {
+export async function pendingRequests(db: KaijuDb, teamId: string): Promise<PendingRequest[]> {
   const rows = await withTeam(db, teamId, (tx) =>
     tx
       .select({
@@ -438,7 +438,7 @@ export async function pendingRequests(db: KobeDb, teamId: string): Promise<Pendi
   return rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
 }
 
-async function pending(db: KobeDb, teamId: string, id: string) {
+async function pending(db: KaijuDb, teamId: string, id: string) {
   return (await pendingRequests(db, teamId)).find((r) => r.id === id) ?? null;
 }
 
@@ -506,7 +506,7 @@ const CLOSED = {
 } as const;
 
 /** A request's state, or null when the team has no such request. */
-async function requestState(db: KobeDb, teamId: string, id: string): Promise<string | null> {
+async function requestState(db: KaijuDb, teamId: string, id: string): Promise<string | null> {
   const [row] = await withTeam(db, teamId, (tx) =>
     tx
       .select({ state: skillPromotionRequests.state })
@@ -516,7 +516,7 @@ async function requestState(db: KobeDb, teamId: string, id: string): Promise<str
   return row?.state ?? null;
 }
 
-async function packageHashOf(db: KobeDb, teamId: string, id: string): Promise<string | null> {
+async function packageHashOf(db: KaijuDb, teamId: string, id: string): Promise<string | null> {
   const [row] = await withTeam(db, teamId, (tx) =>
     tx
       .select({ hash: skillPromotionRequests.packageHash })
@@ -527,7 +527,7 @@ async function packageHashOf(db: KobeDb, teamId: string, id: string): Promise<st
 }
 
 export async function declineRequest(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   id: string,
   admin: string,

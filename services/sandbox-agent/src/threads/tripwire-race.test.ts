@@ -60,7 +60,7 @@ afterEach(async () => {
 });
 
 async function tempDir(): Promise<string> {
-  dir = await mkdtemp(path.join(tmpdir(), "kobe-tripwire-race-"));
+  dir = await mkdtemp(path.join(tmpdir(), "kaiju-tripwire-race-"));
   return dir;
 }
 

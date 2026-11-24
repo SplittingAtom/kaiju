@@ -251,7 +251,7 @@ export function FileBrowser({
         <FileTreeView
           tree={projectsTree}
           label="Projects"
-          idPrefix="kobe-projects-row"
+          idPrefix="kaiju-projects-row"
           actions={projectActions}
           focusRequest={focusRequest}
           onFocusChange={focusFrom.projects}

@@ -1,8 +1,8 @@
 import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { FileOpenResultFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { FileOpenResultFrame } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PushPathError, type PushedFile } from "../workspace/sync.js";
 import { FileOpenBroker, MAX_PENDING_OPENS_PER_THREAD } from "./file-open-broker.js";
@@ -12,7 +12,7 @@ const RUN = "6c7d8e9f-0a1b-4c2d-9e3f-4a5b6c7d8e9f";
 const SHA = "a".repeat(64);
 const SETTLE_MS = 15_000;
 
-type OpenRequest = Extract<KobeToolsRequest, { op: "file.open" }>;
+type OpenRequest = Extract<KaijuToolsRequest, { op: "file.open" }>;
 const request = (p: string, id = "kt_1"): OpenRequest => ({
   id,
   op: "file.open",
@@ -24,7 +24,7 @@ const request = (p: string, id = "kt_1"): OpenRequest => ({
 let base: string;
 let root: string;
 beforeEach(async () => {
-  base = await realpath(await mkdtemp(path.join(tmpdir(), "kobe-openbroker-")));
+  base = await realpath(await mkdtemp(path.join(tmpdir(), "kaiju-openbroker-")));
   root = path.join(base, "workspace");
   await mkdir(path.join(root, "notes"), { recursive: true });
   await writeFile(path.join(root, "notes", "plan.md"), "# Plan\n");
@@ -36,7 +36,7 @@ afterEach(() => rm(base, { recursive: true, force: true }));
 function setup(options: { push?: ((rel: string) => Promise<PushedFile>) | null } = {}) {
   const frames: Record<string, unknown>[] = [];
   const order: string[] = [];
-  const replies: KobeToolsResponse[] = [];
+  const replies: KaijuToolsResponse[] = [];
   const push =
     options.push === null
       ? undefined
@@ -54,7 +54,7 @@ function setup(options: { push?: ((rel: string) => Promise<PushedFile>) | null }
     },
     pushPath: push,
   });
-  const reply = (r: KobeToolsResponse) => replies.push(r);
+  const reply = (r: KaijuToolsResponse) => replies.push(r);
   const settle = async (outcomes = 1) => {
     await vi.waitFor(() => expect(frames.length + replies.length).toBe(outcomes), {
       timeout: SETTLE_MS,

@@ -5,14 +5,14 @@ import {
   projectHistoryResponseSchema,
   projectListResponseSchema,
   projectSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
-import { FakeKobe } from "../fake-kobe";
+import { FakeKaiju } from "../fake-kaiju";
 import { call, expectContract } from "./contract";
 
 describe("fake projects area: answers parse with the protocol (KOBE-717)", () => {
   it("lists projects, their files and history; imports; commits a proposal", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const id = fake.addProject("Budget");
     fake.projectFiles.set(id, ["plan.md"]);
     fake.projectHeads.set(id, { seq: 2, files: new Map([["plan.md", "x"]]) });
@@ -36,7 +36,7 @@ describe("fake projects area: answers parse with the protocol (KOBE-717)", () =>
   });
 
   it("fails on a deliberate drift", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     fake.addProject("Budget");
     const { body } = await call(fake, "GET", "/v1/projects");
     const list = body as { projects: Record<string, unknown>[] };

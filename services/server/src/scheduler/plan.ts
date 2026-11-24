@@ -1,4 +1,4 @@
-import type { ScheduleRecurrence } from "@kobe/protocol";
+import type { ScheduleRecurrence } from "@kaiju/protocol";
 import { nextOccurrence } from "../schedules/recurrence.js";
 
 /**

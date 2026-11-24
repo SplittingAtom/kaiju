@@ -1,7 +1,7 @@
 import { unzipSync } from "fflate";
-import { scanSkillBundle } from "@kobe/skill-scanner";
+import { scanSkillBundle } from "@kaiju/skill-scanner";
 import { describe, expect, it } from "vitest";
-import { loadKobePackages } from "./kobe-packages.js";
+import { loadKaijuPackages } from "./kaiju-packages.js";
 
 /**
  * Pins each builtin Kaiju skill's scan (verdict and finding rule ids), scanned exactly as the seed
@@ -27,7 +27,7 @@ const PINNED: Readonly<Record<string, { verdict: string; rules: readonly string[
 describe("builtin skill scans", () => {
   it("match the pinned verdicts and finding rules", async () => {
     const actual: Record<string, { verdict: string; rules: string[] }> = {};
-    for (const p of await loadKobePackages()) {
+    for (const p of await loadKaijuPackages()) {
       const entries = unzipSync(p.bundle.packageZip ?? p.bundle.zip);
       const scan = scanSkillBundle(
         Object.entries(entries).map(([path, bytes]) => ({ path, bytes })),

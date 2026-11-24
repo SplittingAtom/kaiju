@@ -1,4 +1,4 @@
-import { KOBE_MODEL_ERROR_PREFIX, type ModelRunErrorCode } from "./protocol.js";
+import { KAIJU_MODEL_ERROR_PREFIX, type ModelRunErrorCode } from "./protocol.js";
 
 /**
  * What a failed model request means (KOBE-41): the gateway's error code (KOBE-40 `sendError`:
@@ -128,15 +128,15 @@ export function runErrorCode(failure: Failure): ModelRunErrorCode {
 }
 
 /**
- * The `errorMessage` the server reads (`parseKobeModelError`). Built from fixed parts only: it
+ * The `errorMessage` the server reads (`parseKaijuModelError`). Built from fixed parts only: it
  * must not read as transient to Pi's own auto-retry (`isRetryableAssistantError` matches status
  * numbers and words like "rate limit", "overloaded"), and the gateway's code is network text
  * (`rate_limited` would match) — it goes to stderr (`warn`) per attempt instead.
  */
-export function kobeErrorMessage(
+export function kaijuErrorMessage(
   code: ModelRunErrorCode,
   _failure: Failure,
   attempts: number,
 ): string {
-  return `${KOBE_MODEL_ERROR_PREFIX}${code}: gave up after ${attempts} attempt${attempts === 1 ? "" : "s"}`;
+  return `${KAIJU_MODEL_ERROR_PREFIX}${code}: gave up after ${attempts} attempt${attempts === 1 ? "" : "s"}`;
 }

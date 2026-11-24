@@ -7,10 +7,10 @@ import {
   projectTreeEntries,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
-import { PROJECT_MOUNTS_MAX_PER_MEMBER, PROJECT_WORKSPACE_DIR } from "@kobe/protocol";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import { PROJECT_MOUNTS_MAX_PER_MEMBER, PROJECT_WORKSPACE_DIR } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import type { WorkspaceSync } from "../workspace-sync/service.js";
 import { listLive, lockWorkspace } from "../workspace-sync/store.js";
@@ -51,7 +51,7 @@ export interface ProjectMounts {
   /** Every member of the team: a project's members mode changed, so who lost access is not listed by it. */
   reconcileTeam(teamId: string): Promise<boolean>;
   /** In the caller's transaction: the same as {@link reconcileUser} (for tests and run start). */
-  reconcileUserIn(tx: KobeTx, teamId: string, userId: string): Promise<void>;
+  reconcileUserIn(tx: KaijuTx, teamId: string, userId: string): Promise<void>;
 }
 
 interface Desired {
@@ -81,7 +81,7 @@ export const MOUNTS_MAX_SETTING = "projects.max_mounted_per_member";
  * mounts out (the cap, MT3). `checkedOut` = the subset with a checkout.
  */
 export async function openProjects(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   options: { excludeThreadId?: string; creatorRule?: boolean } = {},
@@ -117,7 +117,7 @@ export async function openProjects(
 }
 
 /** The workspace's cap on open projects per member (MT3): the team setting, else the default. */
-export async function mountLimit(tx: KobeTx, teamId: string): Promise<number> {
+export async function mountLimit(tx: KaijuTx, teamId: string): Promise<number> {
   const res = await tx.execute<{ v: unknown }>(sql`
     SELECT settings -> ${MOUNTS_MAX_SETTING} AS v FROM teams WHERE id = ${teamId}`);
   const v = res.rows[0]?.v;
@@ -132,7 +132,7 @@ export async function mountLimit(tx: KobeTx, teamId: string): Promise<number> {
  * the thread being moved no longer keeps its old project open.
  */
 export async function mountCapRefusal(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { teamId: string; userId: string },
   projectId: string,
   movingThreadId?: string,
@@ -164,7 +164,7 @@ interface Mounts {
 }
 
 /** The files a user should see, by mount path, and the checked-out folders to leave alone. */
-async function desiredFor(tx: KobeTx, teamId: string, userId: string): Promise<Mounts> {
+async function desiredFor(tx: KaijuTx, teamId: string, userId: string): Promise<Mounts> {
   const wanted = new Map<string, Desired>();
   const skipped = new Map<string, number>();
   const { ids, checkedOut } = await openProjects(tx, teamId, userId);
@@ -219,7 +219,7 @@ async function desiredFor(tx: KobeTx, teamId: string, userId: string): Promise<M
   return { wanted, working, skipped };
 }
 
-async function diff(tx: KobeTx, teamId: string, userId: string) {
+async function diff(tx: KaijuTx, teamId: string, userId: string) {
   const { wanted, working, skipped } = await desiredFor(tx, teamId, userId);
   const current = new Map(
     (await listLive(tx, { teamId, userId }, AREA, LIST_LIMIT))
@@ -241,7 +241,7 @@ async function diff(tx: KobeTx, teamId: string, userId: string) {
 type Warn = Pick<Logger, "warn">;
 
 async function reconcile(
-  tx: KobeTx,
+  tx: KaijuTx,
   sync: WorkspaceSync,
   teamId: string,
   userId: string,
@@ -285,7 +285,7 @@ async function reconcile(
  * under an older rule, or a removal whose reconcile was missed). The second set matters for file
  * removal: the object is deleted only once no workspace names it.
  */
-async function membersOf(tx: KobeTx, teamId: string, projectId: string): Promise<string[]> {
+async function membersOf(tx: KaijuTx, teamId: string, projectId: string): Promise<string[]> {
   const res = await tx.execute<{ user_id: string }>(sql`
     SELECT owner_user_id AS user_id FROM threads
      WHERE team_id = ${teamId} AND project_id = ${projectId} AND deleted_at IS NULL
@@ -301,7 +301,7 @@ async function membersOf(tx: KobeTx, teamId: string, projectId: string): Promise
   return res.rows.map((r) => r.user_id);
 }
 
-export function createProjectMounts(db: KobeDb, log: Pick<Logger, "warn">): ProjectMounts {
+export function createProjectMounts(db: KaijuDb, log: Pick<Logger, "warn">): ProjectMounts {
   let sync: WorkspaceSync | undefined;
   const reconcileUsers = async (teamId: string, userIds: readonly string[]): Promise<boolean> => {
     const store = sync;

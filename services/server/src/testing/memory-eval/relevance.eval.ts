@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync, writeSync } from "node:fs";
 import { dirname } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { readRunCandidates } from "../../memory/items/run-memory.js";
 import { recallItems } from "../../memory/items/recall-items.js";
 import { startVectorLeg } from "../../memory/items/vector-leg.js";
@@ -206,7 +206,7 @@ describe("memory relevance eval (KOBE-387)", () => {
     expect([...lanesSeen].sort()).toEqual(["portable", "site", "team", "user"]);
     const report = summarise(results, set.queries);
     say(
-      `\nKOBE-387 memory relevance: ${set.items.length} items, ${set.queries.length} queries\n\n${formatRelevanceReport(report)}\n`,
+      `\nKAIJU-387 memory relevance: ${set.items.length} items, ${set.queries.length} queries\n\n${formatRelevanceReport(report)}\n`,
     );
     const misses = results
       .filter((r) => r.recall.relevance < 1)
@@ -215,7 +215,7 @@ describe("memory relevance eval (KOBE-387)", () => {
     const hybridReport = endpoint ? summarise(hybrid, set.queries) : undefined;
     if (endpoint && hybridReport) {
       say(
-        `\nKOBE-409 hybrid (${endpoint.model}): keyword-only recall@8 ${report.overall.relevance.toFixed(3)} → hybrid ${hybridReport.overall.relevance.toFixed(3)}; ` +
+        `\nKAIJU-409 hybrid (${endpoint.model}): keyword-only recall@8 ${report.overall.relevance.toFixed(3)} → hybrid ${hybridReport.overall.relevance.toFixed(3)}; ` +
           `KOBE-664 recall tool ${(report.overall.recallTool ?? 0).toFixed(3)} → hybrid ${(hybridReport.overall.recallTool ?? 0).toFixed(3)}; ` +
           `query embed latency p50 ${quantile(latencies, 0.5).toFixed(1)} ms, p95 ${quantile(latencies, 0.95).toFixed(1)} ms\n\n${formatRelevanceReport(hybridReport)}\n`,
       );

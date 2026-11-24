@@ -5,13 +5,16 @@ import { describe, expect, it } from "vitest";
 import { splitRenderedPrompt } from "../context/system-prompt.js";
 import type { ExecTransport } from "../kobe-exec/client.js";
 import { registerExecTools, TOOL_NAMES, type PiToolFactories } from "../kobe-exec/tools.js";
-import { registerKobeModels, type ExtensionApiLike as ModelsApi } from "../kobe-models/register.js";
+import {
+  registerKaijuModels,
+  type ExtensionApiLike as ModelsApi,
+} from "../kobe-models/register.js";
 import type { ModelFileState } from "../kobe-models/protocol.js";
 import {
-  registerKobePolicy,
+  registerKaijuPolicy,
   type ExtensionApiLike as PolicyApi,
 } from "../kobe-policy/extension.js";
-import { registerKobeTools, type ExtensionApiLike as ToolsApi } from "../kobe-tools/extension.js";
+import { registerKaijuTools, type ExtensionApiLike as ToolsApi } from "../kobe-tools/extension.js";
 import type { ToolsTransport } from "../kobe-tools/tools.js";
 
 /**
@@ -149,7 +152,7 @@ describe.runIf(INSTALLED)("Pi's extension API as the Kaiju extensions bind to it
 
   it("kobe-tools: registers its tools and all four memory hooks through Pi's loader", async () => {
     const { extension } = await loadThroughPi((api) =>
-      registerKobeTools(api as unknown as ToolsApi, unusedTools, {
+      registerKaijuTools(api as unknown as ToolsApi, unusedTools, {
         files: true,
         projects: true,
         skillDrafts: true,
@@ -169,7 +172,7 @@ describe.runIf(INSTALLED)("Pi's extension API as the Kaiju extensions bind to it
 
   it("kobe-policy: binds tool_call through Pi's loader", async () => {
     const { extension } = await loadThroughPi((api) =>
-      registerKobePolicy(
+      registerKaijuPolicy(
         api as unknown as PolicyApi,
         Promise.resolve({
           checker: { check: async () => ({ allow: true }) },
@@ -204,7 +207,7 @@ describe.runIf(INSTALLED)("Pi's extension API as the Kaiju extensions bind to it
     };
     const api = (name: string) => (ai[name] as Fn)() as never;
     const { extension } = await loadThroughPi((piApi) =>
-      registerKobeModels(piApi as unknown as ModelsApi, {
+      registerKaijuModels(piApi as unknown as ModelsApi, {
         env: { KOBE_MODEL_FILE: "/x/model.json" },
         readState: async () => state,
         pi: {

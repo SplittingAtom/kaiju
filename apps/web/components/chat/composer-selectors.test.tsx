@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { chatRequests, composer, openApp } from "./testing";
@@ -13,7 +13,7 @@ import { chatRequests, composer, openApp } from "./testing";
  * column squeezed beside the rail and an artifact) they fold into one "Agent and model" menu, so
  * the toolbar stays one line and Send stays on it.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 /** The composer panel's laid-out width (mocked; happy-dom has no layout). 0: not measured. */
 let panelWidth = 0;
@@ -21,7 +21,7 @@ let panelWidth = 0;
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push(
     { alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true },
     {
@@ -39,7 +39,7 @@ beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
     this: HTMLElement,
   ) {
-    if (!this.hasAttribute("data-kobe-composer-panel")) return real.call(this);
+    if (!this.hasAttribute("data-kaiju-composer-panel")) return real.call(this);
     return { left: 0, top: 0, x: 0, y: 0, width: panelWidth, height: 80 } as DOMRect;
   });
 });
@@ -201,7 +201,7 @@ describe("narrow composers fold the selectors into one menu (ac-2)", { timeout: 
     const menu = must(document.getElementById(must(button.getAttribute("aria-controls"))));
     act(() => within(menu).getByRole("combobox", { name: "Model for this conversation" }).focus());
     expect(button.getAttribute("aria-expanded")).toBe("true");
-    act(() => document.getElementById("kobe-composer")?.focus());
+    act(() => document.getElementById("kaiju-composer")?.focus());
     expect(button.getAttribute("aria-expanded")).toBe("false");
     expect(getComputedStyle(menu).display).toBe("none");
   });

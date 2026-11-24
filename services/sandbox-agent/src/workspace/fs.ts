@@ -24,7 +24,7 @@ import {
   isExcludedPath,
   isServerOwnedPath,
   workspacePathIssue,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { assertOnVolume, openOnVolume, shareOnVolume, volumeDevice } from "./volume.js";
 
 /**

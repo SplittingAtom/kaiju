@@ -7,7 +7,7 @@ import { executorEnv, startExecutor } from "./spawn-executor.js";
 
 let dir: string;
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), "kobe-spawn-executor-"));
+  dir = await mkdtemp(path.join(tmpdir(), "kaiju-spawn-executor-"));
 });
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });

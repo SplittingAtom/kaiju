@@ -3,10 +3,10 @@ import {
   SYSTEM_ACTOR,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
-import { createSemanticMemoryItemSchema, type SemanticMemoryItemDetail } from "@kobe/protocol";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import { createSemanticMemoryItemSchema, type SemanticMemoryItemDetail } from "@kaiju/protocol";
 import { siteMemoryWriteAllows } from "../../../authz/permissions.js";
 import { recordAudit } from "../../../audit/record.js";
 import { afterCommit, openOp, type Op } from "../../items/context.js";
@@ -45,10 +45,10 @@ interface Decided<T> {
 
 /** Runs a decision on an awaiting_site proposal; Site curators only, others get 404. */
 async function decide<T>(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   id: string,
-  fn: (tx: KobeTx, p: SiteProposalRow) => Promise<Decided<T>>,
+  fn: (tx: KaijuTx, p: SiteProposalRow) => Promise<Decided<T>>,
 ): Promise<T> {
   if (!decidesForSite(who)) throw siteProposalNotFound();
   const { rows } = await db.execute<{ from_team_id: string }>(sql`
@@ -71,7 +71,7 @@ async function decide<T>(
  * Workspace enters Site memory (approve and merge refuse, `memory_disabled`); reject and request
  * changes still settle the proposal.
  */
-async function proposalOp(tx: KobeTx, who: MemoryWho, p: SiteProposalRow): Promise<Op> {
+async function proposalOp(tx: KaijuTx, who: MemoryWho, p: SiteProposalRow): Promise<Op> {
   if (!(await readSwitches(tx, p.fromTeamId)).memory.siteProposals) throw switchedOff();
   return { ...(await openOp(tx, who, "site")), fromProposal: p.id };
 }
@@ -83,7 +83,7 @@ type Outcome = "approved" | "merged" | "rejected" | "changes_requested";
  * Site curator is named in the site log's paired event, contract wall M6).
  */
 async function workspaceAudit(
-  tx: KobeTx,
+  tx: KaijuTx,
   p: SiteProposalRow,
   outcome: Outcome,
   round: number,
@@ -105,7 +105,7 @@ async function workspaceAudit(
 }
 
 async function setDecided(
-  tx: KobeTx,
+  tx: KaijuTx,
   p: SiteProposalRow,
   who: MemoryWho,
   state: "approved" | "merged" | "rejected",
@@ -132,7 +132,7 @@ export interface SiteDecision {
 }
 
 async function accepted(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: MemoryWho,
   p: SiteProposalRow,
   op: Op,
@@ -161,7 +161,7 @@ async function accepted(
 }
 
 export function approveSiteProposal(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   id: string,
   body: ApproveSiteProposal,
@@ -188,7 +188,7 @@ export function approveSiteProposal(
 }
 
 export function mergeSiteProposal(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   id: string,
   body: MergeSiteProposal,
@@ -212,7 +212,7 @@ export function mergeSiteProposal(
 }
 
 async function readCurrent(
-  tx: KobeTx,
+  tx: KaijuTx,
   itemId: string,
 ): Promise<{ statement: string; version: number } | null> {
   const { rows } = await tx.execute<{ statement: string; version: number }>(sql`
@@ -223,7 +223,7 @@ async function readCurrent(
 }
 
 export function rejectSiteProposal(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   id: string,
   reason: string,
@@ -254,7 +254,7 @@ export function rejectSiteProposal(
  * Refused once the proposal has had {@link SITE_MEMORY_PROPOSAL_ROUNDS_MAX} rounds: decide it.
  */
 export function requestSiteChanges(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   id: string,
   note: string,

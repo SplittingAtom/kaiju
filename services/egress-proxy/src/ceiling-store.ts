@@ -1,4 +1,4 @@
-import { sql, type KobeDb } from "@kobe/db";
+import { sql, type KaijuDb } from "@kaiju/db";
 import type { CeilingPattern } from "./allowlist.js";
 
 /**
@@ -7,7 +7,7 @@ import type { CeilingPattern } from "./allowlist.js";
  * the flag is read through `to_jsonb(row)` so a database without the column yet reads every
  * pattern as not internal (fails closed) instead of failing the whole ceiling.
  */
-export async function loadEgressCeilingWithInternal(db: KobeDb): Promise<CeilingPattern[]> {
+export async function loadEgressCeilingWithInternal(db: KaijuDb): Promise<CeilingPattern[]> {
   const res = await db.execute<{ domain: string; internal: boolean }>(sql`
     SELECT d.domain, COALESCE((to_jsonb(d) ->> 'internal')::boolean, false) AS internal
       FROM egress_domains d

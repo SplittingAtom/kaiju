@@ -2,7 +2,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { GitApproval, KobeEventPayload } from "@kobe/protocol";
+import type { GitApproval, KaijuEventPayload } from "@kaiju/protocol";
 import { ApprovalCard } from "./approval-card";
 import { GIT_BODY_PREVIEW, GitChange } from "./git-approval";
 
@@ -21,7 +21,7 @@ const PR: GitApproval = {
   connection_name: "Acme on Forgejo",
   repository: "docs",
   title: "<img src=x onerror=alert(1)> Fix",
-  body: "Fixes it.\n\n---\nOpened by Ana Lee via Kaiju, from conversation https://kobe.test/?thread=t",
+  body: "Fixes it.\n\n---\nOpened by Ana Lee via Kaiju, from conversation https://kaiju.test/?thread=t",
   head: "feature",
   base: "main",
   draft: false,
@@ -75,12 +75,12 @@ describe("GitChange", () => {
           host: "github.com",
           organization: "acme",
           connection_name: "Acme",
-          repository: "kobe-new",
+          repository: "kaiju-new",
           visibility: "private",
         }}
       />,
     );
-    expect(screen.getByRole("row", { name: /New repository kobe-new/ })).toBeTruthy();
+    expect(screen.getByRole("row", { name: /New repository kaiju-new/ })).toBeTruthy();
     expect(screen.getByRole("row", { name: /Visibility Private/ })).toBeTruthy();
     expect(screen.queryByLabelText("Text that will be posted")).toBeNull();
   });
@@ -97,7 +97,7 @@ describe("GitChange", () => {
 
 describe("in the approval card", () => {
   it("shows the git header above the exact input", () => {
-    const requested: KobeEventPayload<"approval.requested"> = {
+    const requested: KaijuEventPayload<"approval.requested"> = {
       approval_id: "00000000-0000-4000-8000-000900000001",
       tool_call_id: "tc1",
       tool: "mcp__kobe__git_open_pull_request",

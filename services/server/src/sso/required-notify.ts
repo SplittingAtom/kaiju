@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, siteRoles, users, type KobeDb } from "@kobe/db";
+import { and, eq, inArray, isNull, siteRoles, users, type KaijuDb } from "@kaiju/db";
 import { logger } from "../logger.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
 import type { Mailer, MailMessage } from "../mail/mailer.js";
@@ -10,7 +10,7 @@ import { oneLine } from "../mail/messages.js";
  * the change commits; best effort (a failure is logged, the change and its audit event stand).
  */
 export interface RequiredNotifyDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly mailer: Mailer;
   readonly publicUrl: string;
 }

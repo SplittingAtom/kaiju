@@ -1,6 +1,6 @@
 import type { Context, Hono } from "hono";
-import { getMembership, sql, withTeam } from "@kobe/db";
-import { workspaceChangesQuerySchema } from "@kobe/protocol";
+import { getMembership, sql, withTeam } from "@kaiju/db";
+import { workspaceChangesQuerySchema } from "@kaiju/protocol";
 import { teamRoleAllows } from "../authz/permissions.js";
 import type { TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
@@ -22,7 +22,7 @@ function parseQuery(c: Ctx) {
 }
 
 /**
- * `GET /v1/workspace/changes?team=&path=…` (KOBE-496, contract `@kobe/protocol`
+ * `GET /v1/workspace/changes?team=&path=…` (KOBE-496, contract `@kaiju/protocol`
  * workspace-changes.ts): changes to the caller's own open files, live. Mounted inside the
  * workspace file routes, so `requireTeam` and `team.chat` already ran. Only the session's own
  * (team, user) rows are ever read (`readFileChanges`), so the stream can carry nothing of

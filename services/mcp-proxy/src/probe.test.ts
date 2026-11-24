@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
-import { SpanKind, SpanStatusCode } from "@kobe/telemetry";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
+import { SpanKind, SpanStatusCode } from "@kaiju/telemetry";
 import { isChildOf, spanNamed, traced } from "./testing/traced.js";
 import { createApp, createInternalApp } from "./app.js";
 import type { UpstreamPolicy } from "./config.js";

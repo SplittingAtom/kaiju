@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { loadEnvelope, type Envelope } from "@kobe/db";
+import { loadEnvelope, type Envelope } from "@kaiju/db";
 import { runWithAuditContext } from "../audit/context.js";
 import { deleteProvider, seedHelmProviders } from "./providers.js";
 import { ssoRequired } from "./required.js";

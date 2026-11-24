@@ -18,7 +18,7 @@ import {
   type ThreadGroup,
 } from "../../lib/chat/thread-groups";
 import { createProjectsApi } from "../../lib/projects/api";
-import { useChatSession } from "../chat/kobe-runtime";
+import { useChatSession } from "../chat/kaiju-runtime";
 import { useListedThreads } from "./use-listed-threads";
 
 export interface ProjectNames {

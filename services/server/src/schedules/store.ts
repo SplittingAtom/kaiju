@@ -2,8 +2,8 @@ import {
   MAX_ACTIVE_SCHEDULES_PER_USER,
   type ScheduleRecurrence,
   type ScheduleResponse,
-} from "@kobe/protocol";
-import { and, desc, eq, schedules, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { and, desc, eq, schedules, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { resolveAgentPin } from "../agents/versions.js";
 import { recordAudit } from "../audit/record.js";
 import { nextOccurrence, recurrenceToCron } from "./recurrence.js";
@@ -43,14 +43,18 @@ export const nextDueAt = (recurrence: ScheduleRecurrence, tz: string): Date | nu
 
 /** Why an agent cannot be scheduled: not visible to the user here, suspended, archived or unpublished. */
 export async function agentRunnable(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { teamId: string; userId: string },
   agentId: string,
 ): Promise<boolean> {
   return (await resolveAgentPin(tx, viewer, agentId)).ok;
 }
 
-export async function countActiveHere(tx: KobeTx, teamId: string, userId: string): Promise<number> {
+export async function countActiveHere(
+  tx: KaijuTx,
+  teamId: string,
+  userId: string,
+): Promise<number> {
   const [row] = await tx
     .select({ n: sql<number>`count(*)::int` })
     .from(schedules)
@@ -65,7 +69,7 @@ export async function countActiveHere(tx: KobeTx, teamId: string, userId: string
  * ever set). Callers needing a stable number hold `withUserScheduleLock` around the whole check.
  */
 export async function countActiveElsewhere(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   teamIds: readonly string[],
 ): Promise<number> {
@@ -78,7 +82,7 @@ export async function countActiveElsewhere(
 
 export const atCap = (active: number): boolean => active >= MAX_ACTIVE_SCHEDULES_PER_USER;
 
-export async function findSchedule(tx: KobeTx, teamId: string, id: string): Promise<Row | null> {
+export async function findSchedule(tx: KaijuTx, teamId: string, id: string): Promise<Row | null> {
   const [row] = await tx
     .select()
     .from(schedules)
@@ -88,7 +92,7 @@ export async function findSchedule(tx: KobeTx, teamId: string, id: string): Prom
 }
 
 export async function listSchedules(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string | null,
 ): Promise<Row[]> {
@@ -112,7 +116,7 @@ export interface NewSchedule {
   readonly nextDueAt: Date | null;
 }
 
-export async function insertSchedule(tx: KobeTx, input: NewSchedule): Promise<Row> {
+export async function insertSchedule(tx: KaijuTx, input: NewSchedule): Promise<Row> {
   const [row] = await tx
     .insert(schedules)
     .values({
@@ -151,7 +155,7 @@ export interface SchedulePatch {
 }
 
 export async function updateSchedule(
-  tx: KobeTx,
+  tx: KaijuTx,
   row: Row,
   patch: SchedulePatch,
   audit: {
@@ -197,7 +201,7 @@ export async function updateSchedule(
   return updated;
 }
 
-export async function deleteSchedule(tx: KobeTx, row: Row): Promise<void> {
+export async function deleteSchedule(tx: KaijuTx, row: Row): Promise<void> {
   await tx.delete(schedules).where(and(eq(schedules.teamId, row.teamId), eq(schedules.id, row.id)));
   await recordAudit(tx, {
     action: "schedule.deleted",

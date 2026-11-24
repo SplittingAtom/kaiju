@@ -1,7 +1,7 @@
 // Shared setup for the scim.*.db.test.ts files (split from scim.db.test.ts, KOBE-725).
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, expect } from "vitest";
-import { sessions, sessionSsoContexts, ssoProviders } from "@kobe/db";
+import { sessions, sessionSsoContexts, ssoProviders } from "@kaiju/db";
 import { loadSsoSettings } from "./settings.js";
 import type { TestBrowser } from "../testing/browser.js";
 import { openHarness, PUBLIC_URL, type Harness } from "../testing/harness.js";

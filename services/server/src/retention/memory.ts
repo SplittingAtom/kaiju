@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, lockLegalHolds, sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { SYSTEM_ACTOR, lockLegalHolds, sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { memoryBlobKey } from "../memory/keys.js";
 import { auditTimeout } from "./locks.js";
@@ -66,7 +66,7 @@ async function deleteObjects(
 }
 
 async function versionBatch(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   store: BlobStore,
   cutoff: Date,
@@ -114,7 +114,7 @@ async function versionBatch(
 }
 
 async function docBatch(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   store: BlobStore,
   selection: Exclude<MemorySelection, { kind: "versions" }>,
@@ -163,11 +163,11 @@ async function docBatch(
  * something (last write).
  */
 export async function purgeMemoryBatchInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   store: BlobStore,
   selection: MemorySelection,
-  record: (tx: KobeTx, counts: MemoryPurgeCounts) => Promise<void>,
+  record: (tx: KaijuTx, counts: MemoryPurgeCounts) => Promise<void>,
 ): Promise<MemoryPurgeCounts> {
   await tx.execute(sql.raw(`SET LOCAL lock_timeout = '5s'`));
   await lockLegalHolds(tx);
@@ -188,7 +188,7 @@ export function memoryRecorder(
   reason: "retention" | "offboarding",
   userId?: string,
 ) {
-  return async (tx: KobeTx, counts: MemoryPurgeCounts): Promise<void> => {
+  return async (tx: KaijuTx, counts: MemoryPurgeCounts): Promise<void> => {
     await recordAudit(tx, {
       action: "retention.memory_purged",
       actor: SYSTEM_ACTOR,
@@ -206,7 +206,7 @@ export function memoryRecorder(
 
 /** Runs batches until nothing is left to purge (or `stop`); object-store errors propagate. */
 export async function purgeMemory(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   store: BlobStore,
   selection: MemorySelection,

@@ -5,7 +5,7 @@ import {
   googleGenerativeAIApi,
   openAICompletionsApi,
 } from "@earendil-works/pi-ai";
-import { registerKobeModels, type ExtensionApiLike } from "./register.js";
+import { registerKaijuModels, type ExtensionApiLike } from "./register.js";
 import { readModelState } from "./state-file.js";
 
 /**
@@ -18,8 +18,8 @@ import { readModelState } from "./state-file.js";
  * its extension loader) and files in this directory, because the image ships it on its own
  * (root-owned, read-only, `/opt/kobe/pi-extensions/kobe-models`).
  */
-export default function kobeModels(api: ExtensionApiLike): Promise<void> {
-  return registerKobeModels(api, {
+export default function kaijuModels(api: ExtensionApiLike): Promise<void> {
+  return registerKaijuModels(api, {
     env: process.env,
     readState: readModelState,
     pi: { createProvider, createAssistantMessageEventStream },

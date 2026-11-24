@@ -1,4 +1,4 @@
-import { and, eq, isNull, threads, type KobeTx } from "@kobe/db";
+import { and, eq, isNull, threads, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { resolveAgentPin } from "../agents/versions.js";
 import {
@@ -24,7 +24,7 @@ import {
  * the agent like any thread's: its tools, the team's exposure and connectors-off still apply.
  */
 export async function chooseThreadAgent(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   agentId: string,
@@ -60,7 +60,7 @@ export async function chooseThreadAgent(
   return { ok: true, thread: await summarizeOne(tx, viewer, row) };
 }
 
-async function isEvalThread(tx: KobeTx, teamId: string, id: string): Promise<boolean> {
+async function isEvalThread(tx: KaijuTx, teamId: string, id: string): Promise<boolean> {
   const [row] = await tx
     .select({ skillEval: threads.skillEval })
     .from(threads)

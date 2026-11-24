@@ -1,9 +1,9 @@
 import { randomBytes } from "node:crypto";
 import pg from "pg";
 import { expect } from "vitest";
-import type { KobeEvent } from "@kobe/protocol";
-import { runs, sql, teamMembers, threads, withTeam } from "@kobe/db";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import type { KaijuEvent } from "@kaiju/protocol";
+import { runs, sql, teamMembers, threads, withTeam } from "@kaiju/db";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { createApp } from "../app.js";
 import { createServerDeps, type ServerDeps, type ServerDepsOptions } from "../deps.js";
 import { runWithAuditContext } from "../audit/context.js";
@@ -15,7 +15,7 @@ import { fakeIsolation, type FakeIsolation } from "./isolation.js";
 import { MemoryMailer } from "./mailer.js";
 import { SseReader } from "./sse.js";
 
-export const PUBLIC_URL = "http://kobe.test";
+export const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 
 export interface Replica {
@@ -147,7 +147,7 @@ export class EventStreamFixture {
   }
 
   /** Ends a run the way the orchestrator must: terminal status and terminal event in one transaction. */
-  async complete(teamId: string, runId: string): Promise<KobeEvent[]> {
+  async complete(teamId: string, runId: string): Promise<KaijuEvent[]> {
     return withTeam(this.db, teamId, async (tx) => {
       await tx.execute(
         sql`UPDATE runs SET status = 'completed', ended_at = now() WHERE team_id = ${teamId} AND id = ${runId}`,

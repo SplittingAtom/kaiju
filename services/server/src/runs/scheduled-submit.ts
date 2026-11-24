@@ -1,4 +1,4 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 
 /**
  * Work the scheduler (KOBE-174) does inside the submit transaction, so that the schedule's claim,
@@ -10,13 +10,13 @@ export interface ScheduledSubmit {
    * First step of the transaction, before the thread is looked up. Creates the thread the command
    * names. Throwing aborts the whole submit (nothing is kept).
    */
-  before(tx: KobeTx): Promise<void>;
+  before(tx: KaijuTx): Promise<void>;
   /**
    * Last step of the transaction. `budgetBlocked`: the budget gate refused the run, so it was
    * recorded as failed (visible in the thread) instead of queued, without a retry.
    */
   after(
-    tx: KobeTx,
+    tx: KaijuTx,
     outcome: { readonly runId: string; readonly budgetBlocked: boolean },
   ): Promise<void>;
 }

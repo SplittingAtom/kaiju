@@ -3,7 +3,7 @@ import { Readable } from "node:stream";
 import { strToU8, zipSync, type Zippable } from "fflate";
 import pino from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { scanSkillBundle } from "@kobe/skill-scanner";
+import { scanSkillBundle } from "@kaiju/skill-scanner";
 import { runWithAuditContext } from "../audit/context.js";
 import { uploadProjectFile } from "../projects/files.js";
 import { validateZipBundle } from "../skills/bundle.js";
@@ -25,7 +25,7 @@ import { ORPHAN_GRACE_MS, sweepOrphanObjects } from "./orphans.js";
  */
 let h: Harness;
 const objects = new MemoryObjects();
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const store: BlobStore = { objects, prefix: PREFIX };
 let team = "";
 let user = "";

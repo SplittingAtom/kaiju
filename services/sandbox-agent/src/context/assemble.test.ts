@@ -1,7 +1,7 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { THREAD_CONTEXT_MAX_BYTES } from "@kobe/protocol/sandbox-wire";
+import { THREAD_CONTEXT_MAX_BYTES } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import { captureText } from "../kobe-models/context-capture.js";
 import { fromCapture, fromSession, parseCapture, readCapture } from "./assemble.js";
@@ -23,7 +23,7 @@ const answer = { role: "assistant", usage: { input: 900, cacheRead: 100, cacheWr
 
 describe("thread.context answer (KOBE-470)", () => {
   it("reads the capture and totals the call's prompt tokens", async () => {
-    dir = await mkdtemp(path.join(tmpdir(), "kobe-assemble-"));
+    dir = await mkdtemp(path.join(tmpdir(), "kaiju-assemble-"));
     const file = path.join(dir, "kobe-context.json");
     await writeFile(
       file,

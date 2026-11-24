@@ -38,4 +38,4 @@ export function admitPiVersion(
   }
   return true;
 }
-import { PI_PINNED_VERSION, PI_PREVIOUS_MINORS } from "@kobe/protocol/sandbox-wire";
+import { PI_PINNED_VERSION, PI_PREVIOUS_MINORS } from "@kaiju/protocol/sandbox-wire";

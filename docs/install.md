@@ -923,7 +923,7 @@ everyone, the setup Owner included. It turns on only from an SSO session of an e
 turns itself off when the last enabled provider is disabled or deleted, and is not in force while
 `auth.sso.enabled` is `false` or no provider can finish a sign-in. When the provider is down and
 nobody can sign in, the break-glass is the operator CLI with the owner role (the chart's migrate
-URL, as for `kobe restore`): `KOBE_DB_MIGRATE_URL=<migrate URL> kobe sso allow-local-sign-in
+URL, as for `kaiju restore`): `KOBE_DB_MIGRATE_URL=<migrate URL> kaiju sso allow-local-sign-in
 --operator <name>`. It turns the setting off and records `identity.sso.required.disabled`
 (`reason: break_glass`) in the audit log. Setting `auth.sso.enabled: false` also brings local
 sign-in back, but switches single sign-on off for everyone.
@@ -1141,7 +1141,7 @@ helm install kobe charts/kobe -n kobe \
   --set ingress.tls.clusterIssuer=letsencrypt \
   --set postgres.external.existingSecret=kobe-db \
   --set s3.endpoint=https://s3.example.com --set s3.bucket=kobe --set s3.existingSecret=kobe-s3 \
-  --set smtp.host=smtp.example.com --set smtp.from='Kaiju <kobe@example.com>' \
+  --set smtp.host=smtp.example.com --set smtp.from='Kaiju <kaiju@example.com>' \
   --set smtp.existingSecret=kobe-smtp
 ```
 
@@ -1255,7 +1255,7 @@ cannot reach the bytes until the lock expires.
 applications. It must be relative and end in `/` (for example `kobe/`; letters, digits and
 `! _ . * ' ( ) / -` only); the chart rejects anything else. It is applied on the server and the
 scheduler (`KOBE_S3_PREFIX`). Changing it on an existing site hides the objects written under
-the old prefix, so move them first or keep the old value. `kobe backup` and `kobe restore` read
+the old prefix, so move them first or keep the old value. `kaiju backup` and `kaiju restore` read
 `KOBE_S3_PREFIX` too; set it to the same value.
 
 ### Timeouts (Postgres and S3)
@@ -1289,12 +1289,12 @@ A stuck network call must never pin a database transaction, its locks or a poole
 
   Role defaults, too, apply only to sessions opened afterwards. Do not set them on the database
   owner or on the backup role: migrations build indexes and backfill for longer, and
-  `kobe backup` holds its snapshot transaction open, idle, for the whole dump (it turns both
+  `kaiju backup` holds its snapshot transaction open, idle, for the whole dump (it turns both
   timeouts off for its own session anyway). With bundled CloudNativePG the same commands work
   in `psql` on the primary (`kubectl -n kobe exec -it kobe-pg-1 -c postgres -- psql -d kobe`);
   they are optional there.
 
-- **Object storage.** The server's and the `kobe` CLI's S3 clients give up on a connection that
+- **Object storage.** The server's and the `kaiju` CLI's S3 clients give up on a connection that
   is not established within 5 s and on a request whose socket stays silent for 60 s (nothing
   sent or received; the SDK then retries). This is an idle timeout, not a total one: an upload or
   download of a large file runs as long as bytes keep moving. It also applies to a download whose
@@ -1323,7 +1323,7 @@ and rollouts fill them.
 
 On top of that: a rollout starts one extra pod per Deployment before the old one stops (server
 +15, model gateway +13, scheduler and egress proxy +11 each at the defaults), the migration Job
-uses 2, `kobe backup` 1 to 2, and Postgres reserves `superuser_reserved_connections` (3) for
+uses 2, `kaiju backup` 1 to 2, and Postgres reserves `superuser_reserved_connections` (3) for
 superusers. At the defaults a rollout peaks near 130, above PostgreSQL's default
 `max_connections` of 100 if every pool were full at once; in practice pools rarely are, but give
 Postgres headroom when you add replicas or raise pool sizes:
@@ -1343,12 +1343,12 @@ Postgres headroom when you add replicas or raise pool sizes:
         shared_buffers: "512MB"
   ```
 
-Each connection names its service in `pg_stat_activity.application_name`: `kobe-server` /
-`kobe-scheduler` (query pool), `kobe-event-stream` (the server's stream pool),
-`kobe-server-listen` / `kobe-scheduler-listen` (the one LISTEN connection per process, which
-carries every notification channel), `kobe-gateway`, `kobe-gateway-listen` and `kobe-gateway-rate`
+Each connection names its service in `pg_stat_activity.application_name`: `kaiju-server` /
+`kaiju-scheduler` (query pool), `kaiju-event-stream` (the server's stream pool),
+`kaiju-server-listen` / `kaiju-scheduler-listen` (the one LISTEN connection per process, which
+carries every notification channel), `kaiju-gateway`, `kaiju-gateway-listen` and `kaiju-gateway-rate`
 (the member rate limiter's pool, KOBE-810),
-`kobe-egress-proxy` and `kobe-egress-proxy-listen`, `kobe-migrate`, `kobe-cli`:
+`kaiju-egress-proxy` and `kaiju-egress-proxy-listen`, `kaiju-migrate`, `kaiju-cli`:
 
 ```sql
 SELECT application_name, count(*) FROM pg_stat_activity
@@ -1444,7 +1444,7 @@ are for evaluation: one instance, a 10 GiB volume, no backups. For production co
 - **Backups.** `postgres.cnpg.backup` is passed verbatim to the Cluster's `spec.backup` (and
   `postgres.cnpg.plugins` to `spec.plugins`, for the Barman Cloud plugin that CloudNativePG 1.26
   and later recommend instead of `barmanObjectStore`). Point it at a bucket other than Kaiju's, add
-  a `ScheduledBackup` resource for base backups, and test a restore. Kaiju's own `kobe backup`
+  a `ScheduledBackup` resource for base backups, and test a restore. Kaiju's own `kaiju backup`
   ([backup-restore.md](backup-restore.md)) remains the portable logical backup; CloudNativePG's
   WAL archive adds point-in-time recovery. The instances' egress is not restricted by the chart.
 
@@ -1504,7 +1504,7 @@ upgrade, and changing a value here later does not change a site that already has
 a chart value go back to Kaiju's built-in defaults); clear a value here to make Kaiju's default the
 reset target. The audit log then shows the reset's event and the system's seed event for each such
 key, even when its value ends up unchanged. An invalid value stops the server at start with the key
-named. `kobe restore` accepts a fresh target seeded this way and replaces those rows with the
+named. `kaiju restore` accepts a fresh target seeded this way and replaces those rows with the
 backup's.
 
 **SVG logos** are refused, with the reason, when they carry scripts, event handlers, external
@@ -1717,7 +1717,7 @@ hook Jobs within it). On a site with large tables (millions of rows in `files`, 
 `CONCURRENTLY` beforehand with the definitions in its upgrade note: the migration's `IF NOT EXISTS`
 then skips them. If a run fails because "the migration lock is held by another session", the
 error names that session (pid, `application_name`, state, start times): a migration, a
-`kobe backup`/`kobe restore` (`application_name` of your client), or a backend of a stopped Job
+`kaiju backup`/`kaiju restore` (`application_name` of your client), or a backend of a stopped Job
 still working. Wait for it, or end it with `SELECT pg_terminate_backend(<pid>)`, and run the
 upgrade again. Rolling a bundled-CloudNativePG release back to its first revision re-runs that
 revision's initial migration Job, which resets app-role grants to that build's matrix; the next
@@ -1736,6 +1736,14 @@ Migrations report what an upgrade changed in the migration Job's log (`"msg":"mi
 from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it during the upgrade
 (`kubectl logs -f job/<release>-migrate`) or read it from your log aggregation afterwards.
 
+- **Renamed log and connection names (Kaiju rename, KOBE-747).** The migrate Job and the
+  database wait init container log `"service":"kaiju-migrate"` and `"service":"kaiju-db-wait"`
+  (before: `kobe-migrate`, `kobe-db-wait`), and every connection's `application_name` in
+  `pg_stat_activity` starts with `kaiju-` (`kaiju-server`, `kaiju-scheduler`, `kaiju-gateway`,
+  `kaiju-egress-proxy`, their `-listen` connections, `kaiju-migrate`, `kaiju-cli`; full list in
+  [Postgres connections](#postgres-connections)). Update log filters, alerts and `pg_stat_activity`
+  queries that match the old names. The operator CLI is now called `kaiju`. Nothing in the
+  database changes.
 - **Git through the egress proxy (KOBE-763).** The chart generates one more Secret,
   `<release>-egress-proxy-internal` (or name your own with `egressProxy.git.internalKeySecret`;
   offline renders need it), and lets the egress proxy reach the server's internal port 8082.
@@ -1892,7 +1900,7 @@ from `RAISE NOTICE`). The hook Job is deleted once it succeeds, so follow it dur
   drops `projects.visibility` and deletes explicit `reader` rows (owners and editors stay).
   Confidential work belongs in a separate workspace or in a member's My files. Before upgrading,
   list what becomes visible with the read-only dry-run
-  `KOBE_BACKUP_DATABASE_URL=<backup role URL> kobe projects restricted` (add `--json` for a
+  `KOBE_BACKUP_DATABASE_URL=<backup role URL> kaiju projects restricted` (add `--json` for a
   machine-readable list; the backup role of [backup and restore](backup-restore.md) has the
   `BYPASSRLS` it needs) and keep the list with your upgrade record.
 - **Ed25519 run and server-call tokens (KOBE-521).** The server now signs run tokens and
@@ -2008,7 +2016,7 @@ app.kubernetes.io/instance=<release>`; server, model gateway, MCP proxy and egre
   Helm replaces them; run starts and reads keep working.
   **Rolling back across this release and Kaiju skills (KOBE-317, migrations 0137–0140) is
   unsupported:** after a `helm rollback` the previous release can't publish team agents and ignores
-  the freeze. Take a `kobe backup` first. To go back, reinstall the previous release and restore
+  the freeze. Take a `kaiju backup` first. To go back, reinstall the previous release and restore
   that backup (changes made after the upgrade are lost).
 - **Skill packages (KOBE-310, migration `0131_skill_store`).** Additive: a site-wide
   `skill_hash_checks` table and a nullable `package_storage_key` on the skill version tables, so
@@ -2049,7 +2057,7 @@ app.kubernetes.io/instance=<release>`; server, model gateway, MCP proxy and egre
   backup taken before this release restores only on the release it was taken with
   ([backup and restore](backup-restore.md#limits)).
   **This upgrade cannot be undone with `helm rollback`:** the previous release fails on the
-  renamed tables. Take a `kobe backup` first. To go back, reinstall the previous release and
+  renamed tables. Take a `kaiju backup` first. To go back, reinstall the previous release and
   restore that backup (changes made after the upgrade are lost).
 - **Site names in the database (KOBE-256, migration `0091_site_rename`).** The `install_*` tables
   become `site_*` (`site_settings`, `site_roles`, `site_agents`, …), with their constraints,
@@ -2061,12 +2069,12 @@ app.kubernetes.io/instance=<release>`; server, model gateway, MCP proxy and egre
   admins switch to the stored names `site` and `site_admin`; runs stopped by the site budget
   before the upgrade keep `install` as their stop scope. Server, scheduler and gateway pods of the
   previous release fail on the renamed tables from the end of the migration Job until Helm
-  replaces them, so expect errors for that short window; so does a `kobe` CLI of the previous
+  replaces them, so expect errors for that short window; so does a `kaiju` CLI of the previous
   release: use the CLI of the release you run. Queries, dashboards or scripts of your own that read
   `install_*` tables must use the new names. A backup taken before this release restores only on
   the release it was taken with ([backup and restore](backup-restore.md#limits)).
   **This upgrade cannot be undone with `helm rollback`:** the previous release fails on the
-  renamed tables. Take a `kobe backup` first. To go back, reinstall the previous release and
+  renamed tables. Take a `kaiju backup` first. To go back, reinstall the previous release and
   restore that backup (changes made after the upgrade are lost).
   SIEM: new `policy.rule.*`, `models.budget.*` and `run.budget_stopped` audit events say
   `scope: "site"` (rows recorded before keep `"install"`); update rules that match `"install"`.
@@ -2301,7 +2309,7 @@ true` lets the hibernation sweep delete a sandbox hibernated for `dormantDays` (
 
 ## Backup and restore
 
-`kobe backup` / `kobe restore` cover Postgres and an S3 object manifest; see
+`kaiju backup` / `kaiju restore` cover Postgres and an S3 object manifest; see
 [backup-restore.md](backup-restore.md). Keep copies of the Secrets you create above (and every
 Secret the chart generates, listed in [backup-restore.md](backup-restore.md#secrets)) in your secret
 store: backups never contain them. Losing the envelope key makes every stored credential unreadable;
@@ -2317,7 +2325,7 @@ To recover a site from a backup (full steps in
    first-run setup** ([First run](#first-run-to-the-first-chat)): the restore refuses a site with
    users. The server's start seeds the gallery agents; the restore replaces those.
 3. Stop the writers: `kubectl -n kobe scale deploy/kobe-server deploy/kobe-scheduler --replicas=0`.
-4. Run `kobe restore --from <backup>` as the owner role (`KOBE_DB_MIGRATE_URL`), and check the
+4. Run `kaiju restore --from <backup>` as the owner role (`KOBE_DB_MIGRATE_URL`), and check the
    printed fingerprint against the one recorded at backup time.
 5. If the backup is older than the bucket or the cluster, set `retention.paused: true` first; then
    scale back up. Users sign in again.

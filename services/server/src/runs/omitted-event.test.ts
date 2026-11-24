@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseEventPayload } from "@kobe/protocol";
+import { parseEventPayload } from "@kaiju/protocol";
 import { omittedItems } from "./omitted-event.js";
 
 const o = (name: string) => ({

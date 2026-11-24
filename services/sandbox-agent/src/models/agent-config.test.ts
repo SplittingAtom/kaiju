@@ -8,7 +8,7 @@ let dir: string | undefined;
 afterEach(async () => {
   if (dir) await rm(dir, { recursive: true, force: true });
 });
-const fresh = async () => (dir = await mkdtemp(path.join(tmpdir(), "kobe-agentcfg-")));
+const fresh = async () => (dir = await mkdtemp(path.join(tmpdir(), "kaiju-agentcfg-")));
 
 describe("guarded Pi config (KOBE-169)", () => {
   it("writes read-only files and reports nothing for them", async () => {

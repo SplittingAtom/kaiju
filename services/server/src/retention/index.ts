@@ -1,4 +1,4 @@
-import { and, eq, isNull, teamMembers, users, withTeam, type KobeDb } from "@kobe/db";
+import { and, eq, isNull, teamMembers, users, withTeam, type KaijuDb } from "@kaiju/db";
 import { deleteReleasedBlobs, type BlobDeletionCounts, type BlobStore } from "./blobs.js";
 import { blobRecorder, purgeRecorder } from "./job.js";
 import { purgeThreads, type PurgeOutcome } from "./purge.js";
@@ -44,7 +44,7 @@ export interface DepartedPurgeResult {
  * KOBE-216), `busy`, `budget` and `held` leave threads behind for a later call.
  */
 export async function purgeDepartedMember(
-  db: KobeDb,
+  db: KaijuDb,
   input: { readonly teamId: string; readonly userId: string },
   blobs?: BlobStore,
 ): Promise<DepartedPurgeResult> {

@@ -1,4 +1,4 @@
-import { inArray, sql, users, withTeam, type TeamRole } from "@kobe/db";
+import { inArray, sql, users, withTeam, type TeamRole } from "@kaiju/db";
 import { readAppName } from "../branding/settings.js";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";

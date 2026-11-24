@@ -1,4 +1,4 @@
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { dutiesProblem } from "./review-duties.js";
 import { DECIDABLE_STATES, PROBLEMS, type Problem } from "./review-problems.js";
@@ -45,7 +45,7 @@ export interface Acknowledgement {
 
 /** Who acknowledged each finding of the version, by key (the first acknowledgement). */
 export async function acknowledgements(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   versionId: string,
 ): Promise<Map<string, Acknowledgement>> {
   const res = await db.execute<{ key: string; actor_id: string; name: string; at: Date }>(sql`
@@ -65,7 +65,7 @@ export async function acknowledgements(
 
 /** Approve's check: every Caution finding acknowledged. */
 export async function unacknowledgedProblem(
-  tx: KobeTx,
+  tx: KaijuTx,
   versionId: string,
   scan: Record<string, unknown>,
 ): Promise<Problem | null> {
@@ -91,7 +91,7 @@ const UNKNOWN: Problem = {
 
 /** Records `userId`'s acknowledgement of one Caution finding (idempotent per finding). */
 export async function acknowledge(
-  db: KobeDb,
+  db: KaijuDb,
   versionId: string,
   userId: string,
   key: string,

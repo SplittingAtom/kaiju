@@ -73,7 +73,7 @@ const pickerSelect = (page: Page) => appsPanel(page).getByRole("combobox", { nam
 const frameOf = (page: Page, app: App): FrameLocator =>
   appsPanel(page).frameLocator(`iframe[title="${app.title} (app from ${app.connectorName})"]`);
 const railWidth = async (page: Page) =>
-  (await page.locator("#kobe-workspace-rail").boundingBox())?.width ?? 0;
+  (await page.locator("#kaiju-workspace-rail").boundingBox())?.width ?? 0;
 
 async function showApps(page: Page, chat: Chat): Promise<void> {
   await chat.showBothPanels("apps");
@@ -138,7 +138,7 @@ test("pick the picker, choose a table: the composer shows the text and nothing i
   await noPageScroll(page);
   await pickTable(frame);
   await expect(chat.composer).toHaveValue(new RegExp(TEXT.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  await expect(page.locator("[data-kobe-app-insert-from]")).toContainText(`From ${app.title}`);
+  await expect(page.locator("[data-kaiju-app-insert-from]")).toContainText(`From ${app.title}`);
   await page.waitForTimeout(1_000);
   expect(sends(), "no thread was created and nothing was sent").toBe(0);
 

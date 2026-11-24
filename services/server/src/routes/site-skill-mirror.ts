@@ -1,5 +1,5 @@
-import type { SkillMirrorStatus } from "@kobe/protocol";
-import { decideEgress, loadEgressCeiling } from "@kobe/db";
+import type { SkillMirrorStatus } from "@kaiju/protocol";
+import { decideEgress, loadEgressCeiling } from "@kaiju/db";
 import { Hono } from "hono";
 import type { AuthVariables } from "../auth/session.js";
 import { requireSitePermission } from "../authz/middleware.js";

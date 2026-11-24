@@ -6,7 +6,7 @@ import type { DraftFile } from "../../lib/chat/attachments";
 import type { ChipFile } from "../../lib/chat/tree";
 import type { SentFileInfo } from "../../lib/chat/sent-files";
 import { formatBytes } from "../../lib/chat/uploads";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 
 const chip =
   "border-foreground/10 bg-background flex min-w-0 max-w-64 items-center gap-2 rounded-lg border px-2 py-1 text-xs";

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
-import { loadEnvelope } from "@kobe/db";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
+import { loadEnvelope } from "@kaiju/db";
 import { logger } from "../logger.js";
 import { createInternalApp } from "../routes/internal.js";
 import type { TestBrowser } from "../testing/browser.js";

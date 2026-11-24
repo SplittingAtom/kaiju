@@ -7,7 +7,7 @@ import {
   threads,
   withTeam,
   type ModelUsageRecord,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { runWithAuditContext } from "../audit/context.js";
 import { threadUsageResponseSchema } from "../openapi/usage.js";
 import { createTeamWithAdmin } from "../teams/members.js";

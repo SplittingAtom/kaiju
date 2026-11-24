@@ -4,17 +4,17 @@ import { bodyLimit } from "hono/body-limit";
 import type { Logger } from "pino";
 import {
   GIT_BUILTIN_CONNECTOR_ID,
-  KOBE_BUILTIN_CONNECTOR_ID,
+  KAIJU_BUILTIN_CONNECTOR_ID,
   canonicalJson,
   toolInputSchema,
   uuidSchema,
-} from "@kobe/protocol";
-import type { SessionVerifyKeys } from "@kobe/session-token";
+} from "@kaiju/protocol";
+import type { SessionVerifyKeys } from "@kaiju/session-token";
 import { bearerToken, isExpiredSandboxToken, verifySandboxToken } from "./auth.js";
 import type { Limits } from "./config.js";
 import type { CredentialResolver } from "./credentials.js";
 import { JSONRPC_ERRORS, parseMessage, rpcError, rpcResult, type JsonRpcId } from "./jsonrpc.js";
-import { annotate, contentAttributes, idAttributes, withSpan } from "@kobe/telemetry";
+import { annotate, contentAttributes, idAttributes, withSpan } from "@kaiju/telemetry";
 import type { Limiter } from "./limits.js";
 import type { BuiltinServer, ExposedTool, PolicyServer } from "./server-client.js";
 import type { UpstreamClient, UpstreamFailure } from "./upstream.js";
@@ -112,7 +112,7 @@ export function mcpRoutes(deps: McpRouteDeps): Hono {
 }
 
 const SESSION_HEADER = "mcp-session-id";
-const SESSION_ID = "kobe-stateless";
+const SESSION_ID = "kaiju-stateless";
 /** The e2e (token rotation) greps the proxy log for this line. */
 const EXPIRED_SESSION_LOG = "mcp: expired token on a live session; answered 404";
 
@@ -215,18 +215,18 @@ function serverFailure(id: JsonRpcId, failure: string): Answer {
  * listener; the proxy attaches no credential and contacts nothing else.
  */
 const builtinOf = (ctx: CallContext): BuiltinServer | undefined =>
-  ctx.connectorId === KOBE_BUILTIN_CONNECTOR_ID
+  ctx.connectorId === KAIJU_BUILTIN_CONNECTOR_ID
     ? "kobe"
     : ctx.connectorId === GIT_BUILTIN_CONNECTOR_ID
       ? "git"
       : undefined;
 /** The built-in git connector (KOBE-762) is hosted by the server the same way. */
-const isKobe = (ctx: CallContext) => builtinOf(ctx) !== undefined;
+const isKaiju = (ctx: CallContext) => builtinOf(ctx) !== undefined;
 
 const listFor = (ctx: CallContext) => {
   const builtin = builtinOf(ctx);
   return builtin !== undefined
-    ? ctx.deps.server.kobeList(ctx.token, builtin)
+    ? ctx.deps.server.kaijuList(ctx.token, builtin)
     : ctx.deps.server.listTools(ctx.token, ctx.connectorId);
 };
 
@@ -293,13 +293,13 @@ async function callTool(ctx: CallContext, id: JsonRpcId, params: unknown): Promi
       },
     },
     () =>
-      isKobe(ctx)
-        ? callKobe(ctx, id, params.name as string, args, toolCallId, threadId)
+      isKaiju(ctx)
+        ? callKaiju(ctx, id, params.name as string, args, toolCallId, threadId)
         : decideAndForward(ctx, id, params.name as string, args, canonical, toolCallId, threadId),
   );
 }
 
-async function callKobe(
+async function callKaiju(
   ctx: CallContext,
   id: JsonRpcId,
   toolName: string,
@@ -312,7 +312,7 @@ async function callKobe(
   if (!release) return [rpcError(id, JSONRPC_ERRORS.internal, "Too many calls in flight."), 429];
   const started = Date.now();
   try {
-    const answered = await deps.server.kobeCall(
+    const answered = await deps.server.kaijuCall(
       ctx.token,
       {
         tool: toolName,

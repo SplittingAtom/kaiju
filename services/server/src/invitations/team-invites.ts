@@ -10,10 +10,10 @@ import {
   teamMembers,
   users,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type TeamRole,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { normalizeEmail } from "./site-invites.js";
 import { reopenRetentionInTx } from "../offboarding/reopen.js";
@@ -43,7 +43,7 @@ export interface TeamInviteSummary extends TeamInvite {
  * roster anyway) are reported.
  */
 export async function inviteToTeam(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   input: {
     readonly email: string;
@@ -107,7 +107,7 @@ export async function inviteToTeam(
   });
 }
 
-export async function listTeamInvites(db: KobeDb, teamId: string): Promise<TeamInviteSummary[]> {
+export async function listTeamInvites(db: KaijuDb, teamId: string): Promise<TeamInviteSummary[]> {
   const rows = await withTeam(db, teamId, (tx) =>
     tx
       .select({
@@ -137,7 +137,7 @@ export async function listTeamInvites(db: KobeDb, teamId: string): Promise<TeamI
 }
 
 export async function revokeTeamInvite(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   id: string,
   /** KOBE-621: revoke only while the invitation still offers this role (the approved before-state). */
@@ -171,7 +171,10 @@ export async function revokeTeamInvite(
  * without `xms_edov`, a generic `email` without `email_verified`) must never list, accept or
  * decline someone else's invitation. Local and invited users are always verified.
  */
-export async function verifiedEmailOf(db: KobeDb | KobeTx, userId: string): Promise<string | null> {
+export async function verifiedEmailOf(
+  db: KaijuDb | KaijuTx,
+  userId: string,
+): Promise<string | null> {
   const [row] = await db
     .select({ email: users.email, verified: users.emailVerified })
     .from(users)
@@ -189,7 +192,7 @@ export async function verifiedEmailOf(db: KobeDb | KobeTx, userId: string): Prom
  * revoked, inviter without authority: one answer); an invalid one is deleted.
  */
 export async function acceptTeamInvite(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   user: { readonly id: string; readonly email: string },
 ): Promise<TeamRole | null> {
@@ -264,14 +267,14 @@ export async function acceptTeamInvite(
  * Deletes the pending invitations a user sent in a team, inside the caller's team transaction:
  * used when they lose the authority to invite (demoted below team admin or removed).
  */
-export async function revokeInvitesSentBy(tx: KobeTx, teamId: string, userId: string) {
+export async function revokeInvitesSentBy(tx: KaijuTx, teamId: string, userId: string) {
   await tx
     .delete(teamInvitations)
     .where(and(eq(teamInvitations.teamId, teamId), eq(teamInvitations.invitedBy, userId)));
 }
 
 /** Deletes a user's pending invitations in every team (deactivation), team by team under RLS. */
-export async function revokeAllInvitesSentBy(db: KobeDb, userId: string): Promise<void> {
+export async function revokeAllInvitesSentBy(db: KaijuDb, userId: string): Promise<void> {
   await scanTeams(db, "revokeAllInvitesSentBy", async (tx, team) => {
     await revokeInvitesSentBy(tx, team.id, userId);
     return undefined;
@@ -280,7 +283,7 @@ export async function revokeAllInvitesSentBy(db: KobeDb, userId: string): Promis
 
 /** The invited user says no; the invitation is deleted. */
 export async function declineTeamInvite(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   email: string,
 ): Promise<boolean> {

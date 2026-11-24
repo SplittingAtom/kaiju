@@ -4,7 +4,7 @@
  * How an execution ended, in words (KOBE-465; statuses NB15, save errors NB11). KOBE-805: a run
  * cut at the output cap or stopped at its time limit says so plainly, with what to do.
  */
-import { NOTEBOOK_EXEC_OUTPUTS_MAX, NOTEBOOK_EXEC_OUTPUT_MAX_BYTES } from "@kobe/protocol";
+import { NOTEBOOK_EXEC_OUTPUTS_MAX, NOTEBOOK_EXEC_OUTPUT_MAX_BYTES } from "@kaiju/protocol";
 import type { Execution } from "../../lib/notebooks/executions";
 import { formatBytes } from "../../lib/files/format";
 
@@ -53,7 +53,7 @@ export function ExecutionNote({
   const text = running ? "Running…" : executionNote(exec, notebook);
   if (text === null) return null;
   return (
-    <p role="status" className="text-muted-foreground text-xs" data-kobe-exec-status="">
+    <p role="status" className="text-muted-foreground text-xs" data-kaiju-exec-status="">
       {exec.origin === "agent" ? `Agent run: ${text}` : text}
     </p>
   );

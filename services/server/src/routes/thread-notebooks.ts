@@ -4,7 +4,7 @@ import {
   notebookPathSchema,
   notebookRunBodySchema,
   notebookVariablesBodySchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { execOutputs, fileHistory } from "../notebooks/history.js";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";

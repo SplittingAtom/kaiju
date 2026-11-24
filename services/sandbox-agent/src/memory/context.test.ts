@@ -1,5 +1,5 @@
-import type { RunMemoryContext } from "@kobe/protocol";
-import { SYSTEM_PROMPT_MAX_BYTES } from "@kobe/protocol";
+import type { RunMemoryContext } from "@kaiju/protocol";
+import { SYSTEM_PROMPT_MAX_BYTES } from "@kaiju/protocol";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";

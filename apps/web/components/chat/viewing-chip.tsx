@@ -3,7 +3,7 @@
 import { EyeIcon, XIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { fileName } from "../../lib/files/preview";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 
 /**
  * "Viewing <file>" on the composer (KOBE-463, FE7): the workspace file open in the artifact
@@ -18,7 +18,7 @@ export function ViewingChip() {
   return (
     <div className="px-2">
       <span
-        data-kobe-viewing-chip={path}
+        data-kaiju-viewing-chip={path}
         title={path}
         className="inline-flex max-w-full items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs"
       >

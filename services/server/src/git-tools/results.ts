@@ -1,4 +1,4 @@
-import type { GitConnectionRecord } from "@kobe/db";
+import type { GitConnectionRecord } from "@kaiju/db";
 import {
   cloneUrlFor,
   type GitBranch,
@@ -8,14 +8,14 @@ import {
   type GitPullRequest,
   type GitRepository,
 } from "../git-hosts/adapter.js";
-import { KOBE_RESULT_MAX_BYTES } from "../kobe-mcp/catalog.js";
+import { KAIJU_RESULT_MAX_BYTES } from "../kaiju-mcp/catalog.js";
 import {
   fenceGitContent,
   fenceGitFile,
   gitContentNotice,
   newNonce,
   plainHostText,
-} from "../kobe-mcp/untrusted.js";
+} from "../kaiju-mcp/untrusted.js";
 import { toolError, type GitToolError } from "./errors.js";
 import type { GitWriteRecord } from "./ledger.js";
 
@@ -24,7 +24,7 @@ import type { GitWriteRecord } from "./ledger.js";
  * states and links the adapters already bounded (web links on the connection's own origin, clone
  * URLs built from the base URL), and the host's free text (titles, bodies, file content) sanitised
  * and fenced as untrusted content with a fresh nonce, so it never reads as instructions. Never a
- * credential, and never more than {@link KOBE_RESULT_MAX_BYTES}.
+ * credential, and never more than {@link KAIJU_RESULT_MAX_BYTES}.
  */
 
 export type GitResultData =
@@ -74,7 +74,7 @@ const repositoryView = (r: GitRepository) => ({
 
 function done(value: Record<string, unknown>): { ok: true; text: string } | GitToolError {
   const text = JSON.stringify(value);
-  if (Buffer.byteLength(text, "utf8") > KOBE_RESULT_MAX_BYTES) {
+  if (Buffer.byteLength(text, "utf8") > KAIJU_RESULT_MAX_BYTES) {
     return toolError(
       "too_large",
       "The result is too large; ask for a smaller page or a smaller file.",

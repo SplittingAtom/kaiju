@@ -1,9 +1,9 @@
 /**
  * Artifacts in the web app (KOBE-130, D-6/D-7 of docs/ledger/KOBE-55.md). The API answers in
  * snake_case; `apiRequest` camelizes, so these are the camelized shapes of `ArtifactSummary` /
- * `ArtifactDetail` (`@kobe/protocol`).
+ * `ArtifactDetail` (`@kaiju/protocol`).
  */
-import { artifactFileExtension, isArtifactTextKind, type ArtifactKind } from "@kobe/protocol";
+import { artifactFileExtension, isArtifactTextKind, type ArtifactKind } from "@kaiju/protocol";
 import { previewOf, type FilePreview } from "../files/preview";
 
 export type { ArtifactKind };

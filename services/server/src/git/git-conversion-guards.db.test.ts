@@ -420,7 +420,7 @@ describe("the project while a conversion holds it (L3) and unsaved working copie
         w.member.id,
         `projects/${p.slug}/new.txt`,
         digest,
-        `kobe/teams/${w.team}/users/${w.member.id}/workspace/${digest}`,
+        `kaiju/teams/${w.team}/users/${w.member.id}/workspace/${digest}`,
       ],
     );
     const res = await start(w.owner, p.id, { connection_id: w.connectionId });

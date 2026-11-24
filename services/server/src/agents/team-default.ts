@@ -5,10 +5,10 @@ import {
   teamAgents,
   teamAgentSuspensions,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
-import type { TeamDefaultAgent, TeamDefaultAgentOption } from "@kobe/protocol";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import type { TeamDefaultAgent, TeamDefaultAgentOption } from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import { lentAgents } from "./roster-resolution.js";
 import { SITE, TEAM, toRecord, type AgentRecord } from "./store.js";
@@ -31,7 +31,7 @@ const NOBODY = "00000000-0000-0000-0000-000000000000";
 
 /** The chosen agent id, or null (none, or a malformed value). `teams` is a site table: by id. */
 export async function readTeamDefaultAgent(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   teamId: string,
 ): Promise<string | null> {
   const res = await db.execute<{ id: string | null }>(sql`
@@ -58,7 +58,7 @@ const option = (
 
 /** What a team admin may choose, by name. Inside `withTeam(teamId)`; `team_id` explicit. */
 export async function defaultAgentOptions(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
 ): Promise<TeamDefaultAgentOption[]> {
   const suspended = new Set(
@@ -82,7 +82,7 @@ export async function defaultAgentOptions(
 }
 
 /** The setting with the choices, for `GET /v1/team/default-agent`. */
-export async function teamDefaultAgent(db: KobeDb, teamId: string): Promise<TeamDefaultAgent> {
+export async function teamDefaultAgent(db: KaijuDb, teamId: string): Promise<TeamDefaultAgent> {
   return withTeam(db, teamId, async (tx) => {
     const agentId = await readTeamDefaultAgent(tx, teamId);
     const options = await defaultAgentOptions(tx, teamId);
@@ -99,7 +99,7 @@ export async function teamDefaultAgent(db: KobeDb, teamId: string): Promise<Team
  * options now; audited `team.default_agent_changed` (ids only) when it changed.
  */
 export async function setTeamDefaultAgent(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   agentId: string | null,
 ): Promise<{ ok: true; value: TeamDefaultAgent } | { ok: false; error: "agent_not_eligible" }> {

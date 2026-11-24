@@ -6,7 +6,7 @@ import { startSkillFromConversation } from "../../lib/skills/from-conversation";
 import { saveWorkspaceSkill } from "../../lib/skills/drafts-api";
 import { showSavedSkill } from "../../lib/skills/saved-notice";
 import type { MenuBindings } from "../../lib/shell/menu";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 import type { Notice } from "./use-thread-menu";
 
 const LOADING = "Looking for skill folders in /workspace/skills…";

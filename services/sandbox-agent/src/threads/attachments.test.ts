@@ -7,7 +7,7 @@ import { AttachmentPathError, confineAttachment, promptWithAttachments } from ".
 let root: string;
 let outside: string;
 beforeEach(async () => {
-  const base = await mkdtemp(path.join(tmpdir(), "kobe-att-"));
+  const base = await mkdtemp(path.join(tmpdir(), "kaiju-att-"));
   root = path.join(base, "workspace");
   outside = path.join(base, "outside");
   await mkdir(path.join(root, "uploads"), { recursive: true });

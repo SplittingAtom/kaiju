@@ -1,5 +1,5 @@
 // Local file operations shared by the restore, pull and push steps of workspace sync.
-import type { WorkspaceEntry } from "@kobe/protocol/sandbox-wire";
+import type { WorkspaceEntry } from "@kaiju/protocol/sandbox-wire";
 import { applyCheckouts } from "../checkouts.js";
 import {
   conflictCopyName,

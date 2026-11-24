@@ -1,14 +1,18 @@
 import { createHash, randomUUID } from "node:crypto";
 import { pino } from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
-import { GIT_BUILTIN_CONNECTOR_ID, KOBE_BUILTIN_CONNECTOR_ID, canonicalJson } from "@kobe/protocol";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
+import {
+  GIT_BUILTIN_CONNECTOR_ID,
+  KAIJU_BUILTIN_CONNECTOR_ID,
+  canonicalJson,
+} from "@kaiju/protocol";
 import {
   generateSessionKeyPair,
   signSessionToken,
   type SessionSigningKey,
-} from "@kobe/session-token";
-import { InMemorySpanExporter, SpanStatusCode, initTelemetry } from "@kobe/telemetry";
+} from "@kaiju/session-token";
+import { InMemorySpanExporter, SpanStatusCode, initTelemetry } from "@kaiju/telemetry";
 import { createApp } from "./app.js";
 import { DEFAULT_LIMITS, type Limits } from "./config.js";
 import {
@@ -22,7 +26,7 @@ import { createLimiter } from "./limits.js";
 import type {
   CallDecision,
   CallQuery,
-  KobeCallAnswer,
+  KaijuCallAnswer,
   PolicyServer,
   ServerAnswer,
   ToolsResponse,
@@ -102,11 +106,11 @@ class FakePolicyServer implements PolicyServer {
   }
 
   /** The built-in Kaiju connector (KOBE-619): what the server lists and answers. */
-  readonly kobeAsked: { token: string; query: Omit<CallQuery, "connectorId"> }[] = [];
-  kobeTools: ServerAnswer<ToolsResponse> = {
+  readonly kaijuAsked: { token: string; query: Omit<CallQuery, "connectorId"> }[] = [];
+  kaijuTools: ServerAnswer<ToolsResponse> = {
     ok: true,
     value: {
-      connector: { id: KOBE_BUILTIN_CONNECTOR_ID, name: "kobe" },
+      connector: { id: KAIJU_BUILTIN_CONNECTOR_ID, name: "kobe" },
       tools: [
         {
           name: "team_members_list",
@@ -118,7 +122,7 @@ class FakePolicyServer implements PolicyServer {
       ],
     },
   };
-  kobeAnswer: ServerAnswer<KobeCallAnswer> = {
+  kaijuAnswer: ServerAnswer<KaijuCallAnswer> = {
     ok: true,
     value: {
       outcome: "result",
@@ -130,14 +134,14 @@ class FakePolicyServer implements PolicyServer {
   };
   /** Which built-in server each list and call went to (KOBE-762). */
   readonly builtinAsked: string[] = [];
-  kobeList(_t?: string, builtin = "kobe") {
+  kaijuList(_t?: string, builtin = "kobe") {
     this.builtinAsked.push(`list:${builtin}`);
-    return Promise.resolve(this.kobeTools);
+    return Promise.resolve(this.kaijuTools);
   }
-  kobeCall(t: string, query: Omit<CallQuery, "connectorId">, builtin = "kobe") {
+  kaijuCall(t: string, query: Omit<CallQuery, "connectorId">, builtin = "kobe") {
     this.builtinAsked.push(`call:${builtin}`);
-    this.kobeAsked.push({ token: t, query });
-    return Promise.resolve(this.kobeAnswer);
+    this.kaijuAsked.push({ token: t, query });
+    return Promise.resolve(this.kaijuAnswer);
   }
 
   fetchGrant(_token: string, _connectorId: string, _options?: GrantFetchOptions) {
@@ -301,7 +305,7 @@ describe("authentication and transport", () => {
     const res = await rpc("tools/list", undefined, {
       token: stale,
       app: app({ log }),
-      headers: { "mcp-session-id": "kobe-stateless" },
+      headers: { "mcp-session-id": "kaiju-stateless" },
     });
     expect(res.status).toBe(404);
     const logged = lines.join("");
@@ -422,7 +426,7 @@ describe("initialize, ping, tools/list", () => {
       serverInfo: { name: "kobe-mcp-proxy", version: "1.0.0" },
     });
     // A constant id only: no state behind it (KOBE-111, see the session test).
-    expect(res.headers.get("mcp-session-id")).toBe("kobe-stateless");
+    expect(res.headers.get("mcp-session-id")).toBe("kaiju-stateless");
     const newest = await rpc("initialize", { protocolVersion: "2099-01-01" });
     expect(newest.json?.result.protocolVersion).toBe("2025-11-25");
   });
@@ -1109,21 +1113,21 @@ describe("the built-in git connector (KOBE-762)", () => {
     expect(server.builtinAsked).toEqual(["list:git", "call:git"]);
     expect(server.asked).toEqual([]);
     expect(fake.received).toEqual([]);
-    await rpc("tools/list", undefined, { connector: KOBE_BUILTIN_CONNECTOR_ID });
+    await rpc("tools/list", undefined, { connector: KAIJU_BUILTIN_CONNECTOR_ID });
     expect(server.builtinAsked.at(-1)).toBe("list:kobe");
   });
 });
 
 describe("the built-in Kaiju connector (KOBE-619)", () => {
-  const kobe = { connector: KOBE_BUILTIN_CONNECTOR_ID };
+  const kaiju = { connector: KAIJU_BUILTIN_CONNECTOR_ID };
 
   it("lists its tools from the server's Kaiju endpoint, never a connector's pinned list", async () => {
-    const res = await rpc("tools/list", undefined, kobe);
+    const res = await rpc("tools/list", undefined, kaiju);
     expect(res.status).toBe(200);
     expect(res.json?.result.tools.map((t: { name: string }) => t.name)).toEqual([
       "team_members_list",
     ]);
-    const init = await rpc("initialize", {}, kobe);
+    const init = await rpc("initialize", {}, kaiju);
     expect(init.status).toBe(200);
   });
 
@@ -1142,14 +1146,14 @@ describe("the built-in Kaiju connector (KOBE-619)", () => {
         arguments: { cursor: "MA" },
         _meta: { "kobe.dev/tool_call_id": "call-7" },
       },
-      kobe,
+      kaiju,
     );
     expect(res.status).toBe(200);
     expect(res.json?.result).toEqual({
       content: [{ type: "text", text: '{"members":[]}' }],
       structuredContent: { members: [] },
     });
-    expect(server.kobeAsked).toEqual([
+    expect(server.kaijuAsked).toEqual([
       {
         token: expect.any(String),
         query: {
@@ -1166,30 +1170,34 @@ describe("the built-in Kaiju connector (KOBE-619)", () => {
   });
 
   it("turns a denial or a refused execution into a tool error the model sees", async () => {
-    server.kobeAnswer = {
+    server.kaijuAnswer = {
       ok: true,
       value: { outcome: "denied", code: "kobe_admin_not_allowed", message: "Not for you." },
     };
-    const denied = await rpc("tools/call", { name: "team_members_set_role", arguments: {} }, kobe);
+    const denied = await rpc("tools/call", { name: "team_members_set_role", arguments: {} }, kaiju);
     expect(denied.json?.result).toEqual({
       content: [{ type: "text", text: "Kaiju denied this call: Not for you." }],
       isError: true,
     });
-    server.kobeAnswer = {
+    server.kaijuAnswer = {
       ok: true,
       value: { outcome: "error", code: "changed_since_approval", message: "Changed." },
     };
-    const changed = await rpc("tools/call", { name: "team_members_set_role", arguments: {} }, kobe);
+    const changed = await rpc(
+      "tools/call",
+      { name: "team_members_set_role", arguments: {} },
+      kaiju,
+    );
     expect(changed.json?.result.isError).toBe(true);
     expect(changed.json?.result.content[0].text).toContain("changed_since_approval");
   });
 
   it("fails closed when the server is away or the connector is not available", async () => {
-    server.kobeAnswer = { ok: false, failure: "unavailable" };
-    const away = await rpc("tools/call", { name: "team_members_list", arguments: {} }, kobe);
+    server.kaijuAnswer = { ok: false, failure: "unavailable" };
+    const away = await rpc("tools/call", { name: "team_members_list", arguments: {} }, kaiju);
     expect(away.json?.result.isError).toBe(true);
-    server.kobeTools = { ok: false, failure: "not_available" };
-    const listed = await rpc("tools/list", undefined, kobe);
+    server.kaijuTools = { ok: false, failure: "not_available" };
+    const listed = await rpc("tools/list", undefined, kaiju);
     expect(listed.status).toBe(403);
   });
 });

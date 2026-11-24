@@ -6,9 +6,9 @@ import {
   isNotNull,
   sql,
   SYSTEM_ACTOR,
-  type KobeDb,
+  type KaijuDb,
   pgCodeOf,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { SITE, siteWhere } from "../agents/store.js";
 import { archiveAgent, publishAgent } from "../agents/versions.js";
@@ -44,7 +44,7 @@ export interface SeedResult {
  * anything has to be published; an archived agent is left alone (never revived behind its back).
  */
 async function ensureDraft(
-  db: KobeDb,
+  db: KaijuDb,
   { key, generation, definition }: ParsedGalleryDefinition,
 ): Promise<{ agentId: string; action: SeedResult["action"]; publish: boolean }> {
   return db.transaction(async (tx) => {
@@ -176,7 +176,7 @@ async function ensureDraft(
 
 const bump = () => sql`${siteAgents.revision} + 1`;
 
-async function seedOne(db: KobeDb, parsed: ParsedGalleryDefinition): Promise<SeedResult> {
+async function seedOne(db: KaijuDb, parsed: ParsedGalleryDefinition): Promise<SeedResult> {
   let draft;
   try {
     draft = await ensureDraft(db, parsed);
@@ -211,7 +211,7 @@ async function seedOne(db: KobeDb, parsed: ParsedGalleryDefinition): Promise<See
  * detached from the repo, so it is kept: reported `kept_customized`, never archived.
  */
 async function retireRemoved(
-  db: KobeDb,
+  db: KaijuDb,
   keys: readonly string[],
 ): Promise<{ retired: string[]; kept: SeedResult[] }> {
   const gone = await db
@@ -236,7 +236,7 @@ async function retireRemoved(
 }
 
 async function retireAll(
-  db: KobeDb,
+  db: KaijuDb,
   parsed: readonly ParsedGalleryDefinition[],
 ): Promise<SeedResult[]> {
   try {
@@ -263,7 +263,7 @@ async function retireAll(
  * instead of at the next start). Nothing is retired.
  */
 export async function seedGalleryAgent(
-  db: KobeDb,
+  db: KaijuDb,
   definition: ParsedGalleryDefinition,
 ): Promise<SeedResult> {
   return seedOne(db, definition);
@@ -276,7 +276,7 @@ export async function seedGalleryAgent(
  * agent a site admin customized (KOBE-494) is skipped until they reset it to the repository.
  */
 export async function seedGalleryAgents(
-  db: KobeDb,
+  db: KaijuDb,
   definitions: readonly GalleryDefinition[] = GALLERY_DEFINITIONS,
 ): Promise<SeedResult[]> {
   const parsed = parseGalleryDefinitions(definitions);

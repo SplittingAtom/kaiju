@@ -1,5 +1,5 @@
-import { checkPackagePaths, type PackageProblemCode } from "@kobe/protocol";
-import { SKILL_DRAFT_MAX_BYTES } from "@kobe/db";
+import { checkPackagePaths, type PackageProblemCode } from "@kaiju/protocol";
+import { SKILL_DRAFT_MAX_BYTES } from "@kaiju/db";
 import { SKILL_LIMITS } from "../limits.js";
 
 /**

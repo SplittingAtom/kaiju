@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { createMiddleware } from "hono/factory";
 import { z } from "zod";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
-import { CALLBACK_PATH, kobeOrigin } from "../connectors/oauth/client.js";
+import { CALLBACK_PATH, kaijuOrigin } from "../connectors/oauth/client.js";
 import {
   finishFlow,
   startFlow,
@@ -41,7 +41,7 @@ function flowDeps(deps: ServerDeps): OauthFlowDeps | undefined {
     db: deps.database.db,
     envelope: deps.envelope,
     io: { policy: deps.connectorUrlPolicy, timeoutMs: DEFAULT_TIMEOUT_MS },
-    kobe: kobeOrigin(deps.publicUrl),
+    kaiju: kaijuOrigin(deps.publicUrl),
     now: () => new Date(),
   };
 }

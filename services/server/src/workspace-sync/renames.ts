@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import type { WorkspaceOwner } from "./keys.js";
 
 /**
@@ -39,7 +39,7 @@ export function pairRenames(gone: readonly CommitFile[], created: readonly Commi
 
 /** The tombstones of `renames` name their new path (one statement; the caller's lock holds). */
 export async function recordRenames(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   renames: readonly Rename[],
 ): Promise<void> {

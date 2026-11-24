@@ -13,7 +13,7 @@ function Opener() {
   const [open, setOpen] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
   return (
-    <div data-kobe-console="">
+    <div data-kaiju-console="">
       <Button ref={opener} onClick={() => setOpen(true)}>
         Details
       </Button>

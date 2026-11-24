@@ -3,7 +3,7 @@ import { userInfo } from "node:os";
 import { join, resolve } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { MIGRATION_LOCK_KEY } from "@kobe/db";
+import { MIGRATION_LOCK_KEY } from "@kaiju/db";
 import pg from "pg";
 import {
   listImmediateForeignKeys,
@@ -106,7 +106,7 @@ function checkTarget(
   const unknownExclusions = manifest.excludedTables.filter((t) => !isExcluded(t.name));
   if (unknownExclusions.length > 0) {
     throw new Error(
-      `The backup left out tables this kobe never excludes: ${unknownExclusions.map((t) => t.name).join(", ")}; restore with the kobe version that made the backup`,
+      `The backup left out tables this kaiju never excludes: ${unknownExclusions.map((t) => t.name).join(", ")}; restore with the kaiju version that made the backup`,
     );
   }
   const target = new Set(tables.map((t) => t.name));
@@ -227,7 +227,7 @@ async function loadData(
 }
 
 /**
- * `kobe restore`: authenticate the backup (before running any tool), decrypt it into a private
+ * `kaiju restore`: authenticate the backup (before running any tool), decrypt it into a private
  * temporary directory, verify the target and the bucket, then load all data in one transaction.
  */
 export async function runRestore(options: RestoreOptions): Promise<RestoreReport> {

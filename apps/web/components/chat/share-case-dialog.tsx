@@ -11,7 +11,7 @@ import {
 } from "../../lib/chat/eval-cases";
 import { Button } from "../ui/button";
 import { chatPortalContainer } from "../ui/chat-portal";
-import { useKobeExtras } from "./kobe-runtime";
+import { useKaijuExtras } from "./kaiju-runtime";
 
 /**
  * "Share as an eval case" (KOBE-276): the preview of exactly what the agent's owner gets, from a
@@ -28,7 +28,7 @@ export function ShareCaseDialog({
   readonly onShared: (caseId: string) => void;
   readonly onOpenChange: (open: boolean) => void;
 }) {
-  const controller = useKobeExtras()?.controller;
+  const controller = useKaijuExtras()?.controller;
   const [options, setOptions] = useState<EvalCaseOptions>(NO_EXTRAS);
   const [preview, setPreview] = useState<EvalCasePreview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,11 +80,11 @@ export function ShareCaseDialog({
   return (
     <Dialog.Root open onOpenChange={onOpenChange}>
       <Dialog.Portal container={chatPortalContainer()}>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kobe-portal />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kaiju-portal />
         <Dialog.Content
           className="bg-background text-foreground fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100vh-2rem)] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 gap-3 overflow-y-auto rounded-lg border p-5 shadow-lg"
           data-share-case-dialog
-          data-kobe-portal
+          data-kaiju-portal
         >
           <Dialog.Title className="m-0 text-base font-semibold">Share as an eval case</Dialog.Title>
           <Dialog.Description className="text-muted-foreground m-0 text-sm">

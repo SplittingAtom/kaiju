@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { projectCommitOutcomeSchema } from "@kobe/protocol";
+import { projectCommitOutcomeSchema } from "@kaiju/protocol";
 import { commitSubject, REPO_COMMIT_TOOL, replyOf } from "./project-commit.js";
 
 /** KOBE-767: the agent's `commit_project` on a Repo, for new and older agents. */

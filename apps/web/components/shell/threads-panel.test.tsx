@@ -2,7 +2,7 @@
 import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { chooseNode, composer, openApp, openRowMenu } from "../chat/testing";
@@ -13,13 +13,13 @@ import { chooseNode, composer, openApp, openRowMenu } from "../chat/testing";
  * closes the panel. The row menus, keyboard and drag onto a project run here too (thread-menu,
  * thread-organize and thread-share tests open this panel).
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -34,7 +34,7 @@ const rail = () => screen.getByRole("complementary", { name: "Workspace" });
 const threadsButton = () => within(rail()).getByRole("button", { name: "Threads panel" });
 const panel = () => screen.findByRole("dialog", { name: "Threads" }, WAIT);
 const closed = () =>
-  waitFor(() => expect(document.querySelector('[data-kobe-panel="threads"]')).toBeNull(), WAIT);
+  waitFor(() => expect(document.querySelector('[data-kaiju-panel="threads"]')).toBeNull(), WAIT);
 
 async function openOn(threadId?: string) {
   openApp(fake, threadId);
@@ -50,7 +50,7 @@ describe("the Threads panel (ac-1, ac-5)", () => {
     fake.addThread("Hiring plan");
     const { user, dialog } = await openOn();
     expect(dialog.getAttribute("aria-modal")).toBe("true");
-    expect(dialog.getAttribute("data-kobe-panel")).toBe("threads");
+    expect(dialog.getAttribute("data-kaiju-panel")).toBe("threads");
     expect(window.location.pathname).toBe("/threads");
     // The workspace stays mounted underneath, inert.
     expect(screen.getByLabelText("Message").closest("[inert]")).not.toBeNull();
@@ -228,7 +228,7 @@ describe("the Threads button's activity (review M4)", () => {
       { name: "Threads panel, a conversation is running" },
       WAIT,
     );
-    expect(button.getAttribute("data-kobe-activity")).toBe("running");
+    expect(button.getAttribute("data-kaiju-activity")).toBe("running");
     expect(button.querySelector("[data-badge]")).not.toBeNull();
   });
 
@@ -236,7 +236,7 @@ describe("the Threads button's activity (review M4)", () => {
     fake.addThread("Quiet");
     openApp(fake);
     await composer();
-    expect(threadsButton().getAttribute("data-kobe-activity")).toBe("idle");
+    expect(threadsButton().getAttribute("data-kaiju-activity")).toBe("idle");
     expect(threadsButton().querySelector("[data-badge]")).toBeNull();
   });
 });

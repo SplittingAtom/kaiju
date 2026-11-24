@@ -1,5 +1,5 @@
-import { sql, withTeam, type KobeTx } from "@kobe/db";
-import { CAPABILITY_RUN_TOKEN, type RunTokenGrant } from "@kobe/protocol";
+import { sql, withTeam, type KaijuTx } from "@kaiju/db";
+import { CAPABILITY_RUN_TOKEN, type RunTokenGrant } from "@kaiju/protocol";
 import { markDelivered, type CommandRow } from "../commands.js";
 import { mintRunToken } from "../run-token.js";
 import { loadRun } from "../run-state.js";
@@ -26,7 +26,7 @@ export function claimDelivery(
 ): Promise<Claimed | "gone" | "replaced" | "run_not_active"> {
   const { ctx, host } = env;
   const { teamId } = host.target;
-  return withTeam(ctx.db, teamId, async (tx: KobeTx) => {
+  return withTeam(ctx.db, teamId, async (tx: KaijuTx) => {
     if (!(await isCurrent(tx, env))) return "replaced" as const;
     // An eval sandbox (KOBE-325) takes only its own thread's commands (the slot already says so).
     const evalThreadId = host.target.evalThreadId;
@@ -50,7 +50,7 @@ export function claimDelivery(
 }
 
 /** Only the sandbox's current connection delivers (a replaced one may not have noticed yet). */
-async function isCurrent(tx: KobeTx, env: DeliveryEnv): Promise<boolean> {
+async function isCurrent(tx: KaijuTx, env: DeliveryEnv): Promise<boolean> {
   const { host } = env;
   const { teamId, userId } = host.target;
   const evalThreadId = host.target.evalThreadId;
@@ -72,7 +72,7 @@ async function isCurrent(tx: KobeTx, env: DeliveryEnv): Promise<boolean> {
 
 /** A start: the run is still this member's and active, leased here, and its token minted. */
 async function claimStart(
-  tx: KobeTx,
+  tx: KaijuTx,
   env: DeliveryEnv,
   row: CommandRow,
 ): Promise<Claimed | "gone" | "run_not_active"> {

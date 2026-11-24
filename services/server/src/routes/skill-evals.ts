@@ -1,7 +1,7 @@
 import { Hono, type Context } from "hono";
 import { z } from "zod";
-import { withTeam } from "@kobe/db";
-import { startSkillEvalBodySchema } from "@kobe/protocol";
+import { withTeam } from "@kaiju/db";
+import { startSkillEvalBodySchema } from "@kaiju/protocol";
 import { requireTeam, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
@@ -18,7 +18,7 @@ import {
 import { SSE_HEADERS } from "../http/sse.js";
 import { param, readJson } from "../http/request.js";
 
-// Skill evals (KOBE-325; contract `@kobe/protocol` skill-evals `api.ts`), in the caller's active
+// Skill evals (KOBE-325; contract `@kaiju/protocol` skill-evals `api.ts`), in the caller's active
 // team: start one for a draft's current revision or a saved version, read it, its history, cancel
 // it, and follow it (SSE `skill.eval.progress` / `skill.eval.completed`). Mounted at `/v1` with
 // full paths, so each route takes the team middleware itself.

@@ -7,7 +7,7 @@
  * nodes: a model or agent change is the next node's `model` / `agentVersion`, a compaction is the
  * `compacted` tick of the node it sits in. Pure; the panel (KOBE-546) draws it.
  */
-import type { ThreadBranchesResponse } from "@kobe/protocol";
+import type { ThreadBranchesResponse } from "@kaiju/protocol";
 import { isAppCardEntry, parseEntry, recordedModel, type ParsedEntry } from "./entries";
 import type { AgentMarker } from "./markers";
 import { succeededToolCalls, toolBadges, type TreeBadges } from "./tree-badges";

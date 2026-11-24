@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import type { PathEntry, WatermarkWalk } from "./range.js";
 import type { EntryRow } from "./transcript.js";
 
@@ -17,7 +17,7 @@ export interface PathRow extends PathEntry {
 
 /** The branch from the root to `leaf`, root first (ids, order, type and time only). */
 export async function readBranch(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   leaf: string,
@@ -47,7 +47,7 @@ export async function readBranch(
 
 /** `seq` of `entryId` in the thread, or null when it is not there. */
 export async function entrySeq(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   entryId: string,
@@ -61,7 +61,7 @@ export async function entrySeq(
 
 /** The author's watermark on the thread with its ancestors (nearest first), or null. */
 export async function readWatermark(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   userId: string,
@@ -85,7 +85,7 @@ export async function readWatermark(
 
 /** The bodies of `ids`, at most a few hundred (inline payloads; an offloaded one is flagged). */
 export async function readEntries(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   ids: readonly string[],

@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
-import type { KobeDb } from "../client.js";
+import type { KaijuDb } from "../client.js";
 import { agentEvalCases, orbitEvals } from "../schema/index.js";
 import { withTeam } from "../with-team.js";
 
@@ -51,7 +51,7 @@ export function evalCasesFile(cases: readonly EvalCaseFileEntry[]): string | nul
  * froze only live ones; the retention window is not re-applied within an eval's few minutes).
  */
 export function loadEvalCaseFile(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   evalId: string,

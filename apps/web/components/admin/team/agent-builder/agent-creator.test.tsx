@@ -216,7 +216,7 @@ describe("connector tools: Allowed and Denied (ac-2)", () => {
 });
 
 describe("the built-in Kaiju connector (KOBE-623)", () => {
-  const KOBE = {
+  const KAIJU = {
     kobe: {
       connector_id: "6b6f6265-0000-4000-8000-000000000001",
       name: "kobe",
@@ -232,7 +232,7 @@ describe("the built-in Kaiju connector (KOBE-623)", () => {
   it("is offered by name; choosing it adds its admin tools and keeps the docs tools named", async () => {
     const calls = stubApi({
       ...READ,
-      "GET /v1/team/connectors/kobe": [200, KOBE],
+      "GET /v1/team/connectors/kobe": [200, KAIJU],
       "POST /v1/agents": [201, { agent: CREATED }],
     });
     renderTeam(<AgentBuilderPage scope="personal" />, { role: "member", permissions: [] });
@@ -264,7 +264,7 @@ describe("the built-in Kaiju connector (KOBE-623)", () => {
   it("is not offered while the site switch is off, and its absence changes nothing", async () => {
     stubApi({
       ...READ,
-      "GET /v1/team/connectors/kobe": [200, { kobe: { ...KOBE.kobe, mode: "off" } }],
+      "GET /v1/team/connectors/kobe": [200, { kobe: { ...KAIJU.kobe, mode: "off" } }],
     });
     renderTeam(<AgentBuilderPage scope="personal" />, { role: "member", permissions: [] });
     await userEvent.click(tab("Behaviour"));

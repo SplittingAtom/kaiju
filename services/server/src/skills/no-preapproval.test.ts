@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
-import { skillBundleRefSchema } from "@kobe/protocol/sandbox-wire";
+import { skillBundleRefSchema } from "@kaiju/protocol/sandbox-wire";
 import { bundleFromSkillMd } from "./bundle.js";
 
 /**

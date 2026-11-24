@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { useEffect, useMemo, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isMacPlatform } from "../../lib/shell/shortcuts";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { EMPTY_TREE_NOTE, FILES_LEFT_NOTE, TREE_HELP_TEXT } from "../../lib/chat/tree-panel";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
@@ -12,14 +12,14 @@ import { ChatApp } from "./chat-app";
 import { announcement, chatRequests, composer, openApp } from "./testing";
 
 /** KOBE-546 (CT4, CT8, CT9, CT12, CT18, CT19): the Conversation tree panel in the app. */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 let scrolled: Element[];
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   resizeWindow(DESKTOP_WIDTH);
   scrolled = [];
@@ -110,7 +110,7 @@ describe("opening and closing (ac-1)", () => {
     expect(within(dialog).getByText("1 branch · 0 forks")).toBeTruthy();
     expect(within(dialog).getByText(TREE_HELP_TEXT)).toBeTruthy();
     // The conversation stays mounted under it.
-    expect(must(document.querySelector("[data-kobe-thread-root]")).textContent).toContain(
+    expect(must(document.querySelector("[data-kaiju-thread-root]")).textContent).toContain(
       "new answer",
     );
     await userEvent.setup().keyboard("{Escape}");
@@ -280,7 +280,7 @@ describe("Continue from here (ac-2)", () => {
     await user.click(must(answers[0]));
     const chip = await screen.findByText(/Continuing from the answer at “a1”/);
     expect(chip).toBeTruthy();
-    const dimmed = [...document.querySelectorAll("[data-kobe-dimmed]")].map((e) => e.textContent);
+    const dimmed = [...document.querySelectorAll("[data-kaiju-dimmed]")].map((e) => e.textContent);
     expect(dimmed.some((x) => x?.includes("new question"))).toBe(true);
     expect(dimmed.some((x) => x?.includes("new answer"))).toBe(true);
     expect(screen.getByText("new answer")).toBeTruthy();
@@ -289,7 +289,7 @@ describe("Continue from here (ac-2)", () => {
     await waitFor(() => expect(document.activeElement).toBe(input));
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByText(/Continuing from the answer/)).toBeNull());
-    expect(document.querySelectorAll("[data-kobe-dimmed]")).toHaveLength(0);
+    expect(document.querySelectorAll("[data-kaiju-dimmed]")).toHaveLength(0);
     await user.click(must(screen.getAllByRole("button", { name: "Continue from here" })[0]));
     await screen.findByText(/Continuing from the answer/);
     await user.type(input, "another way{Enter}");
@@ -409,7 +409,7 @@ describe("keyboard and accessibility (ac-4)", () => {
     const { t } = branchedThread();
     await opened(t);
     const dialog = await openTree();
-    const svg = must(dialog.querySelector("svg[data-kobe-tree-graph]"));
+    const svg = must(dialog.querySelector("svg[data-kaiju-tree-graph]"));
     expect(svg.getAttribute("aria-hidden")).toBe("true");
     const onScreen = row("new answer");
     expect(onScreen.getAttribute("aria-current")).toBe("true");
@@ -496,7 +496,7 @@ describe("narrow windows (ac-5)", () => {
     const { t } = branchedThread();
     await opened(t);
     const dialog = await openTree();
-    expect(dialog.querySelector("[data-kobe-tree-panel='list']")).not.toBeNull();
+    expect(dialog.querySelector("[data-kaiju-tree-panel='list']")).not.toBeNull();
     const section = within(dialog).getByRole("region", { name: "Branches after: a1" });
     const rows = within(section).getAllByRole("listitem");
     expect(rows.map((r) => r.textContent)).toEqual([

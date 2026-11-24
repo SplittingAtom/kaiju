@@ -6,10 +6,10 @@ import {
   scanTeams,
   siteAgentRoster,
   teamAgentRoster,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
-import type { AgentReach, AgentRosterEntry } from "@kobe/protocol";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import type { AgentReach, AgentRosterEntry } from "@kaiju/protocol";
 import type { RosterEntryState, RosterTarget } from "./access.js";
 
 /**
@@ -90,7 +90,7 @@ export const updateAvailable = (
   currentVersion > entry.pinnedVersion;
 
 /** Every entry of a team's roster (any state). Call inside `withTeam(db, teamId)`. */
-export async function teamEntries(tx: KobeTx, teamId: string): Promise<RosterEntryRecord[]> {
+export async function teamEntries(tx: KaijuTx, teamId: string): Promise<RosterEntryRecord[]> {
   const rows = await tx
     .select(TEAM_ENTRY)
     .from(teamAgentRoster)
@@ -99,7 +99,7 @@ export async function teamEntries(tx: KobeTx, teamId: string): Promise<RosterEnt
 }
 
 /** The team roster's active entries (what the team runs besides its own agents and the site). */
-export async function activeTeamEntries(tx: KobeTx, teamId: string): Promise<RosterEntryRecord[]> {
+export async function activeTeamEntries(tx: KaijuTx, teamId: string): Promise<RosterEntryRecord[]> {
   const rows = await tx
     .select(TEAM_ENTRY)
     .from(teamAgentRoster)
@@ -109,7 +109,7 @@ export async function activeTeamEntries(tx: KobeTx, teamId: string): Promise<Ros
 
 /** One agent's entry on a team roster, any state. Call inside `withTeam(db, teamId)`. */
 export async function teamEntry(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   agentId: string,
   lock = false,
@@ -123,12 +123,12 @@ export async function teamEntry(
 }
 
 /** Every entry of the site roster (any state). */
-export async function siteEntries(db: KobeDb | KobeTx): Promise<RosterEntryRecord[]> {
+export async function siteEntries(db: KaijuDb | KaijuTx): Promise<RosterEntryRecord[]> {
   return (await db.select(ENTRY).from(siteAgentRoster)).map(fromSite);
 }
 
 /** The site roster's active entries: run by every team (minus a team's own suspensions). */
-export async function activeSiteEntries(db: KobeDb | KobeTx): Promise<RosterEntryRecord[]> {
+export async function activeSiteEntries(db: KaijuDb | KaijuTx): Promise<RosterEntryRecord[]> {
   const rows = await db
     .select(ENTRY)
     .from(siteAgentRoster)
@@ -137,7 +137,7 @@ export async function activeSiteEntries(db: KobeDb | KobeTx): Promise<RosterEntr
 }
 
 export async function siteEntry(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   agentId: string,
   lock = false,
 ): Promise<RosterEntryRecord | null> {
@@ -154,7 +154,7 @@ export async function siteEntry(
  * its deletion (409 `agent_rostered`, §6.3). Scans every team: entries outlive the owner's
  * membership. Must not run inside a team transaction.
  */
-export async function isRostered(db: KobeDb, agentId: string): Promise<boolean> {
+export async function isRostered(db: KaijuDb, agentId: string): Promise<boolean> {
   const site = await db
     .select({ id: siteAgentRoster.siteAgentId })
     .from(siteAgentRoster)
@@ -191,7 +191,7 @@ export class AgentRosteredError extends Error {
  * lock the agent `FOR SHARE`, so an assignment either committed before this check or waits and
  * then finds no agent.
  */
-export async function refuseIfRostered(db: KobeDb, agentId: string): Promise<void> {
+export async function refuseIfRostered(db: KaijuDb, agentId: string): Promise<void> {
   if (await isRostered(db, agentId)) throw new AgentRosteredError(agentId);
 }
 
@@ -213,7 +213,7 @@ export function isDeclined(e: {
 }
 
 export async function reachOf(
-  db: KobeDb,
+  db: KaijuDb,
   agentIds: readonly string[],
 ): Promise<ReadonlyMap<string, readonly AgentReach[]>> {
   const reach = new Map<string, AgentReach[]>();
@@ -273,7 +273,7 @@ export async function reachOf(
   return reach;
 }
 
-/** An entry on the wire (`@kobe/protocol` `AgentRosterEntry`). */
+/** An entry on the wire (`@kaiju/protocol` `AgentRosterEntry`). */
 export function entryView(e: RosterEntryRecord): AgentRosterEntry {
   return {
     agentId: e.agentId,

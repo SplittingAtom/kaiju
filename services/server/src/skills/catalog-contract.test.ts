@@ -14,7 +14,7 @@ import {
   skillInstallOrigin,
   skillPinMode,
   SYSTEM_TAG_NAMES,
-} from "@kobe/db";
+} from "@kaiju/db";
 import {
   DEFAULT_SYNC_KINDS,
   DEFAULT_SYNC_STATUSES,
@@ -30,7 +30,7 @@ import {
   SKILL_INSTALL_ORIGINS,
   SKILL_PIN_MODES,
   SYSTEM_TAGS,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /** KOBE-311: the database enums of the catalog are exactly the protocol's closed sets. */
 describe("catalog enums match the protocol contract", () => {

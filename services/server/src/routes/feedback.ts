@@ -5,8 +5,8 @@ import {
   FEEDBACK_ERROR_HTTP_STATUS,
   putFeedbackBodySchema,
   type FeedbackErrorCode,
-} from "@kobe/protocol";
-import { withTeam, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam, type KaijuTx } from "@kaiju/db";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import {
@@ -48,7 +48,7 @@ export function feedbackError(c: Context, code: FeedbackErrorCode | FeedbackErro
 async function asViewer<T>(
   deps: ServerDeps,
   c: Ctx,
-  fn: (tx: KobeTx, viewer: Viewer) => Promise<T>,
+  fn: (tx: KaijuTx, viewer: Viewer) => Promise<T>,
 ): Promise<T> {
   const teamId = c.get("team").id;
   const userId = c.get("user").id;

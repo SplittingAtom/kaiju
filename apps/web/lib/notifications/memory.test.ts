@@ -1,10 +1,10 @@
-import { MEMORY_NOTIFICATION_KINDS } from "@kobe/protocol";
+import { MEMORY_NOTIFICATION_KINDS } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
-import type { KobeNotification } from "./api";
+import type { KaijuNotification } from "./api";
 import { notificationLabel, notificationTitle } from "./format";
 import { memoryNotificationLink } from "./memory";
 
-const base: KobeNotification = {
+const base: KaijuNotification = {
   notificationId: "n",
   kind: "memory.proposal.received",
   scheduleId: null,
@@ -16,7 +16,7 @@ const base: KobeNotification = {
 };
 
 /** One example of every memory kind, with the fields it names. */
-const examples: Record<(typeof MEMORY_NOTIFICATION_KINDS)[number], KobeNotification> = {
+const examples: Record<(typeof MEMORY_NOTIFICATION_KINDS)[number], KaijuNotification> = {
   "memory.scope.near_full": {
     ...base,
     kind: "memory.scope.near_full",
@@ -118,7 +118,7 @@ describe("memory notifications in the bell (KOBE-645)", () => {
   });
 
   it("links each kind to where the person decides or sees the result", () => {
-    const href = (n: KobeNotification) => memoryNotificationLink(n)?.href;
+    const href = (n: KaijuNotification) => memoryNotificationLink(n)?.href;
     expect(href(examples["memory.proposal.received"])).toBe("/admin/team/memory?proposal=obj-1");
     expect(href(examples["memory.proposal.accepted"])).toBe("/me/memory?proposal=obj-1");
     expect(href(examples["memory.suggestion.received"])).toBe("/me/projects/p-1?suggestion=obj-1");
@@ -135,7 +135,7 @@ describe("memory notifications in the bell (KOBE-645)", () => {
     // KOBE-404: each reader gets a page they can open; unknown readers get My memory.
     const site = { siteCurator: true, workspaceCurator: false };
     const ws = { siteCurator: false, workspaceCurator: true };
-    const linkFor = (n: KobeNotification, v?: typeof site) => memoryNotificationLink(n, v)?.href;
+    const linkFor = (n: KaijuNotification, v?: typeof site) => memoryNotificationLink(n, v)?.href;
     expect(linkFor(examples["memory.site_proposal.confirmed"], site)).toBe(
       "/admin/site/memory?site_proposal=obj-1",
     );

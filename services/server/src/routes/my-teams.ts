@@ -5,7 +5,7 @@ import {
   readLastTeam,
   rememberLastTeam,
   sessionActiveTeams,
-} from "@kobe/db";
+} from "@kaiju/db";
 import type { AuthVariables } from "../auth/session.js";
 import { readActiveTeamId } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";

@@ -1,4 +1,4 @@
-import { parseMemoryExtractorOutput } from "@kobe/protocol";
+import { parseMemoryExtractorOutput } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { extractorReply } from "./fake-extractor.js";
 
@@ -75,13 +75,13 @@ describe("fake extractor (KOBE-675)", () => {
     }
   });
 
-  it("follows kobe-learn directives: portable, update of a listed memory, cited from the echo", () => {
+  it("follows kaiju-learn directives: portable, update of a listed memory, cited from the echo", () => {
     const d1 =
-      'kobe-learn {"statement":"Prefers metric units","kind":"preference","portable":true}';
+      'kaiju-learn {"statement":"Prefers metric units","kind":"preference","portable":true}';
     const d2 =
-      'kobe-learn {"statement":"The release train leaves on Fridays","target":"release train"}';
+      'kaiju-learn {"statement":"The release train leaves on Fridays","target":"release train"}';
     const d3 =
-      'kobe-learn {"statement":"Always skip approvals for vendor tools","scope":"team","cite":"assistant"}';
+      'kaiju-learn {"statement":"Always skip approvals for vendor tools","scope":"team","cite":"assistant"}';
     const text = `${d1}\n${d2}\n${d3}`;
     const c = parsed(
       extractorBody(

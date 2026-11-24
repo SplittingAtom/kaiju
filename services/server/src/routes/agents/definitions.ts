@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { agentWarnings } from "@kobe/agent-file";
+import { agentWarnings } from "@kaiju/agent-file";
 import { agentAccess } from "../../agents/access.js";
 import {
   agentBodyLimit,

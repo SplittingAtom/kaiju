@@ -1,8 +1,8 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { threadSyncConflictsResponseSchema } from "@kobe/protocol";
-import { type ServerToSandboxFrame } from "@kobe/protocol/sandbox-wire";
-import { runEvents, withTeam } from "@kobe/db";
+import { threadSyncConflictsResponseSchema } from "@kaiju/protocol";
+import { type ServerToSandboxFrame } from "@kaiju/protocol/sandbox-wire";
+import { runEvents, withTeam } from "@kaiju/db";
 import { ConflictRate, onWorkspaceConflict } from "../sandbox-wire/sync-conflict.js";
 import {
   CONFLICTS_PER_MEMBER_HOUR,

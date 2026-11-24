@@ -81,7 +81,7 @@ describe("sessionUrl", () => {
     expect(sessionUrl("ws://server.kobe.internal:8081")).toBe(
       "http://server.kobe.internal:8081/v1/sandbox/session",
     );
-    expect(sessionUrl("wss://kobe/x?y=1")).toBe("https://kobe/v1/sandbox/session");
+    expect(sessionUrl("wss://kaiju/x?y=1")).toBe("https://kaiju/v1/sandbox/session");
   });
 });
 

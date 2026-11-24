@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { BudgetLine } from "@kobe/db";
+import type { BudgetLine } from "@kaiju/db";
 import { describe, expect, it } from "vitest";
 import { MemoryReservations } from "./reservations-memory.js";
 

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { performance } from "node:perf_hooks";
-import { createDb, pruneExpiredRateLimits, type KobeDatabase } from "@kobe/db";
+import { createDb, pruneExpiredRateLimits, type KaijuDatabase } from "@kaiju/db";
 import { afterAll, describe, expect, inject, it, vi } from "vitest";
 import { BudgetGate } from "./budget-gate.js";
 import { DbMemberRate, MEMBER_RATE_DB } from "./member-rate.js";
@@ -14,7 +14,7 @@ import type { CallContext } from "./seams.js";
  * is refused (fail closed).
  */
 const teamId = randomUUID();
-const pools: KobeDatabase[] = [];
+const pools: KaijuDatabase[] = [];
 const clock = { t: Date.now() };
 
 function replica(
@@ -133,7 +133,7 @@ describe("member per-minute model rate across gateway replicas (KOBE-810)", () =
   });
 
   it("refuses the call when Postgres cannot be reached (fail closed)", async () => {
-    const dead = replica(60, { url: "postgres://kobe:x@127.0.0.1:1/none" });
+    const dead = replica(60, { url: "postgres://kaiju:x@127.0.0.1:1/none" });
     expect(await dead.admit(call(randomUUID()))).toMatchObject({
       ok: false,
       status: 503,

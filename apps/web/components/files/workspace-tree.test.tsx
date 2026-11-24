@@ -65,7 +65,7 @@ afterEach(cleanup);
 function mount(extra: Partial<React.ComponentProps<typeof FileBrowser>> = {}) {
   const { fetchFn, calls } = routedFetch(routes);
   render(
-    <div data-kobe-chat>
+    <div data-kaiju-chat>
       <IconActionProvider>
         <WorkspaceProjectsProvider teamId={TEAM} fetchFn={fetchFn}>
           <FileBrowser

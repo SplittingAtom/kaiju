@@ -1,7 +1,7 @@
 /**
  * The team's thread folders (KOBE-536, spec TF3/TF4): `GET/POST /v1/thread-folders`, `PATCH/DELETE
  * /v1/thread-folders/{id}` and filing, `POST /v1/threads/{id}/file`. Folder answers are validated
- * against `@kobe/protocol` in wire casing before the client sees them; a folder name is untrusted
+ * against `@kaiju/protocol` in wire casing before the client sees them; a folder name is untrusted
  * text and is only ever rendered as text.
  */
 import {
@@ -9,7 +9,7 @@ import {
   threadFolderSchema,
   threadFoldersResponseSchema,
   updateThreadFolderRequestSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import "../security/zod-jitless";
 import { apiRequest, type ApiError, type ApiResult } from "../api/client";
 import type { ThreadSummary } from "./types";

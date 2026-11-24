@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { verifySessionToken } from "@kobe/session-token";
+import { verifySessionToken } from "@kaiju/session-token";
 import { describe, expect, it } from "vitest";
 import { enableConnector, piName, registerConnector } from "../testing/mcp-fixtures.js";
 import { VERIFY_KEYS } from "../testing/sandbox-fixtures.js";
@@ -375,7 +375,7 @@ describe("Publish with the gate on but no runner", () => {
     await gateOn();
     const app = (await import("../app.js")).createApp(h.deps);
     const { TestBrowser } = await import("../testing/browser.js");
-    const b = new TestBrowser(app, "http://kobe.test");
+    const b = new TestBrowser(app, "http://kaiju.test");
     await b.post("/api/auth/sign-in/email", {
       email: "bob@eval.test",
       password: "a long enough password",

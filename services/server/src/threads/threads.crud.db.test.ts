@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { TestBrowser } from "../testing/browser.js";
 import { findThread, updateThread } from "./repository.js";
 import {

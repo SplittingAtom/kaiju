@@ -1,6 +1,6 @@
 import pg from "pg";
 import { expect } from "vitest";
-import { createTestDatabase, testServerUrl } from "@kobe/db/testing";
+import { createTestDatabase, testServerUrl } from "@kaiju/db/testing";
 import { createApp, type AppOptions } from "../app.js";
 import { BackgroundTasks } from "../background.js";
 import { createServerDeps, type ServerDeps, type ServerDepsOptions } from "../deps.js";
@@ -9,7 +9,7 @@ import { TestBrowser } from "./browser.js";
 import { fakeIsolation } from "./isolation.js";
 import { MemoryMailer } from "./mailer.js";
 
-export const PUBLIC_URL = "http://kobe.test";
+export const PUBLIC_URL = "http://kaiju.test";
 export const PASSWORD = "a long enough password";
 
 /** A server on its own throwaway database, with an in-memory mailer and a superuser client. */

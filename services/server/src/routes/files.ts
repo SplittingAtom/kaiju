@@ -1,7 +1,7 @@
 import { Readable } from "node:stream";
 import { Hono } from "hono";
-import { files, and, eq, withTeam, type KobeTx } from "@kobe/db";
-import { sharedFileSchema, type SharedFile } from "@kobe/protocol";
+import { files, and, eq, withTeam, type KaijuTx } from "@kaiju/db";
+import { sharedFileSchema, type SharedFile } from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
@@ -29,7 +29,7 @@ export function fileRoutes(deps: ServerDeps): Hono<{ Variables: TeamVariables }>
   app.use(requireTeamPermission("team.chat"));
 
   const readable = (teamId: string, userId: string, id: string) =>
-    withTeam(db, teamId, async (tx: KobeTx) => {
+    withTeam(db, teamId, async (tx: KaijuTx) => {
       const viewer: Viewer = {
         teamId,
         userId,

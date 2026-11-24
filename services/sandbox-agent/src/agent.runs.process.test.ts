@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { APP_CARD_CUSTOM_TYPE, CAPABILITY_APP_CARDS } from "@kobe/protocol";
+import { APP_CARD_CUSTOM_TYPE, CAPABILITY_APP_CARDS } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import {
   RUN,
@@ -107,7 +107,7 @@ describe("kobe-policy channel (fd 3)", () => {
       reasons: [{ code: "risk_read", stage: "risk_class", message: "read" }],
     } as never);
     const decision = await h.server.waitFor(
-      (f) => f.type === "pi.event" && f.event.type === "kobe_test_policy_decision",
+      (f) => f.type === "pi.event" && f.event.type === "kaiju_test_policy_decision",
     );
     expect((decision as PiEvent).event).toMatchObject({ decision: "allow" });
   });
@@ -130,7 +130,7 @@ describe("kobe-policy channel (fd 3)", () => {
       }),
     );
     const decision = await h.server.waitFor(
-      (f) => f.type === "pi.event" && f.event.type === "kobe_test_policy_decision",
+      (f) => f.type === "pi.event" && f.event.type === "kaiju_test_policy_decision",
     );
     expect((decision as PiEvent).event).toMatchObject({ decision: "allow" });
     expect(h.server.frames("error")).toEqual([]);
@@ -199,7 +199,7 @@ describe("kobe-policy channel (fd 3)", () => {
     await h.server.waitFor((f) => f.type === "policy.check");
     h.server.terminate();
     const decision = await h.server.waitFor(
-      (f) => f.type === "pi.event" && f.event.type === "kobe_test_policy_decision",
+      (f) => f.type === "pi.event" && f.event.type === "kaiju_test_policy_decision",
     );
     expect((decision as PiEvent).event).toMatchObject({ decision: "deny" });
   });
@@ -210,7 +210,7 @@ describe("what a tool started by Pi can reach", () => {
     h = await startHarness();
     await h.server.command(runStart("grandchild"));
     const probe = await h.server.waitFor(
-      (f) => f.type === "pi.event" && f.event.type === "kobe_test_grandchild",
+      (f) => f.type === "pi.event" && f.event.type === "kaiju_test_grandchild",
     );
     expect((probe as PiEvent).event).toMatchObject({
       // Its fd 3, if any, is not Pi's policy socket (Node itself opens low fds) ...
@@ -230,7 +230,7 @@ describe("what a tool started by Pi can reach", () => {
     h = await startHarness({ toolsExtension: "/opt/kobe/pi-extensions/kobe-tools/index.js" });
     await h.server.command(runStart("grandchild"));
     const probe = await h.server.waitFor(
-      (f) => f.type === "pi.event" && f.event.type === "kobe_test_grandchild",
+      (f) => f.type === "pi.event" && f.event.type === "kaiju_test_grandchild",
     );
     expect((probe as PiEvent).event).toMatchObject({
       sameToolsChannel: false,
@@ -255,7 +255,7 @@ describe("what a tool started by Pi can reach", () => {
     h = await startHarness();
     await h.server.command(runStart("grandchild-inherit"));
     const control = await h.server.waitFor(
-      (f) => f.type === "pi.event" && f.event.type === "kobe_test_grandchild",
+      (f) => f.type === "pi.event" && f.event.type === "kaiju_test_grandchild",
     );
     expect((control as PiEvent).event).toMatchObject({ sameChannel: true, fd3Write: true });
     await h.server.waitFor(settled());
@@ -275,7 +275,7 @@ describe("what a tool started by Pi can reach", () => {
       h = await startHarness();
       await h.server.command(runStart("orphan"));
       const orphan = await h.server.waitFor(
-        (f) => f.type === "pi.event" && f.event.type === "kobe_test_orphan",
+        (f) => f.type === "pi.event" && f.event.type === "kaiju_test_orphan",
       );
       const pid = (orphan as PiEvent).event.pid as number;
       expect(() => process.kill(pid, 0)).not.toThrow();
@@ -316,7 +316,7 @@ describe("extension UI relay", () => {
       response: { type: "extension_ui_response", id: "ui-1", confirmed: true },
     });
     const answer = await h.server.waitFor(
-      (f) => f.type === "pi.event" && f.event.type === "kobe_test_dialog_answer",
+      (f) => f.type === "pi.event" && f.event.type === "kaiju_test_dialog_answer",
     );
     expect((answer as PiEvent).event).toMatchObject({ answer: { confirmed: true } });
   });

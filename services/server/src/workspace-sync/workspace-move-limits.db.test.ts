@@ -5,8 +5,8 @@ import {
   mentionMarker,
   workspaceFileErrorSchema,
   workspaceListResponseSchema,
-} from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { createApp } from "../app.js";
 import { MOVE_BUDGET } from "../routes/workspace-move.js";
 import { SANDBOX_CHANNEL } from "../sandbox-wire/constants.js";

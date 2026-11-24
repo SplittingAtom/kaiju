@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { recordModelUsage, type ModelUsageRecord } from "./models/index.js";
 import {
   modelCatalog,
@@ -17,7 +17,7 @@ import {
 import { withTeam } from "./with-team.js";
 
 /** KOBE-43: the run_usage ledger (team table, RLS), costs at catalog prices, run attribution. */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const teamA = randomUUID();
 const teamB = randomUUID();
 const userId = randomUUID();

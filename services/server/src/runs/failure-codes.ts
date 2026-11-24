@@ -1,4 +1,4 @@
-import type { ErrorInfo } from "@kobe/protocol";
+import type { ErrorInfo } from "@kaiju/protocol";
 
 /**
  * `run.failed` codes the server writes itself, each with the server's own message: text from a
@@ -55,7 +55,7 @@ export const FAILURE_MESSAGES: Readonly<Record<string, string>> = {
   // fall back); `agentModelNotEnabled(alias)` names the alias.
   agent_model_not_enabled:
     "This agent's model isn't enabled for your team. Ask your team admin to enable it.",
-  // KOBE-41: the model gateway's answers, as kobe-models reports them (`parseKobeModelError`).
+  // KOBE-41: the model gateway's answers, as kobe-models reports them (`parseKaijuModelError`).
   model_not_configured:
     "No model is enabled for your team yet. Ask a team admin to enable one in the team's model settings.",
   model_not_enabled:

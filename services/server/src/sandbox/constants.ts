@@ -92,8 +92,8 @@ export const SANDBOX_HOSTS = {
   mcpProxy: "mcp-proxy.kobe.internal",
   egressProxy: "egress-proxy.kobe.internal",
 } as const;
-export type KobeEndpoint = keyof typeof SANDBOX_HOSTS;
-export const KOBE_ENDPOINTS = Object.keys(SANDBOX_HOSTS) as KobeEndpoint[];
+export type KaijuEndpoint = keyof typeof SANDBOX_HOSTS;
+export const KAIJU_ENDPOINTS = Object.keys(SANDBOX_HOSTS) as KaijuEndpoint[];
 
 /**
  * Pod Security Admission level enforced on team namespaces. "baseline", not "restricted", for

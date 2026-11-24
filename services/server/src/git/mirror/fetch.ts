@@ -6,7 +6,7 @@ import { fitsMount } from "../../projects/paths.js";
 import { GIT_MIRROR_MAX_OBJECTS } from "./limits.js";
 import { MirrorError } from "./mirror-error.js";
 import { downloadPack, unpackPack, writeShallow } from "./pack-unpack.js";
-import { GIT_MIRROR_AUTHOR_MAX, GIT_MIRROR_LOG_MAX, GIT_MIRROR_MESSAGE_MAX } from "@kobe/db";
+import { GIT_MIRROR_AUTHOR_MAX, GIT_MIRROR_LOG_MAX, GIT_MIRROR_MESSAGE_MAX } from "@kaiju/db";
 
 /**
  * The git side of the Repo mirror (KOBE-766, spec workspace-git G17), independent of the

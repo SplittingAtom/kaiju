@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { createApp } from "../app.js";
 import { FRAME_HEADERS } from "../artifacts/serve.js";
 import { WEBRTC_GUARD } from "../connectors/app-frame.js";

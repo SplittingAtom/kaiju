@@ -1,9 +1,9 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 import {
   PROJECT_INSTRUCTIONS_MAX_BYTES,
   projectMountPath,
   type RunProjectContext,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { canPinAgent, findPinnableAgent } from "../agents/versions.js";
 import { loadAccess } from "./access.js";
 
@@ -27,7 +27,7 @@ export function truncateUtf8(text: string, maxBytes: number): { text: string; tr
  * over-long row.
  */
 export async function projectRunContext(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: { teamId: string; userId: string },
   projectId: string | null,
 ): Promise<RunProjectContext | undefined> {
@@ -52,7 +52,7 @@ export async function projectRunContext(
  * still start threads with it; otherwise null (the team default), never an error.
  */
 export async function projectDefaultAgent(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { teamId: string; userId: string },
   projectId: string | null,
 ): Promise<string | null> {

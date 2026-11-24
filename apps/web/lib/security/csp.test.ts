@@ -54,8 +54,8 @@ describe("Content Security Policy", () => {
   });
 
   it("uses a fresh, unguessable nonce per request on both the request and the response", () => {
-    const a = proxy(new NextRequest("http://kobe.test/"));
-    const b = proxy(new NextRequest("http://kobe.test/?thread=x"));
+    const a = proxy(new NextRequest("http://kaiju.test/"));
+    const b = proxy(new NextRequest("http://kaiju.test/?thread=x"));
     const csp = a.headers.get("content-security-policy") ?? "";
     const nonce = /'nonce-([^']+)'/.exec(csp)?.[1] ?? "";
     expect(nonce).toMatch(/^[A-Za-z0-9+/]{22}==$/);
@@ -100,27 +100,30 @@ describe("Strict-Transport-Security (KOBE-695)", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it("is sent only when the public URL is https, includeSubDomains only when configured", () => {
-    expect(hstsHeader({ KOBE_PUBLIC_URL: "https://kobe.example" })).toBe("max-age=31536000");
+    expect(hstsHeader({ KOBE_PUBLIC_URL: "https://kaiju.example" })).toBe("max-age=31536000");
     expect(
-      hstsHeader({ KOBE_PUBLIC_URL: "https://kobe.example", KOBE_HSTS_INCLUDE_SUBDOMAINS: "true" }),
+      hstsHeader({
+        KOBE_PUBLIC_URL: "https://kaiju.example",
+        KOBE_HSTS_INCLUDE_SUBDOMAINS: "true",
+      }),
     ).toBe("max-age=31536000; includeSubDomains");
     expect(
       hstsHeader({
-        KOBE_PUBLIC_URL: "https://kobe.example",
+        KOBE_PUBLIC_URL: "https://kaiju.example",
         KOBE_HSTS_INCLUDE_SUBDOMAINS: "false",
       }),
     ).toBe("max-age=31536000");
-    expect(hstsHeader({ KOBE_PUBLIC_URL: "http://kobe.example" })).toBeUndefined();
+    expect(hstsHeader({ KOBE_PUBLIC_URL: "http://kaiju.example" })).toBeUndefined();
     expect(hstsHeader({})).toBeUndefined();
     expect(hstsHeader({ KOBE_PUBLIC_URL: "not a url" })).toBeUndefined();
   });
 
   it("is on page responses of an https install, and not on a plain-http one", () => {
-    vi.stubEnv("KOBE_PUBLIC_URL", "https://kobe.example");
-    const secure = proxy(new NextRequest("https://kobe.example/"));
+    vi.stubEnv("KOBE_PUBLIC_URL", "https://kaiju.example");
+    const secure = proxy(new NextRequest("https://kaiju.example/"));
     expect(secure.headers.get("strict-transport-security")).toBe("max-age=31536000");
-    vi.stubEnv("KOBE_PUBLIC_URL", "http://kobe.example");
-    const plain = proxy(new NextRequest("http://kobe.example/"));
+    vi.stubEnv("KOBE_PUBLIC_URL", "http://kaiju.example");
+    const plain = proxy(new NextRequest("http://kaiju.example/"));
     expect(plain.headers.get("strict-transport-security")).toBeNull();
   });
 });

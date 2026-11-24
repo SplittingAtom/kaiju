@@ -9,7 +9,7 @@ import {
   isAppCardEntryId,
   type AppCardDetails,
   type AppCardEntry,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   SYSTEM_ACTOR,
   parseToolsSnapshot,
@@ -17,8 +17,8 @@ import {
   threadAppResults,
   threadEntries,
   withTeam,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { usableSiteKeyIds } from "../connectors/site-key.js";
 import type { SharedRateLimit } from "../rate-limit.js";
@@ -167,7 +167,7 @@ interface CardThread {
 
 /** The thread, locked, when the member may add a card: theirs, live, not a test or eval thread. */
 async function lockWritable(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   userId: string,
@@ -189,14 +189,14 @@ async function lockWritable(
   return { id: t.id, ownerUserId: t.owner_user_id, leafEntryId: t.leaf_entry_id };
 }
 
-async function hasActiveRun(tx: KobeTx, teamId: string, threadId: string): Promise<boolean> {
+async function hasActiveRun(tx: KaijuTx, teamId: string, threadId: string): Promise<boolean> {
   const res = await tx.execute(sql`
     SELECT 1 FROM runs WHERE team_id = ${teamId} AND thread_id = ${threadId}
        AND status IN ('running', 'waiting_approval') LIMIT 1`);
   return (res.rowCount ?? res.rows.length) > 0;
 }
 
-async function queuedCount(tx: KobeTx, teamId: string, threadId: string): Promise<number> {
+async function queuedCount(tx: KaijuTx, teamId: string, threadId: string): Promise<number> {
   const res = await tx.execute<{ n: number }>(sql`
     SELECT count(*)::int AS n FROM thread_app_results
      WHERE team_id = ${teamId} AND thread_id = ${threadId} AND queued_at IS NOT NULL`);
@@ -214,13 +214,13 @@ export function resultText(result: Record<string, unknown>): string {
 }
 
 /** Where a new card goes: below the leaf, past any unsent prompt Pi never had (MEDIUM-2). */
-async function cardParent(tx: KobeTx, teamId: string, thread: CardThread): Promise<string | null> {
+async function cardParent(tx: KaijuTx, teamId: string, thread: CardThread): Promise<string | null> {
   return piBranchPoint(tx, teamId, thread.id, thread.leafEntryId);
 }
 
 /** How many cards follow each other ending at `entryId` (at most one more than the cap). */
 async function cardsInARow(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   entryId: string | null,
@@ -233,7 +233,7 @@ async function cardsInARow(
  * Refuses (throws {@link CardRefused}) a card that could stop the thread's next run.
  */
 export async function insertAppCardInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   thread: CardThread,
   card: { readonly entryId: string; readonly content: string; readonly details: AppCardDetails },
@@ -434,7 +434,7 @@ export type DropReason = "no_access" | "expired" | "too_many_cards" | "invalid";
  * pinned and approved one, and the member can still call it (`none`, a site key bound to its URL,
  * or their own grant of its kind).
  */
-async function stillLaunchable(tx: KobeTx, teamId: string, row: QueuedRow): Promise<boolean> {
+async function stillLaunchable(tx: KaijuTx, teamId: string, row: QueuedRow): Promise<boolean> {
   if (row.opened_by === null) return false;
   const res = await tx.execute<{
     auth_kind: string;
@@ -472,7 +472,7 @@ async function stillLaunchable(tx: KobeTx, teamId: string, row: QueuedRow): Prom
 }
 
 async function dropQueued(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   thread: CardThread,
   row: QueuedRow,
@@ -507,7 +507,7 @@ async function dropQueued(
  * (audited; the chat says so). Called under the thread lock.
  */
 export async function insertQueuedAppCardsInTx<T extends CardThread>(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   thread: T,
 ): Promise<T> {
@@ -570,7 +570,7 @@ export async function insertQueuedAppCardsInTx<T extends CardThread>(
  * branch point is not a card. Launches keep every chain within the cap, so this is the whole one.
  */
 export async function appCardChain(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   parentEntryId: string | null,

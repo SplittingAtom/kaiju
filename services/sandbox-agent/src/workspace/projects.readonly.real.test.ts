@@ -70,7 +70,7 @@ describe.runIf(HELPER !== undefined)("project files are read-only to tools (KOBE
   beforeAll(async () => {
     umask = process.umask(0o077);
     identities = await loadPiIdentities(HELPER as string, 1);
-    scratch = await mkdtemp(path.join("/dev/shm", "kobe-projects-"));
+    scratch = await mkdtemp(path.join("/dev/shm", "kaiju-projects-"));
     await chmod(scratch, 0o755);
   });
   afterAll(async () => {

@@ -1,4 +1,4 @@
-import { sql, type KobeTx, type ThreadFileAccess } from "@kobe/db";
+import { sql, type KaijuTx, type ThreadFileAccess } from "@kaiju/db";
 import { underPattern } from "../workspace-files/paths.js";
 import { projectMountPath } from "./paths.js";
 
@@ -37,7 +37,7 @@ export type CountMerge = "add" | "max";
  * the project's readers, TFM7); a project path of no current project is no link.
  */
 export async function resolveTarget(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   ownerUserId: string,
   path: string,
@@ -53,7 +53,7 @@ export async function resolveTarget(
 }
 
 /** Whether the target exists now: a live file, or (owner paths) a folder with live files. */
-async function exists(tx: KobeTx, teamId: string, target: LinkTarget): Promise<boolean> {
+async function exists(tx: KaijuTx, teamId: string, target: LinkTarget): Promise<boolean> {
   if (target.projectId !== undefined) {
     const res = await tx.execute(sql`
       SELECT 1 FROM project_files
@@ -73,7 +73,7 @@ async function exists(tx: KobeTx, teamId: string, target: LinkTarget): Promise<b
  * (the sandbox's push, a server write) clears the mark through the trigger.
  */
 export async function recordLinks(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   links: readonly LinkInput[],
   merge: CountMerge = "add",
@@ -107,7 +107,7 @@ export async function recordLinks(
  * resolving project mounts; paths that name no target are skipped.
  */
 export async function recordWorkspaceLink(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: {
     readonly teamId: string;
     readonly threadId: string;

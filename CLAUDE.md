@@ -38,9 +38,9 @@ pnpm license:check  # fails on deps outside MIT/Apache/BSD/MPL family, or a stal
 pnpm licenses:update  # regenerates THIRD_PARTY_LICENSES.md and NOTICE
 pnpm license:gate   # gate tickets: also fails while a license decision is pending
 
-pnpm --filter @kobe/server test                              # one package
-pnpm --filter @kobe/server exec vitest run src/core/app.test.ts   # one file
-pnpm --filter @kobe/server exec vitest run -t "healthz"      # one test by name
+pnpm --filter @kaiju/server test                              # one package
+pnpm --filter @kaiju/server exec vitest run src/core/app.test.ts   # one file
+pnpm --filter @kaiju/server exec vitest run -t "healthz"      # one test by name
 
 pnpm images:check   # build every service image, assert non-root (needs Docker)
 ```
@@ -105,7 +105,7 @@ this repository is public, so infrastructure details never go into tracked files
   or migration that names the setting, including names built up from parts (its defining
   migration `0239_run_usage_retention.sql` and tests excluded; `secret-box.ts` is allowlisted
   only because its label `kobe.${purpose}` matches the name pattern).
-- (KOBE-823) Both guards above scan the whole repo from inside `@kobe/db`, so `@kobe/db#test` is
+- (KOBE-823) Both guards above scan the whole repo from inside `@kaiju/db`, so `@kaiju/db#test` is
   never cached (`turbo.json`, pinned by `packages/db/src/repo-guards-uncached.test.ts`): a cached
   pass would hide a violation planted outside `packages/db`. Do not re-enable its cache.
 - Server decides every tool call; approvals are HMAC-signed over (run_id, tool_call_id, canonical input).

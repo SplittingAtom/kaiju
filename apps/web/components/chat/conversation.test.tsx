@@ -2,15 +2,15 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { announcement, chatRequests, composer, openApp, streamed, streaming } from "./testing";
 import { must } from "../../lib/testing/must";
 
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear(); // resume points are per tab; each test is a fresh tab
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -593,7 +593,7 @@ describe("root branches: the first message is editable like any other (KOBE-214,
     return { t, root, c1 };
   }
 
-  const compactionMarker = () => document.querySelector('[data-kobe-marker="compaction"]');
+  const compactionMarker = () => document.querySelector('[data-kaiju-marker="compaction"]');
   const version = () => screen.getAllByText(/^Version/)[0]?.textContent;
 
   it("editing the first message starts a sibling root, the picker switches roots and a reload keeps the choice", async () => {

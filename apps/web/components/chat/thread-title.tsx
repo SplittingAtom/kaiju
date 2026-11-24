@@ -133,7 +133,7 @@ export function ThreadTitle({
   return (
     <span ref={wrapper} className="flex max-w-full min-w-0 items-center gap-1">
       <h2
-        id="kobe-thread-title"
+        id="kaiju-thread-title"
         className={draft === null && !renameable ? "text-sm font-medium" : "sr-only"}
       >
         {inProject ? (

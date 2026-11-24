@@ -1,6 +1,6 @@
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { createApp } from "../app.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
 import { waitForAppSessionsToClose } from "../testing/app-sessions.js";
@@ -9,10 +9,14 @@ import { SoftwareAuthenticator } from "../testing/webauthn.js";
 import { totpFromUri } from "../testing/totp.js";
 import { fakeIsolation } from "../testing/isolation.js";
 
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const SETUP_TOKEN = "setup-token-for-tests-0123456789";
 let nextIp = 1;
-const OWNER = { email: "owner@kobe.test", name: "Owner", password: "correct horse battery staple" };
+const OWNER = {
+  email: "owner@kaiju.test",
+  name: "Owner",
+  password: "correct horse battery staple",
+};
 
 let deps: ServerDeps;
 let app: ReturnType<typeof createApp>;
@@ -149,7 +153,7 @@ describe("first-run setup (ac-1)", () => {
 
   it("stays open while no Owner exists, even if other users exist", async () => {
     await deps.createUserWithPassword({
-      email: "early@kobe.test",
+      email: "early@kaiju.test",
       name: "Early",
       password: "an early user password",
     });
@@ -169,7 +173,7 @@ describe("first-run setup (ac-1)", () => {
       (
         await new Browser().post("/v1/setup", {
           ...OWNER,
-          email: "late@kobe.test",
+          email: "late@kaiju.test",
           setupToken: SETUP_TOKEN,
         })
       ).status,
@@ -189,13 +193,13 @@ describe("first-run setup (ac-1)", () => {
 
   it("does not allow self sign-up (invite-only)", async () => {
     const res = await new Browser().post("/api/auth/sign-up/email", {
-      email: "stranger@kobe.test",
+      email: "stranger@kaiju.test",
       name: "Stranger",
       password: "a perfectly long password",
     });
     expect(res.status).not.toBe(200);
     const { rows } = await admin.query(
-      `SELECT count(*)::int AS n FROM users WHERE email = 'stranger@kobe.test'`,
+      `SELECT count(*)::int AS n FROM users WHERE email = 'stranger@kaiju.test'`,
     );
     expect(rows[0]).toEqual({ n: 0 });
   });
@@ -234,7 +238,7 @@ describe("TOTP 2FA (ac-2)", () => {
 });
 
 describe("passkeys (ac-2)", () => {
-  const authenticator = new SoftwareAuthenticator("kobe.test", PUBLIC_URL);
+  const authenticator = new SoftwareAuthenticator("kaiju.test", PUBLIC_URL);
 
   it("registers a passkey for a signed-in user", async () => {
     const b = await signInOwner();
@@ -273,7 +277,7 @@ describe("passkeys (ac-2)", () => {
   it("rejects an assertion from an unregistered authenticator", async () => {
     const b = new Browser();
     const options = await b.get("/api/auth/passkey/generate-authenticate-options");
-    const stranger = new SoftwareAuthenticator("kobe.test", PUBLIC_URL);
+    const stranger = new SoftwareAuthenticator("kaiju.test", PUBLIC_URL);
     const verify = await b.post("/api/auth/passkey/verify-authentication", {
       response: stranger.authenticate(options.json),
     });
@@ -283,7 +287,7 @@ describe("passkeys (ac-2)", () => {
 });
 
 describe("required 2FA (ac-2)", () => {
-  const MEMBER = { email: "member@kobe.test", name: "Member", password: "another long password!" };
+  const MEMBER = { email: "member@kaiju.test", name: "Member", password: "another long password!" };
 
   beforeAll(async () => {
     await deps.createUserWithPassword(MEMBER);
@@ -399,7 +403,7 @@ describe("server-side session revocation (ac-3)", () => {
   });
 
   it("revokes other sessions when the password changes", async () => {
-    const MOVER = { email: "mover@kobe.test", name: "Mover", password: "the original password" };
+    const MOVER = { email: "mover@kaiju.test", name: "Mover", password: "the original password" };
     await deps.createUserWithPassword(MOVER);
     const a = await signedIn(MOVER.email, MOVER.password);
     const b = await signedIn(MOVER.email, MOVER.password);

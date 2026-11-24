@@ -1,6 +1,6 @@
 /* The context viewer (KOBE-471) inside its WorkspacePanel. Chat CSS has no preflight: sizes are
    set here. The text column takes two thirds, the gauge the rest; under 640 px the gauge is a
-   horizontal bar above the text. Kind colours are the --kobe-ctx-* tokens (app/theme.css); each
+   horizontal bar above the text. Kind colours are the --kaiju-ctx-* tokens (app/theme.css); each
    kind also has a pattern, so colour never tells two kinds apart alone. */
 
 .viewer {
@@ -45,16 +45,16 @@
 
 .notice {
   padding: 0.25rem 0.5rem;
-  border-radius: var(--kobe-radius-md);
-  color: var(--kobe-status-attention);
-  background: var(--kobe-status-attention-bg);
+  border-radius: var(--kaiju-radius-md);
+  color: var(--kaiju-status-attention);
+  background: var(--kaiju-status-attention-bg);
 }
 
 .error {
   padding: 0.25rem 0.5rem;
-  border-radius: var(--kobe-radius-md);
-  color: var(--kobe-status-failed);
-  background: var(--kobe-status-failed-bg);
+  border-radius: var(--kaiju-radius-md);
+  color: var(--kaiju-status-failed);
+  background: var(--kaiju-status-failed-bg);
 }
 
 .spinner {
@@ -64,7 +64,7 @@
   height: 0.875rem;
   border: 2px solid var(--border);
   border-top-color: var(--foreground);
-  border-radius: var(--kobe-radius-pill);
+  border-radius: var(--kaiju-radius-pill);
   animation: spin 900ms linear infinite;
 }
 
@@ -81,8 +81,8 @@
   font-size: 0.75rem;
   color: var(--foreground);
   background: var(--background);
-  border: 1px solid var(--kobe-console-control-border);
-  border-radius: var(--kobe-radius-md);
+  border: 1px solid var(--kaiju-console-control-border);
+  border-radius: var(--kaiju-radius-md);
   cursor: pointer;
 }
 
@@ -123,8 +123,8 @@
   font-size: 0.8125rem;
   color: var(--foreground);
   background: var(--background);
-  border: 1px solid var(--kobe-console-control-border);
-  border-radius: var(--kobe-radius-md);
+  border: 1px solid var(--kaiju-console-control-border);
+  border-radius: var(--kaiju-radius-md);
 }
 
 .matches {
@@ -140,7 +140,7 @@
   min-height: 8rem;
   background: var(--muted);
   border: 1px solid var(--border);
-  border-radius: var(--kobe-radius-md);
+  border-radius: var(--kaiju-radius-md);
   overscroll-behavior: contain;
 }
 
@@ -157,7 +157,7 @@
   min-width: 100%;
   height: 20px;
   padding-inline: 0.5rem;
-  font-family: var(--kobe-font-mono);
+  font-family: var(--kaiju-font-mono);
   font-size: 0.75rem;
   line-height: 20px;
   white-space: pre;
@@ -171,7 +171,7 @@
 }
 
 .label[data-active] {
-  outline: 2px solid var(--kobe-composer-focus);
+  outline: 2px solid var(--kaiju-composer-focus);
   outline-offset: -2px;
 }
 
@@ -186,7 +186,7 @@
 .line mark {
   color: inherit;
   background: var(--admin-warn-bg);
-  outline: 1px solid var(--kobe-status-attention);
+  outline: 1px solid var(--kaiju-status-attention);
 }
 
 .stack {
@@ -205,8 +205,8 @@
   overflow: hidden;
   box-sizing: border-box;
   min-height: 12rem;
-  border: 1px solid var(--kobe-console-control-border);
-  border-radius: var(--kobe-radius-md);
+  border: 1px solid var(--kaiju-console-control-border);
+  border-radius: var(--kaiju-radius-md);
   background: var(--background);
 }
 
@@ -242,7 +242,7 @@
 .swatch[data-kind="other"] {
   background-image: repeating-linear-gradient(
     45deg,
-    var(--kobe-ctx-pattern-stripe) 0 2px,
+    var(--kaiju-ctx-pattern-stripe) 0 2px,
     transparent 2px 6px
   );
 }
@@ -253,48 +253,48 @@
 .swatch[data-kind="skills"],
 .swatch[data-kind="tool_definitions"],
 .swatch[data-kind="tools"] {
-  background-image: radial-gradient(var(--kobe-ctx-pattern-dot) 1px, transparent 1.5px);
+  background-image: radial-gradient(var(--kaiju-ctx-pattern-dot) 1px, transparent 1.5px);
   background-size: 5px 5px;
 }
 
 .viewer [data-kind="system_prompt"] {
-  --kind: var(--kobe-ctx-system-prompt);
+  --kind: var(--kaiju-ctx-system-prompt);
 }
 .viewer [data-kind="agent_instructions"] {
-  --kind: var(--kobe-ctx-agent-instructions);
+  --kind: var(--kaiju-ctx-agent-instructions);
 }
 .viewer [data-kind="skills"] {
-  --kind: var(--kobe-ctx-skills);
+  --kind: var(--kaiju-ctx-skills);
 }
 .viewer [data-kind="memory"] {
-  --kind: var(--kobe-ctx-memory);
+  --kind: var(--kaiju-ctx-memory);
 }
 .viewer [data-kind="viewing_file"] {
-  --kind: var(--kobe-ctx-viewing-file);
+  --kind: var(--kaiju-ctx-viewing-file);
 }
 .viewer [data-kind="tool_definitions"] {
-  --kind: var(--kobe-ctx-tool-definitions);
+  --kind: var(--kaiju-ctx-tool-definitions);
 }
 .viewer [data-kind="user_message"] {
-  --kind: var(--kobe-ctx-user);
+  --kind: var(--kaiju-ctx-user);
 }
 .viewer [data-kind="assistant_message"] {
-  --kind: var(--kobe-ctx-assistant);
+  --kind: var(--kaiju-ctx-assistant);
 }
 .viewer [data-kind="tools"],
 .viewer [data-kind="tool_call"],
 .viewer [data-kind="tool_result"] {
-  --kind: var(--kobe-ctx-tools);
+  --kind: var(--kaiju-ctx-tools);
 }
 .viewer [data-kind="compaction_summary"] {
-  --kind: var(--kobe-ctx-compaction);
+  --kind: var(--kaiju-ctx-compaction);
 }
 .viewer [data-kind="other"] {
-  --kind: var(--kobe-ctx-other);
+  --kind: var(--kaiju-ctx-other);
 }
 .swatch[data-kind="free"] {
   --kind: transparent;
-  border: 1px solid var(--kobe-console-control-border);
+  border: 1px solid var(--kaiju-console-control-border);
 }
 
 .legend {
@@ -322,7 +322,7 @@
   color: var(--foreground);
   background: none;
   border: 0;
-  border-radius: var(--kobe-radius-md);
+  border-radius: var(--kaiju-radius-md);
 }
 
 button.legendRow {
@@ -338,7 +338,7 @@ button.legendRow:hover {
   box-sizing: border-box;
   width: 0.875rem;
   height: 0.875rem;
-  border-radius: var(--kobe-radius-sm);
+  border-radius: var(--kaiju-radius-sm);
 }
 
 .legendName {
@@ -400,7 +400,7 @@ button.legendRow:hover {
   max-height: 30%;
   padding: 0.25rem 0.5rem;
   border: 1px solid var(--border);
-  border-radius: var(--kobe-radius-md);
+  border-radius: var(--kaiju-radius-md);
   font-size: 0.8125rem;
 }
 

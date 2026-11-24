@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { canonicalZip } from "@kobe/protocol";
+import { canonicalZip } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { versionOrigin } from "./save.js";
 

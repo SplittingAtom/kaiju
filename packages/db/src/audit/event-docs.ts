@@ -22,7 +22,7 @@ export type { AuditEventDoc } from "./events/fragments.js";
  * Every audit event's row in the docs/audit-log.md taxonomy table (KOBE-815). Each area keeps its
  * rows in `events/<area>.doc.ts`, beside its definitions and typed against them, so an event
  * without a row (or a row without an event) fails the typecheck. The table between the markers
- * below is generated from these by `pnpm --filter @kobe/db audit:doc` (`--check` to verify;
+ * below is generated from these by `pnpm --filter @kaiju/db audit:doc` (`--check` to verify;
  * `events.test.ts` fails when the page is stale). One unpadded row per event, sorted by name and
  * excluded from prettier, so two branches that each add an event touch different lines.
  */
@@ -64,7 +64,7 @@ export const AUDIT_EVENT_DOC_AREAS: readonly Readonly<Record<string, AuditEventD
 ];
 
 export const AUDIT_TABLE_START =
-  "<!-- audit-events:start: generated from packages/db/src/audit/events/*.doc.ts by `pnpm --filter @kobe/db audit:doc`; do not edit by hand -->";
+  "<!-- audit-events:start: generated from packages/db/src/audit/events/*.doc.ts by `pnpm --filter @kaiju/db audit:doc`; do not edit by hand -->";
 export const AUDIT_TABLE_END = "<!-- audit-events:end -->";
 
 /** Plain code-point order, the same on every machine and locale. */

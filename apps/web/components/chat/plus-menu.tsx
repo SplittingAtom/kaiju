@@ -10,7 +10,7 @@ import { IconAction } from "../shell/icon-action";
 import { hasRailApps, useRailApps } from "../shell/rail-apps";
 import { useNavigate } from "../shell/use-navigate";
 import { chatPortalContainer } from "../ui/chat-portal";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 import { ConnectorsSubmenu } from "./plus-connectors";
 import {
   MemorySubmenu,
@@ -62,13 +62,13 @@ function AppsSubmenu({
   const { busy, error, launch } = useAppLaunch();
   return (
     <DropdownMenu.Sub>
-      <DropdownMenu.SubTrigger className={PLUS_ITEM} data-kobe-plus="apps">
+      <DropdownMenu.SubTrigger className={PLUS_ITEM} data-kaiju-plus="apps">
         <AppWindowIcon aria-hidden className="size-4 shrink-0" />
         Apps
       </DropdownMenu.SubTrigger>
       <DropdownMenu.Portal container={chatPortalContainer()}>
         <DropdownMenu.SubContent
-          data-kobe-portal
+          data-kaiju-portal
           aria-label="Apps"
           sideOffset={4}
           className={PLUS_CONTENT}
@@ -80,7 +80,7 @@ function AppsSubmenu({
             <DropdownMenu.Item
               key={app.appId}
               className={PLUS_ITEM}
-              data-kobe-app={app.appId}
+              data-kaiju-app={app.appId}
               aria-busy={busy === app.appId || undefined}
               onSelect={() => void launch(app)}
             >
@@ -120,7 +120,7 @@ function LearnNotice({ learn }: { readonly learn: Learn }) {
   return (
     <span
       role="status"
-      data-kobe-learn-notice=""
+      data-kaiju-learn-notice=""
       className={
         text === ""
           ? "sr-only"
@@ -163,7 +163,7 @@ export function PlusMenu({
   const face = plusIndicator(learn.state);
   const pulse = useLearnNudge(threadId, learn.state);
   return (
-    <span className="relative inline-flex shrink-0" data-kobe-plus-wrap="">
+    <span className="relative inline-flex shrink-0" data-kaiju-plus-wrap="">
       <DropdownMenu.Root open={open} onOpenChange={setOpen} modal={false}>
         <DropdownMenu.Trigger asChild>
           <IconAction
@@ -171,15 +171,15 @@ export function PlusMenu({
             className="size-7 shrink-0 rounded-full"
             side="top"
             description={face.description}
-            data-kobe-learn-state={face.mark ?? undefined}
+            data-kaiju-learn-state={face.mark ?? undefined}
           >
             <PlusFace face={face} pulse={pulse} />
           </IconAction>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal container={chatPortalContainer()}>
           <DropdownMenu.Content
-            data-kobe-portal
-            data-kobe-plus-menu
+            data-kaiju-portal
+            data-kaiju-plus-menu
             side="top"
             align="start"
             sideOffset={6}

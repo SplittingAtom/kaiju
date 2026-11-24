@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { isMacPlatform } from "../../lib/shell/shortcuts";
@@ -15,7 +15,7 @@ import { LEARN_HINT_KEY } from "./plus-learn";
  * KOBE-395 (SM12, Q8): Learn from this chat in the composer's + menu (Memory), the + button's
  * dot / spinner / count, `/learn`, `/learn all`, Mod+Shift+L and the palette.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 const PASS = "00000000-0000-4000-8000-00000000aa01";
 
@@ -23,7 +23,7 @@ beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
   resizeWindow(DESKTOP_WIDTH);
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push({ alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true });
   vi.stubGlobal("fetch", fake.fetch);
 });
@@ -56,12 +56,12 @@ const plusSaying = (text: string | RegExp) =>
     return button;
   }, WAIT);
 const mark = (button: HTMLElement) =>
-  button.querySelector("[data-kobe-learn-mark]")?.getAttribute("data-kobe-learn-mark") ?? null;
+  button.querySelector("[data-kaiju-learn-mark]")?.getAttribute("data-kaiju-learn-mark") ?? null;
 const pulse = (button: HTMLElement) =>
-  button.querySelector("[data-kobe-learn-nudge]")?.getAttribute("data-kobe-learn-nudge") ?? null;
+  button.querySelector("[data-kaiju-learn-nudge]")?.getAttribute("data-kaiju-learn-nudge") ?? null;
 const starts = () => fake.learnStarts.map((s) => s.mode);
 const notice = () =>
-  (document.querySelector("[data-kobe-learn-notice]")?.textContent ?? "").replace(/\u00a0/g, "");
+  (document.querySelector("[data-kaiju-learn-notice]")?.textContent ?? "").replace(/\u00a0/g, "");
 
 async function openMemory() {
   const user = userEvent.setup();
@@ -74,7 +74,7 @@ async function openMemory() {
   await user.keyboard("{ArrowRight}");
   // Radix names a submenu by its trigger ("Memory 3 to review"): find it by its own mark.
   const sub = await waitFor(
-    () => must(document.querySelector<HTMLElement>("[data-kobe-memory-menu]")),
+    () => must(document.querySelector<HTMLElement>("[data-kaiju-memory-menu]")),
     WAIT,
   );
   expect(sub.getAttribute("role")).toBe("menu");
@@ -151,7 +151,7 @@ describe("the + button's Learn state (ac-1)", { timeout: 30_000 }, () => {
     openApp(fake, t);
     const button = await plusSaying("3 memory suggestions to review (Memory)");
     expect(mark(button)).toBe("count");
-    expect(button.querySelector("[data-kobe-learn-mark]")?.textContent).toBe("3");
+    expect(button.querySelector("[data-kaiju-learn-mark]")?.textContent).toBe("3");
     const { user, sub } = await openMemory();
     await user.click(within(sub).getByRole("menuitem", { name: "Review 3 candidates" }));
     await waitFor(() => expect(window.location.pathname).toBe("/me/memory"));
@@ -222,7 +222,7 @@ describe("starting a pass (ac-2)", { timeout: 30_000 }, () => {
     learnable(t);
     const announced: unknown[] = [];
     const hear = (e: Event) => announced.push((e as CustomEvent).detail);
-    window.addEventListener("kobe:memory-pass-completed", hear);
+    window.addEventListener("kaiju:memory-pass-completed", hear);
     openApp(fake, t);
     await plusSaying("New messages to learn from");
     const { user, sub } = await openMemory();
@@ -234,7 +234,7 @@ describe("starting a pass (ac-2)", { timeout: 30_000 }, () => {
       timeout: 8_000,
     });
     // KOBE-396: the finished pass is announced, so To review can open by itself.
-    window.removeEventListener("kobe:memory-pass-completed", hear);
+    window.removeEventListener("kaiju:memory-pass-completed", hear);
     expect(announced).toEqual([expect.objectContaining({ threadId: t, candidates: 2 })]);
     await plusSaying("2 memory suggestions to review");
   });
@@ -253,7 +253,7 @@ describe("starting a pass (ac-2)", { timeout: 30_000 }, () => {
     await waitFor(() => expect(notice()).toBe(LEARN_TIMEOUT_MESSAGE), { timeout: 8_000 });
     const button = await plus();
     expect(mark(button)).not.toBe("spinner");
-    expect(button.getAttribute("data-kobe-learn-state")).not.toBe("spinner");
+    expect(button.getAttribute("data-kaiju-learn-state")).not.toBe("spinner");
   });
 
   it("reads the state again when the tab comes back while a pass runs (KOBE-661)", async () => {
@@ -364,7 +364,7 @@ describe("narrow composers keep the + indicator (ac-3)", { timeout: 30_000 }, ()
     learnable(t, { candidates: 2 });
     openApp(fake, t);
     const button = await plusSaying("2 memory suggestions to review");
-    expect(button.querySelector("[data-kobe-learn-mark]")?.textContent).toBe("2");
+    expect(button.querySelector("[data-kaiju-learn-mark]")?.textContent).toBe("2");
     const bar = must(button.closest("[data-composer-toolbar]"));
     expect(within(bar as HTMLElement).getAllByRole("button")[0]).toBe(button);
   });

@@ -363,7 +363,7 @@ async function runBundles() {
   // transaction from the same bundle list the run.start frame carries, and the run's
   // `run.started` event.
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   try {
     const rows = await withTeam(database.db, config.teamId, (tx) =>
       tx.execute(sql`
@@ -500,7 +500,7 @@ async function galleryAgent() {
 /** The object behind a files row: its key and whether the object store holds it (and its size). */
 async function objectOf(teamId, fileId) {
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   let key;
   try {
     const rows = await withTeam(database.db, teamId, (tx) =>

@@ -1,5 +1,5 @@
-import { sql } from "@kobe/db";
-import type { SemanticMemoryScope } from "@kobe/protocol";
+import { sql } from "@kaiju/db";
+import type { SemanticMemoryScope } from "@kaiju/protocol";
 
 type SQL = ReturnType<typeof sql>;
 

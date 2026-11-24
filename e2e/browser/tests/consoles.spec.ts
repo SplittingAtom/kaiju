@@ -101,7 +101,7 @@ const MAX_CHOICE_GAP_PX = 20;
 async function settle(page: Page, theme: Theme): Promise<void> {
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   // Since KOBE-452 every page is a panel over the workspace.
-  await expect(page.locator("[data-kobe-panel] main").first()).toBeVisible({
+  await expect(page.locator("[data-kaiju-panel] main").first()).toBeVisible({
     timeout: SHELL_TIMEOUT_MS,
   });
   await expect(
@@ -140,7 +140,7 @@ async function detailPages(page: Page, theme: Theme): Promise<{ path: string; na
     await page.goto(from);
     await settle(page, theme);
     const hrefs = await page
-      .locator("[data-kobe-panel] main a[href]")
+      .locator("[data-kaiju-panel] main a[href]")
       .evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
     const path = hrefs.map((h) => h.split(/[?#]/)[0] ?? "").find((h) => link.test(h));
     if (path) out.push({ path, name });

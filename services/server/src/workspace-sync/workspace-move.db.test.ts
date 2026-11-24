@@ -5,8 +5,8 @@ import {
   workspaceFileErrorSchema,
   workspaceListResponseSchema,
   workspaceMoveResponseSchema,
-} from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { createApp } from "../app.js";
 import { hitRateLimit } from "../rate-limit.js";
 import { purgeReleasedWorkspaceHoldHistory } from "../retention/workspace-hold-history.js";

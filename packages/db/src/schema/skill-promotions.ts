@@ -16,7 +16,7 @@ import { registryVersions } from "./registry.js";
 import { teamSkills } from "./skills.js";
 import { teams } from "./teams.js";
 
-/** Mirrors `SKILL_PROMOTION_STATES` (@kobe/protocol). */
+/** Mirrors `SKILL_PROMOTION_STATES` (@kaiju/protocol). */
 export const SKILL_PROMOTION_STATES = ["pending", "confirmed", "declined", "cancelled"] as const;
 export type SkillPromotionState = (typeof SKILL_PROMOTION_STATES)[number];
 

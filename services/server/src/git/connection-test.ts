@@ -1,4 +1,4 @@
-import type { GitAccessLevel, GitCapabilities, GitProvider } from "@kobe/db";
+import type { GitAccessLevel, GitCapabilities, GitProvider } from "@kaiju/db";
 import { GitHostError, type GitHostProbe } from "../git-hosts/adapter.js";
 
 /**

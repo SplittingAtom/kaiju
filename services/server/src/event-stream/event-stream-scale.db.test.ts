@@ -3,7 +3,7 @@ import net from "node:net";
 import type { AddressInfo } from "node:net";
 import { serve, type ServerType } from "@hono/node-server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { KobeEvent } from "@kobe/protocol";
+import type { KaijuEvent } from "@kaiju/protocol";
 import { appendRunEvents } from "./append.js";
 import { createRunEventHub } from "./hub.js";
 import {
@@ -40,7 +40,7 @@ afterAll(async () => {
   await fx.teardown();
 });
 
-const seqs = (events: readonly KobeEvent[]) => events.map((e) => e.seq);
+const seqs = (events: readonly KaijuEvent[]) => events.map((e) => e.seq);
 
 async function fill(teamId: string, runId: string, count: number, size: number): Promise<void> {
   const text = "x".repeat(size);
@@ -150,7 +150,7 @@ describe("LISTEN connection loss (ac-2)", () => {
 
     await fx.admin.query(
       `SELECT pg_terminate_backend(pid) FROM pg_stat_activity
-        WHERE application_name = 'kobe-server-listen' AND datname = current_database()`,
+        WHERE application_name = 'kaiju-server-listen' AND datname = current_database()`,
     );
     await appendRunEvents(fx.db, team, run, [delta("during outage")]);
     const t0 = Date.now();

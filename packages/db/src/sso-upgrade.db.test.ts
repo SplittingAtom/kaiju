@@ -265,7 +265,7 @@ describe("SSO and SCIM tables on upgrade (KOBE-625)", () => {
       expect(await insert("kobe.research.admin", "team_admin")).toBeUndefined();
       expect(await insert("kobe.research.member", "contributor")).toBe("23505");
       // Team roles only (SSO6): no site role can be named.
-      expect(await insert("kobe.owner", "owner")).toBe("22P02");
+      expect(await insert("kaiju.owner", "owner")).toBe("22P02");
       expect(await insert("", "member")).toBe("23514");
       expect(
         await code(

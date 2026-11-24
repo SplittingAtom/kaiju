@@ -79,7 +79,7 @@ describe("KOBE-768: a member's view of a connection", () => {
     expect(
       gitConnectionMemberViewSchema.safeParse({
         ...view,
-        repo_name_prefix: "kobe-",
+        repo_name_prefix: "kaiju-",
         repo_visibility: "internal",
       }).success,
     ).toBe(true);

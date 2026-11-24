@@ -1,5 +1,5 @@
-import { uuidSchema } from "@kobe/protocol";
-import { SANDBOX_WS_PATH } from "@kobe/protocol/sandbox-wire";
+import { uuidSchema } from "@kaiju/protocol";
+import { SANDBOX_WS_PATH } from "@kaiju/protocol/sandbox-wire";
 import { z } from "zod";
 
 const positiveInt = (fallback: number) => z.coerce.number().int().positive().default(fallback);

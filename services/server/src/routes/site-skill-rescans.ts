@@ -1,5 +1,5 @@
-import { RULE_SET, RULE_SET_VERSION } from "@kobe/skill-scanner";
-import { desc, skillRescanRuns } from "@kobe/db";
+import { RULE_SET, RULE_SET_VERSION } from "@kaiju/skill-scanner";
+import { desc, skillRescanRuns } from "@kaiju/db";
 import { Hono } from "hono";
 import type { AuthVariables } from "../auth/session.js";
 import { requireSitePermission } from "../authz/middleware.js";

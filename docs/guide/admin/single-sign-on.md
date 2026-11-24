@@ -118,7 +118,7 @@ their team, read-only, under **Show access mappings** in the Team console.
   never contacts the provider, so it works while the provider is down. Keep that account's
   password or passkey somewhere safe. While single sign-on is
   [required](#requiring-single-sign-on), local sign-in is off for this account too; the
-  break-glass path is then the `kobe sso allow-local-sign-in` command.
+  break-glass path is then the `kaiju sso allow-local-sign-in` command.
 
 ## Multi-factor authentication
 
@@ -197,11 +197,11 @@ It never leaves the site without a way in:
   (`auth.sso.enabled: false`), local sign-in works even though the setting is stored on; the page
   says **Stored on but not in force**.
 - **The provider is down or misconfigured** (nobody can sign in through the web): the Site owner
-  turns the setting off with cluster access, from wherever they run `kobe backup`, with the
+  turns the setting off with cluster access, from wherever they run `kaiju backup`, with the
   installation's owner database role:
 
   ```bash
-  KOBE_DB_MIGRATE_URL=<the chart's migrate URL> kobe sso allow-local-sign-in --operator <your name>
+  KOBE_DB_MIGRATE_URL=<the chart's migrate URL> kaiju sso allow-local-sign-in --operator <your name>
   ```
 
   Password and passkey sign-in work again at once (the setup Owner's password included); the audit

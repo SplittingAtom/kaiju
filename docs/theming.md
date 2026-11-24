@@ -23,7 +23,7 @@ Three layers, one direction:
    when the OS is dark). A style is rendered by `brandingCss()` (`apps/web/lib/theme/branding-css.ts`)
    into one nonced `<style>` in `<head>` that re-declares a small set of these tokens; nothing else
    in the stylesheet changes. The `default` preset renders nothing: the page is theme.css alone.
-3. **Components** read tokens only: CSS modules through `var(--kobe-…)`, Tailwind utilities through
+3. **Components** read tokens only: CSS modules through `var(--kaiju-…)`, Tailwind utilities through
    the names mapped in `apps/web/app/tailwind.css` (`text-console-fg`, `bg-status-running-bg`,
    `rounded-md`, `font-sans`, …). A guard test (`apps/web/app/theme-css.test.ts`) fails the build
    when a stylesheet or component carries a literal colour, font family or shadow colour.
@@ -37,13 +37,13 @@ Kaiju's defaults and logs at most once a minute. So the first paint is already t
 
 ## 2. Site identity
 
-| Element           | Where it shows                                                                                                                                                                                      | Rules                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Site name         | Bar wordmark (top-left, D9); the brand link of the Site console, Team console and My area; browser titles (`<page> · <name>`); sign-in, setup, invite, forgot-password copy; the Appearance preview | 1–40 characters (code points), trimmed, plain text on one line (no control, format or line/paragraph separator characters). Default "Kaiju". Never enters CSS. Setting `branding.app_name`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| Logo              | Left of the name in the bar and the console headers (24 px tall, at most 160 px wide, scaled to fit); the Appearance preview                                                                        | PNG, JPEG, WebP or SVG, ≤ 512 KiB, raster ≤ 4096 px a side. Optional **dark logo** (same rules) shown when the dark theme is on; otherwise the one logo serves both. A dark logo needs a logo. SVG rules: §2.1.                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| Favicon           | Browser tab, bookmarks, history                                                                                                                                                                     | PNG, SVG or ICO, ≤ 256 KiB. Default: the shipped `apps/web/app/icon.svg`. The browser picks the size from the one file. With the logo theme colour on, an SVG favicon is served in `currentColor` with its own light/dark colours (§2.1).                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| Logo theme colour | The logo everywhere it shows (bar, console headers, Appearance preview) and an SVG favicon (KOBE-562)                                                                                               | `branding.logo_theme_color`, default off (uploads as uploaded). On, an **SVG** logo is inlined from the server's inline-safe variant (§2.1) by `components/shell/logo.tsx` (`<Logo>`, class `.logo`, decorative beside the name): `var(--foreground)` at rest, `var(--kobe-brand-primary)` on the brand link's hover or focus, `var(--admin-accent)` when the link is the current page, `transition: color 200ms` (none under `prefers-reduced-motion`; forced colours inherit the system colour). One drawing for both schemes, so a theme change recolours it without loading anything; the dark logo is then ignored (kept, not deleted). Raster logos stay images. |
-| Wordmark text     | Hidden when a logo carries the name on its own ("Show the name next to the logo" off, setting `branding.show_name`); the name stays the accessible name of the link; without a logo it always shows | `--kobe-brand-wordmark-size` / `-weight` decide its type (fixed in this release: no preset sets them)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Element           | Where it shows                                                                                                                                                                                      | Rules                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Site name         | Bar wordmark (top-left, D9); the brand link of the Site console, Team console and My area; browser titles (`<page> · <name>`); sign-in, setup, invite, forgot-password copy; the Appearance preview | 1–40 characters (code points), trimmed, plain text on one line (no control, format or line/paragraph separator characters). Default "Kaiju". Never enters CSS. Setting `branding.app_name`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Logo              | Left of the name in the bar and the console headers (24 px tall, at most 160 px wide, scaled to fit); the Appearance preview                                                                        | PNG, JPEG, WebP or SVG, ≤ 512 KiB, raster ≤ 4096 px a side. Optional **dark logo** (same rules) shown when the dark theme is on; otherwise the one logo serves both. A dark logo needs a logo. SVG rules: §2.1.                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Favicon           | Browser tab, bookmarks, history                                                                                                                                                                     | PNG, SVG or ICO, ≤ 256 KiB. Default: the shipped `apps/web/app/icon.svg`. The browser picks the size from the one file. With the logo theme colour on, an SVG favicon is served in `currentColor` with its own light/dark colours (§2.1).                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Logo theme colour | The logo everywhere it shows (bar, console headers, Appearance preview) and an SVG favicon (KOBE-562)                                                                                               | `branding.logo_theme_color`, default off (uploads as uploaded). On, an **SVG** logo is inlined from the server's inline-safe variant (§2.1) by `components/shell/logo.tsx` (`<Logo>`, class `.logo`, decorative beside the name): `var(--foreground)` at rest, `var(--kaiju-brand-primary)` on the brand link's hover or focus, `var(--admin-accent)` when the link is the current page, `transition: color 200ms` (none under `prefers-reduced-motion`; forced colours inherit the system colour). One drawing for both schemes, so a theme change recolours it without loading anything; the dark logo is then ignored (kept, not deleted). Raster logos stay images. |
+| Wordmark text     | Hidden when a logo carries the name on its own ("Show the name next to the logo" off, setting `branding.show_name`); the name stays the accessible name of the link; without a logo it always shows | `--kaiju-brand-wordmark-size` / `-weight` decide its type (fixed in this release: no preset sets them)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 The file type is detected from the bytes (magic numbers; SVG parsed as XML), never from the
 upload's declared type; raster sizes are read from the file and capped. Files are stored in Postgres
@@ -94,7 +94,7 @@ the **themed favicon**. Both keep only an allowlist:
   attribute's allowlisted declarations become attributes (they win, as in CSS); the rest goes;
 - every `fill` and `stroke` becomes `currentColor` (`none` and `transparent` stay none; `url(#…)`
   paints too: one colour is the point); the root gets `fill="currentColor"` unless it sets one;
-- ids are prefixed (`kobe-logo-`, `kobe-favicon-`) with their `url(#…)` and `href="#…"`
+- ids are prefixed (`kaiju-logo-`, `kaiju-favicon-`) with their `url(#…)` and `href="#…"`
   references; an id or reference that is not a plain name is dropped; `href` only on `use`;
 - the root's width and height are dropped (the page sizes it); a missing viewBox comes from them.
 
@@ -107,12 +107,12 @@ namespaces and is refused). The Appearance page adds this hint to every SVG refu
 
 ## 3. Style inputs
 
-| Input    | Choices                                                                          | What it sets                                                                                                                                                                                 |
-| -------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Preset   | `default`, `slate`, `forest`, `plum`, `ember`, `tokyo-nights`, `catalyst` (§3.1) | A complete set of values for every token marked **preset** below, light and dark, plus its corners and typeface; each preset meets the contrast floor (§8), unit-tested                      |
-| Accent   | One colour (`#rrggbb`, lowercase hex), under Custom                              | The **brand** tokens per scheme (§4.1): primary fill, its hover, its text colour, the link colour and the focus colour; also points `--ring` and `--kobe-composer-focus` at the focus colour |
-| Corners  | `sharp`, `soft` (default), `round`, under Custom                                 | The **radius** tokens (§6)                                                                                                                                                                   |
-| Typeface | `system` (default), `humanist`, `grotesk`, `serif`, `catalyst`, under Custom     | `--kobe-font-sans` and `--kobe-font-mono` (§5); only `catalyst` changes the monospace stack                                                                                                  |
+| Input    | Choices                                                                          | What it sets                                                                                                                                                                                  |
+| -------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Preset   | `default`, `slate`, `forest`, `plum`, `ember`, `tokyo-nights`, `catalyst` (§3.1) | A complete set of values for every token marked **preset** below, light and dark, plus its corners and typeface; each preset meets the contrast floor (§8), unit-tested                       |
+| Accent   | One colour (`#rrggbb`, lowercase hex), under Custom                              | The **brand** tokens per scheme (§4.1): primary fill, its hover, its text colour, the link colour and the focus colour; also points `--ring` and `--kaiju-composer-focus` at the focus colour |
+| Corners  | `sharp`, `soft` (default), `round`, under Custom                                 | The **radius** tokens (§6)                                                                                                                                                                    |
+| Typeface | `system` (default), `humanist`, `grotesk`, `serif`, `catalyst`, under Custom     | `--kaiju-font-sans` and `--kaiju-font-mono` (§5); only `catalyst` changes the monospace stack                                                                                                 |
 
 Stored as `branding.theme`: `{"preset":"<id>"}` or
 `{"preset":"custom","accent":"#rrggbb","corners":"…","font":"…"}`. A preset fixes its own corners and
@@ -133,7 +133,7 @@ on the Appearance page starts from the selected preset's corners and typeface.
 
 Every preset value is in `apps/web/lib/theme/presets.ts` (`PRESETS`); the token list a preset sets
 per scheme is `PRESET_SCHEME_TOKENS` (the brand tokens, both neutral sets, `--ring` and
-`--kobe-composer-focus`, the glow, the page ambient and the three shadows of §7). Presets do not
+`--kaiju-composer-focus`, the glow, the page ambient and the three shadows of §7). Presets do not
 set the scrim, the mono stack or the wordmark.
 
 ## 4. Colour tokens
@@ -143,16 +143,16 @@ retints them the catalogue says so.
 
 ### 4.1 Brand (set by accent or preset)
 
-| Token                        | Used for                                                                                        | Light default                                                     | Dark default | Set by          |
-| ---------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------ | --------------- |
-| `--kobe-brand-primary`       | The one coloured fill: console primary buttons, accent badges, count pills (`bg-status-accent`) | `#2449c7`                                                         | `#4263eb`    | accent / preset |
-| `--kobe-brand-primary-hover` | Hover of the above                                                                              | `color-mix(in oklab, var(--kobe-brand-primary) 90%, transparent)` | same         | accent / preset |
-| `--kobe-brand-primary-fg`    | Text and icons on the primary fill                                                              | `#ffffff`                                                         | `#ffffff`    | accent / preset |
-| `--kobe-brand-link`          | Links and accent text (`text-console-accent`, `--admin-accent`)                                 | `#2449c7`                                                         | `#8fa8ff`    | accent / preset |
-| `--kobe-brand-focus`         | Focus outlines on controls                                                                      | `#2449c7`                                                         | `#8fa8ff`    | accent / preset |
+| Token                         | Used for                                                                                        | Light default                                                      | Dark default | Set by          |
+| ----------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------ | --------------- |
+| `--kaiju-brand-primary`       | The one coloured fill: console primary buttons, accent badges, count pills (`bg-status-accent`) | `#2449c7`                                                          | `#4263eb`    | accent / preset |
+| `--kaiju-brand-primary-hover` | Hover of the above                                                                              | `color-mix(in oklab, var(--kaiju-brand-primary) 90%, transparent)` | same         | accent / preset |
+| `--kaiju-brand-primary-fg`    | Text and icons on the primary fill                                                              | `#ffffff`                                                          | `#ffffff`    | accent / preset |
+| `--kaiju-brand-link`          | Links and accent text (`text-console-accent`, `--admin-accent`)                                 | `#2449c7`                                                          | `#8fa8ff`    | accent / preset |
+| `--kaiju-brand-focus`         | Focus outlines on controls                                                                      | `#2449c7`                                                          | `#8fa8ff`    | accent / preset |
 
-`--admin-accent` (→ `--kobe-brand-link`), `--kobe-status-accent` (→ `--kobe-brand-primary`) and
-`--kobe-status-accent-fg` (→ `--kobe-brand-primary-fg`) are aliases and stay valid for the
+`--admin-accent` (→ `--kaiju-brand-link`), `--kaiju-status-accent` (→ `--kaiju-brand-primary`) and
+`--kaiju-status-accent-fg` (→ `--kaiju-brand-primary-fg`) are aliases and stay valid for the
 stylesheets that read them.
 
 **Derived accent** (`deriveAccent()`, per scheme, measured against the `default` preset's console
@@ -167,41 +167,41 @@ card `#202027`). Lightness moves in OKLCH steps of 0.01, at most 100 steps:
 | link       | the accent darkened until ≥ 4.5:1 on the light page and panel     | the accent lightened until ≥ 4.5:1 on the dark page and panel |
 | focus      | the light link darkened until ≥ 3:1 on page, panel and card       | the dark link lightened until ≥ 3:1 on page, panel and card   |
 
-Under Custom the theme `<style>` also sets `--ring` and `--kobe-composer-focus` to
-`var(--kobe-brand-focus)` (TH3); the chat's `--primary` (send button) stays neutral.
+Under Custom the theme `<style>` also sets `--ring` and `--kaiju-composer-focus` to
+`var(--kaiju-brand-focus)` (TH3); the chat's `--primary` (send button) stays neutral.
 
 ### 4.2 Neutral surfaces and text
 
-Two sets exist: the chat's (shadcn names, oklch) and the consoles' (`--kobe-console-*`). Both stay
+Two sets exist: the chat's (shadcn names, oklch) and the consoles' (`--kaiju-console-*`). Both stay
 in v1 (the plan's optional T9, KOBE-505, may merge them); a preset retints both together so the app
 reads as one. Custom keeps the `default` neutrals.
 
 **Chat and shared components** (assistant-ui, Tailwind `bg-background`, `text-muted-foreground`, …):
 
-| Token                                    | Used for                                | Light                                   | Dark                                        | Set by                                           |
-| ---------------------------------------- | --------------------------------------- | --------------------------------------- | ------------------------------------------- | ------------------------------------------------ |
-| `--background` / `--foreground`          | Page and body text                      | `oklch(1 0 0)` / `oklch(0.145 0 0)`     | `oklch(0.145 0 0)` / `oklch(0.985 0 0)`     | preset                                           |
-| `--card` / `--card-foreground`           | Cards (message cards, tool steps)       | `oklch(1 0 0)` / `oklch(0.145 0 0)`     | `oklch(0.205 0 0)` / `oklch(0.985 0 0)`     | preset                                           |
-| `--popover` / `--popover-foreground`     | Menus, tooltips, dialogs                | as card                                 | as card                                     | preset                                           |
-| `--primary` / `--primary-foreground`     | assistant-ui's primary button (send)    | `oklch(0.205 0 0)` / `oklch(0.985 0 0)` | `oklch(0.922 0 0)` / `oklch(0.205 0 0)`     | preset (stays neutral under Custom, TH3)         |
-| `--secondary` / `--secondary-foreground` | Secondary buttons                       | `oklch(0.97 0 0)` / `oklch(0.205 0 0)`  | `oklch(0.269 0 0)` / `oklch(0.985 0 0)`     | preset                                           |
-| `--muted` / `--muted-foreground`         | Rail and panel surfaces, secondary text | `oklch(0.97 0 0)` / `oklch(0.556 0 0)`  | `oklch(0.269 0 0)` / `oklch(0.708 0 0)`     | preset                                           |
-| `--accent` / `--accent-foreground`       | Hover surfaces of menu items            | `oklch(0.97 0 0)` / `oklch(0.205 0 0)`  | `oklch(0.269 0 0)` / `oklch(0.985 0 0)`     | preset                                           |
-| `--border` / `--input`                   | Dividers / control borders              | `oklch(0.922 0 0)` (both)               | `oklch(1 0 0 / 10%)` / `oklch(1 0 0 / 15%)` | preset                                           |
-| `--ring`                                 | The chat's focus ring                   | `oklch(0.708 0 0)`                      | `oklch(0.556 0 0)`                          | preset; accent points it at `--kobe-brand-focus` |
-| `--destructive`                          | Destructive buttons                     | `oklch(0.577 0.245 27.325)`             | `oklch(0.704 0.191 22.216)`                 | **fixed** (meaning)                              |
+| Token                                    | Used for                                | Light                                   | Dark                                        | Set by                                            |
+| ---------------------------------------- | --------------------------------------- | --------------------------------------- | ------------------------------------------- | ------------------------------------------------- |
+| `--background` / `--foreground`          | Page and body text                      | `oklch(1 0 0)` / `oklch(0.145 0 0)`     | `oklch(0.145 0 0)` / `oklch(0.985 0 0)`     | preset                                            |
+| `--card` / `--card-foreground`           | Cards (message cards, tool steps)       | `oklch(1 0 0)` / `oklch(0.145 0 0)`     | `oklch(0.205 0 0)` / `oklch(0.985 0 0)`     | preset                                            |
+| `--popover` / `--popover-foreground`     | Menus, tooltips, dialogs                | as card                                 | as card                                     | preset                                            |
+| `--primary` / `--primary-foreground`     | assistant-ui's primary button (send)    | `oklch(0.205 0 0)` / `oklch(0.985 0 0)` | `oklch(0.922 0 0)` / `oklch(0.205 0 0)`     | preset (stays neutral under Custom, TH3)          |
+| `--secondary` / `--secondary-foreground` | Secondary buttons                       | `oklch(0.97 0 0)` / `oklch(0.205 0 0)`  | `oklch(0.269 0 0)` / `oklch(0.985 0 0)`     | preset                                            |
+| `--muted` / `--muted-foreground`         | Rail and panel surfaces, secondary text | `oklch(0.97 0 0)` / `oklch(0.556 0 0)`  | `oklch(0.269 0 0)` / `oklch(0.708 0 0)`     | preset                                            |
+| `--accent` / `--accent-foreground`       | Hover surfaces of menu items            | `oklch(0.97 0 0)` / `oklch(0.205 0 0)`  | `oklch(0.269 0 0)` / `oklch(0.985 0 0)`     | preset                                            |
+| `--border` / `--input`                   | Dividers / control borders              | `oklch(0.922 0 0)` (both)               | `oklch(1 0 0 / 10%)` / `oklch(1 0 0 / 15%)` | preset                                            |
+| `--ring`                                 | The chat's focus ring                   | `oklch(0.708 0 0)`                      | `oklch(0.556 0 0)`                          | preset; accent points it at `--kaiju-brand-focus` |
+| `--destructive`                          | Destructive buttons                     | `oklch(0.577 0.245 27.325)`             | `oklch(0.704 0.191 22.216)`                 | **fixed** (meaning)                               |
 
 **Consoles and My area** (Tailwind `bg-console-*`, `text-console-*`, `border-console-*`):
 
-| Token                           | Used for                                                               | Light              | Dark               | Set by |
-| ------------------------------- | ---------------------------------------------------------------------- | ------------------ | ------------------ | ------ |
-| `--kobe-console-bg`             | Page                                                                   | `#ffffff`          | `#16161a`          | preset |
-| `--kobe-console-panel`          | Panels, side navigation, table heads                                   | `#f4f4f6`          | `#202027`          | preset |
-| `--kobe-console-fg`             | Body text                                                              | `#1b1b1f`          | `#ececf1`          | preset |
-| `--kobe-console-muted`          | Secondary text, descriptions                                           | `#5b5b66`          | `#a5a5b2`          | preset |
-| `--kobe-console-border`         | Decorative dividers only                                               | `#d9d9df`          | `#3a3a45`          | preset |
-| `--kobe-console-control-border` | Form-control boundaries (must keep 3:1 on page and panel, WCAG 1.4.11) | `#80808c`          | `#74747f`          | preset |
-| `--kobe-console-overlay`        | Backdrop behind a console dialog                                       | `rgb(0 0 0 / 50%)` | `rgb(0 0 0 / 70%)` | preset |
+| Token                            | Used for                                                               | Light              | Dark               | Set by |
+| -------------------------------- | ---------------------------------------------------------------------- | ------------------ | ------------------ | ------ |
+| `--kaiju-console-bg`             | Page                                                                   | `#ffffff`          | `#16161a`          | preset |
+| `--kaiju-console-panel`          | Panels, side navigation, table heads                                   | `#f4f4f6`          | `#202027`          | preset |
+| `--kaiju-console-fg`             | Body text                                                              | `#1b1b1f`          | `#ececf1`          | preset |
+| `--kaiju-console-muted`          | Secondary text, descriptions                                           | `#5b5b66`          | `#a5a5b2`          | preset |
+| `--kaiju-console-border`         | Decorative dividers only                                               | `#d9d9df`          | `#3a3a45`          | preset |
+| `--kaiju-console-control-border` | Form-control boundaries (must keep 3:1 on page and panel, WCAG 1.4.11) | `#80808c`          | `#74747f`          | preset |
+| `--kaiju-console-overlay`        | Backdrop behind a console dialog                                       | `rgb(0 0 0 / 50%)` | `rgb(0 0 0 / 70%)` | preset |
 
 **Legacy aliases** (on `:root`; read by the rail, shell and shared notices):
 `--admin-fg` → `--foreground`, `--admin-muted` → `--muted-foreground`, `--admin-bg` → `--background`,
@@ -211,16 +211,16 @@ not theme them directly. `--admin-hover` (the rail's row hover) is not an alias:
 
 ### 4.3 Shared accents, outlines and warnings
 
-| Token                   | Used for                                         | Light     | Dark      | Set by                                           |
-| ----------------------- | ------------------------------------------------ | --------- | --------- | ------------------------------------------------ |
-| `--admin-accent`        | Alias of `--kobe-brand-link`                     | `#2449c7` | `#8fa8ff` | accent / preset (through the link)               |
-| `--kobe-composer-focus` | The composer panel's focus outline (3:1 or more) | `#52525b` | `#a1a1aa` | preset; accent points it at `--kobe-brand-focus` |
-| `--admin-danger`        | Error text, destructive console actions          | `#a4161a` | `#ff8a8a` | **fixed** (meaning)                              |
-| `--admin-danger-bg`     | Error notice background                          | `#fdecec` | `#3a1c1e` | **fixed**                                        |
-| `--admin-warn-bg`       | Warning notice background                        | `#fff4d6` | `#3a3218` | **fixed**                                        |
+| Token                    | Used for                                         | Light     | Dark      | Set by                                            |
+| ------------------------ | ------------------------------------------------ | --------- | --------- | ------------------------------------------------- |
+| `--admin-accent`         | Alias of `--kaiju-brand-link`                    | `#2449c7` | `#8fa8ff` | accent / preset (through the link)                |
+| `--kaiju-composer-focus` | The composer panel's focus outline (3:1 or more) | `#52525b` | `#a1a1aa` | preset; accent points it at `--kaiju-brand-focus` |
+| `--admin-danger`         | Error text, destructive console actions          | `#a4161a` | `#ff8a8a` | **fixed** (meaning)                               |
+| `--admin-danger-bg`      | Error notice background                          | `#fdecec` | `#3a1c1e` | **fixed**                                         |
+| `--admin-warn-bg`        | Warning notice background                        | `#fff4d6` | `#3a3218` | **fixed**                                         |
 
-**Lane colours** (CT7, KOBE-545): `--kobe-lane-1` … `--kobe-lane-8` colour the Conversation tree's
-git-graph lanes. Lane 1, the path on screen, is `var(--kobe-brand-link)` in every preset, so it
+**Lane colours** (CT7, KOBE-545): `--kaiju-lane-1` … `--kaiju-lane-8` colour the Conversation tree's
+git-graph lanes. Lane 1, the path on screen, is `var(--kaiju-brand-link)` in every preset, so it
 follows a custom accent. Lanes 2–8 are set by each preset in both schemes (`lib/theme/presets.ts`,
 default in `app/theme.css`): seven distinct hues rotated from the preset's accent, each ≥ 3:1 on the
 page and panels (rule 6 in §8). Custom keeps the default's lanes 2–8. Ghost nodes and summary rows
@@ -233,43 +233,43 @@ own tints in both themes (checked by `theme-css.test.ts` and `e2e/browser/tests/
 Presets and the Appearance page never change them; the preset unit test asserts they keep 4.5:1
 on every preset's surfaces.
 
-| Group            | Tokens                                                                                                                                                                  | Why fixed                                                 |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| Activity status  | `--kobe-status-running(-bg)`, `-attention(-bg)`, `-failed(-bg)`, `-done`, `-idle`                                                                                       | Green/amber/red/grey read the same on every site          |
-| Confirm action   | `--kobe-confirm`, `--kobe-confirm-hover`, `--kobe-confirm-fg`                                                                                                           | "Commits nothing" green, Chris 2026-10-23                 |
-| Tool badge       | `--kobe-tool-badge`, `--kobe-tool-badge-bg`, `--kobe-tool-badge-border`                                                                                                 | Gold identity of tool calls                               |
-| Proposal glow    | `--kobe-glow-gold`, `--kobe-glow-gold-border` (KOBE-615)                                                                                                                | The file editor's Proposed edit bubble; decoration only   |
-| Diff             | `--kobe-diff-added(-bg)`, `--kobe-diff-deleted(-bg)` (derived from status)                                                                                              | Follow status colours                                     |
-| Context gauge    | `--kobe-gauge-ok`, `--kobe-gauge-warn`, `--kobe-gauge-full` (derived from status)                                                                                       | Follow status colours                                     |
-| Context viewer   | `--kobe-ctx-system-prompt`, `-agent-instructions`, `-skills`, `-memory`, `-viewing-file`, `-tool-definitions`, `-user`, `-assistant`, `-tools`, `-compaction`, `-other` | Okabe-Ito/Tol hues chosen for colour-vision safety        |
-| Context patterns | `--kobe-ctx-pattern-stripe` (`rgb(255 255 255 / 45%)`), `--kobe-ctx-pattern-dot` (`rgb(255 255 255 / 55%)`), the same in both themes                                    | The stripes and dots that tell kinds apart without colour |
-| Theme switch     | `--kobe-when-light`, `--kobe-when-dark` (`display` values; also swap the dark logo)                                                                                     | Mechanism, not style                                      |
+| Group            | Tokens                                                                                                                                                                   | Why fixed                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| Activity status  | `--kaiju-status-running(-bg)`, `-attention(-bg)`, `-failed(-bg)`, `-done`, `-idle`                                                                                       | Green/amber/red/grey read the same on every site          |
+| Confirm action   | `--kaiju-confirm`, `--kaiju-confirm-hover`, `--kaiju-confirm-fg`                                                                                                         | "Commits nothing" green, Chris 2026-10-23                 |
+| Tool badge       | `--kaiju-tool-badge`, `--kaiju-tool-badge-bg`, `--kaiju-tool-badge-border`                                                                                               | Gold identity of tool calls                               |
+| Proposal glow    | `--kaiju-glow-gold`, `--kaiju-glow-gold-border` (KOBE-615)                                                                                                               | The file editor's Proposed edit bubble; decoration only   |
+| Diff             | `--kaiju-diff-added(-bg)`, `--kaiju-diff-deleted(-bg)` (derived from status)                                                                                             | Follow status colours                                     |
+| Context gauge    | `--kaiju-gauge-ok`, `--kaiju-gauge-warn`, `--kaiju-gauge-full` (derived from status)                                                                                     | Follow status colours                                     |
+| Context viewer   | `--kaiju-ctx-system-prompt`, `-agent-instructions`, `-skills`, `-memory`, `-viewing-file`, `-tool-definitions`, `-user`, `-assistant`, `-tools`, `-compaction`, `-other` | Okabe-Ito/Tol hues chosen for colour-vision safety        |
+| Context patterns | `--kaiju-ctx-pattern-stripe` (`rgb(255 255 255 / 45%)`), `--kaiju-ctx-pattern-dot` (`rgb(255 255 255 / 55%)`), the same in both themes                                   | The stripes and dots that tell kinds apart without colour |
+| Theme switch     | `--kaiju-when-light`, `--kaiju-when-dark` (`display` values; also swap the dark logo)                                                                                    | Mechanism, not style                                      |
 
 ## 5. Typography
 
-| Token                          | Used for                                      | Default                                                                                                                                         | Set by            |
-| ------------------------------ | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `--kobe-font-sans`             | Everything (`font-sans`, chat root, consoles) | Tailwind's sans stack (`-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif` + emoji fonts) | typeface / preset |
-| `--kobe-font-mono`             | Code, file editor, context viewer             | `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`                                                                                      | typeface / preset |
-| `--kobe-brand-wordmark-size`   | The bar's app name                            | `1.125rem`                                                                                                                                      | **fixed**         |
-| `--kobe-brand-wordmark-weight` | The bar's app name                            | `600`                                                                                                                                           | **fixed**         |
+| Token                           | Used for                                      | Default                                                                                                                                         | Set by            |
+| ------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `--kaiju-font-sans`             | Everything (`font-sans`, chat root, consoles) | Tailwind's sans stack (`-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif` + emoji fonts) | typeface / preset |
+| `--kaiju-font-mono`             | Code, file editor, context viewer             | `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`                                                                                      | typeface / preset |
+| `--kaiju-brand-wordmark-size`   | The bar's app name                            | `1.125rem`                                                                                                                                      | **fixed**         |
+| `--kaiju-brand-wordmark-weight` | The bar's app name                            | `600`                                                                                                                                           | **fixed**         |
 
 Typeface stacks (`FONT_STACK_VALUES` in `apps/web/lib/theme/presets.ts`): `system` =
 Tailwind's sans stack above; `humanist` =
 `Seravek, "Gill Sans Nova", Ubuntu, Calibri, "DejaVu Sans", source-sans-pro, sans-serif`;
 `grotesk` = `Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif`;
 `serif` = `Charter, "Bitstream Charter", "Sitka Text", Cambria, serif`. These four leave
-`--kobe-font-mono` at theme.css's system stack (the branding CSS only emits it for `catalyst`,
+`--kaiju-font-mono` at theme.css's system stack (the branding CSS only emits it for `catalyst`,
 `MONO_STACK_VALUES`).
 
 TH10 as amended (Chris, 2026-11-07, KOBE-555): system stacks by default; a preset may name a
 shipped face. `catalyst` (the Catalyst preset's typeface; a custom theme may pick it too) is
-`var(--kobe-face-outfit, Outfit), ` + the grotesk stack, and its mono stack
-`var(--kobe-face-jetbrains-mono, "JetBrains Mono"), ` + the system monospace stack. The faces are
+`var(--kaiju-face-outfit, Outfit), ` + the grotesk stack, and its mono stack
+`var(--kaiju-face-jetbrains-mono, "JetBrains Mono"), ` + the system monospace stack. The faces are
 variable WOFF2 files in `apps/web/app/fonts/` (SIL OFL 1.1, each with its `OFL.txt`; provenance in
 `docs/ledger/KOBE-555.md`), loaded with `next/font/local` in `apps/web/app/faces.ts` (`display:
 swap`, no preload, Outfit over a metric-matched Arial fallback) and served from `/_next/static/media`, so `font-src 'self'` is unchanged and no
-font request leaves the page. `faces.ts` only declares the `--kobe-face-*` variables on `<html>`;
+font request leaves the page. `faces.ts` only declares the `--kaiju-face-*` variables on `<html>`;
 a browser downloads a face only when the page's stack uses it, so other themes load no font files.
 The trade-off for operators choosing the preset: on a cold load (nothing cached) text paints at
 once in the fallback and swaps to the face when it arrives (about 160 KB for both). Outfit's
@@ -280,37 +280,37 @@ Sizes, weights and line heights are not themable.
 
 ## 6. Corners
 
-| Token                | Used for                                     | sharp | soft (default) | round     |
-| -------------------- | -------------------------------------------- | ----- | -------------- | --------- |
-| `--kobe-radius-sm`   | Chips, badges, small controls (`rounded-sm`) | `0`   | `0.25rem`      | `0.5rem`  |
-| `--kobe-radius-md`   | Buttons, inputs, menu items (`rounded-md`)   | `0`   | `0.375rem`     | `0.75rem` |
-| `--kobe-radius-lg`   | Cards, panels, dialogs (`rounded-lg`)        | `0`   | `0.5rem`       | `1rem`    |
-| `--kobe-radius-xl`   | Composer, artifact panel (`rounded-xl`)      | `0`   | `0.75rem`      | `1.25rem` |
-| `--kobe-radius-pill` | The CSS modules' pill shapes (count pills)   | `0`   | `9999px`       | `9999px`  |
+| Token                 | Used for                                     | sharp | soft (default) | round     |
+| --------------------- | -------------------------------------------- | ----- | -------------- | --------- |
+| `--kaiju-radius-sm`   | Chips, badges, small controls (`rounded-sm`) | `0`   | `0.25rem`      | `0.5rem`  |
+| `--kaiju-radius-md`   | Buttons, inputs, menu items (`rounded-md`)   | `0`   | `0.375rem`     | `0.75rem` |
+| `--kaiju-radius-lg`   | Cards, panels, dialogs (`rounded-lg`)        | `0`   | `0.5rem`       | `1rem`    |
+| `--kaiju-radius-xl`   | Composer, artifact panel (`rounded-xl`)      | `0`   | `0.75rem`      | `1.25rem` |
+| `--kaiju-radius-pill` | The CSS modules' pill shapes (count pills)   | `0`   | `9999px`       | `9999px`  |
 
 Tailwind's `--radius-sm` … `--radius-xl` map onto these in `apps/web/app/tailwind.css`, so existing
 `rounded-*` utilities follow without edits; `rounded-full` stays Tailwind's (circles).
 
 ## 7. Shadows, the glow and the scrim
 
-| Token                       | Used for                                                                 | Light and dark default                                              | Set by |
-| --------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------- | ------ |
-| `--kobe-shadow-pop`         | Menus, pickers, tooltips, the new-build banner                           | `0 4px 16px rgb(0 0 0 / 15%)`                                       | preset |
-| `--kobe-shadow-drawer`      | The rail drawer and the artifact column edge                             | `0 8px 24px rgb(0 0 0 / 12%)`                                       | preset |
-| `--kobe-shadow-panel`       | Workspace panels over the chat                                           | `0 1.5rem 4rem rgb(0 0 0 / 25%)`                                    | preset |
-| `--kobe-scrim`              | The drawer's full-window scrim                                           | `rgb(0 0 0 / 40%)`                                                  | fixed  |
-| `--kobe-glow-color`         | The colour of a glow (KOBE-550)                                          | `color-mix(in oklab, var(--kobe-brand-primary) 28%, transparent)`   | preset |
-| `--kobe-glow-panel`         | The halo of a hovered panel and of the focused composer                  | `0 0 20px var(--kobe-glow-color)`                                   | fixed  |
-| `--kobe-panel-border-hover` | A hovered panel's border                                                 | `color-mix(in oklab, var(--kobe-brand-primary) 35%, var(--border))` | fixed  |
-| `--kobe-page-ambient`       | A `background-image` the page roots (chat, consoles) paint over the page | `none`                                                              | preset |
+| Token                        | Used for                                                                 | Light and dark default                                               | Set by |
+| ---------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------- | ------ |
+| `--kaiju-shadow-pop`         | Menus, pickers, tooltips, the new-build banner                           | `0 4px 16px rgb(0 0 0 / 15%)`                                        | preset |
+| `--kaiju-shadow-drawer`      | The rail drawer and the artifact column edge                             | `0 8px 24px rgb(0 0 0 / 12%)`                                        | preset |
+| `--kaiju-shadow-panel`       | Workspace panels over the chat                                           | `0 1.5rem 4rem rgb(0 0 0 / 25%)`                                     | preset |
+| `--kaiju-scrim`              | The drawer's full-window scrim                                           | `rgb(0 0 0 / 40%)`                                                   | fixed  |
+| `--kaiju-glow-color`         | The colour of a glow (KOBE-550)                                          | `color-mix(in oklab, var(--kaiju-brand-primary) 28%, transparent)`   | preset |
+| `--kaiju-glow-panel`         | The halo of a hovered panel and of the focused composer                  | `0 0 20px var(--kaiju-glow-color)`                                   | fixed  |
+| `--kaiju-panel-border-hover` | A hovered panel's border                                                 | `color-mix(in oklab, var(--kaiju-brand-primary) 35%, var(--border))` | fixed  |
+| `--kaiju-page-ambient`       | A `background-image` the page roots (chat, consoles) paint over the page | `none`                                                               | preset |
 
 One value serves both schemes (the brand tokens they read already differ per scheme). Stylesheets
-read them through `var(--kobe-shadow-…)` and `var(--kobe-glow-…)`.
+read them through `var(--kaiju-shadow-…)` and `var(--kaiju-glow-…)`.
 
 **The glow (KOBE-550, after the Catalyst query tool).** A card-like surface carries the class
-`kobe-panel`: when the pointer rests on it, its border eases toward the brand and a halo appears
+`kaiju-panel`: when the pointer rests on it, its border eases toward the brand and a halo appears
 outside it, in the brand's colour (every preset and a custom accent glow in their own colour; a
-preset may set `--kobe-glow-color` outright, as `catalyst` does with the tool's own alpha). One rule
+preset may set `--kaiju-glow-color` outright, as `catalyst` does with the tool's own alpha). One rule
 per root (`app/chat-global.css` for the chat, `app/admin/admin-global.css` for the consoles),
 unlayered so it outranks a module's resting border and shadow, under `@media (hover: hover)`, with
 no easing under `prefers-reduced-motion`. The surfaces: tool-call cards, approval and file cards,
@@ -318,9 +318,9 @@ the notifications panel, the Compare columns, the context viewer's pane, the con
 primitive, and since KOBE-554 the shell's three columns (rail, artifact column, conversation;
 `components/shell/shell-grid.tsx`) and the console's sidebar and page (`components/ui/console/layout.tsx`);
 the composer glows while it has focus (`components/chat/composer.module.css`). One halo at a time:
-the rule is `.kobe-panel:hover:not(:has(.kobe-panel:hover))`, so a column or console page around a
+the rule is `.kaiju-panel:hover:not(:has(.kaiju-panel:hover))`, so a column or console page around a
 hovered card keeps its resting border and shadow while the card glows. The 768–820 px artifact
-sheet is an overlay with the drawer shadow and no scrim, so it carries no `kobe-panel`. Forced
+sheet is an overlay with the drawer shadow and no scrim, so it carries no `kaiju-panel`. Forced
 colours drop the halo, so a hovered panel's border takes `Highlight` there. The
 `catalyst` preset also turns the three shadows into glows and paints an ambient wash on the dark
 page; the other presets keep today's shadows and no ambient (`presets.test.ts`).
@@ -330,13 +330,13 @@ page; the other presets keep today's shadows and no ambient (`presets.test.ts`).
 **Presets** are checked by `apps/web/lib/theme/presets.test.ts` in both schemes:
 
 1. Body and muted text on page, panel and card: ≥ 4.5:1 (`--foreground`, `--muted-foreground`,
-   `--kobe-console-fg`, `--kobe-console-muted`; the shadcn foreground/background pairs too).
-2. Links (`--kobe-brand-link`) on page and panel: ≥ 4.5:1.
-3. Primary fill text (`--kobe-brand-primary-fg` on `--kobe-brand-primary` and its hover): ≥ 4.5:1.
-4. Focus colours (`--kobe-brand-focus`, `--kobe-composer-focus`, and `--ring` except in `default`)
+   `--kaiju-console-fg`, `--kaiju-console-muted`; the shadcn foreground/background pairs too).
+2. Links (`--kaiju-brand-link`) on page and panel: ≥ 4.5:1.
+3. Primary fill text (`--kaiju-brand-primary-fg` on `--kaiju-brand-primary` and its hover): ≥ 4.5:1.
+4. Focus colours (`--kaiju-brand-focus`, `--kaiju-composer-focus`, and `--ring` except in `default`)
    against page, panel and card: ≥ 3:1 (WCAG 1.4.11); control borders on page and panel likewise.
 5. The fixed status, danger and tool-badge colours keep 4.5:1 on the preset's surfaces (§4.4).
-6. The eight lane colours (`--kobe-lane-1..8`, §4.3) on page, panel and card: ≥ 3:1, and distinct.
+6. The eight lane colours (`--kaiju-lane-1..8`, §4.3) on page, panel and card: ≥ 3:1, and distinct.
 
 **A custom accent** is checked by `checkFloor()` (`packages/protocol/src/theme/accent.ts`), the same
 function on the Appearance page (Save stays off, with the first failure and its ratio) and on the
@@ -365,17 +365,17 @@ Always:
   colour-vision safety.
 - **The scrim, the glow's shape, the mono stack and the wordmark's type** (§5, §7): fixed in this
   release.
-- **Layout**: rail widths (`--kobe-rail-width`, `--kobe-rail-room`, `--kobe-artifact-width`, declared in `components/shell/shell.module.css`, not theme.css),
+- **Layout**: rail widths (`--kaiju-rail-width`, `--kaiju-rail-room`, `--kaiju-artifact-width`, declared in `components/shell/shell.module.css`, not theme.css),
   breakpoints, viewport variables, densities. They are behaviour, not style.
 - **The card/gap rule (KOBE-554, after Catalyst's query tool)**: in every preset the chat's rail,
   artifact column and conversation, and the console's sidebar and page, are floating cards
-  (`--card`, a 1 px border, the panel radius `--kobe-radius-lg`, class `kobe-panel`) with a 16 px gap
-  between them and a 16 px page gutter, so the page colour and a preset's `--kobe-page-ambient`
+  (`--card`, a 1 px border, the panel radius `--kaiju-radius-lg`, class `kaiju-panel`) with a 16 px gap
+  between them and a 16 px page gutter, so the page colour and a preset's `--kaiju-page-ambient`
   show between them. From 768 px the rail drawer (below 1100 px) and the 768–820 px artifact sheet
   are cards inside the same gutters; under 768 px the drawer covers the full height at the window's
   edge as before, and the conversation card keeps 16 px gutters. A preset
   themes the cards through those tokens; the gap and gutter are plain layout values
-  (`--kobe-shell-gutter`, `--kobe-shell-gap` in `shell.module.css`, `SHELL_SPACING_PX` in
+  (`--kaiju-shell-gutter`, `--kaiju-shell-gap` in `shell.module.css`, `SHELL_SPACING_PX` in
   `lib/shell/layout.ts`, `gap-4 p-4` in the console layout), not theme tokens, until a preset needs
   them. Each card scrolls inside itself; the chat page never scrolls.
 - **Artifact frames and MCP app frames**: sandboxed documents with their own CSP; the host's tokens
@@ -395,7 +395,7 @@ Always:
    checks its output against its allow-list and renders the defaults otherwise).
 4. If it carries a contrast rule, add the pair to `theme-css.test.ts` and `presets.test.ts` and,
    where it reaches the screen, to `e2e/browser/tests/support/colours.ts`.
-5. Read it through `var(--kobe-…)` or the Tailwind name; never copy its value into another file
+5. Read it through `var(--kaiju-…)` or the Tailwind name; never copy its value into another file
    (the guard test fails on literal colours, font families and shadow colours outside `theme.css`).
 
 ## 11. Tailwind names
@@ -411,7 +411,7 @@ Always:
 | `font-sans`, `font-mono`                                                                                                                                                                                                                          | typography (§5)                           |
 | `rounded-sm`, `rounded-md`, `rounded-lg`, `rounded-xl`                                                                                                                                                                                            | corners (§6)                              |
 
-Shadows have no Tailwind names; stylesheets read `var(--kobe-shadow-*)` (§7).
+Shadows have no Tailwind names; stylesheets read `var(--kaiju-shadow-*)` (§7).
 
 ## 12. The Appearance page
 

@@ -11,7 +11,7 @@ const parentEnv = {
   PATH: "/usr/bin",
   LANG: "C.UTF-8",
   KOBE_SANDBOX_TOKEN_FILE: "/var/run/kobe/sandbox-wire/token",
-  KOBE_SERVER_URL: "wss://kobe",
+  KOBE_SERVER_URL: "wss://kaiju",
   ANTHROPIC_API_KEY: "sk-should-never-be-here",
   AWS_SECRET_ACCESS_KEY: "nope",
   NODE_OPTIONS: "--inspect=0.0.0.0:9229",
@@ -290,7 +290,7 @@ describe("buildPiLaunch", () => {
     expect(a.args.slice(a.args.indexOf("--model"))).toEqual(["--model", "kobe/openai/gpt-fake"]);
     expect(none.args).not.toContain("--model");
     expect(new Set([a.key, b.key, none.key]).size).toBe(1);
-    // Without kobe-models there is no kobe provider to start on.
+    // Without kobe-models there is no kaiju provider to start on.
     const bare = buildPiLaunch({
       ...base,
       parentEnv: {},

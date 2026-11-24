@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AGENT_FILE_LIMITS, skillSlugSchema } from "@kobe/agent-file";
+import { AGENT_FILE_LIMITS, skillSlugSchema } from "@kaiju/agent-file";
 import {
   and,
   desc,
@@ -9,8 +9,8 @@ import {
   or,
   teamSkillReviews,
   teamSkillVersions,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuTx,
+} from "@kaiju/db";
 import { blockedAmong } from "./blocklist.js";
 import { legacySemver } from "./semver.js";
 
@@ -74,7 +74,7 @@ const withSemver = and(
  * `suspended`. Blocklisting is the resolver's: it drops the hash with its own notice.
  */
 export async function frozenStates(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   entries: readonly FrozenSkill[],
 ): Promise<FrozenDetail[]> {
@@ -133,7 +133,7 @@ export interface FreezePicks {
  * runs omit it as `not_approved` until a republish picks a loadable version.
  */
 export async function freezePicks(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   names: readonly string[],
 ): Promise<FreezePicks> {

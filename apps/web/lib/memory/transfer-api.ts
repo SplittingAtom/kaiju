@@ -3,7 +3,7 @@
  * contract KOBE-377 transfer.ts). Preview runs the deterministic save checks on every row and
  * stores nothing (no learning model, Q10); commit saves the accepted rows all or nothing.
  */
-import type { SemanticMemoryScope } from "@kobe/protocol";
+import type { SemanticMemoryScope } from "@kaiju/protocol";
 import { apiDownload, apiRequest, type ApiResult } from "../api/client";
 import type { ImportFile } from "./import-file";
 import type { ItemKind } from "./items-api";
@@ -118,4 +118,4 @@ export function createTransferApi(teamId: string | undefined, fetchFn?: typeof f
 
 /** The file name an export is saved under. */
 export const exportFileName = (scope: SemanticMemoryScope, format: "json" | "csv", day: string) =>
-  `kobe-memories-${scope === "team" ? "workspace" : scope}-${day}.${format}`;
+  `kaiju-memories-${scope === "team" ? "workspace" : scope}-${day}.${format}`;

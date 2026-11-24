@@ -1,4 +1,4 @@
-import { sql, type KobeDb, type KobeTx, pgCodeOf } from "@kobe/db";
+import { sql, type KaijuDb, type KaijuTx, pgCodeOf } from "@kaiju/db";
 import { PENDING_STATUSES } from "./external-scan-result.js";
 import { recordAudit } from "../../audit/record.js";
 import { blockedAmong } from "../blocklist.js";
@@ -50,7 +50,7 @@ export {
 
 export { confirmerOf, dutiesProblem } from "./review-duties.js";
 
-async function maintainerProblem(tx: KobeTx, v: VersionRow): Promise<Problem | null> {
+async function maintainerProblem(tx: KaijuTx, v: VersionRow): Promise<Problem | null> {
   const all = await listMaintainers(tx, v.skillId);
   if (all.length === 0) return null;
   if (all.some((m) => m.userId === v.submittedBy && !m.deactivated)) return null;
@@ -62,7 +62,7 @@ async function maintainerProblem(tx: KobeTx, v: VersionRow): Promise<Problem | n
 
 /** Every reason `userId` can't approve `v` now, in the order Approve checks them. */
 export async function approveProblems(
-  tx: KobeTx,
+  tx: KaijuTx,
   v: VersionRow | undefined,
   userId: string,
   input?: DecisionInput,
@@ -127,7 +127,7 @@ class Refused extends Error {
 const isInsufficientPrivilege = (err: unknown) => pgCodeOf(err) === "42501";
 
 export async function approve(
-  db: KobeDb,
+  db: KaijuDb,
   versionId: string,
   userId: string,
   input: DecisionInput,

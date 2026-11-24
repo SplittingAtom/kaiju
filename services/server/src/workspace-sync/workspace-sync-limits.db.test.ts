@@ -1,8 +1,8 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { WORKSPACE_SYNC_PATH, type WorkspaceChange } from "@kobe/protocol/sandbox-wire";
-import { sql, withTeam } from "@kobe/db";
+import { WORKSPACE_SYNC_PATH, type WorkspaceChange } from "@kaiju/protocol/sandbox-wire";
+import { sql, withTeam } from "@kaiju/db";
 import { createSandboxApp } from "../routes/sandbox.js";
 import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
 import { FakeSandboxAuth } from "../testing/fake-sandbox.js";

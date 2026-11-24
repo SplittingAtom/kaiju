@@ -2,7 +2,7 @@
 import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { composer, openApp } from "./testing";
 
@@ -11,14 +11,14 @@ import { composer, openApp } from "./testing";
  * workspace files the agent wrote, with distinct icons and names; each opens in its own viewer or
  * editor; a live write adds its badge, and a file gone from the list loses it.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const enc = (s: string) => new TextEncoder().encode(s);
 const ROW = "Artifacts and files in this conversation";
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 afterEach(() => {

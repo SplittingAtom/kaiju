@@ -1,7 +1,7 @@
 "use client";
 
 import { splitAppContext } from "../../lib/apps/app-context";
-import { splitItemReferences, splitSkillRequest } from "@kobe/protocol";
+import { splitItemReferences, splitSkillRequest } from "@kaiju/protocol";
 import {
   ActionBarPrimitive,
   AuiIf,
@@ -17,7 +17,7 @@ import { cn } from "../../lib/utils";
 import {
   branchPoint,
   branchPointOfMeta,
-  type KobeMessageMeta,
+  type KaijuMessageMeta,
   type SkippedReport,
 } from "../../lib/chat/tree";
 import { shortcutOf } from "../../lib/shell/shortcuts";
@@ -26,7 +26,7 @@ import { IconAction } from "../shell/icon-action";
 import { AppCardPart } from "../apps/app-card";
 import { AppItemChips, SentItemChips } from "../apps/app-item-chips";
 import { itemsOfReferences } from "../../lib/apps/app-items";
-import { editSkillKey, useChatSession, useKobeExtras } from "./kobe-runtime";
+import { editSkillKey, useChatSession, useKaijuExtras } from "./kaiju-runtime";
 import { useSkillPick } from "./plus-skills";
 import { isReadOnlyThread } from "./project-bar";
 import { SentAttachments } from "./attachment-chips";
@@ -62,7 +62,7 @@ import styles from "./chat.module.css";
 function SentSkill({ name }: { readonly name: string }) {
   return (
     <p
-      data-kobe-sent-skill={name}
+      data-kaiju-sent-skill={name}
       className="text-muted-foreground m-0 mb-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs"
     >
       <WandSparklesIcon aria-hidden className="size-3" />
@@ -93,7 +93,7 @@ function PlainText({ text }: TextMessagePartProps) {
       {contexts.length > 0 && (
         <ul aria-label="App context sent" className="m-0 mb-1 flex list-none flex-col gap-1 p-0">
           {contexts.map((c, i) => (
-            <li key={i} data-kobe-sent-app-context className="rounded-md border px-2 py-1 text-xs">
+            <li key={i} data-kaiju-sent-app-context className="rounded-md border px-2 py-1 text-xs">
               <details>
                 <summary className="cursor-pointer">
                   Context from {c.source} (untrusted data)
@@ -194,11 +194,11 @@ const ASSISTANT_PARTS = {
   tools: { Override: withApprovalMarker(ToolCallCard) },
   data: {
     by_name: {
-      "kobe-marker": MarkerPart,
-      "kobe-problem": Problem,
-      "kobe-offloaded": Offloaded,
-      "kobe-skipped": SkippedActions,
-      "kobe-app-card": AppCardPart,
+      "kaiju-marker": MarkerPart,
+      "kaiju-problem": Problem,
+      "kaiju-offloaded": Offloaded,
+      "kaiju-skipped": SkippedActions,
+      "kaiju-app-card": AppCardPart,
     },
   },
 } as const;
@@ -213,23 +213,23 @@ const ANSWER_PARTS = {
   tools: { Override: withAppAnswerPass(ToolCallCard) },
   data: {
     by_name: {
-      "kobe-marker": keptInAppAnswer(MarkerPart),
-      "kobe-problem": keptInAppAnswer(Problem),
-      "kobe-offloaded": hiddenInAppAnswer(Offloaded),
-      "kobe-skipped": hiddenInAppAnswer(SkippedActions),
-      "kobe-app-card": keptInAppAnswer(AppCardPart),
+      "kaiju-marker": keptInAppAnswer(MarkerPart),
+      "kaiju-problem": keptInAppAnswer(Problem),
+      "kaiju-offloaded": hiddenInAppAnswer(Offloaded),
+      "kaiju-skipped": hiddenInAppAnswer(SkippedActions),
+      "kaiju-app-card": keptInAppAnswer(AppCardPart),
     },
   },
 } as const;
 
-function useMeta(): KobeMessageMeta | undefined {
-  return useAuiState((s) => s.message.metadata.custom as KobeMessageMeta | undefined);
+function useMeta(): KaijuMessageMeta | undefined {
+  return useAuiState((s) => s.message.metadata.custom as KaijuMessageMeta | undefined);
 }
 
 export function UserMessage() {
   const meta = useMeta();
   const waiting = meta?.kind === "user" && meta.waiting === true;
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const readOnly = isReadOnlyThread(extras);
   const canEdit =
     !readOnly && extras !== undefined && branchPointOfMeta(extras.projection, meta) !== undefined;
@@ -241,7 +241,7 @@ export function UserMessage() {
   return (
     <MessagePrimitive.Root
       data-role="user"
-      data-kobe-dimmed={dimmed || undefined}
+      data-kaiju-dimmed={dimmed || undefined}
       className={cn(
         "group/user animate-in fade-in slide-in-from-bottom-1 grid auto-rows-auto grid-cols-[minmax(72px,1fr)_fit-content(85%)] content-start gap-y-2 px-2 duration-150 [&:where(>*)]:col-start-2",
         waiting && "opacity-75",
@@ -295,7 +295,7 @@ export function UserMessage() {
 /** Regenerate re-sends the question before this answer from that question's parent entry. */
 function useCanRegenerate(): boolean {
   const parentId = useAuiState((s) => s.message.parentId);
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   return extras !== undefined && branchPoint(extras.projection, parentId) !== undefined;
 }
 
@@ -322,16 +322,16 @@ function AppCardMessage() {
   );
 }
 
-function AnswerMessage({ meta }: { readonly meta: KobeMessageMeta | undefined }) {
+function AnswerMessage({ meta }: { readonly meta: KaijuMessageMeta | undefined }) {
   const running = useAuiState((s) => s.message.status?.type === "running");
-  const readOnly = isReadOnlyThread(useKobeExtras());
+  const readOnly = isReadOnlyThread(useKaijuExtras());
   const canRegenerate = useCanRegenerate();
   const dimmed = useDimmed();
   return (
     <MessagePrimitive.Root
       data-role="assistant"
       aria-busy={running}
-      data-kobe-dimmed={dimmed || undefined}
+      data-kaiju-dimmed={dimmed || undefined}
       className={cn(
         "group/answer animate-in fade-in slide-in-from-bottom-1 relative duration-150",
         dimmed && "opacity-50",
@@ -352,7 +352,7 @@ function AnswerMessage({ meta }: { readonly meta: KobeMessageMeta | undefined })
           <div className="ms-2 flex min-h-7.5 items-center gap-2 pe-2 pt-1.5">
             <ActionBarPrimitive.Root
               hideWhenRunning
-              data-kobe-answer-actions
+              data-kaiju-answer-actions
               className="text-muted-foreground animate-in fade-in -ms-1 flex gap-1 duration-200"
             >
               <CopyAction />
@@ -428,7 +428,7 @@ export function ReadOnlyAnswer() {
         <AnswerDetailScope>
           <AnswerParts />
           <div
-            data-kobe-answer-actions
+            data-kaiju-answer-actions
             className="text-muted-foreground ms-2 flex min-h-7.5 items-center gap-1 pe-2 pt-1.5"
           >
             <CopyAction />
@@ -475,7 +475,7 @@ function EditSkillChip() {
   if (picked === undefined) return null;
   return (
     <span
-      data-kobe-edit-skill={picked}
+      data-kaiju-edit-skill={picked}
       className="mx-4 mt-2 inline-flex items-center gap-1.5 self-start rounded-full border px-2 py-0.5 text-xs"
     >
       <WandSparklesIcon aria-hidden className="size-3" />
@@ -514,11 +514,11 @@ export function EditComposer() {
       <ComposerPrimitive.Root className="border-foreground/10 focus-within:border-foreground/25 bg-muted/30 ms-auto flex w-full max-w-[85%] cursor-text flex-col rounded-2xl border transition-[border-color]">
         <EditSkillChip />
         <EditItemChips />
-        <label className="sr-only" htmlFor="kobe-edit-message">
+        <label className="sr-only" htmlFor="kaiju-edit-message">
           Edit your message
         </label>
         <ComposerPrimitive.Input
-          id="kobe-edit-message"
+          id="kaiju-edit-message"
           autoFocus
           className="text-foreground min-h-14 w-full resize-none border-0 bg-transparent px-4 pt-3 pb-1 text-base outline-none focus-visible:shadow-none"
         />

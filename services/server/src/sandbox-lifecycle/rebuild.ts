@@ -4,9 +4,9 @@ import {
   lockLegalHolds,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import { currentAuditContext } from "../audit/context.js";
 import { recordAudit } from "../audit/record.js";
@@ -84,7 +84,7 @@ export interface WorkspaceRebuild {
 }
 
 export interface WorkspaceRebuildOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly log: Pick<Logger, "info" | "warn" | "error">;
   readonly now?: () => number;
 }
@@ -103,7 +103,11 @@ type Row = {
 const toDate = (v: Date | string | null | undefined): Date | null =>
   v === null || v === undefined ? null : new Date(v);
 
-async function readRow(tx: KobeTx, target: SandboxTarget, lock: boolean): Promise<Row | undefined> {
+async function readRow(
+  tx: KaijuTx,
+  target: SandboxTarget,
+  lock: boolean,
+): Promise<Row | undefined> {
   const res = await tx.execute<Row>(sql`
     SELECT s.state, s.sandbox_id, s.rebuild_started_at, w.last_push_at
       FROM sandboxes s
@@ -144,7 +148,7 @@ const withTimeout = <T>(work: (signal: AbortSignal) => Promise<T>, ms: number): 
  * confirm or sweep retries. `pending` then.
  */
 export async function completeRebuild(
-  db: KobeDb,
+  db: KaijuDb,
   provider: Pick<RebuildProvider, "discardLostVolume">,
   team: TeamRef,
   userId: string,
@@ -209,7 +213,7 @@ export async function completeRebuild(
 }
 
 /** Rebuilds of a team confirmed over a minute ago and not finished (the sweep completes them). */
-export async function unfinishedRebuilds(tx: KobeTx, teamId: string): Promise<string[]> {
+export async function unfinishedRebuilds(tx: KaijuTx, teamId: string): Promise<string[]> {
   const res = await tx.execute<{ user_id: string }>(sql`
     SELECT user_id FROM sandboxes
      WHERE team_id = ${teamId} AND rebuild_started_at < now() - interval '1 minute'
@@ -226,7 +230,7 @@ export function createWorkspaceRebuild(options: WorkspaceRebuildOptions): Worksp
   const cache = new Map<string, { readonly at: number; readonly status: RebuildStatus }>();
 
   /** The cluster's answer, judged and recorded; undefined when it could not be read. */
-  const judge = async (tx: KobeTx, team: TeamRef, userId: string) => {
+  const judge = async (tx: KaijuTx, team: TeamRef, userId: string) => {
     if (!provider) return undefined;
     try {
       const health = await provider.volumeHealth(team, userId);

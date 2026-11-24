@@ -4,7 +4,7 @@ import {
   THREAD_SUGGESTION_MAX_CHARS,
   serverCallRequestSchema,
   threadSuggestionsSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { followupMessages, parseFollowups } from "./followups.js";
 
 describe("parseFollowups (KOBE-222 ac-5: threadSuggestionsSchema)", () => {

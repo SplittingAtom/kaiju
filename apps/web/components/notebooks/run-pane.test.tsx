@@ -28,7 +28,7 @@ const PATH = "src/job.py";
 const toolbar = () => screen.getByRole("toolbar", { name: "job.py view" });
 const tab = (name: RegExp) => screen.getByRole("tab", { name });
 const panel = (id: string) =>
-  document.querySelector<HTMLElement>(`[data-kobe-run-panel="${id}"]`) as HTMLElement;
+  document.querySelector<HTMLElement>(`[data-kaiju-run-panel="${id}"]`) as HTMLElement;
 
 const ok = (data: VariablesResult): ApiResult<VariablesResult> => ({ ok: true, status: 200, data });
 const SNAPSHOT: VariablesResult = {
@@ -161,8 +161,8 @@ describe("Run Output and Log (ac-2)", () => {
     const user = userEvent.setup();
     expect(within(panel("output")).getByText("second")).toBeTruthy();
     await user.click(tab(/^Log/u));
-    const entries = [...panel("log").querySelectorAll("[data-kobe-log-entry]")];
-    expect(entries.map((e) => e.getAttribute("data-kobe-log-entry"))).toEqual([
+    const entries = [...panel("log").querySelectorAll("[data-kaiju-log-entry]")];
+    expect(entries.map((e) => e.getAttribute("data-kaiju-log-entry"))).toEqual([
       execId(2),
       execId(1),
     ]);
@@ -204,12 +204,12 @@ describe("Run Output and Log (ac-2)", () => {
     finished(kernel, 1, "error", "boom");
     expect(tab(/^Run Output/u).textContent).toBe("Run Output, new output");
     expect(tab(/^Log/u).textContent).toBe("Log, a run failed");
-    expect(tab(/^Variables/u).querySelector("[data-kobe-badge]")).toBeNull();
+    expect(tab(/^Variables/u).querySelector("[data-kaiju-badge]")).toBeNull();
     await user.click(tab(/^Run Output/u));
-    expect(tab(/^Run Output/u).querySelector("[data-kobe-badge]")).toBeNull();
-    expect(tab(/^Log/u).querySelector("[data-kobe-badge]")).toBeTruthy();
+    expect(tab(/^Run Output/u).querySelector("[data-kaiju-badge]")).toBeNull();
+    expect(tab(/^Log/u).querySelector("[data-kaiju-badge]")).toBeTruthy();
     await user.click(tab(/^Log/u));
-    expect(tab(/^Log/u).querySelector("[data-kobe-badge]")).toBeNull();
+    expect(tab(/^Log/u).querySelector("[data-kaiju-badge]")).toBeNull();
   });
 });
 
@@ -319,7 +319,7 @@ describe("Variables withheld by the sandbox (KOBE-816)", () => {
     await user.click(tab(/^Variables/u));
     const table = await within(panel("variables")).findByRole("table", { name: "Variables" });
     const row = (name: string) =>
-      table.querySelector<HTMLElement>(`[data-kobe-variable="${name}"]`) as HTMLElement;
+      table.querySelector<HTMLElement>(`[data-kaiju-variable="${name}"]`) as HTMLElement;
     expect(row("API_KEY").textContent).toContain("Hidden");
     expect(document.body.textContent).not.toContain("sk-live");
     await user.click(
@@ -346,7 +346,7 @@ describe("Variables (ac-3, ac-4)", () => {
     const table = await within(panel("variables")).findByRole("table", { name: "Variables" });
     expect(kernel.variableCalls).toEqual([false]);
     const row = (name: string) =>
-      table.querySelector<HTMLElement>(`[data-kobe-variable="${name}"]`) as HTMLElement;
+      table.querySelector<HTMLElement>(`[data-kaiju-variable="${name}"]`) as HTMLElement;
     expect(row("x").textContent).toContain("int");
     expect(row("x").textContent).toContain("42");
     expect(row("df").textContent).toContain("pandas.DataFrame");
@@ -367,8 +367,8 @@ describe("Variables (ac-3, ac-4)", () => {
     ).toBeTruthy();
     // Sorted by name, both ways; filtered by name.
     const names = () =>
-      [...table.querySelectorAll("[data-kobe-variable]")].map((r) =>
-        r.getAttribute("data-kobe-variable"),
+      [...table.querySelectorAll("[data-kaiju-variable]")].map((r) =>
+        r.getAttribute("data-kaiju-variable"),
       );
     expect(names()).toEqual(["API_TOKEN", "df", "html", "slow", "x"]);
     const sort = within(table).getByRole("button", { name: /^Name/u });

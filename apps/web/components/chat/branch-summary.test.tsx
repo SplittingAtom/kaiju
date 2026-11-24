@@ -2,8 +2,8 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BRANCH_SUMMARY_ERROR_MESSAGES, branchSummaryError } from "@kobe/protocol";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { BRANCH_SUMMARY_ERROR_MESSAGES, branchSummaryError } from "@kaiju/protocol";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { SUMMARY_TEXT } from "../../lib/chat/tree-panel";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
@@ -15,13 +15,13 @@ import { announcement, chatRequests, openApp } from "./testing";
  * bar's "Make it current ▾" open the dialog; Go posts the branch summary; the summary is the leaf,
  * shown folded as "Summary of another branch" on the branch entered and as the tree's summary row.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   resizeWindow(DESKTOP_WIDTH);
   Element.prototype.scrollIntoView = function scrollIntoView() {};
@@ -107,7 +107,9 @@ describe("from the tree's node menu (ac-3)", () => {
     // The conversation shows the entered branch with the folded summary.
     expect(await screen.findByText("old answer", {}, WAIT)).toBeTruthy();
     expect(screen.queryByText("new answer")).toBeNull();
-    const marker = must(document.querySelector<HTMLElement>('[data-kobe-marker="branch_summary"]'));
+    const marker = must(
+      document.querySelector<HTMLElement>('[data-kaiju-marker="branch_summary"]'),
+    );
     expect(within(marker).getByRole("button", { name: /Summary of another branch/ })).toBeTruthy();
     // The tree shows the summary row under the node it entered.
     await openTree();
@@ -200,6 +202,6 @@ describe("from the bar's Make it current ▾ (ac-3)", () => {
     await waitFor(() =>
       expect(screen.queryByRole("region", { name: "Another branch" })).toBeNull(),
     );
-    expect(document.querySelector('[data-kobe-marker="branch_summary"]')).not.toBeNull();
+    expect(document.querySelector('[data-kaiju-marker="branch_summary"]')).not.toBeNull();
   });
 });

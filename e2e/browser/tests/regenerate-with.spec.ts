@@ -29,7 +29,7 @@ test("Regenerate with another model adds version 2 under a Model changed to mark
   await menu.getByRole("menuitem", { name: other, exact: true }).click();
 
   // The thread's first model reads "Model: …" (KOBE-280); the switch is the one change marker.
-  const changes = page.locator('[data-kobe-marker="model"]', { hasText: "Model changed to" });
+  const changes = page.locator('[data-kaiju-marker="model"]', { hasText: "Model changed to" });
   await expect(changes).toHaveCount(1, { timeout: RUN_TIMEOUT_MS });
   await expect(page.getByText("Version 2 of 2", { exact: true })).toBeVisible({
     timeout: RUN_TIMEOUT_MS,

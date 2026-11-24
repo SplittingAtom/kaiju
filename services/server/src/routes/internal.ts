@@ -1,15 +1,15 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { honoTracing } from "@kobe/telemetry";
+import { honoTracing } from "@kaiju/telemetry";
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
-import { and, connectors, eq, isNull } from "@kobe/db";
-import { idSchema, uuidSchema } from "@kobe/protocol";
+import { and, connectors, eq, isNull } from "@kaiju/db";
+import { idSchema, uuidSchema } from "@kaiju/protocol";
 import { logger } from "../logger.js";
 import { reportCapturedResult, resultReportSchema, type AppResultsDeps } from "../apps/results.js";
 import { authenticateSandbox, type McpAuthDeps } from "../mcp/principal.js";
 import type { McpService } from "../mcp/service.js";
-import type { KobeMcpService } from "../kobe-mcp/service.js";
+import type { KaijuMcpService } from "../kaiju-mcp/service.js";
 import type { GitMcpService } from "../git-tools/mcp-service.js";
 import { createRateLimiter, type RateLimiter } from "../sandbox/rate-limit.js";
 import { invalidRequest, notFound, readJson } from "../http/request.js";
@@ -20,7 +20,7 @@ import { createInternalGitRoutes, type InternalGitDeps } from "./internal-git.js
  * user app (ingress) nor the sandbox listener (8081, which sandboxes reach): the release
  * NetworkPolicy admits only the MCP proxy's pods to this port, and every request must carry the
  * proxy's internal key. The caller's identity is the sandbox's own `kobe.mcp-proxy` session token
- * (`Kaiju-Sandbox-Token`), which the server verifies itself: the proxy cannot speak for a sandbox
+ * (`Kobe-Sandbox-Token`), which the server verifies itself: the proxy cannot speak for a sandbox
  * whose token it has not seen.
  *
  * POST /internal/v1/mcp/connectors/{id}/tools → 200 `{connector, tools}` (pinned + exposed)
@@ -65,7 +65,7 @@ export interface InternalAppDeps {
   readonly auth: McpAuthDeps;
   readonly decideLimiter?: RateLimiter;
   /** The built-in Kaiju MCP server (KOBE-619); unset: its routes answer not available. */
-  readonly kobe?: KobeMcpService;
+  readonly kaiju?: KaijuMcpService;
   /** The built-in git connector (KOBE-762), served like the Kaiju connector. */
   readonly gitMcp?: GitMcpService;
   /** The egress proxy's git decisions (KOBE-763), with its own key; unset: not mounted. */
@@ -216,8 +216,8 @@ export function createInternalApp(deps: InternalAppDeps): Hono {
   // The built-in Kaiju connector (KOBE-619): listed and decided-and-executed by the server itself.
   const notAvailable = (c: Context) => notFound(c, "connector_not_available", "Not available.");
   // The built-in git connector (KOBE-762) is served the same way, on its own paths.
-  const builtins: [string, Pick<KobeMcpService, "list" | "call"> | undefined][] = [
-    ["kobe", deps.kobe],
+  const builtins: [string, Pick<KaijuMcpService, "list" | "call"> | undefined][] = [
+    ["kobe", deps.kaiju],
     ["git", deps.gitMcp],
   ];
   for (const [path, service] of builtins) {

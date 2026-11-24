@@ -7,11 +7,11 @@ import {
   modelProviders,
   teamModels,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
-import type { ThinkingLevel } from "@kobe/protocol";
+import type { ThinkingLevel } from "@kaiju/protocol";
 import { catalogView, type CatalogView } from "./admin-store.js";
 import {
   catalogThinking,
@@ -35,7 +35,7 @@ export interface TeamModelView extends CatalogView {
 }
 
 /** The whole catalog with the team's choice (catalog site-wide; enablement under RLS). */
-export async function listTeamModels(db: KobeDb, teamId: string): Promise<TeamModelView[]> {
+export async function listTeamModels(db: KaijuDb, teamId: string): Promise<TeamModelView[]> {
   const [catalog, enabled] = await Promise.all([
     db
       .select({ entry: modelCatalog, kind: modelProviders.kind })
@@ -68,7 +68,7 @@ export type SetTeamModelResult =
 
 /** Enables/disables an alias for the team and optionally makes it the team's default. */
 export async function setTeamModel(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   alias: string,
   input: TeamModelInput,
@@ -157,7 +157,7 @@ const keepMax = (
  * Whether the team enabled `alias` now (inside the caller's `withTeam` transaction, RLS). A
  * thread's model choice (KOBE-44) must be one of these when it is made.
  */
-export async function isModelEnabled(tx: KobeTx, teamId: string, alias: string): Promise<boolean> {
+export async function isModelEnabled(tx: KaijuTx, teamId: string, alias: string): Promise<boolean> {
   const [row] = await tx
     .select({ alias: teamModels.alias })
     .from(teamModels)

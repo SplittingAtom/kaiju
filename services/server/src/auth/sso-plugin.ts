@@ -3,7 +3,7 @@ import type { BetterAuthPlugin, GenericEndpointContext } from "better-auth";
 import { APIError, createAuthEndpoint, isAPIError } from "better-auth/api";
 import * as oidc from "openid-client";
 import { z } from "zod";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import type { AuthAttemptAudit } from "../audit/attempts.js";
 import { logger } from "../logger.js";
 import type { SsoFailure } from "../sso/claims.js";
@@ -30,7 +30,7 @@ import type { AfterChangeDeps } from "../teams/after-change.js";
 import { readRequireTwoFactorIn } from "./session.js";
 
 export interface SsoPluginOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** Public origin of the install; the redirect URI and error pages hang off it. */
   readonly publicOrigin: string;
   /** Better Auth's secret: the flow cookie's key is derived from it (HKDF, own purpose). */

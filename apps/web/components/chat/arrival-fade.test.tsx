@@ -4,7 +4,7 @@ import { Profiler } from "react";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { IconActionProvider } from "../shell/icon-action";
 import { splitWords } from "./arriving-words";
@@ -21,7 +21,7 @@ const css = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8
 const CSS = css("../../app/chat-global.css");
 const flat = (source: string) => source.replace(/\s+/g, " ");
 
-const spans = (root: ParentNode) => [...root.querySelectorAll("[data-kobe-word]")];
+const spans = (root: ParentNode) => [...root.querySelectorAll("[data-kaiju-word]")];
 const words = (root: ParentNode) => spans(root).map((w) => w.textContent);
 const spanOf = (root: ParentNode, word: string) =>
   must(spans(root).find((w) => w.textContent?.trim() === word));
@@ -77,16 +77,16 @@ describe("splitWords", () => {
 describe("arriving words (ac-1)", () => {
   it("wraps each word that arrives in a span, keeping the text and Markdown", () => {
     const { container } = streamMarkdown("Here is **the** chart\n\n- one");
-    const root = must(container.querySelector("[data-kobe-arrive]"));
-    expect(root.getAttribute("data-kobe-arrive")).toBe("running");
+    const root = must(container.querySelector("[data-kaiju-arrive]"));
+    expect(root.getAttribute("data-kaiju-arrive")).toBe("running");
     expect(words(root)).toEqual(["Here ", "is ", "the", "chart", "one"]);
-    expect(root.querySelector("strong [data-kobe-word]")?.textContent).toBe("the");
+    expect(root.querySelector("strong [data-kaiju-word]")?.textContent).toBe("the");
     expect(root.textContent?.replace(/\s+/g, " ")).toBe("Here is the chart one ");
   });
 
   it("history (mounted finished) renders plain text, without spans", () => {
     const { container } = renderMarkdown("Here is the chart", false);
-    expect(container.querySelector("[data-kobe-arrive]")).toBeNull();
+    expect(container.querySelector("[data-kaiju-arrive]")).toBeNull();
     expect(words(container)).toEqual([]);
     expect(screen.getByText("Here is the chart")).toBeTruthy();
   });
@@ -103,7 +103,7 @@ describe("arriving words (ac-1)", () => {
     update("Here is the chart");
     const before = spans(container);
     finish();
-    expect(container.querySelector("[data-kobe-arrive]")).toBeNull();
+    expect(container.querySelector("[data-kaiju-arrive]")).toBeNull();
     expect(spans(container)).toEqual(before);
     expect(spans(container).every((s, i) => s === before[i])).toBe(true);
   });
@@ -114,7 +114,7 @@ describe("arriving words (ac-1)", () => {
       `Intro words\n\n\`\`\`js\n${code}\n\`\`\`\n\nuse \`npm ci\``,
     );
     expect(words(container)).toEqual(["Intro ", "words", "use "]);
-    expect(must(container.querySelector("pre")).querySelector("[data-kobe-word]")).toBeNull();
+    expect(must(container.querySelector("pre")).querySelector("[data-kaiju-word]")).toBeNull();
     expect(must(container.querySelector("pre")).textContent).toContain("let value399");
   });
 });
@@ -182,7 +182,7 @@ describe("the fade's CSS (ac-1, ac-3)", () => {
   it("animates arriving words over 600 ms from the tint", () => {
     const source = flat(CSS);
     expect(source).toMatch(
-      /\[data-kobe-arrive="running"\] \[data-kobe-word\] \{ color: [^;]+; animation: kobe-arrive 600ms/,
+      /\[data-kaiju-arrive="running"\] \[data-kaiju-word\] \{ color: [^;]+; animation: kaiju-arrive 600ms/,
     );
   });
 
@@ -191,49 +191,51 @@ describe("the fade's CSS (ac-1, ac-3)", () => {
     // Endpoints: the tint at the start (0% arrived), the inherited text colour at the end and at
     // rest (100%); the text colour first, so the build's no-color-mix fallback is the text colour.
     expect(source).toContain(
-      '@property --kobe-arrived { syntax: "<percentage>"; inherits: false; initial-value: 100%; }',
+      '@property --kaiju-arrived { syntax: "<percentage>"; inherits: false; initial-value: 100%; }',
     );
     expect(source).toContain(
-      "@keyframes kobe-arrive { from { --kobe-arrived: 0%; } to { --kobe-arrived: 100%; } }",
+      "@keyframes kaiju-arrive { from { --kaiju-arrived: 0%; } to { --kaiju-arrived: 100%; } }",
     );
     expect(source).toContain(
-      "color: color-mix(in srgb, currentColor var(--kobe-arrived), var(--kobe-arrive-tint));",
+      "color: color-mix(in srgb, currentColor var(--kaiju-arrived), var(--kaiju-arrive-tint));",
     );
-    const keyframes = must(source.match(/@keyframes kobe-arrive \{.*?\} \}/))[0];
+    const keyframes = must(source.match(/@keyframes kaiju-arrive \{.*?\} \}/))[0];
     expect(keyframes).not.toMatch(/[{;] ?color:/);
   });
 
   it("tints only while the message list is pinned; otherwise words arrive plain", () => {
     const source = flat(CSS);
-    expect(source).toContain('[data-kobe-scroll="messages"] { --kobe-arrive-tint: currentColor; }');
+    expect(source).toContain(
+      '[data-kaiju-scroll="messages"] { --kaiju-arrive-tint: currentColor; }',
+    );
     expect(source).toMatch(
-      /\[data-kobe-scroll="messages"\]\[data-kobe-follow="pinned"\] \{ --kobe-arrive-tint: var\(--admin-accent/,
+      /\[data-kaiju-scroll="messages"\]\[data-kaiju-follow="pinned"\] \{ --kaiju-arrive-tint: var\(--admin-accent/,
     );
   });
 
   it("under reduced motion: no fade, a static inset bar in the block being written", () => {
     const reduced = flat(must(CSS.split("@media (prefers-reduced-motion: reduce)")[1]));
-    expect(reduced).toMatch(/\[data-kobe-word\] \{ animation: none; \}/);
+    expect(reduced).toMatch(/\[data-kaiju-word\] \{ animation: none; \}/);
     expect(reduced).toContain(
-      '[data-kobe-follow="pinned"] [data-kobe-arrive="running"] > :last-child { box-shadow: inset 2px 0 0 0 var(--kobe-arrive-tint); }',
+      '[data-kaiju-follow="pinned"] [data-kaiju-arrive="running"] > :last-child { box-shadow: inset 2px 0 0 0 var(--kaiju-arrive-tint); }',
     );
     expect(reduced).not.toContain("var(--background)");
   });
 });
 
 describe("in the conversation", () => {
-  let kobe: FakeKobe;
+  let kaiju: FakeKaiju;
 
   beforeEach(() => {
     sessionStorage.clear();
-    kobe = new FakeKobe();
-    vi.stubGlobal("fetch", kobe.fetch);
+    kaiju = new FakeKaiju();
+    vi.stubGlobal("fetch", kaiju.fetch);
   });
 
   async function startRun(t: string) {
     await userEvent.setup().type(await composer(), "draw a chart{Enter}");
-    const run = must(await waitFor(() => must(kobe.activeRun(t))));
-    await streaming(kobe, run.run_id);
+    const run = must(await waitFor(() => must(kaiju.activeRun(t))));
+    await streaming(kaiju, run.run_id);
     return run.run_id;
   }
 
@@ -244,95 +246,95 @@ describe("in the conversation", () => {
     must(document.querySelector<HTMLElement>('[data-role="assistant"][aria-busy="true"]'));
 
   it("streaming answer and reasoning words arrive as spans; tool output does not (ac-1)", async () => {
-    const t = kobe.addThread("Sales");
-    openApp(kobe, t);
+    const t = kaiju.addThread("Sales");
+    openApp(kaiju, t);
     const runId = await startRun(t);
     const think = (delta: string) =>
-      kobe.emit(runId, "reasoning.delta", { message_id: "m1", content_index: 0, delta });
+      kaiju.emit(runId, "reasoning.delta", { message_id: "m1", content_index: 0, delta });
     act(() => think("Plan "));
     await waitFor(() => expect(answer().textContent).toContain("Plan"));
     act(() => think("it"));
     await waitFor(() => expect(words(answer())).toEqual(["it"]));
-    act(() => kobe.agent.delta(runId, "m1", "Here", 1));
+    act(() => kaiju.agent.delta(runId, "m1", "Here", 1));
     await waitFor(() => expect(answer().textContent).toContain("Here"));
-    act(() => kobe.agent.delta(runId, "m1", " is", 1));
+    act(() => kaiju.agent.delta(runId, "m1", " is", 1));
     await waitFor(() => expect(words(answer())).toEqual(["it", "is"]));
-    expect(answer().querySelectorAll('[data-kobe-arrive="running"]')).toHaveLength(1);
+    expect(answer().querySelectorAll('[data-kaiju-arrive="running"]')).toHaveLength(1);
 
-    act(() => kobe.agent.toolCall(runId, "tc1", "bash", { command: "ls" }, "m1"));
-    act(() => kobe.agent.toolResult(runId, "tc1", "bash", "file-a file-b"));
+    act(() => kaiju.agent.toolCall(runId, "tc1", "bash", { command: "ls" }, "m1"));
+    act(() => kaiju.agent.toolResult(runId, "tc1", "bash", "file-a file-b"));
     expect(await screen.findByText(/file-a file-b/)).toBeTruthy();
-    expect(screen.getByText(/file-a file-b/).closest("[data-kobe-word]")).toBeNull();
+    expect(screen.getByText(/file-a file-b/).closest("[data-kaiju-word]")).toBeNull();
     // The answer text is no longer being written: its words keep their spans, without the fade.
-    const text = must(spanOf(answer(), "is").closest("[data-kobe-words]"));
-    expect(text.hasAttribute("data-kobe-arrive")).toBe(false);
+    const text = must(spanOf(answer(), "is").closest("[data-kaiju-words]"));
+    expect(text.hasAttribute("data-kaiju-arrive")).toBe(false);
     expect(words(answer())).toEqual(["it", "is"]);
   });
 
   it("reopening mid-run shows what streamed so far plain; only new words fade (resume)", async () => {
-    const t = kobe.addThread("Sales");
-    const first = openApp(kobe, t);
+    const t = kaiju.addThread("Sales");
+    const first = openApp(kaiju, t);
     const runId = await startRun(t);
-    kobe.agent.delta(runId, "m1", "one, ");
-    kobe.agent.delta(runId, "m1", "two, ");
+    kaiju.agent.delta(runId, "m1", "one, ");
+    kaiju.agent.delta(runId, "m1", "two, ");
     expect(await screen.findByText(streamed("one, two,"))).toBeTruthy();
 
     first.unmount(); // the tab is refreshed while the run goes on
-    kobe.agent.delta(runId, "m1", "three, ");
-    openApp(kobe, t);
+    kaiju.agent.delta(runId, "m1", "three, ");
+    openApp(kaiju, t);
     expect(await screen.findByText(streamed("one, two, three,"))).toBeTruthy();
     expect(words(document)).toEqual([]);
 
-    await streaming(kobe, runId);
-    act(() => kobe.agent.delta(runId, "m1", "four"));
+    await streaming(kaiju, runId);
+    act(() => kaiju.agent.delta(runId, "m1", "four"));
     await waitFor(() => expect(words(document)).toEqual(["four"]));
   });
 
   it("Stop ends the fade at once, before the server confirms the run ended (KOBE-269)", async () => {
-    const t = kobe.addThread("Sales");
+    const t = kaiju.addThread("Sales");
     // The server accepts the cancel but the run's end arrives later (the sandbox is stopping).
-    const real = kobe.fetch;
-    vi.spyOn(kobe, "fetch").mockImplementation(async (input, init = {}) => {
-      const url = new URL(String(input), "http://kobe.test");
+    const real = kaiju.fetch;
+    vi.spyOn(kaiju, "fetch").mockImplementation(async (input, init = {}) => {
+      const url = new URL(String(input), "http://kaiju.test");
       if (init.method === "POST" && url.pathname.endsWith("/cancel")) {
         const res = await real(url.pathname.replace(/\/cancel$/, ""), { method: "GET" });
         return Response.json(await res.json(), { status: 202 });
       }
       return real(input, init);
     });
-    openApp(kobe, t);
+    openApp(kaiju, t);
     const runId = await startRun(t);
-    act(() => kobe.agent.delta(runId, "m1", "Here is", 1));
+    act(() => kaiju.agent.delta(runId, "m1", "Here is", 1));
     await waitFor(() =>
-      expect(document.querySelector('[data-kobe-arrive="running"]')).toBeTruthy(),
+      expect(document.querySelector('[data-kaiju-arrive="running"]')).toBeTruthy(),
     );
     await userEvent.setup().click(screen.getByRole("button", { name: "Stop" }));
-    await waitFor(() => expect(document.querySelector("[data-kobe-arrive]")).toBeNull());
-    expect(kobe.activeRun(t)?.run_id).toBe(runId); // the server has not ended it
+    await waitFor(() => expect(document.querySelector("[data-kaiju-arrive]")).toBeNull());
+    expect(kaiju.activeRun(t)?.run_id).toBe(runId); // the server has not ended it
     // Words that still arrive before the run's end don't fade either.
-    act(() => kobe.agent.delta(runId, "m1", " more", 1));
+    act(() => kaiju.agent.delta(runId, "m1", " more", 1));
     await waitFor(() => expect(answerText()).toContain("more"));
-    expect(document.querySelector("[data-kobe-arrive]")).toBeNull();
+    expect(document.querySelector("[data-kaiju-arrive]")).toBeNull();
   });
 
   it("after Stop and the run's end, no part is left marked as being written (KOBE-269)", async () => {
-    const t = kobe.addThread("Sales");
-    openApp(kobe, t);
+    const t = kaiju.addThread("Sales");
+    openApp(kaiju, t);
     const runId = await startRun(t);
-    act(() => kobe.agent.delta(runId, "m1", "Here is", 1));
+    act(() => kaiju.agent.delta(runId, "m1", "Here is", 1));
     await waitFor(() =>
-      expect(document.querySelector('[data-kobe-arrive="running"]')).toBeTruthy(),
+      expect(document.querySelector('[data-kaiju-arrive="running"]')).toBeTruthy(),
     );
     await userEvent.setup().click(screen.getByRole("button", { name: "Stop" }));
-    await waitFor(() => expect(kobe.activeRun(t)).toBeUndefined());
-    await waitFor(() => expect(document.querySelector("[data-kobe-arrive]")).toBeNull());
+    await waitFor(() => expect(kaiju.activeRun(t)).toBeUndefined());
+    await waitFor(() => expect(document.querySelector("[data-kaiju-arrive]")).toBeNull());
   });
 
   it("marks the message list with its follow state for the CSS (ac-3)", async () => {
-    const t = kobe.addThread("Sales");
-    openApp(kobe, t);
+    const t = kaiju.addThread("Sales");
+    openApp(kaiju, t);
     await startRun(t);
-    const list = must(document.querySelector<HTMLElement>('[data-kobe-scroll="messages"]'));
-    await waitFor(() => expect(list.dataset.kobeFollow).toBe("pinned"));
+    const list = must(document.querySelector<HTMLElement>('[data-kaiju-scroll="messages"]'));
+    await waitFor(() => expect(list.dataset.kaijuFollow).toBe("pinned"));
   });
 });

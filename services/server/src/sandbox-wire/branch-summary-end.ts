@@ -1,5 +1,8 @@
-import { threadBranchSummaryResultShape, type PiGetEntriesData } from "@kobe/protocol/sandbox-wire";
-import { sql, type KobeTx } from "@kobe/db";
+import {
+  threadBranchSummaryResultShape,
+  type PiGetEntriesData,
+} from "@kaiju/protocol/sandbox-wire";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { z } from "zod";
 import { appendRunEventsInTx } from "../event-stream/append.js";
 import { leafMovedEvents, mirrorEntriesInTx } from "./entries.js";
@@ -40,7 +43,7 @@ export interface BranchSummaryMirror {
  * it on their focus re-read. `ok: false` leaves the leaf; the caller fails the run.
  */
 export async function mirrorBranchSummaryInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   m: BranchSummaryMirror,
 ): Promise<{ readonly ok: boolean; readonly capped: boolean }> {
   const { teamId, threadId, runId, reported } = m;

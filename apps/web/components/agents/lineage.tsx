@@ -1,6 +1,6 @@
 "use client";
 
-import type { AgentLineage, AgentRosterRow } from "@kobe/protocol";
+import type { AgentLineage, AgentRosterRow } from "@kaiju/protocol";
 import Link from "next/link";
 import { getAgentVersion, getTeamAgent } from "../../lib/admin/api/team/agent-builder";
 import { forkedFromLabel, lineageHref } from "../../lib/agents/roster-labels";

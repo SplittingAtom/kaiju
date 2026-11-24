@@ -47,7 +47,7 @@ export const lastPrompt = (page: Page) => page.locator('[data-role="user"]').las
 export const branchBar = (page: Page) => page.getByRole("region", { name: "Another branch" });
 /** The "Forked here · N branches" row with the branch picker ("Version n of m"). */
 export const forkMarker = (page: Page) =>
-  page.locator('[data-kobe-marker="fork"]').filter({ hasText: /Version \d+ of \d+/ });
+  page.locator('[data-kaiju-marker="fork"]').filter({ hasText: /Version \d+ of \d+/ });
 export const treePanel = (page: Page) => page.getByRole("dialog", { name: "Conversation tree" });
 /** A prompt's row in the wide tree: its accessible name is "You, <excerpt>, <time>, …". */
 export const promptRow = (page: Page, mark: string) =>
@@ -79,7 +79,7 @@ export async function buildBranchedThread(chat: Chat): Promise<Branched> {
   await chat.ask(sidePrompt(token));
   await (await chat.messageAction(chat.answers.first(), "Continue from here")).click();
   await expect(page.getByText(/^Continuing from the answer at/)).toBeVisible();
-  await expect(page.locator("[data-kobe-dimmed]").first()).toBeVisible();
+  await expect(page.locator("[data-kaiju-dimmed]").first()).toBeVisible();
   await askOnNewBranch(chat, mainPrompt, MAIN);
   await expect(page.getByText(/^Continuing from the answer at/)).toHaveCount(0);
   return { threadId, token };
@@ -89,7 +89,7 @@ export async function buildBranchedThread(chat: Chat): Promise<Branched> {
 export async function openTree(page: Page): Promise<Locator> {
   const panel = treePanel(page);
   if (await panel.isVisible()) return panel;
-  const header = page.locator("header").filter({ has: page.locator("#kobe-thread-title") });
+  const header = page.locator("header").filter({ has: page.locator("#kaiju-thread-title") });
   await header.getByRole("button", { name: /^Conversation tree/ }).click();
   await expect(panel).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
   return panel;

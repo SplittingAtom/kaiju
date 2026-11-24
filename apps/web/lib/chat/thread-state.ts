@@ -2,7 +2,7 @@
  * The state of one open thread and the pure rules over it (merging entries, which run is active,
  * what to show). The controller (`thread-controller.ts`) owns the side effects.
  */
-import { isActiveRunStatus } from "@kobe/protocol";
+import { isActiveRunStatus } from "@kaiju/protocol";
 import type { ApiError } from "../api/client";
 import type { SentFile } from "./attachments";
 import { parseEntry } from "./entries";

@@ -15,7 +15,7 @@ import {
 import { mayOpenContext } from "../../lib/chat/context-viewer";
 import { branchContextTokens, headOf, isBrowsing } from "../../lib/chat/head";
 import { initialThreadState, type ThreadState } from "../../lib/chat/thread-state";
-import { useKobeExtras } from "../chat/kobe-runtime";
+import { useKaijuExtras } from "../chat/kaiju-runtime";
 import { useThreadUsageRead } from "../chat/message-footer";
 import { useThreadTeamModels, type TeamModelsLoad } from "../chat/use-team-models";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
@@ -179,7 +179,7 @@ export function ThreadContextGauge({
   onCompact,
   compactBlocker,
 }: Pick<ContextGaugeProps, "onCompact" | "compactBlocker"> = {}) {
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const state = extras?.state ?? DRAFT;
   const loaded = useThreadTeamModels();
   const read = useThreadUsageRead();

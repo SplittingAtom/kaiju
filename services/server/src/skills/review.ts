@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { RULE_SET, storedVerdict, type ScanResult, type Verdict } from "@kobe/skill-scanner";
+import { RULE_SET, storedVerdict, type ScanResult, type Verdict } from "@kaiju/skill-scanner";
 import {
   and,
   asc,
@@ -17,12 +17,12 @@ import {
   teamSkillReviews,
   teamSkillVersions,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type SkillReviewStatus,
   type StoredFinding,
   makeCursorCodec,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { blockedAmong, isBlocked } from "./blocklist.js";
 import { scanIncomplete, scanPool, type ScanOptions } from "./scan-pool.js";
@@ -74,7 +74,7 @@ const unscannedReview = () => ({
  * job (`late-scan.ts`) scans it, never a Block verdict for content nobody judged.
  */
 export async function recordPendingReview(
-  tx: KobeTx,
+  tx: KaijuTx,
   at: { teamId: string; skillId: string; version: number; slug: string; contentHash: string },
   scan: ScanResult,
 ): Promise<void> {
@@ -88,7 +88,7 @@ export async function recordPendingReview(
  * gives it a scan.
  */
 export async function recordPersonalScan(
-  tx: KobeTx,
+  tx: KaijuTx,
   at: { skillId: string; version: number },
   scan: ScanResult,
 ): Promise<void> {
@@ -180,7 +180,7 @@ export function decodeCursor(value: string): Cursor | undefined {
  * with keyset pagination; the findings are read only for the page's rows.
  */
 export function listReviews(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   statuses: readonly SkillReviewStatus[],
   page: { limit?: number; cursor?: Cursor } = {},
@@ -259,7 +259,7 @@ export function listReviews(
  * `withTeam` (P2-38: never every version of their skills).
  */
 export function reviewRowsOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   keys: readonly { readonly skillId: string; readonly version: number }[],
 ) {
@@ -284,7 +284,7 @@ export function reviewRowsOf(
  * table (inside `withTeam`), personal ones from the site-wide table.
  */
 async function semversOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   rows: readonly { skillId: string; version: number; scope: "team" | "personal" }[],
 ): Promise<Map<string, string>> {
@@ -324,7 +324,7 @@ async function semversOf(
 
 /** Review state of the versions of one team skill, by version number. */
 export function reviewsOfSkill(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   skillId: string,
 ): Promise<Map<number, { status: SkillReviewStatus; flagged: boolean }>> {
@@ -402,7 +402,7 @@ function approvalRefusal(
  * Site admin with a reason (audited `skill.scan.override`). Rejecting is always allowed.
  */
 export function decideReview(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   at: { skillId: string; version: number },
   decision: Decision,
@@ -503,7 +503,7 @@ export function decideReview(
  * skill with no approved version is in neither list.
  */
 export async function teamSkillStates(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   names: readonly string[],
 ): Promise<{ approved: { name: string; hash: string; semver: string }[]; suspended: string[] }> {
@@ -547,7 +547,7 @@ export async function teamSkillStates(
 
 /** The newest approved, not suspended, version of each named team skill (see teamSkillStates). */
 export async function approvedTeamSkills(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   names: readonly string[],
 ): Promise<{ name: string; hash: string; semver: string }[]> {
@@ -560,7 +560,7 @@ export async function approvedTeamSkills(
  * blocked gets a pending review row here so the team's admins can see and decide it.
  */
 export async function usablePersonalSkills(
-  tx: KobeTx,
+  tx: KaijuTx,
   args: { teamId: string; userId: string; ensureRows: boolean },
 ): Promise<{ name: string; hash: string; semver: string }[]> {
   return (await personalSkillUsage(tx, args)).usable;
@@ -578,7 +578,7 @@ const usableRef = (r: { name: string; hash: string; semver: string | null; versi
  * in this team's approved review row).
  */
 export async function personalSkillUsage(
-  tx: KobeTx,
+  tx: KaijuTx,
   args: { teamId: string; userId: string; ensureRows: boolean },
 ): Promise<{
   usable: { name: string; hash: string; semver: string }[];

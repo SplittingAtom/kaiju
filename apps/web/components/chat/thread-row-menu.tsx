@@ -8,7 +8,7 @@ import type { ThreadState } from "../../lib/chat/thread-state";
 import type { MenuBindings } from "../../lib/shell/menu";
 import { IconAction } from "../shell/icon-action";
 import { ActionMenu, ROW_REVEAL } from "../ui/action-menu";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 import { useThreadMenuBindings, type Notice } from "./use-thread-menu";
 
 const NOTICE_MS = 2500;

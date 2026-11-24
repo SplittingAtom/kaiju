@@ -58,7 +58,7 @@ jobs:
       - uses: ./.github/actions/setup-kobe
       - name: License audit of bundled Python and npm packages
         run: |
-          pnpm --filter @kobe/license-check build
+          pnpm --filter @kaiju/license-check build
           images/sandbox/collect-licenses.sh kobe-sandbox:ci > "$RUNNER_TEMP/sandbox-licenses.json"
           LICENSE_REPORT="$RUNNER_TEMP/sandbox-licenses.json" \
           LICENSE_EXCEPTIONS="$PWD/images/sandbox/license-exceptions.json" \

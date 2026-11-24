@@ -14,7 +14,7 @@ import { MAX_OUTPUT_BLOB_BYTES, OUTPUT_INLINE_MAX_BYTES } from "./entry-output.j
  */
 const f = new RunFixture();
 const objects = new MemoryObjects();
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const blobs: BlobStore = { objects, prefix: PREFIX };
 
 beforeAll(async () => {

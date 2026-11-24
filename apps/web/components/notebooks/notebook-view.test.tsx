@@ -126,7 +126,7 @@ describe("rendering cells and saved outputs (ac-1, ac-2)", () => {
     expect(view.state.doc.toString()).toBe("x = 1\nprint(x)");
     const code = cell(2);
     expect(within(code).getByText("[1]")).toBeTruthy();
-    expect(code.querySelector('[data-kobe-output="stdout"]')?.textContent).toBe("1\n");
+    expect(code.querySelector('[data-kaiju-output="stdout"]')?.textContent).toBe("1\n");
     const img = within(code).getByRole("img", { name: "<Figure>" });
     expect(img.getAttribute("src")).toBe(`data:image/png;base64,${PNG}`);
     // The DataFrame is a table of text.
@@ -429,14 +429,14 @@ describe("running (ac-1)", () => {
     kernel.starts.push(pending(), pending());
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: "Start" }));
-    const status = () => must(document.querySelector("[data-kobe-kernel]"));
+    const status = () => must(document.querySelector("[data-kaiju-kernel]"));
     await waitFor(() => expect(status().textContent).toBe("Starting kernel…"));
     expect(screen.getByRole("button", { name: "Start" }).hasAttribute("disabled")).toBe(true);
     act(() =>
       must(answers[0])({ ok: true, status: 202, data: { status: "waking", retryAfterMs: 100 } }),
     );
     await waitFor(() => expect(status().textContent).toBe("Waking sandbox…"));
-    expect(status().getAttribute("data-kobe-kernel")).toBe("waking");
+    expect(status().getAttribute("data-kaiju-kernel")).toBe("waking");
     // The sandbox woke: the next ask starts the kernel.
     await waitFor(() => expect(kernel.ops).toEqual(["start", "start"]));
     act(() => must(answers[1])({ ok: true, status: 200, data: { status: "idle" } }));

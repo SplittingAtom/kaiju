@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { chatRequests, composer, openApp, openRowMenu, threadGroup } from "./testing";
 
@@ -12,12 +12,12 @@ import { chatRequests, composer, openApp, openRowMenu, threadGroup } from "./tes
  * Regenerate, Regenerate with (the models, as on answers) and Delete. Regenerate acts on the
  * thread's last answer through the same paths as the answer's own buttons, opening the thread.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push(
     { alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true },
     { alias: "glm", label: "GLM 5.3", enabled: true, is_default: false },

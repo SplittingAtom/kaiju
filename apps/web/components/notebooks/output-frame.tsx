@@ -44,7 +44,7 @@ function FrameDocument({ html, teamId }: { readonly html: string; readonly teamI
       sandbox={ARTIFACT_FRAME_SANDBOX}
       referrerPolicy="no-referrer"
       onLoad={onLoad}
-      data-kobe-output-frame=""
+      data-kaiju-output-frame=""
       className="h-80 w-full resize-y rounded-md border bg-white"
     />
   );

@@ -3,7 +3,7 @@
  * set, the remembered expansion (localStorage, per team in this browser, like the artifact tabs),
  * and the move rules the tree applies before asking the server (which decides; KOBE-304 ac-8).
  */
-import { isMemberDropPath, WORKSPACE_DROP_FOLDER } from "@kobe/protocol";
+import { isMemberDropPath, WORKSPACE_DROP_FOLDER } from "@kaiju/protocol";
 import type { ApiError } from "../api/client";
 import type { FileEntry } from "./api";
 import { isReadOnlyPath, parentPath } from "./format";

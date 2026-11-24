@@ -1,4 +1,4 @@
-import { BREAK_GLASS_GRANT_SETTING, sql, type KobeTx } from "@kobe/db";
+import { BREAK_GLASS_GRANT_SETTING, sql, type KaijuTx } from "@kaiju/db";
 import { lockForChange, type Viewer } from "../../../threads/repository.js";
 import { loadAccess } from "../../../projects/access.js";
 import type { ExtractorPromptInput } from "../prompt/input.js";
@@ -97,14 +97,14 @@ export type LearningInputResult =
       readonly leafEntryId?: string;
     };
 
-async function inBreakGlass(tx: KobeTx): Promise<boolean> {
+async function inBreakGlass(tx: KaijuTx): Promise<boolean> {
   const res = await tx.execute<{ grant: string | null }>(
     sql`SELECT NULLIF(current_setting(${BREAK_GLASS_GRANT_SETTING}, true), '') AS grant`,
   );
   return Boolean(res.rows[0]?.grant);
 }
 
-async function projectOf(tx: KobeTx, viewer: Viewer, projectId: string | null) {
+async function projectOf(tx: KaijuTx, viewer: Viewer, projectId: string | null) {
   if (projectId === null) return null;
   const access = await loadAccess(tx, viewer, projectId);
   if (!access) return null;
@@ -116,7 +116,7 @@ async function projectOf(tx: KobeTx, viewer: Viewer, projectId: string | null) {
 }
 
 export async function assembleLearningInput(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   threadId: string,
   options: LearningInputOptions = {},

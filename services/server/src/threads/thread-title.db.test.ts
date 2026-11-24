@@ -7,7 +7,7 @@ import {
 } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { recordModelUsage, type UsageKind } from "@kobe/db";
+import { recordModelUsage, type UsageKind } from "@kaiju/db";
 import {
   RUN_TOKEN_HEADER,
   SERVER_CALL_LIMITS,
@@ -15,8 +15,8 @@ import {
   SERVER_CALL_TOKEN_HEADER,
   serverCallRequestSchema,
   type ServerCallClaims,
-} from "@kobe/protocol";
-import { generateSessionKeyPair, verifyServerCallToken } from "@kobe/session-token";
+} from "@kaiju/protocol";
+import { generateSessionKeyPair, verifyServerCallToken } from "@kaiju/session-token";
 import { SseReader } from "../testing/sse.js";
 import { threadCardSchema } from "./schemas.js";
 import { withAppendTx } from "../event-stream/append.js";

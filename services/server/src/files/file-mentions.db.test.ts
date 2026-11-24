@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { mentionMarker } from "@kobe/protocol";
+import { mentionMarker } from "@kaiju/protocol";
 import type { Person } from "../testing/event-stream-fixture.js";
 import { RunFixture, type RunWorld } from "../testing/run-fixture.js";
 import { SchedulerRunner } from "../scheduler/runner.js";

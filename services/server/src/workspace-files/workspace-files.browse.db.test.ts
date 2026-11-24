@@ -4,8 +4,8 @@ import {
   workspaceFileErrorSchema,
   workspaceListResponseSchema,
   workspaceSearchResponseSchema,
-} from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { SEARCH_RATE_LIMIT } from "../routes/workspace-files.js";
 import { searchFiles } from "./search.js";
 import { PUBLIC_URL, must } from "../testing/event-stream-fixture.js";

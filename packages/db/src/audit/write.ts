@@ -1,7 +1,7 @@
 import { isIP } from "node:net";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import type { KobeDb, KobeTx } from "../client.js";
+import type { KaijuDb, KaijuTx } from "../client.js";
 import { auditLog, type AuditActorKind } from "../schema/audit.js";
 import { AUDIT_EVENTS, isAuditAction, type AuditAction, type AuditTarget } from "./events.js";
 import { isLockTimeout } from "../pg-errors.js";
@@ -138,7 +138,7 @@ export function normalizeUserAgent(ua: string | null | undefined): string | null
  * Throws AuditEventError for an unknown action, a target outside the action's allowlist, or a team
  * that doesn't match the action's scope; the caller's transaction then rolls back.
  */
-export async function audit(tx: KobeTx, event: AuditEvent): Promise<AuditRecordRef> {
+export async function audit(tx: KaijuTx, event: AuditEvent): Promise<AuditRecordRef> {
   const { action } = event;
   if (!isAuditAction(action)) {
     throw new AuditEventError(`audit: unknown action ${JSON.stringify(action)}`);
@@ -196,6 +196,6 @@ export async function audit(tx: KobeTx, event: AuditEvent): Promise<AuditRecordR
  * (Better Auth's sign-in and credential endpoints), for reads (export) and for system observations
  * (isolation state): the action has already happened, so this is best effort by nature.
  */
-export async function auditStandalone(db: KobeDb, event: AuditEvent): Promise<AuditRecordRef> {
+export async function auditStandalone(db: KaijuDb, event: AuditEvent): Promise<AuditRecordRef> {
   return db.transaction((tx) => audit(tx, event));
 }

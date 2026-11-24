@@ -1,4 +1,4 @@
-import { sql, withTeam, type GitConnectionRecord, type KobeDb } from "@kobe/db";
+import { sql, withTeam, type GitConnectionRecord, type KaijuDb } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import type { GitToolPrincipal } from "./access.js";
 
@@ -60,7 +60,7 @@ const KIND_OF: Readonly<Record<GitWriteAction, GitWriteRecord["kind"]>> = {
 };
 
 export async function auditWrite(
-  db: KobeDb,
+  db: KaijuDb,
   ctx: {
     readonly principal: GitToolPrincipal;
     readonly runId: string;
@@ -115,7 +115,7 @@ function safeUrl(v: string | undefined): string | undefined {
   }
 }
 
-async function write(db: KobeDb, ctx: Ctx, action: string, target: Record<string, unknown>) {
+async function write(db: KaijuDb, ctx: Ctx, action: string, target: Record<string, unknown>) {
   const { principal } = ctx;
   await withTeam(db, principal.teamId, (tx) =>
     recordAudit(tx, {
@@ -140,7 +140,7 @@ async function write(db: KobeDb, ctx: Ctx, action: string, target: Record<string
  * not act again.
  */
 export async function auditAttempt(
-  db: KobeDb,
+  db: KaijuDb,
   ctx: Ctx,
   connection: GitConnectionRecord,
   tool: string,
@@ -155,7 +155,7 @@ export async function auditAttempt(
 
 /** The host refused for certain (nothing was created): a repeat may try again. */
 export async function auditFailed(
-  db: KobeDb,
+  db: KaijuDb,
   ctx: Ctx,
   connection: GitConnectionRecord,
   tool: string,
@@ -178,7 +178,7 @@ export type GitPrior =
 
 /** The last record of the same call in the last day: done, unknown, or nothing to go on. */
 export async function findPrior(
-  db: KobeDb,
+  db: KaijuDb,
   principal: GitToolPrincipal,
   action: GitWriteAction,
   idempotencyKey: string,

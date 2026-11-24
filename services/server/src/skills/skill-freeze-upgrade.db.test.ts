@@ -2,14 +2,14 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { rmSync } from "node:fs";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { agentSkills, type AgentFrontmatter } from "@kobe/agent-file";
-import { createDb, runMigrations, withTeam, type KobeDatabase } from "@kobe/db";
+import { agentSkills, type AgentFrontmatter } from "@kaiju/agent-file";
+import { createDb, runMigrations, withTeam, type KaijuDatabase } from "@kaiju/db";
 import {
   createTestDatabase,
   migrationsBefore,
   testServerUrl,
   type TestDatabase,
-} from "@kobe/db/testing";
+} from "@kaiju/db/testing";
 import { resolveEffective } from "../resolver/resolve.js";
 import { buildResolveInput, loadSkillFacts, loadTeamFacts } from "../runs/resolver-input.js";
 import { skillManifestSchema, type FrozenSkill, type SkillManifest } from "./frozen.js";
@@ -27,7 +27,7 @@ import { catalogSeed, hashOf } from "../testing/catalog-seed.js";
 const MARKER = 'ALTER TABLE "team_agent_versions" ADD COLUMN "skill_manifest" jsonb';
 
 let tdb: TestDatabase | undefined;
-let app: KobeDatabase | undefined;
+let app: KaijuDatabase | undefined;
 let adminClient: pg.Client | undefined;
 let oldMigrations = "";
 const must = <T>(v: T | undefined | null, what: string): T => {

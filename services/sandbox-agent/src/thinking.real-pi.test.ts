@@ -5,9 +5,9 @@ import {
   startLocalGateway,
   type LocalGateway,
   type LocalGatewayOptions,
-} from "@kobe/model-gateway/testing";
-import type { ThinkingLevel } from "@kobe/protocol";
-import type { SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/model-gateway/testing";
+import type { ThinkingLevel } from "@kaiju/protocol";
+import type { SandboxToServerFrame } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ModelTokenSource } from "./models/types.js";
 import { RUN, RUN_2, runStart, startHarness, type Harness } from "./testing/harness.js";

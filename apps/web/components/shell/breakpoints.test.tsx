@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { PREFERENCES_PATH } from "../../lib/shell/preferences";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
@@ -14,14 +14,14 @@ import { composer, openApp, openThreads, streaming } from "../chat/testing";
  * themselves are `lib/shell/layout.test.ts` and the CSS contract (`layout-contract.test.tsx`);
  * these check what each band renders and how it behaves. Real widths are measured on gate1.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 /** The grid's columns as laid out (mocked; happy-dom has no layout). */
 let space = { artifact: 0, conversation: 1000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.runnableAgents.push({ id: "a-1", scope: "team", name: "Ledger Bot", model: null });
   fake.teamModels.push({ alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true });
   vi.stubGlobal("fetch", fake.fetch);
@@ -61,7 +61,7 @@ const header = () => must(document.querySelector("header"));
 const row = (n: 1) => must(header().querySelector<HTMLElement>(`[data-bar-row="${n}"]`));
 const toolbar = () =>
   waitFor(() => must(document.querySelector<HTMLElement>("[data-composer-toolbar]")));
-const menuPanel = () => must(document.querySelector<HTMLElement>("#kobe-bar-menu"));
+const menuPanel = () => must(document.querySelector<HTMLElement>("#kaiju-bar-menu"));
 const puts = () => fake.requests.filter((r) => r.method === "PUT" && r.path === PREFERENCES_PATH);
 const handle = () =>
   screen.queryByRole("separator", { name: "Resize the artifact column and the conversation" });
@@ -174,7 +174,7 @@ describe("the CE7 table, per band (ac-1)", () => {
     expect(menuPanel().hidden).toBe(true);
     await userEvent.setup().click(menuButton);
     expect(menuButton.getAttribute("aria-expanded")).toBe("true");
-    expect(menuButton.getAttribute("aria-controls")).toBe("kobe-bar-menu");
+    expect(menuButton.getAttribute("aria-controls")).toBe("kaiju-bar-menu");
     // What row two held is not lost (KOBE-418): the pickers are in the composer's own menu...
     expect(within(header()).queryByRole("combobox")).toBeNull();
     const pickers = await within(await toolbar()).findByRole("button", { name: "Agent and model" });
@@ -386,7 +386,7 @@ describe("manual choices come back when space returns (ac-2)", () => {
     space = { artifact: 500, conversation: 500 };
     must(handle()).focus();
     await userEvent.setup().keyboard("{ArrowRight}");
-    const width = () => grid().style.getPropertyValue("--kobe-artifact-width");
+    const width = () => grid().style.getPropertyValue("--kaiju-artifact-width");
     expect(width()).toBe("524px");
     await waitFor(() => expect(puts()).toHaveLength(1), { timeout: 3000 });
     for (const w of [800, 390]) {

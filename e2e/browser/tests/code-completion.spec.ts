@@ -22,7 +22,7 @@ const SOURCE =
   "df.columns = pd.Index(['alpha_col', 'beta_col'], dtype=object)\n" +
   // Set through globals(), not an assignment the editor can read: a name defined in the file is
   // offered by the editor's own completion, and the kernel's duplicate is dropped (no "kernel").
-  'globals()["kobe_live_value"] = 41\n';
+  'globals()["kaiju_live_value"] = 41\n';
 
 async function workspace(page: Page, op: "upload" | "delete", path: string, content = "") {
   return page.evaluate(
@@ -62,12 +62,12 @@ test("code completion: built-in first, then the kernel's variables, columns and 
     await tree.getByRole("treeitem", { name: "job.py", exact: true }).click();
     const editor = page.getByLabel("Edit job.py");
     await expect(editor).toBeVisible();
-    const note = page.locator("[data-kobe-kernel-completion]");
+    const note = page.locator("[data-kaiju-kernel-completion]");
     const list = page.locator(".cm-tooltip-autocomplete");
 
     // Run first (Run uses the saved file): the run sets the variables the kernel then offers.
     await page.getByRole("button", { name: "Run", exact: true }).click();
-    await expect(page.locator('[data-kobe-kernel="idle"]')).toBeVisible({
+    await expect(page.locator('[data-kaiju-kernel="idle"]')).toBeVisible({
       timeout: RUN_TIMEOUT_MS,
     });
 
@@ -75,12 +75,12 @@ test("code completion: built-in first, then the kernel's variables, columns and 
     await editor.click();
     await page.keyboard.press("ControlOrMeta+End");
     await page.keyboard.type("kobe_li");
-    const live = list.getByRole("option", { name: /kobe_live_value/u });
+    const live = list.getByRole("option", { name: /kaiju_live_value/u });
     await expect(live).toBeVisible({ timeout: 10_000 });
     await expect(live).toContainText("kernel");
     await expect(note).toHaveText("Kernel completion on");
     await page.keyboard.press("Tab");
-    await expect(editor).toContainText("kobe_live_value");
+    await expect(editor).toContainText("kaiju_live_value");
 
     // A DataFrame's columns after `df['`, and the built-in completion alongside.
     await page.keyboard.press("Enter");
@@ -98,7 +98,7 @@ test("code completion: built-in first, then the kernel's variables, columns and 
     // Signature help while typing a call's arguments: text, from the kernel.
     await page.keyboard.press("Enter");
     await page.keyboard.type("pd.read_csv(");
-    await expect(page.locator(".cm-kobe-doc-signature")).toContainText("read_csv(", {
+    await expect(page.locator(".cm-kaiju-doc-signature")).toContainText("read_csv(", {
       timeout: 10_000,
     });
 

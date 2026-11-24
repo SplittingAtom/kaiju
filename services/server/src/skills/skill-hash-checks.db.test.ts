@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { strToU8, zipSync, type Zippable } from "fflate";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { runtimeHash, runtimeZip } from "@kobe/protocol/node";
+import { runtimeHash, runtimeZip } from "@kaiju/protocol/node";
 import { runWithAuditContext } from "../audit/context.js";
 import { addBlocked, blockedAmong, isBlocked, removeBlocked } from "./blocklist.js";
 import pg from "pg";
@@ -59,7 +59,7 @@ async function legacyVersion(
   key: keyof typeof stored,
 ) {
   const bytes = stored[key];
-  const storageKey = `kobe/legacy/${key}`;
+  const storageKey = `kaiju/legacy/${key}`;
   if (key !== "f") objects.objects.set(storageKey, Buffer.from(bytes));
   const cols = `version, semver, seq, frontmatter, source, content_hash, storage_key, size_bytes,
     file_count, uncompressed_bytes, uploaded_by`;
@@ -100,7 +100,7 @@ async function teamSkill(team: string, latest: number): Promise<string> {
 }
 
 beforeAll(async () => {
-  h = await openHarness({ blobs: { objects, prefix: "kobe/" } });
+  h = await openHarness({ blobs: { objects, prefix: "kaiju/" } });
   userId = await h.createUser("hashes@skills.test");
   await h.admin.query(
     `INSERT INTO teams (id, slug, name) VALUES ($1, 'hash-a', 'A'), ($2, 'hash-b', 'B')`,
@@ -157,7 +157,7 @@ describe("the one-off recompute", () => {
   it("is idempotent: a second run checks only what is still unrecorded", async () => {
     const report = await recomputeSkillHashes({ db: db(), blobs: blobs(), log: silent });
     expect(report).toEqual({ checked: 0, same: 0, aliased: 0, legacy: 0, unreadable: 1 });
-    objects.objects.set("kobe/legacy/f", Buffer.from(stored.f));
+    objects.objects.set("kaiju/legacy/f", Buffer.from(stored.f));
     const third = await recomputeSkillHashes({ db: db(), blobs: blobs(), log: silent });
     // Its stored zip was not canonical (files out of order): an alias of its runtime hash.
     expect(third).toEqual({ checked: 1, same: 0, aliased: 1, legacy: 0, unreadable: 0 });
@@ -220,7 +220,7 @@ describe("export never assumes an unchecked hash is clean (KOBE-310 review S2)",
     const skill = rows[0]?.id as string;
     for (const [i, files] of versions.entries()) {
       const bytes = zip(files);
-      const key = `kobe/legacy/${slug}/${i + 1}`;
+      const key = `kaiju/legacy/${slug}/${i + 1}`;
       objects.objects.set(key, Buffer.from(bytes));
       await h.admin.query(
         `INSERT INTO personal_skill_versions (skill_id, version, semver, seq, frontmatter, source,
@@ -289,11 +289,11 @@ describe("one replica at a time (KOBE-310 review S3)", () => {
     const files = { "SKILL.md": SKILL_MD.replace("Body.", "Late."), "evals/late.yaml": "a: 1\n" };
     const bytes = zip(files);
     const late = sha256Hex(bytes);
-    objects.objects.set("kobe/legacy/late", Buffer.from(bytes));
+    objects.objects.set("kaiju/legacy/late", Buffer.from(bytes));
     await h.admin.query(
       `INSERT INTO personal_skill_versions (skill_id, version, semver, seq, frontmatter, source,
          content_hash, storage_key, size_bytes, file_count, uncompressed_bytes, uploaded_by)
-       VALUES ($1, 9, '0.9.0', 9, '{}', 'zip', $2, 'kobe/legacy/late', $3, 2, 10, $4)`,
+       VALUES ($1, 9, '0.9.0', 9, '{}', 'zip', $2, 'kaiju/legacy/late', $3, 2, 10, $4)`,
       [personalSkill, late, bytes.length, userId],
     );
     const report = await recomputeOnce({ database: h.deps.database, blobs: blobs(), log: silent });

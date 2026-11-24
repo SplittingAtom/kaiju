@@ -1,4 +1,4 @@
-import { InMemorySpanExporter, initTelemetry } from "@kobe/telemetry";
+import { InMemorySpanExporter, initTelemetry } from "@kaiju/telemetry";
 
 /** Runs `fn` with tracing on and an in-memory exporter (tests only); tracing is off again after. */
 export async function traced<T>(fn: (exporter: InMemorySpanExporter) => Promise<T>): Promise<T> {

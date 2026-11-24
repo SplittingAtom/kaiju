@@ -1,7 +1,7 @@
 // Builds the request cases: Pi-style bodies run through the model gateway's own rewrite
 // (applyThinking, then withStreamUsage for streaming Chat Completions, in gateway.ts's order),
 // plus raw bodies that bypass the gateway (duplicate keys, no thinking control).
-// Usage: node make-cases.mjs > cases.json  (after `pnpm --filter @kobe/model-gateway build`)
+// Usage: node make-cases.mjs > cases.json  (after `pnpm --filter @kaiju/model-gateway build`)
 import { applyThinking } from "../../services/model-gateway/dist/thinking.js";
 import { topLevelModel, withStreamUsage } from "../../services/model-gateway/dist/body-model.js";
 import { classify } from "../../services/model-gateway/dist/routes.js";

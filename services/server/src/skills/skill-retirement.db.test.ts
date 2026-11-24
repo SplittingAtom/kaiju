@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { SYSTEM_ACTOR, withTeam } from "@kobe/db";
+import { SYSTEM_ACTOR, withTeam } from "@kaiju/db";
 import { runWithAuditContext } from "../audit/context.js";
 import { loadCatalogFacts } from "../runs/catalog-facts.js";
 import { seedDefaultSkillInstalls } from "./default-sync-team.js";

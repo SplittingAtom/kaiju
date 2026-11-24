@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import type { KobeDb } from "@kobe/db";
+import type { KaijuDb } from "@kaiju/db";
 import { issueSessionTokens, signSessionToken } from "../sandbox/session-token.js";
 import { KEYS as keys, VERIFY_KEYS, KEY_PAIRS } from "../testing/sandbox-fixtures.js";
 import { providerLiveness, sandboxWireVerifier } from "./provider-auth.js";
@@ -60,9 +60,9 @@ describe("sandbox wire verifier (KOBE-22 tokens)", () => {
 });
 
 describe("provider liveness", () => {
-  function db(teamRows: { id: string; slug: string }[]): KobeDb {
+  function db(teamRows: { id: string; slug: string }[]): KaijuDb {
     const chain = { from: () => chain, where: () => Promise.resolve(teamRows) };
-    return { select: () => chain } as unknown as KobeDb;
+    return { select: () => chain } as unknown as KaijuDb;
   }
 
   it("asks the provider with the team's slug and caches positive answers only", async () => {

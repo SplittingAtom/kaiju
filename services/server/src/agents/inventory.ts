@@ -1,6 +1,14 @@
-import type { SchedulePausedBy } from "@kobe/protocol";
-import { and, eq, sql, teamAgentSuspensions, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
-import { AGENT_SLUG_MAX } from "@kobe/agent-file";
+import type { SchedulePausedBy } from "@kaiju/protocol";
+import {
+  and,
+  eq,
+  sql,
+  teamAgentSuspensions,
+  withTeam,
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
+import { AGENT_SLUG_MAX } from "@kaiju/agent-file";
 import { z } from "zod";
 import { recordAudit } from "../audit/record.js";
 import { findAgent, setAgentStatus, type AgentRecord } from "./store.js";
@@ -226,7 +234,7 @@ const USAGE_JOINS = sql`LEFT JOIN thread_runs tr ON tr.agent_id = page.id
         LEFT JOIN gallery_score gs ON gs.agent_id = page.id`;
 
 export async function listInventory(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   query: z.infer<typeof inventoryQuerySchema>,
 ): Promise<InventoryPage> {
@@ -271,7 +279,7 @@ export interface UsageSubject {
  * query states `team_id`.
  */
 export async function usageOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   agents: readonly UsageSubject[],
 ): Promise<ReadonlyMap<string, InventoryUsage>> {
@@ -306,7 +314,7 @@ type ScheduleRow = {
 
 /** The team's schedules of these agents, grouped by agent (RLS and an explicit `team_id`). */
 async function schedulesOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   agentIds: readonly string[],
 ): Promise<ReadonlyMap<string, readonly InventorySchedule[]>> {
@@ -337,7 +345,7 @@ async function schedulesOf(
 
 /** A site-wide agent this team's threads or schedules use (the only ones a team may suspend). */
 async function usedSiteAgent(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   id: string,
 ): Promise<{ slug: string; scope: "personal" | "gallery" } | null> {
@@ -355,7 +363,7 @@ export type SuspendResult =
  * a used personal or gallery agent through this team's suspension row. Anything else is not found.
  */
 export async function setInventoryStatus(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   actorUserId: string,
   id: string,
@@ -389,7 +397,7 @@ export async function setInventoryStatus(
 }
 
 /** True when the team suspended this site-wide agent (run start and pinning check it). */
-export async function suspendedInTeam(tx: KobeTx, teamId: string, id: string): Promise<boolean> {
+export async function suspendedInTeam(tx: KaijuTx, teamId: string, id: string): Promise<boolean> {
   const [row] = await tx
     .select({ id: teamAgentSuspensions.agentId })
     .from(teamAgentSuspensions)

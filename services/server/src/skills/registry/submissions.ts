@@ -1,4 +1,4 @@
-import { sql, type KobeDb } from "@kobe/db";
+import { sql, type KaijuDb } from "@kaiju/db";
 
 /**
  * The author's side of the review (KOBE-334, SK23): their submissions to the Site Registry, with
@@ -28,7 +28,7 @@ export interface Submission {
 const DECISIONS = ["changes_requested", "rejected", "rejected_and_blocked", "approved"] as const;
 const LIMIT = 100;
 
-export async function mySubmissions(db: KobeDb, userId: string): Promise<Submission[]> {
+export async function mySubmissions(db: KaijuDb, userId: string): Promise<Submission[]> {
   const res = await db.execute<{
     id: string;
     name: string;

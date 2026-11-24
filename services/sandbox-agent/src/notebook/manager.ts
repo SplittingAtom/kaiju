@@ -9,8 +9,8 @@ import {
   type NotebookTiming,
   type NotebookVariablesResult,
   type NotebookVariablesSnapshot,
-} from "@kobe/protocol";
-import type { NotebookCompletionFrame, NotebookExecuteFrame } from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol";
+import type { NotebookCompletionFrame, NotebookExecuteFrame } from "@kaiju/protocol/sandbox-wire";
 import { askKernel, BRIDGE_MARGIN_MS, COMPLETION_UNAVAILABLE } from "./completion.js";
 import { fail, ok, type CommandOutcome } from "../threads/outcome.js";
 import { OUTPUT_LIMITS, OutputLimiter, type OutputLimits } from "./outputs.js";

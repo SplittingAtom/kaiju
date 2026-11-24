@@ -1,4 +1,4 @@
-import type { RunErrorCode } from "@kobe/protocol";
+import type { RunErrorCode } from "@kaiju/protocol";
 
 /**
  * Errors the orchestrator rejects with: the contract's `RUN_ERROR_CODES` plus the server's own

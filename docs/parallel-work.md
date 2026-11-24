@@ -43,8 +43,8 @@ most 150 words that states their token use.
 | `packages/protocol`                                | Contracts are agreed before dependants start; change a published contract only in its own PR, never inside a feature PR.                                                              |
 | Queries on `threads` / `thread_entries`            | Always state `team_id` explicitly, even inside `withTeam()` (break-glass policy; see `packages/db/README.md`). Enforced by `services/server` tests `team-filter` and `threads-plans`. |
 | `charts/kobe/values.yaml`                          | Add values under your component's key; don't reorder or reformat other sections.                                                                                                      |
-| `docs/audit-log.md` event table                    | Generated (KOBE-815): add an event's row to `audit/events/<area>.doc.ts` in name order, run `pnpm --filter @kobe/db audit:doc`; never edit the table.                                 |
-| `services/server/openapi.json`                     | Not committed (KOBE-815): `pnpm --filter @kobe/server openapi` writes it; routes show in review in the route-inventory snapshot.                                                      |
+| `docs/audit-log.md` event table                    | Generated (KOBE-815): add an event's row to `audit/events/<area>.doc.ts` in name order, run `pnpm --filter @kaiju/db audit:doc`; never edit the table.                                |
+| `services/server/openapi.json`                     | Not committed (KOBE-815): `pnpm --filter @kaiju/server openapi` writes it; routes show in review in the route-inventory snapshot.                                                     |
 
 `schema/index.ts` and `probe-fixtures/index.ts` use git's `union` merge driver
 (`.gitattributes`), so two branches that each append a line merge cleanly when merged locally
@@ -116,10 +116,10 @@ marked generated in `.gitattributes`: collapsed on GitHub, skipped in review. Wh
 on and your branch has migrations, `scripts/onto-main.sh` runs this for you; by hand:
 
 ```bash
-pnpm --filter @kobe/db db:rebase                          # stash yours, merge origin/main, regenerate
-pnpm --filter @kobe/db db:rebase --base origin/group-88-x # the same onto another branch (stacked)
+pnpm --filter @kaiju/db db:rebase                          # stash yours, merge origin/main, regenerate
+pnpm --filter @kaiju/db db:rebase --base origin/group-88-x # the same onto another branch (stacked)
 # on other conflicts: resolve, commit the merge, then
-pnpm --filter @kobe/db db:rebase --apply
+pnpm --filter @kaiju/db db:rebase --apply
 ```
 
 The base also comes from a positional ref or `KOBE_DB_REBASE_BASE`; default `origin/main`. The
@@ -153,7 +153,7 @@ anyway, rebase it by hand:
 3. Re-derive its snapshot: copy main's newest snapshot, apply the migration's schema change to it
    (the same column, constraint or rename as in the old snapshot's diff against its predecessor),
    set a new `id` and `prevId` = main's newest snapshot `id`.
-4. `pnpm --filter @kobe/db db:check` must print no changes; run `pnpm --filter @kobe/db test:db`.
+4. `pnpm --filter @kaiju/db db:check` must print no changes; run `pnpm --filter @kaiju/db test:db`.
 
 SQL-only objects (indexes, policies, `NOT VALID` checks) are not in the snapshot, so they need no
 step 3.
@@ -174,7 +174,7 @@ hand-written migration too; how to write one is in
   - **What a lane changes:** every DB suite's global setup creates `kobe_lane_<lane>` if missing
     (`prepareTestLane`), tests reach the server through that database instead of `postgres`, and
     every throwaway database and role is named `kobe_<kind>_<hex>_<lane>` (`testNameSuffix()` in
-    `@kobe/db/testing`; use it for any database or role a test creates). Roles are cluster-wide but
+    `@kaiju/db/testing`; use it for any database or role a test creates). Roles are cluster-wide but
     random per suite, and setup never drops a role it did not create, so lanes never touch each
     other's objects.
   - **Connections:** lanes share the server's `max_connections` (100 on the dev Postgres) and a
@@ -182,8 +182,8 @@ hand-written migration too; how to write one is in
     default `KOBE_DB_TEST_WORKERS=4` passed (2026-10-22, 10 min each); with three or more lanes on
     the server suite at once, set `KOBE_DB_TEST_WORKERS=2` per lane.
   - **Cleaning up:** a crashed run leaves its lane's databases behind. With the lane idle,
-    `pnpm --filter @kobe/db build` then `pnpm --filter @kobe/db test:lanes` lists lanes with their
-    database and role counts and `pnpm --filter @kobe/db test:lanes drop <lane>` drops one (its
+    `pnpm --filter @kaiju/db build` then `pnpm --filter @kaiju/db test:lanes` lists lanes with their
+    database and role counts and `pnpm --filter @kaiju/db test:lanes drop <lane>` drops one (its
     `kobe_lane_<lane>` database, its throwaway databases and roles). Drop a worktree's lane when you
     remove the worktree. Leftovers named without a lane (`kobe_test_<hex>`) predate lanes or come
     from runs with `KOBE_TEST_DB_LANE=""`. Every DB suite's setup also drops, on the

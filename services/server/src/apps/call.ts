@@ -1,6 +1,6 @@
-import { withTeam, type AppCallReason, type KobeDb } from "@kobe/db";
-import { toolInputSchema, type JsonObject } from "@kobe/protocol";
-import { SpanKind, SpanStatusCode, withSpan, type Span } from "@kobe/telemetry";
+import { withTeam, type AppCallReason, type KaijuDb } from "@kaiju/db";
+import { toolInputSchema, type JsonObject } from "@kaiju/protocol";
+import { SpanKind, SpanStatusCode, withSpan, type Span } from "@kaiju/telemetry";
 import { recordAudit } from "../audit/record.js";
 import { connectorsOffIn } from "../connectors/thread-connectors.js";
 import { viewerProjectIds } from "../threads/references.js";
@@ -36,7 +36,7 @@ import { appBridgeDecision, checkAppTool, validateArguments } from "./decide.js"
  * Nothing about the credential reaches the browser, a log line, an audit row or an event.
  */
 export interface AppCallDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly mcp: Pick<McpService, "revealForMember">;
   readonly rules: PolicyRuleSource;
   readonly caller: AppCaller;
@@ -126,7 +126,7 @@ interface Audited {
 }
 
 async function audit(
-  db: KobeDb,
+  db: KaijuDb,
   p: BrowserPrincipal,
   audited: Audited,
   reason: AppCallReason,
@@ -171,7 +171,7 @@ async function deny(
  * not off there. Undefined when the call may go on.
  */
 async function threadRefusal(
-  db: KobeDb,
+  db: KaijuDb,
   p: BrowserPrincipal,
   threadId: string,
   connectorId: string,

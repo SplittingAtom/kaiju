@@ -10,7 +10,7 @@ import {
   PREFIX_PROMPT,
   PREFIX_SKIPPED,
   messageMeta,
-  type KobeMessageMeta,
+  type KaijuMessageMeta,
   type LiveOverlay,
   type MessagePart,
   type ProjectedItem,
@@ -42,10 +42,10 @@ function withReports(
   const deps = [...item.deps, ...entries];
   if (meta?.kind === "user") {
     const skipped = [...(meta.skipped ?? []), ...reports];
-    const custom: KobeMessageMeta = { ...meta, skipped };
+    const custom: KaijuMessageMeta = { ...meta, skipped };
     return { ...item, message: { ...item.message, metadata: { custom } }, deps };
   }
-  const parts = reports.map((data): MessagePart => ({ type: "data-kobe-skipped", data }));
+  const parts = reports.map((data): MessagePart => ({ type: "data-kaiju-skipped", data }));
   const content = [...(item.message.content as readonly MessagePart[]), ...parts];
   return { ...item, message: { ...item.message, content }, deps };
 }
@@ -87,7 +87,7 @@ export function attachSummaries(
   });
   const first = unplaced[0];
   if (placed.length > 0 || first === undefined) return placed;
-  const meta: KobeMessageMeta = { kind: "assistant", entryIds: [], live: false };
+  const meta: KaijuMessageMeta = { kind: "assistant", entryIds: [], live: false };
   return [
     {
       parentId: null,
@@ -95,7 +95,7 @@ export function attachSummaries(
         id: `${PREFIX_SKIPPED}${first.entry.entryId}`,
         role: "assistant",
         content: unplaced.map(({ report }): MessagePart => ({
-          type: "data-kobe-skipped",
+          type: "data-kaiju-skipped",
           data: report,
         })),
         status: { type: "complete", reason: "stop" },
@@ -132,7 +132,7 @@ export function overlayLive(
     const at = parentEntryId === null ? undefined : place(parentEntryId);
     const parentNode = at === undefined ? headId : at;
     const id = `${PREFIX_PROMPT}${run.runId}`;
-    const meta: KobeMessageMeta = {
+    const meta: KaijuMessageMeta = {
       kind: "user",
       parentEntryId,
       text: live.prompt.text,
@@ -162,7 +162,7 @@ export function overlayLive(
     : ({ type: "incomplete", reason: "cancelled" } as const);
   const anchorIndex = anchor === null ? undefined : indexOf.get(anchor);
   const anchorItem = anchorIndex === undefined ? undefined : items[anchorIndex];
-  const anchorMeta = anchorItem?.message.metadata?.custom as KobeMessageMeta | undefined;
+  const anchorMeta = anchorItem?.message.metadata?.custom as KaijuMessageMeta | undefined;
   const atTail =
     anchorMeta?.kind === "assistant" &&
     (lastCommitted === undefined || lastEntryOfNode.get(anchor as string) === lastCommitted);
@@ -175,7 +175,7 @@ export function overlayLive(
         ...anchorItem.message,
         content,
         status: parts.length > 0 || active ? status : anchorItem.message.status,
-        metadata: { custom: { ...(anchorMeta as object), live: true } as KobeMessageMeta },
+        metadata: { custom: { ...(anchorMeta as object), live: true } as KaijuMessageMeta },
       },
       deps: [...anchorItem.deps, ...run.messages, run.tools, active],
     };
@@ -183,7 +183,7 @@ export function overlayLive(
   }
   if (parts.length === 0) return anchor;
   const id = `${PREFIX_LIVE}${run.runId}`;
-  const meta: KobeMessageMeta = { kind: "assistant", entryIds: [], live: true };
+  const meta: KaijuMessageMeta = { kind: "assistant", entryIds: [], live: true };
   items.push({
     parentId: anchor,
     message: { id, role: "assistant", content: parts, status, metadata: { custom: meta } },

@@ -92,9 +92,9 @@ export {
   type AppSessionOptions,
   type ConnectionErrorLog,
   type CreateDbOptions,
-  type KobeDatabase,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDatabase,
+  type KaijuDb,
+  type KaijuTx,
 } from "./client.js";
 export {
   TEAM_ROLES,

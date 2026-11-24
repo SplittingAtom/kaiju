@@ -4,9 +4,9 @@ import {
   loadEgressCeiling,
   loadTeamEgressIn,
   normalizeHost,
-  type KobeTx,
-} from "@kobe/db";
-import type { SemanticMemoryIssue, SemanticMemoryScope } from "@kobe/protocol";
+  type KaijuTx,
+} from "@kaiju/db";
+import type { SemanticMemoryIssue, SemanticMemoryScope } from "@kaiju/protocol";
 import { normaliseQuote } from "../quote-normalise.js";
 import { undefang } from "./text.js";
 
@@ -106,7 +106,7 @@ export interface EgressModel {
  * Reads the egress model in the save's transaction. `teamId` must be the transaction's team
  * (`withTeam`); null reads the ceiling only.
  */
-export async function readEgressModel(tx: KobeTx, teamId: string | null): Promise<EgressModel> {
+export async function readEgressModel(tx: KaijuTx, teamId: string | null): Promise<EgressModel> {
   return {
     ceiling: new Set(await loadEgressCeiling(tx)),
     team: teamId === null ? null : new Set(await loadTeamEgressIn(tx, teamId)),

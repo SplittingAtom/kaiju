@@ -1,4 +1,4 @@
-import { lockLegalHolds, sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { lockLegalHolds, sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 
 type SQL = ReturnType<typeof sql>;
 
@@ -27,7 +27,7 @@ export class SiteHoldIsolationError extends Error {
  * it and then sees it) and answers whether a Site-wide hold is in force. Hold the transaction open
  * for the deletes it guards.
  */
-export async function siteMemoryHeld(tx: KobeTx): Promise<boolean> {
+export async function siteMemoryHeld(tx: KaijuTx): Promise<boolean> {
   const { rows: iso } = await tx.execute<{ level: string }>(
     sql`SELECT current_setting('transaction_isolation') AS level`,
   );
@@ -60,8 +60,8 @@ export type SitePurgeOutcome<T> = { readonly held: true } | { readonly held: fal
  * person wrote are skipped.
  */
 export function withSiteMemoryPurge<T>(
-  db: KobeDb,
-  purge: (tx: KobeTx, unheld: (itemId: SQL) => SQL) => Promise<T>,
+  db: KaijuDb,
+  purge: (tx: KaijuTx, unheld: (itemId: SQL) => SQL) => Promise<T>,
 ): Promise<SitePurgeOutcome<T>> {
   return db.transaction(
     async (tx): Promise<SitePurgeOutcome<T>> => {

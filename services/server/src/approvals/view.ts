@@ -7,7 +7,7 @@ import {
   riskClassSchema,
   timestampSchema,
   uuidSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ApprovalRow } from "./store.js";
 import { parseCanonicalInput } from "./canonical-input.js";
 

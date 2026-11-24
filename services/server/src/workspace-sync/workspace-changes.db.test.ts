@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { workspaceFileChangeSchema, type WorkspaceFileChange } from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+import { workspaceFileChangeSchema, type WorkspaceFileChange } from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { createApp } from "../app.js";
 import { HUB_DEFAULTS } from "../event-stream/hub.js";
 import { EventStreamFixture, PUBLIC_URL, type Person } from "../testing/event-stream-fixture.js";

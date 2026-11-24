@@ -24,7 +24,7 @@ import { registerExecTools, type ExtensionApiLike, type PiToolFactories } from "
 let transport: ExecTransport | undefined;
 let homes: { piHome: string; toolHome: string } | undefined;
 
-export default function kobeExec(pi: ExtensionApiLike): void {
+export default function kaijuExec(pi: ExtensionApiLike): void {
   transport ??= connect(process.env, (message) => process.stderr.write(`${message}\n`));
   // Read once and removed, like the fd variable: tools must not see it.
   const toolHome = process.env[TOOL_HOME_ENV];

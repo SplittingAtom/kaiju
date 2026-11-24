@@ -72,8 +72,8 @@ describe("Run for .py files (KOBE-615 ac-7, ac-8)", () => {
     await waitFor(() => expect(kernel.runs).toEqual([{ path: PATH }]));
     const pane = screen.getByRole("region", { name: "Run output" });
     expect(await within(pane).findByText("Running…")).toBeTruthy();
-    const split = pane.closest("[data-kobe-split]") as HTMLElement;
-    expect(split.querySelector("[data-kobe-split-top] [data-kobe-editor-body]")).toBeTruthy();
+    const split = pane.closest("[data-kaiju-split]") as HTMLElement;
+    expect(split.querySelector("[data-kaiju-split-top] [data-kaiju-editor-body]")).toBeTruthy();
     expect(screen.getByRole("separator", { name: "Resize the code and its output" })).toBeTruthy();
     finish(kernel);
     expect(await within(pane).findByText("KeyError: 'k'")).toBeTruthy();
@@ -81,7 +81,7 @@ describe("Run for .py files (KOBE-615 ac-7, ac-8)", () => {
     expect(within(pane).queryByText("Running…")).toBeNull();
     expect(within(pane).queryByText(/not saved/u)).toBeNull();
     expect(button("Restart")).toBeTruthy();
-    expect(toolbar().querySelector("[data-kobe-kernel]")).toBeTruthy();
+    expect(toolbar().querySelector("[data-kaiju-kernel]")).toBeTruthy();
   });
 
   it("the output stays after the run, collapses, and closes back to the full height", async () => {
@@ -198,7 +198,7 @@ describe("Run what you see (KOBE-805)", () => {
     const user = userEvent.setup();
     expect(within(toolbar()).queryByRole("button", { name: "Stop" })).toBeNull();
     await user.click(button("Run"));
-    const clock = await waitFor(() => must(toolbar().querySelector("[data-kobe-run-clock]")));
+    const clock = await waitFor(() => must(toolbar().querySelector("[data-kaiju-run-clock]")));
     expect(clock.textContent).toMatch(/^Running \d+:\d\d$/u);
     expect(button("Run").hasAttribute("disabled")).toBe(true);
     await user.click(button("Stop"));
@@ -210,7 +210,9 @@ describe("Run what you see (KOBE-805)", () => {
         duration_ms: 1500,
       },
     });
-    expect(toolbar().querySelector("[data-kobe-run-clock]")?.textContent).toBe("Error after 1.5 s");
+    expect(toolbar().querySelector("[data-kaiju-run-clock]")?.textContent).toBe(
+      "Error after 1.5 s",
+    );
     expect(within(toolbar()).queryByRole("button", { name: "Stop" })).toBeNull();
   });
 
@@ -244,7 +246,9 @@ describe("Run what you see (KOBE-805)", () => {
     await user.click(button("Restart"));
     expect(kernel.ops).toEqual(["restart"]);
     await waitFor(() =>
-      expect(toolbar().querySelector("[data-kobe-kernel]")?.textContent).toBe("Kernel not started"),
+      expect(toolbar().querySelector("[data-kaiju-kernel]")?.textContent).toBe(
+        "Kernel not started",
+      ),
     );
   });
 
@@ -338,7 +342,7 @@ describe("one trigger, one run (KOBE-805 review M1)", () => {
 });
 
 describe("Python opens in Raw (KOBE-802)", () => {
-  const editor = () => document.querySelector("[data-kobe-code-editor]");
+  const editor = () => document.querySelector("[data-kaiju-code-editor]");
 
   it("opens in the code editor; an explicit switch to Rendered is kept when it reopens", async () => {
     const drafts = new EditDraftStore();
@@ -369,8 +373,8 @@ describe("Python opens in Raw (KOBE-802)", () => {
 });
 
 describe("kernel completion in a .py file (KOBE-808)", () => {
-  const indicator = () => document.querySelector("[data-kobe-kernel-completion]");
-  const editor = () => document.querySelector("[data-kobe-code-editor]");
+  const indicator = () => document.querySelector("[data-kaiju-kernel-completion]");
+  const editor = () => document.querySelector("[data-kaiju-code-editor]");
 
   it("the owner's editor completes from the conversation's kernel and says when it is off", async () => {
     const { kernel } = await renderPython();

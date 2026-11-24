@@ -6,7 +6,7 @@ import {
   semanticMemoryImportCommitResponseSchema,
   semanticMemoryImportPreviewResponseSchema,
   semanticMemoryItemDetailSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { TestBrowser } from "../testing/browser.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 
@@ -239,7 +239,7 @@ describe("export (ac-3)", () => {
       "Invoices are approved by the finance lead.",
     );
     expect(json.headers.get("content-disposition")).toMatch(
-      /attachment; filename="kobe-memories-team-/,
+      /attachment; filename="kaiju-memories-team-/,
     );
 
     const csv = await exportAs(as.site, { scope: "site", format: "csv" });

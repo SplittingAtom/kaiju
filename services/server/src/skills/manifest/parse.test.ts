@@ -1,4 +1,4 @@
-import { MANIFEST_MAX_BYTES, kobeSkillManifestSchema } from "@kobe/protocol";
+import { MANIFEST_MAX_BYTES, kaijuSkillManifestSchema } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { readManifest } from "../bundle.js";
 import {
@@ -61,7 +61,7 @@ describe("manifestFromReply", () => {
         packages: { pip: ["pandas>=2"], npm: ["left-pad@^1"] },
       },
     });
-    expect(kobeSkillManifestSchema.safeParse(manifest).success).toBe(true);
+    expect(kaijuSkillManifestSchema.safeParse(manifest).success).toBe(true);
   });
 
   it("reads the object out of prose or a fence, and falls back to SKILL.md's description otherwise", () => {

@@ -7,10 +7,10 @@
  * Deltas carry a stream-local `message_id`; `entry.committed` binds it to the durable entry, after
  * which the entry is the record and the live copy is dropped (contracts decision).
  */
-import type { KobeEvent, KobeEventPayload } from "@kobe/protocol";
+import type { KaijuEvent, KaijuEventPayload } from "@kaiju/protocol";
 import { messageContextTokens } from "./context-usage";
 
-type Payload<T extends KobeEvent["type"]> = KobeEventPayload<T>;
+type Payload<T extends KaijuEvent["type"]> = KaijuEventPayload<T>;
 
 export type LivePart =
   | { readonly kind: "text" | "reasoning"; readonly contentIndex: number; readonly text: string }
@@ -44,7 +44,7 @@ export interface ToolActivity {
 
 /** Run-level happenings shown beside the conversation (not tied to a tool call). */
 export type RunNotice = Extract<
-  KobeEvent,
+  KaijuEvent,
   {
     type:
       | "context.omitted"
@@ -58,7 +58,7 @@ export type RunNotice = Extract<
 >;
 
 export type TerminalEvent = Extract<
-  KobeEvent,
+  KaijuEvent,
   { type: "run.completed" | "run.failed" | "run.interrupted" | "run.budget_stopped" }
 >;
 
@@ -153,7 +153,7 @@ function upsertMessage(
   return { ...run, messages };
 }
 
-function appendDelta(run: LiveRun, event: KobeEvent<"text.delta" | "reasoning.delta">): LiveRun {
+function appendDelta(run: LiveRun, event: KaijuEvent<"text.delta" | "reasoning.delta">): LiveRun {
   const { message_id: messageId, content_index: contentIndex, delta } = event.payload;
   if (run.bound[messageId]) return run;
   const kind = event.type === "text.delta" ? "text" : "reasoning";
@@ -239,7 +239,7 @@ const WORK_EVENTS: ReadonlySet<string> = new Set([
   "entry.committed",
 ]);
 
-function applyOne(run: LiveRun, event: KobeEvent): LiveRun {
+function applyOne(run: LiveRun, event: KaijuEvent): LiveRun {
   const next = WORK_EVENTS.has(event.type) ? { ...run, waking: undefined } : run;
   switch (event.type) {
     case "run.queued":
@@ -355,7 +355,7 @@ export interface AppliedEvents {
 }
 
 /** Applies events in order, dropping any with `seq <= lastSeq` and anything after a terminal. */
-export function applyRunEvents(run: LiveRun, events: readonly KobeEvent[]): AppliedEvents {
+export function applyRunEvents(run: LiveRun, events: readonly KaijuEvent[]): AppliedEvents {
   let current = run;
   const entries: CommittedEntry[] = [];
   for (const event of events) {

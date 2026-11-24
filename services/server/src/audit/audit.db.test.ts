@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { AUDIT_EVENTS, verifyAuditChain } from "@kobe/db";
+import { AUDIT_EVENTS, verifyAuditChain } from "@kaiju/db";
 import { runWithAuditContext } from "./context.js";
 import { SIGN_IN_THROTTLE } from "../auth/sign-in-throttle.js";
 import { anchorKey, anchorMac } from "./anchor.js";
@@ -229,7 +229,7 @@ describe("auth events", () => {
   });
 
   it("records passkey registration, passkey sign-in and removal", async () => {
-    const authenticator = new SoftwareAuthenticator("kobe.test", "http://kobe.test");
+    const authenticator = new SoftwareAuthenticator("kaiju.test", "http://kaiju.test");
     const b = await h.signIn(email("carol"), "a fresh new password");
     const added = await recorded(async () => {
       const options = await b.get("/api/auth/passkey/generate-register-options");
@@ -676,7 +676,7 @@ describe("unauthenticated attempts are aggregated", () => {
       ],
     ]);
     expect(JSON.stringify(summaries)).not.toContain("nobody-flood");
-    await h.admin.query(`DELETE FROM kobe_rate_limits WHERE key LIKE 'kobe:sign-in-%'`);
+    await h.admin.query(`DELETE FROM kobe_rate_limits WHERE key LIKE 'kaiju:sign-in-%'`);
   });
 
   it("bounds reset-request floods the same way", async () => {
@@ -744,7 +744,7 @@ describe("what is recorded", () => {
 
 describe("isolation state changes", () => {
   it("records loss and restoration, not the normal boot, as system events", async () => {
-    const observe = isolationAuditor(h.deps.database.db, "kobe-server-test");
+    const observe = isolationAuditor(h.deps.database.db, "kaiju-server-test");
     const at = new Date();
     const rows = await recorded(async () => {
       await observe({
@@ -777,7 +777,7 @@ describe("isolation state changes", () => {
         "platform.isolation.changed",
         "system",
         null,
-        { from: "verified", to: "missing", runtimeClass: "gvisor", replica: "kobe-server-test" },
+        { from: "verified", to: "missing", runtimeClass: "gvisor", replica: "kaiju-server-test" },
       ],
       [
         "platform.isolation.changed",
@@ -788,7 +788,7 @@ describe("isolation state changes", () => {
           to: "verified",
           runtimeClass: "gvisor",
           handler: "runsc",
-          replica: "kobe-server-test",
+          replica: "kaiju-server-test",
         },
       ],
     ]);

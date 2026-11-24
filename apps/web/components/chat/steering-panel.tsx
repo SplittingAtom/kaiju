@@ -23,7 +23,7 @@ import { scrollToPendingApproval } from "./approval-card";
 import { Button } from "../ui/button";
 import { useDraftAgentName } from "./agent-picker";
 import { useSteer } from "./composer-steer";
-import type { KobeThreadExtras } from "./kobe-runtime";
+import type { KaijuThreadExtras } from "./kaiju-runtime";
 import { SteeringQueue } from "./steering-queue";
 import { QueuedAppCards } from "../apps/queued-app-cards";
 
@@ -107,7 +107,7 @@ function ApprovalPhase({ reader }: { readonly reader: boolean }) {
     <>
       <span
         data-phase="approval"
-        data-kobe-approval-note
+        data-kaiju-approval-note
         className={cn("inline-flex items-center gap-1 font-medium", toneClass("attention"))}
       >
         <ClockIcon aria-hidden className="size-3.5 shrink-0" />
@@ -138,7 +138,7 @@ function ControlsRow({
   controller,
   mode,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   readonly controller: ThreadController;
   readonly mode: SteeringMode;
 }) {
@@ -210,7 +210,7 @@ function ControlsRow({
             size="sm"
             side="top"
             variant="outline"
-            data-kobe-stop
+            data-kaiju-stop
             className={STOP_TINT}
             disabled={isBusy(state, "stop")}
             onClick={stopBinding(controller, state).onSelect}
@@ -230,7 +230,7 @@ function ControlsRow({
  * controls. Approval cards stay in the thread (KOBE-37); a reader of a shared thread sees the
  * status only. Phase changes go to a polite live region, throttled.
  */
-export function SteeringPanel({ extras }: { readonly extras: KobeThreadExtras }) {
+export function SteeringPanel({ extras }: { readonly extras: KaijuThreadExtras }) {
   const { controller, state } = extras;
   const runId = currentRunId(state);
   const reader = state.summary?.readOnly === true;
@@ -255,7 +255,7 @@ export function SteeringPanel({ extras }: { readonly extras: KobeThreadExtras })
       role={open ? "region" : undefined}
       aria-label={open ? "Steering" : undefined}
       data-state={open ? mode : "idle"}
-      data-kobe-steering
+      data-kaiju-steering
       className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-out data-[state=active]:grid-rows-[1fr] data-[state=interrupted]:grid-rows-[1fr] data-[state=queued]:grid-rows-[1fr] data-[state=waiting]:grid-rows-[1fr] motion-reduce:transition-none"
     >
       <div className="min-h-0 overflow-hidden" inert={!open || undefined}>
@@ -268,7 +268,7 @@ export function SteeringPanel({ extras }: { readonly extras: KobeThreadExtras })
           </div>
         )}
       </div>
-      <p className="sr-only" role="status" aria-live="polite" data-kobe-phase-live>
+      <p className="sr-only" role="status" aria-live="polite" data-kaiju-phase-live>
         {said}
       </p>
     </div>

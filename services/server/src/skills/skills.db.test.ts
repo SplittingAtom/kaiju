@@ -20,7 +20,7 @@ const as = {} as Record<Person, TestBrowser>;
 const finance = randomUUID();
 const marketing = randomUUID();
 const objects = new MemoryObjects();
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 let h: Harness;
 
 const skillMd = (name: string, body = "Body.") =>

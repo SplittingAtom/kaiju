@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withSkillRequest } from "@kobe/protocol";
+import { withSkillRequest } from "@kaiju/protocol";
 import { RunFixture } from "../testing/run-fixture.js";
 import type { Person } from "../testing/event-stream-fixture.js";
 import { must } from "../testing/event-stream-fixture.js";

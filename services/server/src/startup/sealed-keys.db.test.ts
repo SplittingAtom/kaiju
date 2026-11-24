@@ -13,7 +13,7 @@ import {
   sealGitCredential,
   virtualKeyContext,
   withTeam,
-} from "@kobe/db";
+} from "@kaiju/db";
 import pino from "pino";
 import { siteKeyContext, urlSha256 } from "../connectors/site-key.js";
 import { checkSealedKeys, sealedFamilies, unknownKeys } from "./sealed-keys.js";

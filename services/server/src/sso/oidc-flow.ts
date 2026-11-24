@@ -1,5 +1,5 @@
 import * as oidc from "openid-client";
-import { and, asc, eq, ssoProviders, type KobeDb } from "@kobe/db";
+import { and, asc, eq, ssoProviders, type KaijuDb } from "@kaiju/db";
 import {
   ALLOWED_ID_TOKEN_ALGS,
   AUTH_TIME_MAX_AGE_S,
@@ -62,7 +62,7 @@ const PROVIDER_COLUMNS = {
 
 /** An enabled provider by slug (a disabled or unknown one is undefined). */
 export async function loadEnabledProvider(
-  db: KobeDb,
+  db: KaijuDb,
   slug: string,
 ): Promise<SsoProvider | undefined> {
   const [row] = await db
@@ -74,7 +74,7 @@ export async function loadEnabledProvider(
 
 /** The sign-in page's buttons: enabled providers, slug and display name only. */
 export async function listSignInProviders(
-  db: KobeDb,
+  db: KaijuDb,
   helmSecrets: ReadonlyMap<string, string>,
 ): Promise<{ slug: string; displayName: string }[]> {
   const rows = await db

@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { CAPABILITY_RUN_TOKEN } from "@kobe/protocol";
-import { generateSessionKeyPair, verifyRunToken } from "@kobe/session-token";
+import { CAPABILITY_RUN_TOKEN } from "@kaiju/protocol";
+import { generateSessionKeyPair, verifyRunToken } from "@kaiju/session-token";
 import { EventStreamFixture, must, type Person } from "../testing/event-stream-fixture.js";
 import { FakeSandbox, FakeSandboxAuth, isFake, sandboxListener } from "../testing/fake-sandbox.js";
 import { withAppendTx } from "../event-stream/append.js";

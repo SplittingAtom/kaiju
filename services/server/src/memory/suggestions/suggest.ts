@@ -1,13 +1,13 @@
 import { z } from "zod";
-import { semanticMemoryKindSchema, semanticMemoryStatementSchema } from "@kobe/protocol";
+import { semanticMemoryKindSchema, semanticMemoryStatementSchema } from "@kaiju/protocol";
 import {
   MEMORY_SUGGESTION_EVIDENCE_MAX,
   SEMANTIC_MEMORY_EVIDENCE_MAX_BYTES,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { notifyMemory, registerMemoryReminder } from "../../notifications/memory.js";
 import { MemoryItemError, inactive, notAllowed } from "../items/errors.js";
@@ -41,7 +41,7 @@ export const NEEDS_OWN_WORDS = "A suggestion needs your own words in this conver
 
 /** The candidate's quotes that come from the person's own messages in the thread, capped. */
 async function ownQuotes(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { teamId: string; threadId: string },
   c: StoredCandidate,
 ): Promise<SuggestionEvidence> {
@@ -76,7 +76,7 @@ export interface Suggested {
 }
 
 export function suggestToEditors(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   candidateId: string,
   body: SuggestBody,

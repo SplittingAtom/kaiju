@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, lockLegalHolds, sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { SYSTEM_ACTOR, lockLegalHolds, sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import {
   portableHoldsUnchanged,
@@ -59,7 +59,7 @@ const notIn = (column: SQL, values: readonly string[]) =>
       )}]::text[]))`;
 
 /** Runs one delete in a savepoint; false when a guard refused it (kept). */
-async function tryDelete(tx: KobeTx, statement: SQL, what: Record<string, unknown>) {
+async function tryDelete(tx: KaijuTx, statement: SQL, what: Record<string, unknown>) {
   try {
     await tx.transaction(async (sp) => {
       await sp.execute(statement);
@@ -136,7 +136,7 @@ const PORTABLE: LaneSql = {
 
 /** One batch of one lane: items first, then versions; `tried` collects every key attempted. */
 async function laneBatch(
-  tx: KobeTx,
+  tx: KaijuTx,
   lane: LaneSql,
   cutoff: Date,
   tried: string[],
@@ -168,7 +168,7 @@ async function laneBatch(
 }
 
 async function siteAudit(
-  tx: KobeTx,
+  tx: KaijuTx,
   lane: SiteLane,
   reason: "retention" | "offboarding",
   counts: SitePurgeCounts,
@@ -191,7 +191,7 @@ async function siteAudit(
 }
 
 /** A Site-wide hold is in force (after the hold lock). */
-async function siteHoldActive(tx: KobeTx): Promise<boolean> {
+async function siteHoldActive(tx: KaijuTx): Promise<boolean> {
   const { rows } = await tx.execute<{ held: boolean }>(
     sql`SELECT public.site_legal_hold_active() AS held`,
   );
@@ -199,7 +199,7 @@ async function siteHoldActive(tx: KobeTx): Promise<boolean> {
 }
 
 /** Portable deletes: READ COMMITTED (a hold approved during the lock wait is seen), lock first. */
-function withPortablePurge<T>(db: KobeDb, purge: (tx: KobeTx) => Promise<T>): Promise<T> {
+function withPortablePurge<T>(db: KaijuDb, purge: (tx: KaijuTx) => Promise<T>): Promise<T> {
   return db.transaction(
     async (tx) => {
       await tx.execute(sql.raw(`SET LOCAL lock_timeout = '5s'`));
@@ -212,7 +212,7 @@ function withPortablePurge<T>(db: KobeDb, purge: (tx: KobeTx) => Promise<T>): Pr
 
 /** Repeats batches of one lane until nothing is left, `stop`, or the try budget is spent. */
 async function purgeLane(
-  db: KobeDb,
+  db: KaijuDb,
   lane: SiteLane,
   cutoff: Date,
   stop: (() => boolean) | undefined,
@@ -220,7 +220,7 @@ async function purgeLane(
   const tried: string[] = [];
   let total = NO_SITE_PURGE;
   while (tried.length < MAX_TRIES && !stop?.()) {
-    const one = async (tx: KobeTx, unheld: (id: SQL) => SQL) => {
+    const one = async (tx: KaijuTx, unheld: (id: SQL) => SQL) => {
       const counts = await laneBatch(tx, lane === "site" ? SITE : PORTABLE, cutoff, tried, unheld);
       await siteAudit(tx, lane, "retention", counts);
       return counts;
@@ -254,7 +254,7 @@ async function purgeLane(
  * lane; a Site-wide hold skips the Site lane (nothing deleted, nothing tried).
  */
 export async function purgeSiteSemanticMemory(
-  db: KobeDb,
+  db: KaijuDb,
   retentionDays: number,
   options: { readonly stop?: () => boolean } = {},
 ): Promise<{ readonly site: SitePurgeCounts; readonly portable: SitePurgeCounts }> {
@@ -289,7 +289,7 @@ type PurgeBatch =
 
 /** One batch of an admin purge in its own READ COMMITTED transaction, re-checking everything. */
 async function portablePurgeBatch(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   refused: string[],
 ): Promise<PurgeBatch> {
@@ -351,7 +351,7 @@ async function portablePurgeBatch(
  * it removed nothing (`retention.site_memory_purged`, counts only; review L2).
  */
 export async function purgePortableForUser(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
 ): Promise<PortablePurgeOutcome> {
   const refused: string[] = [];

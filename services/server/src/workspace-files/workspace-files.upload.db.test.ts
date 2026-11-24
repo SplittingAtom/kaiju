@@ -3,9 +3,9 @@ import {
   workspaceFileEntrySchema,
   workspaceFileErrorSchema,
   workspaceListResponseSchema,
-} from "@kobe/protocol";
-import { type WorkspaceChange } from "@kobe/protocol/sandbox-wire";
-import { withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { type WorkspaceChange } from "@kaiju/protocol/sandbox-wire";
+import { withTeam } from "@kaiju/db";
 import { createApp } from "../app.js";
 import { PUBLIC_URL, must } from "../testing/event-stream-fixture.js";
 import { TestBrowser } from "../testing/browser.js";

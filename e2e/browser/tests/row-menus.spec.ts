@@ -83,7 +83,7 @@ test("thread and file row menus in light and dark; header rename; Copy as Markdo
   await chat.ask("No tools. Reply with the single word OK.");
 
   // The header's pencil renames in place; the rail shows the new name at once.
-  const header = page.locator("header").filter({ has: page.locator("#kobe-thread-title") });
+  const header = page.locator("header").filter({ has: page.locator("#kaiju-thread-title") });
   await header.getByRole("button", { name: /^Rename / }).click();
   const name = page.getByRole("textbox", { name: "Conversation name", exact: true });
   await name.fill(title);

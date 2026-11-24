@@ -24,7 +24,7 @@ async function shoot(page: Page, name: string, target: Locator): Promise<void> {
 
 async function openPlus(page: Page): Promise<Locator> {
   await page.getByRole("button", { name: "Add to your message", exact: true }).click();
-  const menu = page.locator("[data-kobe-plus-menu]");
+  const menu = page.locator("[data-kaiju-plus-menu]");
   await expect(menu).toBeVisible();
   return menu;
 }
@@ -83,14 +83,14 @@ test("the + menu: its items, a broken connector, a toggle across two runs (ac-1.
   await chat.waitForIdle();
   const sub = await openSub(page, "Connectors");
   await expect(sub.getByText("Loading…")).toHaveCount(0);
-  const broken = sub.locator("[data-kobe-connector-problem]");
+  const broken = sub.locator("[data-kaiju-connector-problem]");
   if ((await broken.count()) > 0) {
     await expect(broken.first().getByLabel("Not working")).toBeVisible();
     await shoot(page, "composer-plus-broken", sub);
   }
   const toggle = sub.getByRole("menuitemcheckbox").first();
   test.skip((await toggle.count()) === 0, "no working connector for this member");
-  const id = (await toggle.getAttribute("data-kobe-connector")) ?? "";
+  const id = (await toggle.getAttribute("data-kaiju-connector")) ?? "";
   await expect(toggle).toHaveAttribute("aria-checked", "true");
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-checked", "false");
@@ -106,7 +106,7 @@ test("the + menu: its items, a broken connector, a toggle across two runs (ac-1.
   }
   await page.reload();
   const again = await openSub(page, "Connectors");
-  const same = again.locator(`[data-kobe-connector="${id}"]`);
+  const same = again.locator(`[data-kaiju-connector="${id}"]`);
   await expect(same).toHaveAttribute("aria-checked", "false");
   await same.click();
   await expect(same).toHaveAttribute("aria-checked", "true");
@@ -122,15 +122,15 @@ test("the + menu: a picked skill is a chip, goes with the message and shows in t
   await chat.open();
   const sub = await openSub(page, "Skills");
   await expect(sub.getByText("Loading…")).toHaveCount(0);
-  const first = sub.locator("[data-kobe-skill]").first();
+  const first = sub.locator("[data-kaiju-skill]").first();
   test.skip((await first.count()) === 0, "no skill available to this member and agent");
-  const name = (await first.getAttribute("data-kobe-skill")) ?? "";
+  const name = (await first.getAttribute("data-kaiju-skill")) ?? "";
   await first.click();
-  await expect(page.locator(`[data-kobe-skill-chip="${name}"]`)).toBeVisible();
+  await expect(page.locator(`[data-kaiju-skill-chip="${name}"]`)).toBeVisible();
   await chat.ask("No tools. Reply with the single word ALPHA.");
   await chat.waitForIdle();
-  await expect(page.locator("[data-kobe-skill-chip]")).toHaveCount(0);
-  await expect(chat.userMessages.last().locator(`[data-kobe-sent-skill="${name}"]`)).toBeVisible();
+  await expect(page.locator("[data-kaiju-skill-chip]")).toHaveCount(0);
+  await expect(chat.userMessages.last().locator(`[data-kaiju-sent-skill="${name}"]`)).toBeVisible();
 });
 
 test("the + menu: a connector turned off before the first message is off in the new thread (review MEDIUM-3)", async ({
@@ -142,7 +142,7 @@ test("the + menu: a connector turned off before the first message is off in the 
   await expect(sub.getByText("Loading…")).toHaveCount(0);
   const toggle = sub.getByRole("menuitemcheckbox").first();
   test.skip((await toggle.count()) === 0, "no working connector for this member");
-  const id = (await toggle.getAttribute("data-kobe-connector")) ?? "";
+  const id = (await toggle.getAttribute("data-kaiju-connector")) ?? "";
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-checked", "false");
   await page.keyboard.press("Escape");

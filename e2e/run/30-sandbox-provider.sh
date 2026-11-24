@@ -88,10 +88,10 @@ SEC_CTR='"securityContext":{"allowPrivilegeEscalation":false,"capabilities":{"dr
 contains "admission refuses a team pod without the gVisor RuntimeClass" 'must use RuntimeClass' \
   "$(admission "{\"spec\":{\"automountServiceAccountToken\":false,$SEC_POD,\"containers\":[{\"name\":\"c\",\"image\":\"busybox:1.37\",$SEC_CTR}]}}")"
 # A RuntimeClass that exists but does not isolate (cluster-scoped; removed on exit).
-printf 'apiVersion: node.k8s.io/v1\nkind: RuntimeClass\nmetadata: {name: kobe-e2e-runc}\nhandler: runc\n' \
+printf 'apiVersion: node.k8s.io/v1\nkind: RuntimeClass\nmetadata: {name: kaiju-e2e-runc}\nhandler: runc\n' \
   | $KUBECTL apply -f - >/dev/null 2>&1 || true
 contains "admission refuses a team pod under a non-isolating RuntimeClass" 'must use RuntimeClass' \
-  "$(admission "{\"spec\":{\"runtimeClassName\":\"kobe-e2e-runc\",\"automountServiceAccountToken\":false,$SEC_POD,\"containers\":[{\"name\":\"c\",\"image\":\"busybox:1.37\",$SEC_CTR}]}}")"
+  "$(admission "{\"spec\":{\"runtimeClassName\":\"kaiju-e2e-runc\",\"automountServiceAccountToken\":false,$SEC_POD,\"containers\":[{\"name\":\"c\",\"image\":\"busybox:1.37\",$SEC_CTR}]}}")"
 contains "admission refuses a team pod mounting a Secret" 'must not mount Secrets' \
   "$(admission "{\"spec\":{\"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,$SEC_POD,\"containers\":[{\"name\":\"c\",\"image\":\"busybox:1.37\",$SEC_CTR}],\"volumes\":[{\"name\":\"s\",\"secret\":{\"secretName\":\"x\"}}]}}")"
 contains "admission refuses a team pod with a Kubernetes API token" 'must not mount a Kubernetes API token' \
@@ -108,7 +108,7 @@ contains "admission refuses privilege escalation on any container but the sandbo
   "$(admission "{\"spec\":{\"runtimeClassName\":\"gvisor\",\"automountServiceAccountToken\":false,$SEC_POD,\"containers\":[{\"name\":\"c\",\"image\":\"busybox:1.37\",\"securityContext\":{\"allowPrivilegeEscalation\":true,\"capabilities\":{\"drop\":[\"ALL\"]}}}]}}")"
 server_sa="system:serviceaccount:$NS:kobe-server"
 contains "the server's ServiceAccount cannot create namespaces outside kobe-team-*" 'only manage kobe-team-\* namespaces' \
-  "$($KUBECTL create namespace kobe-e2e-evil --as="$server_sa" --dry-run=server 2>&1 || true)"
+  "$($KUBECTL create namespace kaiju-e2e-evil --as="$server_sa" --dry-run=server 2>&1 || true)"
 contains "the server's ServiceAccount cannot read Secrets in team namespaces" 'forbidden' \
   "$($KUBECTL -n "$TEAM_NS" get secrets --as="$server_sa" 2>&1 || true)"
 contains "the server's ServiceAccount cannot create pods in team namespaces" 'forbidden' \

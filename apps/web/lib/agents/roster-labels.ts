@@ -9,7 +9,7 @@ import type {
   AgentRosterRow,
   AgentRosterTab,
   AgentRosterUnavailableReason,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { agentPageHref } from "./redirects";
 
 const UNAVAILABLE_REASONS: Readonly<Record<AgentRosterUnavailableReason, string>> = {

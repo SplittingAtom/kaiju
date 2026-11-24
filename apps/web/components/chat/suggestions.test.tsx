@@ -2,10 +2,10 @@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { initialThreadState } from "../../lib/chat/thread-state";
 import { must } from "../../lib/testing/must";
-import type { KobeThreadExtras } from "./kobe-runtime";
+import type { KaijuThreadExtras } from "./kaiju-runtime";
 import { FollowupChips } from "./suggestion-chips";
 import { announcement, composer, openApp, streaming, threadGroup } from "./testing";
 
@@ -13,12 +13,12 @@ import { announcement, composer, openApp, streaming, threadGroup } from "./testi
  * KOBE-222 (CE21): the agent's starters on the welcome screen send at once; the server's follow-ups
  * show as chips above the composer after a run until the next send, and a chip sends its text.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -93,7 +93,7 @@ describe("follow-up chips (ac-1, ac-6)", () => {
         .map((b) => b.textContent),
     ).toEqual(["Chart it by region", "What about Q4?", "Compare with last year"]);
     // Above the composer, outside the message list.
-    const box = must(document.querySelector("[data-kobe-composer-box]"));
+    const box = must(document.querySelector("[data-kaiju-composer-box]"));
     expect(group.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await userEvent.setup().click(within(group).getByRole("button", { name: "What about Q4?" }));
     await waitFor(() => expect(sentMessages()).toEqual(["What drives revenue?", "What about Q4?"]));
@@ -134,7 +134,7 @@ describe("FollowupChips for a reader of a shared thread (KOBE-221)", () => {
         summary: { readOnly: true },
         followups: { runId: "r1", suggestions: ["Chart it"] },
       },
-    } as unknown as KobeThreadExtras;
+    } as unknown as KaijuThreadExtras;
     const { container } = render(<FollowupChips extras={extras} />);
     expect(container.innerHTML).toBe("");
   });
@@ -218,7 +218,7 @@ describe("review fixes (S4, S5, N1, N2, N5)", () => {
         phase: "ready",
         followups: { runId: "r1", suggestions: ["Chart it"] },
       },
-    } as unknown as KobeThreadExtras;
+    } as unknown as KaijuThreadExtras;
     const { container } = render(<FollowupChips extras={extras} />);
     expect(container.innerHTML).toBe("");
   });

@@ -1,6 +1,6 @@
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { waitForAppSessionsToClose } from "../testing/app-sessions.js";
 import { createPgReconcileLock } from "./reconcile-lock.js";
 

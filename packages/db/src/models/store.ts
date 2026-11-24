@@ -1,5 +1,5 @@
 import { and, eq, exists, inArray, isNull, sql } from "drizzle-orm";
-import type { KobeDb, KobeTx } from "../client.js";
+import type { KaijuDb, KaijuTx } from "../client.js";
 import {
   ACTIVE_RUN_STATUSES,
   memoryLearningPasses,
@@ -62,7 +62,7 @@ export function gatewayProviderName(id: string, kind: ModelProviderKind): string
   return kind === "openai_compatible" ? `kobe-${id}` : kind;
 }
 
-export async function notifyModels(db: KobeDb | KobeTx, hint: string): Promise<void> {
+export async function notifyModels(db: KaijuDb | KaijuTx, hint: string): Promise<void> {
   await db.execute(sql`SELECT pg_notify(${MODELS_CHANNEL}, ${hint})`);
 }
 
@@ -70,7 +70,7 @@ export async function notifyModels(db: KobeDb | KobeTx, hint: string): Promise<v
  * Marks the gateway configuration changed in `tx` (an admin change): bumps `desired_version` and
  * queues the hint, both delivered on commit. Returns the new version.
  */
-export async function bumpModelsConfig(tx: KobeTx): Promise<number> {
+export async function bumpModelsConfig(tx: KaijuTx): Promise<number> {
   const res = await tx.execute<{ v: string }>(sql`
     UPDATE model_gateway_state SET desired_version = desired_version + 1
      WHERE id = 1 RETURNING desired_version AS v`);
@@ -139,7 +139,7 @@ export interface GatewayThinkingRow {
 
 /** Everything the model-gateway shim checks for a verified token, in one team transaction. */
 export async function loadGatewayPrincipal(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   /** Undefined for a server call (KOBE-234): no sandbox and no eval; `sandbox` is `unrecorded`. */
@@ -271,7 +271,7 @@ export async function loadGatewayPrincipal(
  * (KOBE-24 leases): the shim's run attribution check. Ended runs no longer attribute.
  */
 export async function isActiveRunLeasedTo(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   runId: string,
   sandboxId: string,
@@ -303,7 +303,7 @@ export async function isActiveRunLeasedTo(
  * run, or a run without a level.
  */
 export async function runThinkingLevelOf(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   runId: string,
 ): Promise<ThinkingLevelValue | undefined> {
@@ -328,7 +328,7 @@ export interface RunSession {
  * `user.id` = `threads.owner_user_id`, read from the server's record, never from the caller.
  */
 export async function runSessionOf(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   runId: string,
 ): Promise<RunSession | undefined> {
@@ -377,7 +377,7 @@ const LIVE_CLAIM_STATUSES = ["queued", "running", "waiting_approval", "completed
  * owner is the member a lease would name).
  */
 export async function serverCallRunMatches(
-  db: KobeDb,
+  db: KaijuDb,
   claim: ServerCallRunClaim,
 ): Promise<boolean> {
   return withTeam(db, claim.teamId, async (tx) => {
@@ -449,7 +449,7 @@ export interface ServerCallPassClaim {
  * in the team's RLS context.
  */
 export async function serverCallPassRunning(
-  db: KobeDb,
+  db: KaijuDb,
   claim: ServerCallPassClaim,
 ): Promise<boolean> {
   return withTeam(db, claim.teamId, async (tx) => {

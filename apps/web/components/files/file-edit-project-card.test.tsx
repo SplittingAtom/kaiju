@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { openApp } from "../chat/testing";
 import { NOT_ALLOWED_NOTES, STALE_NOTE } from "./proposal-inline-review";
@@ -13,7 +13,7 @@ import { NOT_ALLOWED_NOTES, STALE_NOTE } from "./proposal-inline-review";
  * the server (committed, stale, not allowed); new files in a project and in My files render and
  * accept; shared readers never see Accept.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 let projectId = "";
 const enc = (s: string) => new TextEncoder().encode(s);
 const PROPOSAL_ID = "11111111-1111-4111-8111-111111111111";
@@ -23,7 +23,7 @@ const PROPOSED = "alpha\nBETA\n";
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   projectId = fake.addProject("Budget");
   fake.projectHeads.set(projectId, { seq: 3, files: new Map([["plan.md", HEAD]]) });

@@ -3,7 +3,7 @@ import {
   SERVER_CALL_EMBEDDINGS_PATH,
   type ServerCallClaims,
   type ThinkingLevel,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { topLevelModel, withStreamUsage } from "../body-model.js";
 import type { Resolution } from "../principals.js";
 import type { Route } from "../routes.js";

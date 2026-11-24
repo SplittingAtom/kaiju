@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import type { Project, ProjectAgent, ProjectInput } from "../../lib/projects/api";
 import { Button, Field, FormRow, Select, TextInput, Textarea } from "../ui/console";
 
-/** Mirrors `PROJECT_*` in `@kobe/protocol` (the server checks again). */
+/** Mirrors `PROJECT_*` in `@kaiju/protocol` (the server checks again). */
 export const NAME_MAX = 100;
 export const DESCRIPTION_MAX = 500;
 export const INSTRUCTIONS_MAX_BYTES = 8 * 1024;

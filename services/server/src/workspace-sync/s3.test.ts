@@ -26,14 +26,14 @@ describe("loadS3Settings", () => {
     expect(loadS3Settings({})).toBeUndefined();
     expect(
       loadS3Settings({
-        KOBE_S3_BUCKET: "kobe",
+        KOBE_S3_BUCKET: "kaiju",
         KOBE_S3_ENDPOINT: "http://s3.kobe-deps:8333",
         KOBE_S3_FORCE_PATH_STYLE: "true",
         KOBE_S3_ACCESS_KEY_ID: "id",
         KOBE_S3_SECRET_ACCESS_KEY: "secret",
       }),
     ).toEqual({
-      bucket: "kobe",
+      bucket: "kaiju",
       endpoint: "http://s3.kobe-deps:8333",
       region: "us-east-1",
       forcePathStyle: true,
@@ -112,13 +112,13 @@ describe("verifyingStream", () => {
 });
 
 describe("S3 object store (fake S3 over HTTP)", () => {
-  const fake = new FakeS3("kobe", "test-key");
+  const fake = new FakeS3("kaiju", "test-key");
   let store: ReturnType<typeof createS3ObjectStore>;
 
   beforeAll(async () => {
     const endpoint = await fake.start();
     store = createS3ObjectStore({
-      bucket: "kobe",
+      bucket: "kaiju",
       endpoint,
       region: "us-east-1",
       forcePathStyle: true,
@@ -165,7 +165,7 @@ describe("S3 object store (fake S3 over HTTP)", () => {
 });
 
 describe("get: only NoSuchKey is a missing object (KOBE-475)", () => {
-  const fake = new FakeS3("kobe", "test-key");
+  const fake = new FakeS3("kaiju", "test-key");
   let endpoint: string;
   const storeFor = (bucket: string) =>
     createS3ObjectStore({
@@ -183,7 +183,7 @@ describe("get: only NoSuchKey is a missing object (KOBE-475)", () => {
   afterAll(() => fake.stop());
 
   it("answers null for NoSuchKey and throws for a wrong bucket", async () => {
-    expect(await storeFor("kobe").get("teams/t/none")).toBeNull();
+    expect(await storeFor("kaiju").get("teams/t/none")).toBeNull();
     await expect(storeFor("not-there").get("teams/t/none")).rejects.toThrow();
   });
 
@@ -276,7 +276,7 @@ describe("S3 client timeouts (KOBE-732)", () => {
 
   const silentStore = () =>
     createS3ObjectStore({
-      bucket: "kobe",
+      bucket: "kaiju",
       endpoint,
       region: "us-east-1",
       forcePathStyle: true,

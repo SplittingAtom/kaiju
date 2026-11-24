@@ -1,4 +1,4 @@
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import { addBlockedInTx } from "../blocklist.js";
 import { dutiesProblem, type DecisionInput } from "./review-approve.js";
@@ -32,9 +32,9 @@ class Refused extends Error {
 }
 
 async function locked(
-  db: KobeDb,
+  db: KaijuDb,
   versionId: string,
-  fn: (tx: KobeTx, v: VersionRow) => Promise<{ version: VersionRow; changed: boolean }>,
+  fn: (tx: KaijuTx, v: VersionRow) => Promise<{ version: VersionRow; changed: boolean }>,
   /** The state the caller saw (a Kaiju MCP call's approved before-state), checked under the lock. */
   expectedState?: string,
 ): Promise<ReviewResult> {
@@ -58,7 +58,7 @@ async function locked(
 }
 
 const event = (
-  tx: KobeTx,
+  tx: KaijuTx,
   versionId: string,
   actor: string,
   action: string,
@@ -71,7 +71,7 @@ const event = (
 
 /** Claims the version: Submitted → In review, held by `userId`. Claiming one's own claim is a no-op. */
 export function claim(
-  db: KobeDb,
+  db: KaijuDb,
   versionId: string,
   userId: string,
   expectedState?: string,
@@ -104,7 +104,7 @@ export function claim(
  * every Registry action (`mayTakeOver`: Site admins), so an abandoned claim never blocks the queue.
  */
 export function unclaim(
-  db: KobeDb,
+  db: KaijuDb,
   versionId: string,
   userId: string,
   mayTakeOver: boolean,
@@ -124,7 +124,7 @@ export function unclaim(
 
 /** A reviewer's comment on the version; it stays in the Registry's history. */
 export function comment(
-  db: KobeDb,
+  db: KaijuDb,
   versionId: string,
   userId: string,
   note: string,
@@ -150,7 +150,7 @@ const VERDICT: Readonly<Record<Verdict, { state: string; action: string; blocked
  * transaction, so the package never loads anywhere.
  */
 export function decide(
-  db: KobeDb,
+  db: KaijuDb,
   versionId: string,
   userId: string,
   verdict: Verdict,
@@ -201,7 +201,7 @@ export function decide(
  * review or Changes requested → Retracted. A never-approved name comes free with it (no open
  * submission holds it any more).
  */
-export function retract(db: KobeDb, versionId: string, userId: string): Promise<ReviewResult> {
+export function retract(db: KaijuDb, versionId: string, userId: string): Promise<ReviewResult> {
   return locked(db, versionId, async (tx, v) => {
     if (v.submittedBy !== userId) throw new Refused(PROBLEMS.not_found);
     if (!REJECTABLE_STATES.has(v.state)) throw new Refused(PROBLEMS.decided);

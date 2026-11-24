@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createBuildWatcher, setActiveWatcher } from "../../lib/build/build-watcher";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { openApp } from "./testing";
 
@@ -10,7 +10,7 @@ import { openApp } from "./testing";
  * KOBE-487 ac-3: a tool this client doesn't know (the web was redeployed with it) still renders
  * as the generic tool card, and makes the page ask whether a newer build is served.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 afterEach(() => {
   cleanup();
@@ -21,7 +21,7 @@ afterEach(() => {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -54,7 +54,7 @@ describe("a tool this client doesn't know (KOBE-487 ac-3)", () => {
     const check = watch();
     openApp(fake, thread("brand_new_tool"));
     const card = await screen.findByRole("region", { name: "Tool call brand_new_tool" });
-    expect(must(card.querySelector("[data-kobe-tool-badge]")).textContent).toBe("brand_new_tool");
+    expect(must(card.querySelector("[data-kaiju-tool-badge]")).textContent).toBe("brand_new_tool");
     expect(within(card).getAllByText(/brand_new_tool/).length).toBeGreaterThan(0);
     await waitFor(() => expect(check).toHaveBeenCalledWith("unknown-input"));
   });

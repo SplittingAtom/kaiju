@@ -6,14 +6,14 @@ import { render } from "@testing-library/react";
 import { useState } from "react";
 import { vi } from "vitest";
 import type {
-  KobeEvent,
-  KobeEventPayload,
-  KobeEventType,
+  KaijuEvent,
+  KaijuEventPayload,
+  KaijuEventType,
   NotebookCompletionBody,
   NotebookHistoryEntry,
   NotebookOutput,
   NotebookRunBody,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ApiResult } from "../../lib/api/client";
 import type { EventSourceLike } from "../../lib/chat/stream";
 import type { FilesApi } from "../../lib/files/api";
@@ -49,7 +49,7 @@ export class StubSource implements EventSourceLike {
   close() {
     this.readyState = 2;
   }
-  send(event: KobeEvent) {
+  send(event: KaijuEvent) {
     for (const l of this.listeners.get(event.type) ?? []) {
       l(new MessageEvent(event.type, { data: JSON.stringify(event) }));
     }
@@ -57,13 +57,13 @@ export class StubSource implements EventSourceLike {
 }
 
 let seq = 0;
-export function ev<T extends KobeEventType>(
+export function ev<T extends KaijuEventType>(
   runId: string,
   type: T,
-  payload: KobeEventPayload<T>,
-): KobeEvent {
+  payload: KaijuEventPayload<T>,
+): KaijuEvent {
   seq += 1;
-  return { run_id: runId, seq, ts: "2026-10-21T10:00:00Z", type, payload } as KobeEvent;
+  return { run_id: runId, seq, ts: "2026-10-21T10:00:00Z", type, payload } as KaijuEvent;
 }
 
 /** One workspace file that saves at a version and reads back. */

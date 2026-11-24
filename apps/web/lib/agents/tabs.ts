@@ -6,7 +6,7 @@
  *
  * A plain module: the page's server component reads `?tab=` with `agentTabParam`.
  */
-import { AGENT_ROSTER_TABS, type AgentRosterTab } from "@kobe/protocol";
+import { AGENT_ROSTER_TABS, type AgentRosterTab } from "@kaiju/protocol";
 
 export const AGENT_TABS = AGENT_ROSTER_TABS;
 export type AgentTab = AgentRosterTab;

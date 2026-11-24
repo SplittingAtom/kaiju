@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { argPatternSchema, globSchema, timestampSchema } from "@kobe/protocol";
+import { argPatternSchema, globSchema, timestampSchema } from "@kaiju/protocol";
 import { allowGlobScoped } from "./patterns.js";
 
 /**

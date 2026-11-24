@@ -63,7 +63,7 @@ beforeEach(() => {
   forbidNativeConfirm();
   assign = vi.fn();
   replaced = [];
-  vi.stubGlobal("location", { ...window.location, assign, href: "http://kobe.test/me/skills" });
+  vi.stubGlobal("location", { ...window.location, assign, href: "http://kaiju.test/me/skills" });
   vi.spyOn(window.history, "replaceState").mockImplementation((_s, _t, url) => {
     replaced.push(String(url));
   });

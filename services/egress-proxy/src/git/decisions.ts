@@ -10,7 +10,7 @@ import type { GitRequest } from "./grammar.js";
  *
  * POST <server internal>/internal/v1/git/transport
  *   Authorization: Bearer <egress proxy internal key>
- *   Kaiju-Sandbox-Token: <the sandbox's own kobe.egress-proxy token>
+ *   Kobe-Sandbox-Token: <the sandbox's own kobe.egress-proxy token>
  *   {host, prefix, owner, repository, service}
  */
 

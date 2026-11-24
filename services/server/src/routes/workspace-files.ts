@@ -1,7 +1,7 @@
 import { Readable } from "node:stream";
 import type { ReadableStream as WebReadableStream } from "node:stream/web";
 import { Hono, type Context } from "hono";
-import { isUnderLegalHold, lockLegalHolds, withTeam } from "@kobe/db";
+import { isUnderLegalHold, lockLegalHolds, withTeam } from "@kaiju/db";
 import {
   isMemberDropPath,
   isThreadFolderName,
@@ -14,7 +14,7 @@ import {
   workspaceSearchQuerySchema,
   workspaceUploadFieldsSchema,
   type WorkspaceFileError,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";

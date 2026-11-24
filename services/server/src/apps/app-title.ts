@@ -1,4 +1,4 @@
-import type { PinnedTool } from "@kobe/db";
+import type { PinnedTool } from "@kaiju/db";
 import { fallbackTitle } from "../threads/title.js";
 
 /**

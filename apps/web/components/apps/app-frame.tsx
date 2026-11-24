@@ -115,7 +115,7 @@ function railFrameHeight(report: number, room: number): number | null {
 }
 
 /** Set on the iframe while Kaiju's host bridge listens for it. */
-export const BRIDGE_ATTACHED_ATTR = "data-kobe-app-bridge";
+export const BRIDGE_ATTACHED_ATTR = "data-kaiju-app-bridge";
 
 /** What an owner may do with a live frame (review LOW-4, coordinator decision 2). */
 export interface AppFrameHandle {
@@ -157,7 +157,7 @@ export function AppFrame(props: AppFrameProps & { readonly ref?: Ref<AppFrameHan
       className={`flex flex-col overflow-hidden rounded-md border border-border bg-card${
         fill ? " min-h-0 flex-1" : ""
       }`}
-      data-kobe-app-frame={app.appId}
+      data-kaiju-app-frame={app.appId}
       aria-label={`${app.title}, an app from ${app.connectorName}`}
     >
       <FrameInstance key={frameKey(app, teamId, cardKey)} {...props} bridgeRef={bridge} />
@@ -352,7 +352,7 @@ function FrameInstance(
     <div
       ref={scroll}
       className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
-      data-kobe-app-scroll
+      data-kaiju-app-scroll
     >
       {iframe}
     </div>

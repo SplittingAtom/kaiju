@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { pgCodeOf } from "./pg-errors.js";
 import {
   gitCommitBranches,
@@ -15,7 +15,7 @@ import {
 import { withTeam } from "./with-team.js";
 
 /** KOBE-767: members' pull-request branches and Repo working copies. */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const teamA = randomUUID();
 const teamB = randomUUID();
 const userId = randomUUID();

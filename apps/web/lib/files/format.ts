@@ -1,4 +1,4 @@
-import { isMemberDropPath } from "@kobe/protocol";
+import { isMemberDropPath } from "@kaiju/protocol";
 import type { ApiError } from "../api/client";
 
 /**

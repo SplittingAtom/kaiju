@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import type { UploadRequest, UploadTransport } from "../../lib/chat/uploads";
 import { ChatApp } from "../chat/chat-app";
 import { chatRequests, composer } from "../chat/testing";
@@ -15,7 +15,7 @@ interface Upload {
   readonly name: string;
 }
 
-let fake: FakeKobe;
+let fake: FakeKaiju;
 let uploads: Upload[];
 let wakes: number;
 let listed: string[];
@@ -110,7 +110,7 @@ function matchMedia(query: string) {
 }
 
 beforeEach(() => {
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   uploads = [];
   wakes = 0;
   listed = [];

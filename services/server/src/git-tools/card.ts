@@ -1,5 +1,5 @@
-import { parseMcpToolName, type GitApproval, type GitApprovalAction } from "@kobe/protocol";
-import { readGitConnection, sql, type KobeTx } from "@kobe/db";
+import { parseMcpToolName, type GitApproval, type GitApprovalAction } from "@kaiju/protocol";
+import { readGitConnection, sql, type KaijuTx } from "@kaiju/db";
 import { gitToolByName, type GitToolInput } from "./catalog.js";
 import { footerLine, memberName, postedBody } from "./posted.js";
 
@@ -29,7 +29,7 @@ export interface GitCardContext {
 }
 
 export async function gitApprovalCard(
-  tx: KobeTx,
+  tx: KaijuTx,
   ctx: GitCardContext,
   piName: string,
   input: Readonly<Record<string, unknown>>,
@@ -99,8 +99,8 @@ export async function gitApprovalCard(
  * (any other tool, including a connector that merely uses a git tool's name: the Pi name's server
  * segment must be the built-in git connector's).
  */
-export async function kobeGitApprovalCard(
-  tx: KobeTx,
+export async function kaijuGitApprovalCard(
+  tx: KaijuTx,
   req: GitCardContext & {
     readonly piName: string;
     readonly input: Readonly<Record<string, unknown>>;

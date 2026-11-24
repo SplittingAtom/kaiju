@@ -1,4 +1,4 @@
-import { withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { evaluateMemoryWrite } from "../checks.js";
 import { openOp, type Op } from "../items/context.js";
 import { notAllowed } from "../items/errors.js";
@@ -50,7 +50,7 @@ async function related(op: Op, refs: readonly { id: string }[]) {
   return out;
 }
 
-async function queueCard(tx: KobeTx, op: Op, p: ProposalRow) {
+async function queueCard(tx: KaijuTx, op: Op, p: ProposalRow) {
   const found = await evaluateMemoryWrite(op, {
     scope: "team",
     policy: false,
@@ -66,7 +66,7 @@ async function queueCard(tx: KobeTx, op: Op, p: ProposalRow) {
 
 export type ProposalCard = Awaited<ReturnType<typeof queueCard>>;
 
-export function listQueue(db: KobeDb, who: MemoryWho) {
+export function listQueue(db: KaijuDb, who: MemoryWho) {
   const teamId = workspaceOf(who);
   if (!curates(who, "team"))
     throw notAllowed("Only Team admins and memory stewards review Workspace proposals.");
@@ -78,7 +78,7 @@ export function listQueue(db: KobeDb, who: MemoryWho) {
   });
 }
 
-export function listMine(db: KobeDb, who: MemoryWho) {
+export function listMine(db: KaijuDb, who: MemoryWho) {
   const teamId = workspaceOf(who);
   return withTeam(db, teamId, async (tx) => ({
     proposals: (await proposalsOf(tx, teamId, who.userId)).map((p) => ({

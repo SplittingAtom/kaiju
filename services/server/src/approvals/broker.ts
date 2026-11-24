@@ -3,12 +3,12 @@ import {
   canonicalJson,
   isActiveRunStatus,
   type PolicyReason,
-} from "@kobe/protocol";
-import { SYSTEM_ACTOR, pgCodeOf, sql, withTeam, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { SYSTEM_ACTOR, pgCodeOf, sql, withTeam, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
-import { kobeAdminApprovalCard } from "../kobe-mcp/approval-card.js";
-import { kobeGitApprovalCard } from "../git-tools/card.js";
-import { isKobeAdminAsk } from "../policy/kobe-admin-guard.js";
+import { kaijuAdminApprovalCard } from "../kaiju-mcp/approval-card.js";
+import { kaijuGitApprovalCard } from "../git-tools/card.js";
+import { isKaijuAdminAsk } from "../policy/kaiju-admin-guard.js";
 import { appendRunEventsInTx, withAppendTx, type NewRunEvent } from "../event-stream/append.js";
 import { applyTransition, lockRunRow, lockThreadRow } from "../runs/store.js";
 import type { ApprovalBroker, ApprovalOutcome, ApprovalRequest } from "../sandbox-wire/types.js";
@@ -41,7 +41,7 @@ export const APPROVALS_MAX_PER_RUN = 100;
 const CREATE_ATTEMPTS = 3;
 
 /** Postgres lock_not_available (`lock_timeout` expired), possibly wrapped by Drizzle. */
-export { isLockTimeout } from "@kobe/db";
+export { isLockTimeout } from "@kaiju/db";
 
 /**
  * A lock conflict that rolled the whole transaction back, so running it again is safe: a lock
@@ -172,7 +172,7 @@ export class ApprovalBrokerImpl implements ApprovalBroker {
     }
     if (row.status === "allowed") {
       // The signed token stays server-side (approval.ts: "neither the key nor the token ever
-      // enters a sandbox"); the MCP proxy finds it by (run, tool_call_id). For built-in and kobe
+      // enters a sandbox"); the MCP proxy finds it by (run, tool_call_id). For built-in and kaiju
       // tools this allow is itself the authorisation.
       if (!tokenOf(row)) return deny("the approval could not be verified.");
       return {
@@ -273,13 +273,13 @@ export class ApprovalBrokerImpl implements ApprovalBroker {
       }
       const input = parseCanonicalInput({ inputCanonical: canonical });
       // KOBE-623: a Kaiju admin write's card says what changes, by name, and where.
-      const admin = isKobeAdminAsk(req.decision.reasons)
-        ? await kobeAdminApprovalCard(tx, teamId, req.tool, input)
+      const admin = isKaijuAdminAsk(req.decision.reasons)
+        ? await kaijuAdminApprovalCard(tx, teamId, req.tool, input)
         : undefined;
       // KOBE-762: a git host write's card names host, organization, repository and the text.
       const git =
         admin === undefined
-          ? await kobeGitApprovalCard(tx, {
+          ? await kaijuGitApprovalCard(tx, {
               teamId,
               userId: req.userId,
               threadId: thread.id,
@@ -331,7 +331,7 @@ export class ApprovalBrokerImpl implements ApprovalBroker {
    * writes the row (KOBE-266).
    */
   async #reject(
-    tx: KobeTx,
+    tx: KaijuTx,
     req: ApprovalRequest,
     reason: "replayed_tool_call_id" | "too_many_approvals" | "run_event_cap",
     taken: (() => void)[],

@@ -1,6 +1,6 @@
 import { unzipSync } from "fflate";
 import { isMap, parseDocument } from "yaml";
-import { MANIFEST_PATH, MANIFEST_YAML_OPTIONS } from "@kobe/protocol";
+import { MANIFEST_PATH, MANIFEST_YAML_OPTIONS } from "@kaiju/protocol";
 import {
   and,
   eq,
@@ -10,8 +10,8 @@ import {
   teamSkillBlocks,
   teamSkillInstalls,
   withTeam,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import type { BlobStore } from "../../retention/blobs.js";
 import { readVerified } from "../blob-read.js";
 import { isBlocked } from "../blocklist.js";
@@ -87,7 +87,7 @@ async function copyLocal(
 
 async function copyCatalog(
   ctx: DraftContext,
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore,
   source: Extract<ForkSource, { kind: "catalog" }>,
 ): Promise<Copy> {

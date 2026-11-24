@@ -3,11 +3,11 @@ import { loadConfig } from "../config.js";
 
 const REQUIRED = {
   KOBE_DATABASE_URL: "postgres://kobe_app:pw@db:5432/kobe",
-  KOBE_PUBLIC_URL: "https://kobe.example.com",
+  KOBE_PUBLIC_URL: "https://kaiju.example.com",
   KOBE_AUTH_SECRET: "x".repeat(32),
   KOBE_SETUP_TOKEN: "t".repeat(24),
   KOBE_SMTP_HOST: "smtp.example.com",
-  KOBE_SMTP_FROM: "Kaiju <kobe@example.com>",
+  KOBE_SMTP_FROM: "Kaiju <kaiju@example.com>",
 };
 
 describe("loadConfig", () => {
@@ -241,12 +241,12 @@ describe("loadConfig", () => {
   });
 
   it("requires an http(s) public URL without a path", () => {
-    expect(loadConfig(REQUIRED).auth?.publicUrl).toBe("https://kobe.example.com");
-    expect(() => loadConfig({ ...REQUIRED, KOBE_PUBLIC_URL: "kobe.example.com" })).toThrow(
+    expect(loadConfig(REQUIRED).auth?.publicUrl).toBe("https://kaiju.example.com");
+    expect(() => loadConfig({ ...REQUIRED, KOBE_PUBLIC_URL: "kaiju.example.com" })).toThrow(
       /KOBE_PUBLIC_URL/,
     );
     expect(() =>
-      loadConfig({ ...REQUIRED, KOBE_PUBLIC_URL: "https://kobe.example.com/app" }),
+      loadConfig({ ...REQUIRED, KOBE_PUBLIC_URL: "https://kaiju.example.com/app" }),
     ).toThrow(/KOBE_PUBLIC_URL/);
   });
 
@@ -345,7 +345,7 @@ describe("loadConfig", () => {
         host: "smtp.example.com",
         port: 587,
         security: "starttls",
-        from: { name: "Kaiju", address: "kobe@example.com" },
+        from: { name: "Kaiju", address: "kaiju@example.com" },
       });
       const { KOBE_SMTP_HOST: _h, ...noHost } = REQUIRED;
       expect(() => loadConfig(noHost)).toThrow(/KOBE_SMTP_HOST/);

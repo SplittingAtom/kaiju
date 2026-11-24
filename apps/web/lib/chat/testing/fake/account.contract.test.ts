@@ -4,14 +4,14 @@ import {
   markNotificationsReadResponseSchema,
   projectCheckoutsResponseSchema,
   uiPreferencesResponseSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
-import { FakeKobe } from "../fake-kobe";
+import { FakeKaiju } from "../fake-kaiju";
 import { call, expectContract } from "./contract";
 
 describe("fake account area: answers parse with the protocol (KOBE-717)", () => {
   it("preferences, notifications, schedules and checkouts", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     fake.preferences = { threads_share: 0.3 };
     await expectContract(fake, uiPreferencesResponseSchema, "GET", "/v1/me/preferences");
     await expectContract(fake, uiPreferencesResponseSchema, "PUT", "/v1/me/preferences", {
@@ -29,7 +29,7 @@ describe("fake account area: answers parse with the protocol (KOBE-717)", () => 
   });
 
   it("fails on a deliberate drift", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const { body } = await call(fake, "GET", "/v1/notifications");
     const { unread_count: _count, ...drifted } = body as Record<string, unknown>;
     expect(listNotificationsResponseSchema.safeParse({ ...drifted, unreadCount: 0 }).success).toBe(

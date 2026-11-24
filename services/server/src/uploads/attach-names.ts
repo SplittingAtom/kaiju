@@ -1,5 +1,5 @@
 import path from "node:path";
-import { workspacePathIssue } from "@kobe/protocol";
+import { workspacePathIssue } from "@kaiju/protocol";
 
 /**
  * Where a message's uploads land in the sandbox (KOBE-144): `uploads/<thread>/<name>`. Names are

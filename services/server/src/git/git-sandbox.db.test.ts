@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { loadEnvelope, sealGitCredential, type Envelope } from "@kobe/db";
-import { runGitContextSchema } from "@kobe/protocol/sandbox-wire";
+import { loadEnvelope, sealGitCredential, type Envelope } from "@kaiju/db";
+import { runGitContextSchema } from "@kaiju/protocol/sandbox-wire";
 import { gitNoReplyEmail, loadRunGitContext } from "./sandbox-git.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 
@@ -82,7 +82,7 @@ afterAll(async () => {
 describe("loadRunGitContext (KOBE-764)", () => {
   it("gives the member as author with their Kaiju email and this Workspace's connections only", async () => {
     const git = must(
-      await loadRunGitContext(h.deps.database.db, { teamId: team, userId: member }, "kobe.test"),
+      await loadRunGitContext(h.deps.database.db, { teamId: team, userId: member }, "kaiju.test"),
     );
     const name = email.split("@")[0] as string;
     expect(git).toEqual({
@@ -100,13 +100,13 @@ describe("loadRunGitContext (KOBE-764)", () => {
       [team],
     );
     const git = must(
-      await loadRunGitContext(h.deps.database.db, { teamId: team, userId: member }, "kobe.test"),
+      await loadRunGitContext(h.deps.database.db, { teamId: team, userId: member }, "kaiju.test"),
     );
     const noReply = gitNoReplyEmail(
       { id: member, name: email.split("@")[0] as string },
-      "kobe.test",
+      "kaiju.test",
     );
-    expect(noReply).toMatch(/^[0-9a-f]{10}\+ada-[0-9a-f]{6}@users\.noreply\.kobe\.test$/);
+    expect(noReply).toMatch(/^[0-9a-f]{10}\+ada-[0-9a-f]{6}@users\.noreply\.kaiju\.test$/);
     expect(git.author.email).toBe(noReply);
     expect(git.committer.email).toBe(noReply);
     expect(JSON.stringify(git)).not.toContain(member);
@@ -118,7 +118,7 @@ describe("loadRunGitContext (KOBE-764)", () => {
       await loadRunGitContext(
         h.deps.database.db,
         { teamId: team, userId: randomUUID() },
-        "kobe.test",
+        "kaiju.test",
       ),
     ).toBeUndefined();
   });

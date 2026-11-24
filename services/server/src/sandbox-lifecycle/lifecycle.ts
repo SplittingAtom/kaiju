@@ -7,9 +7,9 @@ import {
   teams,
   users,
   withTeam,
-  type KobeDb,
-} from "@kobe/db";
-import { ROOT_CONTEXT, recordSpan, runParentContext } from "@kobe/telemetry";
+  type KaijuDb,
+} from "@kaiju/db";
+import { ROOT_CONTEXT, recordSpan, runParentContext } from "@kaiju/telemetry";
 import type { Logger } from "pino";
 import { currentAuditContext } from "../audit/context.js";
 import { recordAudit, recordAuditAfter } from "../audit/record.js";
@@ -77,7 +77,7 @@ export type LifecycleProvider = Pick<SandboxProvider, "wakeSandbox" | "hibernate
   >;
 
 export interface LifecycleOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly provider: LifecycleProvider;
   /** Site default idle minutes (Helm `sandbox.hibernation.idleMinutes`, D14: 15). */
   readonly idleMinutes: number;

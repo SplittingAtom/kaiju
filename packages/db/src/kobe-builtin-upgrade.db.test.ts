@@ -4,9 +4,9 @@ import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { audit, verifyAuditChain } from "./audit/index.js";
 import { createDb } from "./client.js";
-import { seedKobeBuiltinConnector } from "./connectors/builtin.js";
+import { seedKaijuBuiltinConnector } from "./connectors/builtin.js";
 import { runMigrations } from "./migrate.js";
-import { KOBE_BUILTIN_CONNECTOR_ID } from "./schema/index.js";
+import { KAIJU_BUILTIN_CONNECTOR_ID } from "./schema/index.js";
 import {
   createTestDatabase,
   migrationsBefore,
@@ -24,7 +24,7 @@ const MARKER = 'ADD COLUMN "builtin"';
 
 let db: TestDatabase | undefined;
 let older = "";
-const ids = { user: randomUUID(), team: randomUUID(), kobe: randomUUID(), other: randomUUID() };
+const ids = { user: randomUUID(), team: randomUUID(), kaiju: randomUUID(), other: randomUUID() };
 
 const database = (): TestDatabase => {
   if (!db) throw new Error("database not created");
@@ -52,7 +52,7 @@ beforeAll(async () => {
       ids.team,
     ]);
     for (const [id, name] of [
-      [ids.kobe, "kobe"],
+      [ids.kaiju, "kobe"],
       [ids.other, "jira"],
     ] as const) {
       await c.query(
@@ -87,12 +87,12 @@ describe("the built-in connector on upgrade (KOBE-618)", () => {
     await runMigrations({ databaseUrl: ownerUrl, appRole });
     const app = createDb(appUrl);
     try {
-      expect(await seedKobeBuiltinConnector(app.db)).toEqual({
+      expect(await seedKaijuBuiltinConnector(app.db)).toEqual({
         outcome: "seeded",
         name: "kobe-builtin",
         fallback: true,
       });
-      expect(await seedKobeBuiltinConnector(app.db)).toEqual({
+      expect(await seedKaijuBuiltinConnector(app.db)).toEqual({
         outcome: "present",
         name: "kobe-builtin",
       });
@@ -114,8 +114,8 @@ describe("the built-in connector on upgrade (KOBE-618)", () => {
       );
       expect(res.rows).toEqual([
         { id: ids.other, name: "jira", builtin: null },
-        { id: ids.kobe, name: "kobe", builtin: null },
-        { id: KOBE_BUILTIN_CONNECTOR_ID, name: "kobe-builtin", builtin: "kobe" },
+        { id: ids.kaiju, name: "kobe", builtin: null },
+        { id: KAIJU_BUILTIN_CONNECTOR_ID, name: "kobe-builtin", builtin: "kobe" },
       ]);
       // The built-in needs no team row: teams keep exactly their own enablements.
       const enabled = await c.query(`SELECT count(*)::int AS n FROM team_connectors`);

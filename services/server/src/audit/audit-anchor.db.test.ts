@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { SYSTEM_ACTOR, auditStandalone } from "@kobe/db";
+import { SYSTEM_ACTOR, auditStandalone } from "@kaiju/db";
 import { AuditAnchorLogger, anchorKey, anchorMac } from "./anchor.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 

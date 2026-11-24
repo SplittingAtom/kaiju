@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CONNECTOR_GRANT_KIND_VALUES, SSO_LINKED_VIA } from "@kobe/db";
+import { CONNECTOR_GRANT_KIND_VALUES, SSO_LINKED_VIA } from "@kaiju/db";
 import {
   listNotificationsQuerySchema,
   listNotificationsResponseSchema,
@@ -11,7 +11,7 @@ import {
   uiPreferencesResponseSchema,
   uiPreferencesSchema,
   uploadResponseSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { putGrantSchema } from "../../../connectors/grants.js";
 import { oauthStartBodySchema } from "../../../routes/connector-oauth.js";
 import { timeZoneBodySchema } from "../../../routes/me.js";
@@ -23,7 +23,7 @@ import { arr, bool, dateTime, int, nullable, obj, oneOfStrings, str, uuid } from
 /**
  * Request and response schemas of the member's own catalog areas (KOBE-771): Me, Files,
  * Connector grants and Setup. Bodies come from the zod schemas the routes validate with and the
- * `@kobe/protocol` contracts; `untyped(...)` marks answers the routes build without a schema
+ * `@kaiju/protocol` contracts; `untyped(...)` marks answers the routes build without a schema
  * (fields read from the handler and the helpers it calls).
  */
 

@@ -5,13 +5,13 @@ KUBECTL="${KUBECTL:-kubectl}"
 HELM="${HELM:-helm}"
 TAG="${KOBE_IMAGE_TAG:?set KOBE_IMAGE_TAG (use a per-run tag so stale images cannot pass)}"
 NS=kobe-dev
-SANDBOX_NS=kobe-e2e-sandbox
+SANDBOX_NS=kaiju-e2e-sandbox
 TEAM_NS=kobe-team-e2e # KOBE-22: created by the server, not by this script
 TEAM2_NS=kobe-team-e2e2
-UPSTREAM_NS=kobe-e2e-upstream # KOBE-38: an in-cluster HTTPS server standing in for the internet
-MCP_NS=kobe-e2e-mcp # KOBE-58: a fake remote MCP server
-LLM_NS=kobe-e2e-llm # KOBE-40: a fake model provider
-OTEL_NS=kobe-e2e-otel # KOBE-274: a minimal OTLP sink (e2e/lib/otlp-sink.js); tracing is on for the suite
+UPSTREAM_NS=kaiju-e2e-upstream # KOBE-38: an in-cluster HTTPS server standing in for the internet
+MCP_NS=kaiju-e2e-mcp # KOBE-58: a fake remote MCP server
+LLM_NS=kaiju-e2e-llm # KOBE-40: a fake model provider
+OTEL_NS=kaiju-e2e-otel # KOBE-274: a minimal OTLP sink (e2e/lib/otlp-sink.js); tracing is on for the suite
 OTEL_SINK="http://otlp.$OTEL_NS.svc.cluster.local:4318"
 # The proxies and the gateway restrict egress: each may reach the sink (merged into later overrides).
 OTEL_RULE=$(printf '{"to":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"%s"}}}],"ports":[{"protocol":"TCP","port":4318}]}' "$OTEL_NS")
@@ -76,7 +76,7 @@ cleanup() {
   if [[ "$SHARD" != gate1-prep ]]; then
     $KUBECTL delete namespace "$LLM_NS" --ignore-not-found --wait=false >/dev/null 2>&1 || true
   fi
-  $KUBECTL delete runtimeclass kobe-e2e-runc --ignore-not-found >/dev/null 2>&1 || true
+  $KUBECTL delete runtimeclass kaiju-e2e-runc --ignore-not-found >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 

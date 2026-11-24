@@ -4,8 +4,8 @@ import {
   events,
   sql,
   withTeam,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import type { Logger } from "pino";
 import { RateBuckets } from "./rate-buckets.js";
 
@@ -35,7 +35,7 @@ export interface BlockedAttempt {
 
 export type BlockedSink = (attempt: BlockedAttempt) => Promise<void>;
 
-export function dbBlockedSink(db: KobeDb): BlockedSink {
+export function dbBlockedSink(db: KaijuDb): BlockedSink {
   return async (a) => {
     await withTeam(db, a.teamId, async (tx) => {
       const [row] = await tx

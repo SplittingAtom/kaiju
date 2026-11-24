@@ -1,5 +1,5 @@
 import { Hono, type Context } from "hono";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import {
   fileThreadsQuerySchema,
   listParameter,
@@ -7,7 +7,7 @@ import {
   type FileThreadsResponse,
   type ThreadFileLinks,
   type ThreadFileLinksResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { linksOfThreads, threadsOfPaths } from "../thread-file-links/read.js";

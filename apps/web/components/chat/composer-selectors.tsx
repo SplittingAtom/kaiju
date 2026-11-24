@@ -18,7 +18,7 @@ import { CHAT_PORTALLED } from "../ui/chat-portal";
 import { AgentChips } from "./agent-chips";
 import { AgentPickerMenu, ThreadAgentPickerMenu } from "./agent-picker";
 import type { RunnableAgent } from "../../lib/chat/types";
-import { useChatSession, useKobeExtras, type KobeThreadExtras } from "./kobe-runtime";
+import { useChatSession, useKaijuExtras, type KaijuThreadExtras } from "./kaiju-runtime";
 import { ModelSelects, useModelPicker, type ModelPickerData } from "./model-picker";
 
 /**
@@ -67,7 +67,7 @@ export function useFoldedSelectors(panel: HTMLElement | null): boolean {
  */
 function AgentControl({ compact = false }: { readonly compact?: boolean }) {
   const session = useChatSession();
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const isNew = useAuiState((s) => s.threadListItem.remoteId) === undefined;
   const controller = extras?.controller ?? null;
   const onChoose = useCallback(
@@ -218,7 +218,7 @@ export function ComposerSelectors({
 }
 
 /** The selectors' reading of the thread: one per composer, shared with its model warning. */
-export function useComposerPicker(extras: KobeThreadExtras): ModelPickerData | null {
+export function useComposerPicker(extras: KaijuThreadExtras): ModelPickerData | null {
   const isNew = useAuiState((s) => s.threadListItem.remoteId) === undefined;
   const { state, controller } = extras;
   // A shared conversation is read-only and one in Trash can't run: no model to choose.

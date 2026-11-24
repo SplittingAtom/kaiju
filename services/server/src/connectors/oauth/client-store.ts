@@ -1,4 +1,4 @@
-import { and, connectors, eq, isNull, type Envelope, type KobeDb } from "@kobe/db";
+import { and, connectors, eq, isNull, type Envelope, type KaijuDb } from "@kaiju/db";
 import { z } from "zod";
 import { logger } from "../../logger.js";
 import { urlSha256 } from "../site-key.js";
@@ -42,7 +42,7 @@ export interface ClientKey {
 
 /** The kept registration for this issuer and redirect URI, if there is one that still opens. */
 export async function storedClient(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   key: ClientKey,
 ): Promise<ClientRegistration | undefined> {
@@ -71,7 +71,7 @@ export async function storedClient(
 
 /** Keeps a new registration, unless the connector's URL changed meanwhile. */
 export async function saveClient(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   key: ClientKey,
   client: ClientRegistration,

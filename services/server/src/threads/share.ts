@@ -1,4 +1,4 @@
-import type { ThreadVisibility } from "@kobe/protocol";
+import type { ThreadVisibility } from "@kaiju/protocol";
 
 /**
  * Share scope of a thread (D23, CE20, KOBE-221): `private`, `project` (members of its project) or

@@ -2,7 +2,7 @@
  * Site console: model providers and the catalog (`/v1/site/models`, site.models.manage;
  * KOBE-40 API, KOBE-44 UI). Provider keys are write-only: the API says only whether one is set.
  */
-import type { ThinkingPolicy } from "@kobe/protocol";
+import type { ThinkingPolicy } from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../../../api/client";
 
 const enc = encodeURIComponent;

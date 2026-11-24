@@ -10,7 +10,7 @@ const executor = serveExecutor({
   input: process.stdin,
   output: process.stdout,
   commandEnv: process.env,
-  log: (message) => process.stderr.write(`kobe-executor: ${message}\n`),
+  log: (message) => process.stderr.write(`kaiju-executor: ${message}\n`),
 });
 void executor.done.then(() => {
   // Everything started is killed; leave once the replies are flushed.
@@ -18,6 +18,6 @@ void executor.done.then(() => {
   setTimeout(() => process.exit(0), 50).unref();
 });
 process.on("uncaughtException", (error) => {
-  process.stderr.write(`kobe-executor: fatal: ${error.stack ?? error.message}\n`);
+  process.stderr.write(`kaiju-executor: fatal: ${error.stack ?? error.message}\n`);
   process.exit(70);
 });

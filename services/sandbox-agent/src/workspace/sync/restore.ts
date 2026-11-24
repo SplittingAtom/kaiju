@@ -2,8 +2,8 @@ import {
   WORKSPACE_SERVER_OWNED_PREFIXES,
   isExcludedPath,
   workspacePathIssue,
-} from "@kobe/protocol";
-import { type WorkspaceEntry } from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol";
+import { type WorkspaceEntry } from "@kaiju/protocol/sandbox-wire";
 import { SyncHttpError } from "../client.js";
 import {
   hashFile,

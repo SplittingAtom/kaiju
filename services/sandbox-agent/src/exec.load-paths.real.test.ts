@@ -3,7 +3,7 @@ import { chmod, chown, mkdir, mkdtemp, readFile, rm, stat } from "node:fs/promis
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startLocalGateway, type LocalGateway } from "@kobe/model-gateway/testing";
+import { startLocalGateway, type LocalGateway } from "@kaiju/model-gateway/testing";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   loadPiIdentities,
@@ -65,7 +65,7 @@ describe.runIf(PI_AVAILABLE && EXECUTOR_BUILT && HELPER !== undefined)(
       umask = process.umask(0o007);
       identities = await loadPiIdentities(HELPER as string, 1);
       identity = await identities.acquire(1000);
-      scratch = await mkdtemp(path.join("/dev/shm", "kobe-load-"));
+      scratch = await mkdtemp(path.join("/dev/shm", "kaiju-load-"));
       await chmod(scratch, 0o755);
     });
     afterAll(async () => {

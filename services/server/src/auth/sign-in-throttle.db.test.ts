@@ -359,7 +359,7 @@ describe("second factor and signed-in password checks (ac-1)", () => {
   it("lets a passkey sign in while throttled, without clearing the counter (review L2)", async () => {
     await h.createUser("pat@throttle.test");
     const b = await h.signIn("pat@throttle.test");
-    const key = new SoftwareAuthenticator("kobe.test", PUBLIC_URL);
+    const key = new SoftwareAuthenticator("kaiju.test", PUBLIC_URL);
     const options = await b.get("/api/auth/passkey/generate-register-options");
     const registered = await b.post("/api/auth/passkey/verify-registration", {
       response: key.register(options.json),

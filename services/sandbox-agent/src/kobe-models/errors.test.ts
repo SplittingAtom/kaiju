@@ -4,10 +4,10 @@ import {
   classifyFailure,
   isTransient,
   isUnauthorized,
-  kobeErrorMessage,
+  kaijuErrorMessage,
   runErrorCode,
 } from "./errors.js";
-import { KOBE_MODEL_ERROR_PREFIX } from "./protocol.js";
+import { KAIJU_MODEL_ERROR_PREFIX } from "./protocol.js";
 
 const openai = (status: number, code: string) =>
   `${status}: ${JSON.stringify({ message: "m", type: code, code })}`;
@@ -70,7 +70,7 @@ describe("gateway failure classification", () => {
             code: 402,
             message: "m",
             status: "UNKNOWN",
-            details: [{ "@type": "x", reason: "budget_exhausted", domain: "kobe" }],
+            details: [{ "@type": "x", reason: "budget_exhausted", domain: "kaiju" }],
           },
         }),
       ),
@@ -85,12 +85,12 @@ describe("gateway failure classification", () => {
     expect(code(anthropic(402, "budget_below_call"))).toBe("model_budget_too_small");
     expect(isTransient(classifyFailure(openai(402, "budget_below_call"), undefined))).toBe(false);
     expect(
-      kobeErrorMessage(
+      kaijuErrorMessage(
         "model_budget_exhausted",
         classifyFailure(openai(402, "budget_exhausted"), undefined),
         1,
       ),
-    ).toBe(`${KOBE_MODEL_ERROR_PREFIX}model_budget_exhausted: gave up after 1 attempt`);
+    ).toBe(`${KAIJU_MODEL_ERROR_PREFIX}model_budget_exhausted: gave up after 1 attempt`);
   });
 
   it("knows what is worth retrying and what needs a fresh token", () => {
@@ -112,18 +112,18 @@ describe("gateway failure classification", () => {
 
   it("writes an error message the server parses and Pi's auto-retry leaves alone", () => {
     const failure = classifyFailure(openai(503, "model_access_pending"), undefined);
-    const message = kobeErrorMessage("model_unavailable", failure, 6);
-    expect(message).toBe(`${KOBE_MODEL_ERROR_PREFIX}model_unavailable: gave up after 6 attempts`);
+    const message = kaijuErrorMessage("model_unavailable", failure, 6);
+    expect(message).toBe(`${KAIJU_MODEL_ERROR_PREFIX}model_unavailable: gave up after 6 attempts`);
     // The gateway's code never enters the message: Pi would retry on "rate_limited"/"overloaded".
     for (const code of ["rate_limited", "overloaded_error"]) {
       expect(
-        kobeErrorMessage("model_throttled", classifyFailure(openai(429, code), undefined), 8),
+        kaijuErrorMessage("model_throttled", classifyFailure(openai(429, code), undefined), 8),
       ).not.toMatch(/rate.?limit|overloaded/i);
     }
     // isRetryableAssistantError (pi-ai) matches these; none may appear in a final message.
     expect(message).not.toMatch(
       /429|50[0-4]|rate.?limit|too many requests|service.?unavailable|timeout|network/i,
     );
-    expect(kobeErrorMessage("model_throttled", failure, 1)).not.toMatch(/rate.?limit/i);
+    expect(kaijuErrorMessage("model_throttled", failure, 1)).not.toMatch(/rate.?limit/i);
   });
 });

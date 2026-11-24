@@ -2,7 +2,7 @@ import {
   APP_IDLE_IN_TRANSACTION_TIMEOUT_MS,
   APP_STATEMENT_TIMEOUT_MS,
   DEFAULT_POOL_MAX,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { STREAM_POOL_MAX } from "./event-stream/read.js";
 import { z } from "zod";
 import { loadAuditForwardingConfig, type AuditForwardingConfig } from "./audit/forward/config.js";
@@ -151,7 +151,7 @@ const configSchema = z.object({
     DEFAULT_TABLE_SWEEPS.evalHistoryMonths,
     SWEEP_LIMITS.evalHistoryMonths,
   ),
-  // App-role connection timeouts (KOBE-732); 0 turns one off. Defaults in @kobe/db (client.ts).
+  // App-role connection timeouts (KOBE-732); 0 turns one off. Defaults in @kaiju/db (client.ts).
   KOBE_DB_STATEMENT_TIMEOUT_MS: z.coerce
     .number({ error: "KOBE_DB_STATEMENT_TIMEOUT_MS must be a number" })
     .int("KOBE_DB_STATEMENT_TIMEOUT_MS must be an integer")

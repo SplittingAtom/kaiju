@@ -34,9 +34,9 @@ import { extractorReply } from "./fake-extractor.js";
  * `reasoning_effort: "none"` there is no reasoning part and the text says `thought at none`.
  *
  * Long answers and prompt sizes (OpenAI chat API only, KOBE-227 Gate 5 browser checks): a last user
- * message containing `kobe-long-answer=<n>` is streamed as n numbered lines, one every
+ * message containing `kaiju-long-answer=<n>` is streamed as n numbered lines, one every
  * {@link LONG_LINE_MS} (a run that streams long enough to scroll, queue and stop), and one
- * containing `kobe-prompt-tokens=<n>` reports n prompt tokens (the context gauge's fill).
+ * containing `kaiju-prompt-tokens=<n>` reports n prompt tokens (the context gauge's fill).
  *
  * Learning passes (OpenAI chat API only, KOBE-675 Gate 7): a `memory_learn` extractor call (its
  * transcript fence) is answered with scripted, schema-valid candidates (fake-extractor.ts).
@@ -327,7 +327,7 @@ function sse(res: ServerResponse, events: readonly string[]): void {
  * A prompt containing this asks the OpenAI-style fake for one tool step (KOBE-42 Gate 2): the
  * first answer is a `bash` tool call; once the conversation holds its result, a text answer.
  */
-export const TOOL_STEP_MARKER = "kobe-tool-step";
+export const TOOL_STEP_MARKER = "kaiju-tool-step";
 /**
  * The tool step reports this many prompt tokens (a long context), so it alone uses up a Gate 2
  * budget that is still larger than one call's reservation (KOBE-259: a budget below one call
@@ -339,7 +339,7 @@ export const TOOL_STEP_PROMPT_TOKENS = 1_000_000;
  * A prompt containing this gets no answer for {@link SLOW_START_MS} (KOBE-290 e2e: Stop before the
  * first token). The wait ends early when the caller goes away (Pi's abort closes the request).
  */
-export const SLOW_START_MARKER = "kobe-slow-start";
+export const SLOW_START_MARKER = "kaiju-slow-start";
 export const SLOW_START_MS = 120_000;
 
 function openaiToolCall(res: ServerResponse, model: string): void {
@@ -429,13 +429,13 @@ function openai(
   ]);
 }
 
-const LONG_ANSWER = /kobe-long-answer=(\d{1,4})/;
-const PROMPT_TOKENS = /kobe-prompt-tokens=(\d{1,9})/;
+const LONG_ANSWER = /kaiju-long-answer=(\d{1,4})/;
+const PROMPT_TOKENS = /kaiju-prompt-tokens=(\d{1,9})/;
 /** The pause between the lines of a long answer. */
 export const LONG_LINE_MS = 60;
 const MAX_LONG_LINES = 2_000;
 
-/** A `kobe-long-answer=<n>` reply: n numbered lines, streamed one at a time until the caller goes. */
+/** A `kaiju-long-answer=<n>` reply: n numbered lines, streamed one at a time until the caller goes. */
 function openaiLongAnswer(res: ServerResponse, lines: number, model: string): void {
   const chunk = (delta: unknown, finish: string | null, usage?: unknown) =>
     `data: ${JSON.stringify({

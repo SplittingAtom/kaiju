@@ -8,7 +8,7 @@
  * requests) no request is sent for a while and {@link KernelCompleter.state} says why, for the
  * editor's small indicator. The server never wakes a sandbox or starts a kernel for it.
  */
-import { NOTEBOOK_COMPLETE_CODE_MAX_BYTES, isWellFormedText } from "@kobe/protocol";
+import { NOTEBOOK_COMPLETE_CODE_MAX_BYTES, isWellFormedText } from "@kaiju/protocol";
 import type { KernelCompletionAnswer, NotebookApi } from "./api";
 
 /** Why kernel completion is (not) adding to the editor's own completion right now. */

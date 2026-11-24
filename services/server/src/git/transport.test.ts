@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { projectPermissions } from "@kobe/protocol";
+import type { projectPermissions } from "@kaiju/protocol";
 import { accessRefusal, reachableBase, repoReadable, repoRefusal } from "./transport.js";
 
 describe("git transport rules (KOBE-763)", () => {

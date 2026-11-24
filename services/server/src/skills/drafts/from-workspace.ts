@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { canonicalZip, SkillPackageError } from "@kobe/protocol";
-import { and, eq, isNotNull, skillDrafts, withTeam, type KobeTx } from "@kobe/db";
+import { canonicalZip, SkillPackageError } from "@kaiju/protocol";
+import { and, eq, isNotNull, skillDrafts, withTeam, type KaijuTx } from "@kaiju/db";
 import { findThread } from "../../threads/repository.js";
 import { viewerProjectIds } from "../../threads/references.js";
 import { liveFilesUnder } from "../../workspace-files/browse.js";
@@ -72,7 +72,7 @@ type ListedEntry = { path: string; entry: NonNullable<Awaited<ReturnType<typeof 
 type Listing = ListedEntry[] | "too_many" | "too_large" | "outside" | "changed";
 
 /** Every live file under `base`, counted and sized from the manifest before any bytes. */
-async function liveEntries(tx: KobeTx, owner: Owner, base: string): Promise<Listing> {
+async function liveEntries(tx: KaijuTx, owner: Owner, base: string): Promise<Listing> {
   const listed = await liveFilesUnder(tx, owner, base, DRAFT_LIMITS.maxFiles + 1);
   if (listed.length > DRAFT_LIMITS.maxFiles) return "too_many";
   if (listed.reduce((n, f) => n + f.size, 0) > DRAFT_LIMITS.maxDraftBytes) return "too_large";
@@ -86,7 +86,7 @@ async function liveEntries(tx: KobeTx, owner: Owner, base: string): Promise<List
 
 /** The pushed files, each under `base` and with its live row exactly as pushed. */
 async function pinnedEntries(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: Owner,
   base: string,
   pinned: readonly PinnedFile[],

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import {
   notificationEmails,
   notifications,
@@ -18,8 +18,8 @@ import { pgCodeOf } from "./pg-errors.js";
 
 /** KOBE-177: notifications, their email outbox and skipped actions (spec D32). */
 type NewNotification = typeof notifications.$inferInsert;
-let app: KobeDatabase;
-let owner: KobeDatabase;
+let app: KaijuDatabase;
+let owner: KaijuDatabase;
 const teamA = randomUUID();
 const teamB = randomUUID();
 const userId = randomUUID();

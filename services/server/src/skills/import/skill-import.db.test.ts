@@ -8,7 +8,7 @@ import path from "node:path";
 import { strToU8, zipSync } from "fflate";
 import type { HttpClient } from "isomorphic-git";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { provenanceSchema } from "@kobe/protocol";
+import { provenanceSchema } from "@kaiju/protocol";
 import { mirrorHttpClient } from "../mirror/http-client.js";
 import { RawBody, type TestBrowser } from "../../testing/browser.js";
 import {
@@ -128,7 +128,7 @@ beforeAll(async () => {
     accept,
     upstreamPort: (zipServer.address() as AddressInfo).port,
   });
-  h = await openHarness({ blobs: { objects: new MemoryObjects(), prefix: "kobe/" } }, () => ({
+  h = await openHarness({ blobs: { objects: new MemoryObjects(), prefix: "kaiju/" } }, () => ({
     skillImport: {
       deadlineMs: 3_000,
       http: (url: string, deadlineAt: number) =>

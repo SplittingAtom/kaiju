@@ -1,5 +1,5 @@
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { ArtifactPutFrame, ArtifactResultFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { ArtifactPutFrame, ArtifactResultFrame } from "@kaiju/protocol/sandbox-wire";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
 
@@ -40,8 +40,8 @@ export class ArtifactBroker {
   put(
     threadId: string,
     runId: string | undefined,
-    request: KobeToolsRequest,
-    reply: (response: KobeToolsResponse) => void,
+    request: KaijuToolsRequest,
+    reply: (response: KaijuToolsResponse) => void,
   ): void {
     if (runId === undefined) {
       reply(toolsError(request.id, "not_allowed", "no active run on this thread"));

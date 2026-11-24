@@ -40,7 +40,7 @@ function appAnswer(page: Page, app: App): Locator {
 /** Only app cards show: every visible tool card holds an app; the toggle, if any, is closed. */
 async function onlyTheApp(answer: Locator): Promise<Locator> {
   const cards = answer.locator('section[aria-label^="Tool call"]');
-  const apps = answer.locator('section[aria-label^="Tool call"]:has([data-kobe-app-card])');
+  const apps = answer.locator('section[aria-label^="Tool call"]:has([data-kaiju-app-card])');
   await expect(apps.first()).toBeVisible({ timeout: RUN_TIMEOUT_MS });
   expect(await cards.count()).toBe(await apps.count());
   const toggle = answer.getByRole("button", { name: "Show response" });
@@ -71,7 +71,7 @@ test("an answer with an MCP app shows only the app; Show response reveals the re
     await expect.poll(async () => (await answer.innerText()).length).toBeGreaterThan(shown);
     // The app stays one frame in its card.
     await expect(answer.locator("iframe")).toHaveCount(
-      await answer.locator("[data-kobe-app-card] iframe").count(),
+      await answer.locator("[data-kaiju-app-card] iframe").count(),
     );
   } else {
     test
@@ -81,7 +81,7 @@ test("an answer with an MCP app shows only the app; Show response reveals the re
 
   // After a reload: the same, the toggle closed again.
   await page.reload();
-  const card = page.locator("[data-kobe-app-card]").last();
+  const card = page.locator("[data-kaiju-app-card]").last();
   await expect(card).toBeAttached({ timeout: RUN_TIMEOUT_MS });
   await card.scrollIntoViewIfNeeded();
   await onlyTheApp(appAnswer(page, app));

@@ -12,7 +12,7 @@ import {
 import type { ApiError } from "../../lib/api/client";
 import type { ThreadSearchHit } from "../../lib/chat/types";
 import { ErrorNotice } from "../admin/error-notice";
-import { useChatSession } from "../chat/kobe-runtime";
+import { useChatSession } from "../chat/kaiju-runtime";
 import chatStyles from "../chat/chat.module.css";
 import { HitBranchNote } from "./threads-search";
 import styles from "./shell.module.css";
@@ -34,7 +34,7 @@ function SearchResults({
           </button>
           {/* Archived threads stay searchable (CE19), marked so the member knows where they live. */}
           {hit.archivedAt != null && (
-            <span className={styles.hitBadge} data-kobe-archived="">
+            <span className={styles.hitBadge} data-kaiju-archived="">
               Archived
             </span>
           )}
@@ -132,11 +132,11 @@ export function ThreadSearch({ onOpenThread }: { readonly onOpenThread: (id: str
   return (
     <div ref={box} className={styles.searchBox} onKeyDown={onKeyDown} onBlur={onBlur}>
       <form role="search" onSubmit={(e) => void runSearch(e)}>
-        <label className="sr-only" htmlFor="kobe-search">
+        <label className="sr-only" htmlFor="kaiju-search">
           Search conversations
         </label>
         <input
-          id="kobe-search"
+          id="kaiju-search"
           type="search"
           value={query}
           maxLength={256}

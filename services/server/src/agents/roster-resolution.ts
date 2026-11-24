@@ -1,4 +1,4 @@
-import type { AgentFrontmatter } from "@kobe/agent-file";
+import type { AgentFrontmatter } from "@kaiju/agent-file";
 import {
   and,
   eq,
@@ -9,9 +9,9 @@ import {
   siteAgentVersions,
   sql,
   teamAgentSuspensions,
-  type KobeTx,
-} from "@kobe/db";
-import type { AgentRosterUnavailableReason } from "@kobe/protocol";
+  type KaijuTx,
+} from "@kaiju/db";
+import type { AgentRosterUnavailableReason } from "@kaiju/protocol";
 import {
   activeTeamEntries,
   resolvedVersion,
@@ -126,7 +126,7 @@ export const switchTarget = (lent: boolean, inEffect: number, version: number | 
 
 /** `findPinnableAgent`'s fallback: someone else's personal agent, only through a roster. */
 export async function lentAgent(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { readonly teamId: string; readonly userId: string },
   agentId: string,
   options: { readonly lock?: boolean } = {},
@@ -136,7 +136,7 @@ export async function lentAgent(
 
 /** Membership in `teamId` and deactivation of the given owners. Inside `withTeam(teamId)`. */
 export async function ownerStates(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   ownerIds: readonly string[],
 ): Promise<ReadonlyMap<string, OwnerState>> {
@@ -157,14 +157,14 @@ const live = (e: RosterEntryRecord | null): e is RosterEntryRecord =>
   e?.state === "active" || e?.state === "suspended";
 
 /** Live site entries (active or suspended site-wide), optionally of one agent. */
-async function liveSiteEntries(tx: KobeTx, agentId?: string): Promise<RosterEntryRecord[]> {
+async function liveSiteEntries(tx: KaijuTx, agentId?: string): Promise<RosterEntryRecord[]> {
   if (agentId !== undefined) return [await siteEntry(tx, agentId)].filter(live);
   return (await siteEntries(tx)).filter(live);
 }
 
 /** The frontmatter and prompt of the given published versions, by agent id. */
 export async function versionContent(
-  tx: KobeTx,
+  tx: KaijuTx,
   pairs: readonly (readonly [string, number])[],
 ): Promise<ReadonlyMap<string, { frontmatter: AgentFrontmatter; prompt: string }>> {
   if (pairs.length === 0) return new Map();
@@ -196,7 +196,7 @@ export async function versionContent(
  * agents are inert. Call inside `withTeam(db, viewer.teamId)`.
  */
 export async function lentAgents(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { readonly teamId: string; readonly userId: string },
   options: { readonly agentId?: string; readonly lock?: boolean } = {},
 ): Promise<LentAgent[]> {
@@ -282,7 +282,7 @@ export async function lentAgents(
  * site entry) refuses runs as for any agent. Call inside `withTeam(db, viewer.teamId)`.
  */
 export async function keptLentAgent(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { readonly teamId: string; readonly userId: string },
   pin: { readonly agentScope: string; readonly agentId: string; readonly agentVersion: number },
 ): Promise<AgentRecord | null> {

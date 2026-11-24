@@ -2,7 +2,7 @@ import type {
   SkillEvalCheckReason,
   SkillEvalExecutionStatus,
   SkillEvalRunStatus,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /** Words for an eval's numbers and codes, shared by the panel, the history and the scorecard. */
 

@@ -68,7 +68,7 @@ export const MODEL_OUTPUT_TOKENS_RANGE = [256, 131_072] as const;
 export const MODEL_CONTEXT_WINDOW_RANGE = [1_024, 10_000_000] as const;
 
 /**
- * Thinking levels and controls (KOBE-260; the same lists as `@kobe/protocol` thinking.ts, which
+ * Thinking levels and controls (KOBE-260; the same lists as `@kaiju/protocol` thinking.ts, which
  * holds the rules: a server test checks they agree). Levels are ordered.
  */
 export const THINKING_LEVELS = ["off", "low", "medium", "high"] as const;

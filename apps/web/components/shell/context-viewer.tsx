@@ -1,6 +1,6 @@
 "use client";
 
-import type { ThreadContext, ThreadContextMemories } from "@kobe/protocol";
+import type { ThreadContext, ThreadContextMemories } from "@kaiju/protocol";
 import {
   createContext,
   useCallback,
@@ -24,7 +24,7 @@ import {
   type GaugeModel,
 } from "../../lib/chat/context-viewer";
 import type { Panel } from "../../lib/shell/panels";
-import { useKobeExtras } from "../chat/kobe-runtime";
+import { useKaijuExtras } from "../chat/kaiju-runtime";
 import { ContextStack } from "./context-stack";
 import { ContextText, type ContextTextHandle } from "./context-text";
 import { IconAction } from "./icon-action";
@@ -301,7 +301,7 @@ export function useOpenContextViewer(): OpenViewer | null {
  * not inside the conversation's layout. It closes when another thread comes on screen.
  */
 export function ContextViewerHost({ children }: { readonly children: ReactNode }) {
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const threadId = extras?.state.threadId ?? null;
   const controller = extras?.controller ?? null;
   const [open, setOpen] = useState<{ threadId: string; window: number | null } | null>(null);

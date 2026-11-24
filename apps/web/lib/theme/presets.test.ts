@@ -1,4 +1,4 @@
-import { contrastRatio, PRESET_IDS, PRESET_LABELS } from "@kobe/protocol";
+import { contrastRatio, PRESET_IDS, PRESET_LABELS } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import {
   FACE_VARIABLES,
@@ -38,18 +38,18 @@ describe("presets", () => {
   /** KOBE-550: the glow, the page ambient and the shadows are preset tokens (docs/theming.md §7). */
   it("each sets the glow colour, the page ambient and the three shadows", () => {
     for (const token of [
-      "--kobe-glow-color",
-      "--kobe-page-ambient",
-      "--kobe-shadow-pop",
-      "--kobe-shadow-drawer",
-      "--kobe-shadow-panel",
+      "--kaiju-glow-color",
+      "--kaiju-page-ambient",
+      "--kaiju-shadow-pop",
+      "--kaiju-shadow-drawer",
+      "--kaiju-shadow-panel",
     ]) {
       expect(PRESET_SCHEME_TOKENS).toContain(token);
     }
     for (const preset of Object.values(PRESETS)) {
       for (const values of [preset.light, preset.dark]) {
-        expect(values["--kobe-glow-color"]).toMatch(/^(?:color-mix\(|rgb\()/);
-        expect(values["--kobe-page-ambient"]).toMatch(/^(?:none|radial-gradient\()/);
+        expect(values["--kaiju-glow-color"]).toMatch(/^(?:color-mix\(|rgb\()/);
+        expect(values["--kaiju-page-ambient"]).toMatch(/^(?:none|radial-gradient\()/);
       }
     }
   });
@@ -58,13 +58,13 @@ describe("presets", () => {
     for (const preset of Object.values(PRESETS)) {
       if (preset.id === "catalyst") continue;
       for (const values of [preset.light, preset.dark]) {
-        expect(values["--kobe-glow-color"]).toBe(
-          "color-mix(in oklab, var(--kobe-brand-primary) 28%, transparent)",
+        expect(values["--kaiju-glow-color"]).toBe(
+          "color-mix(in oklab, var(--kaiju-brand-primary) 28%, transparent)",
         );
-        expect(values["--kobe-page-ambient"]).toBe("none");
-        expect(values["--kobe-shadow-pop"]).toBe(THEME_LIGHT.get("--kobe-shadow-pop"));
-        expect(values["--kobe-shadow-drawer"]).toBe(THEME_LIGHT.get("--kobe-shadow-drawer"));
-        expect(values["--kobe-shadow-panel"]).toBe(THEME_LIGHT.get("--kobe-shadow-panel"));
+        expect(values["--kaiju-page-ambient"]).toBe("none");
+        expect(values["--kaiju-shadow-pop"]).toBe(THEME_LIGHT.get("--kaiju-shadow-pop"));
+        expect(values["--kaiju-shadow-drawer"]).toBe(THEME_LIGHT.get("--kaiju-shadow-drawer"));
+        expect(values["--kaiju-shadow-panel"]).toBe(THEME_LIGHT.get("--kaiju-shadow-panel"));
       }
     }
   });
@@ -76,9 +76,9 @@ describe("presets", () => {
       `var(${FACE_VARIABLES.outfit}, Outfit), ${FONT_STACK_VALUES.grotesk}`,
     );
     expect(MONO_STACK_VALUES.catalyst).toBe(
-      `var(${FACE_VARIABLES.jetbrainsMono}, "JetBrains Mono"), ${THEME_LIGHT.get("--kobe-font-mono")}`,
+      `var(${FACE_VARIABLES.jetbrainsMono}, "JetBrains Mono"), ${THEME_LIGHT.get("--kaiju-font-mono")}`,
     );
-    const shipped = /var\(--kobe-face-|Outfit|JetBrains/;
+    const shipped = /var\(--kaiju-face-|Outfit|JetBrains/;
     for (const preset of Object.values(PRESETS)) {
       if (preset.id === "catalyst") continue;
       expect(FONT_STACK_VALUES[preset.font], preset.id).not.toMatch(shipped);
@@ -93,21 +93,21 @@ describe("presets", () => {
     const { light, dark } = PRESETS.catalyst;
     expect(PRESETS.catalyst.label).toBe("Catalyst");
     expect(PRESETS.catalyst.corners).toBe("soft");
-    expect(light["--kobe-glow-color"]).toBe("rgb(25 118 210 / 30%)");
-    expect(dark["--kobe-glow-color"]).toBe("rgb(79 195 247 / 25%)");
-    expect(light["--kobe-page-ambient"]).toBe("none");
-    expect(dark["--kobe-page-ambient"]).toMatch(/^radial-gradient\(/);
+    expect(light["--kaiju-glow-color"]).toBe("rgb(25 118 210 / 30%)");
+    expect(dark["--kaiju-glow-color"]).toBe("rgb(79 195 247 / 25%)");
+    expect(light["--kaiju-page-ambient"]).toBe("none");
+    expect(dark["--kaiju-page-ambient"]).toMatch(/^radial-gradient\(/);
     for (const values of [light, dark]) {
       for (const shadow of [
-        "--kobe-shadow-pop",
-        "--kobe-shadow-drawer",
-        "--kobe-shadow-panel",
+        "--kaiju-shadow-pop",
+        "--kaiju-shadow-drawer",
+        "--kaiju-shadow-panel",
       ] as const) {
-        expect(values[shadow]).toMatch(/^0 0 \d+px var\(--kobe-glow-color\)$/);
+        expect(values[shadow]).toMatch(/^0 0 \d+px var\(--kaiju-glow-color\)$/);
       }
     }
-    expect(dark["--kobe-brand-primary"]).toBe("#4fc3f7");
-    expect(light["--kobe-brand-primary"]).toBe("#1565c0");
+    expect(dark["--kaiju-brand-primary"]).toBe("#4fc3f7");
+    expect(light["--kaiju-brand-primary"]).toBe("#1565c0");
     expect(dark["--background"]).toBe("#06080e");
   });
 
@@ -126,9 +126,9 @@ describe("presets", () => {
       expect(preset.light[token], `light ${token}`).toBe(THEME_LIGHT.get(token));
       expect(preset.dark[token], `dark ${token}`).toBe(THEME_DARK.get(token));
     }
-    expect(FONT_STACK_VALUES[preset.font]).toBe(THEME_LIGHT.get("--kobe-font-sans"));
+    expect(FONT_STACK_VALUES[preset.font]).toBe(THEME_LIGHT.get("--kaiju-font-sans"));
     expect(MONO_STACK_VALUES[preset.font]).toBeUndefined();
-    expect(SYSTEM_MONO_STACK).toBe(THEME_LIGHT.get("--kobe-font-mono"));
+    expect(SYSTEM_MONO_STACK).toBe(THEME_LIGHT.get("--kaiju-font-mono"));
     expect(Object.keys(MONO_STACK_VALUES)).toEqual(["catalyst"]);
     for (const token of RADIUS_TOKENS) {
       expect(RADIUS_SCALES[preset.corners][token], token).toBe(THEME_LIGHT.get(token));
@@ -149,10 +149,10 @@ describe("presets", () => {
       'Charter, "Bitstream Charter", "Sitka Text", Cambria, serif',
     );
     expect(FONT_STACK_VALUES.catalyst).toBe(
-      'var(--kobe-face-outfit, Outfit), Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif',
+      'var(--kaiju-face-outfit, Outfit), Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif',
     );
     expect(MONO_STACK_VALUES.catalyst).toBe(
-      'var(--kobe-face-jetbrains-mono, "JetBrains Mono"), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+      'var(--kaiju-face-jetbrains-mono, "JetBrains Mono"), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
     );
     expect(Object.values(RADIUS_SCALES.sharp)).toEqual(["0", "0", "0", "0", "0"]);
     expect(Object.values(RADIUS_SCALES.round)).toEqual([
@@ -167,13 +167,13 @@ describe("presets", () => {
 
 /** The fixed colours (§4.4) a preset's surfaces must keep readable (rule 5). */
 const FIXED_TEXT = [
-  "--kobe-status-running",
-  "--kobe-status-attention",
-  "--kobe-status-failed",
-  "--kobe-status-done",
-  "--kobe-status-idle",
+  "--kaiju-status-running",
+  "--kaiju-status-attention",
+  "--kaiju-status-failed",
+  "--kaiju-status-done",
+  "--kaiju-status-idle",
   "--admin-danger",
-  "--kobe-tool-badge",
+  "--kaiju-tool-badge",
 ] as const;
 
 const PAGES = [
@@ -181,8 +181,8 @@ const PAGES = [
   "--card",
   "--popover",
   "--muted",
-  "--kobe-console-bg",
-  "--kobe-console-panel",
+  "--kaiju-console-bg",
+  "--kaiju-console-panel",
 ] as const satisfies readonly PresetSchemeToken[];
 
 /** Contrast failures of one scheme against docs/theming.md §8 (rules 1-5). */
@@ -204,31 +204,31 @@ function floorFailures(id: string, values: SchemeValues, fixed: ReadonlyMap<stri
   // 1. Body and muted text on page, panel and card.
   for (const bg of PAGES) need("--foreground", bg, 4.5);
   for (const bg of ["--background", "--card", "--popover"]) need("--muted-foreground", bg, 4.5);
-  for (const bg of ["--kobe-console-bg", "--kobe-console-panel"]) {
-    need("--kobe-console-fg", bg, 4.5);
-    need("--kobe-console-muted", bg, 4.5);
+  for (const bg of ["--kaiju-console-bg", "--kaiju-console-panel"]) {
+    need("--kaiju-console-fg", bg, 4.5);
+    need("--kaiju-console-muted", bg, 4.5);
   }
   need("--primary-foreground", "--primary", 4.5);
   need("--secondary-foreground", "--secondary", 4.5);
   need("--accent-foreground", "--accent", 4.5);
   // 2. Links on page and panel.
-  for (const bg of PAGES) need("--kobe-brand-link", bg, 4.5);
+  for (const bg of PAGES) need("--kaiju-brand-link", bg, 4.5);
   // 3. Text on the primary fill and its hover (default's hover is a color-mix over the fill,
   //    measured by app/theme-css.test.ts).
-  need("--kobe-brand-primary-fg", "--kobe-brand-primary", 4.5);
-  if (hex("--kobe-brand-primary-hover") !== null) {
-    need("--kobe-brand-primary-fg", "--kobe-brand-primary-hover", 4.5);
+  need("--kaiju-brand-primary-fg", "--kaiju-brand-primary", 4.5);
+  if (hex("--kaiju-brand-primary-hover") !== null) {
+    need("--kaiju-brand-primary-fg", "--kaiju-brand-primary-hover", 4.5);
   }
   // 4. Focus outlines and control borders: 3:1 (WCAG 1.4.11). Default's chat ring stays today's
   //    neutral grey (docs/theming.md §4.2), so only the themed presets are held to it.
   const outlines = [
-    "--kobe-brand-focus",
-    "--kobe-composer-focus",
+    "--kaiju-brand-focus",
+    "--kaiju-composer-focus",
     ...(id === "default" ? [] : ["--ring"]),
   ];
   for (const outline of outlines) for (const bg of PAGES) need(outline, bg, 3);
-  for (const bg of ["--kobe-console-bg", "--kobe-console-panel"]) {
-    need("--kobe-console-control-border", bg, 3);
+  for (const bg of ["--kaiju-console-bg", "--kaiju-console-panel"]) {
+    need("--kaiju-console-control-border", bg, 3);
   }
   // 5. The fixed status, danger and tool colours on the retinted surfaces.
   for (const fg of FIXED_TEXT) for (const bg of PAGES) need(fg, bg, 4.5);
@@ -253,9 +253,9 @@ describe("lane colours", () => {
     return ref ? resolved(values, ref[1] as PresetSchemeToken) : value;
   };
 
-  it.each(PRESET_IDS)("%s defines --kobe-lane-1..8 in light and dark, lane 1 the link", (id) => {
+  it.each(PRESET_IDS)("%s defines --kaiju-lane-1..8 in light and dark, lane 1 the link", (id) => {
     for (const values of [PRESETS[id].light, PRESETS[id].dark]) {
-      expect(values["--kobe-lane-1"]).toBe(LANE_1_VALUE);
+      expect(values["--kaiju-lane-1"]).toBe(LANE_1_VALUE);
       const colours = LANE_TOKENS.map((t) => resolved(values, t));
       for (const c of colours) expect(c).toMatch(/^#[0-9a-f]{6}$/);
       expect(new Set(colours).size, "eight distinct colours").toBe(8);

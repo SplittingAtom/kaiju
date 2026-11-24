@@ -8,7 +8,7 @@ import {
   numberedName,
   projectFolders,
 } from "../../lib/projects/add-to-project";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { openApp } from "../chat/testing";
 
@@ -17,7 +17,7 @@ import { openApp } from "../chat/testing";
  * conversation's owner only; the dialog asks for project, folder and name, and offers Add as copy
  * when the project already has that name.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const enc = (s: string) => new TextEncoder().encode(s);
 
 beforeEach(() => {
@@ -29,7 +29,7 @@ beforeEach(() => {
     settings.disableIframePageLoading = true;
     settings.handleDisabledFileLoadingAsSuccess = true;
   }
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -39,7 +39,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function threadWith(artifact: Parameters<FakeKobe["addArtifact"]>[1]) {
+function threadWith(artifact: Parameters<FakeKaiju["addArtifact"]>[1]) {
   const t = fake.addThread("Reports");
   const u = fake.addEntry(t, null, { role: "user", content: "make it" });
   fake.addEntry(t, u, { role: "assistant", content: [{ type: "text", text: "done" }] });

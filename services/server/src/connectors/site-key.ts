@@ -8,9 +8,9 @@ import {
   inArray,
   isNull,
   sql,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { maskHint } from "./mask.js";
 
@@ -47,7 +47,7 @@ export function siteKeyContext(connectorId: string, url: string) {
  * (KOBE-449). Fails closed: a URL that changed by any path, an older release that knows nothing
  * of site keys included, leaves no usable key.
  */
-const usableSiteKeyRows = (db: KobeDb | KobeTx, connectorIds: readonly string[]) =>
+const usableSiteKeyRows = (db: KaijuDb | KaijuTx, connectorIds: readonly string[]) =>
   db
     .select({
       connectorId: connectorSiteKeys.connectorId,
@@ -73,7 +73,7 @@ const usableSiteKeyRows = (db: KobeDb | KobeTx, connectorIds: readonly string[])
  * The reveal may still fail on a ciphertext that does not open; the proxy then refuses the call.
  */
 export async function usableSiteKeyIds(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   connectorIds: readonly string[],
 ): Promise<Set<string>> {
   if (connectorIds.length === 0) return new Set();
@@ -85,7 +85,7 @@ export async function usableSiteKeyIds(
  * (another envelope key or tampering is no key).
  */
 export async function revealSiteKey(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   envelope: Envelope,
   connectorId: string,
 ): Promise<string | undefined> {
@@ -104,7 +104,7 @@ export type SetSiteKeyOutcome =
 
 /** Sets or replaces the key of a live connector in `site` mode. */
 export async function setSiteKey(
-  db: KobeDb,
+  db: KaijuDb,
   envelope: Envelope,
   connectorId: string,
   apiKey: string,
@@ -166,7 +166,7 @@ export type SiteKeyRemoval = "removed" | "url_changed" | "mode_changed" | "conne
 
 /** Deletes the key inside the caller's transaction (audited); false when there was none. */
 export async function dropSiteKey(
-  tx: KobeTx,
+  tx: KaijuTx,
   connector: { readonly id: string; readonly name: string },
   reason: SiteKeyRemoval,
 ): Promise<boolean> {
@@ -183,7 +183,7 @@ export async function dropSiteKey(
 }
 
 /** An admin removes the key; undefined when the connector is unknown, false when it had none. */
-export function removeSiteKey(db: KobeDb, connectorId: string): Promise<boolean | undefined> {
+export function removeSiteKey(db: KaijuDb, connectorId: string): Promise<boolean | undefined> {
   return db.transaction(async (tx) => {
     const [connector] = await tx
       .select({ name: connectors.name })

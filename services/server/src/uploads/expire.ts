@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, lockLegalHolds, sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { SYSTEM_ACTOR, lockLegalHolds, sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { auditTimeout } from "../retention/locks.js";
 import type { BlobStore } from "../retention/blobs.js";
@@ -21,7 +21,7 @@ export interface ExpiredUploads {
 const BATCH = 100;
 
 async function expireBatch(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   blobs: BlobStore,
   orphanHours: number,
@@ -75,7 +75,7 @@ async function expireBatch(
 }
 
 export async function expireOrphanUploads(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   blobs: BlobStore,
   orphanHours: number,

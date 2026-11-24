@@ -4,7 +4,7 @@
  * name, the name switch and the style, one file per kind, removal and reset. Every change is
  * audited by the server (`site.branding.updated`).
  */
-import type { BrandingAssetKind, FloorFailure, SiteBranding, ThemeSettings } from "@kobe/protocol";
+import type { BrandingAssetKind, FloorFailure, SiteBranding, ThemeSettings } from "@kaiju/protocol";
 import { apiRequest, type ApiError, type ApiResult } from "../../../api/client";
 
 export interface BrandingChange {

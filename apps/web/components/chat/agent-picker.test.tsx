@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { agentChoices, chatRequests, composer, openApp } from "./testing";
 
@@ -10,11 +10,11 @@ import { agentChoices, chatRequests, composer, openApp } from "./testing";
  * KOBE-122: choosing an agent for a new conversation. The list is the server's runnable set
  * (suspended and archived agents are never in it); a pinned model locks the model picker.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push(
     { alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true },
     { alias: "glm", label: "GLM 5.3", enabled: true, is_default: false },
@@ -69,7 +69,7 @@ describe("agent picker", () => {
     fake.runnableAgents.length = 0;
     fake.runnableAgents.push(
       {
-        id: "g-kobe",
+        id: "g-kaiju",
         scope: "gallery",
         galleryKey: "kobe",
         default: true,
@@ -77,9 +77,9 @@ describe("agent picker", () => {
         name: "Kobe",
         model: null,
       },
-      { id: "t-kobe", scope: "team", slug: "kobe-team1", name: "Kobe", model: null },
+      { id: "t-kaiju", scope: "team", slug: "kaiju-team1", name: "Kobe", model: null },
       { id: "t-ops", scope: "team", slug: "kobe-ops", name: "Kobe", model: null },
-      { id: "p-kobe", scope: "personal", slug: "kobe-mine", name: "Kobe", model: null },
+      { id: "p-kaiju", scope: "personal", slug: "kaiju-mine", name: "Kobe", model: null },
       { id: "t-solo", scope: "team", slug: "solo", name: "Solo", model: null },
     );
     openApp(fake);
@@ -87,7 +87,7 @@ describe("agent picker", () => {
     expect(radios.map((r) => r.closest("label")?.textContent)).toEqual([
       "No agentA plain conversation",
       "KobePersonal",
-      "KobeTeamkobe-team1",
+      "KobeTeamkaiju-team1",
       "KobeTeamkobe-ops",
       "SoloTeam",
       "KobeBuilt-in",
@@ -96,9 +96,9 @@ describe("agent picker", () => {
     expect(within(await group()).getByRole("radio", { name: "Kobe, Built-in" })).toBeTruthy();
     expect(within(await group()).getByRole("radio", { name: "Kobe, Team, kobe-ops" })).toBeTruthy();
     const user = userEvent.setup();
-    await user.click(within(await group()).getByRole("radio", { name: "Kobe, Team, kobe-team1" }));
+    await user.click(within(await group()).getByRole("radio", { name: "Kobe, Team, kaiju-team1" }));
     expect(
-      await screen.findByRole("button", { name: "Chat with: Kobe (Team, kobe-team1)" }),
+      await screen.findByRole("button", { name: "Chat with: Kobe (Team, kaiju-team1)" }),
     ).toBeTruthy();
     await user.click(within(await group()).getByRole("radio", { name: "Solo, Team" }));
     expect(await screen.findByRole("button", { name: "Chat with: Solo" })).toBeTruthy();
@@ -108,7 +108,7 @@ describe("agent picker", () => {
     fake.runnableAgents.length = 0;
     fake.runnableAgents.push(
       { id: "s-lent", scope: "personal", group: "site", name: "Site Lent", model: null },
-      { id: "g-kobe", scope: "gallery", group: "site", name: "Kobe", model: null },
+      { id: "g-kaiju", scope: "gallery", group: "site", name: "Kobe", model: null },
       {
         id: "t-lent",
         scope: "personal",

@@ -1,4 +1,4 @@
-import type { PiSessionEntry } from "@kobe/protocol/sandbox-wire";
+import type { PiSessionEntry } from "@kaiju/protocol/sandbox-wire";
 import { describe, expect, it } from "vitest";
 import {
   findRunPrompt,

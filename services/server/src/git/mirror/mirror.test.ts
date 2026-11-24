@@ -2,8 +2,8 @@ import { mkdir, mkdtemp, readdir, rm, utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { GIT_MIRROR_FAILURES, GIT_REPO_HOST_STATES } from "@kobe/protocol";
-import { GIT_REPOSITORY_HOST_STATE_VALUES } from "@kobe/db";
+import { GIT_MIRROR_FAILURES, GIT_REPO_HOST_STATES } from "@kaiju/protocol";
+import { GIT_REPOSITORY_HOST_STATE_VALUES } from "@kaiju/db";
 import { GitHostError } from "../../git-hosts/adapter.js";
 import { REFUSAL_STATUS, refusalMessage } from "../conversion/refusals.js";
 import {
@@ -131,7 +131,7 @@ describe("Repo content limits shared with Convert to repo (review R3-M1)", () =>
 
 describe("stale work folders (review R3-L2)", () => {
   it("removes only run folders older than the cutoff", async () => {
-    const dir = await mkdtemp(path.join(tmpdir(), "kobe-mirror-stale-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "kaiju-mirror-stale-"));
     await mkdir(path.join(dir, "run-old"));
     await mkdir(path.join(dir, "run-new"));
     await mkdir(path.join(dir, "other"));

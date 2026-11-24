@@ -7,7 +7,7 @@ import type { MenuBindings } from "../../lib/shell/menu";
 import { useBindCommands } from "../shell/command-bindings";
 import { IconAction } from "../shell/icon-action";
 import { CompactDialog } from "./compact-dialog";
-import type { KobeThreadExtras } from "./kobe-runtime";
+import type { KaijuThreadExtras } from "./kaiju-runtime";
 
 /**
  * Compact now (CE15, KOBE-213): who may open the dialog, and why not. `open` is absent where
@@ -34,7 +34,7 @@ function fallbackFocus(): HTMLElement | null {
   return (
     buttons[buttons.length - 1] ??
     document.querySelector<HTMLElement>("[data-context-gauge]") ??
-    document.getElementById("kobe-composer")
+    document.getElementById("kaiju-composer")
   );
 }
 
@@ -55,7 +55,7 @@ export function CompactNowProvider({
   enabled,
   children,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   /** False in the builder's test pane, which offers no compaction. */
   readonly enabled: boolean;
   readonly children: ReactNode;

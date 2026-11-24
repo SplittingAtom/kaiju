@@ -1,10 +1,10 @@
-import { REGISTRY_PUBLISHERS, REGISTRY_VERSION_STATES } from "@kobe/protocol";
+import { REGISTRY_PUBLISHERS, REGISTRY_VERSION_STATES } from "@kaiju/protocol";
 import { arr, bool, int, nullable, obj, oneOfStrings, str } from "../json.js";
 
 /**
  * JSON shapes shared by the Site skills details (KOBE-771): diffs, raw files, scan results and
  * draft rows the routes build without a zod schema (read from `skills/registry/review-diff.ts`,
- * `skills/site-edit/*.ts` and `@kobe/skill-scanner`'s `ScanResult`).
+ * `skills/site-edit/*.ts` and `@kaiju/skill-scanner`'s `ScanResult`).
  */
 
 /** A JSON object the route passes through as stored (scan, manifest, provenance, scorecard). */
@@ -45,7 +45,7 @@ export const rawFile = obj({
 
 const severity = oneOfStrings("caution", "block");
 
-/** `Finding` of `@kobe/skill-scanner`. */
+/** `Finding` of `@kaiju/skill-scanner`. */
 export const scanFinding = obj({
   category: str,
   file: str,

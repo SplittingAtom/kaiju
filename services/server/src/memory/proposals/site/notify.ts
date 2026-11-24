@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import {
   notifyMemoryAll,
   registerMemoryReminder,
@@ -28,7 +28,7 @@ import {
  * ¹ Not the proposer, nor a Team admin who confirmed it (in any round): neither may decide it.
  */
 
-export async function teamAdminsOf(tx: KobeTx, teamId: string): Promise<string[]> {
+export async function teamAdminsOf(tx: KaijuTx, teamId: string): Promise<string[]> {
   const { rows } = await tx.execute<{ user_id: string }>(sql`
     SELECT user_id FROM team_members WHERE team_id = ${teamId} AND role = 'team_admin'
      ORDER BY user_id`);
@@ -36,7 +36,7 @@ export async function teamAdminsOf(tx: KobeTx, teamId: string): Promise<string[]
 }
 
 /** Site admins (and the owner) and Site memory stewards with active accounts. */
-export async function siteCurators(tx: KobeTx): Promise<string[]> {
+export async function siteCurators(tx: KaijuTx): Promise<string[]> {
   const { rows } = await tx.execute<{ user_id: string }>(sql`
     SELECT r.user_id FROM site_roles r JOIN users u ON u.id = r.user_id AND u.deactivated_at IS NULL
     UNION
@@ -57,7 +57,7 @@ interface Subject {
 
 /** Waiting for the Workspace's Team admins (a new proposal, or the Site sent it back). */
 export async function noticeAwaitingTeam(
-  tx: KobeTx,
+  tx: KaijuTx,
   p: Subject,
   actorId: string,
   returned: boolean,
@@ -78,7 +78,7 @@ export async function noticeAwaitingTeam(
 }
 
 /** A Team admin confirmed it (or proposed it themselves): the Site's curators decide now. */
-export async function noticeConfirmed(tx: KobeTx, p: Subject, confirmerId: string): Promise<void> {
+export async function noticeConfirmed(tx: KaijuTx, p: Subject, confirmerId: string): Promise<void> {
   await settleMemoryReminders(tx, p.fromTeamId, p.id);
   const curators = others(await siteCurators(tx), p.proposerId);
   // The confirmer may not decide it (KOBE-666): no reminder for them.
@@ -97,7 +97,7 @@ export async function noticeConfirmed(tx: KobeTx, p: Subject, confirmerId: strin
 
 /** The Site decided: the proposer and the Team admin who confirmed it hear. */
 export async function noticeDecided(
-  tx: KobeTx,
+  tx: KaijuTx,
   p: Subject & { readonly confirmerId: string | null },
   outcome: "accepted" | "dismissed",
   deciderId: string,
@@ -112,6 +112,6 @@ export async function noticeDecided(
 }
 
 /** Withdrawn: nobody owes a decision any more. */
-export async function settleWithdrawn(tx: KobeTx, p: Subject): Promise<void> {
+export async function settleWithdrawn(tx: KaijuTx, p: Subject): Promise<void> {
   await settleMemoryReminders(tx, p.fromTeamId, p.id);
 }

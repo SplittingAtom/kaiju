@@ -16,8 +16,8 @@ import {
   commitProjectRequestSchema,
   commitProjectResponseSchema,
   commitProjectToolInputSchema,
-  kobeToolsRequestSchema,
-  kobeToolsResponseSchema,
+  kaijuToolsRequestSchema,
+  kaijuToolsResponseSchema,
   projectCheckoutSchema,
   projectCommitDetailSchema,
   projectCommitSchema,
@@ -402,15 +402,15 @@ describe("sandbox wire", () => {
       tool: "commit_project",
       input: { message: "m" },
     };
-    expect(kobeToolsRequestSchema.safeParse(req).success).toBe(true);
-    expect(kobeToolsRequestSchema.safeParse({ ...req, input: {} }).success).toBe(false);
+    expect(kaijuToolsRequestSchema.safeParse(req).success).toBe(true);
+    expect(kaijuToolsRequestSchema.safeParse({ ...req, input: {} }).success).toBe(false);
     const ok = {
       id: "r",
       ok: true,
       op: "project_commit",
       outcome: { status: "nothing_to_commit" },
     };
-    expect(kobeToolsResponseSchema.safeParse(ok).success).toBe(true);
+    expect(kaijuToolsResponseSchema.safeParse(ok).success).toBe(true);
   });
 });
 

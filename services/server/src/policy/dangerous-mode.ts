@@ -1,5 +1,5 @@
-import type { ApprovalMode, PolicyDecision, PolicyReason } from "@kobe/protocol";
-import { sql, withTeam, type KobeDb, type KobeTx, type TeamRole } from "@kobe/db";
+import type { ApprovalMode, PolicyDecision, PolicyReason } from "@kaiju/protocol";
+import { sql, withTeam, type KaijuDb, type KaijuTx, type TeamRole } from "@kaiju/db";
 import { toolManifestSchema, withSiteNames, type ToolManifest } from "../agents/manifest.js";
 import { recordAudit } from "../audit/record.js";
 import type { SiteRole } from "../authz/permissions.js";
@@ -41,7 +41,7 @@ export const DANGEROUS_FORBIDDEN = {
 
 /** A published version's manifest when it is in Dangerous mode, else null (unreadable: null). */
 async function dangerousManifest(
-  tx: KobeTx,
+  tx: KaijuTx,
   pin: {
     readonly teamId: string;
     readonly scope: "team" | "personal" | "gallery";
@@ -67,7 +67,7 @@ async function dangerousManifest(
  * whether a call runs under it is `loadRunAgentTools`'s, per call.
  */
 export async function pinnedVersionIsDangerous(
-  tx: KobeTx,
+  tx: KaijuTx,
   pin: {
     readonly teamId: string;
     readonly scope: "team" | "personal" | "gallery" | null;
@@ -103,7 +103,7 @@ export interface DangerousApplication {
  * point (no input). Throws on a failed write: the caller then denies the call (no audit row, no
  * call).
  */
-export async function recordDangerousApplied(db: KobeDb, a: DangerousApplication): Promise<void> {
+export async function recordDangerousApplied(db: KaijuDb, a: DangerousApplication): Promise<void> {
   await withTeam(db, a.teamId, (tx) =>
     recordAudit(tx, {
       action: "policy.dangerous_mode.applied",

@@ -1,5 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
-import type { KobeDb, KobeTx } from "../client.js";
+import type { KaijuDb, KaijuTx } from "../client.js";
 import { legalHolds } from "../schema/legal-holds.js";
 import { pgCodeOf } from "../pg-errors.js";
 
@@ -25,13 +25,13 @@ import { pgCodeOf } from "../pg-errors.js";
 /** SQLSTATE raised when a delete (or an audit erasure) would touch held data. */
 export const LEGAL_HOLD_SQLSTATE = "KH001";
 
-type Executor = KobeDb | KobeTx;
+type Executor = KaijuDb | KaijuTx;
 
 /**
  * Takes the legal-hold lock in shared mode until the transaction ends. Call it at the start of
  * every purge transaction, before checking for holds.
  */
-export async function lockLegalHolds(tx: KobeTx): Promise<void> {
+export async function lockLegalHolds(tx: KaijuTx): Promise<void> {
   await tx.execute(sql`SELECT public.legal_hold_lock_shared()`);
 }
 

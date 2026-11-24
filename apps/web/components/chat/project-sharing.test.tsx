@@ -2,16 +2,16 @@
 import { act, cleanup, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { announcement, chatRequests, openApp } from "./testing";
 
 const PROJECT = "00000000-0000-4000-8000-0000000000a1";
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.addProject("Alpha");
   fake.projects[0] = { ...must(fake.projects[0]), id: PROJECT };
   vi.stubGlobal("fetch", fake.fetch);

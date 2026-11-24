@@ -1,7 +1,7 @@
 /**
  * The context viewer (KOBE-471, docs/specs/context-viewer.md): reads `GET /v1/threads/{id}/context`
  * (KOBE-470) and shapes it for the panel: the stacked gauge by kind, the text as windowed rows,
- * search. The body is validated against `@kobe/protocol` as sent (wire casing, no camelizing);
+ * search. The body is validated against `@kaiju/protocol` as sent (wire casing, no camelizing);
  * every section text is untrusted and is only ever rendered as plain text.
  */
 import {
@@ -13,7 +13,7 @@ import {
   type ContextSectionKind,
   type ThreadContext,
   type ThreadContextErrorCode,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import "../security/zod-jitless";
 import { TEAM_HEADER } from "../teams";
 

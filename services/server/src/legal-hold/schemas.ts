@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { LEGAL_HOLD_REASON_MAX } from "@kobe/db";
+import { LEGAL_HOLD_REASON_MAX } from "@kaiju/db";
 
 const id = z.uuid().transform((v) => v.toLowerCase());
 const reason = z

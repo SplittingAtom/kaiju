@@ -1,6 +1,6 @@
 import { lstat, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { BLOB_REF_COLUMNS, MIGRATION_LOCK_KEY, quoteIdent, type BlobRefColumn } from "@kobe/db";
+import { BLOB_REF_COLUMNS, MIGRATION_LOCK_KEY, quoteIdent, type BlobRefColumn } from "@kaiju/db";
 import pg from "pg";
 import {
   assertCoverage,
@@ -45,7 +45,7 @@ export interface BackupOptions {
   readonly objects: ObjectLister | null;
   /** Operator-held key material; per-backup keys are derived from it. */
   readonly key: Buffer;
-  /** Columns holding object keys (default: the @kobe/db registry). */
+  /** Columns holding object keys (default: the @kaiju/db registry). */
   readonly blobRefColumns?: readonly BlobRefColumn[];
   readonly pgBinDir?: string | undefined;
   readonly log?: (message: string) => void;
@@ -241,7 +241,7 @@ async function snapshotAndDump(
 }
 
 /**
- * `kobe backup`: encrypted data dump + encrypted S3 object listing + signed manifest, in a new
+ * `kaiju backup`: encrypted data dump + encrypted S3 object listing + signed manifest, in a new
  * private directory.
  */
 export async function runBackup(

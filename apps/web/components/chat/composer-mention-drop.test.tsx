@@ -2,14 +2,14 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mentionMarker } from "@kobe/protocol";
+import { mentionMarker } from "@kaiju/protocol";
 import {
   MENTION_FOLDER_REFUSED,
   MENTION_NAME_REFUSED,
   MENTION_NO_COMPOSER,
 } from "../../lib/chat/mention-insert";
 import type { UploadTransport } from "../../lib/chat/uploads";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { ChatApp } from "./chat-app";
 import { composer, openRowMenu } from "./testing";
@@ -49,7 +49,7 @@ const TREE: Record<string, Entry[]> = {
   [`projects/${PROJECT}`]: [entry("plan.md", `projects/${PROJECT}/plan.md`, "file", "projects")],
 };
 
-let fake: FakeKobe;
+let fake: FakeKaiju;
 let moves: number;
 let uploads: string[];
 
@@ -79,7 +79,7 @@ const transport: UploadTransport = (request) => {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   moves = 0;
   uploads = [];
   vi.stubGlobal("fetch", fake.fetch);
@@ -106,7 +106,7 @@ async function openFiles(threadId: string) {
 }
 
 const row = (name: string) => screen.getByRole("treeitem", { name });
-const panel = () => must(document.querySelector<HTMLElement>("[data-kobe-composer-panel]"));
+const panel = () => must(document.querySelector<HTMLElement>("[data-kaiju-composer-panel]"));
 /** The files dropped on the draft, as their chips; the text never holds their `@file(...)`. */
 const chips = () => {
   const text = (screen.getByLabelText("Message") as HTMLTextAreaElement).value;
@@ -149,7 +149,7 @@ function dragToComposer(from: HTMLElement) {
   fireEvent.dragOver(panel(), { dataTransfer: dt });
   const hover = {
     drop: panel().getAttribute("data-mention-drop"),
-    hint: document.getElementById("kobe-composer-hint")?.textContent,
+    hint: document.getElementById("kaiju-composer-hint")?.textContent,
   };
   fireEvent.drop(panel(), { dataTransfer: dt });
   fireEvent.dragEnd(from, { dataTransfer: dt });
@@ -211,7 +211,9 @@ describe("drag a workspace file into the composer (KOBE-374 ac-4)", () => {
 
     const hover = dragToComposer(row("notes"));
     expect(hover).toEqual({ drop: "folder", hint: MENTION_FOLDER_REFUSED });
-    expect(document.getElementById("kobe-composer-hint")?.textContent).toBe(MENTION_FOLDER_REFUSED);
+    expect(document.getElementById("kaiju-composer-hint")?.textContent).toBe(
+      MENTION_FOLDER_REFUSED,
+    );
     expect(chips()).toEqual([`@projects/${PROJECT}/plan.md`]);
     expect(moves).toBe(0);
   });

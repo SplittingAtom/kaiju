@@ -2,7 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { duplexPair, type Duplex } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { connectPolicy, registerKobePolicy, type ExtensionApiLike } from "./extension.js";
+import { connectPolicy, registerKaijuPolicy, type ExtensionApiLike } from "./extension.js";
 import type { ToolCallBlock, ToolCallContextLike, ToolCallEventLike } from "./handler.js";
 
 const OWN = "/opt/kobe/pi-extensions/kobe-policy/index.js";
@@ -66,7 +66,7 @@ describe("kobe-policy extension load", () => {
     const t = setup();
     t.agent.send({ type: "channel.hello", nonce: "N" });
     const { pi, handlers } = fakePi();
-    await registerKobePolicy(pi, t.checker);
+    await registerKaijuPolicy(pi, t.checker);
     expect(t.opened).toEqual([3]);
     expect(t.env).not.toHaveProperty("KOBE_POLICY_FD");
     expect(handlers).toHaveLength(1);
@@ -87,7 +87,7 @@ describe("kobe-policy extension load", () => {
         throw new Error("registration failed");
       },
     };
-    await expect(registerKobePolicy(pi, t.checker)).rejects.toThrow("registration failed");
+    await expect(registerKaijuPolicy(pi, t.checker)).rejects.toThrow("registration failed");
     await new Promise((r) => setTimeout(r, 50));
     expect(t.agent.lines).toEqual([]);
   });
@@ -96,7 +96,7 @@ describe("kobe-policy extension load", () => {
     const t = setup();
     t.agent.send({ type: "channel.hello", nonce: "N" });
     const { pi, handlers } = fakePi();
-    await registerKobePolicy(pi, t.checker);
+    await registerKaijuPolicy(pi, t.checker);
     const result = (handlers[0] as Handler)({ ...call, input: { ...call.input } }, {});
     await until(() => t.agent.lines.length > 1);
     const check = t.agent.lines[1] as Record<string, unknown>;
@@ -116,7 +116,7 @@ describe("kobe-policy extension load", () => {
     const t = setup({ argv: [...ARGV, "-e", "/opt/other.js"] });
     t.agent.send({ type: "channel.hello", nonce: "N" });
     const { pi, handlers } = fakePi();
-    await registerKobePolicy(pi, t.checker);
+    await registerKaijuPolicy(pi, t.checker);
     await until(() => t.agent.lines.length > 0);
     expect(t.agent.lines[0]).toMatchObject({ type: "channel.refused", nonce: "N" });
     expect(await (handlers[0] as Handler)(call, {})).toMatchObject({
@@ -133,7 +133,7 @@ describe("kobe-policy extension load", () => {
   ])("blocks everything when the fd variable is %s", async (_name, value) => {
     const t = setup({ env: { KOBE_POLICY_FD: value } });
     const { pi, handlers } = fakePi();
-    await registerKobePolicy(pi, t.checker);
+    await registerKaijuPolicy(pi, t.checker);
     expect(t.opened).toEqual([]);
     expect(handlers).toHaveLength(1);
     expect(await (handlers[0] as Handler)(call, {})).toMatchObject({
@@ -153,7 +153,7 @@ describe("kobe-policy extension load", () => {
         throw new Error("fd 3 is not a socket");
       },
     });
-    await registerKobePolicy(pi, checker);
+    await registerKaijuPolicy(pi, checker);
     expect(await (handlers[0] as Handler)(call, {})).toMatchObject({
       block: true,
       reason: expect.stringMatching(/not a socket/),
@@ -163,7 +163,7 @@ describe("kobe-policy extension load", () => {
   it("blocks everything when the agent never says hello", async () => {
     const t = setup();
     const { pi, handlers } = fakePi();
-    await registerKobePolicy(pi, t.checker);
+    await registerKaijuPolicy(pi, t.checker);
     expect(await (handlers[0] as Handler)(call, {})).toMatchObject({
       block: true,
       reason: expect.stringMatching(/channel.hello/),
@@ -176,7 +176,7 @@ describe("kobe-policy configuration", () => {
     const t = setup({ env: { KOBE_POLICY_REPLY_TIMEOUT_MS: "50" } });
     t.agent.send({ type: "channel.hello", nonce: "N" });
     const { pi, handlers } = fakePi();
-    await registerKobePolicy(pi, t.checker);
+    await registerKaijuPolicy(pi, t.checker);
     let settled = false;
     void (handlers[0] as Handler)(call, {}).then(() => (settled = true));
     await new Promise((r) => setTimeout(r, 300));

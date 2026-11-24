@@ -1,14 +1,14 @@
 import { fireAndLog } from "../async-util.js";
 import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
-import { sql, withTeam, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuTx } from "@kaiju/db";
 import {
   fileEditProposedPayloadSchema,
   PROJECT_FILE_MAX_BYTES,
   PROJECT_FILES_MAX,
   type FileEditProposedPayload,
   type ProposalNotAllowedError,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { resolveMime, SNIFF_BYTES } from "../uploads/mime.js";
 import { verifyingStream, type ObjectStore } from "../workspace-sync/object-store.js";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
@@ -97,7 +97,7 @@ function relativePath(path: string): string | undefined {
 }
 
 async function findProposal(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   proposalId: string,
@@ -117,7 +117,7 @@ async function findProposal(
 
 /** The commit an earlier accept of this proposal wrote, if any (idempotency without a column). */
 async function acceptedBefore(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   req: ProposalRequest,
@@ -144,7 +144,7 @@ async function acceptedBefore(
 
 /** Steps 1 and 3 (with `lock`): see the module header. */
 async function inspect(
-  tx: KobeTx,
+  tx: KaijuTx,
   deps: Pick<Deps, "blobs" | "limits">,
   req: ProposalRequest,
   lock: boolean,

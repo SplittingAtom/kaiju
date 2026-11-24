@@ -1,15 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam, type AuditEntry } from "@kobe/db";
-import { generateSessionKeyPair } from "@kobe/session-token";
+import { withTeam, type AuditEntry } from "@kaiju/db";
+import { generateSessionKeyPair } from "@kaiju/session-token";
 import { AUDIT_FORWARD_LOCK, AuditForwarder } from "./forward/forwarder.js";
 import { exportLogsRequest } from "./forward/otlp.js";
 import { initialState, writeState } from "./forward/state.js";
 import { formatSyslogMessage } from "./forward/syslog.js";
 import { appendRunEvents } from "../event-stream/append.js";
-import { routeCaller } from "../kobe-mcp/execute.js";
-import { siteMemoryItemGet, siteMemoryItemsList } from "../kobe-mcp/tools/memory-items.js";
-import type { KobeTool } from "../kobe-mcp/catalog.js";
+import { routeCaller } from "../kaiju-mcp/execute.js";
+import { siteMemoryItemGet, siteMemoryItemsList } from "../kaiju-mcp/tools/memory-items.js";
+import type { KaijuTool } from "../kaiju-mcp/catalog.js";
 import { buildRunSemantic, queryWords, readRecallRows } from "../memory/items/run-memory.js";
 import { sweepMemoryReminders } from "../notifications/memory.js";
 import { createPgReconcileLock } from "../sandbox/reconcile-lock.js";
@@ -325,7 +325,7 @@ async function collect(w: World): Promise<SiteWallProbe> {
     ...w.mcpDelegation,
     toolCallId: "wall-probe",
   });
-  const tool = async (t: KobeTool, input: unknown) => {
+  const tool = async (t: KaijuTool, input: unknown) => {
     const route = t.route(input as never);
     const answer = await call(route);
     expect(answer.status, JSON.stringify(answer.body)).toBe(200);

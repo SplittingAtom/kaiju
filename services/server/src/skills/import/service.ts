@@ -9,7 +9,7 @@ import {
   importAllowed,
   type SkillImportOrigin,
   type SkillImportRequest,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { SKILL_LIMITS } from "../limits.js";
 import { validateZipBundle, type BundleError } from "../bundle.js";
 import { readRegistrySettings } from "../registry/settings.js";
@@ -97,7 +97,7 @@ export async function importSkill(
         origin: origin(ctx, request, sha256(bytes), sha256(canonicalZip(files)), now),
       });
     }
-    const dir = await mkdtemp(path.join(tmpdir(), "kobe-skill-import-"));
+    const dir = await mkdtemp(path.join(tmpdir(), "kaiju-skill-import-"));
     let files: Map<string, Uint8Array>;
     try {
       files = await fetchGitFiles(http, request.url, request.commit, request.path, dir, CAPS);

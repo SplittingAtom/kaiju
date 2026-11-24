@@ -1,5 +1,5 @@
-import type { PolicyCheckFrame } from "@kobe/protocol/sandbox-wire";
-import { EXAMPLE_IDS } from "@kobe/protocol/testing";
+import type { PolicyCheckFrame } from "@kaiju/protocol/sandbox-wire";
+import { EXAMPLE_IDS } from "@kaiju/protocol/testing";
 import { describe, expect, it } from "vitest";
 import {
   MAX_POLICY_CHECK_FRAME_BYTES,

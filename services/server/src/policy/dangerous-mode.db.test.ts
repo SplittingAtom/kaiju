@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createDb, type KobeDatabase } from "@kobe/db";
+import { createDb, type KaijuDatabase } from "@kaiju/db";
 import { approvalKeyring } from "../approvals/index.js";
 import { createPolicyEngine } from "./engine.js";
 import { createDbRuleSource, createDbSettingsSource } from "./rule-store.js";
@@ -17,7 +17,7 @@ const fx = new EventStreamFixture();
 const auth = new FakeSandboxAuth();
 const listeners: Awaited<ReturnType<typeof sandboxListener>>[] = [];
 const sandboxes: FakeSandbox[] = [];
-const extraDbs: KobeDatabase[] = [];
+const extraDbs: KaijuDatabase[] = [];
 const KEY = approvalKeyring("approval-key-for-tests-".padEnd(48, "d"));
 const FLOOR_KEY = "policy.approval_floor";
 /** A Dangerous agent naming `bash` (AC1: only tools named one by one run without asking). */

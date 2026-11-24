@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 
 type SQL = ReturnType<typeof sql>;
 
@@ -38,7 +38,7 @@ const textArray = (values: readonly string[]) =>
   )}]::text[]`;
 
 /** Reads the Workspace-wide holds and their Workspaces' members. Call outside any transaction. */
-export async function snapshotPortableHolds(db: KobeDb): Promise<PortableHoldSnapshot> {
+export async function snapshotPortableHolds(db: KaijuDb): Promise<PortableHoldSnapshot> {
   const holds = await db.execute<{ id: string; team_id: string }>(sql`
     SELECT id::text AS id, team_id FROM legal_holds
      WHERE status = 'active' AND user_id IS NULL ORDER BY id`);
@@ -57,7 +57,7 @@ export async function snapshotPortableHolds(db: KobeDb): Promise<PortableHoldSna
 
 /** After `lockLegalHolds`: the Workspace-wide holds are still the snapshot's. */
 export async function portableHoldsUnchanged(
-  tx: KobeTx,
+  tx: KaijuTx,
   snapshot: PortableHoldSnapshot,
 ): Promise<boolean> {
   const { rows } = await tx.execute<{ id: string }>(sql`

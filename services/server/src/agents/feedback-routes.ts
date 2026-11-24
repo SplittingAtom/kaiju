@@ -1,14 +1,14 @@
 import type { Context, Hono } from "hono";
-import type { KobeDb, TeamRole } from "@kobe/db";
+import type { KaijuDb, TeamRole } from "@kaiju/db";
 import { teamRoleAllows } from "../authz/permissions.js";
-import { FEEDBACK_DEFAULT_WINDOW_DAYS, feedbackTotalsQuerySchema } from "@kobe/protocol";
+import { FEEDBACK_DEFAULT_WINDOW_DAYS, feedbackTotalsQuerySchema } from "@kaiju/protocol";
 import { agentFeedbackTotals } from "../feedback/totals.js";
 import { forbidden, notFound } from "./http.js";
 import type { ResolvedAgent } from "./version-routes.js";
 import { invalidRequest } from "../http/request.js";
 
 export interface FeedbackTotalsRouteOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** The agent named by `:id` if the caller may see it; null → 404 (as for version reads). */
   readonly resolve: (c: Context) => Promise<ResolvedAgent | null>;
   readonly teamId: (c: Context) => string;

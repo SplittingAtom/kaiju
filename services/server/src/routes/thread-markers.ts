@@ -4,8 +4,8 @@ import {
   approvalResolutionCauseSchema,
   idSchema,
   uuidSchema as wireUuidSchema,
-} from "@kobe/protocol";
-import { RUN_SKILL_SOURCES, sql, withTeam, type KobeTx, type RunSkillRef } from "@kobe/db";
+} from "@kaiju/protocol";
+import { RUN_SKILL_SOURCES, sql, withTeam, type KaijuTx, type RunSkillRef } from "@kaiju/db";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { skillUpdatesOf } from "../skills/usage.js";
@@ -98,7 +98,7 @@ function newest(rows: readonly Row[]): { rows: Row[]; truncated: boolean } {
 
 type RunMarkerStatus = z.infer<typeof runMarkerSchema>["status"];
 
-async function runMarkers(tx: KobeTx, teamId: string, threadId: string) {
+async function runMarkers(tx: KaijuTx, teamId: string, threadId: string) {
   // Stopped and failed only once started: a deleted or never-started queued message is no turn.
   const res = await tx.execute<Row>(sql`
     SELECT r.id, r.status, r.user_entry_id, r.parent_entry_id, f.message
@@ -134,7 +134,7 @@ async function runMarkers(tx: KobeTx, teamId: string, threadId: string) {
  * `(team_id, run_id)` prefix): `approvals` has no thread index, and the user's index would read
  * every approval they ever had in the team.
  */
-async function approvalMarkers(tx: KobeTx, teamId: string, threadId: string, userId: string) {
+async function approvalMarkers(tx: KaijuTx, teamId: string, threadId: string, userId: string) {
   const res = await tx.execute<Row>(sql`
     SELECT a.id, a.run_id, r.user_entry_id, a.tool_call_id, a.status, a.cause
       FROM runs r
@@ -161,7 +161,7 @@ async function approvalMarkers(tx: KobeTx, teamId: string, threadId: string, use
 }
 
 /** Skill uses the server recorded on the thread's runs (`runs.skills_used`, KOBE-297). */
-async function skillMarkers(tx: KobeTx, teamId: string, threadId: string) {
+async function skillMarkers(tx: KaijuTx, teamId: string, threadId: string) {
   const res = await tx.execute<Row>(sql`
     SELECT r.id, r.user_entry_id, u.use ->> 'tool_call_id' AS tool_call_id,
            u.use ->> 'name' AS name, u.use ->> 'source' AS source,
@@ -201,7 +201,7 @@ async function skillMarkers(tx: KobeTx, teamId: string, threadId: string) {
  * (`runs.skill_refs`, durable unlike the event stream): walking the thread's started runs oldest
  * first, a run that loads a skill at another version than the last run that loaded it.
  */
-async function skillUpdateMarkers(tx: KobeTx, teamId: string, threadId: string) {
+async function skillUpdateMarkers(tx: KaijuTx, teamId: string, threadId: string) {
   const res = await tx.execute<{ id: string; user_entry_id: string | null; refs: RunSkillRef[] }>(
     sql`
     SELECT r.id, r.user_entry_id, r.skill_refs AS refs

@@ -14,8 +14,8 @@ import {
   teams,
   users,
   withTeam,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { logger } from "../logger.js";
 import { CONSOLE_PATHS } from "../mail/console-paths.js";
 import type { Mailer, MailMessage } from "../mail/mailer.js";
@@ -39,7 +39,7 @@ export interface SuspendedVersion {
 }
 
 export interface NotifyDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly mailer: Mailer;
   readonly publicUrl: string;
 }
@@ -53,7 +53,7 @@ const OUTBOX_BATCH = 100;
  * one after another, each under its own RLS.
  */
 async function recipients(
-  db: KobeDb,
+  db: KaijuDb,
   items: readonly SuspendedVersion[],
 ): Promise<Map<string, SuspendedVersion[]>> {
   const byUser = new Map<string, SuspendedVersion[]>();

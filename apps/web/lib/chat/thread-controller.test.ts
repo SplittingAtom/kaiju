@@ -1,15 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createChatApi } from "./api";
-import { FakeKobe } from "./testing/fake-kobe";
+import { FakeKaiju } from "./testing/fake-kaiju";
 import { ThreadController } from "./thread-controller";
 import { currentRunId, isStopping, liveOverlay, type ThreadState } from "./thread-state";
 import { projectThread } from "./tree";
 
-let fake: FakeKobe;
+let fake: FakeKaiju;
 let controllers: ThreadController[];
 
 beforeEach(() => {
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   controllers = [];
   retitles.length = 0;
 });

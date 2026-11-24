@@ -4,7 +4,7 @@
  * while the viewer may open it (`forkedFromThreadId`), and its fork point is an entry of the fork
  * itself, so it is looked up in the fork's own projection, never in the source.
  */
-import type { KobeMessageMeta, Projection } from "./tree";
+import type { KaijuMessageMeta, Projection } from "./tree";
 import type { ThreadSummary } from "./types";
 
 /** Longest excerpt of the fork point's message in the origin marker. */
@@ -29,7 +29,7 @@ export interface ForkPoint {
  * end on an unanswered prompt (the next send would chain two user turns). None while a prompt is
  * pending or an answer is still being written, nor for a prompt with nothing above it.
  */
-export function forkPointOf(meta: KobeMessageMeta | undefined): ForkPoint | undefined {
+export function forkPointOf(meta: KaijuMessageMeta | undefined): ForkPoint | undefined {
   if (meta?.kind === "user") {
     if (meta.pending || meta.entryId === undefined || meta.parentEntryId === null) return undefined;
     return { entryId: meta.parentEntryId, draft: meta.text };

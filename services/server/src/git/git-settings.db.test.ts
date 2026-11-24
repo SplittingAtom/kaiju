@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { gitTeamSettingsSchema } from "@kobe/protocol";
+import { gitTeamSettingsSchema } from "@kaiju/protocol";
 import { gitCommitEmailMode, gitNoReplyEmail } from "./sandbox-git.js";
 import { EventStreamFixture, type Person } from "../testing/event-stream-fixture.js";
 
@@ -68,9 +68,9 @@ describe("Workspace git settings (KOBE-761)", () => {
       await fx.admin.query<{ name: string }>(`SELECT name FROM users WHERE id = $1`, [w.admin.id])
     ).rows[0]?.name;
     expect(body.noreply_example).toBe(
-      gitNoReplyEmail({ id: w.admin.id, name: name ?? "" }, "kobe.test"),
+      gitNoReplyEmail({ id: w.admin.id, name: name ?? "" }, "kaiju.test"),
     );
-    expect(body.noreply_example).toMatch(/^[0-9a-f]{10}\+[a-z0-9-]+@users\.noreply\.kobe\.test$/);
+    expect(body.noreply_example).toMatch(/^[0-9a-f]{10}\+[a-z0-9-]+@users\.noreply\.kaiju\.test$/);
     expect(body.noreply_example).not.toContain(w.admin.id);
   });
 

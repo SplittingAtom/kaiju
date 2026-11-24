@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { ARTIFACT_TOOLS, canonicalJson } from "@kobe/protocol";
+import { ARTIFACT_TOOLS, canonicalJson } from "@kaiju/protocol";
 
 /**
  * The artifact and `share_file` (KOBE-150) tool calls this connection's policy checks allowed (D-3 of KOBE-55). At allow time

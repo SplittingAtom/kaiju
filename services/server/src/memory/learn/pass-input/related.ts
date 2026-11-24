@@ -1,5 +1,5 @@
-import type { KobeTx } from "@kobe/db";
-import type { RunSemanticMemoryItem } from "@kobe/protocol";
+import type { KaijuTx } from "@kaiju/db";
+import type { RunSemanticMemoryItem } from "@kaiju/protocol";
 import {
   parseRunMemoryState,
   runMemoryStateQuery,
@@ -46,7 +46,7 @@ export interface RelatedQuery {
 }
 
 export async function readRelatedItems(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: { readonly teamId: string; readonly userId: string },
   query: RelatedQuery,
 ): Promise<ExtractorExistingItem[]> {

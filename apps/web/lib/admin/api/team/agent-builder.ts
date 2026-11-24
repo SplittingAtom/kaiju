@@ -1,5 +1,5 @@
 /** Team console: the agent builder's calls (`/v1/agents`, drafts and versions, KOBE-45/46). */
-import type { AgentMemorySetting } from "@kobe/protocol";
+import type { AgentMemorySetting } from "@kaiju/protocol";
 import { apiRequest, apiTextFile, type ApiResult, type TextFile } from "../../../api/client";
 import { revisionTag, type AgentSaved, type AgentSummary } from "../agents";
 

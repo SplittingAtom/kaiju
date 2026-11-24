@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { KOBE_BUILTIN_CONNECTOR_ID, seedKobeBuiltinConnector } from "@kobe/db";
+import { KAIJU_BUILTIN_CONNECTOR_ID, seedKaijuBuiltinConnector } from "@kaiju/db";
 import { toolHash } from "./pin.js";
 import { refreshAllConnectors, refreshConnector } from "./refresh.js";
 import type { ProbeResult } from "./probe.js";
@@ -302,8 +302,8 @@ describe("teams using a connector (KOBE-641)", () => {
   });
 
   it("404s the built-in Kaiju connector like every other registry route (review L3)", async () => {
-    await seedKobeBuiltinConnector(h.deps.database.db);
-    const res = await root.get(`${BASE}/${KOBE_BUILTIN_CONNECTOR_ID}/teams`);
+    await seedKaijuBuiltinConnector(h.deps.database.db);
+    const res = await root.get(`${BASE}/${KAIJU_BUILTIN_CONNECTOR_ID}/teams`);
     expect(res.status).toBe(404);
   });
 });

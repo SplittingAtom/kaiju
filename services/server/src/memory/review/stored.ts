@@ -7,8 +7,8 @@ import {
   semanticMemoryKindSchema,
   uuidSchema,
   type MemorySkillHint,
-} from "@kobe/protocol";
-import { sql, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { MemoryItemError, inactive } from "../items/errors.js";
 
 /**
@@ -137,7 +137,7 @@ const FROM = sql`memory_candidates c
  * once (the pass's own selection drops those; this keeps a race from showing two).
  */
 export async function listOpenCandidates(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { teamId: string; userId: string; threadId: string },
 ): Promise<CandidateRow[]> {
   const { rows } = await tx.execute<RawRow>(sql`
@@ -159,7 +159,7 @@ export async function listOpenCandidates(
 
 /** Skill hints of the person's latest completed pass on the thread (at most two). */
 export async function latestSkillHints(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { teamId: string; userId: string; threadId: string },
 ): Promise<MemorySkillHint[]> {
   const { rows } = await tx.execute<{ hints: unknown }>(sql`
@@ -183,7 +183,7 @@ export const candidateNotFound = () =>
  * refuses a decided or expired candidate (409 `memory_item_inactive`).
  */
 export async function lockCandidate(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: { teamId: string; userId: string },
   candidateId: string,
   want: "open" | "saved" = "open",
@@ -208,7 +208,7 @@ export async function lockCandidate(
 
 /** Closes an open candidate (`saved` or `suggested` with its decision, or `dismissed`). */
 export async function decideCandidate(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   candidateId: string,
   state: "saved" | "suggested" | "dismissed",
@@ -223,7 +223,7 @@ export async function decideCandidate(
 
 /** Proposed (KOBE-397): closed in To review, pointing at its proposal. */
 export async function proposeCandidateRow(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   candidateId: string,
   proposalId: string,
@@ -241,7 +241,7 @@ export async function proposeCandidateRow(
  * rounds don't reset it).
  */
 export async function returnCandidate(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   candidateId: string,
   proposal: { id: string; expiresAt: string },
@@ -257,7 +257,7 @@ export async function returnCandidate(
 
 /** Undo: the saved candidate is open again (its expiry unchanged), without its decision. */
 export async function reopenCandidate(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   candidateId: string,
 ): Promise<void> {

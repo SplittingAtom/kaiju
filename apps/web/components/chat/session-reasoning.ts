@@ -3,7 +3,7 @@ import {
   thinkingBudget,
   type ThinkingControl,
   type ThinkingLevel,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { TeamModels } from "../../lib/admin/api/team/models";
 import type { RunUsage, ThreadUsage } from "../../lib/admin/api/usage";
 import { formatTokens } from "../../lib/admin/usage-format";

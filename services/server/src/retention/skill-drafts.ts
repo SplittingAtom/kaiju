@@ -4,9 +4,9 @@ import {
   sql,
   teams,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -32,7 +32,7 @@ export const NO_DRAFT_PURGE: DraftPurgeCounts = { drafts: 0 };
 
 type Reason = "retention" | "offboarding" | "hold_released";
 
-async function audited(tx: KobeTx, teamId: string, reason: Reason, rows: number) {
+async function audited(tx: KaijuTx, teamId: string, reason: Reason, rows: number) {
   if (rows === 0) return;
   await recordAudit(tx, {
     action: "retention.skill_drafts_purged",
@@ -44,10 +44,10 @@ async function audited(tx: KobeTx, teamId: string, reason: Reason, rows: number)
 
 /** Repeats one batch in its own team transaction (legal-hold lock first) until a short one. */
 async function batches(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   stop: (() => boolean) | undefined,
-  one: (tx: KobeTx) => Promise<number>,
+  one: (tx: KaijuTx) => Promise<number>,
 ): Promise<number> {
   let total = 0;
   for (;;) {
@@ -65,7 +65,7 @@ async function batches(
 
 /** Drafts unchanged since before `cutoff` (the team's window); held content goes to history. */
 export async function purgeSkillDrafts(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   cutoff: Date | null,
   options: { readonly stop?: () => boolean } = {},
@@ -87,7 +87,7 @@ export async function purgeSkillDrafts(
 
 /** A hold's copies of drafts and files that no hold covers any more (author nor writer). */
 export async function purgeReleasedDraftHistory(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   options: { readonly stop?: () => boolean } = {},
 ): Promise<{ readonly rows: number }> {
@@ -124,7 +124,7 @@ const ACTIVE_AUTHOR = sql`EXISTS (
  * back, and deletes drafts marked longer than `retainDays` ago. Returns how many were deleted.
  */
 export async function sweepDepartedDraftsInTeam(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   retainDays: number,
   options: { readonly stop?: () => boolean } = {},
@@ -154,7 +154,7 @@ export async function sweepDepartedDraftsInTeam(
 
 /** Every team's departed authors (the offboarding sweep). Returns the drafts deleted. */
 export async function sweepDepartedDrafts(
-  db: KobeDb,
+  db: KaijuDb,
   retainDays: number,
   options: { readonly stop?: () => boolean } = {},
 ): Promise<number> {

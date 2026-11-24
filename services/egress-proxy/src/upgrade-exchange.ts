@@ -6,7 +6,7 @@ import {
 } from "node:http";
 import { isIP, type Socket } from "node:net";
 import { checkServerIdentity, connect as tlsConnect, type TLSSocket } from "node:tls";
-import type { InjectedHeader } from "@kobe/db";
+import type { InjectedHeader } from "@kaiju/db";
 import type { ConnectionReason } from "./connection-audit.js";
 import type { UpgradeSettings } from "./proxy-deps.js";
 import { downstreamHeaders, upstreamHeaders } from "./upgrade-headers.js";

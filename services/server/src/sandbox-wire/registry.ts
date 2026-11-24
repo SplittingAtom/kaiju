@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { SandboxBus } from "./bus.js";
 import { sandboxKey } from "./slots.js";
 import type { SandboxTarget } from "./types.js";
@@ -32,14 +32,14 @@ interface Entry {
  * wherever it lives (locally closed with `replaced`, remotely via a `kick` hint).
  */
 export class ConnectionRegistry {
-  readonly #db: KobeDb;
+  readonly #db: KaijuDb;
   readonly #bus: SandboxBus;
   readonly #replicaId: string;
   readonly #byId = new Map<string, Entry>();
   readonly #bySandbox = new Map<string, Entry>();
   #generation = 0;
 
-  constructor(db: KobeDb, bus: SandboxBus, replicaId: string) {
+  constructor(db: KaijuDb, bus: SandboxBus, replicaId: string) {
     this.#db = db;
     this.#bus = bus;
     this.#replicaId = replicaId;
@@ -147,7 +147,7 @@ export class ConnectionRegistry {
    * the same sandbox replaces the old connection as for a member's.
    */
   async #registerEval(
-    tx: KobeTx,
+    tx: KaijuTx,
     conn: RegisteredConnection,
   ): Promise<{ previous: string | undefined; generation: number }> {
     const { teamId, userId, evalThreadId } = conn.target;

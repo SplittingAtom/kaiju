@@ -1,5 +1,5 @@
-import { auditActorKind, auditQuerySchema, legalHoldStatus } from "@kobe/db";
-import { SEMANTIC_MEMORY_KINDS, SEMANTIC_MEMORY_STATUSES } from "@kobe/protocol";
+import { auditActorKind, auditQuerySchema, legalHoldStatus } from "@kaiju/db";
+import { SEMANTIC_MEMORY_KINDS, SEMANTIC_MEMORY_STATUSES } from "@kaiju/protocol";
 import { exportQuerySchema } from "../../../audit/export/http.js";
 import { FORWARD_DESTINATIONS } from "../../../audit/forward/types.js";
 import {

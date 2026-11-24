@@ -65,7 +65,7 @@ export function withConnectorTools(
  * the allow list names anything else, the docs tools are named too (unless denied); once it
  * names nothing else they leave it again, so an empty list keeps meaning "not narrowed".
  */
-export function withKobeDocs(form: FormState, docsTools: readonly string[]): FormState {
+export function withKaijuDocs(form: FormState, docsTools: readonly string[]): FormState {
   if (docsTools.length === 0) return form;
   const docs = new Set(docsTools);
   const allow = splitLines(form.toolsAllow);

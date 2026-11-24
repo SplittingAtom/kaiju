@@ -4,15 +4,15 @@ import {
   THREAD_SUGGESTIONS_MAX,
   threadSuggestionsSchema,
   type ServerCallRequest,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   loadMemberBudgetState,
   sql,
   thresholdReached,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { logger } from "../logger.js";
 import type { RunAgentResolver } from "../runs/seams.js";
@@ -40,7 +40,10 @@ const SYSTEM_PROMPT =
   "user's message.";
 
 /** Whether the team turned follow-ups on (default off). `teams` is a site table: by id. */
-export async function readFollowupsEnabled(db: KobeDb | KobeTx, teamId: string): Promise<boolean> {
+export async function readFollowupsEnabled(
+  db: KaijuDb | KaijuTx,
+  teamId: string,
+): Promise<boolean> {
   const res = await db.execute<{ on: boolean | null }>(sql`
     SELECT (settings -> ${TEAM_FOLLOWUPS_SETTING}) = 'true'::jsonb AS on
       FROM teams WHERE id = ${teamId}`);
@@ -56,7 +59,7 @@ const SETTINGS_OBJECT = sql`CASE WHEN jsonb_typeof(settings) = 'object' THEN set
  * by one holding the switch instead of failing.
  */
 export async function setFollowupsEnabled(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   enabled: boolean,
 ): Promise<boolean> {
@@ -80,7 +83,7 @@ export async function setFollowupsEnabled(
 type RunIds = { readonly teamId: string; readonly runId: string; readonly threadId: string };
 
 /** The decision's reads (switch, run, budget lines); a parameter so tests can make it fail. */
-export type FollowupsCheck = (tx: KobeTx, ids: RunIds) => Promise<boolean>;
+export type FollowupsCheck = (tx: KaijuTx, ids: RunIds) => Promise<boolean>;
 
 /**
  * The team switch is on, the run is a completed message run a member started (not a schedule) on
@@ -118,7 +121,7 @@ const errorCode = (err: unknown): string => {
  * follow-ups" (logged with its code): a hint never rolls back the run's completion (review S1).
  */
 export async function followupsDecisionInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   ids: RunIds,
   canCall: boolean,
   check: FollowupsCheck = followupsEligibleInTx,
@@ -208,7 +211,7 @@ export type FollowupsSourceResult =
 
 /** The follow-up call's member, model and prompt, read at call time (as for titles). */
 export async function loadFollowupsSource(
-  tx: KobeTx,
+  tx: KaijuTx,
   agents: RunAgentResolver,
   ids: { readonly teamId: string; readonly runId: string; readonly threadId: string },
 ): Promise<FollowupsSourceResult> {

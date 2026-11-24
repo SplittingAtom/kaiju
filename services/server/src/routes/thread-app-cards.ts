@@ -1,6 +1,6 @@
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import { launchAppCardBodySchema, type LaunchAppCardResponse } from "@kobe/protocol";
+import { launchAppCardBodySchema, type LaunchAppCardResponse } from "@kaiju/protocol";
 import {
   APP_LAUNCH_RATE,
   launchAppCard,

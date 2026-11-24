@@ -34,7 +34,7 @@ const b64 = (v: unknown) => Buffer.from(JSON.stringify(v)).toString("base64url")
 const header = (token: string) =>
   JSON.parse(Buffer.from(token.split(".")[0] ?? "", "base64url").toString()) as unknown;
 
-describe("@kobe/session-token (EdDSA, KOBE-513)", () => {
+describe("@kaiju/session-token (EdDSA, KOBE-513)", () => {
   it("signs EdDSA with the key id and round-trips with the public key only", () => {
     const token = signSessionToken(claims, PAIR.signing);
     expect(header(token)).toEqual({ alg: "EdDSA", typ: "JWT", kid: PAIR.signing.kid });

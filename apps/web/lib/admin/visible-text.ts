@@ -2,7 +2,7 @@
  * Invisible and direction-changing characters made visible (KOBE-334 review L4, "Trojan Source"):
  * in the review's diff a reviewer must see exactly what an agent will read, so each such
  * character is shown as a marker like ⟨U+202E⟩. The set follows the scanner's `INVISIBLE`
- * (@kobe/skill-scanner prose.ts): format and bidi controls, zero-width characters, the BOM, tag
+ * (@kaiju/skill-scanner prose.ts): format and bidi controls, zero-width characters, the BOM, tag
  * characters and variation selectors (all, here: a diff isn't the place for emoji presentation).
  */
 const INVISIBLE =

@@ -16,7 +16,7 @@ import { MemoryObjects } from "../testing/memory-objects.js";
  */
 export let h: Harness;
 export const objects = new MemoryObjects();
-export const PREFIX = "kobe/";
+export const PREFIX = "kaiju/";
 export const blobs: BlobStore = { objects, prefix: PREFIX };
 export const log = pino({ level: "silent" });
 export const ids = { owner: "", admin: "", alice: "", bob: "", carol: "" };
@@ -197,9 +197,9 @@ export async function releaseHold(id: string): Promise<void> {
 
 /** A download with the browser's cookies, as raw bytes (the zip is binary). */
 export async function download(b: TestBrowser, path: string) {
-  const res = await h.app.request(`http://kobe.test${path}`, {
+  const res = await h.app.request(`http://kaiju.test${path}`, {
     headers: {
-      origin: "http://kobe.test",
+      origin: "http://kaiju.test",
       "x-forwarded-for": b.ip,
       cookie: [...b.cookies].map(([k, v]) => `${k}=${v}`).join("; "),
     },

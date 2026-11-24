@@ -143,8 +143,8 @@ describe("projectThread", () => {
     });
     const p = projectThread([user("u1", null, "q"), offloaded, failed], "a2");
     expect(content(p, "a1")).toEqual([
-      { type: "data-kobe-offloaded", data: { entryId: "a1" } },
-      { type: "data-kobe-problem", data: { reason: "error", message: "Provider returned 529" } },
+      { type: "data-kaiju-offloaded", data: { entryId: "a1" } },
+      { type: "data-kaiju-problem", data: { reason: "error", message: "Provider returned 529" } },
     ]);
   });
 
@@ -156,7 +156,7 @@ describe("projectThread", () => {
     });
     const p = projectThread([user("u1", null, "q"), cut], "a1");
     expect(content(p, "a1")).toContainEqual({
-      type: "data-kobe-problem",
+      type: "data-kaiju-problem",
       data: {
         reason: "length",
         message: "The model hit its output limit here, so this reply is incomplete.",
@@ -206,7 +206,7 @@ describe("projectThread with a scheduled run's skipped-actions summary (KOBE-178
       ["a1", "u1", "assistant"],
     ]);
     expect(content(p, "a1")?.at(-1)).toEqual({
-      type: "data-kobe-skipped",
+      type: "data-kaiju-skipped",
       data: { text: summaryText, count: 1 },
     });
     expect(p.headId).toBe("a1");
@@ -251,7 +251,7 @@ describe("projectThread with a scheduled run's skipped-actions summary (KOBE-178
     const p = projectThread(entries, "r0");
     expect(shape(p)).toEqual([["skipped:ks-1", null, "assistant"]]);
     expect(content(p, "skipped:ks-1")).toEqual([
-      { type: "data-kobe-skipped", data: { text: summaryText, count: 1 } },
+      { type: "data-kaiju-skipped", data: { text: summaryText, count: 1 } },
     ]);
     expect(p.headId).toBe("skipped:ks-1");
   });
@@ -277,7 +277,7 @@ describe("projectThread with a scheduled run's skipped-actions summary (KOBE-178
       ["a2", "u2", "assistant"],
     ]);
     expect(content(p, "a1")?.at(-1)).toEqual({
-      type: "data-kobe-skipped",
+      type: "data-kaiju-skipped",
       data: { text: "", count: 0 },
     });
     expect(p.lastEntryOfNode.get("a1")).toBe("a1");
@@ -417,7 +417,7 @@ describe("rich history (KOBE-208)", () => {
     const item = must(projectThread(entries, "a2").items.find((i) => i.message.id === "a1"));
     expect(item.message.content).toEqual([
       expect.objectContaining({ type: "tool-call", toolCallId: "tc1", result: "preview" }),
-      { type: "data-kobe-offloaded", data: { entryId: "o1" } },
+      { type: "data-kaiju-offloaded", data: { entryId: "o1" } },
       { type: "text", text: "Done" },
     ]);
     expect(messageMeta(item.message)).toMatchObject({
@@ -477,7 +477,7 @@ describe("app cards (KOBE-440)", () => {
       ["a2", "u2", "assistant"],
     ]);
     expect(content(p, CARD)).toEqual([
-      { type: "data-kobe-app-card", data: { entryId: CARD, tool: "open_explorer" } },
+      { type: "data-kaiju-app-card", data: { entryId: CARD, tool: "open_explorer" } },
     ]);
     expect(messageMeta(must(p.items.find((i) => i.message.id === CARD)).message)).toMatchObject({
       kind: "assistant",

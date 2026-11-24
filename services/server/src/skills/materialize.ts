@@ -1,4 +1,4 @@
-import type { SkillBundleRef } from "@kobe/protocol/sandbox-wire";
+import type { SkillBundleRef } from "@kaiju/protocol/sandbox-wire";
 import {
   and,
   eq,
@@ -7,8 +7,8 @@ import {
   sql,
   personalSkillVersions,
   teamSkillVersions,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuTx,
+} from "@kaiju/db";
 import { logger } from "../logger.js";
 import type { SkillRef } from "../resolver/resolve.js";
 import { blockedAmong, isBlocked } from "./blocklist.js";
@@ -31,7 +31,7 @@ import { blockedAmong, isBlocked } from "./blocklist.js";
  * are stored (KOBE-333) do not. The caller reports them as omitted, never silently.
  */
 export async function bundleRefsFor(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: { teamId: string; userId: string },
   skills: readonly SkillRef[],
 ): Promise<SkillBundleRef[]> {
@@ -39,7 +39,7 @@ export async function bundleRefsFor(
 }
 
 export async function bundleRefsWithGaps(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: { teamId: string; userId: string },
   skills: readonly SkillRef[],
 ): Promise<{ refs: SkillBundleRef[]; unavailable: string[] }> {
@@ -74,7 +74,7 @@ export async function bundleRefsWithGaps(
 }
 
 async function sizesByHash(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: { teamId: string; userId: string },
   hashes: readonly string[],
 ): Promise<Map<string, number>> {
@@ -118,7 +118,7 @@ async function sizesByHash(
  * review row, a catalog version, or a personal version's own scan that this team has not approved
  * since.
  */
-async function isSuspended(tx: KobeTx, teamId: string, hash: string): Promise<boolean> {
+async function isSuspended(tx: KaijuTx, teamId: string, hash: string): Promise<boolean> {
   const { rows } = await tx.execute(sql`
     SELECT 1 FROM team_skill_reviews
      WHERE team_id = ${teamId} AND content_hash = ${hash} AND suspended_at IS NOT NULL
@@ -158,7 +158,7 @@ export interface BundleCaller {
  * break the run that was started with it, while a blocklist entry stops a fetch even mid-run.
  */
 export async function locateBundle(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: BundleCaller,
   hash: string,
 ): Promise<LocatedBundle | null> {

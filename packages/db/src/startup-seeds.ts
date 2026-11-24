@@ -1,7 +1,7 @@
 /**
  * Rows the server writes into a fresh site when it starts, before anyone signs up (KOBE-422):
  * the gallery agents (`services/server/src/gallery/seed.ts`, at every start), Kaiju's own catalog
- * skills (`services/server/src/skills/kobe-seed.ts`, KOBE-317) with their Default tags and sync
+ * skills (`services/server/src/skills/kaiju-seed.ts`, KOBE-317) with their Default tags and sync
  * jobs, the chart's branding defaults (KOBE-503, `services/server/src/branding/defaults.ts`,
  * written only while each key is unset), the built-in Kaiju MCP connector row (KOBE-618), the
  * single sign-on providers the chart declares (`auth.sso.providers`, `managed_by = 'helm'`,
@@ -10,7 +10,7 @@
  * skills' bytes in the bucket (`<prefix>skills/catalog/<sha256>`) need nothing here: the restore
  * leaves objects that are not in the backup untouched, and the backup's rows name the same
  * content-addressed keys.
- * `kobe restore`
+ * `kaiju restore`
  * accepts a target holding only these and replaces them with the backup's rows, in its one
  * transaction; any other row in these tables (a personal agent, a person's audit event, a setting
  * someone chose) is real data and the target is refused.
@@ -54,7 +54,7 @@ const HELM_SSO_AUDIT_ACTIONS = [
 ] as const;
 
 /** Kaiju's own catalog skills (publisher `kobe`, KOBE-317), as a subquery of their ids. */
-const KOBE_SKILL_IDS = "SELECT id FROM public.registry_skills WHERE publisher = 'kobe'";
+const KAIJU_SKILL_IDS = "SELECT id FROM public.registry_skills WHERE publisher = 'kobe'";
 
 /** `site_settings` keys only background jobs write: where a pass or a sweep stands. */
 export const JOB_SETTING_KEYS = [
@@ -138,7 +138,7 @@ export const STARTUP_SEEDED_ROWS: Readonly<Record<string, StartupSeed>> = {
       // Only the chart's SSO providers upsert writes these as the system (KOBE-626).
       ` OR (team_id IS NULL AND action IN (${list(HELM_SSO_AUDIT_ACTIONS)}))` +
       // A site admin's Default jobs write the same system events for their skills: real data.
-      ` OR (action IN (${list(DEFAULT_SYNC_AUDIT_ACTIONS)}) AND target ->> 'skillId' IN (SELECT id::text FROM (${KOBE_SKILL_IDS}) k))` +
+      ` OR (action IN (${list(DEFAULT_SYNC_AUDIT_ACTIONS)}) AND target ->> 'skillId' IN (SELECT id::text FROM (${KAIJU_SKILL_IDS}) k))` +
       `)`,
   },
   connectors: {

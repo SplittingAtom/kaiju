@@ -8,7 +8,7 @@ import type { ViaAgent } from "../../lib/admin/api/audit-via";
 export function ViaAgentNote({ via }: { readonly via: ViaAgent | undefined }) {
   if (via === undefined) return null;
   return (
-    <div className="text-sm text-console-muted" data-kobe-via-agent="">
+    <div className="text-sm text-console-muted" data-kaiju-via-agent="">
       via agent
       {via.threadOpen ? (
         <>

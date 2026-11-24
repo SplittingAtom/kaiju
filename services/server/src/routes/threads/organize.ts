@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { type KobeTx } from "@kobe/db";
+import { type KaijuTx } from "@kaiju/db";
 import { type TeamVariables } from "../../authz/middleware.js";
-import { fileThreadRequestSchema } from "@kobe/protocol";
+import { fileThreadRequestSchema } from "@kaiju/protocol";
 import { canCreateInProject } from "../../threads/references.js";
 import { mountCapRefusal } from "../../projects/mounts.js";
 import { restoreThread, trashThread, type Viewer } from "../../threads/repository.js";
@@ -17,10 +17,10 @@ export function threadOrganizeRoutes(kit: ThreadKit): Hono<{ Variables: TeamVari
 
   /** Pin, unpin, archive, unarchive (CE19, KOBE-220): the owner's own; idempotent. */
   const organize = {
-    pin: (tx: KobeTx, viewer: Viewer, id: string) => setPinned(tx, viewer, id, true),
-    unpin: (tx: KobeTx, viewer: Viewer, id: string) => setPinned(tx, viewer, id, false),
-    archive: (tx: KobeTx, viewer: Viewer, id: string) => setArchived(tx, viewer, id, true),
-    unarchive: (tx: KobeTx, viewer: Viewer, id: string) => setArchived(tx, viewer, id, false),
+    pin: (tx: KaijuTx, viewer: Viewer, id: string) => setPinned(tx, viewer, id, true),
+    unpin: (tx: KaijuTx, viewer: Viewer, id: string) => setPinned(tx, viewer, id, false),
+    archive: (tx: KaijuTx, viewer: Viewer, id: string) => setArchived(tx, viewer, id, true),
+    unarchive: (tx: KaijuTx, viewer: Viewer, id: string) => setArchived(tx, viewer, id, false),
   } as const;
   for (const [action, apply] of Object.entries(organize)) {
     app.post(`/:id/${action}`, async (c) => {

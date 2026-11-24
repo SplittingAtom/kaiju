@@ -1,7 +1,7 @@
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createDb, searchThreads, withTeam, type KobeDatabase, type KobeTx } from "@kobe/db";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createDb, searchThreads, withTeam, type KaijuDatabase, type KaijuTx } from "@kaiju/db";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { lastMirroredEntryId, mirrorEntriesInTx, restoreParts } from "../sandbox-wire/entries.js";
 import { loadRun } from "../sandbox-wire/run-state.js";
 import {
@@ -46,7 +46,7 @@ const ENTRIES_PER_THREAD = 10;
 const WATCHED = /\b(threads|thread_entries)\b/;
 
 let database: TestDatabase;
-let app: KobeDatabase;
+let app: KaijuDatabase;
 let admin: pg.Client;
 let teamId = "";
 let ownerId = "";
@@ -89,7 +89,7 @@ async function capture(fn: () => Promise<void>): Promise<Captured[]> {
 }
 
 /** Runs `fn` in the team's transaction and rolls it back (writes are only planned). */
-async function inTeamRolledBack(fn: (tx: KobeTx) => Promise<unknown>): Promise<void> {
+async function inTeamRolledBack(fn: (tx: KaijuTx) => Promise<unknown>): Promise<void> {
   const rollback = new Error("rollback");
   await withTeam(app.db, teamId, async (tx) => {
     await fn(tx);

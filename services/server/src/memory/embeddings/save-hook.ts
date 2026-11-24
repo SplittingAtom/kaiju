@@ -1,5 +1,5 @@
-import type { KobeDb } from "@kobe/db";
-import type { SemanticMemoryScope } from "@kobe/protocol";
+import type { KaijuDb } from "@kaiju/db";
+import type { SemanticMemoryScope } from "@kaiju/protocol";
 import { logger } from "../../logger.js";
 import type { SaveWho } from "./service.js";
 
@@ -19,15 +19,15 @@ export type SaveEmbedder = (
   itemIds: readonly string[],
 ) => void;
 
-const embedders = new WeakMap<KobeDb, SaveEmbedder>();
+const embedders = new WeakMap<KaijuDb, SaveEmbedder>();
 
-export function registerSaveEmbedder(db: KobeDb, embed: SaveEmbedder): void {
+export function registerSaveEmbedder(db: KaijuDb, embed: SaveEmbedder): void {
   embedders.set(db, embed);
 }
 
 /** Requests vectors for saved items (in the background; never throws, never blocks the save). */
 export function embedSaved(
-  db: KobeDb,
+  db: KaijuDb,
   who: SaveWho,
   scope: SemanticMemoryScope,
   itemIds: readonly string[],

@@ -1,10 +1,10 @@
 /**
- * FakeKobe's `GET /v1/workspace/changes` (KOBE-496), as the server behaves: on each connect one
+ * FakeKaiju's `GET /v1/workspace/changes` (KOBE-496), as the server behaves: on each connect one
  * `file.state` per requested path from the fake workspace, then `file.changed` whenever a test
  * announces a change. Tests change `workspaceFiles` first, then call `announce` with who did it,
  * or call `move` (KOBE-516): it moves the files and says where each old path went (`moved_to`).
  */
-import type { WorkspaceChangeActor, WorkspaceFileChange } from "@kobe/protocol";
+import type { WorkspaceChangeActor, WorkspaceFileChange } from "@kaiju/protocol";
 import { sha256Hex } from "../../files/editor";
 import type { EventSourceLike } from "../stream";
 

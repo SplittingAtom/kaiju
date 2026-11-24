@@ -1,4 +1,4 @@
-import { sql, withTeam } from "@kobe/db";
+import { sql, withTeam } from "@kaiju/db";
 import { logger } from "../logger.js";
 import { notifyEval, settleClosedExecutions } from "../skills/evals/store.js";
 import type { OffboardingContext, TeamIdentity } from "./types.js";

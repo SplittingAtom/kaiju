@@ -288,7 +288,7 @@ describe("isolation banner", () => {
 });
 
 describe("re-checking access", () => {
-  it("shows the checking state again while it asks after kobe:active-team", async () => {
+  it("shows the checking state again while it asks after kaiju:active-team", async () => {
     // Every answer here is a promise the test controls, so it flushes them with act() instead of
     // polling for the DOM against testing-library's 1 s deadline (which a loaded runner can miss).
     let release: (v: ApiResult<ConsoleAccess>) => void = () => undefined;

@@ -1,5 +1,5 @@
-import { and, desc, eq, events, schedules, sql, type KobeTx } from "@kobe/db";
-import type { ScheduleRecurrence } from "@kobe/protocol";
+import { and, desc, eq, events, schedules, sql, type KaijuTx } from "@kaiju/db";
+import type { ScheduleRecurrence } from "@kaiju/protocol";
 import { resolveAgentPin } from "../agents/versions.js";
 import { principalActive } from "../runs/store.js";
 import type { ScheduledSubmit } from "../runs/scheduled-submit.js";
@@ -48,7 +48,7 @@ const titleOf = (prompt: string): string =>
   (prompt.split("\n")[0] ?? "").trim().slice(0, TITLE_MAX);
 
 /** The schedule row under `FOR UPDATE SKIP LOCKED`: this lock is the lease (held until commit). */
-async function leaseRow(tx: KobeTx, due: DueSchedule) {
+async function leaseRow(tx: KaijuTx, due: DueSchedule) {
   const [row] = await tx
     .select()
     .from(schedules)
@@ -67,7 +67,7 @@ const FIRE_OR_SKIP = sql.raw(`('schedule.fire', 'schedule.skip')`);
  * transaction (a `collapsed` skip and its fire): the later `due_at`, the fire, wins.
  */
 async function latestEvent(
-  tx: KobeTx,
+  tx: KaijuTx,
   due: DueSchedule,
 ): Promise<{ kind: string; reason: string | null } | undefined> {
   const [last] = await tx
@@ -91,7 +91,7 @@ async function latestEvent(
  * agent's 15-minute schedule would otherwise write ~96 rows a day, forever; KOBE-180 review).
  */
 export async function recordSkip(
-  tx: KobeTx,
+  tx: KaijuTx,
   due: DueSchedule,
   reason: SkipReason,
   plan: FirePlan,

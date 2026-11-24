@@ -119,7 +119,7 @@ export function createRunEventHub(options: HubOptions): RunEventHub {
     ? undefined
     : createListenClient({
         connectionString: requiredUrl(options.connectionString),
-        applicationName: "kobe-event-hub",
+        applicationName: "kaiju-event-hub",
         reconnectMinMs: opts.reconnectMinMs,
         reconnectMaxMs: opts.reconnectMaxMs,
         pingMs: opts.pingMs,

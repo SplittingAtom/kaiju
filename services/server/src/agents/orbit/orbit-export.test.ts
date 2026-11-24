@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
-import type { AgentDefinition } from "@kobe/agent-file";
+import type { AgentDefinition } from "@kaiju/agent-file";
 import { computeToolManifest, type PublishFloor, type ToolManifest } from "../manifest.js";
 import { mapAgentVersionToOrbit, orbitExportToYaml } from "./orbit-export.js";
 import { orbitExperimentSchema } from "./orbit-schema.js";

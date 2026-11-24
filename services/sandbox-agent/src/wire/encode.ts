@@ -2,7 +2,7 @@ import {
   decodeSandboxFrame,
   encodeFrame,
   type SandboxToServerFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 
 export type OutboundFrame = SandboxToServerFrame;
 

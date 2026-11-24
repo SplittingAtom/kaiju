@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { ChatApp } from "../chat/chat-app";
 import { must } from "../../lib/testing/must";
 import { isMacPlatform } from "../../lib/shell/shortcuts";
@@ -47,7 +47,7 @@ const TREE: Record<string, Entry[]> = {
 
 let seen: Seen[];
 let overrides: Record<string, () => Response>;
-let fake: FakeKobe;
+let fake: FakeKaiju;
 let wakeGate: Promise<void>;
 let syncGate: Promise<void>;
 let syncStatus: string;
@@ -121,7 +121,7 @@ const rootListings = () =>
 beforeEach(() => {
   seen = [];
   overrides = {};
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   wakeGate = Promise.resolve();
   syncGate = Promise.resolve();
   syncStatus = "synced";
@@ -238,7 +238,7 @@ describe("Files in the workspace rail (KOBE-198, ac-3)", () => {
     const { user, panel } = await open();
     await waitFor(() => expect(wakes()).toBe(1));
     const upload = within(panel).getByLabelText("Upload a file to My files");
-    expect(upload.closest("[data-kobe-drop-folder]")).not.toBeNull();
+    expect(upload.closest("[data-kaiju-drop-folder]")).not.toBeNull();
     const refresh = within(panel).getByRole("button", { name: "Refresh files" });
     expect(within(panel).getAllByRole("button", { name: "Refresh files" })).toEqual([refresh]);
     expect(must(refresh.closest("div")).textContent).toMatch(/^Workspace/);
@@ -333,7 +333,7 @@ describe("Files in the workspace rail (KOBE-198, ac-3)", () => {
     // KOBE-304's compact rows take the 24 px button (WCAG 2.5.8's minimum; was 32 px, KOBE-269).
     expect(button.className).toMatch(/\bsize-6\b/);
     const menu = await rowMenu("report.csv");
-    expect(menu.closest("[data-kobe-chat]")).not.toBeNull();
+    expect(menu.closest("[data-kaiju-chat]")).not.toBeNull();
     // Rename and Move to… since the move API (KOBE-304); Mention in message for files (KOBE-374).
     expect(menuNames(menu)).toEqual([
       "Open",

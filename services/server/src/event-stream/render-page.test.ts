@@ -1,43 +1,43 @@
 import { describe, expect, it } from "vitest";
-import { formatSseEvent, type KobeEvent } from "@kobe/protocol";
+import { formatSseEvent, type KaijuEvent } from "@kaiju/protocol";
 import { renderPage, type EpilogueTracking } from "./stream.js";
 
 const RUN = "0b6f0d4e-5a3c-4d8e-9a43-5f7b0f2d1c11";
 const TS = "2026-11-20T10:00:00.000Z";
 
-const delta = (seq: number): KobeEvent =>
+const delta = (seq: number): KaijuEvent =>
   ({
     run_id: RUN,
     seq,
     ts: TS,
     type: "text.delta",
     payload: { message_id: "m", content_index: 0, delta: String(seq) },
-  }) as KobeEvent;
+  }) as KaijuEvent;
 
-const completed = (seq: number, epilogue?: string[]): KobeEvent =>
+const completed = (seq: number, epilogue?: string[]): KaijuEvent =>
   ({
     run_id: RUN,
     seq,
     ts: TS,
     type: "run.completed",
     payload: { leaf_entry_id: null, ...(epilogue ? { epilogue } : {}) },
-  }) as KobeEvent;
+  }) as KaijuEvent;
 
-const titled = (seq: number): KobeEvent =>
+const titled = (seq: number): KaijuEvent =>
   ({
     run_id: RUN,
     seq,
     ts: TS,
     type: "thread.updated",
     payload: { thread_id: RUN, title: "Revenue" },
-  }) as KobeEvent;
+  }) as KaijuEvent;
 
-const page = (events: KobeEvent[], lastSeq = events.at(-1)?.seq ?? 0) => ({
+const page = (events: KaijuEvent[], lastSeq = events.at(-1)?.seq ?? 0) => ({
   run: { ended: false, compacted: false, lastSeq },
   events,
 });
 
-const sse = (events: KobeEvent[]) => events.map((e) => formatSseEvent(e)).join("");
+const sse = (events: KaijuEvent[]) => events.map((e) => formatSseEvent(e)).join("");
 
 describe("renderPage (KOBE-730)", () => {
   it("renders every event after lastSent and advances lastSent", () => {

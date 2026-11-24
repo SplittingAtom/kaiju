@@ -87,22 +87,22 @@ export const EXPOSURE_LABELS: Readonly<Record<Exposure, string>> = {
 };
 
 /** The built-in Kaiju connector's levels for a team (KOBE-623, spec kobe-admin-mcp §6, KA5). */
-export type KobeLevel = "docs" | "read" | "read_write";
+export type KaijuLevel = "docs" | "read" | "read_write";
 /** The site switch: `off` (no Kaiju connector), `docs` (default), `admin`. */
-export type KobeMode = "off" | "docs" | "admin";
+export type KaijuMode = "off" | "docs" | "admin";
 
-export const KOBE_LEVEL_LABELS: Readonly<Record<KobeLevel, string>> = {
+export const KAIJU_LEVEL_LABELS: Readonly<Record<KaijuLevel, string>> = {
   docs: "Docs only",
   read: "Read",
   read_write: "Read and write",
 };
 
-export interface KobeTeamConnector {
+export interface KaijuTeamConnector {
   readonly connectorId: string | null;
   /** `kobe`, or `kobe-builtin` when a registered connector took the name; null if never seeded. */
   readonly name: string | null;
-  readonly mode: KobeMode;
-  readonly level: KobeLevel;
+  readonly mode: KaijuMode;
+  readonly level: KaijuLevel;
   /** Pi names of the docs tools (on in every conversation while the site switch is not off). */
   readonly docsTools: readonly string[];
   readonly adminTools: readonly {
@@ -114,18 +114,18 @@ export interface KobeTeamConnector {
 }
 
 /** `GET /v1/team/connectors/kobe` (team.read). */
-export async function getTeamKobe(teamId: string): Promise<ApiResult<KobeTeamConnector>> {
-  const res = await apiRequest<{ kobe: KobeTeamConnector }>(`${BASE}/kobe`, { teamId });
+export async function getTeamKaiju(teamId: string): Promise<ApiResult<KaijuTeamConnector>> {
+  const res = await apiRequest<{ kobe: KaijuTeamConnector }>(`${BASE}/kobe`, { teamId });
   return res.ok ? { ...res, data: res.data.kobe } : res;
 }
 
 /** `PUT /v1/team/connectors/kobe` (team.connectors.manage), with the level the admin saw. */
-export async function setTeamKobeLevel(
+export async function setTeamKaijuLevel(
   teamId: string,
-  level: KobeLevel,
-  expected: KobeLevel,
-): Promise<ApiResult<KobeTeamConnector>> {
-  const res = await apiRequest<{ kobe: KobeTeamConnector }>(`${BASE}/kobe`, {
+  level: KaijuLevel,
+  expected: KaijuLevel,
+): Promise<ApiResult<KaijuTeamConnector>> {
+  const res = await apiRequest<{ kobe: KaijuTeamConnector }>(`${BASE}/kobe`, {
     method: "PUT",
     json: { level, expected_level: expected },
     teamId,

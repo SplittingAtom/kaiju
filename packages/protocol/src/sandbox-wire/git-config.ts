@@ -15,7 +15,7 @@ import { SANDBOX_WIRE_VERSION } from "./connection.js";
  */
 export const CAPABILITY_GIT = "git";
 
-/** As `GIT_CONNECTIONS_MAX` in @kobe/db: a Workspace has at most five connections (G2). */
+/** As `GIT_CONNECTIONS_MAX` in @kaiju/db: a Workspace has at most five connections (G2). */
 export const RUN_GIT_REMOTES_MAX = 5;
 export const GIT_IDENTITY_NAME_MAX = 200;
 export const GIT_IDENTITY_EMAIL_MAX = 254;
@@ -43,7 +43,7 @@ export const gitIdentitySchema = z.strictObject({ name: identityName, email: ide
 export type GitIdentity = z.infer<typeof gitIdentitySchema>;
 
 /**
- * A connection's base URL as stored (`parseGitBaseUrl` in @kobe/db): https, lowercase host, an
+ * A connection's base URL as stored (`parseGitBaseUrl` in @kaiju/db): https, lowercase host, an
  * optional sub-path (Gitea/Forgejo installed under a path), no trailing slash, no query. No port:
  * the egress proxy carries git only to https on 443 (KOBE-763), so the server leaves such
  * connections out.
@@ -53,7 +53,7 @@ const baseUrl = z
   .max(2048)
   .regex(/^https:\/\/[a-z0-9.-]+(\/[A-Za-z0-9_~-][A-Za-z0-9._~-]*)*$/, "canonical https base URL");
 
-/** As `GIT_ORGANIZATION_PATTERN` / `GIT_ORGANIZATION_MAX` in @kobe/db. */
+/** As `GIT_ORGANIZATION_PATTERN` / `GIT_ORGANIZATION_MAX` in @kaiju/db. */
 const organization = z
   .string()
   .max(100)

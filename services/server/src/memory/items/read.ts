@@ -1,10 +1,10 @@
-import { sql, type KobeDb, makeCursorCodec } from "@kobe/db";
+import { sql, type KaijuDb, makeCursorCodec } from "@kaiju/db";
 import type {
   SemanticMemoryItemDetail,
   SemanticMemoryListQuery,
   SemanticMemoryListResponse,
   SemanticMemoryScope,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { inStore } from "./context.js";
 import { disabled, invalid, notFound } from "./errors.js";
 import { activeCount, policyUsage, scopeLimit } from "./limits.js";
@@ -40,7 +40,7 @@ function decodeCursor(raw: string): { us: string; id: string } {
  * Policy only (Policy follows the Site master switch alone). `usage` feeds the 80% warning.
  */
 export function listItems(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   q: SemanticMemoryListQuery,
 ): Promise<SemanticMemoryListResponse> {
@@ -108,7 +108,7 @@ export const AGENT_DETAIL_VIEW: DetailView = Object.freeze({
 
 /** One item with its versions; another person's personal item is a 404. */
 export function getItem(
-  db: KobeDb,
+  db: KaijuDb,
   who: MemoryWho,
   scope: SemanticMemoryScope,
   id: string,

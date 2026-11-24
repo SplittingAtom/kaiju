@@ -1,14 +1,14 @@
 /**
- * The fake server's shared rules (KOBE-717: out of `fake-kobe.ts`): threads, entries and runs as
+ * The fake server's shared rules (KOBE-717: out of `fake-kaiju.ts`): threads, entries and runs as
  * the server keeps them (queue, start, end, snapshots, summaries), used by every area handler.
- * `FakeKobe` extends it, so tests reach these as before.
+ * `FakeKaiju` extends it, so tests reach these as before.
  */
 import {
   EVENT_ENTRY_PAYLOAD_MAX_BYTES,
-  type KobeEvent,
-  type KobeEventPayload,
-  type KobeEventType,
-} from "@kobe/protocol";
+  type KaijuEvent,
+  type KaijuEventPayload,
+  type KaijuEventType,
+} from "@kaiju/protocol";
 import { defaultRemember } from "./approvals";
 import { FakeStore } from "./store";
 import {
@@ -205,7 +205,7 @@ export class FakeCore extends FakeStore {
     return [...this.runs.values()].find((r) => r.thread_id === threadId && ACTIVE.has(r.status));
   }
 
-  emit<T extends KobeEventType>(runId: string, type: T, payload: KobeEventPayload<T>): void {
+  emit<T extends KaijuEventType>(runId: string, type: T, payload: KaijuEventPayload<T>): void {
     const run = this.run(runId);
     const event = {
       run_id: runId,
@@ -213,7 +213,7 @@ export class FakeCore extends FakeStore {
       ts: NOW,
       type,
       payload,
-    } as KobeEvent;
+    } as KaijuEvent;
     run.events.push(event);
     for (const source of this.sources) source.deliver(run);
   }
@@ -244,11 +244,11 @@ export class FakeCore extends FakeStore {
   }
 
   /** Ends a run: state first, then the terminal event (one transaction on the server). */
-  end<T extends KobeEventType>(
+  end<T extends KaijuEventType>(
     run: FakeRun,
     status: string,
     type: T,
-    payload: KobeEventPayload<T>,
+    payload: KaijuEventPayload<T>,
   ) {
     const thread = this.thread(run.thread_id);
     const wasActive = ACTIVE.has(run.status);

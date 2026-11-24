@@ -1,7 +1,7 @@
 import { createHash, createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { approvalSigningString } from "@kobe/protocol";
-import { computeApprovalMac, signApproval, verifyApproval } from "@kobe/protocol/node";
+import { approvalSigningString } from "@kaiju/protocol";
+import { computeApprovalMac, signApproval, verifyApproval } from "@kaiju/protocol/node";
 import { approvalKeyFromSecret, approvalKeyring } from "./keys.js";
 
 /**

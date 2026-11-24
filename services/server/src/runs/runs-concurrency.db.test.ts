@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { KobeEvent } from "@kobe/protocol";
+import type { KaijuEvent } from "@kaiju/protocol";
 import { must, type Person } from "../testing/event-stream-fixture.js";
 import { RunFixture, piDelta, type FakeWorkspace, type RunWorld } from "../testing/run-fixture.js";
 import type { SseReader } from "../testing/sse.js";
@@ -146,8 +146,8 @@ describe("Gate 1: two teams × five users chat concurrently", () => {
     readonly threadId: string;
   }
 
-  async function readUntil(reader: SseReader, count: number): Promise<KobeEvent[]> {
-    const out: KobeEvent[] = [];
+  async function readUntil(reader: SseReader, count: number): Promise<KaijuEvent[]> {
+    const out: KaijuEvent[] = [];
     while (out.length < count) {
       const e = await reader.nextEvent();
       if (!e) break;

@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
-import { teams, type KobeDb } from "@kobe/db";
-import type { AgentDefinition } from "@kobe/agent-file";
-import { signSessionToken } from "@kobe/session-token";
+import { teams, type KaijuDb } from "@kaiju/db";
+import type { AgentDefinition } from "@kaiju/agent-file";
+import { signSessionToken } from "@kaiju/session-token";
 import { IsolationRuntimeMissingError, type IsolationGate } from "../../isolation/gate.js";
 import { logger } from "../../logger.js";
 import type { SandboxSettings, SessionKeys } from "../../sandbox/config.js";
@@ -46,7 +46,7 @@ const SWEEP_SLACK_SECONDS = 120;
 const MAX_ERROR = 500;
 
 export interface EvalRunnerOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly kube: KubeClient;
   readonly provider: Pick<SandboxProvider, "ensureTeam">;
   readonly isolation: Pick<IsolationGate, "require">;

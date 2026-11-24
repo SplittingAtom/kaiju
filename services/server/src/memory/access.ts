@@ -1,4 +1,4 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 import { loadAccess } from "../projects/access.js";
 
 /**
@@ -11,7 +11,7 @@ import { loadAccess } from "../projects/access.js";
 export type ProjectMemoryAccess = "none" | "read" | "write";
 
 export async function projectMemoryAccess(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   projectId: string,
@@ -23,7 +23,7 @@ export async function projectMemoryAccess(
 
 /** The caller may read the project's memory (and its files, threads shared to it). */
 export async function canAccessProject(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   projectId: string,

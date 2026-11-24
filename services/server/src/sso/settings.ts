@@ -1,4 +1,4 @@
-import { validateCidrs, validateInternalTargets } from "@kobe/address-policy";
+import { validateCidrs, validateInternalTargets } from "@kaiju/address-policy";
 import { z } from "zod";
 import { DEFAULT_ALLOWED_PORTS, resolveAll } from "../connectors/url-policy.js";
 import { checkEntraTenant, checkGenericIssuer } from "./issuer.js";

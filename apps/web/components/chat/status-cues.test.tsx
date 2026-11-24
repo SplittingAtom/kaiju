@@ -3,8 +3,8 @@ import { readFileSync } from "node:fs";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { KobeEventPayload } from "@kobe/protocol";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import type { KaijuEventPayload } from "@kaiju/protocol";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { stubApi } from "../admin/testing";
 import { IconActionProvider } from "../shell/icon-action";
@@ -22,13 +22,13 @@ import { composer, openApp, streaming } from "./testing";
 // A variable path: Vite rewrites `new URL("literal", import.meta.url)` into a served asset URL.
 const cssFile = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
-let fake: FakeKobe;
+let fake: FakeKaiju;
 let scrolled: Element[];
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   scrolled = [];
   Element.prototype.scrollIntoView = function (this: Element) {
@@ -45,7 +45,7 @@ afterEach(() => {
 /** The header's badge (the only StatusBadge in the chat). */
 const badge = async () => Promise.resolve(document.querySelector("header [data-status-badge]"));
 
-function asked(): KobeEventPayload<"approval.requested"> {
+function asked(): KaijuEventPayload<"approval.requested"> {
   return {
     approval_id: "00000000-0000-4000-8000-000900000001",
     tool_call_id: "tc1",
@@ -107,15 +107,15 @@ describe("approval card (ac-3)", () => {
     fake.agent.toolCall(runId, "tc1", "bash", { command: "rm -rf build" }, "m1");
     fake.requestApproval(runId, asked());
     const card = await screen.findByRole("group", { name: /Approval needed/ });
-    expect(card.getAttribute("data-kobe-approval")).toBe("pending");
+    expect(card.getAttribute("data-kaiju-approval")).toBe("pending");
     const icon = must(card.querySelector("svg[aria-hidden]"));
     expect(icon.getAttribute("class")).toMatch(/attention/);
 
-    const footer = must(document.querySelector<HTMLElement>("[data-kobe-composer]"));
+    const footer = must(document.querySelector<HTMLElement>("[data-kaiju-composer]"));
     const note = await within(footer).findByText("Waiting for your approval");
     expect(footer.contains(note)).toBe(true);
     // Amber with a clock icon; the words stay.
-    const cue = must(note.closest("[data-kobe-approval-note]"));
+    const cue = must(note.closest("[data-kaiju-approval-note]"));
     expect(cue.className).toMatch(/attention/);
     expect(cue.querySelector("svg[aria-hidden]")).not.toBeNull();
     // Show brings the card back when the member scrolled away.
@@ -132,7 +132,7 @@ describe("approval card (ac-3)", () => {
     props: { readOnly?: boolean; expiresAt?: string } = {},
   ) =>
     render(
-      <div data-kobe-follow={follow}>
+      <div data-kaiju-follow={follow}>
         <ApprovalCard
           requested={{ ...asked(), ...(props.expiresAt ? { expires_at: props.expiresAt } : {}) }}
           resolved={undefined}
@@ -145,7 +145,7 @@ describe("approval card (ac-3)", () => {
   it("scrolls into view on arrival only while the list follows the latest message (M1)", () => {
     cardIn("pinned");
     expect(scrolled).toHaveLength(1);
-    expect(scrolled[0]?.getAttribute("data-kobe-approval")).toBe("pending");
+    expect(scrolled[0]?.getAttribute("data-kaiju-approval")).toBe("pending");
   });
 
   it("never moves a member who scrolled up, or while the position is being restored (KOBE-288)", () => {
@@ -163,7 +163,7 @@ describe("approval card (ac-3)", () => {
   it("the accent border is the amber status colour", () => {
     const css = cssFile("./chat.module.css").replace(/\s+/g, " ");
     expect(css).toMatch(
-      /\.approval \{[^}]*border-inline-start: 4px solid var\(--kobe-status-attention\)/,
+      /\.approval \{[^}]*border-inline-start: 4px solid var\(--kaiju-status-attention\)/,
     );
   });
 });
@@ -171,7 +171,7 @@ describe("approval card (ac-3)", () => {
 describe("tool steps (ac-4)", () => {
   const step = async (outcome: string) =>
     must(
-      await waitFor(() => must(document.querySelector(`[data-kobe-outcome-label="${outcome}"]`))),
+      await waitFor(() => must(document.querySelector(`[data-kaiju-outcome-label="${outcome}"]`))),
     );
 
   it("Running… green and spinning (not under reduced motion), Waiting amber, Done a muted green check", async () => {
@@ -180,7 +180,7 @@ describe("tool steps (ac-4)", () => {
     const run = await step("running");
     expect(run.textContent).toBe("Running…");
     expect(run.className).toMatch(/running/);
-    const spinner = must(document.querySelector('[data-kobe-outcome="running"]'));
+    const spinner = must(document.querySelector('[data-kaiju-outcome="running"]'));
     expect(spinner.getAttribute("class")).toContain("animate-spin");
     expect(spinner.getAttribute("class")).toContain("motion-reduce:animate-none");
 
@@ -191,7 +191,7 @@ describe("tool steps (ac-4)", () => {
     const done = await step("done");
     expect(done.textContent).toBe("Done");
     expect(done.className).toMatch(/done/);
-    expect(document.querySelector('[data-kobe-outcome="done"]')?.getAttribute("class")).toMatch(
+    expect(document.querySelector('[data-kaiju-outcome="done"]')?.getAttribute("class")).toMatch(
       /done/,
     );
   });
@@ -217,7 +217,7 @@ describe("smaller cues (ac-6)", () => {
   it("the Stop button is red-tinted while a run streams, and keeps its name", async () => {
     await running();
     const stop = await screen.findByRole("button", { name: /^Stop/ });
-    expect(stop.hasAttribute("data-kobe-stop")).toBe(true);
+    expect(stop.hasAttribute("data-kaiju-stop")).toBe(true);
     for (const c of ["border-status-failed", "bg-status-failed-bg", "text-status-failed"]) {
       expect(stop.getAttribute("class")).toContain(c);
       expect(STOP_TINT).toContain(c);
@@ -239,13 +239,13 @@ describe("smaller cues (ac-6)", () => {
     const count = await screen.findByText("3");
     expect(count.className).toMatch(/count/);
     const css = cssFile("../shell/icon-action.module.css").replace(/\s+/g, " ");
-    expect(css).toMatch(/\.count \{[^}]*color: var\(--kobe-status-accent-fg\)/);
-    expect(css).toMatch(/\.count \{[^}]*background: var\(--kobe-status-accent\)/);
+    expect(css).toMatch(/\.count \{[^}]*color: var\(--kaiju-status-accent-fg\)/);
+    expect(css).toMatch(/\.count \{[^}]*background: var\(--kaiju-status-accent\)/);
   });
 
   it("the context gauge's amber and red are the status colours", () => {
     const css = cssFile("../shell/context-gauge.module.css");
-    expect(css).toContain("--gauge-warn: var(--kobe-gauge-warn)");
-    expect(css).toContain("--gauge-full: var(--kobe-gauge-full)");
+    expect(css).toContain("--gauge-warn: var(--kaiju-gauge-warn)");
+    expect(css).toContain("--gauge-full: var(--kaiju-gauge-full)");
   });
 });

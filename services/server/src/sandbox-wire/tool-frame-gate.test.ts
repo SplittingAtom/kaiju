@@ -1,4 +1,4 @@
-import { PI_PINNED_VERSION, SANDBOX_CLOSE_CODES } from "@kobe/protocol/sandbox-wire";
+import { PI_PINNED_VERSION, SANDBOX_CLOSE_CODES } from "@kaiju/protocol/sandbox-wire";
 import { EventEmitter } from "node:events";
 import {
   CAPABILITY_ARTIFACTS,
@@ -10,9 +10,9 @@ import {
   CAPABILITY_SEMANTIC_MEMORY,
   CAPABILITY_SKILL_DRAFTS,
   type ToolRegistry,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import pino from "pino";
-import type * as Db from "@kobe/db";
+import type * as Db from "@kaiju/db";
 import type WebSocket from "ws";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AllowedArtifactCalls } from "../artifacts/allowed.js";
@@ -38,7 +38,7 @@ const reached: string[] = [];
 let armed = false;
 const hang = () => new Promise<never>(() => undefined);
 
-vi.mock("@kobe/db", async (importOriginal) => {
+vi.mock("@kaiju/db", async (importOriginal) => {
   const orig = await importOriginal<typeof Db>();
   return {
     ...orig,

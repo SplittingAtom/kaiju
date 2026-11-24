@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import type { GitApproval } from "@kobe/protocol";
+import type { GitApproval } from "@kaiju/protocol";
 import { visible } from "../../lib/security/visible";
 import styles from "./chat.module.css";
 
@@ -74,7 +74,7 @@ export function GitChange({ git }: { readonly git: GitApproval }) {
   }
   if (git.title !== undefined) rows.push(["Title", git.title]);
   return (
-    <div data-kobe-git-change="">
+    <div data-kaiju-git-change="">
       <p className={styles.who}>
         <strong>{ACTION[git.action]}</strong> on {PROVIDER[git.provider]}{" "}
         <strong>{visible(git.host)}</strong>, organization{" "}

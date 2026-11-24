@@ -141,7 +141,7 @@ contains "...and Bifrost has it (gateway in sync)" '^gateway_in_sync=true$' "$mo
 if want U20; then
   api_begin
   echo "==> U20 api: the gauge's reading is the latest run_usage prompt over the model's window"
-  prompt=$([[ "$FAKE" == 1 ]] && echo "kobe-prompt-tokens=140000 gauge" || echo "No tools. Reply with the single word GAUGE.")
+  prompt=$([[ "$FAKE" == 1 ]] && echo "kaiju-prompt-tokens=140000 gauge" || echo "No tools. Reply with the single word GAUGE.")
   g=$(turn "$U_AD" "$prompt" '"title":"gate5 gauge"')
   show "gauge turn" "$g"
   contains "U20: the turn completes" '^terminal=run.completed$' "$g"

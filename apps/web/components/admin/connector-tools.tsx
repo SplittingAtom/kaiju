@@ -129,7 +129,7 @@ export function McpUiBadge({ app }: { readonly app: ToolApp | null | undefined }
           <button
             type="button"
             aria-label={`MCP-UI: ${text}`}
-            data-kobe-app-badge=""
+            data-kaiju-app-badge=""
             className={`cursor-default rounded-full border-0 bg-transparent p-0 ${FOCUS_RING}`}
           >
             <Badge tone={REVIEW_TONE[app.review]}>MCP-UI</Badge>

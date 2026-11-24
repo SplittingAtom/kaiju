@@ -1,13 +1,13 @@
 import { presentedActorKind } from "./actor-kind.js";
 import { createHash } from "node:crypto";
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import {
   SEMANTIC_MEMORY_POLICY_MAX_ITEMS,
   runSemanticMemorySchema,
   type RunSemanticMemory,
   type RunSemanticMemoryItem,
   type SemanticMemoryScope,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { parseRunMemoryState, runMemoryStateQuery, type RunMemoryStateRow } from "../switches.js";
 import { memberText, messageText } from "../../threads/messages.js";
 import { locate } from "./location.js";
@@ -114,7 +114,7 @@ interface ContextRow extends RunMemoryStateRow {
  * leaf, so a sibling branch never counts); and the items the thread's previous message run was
  * given (stickiness).
  */
-async function readQueryContext(tx: KobeTx, input: RunSemanticInput) {
+async function readQueryContext(tx: KaijuTx, input: RunSemanticInput) {
   const { teamId, threadId, runId } = input;
   const recorded = (table: string) =>
     sql`EXISTS (SELECT 1 FROM ${sql.raw(table)} WHERE team_id = ${teamId} AND run_id = ${runId})`;
@@ -274,7 +274,7 @@ function laneQuery(
  * plans the lanes UNION once per connection and shape (~5 ms a run at the scope limits) instead
  * of every message. Falls back to a plain execute if the driver's internals ever change.
  */
-async function executePrepared(tx: KobeTx, query: SQL): Promise<ItemRow[]> {
+async function executePrepared(tx: KaijuTx, query: SQL): Promise<ItemRow[]> {
   type T = ItemRow;
   const inner = tx as unknown as {
     dialect?: { sqlToQuery(q: SQL): { sql: string; params: unknown[] } };
@@ -288,7 +288,7 @@ async function executePrepared(tx: KobeTx, query: SQL): Promise<ItemRow[]> {
   if (!inner.dialect || typeof client?.query !== "function")
     return (await tx.execute<T>(query)).rows as T[];
   const { sql: text, params } = inner.dialect.sqlToQuery(query);
-  const name = `kobe_sm_${createHash("sha256").update(text).digest("hex").slice(0, 24)}`;
+  const name = `kaiju_sm_${createHash("sha256").update(text).digest("hex").slice(0, 24)}`;
   return (await client.query({ name, text, values: params })).rows;
 }
 
@@ -299,7 +299,7 @@ async function executePrepared(tx: KobeTx, query: SQL): Promise<ItemRow[]> {
  * Throws on anything unexpected; the caller then falls back to {@link buildPolicyOnly}.
  */
 export async function buildRunSemantic(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: RunSemanticInput,
 ): Promise<{ readonly semantic: RunSemanticMemory; readonly fresh: boolean } | undefined> {
   const context = await readQueryContext(tx, input);
@@ -356,7 +356,7 @@ export async function buildRunSemantic(
 
 /** The held set, or undefined when this run starts its epoch (its own picks become it). */
 async function heldFor(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: RunSemanticInput,
   lanes: readonly SelectLane[],
   every: number,
@@ -367,7 +367,7 @@ async function heldFor(
 }
 
 async function placeRecorded(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: RunSemanticInput,
   recorded: RunSemanticMemory,
   placement: ReturnType<typeof effectivePlacement>,
@@ -391,7 +391,7 @@ async function placeRecorded(
  * run records are ignored, so the same run can be asked about many messages.
  */
 export async function readRunCandidates(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: RunSemanticInput,
 ): Promise<{ readonly candidates: LaneCandidates; readonly semantic: RunSemanticMemory }> {
   const context = await readQueryContext(tx, input);
@@ -420,7 +420,7 @@ export async function readRunCandidates(
  * governance. Undefined when the Site master is off or there is no Policy.
  */
 export async function buildPolicyOnly(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: RunSemanticInput,
 ): Promise<RunSemanticMemory | undefined> {
   const { memory, settings } = parseRunMemoryState(
@@ -456,7 +456,7 @@ async function withVectorLeg(
 }
 
 async function readLanes(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: Pick<RunSemanticInput, "teamId" | "userId">,
   policy: boolean,
   lanes: readonly SelectLane[],
@@ -491,7 +491,7 @@ export interface RecallRow {
  * Workspace rows under RLS).
  */
 export async function readRecallRows(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: { readonly teamId: string; readonly userId: string },
   words: readonly string[],
   policy: boolean,
@@ -507,7 +507,7 @@ export async function readRecallRows(
 
 /** {@link readRecallRows} as the lane reads return them (for the vector merge: KOBE-664). */
 export async function readRecallItemRows(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: { readonly teamId: string; readonly userId: string },
   words: readonly string[],
   policy: boolean,
@@ -552,7 +552,7 @@ export function recallCandidates(
  * checks that Policy applies (`memory.policy`).
  */
 export async function readPolicyItems(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: { readonly teamId: string; readonly userId: string },
 ): Promise<RunSemanticMemoryItem[]> {
   const q: Query = { words: [], message: new Set(), sticky: [] };

@@ -7,7 +7,7 @@ import { isRetryableConnectError } from "../connect-errors.js";
 import { MigrationCancelledError, runMigrations } from "../migrate.js";
 
 // Entry point for the Helm pre-install/pre-upgrade migration Job.
-const logger = pino({ base: { service: "kobe-migrate" } });
+const logger = pino({ base: { service: "kaiju-migrate" } });
 
 const envSchema = z.object({
   KOBE_DB_MIGRATE_URL: z.url({

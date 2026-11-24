@@ -18,7 +18,7 @@ afterEach(() => {
 
 function renderMenu(bindings: MenuBindings) {
   return render(
-    <div data-kobe-chat>
+    <div data-kaiju-chat>
       <IconActionProvider>
         <ActionMenu
           trigger="thread-row-actions"
@@ -57,8 +57,8 @@ describe("ActionMenu (KOBE-292)", () => {
         .map((i) => i.textContent),
     ).toEqual(["Copy", "Regenerate", "Delete"]);
     // Portalled into the chat root, marked as the chat's own portal.
-    expect(menu.closest("[data-kobe-chat]")).not.toBeNull();
-    expect(menu.closest("[data-kobe-portal]")).not.toBeNull();
+    expect(menu.closest("[data-kaiju-chat]")).not.toBeNull();
+    expect(menu.closest("[data-kaiju-portal]")).not.toBeNull();
 
     expect(document.activeElement?.textContent).toBe("Copy");
     await user.keyboard("{ArrowDown}");
@@ -121,7 +121,7 @@ describe("ActionMenu (KOBE-292)", () => {
     expect(document.activeElement?.getAttribute("aria-haspopup")).toBe("menu");
     await user.keyboard("{ArrowRight}");
     const sub = await screen.findByRole("menu", { name: "Regenerate with" });
-    expect(sub.closest("[data-kobe-chat]")).not.toBeNull();
+    expect(sub.closest("[data-kaiju-chat]")).not.toBeNull();
     expect(
       within(sub)
         .getAllByRole("menuitem")

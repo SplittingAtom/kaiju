@@ -8,8 +8,8 @@ import {
   type ThreadCompactFrame,
   type WireTraceContext,
   threadCompactFrameSchema,
-} from "@kobe/protocol/sandbox-wire";
-import { CAPABILITY_NOTEBOOK_INSPECT, parseTraceparent, runTraceId } from "@kobe/protocol";
+} from "@kaiju/protocol/sandbox-wire";
+import { CAPABILITY_NOTEBOOK_INSPECT, parseTraceparent, runTraceId } from "@kaiju/protocol";
 import type { CommandRow } from "../commands.js";
 import { isSummaryCommand } from "../types.js";
 import type { Claimed } from "./claim.js";

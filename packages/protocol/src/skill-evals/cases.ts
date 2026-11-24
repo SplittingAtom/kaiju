@@ -52,7 +52,7 @@ export const EVAL_MAX_COST_USD_MAX = 50;
  */
 export const EVAL_ANSWER_CHECK_MAX_CHARS = 64 * 1024;
 export const EVAL_MATCH_TIMEOUT_MS = 100;
-/** A model alias as the model catalog writes it (`@kobe/db` MODEL_ALIAS_PATTERN). */
+/** A model alias as the model catalog writes it (`@kaiju/db` MODEL_ALIAS_PATTERN). */
 export const EVAL_MODEL_ALIAS_PATTERN = /^[a-z0-9]([a-z0-9._-]{0,62}[a-z0-9])?$/;
 /** ES2025 modifier groups (`(?i:…)`): browsers that lint may not know them, so they are refused. */
 const MODIFIER_GROUP = /\(\?[a-z]*-?[a-z]*:/;
@@ -86,7 +86,7 @@ const uniqueList = <T extends z.ZodType>(item: T, max: number, what: string) =>
             code: "custom",
             path: [i],
             message: `the same as item ${first}; list each one once.`,
-            params: { kobe: "duplicate" },
+            params: { kaiju: "duplicate" },
           });
       });
     });
@@ -138,7 +138,7 @@ const matchSchema = z.preprocess(
         ctx.addIssue({
           code: "custom",
           message: `not a regular expression (${problem.replace(/\.$/, "")}).`,
-          params: { kobe: "bad_pattern" },
+          params: { kaiju: "bad_pattern" },
         });
     }),
 );
@@ -160,7 +160,7 @@ const outputGlob = globSchema.superRefine((g, ctx) => {
       code: "custom",
       message:
         "a glob relative to /workspace, such as outputs/*.xlsx, outside skills/ and hidden folders.",
-      params: { kobe: "invalid_value" },
+      params: { kaiju: "invalid_value" },
     });
 });
 
@@ -174,13 +174,13 @@ const fixturePath = z
         code: "custom",
         message:
           "case files come from evals/fixtures/: write fixtures/<name>, such as fixtures/sales.csv.",
-        params: { kobe: "invalid_value" },
+        params: { kaiju: "invalid_value" },
       });
     else if (isReservedWorkspacePath(below))
       ctx.addIssue({
         code: "custom",
         message: "a fixture can't land in skills/ or a hidden folder of /workspace.",
-        params: { kobe: "invalid_value" },
+        params: { kaiju: "invalid_value" },
       });
   });
 
@@ -257,7 +257,7 @@ export const skillEvalExpectSchema = z
       ctx.addIssue({
         code: "custom",
         message: "needs at least one of triggers, outputs, contains, matches or judge.",
-        params: { kobe: "no_expectation" },
+        params: { kaiju: "no_expectation" },
       });
   });
 
@@ -311,7 +311,7 @@ export const skillEvalSuiteSchema = z.strictObject(
               code: "custom",
               path: [i, "id"],
               message: `${c.id} is already the id of cases[${at}]; each case needs its own id.`,
-              params: { kobe: "duplicate" },
+              params: { kaiju: "duplicate" },
             });
         });
       }),

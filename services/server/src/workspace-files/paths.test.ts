@@ -56,7 +56,7 @@ describe("workspace file browser paths", () => {
   it("knows the agent-internal area", () => {
     expect(isInternalPath(".kobe")).toBe(true);
     expect(isInternalPath(".kobe/session.jsonl")).toBe(true);
-    expect(isInternalPath(".kobex/f")).toBe(false);
+    expect(isInternalPath(".kaijux/f")).toBe(false);
   });
 
   it("lists ancestors", () => {

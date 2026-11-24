@@ -1,10 +1,10 @@
-import { readGitConnection, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { readGitConnection, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import {
   runGitRepoSchema,
   type RepoStatusFrame,
   type RunGitContext,
   type RunGitRepo,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { loadAccess } from "../projects/access.js";
 import { reachableBase } from "./transport.js";
 
@@ -24,7 +24,7 @@ import { reachableBase } from "./transport.js";
  */
 
 export async function runGitRepo(
-  db: KobeDb,
+  db: KaijuDb,
   target: { readonly teamId: string; readonly userId: string },
   threadId: string,
   context: RunGitContext,
@@ -72,7 +72,7 @@ export async function runGitRepo(
   });
 }
 
-async function repoOf(tx: KobeTx, teamId: string, projectId: string) {
+async function repoOf(tx: KaijuTx, teamId: string, projectId: string) {
   const res = await tx.execute<{
     id: string;
     connection_id: string | null;
@@ -90,7 +90,7 @@ async function repoOf(tx: KobeTx, teamId: string, projectId: string) {
  * thread, a thread outside that Repo, a project that is not a Repo), so the caller drops it.
  */
 export async function recordRepoStatus(
-  db: KobeDb,
+  db: KaijuDb,
   target: { readonly teamId: string; readonly userId: string },
   frame: RepoStatusFrame,
 ): Promise<boolean> {
@@ -134,7 +134,7 @@ export interface WorkingCopyView {
 
 /** The member's own last report for a Repo, or null when their sandbox never reported one. */
 export async function readWorkingCopy(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   userId: string,

@@ -7,7 +7,7 @@
  * Research goes through the team's connectors: Kobe has no built-in web search (KOBE-606).
  * Questions about Kobe itself go to the kobe-guide skill and the guide's docs tools (KOBE-620).
  */
-export const KOBE_FILE = `---
+export const KAIJU_FILE = `---
 name: Kobe
 role: General-purpose assistant for research, writing, data and code
 description: One agent for everyday work. Answers questions, researches with sources, analyses data, drafts documents and reviews code, with every tool and connector your team allows.

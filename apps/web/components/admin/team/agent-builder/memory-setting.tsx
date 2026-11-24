@@ -1,4 +1,4 @@
-import { AGENT_MEMORY_SETTINGS, type AgentMemorySetting } from "@kobe/protocol";
+import { AGENT_MEMORY_SETTINGS, type AgentMemorySetting } from "@kaiju/protocol";
 import { useState } from "react";
 import type { ApiResult } from "../../../../lib/api/client";
 import { Button, ChoiceGroup, Radio, Section } from "../../../ui/console";

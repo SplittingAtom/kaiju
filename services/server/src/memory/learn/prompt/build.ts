@@ -2,7 +2,7 @@ import {
   SERVER_CALL_LIMITS,
   SERVER_CALL_RESPONSE_FORMATS,
   type ServerCallRequest,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   extractorPromptInputSchema,
   type ExtractorExistingItem,

@@ -6,7 +6,7 @@ import type {
   SkillEvalModeSummary,
   SkillEvalScorecard,
   WithoutCosts,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import Link from "next/link";
 import {
   CHECK_REASON_TEXT,

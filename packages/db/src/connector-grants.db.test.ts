@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { connectorGrants, connectors, teams, users } from "./schema/index.js";
 import { withTeam } from "./with-team.js";
 import { pgCodeOf } from "./pg-errors.js";
 
 /** KOBE-108: per-user connector grants, a team table whose secret is stored sealed. */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const teamA = randomUUID();
 const teamB = randomUUID();
 const userId = randomUUID();

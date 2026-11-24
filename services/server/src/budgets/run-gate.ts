@@ -1,4 +1,4 @@
-import { exhaustedLine, loadMemberBudgetState } from "@kobe/db";
+import { exhaustedLine, loadMemberBudgetState } from "@kaiju/db";
 import type { RunBudgetGate } from "../runs/seams.js";
 
 /**

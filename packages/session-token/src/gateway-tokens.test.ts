@@ -8,7 +8,7 @@ import {
   SERVER_CALL_TOKEN_SKEW_SECONDS,
   type RunTokenClaims,
   type ServerCallClaims,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   generateSessionKeyPair,
   loadVerifyKeys,

@@ -60,7 +60,7 @@ function Entry({
           <ChevronRightIcon aria-hidden className="ms-auto size-4" />
         </DropdownMenu.SubTrigger>
         <DropdownMenu.Portal container={chatPortalContainer()}>
-          <DropdownMenu.SubContent data-kobe-portal sideOffset={4} className={CONTENT}>
+          <DropdownMenu.SubContent data-kaiju-portal sideOffset={4} className={CONTENT}>
             {item.choices.map((choice) => (
               <DropdownMenu.Item
                 key={choice.key}
@@ -111,7 +111,7 @@ function Entry({
  * A row's ⋯ menu (KOBE-292): the menu button pattern (Radix DropdownMenu: Enter, Space or the
  * arrow keys open it, arrows move, Escape closes and returns focus to the button), listing the
  * commands of `scope` the row binds (`menuItems`), with submenus for choices. Portalled into the
- * chat root and marked `data-kobe-portal`, so the drawer's modal layer counts it as inside and the
+ * chat root and marked `data-kaiju-portal`, so the drawer's modal layer counts it as inside and the
  * theme tokens and preflight slice apply in both themes (KOBE-281/282). The thread rows and the
  * file browser share it; KOBE-220's Pin, Archive and Move are bindings on the thread row.
  */
@@ -165,7 +165,7 @@ export function ActionMenu({
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal container={chatPortalContainer()}>
         <DropdownMenu.Content
-          data-kobe-portal
+          data-kaiju-portal
           align="end"
           sideOffset={4}
           className={CONTENT}

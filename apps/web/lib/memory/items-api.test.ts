@@ -2,7 +2,7 @@ import {
   semanticMemoryItemSchema,
   semanticMemoryListQuerySchema,
   SEMANTIC_MEMORY_STATUSES,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { createMemoryItemsApi, listPath, type ItemStatus } from "./items-api";
 

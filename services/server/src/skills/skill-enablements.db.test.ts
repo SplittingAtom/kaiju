@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { resolveEffective } from "../resolver/resolve.js";
 import { buildResolveInput, loadSkillFacts, loadTeamFacts } from "../runs/resolver-input.js";
 import { catalogSeed } from "../testing/catalog-seed.js";

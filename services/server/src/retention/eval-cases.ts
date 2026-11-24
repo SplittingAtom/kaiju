@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, lockLegalHolds, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { SYSTEM_ACTOR, lockLegalHolds, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -23,7 +23,7 @@ export const NO_EVAL_CASE_PURGE: EvalCasePurgeCounts = { cases: 0, kept: 0 };
 
 type Reason = "retention" | "hold_released";
 
-async function audited(tx: KobeTx, teamId: string, reason: Reason, rows: number) {
+async function audited(tx: KaijuTx, teamId: string, reason: Reason, rows: number) {
   if (rows === 0) return;
   await recordAudit(tx, {
     action: "retention.eval_cases_purged",
@@ -34,10 +34,10 @@ async function audited(tx: KobeTx, teamId: string, reason: Reason, rows: number)
 }
 
 async function batches(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   stop: (() => boolean) | undefined,
-  one: (tx: KobeTx) => Promise<number>,
+  one: (tx: KaijuTx) => Promise<number>,
 ): Promise<number> {
   let total = 0;
   for (;;) {
@@ -55,7 +55,7 @@ async function batches(
 
 /** Cases shared before `cutoff` (the team's window), unheld, then released hold copies. */
 export async function purgeEvalCases(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   cutoff: Date | null,
   options: { readonly stop?: () => boolean } = {},
@@ -96,7 +96,7 @@ export async function purgeEvalCases(
  * offboarding purge is due (unheld ones go with that sweep). Hidden cases look purged on every
  * read whatever the window or the membership later become. Not audited: a count would show a hold.
  */
-async function hideHeld(db: KobeDb, teamId: string, cutoff: Date | null): Promise<void> {
+async function hideHeld(db: KaijuDb, teamId: string, cutoff: Date | null): Promise<void> {
   await withTeam(db, teamId, async (tx) => {
     await tx.execute(sql.raw(`SET LOCAL lock_timeout = '5s'`));
     await lockLegalHolds(tx);
@@ -116,7 +116,7 @@ async function hideHeld(db: KobeDb, teamId: string, cutoff: Date | null): Promis
  * holds the legal-hold lock and has checked the member's hold). Returns how many went.
  */
 export async function purgeDepartedCasesInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<number> {

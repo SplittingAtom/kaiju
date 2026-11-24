@@ -20,11 +20,11 @@ import {
   serverCallRunMatches,
   type RunSession,
   recordModelUsage,
-} from "@kobe/db";
-import { deriveTraceSpanKey } from "@kobe/protocol/node";
-import type { ThinkingLevel } from "@kobe/protocol";
-import { verifySessionToken } from "@kobe/session-token";
-import { initTelemetry, loadTelemetryConfig } from "@kobe/telemetry";
+} from "@kaiju/db";
+import { deriveTraceSpanKey } from "@kaiju/protocol/node";
+import type { ThinkingLevel } from "@kaiju/protocol";
+import { verifySessionToken } from "@kaiju/session-token";
+import { initTelemetry, loadTelemetryConfig } from "@kaiju/telemetry";
 import { loadConfig } from "./config.js";
 import { createModelGateway } from "./gateway.js";
 import { TtlCache } from "./cache.js";
@@ -47,14 +47,14 @@ const config = loadConfig(process.env);
 const telemetry = initTelemetry(loadTelemetryConfig(process.env, "model-gateway"));
 const database = createDb(config.databaseUrl, {
   max: config.dbPoolMax,
-  applicationName: "kobe-gateway",
+  applicationName: "kaiju-gateway",
 });
 const db = database.db;
 /** The member rate limiter's own small pool: fails within about 2 s (KOBE-810). */
 const rateDatabase = createDb(config.databaseUrl, {
   ...MEMBER_RATE_DB,
   max: config.ratePoolMax,
-  applicationName: "kobe-gateway-rate",
+  applicationName: "kaiju-gateway-rate",
 });
 
 const principals = new PrincipalCache(

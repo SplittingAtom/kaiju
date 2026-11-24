@@ -6,9 +6,9 @@ import {
   sessionSsoContexts,
   siteRoles,
   users,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 
 /**
  * Deletes the sessions signed in through `providerId` (§9): every one when the provider is turned
@@ -16,7 +16,7 @@ import {
  * deactivate them. Local sessions are never touched. Returns how many ended.
  */
 export async function endSsoSessions(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   scope: { readonly providerId: string; readonly userId?: string },
 ): Promise<number> {
   const ofProvider = eq(sessionSsoContexts.providerId, scope.providerId);
@@ -40,7 +40,7 @@ export async function endSsoSessions(
  * never changes whether they are active (SSO8, SSO10), and they are never the target of an
  * expected link (review M3), since that would hand the account to whoever controls the IdP account.
  */
-export async function isProtectedUser(db: KobeDb | KobeTx, userId: string): Promise<boolean> {
+export async function isProtectedUser(db: KaijuDb | KaijuTx, userId: string): Promise<boolean> {
   const [row] = await db
     .select({ role: siteRoles.role, setupOwner: users.setupOwner })
     .from(users)

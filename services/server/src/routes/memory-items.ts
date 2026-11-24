@@ -11,7 +11,7 @@ import {
   semanticMemoryListQuerySchema,
   semanticMemoryScopeSchema,
   type SemanticMemoryScope,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   requestNamesTeam,
   requireTeam,
@@ -19,7 +19,7 @@ import {
   type TeamVariables,
 } from "../authz/middleware.js";
 import { teamRoleAllows } from "../authz/permissions.js";
-import { delegationOf } from "../kobe-mcp/delegation.js";
+import { delegationOf } from "../kaiju-mcp/delegation.js";
 import type { ServerDeps } from "../deps.js";
 import { createItem } from "../memory/items/create.js";
 import { archiveItem, patchItem, pinItem, restoreItem, revertItem } from "../memory/items/edit.js";
@@ -41,7 +41,7 @@ export const issueText = (e: z.ZodError) =>
 
 /**
  * Semantic memory items (`/v1/memory/semantic/items`, KOBE-378; contract KOBE-377 in
- * `@kobe/protocol` semantic-memory/items.ts, store in `memory/items/`). `user` and `team` routes
+ * `@kaiju/protocol` semantic-memory/items.ts, store in `memory/items/`). `user` and `team` routes
  * run in the active Workspace; portable and Site routes need none (see resolveTeam). The store
  * decides per scope who reads and who writes
  * (KOBE-380 permissions, the Policy guard) and which switches apply (KOBE-381).

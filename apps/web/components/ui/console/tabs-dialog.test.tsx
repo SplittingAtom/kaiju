@@ -53,7 +53,7 @@ function Opener() {
   const [open, setOpen] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
   return (
-    <div data-kobe-console="">
+    <div data-kaiju-console="">
       <Button ref={opener} onClick={() => setOpen(true)}>
         Save version
       </Button>
@@ -81,7 +81,7 @@ describe("Dialog", () => {
     const opener = screen.getByRole("button", { name: "Save version" });
     await userEvent.click(opener);
     const dialog = await screen.findByRole("dialog", { name: "Save a version" });
-    expect(dialog.closest("[data-kobe-console]")).not.toBeNull();
+    expect(dialog.closest("[data-kaiju-console]")).not.toBeNull();
     expect(dialog.getAttribute("aria-describedby")).not.toBeNull();
     expect(screen.getByLabelText("Changelog")).toBeDefined();
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));

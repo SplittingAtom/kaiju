@@ -8,7 +8,7 @@ import { answerConfirm, forbidNativeConfirm, renderSite, stubApi } from "./testi
 
 const BASE = "/v1/site/sso/providers";
 const TOKEN = `kobe_scim_${"A".repeat(43)}`;
-const SCIM_URL = "https://kobe.example.com/v1/scim/v2/contoso";
+const SCIM_URL = "https://kaiju.example.com/v1/scim/v2/contoso";
 
 const provider = {
   id: "p-1",
@@ -27,7 +27,7 @@ const provider = {
   enabled: true,
   managed_by: "console",
   client_secret: "set",
-  redirect_uri: "https://kobe.example.com/api/auth/sso/callback/contoso",
+  redirect_uri: "https://kaiju.example.com/api/auth/sso/callback/contoso",
   linked_identities: 0,
   created_at: "2026-11-11T10:00:00Z",
   updated_at: "2026-11-11T10:00:00Z",

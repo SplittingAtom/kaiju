@@ -1,6 +1,6 @@
 import { readdir, rm, stat } from "node:fs/promises";
 import path from "node:path";
-import { scanTeams, sql } from "@kobe/db";
+import { scanTeams, sql } from "@kaiju/db";
 import { GIT_CONVERSION_SWEEP_MS, GIT_CONVERSION_WORK_PREFIX } from "./limits.js";
 import { conversionWorkRoot, runConversion, type ConversionDeps } from "./runner.js";
 

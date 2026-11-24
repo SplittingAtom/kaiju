@@ -15,9 +15,9 @@ import {
   runRootSpanId,
   runTraceId,
   serverCallRequestSchema,
-} from "@kobe/protocol";
-import { InMemorySpanExporter, initTelemetry } from "@kobe/telemetry";
-import { generateSessionKeyPair, verifyServerCallToken } from "@kobe/session-token";
+} from "@kaiju/protocol";
+import { InMemorySpanExporter, initTelemetry } from "@kaiju/telemetry";
+import { generateSessionKeyPair, verifyServerCallToken } from "@kaiju/session-token";
 import {
   createServerCallClient,
   ServerCallError,

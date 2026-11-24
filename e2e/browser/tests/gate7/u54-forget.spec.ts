@@ -22,7 +22,7 @@ test("U54: Open in Memory, Archive with Undo, and the next run no longer gets it
   await chat.open();
   const threadId = await chat.ask(`tool: show_memory_item {"id":"${ITEM}"}`);
   expect(await memoriesInContext(page, threadId)).toContain(ITEM);
-  const chip = page.locator(`[data-kobe-memory-item="${ITEM}"]`);
+  const chip = page.locator(`[data-kaiju-memory-item="${ITEM}"]`);
   await expect(chip).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
   await chip
     .getByRole("link", { name: "Open in Memory" })

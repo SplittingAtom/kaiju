@@ -10,7 +10,7 @@ import {
   type ThinkingControl,
   type ThinkingLevel,
   type ThinkingPolicy,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { useId, useState } from "react";
 import type { CatalogModel, ProviderKind } from "../../../lib/admin/api/site/models";
 import { Checkbox, Field, FormRow, Select } from "../../ui/console";

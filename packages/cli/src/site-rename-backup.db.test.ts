@@ -8,7 +8,7 @@ import {
   testNameSuffix,
   testServerUrl,
   type TestDatabase,
-} from "@kobe/db/testing";
+} from "@kaiju/db/testing";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { runBackup } from "./backup.js";
 import { runRestore } from "./restore.js";
@@ -17,7 +17,7 @@ import { BLOB_REFS, freshTarget, memoryLister, rowsOf, sql, U1 } from "./testing
 /**
  * KOBE-256 (R3) renamed the install_* tables to site_*. A backup taken before the rename names the
  * old tables and records the old migrations: a site on the renamed schema refuses it before loading
- * anything. It restores on the release it was taken with (that release's `kobe restore`); the
+ * anything. It restores on the release it was taken with (that release's `kaiju restore`); the
  * upgrade then renames in place (packages/db site-rename-migration.db.test.ts). docs/backup-restore.md
  * It names the old tables on purpose (site-identifiers: allow-file).
  */
@@ -28,7 +28,7 @@ const RENAME_MARKER = 'ALTER TABLE "install_settings" RENAME TO "site_settings"'
 describe("a backup taken before the site rename (KOBE-256)", () => {
   const server = testServerUrl();
   const suffix = testNameSuffix();
-  const backupRole = `kobe_backup_old_${suffix}`;
+  const backupRole = `kaiju_backup_old_${suffix}`;
   const password = randomBytes(16).toString("hex");
   const created: TestDatabase[] = [];
   let oldMigrations = "";
@@ -51,7 +51,7 @@ describe("a backup taken before the site rename (KOBE-256)", () => {
     const url = new URL(src.adminUrl);
     url.username = backupRole;
     url.password = password;
-    work = await mkdtemp(join(tmpdir(), "kobe-old-backup-"));
+    work = await mkdtemp(join(tmpdir(), "kaiju-old-backup-"));
     const manifest = await runBackup({
       databaseUrl: url.toString(),
       out: join(work, "old"),

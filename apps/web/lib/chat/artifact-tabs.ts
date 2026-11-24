@@ -139,7 +139,7 @@ export const ARTIFACT_FLOOR_PX = 360;
 export const CONVERSATION_FLOOR_PX = 400;
 
 /** The shell grid's custom property for a dragged width (`components/shell/shell.module.css`). */
-export const ARTIFACT_WIDTH_VAR = "--kobe-artifact-width";
+export const ARTIFACT_WIDTH_VAR = "--kaiju-artifact-width";
 
 /** The widest the artifact column may be when the two columns share `available` px. */
 export function maxArtifactWidth(available: number): number {

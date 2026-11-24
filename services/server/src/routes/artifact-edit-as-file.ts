@@ -5,7 +5,7 @@ import {
   UPLOAD_DEFAULT_MAX_FILE_BYTES,
   isArtifactTextKind,
   type ArtifactSummary,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";

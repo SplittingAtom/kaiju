@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LAKEHOUSE_DRAG_TYPE, LAKEHOUSE_DROP_REFUSED } from "../../lib/apps/lakehouse-drop";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { ChatApp } from "./chat-app";
 import { composer } from "./testing";
@@ -15,12 +15,12 @@ import { composer } from "./testing";
  * decision 2026-11-07: parity with the click). An invalid one is refused with a note and nothing
  * goes in, the `text/plain` copy neither.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -34,8 +34,8 @@ function mount(threadId: string) {
   return render(<ChatApp fetchFn={fake.fetch} eventSource={fake.eventSource} />);
 }
 
-const panel = () => must(document.querySelector<HTMLElement>("[data-kobe-composer-panel]"));
-const hint = () => document.getElementById("kobe-composer-hint")?.textContent;
+const panel = () => must(document.querySelector<HTMLElement>("[data-kaiju-composer-panel]"));
+const hint = () => document.getElementById("kaiju-composer-hint")?.textContent;
 const chips = () =>
   screen
     .queryByRole("list", { name: "Items sent with your next message" })
@@ -96,7 +96,7 @@ describe("drop a Lakehouse Picker item into the composer (KOBE-551)", () => {
     await waitFor(() =>
       expect(chipLabels()).toEqual(["Table mlb.lahman.batting, from Lakehouse Picker; remove"]),
     );
-    expect(panel().querySelector('[data-kobe-app-item="table"]')).not.toBeNull();
+    expect(panel().querySelector('[data-kaiju-app-item="table"]')).not.toBeNull();
     // As for a click: the text and its caret are the member's, untouched.
     expect(input.value).toBe("Count rows in");
     expect(input.selectionStart).toBe(5);
@@ -145,7 +145,7 @@ describe("drop a Lakehouse Picker item into the composer (KOBE-551)", () => {
     dropOnComposer(item(payload));
     await waitFor(() => expect(chipLabels()).toEqual([`${label}, from Lakehouse Picker; remove`]));
     expect(input.value).toBe("");
-    expect(panel().querySelector(`[data-kobe-app-item="${kind}"]`)).not.toBeNull();
+    expect(panel().querySelector(`[data-kaiju-app-item="${kind}"]`)).not.toBeNull();
   });
 
   it("the same item twice: one chip, as for two clicks", async () => {
@@ -194,7 +194,8 @@ describe("drop a Lakehouse Picker item into the composer (KOBE-551)", () => {
       expect(dropTaken).toBe(true);
       await waitFor(() => expect(hint()).toBe(LAKEHOUSE_DROP_REFUSED));
       expect(
-        within(must(document.getElementById("kobe-composer-hint"))).getByRole("status").textContent,
+        within(must(document.getElementById("kaiju-composer-hint"))).getByRole("status")
+          .textContent,
       ).toBe(LAKEHOUSE_DROP_REFUSED);
       expect(input.value).toBe("Hello");
       expect(chips()).toHaveLength(0);
@@ -223,7 +224,7 @@ describe("drop a Lakehouse Picker item into the composer (KOBE-551)", () => {
     fake.addEntry(shared, null, { role: "user", content: "from the author" });
     mount(shared);
     const note = await screen.findByText(/You are reading a shared conversation/);
-    expect(document.querySelector("[data-kobe-composer-panel]")).toBeNull();
+    expect(document.querySelector("[data-kaiju-composer-panel]")).toBeNull();
     expect(fireEvent.drop(note, { dataTransfer: item(TABLE) })).toBe(true);
     expect(screen.queryByRole("list", { name: "Items sent with your next message" })).toBeNull();
     cleanup();
@@ -232,7 +233,7 @@ describe("drop a Lakehouse Picker item into the composer (KOBE-551)", () => {
     must(fake.threads.get(trashed)).deleted_at = "2026-11-01T10:00:00.000Z";
     mount(trashed);
     const trash = await screen.findByText(/This conversation is in Trash/);
-    expect(document.querySelector("[data-kobe-composer-panel]")).toBeNull();
+    expect(document.querySelector("[data-kaiju-composer-panel]")).toBeNull();
     expect(fireEvent.drop(trash, { dataTransfer: item(TABLE) })).toBe(true);
     expect(within(document.body).queryByText("mlb.lahman.batting")).toBeNull();
   });

@@ -8,8 +8,8 @@ import {
   type ApprovalToken,
   type PolicyReason,
   type RiskClass,
-} from "@kobe/protocol";
-import { sql, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
 
 /**
  * `approvals` rows (KOBE-37). Everything runs inside the caller's `withTeam` transaction with
@@ -103,7 +103,7 @@ const SELECT = sql`
     FROM approvals`;
 
 export async function loadApproval(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   approvalId: string,
   options: { readonly lock?: boolean } = {},
@@ -116,7 +116,7 @@ export async function loadApproval(
 }
 
 export async function loadApprovalForCall(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   toolCallId: string,
@@ -129,7 +129,7 @@ export async function loadApprovalForCall(
 
 /** A user's approvals in the team, newest first (`status` and `runId` narrow it). */
 export async function listApprovals(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   filter: { readonly status?: ApprovalStatus; readonly runId?: string; readonly limit: number },
@@ -159,7 +159,7 @@ export interface NewApproval {
 
 /** Inserts a pending approval; undefined when the run already has one for this tool call id. */
 export async function insertPendingApproval(
-  tx: KobeTx,
+  tx: KaijuTx,
   a: NewApproval,
 ): Promise<string | undefined> {
   const res = await tx.execute<{ id: string }>(sql`
@@ -176,7 +176,7 @@ export async function insertPendingApproval(
 
 /** Other approvals of the run still pending (the run stays `waiting_approval` while any is). */
 export async function otherPendingCount(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   approvalId: string,
@@ -208,11 +208,11 @@ export function tokenOf(row: ApprovalRow): ApprovalToken | undefined {
 }
 
 /**
- * The state half of verification (`ApprovalStore` in @kobe/protocol approval.ts), inside a team
+ * The state half of verification (`ApprovalStore` in @kaiju/protocol approval.ts), inside a team
  * transaction. `consume` is the contract's single conditional statement.
  */
 export async function loadApprovalRecord(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   approvalId: string,
 ): Promise<ApprovalRecord | undefined> {
@@ -244,7 +244,7 @@ export async function loadApprovalRecord(
 }
 
 export async function consumeApprovalInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   approvalId: string,
 ): Promise<boolean> {

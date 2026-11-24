@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { policyDecisionSchema, type ToolDescriptor } from "@kobe/protocol";
+import { policyDecisionSchema, type ToolDescriptor } from "@kaiju/protocol";
 import {
   builtin,
   ENABLED_ALL,

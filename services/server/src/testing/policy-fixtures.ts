@@ -4,7 +4,7 @@ import {
   type JsonObject,
   type PolicyInput,
   type ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ConnectorPolicyState } from "../policy/gates.js";
 import type { PolicyRule, PolicyRuleSet } from "../policy/rules.js";
 

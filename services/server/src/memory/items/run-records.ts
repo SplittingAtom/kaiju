@@ -1,5 +1,5 @@
 import { presentedActorKind } from "./actor-kind.js";
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import {
   semanticMemoryRunRank,
   type RunSemanticMemoryItem,
@@ -7,7 +7,7 @@ import {
   type SemanticMemoryKind,
   type SemanticMemoryScope,
   type ThreadContextMemoryItem,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { RENDER_LANES } from "./select.js";
 
 type SQL = ReturnType<typeof sql>;
@@ -29,7 +29,7 @@ const RUN_TABLES: Record<SemanticMemoryScope, SQL> = {
 
 /** One row per item version given to the run, in one statement. Never deletes (legal holds). */
 export async function recordRunMemory(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   items: readonly RunSemanticMemoryItem[],
@@ -80,7 +80,7 @@ const rankOf = (r: { lane: Lane; pinned: boolean }) =>
  * thread's owner, and this is the wall, not a convenience.
  */
 export async function readRunRecords(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   runId: string,
@@ -141,7 +141,7 @@ export const recordToRunItem = (r: RecordRow): RunSemanticMemoryItem => ({
  * came after it), for the thread's owner `userId`. `runId` null: no run has records yet.
  */
 export async function readThreadMemories(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   threadId: string,

@@ -114,11 +114,11 @@ async function step(context, options) {
 }
 
 export default function (pi) {
-  const faux = fauxProvider({ provider: "kobe-faux", models: [{ id: "scripted" }] });
+  const faux = fauxProvider({ provider: "kaiju-faux", models: [{ id: "scripted" }] });
   faux.setResponses(Array.from({ length: 500 }, () => step));
   pi.registerProvider(faux.provider);
   const prepare = async (_event, ctx) => {
-    if (ctx.model?.provider !== "kobe-faux") await pi.setModel(faux.getModel());
+    if (ctx.model?.provider !== "kaiju-faux") await pi.setModel(faux.getModel());
     const active = pi.getActiveTools();
     if (!active.includes("codemode") && pi.getAllTools().some((t) => t.name === "codemode")) {
       pi.setActiveTools([...active, "codemode"]);

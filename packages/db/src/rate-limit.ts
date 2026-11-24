@@ -1,5 +1,5 @@
 import { sql, type SQL } from "drizzle-orm";
-import type { KobeDb } from "./client.js";
+import type { KaijuDb } from "./client.js";
 
 /**
  * Kaiju's durable rate limiters (KOBE-809; shared by the server and the model gateway since
@@ -24,7 +24,7 @@ import type { KobeDb } from "./client.js";
  * Every function takes the pool or an open transaction ({@link RateLimitDb}); inside a
  * transaction pass `prune: false`, so the hit commits or rolls back with it and no prune runs in it.
  */
-export type RateLimitDb = Pick<KobeDb, "execute">;
+export type RateLimitDb = Pick<KaijuDb, "execute">;
 
 export interface RateLimitRule {
   readonly windowMs: number;

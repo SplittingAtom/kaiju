@@ -66,7 +66,7 @@ export interface DefaultSync {
   readonly nextAttemptAt: string | null;
 }
 
-/** Mirrors REGISTRY_TAG_PATTERN in @kobe/protocol. */
+/** Mirrors REGISTRY_TAG_PATTERN in @kaiju/protocol. */
 export const TAG_PATTERN = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
 
 export async function listCatalogTags(): Promise<ApiResult<readonly CatalogTag[]>> {

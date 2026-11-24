@@ -1,5 +1,5 @@
 import { recordAudit } from "../audit/record.js";
-import { isLockConflict, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { isLockConflict, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { TRASH_RETENTION_DAYS } from "./periods.js";
 import { purgeThreads, type PurgeBatchResult } from "./purge.js";
 
@@ -25,7 +25,7 @@ export type DeleteForeverResult =
 const TRASH_INTERVAL = sql.raw(`interval '${TRASH_RETENTION_DAYS} days'`);
 
 async function request(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   threadId: string,
@@ -57,14 +57,14 @@ async function request(
 }
 
 export async function deleteForever(
-  db: KobeDb,
+  db: KaijuDb,
   viewer: { readonly teamId: string; readonly userId: string },
   threadId: string,
 ): Promise<DeleteForeverResult> {
   const { teamId, userId } = viewer;
   const error = await withTeam(db, teamId, (tx) => request(tx, teamId, userId, threadId));
   if (error) return { ok: false, error };
-  const record = async (tx: KobeTx, counts: PurgeBatchResult) => {
+  const record = async (tx: KaijuTx, counts: PurgeBatchResult) => {
     await recordAudit(tx, {
       action: "thread.purged",
       teamId,

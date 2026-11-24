@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_REMEMBER_LIMITS } from "@kobe/protocol";
+import { DEFAULT_REMEMBER_LIMITS } from "@kaiju/protocol";
 import { must } from "../testing/event-stream-fixture.js";
 import {
   fx,

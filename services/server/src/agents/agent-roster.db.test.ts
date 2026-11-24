@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { serializeAgentFile } from "@kobe/agent-file";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { serializeAgentFile } from "@kaiju/agent-file";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { createApp } from "../app.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
 import { seedGalleryAgents } from "../gallery/seed.js";
@@ -16,7 +16,7 @@ import { fakeIsolation } from "../testing/isolation.js";
  * roster read, assign/propose, decide, withdraw, pin/update, remove, suspend/resume, the §5 matrix
  * per role, caps, rate limit, delete while rostered, audit. Own throwaway database.
  */
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 const ANY = { "if-match": "*" };
 

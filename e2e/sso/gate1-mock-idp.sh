@@ -59,7 +59,7 @@ CODE_HASH=$(sha256sum mock-entra.mjs | cut -c1-16)
 SERVER_IMAGE=$(k -n "$KOBE_NS" get "deploy/$RELEASE-server" \
   -o jsonpath='{.spec.template.spec.containers[?(@.name=="server")].image}')
 sed -e "s|__SERVER_IMAGE__|$SERVER_IMAGE|g" -e "s|__TENANT__|$TENANT|g" \
-  -e "s|__CLIENT_ID__|$CLIENT_ID|g" -e "s|__HOST__|$HOST|g" -e "s|__KOBE_NS__|$KOBE_NS|g" \
+  -e "s|__CLIENT_ID__|$CLIENT_ID|g" -e "s|__HOST__|$HOST|g" -e "s|__KAIJU_NS__|$KOBE_NS|g" \
   -e "s|__CODE_HASH__|$CODE_HASH|g" gate1-mock-idp.yaml | k apply -f - >/dev/null
 k -n "$NS" rollout status deploy/mock-idp --timeout=180s >/dev/null
 

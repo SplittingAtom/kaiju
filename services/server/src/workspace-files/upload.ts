@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { pipeline, type Readable } from "node:stream";
-import { withTeam, type KobeDb, type KobeTx } from "@kobe/db";
-import type { WorkspaceFileError } from "@kobe/protocol";
+import { withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
+import type { WorkspaceFileError } from "@kaiju/protocol";
 import { logger } from "../logger.js";
 import { recordAudit } from "../audit/record.js";
 import { UploadMeter, UploadTooLargeError } from "../uploads/meter.js";
@@ -100,7 +100,7 @@ function copyNaming(incoming: IncomingFile): { name: CopyName; first: number } |
 
 /** The path to write: `path`, or the first free copy of it; undefined when none is. */
 async function freePath(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   path: string,
   ancestors: readonly string[],
@@ -147,7 +147,7 @@ function uploadAudit(owner: WorkspaceOwner, size: number, incoming: IncomingFile
  * based on an older revision becomes a conflict copy on its side. Never overwrites.
  */
 export async function uploadToWorkspace(
-  db: KobeDb,
+  db: KaijuDb,
   sync: WorkspaceSync,
   owner: WorkspaceOwner,
   path: string,
@@ -208,7 +208,7 @@ async function discard(sync: WorkspaceSync, key: string, kind: WriteKind): Promi
 }
 
 async function commitUpload(
-  db: KobeDb,
+  db: KaijuDb,
   sync: WorkspaceSync,
   owner: WorkspaceOwner,
   path: string,
@@ -295,7 +295,7 @@ async function commitUpload(
  * blob; always ends the reservation `reserveUpload` made for it.
  */
 export async function storeBlob(
-  db: KobeDb,
+  db: KaijuDb,
   sync: WorkspaceSync,
   owner: WorkspaceOwner,
   blob: {

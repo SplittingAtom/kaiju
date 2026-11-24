@@ -2,9 +2,9 @@ import { createHash, randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import http from "node:http";
 import { afterAll, beforeAll, beforeEach, expect } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
-import { GIT_SITE_ENABLED_KEY, loadEnvelope, withTeam, type Envelope } from "@kobe/db";
-import { gitConversionViewSchema, type GitConversionView } from "@kobe/protocol";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
+import { GIT_SITE_ENABLED_KEY, loadEnvelope, withTeam, type Envelope } from "@kaiju/db";
+import { gitConversionViewSchema, type GitConversionView } from "@kaiju/protocol";
 import { rawRequest } from "../connectors/oauth/http.js";
 import { conversionDeps } from "../git/conversion/deps.js";
 import type { ConversionDeps } from "../git/conversion/runner.js";
@@ -29,7 +29,7 @@ export const must = <T>(v: T | undefined | null): T => {
 };
 export const short = () => randomUUID().slice(0, 8);
 export const sha = (b: Buffer) => createHash("sha256").update(b).digest("hex");
-export const PREFIX = "kobe/";
+export const PREFIX = "kaiju/";
 
 export const fx = new EventStreamFixture();
 export const forgejo = new FakeGitea("forgejo");

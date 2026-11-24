@@ -1,6 +1,6 @@
 "use client";
 
-import { WORKSPACE_DROP_FOLDER } from "@kobe/protocol";
+import { WORKSPACE_DROP_FOLDER } from "@kaiju/protocol";
 import { UploadIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import type { ApiError } from "../../lib/api/client";
@@ -48,7 +48,7 @@ function outsideViewport(e: globalThis.DragEvent): boolean {
  */
 function overTreeFolder(e: DragEvent): boolean {
   const target = e.target instanceof Element ? e.target : null;
-  return target?.closest("[data-kobe-drop-folder]") != null;
+  return target?.closest("[data-kaiju-drop-folder]") != null;
 }
 
 type RailDragHandlers = {

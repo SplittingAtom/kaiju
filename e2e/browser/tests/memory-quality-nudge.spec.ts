@@ -10,7 +10,7 @@ import { api } from "./support/tree.js";
  * 1. The Site console's Memory switches show **Nudge to learn** (read only: the spec never changes
  *    it). In one thread, ten short "OK" turns cross the threshold: after the ninth the Learn state
  *    has no nudge, after the tenth it names a `messages` nudge and the + button's dot pulses
- *    (`data-kobe-learn-nudge="pulse"`, two beats, recorded by a MutationObserver because it lasts
+ *    (`data-kaiju-learn-nudge="pulse"`, two beats, recorded by a MutationObserver because it lasts
  *    2.4 s); a thumbs down then gives a `correction` nudge and a second pulse on the next read. No
  *    learning pass starts (no spinner, `running` stays null). Spends ten short model turns.
  * 2. Workspace and Site console › Memory › Quality show queue health (pending, oldest waiting,
@@ -54,7 +54,7 @@ async function recordPulses(page: Page): Promise<void> {
     window.__kobeNudgePulses = 0;
     const seen = new WeakSet<Element>();
     const count = () => {
-      document.querySelectorAll('[data-kobe-learn-nudge="pulse"]').forEach((el) => {
+      document.querySelectorAll('[data-kaiju-learn-nudge="pulse"]').forEach((el) => {
         if (seen.has(el)) return;
         seen.add(el);
         window.__kobeNudgePulses = (window.__kobeNudgePulses ?? 0) + 1;
@@ -64,7 +64,7 @@ async function recordPulses(page: Page): Promise<void> {
       subtree: true,
       childList: true,
       attributes: true,
-      attributeFilter: ["data-kobe-learn-nudge"],
+      attributeFilter: ["data-kaiju-learn-nudge"],
     });
   });
 }
@@ -135,9 +135,9 @@ test("the Learn nudge: switch shown, pulse after 10 messages and after a thumbs 
   }
   await expect.poll(() => pulses(page), { timeout: PULSE_TIMEOUT_MS }).toBe(1);
   // A hint only: the dot stays, no pass started.
-  await expect(plus.locator('[data-kobe-learn-mark="dot"]')).toBeVisible();
-  await expect(plus).not.toHaveAttribute("data-kobe-learn-state", "spinner");
-  await expect(page.locator("[data-kobe-learn-notice]")).not.toContainText(
+  await expect(plus.locator('[data-kaiju-learn-mark="dot"]')).toBeVisible();
+  await expect(plus).not.toHaveAttribute("data-kaiju-learn-state", "spinner");
+  await expect(page.locator("[data-kaiju-learn-notice]")).not.toContainText(
     "Kaiju is learning from this chat",
   );
 
@@ -152,7 +152,7 @@ test("the Learn nudge: switch shown, pulse after 10 messages and after a thumbs 
   expect(corrected.nudge?.reason).toBe("correction");
   expect(corrected.running).toBeNull();
   await expect.poll(() => pulses(page), { timeout: PULSE_TIMEOUT_MS }).toBe(1);
-  await expect(plus).not.toHaveAttribute("data-kobe-learn-state", "spinner");
+  await expect(plus).not.toHaveAttribute("data-kaiju-learn-state", "spinner");
   // Leave no rating behind (the thread goes to Trash at the end).
   const again = await chat.messageAction(chat.answers.last(), "Bad answer");
   await again.click();

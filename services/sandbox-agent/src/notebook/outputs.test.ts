@@ -1,4 +1,4 @@
-import { NOTEBOOK_TRUNCATED_PREFIX, type NotebookOutput } from "@kobe/protocol";
+import { NOTEBOOK_TRUNCATED_PREFIX, type NotebookOutput } from "@kaiju/protocol";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OUTPUT_LIMITS, OutputLimiter, sanitizeOutput, type OutputLimits } from "./outputs.js";
 

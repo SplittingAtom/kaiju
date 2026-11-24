@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { KobeTx } from "../../client.js";
+import type { KaijuTx } from "../../client.js";
 import {
   artifactVersions,
   artifacts,
@@ -22,7 +22,7 @@ import type { workspace } from "../../tenancy/workspace.js";
 import type { ProbeFixture } from "./types.js";
 
 /** A thread, its owner and a run, for the artifact rows to hang off. */
-async function insertThreadAndRun(tx: KobeTx, teamId: string) {
+async function insertThreadAndRun(tx: KaijuTx, teamId: string) {
   const userId = randomUUID();
   await tx.insert(users).values({ id: userId, name: "Probe", email: `${userId}@probe.test` });
   const [thread] = await tx
@@ -45,7 +45,7 @@ async function insertThreadAndRun(tx: KobeTx, teamId: string) {
 }
 
 /** A personal memory doc with its first version; versions need a doc, docs need an owner. */
-async function insertMemoryDoc(tx: KobeTx, teamId: string) {
+async function insertMemoryDoc(tx: KaijuTx, teamId: string) {
   const userId = randomUUID();
   await tx.insert(users).values({ id: userId, name: "Probe", email: `${userId}@probe.test` });
   const [doc] = await tx
@@ -67,7 +67,7 @@ async function insertMemoryDoc(tx: KobeTx, teamId: string) {
 }
 
 /** A project with its creator, for members and files to hang off. */
-async function insertProject(tx: KobeTx, teamId: string) {
+async function insertProject(tx: KaijuTx, teamId: string) {
   const userId = randomUUID();
   await tx.insert(users).values({ id: userId, name: "Probe", email: `${userId}@probe.test` });
   const [project] = await tx
@@ -79,7 +79,7 @@ async function insertProject(tx: KobeTx, teamId: string) {
 }
 
 /** A project with commit 1, for tree entries and checkouts to hang off. */
-async function insertCommit(tx: KobeTx, teamId: string) {
+async function insertCommit(tx: KaijuTx, teamId: string) {
   const { projectId, userId } = await insertProject(tx, teamId);
   const [commit] = await tx
     .insert(projectCommits)
@@ -98,7 +98,7 @@ async function insertCommit(tx: KobeTx, teamId: string) {
   return { projectId, userId, commitId: commit.id };
 }
 
-async function insertArtifact(tx: KobeTx, teamId: string) {
+async function insertArtifact(tx: KaijuTx, teamId: string) {
   const { userId, threadId, runId } = await insertThreadAndRun(tx, teamId);
   const [row] = await tx
     .insert(artifacts)

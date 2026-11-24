@@ -10,12 +10,12 @@ import {
   stopBinding,
   threadReadOnly,
 } from "../../lib/chat/thread-commands";
-import { branchPointOfMeta, type KobeMessageMeta } from "../../lib/chat/tree";
+import { branchPointOfMeta, type KaijuMessageMeta } from "../../lib/chat/tree";
 import type { MenuBinding, MenuBindings } from "../../lib/shell/menu";
 import { useBindCommands, useCommandsWanted } from "../shell/command-bindings";
 import { ForkDialog } from "./fork-dialog";
 import { SessionCommands } from "./session-info";
-import type { KobeThreadExtras } from "./kobe-runtime";
+import type { KaijuThreadExtras } from "./kaiju-runtime";
 import { RailAnnounce } from "./use-organize-menu";
 import { useThreadMenuBindings, type Notice } from "./use-thread-menu";
 
@@ -26,11 +26,11 @@ const NOT_EDITABLE = "That message can't be edited.";
 const UNTITLED = "Untitled conversation";
 
 /** The newest answer's meta on the branch on screen: `/fork` forks there. */
-function useLastAnswerMeta(): KobeMessageMeta | undefined {
+function useLastAnswerMeta(): KaijuMessageMeta | undefined {
   return useAuiState(
     (s) =>
       s.thread.messages.findLast((m) => m.role === "assistant")?.metadata.custom as
-        KobeMessageMeta | undefined,
+        KaijuMessageMeta | undefined,
   );
 }
 
@@ -42,13 +42,13 @@ const noop = () => {};
  * (assistant-ui's `beginEdit`), under the button's rules: hidden while a run is on, and only where
  * the message has a branch point.
  */
-function useEditLastBinding(extras: KobeThreadExtras, readOnly: boolean): MenuBinding {
+function useEditLastBinding(extras: KaijuThreadExtras, readOnly: boolean): MenuBinding {
   const aui = useAui();
   const lastId = useAuiState((s) => s.thread.messages.findLast((m) => m.role === "user")?.id);
   const lastMeta = useAuiState(
     (s) =>
       s.thread.messages.findLast((m) => m.role === "user")?.metadata.custom as
-        KobeMessageMeta | undefined,
+        KaijuMessageMeta | undefined,
   );
   const running = useAuiState((s) => s.thread.isRunning);
   const blocker = readOnly
@@ -96,7 +96,7 @@ function Bindings({
   threadId,
   notify,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   readonly threadId: string;
   readonly notify: (notice: Notice) => void;
 }) {
@@ -179,7 +179,7 @@ function DraftBindings() {
   return null;
 }
 
-export function ThreadCommands({ extras }: { readonly extras: KobeThreadExtras }) {
+export function ThreadCommands({ extras }: { readonly extras: KaijuThreadExtras }) {
   const [said, setSaid] = useState("");
   const threadId = extras.state.threadId;
   if (threadId === null) return <DraftBindings />;
@@ -191,7 +191,7 @@ export function ThreadCommands({ extras }: { readonly extras: KobeThreadExtras }
         threadId={threadId}
         notify={(n) => setSaid(n.full)}
       />
-      <span role="status" className="sr-only" data-kobe-thread-commands>
+      <span role="status" className="sr-only" data-kaiju-thread-commands>
         {said}
       </span>
     </RailAnnounce.Provider>

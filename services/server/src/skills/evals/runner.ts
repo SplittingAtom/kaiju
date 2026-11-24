@@ -1,5 +1,5 @@
 import { fireAndLog } from "../../async-util.js";
-import { siteSkillSettings, sql, teams, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { siteSkillSettings, sql, teams, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import {
   evalOutputWalkRoots,
   fixtureWorkspacePath,
@@ -8,8 +8,8 @@ import {
   type EvalWorkspaceSnapshot,
   type SkillEvalCase,
   type SkillEvalLimits,
-} from "@kobe/protocol";
-import { evalSnapshotResultSchema } from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol";
+import { evalSnapshotResultSchema } from "@kaiju/protocol/sandbox-wire";
 import { judgeOutputs } from "./judge-outputs.js";
 import type { SkillEvalJudge } from "./judge.js";
 import type { Logger } from "pino";
@@ -69,7 +69,7 @@ export const SKILL_EVAL_RUNNER_TUNING: SkillEvalRunnerTuning = {
 };
 
 export interface SkillEvalRunnerOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore;
   readonly router: SandboxRouter;
   readonly runs: Pick<ServerRunOrchestrator, "submitMessage" | "cancel">;
@@ -171,7 +171,7 @@ export class SkillEvalRunner {
           claim = await claimNextExecution(this.#o.db, team.id, {
             cap,
             wallClockMs,
-            pinFor: kobePin,
+            pinFor: kaijuPin,
           });
         } catch (err) {
           this.#o.log.error({ err, team_id: team.id }, "skill evals: claim failed");
@@ -516,7 +516,7 @@ export class SkillEvalRunner {
   }
 }
 
-async function runState(tx: KobeTx, teamId: string, runId: string) {
+async function runState(tx: KaijuTx, teamId: string, runId: string) {
   const res = await tx.execute<{ ended: boolean; turns: string | number }>(sql`
     SELECT r.status NOT IN ('queued', 'running', 'waiting_approval') AS ended,
            (SELECT count(*) FROM run_usage u
@@ -527,13 +527,13 @@ async function runState(tx: KobeTx, teamId: string, runId: string) {
 }
 
 /** The Site's eval limits (`site_skill_settings.eval_limits`), defaults filled in. */
-export async function siteEvalLimits(db: KobeDb): Promise<SkillEvalLimits> {
+export async function siteEvalLimits(db: KaijuDb): Promise<SkillEvalLimits> {
   const [row] = await db.select({ limits: siteSkillSettings.evalLimits }).from(siteSkillSettings);
   const parsed = skillEvalLimitsSchema.safeParse(row?.limits ?? {});
   return parsed.success ? parsed.data : skillEvalLimitsSchema.parse({});
 }
 
 /** The Kaiju gallery agent's pin, as Workbench test chats use it (the new-thread default). */
-export function kobePin(tx: KobeTx, teamId: string, userId: string): Promise<AgentPin | null> {
+export function kaijuPin(tx: KaijuTx, teamId: string, userId: string): Promise<AgentPin | null> {
   return defaultNewThreadPin(tx, { teamId, userId });
 }

@@ -1,9 +1,9 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import {
   EVENT_PAYLOAD_SCHEMAS,
   THREAD_EGRESS_BLOCKED_MAX,
   type ThreadEgressBlockedResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { findThread, type Viewer } from "../threads/repository.js";
 
 type BlockedRow = ThreadEgressBlockedResponse["blocked"][number];
@@ -19,7 +19,7 @@ const payloadSchema = EVENT_PAYLOAD_SCHEMAS["egress.blocked"];
  * (D18) has none.
  */
 export async function readThreadBlocked(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   threadId: string,
 ): Promise<ThreadEgressBlockedResponse | null> {

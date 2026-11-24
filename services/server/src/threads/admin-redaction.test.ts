@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { KobeEvent } from "@kobe/protocol";
+import type { KaijuEvent } from "@kaiju/protocol";
 import {
-  KOBE_ADMIN_RESULT_HIDDEN,
+  KAIJU_ADMIN_RESULT_HIDDEN,
   adminResultGate,
   redactEntry,
   redactEntryPayload,
@@ -62,7 +62,7 @@ describe("shared-thread redaction of Kaiju admin results (KOBE-623, KA6)", () =>
         role: "toolResult",
         toolCallId: "tc1",
         toolName: "mcp__kobe__team_members_list",
-        content: [{ type: "text", text: KOBE_ADMIN_RESULT_HIDDEN }],
+        content: [{ type: "text", text: KAIJU_ADMIN_RESULT_HIDDEN }],
         isError: false,
       },
     });
@@ -103,13 +103,13 @@ describe("shared-thread redaction of Kaiju admin results (KOBE-623, KA6)", () =>
         blob_ref: "teams/x/blob",
         truncated: true,
       },
-    } as KobeEvent;
+    } as KaijuEvent;
     const out = redactEvent(event, member);
     expect(out.payload).toEqual({
       tool_call_id: "tc1",
       tool: "mcp__kobe__team_members_list",
       is_error: false,
-      preview: KOBE_ADMIN_RESULT_HIDDEN,
+      preview: KAIJU_ADMIN_RESULT_HIDDEN,
       truncated: false,
     });
     expect(redactEvent(event, teamAdmin)).toBe(event);
@@ -128,10 +128,10 @@ describe("shared-thread redaction of Kaiju admin results (KOBE-623, KA6)", () =>
         entry_type: "message",
         payload: result("mcp__kobe__site_users_list"),
       },
-    } as unknown as KobeEvent;
+    } as unknown as KaijuEvent;
     const out = redactEvent(event, teamAdmin);
     expect(JSON.stringify(out)).not.toContain("secret rows");
-    expect(JSON.stringify(out)).toContain(KOBE_ADMIN_RESULT_HIDDEN);
+    expect(JSON.stringify(out)).toContain(KAIJU_ADMIN_RESULT_HIDDEN);
     const siteAdmin = adminResultGate({
       segments: ["kobe"],
       teamRole: "member",
@@ -142,6 +142,6 @@ describe("shared-thread redaction of Kaiju admin results (KOBE-623, KA6)", () =>
       ...event,
       payload: { ...event.payload, payload: result("mcp__kobe__docs_index") },
     };
-    expect(redactEvent(docs as KobeEvent, member)).toBe(docs);
+    expect(redactEvent(docs as KaijuEvent, member)).toBe(docs);
   });
 });

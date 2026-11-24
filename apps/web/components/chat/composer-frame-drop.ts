@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { pointInRect, type FrameDrag, type FrameDragStore } from "../../lib/apps/frame-drag";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 
 export interface FrameDropTarget {
   /** Whether the page point is over the drop target (read on every phase). */

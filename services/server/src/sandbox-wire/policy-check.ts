@@ -11,9 +11,9 @@ import {
   type PolicyReason,
   type ToolDescriptor,
   type ToolRegistry,
-} from "@kobe/protocol";
-import { type PolicyCheckFrame, type PolicyResultFrame } from "@kobe/protocol/sandbox-wire";
-import { eq, getMembership, sql, users, withTeam, type KobeDb } from "@kobe/db";
+} from "@kaiju/protocol";
+import { type PolicyCheckFrame, type PolicyResultFrame } from "@kaiju/protocol/sandbox-wire";
+import { eq, getMembership, sql, users, withTeam, type KaijuDb } from "@kaiju/db";
 import { isArtifactTool } from "../artifacts/allowed.js";
 import { logger } from "../logger.js";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
@@ -27,8 +27,8 @@ import {
 } from "../policy/dangerous-mode.js";
 import { loadRunAgentTools } from "../policy/run-agent-tools.js";
 import { guardViewedFile, proposeAvailable } from "../policy/viewed-file-guard.js";
-import { guardKobeAdmin } from "../policy/kobe-admin-guard.js";
-import { guardKobeAdminCall } from "../kobe-mcp/person-guard.js";
+import { guardKaijuAdmin } from "../policy/kaiju-admin-guard.js";
+import { guardKaijuAdminCall } from "../kaiju-mcp/person-guard.js";
 import { guardGitToolCall } from "../git-tools/guard.js";
 import { recordSkippedActionInTx } from "../policy/skipped-actions.js";
 import { decideAcrossRuns, policyInputFor } from "../mcp/decide-policy.js";
@@ -140,7 +140,7 @@ export function createDbRunContextSource(): RunPolicyContextSource {
 }
 
 export interface PolicyCheckDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly engine: PolicyEngine;
   readonly registry: ToolRegistry;
   readonly approvals: ApprovalBroker;
@@ -221,7 +221,7 @@ function evaluateWithRetry(deps: PolicyCheckDeps, target: SandboxTarget, frame: 
   );
 }
 
-async function accountActive(db: KobeDb, userId: string): Promise<boolean> {
+async function accountActive(db: KaijuDb, userId: string): Promise<boolean> {
   const [row] = await db
     .select({ deactivatedAt: users.deactivatedAt })
     .from(users)
@@ -266,7 +266,7 @@ function evalIsolatedCall(tool: string, input: unknown): boolean {
   );
 }
 
-async function isEvalThread(db: KobeDb, teamId: string, threadId: string): Promise<boolean> {
+async function isEvalThread(db: KaijuDb, teamId: string, threadId: string): Promise<boolean> {
   const res = await withTeam(db, teamId, (tx) =>
     tx.execute<{ skill_eval: boolean }>(sql`
       SELECT skill_eval FROM threads WHERE team_id = ${teamId} AND id = ${threadId}`),
@@ -506,8 +506,8 @@ async function acrossSandboxRuns(
         // built-in ignores it.
         { enforcementPoint: "sandbox", exposure: "all" },
       );
-      // The proxy's Kaiju connector guard, per run (kobe-mcp/service.ts); a no-op for built-ins.
-      return guardKobeAdmin(await deps.engine.decide(siblingInput), {
+      // The proxy's Kaiju connector guard, per run (kaiju-mcp/service.ts); a no-op for built-ins.
+      return guardKaijuAdmin(await deps.engine.decide(siblingInput), {
         tool: input.tool,
         input: siblingInput,
         evalRun: run.skillEval === true,
@@ -599,10 +599,10 @@ async function guardedDecision(d: Deciding, evaluated: Decided): Promise<PolicyD
     now: new Date(),
   });
   // KOBE-619: Kaiju admin tools only for a person who may use them now; writes ask in every mode.
-  const guarded = await guardKobeAdminCall(
+  const guarded = await guardKaijuAdminCall(
     deps.db,
     target,
-    guardKobeAdmin(viewedGuarded, {
+    guardKaijuAdmin(viewedGuarded, {
       tool: evaluated.input.tool,
       input: evaluated.input,
       evalRun: d.evalRun,

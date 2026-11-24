@@ -1,6 +1,6 @@
 "use client";
 
-import type { AgentRosterRow, AgentRosterTab } from "@kobe/protocol";
+import type { AgentRosterRow, AgentRosterTab } from "@kaiju/protocol";
 import Link from "next/link";
 import { useState } from "react";
 import type { GalleryAgentSummary } from "../../lib/admin/api/site/gallery";

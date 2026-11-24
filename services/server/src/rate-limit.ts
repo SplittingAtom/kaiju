@@ -8,15 +8,15 @@ import {
   refundRateLimitHit,
   takeRateBucket,
   takeRateLimit,
-  type KobeDb,
+  type KaijuDb,
   type RateBucketRule,
   type RateLimitDb,
   type RateLimitRule,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { logger } from "./logger.js";
 
 /*
- * The server's view of Kaiju's durable rate limiters. The SQL lives only in `@kobe/db`
+ * The server's view of Kaiju's durable rate limiters. The SQL lives only in `@kaiju/db`
  * (`packages/db/src/rate-limit.ts`, KOBE-810), which the model gateway shares; these wrappers add
  * the server's logging of failed prunes.
  */
@@ -137,7 +137,7 @@ export interface SharedRateLimit {
 
 /** A {@link SharedRateLimit} whose keys are `<name>:<key>`. */
 export function sharedRateLimit(
-  db: KobeDb,
+  db: KaijuDb,
   name: string,
   rule: RateBucketRule,
   clock?: () => number,

@@ -4,7 +4,7 @@ import {
   THREAD_FILE_LINKS_MAX_THREADS,
   threadFileLinksResponseSchema,
   threadFileLinksSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { z } from "zod";
 
 /**

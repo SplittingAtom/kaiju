@@ -10,7 +10,7 @@ import { lakehouseItemContent } from "../../lib/apps/lakehouse-drop";
 import { createChatApi } from "../../lib/chat/api";
 import { NEW_DRAFT } from "../../lib/chat/attachments";
 import { ChatSession } from "../../lib/chat/session";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { applyAppMessage } from "../apps/use-app-composer";
 import { watchFrameDrop } from "./composer-frame-drop";
 import { insertLakehouseItem } from "./composer-mention-drop";
@@ -35,7 +35,7 @@ afterEach(() => {
 });
 
 function harness(handlersOf: (session: ChatSession) => Partial<HostBridgeHandlers>) {
-  const fake = new FakeKobe();
+  const fake = new FakeKaiju();
   const session = new ChatSession({
     teamId: fake.teamId,
     api: createChatApi(fake.teamId, fake.fetch),

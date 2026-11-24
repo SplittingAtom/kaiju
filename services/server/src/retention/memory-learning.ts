@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, lockLegalHolds, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { SYSTEM_ACTOR, lockLegalHolds, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import {
   notifyMemoryAll,
@@ -66,7 +66,7 @@ const add = (a: LearningPurgeCounts, b: LearningPurgeCounts): LearningPurgeCount
 const total = (c: LearningPurgeCounts) => KEYS.reduce((n, k) => n + c[k], 0);
 
 async function audited(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   reason: "retention" | "offboarding",
   counts: LearningPurgeCounts,
@@ -83,7 +83,7 @@ async function audited(
 }
 
 /** Open candidates past their 14 days; settles the reminder of each pass left with none open. */
-async function expireCandidates(tx: KobeTx, teamId: string): Promise<LearningPurgeCounts> {
+async function expireCandidates(tx: KaijuTx, teamId: string): Promise<LearningPurgeCounts> {
   const res = await tx.execute<{ pass_id: string }>(sql`
     WITH due AS (
       SELECT c.id FROM memory_candidates c
@@ -106,7 +106,7 @@ async function expireCandidates(tx: KobeTx, teamId: string): Promise<LearningPur
 }
 
 /** Pending proposals past their 30 days: reminders settled, the proposer told (notify last). */
-async function expireProposals(tx: KobeTx, teamId: string): Promise<LearningPurgeCounts> {
+async function expireProposals(tx: KaijuTx, teamId: string): Promise<LearningPurgeCounts> {
   const res = await tx.execute<{ id: string; proposer_id: string }>(sql`
     WITH due AS (
       SELECT id FROM memory_proposals
@@ -130,7 +130,7 @@ async function expireProposals(tx: KobeTx, teamId: string): Promise<LearningPurg
 }
 
 /** Pending suggestions past their 30 days: reminders settled, the reader told (notify last). */
-async function expireSuggestions(tx: KobeTx, teamId: string): Promise<LearningPurgeCounts> {
+async function expireSuggestions(tx: KaijuTx, teamId: string): Promise<LearningPurgeCounts> {
   const res = await tx.execute<{ id: string; suggested_by: string; project_id: string }>(sql`
     WITH due AS (
       SELECT id FROM memory_project_suggestions
@@ -163,7 +163,7 @@ const suggestionHeld = sql`(public.legal_hold_covers(s.team_id, s.suggested_by)
   OR (s.decided_by IS NOT NULL AND public.legal_hold_covers(s.team_id, s.decided_by)))`;
 
 /** Reminders and bell entries about purged proposals or suggestions (they would open nothing). */
-async function dropNotices(tx: KobeTx, teamId: string, objects: readonly string[]): Promise<void> {
+async function dropNotices(tx: KaijuTx, teamId: string, objects: readonly string[]): Promise<void> {
   if (objects.length === 0) return;
   const list = sql.join(
     objects.map((id) => sql`${id}::uuid`),
@@ -182,7 +182,11 @@ async function dropNotices(tx: KobeTx, teamId: string, objects: readonly string[
  * proposal or suggestion of it involves. Proposals and suggestions go first, in their own
  * statements, so the candidates' `ON DELETE SET NULL` refs never touch a row being deleted.
  */
-async function purgePasses(tx: KobeTx, teamId: string, cutoff: Date): Promise<LearningPurgeCounts> {
+async function purgePasses(
+  tx: KaijuTx,
+  teamId: string,
+  cutoff: Date,
+): Promise<LearningPurgeCounts> {
   const doomed = await tx.execute<{ id: string }>(sql`
     SELECT p.id FROM memory_learning_passes p
      WHERE p.team_id = ${teamId} AND p.finished_at IS NOT NULL
@@ -245,7 +249,7 @@ async function purgePasses(tx: KobeTx, teamId: string, cutoff: Date): Promise<Le
  * Workspace window and no hold covers anyone they involve (KOBE-671).
  */
 async function purgeDecided(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   cutoff: Date,
 ): Promise<LearningPurgeCounts> {
@@ -283,9 +287,9 @@ async function purgeDecided(
 
 /** One batch in its own team transaction, hold lock first; audited when it changed something. */
 function batch(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
-  one: (tx: KobeTx) => Promise<LearningPurgeCounts>,
+  one: (tx: KaijuTx) => Promise<LearningPurgeCounts>,
 ): Promise<LearningPurgeCounts> {
   return withTeam(db, teamId, async (tx) => {
     await tx.execute(sql.raw(`SET LOCAL lock_timeout = '5s'`));
@@ -297,10 +301,10 @@ function batch(
 }
 
 async function repeat(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   stop: (() => boolean) | undefined,
-  one: (tx: KobeTx) => Promise<LearningPurgeCounts>,
+  one: (tx: KaijuTx) => Promise<LearningPurgeCounts>,
 ): Promise<LearningPurgeCounts> {
   let sum = NO_LEARNING_PURGE;
   for (let n = 0; n < 1000; n++) {
@@ -317,7 +321,7 @@ async function repeat(
  * kept forever, so only the expiries run). Called by the nightly retention pass for every team.
  */
 export async function sweepMemoryLearning(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   cutoff: Date | null,
   options: { readonly stop?: () => boolean } = {},
@@ -343,7 +347,7 @@ export async function sweepMemoryLearning(
  * member again or a hold covers them. Always audited.
  */
 export async function purgeDepartedLearningInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<LearningPurgeCounts> {

@@ -1,4 +1,4 @@
-import type { BudgetLine } from "@kobe/db";
+import type { BudgetLine } from "@kaiju/db";
 import {
   MEMBER_SHARE,
   type Cost,

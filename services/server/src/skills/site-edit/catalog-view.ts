@@ -1,5 +1,5 @@
 import { unzipSync } from "fflate";
-import { sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import type { BlobStore } from "../../retention/blobs.js";
 import { blockedAmong } from "../blocklist.js";
 import { compareSemver } from "../semver.js";
@@ -32,7 +32,7 @@ export interface SiteVersionRow {
   readonly stored: boolean;
 }
 
-export interface KobeState {
+export interface KaijuState {
   readonly detached: boolean;
   readonly detachedAt: string | null;
   readonly detachedBy: string | null;
@@ -61,7 +61,7 @@ export interface SiteSkillView {
   readonly retired: boolean;
   /** The newest version's bytes are on the Site's blocklist. */
   readonly blocklisted: boolean;
-  readonly kobe: KobeState | null;
+  readonly kobe: KaijuState | null;
   readonly draft: SiteDraftInfo | null;
   readonly versions: readonly SiteVersionRow[];
 }
@@ -71,7 +71,10 @@ export const RETIRED_STATUSES: readonly string[] = ["deprecated", "archived"];
 const iso = (d: Date | string | null) => (d === null ? null : new Date(d).toISOString());
 
 /** Every version of the skill, newest first. */
-export async function versionRows(db: KobeDb | KobeTx, skillId: string): Promise<SiteVersionRow[]> {
+export async function versionRows(
+  db: KaijuDb | KaijuTx,
+  skillId: string,
+): Promise<SiteVersionRow[]> {
   const { rows } = await db.execute<{
     id: string;
     semver: string;
@@ -131,7 +134,7 @@ type SkillRow = {
   kobe_shipped_version: string | null;
 };
 
-export function kobeState(r: SkillRow): KobeState | null {
+export function kaijuState(r: SkillRow): KaijuState | null {
   if (r.publisher !== "kobe") return null;
   const from = r.detached_from_version;
   const shipped = r.kobe_shipped_version;
@@ -149,7 +152,7 @@ export function kobeState(r: SkillRow): KobeState | null {
   };
 }
 
-export async function skillRow(db: KobeDb | KobeTx, skillId: string): Promise<SkillRow | null> {
+export async function skillRow(db: KaijuDb | KaijuTx, skillId: string): Promise<SkillRow | null> {
   const { rows } = await db.execute<SkillRow>(sql`
     SELECT s.id, s.name, s.summary, s.publisher::text AS publisher, s.status::text AS status,
       s.detached_at, u.name AS detached_by, s.detached_from_version, s.kobe_shipped_version
@@ -158,7 +161,7 @@ export async function skillRow(db: KobeDb | KobeTx, skillId: string): Promise<Sk
   return rows[0] ?? null;
 }
 
-async function draftInfo(db: KobeDb, skillId: string): Promise<SiteDraftInfo | null> {
+async function draftInfo(db: KaijuDb, skillId: string): Promise<SiteDraftInfo | null> {
   const { rows } = await db.execute<{
     base_version_id: string;
     semver: string;
@@ -183,7 +186,7 @@ async function draftInfo(db: KobeDb, skillId: string): Promise<SiteDraftInfo | n
 }
 
 /** Whether any of the skill's versions has bytes on the blocklist. */
-export async function skillBlocklisted(db: KobeDb, skillId: string): Promise<boolean> {
+export async function skillBlocklisted(db: KaijuDb, skillId: string): Promise<boolean> {
   return db.transaction(async (tx) => {
     const { rows } = await tx.execute<{ runtime_hash: string; package_hash: string }>(sql`
       SELECT runtime_hash, package_hash FROM registry_versions WHERE skill_id = ${skillId}`);
@@ -192,7 +195,7 @@ export async function skillBlocklisted(db: KobeDb, skillId: string): Promise<boo
   });
 }
 
-export async function siteSkillView(db: KobeDb, skillId: string): Promise<SiteSkillView | null> {
+export async function siteSkillView(db: KaijuDb, skillId: string): Promise<SiteSkillView | null> {
   const row = await skillRow(db, skillId);
   if (!row) return null;
   return {
@@ -203,7 +206,7 @@ export async function siteSkillView(db: KobeDb, skillId: string): Promise<SiteSk
     status: row.status,
     retired: RETIRED_STATUSES.includes(row.status),
     blocklisted: await skillBlocklisted(db, skillId),
-    kobe: kobeState(row),
+    kobe: kaijuState(row),
     draft: await draftInfo(db, skillId),
     versions: await versionRows(db, skillId),
   };
@@ -250,7 +253,7 @@ export const storedOf = (r: StoredRow): StoredPackage => ({
 });
 
 export async function storedVersion(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   skillId: string,
   versionId: string,
 ): Promise<StoredRow | null> {
@@ -291,7 +294,7 @@ const isText = (bytes: Uint8Array): boolean => {
 };
 
 export async function siteVersionView(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore,
   skillId: string,
   versionId: string,
@@ -323,7 +326,7 @@ export async function siteVersionView(
 
 /** One file of a version, as the review screen shows it (text, escaped text or a hex dump). */
 export async function siteVersionFile(
-  db: KobeDb,
+  db: KaijuDb,
   blobs: BlobStore,
   skillId: string,
   versionId: string,

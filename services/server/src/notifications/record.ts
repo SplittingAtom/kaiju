@@ -1,5 +1,5 @@
-import type { NotificationKind, RunStatus } from "@kobe/protocol";
-import { sql, type KobeTx } from "@kobe/db";
+import type { NotificationKind, RunStatus } from "@kaiju/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { logger } from "../logger.js";
 import { loadSkippedReport } from "../policy/skipped-actions.js";
 
@@ -45,7 +45,7 @@ export interface EndedRun {
  * schedule deleted meanwhile) rolls back only the notification, logged. A lost notification is
  * better than a run that cannot end (KOBE-179 review).
  */
-export async function notifyScheduledRunEndInTx(tx: KobeTx, run: EndedRun): Promise<void> {
+export async function notifyScheduledRunEndInTx(tx: KaijuTx, run: EndedRun): Promise<void> {
   if (run.trigger !== "schedule" || notificationKindOf(run.to, 0) === null) return;
   try {
     await tx.transaction((sp) => recordInTx(sp, run));
@@ -59,7 +59,7 @@ export async function notifyScheduledRunEndInTx(tx: KobeTx, run: EndedRun): Prom
   }
 }
 
-async function recordInTx(tx: KobeTx, run: EndedRun): Promise<void> {
+async function recordInTx(tx: KaijuTx, run: EndedRun): Promise<void> {
   const skipped = (await loadSkippedReport(tx, run.teamId, run.runId)).count;
   const kind = notificationKindOf(run.to, skipped);
   if (kind === null) return;

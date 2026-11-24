@@ -7,7 +7,7 @@ import {
   teamMembers,
   threads,
   withTeam,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { runWithAuditContext } from "../audit/context.js";
 import { resealTeamHeaders } from "./header-store.js";
 import { sweepEgressRequestNotifications } from "./request-notify.js";

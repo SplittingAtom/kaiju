@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, expect } from "vitest";
-import { withTeam } from "@kobe/db";
-import { WORKSPACE_SYNC_PATH } from "@kobe/protocol/sandbox-wire";
+import { withTeam } from "@kaiju/db";
+import { WORKSPACE_SYNC_PATH } from "@kaiju/protocol/sandbox-wire";
 import { unzipSync } from "fflate";
 import { createApp } from "../app.js";
 import { exportZip } from "../retention/export.js";
@@ -28,7 +28,7 @@ export const fx = new EventStreamFixture();
 export const auth = new FakeSandboxAuth();
 export const objects = new MemoryObjects();
 export const silent = { error: () => {}, warn: () => {}, info: () => {} };
-export const PREFIX = "kobe/";
+export const PREFIX = "kaiju/";
 export const LIMITS = {
   maxFileBytes: 1024 * 1024,
   maxWorkspaceBytes: 8 * 1024 * 1024,
@@ -103,7 +103,7 @@ export async function world(): Promise<World> {
 }
 
 export function multipart(name: string, content: string, folder?: string) {
-  const boundary = `----kobe${randomBytes(6).toString("hex")}`;
+  const boundary = `----kaiju${randomBytes(6).toString("hex")}`;
   const field =
     folder === undefined
       ? ""

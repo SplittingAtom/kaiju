@@ -5,15 +5,15 @@ import {
   modelProviders,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import {
   SERVER_CALL_LIMITS,
   parseSkillEvalJudgeVerdict,
   skillEvalJudgeMessages,
   type SkillEvalJudgeOutput,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { ServerCallError, type ServerCallClient } from "../../models/gateway-client.js";
 import { resolveRunModel } from "../../runs/models.js";
@@ -52,7 +52,7 @@ export interface SkillEvalJudge {
 }
 
 export interface SkillEvalJudgeOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly client: ServerCallClient;
   readonly log: Pick<Logger, "info" | "warn">;
   /** The call's own timeout (default the purpose's `timeout_ms`). */
@@ -81,7 +81,7 @@ type JudgeTarget =
   | { readonly ok: false };
 
 /** The judge model's gateway id, if the team enables `alias` now (never a fallback). */
-async function judgeTarget(tx: KobeTx, teamId: string, alias: string): Promise<JudgeTarget> {
+async function judgeTarget(tx: KaijuTx, teamId: string, alias: string): Promise<JudgeTarget> {
   const resolved = await resolveRunModel(tx, teamId, alias);
   if (!resolved.ok || resolved.model === undefined) return { ok: false };
   const [row] = await tx
@@ -98,7 +98,7 @@ async function judgeTarget(tx: KobeTx, teamId: string, alias: string): Promise<J
 }
 
 /** The run's judge spend in the ledger, and how many judge rows it has. */
-async function judgeSpend(db: KobeDb, teamId: string, runId: string) {
+async function judgeSpend(db: KaijuDb, teamId: string, runId: string) {
   return withTeam(db, teamId, async (tx) => {
     const res = await tx.execute<{ cost: string | number | null; n: string | number }>(sql`
       SELECT coalesce(sum(cost_usd), 0) AS cost, count(*) AS n FROM run_usage

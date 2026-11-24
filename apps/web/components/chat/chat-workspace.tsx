@@ -41,7 +41,7 @@ import { AnswerFeedbackProvider } from "./answer-feedback";
 import { ArtifactPanel } from "./artifact-panel";
 import { ArtifactPanelProvider, useArtifactPanel } from "./artifact-state";
 import { DetailProvider } from "./detail";
-import { useKobeRuntime } from "./kobe-runtime";
+import { useKaijuRuntime } from "./kaiju-runtime";
 import { ThreadMarkersProvider } from "./markers";
 import { ThreadUsageProvider } from "./message-footer";
 import { RetentionNotice } from "./retention-notice";
@@ -160,7 +160,7 @@ export function ChatWorkspace({
     },
     [session, setThreadId],
   );
-  const runtime = useKobeRuntime({
+  const runtime = useKaijuRuntime({
     session,
     adapter,
     threadId,
@@ -271,7 +271,7 @@ export function ChatWorkspace({
                                       artifact={<ArtifactPanel filesApi={filesApi} />}
                                       conversation={
                                         <main
-                                          id="kobe-chat-main"
+                                          id="kaiju-chat-main"
                                           className={styles.main}
                                           tabIndex={-1}
                                         >

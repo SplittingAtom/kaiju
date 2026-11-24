@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import type { KobeTx } from "../client.js";
+import type { KaijuTx } from "../client.js";
 import { gitConnections } from "../schema/git.js";
 import {
   GIT_CAPABILITY_VALUES,
@@ -132,7 +132,7 @@ export function toGitConnectionRecord(row: PublicRow): GitConnectionRecord {
 
 /** The Workspace's connections, oldest first, without credentials. */
 export async function readGitConnections(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
 ): Promise<GitConnectionRecord[]> {
   const rows = await tx
@@ -145,7 +145,7 @@ export async function readGitConnections(
 
 /** One connection without its credential, or undefined. */
 export async function readGitConnection(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   connectionId: string,
 ): Promise<GitConnectionRecord | undefined> {
@@ -168,7 +168,7 @@ export interface GitSealedCredentialRow {
  * proxy) or re-wrapping it. Its result must never be returned by an API, logged or audited.
  */
 export async function readGitConnectionSealedCredential(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   connectionId: string,
 ): Promise<GitSealedCredentialRow | undefined> {

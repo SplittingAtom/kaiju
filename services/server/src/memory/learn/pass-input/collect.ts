@@ -1,4 +1,4 @@
-import type { KobeTx } from "@kobe/db";
+import type { KaijuTx } from "@kaiju/db";
 import { DEFAULT_CAPS, entryCost, type BudgetCaps } from "./budget.js";
 import { readEntries, type PathRow } from "./read.js";
 import { toTranscriptPiece, type SkipReason, type TranscriptPiece } from "./transcript.js";
@@ -24,7 +24,7 @@ export interface Collected {
 }
 
 export async function collectPieces(
-  tx: KobeTx,
+  tx: KaijuTx,
   where: { readonly teamId: string; readonly threadId: string },
   range: readonly PathRow[],
   options: {

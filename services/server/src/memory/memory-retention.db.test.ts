@@ -17,7 +17,7 @@ import { MemoryObjects } from "../testing/memory-objects.js";
  */
 let h: Harness;
 const objects = new MemoryObjects();
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const blobs: BlobStore = { objects, prefix: PREFIX };
 const log = pino({ level: "silent" });
 const ids = { owner: "", admin: "", alice: "", bob: "" };

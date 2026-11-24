@@ -1,4 +1,4 @@
-import { MEMORY_EMBED_MAX_INPUT_CHARS } from "@kobe/protocol";
+import { MEMORY_EMBED_MAX_INPUT_CHARS } from "@kaiju/protocol";
 
 /**
  * Task prefixes per embedding model family (KOBE-409, KOBE-659 ledger), matched on the model id

@@ -1,11 +1,11 @@
 import pg from "pg";
 import {
   serverCallPurposeSchema,
-  type KobeEvent,
-  type KobeEventType,
+  type KaijuEvent,
+  type KaijuEventType,
   type ServerCallPurpose,
-} from "@kobe/protocol";
-import { appSessionHook, type AppSessionOptions, type TeamRole } from "@kobe/db";
+} from "@kaiju/protocol";
+import { appSessionHook, type AppSessionOptions, type TeamRole } from "@kaiju/db";
 
 /** Most events one read returns: what a stream holds in memory at a time. */
 export const PAGE_MAX_ROWS = 50;
@@ -35,7 +35,7 @@ export interface Page {
   /** null when the run no longer exists (thread purged). */
   readonly run: RunState | null;
   /** Events with seq > after, ascending and contiguous. Shared between streams: never mutate. */
-  readonly events: readonly KobeEvent[];
+  readonly events: readonly KaijuEvent[];
 }
 
 export interface EpilogueRecord {
@@ -43,7 +43,7 @@ export interface EpilogueRecord {
   readonly terminalSeq: number;
   readonly purposes: readonly ServerCallPurpose[];
   /** Event types written after it. */
-  readonly written: ReadonlySet<KobeEventType>;
+  readonly written: ReadonlySet<KaijuEventType>;
   /** When it was written (database clock), ms since the epoch. */
   readonly completedAtMs: number;
 }
@@ -164,7 +164,7 @@ export function createStreamReader(options: {
   const pool = new pg.Pool({
     connectionString: options.connectionString,
     max: options.max ?? STREAM_POOL_MAX,
-    application_name: "kobe-event-stream",
+    application_name: "kaiju-event-stream",
     connectionTimeoutMillis: 10_000,
     // eslint-disable-next-line @typescript-eslint/no-misused-promises -- pg-pool 3.x awaits the hook; @types/pg says void
     onConnect: appSessionHook(options.session),
@@ -208,7 +208,7 @@ export function createStreamReader(options: {
     const rows = await inTeam<PageRow>(teamId, PAGE_SQL, [teamId, runId, after]);
     const first = rows[0];
     if (!first) return { run: null, events: [] };
-    const events: KobeEvent[] = [];
+    const events: KaijuEvent[] = [];
     for (const row of rows) {
       if (row.seq === null || row.type === null || row.created_at === null) continue;
       events.push({
@@ -217,7 +217,7 @@ export function createStreamReader(options: {
         ts: new Date(row.created_at).toISOString(),
         type: row.type,
         payload: row.payload ?? {},
-      } as KobeEvent);
+      } as KaijuEvent);
     }
     return {
       run: { ended: first.ended, compacted: first.compacted, lastSeq: first.last_seq },
@@ -277,7 +277,7 @@ export function createStreamReader(options: {
       return {
         terminalSeq: Number(terminal.seq),
         purposes,
-        written: new Set(rows.slice(at + 1).map((r) => r.type as KobeEventType)),
+        written: new Set(rows.slice(at + 1).map((r) => r.type as KaijuEventType)),
         completedAtMs: new Date(terminal.created_at).getTime(),
       };
     },

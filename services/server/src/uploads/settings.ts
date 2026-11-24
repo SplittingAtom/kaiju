@@ -3,7 +3,7 @@ import {
   PROJECT_HISTORY_MAX_COMMITS,
   UPLOAD_DEFAULT_MAX_FILE_BYTES,
   UPLOAD_DEFAULT_MAX_MESSAGE_BYTES,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 const GIB = 1024 * 1024 * 1024;
 

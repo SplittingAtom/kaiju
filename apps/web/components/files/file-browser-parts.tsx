@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { FolderIcon, UploadIcon } from "lucide-react";
-import { WORKSPACE_DROP_FOLDER } from "@kobe/protocol";
+import { WORKSPACE_DROP_FOLDER } from "@kaiju/protocol";
 import { describeFileError, isReadOnlyPath } from "../../lib/files/format";
 import { canUploadInto } from "../../lib/files/tree";
 import { projectSlugOf } from "../../lib/projects/workspace";

@@ -6,7 +6,7 @@ import {
   type RememberLimits,
   type RememberScope,
   type ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   allowGlobScoped,
   isLiteralGlob,

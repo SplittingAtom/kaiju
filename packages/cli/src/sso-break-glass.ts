@@ -5,10 +5,10 @@ import {
   lockSsoRequired,
   readSsoRequiredIn,
   storeSsoRequired,
-} from "@kobe/db";
+} from "@kaiju/db";
 
 /**
- * `kobe sso allow-local-sign-in` (KOBE-774): the Site owner's break-glass for "Require single
+ * `kaiju sso allow-local-sign-in` (KOBE-774): the Site owner's break-glass for "Require single
  * sign-on". When the identity provider is down or misconfigured nobody can sign in through the
  * web, so this turns the setting off from outside it: it needs the owner role's database URL
  * (`KOBE_DB_MIGRATE_URL`), i.e. cluster access. One transaction: the setting goes off and
@@ -19,7 +19,7 @@ export async function allowLocalSignIn(
   databaseUrl: string,
   operator: string,
 ): Promise<{ readonly changed: boolean }> {
-  const database = createDb(databaseUrl, { max: 1, applicationName: "kobe-cli" });
+  const database = createDb(databaseUrl, { max: 1, applicationName: "kaiju-cli" });
   try {
     return await database.db.transaction(async (tx) => {
       await lockSsoRequired(tx);

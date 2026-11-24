@@ -17,7 +17,7 @@ import {
 } from "./skill-package/layout.js";
 import { approvalResolutionCauseSchema, policyReasonSchema } from "./policy.js";
 import { rememberScopeSchema } from "./remember.js";
-import { kobeAdminApprovalSchema } from "./kobe-mcp.js";
+import { kaijuAdminApprovalSchema } from "./kaiju-mcp.js";
 import { gitApprovalSchema } from "./git-tools.js";
 import { fileEditProposedPayloadSchema } from "./file-editor.js";
 import { fileOpenedPayloadSchema } from "./file-open.js";
@@ -36,7 +36,7 @@ import {
 } from "./server-call.js";
 
 /** Kaiju Event Stream event types (spec §6.2). Every event is persisted to `run_events` with a monotonic `seq` before fan-out. */
-export const KOBE_EVENT_TYPES = [
+export const KAIJU_EVENT_TYPES = [
   "run.queued",
   "run.started",
   "sandbox.waking",
@@ -82,11 +82,11 @@ export const KOBE_EVENT_TYPES = [
   "memory.pass.failed",
 ] as const;
 
-export type KobeEventType = (typeof KOBE_EVENT_TYPES)[number];
+export type KaijuEventType = (typeof KAIJU_EVENT_TYPES)[number];
 
-const EVENT_TYPE_SET: ReadonlySet<string> = new Set(KOBE_EVENT_TYPES);
+const EVENT_TYPE_SET: ReadonlySet<string> = new Set(KAIJU_EVENT_TYPES);
 
-export function isKobeEventType(value: unknown): value is KobeEventType {
+export function isKaijuEventType(value: unknown): value is KaijuEventType {
   return typeof value === "string" && EVENT_TYPE_SET.has(value);
 }
 
@@ -270,7 +270,7 @@ export const EVENT_PAYLOAD_SCHEMAS = {
      * A Kaiju admin write (KOBE-623): the card's "Admin change" scope and summary, built by the
      * server. Additive: clients that predate it show the ordinary card.
      */
-    admin: kobeAdminApprovalSchema.optional(),
+    admin: kaijuAdminApprovalSchema.optional(),
     /**
      * A git host write (KOBE-762): host, organization, repository and exactly what will be created
      * or posted, built by the server. Additive: older clients show the ordinary card.
@@ -475,9 +475,11 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     suggestions: threadSuggestionsSchema,
   }),
   ...memoryPassEventPayloadSchemas,
-} as const satisfies Record<KobeEventType, z.ZodType>;
+} as const satisfies Record<KaijuEventType, z.ZodType>;
 
-export type KobeEventPayload<T extends KobeEventType> = z.infer<(typeof EVENT_PAYLOAD_SCHEMAS)[T]>;
+export type KaijuEventPayload<T extends KaijuEventType> = z.infer<
+  (typeof EVENT_PAYLOAD_SCHEMAS)[T]
+>;
 
 /**
  * Envelope of every event: the `run_events` row and the SSE `data:` body.
@@ -485,17 +487,17 @@ export type KobeEventPayload<T extends KobeEventType> = z.infer<(typeof EVENT_PA
  * (KOBE-29; writers omit it) and committed in seq order. Consumers still drop `seq <= last seen`
  * (duplicates across reconnects).
  */
-export type KobeEvent<T extends KobeEventType = KobeEventType> = {
+export type KaijuEvent<T extends KaijuEventType = KaijuEventType> = {
   [K in T]: {
     run_id: string;
     seq: number;
     ts: string;
     type: K;
-    payload: KobeEventPayload<K>;
+    payload: KaijuEventPayload<K>;
   };
 }[T];
 
-function envelopeFor<T extends KobeEventType>(type: T) {
+function envelopeFor<T extends KaijuEventType>(type: T) {
   return z.strictObject({
     run_id: uuidSchema,
     seq: z.number().int().positive(),
@@ -505,15 +507,15 @@ function envelopeFor<T extends KobeEventType>(type: T) {
   });
 }
 
-const envelopeSchemas = KOBE_EVENT_TYPES.map((type) => envelopeFor(type));
+const envelopeSchemas = KAIJU_EVENT_TYPES.map((type) => envelopeFor(type));
 
-export const kobeEventSchema = z.discriminatedUnion(
+export const kaijuEventSchema = z.discriminatedUnion(
   "type",
   envelopeSchemas as unknown as [
     ReturnType<typeof envelopeFor>,
     ...ReturnType<typeof envelopeFor>[],
   ],
-) as unknown as z.ZodType<KobeEvent>;
+) as unknown as z.ZodType<KaijuEvent>;
 
 /**
  * Terminal events: the server closes the SSE stream after sending one, unless `run.completed`
@@ -525,7 +527,7 @@ export const TERMINAL_EVENT_TYPES = [
   "run.failed",
   "run.interrupted",
   "run.budget_stopped",
-] as const satisfies KobeEventType[];
+] as const satisfies KaijuEventType[];
 
 /**
  * Events that may follow `run.completed` (KOBE-234): written by the server's post-run calls. After
@@ -536,28 +538,28 @@ export const TERMINAL_EVENT_TYPES = [
 export const EPILOGUE_EVENT_TYPES = {
   title: "thread.updated",
   followups: "thread.suggestions",
-} as const satisfies Record<(typeof SERVER_CALL_PURPOSES)[number], KobeEventType>;
+} as const satisfies Record<(typeof SERVER_CALL_PURPOSES)[number], KaijuEventType>;
 
-export function isTerminalEventType(type: KobeEventType): boolean {
-  return (TERMINAL_EVENT_TYPES as readonly KobeEventType[]).includes(type);
+export function isTerminalEventType(type: KaijuEventType): boolean {
+  return (TERMINAL_EVENT_TYPES as readonly KaijuEventType[]).includes(type);
 }
 
 /**
  * Validate a payload for a known type (producers call this before writing `run_events`),
  * including the whole-payload bound {@link EVENT_PAYLOAD_MAX_BYTES}.
  */
-export function parseEventPayload<T extends KobeEventType>(
+export function parseEventPayload<T extends KaijuEventType>(
   type: T,
   payload: unknown,
-): KobeEventPayload<T> {
-  const parsed = EVENT_PAYLOAD_SCHEMAS[type].parse(payload) as KobeEventPayload<T>;
+): KaijuEventPayload<T> {
+  const parsed = EVENT_PAYLOAD_SCHEMAS[type].parse(payload) as KaijuEventPayload<T>;
   if (jsonByteLength(parsed) > EVENT_PAYLOAD_MAX_BYTES) throw new EventPayloadTooLargeError(type);
   return parsed;
 }
 
 /** `parseEventPayload`: the payload is valid but over {@link EVENT_PAYLOAD_MAX_BYTES}. */
 export class EventPayloadTooLargeError extends RangeError {
-  constructor(readonly type: KobeEventType) {
+  constructor(readonly type: KaijuEventType) {
     super(`${type} payload over ${EVENT_PAYLOAD_MAX_BYTES} bytes as JSON`);
     this.name = "EventPayloadTooLargeError";
   }

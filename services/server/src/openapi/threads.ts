@@ -6,7 +6,7 @@ import {
   threadEgressBlockedResponseSchema,
   shareThreadRequestSchema,
   threadLineageResponseSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { z } from "zod";
 import {
   createThreadBodySchema,

@@ -113,7 +113,7 @@ describe("team setters (KOBE-697)", () => {
     const ts = (src: string) => mentionsTeam("x.ts", src);
     // Aliased or renamed constant.
     expect(
-      ts(`import { TEAM_ID_SETTING as T } from "@kobe/db";\nset_config(\${T}, id, true)`),
+      ts(`import { TEAM_ID_SETTING as T } from "@kaiju/db";\nset_config(\${T}, id, true)`),
     ).toBe(true);
     expect(ts("const SETTING = TEAM_ID_SETTING;")).toBe(true);
     // The name as a value anywhere but a read.

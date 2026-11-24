@@ -1,4 +1,4 @@
-import { toolRules, type AuditActor, type KobeTx } from "@kobe/db";
+import { toolRules, type AuditActor, type KaijuTx } from "@kaiju/db";
 import {
   BUILTIN_TOOLS,
   parseMcpToolName,
@@ -7,7 +7,7 @@ import {
   type JsonObject,
   type RememberLimits,
   type ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { threadLiveFor } from "./live-rule.js";
 import { allowGlobScoped, isLiteralGlob } from "./patterns.js";
 import {
@@ -88,7 +88,7 @@ export function rememberRefusal(
  * rules still win, and unattended runs never use it (evaluate.ts).
  */
 export async function insertUserAllowRule(
-  tx: KobeTx,
+  tx: KaijuTx,
   params: {
     readonly teamId: string;
     readonly userId: string;

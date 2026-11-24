@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { appIdOf } from "./app-id.js";
 import { claimAppResultsInTx } from "./claim.js";
 import { approvalKeyring } from "../approvals/index.js";
@@ -29,7 +29,7 @@ import {
  */
 const fx = new EventStreamFixture();
 const objects = new MemoryObjects();
-const blobs = { objects, prefix: "kobe/" };
+const blobs = { objects, prefix: "kaiju/" };
 const live = new Set<string>();
 let internal: ReturnType<typeof createInternalApp>;
 const URI = "ui://c/explorer";
@@ -221,7 +221,7 @@ describe("capture (ac-1)", () => {
       [w.team],
     );
     const key = must(stored[0], "row").blob_ref;
-    expect(key.startsWith(`kobe/teams/${w.team}/threads/${w.threadId}/apps/`)).toBe(true);
+    expect(key.startsWith(`kaiju/teams/${w.team}/threads/${w.threadId}/apps/`)).toBe(true);
     expect(objects.objects.has(key)).toBe(true);
     // Not queued for deletion once its row committed.
     const { rows: queued } = await fx.admin.query(
@@ -427,7 +427,7 @@ describe("claim, views and reads (ac-2, ac-3, ac-4)", () => {
       [fork],
     );
     expect(
-      must(copies[0], "copy").blob_ref.startsWith(`kobe/teams/${w.team}/threads/${fork}/apps/`),
+      must(copies[0], "copy").blob_ref.startsWith(`kaiju/teams/${w.team}/threads/${fork}/apps/`),
     ).toBe(true);
     const [copy] = (await views(w.owner, fork)).json.results as Body[];
     expect(
@@ -442,9 +442,9 @@ describe("claim, views and reads (ac-2, ac-3, ac-4)", () => {
     const b = w.owner.browser;
     const res = await fx
       .replica(0)
-      .app.request(`http://kobe.test/v1/threads/export?team=${w.team}`, {
+      .app.request(`http://kaiju.test/v1/threads/export?team=${w.team}`, {
         headers: {
-          origin: "http://kobe.test",
+          origin: "http://kaiju.test",
           "x-forwarded-for": b.ip,
           cookie: [...b.cookies].map(([k, v]) => `${k}=${v}`).join("; "),
         },

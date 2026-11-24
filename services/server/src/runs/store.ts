@@ -12,8 +12,8 @@ import {
   type RunViewingContext,
   type ThinkingLevel,
   type ThreadStatus,
-} from "@kobe/protocol";
-import { readBudgetStopScope, sql, type AgentScope, type KobeTx, type RunKind } from "@kobe/db";
+} from "@kaiju/protocol";
+import { readBudgetStopScope, sql, type AgentScope, type KaijuTx, type RunKind } from "@kaiju/db";
 import {
   auditExpiredApprovals,
   expireRunApprovalsInTx,
@@ -142,7 +142,7 @@ export function toSnapshot(run: RunRow): RunSnapshot {
 }
 
 export async function getRunRow(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
 ): Promise<RunRow | undefined> {
@@ -154,7 +154,7 @@ export async function getRunRow(
 
 /** Locks the run row (after its thread's row) and returns it. */
 export async function lockRunRow(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
 ): Promise<RunRow | undefined> {
@@ -169,7 +169,7 @@ export async function lockRunRow(
  * with `isMessageRun`.
  */
 export async function threadRunRows(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<RunRow[]> {
@@ -182,7 +182,7 @@ export async function threadRunRows(
 
 /** Every run of a thread in creation order, as `checkRetry` needs them. */
 export async function retryCandidates(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<{ run_id: string; status: RunStatus; retry_of_run_id?: string }[]> {
@@ -228,7 +228,7 @@ export interface ThreadRow {
 }
 
 /** Fail fast instead of queueing behind a long-held thread row (KOBE-29/34: status writers). */
-export async function setThreadLockTimeout(tx: KobeTx): Promise<void> {
+export async function setThreadLockTimeout(tx: KaijuTx): Promise<void> {
   await tx.execute(sql`SELECT set_config('lock_timeout', ${THREAD_LOCK_TIMEOUT}, true)`);
 }
 
@@ -244,7 +244,7 @@ export async function setThreadLockTimeout(tx: KobeTx): Promise<void> {
  * event writer deadlocked (40P01).
  */
 export async function lockThreadRow(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<ThreadRow | undefined> {
@@ -294,7 +294,7 @@ export async function lockThreadRow(
  * member. `FOR SHARE` on the user row orders this against a concurrent deactivation.
  */
 export async function principalActive(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
 ): Promise<boolean> {
@@ -308,7 +308,7 @@ export async function principalActive(
 }
 
 export async function entryExists(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   entryId: string,
@@ -325,7 +325,7 @@ export async function entryExists(
  * caller.
  */
 export async function setQueuePaused(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   paused: boolean,
@@ -338,7 +338,7 @@ export async function setQueuePaused(
 
 /** Whether the thread's queue is paused by a Stop (see `setQueuePaused`). */
 export async function isQueuePaused(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<boolean> {
@@ -355,7 +355,7 @@ export async function isQueuePaused(
  * the abort — at most `holdMs` (the Stop grace), after which the queue moves anyway.
  */
 export async function abortPending(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   holdMs: number,
@@ -369,14 +369,14 @@ export async function abortPending(
   return res.rows.length > 0;
 }
 
-export async function queuedCount(tx: KobeTx, teamId: string, threadId: string): Promise<number> {
+export async function queuedCount(tx: KaijuTx, teamId: string, threadId: string): Promise<number> {
   const res = await tx.execute<{ n: string | number }>(sql`
     SELECT count(*) AS n FROM runs
      WHERE team_id = ${teamId} AND thread_id = ${threadId} AND status = 'queued'`);
   return Number(res.rows[0]?.n ?? 0);
 }
 
-export async function touchThread(tx: KobeTx, teamId: string, threadId: string): Promise<void> {
+export async function touchThread(tx: KaijuTx, teamId: string, threadId: string): Promise<void> {
   await tx.execute(sql`
     UPDATE threads SET last_activity_at = now() WHERE team_id = ${teamId} AND id = ${threadId}`);
 }
@@ -402,7 +402,7 @@ export interface NewRun {
 export type StoredViewing = RunViewingContext | { readonly path: string };
 
 /** Inserts a queued run at the end of the thread's queue (thread lock held). */
-export async function insertQueuedRun(tx: KobeTx, run: NewRun): Promise<string> {
+export async function insertQueuedRun(tx: KaijuTx, run: NewRun): Promise<string> {
   const res = await tx.execute<{ id: string }>(sql`
     INSERT INTO runs (team_id, thread_id, trigger, status, queue_pos, approval_mode, input,
                       parent_entry_id, retry_of_run_id, client_key, viewing)
@@ -426,7 +426,7 @@ export const VIEWING_RECORD_ONLY = sql`(viewing - 'content' - 'size' - 'truncate
 
 /** The path of the run's viewed file, also after the run ended (Retry reads it again). */
 export async function runViewingPath(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
 ): Promise<string | undefined> {
@@ -440,7 +440,7 @@ export async function runViewingPath(
  * (regenerate, KOBE-467); undefined when none did or it viewed nothing.
  */
 export async function promptViewingPath(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   entryId: string,
@@ -457,7 +457,7 @@ export async function promptViewingPath(
  * not parse sends no note.
  */
 export async function runViewing(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
 ): Promise<RunViewingContext | null> {
@@ -485,7 +485,7 @@ export interface AppliedTransition {
  * `approval.resolved` before the terminal event; audited). Returns the thread's new status.
  */
 export async function applyTransition(
-  tx: KobeTx,
+  tx: KaijuTx,
   thread: ThreadRow,
   run: RunRow,
   to: RunStatus,
@@ -559,7 +559,7 @@ export async function applyTransition(
 }
 
 export async function setThreadStatus(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   status: ThreadStatus,
@@ -578,7 +578,7 @@ export async function setThreadStatus(
  * at the root): the retry then continues from the leaf.
  */
 export async function retryBranchPoint(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   run: { readonly id: string; readonly threadId: string; readonly parentEntryId: string | null },
 ): Promise<string | null> {
@@ -595,7 +595,7 @@ export async function retryBranchPoint(
 
 /** The run a client-supplied idempotency key already created on this thread. */
 export async function runByClientKey(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   clientKey: string,
@@ -612,7 +612,7 @@ export async function runByClientKey(
  * (the one Retry was used; retry the retry, or send the message again).
  */
 export async function existingRetry(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
 ): Promise<{ runId: string; queued: boolean }> {
@@ -635,7 +635,7 @@ export async function existingRetry(
 
 /** The interrupted run an `interrupted` thread is waiting on (Retry or Continue, D14). */
 export async function latestInterruptedRow(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<RunRow | undefined> {
@@ -651,7 +651,7 @@ export async function latestInterruptedRow(
 
 /** Records a stop the sandbox must still receive (cleared by `clearStop` once answered). */
 export async function requestStop(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   mode: "abort" | "after_step",
@@ -662,7 +662,7 @@ export async function requestStop(
 }
 
 export async function clearStop(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   mode: "abort" | "after_step",

@@ -21,7 +21,7 @@ describe("safeReturnTo (spec sso-oidc-scim §5.3, open redirect)", () => {
     "\\\\evil.example.com",
     "/\\/evil.example.com",
     "https://evil.example.com",
-    "http://kobe.test/chat",
+    "http://kaiju.test/chat",
     "javascript:alert(1)",
     "chat",
     " /chat",

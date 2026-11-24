@@ -213,7 +213,7 @@ export async function runMigrations(options: MigrateOptions): Promise<void> {
 }
 
 /** `application_name` of the runner's sessions: how a lock holder is recognised. */
-export const MIGRATE_APPLICATION_NAME = "kobe-migrate";
+export const MIGRATE_APPLICATION_NAME = "kaiju-migrate";
 
 /**
  * On abort: `pg_cancel_backend` the runner's backend from a second connection (a closed socket
@@ -264,7 +264,7 @@ interface LockHolder {
   mode: string;
 }
 
-/** Who holds the migration lock (a migration, `kobe backup`/`restore`, or a stuck backend). */
+/** Who holds the migration lock (a migration, `kaiju backup`/`restore`, or a stuck backend). */
 async function lockHolders(client: pg.ClientBase): Promise<string> {
   const { rows } = await client.query<LockHolder>(
     `SELECT a.pid, a.application_name, a.state, a.query_start, a.backend_start, l.mode
@@ -301,7 +301,7 @@ async function acquireMigrationLock(
   ]);
   if (tried.rows[0]?.ok) return;
   const holders = await lockHolders(client);
-  onNotice?.(`kobe: the migration lock is held by ${holders}; waiting up to 10 s`);
+  onNotice?.(`kaiju: the migration lock is held by ${holders}; waiting up to 10 s`);
   try {
     await client.query(`SELECT pg_advisory_lock($1)`, [MIGRATION_LOCK_KEY]);
   } catch (err) {

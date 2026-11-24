@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import { appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { reorderQueuedRuns } from "../runs/queue-order.js";
 import { lockRunRow, lockThreadRow } from "../runs/store.js";
@@ -70,7 +70,7 @@ function why(result: PromiseSettledResult<unknown>): string {
   return `rejected ${err.cause?.code ?? "-"} ${err.cause?.message ?? err.message ?? ""}`;
 }
 
-type ThreadLock = (tx: KobeTx, threadId: string) => Promise<unknown>;
+type ThreadLock = (tx: KaijuTx, threadId: string) => Promise<unknown>;
 
 const THREAD_LOCKS: readonly (readonly [string, ThreadLock])[] = [
   ["lockThreadRow (broker, decide, sweeps)", (tx, id) => lockThreadRow(tx, team, id)],

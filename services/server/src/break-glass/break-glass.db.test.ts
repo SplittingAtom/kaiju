@@ -1,6 +1,6 @@
 import pg from "pg";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { createApp } from "../app.js";
 import { sweepBreakGlass } from "./sweeper.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
@@ -10,7 +10,7 @@ import { fakeIsolation } from "../testing/isolation.js";
 
 // KOBE-16 break-glass end to end: request, two-person approval, notifications, audited reads
 // through their own routes only, revocation and expiry re-checked per request, races.
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 
 const PEOPLE = ["owner", "investigator", "alice", "bob", "carol", "dave", "erin"] as const;

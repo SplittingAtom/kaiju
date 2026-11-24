@@ -1,4 +1,4 @@
-import { isDangerousMode, type AgentFrontmatter } from "@kobe/agent-file";
+import { isDangerousMode, type AgentFrontmatter } from "@kaiju/agent-file";
 import {
   and,
   eq,
@@ -11,10 +11,10 @@ import {
   teamAgentSuspensions,
   users,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   makeCursorCodec,
-} from "@kobe/db";
+} from "@kaiju/db";
 import type {
   AgentLineage,
   AgentReach,
@@ -23,8 +23,8 @@ import type {
   AgentRosterRow,
   AgentRosterStatus,
   AgentRosterTab,
-} from "@kobe/protocol";
-import { AGENT_ROSTER_PAGE_MAX } from "@kobe/protocol";
+} from "@kaiju/protocol";
+import { AGENT_ROSTER_PAGE_MAX } from "@kaiju/protocol";
 import {
   agentAccess,
   rosterActions,
@@ -188,7 +188,7 @@ const subjectOf = (
 
 /** Names of the given users (owners on the rows). */
 async function namesOf(
-  db: KobeDb | KobeTx,
+  db: KaijuDb | KaijuTx,
   ids: readonly string[],
 ): Promise<ReadonlyMap<string, string>> {
   const unique = [...new Set(ids)];
@@ -202,7 +202,7 @@ async function namesOf(
 
 /** The frontmatter of the given published versions of site agents, by agent id. */
 async function versionFrontmatter(
-  tx: KobeTx | KobeDb,
+  tx: KaijuTx | KaijuDb,
   pairs: readonly (readonly [string, number])[],
 ): Promise<ReadonlyMap<string, AgentFrontmatter>> {
   if (pairs.length === 0) return new Map();
@@ -221,7 +221,7 @@ async function versionFrontmatter(
 
 /** Someone else's personal agent shows the version its entry runs, never the owner's draft. */
 async function entryCandidates(
-  tx: KobeTx,
+  tx: KaijuTx,
   actor: RosterActor,
   entries: readonly RosterEntryRecord[],
   states: (agentId: string) => {
@@ -270,7 +270,7 @@ async function entryCandidates(
   });
 }
 
-async function suspendedIn(tx: KobeTx, teamId: string): Promise<ReadonlySet<string>> {
+async function suspendedIn(tx: KaijuTx, teamId: string): Promise<ReadonlySet<string>> {
   const rows = await tx
     .select({ id: teamAgentSuspensions.agentId })
     .from(teamAgentSuspensions)
@@ -278,7 +278,7 @@ async function suspendedIn(tx: KobeTx, teamId: string): Promise<ReadonlySet<stri
   return new Set(rows.map((r) => r.id));
 }
 
-async function personalCandidates(db: KobeDb, actor: RosterActor): Promise<Candidate[]> {
+async function personalCandidates(db: KaijuDb, actor: RosterActor): Promise<Candidate[]> {
   const own = await db
     .select(SITE_ROW)
     .from(siteAgents)
@@ -306,7 +306,7 @@ async function personalCandidates(db: KobeDb, actor: RosterActor): Promise<Candi
 }
 
 /** Inside the read's `withTeam(actor.teamId)`; every team query states `team_id`. */
-async function teamCandidates(tx: KobeTx, actor: RosterActor): Promise<Candidate[]> {
+async function teamCandidates(tx: KaijuTx, actor: RosterActor): Promise<Candidate[]> {
   const teamId = actor.teamId;
   const owned = await tx.select(TEAM).from(teamAgents).where(eq(teamAgents.teamId, teamId));
   const entries = await teamEntries(tx, teamId);
@@ -340,7 +340,7 @@ async function teamCandidates(tx: KobeTx, actor: RosterActor): Promise<Candidate
 }
 
 /** Inside the read's `withTeam(actor.teamId)` (this team's suspensions and entries). */
-async function siteCandidates(tx: KobeTx, actor: RosterActor): Promise<Candidate[]> {
+async function siteCandidates(tx: KaijuTx, actor: RosterActor): Promise<Candidate[]> {
   const gallery = await tx.select(SITE_ROW).from(siteAgents).where(eq(siteAgents.scope, "gallery"));
   const entries = await siteEntries(tx);
   const here = await suspendedIn(tx, actor.teamId);
@@ -374,7 +374,7 @@ const INVENTORY_SCOPE: Readonly<Record<AgentRosterKind, UsageSubject["scope"]>> 
  * snapshot as the rows), team explicit.
  */
 async function withUsage(
-  tx: KobeTx,
+  tx: KaijuTx,
   actor: RosterActor,
   rows: AgentRosterRow[],
 ): Promise<AgentRosterRow[]> {
@@ -408,7 +408,7 @@ type RosterQuery = {
  * decision across the whole roster (§6.4) for the tab's admins.
  */
 async function pageOf(
-  conn: KobeDb | KobeTx,
+  conn: KaijuDb | KaijuTx,
   actor: RosterActor,
   query: RosterQuery,
   candidates: readonly Candidate[],
@@ -437,7 +437,7 @@ async function pageOf(
 }
 
 export async function listRoster(
-  db: KobeDb,
+  db: KaijuDb,
   actor: RosterActor,
   query: RosterQuery,
 ): Promise<AgentRosterPage> {

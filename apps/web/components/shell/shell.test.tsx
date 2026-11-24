@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { command, commandsIn, type CommandId } from "../../lib/shell/commands";
 import { forgetLastThread, lastThreadHref, rememberLastThread } from "../../lib/shell/last-thread";
 import { must } from "../../lib/testing/must";
@@ -14,12 +14,12 @@ import { ShellGrid } from "./shell-grid";
  * KOBE-197 (CE3, CE4, CE7): the utility bar (one row since KOBE-418) over the rail · artifact ·
  * conversation grid.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push({ alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true });
   vi.stubGlobal("fetch", fake.fetch);
 });
@@ -36,7 +36,7 @@ const ME = { id: "u-1", name: "Ada", email: "ada@example.test", twoFactorEnabled
 function withAccess(siteRole: string | null, teamRole: string, permissions: string[]) {
   const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
   vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
-    const path = new URL(input, "http://kobe.test").pathname;
+    const path = new URL(input, "http://kaiju.test").pathname;
     if (path === "/v1/me") return json({ user: ME, siteRole });
     if (path === "/v1/team") {
       return json({
@@ -169,10 +169,10 @@ describe("grid", () => {
     expect(regions).toEqual(["rail", "artifact", "conversation"]);
     // Floating cards (KOBE-554): each column glows on hover like the cards inside it.
     for (const name of regions) {
-      expect(region(must(name)).classList.contains("kobe-panel"), name ?? "").toBe(true);
+      expect(region(must(name)).classList.contains("kaiju-panel"), name ?? "").toBe(true);
     }
     expect(within(region("rail")).getByRole("complementary", { name: "Workspace" })).toBeTruthy();
-    expect(region("conversation").querySelector("main#kobe-chat-main")).toBeTruthy();
+    expect(region("conversation").querySelector("main#kaiju-chat-main")).toBeTruthy();
     // Empty: the conversation takes the remaining width (the column collapses on `:empty`).
     expect(region("artifact").childElementCount).toBe(0);
 
@@ -196,9 +196,9 @@ describe("cards (KOBE-554)", () => {
       />,
     );
     const artifact = must(container.querySelector('[data-shell-region="artifact"]'));
-    expect(artifact.classList.contains("kobe-panel")).toBe(false);
+    expect(artifact.classList.contains("kaiju-panel")).toBe(false);
     rerender(<ShellGrid rail={<p>rail</p>} artifact={<p>tab</p>} conversation={<p>thread</p>} />);
-    expect(artifact.classList.contains("kobe-panel")).toBe(true);
+    expect(artifact.classList.contains("kaiju-panel")).toBe(true);
   });
 });
 
@@ -260,7 +260,7 @@ function holdSearches(): Map<string, () => void> {
   const held = new Map<string, () => void>();
   const inner = fake.fetch;
   const fetchFn: typeof fetch = async (input, init) => {
-    const url = new URL(String(input), "http://kobe.test");
+    const url = new URL(String(input), "http://kaiju.test");
     const q = url.searchParams.get("q");
     if (url.pathname === "/v1/threads" && q !== null) {
       await new Promise<void>((resolve) => held.set(q, resolve));

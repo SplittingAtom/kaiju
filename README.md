@@ -43,9 +43,9 @@ pnpm license:check  # fails on any dependency outside the MIT/Apache/BSD/MPL fam
 Run one package's tests, or a single test file / test name:
 
 ```bash
-pnpm --filter @kobe/server test
-pnpm --filter @kobe/server exec vitest run src/core/app.test.ts
-pnpm --filter @kobe/server exec vitest run -t "healthz"
+pnpm --filter @kaiju/server test
+pnpm --filter @kaiju/server exec vitest run src/core/app.test.ts
+pnpm --filter @kaiju/server exec vitest run -t "healthz"
 ```
 
 Build every service image and verify it runs as a non-root user (needs a Docker engine; set

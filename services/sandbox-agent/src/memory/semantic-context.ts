@@ -8,7 +8,7 @@ import {
   type RunSemanticMemory,
   type RunSemanticMemoryItem,
   type SemanticMemoryPlacement,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { capBytes, oneLine, untrustedLinesBlock } from "../kobe-tools/memory-fence.js";
 
 /**

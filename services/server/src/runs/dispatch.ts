@@ -1,5 +1,5 @@
-import { isActiveRunStatus } from "@kobe/protocol";
-import { SYSTEM_ACTOR, sql, type KobeDb } from "@kobe/db";
+import { isActiveRunStatus } from "@kaiju/protocol";
+import { SYSTEM_ACTOR, sql, type KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import { withAppendTx } from "../event-stream/append.js";
@@ -29,7 +29,7 @@ export interface DispatchTuning {
 }
 
 export interface DispatchHost {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly router: SandboxRouter;
   readonly agents: RunAgentResolver;
   readonly tuning: DispatchTuning;

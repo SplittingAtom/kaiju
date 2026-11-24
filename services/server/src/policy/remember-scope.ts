@@ -11,7 +11,7 @@ import {
   type JsonObject,
   type RememberScope,
   type ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { wallMs, wallToInstant } from "../schedules/recurrence.js";
 import { matchArgPattern } from "./patterns.js";
 import { prepareInput } from "./tool-inputs.js";

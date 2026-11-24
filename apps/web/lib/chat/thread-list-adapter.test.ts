@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { ApiError } from "../api/client";
 import { createChatApi } from "./api";
 import { ChatSession, titleFrom } from "./session";
-import { FakeKobe } from "./testing/fake-kobe";
+import { FakeKaiju } from "./testing/fake-kaiju";
 import { ChatApiError, createThreadListAdapter } from "./thread-list-adapter";
 
 function setup() {
-  const fake = new FakeKobe();
+  const fake = new FakeKaiju();
   const session = new ChatSession({
     teamId: fake.teamId,
     api: createChatApi(fake.teamId, fake.fetch),

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { memoryStewardListSchema, memoryStewardSchema } from "@kobe/protocol";
+import { memoryStewardListSchema, memoryStewardSchema } from "@kaiju/protocol";
 import { isWorkspaceSteward } from "./stewards.js";
 import type { TestBrowser } from "../testing/browser.js";
 import { openHarness, type Harness } from "../testing/harness.js";

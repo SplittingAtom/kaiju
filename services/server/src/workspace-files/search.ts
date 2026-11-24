@@ -1,10 +1,10 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import {
   mentionPathIssue,
   WORKSPACE_EXCLUDED_PREFIXES,
   WORKSPACE_SEARCH_MAX_RESULTS,
   type WorkspaceFileEntry,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { WorkspaceOwner } from "../workspace-sync/keys.js";
 import { areaOf, baseName, underPattern } from "./paths.js";
 
@@ -31,7 +31,7 @@ const SEARCH_MATCH_MAX = 500;
  * `withTeam()`.
  */
 export async function searchFiles(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   query: string,
   limit: number = WORKSPACE_SEARCH_MAX_RESULTS,
@@ -78,7 +78,7 @@ function searchEntry(r: SearchRow): WorkspaceFileEntry {
 
 /** Of `paths`, the ones that are live files in the owner's synced workspace. */
 export async function liveFilePaths(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: WorkspaceOwner,
   paths: readonly string[],
 ): Promise<ReadonlySet<string>> {

@@ -38,7 +38,7 @@ spec:
         - name: migrate
           image: {{ include "kobe.image" (dict "root" $root "name" "server") }}
           imagePullPolicy: {{ $root.Values.global.imagePullPolicy }}
-          command: ["node", "node_modules/@kobe/db/dist/cli/migrate.js"]
+          command: ["node", "node_modules/@kaiju/db/dist/cli/migrate.js"]
           env:
             - name: KOBE_DB_MIGRATE_URL
               valueFrom:

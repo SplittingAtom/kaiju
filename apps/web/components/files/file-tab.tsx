@@ -21,7 +21,7 @@
  */
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { CheckIcon, ClipboardCopyIcon } from "lucide-react";
-import { NOTEBOOK_FILE_MAX_BYTES, sandboxPathOf } from "@kobe/protocol";
+import { NOTEBOOK_FILE_MAX_BYTES, sandboxPathOf } from "@kaiju/protocol";
 import { copyText } from "../../lib/clipboard";
 import type { ApiError } from "../../lib/api/client";
 import type { FilesApi } from "../../lib/files/api";

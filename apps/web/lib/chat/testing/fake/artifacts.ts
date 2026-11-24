@@ -1,5 +1,5 @@
 /** Artifacts (KOBE-55 D-6, KOBE-485) and shared files (KOBE-150) (KOBE-717 area). */
-import { artifactFileExtension } from "@kobe/protocol";
+import { artifactFileExtension } from "@kaiju/protocol";
 import type { FakeCore } from "./core";
 import {
   error,

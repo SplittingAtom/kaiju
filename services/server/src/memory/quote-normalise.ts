@@ -1,4 +1,4 @@
-import { INVISIBLE } from "@kobe/skill-scanner";
+import { INVISIBLE } from "@kaiju/skill-scanner";
 
 /**
  * The shared quote normaliser (KOBE-379, SM9/SM29). Two texts that read the same to a person

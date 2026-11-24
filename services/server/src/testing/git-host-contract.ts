@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { withTestLoopback } from "@kobe/address-policy/testing";
+import { withTestLoopback } from "@kaiju/address-policy/testing";
 import { serializeError } from "../log-safety.js";
 import { GitHostError, type GitHostAdapter, type GitProvider } from "../git-hosts/adapter.js";
 import type { GitHostNet } from "../git-hosts/http.js";
@@ -263,7 +263,11 @@ export function describeProviderContract(name: string, setup: ContractSetup): vo
       const first = await a.listBranches("docs");
       const main = first.items.find((b) => b.name === "main");
       expect(main?.commitSha).toMatch(/^[0-9a-f]{40}$/);
-      const made = await a.createBranch({ repository: "docs", name: "kobe/feature", from: "main" });
+      const made = await a.createBranch({
+        repository: "docs",
+        name: "kobe/feature",
+        from: "main",
+      });
       expect(made).toMatchObject({ name: "kobe/feature", commitSha: main?.commitSha });
       const bySha = await a.createBranch({
         repository: "docs",

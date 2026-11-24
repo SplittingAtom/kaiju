@@ -6,7 +6,7 @@ import {
   setLabelBodySchema,
   threadBranchesResponseSchema,
   type ThreadBranchesResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../api/client";
 import { LINEAGE_REREAD_MS } from "./lineage";
 import { readWire } from "./wire-read";

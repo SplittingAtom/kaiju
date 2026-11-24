@@ -1,4 +1,4 @@
-import { SITE_WIDE_TABLES, isTeamTable } from "@kobe/db";
+import { SITE_WIDE_TABLES, isTeamTable } from "@kaiju/db";
 import { describe, expect, it } from "vitest";
 import { EXCLUDED_TABLES, isExcluded } from "./excluded.js";
 

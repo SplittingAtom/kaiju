@@ -1,5 +1,5 @@
-import { parseSkillEvalSuite } from "@kobe/protocol/skill-evals";
-import type { SkillEvalCase } from "@kobe/protocol";
+import { parseSkillEvalSuite } from "@kaiju/protocol/skill-evals";
+import type { SkillEvalCase } from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { evalChecks, matchWithTimeout, type EvalObservation } from "./checks.js";
 

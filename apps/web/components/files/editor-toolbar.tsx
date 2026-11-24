@@ -16,7 +16,7 @@ import { cn } from "../../lib/utils";
 import type { TextMode } from "./text-modes";
 
 export interface ToolbarAction {
-  /** Stable key; also `data-kobe-action` on the button. */
+  /** Stable key; also `data-kaiju-action` on the button. */
   readonly id: string;
   /** The name (the More menu's item, and the button's text unless `text` says otherwise). */
   readonly label: string;
@@ -47,7 +47,7 @@ function ActionButton({ action }: { readonly action: ToolbarAction }) {
   return (
     <button
       type="button"
-      data-kobe-action={action.id}
+      data-kaiju-action={action.id}
       className={cn(TOOL_BUTTON, action.overflow && FOLDS)}
       disabled={action.disabled}
       aria-busy={action.busy || undefined}
@@ -76,7 +76,7 @@ function MoreMenu({ actions }: { readonly actions: readonly ToolbarAction[] }) {
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal container={chatPortalContainer()}>
-        <DropdownMenu.Content data-kobe-portal align="end" sideOffset={4} className={MENU}>
+        <DropdownMenu.Content data-kaiju-portal align="end" sideOffset={4} className={MENU}>
           {actions.map((action) => {
             const Icon = action.icon;
             return (
@@ -119,7 +119,7 @@ export function EditorToolbar({
       <div
         role="toolbar"
         aria-label={label}
-        data-kobe-editor-toolbar=""
+        data-kaiju-editor-toolbar=""
         className="flex min-w-0 flex-wrap items-center gap-1 border-b pb-1.5"
       >
         {leading}
@@ -150,7 +150,7 @@ export function ModeSwitch({
   const word = (on: boolean) =>
     cn("cursor-pointer text-xs select-none", on ? "font-medium" : "text-muted-foreground");
   return (
-    <span className="me-1 inline-flex items-center gap-1.5" data-kobe-mode={mode}>
+    <span className="me-1 inline-flex items-center gap-1.5" data-kaiju-mode={mode}>
       <span aria-hidden className={word(!raw)} onClick={() => onMode("rendered")}>
         Rendered
       </span>

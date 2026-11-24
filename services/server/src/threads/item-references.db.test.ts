@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withItemReferences, withSkillRequest } from "@kobe/protocol";
+import { withItemReferences, withSkillRequest } from "@kaiju/protocol";
 import { RunFixture } from "../testing/run-fixture.js";
 
 /**

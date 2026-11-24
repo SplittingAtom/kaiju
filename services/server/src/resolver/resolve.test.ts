@@ -109,16 +109,16 @@ describe("skills", () => {
 
   // KOBE-317: the former built-ins are Kaiju's catalog skills: an agent naming one gets it as a named
   // catalog skill (step 2), with a hash, blocklistable, and holding its name like the built-in did.
-  const kobe = (name: string) => ({ ...sk(name, `kobe-${name}`), source: "catalog" as const });
+  const kaiju = (name: string) => ({ ...sk(name, `kaiju-${name}`), source: "catalog" as const });
 
   it("a former built-in the agent names resolves as a named catalog skill (KOBE-317)", () => {
     const r = resolveEffective(
-      with_({ agent: { catalogSkills: [kobe("charts"), kobe("docx"), kobe("charts")] } }),
+      with_({ agent: { catalogSkills: [kaiju("charts"), kaiju("docx"), kaiju("charts")] } }),
     );
     expect(r.ok && r.value.skills.map((s) => s.name)).toEqual(["charts", "docx"]);
     expect(r.ok && r.value.omissions).toEqual([]);
     const blocked = resolveEffective(
-      with_({ agent: { catalogSkills: [kobe("charts")] }, blockedHashes: ["kobe-charts"] }),
+      with_({ agent: { catalogSkills: [kaiju("charts")] }, blockedHashes: ["kaiju-charts"] }),
     );
     expect(blocked.ok && blocked.value.omissions).toEqual([
       { kind: "skill", name: "charts", reason: "blocklisted" },
@@ -128,17 +128,17 @@ describe("skills", () => {
   it("a team's own Required skill of a Kaiju name wins, and the named Kaiju one says so (review S4)", () => {
     const r = resolveEffective(
       with_({
-        agent: { catalogSkills: [kobe("pdf"), kobe("docx")] },
+        agent: { catalogSkills: [kaiju("pdf"), kaiju("docx")] },
         team: { requiredSkills: [{ ...sk("pdf", "team-pdf"), source: "team" }] },
       }),
     );
-    expect(r.ok && r.value.skills.map((s) => s.hash)).toEqual(["team-pdf", "kobe-docx"]);
+    expect(r.ok && r.value.skills.map((s) => s.hash)).toEqual(["team-pdf", "kaiju-docx"]);
     expect(r.ok && r.value.omissions).toEqual([{ kind: "skill", name: "pdf", reason: "shadowed" }]);
     // The same skill both Required and named is one skill, no notice.
     const same = resolveEffective(
       with_({
-        agent: { catalogSkills: [kobe("pdf")] },
-        team: { requiredSkills: [kobe("pdf")] },
+        agent: { catalogSkills: [kaiju("pdf")] },
+        team: { requiredSkills: [kaiju("pdf")] },
       }),
     );
     expect(same.ok && same.value.omissions).toEqual([]);
@@ -147,7 +147,7 @@ describe("skills", () => {
   it("an exclusive agent keeps the Kaiju skills it names", () => {
     const excl = resolveEffective(
       with_({
-        agent: { catalogSkills: [kobe("pdf")], exclusiveSkills: true },
+        agent: { catalogSkills: [kaiju("pdf")], exclusiveSkills: true },
         user: { skills: [sk("u")] },
       }),
     );
@@ -160,7 +160,7 @@ describe("skills", () => {
   it("a personal skill named like a named Kaiju skill is shadowed by it", () => {
     const r = resolveEffective(
       with_({
-        agent: { catalogSkills: [kobe("xlsx")] },
+        agent: { catalogSkills: [kaiju("xlsx")] },
         user: { skills: [sk("xlsx"), sk("mine")] },
       }),
     );
@@ -305,7 +305,7 @@ describe("team skills offered to all agents (KOBE-297)", () => {
         with_({
           agent: {
             skills: [sk("dup")],
-            catalogSkills: [{ ...sk("pdf", "kobe-pdf"), source: "catalog" }],
+            catalogSkills: [{ ...sk("pdf", "kaiju-pdf"), source: "catalog" }],
           },
           user: { skills: [sk("mine", "h-personal")] },
           team: { offeredSkills: [sk("dup"), sk("pdf"), sk("mine"), sk("fresh"), sk("fresh")] },

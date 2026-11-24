@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { GIT_BUILTIN_CONNECTOR_ID, type ToolDescriptor } from "@kobe/protocol";
+import { GIT_BUILTIN_CONNECTOR_ID, type ToolDescriptor } from "@kaiju/protocol";
 import { evaluatePolicy } from "../policy/evaluate.js";
-import { isKobeAdminTool, guardKobeAdmin } from "../policy/kobe-admin-guard.js";
+import { isKaijuAdminTool, guardKaijuAdmin } from "../policy/kaiju-admin-guard.js";
 import type { PolicyRule } from "../policy/rules.js";
 import { DEFAULT_POLICY_SETTINGS } from "../policy/settings.js";
 import { describePinnedTool } from "../mcp/catalog.js";
@@ -142,7 +142,7 @@ describe("rules change the defaults as for any tool", () => {
 
 describe("the Kaiju admin guard does not apply", () => {
   it("git tools are not Kaiju admin tools: no forced ask, not denied in scheduled runs", () => {
-    for (const t of GIT_TOOLS) expect(isKobeAdminTool(descriptor(t.name))).toBe(false);
+    for (const t of GIT_TOOLS) expect(isKaijuAdminTool(descriptor(t.name))).toBe(false);
     const tool = descriptor("git_create_branch");
     const allowed = decide("git_create_branch", {
       connection: CONN,
@@ -150,7 +150,7 @@ describe("the Kaiju admin guard does not apply", () => {
       name: "x",
       from: "main",
     });
-    const guarded = guardKobeAdmin(allowed, {
+    const guarded = guardKaijuAdmin(allowed, {
       tool,
       input: policyInput(tool, {}, { kind: "schedule", exposure: "custom" }),
       evalRun: false,

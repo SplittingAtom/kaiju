@@ -41,7 +41,7 @@ async function write(who: TestBrowser, id: string, path: string, rev: number, bo
 }
 
 beforeAll(async () => {
-  h = await openHarness({ blobs: { objects, prefix: "kobe/" } });
+  h = await openHarness({ blobs: { objects, prefix: "kaiju/" } });
   authorId = await h.createUser("author@drafts.test");
   builderId = await h.createUser("builder@drafts.test");
   const adminId = await h.createUser("admin@drafts.test");

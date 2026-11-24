@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ThinkingLevel } from "@kobe/protocol";
+import type { ThinkingLevel } from "@kaiju/protocol";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TeamModel, TeamModels } from "../../lib/admin/api/team/models";
 import { ThinkingPicker, shownThinking, thinkingChoices } from "./thinking-picker";

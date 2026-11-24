@@ -4,8 +4,8 @@ import {
   sealAuditV1,
   type AuditPiiErasure,
   type AuditSealResult,
-  type KobeDb,
-} from "@kobe/db";
+  type KaijuDb,
+} from "@kaiju/db";
 import { logger } from "../logger.js";
 import { recordAudit } from "./record.js";
 
@@ -26,7 +26,7 @@ export interface AuditPiiSweepResult {
 }
 
 /** One page in one transaction: erase, then record the count as the last write. */
-async function sweepPage(db: KobeDb, pageSize: number): Promise<AuditPiiErasure | null> {
+async function sweepPage(db: KaijuDb, pageSize: number): Promise<AuditPiiErasure | null> {
   return db.transaction(async (tx) => {
     const result = await eraseExpiredAuditPii(tx, pageSize);
     if (result && result.rows > 0) {
@@ -47,7 +47,7 @@ async function sweepPage(db: KobeDb, pageSize: number): Promise<AuditPiiErasure 
  * database re-checks age, hold and version for every row.
  */
 export async function sweepAuditPii(
-  db: KobeDb,
+  db: KaijuDb,
   pageSize: number = AUDIT_PII_PAGE,
 ): Promise<AuditPiiSweepResult> {
   let erased = 0;
@@ -69,7 +69,7 @@ export class AuditPiiSweeper {
   private sealDone = false;
   private sealTriedAt = 0;
 
-  constructor(private readonly db: KobeDb) {}
+  constructor(private readonly db: KaijuDb) {}
 
   /**
    * Seals the rows chained before the v2 upgrade once (`audit.chain.upgraded`); their IP and user

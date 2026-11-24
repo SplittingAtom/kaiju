@@ -2,10 +2,10 @@ import {
   type PiGetEntriesData,
   type ServerToSandboxFrame,
   type RunStartFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { randomUUID } from "node:crypto";
 
-import { withTeam, type SandboxCommandKind } from "@kobe/db";
+import { withTeam, type SandboxCommandKind } from "@kaiju/db";
 import type { Logger } from "pino";
 import { recordRunMemory } from "../memory/items/run-records.js";
 import { markTold } from "../sync-conflicts/store.js";

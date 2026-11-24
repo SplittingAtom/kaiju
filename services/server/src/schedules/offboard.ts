@@ -7,9 +7,9 @@ import {
   or,
   schedules,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { syncAgentSchedules } from "../agents/roster-schedules.js";
 import { recordAudit } from "../audit/record.js";
 import type { ServerRunOrchestrator } from "../runs/orchestrator.js";
@@ -35,7 +35,7 @@ export type ScheduleStopCause = "deactivation" | "member_removed";
  * Returns the paused ids.
  */
 export async function pauseOwnerSchedulesInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   by: ScheduleStopCause,
@@ -77,7 +77,7 @@ type Runs = Pick<ServerRunOrchestrator, "cancelScheduledRuns">;
  * attempted; throws afterwards if any failed, so the deactivation reports the step incomplete,
  * and the scheduler's owner sweep finishes it at its next tick (KOBE-252).
  */
-export async function stopUserSchedules(db: KobeDb, runs: Runs, userId: string): Promise<void> {
+export async function stopUserSchedules(db: KaijuDb, runs: Runs, userId: string): Promise<void> {
   const teams = await listMemberships(db, userId);
   const failures: unknown[] = [];
   for (const { teamId } of teams) {

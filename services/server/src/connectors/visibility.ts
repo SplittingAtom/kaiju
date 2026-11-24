@@ -1,4 +1,4 @@
-import type { PinnedTool } from "@kobe/db";
+import type { PinnedTool } from "@kaiju/db";
 
 /**
  * MCP Apps visibility (KOBE-435, spec MA6): a tool's pinned `_meta.ui.visibility`, default

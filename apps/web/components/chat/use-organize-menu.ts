@@ -7,7 +7,7 @@ import { placementOf } from "../../lib/chat/thread-groups";
 import { isThreadRunning, queuedRuns, type ThreadState } from "../../lib/chat/thread-state";
 import type { Project } from "../../lib/projects/api";
 import type { MenuBindings, MenuChoice } from "../../lib/shell/menu";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 
 /**
  * Pin, Archive and Move to project in a thread row's menu (CE19, KOBE-220). The row offers Pin or
@@ -69,7 +69,7 @@ function refusal(change: OrganizeChange, error: ApiError): string {
 
 const rowButton = (threadId: string) =>
   document.querySelector<HTMLElement>(
-    `[data-kobe-thread="${CSS.escape(threadId)}"] button[aria-haspopup="menu"]`,
+    `[data-kaiju-thread="${CSS.escape(threadId)}"] button[aria-haspopup="menu"]`,
   );
 
 /**
@@ -88,8 +88,8 @@ function followRow(threadId: string, group: "pinned" | "archived" | null) {
       // there, or to Current while Archived is folded inside it.
       const toggle =
         group === "archived"
-          ? (document.querySelector<HTMLElement>('[data-kobe-node="archived"]') ??
-            document.querySelector<HTMLElement>('[data-kobe-node="current"]'))
+          ? (document.querySelector<HTMLElement>('[data-kaiju-node="archived"]') ??
+            document.querySelector<HTMLElement>('[data-kaiju-node="current"]'))
           : group
             ? document.querySelector<HTMLElement>(`[data-group="${group}"] button[aria-expanded]`)
             : null;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { TeamRole } from "@kobe/db";
+import type { TeamRole } from "@kaiju/db";
 import { agentAccess } from "./access.js";
 import { mayReadFeedbackTotals } from "./feedback-routes.js";
 import type { ResolvedAgent } from "./version-routes.js";

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import pino from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { withTeam, sql } from "@kobe/db";
+import { withTeam, sql } from "@kaiju/db";
 import { runWithAuditContext } from "../audit/context.js";
 import { runRetentionPass } from "./job.js";
 import { DEFAULT_TABLE_SWEEPS, NO_TABLE_SWEEPS, sweepTable, sweepTables } from "./table-sweeps.js";

@@ -23,11 +23,11 @@ import { threadEntries, threads } from "./threads.js";
 // break-glass read policy and the legal-hold guards are SQL-only (custom migration
 // `*_answer_feedback_rls.sql`).
 
-/** `@kobe/protocol` FEEDBACK_RATINGS. */
+/** `@kaiju/protocol` FEEDBACK_RATINGS. */
 export const ANSWER_FEEDBACK_RATINGS = ["up", "down"] as const;
 export type AnswerFeedbackRating = (typeof ANSWER_FEEDBACK_RATINGS)[number];
 
-/** `@kobe/protocol` FEEDBACK_REASONS. */
+/** `@kaiju/protocol` FEEDBACK_REASONS. */
 export const ANSWER_FEEDBACK_REASONS = [
   "wrong",
   "ignored_instructions",
@@ -37,7 +37,7 @@ export const ANSWER_FEEDBACK_REASONS = [
 ] as const;
 export type AnswerFeedbackReason = (typeof ANSWER_FEEDBACK_REASONS)[number];
 
-/** `@kobe/protocol` FEEDBACK_COMMENT_MAX_CHARS. */
+/** `@kaiju/protocol` FEEDBACK_COMMENT_MAX_CHARS. */
 export const ANSWER_FEEDBACK_COMMENT_MAX_CHARS = 500;
 /** Longest model alias kept (the run's catalog alias). */
 export const ANSWER_FEEDBACK_MODEL_MAX_CHARS = 240;

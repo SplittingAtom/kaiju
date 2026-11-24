@@ -5,8 +5,8 @@ import {
   serverCallRunOptional,
   type ServerCallClaims,
   type SessionTokenClaims,
-} from "@kobe/protocol";
-import { SessionTokenError } from "@kobe/session-token";
+} from "@kaiju/protocol";
+import { SessionTokenError } from "@kaiju/session-token";
 import { extractCredential } from "../credentials.js";
 import type { Route } from "../routes.js";
 import { authenticateServerCall, isServerCall } from "../server-call.js";

@@ -4,9 +4,9 @@ import {
   returnRateBucketToken,
   takeRateBucket,
   takeRateLimit,
-  type KobeDatabase,
-} from "@kobe/db";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+  type KaijuDatabase,
+} from "@kaiju/db";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { hitRateLimit, sharedRateLimit, type RateBucketRule } from "../rate-limit.js";
 import { APP_LAUNCH_RATE } from "./app-cards.js";
@@ -18,8 +18,8 @@ import { APP_CALL_RATE } from "./call-deps.js";
  * with the old in-memory buckets' numbers; before, each pod had its own bucket.
  */
 let database: TestDatabase;
-let replicaA: KobeDatabase;
-let replicaB: KobeDatabase;
+let replicaA: KaijuDatabase;
+let replicaB: KaijuDatabase;
 /** The test clock, ahead of real time: a prune runs on the database clock and must not reach it. */
 const clock = { t: Date.now() + 600_000 };
 
@@ -79,7 +79,7 @@ describe("MCP App limits across server replicas (KOBE-810)", () => {
   });
 
   it("refuses (throws) when Postgres cannot be reached", async () => {
-    const dead = createDb("postgres://kobe:x@127.0.0.1:1/none", { max: 1 });
+    const dead = createDb("postgres://kaiju:x@127.0.0.1:1/none", { max: 1 });
     try {
       await expect(
         sharedRateLimit(dead.db, "app-call", APP_CALL_RATE).allow("u"),
@@ -132,7 +132,7 @@ describe("replicas whose clocks are 5 minutes apart (KOBE-810)", () => {
   });
 });
 
-describe("the limiter in @kobe/db (KOBE-810)", () => {
+describe("the limiter in @kaiju/db (KOBE-810)", () => {
   it("a bucket's refusal says when one request is available, and is not charged", async () => {
     const key = `bucket:${randomUUID()}`;
     const rule = { burst: 2, perSecond: 1 };

@@ -5,7 +5,7 @@ import {
   semanticMemoryItemDetailSchema,
   semanticMemoryListResponseSchema,
   type SemanticMemoryScope,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { TestBrowser } from "../testing/browser.js";
 import { openHarness, type Harness } from "../testing/harness.js";
 

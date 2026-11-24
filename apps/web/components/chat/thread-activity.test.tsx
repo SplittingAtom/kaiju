@@ -3,8 +3,8 @@ import { readFileSync } from "node:fs";
 import { cleanup, render, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { KobeEventPayload } from "@kobe/protocol";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import type { KaijuEventPayload } from "@kaiju/protocol";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { ChatApp } from "./chat-app";
 import { composer, openThreads, streaming, threadGroup } from "./testing";
@@ -17,13 +17,13 @@ import { composer, openThreads, streaming, threadGroup } from "./testing";
 // A variable path: Vite rewrites `new URL("literal", import.meta.url)` into a served asset URL.
 const cssFile = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
-let fake: FakeKobe;
+let fake: FakeKaiju;
 let visibility: DocumentVisibilityState = "visible";
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
   visibility = "visible";
   Object.defineProperty(document, "visibilityState", {
@@ -62,9 +62,11 @@ async function row(title: string): Promise<HTMLElement> {
 }
 
 const activityOf = async (title: string) =>
-  must((await row(title)).querySelector("[data-kobe-activity]")).getAttribute("data-kobe-activity");
+  must((await row(title)).querySelector("[data-kaiju-activity]")).getAttribute(
+    "data-kaiju-activity",
+  );
 
-function asked(): KobeEventPayload<"approval.requested"> {
+function asked(): KaijuEventPayload<"approval.requested"> {
   return {
     approval_id: "00000000-0000-4000-8000-000900000001",
     tool_call_id: "tc1",
@@ -157,9 +159,9 @@ describe("rail activity dots (ac-2)", () => {
     await waitFor(() => expect(window.location.search).toBe(`?thread=${b}`));
     const threads = () =>
       must(document.querySelector<HTMLElement>('[data-rail-header] [data-command="rail-threads"]'));
-    await waitFor(() => expect(threads().getAttribute("data-kobe-activity")).toBe("running"));
+    await waitFor(() => expect(threads().getAttribute("data-kaiju-activity")).toBe("running"));
     fake.agent.complete(runId);
-    await waitFor(() => expect(threads().getAttribute("data-kobe-activity")).toBe("unread"));
+    await waitFor(() => expect(threads().getAttribute("data-kaiju-activity")).toBe("unread"));
     expect(threads().getAttribute("aria-label")).toBe(
       "Threads panel, a conversation has new activity",
     );
@@ -169,7 +171,7 @@ describe("rail activity dots (ac-2)", () => {
       .setup()
       .click(await within(await rail()).findByRole("button", { name: /^Deploy/ }));
     await waitFor(() => expect(window.location.search).toBe(`?thread=${a}`));
-    await waitFor(() => expect(threads().getAttribute("data-kobe-activity")).toBe("idle"));
+    await waitFor(() => expect(threads().getAttribute("data-kaiju-activity")).toBe("idle"));
   });
 
   it("an approval in the open thread turns its dot amber live", async () => {
@@ -206,7 +208,7 @@ describe("rail activity dots (ac-2)", () => {
     open(t, 60_000);
     await openThreads();
     const theirs = await waitFor(() =>
-      must(document.querySelector(`li[data-kobe-thread="${shared}"]`)),
+      must(document.querySelector(`li[data-kaiju-thread="${shared}"]`)),
     );
     setVisibility("hidden");
     await new Promise((r) => setTimeout(r, 100));
@@ -279,6 +281,6 @@ describe("reduced motion", () => {
     const css = cssFile("../ui/status.module.css");
     const reduced = must(css.split("@media (prefers-reduced-motion: reduce)")[1]);
     expect(reduced.replace(/\s+/g, " ")).toContain(".pulse { animation: none; }");
-    expect(css).toMatch(/\.pulse \{\s*animation: kobe-status-pulse/);
+    expect(css).toMatch(/\.pulse \{\s*animation: kaiju-status-pulse/);
   });
 });

@@ -8,7 +8,7 @@ import { openHarness, type Harness } from "../testing/harness.js";
 // old backend; on its new connection it ends that backend (same role) and leads again.
 
 const KEY = 0x6b6f_6265_7e57;
-const APP = "kobe-test-leader-listen";
+const APP = "kaiju-test-leader-listen";
 
 let h: Harness;
 const clients: pg.Client[] = [];
@@ -63,7 +63,7 @@ describe("leader lock reclaim (KOBE-704 review)", () => {
   });
 
   it("never ends another replica's healthy leader", async () => {
-    const other = await connect("kobe-test-other-replica");
+    const other = await connect("kaiju-test-other-replica");
     const otherLock = new SessionLeaderLock(KEY, { warn: vi.fn() });
     const mine = new SessionLeaderLock(KEY, { warn: vi.fn() });
     const old = await connect();

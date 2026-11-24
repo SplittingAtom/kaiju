@@ -1,10 +1,10 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import {
   skillEvalEstimateSchema,
   type SkillEvalEstimate,
   type SkillEvalPlannedExecution,
   type SkillEvalSuite,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { gatewayModelOf } from "../../runs/models.js";
 
 // The eval estimate (KOBE-327, SK18; contract KOBE-324 `skillEvalEstimateSchema`): "≈ $X, ≈ N
@@ -49,7 +49,7 @@ type Row = Record<string, unknown>;
 const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
 
 /** The team's eval executions on `alias`: mean cost, duration, and judge cost per judged one. */
-async function evalHistory(tx: KobeTx, teamId: string, alias: string, only: string | null) {
+async function evalHistory(tx: KaijuTx, teamId: string, alias: string, only: string | null) {
   const res = await tx.execute<Row>(sql`
     SELECT count(*) AS n, avg(cost) AS cost, avg(ms) AS ms,
            avg(judge) FILTER (WHERE judge > 0) AS judge
@@ -74,7 +74,7 @@ async function evalHistory(tx: KobeTx, teamId: string, alias: string, only: stri
 
 /** The team's ordinary runs on the model: mean cost and duration per run (the stand-in). */
 async function runHistory(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   model: string,
   only: string | null,
@@ -98,7 +98,7 @@ async function runHistory(
 
 /** The mean cost of the team's eval judge calls (any model), for a stand-in estimate. */
 async function judgeCallMean(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   only: string | null,
 ): Promise<number | null> {
@@ -116,7 +116,7 @@ const roundUsd = (x: number) => Math.round(x * 10_000) / 10_000;
 
 /** The estimate of running `plan` on the run model `alias` (inside the team's transaction). */
 /** The run model's catalog prices per million tokens, when it has both. */
-async function pricesOf(tx: KobeTx, alias: string) {
+async function pricesOf(tx: KaijuTx, alias: string) {
   const res = await tx.execute<Row>(sql`
     SELECT input_usd_per_mtok AS input, output_usd_per_mtok AS output FROM model_catalog
      WHERE alias = ${alias}`);
@@ -127,7 +127,7 @@ async function pricesOf(tx: KobeTx, alias: string) {
 }
 
 /** The suite-size estimate: no history of the caller's on the model. */
-async function suiteSize(tx: KobeTx, input: EstimateInput): Promise<SkillEvalEstimate> {
+async function suiteSize(tx: KaijuTx, input: EstimateInput): Promise<SkillEvalEstimate> {
   const executions = input.plan.length;
   const prices = await pricesOf(tx, input.runModel);
   const byId = new Map(input.suite.cases.map((c) => [c.id, c]));
@@ -167,7 +167,7 @@ export interface EstimateInput {
 
 /** The estimate of running `plan` on the run model (inside the team's transaction). */
 export async function estimateSkillEvalIn(
-  tx: KobeTx,
+  tx: KaijuTx,
   input: EstimateInput,
 ): Promise<SkillEvalEstimate> {
   const executions = input.plan.length;

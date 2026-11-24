@@ -1,5 +1,5 @@
-import type { ArtifactDetail, ArtifactKind, ArtifactSummary } from "@kobe/protocol";
-import { and, artifactVersions, artifacts, asc, eq, type KobeTx } from "@kobe/db";
+import type { ArtifactDetail, ArtifactKind, ArtifactSummary } from "@kaiju/protocol";
+import { and, artifactVersions, artifacts, asc, eq, type KaijuTx } from "@kaiju/db";
 import { findThread, type ThreadAccess, type Viewer } from "../threads/repository.js";
 
 /**
@@ -45,7 +45,7 @@ function summary(row: Row): ArtifactSummary {
 }
 
 export async function listArtifacts(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   threadId: string,
 ): Promise<ArtifactSummary[] | null> {
@@ -60,7 +60,7 @@ export async function listArtifacts(
 
 /** The artifact and the viewer's access to its thread, if the thread is readable by the viewer. */
 async function findReadable(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
 ): Promise<{ artifact: ArtifactSummary; access: ThreadAccess } | null> {
@@ -75,7 +75,7 @@ async function findReadable(
 
 /** The artifact, if its thread is readable by the viewer. */
 export async function findArtifact(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
 ): Promise<ArtifactSummary | null> {
@@ -83,7 +83,7 @@ export async function findArtifact(
 }
 
 export async function artifactDetail(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
 ): Promise<ArtifactDetail | null> {
@@ -113,7 +113,7 @@ export async function artifactDetail(
  * owns its thread (Edit as file, KOBE-485) or only reads it.
  */
 export async function findVersionBlob(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   id: string,
   version: number,

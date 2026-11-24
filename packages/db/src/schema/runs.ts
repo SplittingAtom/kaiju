@@ -19,7 +19,7 @@ import type { ThinkingLevelValue } from "./models.js";
 import { threads } from "./threads.js";
 
 /**
- * `runs.viewing` (KOBE-462): `@kobe/protocol` `RunViewingContext` (file-editor.ts) as stored, or
+ * `runs.viewing` (KOBE-462): `@kaiju/protocol` `RunViewingContext` (file-editor.ts) as stored, or
  * only the path when the file could not be read (not synced yet, storage error; KOBE-493 still
  * guards it).
  */
@@ -64,11 +64,11 @@ export const TERMINAL_RUN_STATUSES = [
 const statusList = (statuses: readonly RunStatus[]) =>
   sql.raw(statuses.map((s) => `'${s}'`).join(", "));
 
-/** Thread approval modes (D29; `@kobe/protocol` `APPROVAL_MODES`). There is no bypass mode. */
+/** Thread approval modes (D29; `@kaiju/protocol` `APPROVAL_MODES`). There is no bypass mode. */
 export const RUN_APPROVAL_MODES = ["ask-on-write", "ask-all", "auto"] as const;
 export type RunApprovalMode = (typeof RUN_APPROVAL_MODES)[number];
 
-/** Who a budget stop applies to (D30; `@kobe/protocol` `BudgetStopCommand.scope`). */
+/** Who a budget stop applies to (D30; `@kaiju/protocol` `BudgetStopCommand.scope`). */
 export const BUDGET_STOP_SCOPES = ["site", "team", "user"] as const;
 export type BudgetStopScope = (typeof BUDGET_STOP_SCOPES)[number];
 /**
@@ -99,7 +99,7 @@ export function readBudgetStopScope(stored: string | null): BudgetStopScope | nu
 export const RUN_KINDS = ["message", "compaction", "notebook", "branch_summary"] as const;
 export type RunKind = (typeof RUN_KINDS)[number];
 
-/** Longest message a run carries (`@kobe/protocol` `submitMessageBodySchema.content`). */
+/** Longest message a run carries (`@kaiju/protocol` `submitMessageBodySchema.content`). */
 export const RUN_INPUT_MAX_CHARS = 200_000;
 
 /**
@@ -164,7 +164,7 @@ export const runs = pgTable(
     /** Set by the D18 compaction job once this ended run's events are folded into entries. */
     eventsCompactedAt: timestamp({ withTimezone: true }),
     /**
-     * Durable inbound sandbox-wire cursor (KOBE-24; `@kobe/protocol` sandbox-wire/connection.ts):
+     * Durable inbound sandbox-wire cursor (KOBE-24; `@kaiju/protocol` sandbox-wire/connection.ts):
      * the highest `pi.event` seq of this run whose effects are committed. Advanced only by a
      * compare-and-set in the same transaction as the appended rows; never decreases (trigger).
      */
@@ -176,7 +176,7 @@ export const runs = pgTable(
      */
     sandboxBytes: bigint({ mode: "number" }).notNull().default(0),
     /**
-     * The effective approval mode fixed when the run is created (KOBE-30; `@kobe/protocol`
+     * The effective approval mode fixed when the run is created (KOBE-30; `@kaiju/protocol`
      * `RunSnapshot.approval_mode`): the requested mode clamped to the site and team floors, so a
      * later change can't loosen a run. Scheduled runs are `auto` (D32). The policy check clamps it
      * to the floor again at call time (floors only tighten).
@@ -245,7 +245,7 @@ export const runs = pgTable(
      */
     thinkingLevel: text().$type<ThinkingLevelValue>(),
     /**
-     * The workspace file the member had open when sending (KOBE-462, `@kobe/protocol`
+     * The workspace file the member had open when sending (KOBE-462, `@kaiju/protocol`
      * file-editor.ts): path, version and a bounded copy of its text, read by
      * the server at submit and sent as `run.start.viewing`. Server-written, never shown in the
      * thread or its events; null for runs without one. Purged with the run.
@@ -350,7 +350,7 @@ export const runs = pgTable(
  * The live Kaiju Event Stream (D16, §6.2), written before fan-out. `seq` is assigned by a trigger
  * that increments `runs.last_seq` under the run's row lock: gapless, monotonic per run, and
  * committed in seq order, so a reader resuming after seq n never skips an event. `type` is the
- * event type from `@kobe/protocol` (validated there; text here so new types need no migration).
+ * event type from `@kaiju/protocol` (validated there; text here so new types need no migration).
  */
 export const runEvents = pgTable(
   "run_events",

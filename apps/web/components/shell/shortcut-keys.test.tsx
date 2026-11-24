@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { isMacPlatform } from "../../lib/shell/shortcuts";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
@@ -20,14 +20,14 @@ import {
  * lists them, tooltips name them, and none fires from a text field (but the palette, Stop and
  * Steer), during IME composition, over a dialog, or from an artifact's iframe.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
   document.documentElement.removeAttribute("data-theme");
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push(
     { alias: "kimi", label: "Kimi K2.7 Code", enabled: true, is_default: true },
     { alias: "glm", label: "GLM 5.3", enabled: true, is_default: false },
@@ -60,7 +60,7 @@ type Place = "page" | "composer";
  */
 function hitIn(place: Place) {
   return (key: string, extra: Partial<KeyboardEventInit> = {}) => {
-    const box = document.getElementById("kobe-composer");
+    const box = document.getElementById("kaiju-composer");
     let target: Element = document.body;
     if (place === "composer" && box) {
       act(() => box.focus());
@@ -102,7 +102,10 @@ async function openShared(t: string) {
 }
 
 const status = () =>
-  (document.querySelector("[data-kobe-shortcut-status]")?.textContent ?? "").replace(/\u00a0/g, "");
+  (document.querySelector("[data-kaiju-shortcut-status]")?.textContent ?? "").replace(
+    /\u00a0/g,
+    "",
+  );
 // By selector: an open dialog hides the rest from the accessibility tree.
 const rail = () => must(document.querySelector<HTMLElement>('aside[aria-label="Workspace"]'));
 const threadParam = () => new URL(window.location.href).searchParams.get("thread");
@@ -155,7 +158,7 @@ describe.each<Place>(["page", "composer"])(
       hit("F", { shiftKey: true });
       await waitFor(() => expect(rail().hasAttribute("data-collapsed")).toBe(false));
       await waitFor(() =>
-        expect(document.activeElement).toBe(document.getElementById("kobe-rail-files")),
+        expect(document.activeElement).toBe(document.getElementById("kaiju-rail-files")),
       );
     });
 
@@ -163,7 +166,7 @@ describe.each<Place>(["page", "composer"])(
       const t = conversation("Report");
       fake.addArtifact(t, { kind: "markdown", title: "Plan", versions: ["Plan body"] });
       await opened(t);
-      const column = () => must(document.getElementById("kobe-artifact-column"));
+      const column = () => must(document.getElementById("kaiju-artifact-column"));
       expect(column().childElementCount).toBe(0);
       hit("A", { shiftKey: true });
       await screen.findByRole("tab", { name: "Plan", selected: true }, WAIT);
@@ -304,24 +307,24 @@ describe("the ? sheet and tooltips list them (ac-2)", { timeout: 30_000 }, () =>
     before.focus();
     fireEvent.keyDown(before, { key: "?", shiftKey: true });
     const sheet = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
-    const rows = sheet.querySelectorAll("[data-kobe-shortcut]");
+    const rows = sheet.querySelectorAll("[data-kaiju-shortcut]");
     expect(rows).toHaveLength(12);
-    expect([...rows].map((r) => r.querySelector("[data-kobe-shortcut-name]")?.textContent)).toEqual(
-      [
-        "Search actions, threads and files",
-        "New conversation",
-        "Collapse or expand the rail",
-        "Show the files",
-        "Show or hide the artifact column",
-        "Show or hide all details",
-        "Stop",
-        "Steer now",
-        "Edit your last message",
-        "Previous conversation",
-        "Next conversation",
-        "Go to the message box",
-      ],
-    );
+    expect(
+      [...rows].map((r) => r.querySelector("[data-kaiju-shortcut-name]")?.textContent),
+    ).toEqual([
+      "Search actions, threads and files",
+      "New conversation",
+      "Collapse or expand the rail",
+      "Show the files",
+      "Show or hide the artifact column",
+      "Show or hide all details",
+      "Stop",
+      "Steer now",
+      "Edit your last message",
+      "Previous conversation",
+      "Next conversation",
+      "Go to the message box",
+    ]);
     const mac = isMacPlatform();
     expect(rows[0]?.querySelector("kbd")?.textContent).toBe(mac ? "⌘K" : "Ctrl+K");
     expect(within(sheet).getByRole("list", { name: "Message box keys" })).toBeTruthy();
@@ -430,7 +433,7 @@ describe("where shortcuts don't fire (ac-2)", { timeout: 30_000 }, () => {
     // An artifact preview's frame (the real one is sandboxed and cross-origin).
     const frame = document.createElement("iframe");
     frame.title = "Preview";
-    must(document.getElementById("kobe-artifact-column")).append(frame);
+    must(document.getElementById("kaiju-artifact-column")).append(frame);
     frame.focus();
     expect(document.activeElement).toBe(frame);
     // A key the frame forwarded to the page anyway (it never does: sandboxed, cross-origin).

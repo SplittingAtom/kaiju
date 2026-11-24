@@ -3,8 +3,8 @@ import {
   createScheduleBodySchema,
   listSchedulesQuerySchema,
   type CreateScheduleBody,
-} from "@kobe/protocol";
-import { withTeam } from "@kobe/db";
+} from "@kaiju/protocol";
+import { withTeam } from "@kaiju/db";
 import { type TeamVariables } from "../../authz/middleware.js";
 import {
   NOT_ALLOWED,

@@ -6,24 +6,24 @@ import {
   EVENT_TOOL_INPUT_MAX_BYTES,
   EventPayloadTooLargeError,
   jsonByteLength,
-  KOBE_EVENT_TYPES,
+  KAIJU_EVENT_TYPES,
   TERMINAL_EVENT_TYPES,
   THREAD_EGRESS_BLOCKED_MAX,
   threadEgressBlockedResponseSchema,
   formatSseEvent,
-  isKobeEventType,
+  isKaijuEventType,
   isTerminalEventType,
-  kobeEventSchema,
+  kaijuEventSchema,
   parseEventPayload,
   decideStreamOpen,
   resolveResumeCursor,
-  type KobeEvent,
+  type KaijuEvent,
 } from "./index.js";
 import { EVENT_PAYLOAD_EXAMPLES, EXAMPLE_IDS, createInMemoryEventLog } from "./testing/index.js";
 
 describe("Kaiju Event Stream types", () => {
   it("lists every event type from the spec (§6.2) and the epilogue (KOBE-234)", () => {
-    expect(KOBE_EVENT_TYPES).toEqual([
+    expect(KAIJU_EVENT_TYPES).toEqual([
       "run.queued",
       "run.started",
       "sandbox.waking",
@@ -63,13 +63,13 @@ describe("Kaiju Event Stream types", () => {
   });
 
   it("recognises known types and rejects unknown ones", () => {
-    expect(isKobeEventType("text.delta")).toBe(true);
-    expect(isKobeEventType("text.deltas")).toBe(false);
-    expect(isKobeEventType(42)).toBe(false);
+    expect(isKaijuEventType("text.delta")).toBe(true);
+    expect(isKaijuEventType("text.deltas")).toBe(false);
+    expect(isKaijuEventType(42)).toBe(false);
   });
 
   it("has exactly one payload schema per type", () => {
-    expect(Object.keys(EVENT_PAYLOAD_SCHEMAS).sort()).toEqual([...KOBE_EVENT_TYPES].sort());
+    expect(Object.keys(EVENT_PAYLOAD_SCHEMAS).sort()).toEqual([...KAIJU_EVENT_TYPES].sort());
   });
 
   it("only run.* end states are terminal", () => {
@@ -222,13 +222,13 @@ describe("tool.result app marker (KOBE-438, MCP Apps MA10)", () => {
 });
 
 describe("event payloads", () => {
-  it.each(KOBE_EVENT_TYPES)("accepts the example payload for %s", (type) => {
+  it.each(KAIJU_EVENT_TYPES)("accepts the example payload for %s", (type) => {
     expect(parseEventPayload(type, EVENT_PAYLOAD_EXAMPLES[type])).toEqual(
       EVENT_PAYLOAD_EXAMPLES[type],
     );
   });
 
-  it.each(KOBE_EVENT_TYPES)("rejects unknown keys on %s", (type) => {
+  it.each(KAIJU_EVENT_TYPES)("rejects unknown keys on %s", (type) => {
     expect(() =>
       parseEventPayload(type, { ...EVENT_PAYLOAD_EXAMPLES[type], surprise: 1 }),
     ).toThrow();
@@ -304,7 +304,7 @@ describe("payload size bounds", () => {
 });
 
 describe("event envelope", () => {
-  const event: KobeEvent<"text.delta"> = {
+  const event: KaijuEvent<"text.delta"> = {
     run_id: EXAMPLE_IDS.run,
     seq: 1042,
     ts: "2026-10-01T22:00:00.123Z",
@@ -313,7 +313,7 @@ describe("event envelope", () => {
   };
 
   it("parses a valid envelope and discriminates on type", () => {
-    expect(kobeEventSchema.parse(event)).toEqual(event);
+    expect(kaijuEventSchema.parse(event)).toEqual(event);
   });
 
   it.each([
@@ -324,7 +324,7 @@ describe("event envelope", () => {
     ["payload of another type", { ...event, payload: EVENT_PAYLOAD_EXAMPLES["run.failed"] }],
     ["extra envelope key", { ...event, team_id: "t" }],
   ])("rejects %s", (_label, value) => {
-    expect(kobeEventSchema.safeParse(value).success).toBe(false);
+    expect(kaijuEventSchema.safeParse(value).success).toBe(false);
   });
 
   it("frames SSE with id = seq, event = type, single-line data = envelope", () => {

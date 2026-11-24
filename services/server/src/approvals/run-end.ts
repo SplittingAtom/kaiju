@@ -1,5 +1,5 @@
-import type { ApprovalResolutionCause, RunTransitionCause } from "@kobe/protocol";
-import { SYSTEM_ACTOR, sql, type KobeTx } from "@kobe/db";
+import type { ApprovalResolutionCause, RunTransitionCause } from "@kaiju/protocol";
+import { SYSTEM_ACTOR, sql, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { appendRunEventsInTx } from "../event-stream/append.js";
 import { notifyHintInTx } from "../sandbox-wire/bus.js";
@@ -49,7 +49,7 @@ export function expiryCauseOf(cause: RunTransitionCause): ExpiryCause {
  * for bus hints (the waiting broker re-reads the row).
  */
 export async function expireRunApprovalsInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   cause: ExpiryCause,
@@ -95,7 +95,7 @@ export async function expireRunApprovalsInTx(
  * sandbox never ran them.
  */
 export async function voidUndeliveredAllowInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   approvalId: string,
 ): Promise<ExpiredApproval[]> {
@@ -135,7 +135,7 @@ export async function voidUndeliveredAllowInTx(
 
 /** One `approval.expired` audit row per expired approval (system). Call as the last step. */
 export async function auditExpiredApprovals(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   expired: readonly ExpiredApproval[],
 ): Promise<void> {

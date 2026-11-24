@@ -30,7 +30,7 @@ function Steps({ children }: { readonly children: ReactNode }) {
 
 /**
  * Backup and restore (spec D31; KOBE-11): what the server can tell (the last restore from the
- * audit log, whether the deleting jobs are paused) and how to run `kobe backup` and `kobe restore`.
+ * audit log, whether the deleting jobs are paused) and how to run `kaiju backup` and `kaiju restore`.
  * Backups run outside the server with a read-only role, so the page cannot show when the last
  * one ran; the full runbook is docs/backup-restore.md.
  */
@@ -39,7 +39,7 @@ export function BackupPage() {
     <>
       <PageHeader
         title="Backup and restore"
-        description="Backups are taken with the kobe command-line tool, outside the running site. This page shows what the site itself knows and the steps to follow."
+        description="Backups are taken with the kaiju command-line tool, outside the running site. This page shows what the site itself knows and the steps to follow."
       />
       <StatusSection />
       <BackUpSection />
@@ -55,7 +55,7 @@ function StatusSection() {
     <Section id="backup-status-heading" title="Status">
       <Notice role="note" title="Kaiju can't see your backups">
         <p>
-          <code>kobe backup</code> connects to Postgres with a read-only role and writes the backup
+          <code>kaiju backup</code> connects to Postgres with a read-only role and writes the backup
           elsewhere, so nothing on the site records it. When a backup finishes it prints its
           manifest fingerprint and time: keep both in your runbook, outside the backup storage.
         </p>
@@ -145,7 +145,7 @@ function BackUpSection() {
           Once: generate the backup key and create a backup database role with{" "}
           <code>BYPASSRLS</code> and <code>pg_read_all_data</code>.
           <Commands label="Create the backup key">
-            {"openssl rand -base64 32 > kobe-backup.key && chmod 600 kobe-backup.key"}
+            {"openssl rand -base64 32 > kaiju-backup.key && chmod 600 kaiju-backup.key"}
           </Commands>
         </li>
         <li>
@@ -153,11 +153,11 @@ function BackUpSection() {
           list of S3 objects; sandbox volumes are left out (they are rebuilt).
           <Commands label="Take a backup">
             {[
-              "export KOBE_BACKUP_KEY_FILE=<path to kobe-backup.key>",
+              "export KOBE_BACKUP_KEY_FILE=<path to kaiju-backup.key>",
               "export KOBE_BACKUP_DATABASE_URL=<postgres URL of the backup role>",
               "export KOBE_S3_ENDPOINT=<url> KOBE_S3_BUCKET=<bucket> KOBE_S3_REGION=<region>",
               "export KOBE_S3_ACCESS_KEY_ID=<id> KOBE_S3_SECRET_ACCESS_KEY=<secret>",
-              "kobe backup --out <backup dir>/kobe-$(date -u +%Y%m%dT%H%M%SZ)",
+              "kaiju backup --out <backup dir>/kaiju-$(date -u +%Y%m%dT%H%M%SZ)",
             ].join("\n")}
           </Commands>
         </li>
@@ -198,12 +198,12 @@ function RestoreSection() {
           you recorded.
           <Commands label="Restore a backup">
             {[
-              "export KOBE_BACKUP_KEY_FILE=<path to kobe-backup.key>",
+              "export KOBE_BACKUP_KEY_FILE=<path to kaiju-backup.key>",
               "export KOBE_DB_MIGRATE_URL=<postgres URL of the owner role>",
               "export KOBE_S3_ENDPOINT=<url> KOBE_S3_BUCKET=<bucket> KOBE_S3_REGION=<region>",
               "export KOBE_S3_ACCESS_KEY_ID=<id> KOBE_S3_SECRET_ACCESS_KEY=<secret>",
               "export KOBE_TMPDIR=/dev/shm",
-              "kobe restore --from <backup dir>",
+              "kaiju restore --from <backup dir>",
             ].join("\n")}
           </Commands>
         </li>

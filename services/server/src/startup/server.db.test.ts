@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { pino } from "pino";
-import { signingKeyEnvName } from "@kobe/session-token";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { signingKeyEnvName } from "@kaiju/session-token";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { loadConfig, type Config } from "../config.js";
 import type { RuntimeClassLike } from "../isolation/runtime-class.js";
 import { SchedulerRunner } from "../scheduler/runner.js";
@@ -20,11 +20,11 @@ import { startServer } from "./server.js";
  */
 let database: TestDatabase;
 const silent = pino({ level: "silent" });
-const s3 = new FakeS3("kobe-test", "AKIDSTARTSERVER");
+const s3 = new FakeS3("kaiju-test", "AKIDSTARTSERVER");
 let s3Url = "";
 // The sandbox runtime's Kubernetes client reads KUBECONFIG: a cluster nobody listens on, so every
 // call fails at once (the runtime logs it) and nothing reaches a real cluster.
-const kubeDir = mkdtempSync(join(tmpdir(), "kobe-start-server-"));
+const kubeDir = mkdtempSync(join(tmpdir(), "kaiju-start-server-"));
 const previousKubeconfig = process.env.KUBECONFIG;
 
 beforeAll(async () => {
@@ -38,7 +38,7 @@ beforeAll(async () => {
       "kind: Config",
       "clusters: [{ name: none, cluster: { server: 'https://127.0.0.1:1' } }]",
       "users: [{ name: none, user: { token: none } }]",
-      "contexts: [{ name: none, context: { cluster: none, user: none, namespace: kobe } }]",
+      "contexts: [{ name: none, context: { cluster: none, user: none, namespace: kaiju } }]",
       "current-context: none",
     ].join("\n"),
   );
@@ -163,7 +163,7 @@ function serverConfig(extra: Record<string, string> = {}): Config {
     KOBE_AUTH_SECRET: "s".repeat(48),
     KOBE_SETUP_TOKEN: "setup-token-for-start-server-0",
     KOBE_SMTP_HOST: "127.0.0.1",
-    KOBE_SMTP_FROM: "Kaiju <kobe@example.com>",
+    KOBE_SMTP_FROM: "Kaiju <kaiju@example.com>",
   });
   // Any free port.
   return { ...config, port: 0 };

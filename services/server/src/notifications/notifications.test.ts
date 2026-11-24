@@ -43,15 +43,15 @@ describe("scheduledRunMessage", () => {
     teamName: "Finance",
     when: "daily at 09:00 (UTC)",
     skippedCount: null,
-    threadLink: "http://kobe.test/?thread=t1",
-    schedulesLink: "http://kobe.test/me/schedules",
+    threadLink: "http://kaiju.test/?thread=t1",
+    schedulesLink: "http://kaiju.test/me/schedules",
   } as const;
 
   it("says the outcome, the skipped count and the links", () => {
     const m = scheduledRunMessage({ ...base, outcome: "skipped_actions", skippedCount: 3 });
     expect(m.subject).toBe("Your scheduled run finished with skipped actions in the Finance team");
     expect(m.text).toContain("3 tool calls were skipped");
-    expect(m.text).toContain("http://kobe.test/?thread=t1");
+    expect(m.text).toContain("http://kaiju.test/?thread=t1");
     expect(scheduledRunMessage({ ...base, outcome: "failed" }).subject).toBe(
       "Your scheduled run failed in the Finance team",
     );

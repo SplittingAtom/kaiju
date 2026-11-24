@@ -1,4 +1,4 @@
-import { threadFolders, eq, withTeam, type KobeDb } from "@kobe/db";
+import { threadFolders, eq, withTeam, type KaijuDb } from "@kaiju/db";
 
 /**
  * The team's folder paths by folder id for the export (KOBE-534, TF9): `"A/Sub-folder"`, by
@@ -6,7 +6,7 @@ import { threadFolders, eq, withTeam, type KobeDb } from "@kobe/db";
  * than the tree allows, or broken, is cut where it stops.
  */
 export async function folderPaths(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
 ): Promise<ReadonlyMap<string, string>> {
   const rows = await withTeam(db, teamId, (tx) =>

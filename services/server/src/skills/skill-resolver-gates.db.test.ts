@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { scanSkillBundle } from "@kobe/skill-scanner";
-import { withTeam } from "@kobe/db";
+import { scanSkillBundle } from "@kaiju/skill-scanner";
+import { withTeam } from "@kaiju/db";
 import { runWithAuditContext } from "../audit/context.js";
 import { resolveEffective } from "../resolver/resolve.js";
 import { buildResolveInput, loadSkillFacts, loadTeamFacts } from "../runs/resolver-input.js";

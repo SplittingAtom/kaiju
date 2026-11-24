@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { KobeTx } from "../../client.js";
+import type { KaijuTx } from "../../client.js";
 import {
   gitCommitBranches,
   gitConnections,
@@ -13,7 +13,7 @@ import {
 import type { git } from "../../tenancy/git.js";
 import type { ProbeFixture } from "./types.js";
 
-async function insertConnection(tx: KobeTx, teamId: string) {
+async function insertConnection(tx: KaijuTx, teamId: string) {
   const userId = randomUUID();
   await tx.insert(users).values({ id: userId, name: "Probe", email: `${userId}@probe.test` });
   const [connection] = await tx
@@ -36,12 +36,12 @@ async function insertConnection(tx: KobeTx, teamId: string) {
   return { connectionId: connection.id, userId };
 }
 
-async function insertRepository(tx: KobeTx, teamId: string): Promise<string> {
+async function insertRepository(tx: KaijuTx, teamId: string): Promise<string> {
   return (await insertRepo(tx, teamId)).repositoryId;
 }
 
 /** A Repo: a connection, a project of kind `repo` and its repository row. */
-async function insertRepo(tx: KobeTx, teamId: string) {
+async function insertRepo(tx: KaijuTx, teamId: string) {
   const { connectionId, userId } = await insertConnection(tx, teamId);
   const slug = `probe-${randomUUID().slice(0, 8)}`;
   const [project] = await tx

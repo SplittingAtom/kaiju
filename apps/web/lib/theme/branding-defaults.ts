@@ -4,7 +4,7 @@ import {
   DEFAULT_SHOW_NAME,
   DEFAULT_THEME,
   type SiteBranding,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
  * The built-in branding (theming plan §4.3): what every page shows with nothing configured, or

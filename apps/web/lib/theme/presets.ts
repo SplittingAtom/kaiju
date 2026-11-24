@@ -1,5 +1,5 @@
-import type { CornerStyle, FontStack, PresetId } from "@kobe/protocol";
-import { PRESET_LABELS } from "@kobe/protocol";
+import type { CornerStyle, FontStack, PresetId } from "@kaiju/protocol";
+import { PRESET_LABELS } from "@kaiju/protocol";
 
 /**
  * The shipped presets (theming plan TH9; catalogue docs/theming.md §3-§6). A preset is a complete
@@ -16,24 +16,24 @@ import { PRESET_LABELS } from "@kobe/protocol";
 
 /**
  * The Conversation tree's lane colours (CT7, KOBE-545): lane 1 is the path on screen, the accent
- * as text on the page (`var(--kobe-brand-link)`, so a custom accent moves it too); lanes 2-8 are
+ * as text on the page (`var(--kaiju-brand-link)`, so a custom accent moves it too); lanes 2-8 are
  * distinct hues per preset, rotated from its accent, each at least 3:1 (WCAG 1.4.11) on every page
  * and panel surface of its scheme (presets.test.ts).
  */
 export const LANE_TOKENS = [
-  "--kobe-lane-1",
-  "--kobe-lane-2",
-  "--kobe-lane-3",
-  "--kobe-lane-4",
-  "--kobe-lane-5",
-  "--kobe-lane-6",
-  "--kobe-lane-7",
-  "--kobe-lane-8",
+  "--kaiju-lane-1",
+  "--kaiju-lane-2",
+  "--kaiju-lane-3",
+  "--kaiju-lane-4",
+  "--kaiju-lane-5",
+  "--kaiju-lane-6",
+  "--kaiju-lane-7",
+  "--kaiju-lane-8",
 ] as const;
 export type LaneToken = (typeof LANE_TOKENS)[number];
 
 /** Lane 1 in every preset and scheme: the accent's link colour. */
-export const LANE_1_VALUE = "var(--kobe-brand-link)";
+export const LANE_1_VALUE = "var(--kaiju-brand-link)";
 
 /**
  * The glow, the page ambient and the shadows (KOBE-550, docs/theming.md §7). Every preset sets
@@ -41,21 +41,21 @@ export const LANE_1_VALUE = "var(--kobe-brand-link)";
  * ambient and keep today's shadows; `catalyst` carries the Catalyst query tool's own values.
  */
 export const GLOW_TOKENS = [
-  "--kobe-glow-color",
-  "--kobe-page-ambient",
-  "--kobe-shadow-pop",
-  "--kobe-shadow-drawer",
-  "--kobe-shadow-panel",
+  "--kaiju-glow-color",
+  "--kaiju-page-ambient",
+  "--kaiju-shadow-pop",
+  "--kaiju-shadow-drawer",
+  "--kaiju-shadow-panel",
 ] as const;
 export type GlowToken = (typeof GLOW_TOKENS)[number];
 
 /** theme.css's values: the brand primary at 28%, no ambient, the neutral shadows. */
 export const DEFAULT_GLOW: Readonly<Record<GlowToken, string>> = {
-  "--kobe-glow-color": "color-mix(in oklab, var(--kobe-brand-primary) 28%, transparent)",
-  "--kobe-page-ambient": "none",
-  "--kobe-shadow-pop": "0 4px 16px rgb(0 0 0 / 15%)",
-  "--kobe-shadow-drawer": "0 8px 24px rgb(0 0 0 / 12%)",
-  "--kobe-shadow-panel": "0 1.5rem 4rem rgb(0 0 0 / 25%)",
+  "--kaiju-glow-color": "color-mix(in oklab, var(--kaiju-brand-primary) 28%, transparent)",
+  "--kaiju-page-ambient": "none",
+  "--kaiju-shadow-pop": "0 4px 16px rgb(0 0 0 / 15%)",
+  "--kaiju-shadow-drawer": "0 8px 24px rgb(0 0 0 / 12%)",
+  "--kaiju-shadow-panel": "0 1.5rem 4rem rgb(0 0 0 / 25%)",
 };
 
 /** Tokens a preset sets per scheme, in theme.css order. */
@@ -77,19 +77,19 @@ export const PRESET_SCHEME_TOKENS = [
   "--border",
   "--input",
   "--ring",
-  "--kobe-brand-primary",
-  "--kobe-brand-primary-hover",
-  "--kobe-brand-primary-fg",
-  "--kobe-brand-link",
-  "--kobe-brand-focus",
-  "--kobe-console-fg",
-  "--kobe-console-muted",
-  "--kobe-console-bg",
-  "--kobe-console-panel",
-  "--kobe-console-border",
-  "--kobe-console-control-border",
-  "--kobe-console-overlay",
-  "--kobe-composer-focus",
+  "--kaiju-brand-primary",
+  "--kaiju-brand-primary-hover",
+  "--kaiju-brand-primary-fg",
+  "--kaiju-brand-link",
+  "--kaiju-brand-focus",
+  "--kaiju-console-fg",
+  "--kaiju-console-muted",
+  "--kaiju-console-bg",
+  "--kaiju-console-panel",
+  "--kaiju-console-border",
+  "--kaiju-console-control-border",
+  "--kaiju-console-overlay",
+  "--kaiju-composer-focus",
   ...LANE_TOKENS,
   ...GLOW_TOKENS,
 ] as const;
@@ -111,16 +111,16 @@ export interface Preset {
  * the variable is missing.
  */
 export const FACE_VARIABLES = {
-  outfit: "--kobe-face-outfit",
-  jetbrainsMono: "--kobe-face-jetbrains-mono",
+  outfit: "--kaiju-face-outfit",
+  jetbrainsMono: "--kaiju-face-jetbrains-mono",
 } as const;
 
 const GROTESK = 'Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif';
-/** theme.css's `--kobe-font-mono` (presets.test.ts checks it), the fallback after JetBrains Mono. */
+/** theme.css's `--kaiju-font-mono` (presets.test.ts checks it), the fallback after JetBrains Mono. */
 export const SYSTEM_MONO_STACK = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 
 /**
- * `--kobe-font-sans` per typeface (§5); `system` is today's. System stacks, except `catalyst`,
+ * `--kaiju-font-sans` per typeface (§5); `system` is today's. System stacks, except `catalyst`,
  * which starts with the shipped Outfit (TH10 as amended, KOBE-555).
  */
 export const FONT_STACK_VALUES: Readonly<Record<FontStack, string>> = {
@@ -134,7 +134,7 @@ export const FONT_STACK_VALUES: Readonly<Record<FontStack, string>> = {
 };
 
 /**
- * `--kobe-font-mono` for the typefaces that change it (§5): only `catalyst`, with JetBrains Mono
+ * `--kaiju-font-mono` for the typefaces that change it (§5): only `catalyst`, with JetBrains Mono
  * over theme.css's system stack. The others leave theme.css's value alone, so nothing is emitted.
  */
 export const MONO_STACK_VALUES: Readonly<Partial<Record<FontStack, string>>> = {
@@ -142,36 +142,36 @@ export const MONO_STACK_VALUES: Readonly<Partial<Record<FontStack, string>>> = {
 };
 
 export const RADIUS_TOKENS = [
-  "--kobe-radius-sm",
-  "--kobe-radius-md",
-  "--kobe-radius-lg",
-  "--kobe-radius-xl",
-  "--kobe-radius-pill",
+  "--kaiju-radius-sm",
+  "--kaiju-radius-md",
+  "--kaiju-radius-lg",
+  "--kaiju-radius-xl",
+  "--kaiju-radius-pill",
 ] as const;
 export type RadiusToken = (typeof RADIUS_TOKENS)[number];
 
 /** The radius scales (§6); `soft` is today's. */
 export const RADIUS_SCALES: Readonly<Record<CornerStyle, Readonly<Record<RadiusToken, string>>>> = {
   sharp: {
-    "--kobe-radius-sm": "0",
-    "--kobe-radius-md": "0",
-    "--kobe-radius-lg": "0",
-    "--kobe-radius-xl": "0",
-    "--kobe-radius-pill": "0",
+    "--kaiju-radius-sm": "0",
+    "--kaiju-radius-md": "0",
+    "--kaiju-radius-lg": "0",
+    "--kaiju-radius-xl": "0",
+    "--kaiju-radius-pill": "0",
   },
   soft: {
-    "--kobe-radius-sm": "0.25rem",
-    "--kobe-radius-md": "0.375rem",
-    "--kobe-radius-lg": "0.5rem",
-    "--kobe-radius-xl": "0.75rem",
-    "--kobe-radius-pill": "9999px",
+    "--kaiju-radius-sm": "0.25rem",
+    "--kaiju-radius-md": "0.375rem",
+    "--kaiju-radius-lg": "0.5rem",
+    "--kaiju-radius-xl": "0.75rem",
+    "--kaiju-radius-pill": "9999px",
   },
   round: {
-    "--kobe-radius-sm": "0.5rem",
-    "--kobe-radius-md": "0.75rem",
-    "--kobe-radius-lg": "1rem",
-    "--kobe-radius-xl": "1.25rem",
-    "--kobe-radius-pill": "9999px",
+    "--kaiju-radius-sm": "0.5rem",
+    "--kaiju-radius-md": "0.75rem",
+    "--kaiju-radius-lg": "1rem",
+    "--kaiju-radius-xl": "1.25rem",
+    "--kaiju-radius-pill": "9999px",
   },
 };
 
@@ -179,14 +179,14 @@ type Lanes = readonly [string, string, string, string, string, string, string];
 
 function laneValues(lanes: Lanes): Readonly<Record<LaneToken, string>> {
   return {
-    "--kobe-lane-1": LANE_1_VALUE,
-    "--kobe-lane-2": lanes[0],
-    "--kobe-lane-3": lanes[1],
-    "--kobe-lane-4": lanes[2],
-    "--kobe-lane-5": lanes[3],
-    "--kobe-lane-6": lanes[4],
-    "--kobe-lane-7": lanes[5],
-    "--kobe-lane-8": lanes[6],
+    "--kaiju-lane-1": LANE_1_VALUE,
+    "--kaiju-lane-2": lanes[0],
+    "--kaiju-lane-3": lanes[1],
+    "--kaiju-lane-4": lanes[2],
+    "--kaiju-lane-5": lanes[3],
+    "--kaiju-lane-6": lanes[4],
+    "--kaiju-lane-7": lanes[5],
+    "--kaiju-lane-8": lanes[6],
   };
 }
 
@@ -234,19 +234,19 @@ function scheme(v: {
     "--border": v.border,
     "--input": v.input,
     "--ring": v.focus,
-    "--kobe-brand-primary": v.primary,
-    "--kobe-brand-primary-hover": v.primaryHover,
-    "--kobe-brand-primary-fg": v.primaryFg,
-    "--kobe-brand-link": v.link,
-    "--kobe-brand-focus": v.focus,
-    "--kobe-console-fg": v.text,
-    "--kobe-console-muted": v.muted,
-    "--kobe-console-bg": v.page,
-    "--kobe-console-panel": v.consolePanel,
-    "--kobe-console-border": v.border,
-    "--kobe-console-control-border": v.controlBorder,
-    "--kobe-console-overlay": v.overlay,
-    "--kobe-composer-focus": v.composerFocus,
+    "--kaiju-brand-primary": v.primary,
+    "--kaiju-brand-primary-hover": v.primaryHover,
+    "--kaiju-brand-primary-fg": v.primaryFg,
+    "--kaiju-brand-link": v.link,
+    "--kaiju-brand-focus": v.focus,
+    "--kaiju-console-fg": v.text,
+    "--kaiju-console-muted": v.muted,
+    "--kaiju-console-bg": v.page,
+    "--kaiju-console-panel": v.consolePanel,
+    "--kaiju-console-border": v.border,
+    "--kaiju-console-control-border": v.controlBorder,
+    "--kaiju-console-overlay": v.overlay,
+    "--kaiju-composer-focus": v.composerFocus,
     ...laneValues(v.lanes),
     ...DEFAULT_GLOW,
     ...v.glow,
@@ -277,19 +277,20 @@ const DEFAULT_PRESET: Preset = {
     "--border": "oklch(0.922 0 0)",
     "--input": "oklch(0.922 0 0)",
     "--ring": "oklch(0.708 0 0)",
-    "--kobe-brand-primary": "#2449c7",
-    "--kobe-brand-primary-hover": "color-mix(in oklab, var(--kobe-brand-primary) 90%, transparent)",
-    "--kobe-brand-primary-fg": "#ffffff",
-    "--kobe-brand-link": "#2449c7",
-    "--kobe-brand-focus": "#2449c7",
-    "--kobe-console-fg": "#1b1b1f",
-    "--kobe-console-muted": "#5b5b66",
-    "--kobe-console-bg": "#ffffff",
-    "--kobe-console-panel": "#f4f4f6",
-    "--kobe-console-border": "#d9d9df",
-    "--kobe-console-control-border": "#80808c",
-    "--kobe-console-overlay": "rgb(0 0 0 / 50%)",
-    "--kobe-composer-focus": "#52525b",
+    "--kaiju-brand-primary": "#2449c7",
+    "--kaiju-brand-primary-hover":
+      "color-mix(in oklab, var(--kaiju-brand-primary) 90%, transparent)",
+    "--kaiju-brand-primary-fg": "#ffffff",
+    "--kaiju-brand-link": "#2449c7",
+    "--kaiju-brand-focus": "#2449c7",
+    "--kaiju-console-fg": "#1b1b1f",
+    "--kaiju-console-muted": "#5b5b66",
+    "--kaiju-console-bg": "#ffffff",
+    "--kaiju-console-panel": "#f4f4f6",
+    "--kaiju-console-border": "#d9d9df",
+    "--kaiju-console-control-border": "#80808c",
+    "--kaiju-console-overlay": "rgb(0 0 0 / 50%)",
+    "--kaiju-composer-focus": "#52525b",
     ...laneValues(["#926e02", "#b54877", "#048872", "#9057b4", "#548508", "#ba4f23", "#03819e"]),
     ...DEFAULT_GLOW,
   },
@@ -311,19 +312,20 @@ const DEFAULT_PRESET: Preset = {
     "--border": "oklch(1 0 0 / 10%)",
     "--input": "oklch(1 0 0 / 15%)",
     "--ring": "oklch(0.556 0 0)",
-    "--kobe-brand-primary": "#4263eb",
-    "--kobe-brand-primary-hover": "color-mix(in oklab, var(--kobe-brand-primary) 90%, transparent)",
-    "--kobe-brand-primary-fg": "#ffffff",
-    "--kobe-brand-link": "#8fa8ff",
-    "--kobe-brand-focus": "#8fa8ff",
-    "--kobe-console-fg": "#ececf1",
-    "--kobe-console-muted": "#a5a5b2",
-    "--kobe-console-bg": "#16161a",
-    "--kobe-console-panel": "#202027",
-    "--kobe-console-border": "#3a3a45",
-    "--kobe-console-control-border": "#74747f",
-    "--kobe-console-overlay": "rgb(0 0 0 / 70%)",
-    "--kobe-composer-focus": "#a1a1aa",
+    "--kaiju-brand-primary": "#4263eb",
+    "--kaiju-brand-primary-hover":
+      "color-mix(in oklab, var(--kaiju-brand-primary) 90%, transparent)",
+    "--kaiju-brand-primary-fg": "#ffffff",
+    "--kaiju-brand-link": "#8fa8ff",
+    "--kaiju-brand-focus": "#8fa8ff",
+    "--kaiju-console-fg": "#ececf1",
+    "--kaiju-console-muted": "#a5a5b2",
+    "--kaiju-console-bg": "#16161a",
+    "--kaiju-console-panel": "#202027",
+    "--kaiju-console-border": "#3a3a45",
+    "--kaiju-console-control-border": "#74747f",
+    "--kaiju-console-overlay": "rgb(0 0 0 / 70%)",
+    "--kaiju-composer-focus": "#a1a1aa",
     ...laneValues(["#cea608", "#f67fa5", "#0ec5af", "#cf8bea", "#7ec05b", "#f78953", "#0bbcee"]),
     ...DEFAULT_GLOW,
   },
@@ -599,9 +601,9 @@ const TOKYO_NIGHTS: Preset = {
  * JetBrains Mono, ship with the web app (KOBE-555, TH10 as amended): the `catalyst` stacks.
  */
 const CATALYST_GLOW_SHADOWS = {
-  "--kobe-shadow-pop": "0 0 24px var(--kobe-glow-color)",
-  "--kobe-shadow-drawer": "0 0 32px var(--kobe-glow-color)",
-  "--kobe-shadow-panel": "0 0 40px var(--kobe-glow-color)",
+  "--kaiju-shadow-pop": "0 0 24px var(--kaiju-glow-color)",
+  "--kaiju-shadow-drawer": "0 0 32px var(--kaiju-glow-color)",
+  "--kaiju-shadow-panel": "0 0 40px var(--kaiju-glow-color)",
 } as const;
 
 const CATALYST: Preset = {
@@ -630,7 +632,7 @@ const CATALYST: Preset = {
     overlay: "rgb(10 14 26 / 50%)",
     composerFocus: "#1565c0",
     lanes: ["#8a6500", "#ad1457", "#00897b", "#6a1b9a", "#558b2f", "#d84315", "#00838f"],
-    glow: { "--kobe-glow-color": "rgb(25 118 210 / 30%)", ...CATALYST_GLOW_SHADOWS },
+    glow: { "--kaiju-glow-color": "rgb(25 118 210 / 30%)", ...CATALYST_GLOW_SHADOWS },
   }),
   dark: scheme({
     page: "#06080e",
@@ -654,8 +656,8 @@ const CATALYST: Preset = {
     composerFocus: "#4fc3f7",
     lanes: ["#ffa726", "#f06292", "#66bb6a", "#ab47bc", "#d4e157", "#ff7043", "#26a69a"],
     glow: {
-      "--kobe-glow-color": "rgb(79 195 247 / 25%)",
-      "--kobe-page-ambient":
+      "--kaiju-glow-color": "rgb(79 195 247 / 25%)",
+      "--kaiju-page-ambient":
         "radial-gradient(ellipse 80% 60% at 50% -10%, rgb(79 195 247 / 4%) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 100%, rgb(79 195 247 / 2%) 0%, transparent 50%)",
       ...CATALYST_GLOW_SHADOWS,
     },

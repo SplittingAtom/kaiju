@@ -16,7 +16,7 @@ import {
   WORKSPACE_CHANGES_MAX_PATHS,
   workspaceFileChangeSchema,
   type WorkspaceFileChange,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import "../security/zod-jitless";
 import {
   browserEventSource,

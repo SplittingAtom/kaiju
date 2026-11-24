@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { createApp } from "../app.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
 import { seedGalleryAgents } from "../gallery/seed.js";
@@ -14,7 +14,7 @@ import { fakeIsolation } from "../testing/isolation.js";
  * Fork lands in Personal with binding, transfer, adopt (KOBE-568, spec agents-roster AR8, AR10,
  * AR16, §5, §6.7-6.9). Own throwaway database.
  */
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 const ANY = { "if-match": "*" };
 

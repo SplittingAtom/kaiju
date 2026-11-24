@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 
 /**
  * The team installed a catalog skill (KOBE-338 review M3, D1): the install governs from now on.
@@ -7,7 +7,7 @@ import { sql, type KobeTx } from "@kobe/db";
  * audit log keeps who asked). Called inside the install's transaction, under its install lock.
  */
 export async function skillInstallAnswers(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   skillId: string,
 ): Promise<void> {

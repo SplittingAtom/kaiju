@@ -19,7 +19,7 @@ COPY . .
 ARG KOBE_BUILD_ID=""
 ENV KOBE_BUILD_ID=${KOBE_BUILD_ID}
 RUN pnpm install --offline --frozen-lockfile \
- && pnpm turbo run build --filter=@kobe/web...
+ && pnpm turbo run build --filter=@kaiju/web...
 
 FROM ${NODE_IMAGE}
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=8080 HOSTNAME=0.0.0.0

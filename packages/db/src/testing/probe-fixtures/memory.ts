@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { KobeTx } from "../../client.js";
+import type { KaijuTx } from "../../client.js";
 import {
   portableMemoryItemVersions,
   portableMemoryItems,
@@ -28,14 +28,14 @@ import {
 import type { memory } from "../../tenancy/memory.js";
 import type { ProbeFixture } from "./types.js";
 
-async function insertUser(tx: KobeTx): Promise<string> {
+async function insertUser(tx: KaijuTx): Promise<string> {
   const userId = randomUUID();
   await tx.insert(users).values({ id: userId, name: "Probe", email: `${userId}@probe.test` });
   return userId;
 }
 
 /** A thread of `userId` with one run, for run records to hang off. */
-async function insertRun(tx: KobeTx, teamId: string, userId: string): Promise<string> {
+async function insertRun(tx: KaijuTx, teamId: string, userId: string): Promise<string> {
   const [thread] = await tx
     .insert(threads)
     .values({ teamId, ownerUserId: userId, title: "Probe" })
@@ -56,7 +56,7 @@ async function insertRun(tx: KobeTx, teamId: string, userId: string): Promise<st
 }
 
 /** A personal Workspace item with its first version (one transaction: deferred version key). */
-async function insertItem(tx: KobeTx, teamId: string) {
+async function insertItem(tx: KaijuTx, teamId: string) {
   const userId = await insertUser(tx);
   const [item] = await tx
     .insert(semanticMemoryItems)
@@ -75,7 +75,7 @@ async function insertItem(tx: KobeTx, teamId: string) {
 }
 
 /** A thread of a new user with one entry `e1`, for learning rows to hang off. */
-async function insertThread(tx: KobeTx, teamId: string) {
+async function insertThread(tx: KaijuTx, teamId: string) {
   const userId = await insertUser(tx);
   const [thread] = await tx
     .insert(threads)
@@ -89,7 +89,7 @@ async function insertThread(tx: KobeTx, teamId: string) {
 }
 
 /** A queued learning pass over that thread. */
-async function insertPass(tx: KobeTx, teamId: string) {
+async function insertPass(tx: KaijuTx, teamId: string) {
   const { threadId, userId } = await insertThread(tx, teamId);
   const [pass] = await tx
     .insert(memoryLearningPasses)

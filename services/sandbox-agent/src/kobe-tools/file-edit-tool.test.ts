@@ -4,11 +4,11 @@ import {
   FILE_EDIT_CONTENT_MAX_BYTES,
   FILE_EDIT_SUMMARY_MAX,
   PROPOSE_FILE_EDIT_TOOL,
-  kobeToolsResponseSchema,
+  kaijuToolsResponseSchema,
   proposeFileEditInputSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { ToolsOutcome } from "./client.js";
-import { fileEditsEnabled, registerKobeTools } from "./extension.js";
+import { fileEditsEnabled, registerKaijuTools } from "./extension.js";
 import { parseFileEditReply, proposeFileEditTool } from "./file-edit-tool.js";
 import * as P from "./protocol.js";
 import type { ToolsTransport } from "./tools.js";
@@ -85,7 +85,7 @@ describe("propose_file_edit (KOBE-462)", () => {
   it("parses only well-formed answers (fail closed)", () => {
     const reply = { id: "kt_1", ...PROPOSED };
     expect(parseFileEditReply(reply)).toEqual(reply);
-    expect(kobeToolsResponseSchema.safeParse(reply).success).toBe(true);
+    expect(kaijuToolsResponseSchema.safeParse(reply).success).toBe(true);
     expect(parseFileEditReply({ ...reply, status: "applied" })).toBeUndefined();
     expect(parseFileEditReply({ ...reply, base_sha256: "x" })).toBeUndefined();
   });
@@ -105,7 +105,7 @@ describe("propose_file_edit (KOBE-462)", () => {
     } as const;
     const reply = { id: "kt_2", ...created };
     expect(parseFileEditReply(reply)).toEqual(reply);
-    expect(kobeToolsResponseSchema.safeParse(reply).success).toBe(true);
+    expect(kaijuToolsResponseSchema.safeParse(reply).success).toBe(true);
     const result = await proposeFileEditTool(transport(created).t).execute("call_2", {
       ...input,
       path: "/workspace/projects/p/new.md",
@@ -121,7 +121,7 @@ describe("propose_file_edit (KOBE-462)", () => {
     expect(env.KOBE_TOOLS_FILE_EDITS).toBeUndefined();
     const names = (fileEdits: boolean) => {
       const registered: string[] = [];
-      registerKobeTools(
+      registerKaijuTools(
         { registerTool: (tool) => registered.push((tool as { name: string }).name) },
         transport(PROPOSED).t,
         { fileEdits },

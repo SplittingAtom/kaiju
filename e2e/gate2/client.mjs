@@ -235,7 +235,7 @@ async function audit() {
 
 async function ledger() {
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   try {
     const rows = await withTeam(database.db, config.teamId, (tx) =>
       tx.execute(sql`
@@ -252,7 +252,7 @@ async function ledger() {
 /** Whether the user's sandbox opened a wire connection after `since`. */
 async function wire() {
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   try {
     const rows = await withTeam(database.db, config.teamId, (tx) =>
       tx.execute(sql`
@@ -271,7 +271,7 @@ async function wire() {
 /** A connector (plain-HTTP fake server), enabled for the team, and a run leased to the sandbox. */
 async function mcpFixture() {
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   const { randomUUID } = await import("node:crypto");
   const pinned = (name, annotations) => ({
     name,
@@ -319,7 +319,7 @@ async function mcpFixture() {
 /** Takes the fixture down again: the lease, the team's enablement and the connector. */
 async function mcpClean() {
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   try {
     await withTeam(database.db, config.teamId, async (tx) => {
       await tx.execute(sql`DELETE FROM sandbox_run_leases WHERE run_id = ${config.runId}`);
@@ -363,11 +363,11 @@ async function mint2() {
 /** The user's approval of one write, signed with the site key and stored as the server does. */
 async function approve() {
   const { approvalKeyring } = await import("/app/dist/approvals/keys.js");
-  const { signApproval } = await import("/app/node_modules/@kobe/protocol/dist/node/index.js");
-  const { canonicalJson } = await import("/app/node_modules/@kobe/protocol/dist/index.js");
+  const { signApproval } = await import("/app/node_modules/@kaiju/protocol/dist/node/index.js");
+  const { canonicalJson } = await import("/app/node_modules/@kaiju/protocol/dist/index.js");
   const { randomUUID } = await import("node:crypto");
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   const approvalId = randomUUID();
   const t = config.teamId;
   const token = signApproval({
@@ -466,7 +466,7 @@ async function breakGlass() {
   out("approve_warnings", (approved.json.warnings ?? []).map((w) => w.code).join(",") || "-");
 
   const database = await db();
-  const { sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   try {
     const rows = await database.db.execute(sql`
       SELECT recipient_role, event, status, count(*)::int AS n FROM break_glass_notifications
@@ -531,7 +531,7 @@ async function breakGlass() {
 
 /** The site's plaintext provider API keys, for the CI-side secret scan (never printed there). */
 async function providerKeys() {
-  const kdb = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const kdb = await import("/app/node_modules/@kaiju/db/dist/index.js");
   const { SecretBox, PROVIDER_KEY_PURPOSE, providerKeyContext, modelProviders } = kdb;
   const secrets = [
     process.env.KOBE_MODELS_PROVIDER_KEY_SECRET,
@@ -564,7 +564,7 @@ async function providerKeys() {
  */
 async function replicaBudget() {
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   const spent = async () => {
     const rows = await withTeam(database.db, config.teamId, (tx) =>
       tx.execute(sql`

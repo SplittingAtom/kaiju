@@ -206,7 +206,7 @@ nothing is approved. It never writes a remember-rule. Readers of a shared thread
 
 ## Signing
 
-An allowed approval carries an HMAC token (`@kobe/protocol` `approval.ts`):
+An allowed approval carries an HMAC token (`@kaiju/protocol` `approval.ts`):
 
 ```
 mac = base64url(HMAC-SHA256(KOBE_APPROVAL_KEY,
@@ -281,7 +281,7 @@ A successful use is audited as `approval.consumed`. Every refusal is audited as 
 with its reason (`no_approval`, `bad_mac`, `binding_mismatch`, `expired`, `not_consumable`,
 `run_inactive`, …), throttled per tool call and reason (repeats counted as `suppressed`). The proxy forwards exactly
 `JSON.parse(canonicalJson(arguments))`. KOBE-58 can call this in process, or move the same
-`@kobe/protocol/node` `authorizeApprovedCall` plus the SQL in `approvals/store.ts` into the proxy.
+`@kaiju/protocol/node` `authorizeApprovedCall` plus the SQL in `approvals/store.ts` into the proxy.
 The proxy needs `KOBE_APPROVAL_KEY`, which is the same Secret key as above.
 
 **How KOBE-58 calls it.** The MCP proxy's re-check runs in the server (internal listener), so the

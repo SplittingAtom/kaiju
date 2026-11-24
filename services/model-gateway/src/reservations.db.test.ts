@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { createDb, sql, teams, type BudgetLine, type KobeDatabase } from "@kobe/db";
+import { createDb, sql, teams, type BudgetLine, type KaijuDatabase } from "@kaiju/db";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
 import { BudgetGate } from "./budget-gate.js";
 import { DbReservations } from "./reservations-db.js";
@@ -10,7 +10,7 @@ import type { CallContext } from "./seams.js";
  * the same database sees the first's), end on release and settle, and expire by themselves.
  * (The full two-replica race is KOBE-121.)
  */
-let app: KobeDatabase;
+let app: KaijuDatabase;
 const team = randomUUID();
 const line: BudgetLine = {
   scope: "user",

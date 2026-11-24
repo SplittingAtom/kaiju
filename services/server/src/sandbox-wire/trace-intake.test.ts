@@ -1,7 +1,7 @@
-import { runRootSpanId, runTraceId } from "@kobe/protocol";
-import { type TraceSpansFrame } from "@kobe/protocol/sandbox-wire";
-import { deriveTraceSpanKey, mapSandboxSpanId } from "@kobe/protocol/node";
-import type { RelaySpan, RunRootSpan } from "@kobe/telemetry";
+import { runRootSpanId, runTraceId } from "@kaiju/protocol";
+import { type TraceSpansFrame } from "@kaiju/protocol/sandbox-wire";
+import { deriveTraceSpanKey, mapSandboxSpanId } from "@kaiju/protocol/node";
+import type { RelaySpan, RunRootSpan } from "@kaiju/telemetry";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { RelayBudget } from "./trace-budget.js";
 import { TraceFrameRate, TraceIntake, type TraceCounters } from "./trace-intake.js";

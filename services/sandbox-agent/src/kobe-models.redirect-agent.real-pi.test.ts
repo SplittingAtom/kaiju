@@ -2,12 +2,14 @@ import { existsSync } from "node:fs";
 import { readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startLocalGateway, type LocalGateway } from "@kobe/model-gateway/testing";
+import { startLocalGateway, type LocalGateway } from "@kaiju/model-gateway/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ModelWiring } from "./models/types.js";
+import { KAIJU_PROVIDER_ID } from "./kobe-models/protocol.js";
 import { RUN_TOKEN as runToken } from "./testing/redirect-plants.js";
 import {
   ANTHROPIC,
+  LEAKING_PROVIDER_MODELS,
   OPENAI,
   RUN_IDS,
   plantCommand,
@@ -127,7 +129,7 @@ async function setModelRefused(harness: Harness, modelId: string): Promise<void>
     type: "pi.command",
     command_id: "sm-1",
     thread_id: THREAD,
-    command: { id: "srv", type: "set_model", provider: "kobe", modelId },
+    command: { id: "srv", type: "set_model", provider: KAIJU_PROVIDER_ID, modelId },
   } as never);
   await until(() => harness.server.frames("error").length > before);
 }
@@ -135,10 +137,7 @@ async function setModelRefused(harness: Harness, modelId: string): Promise<void>
 describe.skipIf(!PI_AVAILABLE)(
   "the agent closes the Pi agent/ provider redirect (KOBE-169)",
   () => {
-    const LEAKING = [
-      "models.json: provider kobe models with their own baseUrl",
-      "everything at once",
-    ];
+    const LEAKING = [LEAKING_PROVIDER_MODELS, "everything at once"];
 
     /**
      * Plant in a run (the real bash tool), then `set_model` to a model only the plant defines. The

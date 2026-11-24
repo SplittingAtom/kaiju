@@ -1,5 +1,5 @@
-import { agentSlugSchema, parseAgentFile, type AgentDefinition } from "@kobe/agent-file";
-import { KOBE_FILE } from "./agents/kobe.js";
+import { agentSlugSchema, parseAgentFile, type AgentDefinition } from "@kaiju/agent-file";
+import { KAIJU_FILE } from "./agents/kobe.js";
 
 /**
  * One gallery agent as it is kept in the repo (KOBE-87): a stable `key` (also its slug) and the
@@ -19,7 +19,7 @@ export interface GalleryDefinition {
 }
 
 /** Key of the one gallery agent, Kobe (KOBE-254); the web preselects it for new chats. */
-export const KOBE_GALLERY_KEY = "kobe";
+export const KAIJU_GALLERY_KEY = "kobe";
 
 /**
  * The gallery (KOBE-254, user decision 2026-10-11): one general-purpose agent, Kobe. It pins no
@@ -27,7 +27,7 @@ export const KOBE_GALLERY_KEY = "kobe";
  * their keys are no longer listed here. Raise an entry's generation with every change to its file.
  */
 export const GALLERY_DEFINITIONS: readonly GalleryDefinition[] = [
-  { key: KOBE_GALLERY_KEY, generation: 4, file: KOBE_FILE },
+  { key: KAIJU_GALLERY_KEY, generation: 4, file: KAIJU_FILE },
 ];
 
 export interface ParsedGalleryDefinition {

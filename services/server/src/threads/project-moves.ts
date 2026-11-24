@@ -5,10 +5,10 @@ import {
   sql,
   threads,
   THREAD_PROJECT_MOVES_MAX,
-  type KobeTx,
+  type KaijuTx,
   type ThreadProjectMove,
-} from "@kobe/db";
-import { uuidSchema as wireUuidSchema, idSchema } from "@kobe/protocol";
+} from "@kaiju/db";
+import { uuidSchema as wireUuidSchema, idSchema } from "@kaiju/protocol";
 import { loadAccess } from "../projects/access.js";
 
 /**
@@ -49,7 +49,7 @@ export function withMove(
  * under the thread lock with no run queued or running, so the count can't change meanwhile.
  */
 export async function movesOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
 ): Promise<{ moves: ThreadProjectMove[]; now: string; started: number }> {
@@ -127,7 +127,7 @@ type Side = { readonly id: string | null; readonly name: string | null; readonly
 
 /** The project as the viewer may see it: id and name if they may open it (member or team admin). */
 async function sideFor(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { teamId: string; userId: string },
   projectId: string | null,
   cache: Map<string, string | null>,
@@ -145,7 +145,7 @@ async function sideFor(
 
 /** The thread's project markers, oldest first (at most one per run). */
 export async function projectMarkers(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: { teamId: string; userId: string },
   threadId: string,
 ): Promise<ProjectMarker[]> {

@@ -4,9 +4,9 @@ import {
   loadMemberBudgetState,
   withTeam,
   type BudgetLine,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 
 // Skill evals and budgets (KOBE-327, D30, SK18). Eval spend counts against every budget like
 // any run's (kinds `eval` and `eval_judge`), and the optional team eval cap counts eval spend
@@ -71,7 +71,7 @@ export const REFUSED_BLOCK: EvalBudgetBlock = {
 };
 
 /** What the team's (and the member's) live reservations hold: spend still in flight. */
-async function heldIn(tx: KobeTx, teamId: string, userId: string) {
+async function heldIn(tx: KaijuTx, teamId: string, userId: string) {
   const res = await tx.execute<Record<string, unknown>>(sql`
     SELECT COALESCE(sum(usd), 0) AS team_usd, COALESCE(sum(tokens), 0) AS team_tokens,
            COALESCE(sum(usd) FILTER (WHERE user_id = ${userId}::uuid), 0) AS user_usd,
@@ -91,7 +91,7 @@ async function heldIn(tx: KobeTx, teamId: string, userId: string) {
  * plus the live reservations reach it: the gateway's own rule (review-327 M1).
  */
 export async function evalBudgetBlockIn(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   options: { readonly inFlight?: boolean } = {},
@@ -107,7 +107,7 @@ export async function evalBudgetBlockIn(
 }
 
 export function evalBudgetBlock(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   options: { readonly inFlight?: boolean } = {},

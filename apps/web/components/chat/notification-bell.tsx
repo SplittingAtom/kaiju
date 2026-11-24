@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import {
   createNotificationsApi,
-  type KobeNotification,
+  type KaijuNotification,
   type NotificationsApi,
 } from "../../lib/notifications/api";
 import {
@@ -88,7 +88,7 @@ function NotificationItem({
   onOpenFiles,
   onMarkRead,
 }: {
-  readonly note: KobeNotification;
+  readonly note: KaijuNotification;
   readonly label: string;
   readonly viewer: MemoryViewer;
   readonly onOpen: (() => void) | null;
@@ -186,30 +186,30 @@ function NotificationPanel({
     fetchFn,
     state.status === "ready" && state.items.some(needsViewer),
   );
-  const openThread = async (n: KobeNotification, threadId: string) => {
+  const openThread = async (n: KaijuNotification, threadId: string) => {
     if (n.readAt === null) await list.markRead([n.notificationId]);
     onOpenThread(threadId);
   };
-  const openSkill = async (n: KobeNotification, href: string) => {
+  const openSkill = async (n: KaijuNotification, href: string) => {
     if (n.readAt === null) await list.markRead([n.notificationId]);
     onOpenSkill(href);
   };
-  const openLink = async (n: KobeNotification, href: string) => {
+  const openLink = async (n: KaijuNotification, href: string) => {
     if (n.readAt === null) await list.markRead([n.notificationId]);
     onOpenLink(href);
   };
-  const openFiles = async (n: KobeNotification, projectId: string, open: (id: string) => void) => {
+  const openFiles = async (n: KaijuNotification, projectId: string, open: (id: string) => void) => {
     if (n.readAt === null) await list.markRead([n.notificationId]);
     open(projectId);
   };
-  const filesOf = (n: KobeNotification): (() => void) | null =>
+  const filesOf = (n: KaijuNotification): (() => void) | null =>
     onOpenFiles && n.kind.startsWith("git.conversion.") && n.projectId
       ? () => void openFiles(n, n.projectId as string, onOpenFiles)
       : null;
   return (
     <section
       id={id}
-      className={`${styles.notePanel} kobe-panel`}
+      className={`${styles.notePanel} kaiju-panel`}
       aria-label="Notifications"
       hidden={!open}
     >

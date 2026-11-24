@@ -86,7 +86,7 @@ describe("fair use (re-review R-LOW-1)", () => {
   });
 
   it("answers busy in bounded time when no worker ever starts (re-check LOW)", async () => {
-    const dir = mkdtempSync(path.join(tmpdir(), "kobe-pool-"));
+    const dir = mkdtempSync(path.join(tmpdir(), "kaiju-pool-"));
     const hang = path.join(dir, "hang.cjs");
     writeFileSync(hang, "for (;;) {}\n");
     const stuck = createValidatorPool({ size: 1, waitMs: 300, library: hang });

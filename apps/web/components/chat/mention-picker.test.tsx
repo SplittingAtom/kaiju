@@ -2,7 +2,7 @@
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { mentionQueryAt, mentionsIn } from "../../lib/chat/mentions";
 import { composer, openApp } from "./testing";
 
@@ -11,12 +11,12 @@ import { composer, openApp } from "./testing";
  * one (KOBE-756) removes the typed `@query` and shows a file chip; the send appends the chip's
  * marker, which the server turns into the absolute sandbox path.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.workspaceFiles.set("data/sales q3.csv", new Uint8Array(10));
   fake.workspaceFiles.set("reports/summary.md", new Uint8Array(10));
   fake.workspaceFiles.set("projects/p/sales-brief.md", new Uint8Array(10));

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useState } from "react";
-import type { AgentMemorySetting } from "@kobe/protocol";
+import type { AgentMemorySetting } from "@kaiju/protocol";
 import {
   listTeamAgentVersions,
   type AgentVersionSummary,

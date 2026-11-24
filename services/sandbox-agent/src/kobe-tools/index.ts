@@ -6,7 +6,7 @@ import {
   memoryFile,
   notebooksEnabled,
   projectsEnabled,
-  registerKobeTools,
+  registerKaijuTools,
   skillDraftsEnabled,
   type ExtensionApiLike,
 } from "./extension.js";
@@ -37,7 +37,7 @@ let memory = false;
 let memoryPath: string | undefined;
 let connected = false;
 
-export default function kobeTools(pi: ExtensionApiLike): void {
+export default function kaijuTools(pi: ExtensionApiLike): void {
   if (!connected) {
     connected = true;
     files = filesEnabled(process.env);
@@ -53,7 +53,7 @@ export default function kobeTools(pi: ExtensionApiLike): void {
       warn: (message) => process.stderr.write(`${message}\n`),
     });
   }
-  registerKobeTools(pi, transport, {
+  registerKaijuTools(pi, transport, {
     files,
     projects,
     skillDrafts,

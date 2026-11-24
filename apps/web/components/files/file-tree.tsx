@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { ChevronRightIcon, LoaderCircleIcon, type LucideIcon } from "lucide-react";
-import { WORKSPACE_DROP_FOLDER } from "@kobe/protocol";
+import { WORKSPACE_DROP_FOLDER } from "@kaiju/protocol";
 import type { FileEntry } from "../../lib/files/api";
 import { carriesFiles, droppedItems, type DroppedItems } from "../../lib/files/drop";
 import { carriesWorkspaceRow, startRowDrag, startUnmountedDrag } from "../../lib/files/drag";
@@ -32,7 +32,7 @@ import type { FileTree } from "./use-file-tree";
 /** The drag's own type: a tree row being moved or mentioned (never files from the computer). */
 export { TREE_DRAG_TYPE } from "../../lib/files/drag";
 /** Marks the folders that take files dropped from the computer (the rail's zone leaves them). */
-export const DROP_FOLDER_ATTR = "data-kobe-drop-folder";
+export const DROP_FOLDER_ATTR = "data-kaiju-drop-folder";
 /** Indentation per level, px. */
 const INDENT = 12;
 const TYPE_AHEAD_MS = 600;
@@ -256,7 +256,7 @@ function EntryRow({
           aria-label={ACTIVE_LABEL}
           title={ACTIVE_LABEL}
           className="size-2 shrink-0 rounded-full"
-          style={{ backgroundColor: "var(--kobe-active-dot)" }}
+          style={{ backgroundColor: "var(--kaiju-active-dot)" }}
         />
       )}
       <span
@@ -428,7 +428,7 @@ export function FileTreeView({
   focusRequest,
   onFocusChange,
   header,
-  idPrefix = "kobe-files-row",
+  idPrefix = "kaiju-files-row",
   dragRows = true,
 }: {
   /** Row ids start with this (two trees on one page: Projects and My files). */

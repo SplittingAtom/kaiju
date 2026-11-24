@@ -7,8 +7,8 @@ import {
   appNameSchema,
   themeSettingsSchema,
   type ThemeSettings,
-} from "@kobe/protocol";
-import { eq, inArray, siteSettings, type KobeDb, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { eq, inArray, siteSettings, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { logger } from "../logger.js";
 
 /**
@@ -60,7 +60,7 @@ function parseTheme(raw: string | undefined): ThemeSettings {
 }
 
 /** The four settings, each defaulted when unset or unreadable. */
-export async function readBrandingSettings(db: KobeDb | KobeTx): Promise<BrandingSettings> {
+export async function readBrandingSettings(db: KaijuDb | KaijuTx): Promise<BrandingSettings> {
   const rows = await db
     .select({ key: siteSettings.key, value: siteSettings.value })
     .from(siteSettings)
@@ -83,7 +83,7 @@ export async function readBrandingSettings(db: KobeDb | KobeTx): Promise<Brandin
 }
 
 /** The configured app name (mail, titles), "Kaiju" when unset or unreadable. */
-export async function readAppName(db: KobeDb | KobeTx): Promise<string> {
+export async function readAppName(db: KaijuDb | KaijuTx): Promise<string> {
   const [row] = await db
     .select({ value: siteSettings.value })
     .from(siteSettings)
@@ -97,7 +97,7 @@ export function themeLabel(theme: ThemeSettings): string {
 }
 
 /** Writes one setting (insert or update). */
-export async function storeSetting(tx: KobeTx, key: string, value: string): Promise<void> {
+export async function storeSetting(tx: KaijuTx, key: string, value: string): Promise<void> {
   await tx
     .insert(siteSettings)
     .values({ key, value })

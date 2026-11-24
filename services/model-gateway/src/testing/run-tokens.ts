@@ -1,4 +1,4 @@
-import { generateSessionKeyPair } from "@kobe/session-token";
+import { generateSessionKeyPair } from "@kaiju/session-token";
 import type { GatewayOptions } from "../gateway.js";
 
 /** Run token settings for harnesses whose sandboxes carry no run token: enforcement off. */

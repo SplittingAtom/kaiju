@@ -60,7 +60,7 @@ async function runProbe(page: Page, src: string, sandboxed: boolean): Promise<Re
         const frame = document.createElement("iframe");
         if (sandboxed) frame.setAttribute("sandbox", "allow-scripts");
         frame.setAttribute("referrerpolicy", "no-referrer");
-        frame.setAttribute("data-kobe-test", sandboxed ? "app-frame" : "app-frame-header-only");
+        frame.setAttribute("data-kaiju-test", sandboxed ? "app-frame" : "app-frame-header-only");
         frame.title = "app frame probe";
         frame.style.cssText = "position:fixed;right:0;bottom:0;width:320px;height:200px";
         const timer = setTimeout(() => reject(new Error("the probe never reported")), 30_000);
@@ -84,7 +84,7 @@ function expectIsolated(report: Report): void {
   expect(eventOrigin).toBe("null");
   // Network: refused by the policy, not merely unreachable.
   expect(results["fetch_remote"]).toMatch(/^threw:/);
-  expect(results["fetch_kobe"]).toMatch(/^threw:/);
+  expect(results["fetch_kaiju"]).toMatch(/^threw:/);
   expect(results["xhr"]).toBe("error");
   expect(results["websocket"]).not.toBe("reached");
   expect(results["img"]).toBe("error");
@@ -192,11 +192,11 @@ test("an app frame cannot reach the network, Kaiju or the page around it (KOBE-4
   console.log(`webrtc (${test.info().project.name}): ${JSON.stringify(webrtc)}`);
 
   // The form post and the top navigation went nowhere.
-  await expect(page.locator("[data-kobe-test=app-frame]")).toBeAttached();
-  await expect(page.locator("[data-kobe-test=app-frame-header-only]")).toBeAttached();
+  await expect(page.locator("[data-kaiju-test=app-frame]")).toBeAttached();
+  await expect(page.locator("[data-kaiju-test=app-frame-header-only]")).toBeAttached();
   // Only the test's own two frames: the rail may show a live picker frame of its own (KOBE-461).
   for (const id of PROBE_FRAME_IDS) {
-    const handle = await page.locator(`[data-kobe-test=${id}]`).elementHandle();
+    const handle = await page.locator(`[data-kaiju-test=${id}]`).elementHandle();
     const frame = await handle?.contentFrame();
     expect(frame, id).toBeTruthy();
     if (!frame) continue;

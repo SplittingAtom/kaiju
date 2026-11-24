@@ -21,7 +21,7 @@ import {
   notebookRunResultFrameSchema,
 } from "./sandbox-wire/notebook-frames.js";
 import { sandboxToServerFrameSchema, serverToSandboxFrameSchema } from "./sandbox-wire/frames.js";
-import { kobeToolsRequestSchema, kobeToolsResponseSchema } from "./artifacts.js";
+import { kaijuToolsRequestSchema, kaijuToolsResponseSchema } from "./artifacts.js";
 import { BUILTIN_TOOLS } from "./tools.js";
 import { z } from "zod";
 
@@ -161,7 +161,7 @@ describe("run_python input (NB13)", () => {
 
   it("travels on the kobe-tools channel", () => {
     expect(
-      kobeToolsRequestSchema.safeParse({
+      kaijuToolsRequestSchema.safeParse({
         id: "kt_1",
         op: "notebook.run",
         tool_call_id: "call_1",
@@ -179,7 +179,7 @@ describe("run_python input (NB13)", () => {
       truncated: false,
       saved: null,
     };
-    expect(kobeToolsResponseSchema.safeParse(ok).success).toBe(true);
+    expect(kaijuToolsResponseSchema.safeParse(ok).success).toBe(true);
     expect(z.strictObject(notebookRunOkFields).safeParse({ ...ok, id: undefined }).success).toBe(
       false,
     );

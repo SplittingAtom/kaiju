@@ -1,4 +1,4 @@
-import { AUDIT_VIA_AGENT_KEY, sql, withTeam, type KobeDb } from "@kobe/db";
+import { AUDIT_VIA_AGENT_KEY, sql, withTeam, type KaijuDb } from "@kaiju/db";
 import { findThreads } from "../threads/repository.js";
 import { viewerProjectIds } from "../threads/references.js";
 
@@ -44,7 +44,7 @@ interface Event {
 
 /** The threads among `ids` of `teamId` that `userId` may read now (none unless a member). */
 async function openThreads(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   ids: readonly string[],
@@ -61,7 +61,7 @@ async function openThreads(
 
 /** Each event's via-agent view by event id, for `userId` reading the log. */
 export async function viaAgentViews(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   events: readonly Event[],
 ): Promise<Map<string, ViaAgentView>> {
@@ -90,7 +90,7 @@ export async function viaAgentViews(
 
 /** The page's events with `viaAgent` added where one applies (the rest unchanged). */
 export async function withViaAgent<E extends Event>(
-  db: KobeDb,
+  db: KaijuDb,
   userId: string,
   events: readonly E[],
 ): Promise<(E & { viaAgent?: ViaAgentView })[]> {

@@ -23,10 +23,10 @@ import {
   type GitProvider,
   type GitRepoVisibility,
   type GitSealedCredentialRow,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type SealedGitCredential,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -42,7 +42,7 @@ export function auditHost(baseUrl: string): string {
   return new URL(baseUrl).hostname.toLowerCase();
 }
 
-const lockConnections = (tx: KobeTx, teamId: string) =>
+const lockConnections = (tx: KaijuTx, teamId: string) =>
   // Serialises connects per Workspace so the cap (G2) holds under concurrent requests.
   tx.execute(
     sql`SELECT pg_advisory_xact_lock(hashtextextended(${`kobe.git_connections:${teamId}`}, 0))`,
@@ -51,7 +51,7 @@ const lockConnections = (tx: KobeTx, teamId: string) =>
 export type CreateBlock = "connection_limit" | "already_connected";
 
 async function blockOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   baseUrl: string,
   organization: string,
@@ -71,7 +71,7 @@ async function blockOf(
 
 /** A cheap check before probing the host (the insert checks again under the lock). */
 export function precheckCreate(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   baseUrl: string,
   organization: string,
@@ -86,7 +86,7 @@ export function precheckCreate(
 
 /** Agent ids a connection may be limited to (GQ8): the Workspace's agents and roster entries. */
 async function unknownAgents(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   ids: readonly string[] | null | undefined,
 ): Promise<boolean> {
@@ -160,7 +160,7 @@ export type InsertResult =
  * Stores a tested connection: under the Workspace's connect lock, the cap (G2) and the
  * (host, organization) pair are checked again in the same transaction as the insert.
  */
-export async function insertGitConnection(db: KobeDb, n: NewGitConnection): Promise<InsertResult> {
+export async function insertGitConnection(db: KaijuDb, n: NewGitConnection): Promise<InsertResult> {
   try {
     return await withTeam(db, n.teamId, async (tx): Promise<InsertResult> => {
       await lockConnections(tx, n.teamId);
@@ -251,7 +251,7 @@ export type UpdateResult =
 
 /** Changes a connection's settings (G1, G11, GQ8, GQ11); audited when something changed. */
 export function updateGitConnection(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   connectionId: string,
   userId: string,
@@ -327,7 +327,10 @@ export type ReplaceResult =
   | { readonly ok: false; readonly code: "not_found" };
 
 /** Replaces the sealed credential after a passing test (G8); the old ciphertext is overwritten. */
-export function replaceGitCredential(db: KobeDb, r: CredentialReplacement): Promise<ReplaceResult> {
+export function replaceGitCredential(
+  db: KaijuDb,
+  r: CredentialReplacement,
+): Promise<ReplaceResult> {
   return withTeam(db, r.teamId, async (tx): Promise<ReplaceResult> => {
     const [previous] = await tx
       .select({
@@ -392,7 +395,7 @@ export type RemoveResult =
  * the host.
  */
 export function removeGitConnection(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   connectionId: string,
 ): Promise<RemoveResult> {
@@ -449,7 +452,7 @@ export type HealthOutcome =
  * check that raced a credential replacement is dropped (the new credential was just tested).
  */
 export async function storeGitHealth(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   connectionId: string,
   credentialUpdatedAt: Date,

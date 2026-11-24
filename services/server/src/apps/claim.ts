@@ -1,5 +1,5 @@
-import { sql, type KobeTx } from "@kobe/db";
-import { toolInputSchema } from "@kobe/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
+import { toolInputSchema } from "@kaiju/protocol";
 import { appInputDigest, pinnedInputSchema } from "./input-canonical.js";
 
 /**
@@ -40,7 +40,7 @@ const isMcpResult = (e: Event): e is { type: string; payload: ToolResultPayload 
 
 /** Each tool call's input: from this batch's `tool.call`, else the run's stored one. */
 async function inputsOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   events: readonly Event[],
@@ -68,7 +68,7 @@ async function inputsOf(
 }
 
 export async function claimAppResultsInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   runId: string,
   events: readonly Event[],

@@ -1,4 +1,4 @@
-import { scanTeams, sql, type KobeDb, type KobeTx } from "@kobe/db";
+import { scanTeams, sql, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { logger } from "../../logger.js";
 import { CONSOLE_PATHS } from "../../mail/console-paths.js";
 import type { Mailer } from "../../mail/mailer.js";
@@ -22,7 +22,7 @@ import type { Retired } from "./retire.js";
  * request path: the console's install banners are the durable record.
  */
 export interface NotifyDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly mailer: Mailer;
   readonly publicUrl: string;
 }
@@ -70,7 +70,7 @@ const hitSemvers = (r: Retired) =>
   r.before.filter((v) => v.id === r.versionId || r.siblingIds.includes(v.id)).map((v) => v.semver);
 
 /** Revoke's wider circle in a team: who ran it lately, and whose agents name it (review M3). */
-async function everyoneWithIt(tx: KobeTx, teamId: string, r: Retired): Promise<string[]> {
+async function everyoneWithIt(tx: KaijuTx, teamId: string, r: Retired): Promise<string[]> {
   const semvers = hitSemvers(r);
   if (semvers.length === 0) return [];
   const ran = await tx.execute<{ user_id: string }>(sql`
@@ -103,7 +103,7 @@ async function everyoneWithIt(tx: KobeTx, teamId: string, r: Retired): Promise<s
 }
 
 /** Unrevoke: the people this team's revoke notices reached (not a new reckoning). */
-async function revokeRecipients(tx: KobeTx, teamId: string, r: Retired): Promise<string[]> {
+async function revokeRecipients(tx: KaijuTx, teamId: string, r: Retired): Promise<string[]> {
   if (!r.revokedAt || !r.semver) return [];
   const rows = await tx.execute<{ user_id: string }>(sql`
     SELECT DISTINCT user_id FROM notifications
@@ -113,7 +113,7 @@ async function revokeRecipients(tx: KobeTx, teamId: string, r: Retired): Promise
   return rows.rows.map((x) => x.user_id);
 }
 
-async function teamPart(tx: KobeTx, teamId: string, r: Retired) {
+async function teamPart(tx: KaijuTx, teamId: string, r: Retired) {
   // An undone deprecation tells no one: a deprecate–undo loop must not flood installers' bells.
   if (r.act === "undeprecate") return undefined;
   if (r.act === "unrevoke")
@@ -137,7 +137,7 @@ async function teamPart(tx: KobeTx, teamId: string, r: Retired) {
   return write(tx, teamId, r, users);
 }
 
-async function write(tx: KobeTx, teamId: string, r: Retired, users: ReadonlySet<string>) {
+async function write(tx: KaijuTx, teamId: string, r: Retired, users: ReadonlySet<string>) {
   if (users.size === 0) return undefined;
   const kind = kindOf(r);
   // A deprecation told again within a day isn't news: a deprecate–undo loop can't flood bells
@@ -156,7 +156,7 @@ async function write(tx: KobeTx, teamId: string, r: Retired, users: ReadonlySet<
 }
 
 /** Writes the in-app notices; returns how many teams and members were told and whom to email. */
-export async function notifyRetirement(db: KobeDb, r: Retired): Promise<Notified> {
+export async function notifyRetirement(db: KaijuDb, r: Retired): Promise<Notified> {
   const parts = await scanTeams(db, "notifyRetirement", (tx, team) => teamPart(tx, team.id, r));
   const told = new Set(parts.flat());
   const emailTo = new Set<string>();

@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, type KobeDb } from "@kobe/db";
+import { SYSTEM_ACTOR, type KaijuDb } from "@kaiju/db";
 import { currentAuditContext } from "../audit/context.js";
 import { recordAuditAfter, type ServerAuditEvent } from "../audit/record.js";
 import type { IsolationGate } from "../isolation/gate.js";
@@ -49,7 +49,7 @@ export function createSandboxRuntime(
   env: Readonly<Record<string, string | undefined>>,
   isolation: Pick<IsolationGate, "require">,
   /** Audit log (sandbox.created/destroyed); without it the events are not recorded. */
-  db?: KobeDb,
+  db?: KaijuDb,
 ): SandboxRuntime | undefined;
 /**
  * `providerOnly` (the scheduler, KOBE-174): no session keys are read or required. Tokens are
@@ -58,13 +58,13 @@ export function createSandboxRuntime(
 export function createSandboxRuntime(
   env: Readonly<Record<string, string | undefined>>,
   isolation: Pick<IsolationGate, "require">,
-  db: KobeDb | undefined,
+  db: KaijuDb | undefined,
   options: { readonly providerOnly: true },
 ): SandboxProviderRuntime | undefined;
 export function createSandboxRuntime(
   env: Readonly<Record<string, string | undefined>>,
   isolation: Pick<IsolationGate, "require">,
-  db?: KobeDb,
+  db?: KaijuDb,
   options?: { readonly providerOnly: boolean },
 ): SandboxRuntime | SandboxProviderRuntime | undefined {
   const config = options?.providerOnly ? providerOnlyConfig(env) : loadSandboxConfig(env);

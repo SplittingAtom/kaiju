@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mentionMarker } from "@kobe/protocol";
+import { mentionMarker } from "@kaiju/protocol";
 import { MentionStore } from "./mentions";
 
 describe("dropped-file chips in the MentionStore", () => {

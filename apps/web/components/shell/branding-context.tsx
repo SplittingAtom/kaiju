@@ -1,6 +1,6 @@
 "use client";
 
-import type { SiteBranding } from "@kobe/protocol";
+import type { SiteBranding } from "@kaiju/protocol";
 import { createContext, useContext, type ReactNode } from "react";
 import { DEFAULT_BRANDING } from "../../lib/theme/branding-defaults";
 

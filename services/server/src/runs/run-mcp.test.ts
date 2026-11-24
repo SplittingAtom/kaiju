@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PinnedTool } from "@kobe/db";
+import type { PinnedTool } from "@kaiju/db";
 import type { TeamConnector } from "../mcp/catalog.js";
 import { pinnedTool } from "../testing/mcp-fixtures.js";
 import {

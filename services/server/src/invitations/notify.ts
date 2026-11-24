@@ -1,4 +1,4 @@
-import { and, eq, isNull, users, type TeamRole } from "@kobe/db";
+import { and, eq, isNull, users, type TeamRole } from "@kaiju/db";
 import type { ServerDeps } from "../deps.js";
 import { logger } from "../logger.js";
 import { readAppName } from "../branding/settings.js";

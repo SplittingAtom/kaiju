@@ -1,13 +1,13 @@
 import { mkdtemp, rm, stat, symlink, writeFile, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { SYSTEM_PROMPT_MAX_BYTES } from "@kobe/protocol";
+import { SYSTEM_PROMPT_MAX_BYTES } from "@kaiju/protocol";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SystemPromptFile, systemPromptArgs } from "./system-prompt-file.js";
 
 let dir: string;
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), "kobe-prompt-"));
+  dir = await mkdtemp(path.join(tmpdir(), "kaiju-prompt-"));
 });
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });

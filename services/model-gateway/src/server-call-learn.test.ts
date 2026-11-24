@@ -5,7 +5,7 @@ import {
   SERVER_CALL_MAX_MESSAGES,
   SERVER_CALL_RESPONSE_FORMATS,
   type ServerCallClaims,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { describe, expect, it } from "vitest";
 import { checkServerCallBody, serverCallBodyLimit } from "./server-call.js";
 

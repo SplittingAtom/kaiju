@@ -1,4 +1,4 @@
-import { SSO_DEFAULT_MFA_RULE, SSO_TEXT_MAX } from "@kobe/db";
+import { SSO_DEFAULT_MFA_RULE, SSO_TEXT_MAX } from "@kaiju/db";
 import { z } from "zod";
 
 /**

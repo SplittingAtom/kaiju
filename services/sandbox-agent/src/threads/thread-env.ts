@@ -1,9 +1,9 @@
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
 import type {
   PiExtensionUiRequest,
   RepoStatusFrame,
   RunMcpContext,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import type { EgressWiring } from "../egress/egress-wiring.js";
 import type { ExecRelay } from "../exec/relay.js";
 import type { McpWiring } from "../mcp/pi-mcp-config.js";
@@ -46,8 +46,8 @@ export interface ThreadHooks {
   readonly toolsRequest?: (
     threadId: string,
     runId: string | undefined,
-    request: KobeToolsRequest,
-    reply: (response: KobeToolsResponse) => void,
+    request: KaijuToolsRequest,
+    reply: (response: KaijuToolsResponse) => void,
   ) => void;
   /** The thread's tools channel is unusable: every pending request of the thread fails. */
   readonly toolsChannelClosed?: (threadId: string, reason: string) => void;

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { type SessionTokenClaims } from "@kobe/protocol";
+import { type SessionTokenClaims } from "@kaiju/protocol";
 import {
   PI_PINNED_VERSION,
   SANDBOX_WS_PATH,
@@ -9,7 +9,7 @@ import {
   decodeServerFrame,
   type SandboxToServerFrame,
   type ServerToSandboxFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import WebSocket from "ws";
 import type { SandboxLiveness, SessionTokenVerifier } from "../sandbox-wire/types.js";
 import type { ServerDeps } from "../deps.js";

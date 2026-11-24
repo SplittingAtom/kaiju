@@ -3,7 +3,7 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { contextOf, section } from "../../lib/chat/testing/context-fixtures";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { openApp } from "../chat/testing";
 
@@ -11,11 +11,11 @@ import { openApp } from "../chat/testing";
  * KOBE-471: the context gauge opens the context viewer, a panel over the workspace with the raw
  * text (labelled sections, windowed, searchable) and a stacked gauge by kind with its legend.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 beforeEach(() => {
   sessionStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   fake.teamModels.push({
     alias: "kimi",
     label: "Kimi K2.7 Code",

@@ -1,6 +1,6 @@
-import { sql, type KobeDb } from "@kobe/db";
-import { NOTEBOOK_EXEC_OUTPUT_MAX_BYTES, NOTEBOOK_EXEC_OUTPUTS_MAX } from "@kobe/protocol";
-import { type NotebookOutputFrame } from "@kobe/protocol/sandbox-wire";
+import { sql, type KaijuDb } from "@kaiju/db";
+import { NOTEBOOK_EXEC_OUTPUT_MAX_BYTES, NOTEBOOK_EXEC_OUTPUTS_MAX } from "@kaiju/protocol";
+import { type NotebookOutputFrame } from "@kaiju/protocol/sandbox-wire";
 import type { Logger } from "pino";
 import { MAX_APPEND_BATCH, appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import type { NotebookExec } from "./delivery.js";
@@ -15,7 +15,7 @@ import type { NotebookExec } from "./delivery.js";
  * requester reads back every output it will save.
  */
 export interface NotebookIntakeDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly teamId: string;
   readonly runMaxEvents: number;
   readonly log: Pick<Logger, "warn">;

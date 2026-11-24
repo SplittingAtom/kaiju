@@ -12,7 +12,7 @@ import {
   type PlacedFolder,
 } from "../../lib/chat/folder-tree";
 import type { MenuBindings, MenuChoice } from "../../lib/shell/menu";
-import { useChatSession } from "../chat/kobe-runtime";
+import { useChatSession } from "../chat/kaiju-runtime";
 import chat from "../chat/chat.module.css";
 
 export const TOO_DEEP = "Folders go three levels deep";
@@ -35,8 +35,8 @@ export interface FolderActions {
 /** Focuses a node's row in the tree (or the phone dropdown) once it is on screen again. */
 function focusNode(key: string) {
   requestAnimationFrame(() => {
-    const row = document.querySelector<HTMLElement>(`[data-kobe-node="${CSS.escape(key)}"]`);
-    (row ?? document.querySelector<HTMLElement>("[data-kobe-folder-picker]"))?.focus();
+    const row = document.querySelector<HTMLElement>(`[data-kaiju-node="${CSS.escape(key)}"]`);
+    (row ?? document.querySelector<HTMLElement>("[data-kaiju-folder-picker]"))?.focus();
   });
 }
 
@@ -130,7 +130,7 @@ function NameForm({
     });
   };
   return (
-    <form onSubmit={submit} className="flex flex-col gap-1.5" data-kobe-folder-editor="">
+    <form onSubmit={submit} className="flex flex-col gap-1.5" data-kaiju-folder-editor="">
       <input
         aria-label={label}
         aria-invalid={error !== null || undefined}

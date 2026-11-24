@@ -3,7 +3,7 @@
 import { useAuiState } from "@assistant-ui/react";
 import { useSyncExternalStore } from "react";
 import { threadReadOnly } from "../../lib/chat/thread-commands";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 
 const noSubscribe = () => () => {};
 

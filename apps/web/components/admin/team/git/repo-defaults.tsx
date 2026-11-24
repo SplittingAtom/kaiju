@@ -101,7 +101,7 @@ export function RepoDefaultsFields({
           </Select>
         </Field>
         <div className="flex flex-wrap gap-3">
-          <Field label="Name prefix" error={problems["prefix"]} hint="Optional, e.g. kobe-.">
+          <Field label="Name prefix" error={problems["prefix"]} hint="Optional, e.g. kaiju-.">
             <TextInput
               autoComplete="off"
               spellCheck={false}

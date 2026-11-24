@@ -2,7 +2,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { groupThreads, placementCustom } from "../../lib/chat/thread-groups";
 import { must } from "../../lib/testing/must";
 import { SkillTestPane } from "./test-pane";
@@ -18,7 +18,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function openPane(fake: FakeKobe, flush: () => Promise<unknown>) {
+function openPane(fake: FakeKaiju, flush: () => Promise<unknown>) {
   let n = 0;
   return render(
     <SkillTestPane
@@ -34,7 +34,7 @@ function openPane(fake: FakeKobe, flush: () => Promise<unknown>) {
 
 describe("Workbench test pane", () => {
   it("ac-1: saves pending edits, then starts a test chat of this draft with no agent choice", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     const order: string[] = [];
     const flush = vi.fn(async () => {
       order.push("flush");
@@ -68,7 +68,7 @@ describe("Workbench test pane", () => {
   });
 
   it("ac-3: its chats land in the rail's Workbench group", async () => {
-    const fake = new FakeKobe();
+    const fake = new FakeKaiju();
     openPane(fake, async () => null);
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText("Message"), "Hello{Enter}");

@@ -17,7 +17,7 @@ import { pageApi } from "./support/gate5.js";
  * The second test needs a git connection at Read and write in the active Workspace and goes
  * through the dialog on a real project up to, not including, the start. Only with
  * `KOBE_GIT_E2E_CONVERT=1` (opt-in, off by default, review H1) does it also convert: that creates
- * a private repository named `<prefix>kobe-e2e-<unique>` in the organization, which Kaiju never
+ * a private repository named `<prefix>kaiju-e2e-<unique>` in the organization, which Kaiju never
  * deletes (remove it on the host afterwards). Spends no model tokens:
  * `npx playwright test repos-files-panel`.
  */
@@ -91,8 +91,8 @@ async function fakeRepos(page: Page): Promise<{ started: string[] }> {
         connection_id: CONNECTION_ID,
         provider: "github",
         base_url: "https://github.com",
-        full_name: "acme-e2e/kobe-e2e-repo",
-        web_url: "https://github.com/acme-e2e/kobe-e2e-repo",
+        full_name: "acme-e2e/kaiju-e2e-repo",
+        web_url: "https://github.com/acme-e2e/kaiju-e2e-repo",
         default_branch: "main",
         host_state: "active",
         read_only: false,
@@ -168,7 +168,10 @@ test("Repos in Files: git icon, host link, branch, ahead/behind, details, a refu
   const tree = projectsTree(page);
   const repo = tree.getByRole("treeitem", { name: "E2E Repo 768" });
   await expect(repo).toBeVisible({ timeout: SHELL_TIMEOUT_MS });
-  await expect(repo).toHaveAttribute("title", "e2e-repo-768 · github.com · acme-e2e/kobe-e2e-repo");
+  await expect(repo).toHaveAttribute(
+    "title",
+    "e2e-repo-768 · github.com · acme-e2e/kaiju-e2e-repo",
+  );
   await expect(repo.locator("svg.lucide-git-branch")).toHaveCount(1);
   await expect(repo).toContainText("fix");
   await expect(repo).toContainText("↑2 ↓1");
@@ -179,10 +182,10 @@ test("Repos in Files: git icon, host link, branch, ahead/behind, details, a refu
   await expect(menu.getByRole("menuitem", { name: "Open on github.com" })).toBeVisible();
   await menu.getByRole("menuitem", { name: "Repo details…" }).click();
   const details = page.getByRole("dialog", { name: "E2E Repo 768: Repo" });
-  await expect(details.getByText("github.com · acme-e2e/kobe-e2e-repo")).toBeVisible();
+  await expect(details.getByText("github.com · acme-e2e/kaiju-e2e-repo")).toBeVisible();
   const link = details.getByRole("link", { name: "Open on github.com" });
   await expect(link).toHaveAttribute("rel", "noopener noreferrer");
-  await expect(link).toHaveAttribute("href", "https://github.com/acme-e2e/kobe-e2e-repo");
+  await expect(link).toHaveAttribute("href", "https://github.com/acme-e2e/kaiju-e2e-repo");
   await expect(details.getByText(/Your working copy: fix, 2 ahead, 1 behind/)).toBeVisible();
   await expect(details.getByRole("button", { name: "Relink…" })).toBeVisible();
   await expect(details.getByRole("button", { name: "Close" })).toBeFocused();
@@ -199,13 +202,13 @@ test("Repos in Files: git icon, host link, branch, ahead/behind, details, a refu
   const dialog = page.getByRole("dialog", { name: "Convert E2E Plain 768 to a repo" });
   const name = dialog.getByRole("textbox", { name: "Repository name" });
   await expect(name).toBeFocused();
-  await expect(name).toHaveValue("kobe-e2e-plain-768");
+  await expect(name).toHaveValue("kaiju-e2e-plain-768");
   await dialog.getByRole("radio", { name: "One commit of the current files" }).check();
   await dialog.getByRole("button", { name: "Convert" }).click();
   await expect(dialog.getByRole("alert")).toContainText("more than a Repo's mirror can show");
   expect(JSON.parse(seen.started[0] ?? "{}")).toEqual({
     connection_id: CONNECTION_ID,
-    repository_name: "kobe-e2e-plain-768",
+    repository_name: "kaiju-e2e-plain-768",
     carry_history: false,
   });
 });
@@ -237,7 +240,7 @@ test("Convert to repo on a real project (needs a git connection at Read and writ
     page,
     "POST",
     "/v1/projects",
-    { name: `Kaiju e2e ${unique}`, slug: `kobe-e2e-${unique}` },
+    { name: `Kaiju e2e ${unique}`, slug: `kaiju-e2e-${unique}` },
   );
   expect(made.status, JSON.stringify(made.json)).toBe(201);
   const uploaded = await page.evaluate(async (id) => {
@@ -266,7 +269,7 @@ test("Convert to repo on a real project (needs a git connection at Read and writ
       .click();
     const dialog = page.getByRole("dialog", { name: `Convert ${made.json.name} to a repo` });
     await expect(dialog.getByRole("textbox", { name: "Repository name" })).toHaveValue(
-      new RegExp(`kobe-e2e-${unique}$`),
+      new RegExp(`kaiju-e2e-${unique}$`),
     );
     await expect(dialog.getByText(/^An? (private|internal) repository in /)).toBeVisible();
     await dialog.getByRole("radio", { name: "One commit of the current files" }).check();

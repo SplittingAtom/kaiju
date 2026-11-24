@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUILTIN_TOOLS, builtinToolDescriptor, kobeToolsRequestSchema } from "./index.js";
+import { BUILTIN_TOOLS, builtinToolDescriptor, kaijuToolsRequestSchema } from "./index.js";
 import {
   decodeSandboxFrame,
   decodeServerFrame,
@@ -12,7 +12,7 @@ describe("retired web_search", () => {
     expect(Object.keys(BUILTIN_TOOLS)).not.toContain("web_search");
     expect(builtinToolDescriptor("web_search")).toBeUndefined();
     const req = { id: "k1", op: "web_search", tool_call_id: "c", tool: "web_search", input: {} };
-    expect(kobeToolsRequestSchema.safeParse(req).success).toBe(false);
+    expect(kaijuToolsRequestSchema.safeParse(req).success).toBe(false);
   });
 
   it("still decodes an old agent's query frame, whatever its input", () => {

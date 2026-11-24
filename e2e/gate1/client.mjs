@@ -135,7 +135,7 @@ function expectedReply(prompt, words) {
 // --- fixtures -------------------------------------------------------------------------------
 
 async function db() {
-  const { createDb } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { createDb } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   return createDb(process.env.KOBE_DATABASE_URL, { max: 2 });
 }
 
@@ -379,7 +379,7 @@ async function chat() {
 /** Open wire connections per (team, user), read as the app role inside each team (RLS). */
 async function connections() {
   const database = await db();
-  const { withTeam, sql } = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const { withTeam, sql } = await import("/app/node_modules/@kaiju/db/dist/index.js");
   try {
     for (const u of config.users) {
       const rows = await withTeam(database.db, u.teamId, (tx) =>
@@ -440,7 +440,7 @@ async function mint() {
  */
 async function probe() {
   const database = await db();
-  const kdb = await import("/app/node_modules/@kobe/db/dist/index.js");
+  const kdb = await import("/app/node_modules/@kaiju/db/dist/index.js");
   const { withTeam, sql, TEAM_TABLES, quoteIdent } = kdb;
   const [a, b] = config.teams;
   let outside = 0;

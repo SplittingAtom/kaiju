@@ -11,7 +11,7 @@ import { TIMEOUT_BIN, toolCommandRunner } from "./tool-command.js";
  * tools' environment; never as the agent's own uid when the tools are another one (review L5).
  * The helper here is a stand-in that records the uid it was asked for and runs the rest.
  */
-const root = mkdtempSync(path.join(tmpdir(), "kobe-tool-command-"));
+const root = mkdtempSync(path.join(tmpdir(), "kaiju-tool-command-"));
 const log = path.join(root, "helper.log");
 const helper = path.join(root, "kobe-runas");
 writeFileSync(helper, `#!/bin/sh\nprintf '%s\\n' "$*" >> '${log}'\nshift\nexec "$@"\n`);

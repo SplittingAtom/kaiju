@@ -1,4 +1,4 @@
-import { sql, withTeam, type KobeDb } from "@kobe/db";
+import { sql, withTeam, type KaijuDb } from "@kaiju/db";
 import type { z } from "zod";
 import {
   notebookExecuteResultSchema,
@@ -9,7 +9,7 @@ import {
   type NotebookFinishedPayload,
   type NotebookOutput,
   type NotebookStartedPayload,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { AppendError, appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import type { CommandOutcome } from "../sandbox-wire/types.js";
@@ -110,7 +110,7 @@ export interface Execution {
 }
 
 export interface ExecutionDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly files: NotebookFiles;
   readonly log: Pick<Logger, "warn" | "error">;
 }
@@ -140,7 +140,7 @@ export function startedPayload(e: Execution): NotebookStartedPayload {
   };
 }
 
-export async function recordStarted(db: KobeDb, e: Execution): Promise<void> {
+export async function recordStarted(db: KaijuDb, e: Execution): Promise<void> {
   await withAppendTx(db, e.owner.teamId, (tx) =>
     appendRunEventsInTx(tx, e.owner.teamId, e.runId, [
       { type: "notebook.started", payload: startedPayload(e) },
@@ -248,7 +248,7 @@ function logDropped(deps: ExecutionDeps, e: Execution, fields: readonly string[]
 
 /** The execution's outputs as the server stored them, in order. */
 export async function readOutputs(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   runId: string,
   execId: string,

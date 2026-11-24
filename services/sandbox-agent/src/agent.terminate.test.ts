@@ -1,5 +1,5 @@
-import { formatTraceparent, runTraceId } from "@kobe/protocol";
-import { parseSandboxSpan, type SandboxToServerFrame } from "@kobe/protocol/sandbox-wire";
+import { formatTraceparent, runTraceId } from "@kaiju/protocol";
+import { parseSandboxSpan, type SandboxToServerFrame } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import { RUN, THREAD, runStart, startHarness, until, type Harness } from "./testing/harness.js";
 

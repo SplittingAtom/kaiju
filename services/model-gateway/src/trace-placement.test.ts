@@ -1,12 +1,12 @@
-import { runRootSpanId, runTraceId, type ServerCallClaims } from "@kobe/protocol";
-import { deriveTraceSpanKey } from "@kobe/protocol/node";
+import { runRootSpanId, runTraceId, type ServerCallClaims } from "@kaiju/protocol";
+import { deriveTraceSpanKey } from "@kaiju/protocol/node";
 import {
   InMemorySpanExporter,
   initTelemetry,
   trace,
   type Context,
   type Telemetry,
-} from "@kobe/telemetry";
+} from "@kaiju/telemetry";
 import { afterEach, describe, expect, it } from "vitest";
 import { placeRequestSpan, type GatewayTracing } from "./trace-placement.js";
 

@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Trace workspace dependencies from the monorepo root so the standalone bundle is complete.
   outputFileTracingRoot: fileURLToPath(new URL("../../", import.meta.url)),
-  transpilePackages: ["@kobe/protocol"],
+  transpilePackages: ["@kaiju/protocol"],
   poweredByHeader: false,
   env: { KOBE_BUILD_ID: buildId },
   generateBuildId: () => buildId,

@@ -1,4 +1,4 @@
-import { sql, type KobeDb } from "@kobe/db";
+import { sql, type KaijuDb } from "@kaiju/db";
 import { hostStandings } from "../../egress/host-standing.js";
 import { listMaintainers, type Maintainer } from "./maintainers.js";
 import { similarCatalogNames } from "./names-db.js";
@@ -106,7 +106,7 @@ function capabilitiesOf(manifest: Record<string, unknown>) {
   return { egress, packages };
 }
 
-async function findingsOf(db: KobeDb, v: { id: string; scan: Record<string, unknown> }) {
+async function findingsOf(db: KaijuDb, v: { id: string; scan: Record<string, unknown> }) {
   const raw = Array.isArray(v.scan.findings) ? (v.scan.findings as Record<string, unknown>[]) : [];
   const acks = await acknowledgements(db, v.id);
   const own = raw.map((f): ReviewFinding => {
@@ -144,14 +144,14 @@ async function findingsOf(db: KobeDb, v: { id: string; scan: Record<string, unkn
   ];
 }
 
-async function teamName(db: KobeDb, teamId: unknown): Promise<string | null> {
+async function teamName(db: KaijuDb, teamId: unknown): Promise<string | null> {
   if (typeof teamId !== "string") return null;
   const res = await db.execute<{ name: string }>(sql`SELECT name FROM teams WHERE id = ${teamId}`);
   return res.rows[0]?.name ?? null;
 }
 
 export async function reviewDetail(
-  db: KobeDb,
+  db: KaijuDb,
   versionId: string,
   callerId: string,
 ): Promise<ReviewDetail | null> {

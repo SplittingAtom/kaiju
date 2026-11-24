@@ -74,11 +74,11 @@ export function RebuildWorkspaceDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal container={chatPortalContainer()}>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kobe-portal />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kaiju-portal />
         <Dialog.Content
           className="bg-background text-foreground fixed top-1/2 left-1/2 z-50 grid w-[min(30rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 gap-3 rounded-lg border p-5 shadow-lg"
           data-rebuild-workspace-dialog
-          data-kobe-portal
+          data-kaiju-portal
         >
           <Dialog.Title className="m-0 text-base font-semibold">
             Rebuild {whose} sandbox from the last sync?

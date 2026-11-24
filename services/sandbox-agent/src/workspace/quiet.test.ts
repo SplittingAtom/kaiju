@@ -13,7 +13,7 @@ afterEach(async () => {
 async function proc(
   entries: readonly { pid: number; ppid: number; uid: number; state?: string }[],
 ): Promise<string> {
-  const root = await mkdtemp(path.join(tmpdir(), "kobe-proc-"));
+  const root = await mkdtemp(path.join(tmpdir(), "kaiju-proc-"));
   roots.push(root);
   for (const e of entries) {
     await mkdir(path.join(root, String(e.pid)));

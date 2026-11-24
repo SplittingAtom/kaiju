@@ -6,7 +6,7 @@ import {
   NOTEBOOK_TRUNCATED_PREFIX,
   notebookOutputSchema,
   type NotebookOutput,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
  * Kaiju's caps on what a kernel prints (docs/specs/notebooks.md NB4, NB9), applied before anything

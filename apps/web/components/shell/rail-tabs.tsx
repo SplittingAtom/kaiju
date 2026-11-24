@@ -6,8 +6,8 @@ import styles from "./rail.module.css";
 
 /** The rail section's tabs and their panels' ids (KOBE-448). */
 export const RAIL_TAB_IDS = {
-  files: { tab: "kobe-rail-tab-files", panel: "kobe-rail-files" },
-  apps: { tab: "kobe-rail-tab-apps", panel: "kobe-rail-apps" },
+  files: { tab: "kaiju-rail-tab-files", panel: "kaiju-rail-files" },
+  apps: { tab: "kaiju-rail-tab-apps", panel: "kaiju-rail-apps" },
 } as const;
 
 const ORDER: readonly RailTab[] = ["files", "apps"];

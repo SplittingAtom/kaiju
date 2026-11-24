@@ -1,5 +1,5 @@
-import type { SemanticMemoryScope, SiteGrant } from "@kobe/protocol";
-import type { TeamRole } from "@kobe/db";
+import type { SemanticMemoryScope, SiteGrant } from "@kaiju/protocol";
+import type { TeamRole } from "@kaiju/db";
 import {
   siteMemoryAllows,
   siteMemoryWriteAllows,

@@ -1,11 +1,11 @@
 import { Hono, type Context } from "hono";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import {
   LEARN_REFUSAL_HTTP_STATUS,
   learnStartRequestSchema,
   type LearnRefusal,
   type LearnStartResponse,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { requireTeam, requireTeamPermission, type TeamVariables } from "../authz/middleware.js";
 import type { ServerDeps } from "../deps.js";
 import { readLearnState } from "../memory/learn/state.js";

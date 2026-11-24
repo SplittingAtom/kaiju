@@ -4,8 +4,15 @@ import {
   type RememberLimits,
   type RememberScope,
   type ToolRegistry,
-} from "@kobe/protocol";
-import { sql, SYSTEM_ACTOR, withTeam, type AuditActor, type KobeDb, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import {
+  sql,
+  SYSTEM_ACTOR,
+  withTeam,
+  type AuditActor,
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { liveUserRule } from "./live-rule.js";
 import { readTeamRememberLimits } from "./remember-limits-store.js";
 import { RULE_REFUSAL_TEXT, rememberedRuleRefusal } from "./remember-limits.js";
@@ -133,7 +140,7 @@ async function view(
 
 /** Live user rules in the team, of one member (`userId`) or of every member (team admins). */
 async function listLive(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string | undefined,
   judge: RuleJudge,
@@ -164,7 +171,7 @@ async function listLive(
 
 /** The member's own live remembered approvals (My area, Approvals), each judged as the engine would. */
 export function listUserRules(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   judge: RuleJudge,
@@ -178,7 +185,7 @@ export function listUserRules(
  * no thread title or argument values unless the thread is shared (D18).
  */
 export function listMemberRules(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   judge: RuleJudge,
   now: Date = new Date(),
@@ -188,7 +195,7 @@ export function listMemberRules(
 
 /** Deletes one user rule in the team (only `userId`'s when given), audited; false if none. */
 async function deleteOne(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   id: string,
   userId: string | undefined,
@@ -210,7 +217,7 @@ async function deleteOne(
  * once: the engine reads rules per decision.
  */
 export function deleteUserRule(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   id: string,
@@ -219,7 +226,7 @@ export function deleteUserRule(
 }
 
 /** A team admin revokes any member's remember-rule in their own team (RLS keeps it there). */
-export function deleteMemberRule(db: KobeDb, teamId: string, id: string): Promise<boolean> {
+export function deleteMemberRule(db: KaijuDb, teamId: string, id: string): Promise<boolean> {
   return withTeam(db, teamId, (tx) => deleteOne(tx, teamId, id, undefined));
 }
 
@@ -229,7 +236,7 @@ export function deleteMemberRule(db: KobeDb, teamId: string, id: string): Promis
  * the system. Called before a new rule is counted against the cap.
  */
 export async function pruneEndedUserRules(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userId: string,
   now: Date,
@@ -245,7 +252,7 @@ export async function pruneEndedUserRules(
   return res.rows.length;
 }
 
-async function auditEnded(tx: KobeTx, teamId: string, rows: readonly RawRule[]): Promise<number> {
+async function auditEnded(tx: KaijuTx, teamId: string, rows: readonly RawRule[]): Promise<number> {
   for (const row of rows) {
     await auditRule(tx, "policy.rule.deleted", storedFromRaw(row), teamId, SYSTEM_ACTOR);
   }
@@ -259,7 +266,7 @@ async function auditEnded(tx: KobeTx, teamId: string, rows: readonly RawRule[]):
  * brings them back.
  */
 export async function endThreadRules(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadIds: readonly string[],
 ): Promise<number> {
@@ -278,7 +285,7 @@ export async function endThreadRules(
  * regaining access never brings them back (review S2).
  */
 export async function endUnreachableThreadRules(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   now: Date = new Date(),
 ): Promise<number> {

@@ -10,10 +10,10 @@ import {
   teamMembers,
   users,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type TeamRole,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { normalizeEmail } from "../invitations/site-invites.js";
 import { SITE_ADMIN_VIA } from "./members.js";
@@ -60,7 +60,7 @@ class Refused extends Error {
  * the caller's (after the commit).
  */
 export async function addExistingMembers(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   input: { readonly userIds: readonly string[]; readonly role: TeamRole; readonly actorId: string },
 ): Promise<AddMembersResult> {
@@ -78,7 +78,7 @@ export async function addExistingMembers(
 }
 
 async function addInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   userIds: readonly string[],
   input: { readonly role: TeamRole; readonly actorId: string },
@@ -155,7 +155,7 @@ export interface Candidate {
  * already members, never the caller, matched by name or email (case-insensitive substring), at most {@link CANDIDATES_MAX}.
  */
 export async function searchCandidates(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   input: { readonly query: string; readonly actorId: string },
 ): Promise<Candidate[]> {

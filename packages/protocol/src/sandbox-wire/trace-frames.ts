@@ -109,7 +109,7 @@ export const TRACE_SPAN_CLOCK_SKEW_MS = 60_000;
 export const TRACE_SPAN_MAX_DEPTH = 8;
 /** Most attributes any sandbox span may carry (the per-name schemas stay under it). */
 export const SANDBOX_SPAN_MAX_ATTRIBUTES = 16;
-/** Longest content attribute; equals `MAX_CAPTURED_CHARS` of `@kobe/telemetry`. */
+/** Longest content attribute; equals `MAX_CAPTURED_CHARS` of `@kaiju/telemetry`. */
 export const SANDBOX_SPAN_CONTENT_MAX_CHARS = 4096;
 /** Plausible epoch-millisecond range of a span time (2001 .. 2286); the server clamps further. */
 export const SANDBOX_SPAN_TIME_MIN_MS = 1e12;

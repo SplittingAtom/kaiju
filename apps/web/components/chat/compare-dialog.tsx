@@ -21,7 +21,7 @@ import { cn } from "../../lib/utils";
 import { useShellBand } from "../shell/shell-band";
 import { Button } from "../ui/button";
 import { chatPortalContainer } from "../ui/chat-portal";
-import type { KobeThreadExtras } from "./kobe-runtime";
+import type { KaijuThreadExtras } from "./kaiju-runtime";
 import { MessageFooter } from "./message-footer";
 import { ReadOnlyAnswer, ReadOnlyPrompt } from "./messages";
 import styles from "./compare-dialog.module.css";
@@ -76,7 +76,7 @@ export function CompareDialog({
   labelOf,
   onClose,
 }: {
-  readonly extras: KobeThreadExtras;
+  readonly extras: KaijuThreadExtras;
   readonly messageId: string;
   /** Start from this message (left column) rather than the two newest. */
   readonly picked?: boolean | undefined;
@@ -149,11 +149,11 @@ function CompareFrame({
   return (
     <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal container={chatPortalContainer()}>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kobe-portal />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kaiju-portal />
         <Dialog.Content
           className={cn(styles.dialog, "shadow-lg", sheet && styles.sheet)}
-          data-kobe-portal
-          data-kobe-compare={sheet ? "sheet" : "dialog"}
+          data-kaiju-portal
+          data-kaiju-compare={sheet ? "sheet" : "dialog"}
         >
           <div className={styles.top}>
             <div className={styles.heading}>
@@ -225,8 +225,8 @@ function VersionColumn({
     <section
       role="region"
       aria-label={title}
-      className={`${styles.column} kobe-panel`}
-      data-kobe-compare-column={SIDES[side]}
+      className={`${styles.column} kaiju-panel`}
+      data-kaiju-compare-column={SIDES[side]}
     >
       {answer === null ? (
         <>

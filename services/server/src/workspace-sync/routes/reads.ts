@@ -1,5 +1,5 @@
-import { workspaceBlobsMissingRequestSchema } from "@kobe/protocol/sandbox-wire";
-import { WORKSPACE_MAX_BATCH } from "@kobe/protocol";
+import { workspaceBlobsMissingRequestSchema } from "@kaiju/protocol/sandbox-wire";
+import { WORKSPACE_MAX_BATCH } from "@kaiju/protocol";
 import { Hono } from "hono";
 import { checkoutRefs } from "../checkouts.js";
 import { lostBlobs } from "../lost.js";

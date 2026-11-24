@@ -86,7 +86,7 @@ describe("AES-256-GCM", () => {
   });
 
   it("streams a file through and refuses a tampered one, leaving no plaintext behind", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "kobe-crypto-"));
+    const dir = await mkdtemp(join(tmpdir(), "kaiju-crypto-"));
     const plain = randomBytes(300_000);
     const sealedPath = join(dir, "database.dump.enc");
     const header = await encryptStream(

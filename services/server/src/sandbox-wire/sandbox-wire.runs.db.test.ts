@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { SANDBOX_CLOSE_CODES, SANDBOX_MAX_FRAME_BYTES } from "@kobe/protocol/sandbox-wire";
-import { sql, withTeam } from "@kobe/db";
+import { SANDBOX_CLOSE_CODES, SANDBOX_MAX_FRAME_BYTES } from "@kaiju/protocol/sandbox-wire";
+import { sql, withTeam } from "@kaiju/db";
 import { FakeSandbox, isFake } from "../testing/fake-sandbox.js";
 import {
   fx,
@@ -337,11 +337,11 @@ describe("leasing and the compromised-sandbox suite", () => {
     sb.hello(sandboxId);
     await sb.ready();
     await fx.activate(w.owner, w.team);
-    const res = await fx.replica(0).app.request(`http://kobe.test/v1/team/members/${member.id}`, {
+    const res = await fx.replica(0).app.request(`http://kaiju.test/v1/team/members/${member.id}`, {
       method: "DELETE",
       headers: {
         cookie: [...w.owner.browser.cookies].map(([k, v]) => `${k}=${v}`).join("; "),
-        origin: "http://kobe.test",
+        origin: "http://kaiju.test",
         "x-kobe-team": w.team,
         "x-forwarded-for": w.owner.browser.ip,
       },

@@ -3,7 +3,7 @@ import {
   threadFolderSchema,
   threadFoldersResponseSchema,
   updateThreadFolderRequestSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { z } from "zod";
 
 /**

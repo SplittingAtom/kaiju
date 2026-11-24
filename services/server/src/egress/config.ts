@@ -1,4 +1,4 @@
-import { MIN_SECRET_LENGTH } from "@kobe/db";
+import { MIN_SECRET_LENGTH } from "@kaiju/db";
 import { z } from "zod";
 
 /**

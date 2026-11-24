@@ -1,5 +1,5 @@
-import { APP_CONTEXT_PREAMBLE, type AppContextPart } from "@kobe/protocol";
-import type { KobeDb } from "@kobe/db";
+import { APP_CONTEXT_PREAMBLE, type AppContextPart } from "@kaiju/protocol";
+import type { KaijuDb } from "@kaiju/db";
 import { memberApps } from "./catalog.js";
 
 /**
@@ -52,7 +52,7 @@ export function withAppContext(contexts: readonly ResolvedAppContext[], text: st
 
 /** Each part, if it names a live app of the member with the same template; else undefined. */
 export async function resolveAppContexts(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   userId: string,
   parts: readonly AppContextPart[],

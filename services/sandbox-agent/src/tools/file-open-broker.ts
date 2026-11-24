@@ -1,5 +1,5 @@
-import type { KobeToolsRequest, KobeToolsResponse } from "@kobe/protocol";
-import type { FileOpenFrame, FileOpenResultFrame } from "@kobe/protocol/sandbox-wire";
+import type { KaijuToolsRequest, KaijuToolsResponse } from "@kaiju/protocol";
+import type { FileOpenFrame, FileOpenResultFrame } from "@kaiju/protocol/sandbox-wire";
 import type { PushedFile } from "../workspace/sync.js";
 import { toolsError } from "./channel.js";
 import { PendingRequests } from "./pending-requests.js";
@@ -17,7 +17,7 @@ import { resolveWorkspaceFile, SharePathError } from "./share-path.js";
 export const MAX_PENDING_OPENS = 16;
 export const MAX_PENDING_OPENS_PER_THREAD = 4;
 
-type OpenRequest = Extract<KobeToolsRequest, { op: "file.open" }>;
+type OpenRequest = Extract<KaijuToolsRequest, { op: "file.open" }>;
 
 export interface FileOpenBrokerDeps {
   /** The workspace root (`KOBE_WORKSPACE_DIR`). */
@@ -44,7 +44,7 @@ export class FileOpenBroker {
     threadId: string,
     runId: string | undefined,
     request: OpenRequest,
-    reply: (response: KobeToolsResponse) => void,
+    reply: (response: KaijuToolsResponse) => void,
   ): void {
     if (runId === undefined) {
       reply(toolsError(request.id, "not_allowed", "no active run on this thread"));

@@ -5,12 +5,12 @@ import {
   startLocalGateway,
   type GateDecision,
   type LocalGateway,
-} from "@kobe/model-gateway/testing";
+} from "@kaiju/model-gateway/testing";
 import {
-  parseKobeModelError,
+  parseKaijuModelError,
   type PiModelApi,
   type SandboxToServerFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ModelTokenSource, ModelWiring } from "./models/types.js";
 import { RUN, RUN_2, runStart, startHarness, type Harness } from "./testing/harness.js";
@@ -219,7 +219,7 @@ describe.skipIf(!PI_AVAILABLE)("kobe-models in real Pi, through the real model g
   it("fails a run on a model the team has not enabled with model_not_enabled (403 from the shim)", async () => {
     const { h, gateway } = await start();
     const events = await run(h, RUN, "nope", { ...OPENAI, gateway_model: "openai/not-enabled" });
-    expect(parseKobeModelError(lastAssistantError(events))).toBe("model_not_enabled");
+    expect(parseKaijuModelError(lastAssistantError(events))).toBe("model_not_enabled");
     expect(textOf(events)).toBe("");
     expect(gateway.calls.map((c) => c.status)).toEqual([403]);
     expect(gateway.seen).toEqual([]);
@@ -230,7 +230,7 @@ describe.skipIf(!PI_AVAILABLE)("kobe-models in real Pi, through the real model g
     expect(textOf(await run(h, RUN, "a", OPENAI))).toBe("fake-openai: a");
     tokens.rotate(gateway.mintToken({ expiresInSeconds: -5 }));
     const refused = await run(h, RUN_2, "b", OPENAI);
-    expect(parseKobeModelError(lastAssistantError(refused))).toBe("model_session_revoked");
+    expect(parseKaijuModelError(lastAssistantError(refused))).toBe("model_session_revoked");
     tokens.rotate(gateway.mintToken());
     expect(textOf(await run(h, RUN_3, "c", OPENAI))).toBe("fake-openai: c");
     expect(h.server.frames("pi.exited")).toEqual([]);

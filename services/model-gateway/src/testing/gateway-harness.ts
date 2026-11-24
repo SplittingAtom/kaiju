@@ -1,15 +1,20 @@
 import { randomUUID } from "node:crypto";
 import { createServer, type IncomingHttpHeaders, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { SecretBox, VIRTUAL_KEY_PURPOSE, virtualKeyContext, type GatewayPrincipal } from "@kobe/db";
-import type { SessionTokenAudience } from "@kobe/protocol";
-import { deriveTraceSpanKey } from "@kobe/protocol/node";
+import {
+  SecretBox,
+  VIRTUAL_KEY_PURPOSE,
+  virtualKeyContext,
+  type GatewayPrincipal,
+} from "@kaiju/db";
+import type { SessionTokenAudience } from "@kaiju/protocol";
+import { deriveTraceSpanKey } from "@kaiju/protocol/node";
 import {
   generateSessionKeyPair,
   signSessionToken,
   verifySessionToken,
   type SessionSigningKey,
-} from "@kobe/session-token";
+} from "@kaiju/session-token";
 import pino from "pino";
 import { afterAll, afterEach, beforeAll, beforeEach } from "vitest";
 import { createModelGateway } from "../gateway.js";

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, inject, it } from "vitest";
-import { createDb, type KobeDatabase } from "./client.js";
+import { createDb, type KaijuDatabase } from "./client.js";
 import { withTeam } from "./with-team.js";
 
 /**
@@ -20,7 +20,7 @@ const REPLAY = `SELECT d.scope, d.path, v.version
  WHERE v.team_id = $1 AND v.run_id = $2 AND v.tool_call_id = $3`;
 
 const admin = new pg.Client({ connectionString: inject("adminUrl") });
-let app: KobeDatabase;
+let app: KaijuDatabase;
 let team = "";
 let run = "";
 
@@ -106,14 +106,14 @@ describe("memory_doc_versions_tool_call_idx (KOBE-229)", () => {
       )) as unknown as { rows: { "QUERY PLAN": PlanNode[] }[] };
       // A prepared statement (as drizzle's parameters can end up) plans without the values.
       await tx.execute(sql`SET LOCAL plan_cache_mode = force_generic_plan`);
-      await tx.execute(sql.raw(`PREPARE kobe_229_replay(uuid, uuid, text) AS ${REPLAY}`));
+      await tx.execute(sql.raw(`PREPARE kaiju_229_replay(uuid, uuid, text) AS ${REPLAY}`));
       try {
         const generic = (await tx.execute(
-          sql.raw(`EXPLAIN (FORMAT JSON) EXECUTE kobe_229_replay('${team}', '${run}', 'call-40')`),
+          sql.raw(`EXPLAIN (FORMAT JSON) EXECUTE kaiju_229_replay('${team}', '${run}', 'call-40')`),
         )) as unknown as { rows: { "QUERY PLAN": PlanNode[] }[] };
         return [literal, generic].map((r) => r.rows[0]?.["QUERY PLAN"][0] as unknown as PlanNode);
       } finally {
-        await tx.execute(sql`DEALLOCATE kobe_229_replay`);
+        await tx.execute(sql`DEALLOCATE kaiju_229_replay`);
       }
     });
     for (const plan of plans) {

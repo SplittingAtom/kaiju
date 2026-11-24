@@ -1,4 +1,4 @@
-import type { SessionTokenClaims } from "@kobe/protocol";
+import type { SessionTokenClaims } from "@kaiju/protocol";
 import {
   SessionTokenError,
   verifySessionToken,
@@ -6,7 +6,7 @@ import {
   type SessionVerifyKeys,
   type SiteEgressClaims,
   type SiteEgressPurpose,
-} from "@kobe/session-token";
+} from "@kaiju/session-token";
 
 /**
  * Sandbox authentication to the egress proxy (spec D28, D13): the sandbox's `kobe.egress-proxy`

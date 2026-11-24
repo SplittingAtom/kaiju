@@ -1,5 +1,5 @@
 import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
-import { eq, sessionSsoContexts, users, type KobeDb } from "@kobe/db";
+import { eq, sessionSsoContexts, users, type KaijuDb } from "@kaiju/db";
 import { passkeyIsLastSignIn } from "../sso/linking.js";
 import { ssoRequired } from "../sso/required.js";
 import { SSO_OFF, type SsoSettings } from "../sso/settings.js";
@@ -50,7 +50,7 @@ const SSO_MFA_REQUIRED = {
 };
 
 /** The session is a single sign-on session whose sign-in did not prove MFA. */
-async function ssoSessionWithoutMfa(db: KobeDb, sessionId: string): Promise<boolean> {
+async function ssoSessionWithoutMfa(db: KaijuDb, sessionId: string): Promise<boolean> {
   const [row] = await db
     .select({ mfaSatisfied: sessionSsoContexts.mfaSatisfied })
     .from(sessionSsoContexts)
@@ -78,7 +78,7 @@ const SETUP_OWNER_LOCAL_ONLY = {
 
 /** The session is an SSO session of the setup Owner. */
 async function setupOwnerSsoSession(
-  db: KobeDb,
+  db: KaijuDb,
   session: { readonly id: string; readonly userId: string },
 ): Promise<boolean> {
   const [row] = await db
@@ -129,7 +129,7 @@ const PASSKEY_VERIFY_PATHS = new Set([
  * verification), and a password change revoking the other sessions.
  */
 export function authGuards(o: {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly ssoSettings: SsoSettings | undefined;
   readonly rotation: SessionRotation;
 }) {

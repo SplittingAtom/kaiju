@@ -28,7 +28,7 @@ import { useNavigate } from "../../shell/use-navigate";
 import { MutationStatus } from "../error-notice";
 import { DateTime, ResourceView } from "../parts";
 import { useMutation, useResource } from "../use-resource";
-import { DetachedBadge, KobePanel } from "./catalog-kobe-panel";
+import { DetachedBadge, KaijuPanel } from "./catalog-kaiju-panel";
 import { CatalogVersionPanel } from "./catalog-version-panel";
 
 export const CATALOG_HOME = "/admin/site/skill-tags";
@@ -190,7 +190,7 @@ function SkillView({
           </p>
         </Notice>
       )}
-      <KobePanel skillId={skill.id} name={skill.name} kobe={skill.kobe} onReset={reload} />
+      <KaijuPanel skillId={skill.id} name={skill.name} kobe={skill.kobe} onReset={reload} />
       <MutationStatus error={mutation.error} notice={mutation.notice} />
       <Section title="Versions">
         <Versions

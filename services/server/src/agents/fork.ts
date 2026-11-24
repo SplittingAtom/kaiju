@@ -1,5 +1,5 @@
-import type { AgentDefinition } from "@kobe/agent-file";
-import { and, eq, siteAgents, withTeam, type KobeDb } from "@kobe/db";
+import type { AgentDefinition } from "@kaiju/agent-file";
+import { and, eq, siteAgents, withTeam, type KaijuDb } from "@kaiju/db";
 import type { ForkVia } from "./access.js";
 import { siteEntry, teamEntry } from "./roster.js";
 import { findAgent, SITE, toRecord, type AgentLocation, type AgentRecord } from "./store.js";
@@ -23,7 +23,7 @@ export interface ForkSource {
 /** An entry that lends the agent to its roster: assigned (active, or suspended site-wide). */
 const lends = (state: string | undefined) => state === "active" || state === "suspended";
 
-async function boundTeamOf(db: KobeDb, agentId: string): Promise<string | null> {
+async function boundTeamOf(db: KaijuDb, agentId: string): Promise<string | null> {
   const [row] = await db
     .select({ boundTeamId: siteAgents.boundTeamId })
     .from(siteAgents)
@@ -32,7 +32,7 @@ async function boundTeamOf(db: KobeDb, agentId: string): Promise<string | null> 
 }
 
 export async function findForkSource(
-  db: KobeDb,
+  db: KaijuDb,
   caller: { readonly teamId: string; readonly userId: string },
   agentId: string,
 ): Promise<ForkSource | null> {
@@ -54,7 +54,7 @@ export async function findForkSource(
 
 /** Someone else's personal agent lent to the site roster (unbound fork) or the team's (bound). */
 async function lentPersonalAgent(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   agentId: string,
 ): Promise<ForkSource | null> {
@@ -80,7 +80,7 @@ async function lentPersonalAgent(
  * agent). Someone else's never-published agent has nothing to copy: null.
  */
 export async function forkDefinition(
-  db: KobeDb,
+  db: KaijuDb,
   source: ForkSource,
 ): Promise<{ definition: AgentDefinition; version: number | null } | null> {
   const { agent } = source;

@@ -16,9 +16,9 @@ import {
   teamMembers,
   threads,
   users,
-  type KobeTx,
+  type KaijuTx,
   type TeamRole,
-} from "@kobe/db";
+} from "@kaiju/db";
 import type {
   CreateProjectRequest,
   Project,
@@ -27,7 +27,7 @@ import type {
   ProjectRole,
   TransferOwnerResponse,
   UpdateProjectRequest,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { canPinAgent, findPinnableAgent } from "../agents/versions.js";
 import { projectCheckouts } from "./checkouts.js";
 import { queueProjectBlobs } from "./tree.js";
@@ -68,7 +68,7 @@ interface Viewer {
 }
 
 export async function toProject(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   row: ProjectRow,
   myRole: ProjectRole | undefined,
@@ -108,12 +108,12 @@ export async function toProject(
 }
 
 /** A default agent must be a team or gallery agent that can start threads: personal agents only work for their owner. */
-async function validAgent(tx: KobeTx, viewer: Viewer, agentId: string): Promise<boolean> {
+async function validAgent(tx: KaijuTx, viewer: Viewer, agentId: string): Promise<boolean> {
   const agent = await findPinnableAgent(tx, viewer, agentId);
   return agent !== null && agent.scope !== "personal" && canPinAgent(agent);
 }
 
-async function usersInTeam(tx: KobeTx, teamId: string, userIds: readonly string[]) {
+async function usersInTeam(tx: KaijuTx, teamId: string, userIds: readonly string[]) {
   if (userIds.length === 0) return true;
   const rows = await tx
     .select({ id: teamMembers.userId })
@@ -122,7 +122,7 @@ async function usersInTeam(tx: KobeTx, teamId: string, userIds: readonly string[
   return rows.length === new Set(userIds).size;
 }
 
-async function freeSlug(tx: KobeTx, teamId: string, base: string): Promise<string | undefined> {
+async function freeSlug(tx: KaijuTx, teamId: string, base: string): Promise<string | undefined> {
   for (const candidate of slugCandidates(base)) {
     const [taken] = await tx
       .select({ id: projects.id })
@@ -135,7 +135,7 @@ async function freeSlug(tx: KobeTx, teamId: string, base: string): Promise<strin
 
 /** Creates a project; the creator becomes `owner`. Audit has ids and field names only. */
 export async function createProject(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   body: CreateProjectRequest,
   /** Promote to project (KOBE-586) picks the id first: its blobs are copied before the insert. */
@@ -194,7 +194,7 @@ export async function createProject(
  * `editorOnly` (`?role=editor`) narrows to the projects the caller may edit.
  */
 export async function listProjects(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   options: { includeArchived: boolean; teamRole: TeamRole; editorOnly?: boolean },
 ): Promise<Project[]> {
@@ -230,7 +230,7 @@ export async function listProjects(
  * assign one ("No owner: assign one"). Archived ones only with `includeArchived`.
  */
 export async function listOwnerless(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   options: { includeArchived: boolean },
 ): Promise<Project[]> {
@@ -253,7 +253,7 @@ export async function listOwnerless(
 }
 
 export async function updateProject(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   access: ProjectAccess,
   body: UpdateProjectRequest,
@@ -293,7 +293,7 @@ export async function updateProject(
 
 /** Hard delete, refused while threads, project memory or files still point at the project. */
 export async function deleteProject(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   projectId: string,
   /** Working copies with uncommitted changes the caller agreed to discard (KOBE-780). */
@@ -374,7 +374,7 @@ export async function deleteProject(
 
 // ----------------------------------------------------------------------------- members
 
-export async function listMembers(tx: KobeTx, teamId: string, projectId: string) {
+export async function listMembers(tx: KaijuTx, teamId: string, projectId: string) {
   const rows = await tx
     .select()
     .from(projectMembers)
@@ -387,7 +387,7 @@ export async function listMembers(tx: KobeTx, teamId: string, projectId: string)
   }));
 }
 
-async function ownerCount(tx: KobeTx, teamId: string, projectId: string): Promise<number> {
+async function ownerCount(tx: KaijuTx, teamId: string, projectId: string): Promise<number> {
   const [row] = await tx
     .select({ n: count() })
     .from(projectMembers)
@@ -402,7 +402,7 @@ async function ownerCount(tx: KobeTx, teamId: string, projectId: string): Promis
 }
 
 /** The project's explicit role set after a change (audit GV4: counts, never who). */
-async function roleCounts(tx: KobeTx, teamId: string, projectId: string) {
+async function roleCounts(tx: KaijuTx, teamId: string, projectId: string) {
   const rows = await tx
     .select({ role: projectMembers.role, n: count() })
     .from(projectMembers)
@@ -412,7 +412,7 @@ async function roleCounts(tx: KobeTx, teamId: string, projectId: string) {
   return { owner: of("owner"), editor: of("editor") };
 }
 
-async function currentRole(tx: KobeTx, teamId: string, projectId: string, userId: string) {
+async function currentRole(tx: KaijuTx, teamId: string, projectId: string, userId: string) {
   const [row] = await tx
     .select({ role: projectMembers.role })
     .from(projectMembers)
@@ -427,7 +427,7 @@ async function currentRole(tx: KobeTx, teamId: string, projectId: string, userId
 }
 
 export async function addMember(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   projectId: string,
   member: { userId: string; role: ProjectMemberRole },
@@ -464,7 +464,7 @@ export async function addMember(
 
 /** Sets a role; a workspace member without a row (an implicit reader, RV1) gets one. */
 export async function setMemberRole(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   access: ProjectAccess,
   userId: string,
@@ -514,7 +514,7 @@ export async function setMemberRole(
 }
 
 export async function removeMember(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   projectId: string,
   userId: string,
@@ -552,7 +552,7 @@ export async function removeMember(
  * nobody is demoted (`previous_owner_user_id` null). Audited `project.owner_transferred`.
  */
 export async function transferOwner(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   access: ProjectAccess,
   toUserId: string,
@@ -592,7 +592,7 @@ export async function transferOwner(
 }
 
 async function setRole(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   projectId: string,
   userId: string,

@@ -5,7 +5,7 @@ import {
   WORKSPACE_SEGMENT_MAX_BYTES,
   WORKSPACE_SERVER_OWNED_PREFIXES,
   type WorkspaceArea,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { checkoutOf, NO_CHECKOUTS } from "../workspace-sync/checkouts.js";
 
 /**

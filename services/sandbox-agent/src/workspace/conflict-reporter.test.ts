@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { WorkspaceConflictFrame } from "@kobe/protocol/sandbox-wire";
+import type { WorkspaceConflictFrame } from "@kaiju/protocol/sandbox-wire";
 import { CONFLICT_QUEUE_MAX, ConflictReporter } from "./conflict-reporter.js";
 
 const report = (n: number) => ({

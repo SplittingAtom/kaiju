@@ -1,5 +1,5 @@
-import { agentSkills, validateAgentDefinition, type AgentDefinition } from "@kobe/agent-file";
-import { withTeam, type KobeDb } from "@kobe/db";
+import { agentSkills, validateAgentDefinition, type AgentDefinition } from "@kaiju/agent-file";
+import { withTeam, type KaijuDb } from "@kaiju/db";
 import { acceptedCases, caseReviewerPresent } from "../../eval-cases/review.js";
 import { EVAL_CASES_MAX_BYTES, casesFile } from "./cases.js";
 import type { BackgroundTasks } from "../../background.js";
@@ -36,7 +36,7 @@ export type GateOutcome =
     };
 
 export interface GateInput {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly runner: EvalRunner | undefined;
   readonly background: BackgroundTasks;
   readonly team: TeamRef;

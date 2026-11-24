@@ -1,4 +1,4 @@
-import { sql, type KobeDb } from "@kobe/db";
+import { sql, type KaijuDb } from "@kaiju/db";
 import { usageSnapshot, viewerTeamsOf } from "./usage-snapshot.js";
 import { optOutCount } from "./usage-views.js";
 import { isMasked } from "./default-sync-run.js";
@@ -30,7 +30,7 @@ export interface SiteCatalogSkill {
  * the minimum-count rule, the viewer's own teams left out (KOBE-339 review M4): never live, so
  * watching the page can't catch one team's opt-out.
  */
-export async function listSiteCatalog(db: KobeDb, viewerId: string): Promise<SiteCatalogSkill[]> {
+export async function listSiteCatalog(db: KaijuDb, viewerId: string): Promise<SiteCatalogSkill[]> {
   const { rows } = await db.execute<{
     id: string;
     name: string;
@@ -106,7 +106,7 @@ const ENDED = new Set(["done", "failed"]);
 const iso = (v: unknown) => (v === null ? null : v instanceof Date ? v.toISOString() : String(v));
 
 /** The newest Default sync jobs with their progress; totals only, never team names. */
-export async function listDefaultSyncs(db: KobeDb): Promise<DefaultSyncRow[]> {
+export async function listDefaultSyncs(db: KaijuDb): Promise<DefaultSyncRow[]> {
   const { rows } = await db.execute<Record<string, unknown>>(sql`
     SELECT j.*, s.name FROM skill_default_syncs j JOIN registry_skills s ON s.id = j.skill_id
     ORDER BY j.seq DESC LIMIT ${SHOWN_SYNCS}`);

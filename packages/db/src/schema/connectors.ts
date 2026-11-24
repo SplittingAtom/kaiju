@@ -42,7 +42,7 @@ export const connectorExposure = pgEnum("connector_exposure", ["read_only", "all
 export type ConnectorExposureKind = (typeof connectorExposure.enumValues)[number];
 
 /**
- * Same grammar as `connectorNameSchema` in @kobe/protocol: lowercase `[a-z0-9]` runs joined by a
+ * Same grammar as `connectorNameSchema` in @kaiju/protocol: lowercase `[a-z0-9]` runs joined by a
  * single `-` or `_` (so Pi's `mcp__<server>__<tool>` names split unambiguously), at most 64.
  */
 export const CONNECTOR_NAME_PATTERN = "^[a-z0-9]+([-_][a-z0-9]+)*$";
@@ -53,7 +53,7 @@ export const CONNECTOR_URL_MAX = 2048;
 /**
  * Built-in connectors hosted by Kaiju itself (KOBE-618, spec kobe-admin-mcp §3): `kobe`, the Kaiju
  * MCP server (docs and admin tools). Its row is seeded by the server at start
- * ({@link seedKobeBuiltinConnector}); the MCP proxy routes it to the server's internal listener,
+ * ({@link seedKaijuBuiltinConnector}); the MCP proxy routes it to the server's internal listener,
  * never to its URL, which only marks the row (a check ties the two together, so no registered
  * connector can carry the internal URL and no built-in can point anywhere else).
  */
@@ -64,10 +64,10 @@ export type BuiltinConnector = (typeof BUILTIN_CONNECTORS)[number];
  * The `kobe` row's fixed id, the same on every site ("kobe" in hex, then a v4-shaped tail), so
  * replicas seed one row and the MCP proxy can route it without asking.
  */
-export const KOBE_BUILTIN_CONNECTOR_ID = "6b6f6265-0000-4000-8000-000000000001";
+export const KAIJU_BUILTIN_CONNECTOR_ID = "6b6f6265-0000-4000-8000-000000000001";
 
 /** The `kobe` row's URL: a marker in the reserved `.internal` zone, never fetched. */
-export const KOBE_BUILTIN_CONNECTOR_URL = "http://kobe-server.internal/internal/v1/mcp/kobe";
+export const KAIJU_BUILTIN_CONNECTOR_URL = "http://kobe-server.internal/internal/v1/mcp/kobe";
 
 /**
  * The `git` built-in (KOBE-762, owner decision 2026-11-22): the git host tools as their own
@@ -83,36 +83,36 @@ export const GIT_BUILTIN_CONNECTOR_URL = "http://kobe-server.internal/internal/v
  * `docs` (docs tools only; the default, also when unset or unreadable), `admin` (docs plus the
  * admin tools each team turns on).
  */
-export const KOBE_MCP_MODE_KEY = "kobe_mcp.mode";
-export const KOBE_MCP_MODES = ["off", "docs", "admin"] as const;
-export type KobeMcpMode = (typeof KOBE_MCP_MODES)[number];
-export const KOBE_MCP_MODE_DEFAULT: KobeMcpMode = "docs";
+export const KAIJU_MCP_MODE_KEY = "kobe_mcp.mode";
+export const KAIJU_MCP_MODES = ["off", "docs", "admin"] as const;
+export type KaijuMcpMode = (typeof KAIJU_MCP_MODES)[number];
+export const KAIJU_MCP_MODE_DEFAULT: KaijuMcpMode = "docs";
 
 /**
  * Team switch (`teams.settings`, spec §6, KA5): `docs` (default), `read` (admin reads), or
  * `read_write` (admin reads and writes). Only honoured while the site switch is `admin`.
  */
-export const KOBE_MCP_TEAM_SETTING = "kobe_mcp.admin";
-export const KOBE_MCP_TEAM_LEVELS = ["docs", "read", "read_write"] as const;
-export type KobeMcpTeamLevel = (typeof KOBE_MCP_TEAM_LEVELS)[number];
-export const KOBE_MCP_TEAM_LEVEL_DEFAULT: KobeMcpTeamLevel = "docs";
+export const KAIJU_MCP_TEAM_SETTING = "kobe_mcp.admin";
+export const KAIJU_MCP_TEAM_LEVELS = ["docs", "read", "read_write"] as const;
+export type KaijuMcpTeamLevel = (typeof KAIJU_MCP_TEAM_LEVELS)[number];
+export const KAIJU_MCP_TEAM_LEVEL_DEFAULT: KaijuMcpTeamLevel = "docs";
 
 /** The site switch from its stored text: anything but a known mode is the default. */
-export function parseKobeMcpMode(value: string | null | undefined): KobeMcpMode {
-  return (KOBE_MCP_MODES as readonly string[]).includes(value ?? "")
-    ? (value as KobeMcpMode)
-    : KOBE_MCP_MODE_DEFAULT;
+export function parseKaijuMcpMode(value: string | null | undefined): KaijuMcpMode {
+  return (KAIJU_MCP_MODES as readonly string[]).includes(value ?? "")
+    ? (value as KaijuMcpMode)
+    : KAIJU_MCP_MODE_DEFAULT;
 }
 
 /** The team switch from `teams.settings`: anything but a known level is the default. */
-export function parseKobeMcpTeamLevel(settings: unknown): KobeMcpTeamLevel {
+export function parseKaijuMcpTeamLevel(settings: unknown): KaijuMcpTeamLevel {
   const value =
     typeof settings === "object" && settings !== null
-      ? (settings as Record<string, unknown>)[KOBE_MCP_TEAM_SETTING]
+      ? (settings as Record<string, unknown>)[KAIJU_MCP_TEAM_SETTING]
       : undefined;
-  return typeof value === "string" && (KOBE_MCP_TEAM_LEVELS as readonly string[]).includes(value)
-    ? (value as KobeMcpTeamLevel)
-    : KOBE_MCP_TEAM_LEVEL_DEFAULT;
+  return typeof value === "string" && (KAIJU_MCP_TEAM_LEVELS as readonly string[]).includes(value)
+    ? (value as KaijuMcpTeamLevel)
+    : KAIJU_MCP_TEAM_LEVEL_DEFAULT;
 }
 
 /** Site-wide (†): the connector registry (site admins, D6). */
@@ -214,12 +214,12 @@ export const connectors = pgTable(
       .where(sql`${t.builtin} IS NOT NULL`),
     check(
       "connectors_builtin",
-      sql`${t.builtin} IS NULL OR (((${t.builtin} = 'kobe' AND ${t.id} = '${sql.raw(KOBE_BUILTIN_CONNECTOR_ID)}'::uuid) OR (${t.builtin} = 'git' AND ${t.id} = '${sql.raw(GIT_BUILTIN_CONNECTOR_ID)}'::uuid)) AND ${t.authKind} = 'none' AND ${t.credentialSource} = 'member' AND ${t.toolsHash} IS NULL AND ${t.toolsSnapshot} = '[]'::jsonb)`,
+      sql`${t.builtin} IS NULL OR (((${t.builtin} = 'kobe' AND ${t.id} = '${sql.raw(KAIJU_BUILTIN_CONNECTOR_ID)}'::uuid) OR (${t.builtin} = 'git' AND ${t.id} = '${sql.raw(GIT_BUILTIN_CONNECTOR_ID)}'::uuid)) AND ${t.authKind} = 'none' AND ${t.credentialSource} = 'member' AND ${t.toolsHash} IS NULL AND ${t.toolsSnapshot} = '[]'::jsonb)`,
     ),
     // Only a built-in carries an internal URL, each its own, and a built-in carries nothing else.
     check(
       "connectors_builtin_url",
-      sql`CASE WHEN ${t.builtin} IS NULL THEN ${t.url} NOT IN ('${sql.raw(KOBE_BUILTIN_CONNECTOR_URL)}', '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}') WHEN ${t.builtin} = 'kobe' THEN ${t.url} = '${sql.raw(KOBE_BUILTIN_CONNECTOR_URL)}' WHEN ${t.builtin} = 'git' THEN ${t.url} = '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}' ELSE false END`,
+      sql`CASE WHEN ${t.builtin} IS NULL THEN ${t.url} NOT IN ('${sql.raw(KAIJU_BUILTIN_CONNECTOR_URL)}', '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}') WHEN ${t.builtin} = 'kobe' THEN ${t.url} = '${sql.raw(KAIJU_BUILTIN_CONNECTOR_URL)}' WHEN ${t.builtin} = 'git' THEN ${t.url} = '${sql.raw(GIT_BUILTIN_CONNECTOR_URL)}' ELSE false END`,
     ),
     check(
       "connectors_oauth_client",

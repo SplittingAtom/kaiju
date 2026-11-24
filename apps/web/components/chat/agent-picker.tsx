@@ -13,7 +13,7 @@ import {
 import { groupAgents } from "../../lib/chat/agent-groups";
 import type { RunnableAgent } from "../../lib/chat/types";
 import { cn } from "../../lib/utils";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 
 type Agents = readonly RunnableAgent[];
 

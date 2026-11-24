@@ -11,10 +11,10 @@
  */
 import { FileSearchIcon } from "lucide-react";
 import { useEffect } from "react";
-import { workspaceToolPath, type KobeEventPayload } from "@kobe/protocol";
+import { workspaceToolPath, type KaijuEventPayload } from "@kaiju/protocol";
 import { fileName } from "../../lib/files/preview";
 import { useArtifactPanel } from "../chat/artifact-state";
-import { useKobeExtras } from "../chat/kobe-runtime";
+import { useKaijuExtras } from "../chat/kaiju-runtime";
 import { AddToProject } from "../projects/add-to-project";
 import styles from "../chat/chat.module.css";
 
@@ -23,7 +23,7 @@ const handled = new Set<string>();
 
 /** The opened file: the server's record while the run streams, else the call's own path. */
 function openedPath(
-  live: KobeEventPayload<"file.opened"> | undefined,
+  live: KaijuEventPayload<"file.opened"> | undefined,
   args: unknown,
 ): string | undefined {
   if (live !== undefined) return live.path;
@@ -40,7 +40,7 @@ export function OpenFileCard({
 }: {
   readonly toolCallId: string;
   /** The `file.opened` event of this call, while the run streams. */
-  readonly live: KobeEventPayload<"file.opened"> | undefined;
+  readonly live: KaijuEventPayload<"file.opened"> | undefined;
   /** The call's input (after a reload, the only record of the path). */
   readonly args: unknown;
   readonly done: boolean;
@@ -48,7 +48,7 @@ export function OpenFileCard({
   readonly failed: boolean;
 }) {
   const panel = useArtifactPanel();
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const readOnly = extras?.state.summary?.readOnly === true;
   const request = extras?.state.fileOpenRequest;
   useEffect(() => {
@@ -63,7 +63,7 @@ export function OpenFileCard({
   if (path === undefined) return null;
   const name = fileName(path);
   return (
-    <div className={`${styles.fileCard} kobe-panel`} data-kobe-opened-file={path}>
+    <div className={`${styles.fileCard} kaiju-panel`} data-kaiju-opened-file={path}>
       <FileSearchIcon aria-hidden className="size-4" />
       <div className={styles.fileInfo}>
         <span className={styles.fileName} title={path}>

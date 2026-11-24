@@ -1,4 +1,7 @@
-import { piExtensionUiRequestSchema, type PiExtensionUiRequest } from "@kobe/protocol/sandbox-wire";
+import {
+  piExtensionUiRequestSchema,
+  type PiExtensionUiRequest,
+} from "@kaiju/protocol/sandbox-wire";
 import {
   BRANCH_SUMMARY_REQUEST_UI_TITLE,
   BRANCH_SUMMARY_RESULT_UI_TITLE,

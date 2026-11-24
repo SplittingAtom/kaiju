@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { FILE_SHARE_MAX_BYTES, uploadFileNameSchema, type SharedFile } from "@kobe/protocol";
-import { type FileShareFrame } from "@kobe/protocol/sandbox-wire";
-import { files, sql, withTeam, type KobeDb, type KobeTx, pgCodeOf } from "@kobe/db";
+import { FILE_SHARE_MAX_BYTES, uploadFileNameSchema, type SharedFile } from "@kaiju/protocol";
+import { type FileShareFrame } from "@kaiju/protocol/sandbox-wire";
+import { files, sql, withTeam, type KaijuDb, type KaijuTx, pgCodeOf } from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { AppendError, appendRunEventsInTx, withAppendTx } from "../event-stream/append.js";
 import { logger } from "../logger.js";
@@ -57,7 +57,7 @@ export type ShareResult =
     };
 
 export interface FileShareDeps {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   readonly blobs: BlobStore | undefined;
   readonly settings: UploadSettings;
   readonly runMaxEvents: number;
@@ -129,7 +129,7 @@ interface FileRow {
   readonly scanStatus: string;
 }
 
-async function existing(tx: KobeTx, teamId: string, toolCallId: string) {
+async function existing(tx: KaijuTx, teamId: string, toolCallId: string) {
   const res = await tx.execute<{
     id: string;
     name: string;
@@ -167,7 +167,11 @@ function replay(
   return prior.runId === runId ? { ok: true, file: prior.file, replay: true } : OTHER_RUN;
 }
 
-async function runActive(tx: KobeTx, target: ShareTarget, frame: FileShareFrame): Promise<boolean> {
+async function runActive(
+  tx: KaijuTx,
+  target: ShareTarget,
+  frame: FileShareFrame,
+): Promise<boolean> {
   // A compaction (KOBE-213) makes no tool calls: refused from the database, not only the lease.
   const res = await tx.execute<{ status: string; kind: string }>(sql`
     SELECT r.status, r.kind FROM runs r
@@ -181,7 +185,7 @@ async function runActive(tx: KobeTx, target: ShareTarget, frame: FileShareFrame)
 
 /** The manifest object for the push, or a refusal. */
 async function verifiedBlob(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: ShareTarget,
   frame: FileShareFrame,
   path: string,
@@ -284,7 +288,7 @@ async function commit(
 }
 
 async function appendShared(
-  tx: KobeTx,
+  tx: KaijuTx,
   deps: FileShareDeps,
   teamId: string,
   frame: FileShareFrame,

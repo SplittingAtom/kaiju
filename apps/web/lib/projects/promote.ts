@@ -1,4 +1,4 @@
-import { projectPermissions } from "@kobe/protocol";
+import { projectPermissions } from "@kaiju/protocol";
 import type { FileEntry } from "../files/api";
 import type { TeamRole } from "../teams";
 

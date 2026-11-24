@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
-import type { KobeTx } from "../../client.js";
+import type { KaijuTx } from "../../client.js";
 import {
   answerFeedback,
   answerFeedbackHistory,
@@ -20,7 +20,7 @@ import type { conversations } from "../../tenancy/conversations.js";
 import type { ProbeFixture } from "./types.js";
 
 async function insertThread(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   values: Partial<typeof threads.$inferInsert> = {},
 ): Promise<string> {
@@ -35,7 +35,7 @@ async function insertThread(
 }
 
 /** A top-level folder with a subfolder (KOBE-534); returns the subfolder's id. */
-async function insertFolder(tx: KobeTx, teamId: string): Promise<string> {
+async function insertFolder(tx: KaijuTx, teamId: string): Promise<string> {
   const userId = randomUUID();
   await tx.insert(users).values({ id: userId, name: "Probe", email: `${userId}@probe.test` });
   const [top] = await tx
@@ -51,7 +51,7 @@ async function insertFolder(tx: KobeTx, teamId: string): Promise<string> {
   return sub.id;
 }
 
-async function insertRun(tx: KobeTx, teamId: string, threadId?: string): Promise<string> {
+async function insertRun(tx: KaijuTx, teamId: string, threadId?: string): Promise<string> {
   const thread = threadId ?? (await insertThread(tx, teamId));
   const [row] = await tx
     .insert(runs)

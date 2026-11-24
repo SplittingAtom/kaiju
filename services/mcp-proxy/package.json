@@ -1,5 +1,5 @@
 {
-  "name": "@kobe/mcp-proxy",
+  "name": "@kaiju/mcp-proxy",
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
@@ -22,10 +22,10 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",
-    "@kobe/address-policy": "workspace:*",
-    "@kobe/protocol": "workspace:*",
-    "@kobe/session-token": "workspace:*",
-    "@kobe/telemetry": "workspace:*",
+    "@kaiju/address-policy": "workspace:*",
+    "@kaiju/protocol": "workspace:*",
+    "@kaiju/session-token": "workspace:*",
+    "@kaiju/telemetry": "workspace:*",
     "hono": "^4.13.16",
     "pino": "^10.4.0",
     "undici": "^8.12.2",

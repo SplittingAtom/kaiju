@@ -1,11 +1,11 @@
-import { SYSTEM_ACTOR, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { SYSTEM_ACTOR, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import {
   SYNC_CONFLICT_NOTES_MAX,
   THREAD_FILE_WRITE_TOOLS,
   THREAD_SYNC_CONFLICTS_MAX,
   type SyncConflict,
   type ThreadSyncConflict,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { recordAudit } from "../audit/record.js";
 
 /**
@@ -48,7 +48,7 @@ const writeTools = sql.join(
  * their newest runs only. Undefined when none did.
  */
 export async function lastWriter(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: ConflictOwner,
   path: string,
 ): Promise<{ threadId: string; runId: string } | undefined> {
@@ -84,7 +84,7 @@ export async function lastWriter(
  * cap ({@link CONFLICTS_PER_MEMBER_HOUR}), nothing recorded.
  */
 export async function recordConflict(
-  db: KobeDb,
+  db: KaijuDb,
   owner: ConflictOwner,
   conflict: SyncConflict,
 ): Promise<RecordedConflict | undefined> {
@@ -124,7 +124,7 @@ export async function recordConflict(
 }
 
 /** Settled rows past `SETTLED_KEEP`, then anything past the per-member cap (oldest first). */
-async function trim(tx: KobeTx, owner: ConflictOwner): Promise<void> {
+async function trim(tx: KaijuTx, owner: ConflictOwner): Promise<void> {
   await tx.execute(sql`
     DELETE FROM workspace_sync_conflicts
      WHERE team_id = ${owner.teamId} AND user_id = ${owner.userId}
@@ -168,7 +168,7 @@ export interface AgentNotes {
  * connection lost go with a later run. `only` limits it to those ids (a mid-run note).
  */
 export async function untoldNotes(
-  db: KobeDb,
+  db: KaijuDb,
   owner: ConflictOwner,
   threadId: string,
   only?: readonly string[],
@@ -195,7 +195,7 @@ export async function untoldNotes(
 
 /** Marks exactly these conflicts told to the agent. */
 export async function markTold(
-  db: KobeDb,
+  db: KaijuDb,
   owner: ConflictOwner,
   ids: readonly string[],
 ): Promise<void> {
@@ -213,7 +213,7 @@ export async function markTold(
 
 /** The thread's unresolved, undismissed conflicts, newest first (the caller checked ownership). */
 export async function listThreadConflicts(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: ConflictOwner,
   threadId: string,
 ): Promise<ThreadSyncConflict[]> {
@@ -236,7 +236,7 @@ export async function listThreadConflicts(
  * rail, since no thread can show them.
  */
 export async function listWorkspaceConflicts(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: ConflictOwner,
 ): Promise<ThreadSyncConflict[]> {
   const res = await tx.execute<ConflictRow>(sql`
@@ -255,7 +255,7 @@ export async function listWorkspaceConflicts(
 
 /** Settles one conflict of the thread (`threadId` null: one no thread wrote); false when there is no such row (idempotent otherwise). */
 export async function settleConflict(
-  tx: KobeTx,
+  tx: KaijuTx,
   owner: ConflictOwner,
   threadId: string | null,
   conflictId: string,

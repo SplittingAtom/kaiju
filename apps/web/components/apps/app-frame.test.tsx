@@ -319,7 +319,7 @@ describe("AppFrame in the rail (KOBE-575)", () => {
     vi.stubGlobal("ResizeObserver", FakeResizeObserver);
     const mounted = mount({ placement: "rail" });
     const wrapper = mounted.iframe.parentElement as HTMLElement;
-    expect(wrapper.hasAttribute("data-kobe-app-scroll")).toBe(true);
+    expect(wrapper.hasAttribute("data-kaiju-app-scroll")).toBe(true);
     let height = clientHeight;
     Object.defineProperty(wrapper, "clientHeight", { get: () => height, configurable: true });
     const resize = (next: number) =>

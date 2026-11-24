@@ -6,7 +6,7 @@ import {
   bash,
   read,
   write,
-  kobeWrite,
+  kaijuWrite,
   jiraCreate,
   jiraSearch,
   PROMPT_SANDBOX,
@@ -148,7 +148,7 @@ export const EARLY_CASES: readonly Case[] = [
   // 2. team deny wins over ask, risk, mode and allow.
   {
     name: "team deny beats site ask and user allow",
-    tool: kobeWrite,
+    tool: kaijuWrite,
     rules: [
       rule("site", "ask", "share_file"),
       rule("team", "deny", "share_*"),
@@ -209,7 +209,7 @@ export const EARLY_CASES: readonly Case[] = [
   },
   {
     name: "user allow cannot remove a team ask",
-    tool: kobeWrite,
+    tool: kaijuWrite,
     rules: [rule("team", "ask", "share_file"), rule("user", "allow", "share_file")],
     effect: "require_approval",
     codes: ["team_ask_rule"],
@@ -253,7 +253,7 @@ export const EARLY_CASES: readonly Case[] = [
   },
   {
     name: "ask-on-write prompts for a Kaiju-scoped write",
-    tool: kobeWrite,
+    tool: kaijuWrite,
     effect: "require_approval",
     codes: ["risk_write"],
   },

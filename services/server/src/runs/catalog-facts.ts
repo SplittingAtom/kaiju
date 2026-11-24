@@ -1,5 +1,5 @@
-import { sql, type KobeTx } from "@kobe/db";
-import { PUBLISHED_VERSION_STATES } from "@kobe/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
+import { PUBLISHED_VERSION_STATES } from "@kaiju/protocol";
 import {
   pickCatalogVersion,
   type CatalogPin,
@@ -62,7 +62,7 @@ const byName = (a: { name: string }, b: { name: string }) =>
   a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
 
 async function versionsOf(
-  tx: KobeTx,
+  tx: KaijuTx,
   skillIds: readonly string[],
 ): Promise<Map<string, CatalogVersion[]>> {
   const out = new Map<string, CatalogVersion[]>();
@@ -109,8 +109,8 @@ async function versionsOf(
  * header): skill id and the Default's major, for those still tagged Default and neither opted out
  * nor blocked in this team.
  */
-async function pendingKobeDefaults(
-  tx: KobeTx,
+async function pendingKaijuDefaults(
+  tx: KaijuTx,
   teamId: string,
   names: readonly string[],
 ): Promise<Map<string, { skillId: string; major: number }>> {
@@ -136,7 +136,7 @@ async function pendingKobeDefaults(
 }
 
 export async function loadCatalogFacts(
-  tx: KobeTx,
+  tx: KaijuTx,
   args: {
     readonly teamId: string;
     readonly userId: string;
@@ -163,7 +163,7 @@ export async function loadCatalogFacts(
         AND e.catalog_skill_id IS NOT NULL AND ${notBlocked(sql`e.catalog_skill_id`)}`)
   ).rows.filter((e) => e.version_id === null || membersMayAdd || installedIds.has(e.skill_id));
   const installedNames = new Set(installs.map((i) => i.name));
-  const pending = await pendingKobeDefaults(
+  const pending = await pendingKaijuDefaults(
     tx,
     args.teamId,
     args.namedCatalog.filter((n) => !installedNames.has(n)),
@@ -215,17 +215,17 @@ export async function loadCatalogFacts(
   const named = new Set(args.namedCatalog);
   for (const name of named) {
     const i = installed.get(name);
-    const kobe = pending.get(name);
+    const kaiju = pending.get(name);
     // Any version of the Default's major anchors Track within major (the pin picks the newest).
-    const anchor = kobe
-      ? (versions.get(kobe.skillId) ?? []).find((v) => majorOf(v.semver) === kobe.major)
+    const anchor = kaiju
+      ? (versions.get(kaiju.skillId) ?? []).find((v) => majorOf(v.semver) === kaiju.major)
       : undefined;
     if (i) into(out.named, out.namedOmissions, resolve(i.skill_id, i.name, pinOf(i)));
-    else if (kobe && anchor)
+    else if (kaiju && anchor)
       into(
         out.named,
         out.namedOmissions,
-        resolve(kobe.skillId, name, { pinMode: "within_major", versionId: anchor.id }),
+        resolve(kaiju.skillId, name, { pinMode: "within_major", versionId: anchor.id }),
       );
     else out.namedOmissions.push({ name, reason: "not_installed" });
   }

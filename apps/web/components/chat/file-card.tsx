@@ -7,11 +7,11 @@
  */
 import { useContext, useState } from "react";
 import { DownloadIcon, FileIcon } from "lucide-react";
-import type { KobeEventPayload } from "@kobe/protocol";
+import type { KaijuEventPayload } from "@kaiju/protocol";
 import type { ApiError } from "../../lib/api/client";
 import { formatBytes } from "../../lib/files/format";
 import { saveBytes } from "../../lib/files/save";
-import { ChatSessionContext } from "./kobe-runtime";
+import { ChatSessionContext } from "./kaiju-runtime";
 import styles from "./chat.module.css";
 
 /** The words for a failed download; 404 covers a rejected scan and a thread you cannot read. */
@@ -22,7 +22,7 @@ export function describeDownloadError(error: ApiError): string {
   return "The download failed. Try again.";
 }
 
-export function FileCard({ file }: { readonly file: KobeEventPayload<"file.shared"> }) {
+export function FileCard({ file }: { readonly file: KaijuEventPayload<"file.shared"> }) {
   const api = useContext(ChatSessionContext)?.api;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export function FileCard({ file }: { readonly file: KobeEventPayload<"file.share
   };
 
   return (
-    <div className={`${styles.fileCard} kobe-panel`}>
+    <div className={`${styles.fileCard} kaiju-panel`}>
       <FileIcon aria-hidden className="size-4" />
       <div className={styles.fileInfo}>
         <span className={styles.fileName}>{file.name}</span>

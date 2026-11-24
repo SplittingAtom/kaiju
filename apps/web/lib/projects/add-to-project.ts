@@ -2,11 +2,11 @@
  * Add to project helpers (KOBE-585): pure functions behind the dialog in
  * `components/projects/add-to-project.tsx`.
  */
-import { artifactFileExtension, artifactFileStem, type ArtifactKind } from "@kobe/protocol";
+import { artifactFileExtension, artifactFileStem, type ArtifactKind } from "@kaiju/protocol";
 import { ancestorsOf, joinPath } from "../files/tree";
 import type { Project, ProjectFile } from "./api";
 
-/** The server's default name for an artifact: its stem and extension (`@kobe/protocol`). */
+/** The server's default name for an artifact: its stem and extension (`@kaiju/protocol`). */
 export function artifactProjectFileName(
   title: string,
   kind: ArtifactKind,

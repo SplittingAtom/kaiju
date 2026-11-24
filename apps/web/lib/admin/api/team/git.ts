@@ -1,6 +1,6 @@
 /**
  * Workspace git connections (`/v1/team/git/connections*`, KOBE-760; the Git section, KOBE-761).
- * Answers are `@kobe/protocol` git-connections.ts, camelized. Reads are open to every member
+ * Answers are `@kaiju/protocol` git-connections.ts, camelized. Reads are open to every member
  * (members get the short view); every write needs `team.git.manage`.
  *
  * The credential (a token, or a GitHub App's private key) goes out once in a JSON body and is
@@ -13,7 +13,7 @@ import type {
   GitConnectionMemberView,
   GitTeamSettings,
   GitTestReport,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { apiRequest, type ApiResult } from "../../../api/client";
 import type { Camelized } from "../../../api/casing";
 

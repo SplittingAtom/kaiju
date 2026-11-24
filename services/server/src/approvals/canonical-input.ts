@@ -1,4 +1,4 @@
-import { jsonObjectSchema, type JsonObject } from "@kobe/protocol";
+import { jsonObjectSchema, type JsonObject } from "@kaiju/protocol";
 
 /** The stored canonical input of an approval is not a JSON object (never expected: the server writes it). */
 export class CanonicalInputError extends Error {

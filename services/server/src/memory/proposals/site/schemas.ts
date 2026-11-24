@@ -3,12 +3,12 @@ import {
   semanticMemoryKindSchema,
   semanticMemoryOverridesSchema,
   semanticMemoryStatementSchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   SITE_MEMORY_PROPOSAL_STATE_VALUES,
   SITE_MEMORY_PROPOSAL_TEXT_MAX,
   SITE_MEMORY_PROPOSAL_ROUNDS_MAX,
-} from "@kobe/db";
+} from "@kaiju/db";
 import { SITE_PROPOSALS_LIST_MAX } from "./rows.js";
 
 /**

@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { must } from "../../lib/testing/must";
 import { DESKTOP_WIDTH, resizeWindow } from "../../lib/testing/viewport";
 import { composer, openApp } from "../chat/testing";
@@ -14,14 +14,14 @@ import { composer, openApp } from "../chat/testing";
  * KOBE-614, "Used in") that give the keyboard, screen readers and narrow widths the same links.
  * KOBE-614: the pin on the thread row, the workspace rail's resize handle and its saved width.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 const WAIT = { timeout: 10_000 };
 const enc = (s: string) => new TextEncoder().encode(s);
 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -63,9 +63,9 @@ function seed() {
 }
 
 const body = (dialog: HTMLElement) =>
-  must(dialog.querySelector<HTMLElement>("[data-kobe-threads-body]"));
+  must(dialog.querySelector<HTMLElement>("[data-kaiju-threads-body]"));
 const row = (dialog: HTMLElement, id: string) =>
-  must(dialog.querySelector<HTMLElement>(`[data-kobe-thread="${id}"]`));
+  must(dialog.querySelector<HTMLElement>(`[data-kaiju-thread="${id}"]`));
 /** Budget's line pin: shown once its links are read (three rails). */
 const budgetPin = (dialog: HTMLElement) =>
   within(dialog).findByRole("button", { name: "Keep lines shown for Budget" }, WAIT);
@@ -78,8 +78,8 @@ async function filesItem(user: ReturnType<typeof userEvent.setup>, dialog: HTMLE
 }
 
 const lines = (dialog: HTMLElement) =>
-  [...dialog.querySelectorAll<SVGGElement>("[data-kobe-line]")].map((g) => ({
-    anchor: g.getAttribute("data-kobe-line"),
+  [...dialog.querySelectorAll<SVGGElement>("[data-kaiju-line]")].map((g) => ({
+    anchor: g.getAttribute("data-kaiju-line"),
     access: g.getAttribute("data-access"),
   }));
 
@@ -87,7 +87,7 @@ describe("three rails (ac-1)", () => {
   it("shows folders | threads | the workspace, reading the rows' links in one batch", async () => {
     const { budget, hiring } = seed();
     const { dialog } = await openPanel();
-    expect(body(dialog).getAttribute("data-kobe-threads-body")).toBe("three-rails");
+    expect(body(dialog).getAttribute("data-kaiju-threads-body")).toBe("three-rails");
     const files = await within(dialog).findByRole("tree", { name: "Workspace files" }, WAIT);
     expect(await within(files).findByRole("treeitem", { name: "report.md" }, WAIT)).toBeTruthy();
     await waitFor(() => expect(fake.fileLinks.linkReads.length).toBeGreaterThan(0), WAIT);
@@ -118,9 +118,9 @@ describe("three rails (ac-1)", () => {
       dialog.querySelector('[data-access="write"] path')?.getAttribute("stroke-dasharray"),
     ).toBeNull();
     // notes/ is closed: the line ends on it, with a count.
-    expect(dialog.querySelector('[data-kobe-line-count="notes"]')?.textContent).toBe("1");
+    expect(dialog.querySelector('[data-kaiju-line-count="notes"]')?.textContent).toBe("1");
     // Decorative: the overlay is hidden from screen readers.
-    expect(dialog.querySelector("[data-kobe-file-lines]")?.getAttribute("aria-hidden")).toBe(
+    expect(dialog.querySelector("[data-kaiju-file-lines]")?.getAttribute("aria-hidden")).toBe(
       "true",
     );
     fireEvent.pointerLeave(body(dialog));
@@ -158,7 +158,7 @@ describe("three rails (ac-1)", () => {
     // Old work's row is not in Current's list (archived, or not read by the list): named as elsewhere.
     await waitFor(
       () =>
-        expect(dialog.querySelector("[data-kobe-elsewhere]")?.textContent).toMatch(
+        expect(dialog.querySelector("[data-kaiju-elsewhere]")?.textContent).toMatch(
           /Also used in threads not shown: 1 (in Archived|elsewhere)/,
         ),
       WAIT,
@@ -208,7 +208,7 @@ describe("three rails (ac-1)", () => {
     within(sub).getByRole("menuitem", { name: "Hiring" }).focus();
     await user.keyboard("{Enter}");
     await waitFor(
-      () => expect(document.querySelector('[data-kobe-panel="threads"]')).toBeNull(),
+      () => expect(document.querySelector('[data-kaiju-panel="threads"]')).toBeNull(),
       WAIT,
     );
     expect(window.location.search).toBe(`?thread=${hiring}`);
@@ -219,7 +219,7 @@ describe("three rails (ac-1)", () => {
     const { user, dialog } = await openPanel();
     await user.click(await within(dialog).findByRole("treeitem", { name: "report.md" }, WAIT));
     await waitFor(
-      () => expect(document.querySelector('[data-kobe-panel="threads"]')).toBeNull(),
+      () => expect(document.querySelector('[data-kaiju-panel="threads"]')).toBeNull(),
       WAIT,
     );
     expect(await screen.findByRole("toolbar", { name: "report.md view" }, WAIT)).toBeTruthy();
@@ -264,7 +264,7 @@ describe("the lists (ac-2)", () => {
     const again = await within(dialog).findByRole("list", { name: "Files Budget used" }, WAIT);
     await user.click(within(again).getByRole("button", { name: "report.md" }));
     await waitFor(
-      () => expect(document.querySelector('[data-kobe-panel="threads"]')).toBeNull(),
+      () => expect(document.querySelector('[data-kaiju-panel="threads"]')).toBeNull(),
       WAIT,
     );
     expect(await screen.findByRole("toolbar", { name: "report.md view" }, WAIT)).toBeTruthy();
@@ -290,7 +290,7 @@ describe("the lists (ac-2)", () => {
     const { user, dialog } = await openPanel();
     resizeWindow(1000);
     await waitFor(
-      () => expect(body(dialog).getAttribute("data-kobe-threads-body")).toBe("two-rails"),
+      () => expect(body(dialog).getAttribute("data-kaiju-threads-body")).toBe("two-rails"),
       WAIT,
     );
     await waitFor(() => expect(fake.fileLinks.linkReads.length).toBeGreaterThan(0), WAIT);
@@ -303,7 +303,7 @@ describe("the lists (ac-2)", () => {
     ).toBeNull();
     fireEvent.pointerOver(row(dialog, budget));
     await act(() => new Promise((r) => setTimeout(r, 50)));
-    expect(dialog.querySelector("[data-kobe-file-lines]")).toBeNull();
+    expect(dialog.querySelector("[data-kaiju-file-lines]")).toBeNull();
     // No workspace rail, so its files' threads are not read again.
     const reads = fake.fileLinks.fileReads.length;
     await act(() => new Promise((r) => setTimeout(r, 50)));
@@ -343,8 +343,8 @@ describe("KOBE-614: the pin on the row, the rail's handle", () => {
     const { user, dialog } = await openPanel();
     await within(dialog).findByRole("treeitem", { name: "report.md" }, WAIT);
     const handle = within(dialog).getByRole("separator", { name: "Resize the workspace files" });
-    expect(handle.getAttribute("aria-controls")).toBe("kobe-threads-file-rail");
-    const railColumn = must(dialog.querySelector<HTMLElement>("#kobe-threads-file-rail"));
+    expect(handle.getAttribute("aria-controls")).toBe("kaiju-threads-file-rail");
+    const railColumn = must(dialog.querySelector<HTMLElement>("#kaiju-threads-file-rail"));
     const box = (width: number, right: number) =>
       ({
         width,
@@ -359,16 +359,18 @@ describe("KOBE-614: the pin on the row, the rail's handle", () => {
     vi.spyOn(body(dialog), "getBoundingClientRect").mockReturnValue(box(1200, 1200));
     vi.spyOn(railColumn, "getBoundingClientRect").mockReturnValue(box(400, 1200));
     // By default the thread column fits its titles and the rail takes the rest.
-    expect(body(dialog).style.getPropertyValue("--kobe-threads-col")).toBe("fit-content(28rem)");
+    expect(body(dialog).style.getPropertyValue("--kaiju-threads-col")).toBe("fit-content(28rem)");
     handle.focus();
     await user.keyboard("{ArrowLeft}");
     await waitFor(() => expect(fake.preferences["threads_file_rail_width"]).toBe(424), WAIT);
-    expect(body(dialog).style.getPropertyValue("--kobe-file-rail-col")).toBe("minmax(240px,424px)");
-    expect(body(dialog).style.getPropertyValue("--kobe-threads-col")).toBe("minmax(12rem,1fr)");
+    expect(body(dialog).style.getPropertyValue("--kaiju-file-rail-col")).toBe(
+      "minmax(240px,424px)",
+    );
+    expect(body(dialog).style.getPropertyValue("--kaiju-threads-col")).toBe("minmax(12rem,1fr)");
     // Enter: back to the default.
     await user.keyboard("{Enter}");
     await waitFor(() => expect(fake.preferences["threads_file_rail_width"]).toBeNull(), WAIT);
-    expect(body(dialog).style.getPropertyValue("--kobe-threads-col")).toBe("fit-content(28rem)");
+    expect(body(dialog).style.getPropertyValue("--kaiju-threads-col")).toBe("fit-content(28rem)");
   });
 
   it("a saved width is applied when the panel opens", async () => {
@@ -377,7 +379,7 @@ describe("KOBE-614: the pin on the row, the rail's handle", () => {
     const { dialog } = await openPanel();
     await waitFor(
       () =>
-        expect(body(dialog).style.getPropertyValue("--kobe-file-rail-col")).toBe(
+        expect(body(dialog).style.getPropertyValue("--kaiju-file-rail-col")).toBe(
           "minmax(240px,380px)",
         ),
       WAIT,

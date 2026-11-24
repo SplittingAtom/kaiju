@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { projectSlugSchema } from "@kobe/protocol";
+import { projectSlugSchema } from "@kaiju/protocol";
 import { deriveSlug, slugCandidates } from "./slug.js";
 import { truncateUtf8 } from "./run-context.js";
 

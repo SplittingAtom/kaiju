@@ -5,11 +5,11 @@ import {
   siteAgents,
   threads,
   withTeam,
-  type KobeDb,
-  type KobeTx,
+  type KaijuDb,
+  type KaijuTx,
   type TeamRole,
-} from "@kobe/db";
-import { KOBE_GALLERY_KEY } from "../../gallery/definitions.js";
+} from "@kaiju/db";
+import { KAIJU_GALLERY_KEY } from "../../gallery/definitions.js";
 import { logger } from "../../logger.js";
 import type { BlobStore } from "../../retention/blobs.js";
 import { visibleDraft } from "./records.js";
@@ -28,7 +28,7 @@ export type TestChatStart =
     };
 
 export async function testChatStart(
-  tx: KobeTx,
+  tx: KaijuTx,
   who: { readonly teamId: string; readonly userId: string; readonly role: TeamRole },
   draftId: string,
   agentId: string | null | undefined,
@@ -41,7 +41,7 @@ export async function testChatStart(
     .where(
       and(
         eq(siteAgents.scope, "gallery"),
-        eq(siteAgents.galleryKey, KOBE_GALLERY_KEY),
+        eq(siteAgents.galleryKey, KAIJU_GALLERY_KEY),
         isNull(siteAgents.archivedAt),
       ),
     );
@@ -74,7 +74,7 @@ const REFUSALS: Readonly<Record<string, { status: 403 | 409 | 422 | 503; code: s
  * anyway) is left to the run API: null.
  */
 export async function prepareTestChat(
-  deps: { readonly db: KobeDb; readonly blobs: BlobStore | undefined },
+  deps: { readonly db: KaijuDb; readonly blobs: BlobStore | undefined },
   who: { readonly teamId: string; readonly userId: string; readonly role: TeamRole },
   threadId: string,
 ): Promise<TestChatRefusal | null> {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type DragEvent, type RefObject } from "react";
-import { ITEM_REFERENCES_MAX } from "@kobe/protocol";
+import { ITEM_REFERENCES_MAX } from "@kaiju/protocol";
 import type { FrameDrag } from "../../lib/apps/frame-drag";
 import { appMessageOf } from "../../lib/apps/host-bridge";
 import {
@@ -23,7 +23,7 @@ import {
 import type { ChatSession } from "../../lib/chat/session";
 import { applyAppMessage } from "../apps/use-app-composer";
 import { useFrameDrop } from "./composer-frame-drop";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 
 /**
  * What a drag hovering over the composer would do: a workspace row is mentioned or refused; a

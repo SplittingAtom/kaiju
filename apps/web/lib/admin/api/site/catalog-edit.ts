@@ -31,7 +31,7 @@ export interface CatalogVersionRow {
   readonly stored: boolean;
 }
 
-export interface KobeState {
+export interface KaijuState {
   readonly detached: boolean;
   readonly detachedAt: string | null;
   readonly detachedBy: string | null;
@@ -56,7 +56,7 @@ export interface CatalogSkillView {
   readonly status: string;
   readonly retired: boolean;
   readonly blocklisted: boolean;
-  readonly kobe: KobeState | null;
+  readonly kobe: KaijuState | null;
   readonly draft: SiteDraftInfo | null;
   readonly versions: readonly CatalogVersionRow[];
 }
@@ -124,7 +124,7 @@ export interface SitePublished {
   readonly previous: { readonly publisher: string; readonly semver: string } | null;
 }
 
-export interface KobeCompare {
+export interface KaijuCompare {
   readonly current: { readonly id: string; readonly semver: string; readonly publisher: string };
   readonly shipped: { readonly semver: string };
   readonly diff: Omit<VersionDiff, "against">;
@@ -217,11 +217,11 @@ export function publishSiteDraft(
   });
 }
 
-export function compareWithKobe(skillId: string): Promise<ApiResult<KobeCompare>> {
+export function compareWithKaiju(skillId: string): Promise<ApiResult<KaijuCompare>> {
   return apiRequest(`${base(skillId)}/kobe/compare`);
 }
 
-export function resetToKobe(
+export function resetToKaiju(
   skillId: string,
 ): Promise<ApiResult<{ shippedSemver: string; seed: { action: string } | null }>> {
   return apiRequest(`${base(skillId)}/kobe/reset`, { method: "POST", json: {} });

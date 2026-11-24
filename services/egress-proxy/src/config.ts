@@ -1,4 +1,4 @@
-import { verifyKeysFromEnv, type SessionVerifyKeys } from "@kobe/session-token";
+import { verifyKeysFromEnv, type SessionVerifyKeys } from "@kaiju/session-token";
 import { z } from "zod";
 import { validateCidrs, validateInternalTargets } from "./address-policy.js";
 

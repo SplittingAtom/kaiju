@@ -67,7 +67,7 @@ async function waitForLink(page: Page, threadId: string, path: string, access: "
 
 /** Renames the open conversation from its header. */
 async function rename(page: Page, title: string): Promise<void> {
-  const header = page.locator("header").filter({ has: page.locator("#kobe-thread-title") });
+  const header = page.locator("header").filter({ has: page.locator("#kaiju-thread-title") });
   await header.getByRole("button", { name: /^Rename / }).click();
   const name = page.getByRole("textbox", { name: "Conversation name", exact: true });
   await name.fill(title);
@@ -75,15 +75,15 @@ async function rename(page: Page, title: string): Promise<void> {
 }
 
 const panelOf = (page: Page) => page.getByRole("dialog", { name: "Threads" });
-const bodyOf = (page: Page) => panelOf(page).locator("[data-kobe-threads-body]");
+const bodyOf = (page: Page) => panelOf(page).locator("[data-kaiju-threads-body]");
 const rowOf = (page: Page, threadId: string) =>
-  panelOf(page).locator(`[data-kobe-thread="${threadId}"]`);
-const railOf = (page: Page) => panelOf(page).locator("[data-kobe-file-rail]");
+  panelOf(page).locator(`[data-kaiju-thread="${threadId}"]`);
+const railOf = (page: Page) => panelOf(page).locator("[data-kaiju-file-rail]");
 const railRow = (page: Page, path: string) =>
   railOf(page).locator(`[role="treeitem"][data-path="${path}"]`);
-const lines = (page: Page) => panelOf(page).locator("[data-kobe-file-lines] [data-kobe-line]");
+const lines = (page: Page) => panelOf(page).locator("[data-kaiju-file-lines] [data-kaiju-line]");
 const lineTo = (page: Page, anchor: string) =>
-  panelOf(page).locator(`[data-kobe-file-lines] [data-kobe-line="${anchor}"]`);
+  panelOf(page).locator(`[data-kaiju-file-lines] [data-kaiju-line="${anchor}"]`);
 /** Opens the row's ⋯ menu (KOBE-614) and returns its "Files (N)…" item. */
 async function filesItem(
   page: Page,
@@ -134,7 +134,7 @@ test("hover a thread: solid line to the written file, dashed to the read one; pi
     // A fresh panel: its rows' links and its workspace tree are read when it opens.
     await page.reload();
     await chat.openThreads();
-    await expect(bodyOf(page)).toHaveAttribute("data-kobe-threads-body", "three-rails");
+    await expect(bodyOf(page)).toHaveAttribute("data-kaiju-threads-body", "three-rails");
     const row = rowOf(page, threadId);
     await expect(row).toHaveCount(1, { timeout: SHELL_TIMEOUT_MS });
     // The pin is on the thread's row (KOBE-614), shown on hover.
@@ -187,7 +187,7 @@ test("hover a thread: solid line to the written file, dashed to the read one; pi
     // The workspace rail resizes from its divider (KOBE-614): Right narrows it (Left widens it only
     // while the thread column has room to give, so the spec narrows), Enter resets.
     const handle = panelOf(page).getByRole("separator", { name: "Resize the workspace files" });
-    const railColumn = panelOf(page).locator("#kobe-threads-file-rail");
+    const railColumn = panelOf(page).locator("#kaiju-threads-file-rail");
     const before = (await railColumn.boundingBox())?.width ?? 0;
     await handle.focus();
     await page.keyboard.press("ArrowRight");
@@ -200,7 +200,7 @@ test("hover a thread: solid line to the written file, dashed to the read one; pi
     await expect
       .poll(() =>
         bodyOf(page).evaluate((el) =>
-          (el as HTMLElement).style.getPropertyValue("--kobe-threads-col"),
+          (el as HTMLElement).style.getPropertyValue("--kaiju-threads-col"),
         ),
       )
       .toBe("fit-content(28rem)");
@@ -222,7 +222,7 @@ test("hover a thread: solid line to the written file, dashed to the read one; pi
     // Narrow (TFM4): no workspace rail and no lines, the row's menu still has "Files (N)…".
     await page.setViewportSize(NARROW);
     await chat.openThreads();
-    await expect(bodyOf(page)).not.toHaveAttribute("data-kobe-threads-body", "three-rails");
+    await expect(bodyOf(page)).not.toHaveAttribute("data-kaiju-threads-body", "three-rails");
     await expect(railOf(page)).toHaveCount(0);
     const narrowRow = rowOf(page, threadId);
     await expect(narrowRow).toHaveCount(1, { timeout: SHELL_TIMEOUT_MS });
@@ -230,7 +230,7 @@ test("hover a thread: solid line to the written file, dashed to the read one; pi
     await page.keyboard.press("Escape");
     await expect(narrowRow.getByRole("button", { name: /^Keep lines shown for / })).toHaveCount(0);
     await page.waitForTimeout(500);
-    await expect(panelOf(page).locator("[data-kobe-file-lines]")).toHaveCount(0);
+    await expect(panelOf(page).locator("[data-kaiju-file-lines]")).toHaveCount(0);
   } finally {
     await deleteWorkspacePath(page, dir);
   }

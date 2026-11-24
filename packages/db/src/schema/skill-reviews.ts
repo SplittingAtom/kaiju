@@ -29,7 +29,7 @@ import { teams } from "./teams.js";
 export const skillReviewStatus = pgEnum("skill_review_status", ["pending", "approved", "rejected"]);
 export type SkillReviewStatus = (typeof skillReviewStatus.enumValues)[number];
 
-/** One finding of `@kobe/skill-scanner`, as stored. */
+/** One finding of `@kaiju/skill-scanner`, as stored. */
 export interface StoredFinding {
   readonly category: string;
   readonly rule: string;

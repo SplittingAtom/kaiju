@@ -1,7 +1,7 @@
 import { chmod, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { RunGitContext } from "@kobe/protocol/sandbox-wire";
+import type { RunGitContext } from "@kaiju/protocol/sandbox-wire";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   GIT_CONFIG_FILE_NAME,
@@ -23,15 +23,15 @@ const context: RunGitContext = {
 
 let dir = "";
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(tmpdir(), "kobe-gitconfig-"));
+  dir = await mkdtemp(path.join(tmpdir(), "kaiju-gitconfig-"));
 });
 afterEach(() => rm(dir, { recursive: true, force: true }));
 
 describe("gitEnv (KOBE-764)", () => {
   it("points git at the agent's config file and turns prompts off, with no secret", () => {
-    const env = gitEnv("/run/kobe/pi-x/gitconfig");
+    const env = gitEnv("/run/kaiju/pi-x/gitconfig");
     expect(env).toEqual({
-      GIT_CONFIG_GLOBAL: "/run/kobe/pi-x/gitconfig",
+      GIT_CONFIG_GLOBAL: "/run/kaiju/pi-x/gitconfig",
       GIT_TERMINAL_PROMPT: "0",
     });
     expect(Object.keys(env)).not.toContain("GIT_ASKPASS");
@@ -76,7 +76,7 @@ describe("gitConfigText", () => {
     expect(text).toContain("[credential]\n\thelper =\n");
     expect(text).toContain("[core]\n\taskPass =\n");
     expect(text).toContain("[http]\n\tproxyAuthMethod = basic\n");
-    expect(text).toContain("\tsshCommand = \"echo 'kobe: SSH is not available");
+    expect(text).toContain("\tsshCommand = \"echo 'kaiju: SSH is not available");
     expect(text).toContain("[user]\n\tuseConfigOnly = true\n");
     expect(text).not.toContain("[url ");
     expect(text).not.toMatch(/extraHeader|proxy\s*=|password|token/i);

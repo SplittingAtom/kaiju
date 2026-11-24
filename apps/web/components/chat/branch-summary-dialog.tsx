@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { Dialog } from "radix-ui";
-import { BRANCH_SUMMARY_FOCUS_MAX_CHARS } from "@kobe/protocol";
+import { BRANCH_SUMMARY_FOCUS_MAX_CHARS } from "@kaiju/protocol";
 import type { ThreadController } from "../../lib/chat/thread-controller";
 import { FILES_LEFT_NOTE } from "../../lib/chat/tree-panel";
 import { Button } from "../ui/button";
@@ -77,11 +77,11 @@ export function BranchSummaryDialog({
   return (
     <Dialog.Root open={open} onOpenChange={change}>
       <Dialog.Portal container={chatPortalContainer()}>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kobe-portal />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30" data-kaiju-portal />
         <Dialog.Content
           className="bg-background text-foreground fixed top-1/2 left-1/2 z-50 grid w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 gap-3 rounded-lg border p-5 shadow-lg"
           data-branch-summary-dialog
-          data-kobe-portal
+          data-kaiju-portal
         >
           <Dialog.Title className="m-0 text-base font-semibold">
             Make it current and carry a summary

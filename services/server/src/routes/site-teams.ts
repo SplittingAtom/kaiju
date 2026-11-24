@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { asc, eq, teams, isUniqueViolation } from "@kobe/db";
+import { asc, eq, teams, isUniqueViolation } from "@kaiju/db";
 import type { AuthVariables } from "../auth/session.js";
 import { recordAudit } from "../audit/record.js";
 import { requireSitePermission } from "../authz/middleware.js";

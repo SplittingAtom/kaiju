@@ -1,14 +1,14 @@
-import { THREAD_COMPACT_SUMMARY_MAX_BYTES, utf8ByteLength } from "@kobe/protocol";
+import { THREAD_COMPACT_SUMMARY_MAX_BYTES, utf8ByteLength } from "@kaiju/protocol";
 import {
   type ThreadCompactFrame,
   type ThreadCompactResultFrame,
-} from "@kobe/protocol/sandbox-wire";
+} from "@kaiju/protocol/sandbox-wire";
 import { gatewayBaseUrl } from "../kobe-models/protocol.js";
 import { PiProcessError } from "../pi/pi-process.js";
 import type { RunModel } from "../models/types.js";
 
-/** The Pi provider id kobe-models registers (kobe-models/protocol.ts `KOBE_PROVIDER_ID`). */
-const KOBE_PROVIDER = "kobe";
+/** The Pi provider id kobe-models registers (kobe-models/protocol.ts `KAIJU_PROVIDER_ID`). */
+const KAIJU_PROVIDER = "kobe";
 
 type ResultOk = Extract<ThreadCompactResultFrame, { ok: true }>;
 type ResultErr = Extract<ThreadCompactResultFrame, { ok: false }>;
@@ -61,7 +61,7 @@ export function selectsModel(state: unknown, model: RunModel, gatewayUrl: string
     contextWindow?: unknown;
     maxTokens?: unknown;
   };
-  if (m.provider !== KOBE_PROVIDER || m.id !== model.gatewayModel) return false;
+  if (m.provider !== KAIJU_PROVIDER || m.id !== model.gatewayModel) return false;
   if (m.baseUrl !== gatewayBaseUrl(gatewayUrl, model.api)) return false;
   const limits = model.limits;
   return (
@@ -73,7 +73,7 @@ export function selectsModel(state: unknown, model: RunModel, gatewayUrl: string
 /** Pi RPC `set_model` for the compaction's model (only the kobe provider; never the server's input). */
 export const setModelCommand = (model: RunModel) => ({
   type: "set_model",
-  provider: KOBE_PROVIDER,
+  provider: KAIJU_PROVIDER,
   modelId: model.gatewayModel,
 });
 

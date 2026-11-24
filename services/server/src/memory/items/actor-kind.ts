@@ -1,4 +1,4 @@
-import type { SemanticMemoryActorKind } from "@kobe/protocol";
+import type { SemanticMemoryActorKind } from "@kaiju/protocol";
 
 /**
  * How a version's author kind is shown to someone who isn't a Site curator (KOBE-403, SM20): a

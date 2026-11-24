@@ -3,8 +3,8 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, beforeEach, expect } from "vitest";
-import { type KobeTx } from "@kobe/db";
-import { type MemoryExtractorCandidate } from "@kobe/protocol";
+import { type KaijuTx } from "@kaiju/db";
+import { type MemoryExtractorCandidate } from "@kaiju/protocol";
 import { BackgroundTasks } from "../background.js";
 import { appendRunEvents } from "../event-stream/append.js";
 import { type ServerCallClient, type ServerCallInput } from "../models/gateway-client.js";
@@ -46,7 +46,7 @@ export let background: BackgroundTasks;
 export let passes: LearningPasses;
 export const passesOn = (
   replica: number,
-  beforeClaim?: (tx: KobeTx) => Promise<void>,
+  beforeClaim?: (tx: KaijuTx) => Promise<void>,
   completion?: LearningPassesOptions["completion"],
 ) =>
   createLearningPasses({

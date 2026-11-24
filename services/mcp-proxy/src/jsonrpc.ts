@@ -1,4 +1,4 @@
-import { parseJsonStrict } from "@kobe/protocol";
+import { parseJsonStrict } from "@kaiju/protocol";
 
 /**
  * JSON-RPC 2.0 as MCP Streamable HTTP uses it (one message per POST; batches were removed in MCP

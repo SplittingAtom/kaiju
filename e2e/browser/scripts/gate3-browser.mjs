@@ -182,7 +182,7 @@ async function versionBadge(page) {
   const target = (await switcher.getAttribute("aria-label"))?.match(/v(\d+)$/)?.[1] ?? "?";
   await switcher.click();
   const gone = await page
-    .locator("[data-kobe-agent-version]")
+    .locator("[data-kaiju-agent-version]")
     .waitFor({ state: "detached", timeout: 10_000 })
     .then(
       () => true,

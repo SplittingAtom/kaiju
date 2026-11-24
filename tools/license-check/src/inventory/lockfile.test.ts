@@ -19,7 +19,7 @@ importers:
       vitest: { specifier: ^5, version: 5.0.3 }
   apps/web:
     dependencies:
-      '@kobe/protocol': { specifier: 'workspace:*', version: 'link:../../packages/protocol' }
+      '@kaiju/protocol': { specifier: 'workspace:*', version: 'link:../../packages/protocol' }
       auth: { specifier: ^1, version: 1.0.0(vitest@5.0.3) }
       native: { specifier: ^1, version: 1.0.0 }
       string-width-cjs: { specifier: npm:string-width@4.2.3, version: string-width@4.2.3 }

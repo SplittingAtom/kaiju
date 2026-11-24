@@ -8,7 +8,7 @@ import { canRegenerateWith } from "../../lib/chat/thread-state";
 import { branchPoint } from "../../lib/chat/tree";
 import { IconAction } from "../shell/icon-action";
 import { chatPortalContainer } from "../ui/chat-portal";
-import { useKobeExtras } from "./kobe-runtime";
+import { useKaijuExtras } from "./kaiju-runtime";
 import { useThreadTeamModels } from "./use-team-models";
 
 const ITEM =
@@ -29,7 +29,7 @@ const CURRENT = " (current)";
  * thread (its model never changes) and while the team's models are unknown.
  */
 export function RegenerateWith() {
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const loaded = useThreadTeamModels();
   const parentId = useAuiState((s) => s.message.parentId);
   const pending = useRef(false);

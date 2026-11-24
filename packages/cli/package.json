@@ -1,12 +1,12 @@
 {
-  "name": "@kobe/cli",
+  "name": "@kaiju/cli",
   "version": "0.0.0",
   "private": true,
   "license": "Apache-2.0",
-  "description": "Operator CLI: kobe backup, kobe restore and kobe projects restricted",
+  "description": "Operator CLI: kaiju backup, kaiju restore and kaiju projects restricted",
   "type": "module",
   "bin": {
-    "kobe": "./dist/cli.js"
+    "kaiju": "./dist/cli.js"
   },
   "files": [
     "dist"
@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1172.0",
-    "@kobe/db": "workspace:*",
+    "@kaiju/db": "workspace:*",
     "pg": "^8.23.1",
     "zod": "^4.6.7"
   },

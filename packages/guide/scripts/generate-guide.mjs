@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// KOBE-616, moved to @kobe/guide by KOBE-620: compiles the Kaiju guide (docs/guide/**/*.md at the
+// KOBE-616, moved to @kaiju/guide by KOBE-620: compiles the Kaiju guide (docs/guide/**/*.md at the
 // repository root) into src/generated/pages.ts, so the package (and the web bundle and the server
 // image that use it) carry it and nothing is read from docs/guide at runtime. Runs before the
 // package's build, typecheck and tests (package.json); the output is gitignored. Fails with every

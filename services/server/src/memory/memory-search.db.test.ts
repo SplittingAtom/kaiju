@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
 import pino from "pino";
-import { createDb, type KobeDatabase } from "@kobe/db";
+import { createDb, type KaijuDatabase } from "@kaiju/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { readMemory, type ReadRequest } from "./agent.js";
 import { memoryBlobKey } from "./keys.js";
@@ -15,7 +15,7 @@ import type { GetOptions } from "../workspace-sync/object-store.js";
  * committed, so no connection sits idle in a transaction while up to 200 objects are fetched.
  * Ranking and limits are unchanged (path order, 200 docs, 20 files, 256 KiB).
  */
-const PREFIX = "kobe/";
+const PREFIX = "kaiju/";
 const DOCS = 210;
 
 /**
@@ -45,7 +45,7 @@ const fx = new EventStreamFixture();
 const objects = new ProbedObjects();
 const log = pino({ level: "silent" });
 /** The search's own pool: nothing else checks clients out of it. */
-let search: KobeDatabase;
+let search: KaijuDatabase;
 
 beforeAll(async () => {
   await fx.setup([{}], () => ({ blobs: { objects, prefix: PREFIX } }));

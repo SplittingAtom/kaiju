@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PinnedTool } from "@kobe/db";
+import type { PinnedTool } from "@kaiju/db";
 import { appTitle, humaniseToolName, templateTitle } from "./app-title.js";
 
 const tool = (extra: Record<string, unknown> = {}) =>

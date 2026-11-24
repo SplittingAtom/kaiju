@@ -1,4 +1,4 @@
-import { sql, type KobeTx } from "@kobe/db";
+import { sql, type KaijuTx } from "@kaiju/db";
 import type { SandboxTarget } from "../sandbox-wire/types.js";
 
 /**
@@ -38,7 +38,7 @@ export type FlushProofOutcome =
  * row is not hibernated (yet), and the agent retries once.
  */
 export async function recordFlushProof(
-  tx: KobeTx,
+  tx: KaijuTx,
   caller: SandboxTarget & { readonly sandboxId: string },
   connectionId: string,
 ): Promise<FlushProofOutcome> {
@@ -65,7 +65,7 @@ export async function recordFlushProof(
 }
 
 /** Any upload or manifest change after the proof: the volume is no longer proven covered. */
-export async function clearFlushProof(tx: KobeTx, owner: SandboxTarget): Promise<void> {
+export async function clearFlushProof(tx: KaijuTx, owner: SandboxTarget): Promise<void> {
   await tx.execute(sql`
     UPDATE sandboxes SET volume_synced_at = NULL
      WHERE team_id = ${owner.teamId} AND user_id = ${owner.userId}
@@ -74,7 +74,7 @@ export async function clearFlushProof(tx: KobeTx, owner: SandboxTarget): Promise
 
 /** Hibernated sandboxes of a team past the dormancy period with a proof (unlocked read). */
 export async function reclaimCandidates(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   dormantDays: number,
   limit: number,
@@ -99,7 +99,7 @@ export interface ReclaimableSandbox {
  * be reclaimed now. The caller holds the legal-hold lock. Undefined when it may not.
  */
 export async function lockReclaimable(
-  tx: KobeTx,
+  tx: KaijuTx,
   target: SandboxTarget,
   dormantDays: number,
 ): Promise<ReclaimableSandbox | undefined> {
@@ -145,7 +145,7 @@ export async function lockReclaimable(
  * After the claim and volume are gone: the row stays `hibernated` without a sandbox, so the next
  * wake creates a new one (and announces "waking"); the proof is used up.
  */
-export async function forgetReclaimedSandbox(tx: KobeTx, target: SandboxTarget): Promise<void> {
+export async function forgetReclaimedSandbox(tx: KaijuTx, target: SandboxTarget): Promise<void> {
   await tx.execute(sql`
     UPDATE sandboxes SET sandbox_id = NULL, pvc = NULL, volume_synced_at = NULL
      WHERE team_id = ${target.teamId} AND user_id = ${target.userId}`);

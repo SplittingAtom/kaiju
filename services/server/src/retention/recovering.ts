@@ -1,4 +1,4 @@
-import { lockLegalHolds, sql, withTeam, type KobeDb, type KobeTx } from "@kobe/db";
+import { lockLegalHolds, sql, withTeam, type KaijuDb, type KaijuTx } from "@kaiju/db";
 import { logger } from "../logger.js";
 import { DeleteAbortedError } from "./bounded-delete.js";
 
@@ -9,9 +9,9 @@ import { DeleteAbortedError } from "./bounded-delete.js";
  * error is rethrown as before.
  */
 export async function withTeamRecovering<T>(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
-  fn: (tx: KobeTx) => Promise<T>,
+  fn: (tx: KaijuTx) => Promise<T>,
 ): Promise<T> {
   try {
     return await withTeam(db, teamId, fn);

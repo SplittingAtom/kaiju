@@ -1,6 +1,6 @@
 "use client";
 
-import { thinkingRank, type ThinkingControl, type ThinkingLevel } from "@kobe/protocol";
+import { thinkingRank, type ThinkingControl, type ThinkingLevel } from "@kaiju/protocol";
 import type { TeamModels } from "../../lib/admin/api/team/models";
 import { ThinkingEffort } from "./thinking-effort";
 

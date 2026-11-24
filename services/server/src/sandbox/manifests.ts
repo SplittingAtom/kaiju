@@ -8,7 +8,7 @@ import {
   BOOTSTRAP_TOKEN_DIR,
   BOOTSTRAP_TOKEN_FILE,
   BOOTSTRAP_TOKEN_SECONDS,
-  KOBE_ENDPOINTS,
+  KAIJU_ENDPOINTS,
   EVAL_NETWORK_POLICY,
   SKILL_SCAN_NETWORK_POLICY,
   LABEL_MANAGED_BY,
@@ -40,7 +40,7 @@ import {
   SANDBOX_WARM_POOL,
   SERVER_ROLE_BINDING,
   TEAM_NAMESPACE_PREFIX,
-  type KobeEndpoint,
+  type KaijuEndpoint,
 } from "./constants.js";
 
 /**
@@ -152,8 +152,8 @@ export function serverRoleBindingManifest(namespace: string, s: SandboxSettings)
 }
 
 /** Kaiju services sandboxes may open connections to (the model gateway only with modelGatewayAccess). */
-export const sandboxEgressEndpoints = (s: SandboxSettings): KobeEndpoint[] =>
-  KOBE_ENDPOINTS.filter((e) => e !== "modelGateway" || s.modelGatewayAccess);
+export const sandboxEgressEndpoints = (s: SandboxSettings): KaijuEndpoint[] =>
+  KAIJU_ENDPOINTS.filter((e) => e !== "modelGateway" || s.modelGatewayAccess);
 
 /**
  * Default deny (spec D11, D28): no ingress at all; egress only to the Kaiju server, the model
@@ -294,7 +294,7 @@ export function pullSecretManifest(namespace: string, source: KubeObject): KubeO
 }
 
 /** ClusterIPs of the Kaiju Services, by endpoint (for /etc/hosts in sandboxes). */
-export type EndpointAddresses = Readonly<Record<KobeEndpoint, string>>;
+export type EndpointAddresses = Readonly<Record<KaijuEndpoint, string>>;
 
 const url = (scheme: string, host: string, port: number, defaultPort: number): string =>
   `${scheme}://${host}${port === defaultPort ? "" : `:${port}`}`;
@@ -378,7 +378,7 @@ export function sandboxPodSpec(
       searches: [],
       options: [{ name: "ndots", value: "1" }],
     },
-    hostAliases: KOBE_ENDPOINTS.map((e) => ({ ip: addresses[e], hostnames: [SANDBOX_HOSTS[e]] })),
+    hostAliases: KAIJU_ENDPOINTS.map((e) => ({ ip: addresses[e], hostnames: [SANDBOX_HOSTS[e]] })),
     ...(s.imagePullSecrets.length > 0
       ? { imagePullSecrets: s.imagePullSecrets.map((name) => ({ name })) }
       : {}),

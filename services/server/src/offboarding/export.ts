@@ -1,4 +1,4 @@
-import { SYSTEM_ACTOR, sql, withTeam } from "@kobe/db";
+import { SYSTEM_ACTOR, sql, withTeam } from "@kaiju/db";
 import { currentAuditContext } from "../audit/context.js";
 import { recordAudit } from "../audit/record.js";
 import { zipChunks, type ZipSource } from "./zip.js";

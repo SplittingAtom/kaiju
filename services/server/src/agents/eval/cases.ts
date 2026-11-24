@@ -1,12 +1,12 @@
-import { EVAL_CASE_SUITE, evalCasesFile } from "@kobe/db";
-import type { EvalCaseContent } from "@kobe/protocol";
+import { EVAL_CASE_SUITE, evalCasesFile } from "@kaiju/db";
+import type { EvalCaseContent } from "@kaiju/protocol";
 
 /**
  * Shared eval cases as the eval image's extra suite (KOBE-276): the agent's accepted cases, frozen
  * into the eval when it starts (`orbit_evals.case_ids`). Their text never sits in a Kubernetes
  * object (review S2): the Job runs with `--gateway-cases` and fetches `cases.json` from the model
  * gateway with its own eval token, which reads it from Postgres while the eval runs
- * (`@kobe/db` `loadEvalCaseFile`). The image reports ids and pass/fail only.
+ * (`@kaiju/db` `loadEvalCaseFile`). The image reports ids and pass/fail only.
  */
 
 export const CASE_SUITE = EVAL_CASE_SUITE;

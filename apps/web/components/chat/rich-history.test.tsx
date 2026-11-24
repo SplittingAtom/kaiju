@@ -2,7 +2,7 @@
 import { act, cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { PREFERENCES_PATH } from "../../lib/shell/preferences";
 import { must } from "../../lib/testing/must";
 import { browserSpaced, crushedIconButtons, openApp, pressModShift } from "./testing";
@@ -14,7 +14,7 @@ import { browserSpaced, crushedIconButtons, openApp, pressModShift } from "./tes
  * Detail toggle (Mod+Shift+D, the palette) opens or closes everything and follows the member
  * across reloads; each answer's Show details follows it (KOBE-418).
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 afterEach(() => {
   cleanup();
@@ -100,7 +100,7 @@ function recordedThread(): { thread: string; prompt: string; bigEntry: string } 
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 

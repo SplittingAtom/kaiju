@@ -1,6 +1,6 @@
 "use client";
 
-import { SEMANTIC_MEMORY_SCOPE_LABELS } from "@kobe/protocol";
+import { SEMANTIC_MEMORY_SCOPE_LABELS } from "@kaiju/protocol";
 import { useMemo, useState } from "react";
 import type { ApiError } from "../../lib/api/client";
 import { createTransferApi, exportFileName } from "../../lib/memory/transfer-api";

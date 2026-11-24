@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createTestDatabase, testServerUrl, type TestDatabase } from "@kobe/db/testing";
+import { createTestDatabase, testServerUrl, type TestDatabase } from "@kaiju/db/testing";
 import { createApp } from "../app.js";
 import { BackgroundTasks } from "../background.js";
 import { createServerDeps, type ServerDeps } from "../deps.js";
@@ -16,7 +16,7 @@ import { fakeIsolation } from "../testing/isolation.js";
  * provider-managed row, through the Team console's code paths and rules; never their own
  * membership; every change audited in the team's log with `via: "site_admin"`.
  */
-const PUBLIC_URL = "http://kobe.test";
+const PUBLIC_URL = "http://kaiju.test";
 const PASSWORD = "a long enough password";
 
 type Person =

@@ -32,9 +32,9 @@ function artifactsBinding(panel: ArtifactPanelApi): MenuBinding {
   return {
     label: showing ? "Hide the artifact column" : "Show the artifact column",
     onSelect: () => {
-      const column = document.getElementById("kobe-artifact-column");
+      const column = document.getElementById("kaiju-artifact-column");
       const inside = column?.contains(document.activeElement) === true;
-      if (panel.toggleColumn() && inside) document.getElementById("kobe-chat-main")?.focus();
+      if (panel.toggleColumn() && inside) document.getElementById("kaiju-chat-main")?.focus();
     },
     blocker: panel.openId === null && !panel.artifacts?.length ? NO_ARTIFACTS : null,
   };

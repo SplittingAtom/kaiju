@@ -1,5 +1,5 @@
-import { sql, type KobeTx } from "@kobe/db";
-import { THREAD_CARD_BRANCHES_MAX } from "@kobe/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
+import { THREAD_CARD_BRANCHES_MAX } from "@kaiju/protocol";
 import { findPinnableAgent } from "../agents/versions.js";
 import { treeEntrySql } from "../sandbox-wire/entries.js";
 import { cutText, firstUserMessage, messageCount } from "./messages.js";
@@ -11,7 +11,7 @@ import { THREAD_CARD_MESSAGE_CHARS, type ThreadCard } from "./schemas.js";
  * user message (cut short), its agent, its last activity and how many messages it holds. Read
  * when the card opens, for whoever may read the thread; Postgres only (never a sandbox).
  */
-async function counted(tx: KobeTx, teamId: string, threadId: string) {
+async function counted(tx: KaijuTx, teamId: string, threadId: string) {
   const { count, capped } = await messageCount(tx, teamId, threadId);
   return { message_count: count, message_count_capped: capped };
 }
@@ -22,7 +22,7 @@ async function counted(tx: KobeTx, teamId: string, threadId: string) {
  * straight thread has none. Server-written notes and cards are not children ({@link treeEntrySql}).
  * Stops after {@link THREAD_CARD_BRANCHES_MAX}. An index-only scan over the whole thread per hover.
  */
-export async function junctionCount(tx: KobeTx, teamId: string, threadId: string) {
+export async function junctionCount(tx: KaijuTx, teamId: string, threadId: string) {
   const { rows } = await tx.execute<{ n: number }>(sql`
     SELECT count(*)::int AS n FROM (
       SELECT e.parent_id FROM thread_entries e
@@ -40,7 +40,7 @@ export async function junctionCount(tx: KobeTx, teamId: string, threadId: string
 }
 
 export async function threadCard(
-  tx: KobeTx,
+  tx: KaijuTx,
   viewer: Viewer,
   threadId: string,
 ): Promise<ThreadCard | null> {

@@ -14,8 +14,8 @@ const read = vi.fn(async (): Promise<ContextRead> => ({
   context: contextOf([section("other", 1)]),
 }));
 
-vi.mock("../chat/kobe-runtime", () => ({
-  useKobeExtras: () => ({
+vi.mock("../chat/kaiju-runtime", () => ({
+  useKaijuExtras: () => ({
     controller: { threadContext: read },
     state: { threadId: screenThread.id },
   }),
@@ -37,7 +37,7 @@ function Opener() {
 
 const app = () => (
   <IconActionProvider>
-    <div data-kobe-chat>
+    <div data-kaiju-chat>
       <ContextViewerHost>
         <Opener />
       </ContextViewerHost>

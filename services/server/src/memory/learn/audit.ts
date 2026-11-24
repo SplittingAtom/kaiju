@@ -1,5 +1,5 @@
-import type { MemoryPassFailureCode } from "@kobe/protocol";
-import { SYSTEM_ACTOR, type KobeTx } from "@kobe/db";
+import type { MemoryPassFailureCode } from "@kaiju/protocol";
+import { SYSTEM_ACTOR, type KaijuTx } from "@kaiju/db";
 import { recordAudit } from "../../audit/record.js";
 import type { LearningPassInput } from "./pass-input/assemble.js";
 
@@ -21,7 +21,7 @@ interface PassRef {
 const person = (p: PassRef) => ({ kind: "user" as const, id: p.userId });
 
 export function auditPassStarted(
-  tx: KobeTx,
+  tx: KaijuTx,
   pass: PassRef & { readonly modelAlias: string; readonly promptVersion: string },
   input: Pick<LearningPassInput, "partial" | "truncated" | "summarised"> & {
     readonly entries: number;
@@ -52,7 +52,7 @@ export interface PassCounts {
 }
 
 export function auditPassCompleted(
-  tx: KobeTx,
+  tx: KaijuTx,
   pass: PassRef,
   counts: PassCounts,
   attempts: number,
@@ -74,7 +74,7 @@ export function auditPassCompleted(
 }
 
 export function auditPassFailed(
-  tx: KobeTx,
+  tx: KaijuTx,
   pass: PassRef,
   code: MemoryPassFailureCode | "interrupted",
   attempts: number,

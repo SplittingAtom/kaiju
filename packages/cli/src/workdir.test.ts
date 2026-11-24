@@ -6,9 +6,9 @@ import { CLEANUP_SIGNALS, makePrivateWorkDir, removeOnSignal } from "./workdir.j
 
 describe("makePrivateWorkDir", () => {
   it("creates a 0700 directory under the given base (KOBE_TMPDIR)", async () => {
-    const base = await mkdtemp(join(tmpdir(), "kobe-base-"));
+    const base = await mkdtemp(join(tmpdir(), "kaiju-base-"));
     const dir = await makePrivateWorkDir(base);
-    expect(dir.startsWith(join(base, "kobe-restore-"))).toBe(true);
+    expect(dir.startsWith(join(base, "kaiju-restore-"))).toBe(true);
     expect((await stat(dir)).mode & 0o777).toBe(0o700);
   });
 });

@@ -1,9 +1,9 @@
 import { Hono } from "hono";
-import { annotate, honoTracing } from "@kobe/telemetry";
-import { AuditBusyError } from "@kobe/db";
+import { annotate, honoTracing } from "@kaiju/telemetry";
+import { AuditBusyError } from "@kaiju/db";
 import { auditRequestContext, auditUserContext } from "./audit/context.js";
 import { requireSession, type AuthVariables } from "./auth/session.js";
-import { delegationOf } from "./kobe-mcp/delegation.js";
+import { delegationOf } from "./kaiju-mcp/delegation.js";
 import type { ServerDeps } from "./deps.js";
 import { logger } from "./logger.js";
 import type { IngressRateLimitSource } from "./config.js";
@@ -61,7 +61,7 @@ import {
   connectorOauthRoutes,
   oauthCallbackRefusals,
 } from "./routes/connector-oauth.js";
-import { clientMetadataDocument, kobeOrigin } from "./connectors/oauth/client.js";
+import { clientMetadataDocument, kaijuOrigin } from "./connectors/oauth/client.js";
 import { siteConnectorsRoutes } from "./routes/site-connectors.js";
 import { siteSkillBlocklistRoutes } from "./routes/site-skill-blocklist.js";
 import { siteSkillRescanRoutes } from "./routes/site-skill-rescans.js";
@@ -228,7 +228,7 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   // Kaiju's OAuth Client ID Metadata Document (KOBE-109): public, fetched by authorization servers.
   app.get("/v1/oauth/client-metadata.json", (c) => {
     c.header("Cache-Control", "public, max-age=3600");
-    return c.json(clientMetadataDocument(kobeOrigin(deps.publicUrl)));
+    return c.json(clientMetadataDocument(kaijuOrigin(deps.publicUrl)));
   });
 
   // The OAuth callback's refusals become pages a browser can use (KOBE-835); wraps the route below.
@@ -406,6 +406,6 @@ export function createApp(deps?: ServerDeps, options: AppOptions = {}): Hono {
   );
   app.route("/v1", api);
   // Kaiju MCP admin tools (KOBE-619) run their console routes in process through this router.
-  deps.kobeMcp.bindApi(app);
+  deps.kaijuMcp.bindApi(app);
   return app;
 }

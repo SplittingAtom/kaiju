@@ -2,14 +2,14 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { loadEnvelope } from "@kobe/db";
+import { loadEnvelope } from "@kaiju/db";
 import type { ProbeResult } from "./probe.js";
 import { refreshConnector } from "./refresh.js";
 import { logger } from "../logger.js";
 import { createInternalApp } from "../routes/internal.js";
 import type { TestBrowser } from "../testing/browser.js";
 import { openHarness, type Harness } from "../testing/harness.js";
-import { signSessionToken } from "@kobe/session-token";
+import { signSessionToken } from "@kaiju/session-token";
 import {
   INTERNAL_KEY,
   MCP_SESSION_KEY,

@@ -246,13 +246,13 @@ importers:
       '@codemirror/view':
         specifier: ^6.43.15
         version: 6.43.15
-      '@kobe/agent-file':
+      '@kaiju/agent-file':
         specifier: workspace:*
         version: link:../../packages/agent-file
-      '@kobe/guide':
+      '@kaiju/guide':
         specifier: workspace:*
         version: link:../../packages/guide
-      '@kobe/protocol':
+      '@kaiju/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
       '@tailwindcss/postcss':
@@ -349,16 +349,16 @@ importers:
 
   charts/kobe:
     devDependencies:
-      '@kobe/egress-proxy':
+      '@kaiju/egress-proxy':
         specifier: workspace:*
         version: link:../../services/egress-proxy
-      '@kobe/mcp-proxy':
+      '@kaiju/mcp-proxy':
         specifier: workspace:*
         version: link:../../services/mcp-proxy
-      '@kobe/model-gateway':
+      '@kaiju/model-gateway':
         specifier: workspace:*
         version: link:../../services/model-gateway
-      '@kobe/server':
+      '@kaiju/server':
         specifier: workspace:*
         version: link:../../services/server
       yaml:
@@ -369,7 +369,7 @@ importers:
 
   packages/agent-file:
     dependencies:
-      '@kobe/protocol':
+      '@kaiju/protocol':
         specifier: workspace:*
         version: link:../protocol
       yaml:
@@ -384,7 +384,7 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.1172.0
         version: 3.1175.0
-      '@kobe/db':
+      '@kaiju/db':
         specifier: workspace:*
         version: link:../db
       pg:
@@ -443,7 +443,7 @@ importers:
 
   packages/session-token:
     dependencies:
-      '@kobe/protocol':
+      '@kaiju/protocol':
         specifier: workspace:*
         version: link:../protocol
 
@@ -451,7 +451,7 @@ importers:
 
   packages/telemetry:
     dependencies:
-      '@kobe/protocol':
+      '@kaiju/protocol':
         specifier: workspace:*
         version: link:../protocol
       '@opentelemetry/api':
@@ -487,19 +487,19 @@ importers:
 
   services/egress-proxy:
     dependencies:
-      '@kobe/address-policy':
+      '@kaiju/address-policy':
         specifier: workspace:*
         version: link:../../packages/address-policy
-      '@kobe/db':
+      '@kaiju/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@kobe/protocol':
+      '@kaiju/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
-      '@kobe/session-token':
+      '@kaiju/session-token':
         specifier: workspace:*
         version: link:../../packages/session-token
-      '@kobe/telemetry':
+      '@kaiju/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
       pg:
@@ -521,16 +521,16 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.5
         version: 2.1.6(hono@4.13.19)
-      '@kobe/address-policy':
+      '@kaiju/address-policy':
         specifier: workspace:*
         version: link:../../packages/address-policy
-      '@kobe/protocol':
+      '@kaiju/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
-      '@kobe/session-token':
+      '@kaiju/session-token':
         specifier: workspace:*
         version: link:../../packages/session-token
-      '@kobe/telemetry':
+      '@kaiju/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
       hono:
@@ -548,16 +548,16 @@ importers:
 
   services/model-gateway:
     dependencies:
-      '@kobe/db':
+      '@kaiju/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@kobe/protocol':
+      '@kaiju/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
-      '@kobe/session-token':
+      '@kaiju/session-token':
         specifier: workspace:*
         version: link:../../packages/session-token
-      '@kobe/telemetry':
+      '@kaiju/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
       pg:
@@ -576,7 +576,7 @@ importers:
 
   services/sandbox-agent:
     dependencies:
-      '@kobe/protocol':
+      '@kaiju/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
       pino:
@@ -589,7 +589,7 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
-      '@kobe/model-gateway':
+      '@kaiju/model-gateway':
         specifier: workspace:*
         version: link:../model-gateway
       '@types/ws':
@@ -613,28 +613,28 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.5
         version: 2.1.6(hono@4.13.19)
-      '@kobe/address-policy':
+      '@kaiju/address-policy':
         specifier: workspace:*
         version: link:../../packages/address-policy
-      '@kobe/agent-file':
+      '@kaiju/agent-file':
         specifier: workspace:*
         version: link:../../packages/agent-file
-      '@kobe/db':
+      '@kaiju/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@kobe/guide':
+      '@kaiju/guide':
         specifier: workspace:*
         version: link:../../packages/guide
-      '@kobe/protocol':
+      '@kaiju/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
-      '@kobe/session-token':
+      '@kaiju/session-token':
         specifier: workspace:*
         version: link:../../packages/session-token
-      '@kobe/skill-scanner':
+      '@kaiju/skill-scanner':
         specifier: workspace:*
         version: link:../../packages/skill-scanner
-      '@kobe/telemetry':
+      '@kaiju/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
       '@kubernetes/client-node':
@@ -683,7 +683,7 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
-      '@kobe/mcp-proxy':
+      '@kaiju/mcp-proxy':
         specifier: workspace:*
         version: link:../mcp-proxy
       '@levischuck/tiny-cbor':

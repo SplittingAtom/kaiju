@@ -1,10 +1,10 @@
-import { SERVER_CALL_LIMITS, type ServerCallPurpose } from "@kobe/protocol";
+import { SERVER_CALL_LIMITS, type ServerCallPurpose } from "@kaiju/protocol";
 import type { Logger } from "pino";
 import { AppendError, type NewRunEvent } from "../event-stream/append.js";
 import { ServerCallError } from "../models/gateway-client.js";
 
 /**
- * The epilogue of a completed run (KOBE-234; contract in `@kobe/protocol` server-call.ts, design in
+ * The epilogue of a completed run (KOBE-234; contract in `@kaiju/protocol` server-call.ts, design in
  * docs/design/server-model-calls.md). KOBE-219 (title) and KOBE-222 (follow-ups) supply the model
  * calls and the writes; this fixes the order and the failure rules:
  *

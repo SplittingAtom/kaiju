@@ -1,4 +1,4 @@
-import type { AuditActor, KobeDb } from "@kobe/db";
+import type { AuditActor, KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import type { BlobStore } from "../retention/blobs.js";
 import type { SandboxProvider } from "../sandbox/provider.js";
@@ -14,7 +14,7 @@ export type OffboardProvider = Pick<
 >;
 
 export interface OffboardingContext {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** The sandbox provider, once it exists (startup/server.ts builds it after the server deps). */
   readonly provider: () => OffboardProvider | undefined;
   /** Object storage of the workspace copy; undefined when `s3.*` is not configured. */

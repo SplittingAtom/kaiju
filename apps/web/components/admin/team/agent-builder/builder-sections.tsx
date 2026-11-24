@@ -1,7 +1,7 @@
 "use client";
 
-import { slugFromName } from "@kobe/agent-file";
-import type { AgentMemorySetting } from "@kobe/protocol";
+import { slugFromName } from "@kaiju/agent-file";
+import type { AgentMemorySetting } from "@kaiju/protocol";
 import type { RefObject } from "react";
 import {
   getAgentVersion,

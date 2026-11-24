@@ -8,8 +8,8 @@ import {
   KOBE_TOOLS_FD,
   UPLOAD_DEFAULT_MAX_FILE_BYTES,
   canonicalJson,
-  kobeToolsRequestSchema,
-  kobeToolsResponseSchema,
+  kaijuToolsRequestSchema,
+  kaijuToolsResponseSchema,
   shareFileInputSchema,
   toolInputSchema,
   workspaceDeleteQuerySchema,
@@ -142,13 +142,13 @@ describe("kobe-tools file.share", () => {
   };
   it("decodes the request and keeps artifact.put working", () => {
     expect(KOBE_TOOLS_FD).toBe(4);
-    expect(kobeToolsRequestSchema.safeParse(request).success).toBe(true);
-    expect(kobeToolsRequestSchema.safeParse({ ...request, tool: "create_artifact" }).success).toBe(
+    expect(kaijuToolsRequestSchema.safeParse(request).success).toBe(true);
+    expect(kaijuToolsRequestSchema.safeParse({ ...request, tool: "create_artifact" }).success).toBe(
       false,
     );
-    expect(kobeToolsRequestSchema.safeParse({ ...request, input: {} }).success).toBe(false);
+    expect(kaijuToolsRequestSchema.safeParse({ ...request, input: {} }).success).toBe(false);
     expect(
-      kobeToolsRequestSchema.safeParse({
+      kaijuToolsRequestSchema.safeParse({
         id: "r2",
         op: "artifact.put",
         tool_call_id: "tc_2",
@@ -169,23 +169,23 @@ describe("kobe-tools file.share", () => {
     sha256: SHA,
   };
   it("decodes ok and error responses; artifact responses still decode", () => {
-    expect(kobeToolsResponseSchema.safeParse(ok).success).toBe(true);
+    expect(kaijuToolsResponseSchema.safeParse(ok).success).toBe(true);
     expect(
-      kobeToolsResponseSchema.safeParse({
+      kaijuToolsResponseSchema.safeParse({
         id: "r1",
         ok: false,
         error: { code: "not_synced", message: "m" },
       }).success,
     ).toBe(true);
     expect(
-      kobeToolsResponseSchema.safeParse({
+      kaijuToolsResponseSchema.safeParse({
         id: "r1",
         ok: true,
         artifact_id: EXAMPLE_IDS.artifact,
         version: 1,
       }).success,
     ).toBe(true);
-    expect(kobeToolsResponseSchema.safeParse({ ...ok, size_bytes: -1 }).success).toBe(false);
+    expect(kaijuToolsResponseSchema.safeParse({ ...ok, size_bytes: -1 }).success).toBe(false);
   });
 });
 

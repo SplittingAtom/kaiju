@@ -23,8 +23,8 @@ RUN case "${SERVICE}" in \
       *) echo "error: --build-arg SERVICE must be server, mcp-proxy, egress-proxy or model-gateway (got '${SERVICE}')" >&2; exit 1 ;; \
     esac \
  && pnpm install --offline --frozen-lockfile \
- && pnpm turbo run build --filter=@kobe/${SERVICE}... \
- && pnpm --filter=@kobe/${SERVICE} deploy --prod --legacy /out
+ && pnpm turbo run build --filter=@kaiju/${SERVICE}... \
+ && pnpm --filter=@kaiju/${SERVICE} deploy --prod --legacy /out
 
 FROM ${NODE_IMAGE}
 ENV NODE_ENV=production

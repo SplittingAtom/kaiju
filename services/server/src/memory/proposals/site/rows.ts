@@ -1,5 +1,5 @@
-import { sql, type KobeTx, type SiteMemoryProposalState } from "@kobe/db";
-import type { SemanticMemoryKind } from "@kobe/protocol";
+import { sql, type KaijuTx, type SiteMemoryProposalState } from "@kaiju/db";
+import type { SemanticMemoryKind } from "@kaiju/protocol";
 import { MemoryItemError, inactive } from "../../items/errors.js";
 
 /**
@@ -137,7 +137,7 @@ export const siteProposalNotFound = () =>
 
 /** One proposal the audience may see, or 404. */
 export async function readSiteProposal(
-  tx: KobeTx,
+  tx: KaijuTx,
   audience: Audience,
   id: string,
   lock = false,
@@ -151,7 +151,7 @@ export async function readSiteProposal(
 
 /** Row-locks an open, unexpired proposal in `want` (default: any open state) for an action. */
 export async function lockOpen(
-  tx: KobeTx,
+  tx: KaijuTx,
   audience: Audience,
   id: string,
   want: readonly SiteMemoryProposalState[] = OPEN_STATES,
@@ -196,7 +196,7 @@ function where(audience: Audience, f: ListFilter) {
 
 /** Open proposals oldest first (a queue); decided ones newest first. */
 export async function listSiteProposals(
-  tx: KobeTx,
+  tx: KaijuTx,
   audience: Audience,
   f: ListFilter,
 ): Promise<SiteProposalRow[]> {
@@ -210,7 +210,7 @@ export async function listSiteProposals(
 
 /** How many proposals per state the audience sees (open ones past expiry count as expired). */
 export async function countSiteProposals(
-  tx: KobeTx,
+  tx: KaijuTx,
   audience: Audience,
   f: Omit<ListFilter, "state" | "limit">,
 ): Promise<Record<string, number>> {

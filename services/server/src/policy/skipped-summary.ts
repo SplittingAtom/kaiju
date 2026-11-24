@@ -1,10 +1,10 @@
 import {
-  type KobeEventType,
+  type KaijuEventType,
   type PolicyReasonCode,
   type RiskClass,
   type SkippedAction,
-} from "@kobe/protocol";
-import { sql, threadEntries, type KobeTx } from "@kobe/db";
+} from "@kaiju/protocol";
+import { sql, threadEntries, type KaijuTx } from "@kaiju/db";
 import type { NewRunEvent } from "../event-stream/append.js";
 import { loadSkippedReport } from "./skipped-actions.js";
 
@@ -64,7 +64,7 @@ export function skippedSummary(actions: readonly SkippedAction[], count: number)
   ].join("\n");
 }
 
-const REPORTED_EVENTS: ReadonlySet<string> = new Set<KobeEventType>([
+const REPORTED_EVENTS: ReadonlySet<string> = new Set<KaijuEventType>([
   "run.completed",
   "run.failed",
   "run.interrupted",
@@ -77,7 +77,7 @@ const REPORTED_EVENTS: ReadonlySet<string> = new Set<KobeEventType>([
  * continues from its own leaf; the next run's `parent_entry_id` must stay an entry Pi knows).
  */
 export async function reportSkippedActionsInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   run: { readonly teamId: string; readonly runId: string; readonly threadId: string },
   event: NewRunEvent,
   isScheduled: boolean,
@@ -93,7 +93,7 @@ export async function reportSkippedActionsInTx(
 }
 
 async function appendSummaryEntry(
-  tx: KobeTx,
+  tx: KaijuTx,
   run: { readonly teamId: string; readonly runId: string; readonly threadId: string },
   text: string,
   count: number,
@@ -132,7 +132,7 @@ async function appendSummaryEntry(
  * neither a branch point (`run.start.parent_entry_id`) nor the thread's leaf.
  */
 export async function isSkippedSummaryEntry(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   threadId: string,
   entryId: string,

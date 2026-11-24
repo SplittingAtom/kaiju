@@ -2,17 +2,17 @@ import {
   epilogueOpen,
   formatSseEvent,
   formatSseRetry,
-  isKobeEventType,
+  isKaijuEventType,
   isTerminalEventType,
   SERVER_CALL_EPILOGUE_MAX_MS,
   serverCallPurposeSchema,
   SSE_KEEPALIVE_FRAME,
   SSE_KEEPALIVE_MS,
   SSE_RETRY_MS,
-  type KobeEvent,
-  type KobeEventType,
+  type KaijuEvent,
+  type KaijuEventType,
   type ServerCallPurpose,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { logger as rootLogger } from "../logger.js";
 import type { HubSubscriber, RunEventHub } from "./hub.js";
 import type { Page, RunState } from "./read.js";
@@ -54,12 +54,12 @@ export interface StreamSource {
  */
 export interface EpilogueState {
   readonly purposes: readonly ServerCallPurpose[];
-  readonly written: ReadonlySet<KobeEventType>;
+  readonly written: ReadonlySet<KaijuEventType>;
   readonly completedAtMs: number;
 }
 
 /** The epilogue a `run.completed` announces, or undefined when none. */
-export function announcedEpilogue(event: KobeEvent): EpilogueState | undefined {
+export function announcedEpilogue(event: KaijuEvent): EpilogueState | undefined {
   if (event.type !== "run.completed") return undefined;
   const raw = (event.payload as { epilogue?: unknown }).epilogue;
   const purposes = Array.isArray(raw)
@@ -75,7 +75,7 @@ export function announcedEpilogue(event: KobeEvent): EpilogueState | undefined {
 /** An epilogue being waited for: what was announced, and which of its events were written since. */
 export interface EpilogueTracking {
   readonly state: EpilogueState;
-  readonly written: ReadonlySet<KobeEventType>;
+  readonly written: ReadonlySet<KaijuEventType>;
 }
 
 export interface RenderedPage {
@@ -115,7 +115,7 @@ export function renderPage(
     if (tracking) {
       tracking = { state: tracking.state, written: new Set([...tracking.written, event.type]) };
     }
-    if (isKobeEventType(event.type) && isTerminalEventType(event.type)) {
+    if (isKaijuEventType(event.type) && isTerminalEventType(event.type)) {
       const state = announcedEpilogue(event);
       if (state) {
         announced.push(state);

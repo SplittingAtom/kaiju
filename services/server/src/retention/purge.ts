@@ -7,9 +7,9 @@ import {
   lockLegalHolds,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { PERIOD_DAYS, TRASH_RETENTION_DAYS, effectiveAt } from "./periods.js";
 import { readMaximumLayer, readTeamLayer } from "./settings.js";
 import { BATCH_SCRUB, scrubEvidenceInTx } from "./semantic-memory.js";
@@ -140,7 +140,7 @@ function withinBudget(rows: readonly Candidate[], limits: BatchLimits): Candidat
 const num = (value: unknown): number => Number(value ?? 0);
 
 /** Queues the object keys of the threads' thread-owned blob columns; returns how many were new. */
-async function queueBlobs(tx: KobeTx, teamId: string, ids: readonly string[]): Promise<number> {
+async function queueBlobs(tx: KaijuTx, teamId: string, ids: readonly string[]): Promise<number> {
   let queued = 0;
   for (const ref of BLOB_REF_COLUMNS.filter((r) => r.thread)) {
     const table = sql.identifier(ref.table);
@@ -159,7 +159,7 @@ async function queueBlobs(tx: KobeTx, teamId: string, ids: readonly string[]): P
 }
 
 /** What deleting the threads takes with it (for the audit event; counts only). */
-async function countOwned(tx: KobeTx, teamId: string, ids: readonly string[]) {
+async function countOwned(tx: KaijuTx, teamId: string, ids: readonly string[]) {
   const res = await tx.execute<{
     entries: string;
     runs: string;
@@ -193,7 +193,7 @@ async function countOwned(tx: KobeTx, teamId: string, ids: readonly string[]) {
  * foreign-key check needs a share lock on the source, which this batch holds `FOR UPDATE`.
  */
 async function sourcesWithBusyForks(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   sources: readonly string[],
 ): Promise<string[]> {
@@ -225,7 +225,7 @@ export interface PurgeBatchResult extends PurgeCounts {
 
 /** Threads the batch's query would have picked but for a lock (a plain read is not blocked). */
 async function lockedCandidates(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   selection: PurgeSelection,
   retentionDays: number,
@@ -248,11 +248,11 @@ async function lockedCandidates(
  * something was purged. Throws on database errors; `isLegalHoldViolation(err)` means held.
  */
 export async function purgeBatchInTx(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   selection: PurgeSelection,
   limits: BatchLimits,
-  record: (tx: KobeTx, counts: PurgeBatchResult) => Promise<void>,
+  record: (tx: KaijuTx, counts: PurgeBatchResult) => Promise<void>,
   /** Sources an earlier batch of this loop left out (busy forks): not picked again. */
   exclude: readonly string[] = [],
 ): Promise<PurgeBatchResult> {
@@ -362,10 +362,10 @@ function add(a: PurgeCounts, b: PurgeCounts): PurgeCounts {
  * until none is left, a hold refuses a delete, or the budget runs out.
  */
 export async function purgeThreads(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   selection: PurgeSelection,
-  record: (tx: KobeTx, counts: PurgeBatchResult) => Promise<void>,
+  record: (tx: KaijuTx, counts: PurgeBatchResult) => Promise<void>,
   options: PurgeLoopOptions = {},
 ): Promise<PurgeOutcome> {
   const limits = options.limits ?? DEFAULT_BATCH;

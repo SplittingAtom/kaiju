@@ -7,7 +7,7 @@ import {
   type ArgPattern,
   type JsonObject,
   type ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
  * Pattern matching for policy rules, built on the protocol's glob grammar (`*`, `?`, `\` escape;

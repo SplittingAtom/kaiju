@@ -4,9 +4,9 @@ import {
   lockLegalHolds,
   sql,
   withTeam,
-  type KobeDb,
-  type KobeTx,
-} from "@kobe/db";
+  type KaijuDb,
+  type KaijuTx,
+} from "@kaiju/db";
 import { recordAudit } from "../audit/record.js";
 import { auditTimeout } from "./locks.js";
 
@@ -177,7 +177,7 @@ function deleteStatement(
 
 /** One batch of `table` in the team's transaction; returns the rows deleted. */
 async function sweepBatch(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   table: SweptTable,
   statement: SQL,
@@ -205,7 +205,7 @@ async function sweepBatch(
 
 /** Sweeps one table of one team: batches until a short one, the batch cap or `stop`. */
 export async function sweepTable(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   table: SweptTable,
   settings: TableSweepSettings,
@@ -229,7 +229,7 @@ export async function sweepTable(
  * reported to `onError` (or rethrown once all tables ran) and that table counts 0.
  */
 export async function sweepTables(
-  db: KobeDb,
+  db: KaijuDb,
   teamId: string,
   settings: TableSweepSettings,
   options: SweepOptions = {},

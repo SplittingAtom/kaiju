@@ -1,5 +1,5 @@
-import { sql, type KobeTx } from "@kobe/db";
-import type { SemanticMemoryIssue } from "@kobe/protocol";
+import { sql, type KaijuTx } from "@kaiju/db";
+import type { SemanticMemoryIssue } from "@kaiju/protocol";
 import type { Location } from "./location.js";
 
 /**
@@ -31,7 +31,7 @@ export const NEAR_DUPLICATE_WARNING: SemanticMemoryIssue = {
  * any item the save replaces).
  */
 export async function findNearDuplicates(
-  tx: KobeTx,
+  tx: KaijuTx,
   loc: Location,
   statement: string,
   except: readonly string[] = [],
@@ -59,7 +59,7 @@ export async function findNearDuplicates(
  * (`unnest … WITH ORDINALITY` with a lateral match), keyed by statement.
  */
 export async function findNearDuplicatesMany(
-  tx: KobeTx,
+  tx: KaijuTx,
   loc: Location,
   statements: readonly string[],
 ): Promise<Map<string, NearDuplicate[]>> {

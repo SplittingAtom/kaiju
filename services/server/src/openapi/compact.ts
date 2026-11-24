@@ -4,7 +4,7 @@ import {
   compactThreadRequestSchema,
   compactThreadResponseSchema,
   type CompactThreadErrorCode,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 
 /**
  * OpenAPI for `POST /v1/threads/{id}/compact` (KOBE-212 contract, KOBE-213 route,

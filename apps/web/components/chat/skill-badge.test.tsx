@@ -1,14 +1,14 @@
 // @vitest-environment happy-dom
 import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { FakeKobe } from "../../lib/chat/testing/fake-kobe";
+import { FakeKaiju } from "../../lib/chat/testing/fake-kaiju";
 import { openApp } from "./testing";
 
 /**
  * KOBE-297 ac-1: a skill the server saw the run use is named on the answer ("Used skill: …") and on
  * the Read step ("Read skill …"), from the thread's markers, so it is there after a reload.
  */
-let fake: FakeKobe;
+let fake: FakeKaiju;
 
 afterEach(() => {
   cleanup();
@@ -18,7 +18,7 @@ afterEach(() => {
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  fake = new FakeKobe();
+  fake = new FakeKaiju();
   vi.stubGlobal("fetch", fake.fetch);
 });
 
@@ -122,7 +122,7 @@ describe("skill versions (KOBE-315)", () => {
       await screen.findByText("Used skill: pretty-html 1.4.3", {}, { timeout: 4_000 }),
     ).toBeTruthy();
     const note = await screen.findByText(/Skill updated/, {}, { timeout: 4_000 });
-    expect(note.closest("[data-kobe-marker]")?.textContent).toContain(
+    expect(note.closest("[data-kaiju-marker]")?.textContent).toContain(
       "Skill updated: pretty-html 1.4.2 → 1.4.3",
     );
   });

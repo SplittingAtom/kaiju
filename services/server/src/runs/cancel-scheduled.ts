@@ -1,5 +1,5 @@
-import { isActiveRunStatus, isTerminalRunStatus } from "@kobe/protocol";
-import { SYSTEM_ACTOR, sql, withTeam, type KobeDb } from "@kobe/db";
+import { isActiveRunStatus, isTerminalRunStatus } from "@kaiju/protocol";
+import { SYSTEM_ACTOR, sql, withTeam, type KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import { recordAudit } from "../audit/record.js";
 import { withAppendTx } from "../event-stream/append.js";
@@ -17,7 +17,7 @@ import {
 export type ScheduledCancelReason = "owner_deactivated" | "member_removed";
 
 export interface CancelScheduledContext {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** Retries on a busy thread row (lock timeout), like the orchestrator's own entry points. */
   readonly withRetry: <T>(fn: () => Promise<T>) => Promise<T>;
   readonly emit: (teamId: string, transitions: readonly AppliedTransition[]) => void;

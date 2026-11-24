@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { withTeam } from "@kobe/db";
+import { withTeam } from "@kaiju/db";
 import { loadTeamConnector, exposedTools } from "../mcp/catalog.js";
 import { loadTeamFacts } from "../runs/resolver-input.js";
 import { openHarness, type Harness } from "../testing/harness.js";

@@ -14,7 +14,7 @@ afterEach(async () => {
 
 describe("readOutputs off the workspace volume (KOBE-326 review L1)", () => {
   it("refuses a file whose device is not the workspace volume's", async () => {
-    ws = await mkdtemp(path.join(tmpdir(), "kobe-eval-vol-"));
+    ws = await mkdtemp(path.join(tmpdir(), "kaiju-eval-vol-"));
     await mkdir(path.join(ws, "outputs"));
     await writeFile(path.join(ws, "outputs/a.txt"), "abc");
     const out = await readOutputs(ws, {

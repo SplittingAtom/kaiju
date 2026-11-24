@@ -1,5 +1,5 @@
-import type { AppCallReason, PinnedTool } from "@kobe/db";
-import type { JsonObject } from "@kobe/protocol";
+import type { AppCallReason, PinnedTool } from "@kaiju/db";
+import type { JsonObject } from "@kaiju/protocol";
 import { appVisible } from "../connectors/visibility.js";
 import { describePinnedTool, type TeamConnector } from "../mcp/catalog.js";
 import { matchingRules, type PolicyRuleSet } from "../policy/rules.js";

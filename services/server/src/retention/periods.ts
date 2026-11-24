@@ -1,4 +1,4 @@
-import { RETENTION_GRACE_DAYS, RETENTION_PERIODS, type RetentionPeriod } from "@kobe/db";
+import { RETENTION_GRACE_DAYS, RETENTION_PERIODS, type RetentionPeriod } from "@kaiju/db";
 import { z } from "zod";
 import { TRASH_RETENTION_DAYS } from "../threads/schemas.js";
 

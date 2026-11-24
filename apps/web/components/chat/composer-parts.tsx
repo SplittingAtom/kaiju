@@ -89,7 +89,7 @@ export function ComposerHint({
 }) {
   return (
     <p
-      id="kobe-composer-hint"
+      id="kaiju-composer-hint"
       className="text-muted-foreground m-0 min-w-0 flex-1 basis-40 text-xs"
     >
       {rowDrop.rowDrop === "file" ? (
@@ -103,7 +103,7 @@ export function ComposerHint({
       ) : blocker !== undefined ? (
         <span role="status">{blocker}</span>
       ) : piRefusal !== null ? (
-        <span role="status" data-kobe-pi-refusal>
+        <span role="status" data-kaiju-pi-refusal>
           {piRefusal}
         </span>
       ) : dictation.error ? (
@@ -234,14 +234,14 @@ export function ComposerNotes({
     <>
       {/* CT3: from a browsed branch, a send continues that branch, which becomes current. */}
       {branching && (
-        <p role="note" data-kobe-branch-send="" className="text-muted-foreground m-0 px-2 text-xs">
+        <p role="note" data-kaiju-branch-send="" className="text-muted-foreground m-0 px-2 text-xs">
           Sending here makes this branch current
         </p>
       )}
       {pending && (
         <p
           role="note"
-          data-kobe-app-insert-from={pending.from}
+          data-kaiju-app-insert-from={pending.from}
           className="text-muted-foreground m-0 flex items-center gap-2 px-2 text-xs"
         >
           <span>From {pending.from}: edit the text or confirm it before you send.</span>

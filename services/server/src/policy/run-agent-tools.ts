@@ -1,8 +1,8 @@
-import { explicitToolNames } from "@kobe/agent-file";
-import { sql, type KobeTx, type TeamRole } from "@kobe/db";
+import { explicitToolNames } from "@kaiju/agent-file";
+import { sql, type KaijuTx, type TeamRole } from "@kaiju/db";
 import { toolManifestSchema, withSiteNames } from "../agents/manifest.js";
 import type { SiteRole } from "../authz/permissions.js";
-import { MEMORY_TOOLS } from "@kobe/protocol";
+import { MEMORY_TOOLS } from "@kaiju/protocol";
 import { readRunMemoryPlan } from "../agents/run-memory.js";
 import { mayUseDangerousMode } from "./dangerous-mode.js";
 
@@ -46,7 +46,7 @@ interface RunAgentRow extends Record<string, unknown> {
 }
 
 export async function loadRunAgentTools(
-  tx: KobeTx,
+  tx: KaijuTx,
   run: { readonly teamId: string; readonly runId: string },
 ): Promise<RunAgentTools> {
   const tools = await agentTools(tx, run);
@@ -55,7 +55,7 @@ export async function loadRunAgentTools(
 }
 
 async function agentTools(
-  tx: KobeTx,
+  tx: KaijuTx,
   run: { readonly teamId: string; readonly runId: string },
 ): Promise<RunAgentTools> {
   const res = await tx.execute<RunAgentRow>(sql`
@@ -102,7 +102,7 @@ async function agentTools(
  * deny entries that aren't strings are dropped.
  */
 async function draftTools(
-  tx: KobeTx,
+  tx: KaijuTx,
   teamId: string,
   scope: "team" | "personal" | "gallery",
   agentId: string,
@@ -133,7 +133,7 @@ async function draftTools(
 }
 
 /** The publisher is active and a site admin or an admin of this team, now (AC1). */
-async function stillAdmin(tx: KobeTx, teamId: string, userId: string): Promise<boolean> {
+async function stillAdmin(tx: KaijuTx, teamId: string, userId: string): Promise<boolean> {
   const res = await tx.execute<{
     active: boolean;
     team_role: TeamRole | null;

@@ -24,7 +24,7 @@ export {
   EMPTY_VERSION_NOTE,
   messageMeta,
   type ChipFile,
-  type KobeMessageMeta,
+  type KaijuMessageMeta,
   type LiveOverlay,
   type ProjectedItem,
   type Projection,

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { canonicalZip } from "@kobe/protocol";
-import { and, eq, sql, teamSkillVersions, withTeam } from "@kobe/db";
+import { canonicalZip } from "@kaiju/protocol";
+import { and, eq, sql, teamSkillVersions, withTeam } from "@kaiju/db";
 import { teamRoleAllows } from "../../authz/permissions.js";
 import { validateZipBundle, type BundleError } from "../bundle.js";
 import { SKILL_LIMITS } from "../limits.js";

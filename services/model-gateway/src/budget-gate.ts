@@ -5,8 +5,8 @@ import {
   type BudgetLine,
   type MemberBudgetState,
   type ModelPrice,
-} from "@kobe/db";
-import { SERVER_CALL_LIMITS, type ServerCallTokenPurpose } from "@kobe/protocol";
+} from "@kaiju/db";
+import { SERVER_CALL_LIMITS, type ServerCallTokenPurpose } from "@kaiju/protocol";
 import { randomUUID } from "node:crypto";
 import { TtlCache } from "./cache.js";
 import { MemoryMemberRate, type MemberRate, type MemberRateTake } from "./member-rate.js";

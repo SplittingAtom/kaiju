@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { threadExportUrl, type TeamRetentionNotice } from "../../lib/chat/api";
 import { IconAction } from "../shell/icon-action";
 import { InlineLink } from "../shell/text-links";
-import { useChatSession } from "./kobe-runtime";
+import { useChatSession } from "./kaiju-runtime";
 import styles from "./chat.module.css";
 
 const LABELS: Readonly<Record<string, string>> = {

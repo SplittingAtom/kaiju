@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import git, { type TreeEntry } from "isomorphic-git";
-import type { GitConversionFailure } from "@kobe/protocol";
+import type { GitConversionFailure } from "@kaiju/protocol";
 import { componentRefusal, gitattributesRefusal, isGitattributes } from "./paths.js";
 import type { ConversionPlan, PlanIdentity } from "./plan.js";
 

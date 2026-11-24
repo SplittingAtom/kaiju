@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { request } from "node:http";
-import { RUN_TOKEN_HEADER, type RunTokenClaims } from "@kobe/protocol";
-import { generateSessionKeyPair, signRunToken } from "@kobe/session-token";
+import { RUN_TOKEN_HEADER, type RunTokenClaims } from "@kaiju/protocol";
+import { generateSessionKeyPair, signRunToken } from "@kaiju/session-token";
 import { describe, expect, it } from "vitest";
 import { hmacEraToken } from "./testing/hmac-era.js";
 import {

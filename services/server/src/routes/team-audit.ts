@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { listTeamAuditEvents, withTeam } from "@kobe/db";
+import { listTeamAuditEvents, withTeam } from "@kaiju/db";
 import { exportResponse, parseExportQuery } from "../audit/export/http.js";
 import { EXPORT_PAGE_SIZE } from "../audit/export/stream.js";
 import { hitRateLimit } from "../rate-limit.js";

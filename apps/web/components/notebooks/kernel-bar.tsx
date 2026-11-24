@@ -111,7 +111,7 @@ export function KernelState({
       <span
         role="status"
         className="text-muted-foreground text-xs"
-        data-kobe-kernel={busy ? "busy" : "idle"}
+        data-kaiju-kernel={busy ? "busy" : "idle"}
       >
         {busy ? "Kernel busy" : "Kernel idle"}
       </span>
@@ -119,7 +119,7 @@ export function KernelState({
   }
   const state = kernelState(phase, busy, live);
   return (
-    <span role="status" className="text-muted-foreground text-xs" data-kobe-kernel={state.key}>
+    <span role="status" className="text-muted-foreground text-xs" data-kaiju-kernel={state.key}>
       {state.text}
     </span>
   );

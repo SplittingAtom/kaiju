@@ -44,7 +44,7 @@ export interface PackageFiles {
   notice(dir: string): string | undefined;
 }
 
-const FIRST_PARTY = /^@kobe\//;
+const FIRST_PARTY = /^@kaiju\//;
 
 export function npmPage(name: string, version: string): string {
   return `https://www.npmjs.com/package/${name}/v/${version}`;

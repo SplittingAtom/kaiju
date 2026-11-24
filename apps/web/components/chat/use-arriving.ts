@@ -2,7 +2,7 @@
 
 import { useAuiState } from "@assistant-ui/react";
 import { isStopping } from "../../lib/chat/thread-state";
-import { kobeExtrasOf } from "./kobe-runtime";
+import { kaijuExtrasOf } from "./kaiju-runtime";
 
 /**
  * Whether a part is being written, for the arrival fade (KOBE-207): it streams, and Stop was not
@@ -10,7 +10,7 @@ import { kobeExtrasOf } from "./kobe-runtime";
  */
 export function useArriving(status: { readonly type: string }): boolean {
   const stopping = useAuiState((s) => {
-    const extras = kobeExtrasOf(s);
+    const extras = kaijuExtrasOf(s);
     return extras ? isStopping(extras.state) : false;
   });
   return status.type === "running" && !stopping;

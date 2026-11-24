@@ -5,7 +5,7 @@ import {
   type JsonObject,
   type PolicyDecision,
   type ToolDescriptor,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   builtin,
   ENABLED_ALL,
@@ -52,7 +52,7 @@ export const bash = builtin("bash");
 export const read = builtin("read");
 export const write = builtin("write");
 /** A Kaiju-scoped write that prompts in ask-on-write (artifacts are exempt; see settings.ts). */
-export const kobeWrite = builtin("share_file");
+export const kaijuWrite = builtin("share_file");
 export const jiraCreate = mcpTool("mcp__jira__create_issue", "write");
 export const jiraSearch = mcpTool("mcp__jira__search", "read");
 export const PROMPT_SANDBOX: PolicySettings = { promptSandboxWrites: true };

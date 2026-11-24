@@ -4,8 +4,8 @@ import {
   type ApprovalResolutionBody,
   type ApproveAllBody,
   type ToolRegistry,
-} from "@kobe/protocol";
-import type { KobeDb } from "@kobe/db";
+} from "@kaiju/protocol";
+import type { KaijuDb } from "@kaiju/db";
 import type { Logger } from "pino";
 import { logger as rootLogger } from "../logger.js";
 import { createToolRegistry } from "../policy/registry.js";
@@ -23,7 +23,7 @@ import { createApprovalVerifier, type ApprovalVerifier } from "./verify.js";
 import type { ApprovalView } from "./view.js";
 
 export interface ApprovalServiceOptions {
-  readonly db: KobeDb;
+  readonly db: KaijuDb;
   /** The site's approval key; absent → approvals are denied (logged at startup). */
   readonly keys?: ApprovalKeyring;
   /** Pending TTL (default D29's 1 h; tests shorten it). */

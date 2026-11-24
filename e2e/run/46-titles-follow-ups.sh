@@ -70,7 +70,7 @@
     # titled thread above (the Owner's, private, with runs) is pinned and unpinned, archived and
     # unarchived (archiving unpins; an archived thread can't be pinned), moved into a new project,
     # shared to it and moved out again (the move ends the project share: the member loses it).
-    # A second thread is busy with a run the fake model holds back (`kobe-slow-start`): moving it
+    # A second thread is busy with a run the fake model holds back (`kaiju-slow-start`): moving it
     # is refused until the run is stopped. Then the team share: the reader (a plain member) opens
     # the thread read-only, can't post to it (403 read_only) and forks it; the Owner revokes and
     # the reader gets 404. Last, the Owner as team admin: of two threads the reader starts, the
@@ -143,7 +143,7 @@ out("reader_after_move", code(await reader("GET", t)));
 // Move while a run is active: refused (409 thread_busy) until it is stopped.
 const busy = await owner("POST", "/v1/threads", { title: "E2E busy " + marker });
 const busyPath = "/v1/threads/" + busy.json.thread_id;
-const sent = await owner("POST", busyPath + "/messages", { content: "kobe-slow-start move me " + marker });
+const sent = await owner("POST", busyPath + "/messages", { content: "kaiju-slow-start move me " + marker });
 out("busy_message", sent.status);
 out("busy_move", code(await owner("POST", busyPath + "/move", { project_id: projectId })));
 out("busy_cancel", (await owner("POST", "/v1/runs/" + sent.json.run_id + "/cancel")).json.status);

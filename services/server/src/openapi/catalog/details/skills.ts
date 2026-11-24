@@ -1,7 +1,7 @@
-import { agentScope, SKILL_DRAFT_STARTS, skillSource } from "@kobe/db";
+import { agentScope, SKILL_DRAFT_STARTS, skillSource } from "@kaiju/db";
 import {
   catalogSkillEvalScorecardSchema,
-  kobeSkillManifestSchema,
+  kaijuSkillManifestSchema,
   putMemberSkillAddSchema,
   REGISTRY_VERSION_STATES,
   SKILL_ACCESS_MODES,
@@ -13,7 +13,7 @@ import {
   skillEvalStartedSchema,
   skillImportRequestSchema,
   startSkillEvalBodySchema,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import { z } from "zod";
 import { addSchema, reassignSchema } from "../../../routes/catalog-maintainers.js";
 import { enablementSchema } from "../../../routes/me-skill-enablements.js";
@@ -36,7 +36,7 @@ import { arr, bool, dateTime, int, nullable, num, obj, oneOfStrings, str, uuid }
  * Request and response schemas of the Skills catalog area (KOBE-771): team and personal skills,
  * Workbench drafts, skill evals, the Site catalog as members see it, maintainers, Add for me and
  * Promote to Site. Bodies come from the zod schemas the routes validate with and the
- * `@kobe/protocol` contracts; `untyped(...)` marks answers the routes build without a schema
+ * `@kaiju/protocol` contracts; `untyped(...)` marks answers the routes build without a schema
  * (fields read from `skill-json.ts`, `skill-drafts/shared.ts` and the helpers they call).
  */
 
@@ -51,7 +51,7 @@ const nameRef = obj({ id: uuid, name: str });
 const packageFile = obj({ path: str, size: int });
 const access = oneOfStrings(...SKILL_ACCESS_MODES);
 const evalMode = oneOfStrings(...SKILL_EVAL_MODES);
-const manifestJson = jsonSchemaOf(kobeSkillManifestSchema, "output");
+const manifestJson = jsonSchemaOf(kaijuSkillManifestSchema, "output");
 const catalogScorecard = jsonSchemaOf(catalogSkillEvalScorecardSchema, "output");
 
 // --- Skills (`routes/skill-json.ts`) ---
@@ -123,7 +123,7 @@ const manifestModelAnswer = {
   source: oneOfStrings("model", "seed"),
 };
 
-/** `@kobe/skill-scanner` Finding (its category and severity unions, as written there). */
+/** `@kaiju/skill-scanner` Finding (its category and severity unions, as written there). */
 const scanFinding = obj({
   category: oneOfStrings(
     "network",
@@ -143,7 +143,7 @@ const scanFinding = obj({
 });
 const verdict = oneOfStrings("pass", "caution", "block");
 
-// --- Evals (`@kobe/protocol` skill-evals `api.ts`) ---
+// --- Evals (`@kaiju/protocol` skill-evals `api.ts`) ---
 
 const SkillEvalRun = named("SkillEvalRun", skillEvalRunSchema);
 const SkillEvalStarted = named("SkillEvalStarted", skillEvalStartedSchema);

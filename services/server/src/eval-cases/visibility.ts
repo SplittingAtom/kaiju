@@ -1,4 +1,4 @@
-import { agentEvalCases, sql, type KobeTx } from "@kobe/db";
+import { agentEvalCases, sql, type KaijuTx } from "@kaiju/db";
 import { PERIOD_DAYS, effectiveAt } from "../retention/periods.js";
 import { readMaximumLayer, readTeamLayer } from "../retention/settings.js";
 
@@ -17,7 +17,7 @@ type SQL = ReturnType<typeof sql>;
  */
 
 /** Cases shared before this are past the team's effective retention window (null: forever). */
-export async function caseCutoff(tx: KobeTx, teamId: string): Promise<Date | null> {
+export async function caseCutoff(tx: KaijuTx, teamId: string): Promise<Date | null> {
   const now = new Date();
   const days =
     PERIOD_DAYS[effectiveAt(await readTeamLayer(tx, teamId), await readMaximumLayer(tx), now)];

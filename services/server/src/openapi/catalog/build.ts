@@ -8,7 +8,7 @@ import { z } from "zod";
  *
  * An area marked `detailed` gives every entry a `CatalogDetail` (request body, query, response,
  * status, extra errors), built from the zod schemas the routes validate with and the response
- * schemas in `@kobe/protocol`. An entry without detail carries `x-kobe-detail: "summary"`: its
+ * schemas in `@kaiju/protocol`. An entry without detail carries `x-kobe-detail: "summary"`: its
  * summary, path parameters and the error envelope are documented, its bodies are not (yet).
  */
 
@@ -38,7 +38,7 @@ export interface NamedSchema {
   readonly json?: JsonSchema;
 }
 
-/** A component from a zod schema the route (or `@kobe/protocol`) already defines. */
+/** A component from a zod schema the route (or `@kaiju/protocol`) already defines. */
 export const named = (name: string, zod: z.ZodType): NamedSchema => ({ name, zod });
 
 /** A component for a response with no schema in code: the fields the handler sends, as is. */

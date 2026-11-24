@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { createServer, type IncomingHttpHeaders, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { SecretBox, VIRTUAL_KEY_PURPOSE, virtualKeyContext, type GatewayPrincipal } from "@kobe/db";
+import {
+  SecretBox,
+  VIRTUAL_KEY_PURPOSE,
+  virtualKeyContext,
+  type GatewayPrincipal,
+} from "@kaiju/db";
 import {
   RUN_TOKEN_HEADER,
   SERVER_CALL_AUDIENCE,
@@ -9,14 +14,14 @@ import {
   SERVER_CALL_RESPONSE_FORMATS,
   SERVER_CALL_TOKEN_HEADER,
   type ServerCallClaims,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import {
   generateSessionKeyPair,
   signRunToken,
   signServerCallToken,
   signSessionToken,
   verifySessionToken,
-} from "@kobe/session-token";
+} from "@kaiju/session-token";
 import pino from "pino";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createModelGateway } from "./gateway.js";

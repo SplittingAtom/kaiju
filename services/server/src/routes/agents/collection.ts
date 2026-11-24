@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { slugFromName } from "@kobe/agent-file";
+import { slugFromName } from "@kaiju/agent-file";
 import { agentAccess, canCreateAgent } from "../../agents/access.js";
 import {
   agentBodyLimit,

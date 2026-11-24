@@ -39,7 +39,7 @@ export function sendError(
                 {
                   "@type": "type.googleapis.com/google.rpc.ErrorInfo",
                   reason: code,
-                  domain: "kobe",
+                  domain: "kaiju",
                 },
               ],
             },

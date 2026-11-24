@@ -1,4 +1,4 @@
-import type { GatewayThinkingRow } from "@kobe/db";
+import type { GatewayThinkingRow } from "@kaiju/db";
 import {
   ANTHROPIC_BUDGET,
   effectiveThinkingLevel,
@@ -8,11 +8,11 @@ import {
   strictestThinkingPolicy,
   type ThinkingLevel,
   type ThinkingPolicy,
-} from "@kobe/protocol";
+} from "@kaiju/protocol";
 import type { Route } from "./routes.js";
 
 /**
- * Thinking enforcement (KOBE-260; levels and policies in `@kobe/protocol` thinking.ts, mapping
+ * Thinking enforcement (KOBE-260; levels and policies in `@kaiju/protocol` thinking.ts, mapping
  * table in docs/design/thinking-controls.md). For a sandbox's call to a model with a thinking
  * control, the gateway decides the level (the run's recorded level, clamped to the site and team
  * settings in force now) and writes it into the request in the control's form. Pi and the
@@ -61,7 +61,7 @@ const CONTROL_ROUTE: Readonly<Record<ThinkingPolicy["control"], Route["kind"] | 
   gemini_budget: "gemini",
 };
 
-// Budget tables per level: `@kobe/protocol` thinking.ts (KOBE-557: the chat shows spend against them).
+// Budget tables per level: `@kaiju/protocol` thinking.ts (KOBE-557: the chat shows spend against them).
 const ANTHROPIC_MIN_BUDGET = 1_024;
 /**
  * What an Anthropic budget leaves for the answer (review S3): at least 1,024 tokens and at least a

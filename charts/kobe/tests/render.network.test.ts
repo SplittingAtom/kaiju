@@ -19,7 +19,7 @@ describe("migrations (KOBE-68)", () => {
     expect(job?.spec.template.spec.terminationGracePeriodSeconds).toBe(30);
     const c = job?.spec.template.spec.containers[0];
     expect(c.image).toBe("ghcr.io/splittingatom/kobe-server:0.1.0");
-    expect(c.command).toEqual(["node", "node_modules/@kobe/db/dist/cli/migrate.js"]);
+    expect(c.command).toEqual(["node", "node_modules/@kaiju/db/dist/cli/migrate.js"]);
     expect(migrateEnv(ms)).toEqual(
       expect.arrayContaining([
         {
@@ -109,7 +109,7 @@ describe("migrations (KOBE-68)", () => {
         (c: { name: string }) => c.name === "wait-for-migrations",
       );
       expect(wait?.name, name).toBe("wait-for-migrations");
-      expect(wait?.command).toEqual(["node", "node_modules/@kobe/db/dist/cli/wait.js"]);
+      expect(wait?.command).toEqual(["node", "node_modules/@kaiju/db/dist/cli/wait.js"]);
       expect(wait?.env).toContainEqual({
         name: "KOBE_DATABASE_URL",
         valueFrom: { secretKeyRef: { name: "kobe-db", key: "app-url" } },

@@ -4,9 +4,9 @@ import { useAuiState } from "@assistant-ui/react";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { RunUsage, ThreadUsage } from "../../lib/admin/api/usage";
 import { formatTokens, formatUsd } from "../../lib/admin/usage-format";
-import type { KobeMessageMeta } from "../../lib/chat/tree";
+import type { KaijuMessageMeta } from "../../lib/chat/tree";
 import { cn } from "../../lib/utils";
-import { useKobeExtras } from "./kobe-runtime";
+import { useKaijuExtras } from "./kaiju-runtime";
 
 /** Usage rows land a moment after a run ends (the gateway's flush); read them after this. */
 const USAGE_SETTLE_MS = 1_500;
@@ -37,7 +37,7 @@ function staleAfter(usage: ThreadUsage, ended: string | null): boolean {
  * gauge (KOBE-211). After a run, a read whose newest call isn't that run's is read again, bounded.
  */
 export function ThreadUsageProvider({ children }: { readonly children: ReactNode }) {
-  const extras = useKobeExtras();
+  const extras = useKaijuExtras();
   const controller = extras?.controller;
   const threadId = extras?.state.threadId ?? null;
   const ended = extras?.state.live?.terminal ? extras.state.live.runId : null;
@@ -102,7 +102,7 @@ function clock(iso: string): { readonly short: string; readonly full: string } |
  * always (Compare versions' column headings, CT10).
  */
 export function MessageFooter({ shown = false }: { readonly shown?: boolean } = {}) {
-  const meta = useAuiState((s) => s.message.metadata.custom as KobeMessageMeta | undefined);
+  const meta = useAuiState((s) => s.message.metadata.custom as KaijuMessageMeta | undefined);
   const usage = useContext(ThreadUsageContext)?.usage ?? null;
   if (meta?.kind !== "assistant" || meta.live || meta.at === undefined) return null;
   const time = clock(meta.at);

@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { workspaceFileEntrySchema } from "@kobe/protocol";
+import { workspaceFileEntrySchema } from "@kaiju/protocol";
 import { createApp } from "../app.js";
 import {
   EventStreamFixture,

@@ -46,7 +46,7 @@ import { egressRequestRoutes } from "../routes/egress-requests.js";
 import { siteEgressRoutes } from "../routes/site-egress.js";
 import { siteSsoRoutes } from "../routes/site-sso.js";
 
-// The JSON file is generated, not committed (KOBE-815): `pnpm --filter @kobe/server openapi`
+// The JSON file is generated, not committed (KOBE-815): `pnpm --filter @kaiju/server openapi`
 // writes it from the build, and CI keeps it as an artifact. Route changes show in review through
 // the route-inventory snapshot (src/routes/__snapshots__/route-inventory.app.txt).
 

@@ -7,7 +7,7 @@ import { AppFrame } from "../apps/app-frame";
 import { useAppComposer } from "../apps/use-app-composer";
 import { useThreadSettled } from "../chat/thread-on-screen";
 import { OpenedPicker } from "./rail-picker-opening";
-import { useChatSession, useKobeExtras } from "../chat/kobe-runtime";
+import { useChatSession, useKaijuExtras } from "../chat/kaiju-runtime";
 import type { RailApi } from "./rail-state";
 import styles from "./rail.module.css";
 
@@ -165,7 +165,7 @@ export function RailPickers({
   // A site admin places an app in the rail (KOBE-531); the KOBE-460 name rule is gone.
   const pickers = apps.filter((a) => a.placement === "rail");
   const { chosen, gone } = useChosenPicker(rail, pickers, settled);
-  const threadId = useKobeExtras()?.state.threadId ?? null;
+  const threadId = useKaijuExtras()?.state.threadId ?? null;
   const selectId = useId();
   const { setPickerShown } = rail;
   const shown = chosen !== null && visible;
@@ -175,7 +175,7 @@ export function RailPickers({
   useEffect(() => () => setPickerShown(false), [setPickerShown]);
   if (pickers.length === 0) return null;
   return (
-    <div className={styles.pickers} data-kobe-rail-picker={chosen?.appId ?? ""}>
+    <div className={styles.pickers} data-kaiju-rail-picker={chosen?.appId ?? ""}>
       <div className={styles.sectionHeader}>
         <label htmlFor={selectId} className={styles.sectionTitle}>
           Pickers
