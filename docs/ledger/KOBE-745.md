@@ -32,67 +32,98 @@ step, self-test, README) and wires the guard and self-test into CI's static job 
   their allowlists. The scripts themselves never spell a setting.
 - **Read as signed strings (spec §1), so permanent:** session-token audiences
   (`kobe.sandbox-wire`, `kobe.mcp-proxy`, ...), issuer `kobe-server`, the projected-token audience
-  `kobe.sandbox-bootstrap`, `kobe.*.v<n>` HMAC/HKDF labels, the trace-span key label. Advisory-lock
-  names of Postgres (`kobe.legal_hold`, `kobe.audit.pii_sweep`) sit with the settings. Say if any
-  of these should move to RN-5.
+  `kobe.sandbox-bootstrap`, `kobe.*.v<n>` HMAC/HKDF labels, the trace-span key label. The review
+  agreed (spec §1).
 - **Binary files** are scanned too (latin1); none of the 3 tracked binaries contains the name.
   **Generated files** get their own groups (lockfile → RN-3 via `pnpm install`; product name in
   `THIRD_PARTY_LICENSES.md`/`NOTICE` → RN-2 and image paths → RN-6 via `pnpm licenses:update`).
 
+## Review round 1 (merge after fixes): what changed
+
+- **Engine:** kept groups (permanent, then provisional) protect paths too: their content entries
+  also match file paths (C1 applied migrations, C2 `kobe.skill.yaml`). Questions are a
+  `provisional` step; `guard.mjs --final` fails while any non-permanent group remains (M6).
+- **rename.mjs `--apply`:** all or nothing (M1): checks first, then writes; on any failure it
+  resets to HEAD. Refuses: an earlier step's groups still present (M2), a dirty tree, rewriting a
+  binary, non-UTF-8 file or symlink (M3), a target that exists or collides case-insensitively, and
+  a path rename whose references another step (or a left-out group) owns (H4; Markdown and
+  generated files are only reported). Symlinks are read with `lstat`; a missing tracked file
+  gives a clear error.
+- **Now permanent:** `kobe-guide` and the built-in connector URLs (C3, C5: CHECK constraints),
+  `kobeShippedVersion` and other `kobe*` schema properties (C4: column mapping), every
+  advisory-lock name and derived-hash label (H1; RN-5 patterns now match only inside quotes, with
+  a trailing boundary), audit action names (H2), git-mirror trailers (H8), Bifrost customers
+  `kobe-site`/`kobe-install` (H9), more ticket-id forms `KOBE-${n}`, `KOBE-[1-4]`, `KOBE-xx` (H7).
+- **Ownership fixes:** `x-kobe-team` is RN-5's only (H3); objects inside team namespaces
+  (`kobe-sandbox`, quotas, NetworkPolicies, LimitRange, RoleBinding) are RN-7 hand work with the
+  configured prefix, and RN-7's patterns skip `charts/**` and `sandbox/constants.ts`, so the
+  gVisor admission policy is never renamed mechanically (H5, H6); `kobe-sandbox-token` is an RN-5
+  header with accept-both hand work (M5); the Pi extensions, image sources and Python packages
+  move with RN-6 (H4); bare `KOBE` in code is an RN-3 identifier. RN-4's header names the
+  `KOBE_TEST_DATABASE_URL` trap (M4).
+- **Self-test:** 19 tests, one per finding (path protection, binary, order, atomic rollback,
+  target collision, reference conflict) plus owners of review sample lines on the real allowlist
+  and step files (M7).
+
+## Each step applied in isolation (throwaway worktree, removed afterwards)
+
+`--apply --step RN-n` in order on `093ffd1ce`; after each: the step's allowlist groups deleted,
+`pnpm build` and `pnpm typecheck`. RN-3 also ran `pnpm install` (lockfile: the step's hand work).
+
+| Step | Applied (occ. / files / paths) | build | typecheck | Still hand work (owned, unchanged)                            |
+| ---- | ------------------------------ | ----- | --------- | ------------------------------------------------------------- |
+| RN-2 | 3,433 / 1,142 / 0              | ok    | ok        | 222: docs `Triage:` tail, generated NOTICE/THIRD_PARTY        |
+| RN-3 | 12,911 / 2,751 / 79            | ok    | ok        | 2,036: test-fixture and app-code `Triage:` tails, lockfile    |
+| RN-4 | 3,775 / 476 / 0                | ok    | ok        | the KOBE\_\* fallback helper and warning (runtime, not built) |
+| RN-5 | 752 / 320 / 0                  | ok    | ok        | accept `x-kobe-team` and `kobe-sandbox-token` for one release |
+| RN-6 | 2,689 / 506 / 187              | ok    | ok        | 730: e2e/chart `Triage:` tail, licence inventories            |
+| RN-7 | 115 / 48 / 0                   | ok    | ok        | 98: prefix configuration, in-namespace object names           |
+| RN-8 | 102 / 19 / 1                   | ok    | ok        | the GitHub rename, runner set, variables                      |
+| RN-9 | 5 / 5 / 0                      | ok    | ok        | the fresh install itself                                      |
+
+Not checked per step: unit/e2e tests, image builds, a real install. One finding of the first run
+was fixed before the final run (bare `KOBE` as RN-2 broke RN-2's typecheck; RN-5's unquoted
+`kobe.agent` matched a test variable). After RN-3, one provisional entry went stale (the lookbehind
+on `kobeName`); it now accepts both names.
+
 ## Totals (this branch, `node scripts/rename/guard.mjs --report`)
 
-61,555 occurrences in 5,948 files (contents and paths, this branch's new files included); 106 entries in 48 groups, 221 lines.
+61,701 occurrences in 5,948 files; 121 entries in 53 groups, 250 lines.
 
 | Owner                                     | Occurrences | Files |
 | ----------------------------------------- | ----------: | ----: |
-| permanent (spec §3 "stays")               |      32,963 | 5,552 |
-| permanent, provisional (Q1–Q13 below)     |       1,518 |   477 |
-| RN-2 user-facing text                     |       3,716 | 1,160 |
-| RN-3 packages, identifiers, paths         |      15,884 | 3,107 |
+| permanent                                 |      33,376 | 5,560 |
+| provisional (Q1–Q11 below)                |       1,459 |   458 |
+| RN-2 user-facing text                     |       3,655 | 1,148 |
+| RN-3 packages, identifiers, paths         |      15,029 | 2,986 |
 | RN-4 environment variables                |       3,775 |   476 |
-| RN-5 headers, cookies, storage, telemetry |         692 |   278 |
-| RN-6 chart, images, Kubernetes names      |       2,627 |   415 |
-| RN-7 team namespace prefix                |         272 |   168 |
+| RN-5 headers, cookies, storage, telemetry |         752 |   320 |
+| RN-6 chart, images, release-namespace     |       3,334 |   560 |
+| RN-7 namespace prefix, in-namespace names |         213 |    66 |
 | RN-8 repository, CI, CLAUDE.md            |         103 |    20 |
 | RN-9 test install names                   |           5 |     5 |
 
-Permanent split: ticket ids 23,046; history docs 4,243; applied migrations 4,307; rename spec and
-tooling 356; Postgres settings 136, objects 274; signed/persisted ids 524; migration markers 28.
-
-## Dry run (`node scripts/rename/rename.mjs --summary`; writes nothing)
-
-| Step | Would change (occurrences / files / paths) | Left for hand edits (owned, no pattern yet)                     |
-| ---- | ------------------------------------------ | --------------------------------------------------------------- |
-| RN-2 | 3,508 / 1,154 / 0                          | 208: docs `Triage:` tail, generated NOTICE/THIRD_PARTY text     |
-| RN-3 | 13,551 / 2,832 / 204                       | 2,121: test-fixture and app-code `Triage:` tails, lockfile      |
-| RN-4 | 3,775 / 476 / 0                            | 0 (fallback helper is hand work)                                |
-| RN-5 | 692 / 278 / 0                              | 0                                                               |
-| RN-6 | 2,084 / 393 / 80                           | 463: e2e/chart `Triage:` tail (`psql_kobe` 130, release `kobe`) |
-| RN-7 | 272 / 168 / 0                              | 0 (prefix configuration is hand work)                           |
-| RN-8 | 102 / 19 / 1                               | 0                                                               |
-| RN-9 | 5 / 5 / 0                                  | 0                                                               |
-
 ## Open questions (for Chris)
 
-The spec is silent on these classes. Each is held as provisional `permanent` (no step touches it)
-until answered; the group name in `allowlist.txt` carries the number. My recommendation in brackets.
+Held as `provisional` (no step touches them) until answered; group names carry the number.
+Recommendation in brackets. Per the review, Q3, Q4, Q7 (and maybe Q5, Q8) stay visible to agents
+or members, against spec §8.1: keep them and amend §8.1, or add read-both logic, before RN-9.
 
-1. **Q1 Specs of earlier lanes** `docs/specs/*.md` (395 in 18 files, e.g. `kobe-admin-mcp.md`): keep as design records like gate docs, or rename? [keep]
-2. **Q2 Skill manifest file name** `kobe.skill.yaml` (227 / 86): lives inside packages that exist outside the DB, like `kobe.dev/skill/v1`. [keep; read both if renamed later]
-3. **Q3 Built-in connector** id `kobe`, tool names `mcp__kobe__*`, route `/connectors/kobe`, site setting keys `kobe_mcp.*`, deny codes `kobe_admin_write` (174 / 52): stored in rows, policy rules and thread history. [keep]
-4. **Q4 Workspace and Pi session names**: folder `.kobe/`, Pi entry types `kobe.branch` etc., Pi provider id `kobe` (328 / 165). [keep]
-5. **Q5 Audit field names** `kobeCommitId` (13 / 7), stored in audit rows. [keep]
-6. **Q6 Model ids** `kobe-local/...` (77 / 31), stored in catalogs. [keep]
-7. **Q7 MCP Apps names shared with external app servers** (Catalyst): `_meta` key `io.kobe/item-kind`, bridge methods `kobe/notifications/drag-*`, host name `kobe` (31 / 16). [keep, or add `kaiju` names while accepting the old]
-8. **Q8 Sandbox home** `/home/kobe` (28 / 12): Pi sessions and files hold absolute paths. [keep]
-9. **Q9 Value `kobe` in persisted enums**: registry publisher, memory/file `source`/`scope`, theme preset, built-in agent slug, gallery key (133 / 63; e.g. `publisher: "kobe"`). [keep]
-10. **Q10 Rate-limit row keys and lock names** `kobe:<purpose>:`, `kobe.skill-eval.reaper` (54 / 25): old and new pods share them in an upgrade. [keep]
-11. **Q11 Kubernetes label keys** `kobe.splittingatom.io/*` (40 / 24) on objects in existing team namespaces. [keep, like the namespace prefix]
-12. **Q12 Git branch prefix** `kobe/<member>/...` pushed to members' repositories (14 / 11). [new branches `kaiju/`; old ones stay]
-13. **Q13 Agent file (orbit) export section** `kobe:` (4 / 4). [keep]
-14. **Spec's `kobe-models/*` gateway names** (§3 stays 3): no such persisted value exists; `kobe-models` is the Pi extension's name (given to RN-3/RN-6) and the stored provider id is `kobe` (Q4). Confirm the spec meant the provider id.
-15. **Built-in gallery agent "Kobe"** (`services/server/src/gallery/agents/kobe.ts`: `name: Kobe`, "You are Kobe"): RN-2 renames the seed, but existing installs keep the name in their rows without a data update (§5 says no migration). Rename existing rows?
-16. **Operator-visible telemetry names** given to RN-5: span/attribute names `kobe.run`, `kobe.tool.*` (114) and the syslog SD-ID `kobe@<PEN>` (6 / 3). Operators' SIEM and trace queries match them. Rename in RN-5 (as planned) with a release note, or keep?
+1. **Q1 Specs of earlier lanes** `docs/specs/*.md` (391 / 18). [keep as design records]
+2. **Q2 Skill manifest file name** `kobe.skill.yaml` (240 / 94, any case). [keep]
+3. **Q3 Built-in connector** id `kobe`, `mcp__kobe__*`, `/connectors/kobe`, `kobe_mcp.*` settings, deny codes (176 / 52). [keep]
+4. **Q4 Workspace and Pi session names** `.kobe/`, `kobe.branch` etc., Pi provider id `kobe` (328 / 165). [keep]
+5. **Q5 Model ids** `kobe-local/...` (77 / 31). [keep]
+6. **Q6 MCP Apps names shared with Catalyst**: `io.kobe/item-kind`, `kobe/notifications/drag-*`, host name (31 / 14). [keep, or add new names accepting the old]
+7. **Q7 Sandbox home** `/home/kobe` (28 / 12). [keep]
+8. **Q8 Value `kobe` in persisted enums** (publisher, source, scope, theme preset, agent slug; 130 / 63). [keep]
+9. **Q9 Kubernetes label keys** `kobe.splittingatom.io/*` (40 / 24). [keep, like the namespace prefix]
+10. **Q10 Git branch prefix** `kobe/<member>/...` (14 / 11). [new branches `kaiju/`]
+11. **Q11 Agent file (orbit) export section** `kobe:` (4 / 4). [keep]
+12. **Spec's `kobe-models/*` gateway names**: no such stored value; the stored one is provider id `kobe` (Q4).
+13. **Built-in gallery agent "Kobe"**: existing installs keep the name in their rows without a data update. Rename existing rows?
+14. **Operator-visible telemetry names** (RN-5): `kobe.run`, `kobe.tool.*`, syslog SD-ID `kobe@<PEN>`. Rename with a release note, or keep?
+15. **In-namespace object names** (RN-7): configured or detected per install (planned), or keep `kobe-*` everywhere?
 
 ## Doc evaluation
 
@@ -101,8 +132,6 @@ admin or in-sandbox agent sees or can do changes. `scripts/rename/README.md` doc
 
 ## Evidence
 
-- `node scripts/rename/guard.mjs`: ok, 61,555 allowed occurrences, 106 entries, ~1.5 s.
-- `node --test scripts/rename/rename.test.mjs`: 11 tests pass (case handling, globs, parse errors,
-  unowned and stale findings, dry run writes nothing, one step changes only its own names,
-  permanent `kobe.dev/`, `KOBE-123`, `kobe_reserve_budget` and the team setting untouched,
-  `x-kobe-team` waits for RN-5, idempotent second run, dirty tree refused).
+- `node scripts/rename/guard.mjs`: ok, 61,701 allowed occurrences, 121 entries, ~1.8 s.
+- `node --test scripts/rename/rename.test.mjs`: 19 tests pass.
+- Per-step isolation run: table above.

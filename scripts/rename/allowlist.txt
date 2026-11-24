@@ -97,7 +97,7 @@ docs/specs/** /kobe/i
 == provisional: (Q8) Value `kobe` in persisted enums and rows: registry publisher, memory/file source and scope, theme preset, built-in agent slug and connector name
 ** /\b(?:publisher|previousPublisher|source|scope|preset|slug|agentId|galleryId|gallery_key|galleryKey|builtin)\b["']?\s*(?:[:=!]{1,3}|<>)\s*["'`]kobe["'`]/
 ** /["'`]kobe["'`]\s*\|\s*["'`](?:maintainer|external|site|gallery)["'`]/
-** /(?<=\bkobeName\s*=\s*)"kobe"/
+** /(?<=\bk(?:obe|aiju)Name\s*=\s*)"kobe"/
 ** /\b(?:z\.enum|oneOfStrings)\(\[[^\]]*["'`]kobe["'`]/
 
 == provisional: (Q9) Kubernetes label keys `kobe.splittingatom.io/*` on objects in existing team namespaces (selectors, network policies)
