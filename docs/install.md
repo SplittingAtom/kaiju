@@ -1784,6 +1784,14 @@ added by hand is still used, and the warning says so (`KOBE_S3_PREFIX → KAIJU_
 (KAIJU_S3_PREFIX is set but empty, so KOBE_S3_PREFIX is used)`). Once you rename it, set the chart
 value (`s3.prefix`) instead where there is one.
 
+Kubernetes service-link variables are not settings and are never renamed or warned about. With
+`enableServiceLinks` on (the Kubernetes default), a pod sees `<SERVICE>_SERVICE_HOST`,
+`<SERVICE>_PORT_80_TCP_ADDR` and the like for every Service in its namespace, so Services named
+`kobe-*` give names such as `KOBE_SERVER_SERVICE_HOST`. The fallback skips a variable whose name
+and value have that shape when its `<SERVICE>_SERVICE_HOST` sibling holds an IP address. The chart's
+pods and the sandbox, evaluation and scan pods the server creates set `enableServiceLinks: false`,
+since nothing in Kaiju reads these variables.
+
 ### Upgrade notes
 
 Release notes for operators, one file per release, are in [docs/releases](releases/): start

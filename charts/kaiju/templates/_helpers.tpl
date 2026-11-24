@@ -318,6 +318,9 @@ spec:
       {{- include "kaiju.imagePullSecrets" $root | nindent 6 }}
       serviceAccountName: {{ .serviceAccount | default (printf "%s-workload" $fullname) }}
       automountServiceAccountToken: {{ .automountToken | default false }}
+      # No Service env vars (KOBE-836): nothing reads them, and Services named <release>-* would
+      # inject <RELEASE>_*_PORT names that look like product settings. KUBERNETES_SERVICE_* stays.
+      enableServiceLinks: false
       {{- with include "kaiju.topologySpread" (dict "root" $root "component" .component "values" .values) }}
       {{- . | nindent 6 }}
       {{- end }}
